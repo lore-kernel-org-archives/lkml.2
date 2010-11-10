@@ -1,53 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab0KJUjM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:39:12 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39098 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752376Ab0KJUjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:39:10 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: Forked android kernel development from linux kernel mainline
-Date: Wed, 10 Nov 2010 21:38:21 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: "Ted Ts'o" <tytso@mit.edu>, david@lang.hm,
-        Anca Emanuel <anca.emanuel@gmail.com>, Greg KH <greg@kroah.com>,
-        Elvis Dowson <elvis.dowson@mac.com>,
-        Janakiram Sistla <janakiram.sistla@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com> <20101107000348.GF2935@thunk.org> <20101110135458.GB1553@ucw.cz>
-In-Reply-To: <20101110135458.GB1553@ucw.cz>
+	id S1754047Ab0KJUmE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:42:04 -0500
+Received: from sj-iport-4.cisco.com ([171.68.10.86]:31648 "EHLO
+	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753741Ab0KJUmC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 15:42:02 -0500
+Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAGaS2kyrR7Hu/2dsb2JhbACiNnGjRZtGhUoEhFqFfQ
+X-IronPort-AV: E=Sophos;i="4.59,180,1288569600"; 
+   d="scan'208";a="215190743"
+Message-ID: <4CDB0399.9000206@cisco.com>
+Date: Wed, 10 Nov 2010 12:42:01 -0800
+From: Joe Eykholt <jeykholt@cisco.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+CC: Boaz Harrosh <bharrosh@panasas.com>, Greg KH <greg@kroah.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Andy Yan <ayan@marvell.com>,
+        Chetan Loke <generationgnu@yahoo.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+References: <20101011213235.GA11489@kroah.com> <4CB4AEB9.30501@vlnb.net> <20101012190345.GA25737@kroah.com> <4CB75E81.7000208@vlnb.net> <20101014200413.GA30831@kroah.com> <4CC1CA4D.1090609@vlnb.net> <20101022175624.GA13640@kroah.com> <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDB00C2.2090200@cisco.com>
+In-Reply-To: <4CDB00C2.2090200@cisco.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011102138.22213.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 10, 2010, Pavel Machek wrote:
-> On Sat 2010-11-06 20:03:48, Ted Ts'o wrote:
-> > On Sat, Nov 06, 2010 at 04:52:26PM -0700, david@lang.hm wrote:
-> > > also, none of these other patches resulted in device drivers
-> > > developed for a distro being incompatible with mainline.
-> > 
-> > What, people can't delete a couple of single lines of code before
-> > submitting the device driver upstream to mainline?  Here's the world's
-> > tiniest violin playing, "my heart bleeds for you"....
-> 
-> Deleting couple single liners is not a problem. Cleaning up 100KLoC
-> patch for mainline *is* a problem.
-> 
-> I know, I tried to do that work. Even getting it to staging quality
-> was hard, and it was recently dropped due to security holes.
-> 
-> Unfortunately google uses wakelocks as an excuse for not cleaning up
-> stuff... "because readding those few lines would be too hard".
 
-Actually, this isn't a good excuse any more as of 2.6.37-rc1.  You can
-basically replace wakelocks with wakeup sources and go ahead.
 
-Thanks,
-Rafael
+On 11/10/10 12:29 PM, Joe Eykholt wrote:
+> 
+> 
+> On 11/10/10 12:19 PM, Vladislav Bolkhovitin wrote:
+>> Boaz Harrosh, on 11/10/2010 12:58 PM wrote:
+>>> On 11/09/2010 10:06 PM, Vladislav Bolkhovitin wrote:
+>>>>
+>>>> Sorry, but what is incorrect in the working implementation without any
+>>>> bugs doing its job in the simplest, smallest and clearest way?
+>>>>
+>>>> If those objects remade to free themselves in the kobjects release(),
+>>>> what value would it add to them? Would the implementation be simpler,
+>>>> smaller or clearer? Not, I believe, new implementation would be only
+>>>> bigger and less clear. So, what's the point to do it to make the code worse?
+>>>>
+>>>
+>>> Totally theoretically speaking, since I have not inspected the code.
+>>>
+>>> If today you wait for the count to reach zero, then unregister
+>>> and send an event to some other subsystem to free the object.
+>>>
+>>> Is it not the same as if you take an extra refcount, unregister and
+>>> send the event at count=1. Then at that other place decrement the last
+>>> count to cause the object to be freed.
+>>>
+>>> I agree that it is hard to do lockless. what some places do is have
+>>> an extra kref. The kobj has a single ref on it. everything takes the
+>>> other kref. when that reaches zero the unregister and event fires
+>>> and at free you decrement the only kobj ref to deallocate. This is one
+>>> way. In some situations you can manage with a single counter it all
+>>> depends.
+>>
+>> Thanks for sharing your thoughts with us. But the question isn't about
+>> if it's possible to implement what we need locklessly. The question is
+>> in two approaches how to synchronously delete objects with entries on SYSFS:
+>>
+>> 1. struct object_x {
+>> 	...
+>> 	struct kobject kobj;
+>> 	struct completion *release_completion;
+>> };
+>>
+>> static void x_release(struct kobject *kobj)
+>> {
+>> 	struct object_x *x;
+>> 	struct completion *c;
+>>
+>> 	x = container_of(kobj, struct object_x, kobj);
+>> 	c = x->release_completion;
+>> 	kfree(x);
+>> 	complete_all(c);
+>> }
+>>
+>> void del_object(struct object_x *x)
+>> {
+>> 	DECLARE_COMPLETION_ONSTACK(completion);
+>>
+>> 	...
+>> 	x->release_completion = &completion;
+>> 	kobject_put(&x->kobj);
+>> 	wait_for_completion(&completion);
+>> }
+>>
+>> and
+>>
+>> 2. struct object_x {
+>> 	...
+>> 	struct kobject kobj;
+>> 	struct completion release_completion;
+>> };
+>>
+>> static void x_release(struct kobject *kobj)
+>> {
+>> 	struct object_x *x;
+>>
+>> 	x = container_of(kobj, struct object_x, kobj);
+>> 	complete_all(&x->release_completion);
+>> }
+>>
+>> void del_object(struct object_x *x)
+>> {
+>> 	...
+>> 	kobject_put(&x->kobj);
+>> 	wait_for_completion(&completion);
+>> 	...
+>> 	kfree(x);
+>> }
+> 
+> I'll admit I don't understand this all that well, but
+> why not just have x_release() (based on (2))
+> do free(x), and have del_object
+> do the kobject_put(&x->kobj) as its very last thing?
+> Then you don't need the completion.
+
+Ah, well to answer my own question, I guess that's (1).
+Never mind.
+
+	Joe
+
+>> Greg asserts that (1) is the only correct approach while (2) is
+>> incorrect, and I'm trying to justify that (2) is correct too and
+>> sometimes could be better, i.e. simpler and clearer, because it
+>> decouples object_x from SYSFS and its kobj. Then kobj becomes an
+>> ordinary member of struct object_x without any special treatment and
+>> with the same lifetime rules as other members of struct object_x. While
+>> in (1) all lifetime of struct object_x is strictly attached to kobj, so
+>> it needs be specially handled with additional code for that if struct
+>> object_x has many other members which needed to be initialized/deleted
+>> _before and after_ kobj as we have in SCST.
+>>
+>> Vlad
