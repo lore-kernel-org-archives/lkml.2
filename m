@@ -1,111 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640Ab0KJC03 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 21:26:29 -0500
-Received: from mga09.intel.com ([134.134.136.24]:64308 "EHLO mga09.intel.com"
+	id S1754627Ab0KJCbJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 21:31:09 -0500
+Received: from mail.perches.com ([173.55.12.10]:4898 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752032Ab0KJC01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 21:26:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,176,1288594800"; 
-   d="scan'208";a="675975103"
-Date: Wed, 10 Nov 2010 10:26:24 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Hellwig <hch@lst.de>,
-        Jan Engelhardt <jengelh@medozas.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] writeback: avoid livelocking WB_SYNC_ALL writeback
-Message-ID: <20101110022624.GA5167@localhost>
-References: <20101108230916.826791396@intel.com>
- <20101108231727.139062518@intel.com>
- <20101109144346.21d6a5e4.akpm@linux-foundation.org>
- <20101109231840.GC11214@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101109231840.GC11214@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751287Ab0KJCbG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 21:31:06 -0500
+Subject: Re: [PATCH 1/9] drivers/gpu/drm/drm_stub.c: Use printf extension
+ %pV
+From: Joe Perches <joe@perches.com>
+To: Kristian =?ISO-8859-1?Q?H=F8gsberg?= <krh@bitplanet.net>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+In-Reply-To: <AANLkTi=Nu=rncb8+BzEGtphEj452xwVTPPM+EbCz0Fm1@mail.gmail.com>
+References: <cover.1289348757.git.joe@perches.com>
+	 <4da8e82f773833e126fc5d2d5563093b784144e5.1289348757.git.joe@perches.com>
+	 <AANLkTi=Nu=rncb8+BzEGtphEj452xwVTPPM+EbCz0Fm1@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 09 Nov 2010 18:31:03 -0800
+Message-ID: <1289356263.28590.85.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 07:18:40AM +0800, Jan Kara wrote:
-> On Tue 09-11-10 14:43:46, Andrew Morton wrote:
+On Tue, 2010-11-09 at 21:16 -0500, Kristian Høgsberg wrote:
+> On Tue, Nov 9, 2010 at 7:35 PM, Joe Perches <joe@perches.com> wrote:
+> > Using %pV reduces the number of printk calls and
+> > eliminates any possible message interleaving from
+> > other printk calls.
 
-> > I don't really see how this patch changes anything.  For WB_SYNC_ALL
-> > requests the code will still try to write out 2^63 pages, only it does
-> > it all in a single writeback_inodes_wb() call.  What prevents that call
+> Wouldn't it be easier and more convenient to just make the %pV format
+> specifier just expect a format string and the va_arg list?  Like this
+>   printk(KERN_DEBUG "%pV", format, &args);
+> I mean, the %pV is kernel specific and we can just change how it works.
 
-Sorry sync() works on one super block after another, so it's some
-__writeback_inodes_sb() call. I'll update the comment.
+No it wouldn't.
 
-> > itself from getting livelocked?
+gcc would now warn about a mismatch between format and arguments.
 
-__writeback_inodes_sb() livelock is prevented by
 
-- working on a finite set of files by doing queue_io() once at the beginning
-- working on a finite set of pages by PAGECACHE_TAG_TOWRITE page tagging
 
->   I'm referring to the livelock avoidance using page tagging. Fengguang
-> actually added a note about this into a comment in the code but it's not
-> in the changelog. And you're right it should be here.
-
-OK, I'll add the above to changelog.
-
-> > Perhaps the unmentioned problem here is that each call to
-> > writeback_inodes_wb(MAX_WRITEBACK_PAGES) will restart its walk across
-> > the inode lists.  So instead of giving up on a being-written-to-file,
-> > we continuously revisit it again and again and again.
-> > 
-> > Correct?  If so, please add the description.  If incorrect, please add
-> > the description as well ;)
->   Yes, that's the problem.
-
-writeback_inodes_wb(MAX_WRITEBACK_PAGES) will put the not full written
-inode to head of b_more_io, and pick up the next inode from tail of
-b_io next time it is called. Here the tail of b_io serves as the
-cursor.
-
-         b_io             b_more_io
-        |----------------|-----------------|
-        ^head            ^cursor           ^tail
-
-> > Root cause time: it's those damn per-sb inode lists *again*.  They're
-> > just awful.  We need some data structure there which is more amenable
-> > to being iterated over.  Something against which we can store cursors,
-> > for a start.
->   This would be definitely nice. But in this particular case, since we have
-> that page tagging livelock avoidance, we can just do all we need in a one
-> big sweep so we are OK.
-
-The main problem of list_head is the awkward superblock walks in
-move_expired_inodes(). It may take inode_lock for too long time.
-
-It helps to break up b_dirty into a rb-tree. That will make
-redirty_tail() more straightforward, too.
-
-> Suggestion for the new changelog:
-> When wb_writeback() is called in WB_SYNC_ALL mode, work->nr_to_write is
-> usually set to LONG_MAX. The logic in wb_writeback() then calls
-> __writeback_inodes_sb() with nr_to_write == MAX_WRITEBACK_PAGES and
-
-> we easily end up with negative nr_to_write after the function returns.
-> This is because write_cache_pages() does not stop writing when
-> nr_to_write drops to zero in WB_SYNC_ALL mode.
-
-It will return with (nr_to_write <=0) regardless of the
-write_cache_pages() trick to ignore nr_to_write. So I changed the
-above to:
-
-        we easily end up with non-positive nr_to_write after the function
-        returns, if the inode has more than MAX_WRITEBACK_PAGES dirty pages
-        at the moment.
-
-Others look good. I'll repost the series with updated changelog.
-
-Thanks,
-Fengguang
