@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579Ab0KJPJq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 10:09:46 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:63723 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756489Ab0KJPJp (ORCPT
+	id S1756571Ab0KJPLW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:11:22 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53774 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756130Ab0KJPLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 10:09:45 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=2Zzf6Ss2cq4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=IytSkmhflcfRvnpANeIA:9 a=cg-_anD8Fw_IKkNTiAUA:7 a=ljD0WotEofgNRXhofq8hhJPhbo8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC/Requirements/Design] h/w error reporting
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, "Luck, Tony" <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, ying.huang@intel.com, bp@alien8.de,
-        tglx@linutronix.de, akpm@linux-foundation.org, mchehab@redhat.com,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <1289400234.2191.129.camel@laptop>
-References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
-	 <20101110101450.GA18481@elte.hu>
-	 <1289400056.12418.139.camel@gandalf.stny.rr.com>
-	 <1289400234.2191.129.camel@laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 10 Nov 2010 10:09:41 -0500
-Message-ID: <1289401781.12418.145.camel@gandalf.stny.rr.com>
+	Wed, 10 Nov 2010 10:11:21 -0500
+Date: Wed, 10 Nov 2010 07:08:08 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Don Zickus <dzickus@redhat.com>, fweisbec@gmail.com,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, sergey.senozhatsky@gmail.com
+Subject: Re: [PATCH v3] watchdog:  touch_nmi_watchdog should only touch
+ local cpu not every one
+Message-Id: <20101110070808.46c4adb5.akpm@linux-foundation.org>
+In-Reply-To: <20101110074941.GD29493@elte.hu>
+References: <1289240913-16677-1-git-send-email-dzickus@redhat.com>
+	<20101110074941.GD29493@elte.hu>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 15:43 +0100, Peter Zijlstra wrote:
-> On Wed, 2010-11-10 at 09:40 -0500, Steven Rostedt wrote:
-> > The second option was agreed upon by myself, Thomas, Frederic, and
-> > Peter, and it was OK'd by Linus.
+On Wed, 10 Nov 2010 08:49:41 +0100 Ingo Molnar <mingo@elte.hu> wrote:
+
+> 
+> * Don Zickus <dzickus@redhat.com> wrote:
+> 
+> > I ran into a scenario where while one cpu was stuck and should have panic'd 
+> > because of the NMI watchdog, it didn't.  The reason was another cpu was spewing 
+> > stack dumps on to the console.  Upon investigation, I noticed that when writing to 
+> > the console and also when dumping the stack, the watchdog is touched.
 > > 
-> > What do you think about it? 
+> > This causes all the cpus to reset their NMI watchdog flags and the 'stuck' cpu 
+> > just spins forever.
 > 
-> I would still like to see lots more detail before we commit to anything,
-
-Keeping it out of tree means we don't commit to anything :-)
-
-> sure the second way is the only way out, but you still need to come up
-> with a trace data format and a control ABI.
-
-Great! Let's start with that then. Could you list some of the basic
-needs of perf? And then I can start talking about what I need for
-ftrace, and we also should keep in mind things we may want to do in the
-future.
-
+> Hm, the flip side is that if a CPU is stuck spewing backtraces, we will now make all 
+> the other CPUs a lot more noisy - which might only 'lock up' because this CPU is 
+> stuck spewing oopses, right?
 > 
-> Without those its pretty pointless to even talk about stuff.
+> Andrew, what would be your preference?
+> 
 
-Agreed, but we really do want to find a way out, thus lets start the
-conversation. Basically, start from square one. We now have both ftrace
-and perf, and we know what we need. We can start working on something
-with both in mind, and perhaps keeping track of other things.
+I saw you were cc'ed and felt rather pleased that I wouldn't have to
+decide ;)
 
-I added Mathieu too. I know to you LTTng does not exist, but he can at
-least give ideas about something we may not have thought about and may
-want to do in the future.
-
--- Steve
-
-
-
+I guess the NMI really is a cpu-local concept rather than a
+machine-wide one.  And touch_nmi_watchdog() says "this CPU isn't
+stuck", rather than "this CPU and all those others aren't stuck", yes?
