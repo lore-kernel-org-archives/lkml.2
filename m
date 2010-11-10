@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754394Ab0KJCF2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 21:05:28 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56499 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752468Ab0KJCF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 21:05:27 -0500
-Message-ID: <4CD9FE2D.2070108@cn.fujitsu.com>
-Date: Wed, 10 Nov 2010 10:06:37 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1754363Ab0KJCHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 21:07:42 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:64160 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab0KJCHl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 21:07:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=FwGTlCpjmoKOFn3xI/uXQO1Ca/8T4G7FicLDYNHqSohYQd6+KgmvAeLpQBgvioVBkg
+         9z/yVqYSNwReeYVCa+JtW56Sg4VwdHh/sKaTlmRok+HRZy3PujBk5vCLe9dNWnG+Xmif
+         1z/eWWzlu5G1hLw4EtVyNfBp0Jra4DaDJ8Z3k=
+Message-ID: <4CD9FE64.5010600@gmail.com>
+Date: Tue, 09 Nov 2010 21:07:32 -0500
+From: Richard Farina <sidhayn@gmail.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.2; en-US; rv:1.8.1.6) Gecko/20070728 Thunderbird/2.0.0.6 Mnenhy/0.7.5.0
 MIME-Version: 1.0
-To: Paul Menage <menage@google.com>
-CC: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        containers@lists.linux-foundation.org
-Subject: Re: [PATCH 1/7] cgroups: Shrink struct cgroup_subsys
-References: <4CC146A4.9090505@cn.fujitsu.com> <4CC146BA.7080009@cn.fujitsu.com> <AANLkTikf-1kLStxqi5UjP=vn3pqVBHy0OA7ibeWTkJ5z@mail.gmail.com> <4CD78946.5060405@cn.fujitsu.com> <AANLkTim6d1fQLZbkmZST3PTN0RMSs3m=oossF81pYBn9@mail.gmail.com> <4CD9ECD2.3030805@cn.fujitsu.com> <AANLkTinMr7VE4Os7rXWjiHWOVysv=oE0vHKduLWCN0bC@mail.gmail.com>
-In-Reply-To: <AANLkTinMr7VE4Os7rXWjiHWOVysv=oE0vHKduLWCN0bC@mail.gmail.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-10 10:05:50,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-10 10:05:52,
-	Serialize complete at 2010-11-10 10:05:52
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+CC: linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Compat-wireless for 2.6.37-rc1 - 802.11, Bluetooth and Ethernet
+ backported
+References: <AANLkTimz=0MknJnivvEb_Uq4fjDWFDUN5ug=kOo+eocd@mail.gmail.com>
+In-Reply-To: <AANLkTimz=0MknJnivvEb_Uq4fjDWFDUN5ug=kOo+eocd@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Menage wrote:
-> On Tue, Nov 9, 2010 at 4:52 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
->>> bool active:1;
->>> bool disabled:1;
->>>
->> It won't compile, but unsigned char active:1 will do. ;)
-> 
-> Are you sure? I don't have a buildable kernel tree at the moment, but
-> the following fragment compiled fine for me (with gcc 4.4.3):
-> 
-> struct foo {
->   _Bool b1:1;
->   _Bool b2:1;
-> };
-> 
-> and was sized at one byte. And "bool" is just a typedef of _Bool in
-> the kernel headers.
-> 
+Luis R. Rodriguez wrote:
+> Linus released 2.6.37-rc1 a couple of weeks ago and we now have our
+> first vanilla release for the same kernel. This is a stable  [1]
+> compat-wireless-2.6.36-rc7-1 [2], this release has no extra patches
+> applied on top and at this point I am a bit lazy to go ahead and suck
+> these in so please note you'll likely end up with a lot of stable
+> patches missing but I will hope that in the next linux-next.git these
+> get sucked in and I can simply use ./scripts/admin-updates.sh -s to
+> suck them in for the rc2 release.
+>
+> Please report any issues ASAP but be-aware there are a few stable
+> patches missing still. I'd trust the compat-wireless-2.6.36-5-spn
+> right now more if you are looking for something really stable, but I
+> do expect this release to stabilize after a couple of RCs. For details
+> on changes you can refer to the now very highly detailed
+> ChangeLog-2.6.37-rc1-wireless [3] which includes the changes for
+> compat.git, compat-wireless.git and the Linux kernel for the
+> backported subsystems.
+>
+> Origin remote URL:
+> git://git.kernel.org/pub/scm/linux/kernel/git/hpa/linux-2.6-allstable.git
+> This is a stable compat-wireless release
+>
+> compat-wireless code metrics
+>
+>     739355 - Total upstream lines of code being pulled
+>       2163 - backport code changes
+>       1909 - backport code additions
+>        254 - backport code deletions
+>       6324 - backport from compat module
+>       8487 - total backport code
+>     1.1479 - % of code consists of backport work
+>
+> Base tree: linux-2.6-allstable.git
+> Base tree version: v2.6.37-rc1
+> compat-wireless release: compat-wireless-v2.6.37-rc1-1
+>
+> Cleaning up the release ...
+> Creating compat-wireless-2.6.37-rc1-1.tar.bz2 ...
+>
+> Compat-wireles release: compat-wireless-2.6.37-rc1-1
+> Size: 3.7M	compat-wireless-2.6.37-rc1-1.tar.bz2
+> sha1sum: 60b1c6e9d421f039e22b62901de816a46931a603
+> compat-wireless-2.6.37-rc1-1.tar.bz2
+>
+>   
+http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.37/compat-wireless-2.6.37-1.tar.bz2
+The filename on the website has no -rc, please fix as this will 
+definitely cause confusion.
 
-Oops, I just used bool outside kernel tree..
+Thanks,
+Rick Farina
+>   Luis
+>
+> [1] http://wireless.kernel.org/en/users/Download/stable
+> [2] http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.37/compat-wireless-2.6.37-1.tar.bz2
+> [3] http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.37/ChangeLog-2.6.37-wireless
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>   
 
->> Every thing that reduces code size (without sacrifice readability
->> and maintain maintainability) should be worth.
-> 
-> Agreed, within reason. But this patch doesn't reduce code size - it
-
-I meant binary size.
-
-> makes the code fractionally more complicated and reduces the *binary*
-> size by a few bytes.
-> 
-
-It's a commonly used skill in kernel code, so I can't say it makes
-code more complicated.
-
-That said, I'll happily drop this patch. It just came to me when I
-started to add new bool values to the structure. Or if you prefer
-bool xxx:1 or just bool xxx, I can do that.
-
->> This is one of the reasons we accept patches that replacing
->> kmalloc+memset with kzalloc, which just saves 8 bytes in my box.
->>
-> 
-> Replacing two function calls with one function call is a code
-> simplification and hence (generally) a good thing - the minuscule
-> reduction in binary size reduction that comes with it is just noise.
-> 
