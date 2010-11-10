@@ -1,124 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868Ab0KJM3c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 07:29:32 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:48461 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755809Ab0KJM3a (ORCPT
+	id S1755876Ab0KJMaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 07:30:05 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:42259 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755717Ab0KJMaC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 07:29:30 -0500
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: linux-i2c@vger.kernel.org
-Cc: Wolfram Sang <w.sang@pengutronix.de>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hong Liu <hong.liu@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Anantha Narayanan <anantha.narayanan@intel.com>,
-        Andres Salomon <dilinger@queued.net>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCH] i2c: Remove obsolete cleanup for clientdata
-Date: Wed, 10 Nov 2010 13:28:19 +0100
-Message-Id: <1289392100-32668-1-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 10 Nov 2010 07:30:02 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Wed, 10 Nov 2010 13:29:58 +0100
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH v7] USB device driver of Topcliff PCH
+In-reply-to: <001601cb7fca$918dc5e0$66f8800a@maildom.okisemi.com>
+To: Andy Isaacson <adi@hexapodia.org>,
+        Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>, "Wang, Qi" <qi.wang@intel.com>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>,
+        Andrew <andrew.chih.howe.khor@intel.com>,
+        Intel OTC <joel.clark@intel.com>,
+        "Foster, Margie" <margie.foster@intel.com>,
+        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
+Message-id: <op.vlyfn8qo7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.63 (Linux)
+References: <4CC55AD9.6020800@dsn.okisemi.com>
+ <20101103183750.GA23043@hexapodia.org> <op.vlum8dzo7p4s8u@pikus>
+ <001601cb7fca$918dc5e0$66f8800a@maildom.okisemi.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few new i2c-drivers came into the kernel which clear the clientdata-pointer
-on exit. This is obsolete meanwhile, so fix it and hope the word will spread.
+On Tue, 09 Nov 2010 05:57:05 +0100, Toshiharu Okada <toshiharu-linux@dsn.okisemi.com> wrote:
+> I will modify to "if-else-if-else" as follows.
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
----
+> if (!list_empty(&ep->queue)) {
+>     dev_dbg(&dev->pdev->dev, "%s: list not empty", __func__);
+>     ret = -EAGAIN;
+> } else {
+>     if (halt) { /* halt or clear halt */
+>         if (ep->num == PCH_UDC_EP0)
+>             ep->dev->stall = 1;
+>         pch_udc_ep_set_stall(ep);
+>         pch_udc_enable_ep_interrupts(ep->dev, PCH_UDC_EPINT(ep->in,
+> ep->num));
+>         ret = 0;
+>     } else {
+>         pch_udc_ep_clear_stall(ep);
+>         ret = 0;
+>     }
+> }
 
-Like last time I suggest to collect acks from the driver authors and merge it
-vie Jean's i2c-tree.
+In that case, make it:
 
- drivers/media/video/imx074.c          |    2 --
- drivers/media/video/ov6650.c          |    2 --
- drivers/misc/apds9802als.c            |    1 -
- drivers/staging/olpc_dcon/olpc_dcon.c |    3 ---
- 4 files changed, 0 insertions(+), 8 deletions(-)
+if (list_empty(&ep->queue)) {
+	if (halt) { /* halt or clear halt */
+		if (ep->num == PCH_UDC_EP0)
+			ep->dev->stall = 1;
+		pch_udc_ep_set_stall(ep);
+		pch_udc_enable_ep_interrupts(ep->dev, PCH_UDC_EPINT(ep->in, ep->num));
+	} else {
+		pch_udc_ep_clear_stall(ep);
+	}
+	ret = 0;
+} else {
+	dev_dbg(&dev->pdev->dev, "%s: list not empty", __func__);
+	ret = -EAGAIN;
+}
 
-diff --git a/drivers/media/video/imx074.c b/drivers/media/video/imx074.c
-index 380e459..27b5dfd 100644
---- a/drivers/media/video/imx074.c
-+++ b/drivers/media/video/imx074.c
-@@ -451,7 +451,6 @@ static int imx074_probe(struct i2c_client *client,
- 	ret = imx074_video_probe(icd, client);
- 	if (ret < 0) {
- 		icd->ops = NULL;
--		i2c_set_clientdata(client, NULL);
- 		kfree(priv);
- 		return ret;
- 	}
-@@ -468,7 +467,6 @@ static int imx074_remove(struct i2c_client *client)
- 	icd->ops = NULL;
- 	if (icl->free_bus)
- 		icl->free_bus(icl);
--	i2c_set_clientdata(client, NULL);
- 	client->driver = NULL;
- 	kfree(priv);
- 
-diff --git a/drivers/media/video/ov6650.c b/drivers/media/video/ov6650.c
-index b7cfeab..2dd5298 100644
---- a/drivers/media/video/ov6650.c
-+++ b/drivers/media/video/ov6650.c
-@@ -1176,7 +1176,6 @@ static int ov6650_probe(struct i2c_client *client,
- 
- 	if (ret) {
- 		icd->ops = NULL;
--		i2c_set_clientdata(client, NULL);
- 		kfree(priv);
- 	}
- 
-@@ -1187,7 +1186,6 @@ static int ov6650_remove(struct i2c_client *client)
- {
- 	struct ov6650 *priv = to_ov6650(client);
- 
--	i2c_set_clientdata(client, NULL);
- 	kfree(priv);
- 	return 0;
- }
-diff --git a/drivers/misc/apds9802als.c b/drivers/misc/apds9802als.c
-index f9b91ba..abe3d21 100644
---- a/drivers/misc/apds9802als.c
-+++ b/drivers/misc/apds9802als.c
-@@ -251,7 +251,6 @@ static int apds9802als_probe(struct i2c_client *client,
- 
- 	return res;
- als_error1:
--	i2c_set_clientdata(client, NULL);
- 	kfree(data);
- 	return res;
- }
-diff --git a/drivers/staging/olpc_dcon/olpc_dcon.c b/drivers/staging/olpc_dcon/olpc_dcon.c
-index 75aa7a36..f286a4c 100644
---- a/drivers/staging/olpc_dcon/olpc_dcon.c
-+++ b/drivers/staging/olpc_dcon/olpc_dcon.c
-@@ -733,7 +733,6 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
-  edev:
- 	platform_device_unregister(dcon_device);
- 	dcon_device = NULL;
--	i2c_set_clientdata(client, NULL);
-  eirq:
- 	free_irq(DCON_IRQ, &dcon_driver);
-  einit:
-@@ -757,8 +756,6 @@ static int dcon_remove(struct i2c_client *client)
- 		platform_device_unregister(dcon_device);
- 	cancel_work_sync(&dcon_work);
- 
--	i2c_set_clientdata(client, NULL);
--
- 	return 0;
- }
- 
+Ie. no need to put "ret = 0;" twice in the code.
+
 -- 
-1.7.2.3
-
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
