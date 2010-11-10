@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab0KJKNZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 05:13:25 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35998 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755003Ab0KJKNR (ORCPT
+	id S1755426Ab0KJKPW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 05:15:22 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:63146 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753871Ab0KJKPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 05:13:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=XOvqMBUueXxY689kmuMD9owOnDFaUvZcfFnzty0DxxmELLf60gRLlsy5Jv0wvJM1hz
-         LlTQ8ZeUIEB2wFiS2x9nMgTjZfQV3QayYkZwdjAdsUhqKVV3sGLuICudR2npbouUEU/J
-         lQZONzEtExyFSM3fLlWiT73Vh/0BZ40xBvGik=
-From: Marek Belisko <marek.belisko@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Marek Belisko <marek.belisko@gmail.com>
-Subject: [PATCH 3/3] staging: ft1000: Remove unused variables.
-Date: Wed, 10 Nov 2010 11:15:28 +0100
-Message-Id: <1289384128-19823-3-git-send-email-marek.belisko@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1289384128-19823-1-git-send-email-marek.belisko@gmail.com>
-References: <1289384128-19823-1-git-send-email-marek.belisko@gmail.com>
+	Wed, 10 Nov 2010 05:15:20 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: john stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCH RFC 2/8] clock device: convert clock_gettime
+Date: Wed, 10 Nov 2010 11:16:07 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Richard Cochran <richardcochran@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Christoph Lameter <cl@linux.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <cover.1288897198.git.richard.cochran@omicron.at> <201011080756.50930.arnd@arndb.de> <1289338622.9434.46.camel@localhost.localdomain>
+In-Reply-To: <1289338622.9434.46.camel@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011101116.08038.arnd@arndb.de>
+X-Provags-ID: V02:K0:HtCaPP2m9jdPLKwyrw1E5JKSaqqTwMOqAkEb86A+EkR
+ SmWgdt3dNLquhffUbPc7JayrLHlGje2oZLFwxYaYENnc03EBSF
+ xbnVPdlPImoHE0IbaOh8dE39G1MiHQs0nk7j47Hx1mIHYdV6+I
+ KCyWNM2Yp407dJVwS+8AwV7UGs0TbdOvau6oZmHdMN85TTcD7g
+ dNe55t0jc0BGmDkxv+gyA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This variables was used mainly for char device and char device
-was removed so remove also unused variables.
+On Tuesday 09 November 2010, john stultz wrote:
+> I wonder thought if it would be worth having a syscall to convert from
+> fd to clock_id so it could be more flexible in the future. But it may
+> not be worth it, as we're probably already limited by the cpuclock
+> implementation.
 
-Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c  |    1 -
- drivers/staging/ft1000/ft1000-usb/ft1000_usb.h |    2 --
- 2 files changed, 0 insertions(+), 3 deletions(-)
+If the file descriptor comes from a character device, we don't even need
+a syscall, it could simply be an ioctl on the device.
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 62db2a3..62d4068 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -834,7 +834,6 @@ u16 init_ft1000_netdev(struct ft1000_device *ft1000dev)
-     pInfo->ft1000_reset = ft1000_reset;
-     pInfo->mediastate = 0;
-     pInfo->fifo_cnt = 0;
--    pInfo->DeviceCreated = FALSE;
-     pInfo->DeviceMajor = 0;
-     pInfo->CurrentInterruptEnableMask = ISR_DEFAULT_MASK;
-     pInfo->InterruptsEnabled = FALSE;
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-index 4375994..804f20e 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-@@ -502,7 +502,6 @@ struct ft1000_info {
-     int DSPResetNum;
-     int NumIOCTLBufs;
-     int IOCTLBufLvl;
--    int DeviceCreated;
-     int CardReady;
-     int NetDevRegDone;
-     u8 CardNumber;
-@@ -532,7 +531,6 @@ struct ft1000_info {
-     u16 ConStat;	//mbelian
-     u16 ProgConStat;
-     struct list_head prov_list;
--    int appcnt;
- 	struct app_info_block app_info[MAX_NUM_APP];
-     u16 DSPInfoBlklen;
-     u16 DrvMsgPend;
--- 
-1.7.1
-
+	Arnd
