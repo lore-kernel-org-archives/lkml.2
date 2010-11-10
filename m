@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab0KJPGh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 10:06:37 -0500
-Received: from mga09.intel.com ([134.134.136.24]:12873 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756360Ab0KJPGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 10:06:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,178,1288594800"; 
-   d="scan'208";a="676151114"
-Subject: Re: [RFC PATCH 2/2] perf stat: Use event group to simulate PMI on
- PMI-less hardware counter
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Matt Fleming <matt@console-pimps.org>,
-        "Zhang, Rui" <rui.zhang@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-In-Reply-To: <1289400784.2191.134.camel@laptop>
-References: <1289369725.2430.39.camel@minggr.sh.intel.com>
-	 <1289391709.2191.102.camel@laptop>  <1289400319.2479.39.camel@localhost>
-	 <1289400784.2191.134.camel@laptop>
+	id S1756547Ab0KJPH2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:07:28 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:53156 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1756475Ab0KJPH1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 10:07:27 -0500
+X-Authenticated: #23875046
+X-Provags-ID: V01U2FsdGVkX1+sHRwisEyskWFQZMbrzzur/5BCMRdiDY1aooEwN9
+	7j3KKiGCUbi228
+Subject: Re: [PATCH 2/2 v2] Unify rest of FAT messages.
+From: Alexey Fisher <bug-track@fisher-privat.net>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: linux-kernel@vger.kernel.org, joe@perches.com
+In-Reply-To: <87d3qdp9oa.fsf@devron.myhome.or.jp>
+References: <1289321718-6373-1-git-send-email-bug-track@fisher-privat.net>
+	 <1289329470-14454-1-git-send-email-bug-track@fisher-privat.net>
+	 <87hbfppfu3.fsf@devron.myhome.or.jp> <1289392908.6057.44.camel@zwerg>
+	 <87d3qdp9oa.fsf@devron.myhome.or.jp>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Nov 2010 23:06:37 +0800
-Message-Id: <1289401597.2479.48.camel@localhost>
+Date: Wed, 10 Nov 2010 16:07:24 +0100
+Message-ID: <1289401644.2438.34.camel@mini>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 22:53 +0800, Peter Zijlstra wrote:
-> On Wed, 2010-11-10 at 22:45 +0800, Lin Ming wrote:
-> > On Wed, 2010-11-10 at 20:21 +0800, Peter Zijlstra wrote:
-> > > On Wed, 2010-11-10 at 14:15 +0800, Lin Ming wrote:
-> > > > Some hardware counters(for example, Intel RAPL) can't generate interrupt
-> > > > when overflow. So we need to simulate the interrupt to periodically
-> > > > record the counter values. Otherwise, the counter may overflow and the
-> > > > wrong value is read.
-> > > > 
-> > > > This patch uses event group to simulate PMI as suggested by Peter
-> > > > Zijlstra, http://marc.info/?l=linux-kernel&m=128220854801819&w=2
-> > > > 
-> > > > create_group_counters() will create a group with 2 events, one hrtimer
-> > > > based event as the group leader, and the other event to count. The
-> > > > hrtimer is fired periodically, so the sibling event can record its
-> > > > counter value periodically as well.
-> > > 
-> > > I'm terribly confused here....
-> > > 
-> > >  - you introduce perf_event_attr:pmi_simulate, but then you never
-> > > implement it -- nor do we need it afaict.
-> > 
-> > Someone need to simluate pmi will use it in future.
+Am Mittwoch, den 10.11.2010, 22:53 +0900 schrieb OGAWA Hirofumi:
+> Alexey Fisher <bug-track@fisher-privat.net> writes:
 > 
-> Maybe, but simply adding an ABI just in case doesn't seem like a good
-> idea. The proposed idea was to group with a software hrtimer-based event
-> and use the hrtimer's sample to read the hardware group sibling using
-> PERF_SAMPLE_READ.
-
-So this is usefull in perf top/record on PMI-less counter?
-
+> > Am Mittwoch, den 10.11.2010, 20:40 +0900 schrieb OGAWA Hirofumi:
+> >> Alexey Fisher <bug-track@fisher-privat.net> writes:
+> >> 
+> >> > Here is how it looks like after patch.
+> >> 
+> >> This is going to unify the all FSes (e.g. fat_msg() uses fs_msg("FAT", ...))?
+> >> If so, I think it's welcome. If not, umm, it looks like good but...
+> >
+> > Yea, i thought about it. It will be better to have some kernel wide
+> > fs_msg(). But before doing this i think one more step should be done -
+> > some notification interface for userspace. 
+> > If we get some fs errors userspace app should be notified so user too.
+> >
+> > I work currently on one case, user lost all data on FAT drive. First
+> > error messages was logged for some weeks, and only now some big data
+> > lost. There war no errors from GUI.
 > 
-> That should be possible using today's interface.
-> 
-> > > 
-> > > 
-> > >  - you use grouped counters for perf-stat, perf-stat doesn't use
-> > > sampling so I don't see a need to group events to simulate the PMI.
-> > > 
-> > 
-> > Aha, sorry, actually, I mean to periodically read the PMI-less counter
-> > and reset it to zero each time to avoid overflow.
-> > 
-> > Well, seems I have done this in the wrong way.
-> > Let me re-think about it.
-> 
-> Right, so you're wanting to avoid overflowing the hardware counter? This
+> It clealy can happen on all FSes, not only FAT. And I don't want to push
+> it (notification stuff) from FAT tree. (need the review from other guys).
 
-Yes.
+I do not blame FAT. It was just one example/usecase.
 
-> is only a problem for short hardware counters without a pmi, SH and the
-> like currently cascade 2 32bit counters to create 64bit hardware
-> counters and avoid the overflow case that way.
-> 
-> Another thing they can do is simply use the system tick to fold the
-> 32bit counters into a the 64bit counter.
-> 
-> Again, this doesn't need any changes to the ABI and generic code.
+> IMHO, it should be kernel wide (or subsystem wide) notification system
+> even if you target is FAT-fs only.  (yeah, it's hard to push to
+> linus-tree than one FS though).
 
-Thanks for the explanation.
+Sound complicated. I will not get time for this, right now. Any way, at
+least if this patch set go upstream it will help investigate some FS
+related issues. For my work (Computer Forensic) it will be really
+helpful.
 
-
+Regards,
+Alexey
 
 
