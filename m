@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753937Ab0KJCLS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 21:11:18 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44670 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab0KJCLS (ORCPT
+	id S1754590Ab0KJCPk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 21:15:40 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:37084 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753733Ab0KJCPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 21:11:18 -0500
+	Tue, 9 Nov 2010 21:15:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=UT7vIW8uM+/2KJ2Wc0XCCesuzKR3nyotAm58qelEhP+bkyXouWWX4avrMkvcSSS9VT
+         B6rb59QfaE445LchDTaw==
 MIME-Version: 1.0
-In-Reply-To: <1289353544.22787.49.camel@concordia>
-References: <1289339119.2191.92.camel@laptop> <20101109221338.GA19947@suse.de>
- <1289345811.10536.8.camel@concordia> <AANLkTi=UftgQn0ydRd2wszqFtpRrkEcW7dzfapKKix_V@mail.gmail.com>
- <1289350360.22787.9.camel@concordia> <AANLkTikGHNkUN6t9rPhdE6XOQiqb5xAzH_9eY6L9h2H2@mail.gmail.com>
- <1289351423.22787.22.camel@concordia> <AANLkTin_VixECn4AdQW_xC=_5ZNY5wBsif6cW5dDEJFe@mail.gmail.com>
- <1289353544.22787.49.camel@concordia>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 10 Nov 2010 03:11:01 +0100
-Message-ID: <AANLkTinTwphGkvuzQPaf41j_g=_cJC8TX9es8s+NeucE@mail.gmail.com>
-Subject: Re: [RFC][PATCH] perf: sysfs type id
-To: michael@ellerman.id.au
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4CD9FE2D.2070108@cn.fujitsu.com>
+References: <4CC146A4.9090505@cn.fujitsu.com> <4CC146BA.7080009@cn.fujitsu.com>
+ <AANLkTikf-1kLStxqi5UjP=vn3pqVBHy0OA7ibeWTkJ5z@mail.gmail.com>
+ <4CD78946.5060405@cn.fujitsu.com> <AANLkTim6d1fQLZbkmZST3PTN0RMSs3m=oossF81pYBn9@mail.gmail.com>
+ <4CD9ECD2.3030805@cn.fujitsu.com> <AANLkTinMr7VE4Os7rXWjiHWOVysv=oE0vHKduLWCN0bC@mail.gmail.com>
+ <4CD9FE2D.2070108@cn.fujitsu.com>
+From: Paul Menage <menage@google.com>
+Date: Tue, 9 Nov 2010 18:15:13 -0800
+Message-ID: <AANLkTinLtTfp0VxhRtbk916R8g4skGAMGXKF9M1tRzvD@mail.gmail.com>
+Subject: Re: [PATCH 1/7] cgroups: Shrink struct cgroup_subsys
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 02:45, Michael Ellerman <michael@ellerman.id.au> wrote:
-> On Wed, 2010-11-10 at 02:19 +0100, Kay Sievers wrote:
+On Tue, Nov 9, 2010 at 6:06 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+> That said, I'll happily drop this patch. It just came to me when I
+> started to add new bool values to the structure. Or if you prefer
+> bool xxx:1 or just bool xxx, I can do that.
 
->> >> The pseudo-convenience device_register/device_unregister should also
->> >> not be used.
->> >
->> > Why are they in the tree if they shouldn't be used?
->>
->> Because they save one line and do improper error handling.
->> They should all be converted to device_init+device_add/device_del/device_put.
->
-> I don't see device_init(), or do you mean device_initialize()? It
-> returns void?
+bool xxx:1 is fine with me - I think it's worth keeping the semantics
+of these being boolean flags as obvious as possible.
 
-http://lkml.org/lkml/2010/9/22/56
+I just wouldn't invest much effort in similar patches in the future
+(given that there are only likely to be, what, <20 instances of
+cgroup_subsys in the kernel?). Shrinking a structure that had
+potentially very many instances, such as css_set or cg_cgroup_link,
+would be different of course.
 
-Kay
+Paul
