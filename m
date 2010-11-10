@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab0KJCPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 21:15:40 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:37084 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab0KJCPh (ORCPT
+	id S1754554Ab0KJCQf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 21:16:35 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48574 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032Ab0KJCQe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 21:15:37 -0500
+	Tue, 9 Nov 2010 21:16:34 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=UT7vIW8uM+/2KJ2Wc0XCCesuzKR3nyotAm58qelEhP+bkyXouWWX4avrMkvcSSS9VT
-         B6rb59QfaE445LchDTaw==
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=pKQ+ZW4h6QCthBhIVcB1pS6sEEZdNpbwWfclDsSMEjDLC/mnnL2icwEw8DjFSvOC73
+         X92+5CUYspkHaVGxfXgkqDcJS+dUA1avBHPf5z/cuxXlrVzxqjU/It4dzZXDV52HD7yX
+         lpAUOYYx4gYlOKsuhemQWX1acCeBbQNlqaDUE=
 MIME-Version: 1.0
-In-Reply-To: <4CD9FE2D.2070108@cn.fujitsu.com>
-References: <4CC146A4.9090505@cn.fujitsu.com> <4CC146BA.7080009@cn.fujitsu.com>
- <AANLkTikf-1kLStxqi5UjP=vn3pqVBHy0OA7ibeWTkJ5z@mail.gmail.com>
- <4CD78946.5060405@cn.fujitsu.com> <AANLkTim6d1fQLZbkmZST3PTN0RMSs3m=oossF81pYBn9@mail.gmail.com>
- <4CD9ECD2.3030805@cn.fujitsu.com> <AANLkTinMr7VE4Os7rXWjiHWOVysv=oE0vHKduLWCN0bC@mail.gmail.com>
- <4CD9FE2D.2070108@cn.fujitsu.com>
-From: Paul Menage <menage@google.com>
-Date: Tue, 9 Nov 2010 18:15:13 -0800
-Message-ID: <AANLkTinLtTfp0VxhRtbk916R8g4skGAMGXKF9M1tRzvD@mail.gmail.com>
-Subject: Re: [PATCH 1/7] cgroups: Shrink struct cgroup_subsys
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        containers@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+In-Reply-To: <4da8e82f773833e126fc5d2d5563093b784144e5.1289348757.git.joe@perches.com>
+References: <cover.1289348757.git.joe@perches.com>
+	<4da8e82f773833e126fc5d2d5563093b784144e5.1289348757.git.joe@perches.com>
+Date: Tue, 9 Nov 2010 21:16:33 -0500
+X-Google-Sender-Auth: jZHlM_wLubkRC-eVIa8IqRfPV_0
+Message-ID: <AANLkTi=Nu=rncb8+BzEGtphEj452xwVTPPM+EbCz0Fm1@mail.gmail.com>
+Subject: Re: [PATCH 1/9] drivers/gpu/drm/drm_stub.c: Use printf extension %pV
+From: =?UTF-8?Q?Kristian_H=C3=B8gsberg?= <krh@bitplanet.net>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 9, 2010 at 6:06 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
-> That said, I'll happily drop this patch. It just came to me when I
-> started to add new bool values to the structure. Or if you prefer
-> bool xxx:1 or just bool xxx, I can do that.
+On Tue, Nov 9, 2010 at 7:35 PM, Joe Perches <joe@perches.com> wrote:
+> Using %pV reduces the number of printk calls and
+> eliminates any possible message interleaving from
+> other printk calls.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/gpu/drm/drm_stub.c |   14 +++++++++++---
+>  1 files changed, 11 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/gpu/drm/drm_stub.c b/drivers/gpu/drm/drm_stub.c
+> index cdc89ee..e632527 100644
+> --- a/drivers/gpu/drm/drm_stub.c
+> +++ b/drivers/gpu/drm/drm_stub.c
+> @@ -57,13 +57,21 @@ void drm_ut_debug_printk(unsigned int request_level,
+>                         const char *function_name,
+>                         const char *format, ...)
+>  {
+> +       struct va_format vaf;
+>        va_list args;
+>
+>        if (drm_debug & request_level) {
+> -               if (function_name)
+> -                       printk(KERN_DEBUG "[%s:%s], ", prefix, function_name);
+>                va_start(args, format);
+> -               vprintk(format, args);
+> +
+> +               vaf.fmt = format;
+> +               vaf.va = &args;
+> +
+> +               if (function_name)
+> +                       printk(KERN_DEBUG "[%s:%s], %pV",
+> +                              prefix, function_name, &vaf);
+> +               else
+> +                       printk(KERN_DEBUG "%pV", &vaf);
 
-bool xxx:1 is fine with me - I think it's worth keeping the semantics
-of these being boolean flags as obvious as possible.
+Wouldn't it be easier and more convenient to just make the %pV format
+specifier just expect a format string and the va_arg list?  Like this
 
-I just wouldn't invest much effort in similar patches in the future
-(given that there are only likely to be, what, <20 instances of
-cgroup_subsys in the kernel?). Shrinking a structure that had
-potentially very many instances, such as css_set or cg_cgroup_link,
-would be different of course.
+  printk(KERN_DEBUG "%pV", format, &args);
 
-Paul
+I mean, the %pV is kernel specific and we can just change how it works.
+
+Kristian
