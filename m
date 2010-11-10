@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab0KJBEA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 20:04:00 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:60906 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665Ab0KJBD6 (ORCPT
+	id S1753901Ab0KJBEb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 20:04:31 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64652 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446Ab0KJBEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 20:03:58 -0500
-Date: Wed, 10 Nov 2010 10:03:34 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-        Thomas Winischhofer <thomas@winischhofer.net>
-Subject: Re: [PATCH] sisfb: limit POST memory test according to PCI resource length
-Message-ID: <20101110010334.GA28852@linux-sh.org>
-References: <1289341504-1038-1-git-send-email-aaro.koskinen@iki.fi>
+	Tue, 9 Nov 2010 20:04:30 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=RvBIp/uRmG5fQX72vd9UykAsa4ojgK1LOmmgY2CPt+xUfzbUbEwmLaGFSxpp14E1H+
+         8AiGIQDO03Kxr3YXEq9p0V10+CZyRr6mHHcd3+L+NP5pzTPHpKQxkIdwEvmKLkhv0b52
+         XPcGR23fpqriCJCV8nPgjS9WNfAnlm0+RtK+M=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289341504-1038-1-git-send-email-aaro.koskinen@iki.fi>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <1289294671-6865-7-git-send-email-gthelen@google.com>
+References: <1289294671-6865-1-git-send-email-gthelen@google.com>
+	<1289294671-6865-7-git-send-email-gthelen@google.com>
+Date: Wed, 10 Nov 2010 10:04:29 +0900
+Message-ID: <AANLkTi=fZq_+DiD+E__KhgTQz86eTrALGE9M7twX3hgB@mail.gmail.com>
+Subject: Re: [PATCH 6/6] memcg: make mem_cgroup_page_stat() return value unsigned
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 12:25:04AM +0200, Aaro Koskinen wrote:
-> diff --git a/drivers/video/sis/sis_main.c b/drivers/video/sis/sis_main.c
-> index b52f8e4..8a528aa 100644
-> --- a/drivers/video/sis/sis_main.c
-> +++ b/drivers/video/sis/sis_main.c
-> @@ -4514,7 +4514,7 @@ sisfb_post_sis300(struct pci_dev *pdev)
->  	} else {
->  #endif
->  		/* Need to map max FB size for finding out about RAM size */
-> -		mapsize = 64 << 20;
-> +		mapsize = ivideo->video_size;
->  		sisfb_post_map_vram(ivideo, &mapsize, 4);
->  
->  		if(ivideo->video_vbase) {
-> @@ -4680,7 +4680,7 @@ sisfb_post_xgi_ramsize(struct sis_video_info *ivideo)
->  	orSISIDXREG(SISSR, 0x20, (0x80 | 0x04));
->  
->  	/* Need to map max FB size for finding out about RAM size */
-> -	mapsize = 256 << 20;
-> +	mapsize = ivideo->video_size;
->  	sisfb_post_map_vram(ivideo, &mapsize, 32);
->  
->  	if(!ivideo->video_vbase) {
-> 
-sisfb_post_map_vram() expects that the mapsize >= min, and falls back on
-the default aperture size otherwise. If you're going to pass in a
-variable size for video_size then this expectation may no longer hold
-true, and you've then changed the behaviour if an invalid size succeeds
-on the initial ioremap() attempt.
+On Tue, Nov 9, 2010 at 6:24 PM, Greg Thelen <gthelen@google.com> wrote:
+> mem_cgroup_page_stat() used to return a negative page count
+> value to indicate value.
+>
+> mem_cgroup_page_stat() has changed so it never returns
+> error so convert the return value to the traditional page
+> count type (unsigned long).
+>
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-Simply inserting a:
+It seems to be late review. Just 1 day.
+I don't know why Andrew merge it in a hurry without any review.
+Anyway, I add my Reviewed-by in this series since my eyes can't find
+any big bug.
 
-	if (*mapsize < min)
-		return;
-
-sanity check prior to the ioremap() should preserve the existing
-behaviour.
+Thanks.
+-- 
+Kind regards,
+Minchan Kim
