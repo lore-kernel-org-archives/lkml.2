@@ -1,74 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab0KJSKd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 13:10:33 -0500
+	id S1756048Ab0KJSKs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:10:48 -0500
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:33622 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755701Ab0KJSK3 (ORCPT
+	with ESMTP id S1755726Ab0KJSKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 13:10:29 -0500
+	Wed, 10 Nov 2010 13:10:46 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=jLXNmQcuKLdNb2K+xsdR1WAQXsqbDAko+IfL8axfG53E6WrKy8bneXo1wTeU1mjIMi
-         2BZ6zXJ24f4wuSsmc6oEyC9GazsojpV8lbSe/jkrVj7gtQFSA/JV4PFvOZ8WLB+eNKH5
-         xBss/yaA7B63ce2tEBzXzyXt7UXbJuUj8MD4k=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=dRN4jy7SpTBdejmd/SdOMF/nX+AorRWdwSVpMiNwo4mIer7mTt4Kd9rEuKHLUMTV9q
+         40UVp6VhIh0Q0PfwclwN2W0DPdVmD3qkAzTxASAT+z2295VwvBatPzZgWIhAlRha2/D1
+         U2cdnHkPezrghulqmO2tLj6BG85E18t6ibCL0=
 From: tzanussi@gmail.com
 To: linux-kernel@vger.kernel.org
 Cc: acme@ghostprotocols.net, mingo@elte.hu, fweisbec@gmail.com
-Subject: [PATCH 0/7] perf trace command-line cleanup, v2
-Date: Wed, 10 Nov 2010 12:10:17 -0600
-Message-Id: <1289412624-4772-1-git-send-email-tzanussi@gmail.com>
+Subject: [PATCH 6/7] perf trace: update Documentation with new perf trace variants
+Date: Wed, 10 Nov 2010 12:10:23 -0600
+Message-Id: <1289412624-4772-7-git-send-email-tzanussi@gmail.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1289412624-4772-1-git-send-email-tzanussi@gmail.com>
+References: <1289412624-4772-1-git-send-email-tzanussi@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Tom Zanussi <tom.zanussi@linux.intel.com>
 
-There are currently some inconsistencies in perf trace command-line
-handling - for example, the system-wide param is hard-coded into the
-canned scripts, and the user doesn't have any option to avoid it.
-This patchset removes that limitation and cleans up some related
-complications introduced by live-mode.  It also more clearly documents
-usage, and fixes up a couple other minor problems.
+Add documentation describing new 'perf trace' command changes
+e.g. <command> handling and live-mode/top variants.
 
-This patchset can also be pulled from here:
+Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+Acked-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+---
+ tools/perf/Documentation/perf-trace.txt |   57 ++++++++++++++++++++++++++----
+ 1 files changed, 49 insertions(+), 8 deletions(-)
 
-git://github.com/zanussi/linux-2.6.git perf-trace-updates-urgent
-
-v2 changes:
-
-- rebased to perf/urgent
-- added Arnaldo's Acked-by to patches
-
-Tom Zanussi (7):
-  perf trace scripting: fix some small memory leaks and missing error
-    checks
-  perf trace scripting: remove system-wide param from shell scripts
-  perf record: make the record options available outside perf record
-  perf trace record: handle commands correctly
-  perf trace: live-mode command-line cleanup
-  perf trace: update Documentation with new perf trace variants
-  perf trace: update usage
-
- tools/perf/Documentation/perf-trace.txt            |   57 +++++-
- tools/perf/builtin-record.c                        |   10 +-
- tools/perf/builtin-trace.c                         |  209 ++++++++++++++------
- tools/perf/scripts/perl/bin/failed-syscalls-record |    2 +-
- tools/perf/scripts/perl/bin/rw-by-file-record      |    2 +-
- tools/perf/scripts/perl/bin/rw-by-pid-record       |    2 +-
- tools/perf/scripts/perl/bin/rwtop-record           |    2 +-
- tools/perf/scripts/perl/bin/wakeup-latency-record  |    2 +-
- tools/perf/scripts/perl/bin/workqueue-stats-record |    2 +-
- .../python/bin/failed-syscalls-by-pid-record       |    2 +-
- .../scripts/python/bin/futex-contention-record     |    2 +-
- tools/perf/scripts/python/bin/netdev-times-record  |    2 +-
- .../perf/scripts/python/bin/sched-migration-record |    2 +-
- tools/perf/scripts/python/bin/sctop-record         |    2 +-
- .../python/bin/syscall-counts-by-pid-record        |    2 +-
- .../perf/scripts/python/bin/syscall-counts-record  |    2 +-
- 16 files changed, 217 insertions(+), 85 deletions(-)
-
+diff --git a/tools/perf/Documentation/perf-trace.txt b/tools/perf/Documentation/perf-trace.txt
+index 122ec9d..26aff6b 100644
+--- a/tools/perf/Documentation/perf-trace.txt
++++ b/tools/perf/Documentation/perf-trace.txt
+@@ -8,7 +8,11 @@ perf-trace - Read perf.data (created by perf record) and display trace output
+ SYNOPSIS
+ --------
+ [verse]
+-'perf trace' {record <script> | report <script> [args] }
++'perf trace' [<options>]
++'perf trace' [<options>] record <script> [<record-options>] <command>
++'perf trace' [<options>] report <script> [script-args]
++'perf trace' [<options>] <script> <required-script-args> [<record-options>] <command>
++'perf trace' [<options>] <top-script> [script-args]
+ 
+ DESCRIPTION
+ -----------
+@@ -24,23 +28,53 @@ There are several variants of perf trace:
+   available via 'perf trace -l').  The following variants allow you to
+   record and run those scripts:
+ 
+-  'perf trace record <script>' to record the events required for 'perf
+-  trace report'.  <script> is the name displayed in the output of
+-  'perf trace --list' i.e. the actual script name minus any language
+-  extension.
++  'perf trace record <script> <command>' to record the events required
++  for 'perf trace report'.  <script> is the name displayed in the
++  output of 'perf trace --list' i.e. the actual script name minus any
++  language extension.  If <command> is not specified, the events are
++  recorded using the -a (system-wide) 'perf record' option.
+ 
+-  'perf trace report <script>' to run and display the results of
+-  <script>.  <script> is the name displayed in the output of 'perf
++  'perf trace report <script> [args]' to run and display the results
++  of <script>.  <script> is the name displayed in the output of 'perf
+   trace --list' i.e. the actual script name minus any language
+   extension.  The perf.data output from a previous run of 'perf trace
+   record <script>' is used and should be present for this command to
+-  succeed.
++  succeed.  [args] refers to the (mainly optional) args expected by
++  the script.
++
++  'perf trace <script> <required-script-args> <command>' to both
++  record the events required for <script> and to run the <script>
++  using 'live-mode' i.e. without writing anything to disk.  <script>
++  is the name displayed in the output of 'perf trace --list' i.e. the
++  actual script name minus any language extension.  If <command> is
++  not specified, the events are recorded using the -a (system-wide)
++  'perf record' option.  If <script> has any required args, they
++  should be specified before <command>.  This mode doesn't allow for
++  optional script args to be specified; if optional script args are
++  desired, they can be specified using separate 'perf trace record'
++  and 'perf trace report' commands, with the stdout of the record step
++  piped to the stdin of the report script, using the '-o -' and '-i -'
++  options of the corresponding commands.
++
++  'perf trace <top-script>' to both record the events required for
++  <top-script> and to run the <top-script> using 'live-mode'
++  i.e. without writing anything to disk.  <top-script> is the name
++  displayed in the output of 'perf trace --list' i.e. the actual
++  script name minus any language extension; a <top-script> is defined
++  as any script name ending with the string 'top'.
++
++  [<record-options>] can be passed to the record steps of 'perf trace
++  record' and 'live-mode' variants; this isn't possible however for
++  <top-script> 'live-mode' or 'perf trace report' variants.
+ 
+   See the 'SEE ALSO' section for links to language-specific
+   information on how to write and run your own trace scripts.
+ 
+ OPTIONS
+ -------
++<command>...::
++	Any command you can specify in a shell.
++
+ -D::
+ --dump-raw-trace=::
+         Display verbose dump of the trace data.
+@@ -64,7 +98,13 @@ OPTIONS
+         Generate perf-trace.[ext] starter script for given language,
+         using current perf.data.
+ 
++-a::
++        Force system-wide collection.  Scripts run without a <command>
++        normally use -a by default, while scripts run with a <command>
++        normally don't - this option allows the latter to be run in
++        system-wide mode.
++
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-trace-perl[1],
 -- 
 Tom Zanussi, Intel Open Source Technology Center
+
