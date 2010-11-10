@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756405Ab0KJUNM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:13:12 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:39805 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756188Ab0KJUNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:13:11 -0500
-Date: Wed, 10 Nov 2010 12:12:20 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] hwmon: (applesmc) Fix checkpatch errors
-Message-ID: <20101110201220.GA3084@ericsson.com>
-References: <1289415200-4928-1-git-send-email-guenter.roeck@ericsson.com>
- <4CDAE9D7.3060007@euromail.se>
- <20101110193930.GA31650@ericsson.com>
- <4CDAF8E4.7030609@euromail.se>
+	id S1756374Ab0KJUQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:16:48 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42468 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756161Ab0KJUQr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 15:16:47 -0500
+Date: Wed, 10 Nov 2010 21:16:00 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, jkacur@redhat.com, dvhart@linux.intel.com,
+        peterz@infradead.org, matt@console-pimps.org, tglx@linutronix.de,
+        mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/urgent] futex: Address compiler warnings in
+	exit_robust_list
+Message-ID: <20101110201600.GA14145@pengutronix.de>
+References: <1288897200-13008-1-git-send-email-dvhart@linux.intel.com> <tip-4c115e951d80aff126468adaec7a6c7854f61ab8@git.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4CDAF8E4.7030609@euromail.se>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <tip-4c115e951d80aff126468adaec7a6c7854f61ab8@git.kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 02:56:20PM -0500, Henrik Rydberg wrote:
-> >>> @@ -977,7 +975,11 @@ static ssize_t applesmc_key_at_index_show
-> 
-> >>>  static ssize_t applesmc_key_at_index_store(struct device *dev,
-> >>>  	struct device_attribute *attr, const char *sysfsbuf, size_t count)
-> >>>  {
-> >>> -	key_at_index = simple_strtoul(sysfsbuf, NULL, 10);
-> >>> +	unsigned long newkey;
-> >>> +
-> >>> +	if (strict_strtoul(sysfsbuf, 10, &newkey) < 0)
-> >>> +		return -EINVAL;
-> >>> +	key_at_index = newkey;
-> >>
-> >>
-> >> Crash alert - key_at_index is not range checked, and the remake uses this value
-> >> as an array index...
-> >>
-> > Good that I made this change ;). I'll add the check and re-send.
-> 
-> 
-> Indeed! The downside of remakes... sorry about that. :-)
-> 
-Happens.
+Hallo Thomas,
 
-> I guess the change should go into patch 4 already? There is also the option to
-> put the bounds check in applesmc_get_entry_by_index, but I like the simplicity
-> of "|| newkey >= smcreg.key_count".
+On Wed, Nov 10, 2010 at 12:30:44PM +0000, tip-bot for Darren Hart wrote:
+> Commit-ID:  4c115e951d80aff126468adaec7a6c7854f61ab8
+> Gitweb:     http://git.kernel.org/tip/4c115e951d80aff126468adaec7a6c7854f61ab8
+> Author:     Darren Hart <dvhart@linux.intel.com>
+> AuthorDate: Thu, 4 Nov 2010 15:00:00 -0400
+> Committer:  Thomas Gleixner <tglx@linutronix.de>
+> CommitDate: Wed, 10 Nov 2010 13:27:50 +0100
 > 
-I don't like the idea of putting the check into applesmc_get_entry_by_index().
-Let me see if I can merge it into patch #4. If not, I'll keep it in my patch
-for simplicity.
+> futex: Address compiler warnings in exit_robust_list
+> 
+> Since commit 1dcc41bb (futex: Change 3rd arg of fetch_robust_entry()
+> to unsigned int*) some gcc versions decided to emit the following
+> warning:
+> 
+> kernel/futex.c: In function ‘exit_robust_list’:
+> kernel/futex.c:2492: warning: ‘next_pi’ may be used uninitialized in this function
+> 
+> The commit did not introduce the warning as gcc should have warned
+> before that commit as well. It's just gcc being silly.
+> 
+> The code path really can't result in next_pi being unitialized (or
+> should not), but let's keep the build clean. Annotate next_pi as an
+> uninitialized_var.
+> 
+> [ tglx: Addressed the same issue in futex_compat.c and massaged the
+>   	changelog ]
+> 
+> Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+> Tested-by: Matt Fleming <matt@console-pimps.org>
+> Tested-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+I don't care much (at least until someone claims this change to
+introduce a regression), but I didn't test it.  I only suggested to use 
+uninitialized_var instead of = 0.
 
-> > This points to another problem, though. You allocate key_count entries,
-> > ie cache[0]..cache[key_count-1]. Yet, the key searches are from 0..key_count,
-> > ie span key_count+1 entries. Is that another problem ?
-> 
-> >
-> 
-> > Seems to me you would either have to allocate key_count+1 entries, or terminate
-> > the search at key_count - 1. Not sure which one would be correct. Let me know,
-> > and I'll update the affected patch(es).
-> 
-> 
-> If you are referring to the lower and upper bound functions, those use the
-> one-past-the-last-element convention, so it is actually still 0..key_count - 1.
-> I stayed very close to the stl reference implementation, which relies on the
-> fact that when begin != end, (begin + (end - begin) / 2) < end.
-> 
-Ok, you are right - I was concerned about applesmc_get_upper_bound() returning
-smcreg.key_count, but that is ok, since that value is never used to actually
-retrieve a key.
+Thanks
+Uwe
 
-Thanks,
-Guenter
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
