@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab0KJMVy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 07:21:54 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:34111 "EHLO
+	id S1755862Ab0KJM2S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 07:28:18 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:47048 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755636Ab0KJMVv convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755791Ab0KJM2S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 07:21:51 -0500
-Subject: Re: [RFC PATCH 2/2] perf stat: Use event group to simulate PMI on
- PMI-less hardware counter
+	Wed, 10 Nov 2010 07:28:18 -0500
+Subject: Re: [RFC][PATCH] perf: sysfs type id
 From: Peter Zijlstra <peterz@infradead.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Matt Fleming <matt@console-pimps.org>,
-        Zhang Rui <rui.zhang@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-In-Reply-To: <1289369725.2430.39.camel@minggr.sh.intel.com>
-References: <1289369725.2430.39.camel@minggr.sh.intel.com>
+To: Greg KH <gregkh@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Lin Ming <ming.m.lin@intel.com>, Stephane Eranian <eranian@google.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <20101109221338.GA19947@suse.de>
+References: <1289339119.2191.92.camel@laptop>
+	 <20101109221338.GA19947@suse.de>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Wed, 10 Nov 2010 13:21:49 +0100
-Message-ID: <1289391709.2191.102.camel@laptop>
+Date: Wed, 10 Nov 2010 13:27:17 +0100
+Message-ID: <1289392037.2191.105.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 14:15 +0800, Lin Ming wrote:
-> Some hardware counters(for example, Intel RAPL) can't generate interrupt
-> when overflow. So we need to simulate the interrupt to periodically
-> record the counter values. Otherwise, the counter may overflow and the
-> wrong value is read.
-> 
-> This patch uses event group to simulate PMI as suggested by Peter
-> Zijlstra, http://marc.info/?l=linux-kernel&m=128220854801819&w=2
-> 
-> create_group_counters() will create a group with 2 events, one hrtimer
-> based event as the group leader, and the other event to count. The
-> hrtimer is fired periodically, so the sibling event can record its
-> counter value periodically as well.
+On Tue, 2010-11-09 at 14:13 -0800, Greg KH wrote:
 
-I'm terribly confused here....
+> You missed the embedded track at Plumbers where we talked about never
+> adding another class to the kernel.  Please use bus_id instead for this.
 
- - you introduce perf_event_attr:pmi_simulate, but then you never
-implement it -- nor do we need it afaict.
+I did, it was early and I wasn't aware this all comes under the heading
+of embedded.
 
+Anyway, anybody got a good example of bus_type I can 'borrow' ?
 
- - you use grouped counters for perf-stat, perf-stat doesn't use
-sampling so I don't see a need to group events to simulate the PMI.
-
-
+Also, it would be really nice if you (plural) could make this subsystem
+thing happen, calling tihngs a bus that aren't a bus just makes me
+upset ;-)
