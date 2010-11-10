@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757085Ab0KJQrP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 11:47:15 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:56668 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757028Ab0KJQrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 11:47:14 -0500
-Date: Wed, 10 Nov 2010 08:47:08 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] x86: clear XD_DISABLED flag on Intel to regain NX
-Message-ID: <20101110164708.GN5876@outflux.net>
-References: <20101109181157.GE5876@outflux.net>
- <20101109181501.GG5876@outflux.net>
- <87hbfpp390.fsf@basil.nowhere.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87hbfpp390.fsf@basil.nowhere.org>
+	id S1757059Ab0KJQvJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 11:51:09 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:34569 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757029Ab0KJQvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 11:51:07 -0500
+Message-ID: <4CDACD74.7090502@canonical.com>
+Date: Wed, 10 Nov 2010 08:51:00 -0800
+From: John Johansen <john.johansen@canonical.com>
 Organization: Canonical
-X-HELO: www.outflux.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: wzt.wzt@gmail.com
+CC: linux-kernel@vger.kernel.org, apparmor@lists.ubuntu.com,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] APPARMOR: Fix memory leak of alloc_namespace()
+References: <20101110033155.GA2873@localhost.localdomain>
+In-Reply-To: <20101110033155.GA2873@localhost.localdomain>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
-
-On Wed, Nov 10, 2010 at 05:11:55PM +0100, Andi Kleen wrote:
-> Kees Cook <kees.cook@canonical.com> writes:
-> > +
-> > +verify_cpu_clear_xd:
-> > +	movl	$MSR_IA32_MISC_ENABLE, %ecx
-> > +	rdmsr
-> > +	btrl	$2, %edx		# clear MSR_IA32_MISC_ENABLE_XD_DISABLE
-> > +	jnc	verify_cpu_check	# only write MSR if bit was
-> > changed
+On 11/09/2010 07:31 PM, wzt.wzt@gmail.com wrote:
+> policy->name is a substring of policy->hname, if prefix is not NULL, it will 
+> allocted strlen(prefix) + strlen(name) + 3 bytes to policy->hname in policy_init(). 
+> use kzfree(ns->base.name) will casue memory leak if alloc_namespace() failed.
 > 
-> Strictly it's still a bit dangerous to read this MSR without knowing
-> about the CPU for sure. If you guess wrong you'll die here.
+> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+yes, thank you.
 
-Right, which is why in this code it validates the CPU brand and its
-family and model to make sure it's safe to read this MSR. The logic
-is identical to the code in early_init_intel() that also accesses
-MSR_IA32_MISC_ENABLE. I reviewed the CPU documentation and it seemed
-to support that MSR_IA32_MISC_ENABLE would be available under those
-conditions. That said, I only had a limited number of systems available
-to test it on. If there are adjustments to be made, we can fix them.
+Signed-off-by: John Johansen <john.johansen@canonical.com>
 
-> I would rather move this code later into the early init code (before the
-> second mapping is set up, which is still in time). There the exception
-> handlers are up and you could handle a #GP if it happens.
-
-The problem is that the page tables are set up before early_init, and Peter
-Anvin and I did not see a way to move the XD_DISABLE logic any later than
-where I've put it. Though I should let Peter speak for himself here, as I'm
-less familiar with that aspect of the code.
-
--Kees
-
--- 
-Kees Cook
-Ubuntu Security Team
+> 
+> ---
+>  security/apparmor/policy.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/security/apparmor/policy.c b/security/apparmor/policy.c
+> index 52cc865..4f0eade 100644
+> --- a/security/apparmor/policy.c
+> +++ b/security/apparmor/policy.c
+> @@ -306,7 +306,7 @@ static struct aa_namespace *alloc_namespace(const char *prefix,
+>  	return ns;
+>  
+>  fail_unconfined:
+> -	kzfree(ns->base.name);
+> +	kzfree(ns->base.hname);
+>  fail_ns:
+>  	kzfree(ns);
+>  	return NULL;
