@@ -1,156 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab0KJUmE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:42:04 -0500
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:31648 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741Ab0KJUmC (ORCPT
+	id S1754027Ab0KJUnV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:43:21 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:14866 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753562Ab0KJUnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:42:02 -0500
-Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAGaS2kyrR7Hu/2dsb2JhbACiNnGjRZtGhUoEhFqFfQ
-X-IronPort-AV: E=Sophos;i="4.59,180,1288569600"; 
-   d="scan'208";a="215190743"
-Message-ID: <4CDB0399.9000206@cisco.com>
-Date: Wed, 10 Nov 2010 12:42:01 -0800
-From: Joe Eykholt <jeykholt@cisco.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	Wed, 10 Nov 2010 15:43:20 -0500
+Date: Wed, 10 Nov 2010 21:31:38 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Greg KH <greg@kroah.com>
+cc: linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
+        devel@driverdev.osuosl.org, Dan Carpenter <error27@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: [PATCH 10/17][trivial] staging, bcm: Remove unnecessary casts
+ of void ptr returning alloc function return values
+In-Reply-To: <20101110004543.GA28373@kroah.com>
+Message-ID: <alpine.LNX.2.00.1011102129050.625@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1011082342560.23697@swampdragon.chaosbits.net> <20101110004543.GA28373@kroah.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-CC: Boaz Harrosh <bharrosh@panasas.com>, Greg KH <greg@kroah.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        James Smart <James.Smart@Emulex.Com>, Andy Yan <ayan@marvell.com>,
-        Chetan Loke <generationgnu@yahoo.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-References: <20101011213235.GA11489@kroah.com> <4CB4AEB9.30501@vlnb.net> <20101012190345.GA25737@kroah.com> <4CB75E81.7000208@vlnb.net> <20101014200413.GA30831@kroah.com> <4CC1CA4D.1090609@vlnb.net> <20101022175624.GA13640@kroah.com> <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDB00C2.2090200@cisco.com>
-In-Reply-To: <4CDB00C2.2090200@cisco.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 9 Nov 2010, Greg KH wrote:
 
-
-On 11/10/10 12:29 PM, Joe Eykholt wrote:
+> On Tue, Nov 09, 2010 at 12:09:51AM +0100, Jesper Juhl wrote:
+> > Hi,
+> > 
+> > The [vk][cmz]alloc(_node) family of functions return void pointers which
+> > it's completely unnecessary/pointless to cast to other pointer types since
+> > that happens implicitly.
+> > 
+> > This patch removes such casts from drivers/staging/bcm/
+> > 
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  CmHost.c       |    2 +-
+> >  InterfaceDld.c |   27 +++++++++++++--------------
+> >  Misc.c         |   12 +++++-------
+> >  3 files changed, 19 insertions(+), 22 deletions(-)
+> > 
+> > diff --git a/drivers/staging/bcm/CmHost.c b/drivers/staging/bcm/CmHost.c
 > 
+> This driver just got a major overhaul, and this patch doesn't apply
+> anymore.
 > 
-> On 11/10/10 12:19 PM, Vladislav Bolkhovitin wrote:
->> Boaz Harrosh, on 11/10/2010 12:58 PM wrote:
->>> On 11/09/2010 10:06 PM, Vladislav Bolkhovitin wrote:
->>>>
->>>> Sorry, but what is incorrect in the working implementation without any
->>>> bugs doing its job in the simplest, smallest and clearest way?
->>>>
->>>> If those objects remade to free themselves in the kobjects release(),
->>>> what value would it add to them? Would the implementation be simpler,
->>>> smaller or clearer? Not, I believe, new implementation would be only
->>>> bigger and less clear. So, what's the point to do it to make the code worse?
->>>>
->>>
->>> Totally theoretically speaking, since I have not inspected the code.
->>>
->>> If today you wait for the count to reach zero, then unregister
->>> and send an event to some other subsystem to free the object.
->>>
->>> Is it not the same as if you take an extra refcount, unregister and
->>> send the event at count=1. Then at that other place decrement the last
->>> count to cause the object to be freed.
->>>
->>> I agree that it is hard to do lockless. what some places do is have
->>> an extra kref. The kobj has a single ref on it. everything takes the
->>> other kref. when that reaches zero the unregister and event fires
->>> and at free you decrement the only kobj ref to deallocate. This is one
->>> way. In some situations you can manage with a single counter it all
->>> depends.
->>
->> Thanks for sharing your thoughts with us. But the question isn't about
->> if it's possible to implement what we need locklessly. The question is
->> in two approaches how to synchronously delete objects with entries on SYSFS:
->>
->> 1. struct object_x {
->> 	...
->> 	struct kobject kobj;
->> 	struct completion *release_completion;
->> };
->>
->> static void x_release(struct kobject *kobj)
->> {
->> 	struct object_x *x;
->> 	struct completion *c;
->>
->> 	x = container_of(kobj, struct object_x, kobj);
->> 	c = x->release_completion;
->> 	kfree(x);
->> 	complete_all(c);
->> }
->>
->> void del_object(struct object_x *x)
->> {
->> 	DECLARE_COMPLETION_ONSTACK(completion);
->>
->> 	...
->> 	x->release_completion = &completion;
->> 	kobject_put(&x->kobj);
->> 	wait_for_completion(&completion);
->> }
->>
->> and
->>
->> 2. struct object_x {
->> 	...
->> 	struct kobject kobj;
->> 	struct completion release_completion;
->> };
->>
->> static void x_release(struct kobject *kobj)
->> {
->> 	struct object_x *x;
->>
->> 	x = container_of(kobj, struct object_x, kobj);
->> 	complete_all(&x->release_completion);
->> }
->>
->> void del_object(struct object_x *x)
->> {
->> 	...
->> 	kobject_put(&x->kobj);
->> 	wait_for_completion(&completion);
->> 	...
->> 	kfree(x);
->> }
+> Care to redo it against the next linux-next tree?
 > 
-> I'll admit I don't understand this all that well, but
-> why not just have x_release() (based on (2))
-> do free(x), and have del_object
-> do the kobject_put(&x->kobj) as its very last thing?
-> Then you don't need the completion.
 
-Ah, well to answer my own question, I guess that's (1).
-Never mind.
+Here's a patch against a copy of linux-next that I just cloned.
 
-	Joe
 
->> Greg asserts that (1) is the only correct approach while (2) is
->> incorrect, and I'm trying to justify that (2) is correct too and
->> sometimes could be better, i.e. simpler and clearer, because it
->> decouples object_x from SYSFS and its kobj. Then kobj becomes an
->> ordinary member of struct object_x without any special treatment and
->> with the same lifetime rules as other members of struct object_x. While
->> in (1) all lifetime of struct object_x is strictly attached to kobj, so
->> it needs be specially handled with additional code for that if struct
->> object_x has many other members which needed to be initialized/deleted
->> _before and after_ kobj as we have in SCST.
->>
->> Vlad
+Don't pointlessly cast pointers returned by allocation functions that 
+return void pointers which are implicitly converted.
+For drivers/staging/bcm/
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ CmHost.c       |    2 +-
+ InterfaceDld.c |   14 ++++++--------
+ Misc.c         |   15 ++++++---------
+ 3 files changed, 13 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/staging/bcm/CmHost.c b/drivers/staging/bcm/CmHost.c
+index 38b64e6..a685cad 100644
+--- a/drivers/staging/bcm/CmHost.c
++++ b/drivers/staging/bcm/CmHost.c
+@@ -1702,7 +1702,7 @@ ULONG StoreCmControlResponseMessage(PMINI_ADAPTER Adapter,PVOID pvBuffer,UINT *p
+ 	}
+ 	// For DSA_REQ, only upto "psfAuthorizedSet" parameter should be accessed by driver!
+ 
+-	pstAddIndication=(stLocalSFAddIndication *)kmalloc(sizeof(*pstAddIndication), GFP_KERNEL);
++	pstAddIndication=kmalloc(sizeof(*pstAddIndication), GFP_KERNEL);
+ 	if(NULL==pstAddIndication)
+ 		return 0;
+ 
+diff --git a/drivers/staging/bcm/InterfaceDld.c b/drivers/staging/bcm/InterfaceDld.c
+index 1fc36a1..df64acb 100644
+--- a/drivers/staging/bcm/InterfaceDld.c
++++ b/drivers/staging/bcm/InterfaceDld.c
+@@ -5,15 +5,14 @@ int InterfaceFileDownload( PVOID arg,
+                         struct file *flp,
+                         unsigned int on_chip_loc)
+ {
+-    char            *buff=NULL;
+    // unsigned int    reg=0;
+     mm_segment_t    oldfs={0};
+     int             errno=0, len=0 /*,is_config_file = 0*/;
+     loff_t          pos=0;
+ 	PS_INTERFACE_ADAPTER psIntfAdapter = (PS_INTERFACE_ADAPTER)arg;
+ 	//PMINI_ADAPTER Adapter = psIntfAdapter->psAdapter;
++    char            *buff=kmalloc(MAX_TRANSFER_CTRL_BYTE_USB, GFP_KERNEL);
+ 
+-    buff=(PCHAR)kmalloc(MAX_TRANSFER_CTRL_BYTE_USB, GFP_KERNEL);
+     if(!buff)
+     {
+         return -ENOMEM;
+@@ -56,7 +55,7 @@ int InterfaceFileReadbackFromChip( PVOID arg,
+                         struct file *flp,
+                         unsigned int on_chip_loc)
+ {
+-    char            *buff=NULL, *buff_readback=NULL;
++    char            *buff, *buff_readback;
+     unsigned int    reg=0;
+     mm_segment_t    oldfs={0};
+     int             errno=0, len=0, is_config_file = 0;
+@@ -65,8 +64,8 @@ int InterfaceFileReadbackFromChip( PVOID arg,
+ 	INT				Status = STATUS_SUCCESS;
+ 	PS_INTERFACE_ADAPTER psIntfAdapter = (PS_INTERFACE_ADAPTER)arg;
+ 
+-    buff=(PCHAR)kmalloc(MAX_TRANSFER_CTRL_BYTE_USB, GFP_DMA);
+-    buff_readback=(PCHAR)kmalloc(MAX_TRANSFER_CTRL_BYTE_USB , GFP_DMA);
++    buff=kmalloc(MAX_TRANSFER_CTRL_BYTE_USB, GFP_DMA);
++    buff_readback=kmalloc(MAX_TRANSFER_CTRL_BYTE_USB , GFP_DMA);
+     if(!buff || !buff_readback)
+     {
+         kfree(buff);
+@@ -287,7 +286,7 @@ int bcm_ioctl_fw_download(PMINI_ADAPTER Adapter, FIRMWARE_INFO *psFwInfo)
+ 	else
+ 	{
+ 
+-		buff = (PUCHAR)kzalloc(psFwInfo->u32FirmwareLength,GFP_KERNEL);
++		buff = kzalloc(psFwInfo->u32FirmwareLength,GFP_KERNEL);
+ 		if(buff==NULL)
+ 		{
+ 			BCM_DEBUG_PRINT(Adapter,DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL,"Failed in allocation memory");
+@@ -345,11 +344,10 @@ static INT buffRdbkVerify(PMINI_ADAPTER Adapter,
+ 			PUCHAR mappedbuffer, UINT u32FirmwareLength,
+ 			ULONG u32StartingAddress)
+ {
+-	PUCHAR readbackbuff = NULL;
+ 	UINT len = u32FirmwareLength;
+ 	INT retval = STATUS_SUCCESS;
++	PUCHAR readbackbuff = kzalloc(MAX_TRANSFER_CTRL_BYTE_USB,GFP_KERNEL);
+ 
+-	readbackbuff = (PUCHAR)kzalloc(MAX_TRANSFER_CTRL_BYTE_USB,GFP_KERNEL);
+ 	if(NULL == readbackbuff)
+ 	{
+ 		BCM_DEBUG_PRINT(Adapter,DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL, "MEMORY ALLOCATION FAILED");
+diff --git a/drivers/staging/bcm/Misc.c b/drivers/staging/bcm/Misc.c
+index 82d9f86..1bb6a1d 100644
+--- a/drivers/staging/bcm/Misc.c
++++ b/drivers/staging/bcm/Misc.c
+@@ -71,8 +71,7 @@ InitAdapter(PMINI_ADAPTER psAdapter)
+ 	default_wimax_protocol_initialize(psAdapter);
+ 	for (i=0;i<MAX_CNTRL_PKTS;i++)
+ 	{
+-		psAdapter->txctlpacket[i] = (char *)kmalloc(MAX_CNTL_PKT_SIZE,
+-												GFP_KERNEL);
++		psAdapter->txctlpacket[i] = kmalloc(MAX_CNTL_PKT_SIZE, GFP_KERNEL);
+ 		if(!psAdapter->txctlpacket[i])
+ 		{
+ 			BCM_DEBUG_PRINT(psAdapter,DBG_TYPE_INITEXIT, MP_INIT, DBG_LVL_ALL, "No More Cntl pkts got, max got is %d", i);
+@@ -1228,11 +1227,11 @@ static int bcm_parse_target_params(PMINI_ADAPTER Adapter)
+ {
+ 	struct file 		*flp=NULL;
+ 	mm_segment_t 	oldfs={0};
+-	char *buff = NULL;
++	char *buff;
+ 	int len = 0;
+ 	loff_t	pos = 0;
+ 
+-	buff=(PCHAR)kmalloc(BUFFER_1K, GFP_KERNEL);
++	buff=kmalloc(BUFFER_1K, GFP_KERNEL);
+ 	if(!buff)
+ 	{
+ 		return -ENOMEM;
+@@ -1393,12 +1392,10 @@ static VOID doPowerAutoCorrection(PMINI_ADAPTER psAdapter)
+ #if 0
+ static unsigned char *ReadMacAddrEEPROM(PMINI_ADAPTER Adapter, ulong dwAddress)
+ {
+-	unsigned char *pucmacaddr = NULL;
+-	int status = 0, i=0;
+-	unsigned int temp =0;
++	int status = 0, i = 0;
++	unsigned int temp = 0;
++	unsigned char *pucmacaddr = kmalloc(MAC_ADDRESS_SIZE, GFP_KERNEL);
+ 
+-
+-	pucmacaddr = (unsigned char *)kmalloc(MAC_ADDRESS_SIZE, GFP_KERNEL);
+ 	if(!pucmacaddr)
+ 	{
+ 		BCM_DEBUG_PRINT(Adapter,DBG_TYPE_PRINTK, 0, 0, "No Buffers to Read the EEPROM Address\n");
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
+Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
