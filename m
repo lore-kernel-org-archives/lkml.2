@@ -1,134 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755586Ab0KJSfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 13:35:20 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:35689 "EHLO imr4.ericy.com"
+	id S1755411Ab0KJShJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:37:09 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:46672 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752484Ab0KJSfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 13:35:18 -0500
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>, Henrik Rydberg <rydberg@euromail.se>
-CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH] hwmon: (applesmc) Fix checkpatch errors
-Date: Wed, 10 Nov 2010 10:53:20 -0800
-Message-ID: <1289415200-4928-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.3.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752484Ab0KJShH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 13:37:07 -0500
+From: Kees Cook <kees.cook@canonical.com>
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: Pekka Enberg <penberg@kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [Security] [PATCH v5 0/4] x86: clear XD_DISABLED flag on Intel to regain NX
+Date: Wed, 10 Nov 2010 10:35:50 -0800
+Message-Id: <1289414154-7829-1-git-send-email-kees.cook@canonical.com>
+X-Mailer: git-send-email 1.7.2.3
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix all checkpatch errors and most of the warnings.
+Resending with Alan Cox's Acks, at Ingo's request.
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Intel CPUs have an additional MSR bit to indicate if the BIOS was
+configured to disable NX. This bit was traditionally used for operating
+systems that did not understand how to handle the NX bit. Since Linux
+understands this, this BIOS flag should be ignored by default.
+
+In a review[1] of reported hardware being used by Ubuntu bug reporters,
+almost 10% of systems had an incorrectly configured BIOS, leaving their
+systems unable to use the NX features of their CPU.
+
+This change will clear the MSR_IA32_MISC_ENABLE_XD_DISABLE bit so that NX
+cannot be inappropriately controlled by the BIOS on Intel CPUs. If, under
+very strange hardware configurations, NX actually needs to be disabled,
+"noexec=off" can be used to restore the prior behavior.
+
+-Kees
+
+[1] http://www.outflux.net/blog/archives/2010/02/18/data-mining-for-nx-bit/
+
 ---
- drivers/hwmon/applesmc.c |   40 +++++++++++++++++++++-------------------
- 1 files changed, 21 insertions(+), 19 deletions(-)
-
-diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-index 1e49b30..365761b 100644
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -174,9 +174,8 @@ static int __wait_status(u8 val)
- 
- 	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
- 		udelay(us);
--		if ((inb(APPLESMC_CMD_PORT) & APPLESMC_STATUS_MASK) == val) {
-+		if ((inb(APPLESMC_CMD_PORT) & APPLESMC_STATUS_MASK) == val)
- 			return 0;
--		}
- 	}
- 
- 	return -EIO;
-@@ -431,7 +430,7 @@ static int applesmc_has_key(const char *key, bool *value)
- /*
-  * applesmc_read_motion_sensor - Read motion sensor (X, Y or Z).
-  */
--static int applesmc_read_motion_sensor(int index, s16* value)
-+static int applesmc_read_motion_sensor(int index, s16 *value)
- {
- 	u8 buffer[2];
- 	int ret;
-@@ -779,14 +778,12 @@ static ssize_t applesmc_store_fan_speed(struct device *dev,
- 					const char *sysfsbuf, size_t count)
- {
- 	int ret;
--	u32 speed;
-+	unsigned long speed;
- 	char newkey[5];
- 	u8 buffer[2];
- 
--	speed = simple_strtoul(sysfsbuf, NULL, 10);
--
--	if (speed > 0x4000) /* Bigger than a 14-bit value */
--		return -EINVAL;
-+	if (strict_strtoul(sysfsbuf, 10, &speed) < 0 || speed >= 0x4000)
-+		return -EINVAL;		/* Bigger than a 14-bit value */
- 
- 	sprintf(newkey, fan_speed_fmt[to_option(attr)], to_index(attr));
- 
-@@ -822,10 +819,11 @@ static ssize_t applesmc_store_fan_manual(struct device *dev,
- {
- 	int ret;
- 	u8 buffer[2];
--	u32 input;
-+	unsigned long input;
- 	u16 val;
- 
--	input = simple_strtoul(sysfsbuf, NULL, 10);
-+	if (strict_strtoul(sysfsbuf, 10, &input) < 0)
-+		return -EINVAL;
- 
- 	ret = applesmc_read_key(FANS_MANUAL, buffer, 2);
- 	val = (buffer[0] << 8 | buffer[1]);
-@@ -977,7 +975,11 @@ static ssize_t applesmc_key_at_index_show(struct device *dev,
- static ssize_t applesmc_key_at_index_store(struct device *dev,
- 	struct device_attribute *attr, const char *sysfsbuf, size_t count)
- {
--	key_at_index = simple_strtoul(sysfsbuf, NULL, 10);
-+	unsigned long newkey;
-+
-+	if (strict_strtoul(sysfsbuf, 10, &newkey) < 0)
-+		return -EINVAL;
-+	key_at_index = newkey;
- 
- 	return count;
- }
-@@ -1193,24 +1195,24 @@ static __initdata struct dmi_system_id applesmc_whitelist[] = {
- 	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir") },
- 	},
- 	{ applesmc_dmi_match, "Apple MacBook Pro", {
--	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
--	  DMI_MATCH(DMI_PRODUCT_NAME,"MacBookPro") },
-+	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
-+	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro") },
- 	},
- 	{ applesmc_dmi_match, "Apple MacBook", {
--	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
--	  DMI_MATCH(DMI_PRODUCT_NAME,"MacBook") },
-+	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
-+	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBook") },
- 	},
- 	{ applesmc_dmi_match, "Apple Macmini", {
--	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
--	  DMI_MATCH(DMI_PRODUCT_NAME,"Macmini") },
-+	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
-+	  DMI_MATCH(DMI_PRODUCT_NAME, "Macmini") },
- 	},
- 	{ applesmc_dmi_match, "Apple MacPro", {
- 	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
- 	  DMI_MATCH(DMI_PRODUCT_NAME, "MacPro") },
- 	},
- 	{ applesmc_dmi_match, "Apple iMac", {
--	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
--	  DMI_MATCH(DMI_PRODUCT_NAME,"iMac") },
-+	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
-+	  DMI_MATCH(DMI_PRODUCT_NAME, "iMac") },
- 	},
- 	{ .ident = NULL }
- };
--- 
-1.7.3.1
-
+Changelog:
+v2 - rearranged use of verify_cpu()
+v3 - resent, show stats on systems that need it
+v4 - expanded commit messages, added acks
+v5 - added acks
