@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab0KJTMh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 14:12:37 -0500
-Received: from mga11.intel.com ([192.55.52.93]:21317 "EHLO mga11.intel.com"
+	id S1756247Ab0KJTOy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 14:14:54 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:56680 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755623Ab0KJTMg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 14:12:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,179,1288594800"; 
-   d="scan'208";a="625496128"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Borislav Petkov <bp@amd64.org>,
-        "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Date: Wed, 10 Nov 2010 11:12:33 -0800
-Subject: RE: [PATCH 01/12] EDAC, MCE: Select extended error code mask
-Thread-Topic: [PATCH 01/12] EDAC, MCE: Select extended error code mask
-Thread-Index: AcuBCgZT2wME6srLRHaYBMdVrkiTtAAAQj0Q
-Message-ID: <987664A83D2D224EAE907B061CE93D5301649A7081@orsmsx505.amr.corp.intel.com>
-References: <1289415741-15000-1-git-send-email-bp@amd64.org>
- <1289415741-15000-2-git-send-email-bp@amd64.org>
-In-Reply-To: <1289415741-15000-2-git-send-email-bp@amd64.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755862Ab0KJTOx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 14:14:53 -0500
+Date: Wed, 10 Nov 2010 20:14:32 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Don Zickus <dzickus@redhat.com>
+Cc: fweisbec@gmail.com, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org,
+        sergey.senozhatsky@gmail.com
+Subject: Re: [PATCH v3] watchdog:  touch_nmi_watchdog should only touch local
+ cpu not every one
+Message-ID: <20101110191432.GB30227@elte.hu>
+References: <1289240913-16677-1-git-send-email-dzickus@redhat.com>
+ <20101110074941.GD29493@elte.hu>
+ <20101110160516.GZ4823@redhat.com>
+ <20101110180711.GB22410@elte.hu>
+ <20101110190352.GA31794@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101110190352.GA31794@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> F15h enlarges the extended error code of an MCE to a 5-bit field
-> (MCi_STATUS[20:16]). Add a mask variable which default 0xf is overridden
-> on F15h.
 
-> +static u8 xec_mask	 = 0xf;
+* Don Zickus <dzickus@redhat.com> wrote:
 
-If the field is 5 bits, shouldn't this mask be 0x1f?
+> On Wed, Nov 10, 2010 at 07:07:11PM +0100, Ingo Molnar wrote:
+> > 
+> > * Don Zickus <dzickus@redhat.com> wrote:
+> > 
+> > > > Hm, the flip side is that if a CPU is stuck spewing backtraces, we will now make 
+> > > > all the other CPUs a lot more noisy - which might only 'lock up' because this 
+> > > > CPU is stuck spewing oopses, right?
+> > > 
+> > > When you say the other CPUs will be a lot more noisy, is that because they are 
+> > > busy processing backtraces for the first cpu to spew?  I guess I don't understand 
+> > > how the other CPUs could have their interrupts off the whole time while the first 
+> > > cpu is spewing a backtrace (just trying to educate myself).
+> > 
+> > Say the kernel crashes on a CPU and keeps spewing new oopses, while write-holding 
+> > tasklist_lock.
+> > 
+> > Any other CPU that delivers a signal from IRQ context, trying to take the 
+> > tasklist_lock, will loop indefinitely until that crashing CPU releases the lock.
+> > 
+> > In that case the 'secondary' NMI warnings from all other CPUs (eventually every CPU 
+> > gets stuck in such a scenario) will start spewing NMI lockup messages.
+> > 
+> > Dunno. Maybe we should do your change - but also have an option to 'shut up' the 
+> > kernel after the first hard oops [not warning]. That would silence the secondary NMI 
+> > watchdog messages as well.
+> 
+> You mean inside the panic() routine? like a ratelimit?
 
--Tony
+A ratelimit, but some really serious one - like only one crash displayed per 10 
+minutes, or so - to give the user time to make a picture of the first crash, if it's 
+still visible on the screen or so.
+
+Thanks,
+
+	Ingo
