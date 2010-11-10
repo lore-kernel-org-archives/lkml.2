@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754962Ab0KJI0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 03:26:14 -0500
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:38603 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753226Ab0KJI0M (ORCPT
+	id S1755009Ab0KJI1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 03:27:32 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54059 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753608Ab0KJI1b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 03:26:12 -0500
-Date: Wed, 10 Nov 2010 19:24:58 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Evgeniy Ivanov <lolkaantimat@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>, dave b <db.pub.mail@gmail.com>,
-        Sanjoy Mahajan <sanjoy@olin.edu>, Jesper Juhl <jj@chaosbits.net>,
-        Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-        Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-Message-ID: <20101110082458.GU2715@dastard>
-References: <20101105014334.GF13830@dastard>
- <E1PELiI-0001Pj-8g@approx.mit.edu>
- <AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
- <4CD696B4.6070002@kernel.dk>
- <AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>
- <20101110013255.GR2715@dastard>
- <AANLkTikAF=Ka_qB5pPzo9wj_jAp=TG2xSbjaGcoLYfBw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikAF=Ka_qB5pPzo9wj_jAp=TG2xSbjaGcoLYfBw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 10 Nov 2010 03:27:31 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=vlYRlMykO+fISmP7oyv+LXuMk3UahPNZCgekYupJMULOTaLFybyH2mNnVdHeY9lK7X
+         FhBjKIKdCHKkFv581ldzMmEGSpA9M3TwVeqo26TGb7ASbBdzA4tvDHnsAybni4y3sGBh
+         GzMBM9dBa6HTZEUb7wru2QHdcx0HrWWB0Tfg0=
+From: Marek Belisko <marek.belisko@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@gmail.com>
+Subject: [PATCH] staging: ft1000: Check return value of kthread_run.
+Date: Wed, 10 Nov 2010 09:29:35 +0100
+Message-Id: <1289377775-13421-1-git-send-email-marek.belisko@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 11:08:17AM +0300, Evgeniy Ivanov wrote:
-> On Wed, Nov 10, 2010 at 4:32 AM, Dave Chinner <david@fromorbit.com> wrote:
-> > Don't forget to mention data=writeback is not the default because if
-> > your system crashes or you lose power running in this mode it will
-> > *CORRUPT YOUR FILESYSTEM* and you *WILL LOSE DATA*. Not to mention
-> > the significant security issues (e.g stale data exposure) that also
-> > occur even if the filesystem is not corrupted by the crash. IOWs,
-> > data=writeback is the "fast but I'll eat your data" option for ext3.
-> >
-> > So I recommend that nobody follows this path because it only leads
-> > to worse trouble down the road.  Your best bet it to migrate away
-> > from ext3 to a filesystem that doesn't have such inherent ordering
-> > problems like ext4 or XFS....
-> 
-> Is it save to use "data=writeback" with ext4?
+kthread_run could fail so we will check return value.
 
-I believe the same issues exist with data=writeback in ext4, but you
-probably should have an ext4 developer answer that question for
-certain.
+Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
+---
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-> At least are there security issues?
-> Why do you say, that fs can be corrupted? Metadata is still
-> journalled, so only data might be corrupted, but FS should still be
-> consistent.
-
-Data corruption is still a filesystem corruption.
-
-Cheers,
-
-Dave.
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+index 41bbe99..dcbc97c 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+@@ -175,6 +175,12 @@ static int ft1000_probe(struct usb_interface *interface,
+ 	gPollingfailed = FALSE;
+ 	pft1000info->pPollThread =
+ 	    kthread_run(ft1000_poll_thread, ft1000dev, "ft1000_poll");
++
++	if (IS_ERR(pft1000info->pPollThread)) {
++		ret = PTR_ERR(pft1000info->pPollThread);
++		goto err_load;
++	}
++
+ 	msleep(500);
+ 
+ 	while (!pft1000info->CardReady) {
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.1
+
