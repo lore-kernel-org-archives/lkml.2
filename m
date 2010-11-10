@@ -1,57 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab0KJXrg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 18:47:36 -0500
-Received: from mail.perches.com ([173.55.12.10]:4946 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757465Ab0KJXqY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 18:46:24 -0500
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6] fs/adfs: Add printf format/argument verification and fix fallout
-Date: Wed, 10 Nov 2010 15:46:13 -0800
-Message-Id: <0225f04b4d546510012ed80507e2b9efafec618a.1289432524.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
-In-Reply-To: <cover.1289432524.git.joe@perches.com>
-References: <cover.1289432524.git.joe@perches.com>
+	id S1757481Ab0KJXup (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 18:50:45 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55893 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757322Ab0KJXuo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 18:50:44 -0500
+Date: Wed, 10 Nov 2010 15:49:56 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org, mingo@elte.hu,
+        kees.cook@canonical.com, security@kernel.org
+Subject: Re: [PATCH v3] Restrict unprivileged access to kernel syslog
+Message-Id: <20101110154956.83a3f84d.akpm@linux-foundation.org>
+In-Reply-To: <1289431735.3847.9.camel@dan>
+References: <1289431735.3847.9.camel@dan>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add __attribute__ ((format(printf, 3, 4))) to __adfs_error prototype
-Change format string to match argument in adfs_dir_lookup_byname
+On Wed, 10 Nov 2010 18:28:55 -0500
+Dan Rosenberg <drosenberg@vsecurity.com> wrote:
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- fs/adfs/adfs.h |    1 +
- fs/adfs/dir.c  |    2 +-
- 2 files changed, 2 insertions(+), 1 deletions(-)
+> The kernel syslog contains debugging information that is often useful
+> during exploitation of other vulnerabilities, such as kernel heap
+> addresses.  Rather than futilely attempt to sanitize hundreds (or
+> thousands) of printk statements and simultaneously cripple useful
+> debugging functionality, it is far simpler to create an option that
+> prevents unprivileged users from reading the syslog.
+> 
+> This patch, loosely based on grsecurity's GRKERNSEC_DMESG, creates the
+> dmesg_restrict sysctl.  When set to "0", the default, no restrictions
+> are enforced.  When set to "1", only users with CAP_SYS_ADMIN can read
+> the kernel syslog via dmesg(8) or other mechanisms.
+> 
+> v3 sets a default for the config, renames to
+> CONFIG_SECURITY_DMESG_RESTRICT to be consistent with the sysctl name,
+> and adds Acks.
+> 
 
-diff --git a/fs/adfs/adfs.h b/fs/adfs/adfs.h
-index 2ff622f..fa078f1 100644
---- a/fs/adfs/adfs.h
-+++ b/fs/adfs/adfs.h
-@@ -129,6 +129,7 @@ extern int adfs_map_lookup(struct super_block *sb, unsigned int frag_id, unsigne
- extern unsigned int adfs_map_free(struct super_block *sb);
+The patch adds trailing whitespace.  checkpatch detects it.
+
+> CC: stable <stable@kernel.org>
+
+hm.  Reasons for this?
+
+> ...
+>
+> +dmesg_restrict:
+> +
+> +This toggle indicates whether unprivileged users are prevented 
+> +from using dmesg(8) to view messages from the kernel's log
+> +buffer.  By default, it is set to (0), resulting in no 
+> +restrictions.  When set to (1), users must have CAP_SYS_ADMIN
+> +to use dmesg(8).
+
+Actually, the default depends on CONFIG_SECURITY_DMESG_RESTRICT ;)
+
+> +==============================================================
+> +
+>  domainname & hostname:
+>  
+>  These files can be used to set the NIS/YP domainname and the
+> diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+> index 450092c..f0d0088 100644
+> --- a/include/linux/kernel.h
+> +++ b/include/linux/kernel.h
+> @@ -293,6 +293,7 @@ extern bool printk_timed_ratelimit(unsigned long *caller_jiffies,
+>  				   unsigned int interval_msec);
+>  
+>  extern int printk_delay_msec;
+> +extern int dmesg_restrict;
+>  
+>  /*
+>   * Print a one-time message (analogous to WARN_ONCE() et al):
+> diff --git a/kernel/printk.c b/kernel/printk.c
+> index b2ebaee..38e7d58 100644
+> --- a/kernel/printk.c
+> +++ b/kernel/printk.c
+> @@ -261,6 +261,12 @@ static inline void boot_delay_msec(void)
+>  }
+>  #endif
+>  
+> +#ifdef CONFIG_SECURITY_DMESG_RESTRICT
+> +int dmesg_restrict = 1;
+> +#else
+> +int dmesg_restrict;
+> +#endif
+
+You might be able to make this an int type and do
+
+int dmesg_restrict = CONFIG_SECURITY_DMESG_RESTRICT;
+
+We did a trick like that with CONFIG_BASE_SMALL:
+
+int whatever = CONFIG_BASE_SMALL ? 2 : 42;
+
+otoh you might decide not to bother, in which case, this?
+
+--- a/Documentation/sysctl/kernel.txt~restrict-unprivileged-access-to-kernel-syslog-fix
++++ a/Documentation/sysctl/kernel.txt
+@@ -216,11 +216,14 @@ to decide what to do with it.
  
- /* Misc */
-+__attribute__ ((format(printf, 3, 4)))
- void __adfs_error(struct super_block *sb, const char *function,
- 		  const char *fmt, ...);
- #define adfs_error(sb, fmt...) __adfs_error(sb, __func__, fmt)
-diff --git a/fs/adfs/dir.c b/fs/adfs/dir.c
-index f4287e4..6b74978 100644
---- a/fs/adfs/dir.c
-+++ b/fs/adfs/dir.c
-@@ -148,7 +148,7 @@ adfs_dir_lookup_byname(struct inode *inode, struct qstr *name, struct object_inf
- 		goto out;
+ dmesg_restrict:
  
- 	if (ADFS_I(inode)->parent_id != dir.parent_id) {
--		adfs_error(sb, "parent directory changed under me! (%lx but got %lx)\n",
-+		adfs_error(sb, "parent directory changed under me! (%lx but got %x)\n",
- 			   ADFS_I(inode)->parent_id, dir.parent_id);
- 		ret = -EIO;
- 		goto free_out;
--- 
-1.7.3.1.g432b3.dirty
+-This toggle indicates whether unprivileged users are prevented
+-from using dmesg(8) to view messages from the kernel's log
+-buffer.  By default, it is set to (0), resulting in no
+-restrictions.  When set to (1), users must have CAP_SYS_ADMIN
+-to use dmesg(8).
++This toggle indicates whether unprivileged users are prevented from using
++dmesg(8) to view messages from the kernel's log buffer.  When
++dmesg_restrict is set to (0) there are no restrictions.  When
++dmesg_restrict is set set to (1), users must have CAP_SYS_ADMIN to use
++dmesg(8).
++
++The kernel config option CONFIG_SECURITY_DMESG_RESTRICT sets the default
++value of dmesg_restrict.
+ 
+ ==============================================================
+ 
+_
 
