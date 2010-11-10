@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab0KJNzZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 08:55:25 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:60686 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751701Ab0KJNzV (ORCPT
+	id S1756032Ab0KJN4H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 08:56:07 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:36754 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab0KJN4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 08:55:21 -0500
-Date: Wed, 10 Nov 2010 14:54:58 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Ted Ts'o" <tytso@mit.edu>, david@lang.hm,
-        Anca Emanuel <anca.emanuel@gmail.com>, Greg KH <greg@kroah.com>,
-        Elvis Dowson <elvis.dowson@mac.com>,
-        Janakiram Sistla <janakiram.sistla@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Forked android kernel development from linux kernel mainline
-Message-ID: <20101110135458.GB1553@ucw.cz>
-References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
- <AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com>
- <20101106181202.GA6927@kroah.com>
- <20101106192259.GB2935@thunk.org>
- <AANLkTikQoAbsKX=N-ST3KVqSxBnA6OhNvd7FehLDnn=V@mail.gmail.com>
- <20101106234029.GC2935@thunk.org>
- <alpine.DEB.2.00.1011061646170.29342@asgard.lang.hm>
- <20101107000348.GF2935@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101107000348.GF2935@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 10 Nov 2010 08:56:03 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=UWg-Qlbn-4MA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=zeB7-BFqJsCSiuUvVdkA:9 a=Ld9-_sO_eT8qURtQvBQA:7 a=7ibdKvd27kcdexGkkq-fC2dcmh0A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] Delegate unknown module parameters to interested
+ parties
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
+In-Reply-To: <201011101621.28946.rusty@rustcorp.com.au>
+References: <0d30dc$k4dmjb@orsmga001.jf.intel.com>
+	 <1289311867-10096-1-git-send-email-chris@chris-wilson.co.uk>
+	 <1289313561.12418.96.camel@gandalf.stny.rr.com>
+	 <201011101621.28946.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 10 Nov 2010 08:56:00 -0500
+Message-ID: <1289397360.12418.119.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2010-11-06 20:03:48, Ted Ts'o wrote:
-> On Sat, Nov 06, 2010 at 04:52:26PM -0700, david@lang.hm wrote:
-> > also, none of these other patches resulted in device drivers
-> > developed for a distro being incompatible with mainline.
+On Wed, 2010-11-10 at 16:21 +1030, Rusty Russell wrote:
+> On Wed, 10 Nov 2010 01:09:21 am Steven Rostedt wrote:
+> > [ Added Rusty "Module God" Russell ]
 > 
-> What, people can't delete a couple of single lines of code before
-> submitting the device driver upstream to mainline?  Here's the world's
-> tiniest violin playing, "my heart bleeds for you"....
+> And I also wrote the parameter parsing code, so sending to me is probably
+> a good idea.
+> 
+> So, what's this for?  You want trace= as a standard module parameter
 
-Deleting couple single liners is not a problem. Cleaning up 100KLoC
-patch for mainline *is* a problem.
+Yep, this way we could even enable tracepoints that are in the init
+section.
 
-I know, I tried to do that work. Even getting it to staging quality
-was hard, and it was recently dropped due to security holes.
+> or something?  If this is a once-off I'd prefer a custom hack I think.
+> If you can think of other users, this might be a good idea; though don't
+> use "void *data" use an explicit struct module *...
 
-Unfortunately google uses wakelocks as an excuse for not cleaning up
-stuff... "because readding those few lines would be too hard".
+If I wrote the code, it would have been a once-off custom hack. But,
+personally, I like the generic addition. Perhaps others will hook into
+it without fear of having to hack the module code, which can be quite
+intimidating to some.
 
-	 	  	   	     	   	    	Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I also agree to not use the void *data.
+
+-- Steve
+
+
