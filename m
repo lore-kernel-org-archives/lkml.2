@@ -1,131 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab0KJPwR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 10:52:17 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:49237 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756459Ab0KJPwQ (ORCPT
+	id S1756753Ab0KJPxs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:53:48 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:52492 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756231Ab0KJPxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 10:52:16 -0500
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-crypto@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Subject: [PATCH v1.3 0/4] keys: trusted and encrypted keys
-Date: Wed, 10 Nov 2010 10:51:45 -0500
-Message-Id: <1289404309-15955-1-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.2.2
+	Wed, 10 Nov 2010 10:53:47 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=2Zzf6Ss2cq4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=GwmEstuPqUwjGjsdEDwA:9 a=_vMTJuKud1PwGh-L5wQA:7 a=7SD9hlayFWtsfzhUD3iDaYiWTsoA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC/Requirements/Design] h/w error reporting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, "Luck, Tony" <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org, ying.huang@intel.com, bp@alien8.de,
+        tglx@linutronix.de, akpm@linux-foundation.org, mchehab@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <1289403019.2084.17.camel@laptop>
+References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
+	 <20101110101450.GA18481@elte.hu>
+	 <1289400056.12418.139.camel@gandalf.stny.rr.com>
+	 <1289400234.2191.129.camel@laptop>
+	 <1289401781.12418.145.camel@gandalf.stny.rr.com>
+	 <1289403019.2084.17.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 10 Nov 2010 10:53:45 -0500
+Message-ID: <1289404425.12418.160.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous posting added serveral new trusted-key options (migratable,
-pcrlock, keyhandle, keyauth, blobauth), described below, based on
-suggestions by Jason Gunthorpe. This patch requires the pcrlock option
-be executed with CAP_SYS_ADMIN privileges.  By default, trusted keys
-work as previously described. 
+On Wed, 2010-11-10 at 16:30 +0100, Peter Zijlstra wrote:
 
-Trusted and Encrypted Keys are two new key types added to the
-existing kernel key ring service. Both of these new types are
-variable length symmetic keys, and in both cases all keys are
-created in the kernel, and user space sees, stores, and loads 
-only encrypted blobs. Trusted Keys require the availability of a
-Trusted Platform Module (TPM) chip for greater security, while
-Encrypted Keys can be used on any system. All user level blobs,
-are displayed and loaded in hex ascii for convenience, and
-are integrity verified.
 
-Trusted Keys use a TPM both to generate and to seal the keys.
-Keys are sealed under a 2048 bit RSA key in the TPM, and optionally
-sealed to specified PCR (integrity measurement) values, and only
-unsealed by the TPM, if PCRs and blob integrity verifications match.
-A loaded Trusted Key can be updated with new (future) PCR values,
-so keys are easily migrated to new pcr values, such as when the
-kernel and initramfs are updated. The same key can have many
-saved blobs under different PCR values, so multiple boots are
-easily supported.
+> I also don't want to support the stupid concurrent read/write from tail.
 
-By default, trusted keys are sealed under the SRK, which has the
-default authorization value (20 zeros). This can be set at
-takeownership time with the trouser's utility:
-"tpm_takeownership -u -z".
+You are talking about what you said that ftrace ring buffer is totally
+broken, that if the writer is writing to the tail, and the reader is
+reading from the head, it is broken?
 
-Usage:
-    keyctl add trusted name "new keylen [options]" ring
-    keyctl add trusted name "load hex_blob [pcrlock=pcrnum]" ring
-    keyctl update key "update [options]"
-    keyctl print keyid
+Let me get this straight.
 
-    options:
-       keyhandle= ascii hex value of sealing key default 0x40000000 (SRK)
-       keyauth=	  ascii hex auth for sealing key default 0x00... (40 ascii zeros)
-       blobauth=  ascii hex auth for sealed data default 0x00... (40 ascii zeros)
-       pcrinfo=	  ascii hex of PCR_INFO or PCR_INFO_LONG (no default)
-       pcrlock=	  pcr number to be extended to "lock" blob
-       migratable= 0|1 indicating permission to reseal to new PCR values, 
-                   default 1 (resealing allowed)
- 
-The key length for new keys are always in bytes.  Trusted Keys can
-be 32 - 128 bytes (256 - 1024 bits), the upper limit is to fit within
-the 2048 bit SRK (RSA) keylength, with all necessary structure/padding. 
+We have a writer constantly writing to the tail of the buffer. On
+another CPU we have a reader, that will start at that tail (where the
+writer just wrote) and go backwards.
 
-Encrypted keys do not depend on a TPM, and are faster, as they
-use AES for encryption/decryption. New keys are created from kernel
-generated random numbers, and are encrypted/decrypted using a
-specified 'master' key. The 'master' key can either be a trusted-key
-or user-key type. The main disadvantage of encrypted keys is that if
-they are not rooted in a trusted key, they are only as secure as the
-user key encrypting them. The master user key should therefore
-be loaded in as secure a way as possible, preferably early in
-boot.
+What happens if the writer continues writing? Do we stop the reader and
+have it write what it just wrote? Or just consider that the reader goes
+the opposite direction of the writer, and when it hits the writer, it
+continues, since now it has the new data again.
 
-Usage:
-  keyctl add encrypted name "new master-key-name keylen" ring
-  keyctl add encrypted name "load master-key-name keylen hex_blob" ring
-  keyctl update keyid "update master-key-name"
+Now the question comes, how do we show this data to the user? Does the
+user need to sort the data? If the reader reads X amount of data, it
+gets X from where the writer just wrote. Then the writer writes Y data.
+The reader reads X amount again, but X > Y, do we read the Y where the
+writer wrote, and then read the buffer part that is older than the
+previous read? Thus the user now has the burden to sort the buffer?
 
-The initial consumer of trusted keys is EVM, which at boot time
-needs a high quality symmetric key for HMAC protection of file
-metadata. The use of a trusted key provides strong guarantees
-that the EVM key has not been compromised by a user level problem,
-and when sealed to specific boot PCR values, protects against
-boot and offline attacks. Other uses for trusted and encrypted
-keys, such as for disk and file encryption are anticipated.
+I'm really confused to how to use a buffer like this?
 
-Mimi Zohar
-David Safford
+-- Steve
 
-Mimi Zohar (4):
-  lib: hex2bin converts ascii hexadecimal string to binary
-  key: add tpm_send command
-  keys: add new trusted key-type
-  keys: add new key-type encrypted
-
- drivers/char/tpm/tpm.c            |   17 +
- include/keys/encrypted-type.h     |   30 +
- include/keys/trusted-type.h       |   32 ++
- include/linux/kernel.h            |    1 +
- include/linux/tpm.h               |    3 +
- lib/hexdump.c                     |   16 +
- security/Kconfig                  |   31 +
- security/keys/Makefile            |    2 +
- security/keys/encrypted_defined.c |  816 +++++++++++++++++++++++++++
- security/keys/encrypted_defined.h |   52 ++
- security/keys/trusted_defined.c   | 1101 +++++++++++++++++++++++++++++++++++++
- security/keys/trusted_defined.h   |  147 +++++
- 12 files changed, 2248 insertions(+), 0 deletions(-)
- create mode 100644 include/keys/encrypted-type.h
- create mode 100644 include/keys/trusted-type.h
- create mode 100644 security/keys/encrypted_defined.c
- create mode 100644 security/keys/encrypted_defined.h
- create mode 100644 security/keys/trusted_defined.c
- create mode 100644 security/keys/trusted_defined.h
-
--- 
-1.7.2.2
 
