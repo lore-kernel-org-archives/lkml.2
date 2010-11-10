@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab0KJAuW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 19:50:22 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60399 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751406Ab0KJAuU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 19:50:20 -0500
+	id S1753431Ab0KJAvZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 19:51:25 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:51385 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406Ab0KJAvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 9 Nov 2010 19:51:24 -0500
+Message-ID: <4CD9ECD2.3030805@cn.fujitsu.com>
+Date: Wed, 10 Nov 2010 08:52:34 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-In-Reply-To: <201011100039.17689.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1011041045350.2522-100000@netrider.rowland.org> <201011100039.17689.rjw@sisk.pl>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 9 Nov 2010 16:49:49 -0800
-Message-ID: <AANLkTik3ufjfFRKk6Yu39h-E314+ds0iAy1dfFoZSeVN@mail.gmail.com>
-Subject: Re: [linux-pm] [GIT PULL] One more power management fix for 2.6.37
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
+To: Paul Menage <menage@google.com>
+CC: "akpm >> Andrew Morton" <akpm@linux-foundation.org>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org
+Subject: Re: [PATCH 1/7] cgroups: Shrink struct cgroup_subsys
+References: <4CC146A4.9090505@cn.fujitsu.com>	<4CC146BA.7080009@cn.fujitsu.com>	<AANLkTikf-1kLStxqi5UjP=vn3pqVBHy0OA7ibeWTkJ5z@mail.gmail.com>	<4CD78946.5060405@cn.fujitsu.com> <AANLkTim6d1fQLZbkmZST3PTN0RMSs3m=oossF81pYBn9@mail.gmail.com>
+In-Reply-To: <AANLkTim6d1fQLZbkmZST3PTN0RMSs3m=oossF81pYBn9@mail.gmail.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-10 08:51:47,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-10 08:51:51,
+	Serialize complete at 2010-11-10 08:51:51
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 9, 2010 at 3:39 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->
-> So, what about the patch below?
+Paul Menage wrote:
+> On Sun, Nov 7, 2010 at 9:23 PM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+>> bool active;
+>> bool disabled;
+>> ...
+>>
+>> ?
+>>
+>> With alignment 5-8 bool values == 8 bytes in 64-bit machine, compared to
+>> 4 bytes with the approach this patch takes.
+> 
+> I meant specifying it as:
+> 
+> bool active:1;
+> bool disabled:1;
+> 
 
-I think it looks saner, but I also think that it would be saner yet to
-have a separate list entirely, and *not* do this crazy "move things
-back and forth between 'dpm_list'" thing.
+It won't compile, but unsigned char active:1 will do. ;)
 
-So I would seriously suggest that the design should aim for each
-suspend event to move things between two lists, and as devices go
-through the suspend phases, they'd move to/from lists that also
-indicate which suspend level they are at.
+> i.e. keeping the bit-sized flags but also keeping the bool semantics.
+> Having said that, I'm not really sure why saving 12 bytes per
+> subsystem is worth a patch.
 
-So why not introduce a new list called "dpm_list_suspended", and in
-"dpm_suspend_noirq()" you move devices one at a time from the
-"dpm_list" to the "dmp_list_suspended".
+Every thing that reduces code size (without sacrifice readability
+and maintain maintainability) should be worth.
 
-And then in "dpm_resume_noirq()" you move them back.
-
-Wouldn't that be nice?
-
-(Optimally, you'd have separate lists for "active", "suspended", and
-"irq-suspended")
-
-But regardless, your patch does seem to at least match what we
-currently do in the regular suspend/resume code (ie the
-non-irq's-disabled case). So I don't mind it. I just think that it
-would be cleaner to not take things off one list only to put them back
-on the same list again.
-
-In particular, _if_ device add events can happen concurrently with
-this, I don't understand how that would maintain the depth-first order
-of the list. In contrast, if you do it with separate lists, then you
-know that if a device is on the "suspended" list, then it by
-definition has to be "after" all devices that are on the non-suspended
-list, since you cannot have a non-suspended device that depends on a
-suspended one.
-
-So having separate lists with state should also be very sensible from
-a device topology standpoint - while doing that "list_splice()" back
-on the same list is _not_ at all obviously correct from a topological
-standpoint (I'm not sure I'm explaining this well).
-
-                 Linus
+This is one of the reasons we accept patches that replacing
+kmalloc+memset with kzalloc, which just saves 8 bytes in my box.
