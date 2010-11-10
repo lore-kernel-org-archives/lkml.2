@@ -1,105 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab0KJUvB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:51:01 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:11119 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454Ab0KJUvA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:51:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=hcv4DsFzLo5Mib+D4jBnJIy+xcYz5MnLhNWI1rS7Xp+PpE5Fj7mxfUIbjnsUzzUzq7
-         5enSuL0mqy3EPogdQSvw==
-Date: Wed, 10 Nov 2010 12:50:49 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "Figo.zhang" <figo1802@gmail.com>
-cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Figo.zhang" <zhangtianfei@leadcoretech.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@osdl.org>
-Subject: Re: [PATCH v2]oom-kill: CAP_SYS_RESOURCE should get bonus
-In-Reply-To: <1289399891.10699.14.camel@localhost.localdomain>
-Message-ID: <alpine.DEB.2.00.1011101242240.830@chino.kir.corp.google.com>
-References: <1288834737.2124.11.camel@myhost> <alpine.DEB.2.00.1011031847450.21550@chino.kir.corp.google.com> <20101109195726.BC9E.A69D9226@jp.fujitsu.com> <20101109122437.2e0d71fd@lxorguk.ukuu.org.uk> <alpine.DEB.2.00.1011091300510.7730@chino.kir.corp.google.com>
- <1289399891.10699.14.camel@localhost.localdomain>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756231Ab0KJUwX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:52:23 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39143 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753603Ab0KJUwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 15:52:22 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [linux-pm] [GIT PULL] One more power management fix for 2.6.37
+Date: Wed, 10 Nov 2010 21:51:22 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <Pine.LNX.4.44L0.1011092144340.14099-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1011092144340.14099-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011102151.22552.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Nov 2010, Figo.zhang wrote:
-
-> > I didn't check earlier, but CAP_SYS_RESOURCE hasn't had a place in the oom 
-> > killer's heuristic in over five years, so what regression are we referring 
-> > to in this thread?  These tasks already have full control over 
-> > oom_score_adj to modify its oom killing priority in either direction.
+On Wednesday, November 10, 2010, Alan Stern wrote:
+> On Tue, 9 Nov 2010, Linus Torvalds wrote:
 > 
-> yes, it can control by user, but is it all system administrators will
-> adjust all of the processes by each one and one in real word? suppose if
-> it has thousands of processes in database system.
+> > On Tue, Nov 9, 2010 at 3:39 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > >
+> > > So, what about the patch below?
 > 
+> The "transition_started" thing is a little odd.  I get the feeling that
+> it shouldn't be set back to false during dpm_resume_noirq() at all.  
+> Maybe I'm not quite thinking straight just now...
 
-Yes, the kernel can't possibly know the oom killing priorities of your 
-task so if you have such requirements then you must use the userspace 
-tunable.
+No, I think you're right.  I rethought that particular thing in the meantime
+and came to the conclusion that it'd be better to keep it where it was.
 
-> > Futhermore, the heuristic was entirely rewritten, but I wouldn't consider 
-> > all the old factors such as cputime and nice level being removed as 
-> > "regressions" since the aim was to make it more predictable and more 
-> > likely to kill a large consumer of memory such that we don't have to kill 
-> > more tasks in the near future.
+> > I think it looks saner, but I also think that it would be saner yet to
+> > have a separate list entirely, and *not* do this crazy "move things
+> > back and forth between 'dpm_list'" thing.
+> > 
+> > So I would seriously suggest that the design should aim for each
+> > suspend event to move things between two lists, and as devices go
+> > through the suspend phases, they'd move to/from lists that also
+> > indicate which suspend level they are at.
+> > 
+> > So why not introduce a new list called "dpm_list_suspended", and in
+> > "dpm_suspend_noirq()" you move devices one at a time from the
+> > "dpm_list" to the "dmp_list_suspended".
+> > 
+> > And then in "dpm_resume_noirq()" you move them back.
+> > 
+> > Wouldn't that be nice?
+> > 
+> > (Optimally, you'd have separate lists for "active", "suspended", and
+> > "irq-suspended")
+> > 
+> > But regardless, your patch does seem to at least match what we
+> > currently do in the regular suspend/resume code (ie the
+> > non-irq's-disabled case). So I don't mind it. I just think that it
+> > would be cleaner to not take things off one list only to put them back
+> > on the same list again.
+> > 
+> > In particular, _if_ device add events can happen concurrently with
+> > this,
 > 
-> the goal of oom_killer is to find out the best process to kill, the one
-> should be:
-> 1. it is a most memory comsuming process in all processes
-> 2. and it was a proper process to kill, which will not be let system 
-> into unpredictable state as possible.
+> They can.  We explicitly allow new devices to be registered during the 
+> final "complete" phase, and we grudgingly allow it even during the 
+> "resume" phase, if the parent has already been resumed.
 > 
-
-There are four types of tasks that are improper to kill and this is 
-relatively unchanged in the past five years of the oom killer:
-
- - init,
-
- - kthreads,
-
- - tasks that are bound to a disjoint set of cpuset mems or mempolicy 
-   nodes that are not oom, and
-
- - those disabled from oom killing by userspace.
-
-That does not include CAP_SYS_RESOURCE, nor CAP_SYS_ADMIN.  Your argument 
-about killing some tasks that have CAP_SYS_RESOURCE leaving hardware in an 
-unpredictable state isn't even addressed by your own patch, you only give 
-them a 3% memory bonus so they are still eligible.
-
-As mentioned previously, for this patch to make sense, you would need to 
-show that CAP_SYS_RESOURCE equates to 3% of the available memory's 
-capacity for a task.  I don't believe that evidence has been presented.  
-This has nothing to do with preventing these threads from being killed (at 
-the risk of possibly panicking the machine) since your patch doesn't do 
-that.
-
-> if a user process and a process such email cleint "evolution" with
-> ditecly hareware access such as "Xorg", they have eat the equal memory,
-> so which process are you want to kill?
+> The "prepare" traversal is ordered in the forward direction so that if
+> a child is registered beneath a device during that device's ->prepare
+> callback, it will end up in the right place (i.e., after the parent in
+> the list).  The "complete" traversal should work out the same way, only
+> in reverse.  Which means we should _start_ with everything on the other
+> list, and move each device onto the dpm_list just _before_ invoking its
+> ->complete callback.
 > 
+> The way the code is now, it looks like a child registered during the
+> parent's callback will end up in the wrong place.
+> 
+> >  I don't understand how that would maintain the depth-first order
+> > of the list. In contrast, if you do it with separate lists, then you
+> > know that if a device is on the "suspended" list, then it by
+> > definition has to be "after" all devices that are on the non-suspended
+> > list, since you cannot have a non-suspended device that depends on a
+> > suspended one.
+> 
+> The situation isn't quite as bad as it seems, if you assume that a 
+> child will never be registered at a time when its parent is still 
+> suspended.  Right now we warn if such a thing happens but we don't 
+> prevent it.
+> 
+> > So having separate lists with state should also be very sensible from
+> > a device topology standpoint - while doing that "list_splice()" back
+> > on the same list is _not_ at all obviously correct from a topological
+> > standpoint (I'm not sure I'm explaining this well).
+> 
+> I don't see anything wrong with changing over to multiple list heads.  
+> It might even allow us to remove the dev->power.status field.
 
-Both have equal oom killing priority according to the heuristic if they 
-are not run by root.  If you would like to protect Xorg, then you need to 
-use the userspace tunable to protect it just like everything else does.  
-This is completely unchanged from the oom killer rewrite.
+I guess it would allow us to do that, but that's going to be a major change.
 
-If you actually have a problem that you're reporting, however, it would 
-probably be better to show the oom killer log from that event and let us 
-address it instead of introducing arbitrary heuristics into something 
-which aims to be as predictable as possible.
+What about applying the patch below now and moving to the multiple list heads
+approach in the next cycle?
+
+Rafael
+
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM: Allow devices to be removed during late suspend and early resume
+
+Holding dpm_list_mtx across late suspend and early resume of devices
+is problematic for the PCMCIA subsystem and doesn't allow device
+objects to be removed by late suspend and early resume driver
+callbacks.  This appears to be overly restrictive, as drivers are
+generally allowed to remove device objects in other phases of suspend
+and resume.  Therefore rework dpm_{suspend|resume}_noirq() so that
+they don't have to hold dpm_list_mtx all the time.
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/main.c |   34 ++++++++++++++++++++++++++++++----
+ 1 file changed, 30 insertions(+), 4 deletions(-)
+
+Index: linux-2.6/drivers/base/power/main.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/main.c
++++ linux-2.6/drivers/base/power/main.c
+@@ -475,20 +475,33 @@ End:
+  */
+ void dpm_resume_noirq(pm_message_t state)
+ {
+-	struct device *dev;
++	struct list_head list;
+ 	ktime_t starttime = ktime_get();
+ 
++	INIT_LIST_HEAD(&list);
+ 	mutex_lock(&dpm_list_mtx);
+ 	transition_started = false;
+-	list_for_each_entry(dev, &dpm_list, power.entry)
++	while (!list_empty(&dpm_list)) {
++		struct device *dev = to_device(dpm_list.next);
++
++		get_device(dev);
+ 		if (dev->power.status > DPM_OFF) {
+ 			int error;
+ 
+ 			dev->power.status = DPM_OFF;
++			mutex_unlock(&dpm_list_mtx);
++
+ 			error = device_resume_noirq(dev, state);
++
++			mutex_lock(&dpm_list_mtx);
+ 			if (error)
+ 				pm_dev_err(dev, state, " early", error);
+ 		}
++		if (!list_empty(&dev->power.entry))
++			list_move_tail(&dev->power.entry, &list);
++		put_device(dev);
++	}
++	list_splice(&list, &dpm_list);
+ 	mutex_unlock(&dpm_list_mtx);
+ 	dpm_show_time(starttime, state, "early");
+ 	resume_device_irqs();
+@@ -789,20 +802,33 @@ End:
+  */
+ int dpm_suspend_noirq(pm_message_t state)
+ {
+-	struct device *dev;
++	struct list_head list;
+ 	ktime_t starttime = ktime_get();
+ 	int error = 0;
+ 
++	INIT_LIST_HEAD(&list);
+ 	suspend_device_irqs();
+ 	mutex_lock(&dpm_list_mtx);
+-	list_for_each_entry_reverse(dev, &dpm_list, power.entry) {
++	while (!list_empty(&dpm_list)) {
++		struct device *dev = to_device(dpm_list.prev);
++
++		get_device(dev);
++		mutex_unlock(&dpm_list_mtx);
++
+ 		error = device_suspend_noirq(dev, state);
++
++		mutex_lock(&dpm_list_mtx);
+ 		if (error) {
+ 			pm_dev_err(dev, state, " late", error);
++			put_device(dev);
+ 			break;
+ 		}
+ 		dev->power.status = DPM_OFF_IRQ;
++		if (!list_empty(&dev->power.entry))
++			list_move(&dev->power.entry, &list);
++		put_device(dev);
+ 	}
++	list_splice_tail(&list, &dpm_list);
+ 	mutex_unlock(&dpm_list_mtx);
+ 	if (error)
+ 		dpm_resume_noirq(resume_event(state));
