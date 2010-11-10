@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab0KJRtO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:49:14 -0500
-Received: from kroah.org ([198.145.64.141]:44274 "EHLO coco.kroah.org"
+	id S1755228Ab0KJRtY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:49:24 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:57258 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754114Ab0KJRtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:49:12 -0500
-Date: Wed, 10 Nov 2010 09:49:26 -0800
-From: Greg KH <greg@kroah.com>
-To: Minkyu Kang <promsoft@gmail.com>
-Cc: Minkyu Kang <mk7.kang@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        kyungmin.park@samsung.com, Ben Dooks <ben-i2c@fluff.org>
-Subject: Re: [PATCH v2] misc: adds support the FSA9480 USB Switch
-Message-ID: <20101110174926.GB13276@kroah.com>
-References: <4C7CD95A.5040309@samsung.com> <20100917150731.f1f44f3c.akpm@linux-foundation.org> <AANLkTim2UhJAhOw1qHvZ9bbctR0tNSMvE61T=sxffHxO@mail.gmail.com> <4CB26931.5040105@samsung.com> <20101011173649.GC7116@kroah.com> <AANLkTi=vTkHJJ2dq5RZHHCwWYEBtY=Y7dPPh=Wzzx95f@mail.gmail.com>
+	id S1755183Ab0KJRtX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 12:49:23 -0500
+Date: Wed, 10 Nov 2010 18:48:52 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Steven Rostedt <rostedt@goodmis.org>, "Luck, Tony" <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org, ying.huang@intel.com, bp@alien8.de,
+        tglx@linutronix.de, akpm@linux-foundation.org, mchehab@redhat.com,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [RFC/Requirements/Design] h/w error reporting
+Message-ID: <20101110174852.GB4001@elte.hu>
+References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
+ <20101110101450.GA18481@elte.hu>
+ <1289400056.12418.139.camel@gandalf.stny.rr.com>
+ <1289400234.2191.129.camel@laptop>
+ <1289401781.12418.145.camel@gandalf.stny.rr.com>
+ <1289403019.2084.17.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=vTkHJJ2dq5RZHHCwWYEBtY=Y7dPPh=Wzzx95f@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1289403019.2084.17.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 09:55:34AM +0900, Minkyu Kang wrote:
-> Dear Greg KH,
-> 
-> On 12 October 2010 02:36, Greg KH <greg@kroah.com> wrote:
-> > On Mon, Oct 11, 2010 at 10:32:33AM +0900, Minkyu Kang wrote:
-> >> The FSA9480 is a USB port accessory detector and switch.
-> >> This patch adds support the FSA9480 USB Switch.
-> >>
-> >> Signed-off-by: Minkyu Kang <mk7.kang@samsung.com>
-> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >> ---
-> >> v2:
-> >> ?use the threaded irq
-> >> ?fix the sysfs
-> >>
-> >> ?drivers/misc/Kconfig ? ?| ? ?9 +
-> >> ?drivers/misc/Makefile ? | ? ?1 +
-> >> ?drivers/misc/fsa9480.c ?| ?544 +++++++++++++++++++++++++++++++++++++++++++++++
-> >> ?include/linux/fsa9480.h | ? 40 ++++
-> >
-> > Why do you need a .h file here for a single driver?
-> 
-> Because of platform data.
 
-Then put it in include/linux/platform_data/ instead please.
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-> > You are creating new sysfs files, so you are required to add a new
-> > Documentation/ABI file as well, please add that to this patch.
+> On Wed, 2010-11-10 at 10:09 -0500, Steven Rostedt wrote:
+> > 
+> > > sure the second way is the only way out, but you still need to come up with a 
+> > > trace data format and a control ABI.
+> > 
+> > Great! Let's start with that then. Could you list some of the basic needs of 
+> > perf?
 > 
-> ok.
-> 
-> >
-> > And why are you exporting symbols from this driver, that should not be
-> > needed at all.
-> 
-> It's for other drivers.
-> For example.. When USB cable is connected, PMIC driver enable the
-> power for each device. (USB, uart, audio and so on..)
-> But if use the manual switch, PMIC driver can't know what device is enabled.
-> So, this function was exported.
+> Needs for what? I've already got a full control ABI and I can already redirect 
+> output to other buffers ;-)
 
-What drivers are using these functions?  Where is the code for them?
-When will they be submitted for inclusion?
+Yep. The obvious direction is to extend the event buffering ABI we already have, 
+with whatever additions that are needed:
 
-thanks,
+ - document that we already support flight recorder mode
 
-greg k-h
+ - a more compressed record format
+
+ - NOP filler events up to page boundary, for better splice and for better flight 
+   recorder
+
+ - splice support
+
+etc. That's how it evolved until now and it's all very extensible.
+
+Steve, could you please list the additions you have in mind, in order of priority?
+
+Thanks,
+
+	Ingo
