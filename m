@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757099Ab0KJVo1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 16:44:27 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:15679 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756993Ab0KJVo0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 16:44:26 -0500
-Date: Wed, 10 Nov 2010 22:32:44 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] SUNRPC: Simplify rpc_alloc_iostats by removing pointless
- local variable
-In-Reply-To: <alpine.LNX.2.00.1011072205370.26247@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1011102229370.625@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1011072205370.26247@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757129Ab0KJVrE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 16:47:04 -0500
+Received: from skyrme.org ([193.175.80.135]:44539 "EHLO skyrme.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757074Ab0KJVrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 16:47:03 -0500
+X-Greylist: delayed 2443 seconds by postgrey-1.27 at vger.kernel.org; Wed, 10 Nov 2010 16:47:02 EST
+From: Oskar Schirmer <oskar@scara.com>
+To: Steve French <sfrench@samba.org>
+Cc: stable@kernel.org, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Suresh Jayaraman <sjayaraman@suse.de>,
+        Andrew Hendry <andrew.hendry@gmail.com>,
+        Oskar Schirmer <oskar@scara.com>
+Subject: [PATCH] cifs: fix another memleak, in cifs_root_iget
+Date: Wed, 10 Nov 2010 21:06:13 +0000
+Message-Id: <1289423173-7044-1-git-send-email-oskar@scara.com>
+X-Mailer: git-send-email 1.6.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 7 Nov 2010, Jesper Juhl wrote:
+cifs_root_iget allocates full_path through
+cifs_build_path_to_root, but fails to kfree it upon
+cifs_get_inode_info* failure.
 
-> Hi,
-> 
-> We can simplify net/sunrpc/stats.c::rpc_alloc_iostats() a bit by getting 
-> rid of the unneeded local variable 'new'.
-> 
-> 
-> Please CC me on replies.
-> 
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  stats.c |    4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
-> 
-> diff --git 
-> a/net/sunrpc/stats.c b/net/sunrpc/stats.c
-> index f71a731..80df89d 100644
-> --- a/net/sunrpc/stats.c
-> +++ b/net/sunrpc/stats.c
-> @@ -115,9 +115,7 @@ EXPORT_SYMBOL_GPL(svc_seq_show);
->   */
->  struct rpc_iostats *rpc_alloc_iostats(struct rpc_clnt *clnt)
->  {
-> -	struct rpc_iostats *new;
-> -	new = kcalloc(clnt->cl_maxproc, sizeof(struct rpc_iostats), GFP_KERNEL);
-> -	return new;
-> +	return kcalloc(clnt->cl_maxproc, sizeof(struct rpc_iostats), GFP_KERNEL);
->  }
->  EXPORT_SYMBOL_GPL(rpc_alloc_iostats);
->  
-> 
-> 
+Make all failure exit paths traverse clean up
+handling at the end of the function.
 
-Ok, no response to this for a couple of days.
-Is there some problem or did it just get missed?
-Could someone merge this and push it up-stream, please, if there are no 
-problems with it...
+Signed-off-by: Oskar Schirmer <oskar@scara.com>
+Cc: stable@kernel.org
+---
+ fs/cifs/inode.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+index ef3a55b..ff7d299 100644
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -881,8 +881,10 @@ struct inode *cifs_root_iget(struct super_block *sb, unsigned long ino)
+ 		rc = cifs_get_inode_info(&inode, full_path, NULL, sb,
+ 						xid, NULL);
  
-
+-	if (!inode)
+-		return ERR_PTR(rc);
++	if (!inode) {
++		inode = ERR_PTR(rc);
++		goto out;
++	}
+ 
+ #ifdef CONFIG_CIFS_FSCACHE
+ 	/* populate tcon->resource_id */
+@@ -898,13 +900,11 @@ struct inode *cifs_root_iget(struct super_block *sb, unsigned long ino)
+ 		inode->i_uid = cifs_sb->mnt_uid;
+ 		inode->i_gid = cifs_sb->mnt_gid;
+ 	} else if (rc) {
+-		kfree(full_path);
+-		_FreeXid(xid);
+ 		iget_failed(inode);
+-		return ERR_PTR(rc);
++		inode = ERR_PTR(rc);
+ 	}
+ 
+-
++out:
+ 	kfree(full_path);
+ 	/* can not call macro FreeXid here since in a void func
+ 	 * TODO: This is no longer true
 -- 
-Jesper Juhl <jj@chaosbits.net>             http://www.chaosbits.net/
-Don't top-post  http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.0.4
 
