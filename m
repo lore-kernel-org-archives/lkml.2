@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab0KJUxQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:53:16 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:12210 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753769Ab0KJUxP (ORCPT
+	id S1756751Ab0KJUxj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:53:39 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:36081 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754019Ab0KJUxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:53:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=VCsmIGuKZICHiaI5xL5pdnDOEzELNi2d+fBE+EOqO2R7NmZtY/DvarRVa4pll7EmsM
-         fcuwNYHXEdcalrxWkItw==
+	Wed, 10 Nov 2010 15:53:37 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Alexey Fisher <bug-track@fisher-privat.net>
+Cc: linux-kernel@vger.kernel.org, joe@perches.com
+Subject: Re: [PATCH 2/2 v2] Unify rest of FAT messages.
+References: <1289321718-6373-1-git-send-email-bug-track@fisher-privat.net>
+	<1289329470-14454-1-git-send-email-bug-track@fisher-privat.net>
+	<87hbfppfu3.fsf@devron.myhome.or.jp> <1289392908.6057.44.camel@zwerg>
+	<87d3qdp9oa.fsf@devron.myhome.or.jp> <1289401644.2438.34.camel@mini>
+	<878w11p1wk.fsf@devron.myhome.or.jp> <1289408312.3636.10.camel@mini>
+Date: Thu, 11 Nov 2010 05:53:32 +0900
+In-Reply-To: <1289408312.3636.10.camel@mini> (Alexey Fisher's message of "Wed,
+	10 Nov 2010 17:58:32 +0100")
+Message-ID: <8739r8q4s3.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1289421164.2084.56.camel@laptop>
-References: <1289339119.2191.92.camel@laptop>
-	<AANLkTi=ojOnLyRO4hTgYdCCXLsN0wUeTcme=5h8-mjdz@mail.gmail.com>
-	<1289398207.2191.117.camel@laptop>
-	<1289398763.2191.121.camel@laptop>
-	<AANLkTimQ7w38wzrYT4MgjHFr6LCVj2M5fB11-n3XCD2w@mail.gmail.com>
-	<1289421164.2084.56.camel@laptop>
-Date: Wed, 10 Nov 2010 21:53:10 +0100
-Message-ID: <AANLkTiku7UsVoYv_+6r79rvGPJU7OU=VGDiaYo0H=82y@mail.gmail.com>
-Subject: Re: [RFC][PATCH] perf: sysfs type id
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Lin Ming <ming.m.lin@intel.com>,
-        "robert.richter" <robert.richter@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 9:32 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2010-11-10 at 21:08 +0100, Stephane Eranian wrote:
->> Would that be by passing the full filename to the tool?
+Alexey Fisher <bug-track@fisher-privat.net> writes:
+
+>> Also, yes. It would be complicate more or less than one FS. And maybe I
+>> can understand why you want to concentrate FAT.
+>> 
+>> But I'm afraid to implement for only FAT. If there is not any some sort
+>> of agreement by others, it may have to re-implement. If that happen, FAT
+>> can be bothered by compatible (or have to maintain both of old and new
+>> for a while). Because the notified data are some sort of ABI, IMO.
+>> 
+>> This is why I'm careful about this, and can't say easily - "let's try it
+>> on FAT".
 >
-> possible, or something like <pmu-name>:<event-name>, cpu:cycles would
-> map to /sys/class/pmu/cpu/events/cycles (given the previous patch).
+> I'm not sure if we talk about same thing now :D
+> By notification you mean the idea to notify userspace about error?
+> correct?
+
+Sure. I was talking about "to notify userspace". :)
+
+> In my previous email i switched the point, it will be to complicate for
+> now to work on notification system. For now i'll be happy to see grep
+> friendly logs. Same like ext2,3,4 do
 >
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=4cf46b67eb6de94532c1bea11d2479d085229d0e
 >
-Ok, but I think you're proposal is missing one bit. You are addressing
-the class (or type) of PMU, but you are not addressing the naming of
-an instance.
+> In long term it will be good to have such notification system. So i will
+> start new tread about it. 
 
-Let's take an example, suppose you have counters on a graphic card.
-Your system has two such graphic cards. In your scheme you would
-end up with a sys/class/pmu/gfx/.....
+OK, I see. I'll review patches. Looks good though.
 
-But now, suppose I want to count cycles on the first graphic card.
-Seems to me you need to expose the instances as well. The instance
-number needs to be passed in the attr struct somehow.
-
-You can either create multiple subdir under gfx, or have this info somewhere
-else in the sysfs tree, if people really care about class vs. instance.
-
-I can see users doing:
-$ perf stat -e gfx@1::cycles ...  -> sys/class/gfx/1/event/cycles
-
-The reason I am using :: here is because libpfm4 is already using
-this as a separator for PMU type vs. event.
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
