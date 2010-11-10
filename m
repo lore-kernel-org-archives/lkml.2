@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab0KJXUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 18:20:15 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52747 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757279Ab0KJXUN (ORCPT
+	id S1757401Ab0KJXUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 18:20:32 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57910 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757279Ab0KJXUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 18:20:13 -0500
-From: "Kirill A. Shutsemov" <kirill@shutemov.name>
-To: Sam Ravnborg <sam@ravnborg.org>, David Woodhouse <dwmw2@infradead.org>
-Cc: Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Am=C3=A9rico=20Wang?= <xiyou.wangcong@gmail.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH] kbuild: introduce HDR_ARCH_LIST for headers_install_all
-Date: Thu, 11 Nov 2010 01:19:40 +0200
-Message-Id: <1289431180-30562-1-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <20101107075841.GM3046@hack>
-References: <20101107075841.GM3046@hack>
+	Wed, 10 Nov 2010 18:20:31 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=0Gcdu3wDtgIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=sdKRNInUc8Rz3hFnJc4A:9 a=6zHIh4lOpUtwIZkLsGHNAnS76q0A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
+ reporting)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, "bp@alien8.de" <bp@alien8.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mchehab@redhat.com" <mchehab@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <alpine.LFD.2.00.1011110004520.2900@localhost6.localdomain6>
+References: <1289401781.12418.145.camel@gandalf.stny.rr.com>
+	 <1289403019.2084.17.camel@laptop> <20101110174852.GB4001@elte.hu>
+	 <1289412329.12418.177.camel@gandalf.stny.rr.com>
+	 <1289413460.2084.27.camel@laptop> <20101110184105.GH22410@elte.hu>
+	 <1289415645.12418.180.camel@gandalf.stny.rr.com>
+	 <20101110191127.GA6190@nowhere> <20101110202316.GA32396@Krystal>
+	 <987664A83D2D224EAE907B061CE93D5301649A71DC@orsmsx505.amr.corp.intel.com>
+	 <20101110225115.GB9299@Krystal>
+	 <alpine.LFD.2.00.1011110004520.2900@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 10 Nov 2010 18:20:27 -0500
+Message-ID: <1289431227.12418.211.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kirill A. Shutemov <kirill@shutemov.name>
+On Thu, 2010-11-11 at 00:12 +0100, Thomas Gleixner wrote:
 
-Using HDR_ARCH_LIST you can specify subset of architectures you want to get
-headers for.
+> Cramming both into the same session is just insane.
 
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- Documentation/make/headers_install.txt |    5 +++--
- scripts/headers.sh                     |    2 +-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+That just doubled the overhead of the tracer.
 
-diff --git a/Documentation/make/headers_install.txt b/Documentation/make/headers_install.txt
-index f2481ca..951eb9f 100644
---- a/Documentation/make/headers_install.txt
-+++ b/Documentation/make/headers_install.txt
-@@ -39,8 +39,9 @@ INSTALL_HDR_PATH indicates where to install the headers.  It defaults to
- The command "make headers_install_all" exports headers for all architectures
- simultaneously.  (This is mostly of interest to distribution maintainers,
- who create an architecture-independent tarball from the resulting include
--directory.)  Remember to provide the appropriate linux/asm directory via "mv"
--or "ln -s" before building a C library with headers exported this way.
-+directory.)  You also can use HDR_ARCH_LIST to specify list of architectures.
-+Remember to provide the appropriate linux/asm directory via "mv" or "ln -s"
-+before building a C library with headers exported this way.
- 
- The kernel header export infrastructure is maintained by David Woodhouse
- <dwmw2@infradead.org>.
-diff --git a/scripts/headers.sh b/scripts/headers.sh
-index 1ddcdd3..978b42b 100755
---- a/scripts/headers.sh
-+++ b/scripts/headers.sh
-@@ -13,7 +13,7 @@ do_command()
- 	fi
- }
- 
--archs=$(ls ${srctree}/arch)
-+archs=${HDR_ARCH_LIST:-$(ls ${srctree}/arch)}
- 
- for arch in ${archs}; do
- 	case ${arch} in
--- 
-1.7.3.2
+> 
+> The first rule is "Keep It Simple!".  Period.
+
+It's not that complex. Both Mathieu and I have implemented it. Really,
+I've seen a lot more complex code. Just because it does not fit into the
+CS101 course does not mean that it is totally complex.
+
+-- Steve
+
 
