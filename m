@@ -1,122 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab0KJOOj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 09:14:39 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43783 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755816Ab0KJOOh (ORCPT
+	id S1756161Ab0KJOPH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 09:15:07 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36610 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755816Ab0KJOPD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 09:14:37 -0500
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: linux-i2c@vger.kernel.org
-Cc: Wolfram Sang <w.sang@pengutronix.de>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Sergio Aguirre <saaguirre@ti.com>,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Philipp Wiesner <p.wiesner@phytec.de>,
-        =?UTF-8?q?M=C3=A1rton=20N=C3=A9meth?= <nm127@freemail.hu>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] media: video: do not clear 'driver' from an i2c_client
-Date: Wed, 10 Nov 2010 15:14:13 +0100
-Message-Id: <1289398455-21949-1-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 10 Nov 2010 09:15:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <20101110133638.GC11388@elte.hu>
+References: <1289339119.2191.92.camel@laptop> <20101109221338.GA19947@suse.de>
+ <1289392037.2191.105.camel@laptop> <20101110133638.GC11388@elte.hu>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 10 Nov 2010 15:14:47 +0100
+Message-ID: <AANLkTikkV1pdseitAPkXTyK529vsvbaVb-RMiMY4Ao-+@mail.gmail.com>
+Subject: Re: sysfs: Add an 'events' class. (was: Re: [RFC][PATCH] perf: sysfs
+ type id)
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>, Greg KH <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>, Lin Ming <ming.m.lin@intel.com>,
+        Stephane Eranian <eranian@google.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i2c-core does this already.
+On Wed, Nov 10, 2010 at 14:36, Ingo Molnar <mingo@elte.hu> wrote:
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>> On Tue, 2010-11-09 at 14:13 -0800, Greg KH wrote:
+>>
+>> > You missed the embedded track at Plumbers where we talked about never
+>> > adding another class to the kernel.  Please use bus_id instead for this.
+>>
+>> I did, it was early and I wasn't aware this all comes under the heading
+>> of embedded.
+>>
+>> Anyway, anybody got a good example of bus_type I can 'borrow' ?
+>>
+>> Also, it would be really nice if you (plural) could make this subsystem thing
+>> happen, calling tihngs a bus that aren't a bus just makes me upset ;-)
+>
+> Same here - calling events a 'bus' is like totally brain-dead IMHO. It implies
+> something hardware, while many events are not related to any hardware component but
+> are pure software abstractions: such as context-switches, or syscall entries, or VM
+> events.
 
-Reported-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
----
+Please use a bus, regardless of the name, class is dead and you will
+need stuff tha can only happen at bus. We'll fix the name later.
 
-Not sure if this should go via i2c or media?
+> So i'd rather have 'events' or 'event_source' as a 'class' temporarily, than have it
+> as a 'bus' temporarily - and we get the real fix whenever the sysfs unification
+> happens.
 
- drivers/media/video/imx074.c     |    1 -
- drivers/media/video/mt9m001.c    |    1 -
- drivers/media/video/mt9m111.c    |    1 -
- drivers/media/video/mt9t031.c    |    1 -
- drivers/media/video/mt9v022.c    |    1 -
- drivers/media/video/rj54n1cb0c.c |    1 -
- 6 files changed, 0 insertions(+), 6 deletions(-)
+Nope, that can not work.
 
-diff --git a/drivers/media/video/imx074.c b/drivers/media/video/imx074.c
-index 27b5dfd..1a11691 100644
---- a/drivers/media/video/imx074.c
-+++ b/drivers/media/video/imx074.c
-@@ -467,7 +467,6 @@ static int imx074_remove(struct i2c_client *client)
- 	icd->ops = NULL;
- 	if (icl->free_bus)
- 		icl->free_bus(icl);
--	client->driver = NULL;
- 	kfree(priv);
- 
- 	return 0;
-diff --git a/drivers/media/video/mt9m001.c b/drivers/media/video/mt9m001.c
-index fcb4cd9..f7fc88d 100644
---- a/drivers/media/video/mt9m001.c
-+++ b/drivers/media/video/mt9m001.c
-@@ -798,7 +798,6 @@ static int mt9m001_remove(struct i2c_client *client)
- 
- 	icd->ops = NULL;
- 	mt9m001_video_remove(icd);
--	client->driver = NULL;
- 	kfree(mt9m001);
- 
- 	return 0;
-diff --git a/drivers/media/video/mt9m111.c b/drivers/media/video/mt9m111.c
-index 525a16e..53fa2a7 100644
---- a/drivers/media/video/mt9m111.c
-+++ b/drivers/media/video/mt9m111.c
-@@ -1092,7 +1092,6 @@ static int mt9m111_remove(struct i2c_client *client)
- 	struct soc_camera_device *icd = client->dev.platform_data;
- 
- 	icd->ops = NULL;
--	client->driver = NULL;
- 	kfree(mt9m111);
- 
- 	return 0;
-diff --git a/drivers/media/video/mt9t031.c b/drivers/media/video/mt9t031.c
-index 9bd44a8..7ce279c 100644
---- a/drivers/media/video/mt9t031.c
-+++ b/drivers/media/video/mt9t031.c
-@@ -896,7 +896,6 @@ static int mt9t031_remove(struct i2c_client *client)
- 
- 	if (icd)
- 		icd->ops = NULL;
--	client->driver = NULL;
- 	kfree(mt9t031);
- 
- 	return 0;
-diff --git a/drivers/media/video/mt9v022.c b/drivers/media/video/mt9v022.c
-index b96171c..6a784c8 100644
---- a/drivers/media/video/mt9v022.c
-+++ b/drivers/media/video/mt9v022.c
-@@ -930,7 +930,6 @@ static int mt9v022_remove(struct i2c_client *client)
- 
- 	icd->ops = NULL;
- 	mt9v022_video_remove(icd);
--	client->driver = NULL;
- 	kfree(mt9v022);
- 
- 	return 0;
-diff --git a/drivers/media/video/rj54n1cb0c.c b/drivers/media/video/rj54n1cb0c.c
-index d2fa2d4..57e11b6 100644
---- a/drivers/media/video/rj54n1cb0c.c
-+++ b/drivers/media/video/rj54n1cb0c.c
-@@ -1460,7 +1460,6 @@ static int rj54n1_remove(struct i2c_client *client)
- 	icd->ops = NULL;
- 	if (icl->free_bus)
- 		icl->free_bus(icl);
--	client->driver = NULL;
- 	kfree(rj54n1);
- 
- 	return 0;
--- 
-1.7.2.3
+> I also have a question about this future plan mentioned in
+> Documentation/sysfs-rules.txt:
+>
+>  - Hierarchy in a single device tree
+>   There is only one valid place in sysfs where hierarchy can be examined
+>   and this is below: /sys/devices.
+>   It is planned that all device directories will end up in the tree
+>   below this directory.
+>
+> So did i get it right, sysfs is going to convert from a VFS hiearchy/enumeration to
+> a flat enumeration of entities, all listed in /dev/devices/?
 
+I guess you mean /sys. No, /sys/devices/ is and stays as a hierarchy
+and will not be flat.
+
+> Why is that done? I think it's quite nice that the actual topology is represented
+> right now via the sysfs VFS structure - so that we have things like:
+>
+>   /sys/devices/system/ioapic/ioapic0/
+
+That does not change at all.
+
+> Where there's is a proper hierarchy showing that we have a 'system', which has an
+> 'ioapic', which has an ioapic numbered '0'. That entity could then grow 'events' and
+> have:
+>
+>   /sys/devices/system/ioapic/ioapic0/events/
+>
+> And could show various IO-APIC events, such as (future, possible events):
+>
+>   /sys/devices/system/ioapic/ioapic0/events/irq/
+>   /sys/devices/system/ioapic/ioapic0/events/register-read/
+>   /sys/devices/system/ioapic/ioapic0/events/register-write/
+>   /sys/devices/system/ioapic/ioapic0/events/affinity/
+>   [...]
+>
+> So is the plan to get rid of such rich hiearchies and just use a flat store of
+> everything in /sys/devices/?
+
+No. Where do you get that idea from?
+
+> My hope would be to _increase_ the depth of sysfs in the future, to express every
+> meaningful hiearchy that exists in the system (be that hw hierarchy or some sw
+> abstraction hierarchy). But maybe i got it all wrong so please advise.
+
+Yeah, seems all wrong. :)
+
+/sys/device is the hierarchy (ans will stay as it is), /sys/class,bus
+(later /sys/subsystem/) is the flat list of devices per subsystem (to
+find all devices of a specific subsystem). The list _points_ to
+devices in /sys/devices, it does never contain any devices. You might
+want re-read the last mail in this thread, where I explained the
+difference between hierarchy and classification in more details.
+
+Kay
