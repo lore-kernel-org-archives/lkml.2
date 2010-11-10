@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab0KJRsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:48:07 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:37622 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754919Ab0KJRsA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:48:00 -0500
-Message-ID: <4CDADACC.4070405@codemonkey.ws>
-Date: Wed, 10 Nov 2010 11:47:56 -0600
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
+	id S1755021Ab0KJRtO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:49:14 -0500
+Received: from kroah.org ([198.145.64.141]:44274 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754114Ab0KJRtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 12:49:12 -0500
+Date: Wed, 10 Nov 2010 09:49:26 -0800
+From: Greg KH <greg@kroah.com>
+To: Minkyu Kang <promsoft@gmail.com>
+Cc: Minkyu Kang <mk7.kang@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        kyungmin.park@samsung.com, Ben Dooks <ben-i2c@fluff.org>
+Subject: Re: [PATCH v2] misc: adds support the FSA9480 USB Switch
+Message-ID: <20101110174926.GB13276@kroah.com>
+References: <4C7CD95A.5040309@samsung.com> <20100917150731.f1f44f3c.akpm@linux-foundation.org> <AANLkTim2UhJAhOw1qHvZ9bbctR0tNSMvE61T=sxffHxO@mail.gmail.com> <4CB26931.5040105@samsung.com> <20101011173649.GC7116@kroah.com> <AANLkTi=vTkHJJ2dq5RZHHCwWYEBtY=Y7dPPh=Wzzx95f@mail.gmail.com>
 MIME-Version: 1.0
-To: Ian Molton <ian.molton@collabora.co.uk>
-CC: QEMU Developers <qemu-devel@nongnu.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        virtualization@lists.osdl.org, Alon Levy <alevy@redhat.com>,
-        Avi Kivity <avi@redhat.com>
-Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
-References: <1097264455.965471288612409433.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>	<4CCEC090.3050009@codemonkey.ws>	<4CD1A406.3090909@collabora.co.uk> <4CD1A73B.2010406@codemonkey.ws> <4CD44759.5020500@collabora.co.uk> <4CDAD4D4.3070009@collabora.co.uk>
-In-Reply-To: <4CDAD4D4.3070009@collabora.co.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=vTkHJJ2dq5RZHHCwWYEBtY=Y7dPPh=Wzzx95f@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2010 11:22 AM, Ian Molton wrote:
-> Ping ?
+On Wed, Nov 10, 2010 at 09:55:34AM +0900, Minkyu Kang wrote:
+> Dear Greg KH,
+> 
+> On 12 October 2010 02:36, Greg KH <greg@kroah.com> wrote:
+> > On Mon, Oct 11, 2010 at 10:32:33AM +0900, Minkyu Kang wrote:
+> >> The FSA9480 is a USB port accessory detector and switch.
+> >> This patch adds support the FSA9480 USB Switch.
+> >>
+> >> Signed-off-by: Minkyu Kang <mk7.kang@samsung.com>
+> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> >> ---
+> >> v2:
+> >> ?use the threaded irq
+> >> ?fix the sysfs
+> >>
+> >> ?drivers/misc/Kconfig ? ?| ? ?9 +
+> >> ?drivers/misc/Makefile ? | ? ?1 +
+> >> ?drivers/misc/fsa9480.c ?| ?544 +++++++++++++++++++++++++++++++++++++++++++++++
+> >> ?include/linux/fsa9480.h | ? 40 ++++
+> >
+> > Why do you need a .h file here for a single driver?
+> 
+> Because of platform data.
 
-I think the best way forward is to post patches.
+Then put it in include/linux/platform_data/ instead please.
 
-To summarize what I was trying to express in the thread, I think this is 
-not the right long term architecture but am not opposed to it as a short 
-term solution.  I think having a new virtio device is a bad design 
-choice but am not totally opposed to it.
+> > You are creating new sysfs files, so you are required to add a new
+> > Documentation/ABI file as well, please add that to this patch.
+> 
+> ok.
+> 
+> >
+> > And why are you exporting symbols from this driver, that should not be
+> > needed at all.
+> 
+> It's for other drivers.
+> For example.. When USB cable is connected, PMIC driver enable the
+> power for each device. (USB, uart, audio and so on..)
+> But if use the manual switch, PMIC driver can't know what device is enabled.
+> So, this function was exported.
 
-My advice is that using virtio-serial + an external tool is probably the 
-least amount of work to get something working and usable with QEMU.  If 
-you want to go for the path of integration, you're going to have to fix 
-all of the coding style issues and make the code fit into QEMU.  
-Dropping a bunch of junk into target-i386/ is not making the code fit 
-into QEMU.
+What drivers are using these functions?  Where is the code for them?
+When will they be submitted for inclusion?
 
-If you post just what you have now in patch form, I can try to provide 
-more concrete advice ignoring the coding style problems.
+thanks,
 
-Regards,
-
-Anthony Liguori
-
+greg k-h
