@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab0KJQRS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 11:17:18 -0500
-Received: from borg.asidev.net ([95.141.38.199]:54358 "EHLO borg.asidev.net"
+	id S1756890Ab0KJQTl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 11:19:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57129 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756443Ab0KJQRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 11:17:17 -0500
-Message-ID: <4CDAC587.7090904@evidence.eu.com>
-Date: Wed, 10 Nov 2010 17:17:11 +0100
-From: Claudio Scordino <claudio@evidence.eu.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1756443Ab0KJQTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 11:19:40 -0500
+Date: Wed, 10 Nov 2010 08:04:12 -0800
+From: Greg KH <gregkh@suse.de>
+To: Carmine IASCONE <carmine.iascone@st.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>, Matteo DAMENO <matteo.dameno@st.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mems applications <mems.applications@st.com>,
+        Alan Cox <alan.cox@intel.com>
+Subject: Re: [PATCH] staging: lis331dlh: add lis331dlh driver
+Message-ID: <20101110160412.GB10561@suse.de>
+References: <1289323527-5501-1-git-send-email-carmine.iascone@st.com> <20101109173540.GA20370@suse.de> <3B4B64FC2A10C148B521CFCC54F4F7E49FA33DB115@SAFEX1MAIL3.st.com> <4CDAB795.5080607@gmail.com>
 MIME-Version: 1.0
-To: Dhaval Giani <dhaval@retis.sssup.it>
-CC: Raistlin <raistlin@linux.it>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 02/22] sched: add extended scheduling interface
-References: <1288333128.8661.137.camel@Palantir> <1288333622.8661.141.camel@Palantir> <20101110160004.GA9092@gondor.retis>
-In-Reply-To: <20101110160004.GA9092@gondor.retis>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CDAB795.5080607@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dhaval Giani ha scritto:
->> +/*
->> + * Extended scheduling parameters data structure.
->> + *
->> + * This is needed because the original struct sched_param can not be
->> + * altered without introducing ABI issues with legacy applications
->> + * (e.g., in sched_getparam()).
->> + *
->> + * However, the possibility of specifying more than just a priority for
->> + * the tasks may be useful for a wide variety of application fields, e.g.,
->> + * multimedia, streaming, automation and control, and many others.
->> + *
->> + * This variant (sched_param_ex) is meant at describing a so-called
->> + * sporadic time-constrained task. In such model a task is specified by:
->> + *  - the activation period or minimum instance inter-arrival time;
->> + *  - the maximum (or average, depending on the actual scheduling
->> + *    discipline) computation time of all instances, a.k.a. runtime;
->> + *  - the deadline (relative to the actual activation time) of each
->> + *    instance.
->> + * Very briefly, a periodic (sporadic) task asks for the execution of
->> + * some specific computation --which is typically called an instance--
->> + * (at most) every period. Moreover, each instance typically lasts no more
->> + * than the runtime and must be completed by time instant t equal to
->> + * the instance activation time + the deadline.
->> + *
->> + * This is reflected by the actual fields of the sched_param_ex structure:
->> + *
->> + *  @sched_priority     task's priority (might still be useful)
->> + *  @sched_deadline     representative of the task's deadline
->> + *  @sched_runtime      representative of the task's runtime
->> + *  @sched_period       representative of the task's period
->> + *  @sched_flags        for customizing the scheduler behaviour
->> + *
->> + * There are other fields, which may be useful for implementing (in
->> + * user-space) advanced scheduling behaviours, e.g., feedback scheduling:
->> + *
->> + *  @curr_runtime       task's currently available runtime
->> + *  @used_runtime       task's totally used runtime
->> + *  @curr_deadline      task's current absolute deadline
->> + *
->> + * Given this task model, there are a multiplicity of scheduling algorithms
->> + * and policies, that can be used to ensure all the tasks will make their
->> + * timing constraints.
->> + */
->> +struct sched_param_ex {
->> +	int sched_priority;
->> +	struct timespec sched_runtime;
->> +	struct timespec sched_deadline;
->> +	struct timespec sched_period;
->> +	unsigned int sched_flags;
->> +
->> +	struct timespec curr_runtime;
->> +	struct timespec used_runtime;
->> +	struct timespec curr_deadline;
->> +};
->> +
+On Wed, Nov 10, 2010 at 04:17:41PM +0100, Jiri Slaby wrote:
+> On 11/10/2010 12:51 PM, Carmine IASCONE wrote:
+> > Hi Greg, Hi JS,
+> > Matteo and I have started to develop linux device drivers for our STMicroelectronics sensors about one year ago. Our main target is the Android platform (mobile phone or tablet pc), and for this reason the drivers are thought to be used on I2C bus. The drivers are enough stable, we have several customers that are using them, and also with the advice of these customers, we would like to make available them for all the linux community, merging them in the kernel upstream to be used in all linux supported platforms.
+> > The drivers have had a initial review by Alan Cox, that gives us some very precious advices to improve the style and robustness of the drivers. 
+> > We are newbies in patch generation and submission: we have followed the instructions in the Greg's video on you tube to create this first patch, so sorry if there is something that we missed. We thought to put the driver in staging directory, because before merging them in the main tree we would like to have a general revision, and also because in this first release we haven't managed the device interrupts yet. At the end the right position for these drivers could be drivers/input/misc.
+> > How do we proceed now? Do we need to generate a new patch adding the TODO file? Please advice.
 > 
-> So, how extensible is this. What about when real time theory develops a
-> new algorithm which actually works practically, but needs additional
-> parameters? :-). (I am guessing that this interface should handle most
-> of the algorithms used these days). Any ideas?
+> Hi, well, I don't think this should go into staging at all as I think
+> it's clean enough to go upstream directly (but I repeat I'm no IIC
+> expert). So please resend to IIC people:
+> I2C SUBSYSTEM
+> M:      "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
+> M:      "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
+> L:      linux-i2c@vger.kernel.org
+> 
+> but before that, move that out of staging to drivers/i2c/ (or anywhere
+> where it make sense).
+> 
+> It's perfectly OK to add functionality later (IRQs).
 
-AFAIK, these parameters already address most real-time algorithms.
+I agree, this should be sent to Jean and the i2c developers first.
+Please work to get your driver into the main tree, only use staging as a
+last-resort if you have a lot of work left to do on the code.
 
-It could happen that in the future a new algorithm will need some
-further parameter (like jitter). However, IMHO, this is too unlikely
-to justify the addition of some padding in this data structure.
+thanks,
 
-Best regards,
-
-	Claudio
+greg k-h
