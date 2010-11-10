@@ -1,109 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab0KJSMn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 13:12:43 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:55324 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755703Ab0KJSKc (ORCPT
+	id S1755981Ab0KJSMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:12:25 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56579 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754871Ab0KJSMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 13:10:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=HrwVDivCb6DvW/cfRvk4MlMq7RRV6HjzVu+TqAbi2Dj1WJLJHZ7De3x6GfHchSnDbT
-         NmxiLBWr7EHYC9HgsFbJwV/tDCeMfbUrTDcOzheFJrUU7mxGfUySVsT2JoNgiYSKe5L6
-         +aHpzC4osDk9HErKw2knQr6OuAhsNXNWuCAHk=
-From: tzanussi@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: acme@ghostprotocols.net, mingo@elte.hu, fweisbec@gmail.com
-Subject: [PATCH 1/7] perf trace scripting: fix some small memory leaks and missing error checks
-Date: Wed, 10 Nov 2010 12:10:18 -0600
-Message-Id: <1289412624-4772-2-git-send-email-tzanussi@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1289412624-4772-1-git-send-email-tzanussi@gmail.com>
-References: <1289412624-4772-1-git-send-email-tzanussi@gmail.com>
+	Wed, 10 Nov 2010 13:12:21 -0500
+Subject: Memory leak via nfs_readdir_make_qstr
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Bryan Schumaker <bjschuma@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Wed, 10 Nov 2010 18:12:17 +0000
+Message-ID: <1289412737.4513.80.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Nov 2010 18:12:17.0809 (UTC) FILETIME=[CF4DC810:01CB8102]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Zanussi <tom.zanussi@linux.intel.com>
+Hi,
 
-Free the other two fields of script_desc which somehow got overlooked,
-free malloc'ed args in case exec fails, and add missing checks for
-failed mallocs.
+I tested the 2.6.37-rc1 on an ARM platform with nfsroot filesystem.
+Kmemleak reports quite a lot (> 150) of leaks like below. You seem to
+have made changes recently to this area.
 
-Signed-off-by: Tom Zanussi <tom.zanussi@linux.intel.com>
-Acked-by: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
----
- tools/perf/builtin-trace.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+unreferenced object 0xef3aa600 (size 32):
+  comm "modprobe", pid 480, jiffies 4294938128 (age 1250.660s)
+  hex dump (first 32 bytes):
+    2e 2e 3a ef 00 01 10 00 00 02 20 00 60 f3 93 ef  ..:....... .`...
+    e0 be 82 ef e0 01 00 00 a1 85 48 39 1d 08 44 bb  ..........H9..D.
+  backtrace:
+    [<c00a3351>] create_object+0xbd/0x1bc
+    [<c0272c11>] kmemleak_alloc+0x21/0x40
+    [<c00a1d05>] __kmalloc_track_caller+0x81/0xc4
+    [<c008a491>] kmemdup+0x11/0x20
+    [<c01053db>] nfs_readdir_page_filler+0xef/0x360
+    [<c0105843>] nfs_readdir_xdr_to_array+0x1f7/0x2e4
+    [<c0105941>] nfs_readdir_filler+0x11/0x58
+    [<c007c397>] do_read_cache_page+0x47/0xd8
+    [<c007c459>] read_cache_page_async+0x15/0x18
+    [<c007c463>] read_cache_page+0x7/0xc
+    [<c0105a5d>] nfs_readdir+0xd5/0x398
+    [<c00af433>] vfs_readdir+0x5f/0x74
+    [<c00af50d>] sys_getdents+0x49/0x74
+    [<c0036401>] ret_fast_syscall+0x1/0x44
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 2f8df45..368e624 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -337,6 +337,8 @@ static struct script_desc *script_desc__new(const char *name)
- static void script_desc__delete(struct script_desc *s)
- {
- 	free(s->name);
-+	free(s->half_liner);
-+	free(s->args);
- 	free(s);
- }
- 
-@@ -626,6 +628,9 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
- 			close(live_pipe[0]);
- 
- 			__argv = malloc(6 * sizeof(const char *));
-+			if (!__argv)
-+				die("malloc");
-+
- 			__argv[0] = "/bin/sh";
- 			__argv[1] = record_script_path;
- 			__argv[2] = "-q";
-@@ -634,6 +639,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
- 			__argv[5] = NULL;
- 
- 			execvp("/bin/sh", (char **)__argv);
-+			free(__argv);
- 			exit(-1);
- 		}
- 
-@@ -641,6 +647,8 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
- 		close(live_pipe[1]);
- 
- 		__argv = malloc((argc + 3) * sizeof(const char *));
-+		if (!__argv)
-+			die("malloc");
- 		__argv[0] = "/bin/sh";
- 		__argv[1] = report_script_path;
- 		for (i = 2; i < argc; i++)
-@@ -650,6 +658,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
- 		__argv[i++] = NULL;
- 
- 		execvp("/bin/sh", (char **)__argv);
-+		free(__argv);
- 		exit(-1);
- 	}
- 
-@@ -661,6 +670,8 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
- 		}
- 
- 		__argv = malloc((argc + 1) * sizeof(const char *));
-+		if (!__argv)
-+			die("malloc");
- 		__argv[0] = "/bin/sh";
- 		__argv[1] = script_path;
- 		for (i = 3; i < argc; i++)
-@@ -668,7 +679,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
- 		__argv[argc - 1] = NULL;
- 
- 		execvp("/bin/sh", (char **)__argv);
-+		free(__argv);
- 		exit(-1);
- 	}
- 
--- 
-Tom Zanussi, Intel Open Source Technology Center
+Any quick thoughts? I'll have a look tomorrow as well.
 
+Thanks,
+
+Catalin
 
