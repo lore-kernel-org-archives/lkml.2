@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756598Ab0KJTW3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 14:22:29 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26619 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756519Ab0KJTW2 (ORCPT
+	id S1756460Ab0KJTYV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 14:24:21 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57447 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143Ab0KJTYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 14:22:28 -0500
-Message-ID: <4CDAF0D8.1000100@kernel.org>
-Date: Wed, 10 Nov 2010 11:22:00 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
+	Wed, 10 Nov 2010 14:24:19 -0500
+Date: Wed, 10 Nov 2010 20:23:23 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: "linux-edac@vger.kernel.org" <linux-edac@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "Petkov, Borislav" <Borislav.Petkov@amd.com>
+Subject: Re: [PATCH 01/12] EDAC, MCE: Select extended error code mask
+Message-ID: <20101110192322.GC13539@aftab>
+References: <1289415741-15000-1-git-send-email-bp@amd64.org>
+ <1289415741-15000-2-git-send-email-bp@amd64.org>
+ <987664A83D2D224EAE907B061CE93D5301649A7081@orsmsx505.amr.corp.intel.com>
+ <987664A83D2D224EAE907B061CE93D5301649A708E@orsmsx505.amr.corp.intel.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@novell.com>
-CC: mingo@elte.hu, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        hpa@zytor.com
-Subject: Re: [PATCH] x86-64: more fixes and cleanup to AMD Fam10 MMCONF	 enabling
-References: <4CD3F18E0200007800020B6D@vpn.id2.novell.com> <4CD4443F.8000008@kernel.org> <4CD7BD310200007800020E13@vpn.id2.novell.com>
-In-Reply-To: <4CD7BD310200007800020E13@vpn.id2.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301649A708E@orsmsx505.amr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/08/2010 12:04 AM, Jan Beulich wrote:
->>>> On 05.11.10 at 18:51, Yinghai Lu <yinghai@kernel.org> wrote:
->> On 11/05/2010 03:59 AM, Jan Beulich wrote:
->>> Unfortunately it turned out the original code had more issues: We want
->>> to place the region above 4G in any case (even if TOM2 isn't enabled
->>> or invalid), and the base mask definition was improperly typed (thus
->>> causing shifts by FAM10H_MMIO_CONF_BASE_SHIFT to produce other than
->>> the intended result). Fixing this in turn allowed simplifying the MMIO
->>> region detection code, as regions ending below TOM2 now aren't of
->>> interest anymore.
->>>
->>> This will only apply cleanly on top of yesterday's patch titled
->>> "x86-64: fix and clean up AMD Fam10 MMCONF enabling".
->>
->> I don't think we have systems that have Enable bit set, but TOM2 < 4G.
+On Wed, Nov 10, 2010 at 02:15:48PM -0500, Luck, Tony wrote:
+> > (MCi_STATUS[20:16]). Add a mask variable which default 0xf is overridden
+> > on F15h.
 > 
-> I suppose that's true, but making the kernel independent of
-> BIOS flaws (especially when it's that cheap) seems like a good
-> idea to me. But of course, if that's what would be hindering
-> acceptance of the patch, I'd re-submit with that part dropped.
+> I failed to read the "overridden" part ...
+> Ignore the noise - I blame the cold medication I'm taking.
 
-I'm ok with your change.
+And yet it doesn't stop you from looking at my wobbly decoding stuff.
+Wait a sec, shouldn't you be relaxing instead? Ah well, kernel people...
 
-Please come out one updated version with meaningful MACRO.
+Thanks for looking into it.
 
-Thanks
+-- 
+Regards/Gruss,
+Boris.
 
-	Yinghai
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
