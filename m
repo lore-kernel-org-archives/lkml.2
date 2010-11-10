@@ -1,96 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073Ab0KJTDY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 14:03:24 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49253 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755973Ab0KJTDW (ORCPT
+	id S1756039Ab0KJTID (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 14:08:03 -0500
+Received: from mail.bluewatersys.com ([202.124.120.130]:47605 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754879Ab0KJTIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 14:03:22 -0500
-From: Borislav Petkov <bp@amd64.org>
-To: <linux-edac@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 01/12] EDAC, MCE: Select extended error code mask
-Date: Wed, 10 Nov 2010 20:02:10 +0100
-Message-Id: <1289415741-15000-2-git-send-email-bp@amd64.org>
-X-Mailer: git-send-email 1.7.3.1.50.g1e633
-In-Reply-To: <1289415741-15000-1-git-send-email-bp@amd64.org>
-References: <1289415741-15000-1-git-send-email-bp@amd64.org>
+	Wed, 10 Nov 2010 14:08:00 -0500
+Message-ID: <4CDAEDCD.5050603@bluewatersys.com>
+Date: Thu, 11 Nov 2010 08:09:01 +1300
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: Marco Stornelli <marco.stornelli@gmail.com>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Tim Bird <tim.bird@am.sony.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 08/16 v2] pramfs: headers
+References: <4CD518C5.6000509@gmail.com>	<4CD7076D.80507@bluewatersys.com>	<AANLkTinJJG0K=BPS0CPzDWcgpRn_yPxZ819N408SwD6d@mail.gmail.com>	<4CD85489.8000503@bluewatersys.com>	<AANLkTim8rAQnVYpZdykd2VuL1N9CvkGj88Kf5qpSuJsC@mail.gmail.com>	<4CD9B09F.5090707@bluewatersys.com>	<AANLkTiky0LLnipJN3tCwcW6F2LEK-REEd=Ovo0ewMubR@mail.gmail.com> <AANLkTik+Vx8W1qXEZ=AqedRSj_D4-k70Xa4h-bnW2MRH@mail.gmail.com>
+In-Reply-To: <AANLkTik+Vx8W1qXEZ=AqedRSj_D4-k70Xa4h-bnW2MRH@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+On 11/10/2010 09:15 PM, Marco Stornelli wrote:
+> 2010/11/9 Geert Uytterhoeven <geert@linux-m68k.org>:
+>> On Tue, Nov 9, 2010 at 21:35, Ryan Mallon <ryan@bluewatersys.com> wrote:
+>>> You can still do all of those things without having a fixed endianess.
+>>> You just have to have one extra step of telling the external tools what
+>>> the endianess is. IMHO, it is better to have the overhead of the endian
+>>> conversion in the tools since it is less costly there than an the
+>>> embedded system.
+>>>
+>>> I'm just trying to understand why the fixed endianess rule cannot be
+>>> bent for such a specialised filesystem.
+>>
+>> When it was decided that filesystems should be fixed-endian and support for
+>> big-endian ext2 was dropped, the overhead of doing the fixed conversions was
+>> deetermined negligible due to compiler optimization.
+>> That was ages ago, and current embedded systems run circles around the
+>> machines of those days.
+>>
+>> Note that this is about metadata only. Actual file contents are always just
+>> byte streams.
+>>
+> 
+> I can add that the penalties in this case are  negligible due to the
+> compensation of the very fast access of the media. In addition, from
+> performance point of view I'm pretty happy (you can see the some
+> benchmark on the project web site).
 
-F15h enlarges the extended error code of an MCE to a 5-bit field
-(MCi_STATUS[20:16]). Add a mask variable which default 0xf is overridden
-on F15h.
+Thanks for the explanation guys.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- drivers/edac/mce_amd.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+~Ryan
 
-diff --git a/drivers/edac/mce_amd.c b/drivers/edac/mce_amd.c
-index c018109..01853ee 100644
---- a/drivers/edac/mce_amd.c
-+++ b/drivers/edac/mce_amd.c
-@@ -5,6 +5,7 @@
- 
- static struct amd_decoder_ops *fam_ops;
- 
-+static u8 xec_mask	 = 0xf;
- static u8 nb_err_cpumask = 0xf;
- 
- static bool report_gart_errors;
-@@ -172,7 +173,7 @@ static bool f14h_dc_mce(u16 ec)
- static void amd_decode_dc_mce(struct mce *m)
- {
- 	u16 ec = m->status & 0xffff;
--	u8 xec = (m->status >> 16) & 0xf;
-+	u8 xec = (m->status >> 16) & xec_mask;
- 
- 	pr_emerg(HW_ERR "Data Cache Error: ");
- 
-@@ -257,7 +258,7 @@ static bool f14h_ic_mce(u16 ec)
- static void amd_decode_ic_mce(struct mce *m)
- {
- 	u16 ec = m->status & 0xffff;
--	u8 xec = (m->status >> 16) & 0xf;
-+	u8 xec = (m->status >> 16) & xec_mask;
- 
- 	pr_emerg(HW_ERR "Instruction Cache Error: ");
- 
-@@ -277,7 +278,7 @@ static void amd_decode_ic_mce(struct mce *m)
- static void amd_decode_bu_mce(struct mce *m)
- {
- 	u32 ec = m->status & 0xffff;
--	u32 xec = (m->status >> 16) & 0xf;
-+	u32 xec = (m->status >> 16) & xec_mask;
- 
- 	pr_emerg(HW_ERR "Bus Unit Error");
- 
-@@ -319,7 +320,7 @@ wrong_bu_mce:
- static void amd_decode_ls_mce(struct mce *m)
- {
- 	u16 ec = m->status & 0xffff;
--	u8 xec = (m->status >> 16) & 0xf;
-+	u8 xec = (m->status >> 16) & xec_mask;
- 
- 	if (boot_cpu_data.x86 == 0x14) {
- 		pr_emerg("You shouldn't be seeing an LS MCE on this cpu family,"
-@@ -651,6 +652,10 @@ static int __init mce_amd_init(void)
- 		fam_ops->nb_mce = nb_noop_mce;
- 		break;
- 
-+	case 0x15:
-+		xec_mask = 0x1f;
-+		break;
-+
- 	default:
- 		printk(KERN_WARNING "Huh? What family is that: %d?!\n",
- 				    boot_cpu_data.x86);
 -- 
-1.7.3.1.50.g1e633
+Bluewater Systems Ltd - ARM Technology Solution Centre
 
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
