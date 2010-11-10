@@ -1,153 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab0KJGci (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 01:32:38 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:51626 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752222Ab0KJGcg (ORCPT
+	id S1754770Ab0KJGdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 01:33:19 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:33013 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab0KJGdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 01:32:36 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAGzL2Ux5LcZK/2dsb2JhbACiOnK7PYVKBA
-Date: Wed, 10 Nov 2010 17:32:29 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch] mm: vmscan implement per-zone shrinkers
-Message-ID: <20101110063229.GA5700@amd>
-References: <20101109123246.GA11477@amd>
- <20101110051813.GS2715@dastard>
+	Wed, 10 Nov 2010 01:33:18 -0500
+Date: Wed, 10 Nov 2010 01:33:12 -0500 (EST)
+From: Nicolas Pitre <nicolas.pitre@canonical.com>
+X-X-Sender: nico@xanadu.home
+To: Kay Sievers <kay.sievers@vrfy.org>
+cc: Greg Kroah-Hartman <gregkh@suse.de>, lkml <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 29/49] vcs: add poll/fasync support
+In-Reply-To: <AANLkTinfLT0WYDHek8+QjYKfGC0rtJ3ZFhoZj2fD8-Ri@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1011100119140.13911@xanadu.home>
+References: <20101022175112.GC13489@kroah.com> <1287771688-14805-29-git-send-email-gregkh@suse.de> <AANLkTinVp4C9bRW6=EMHwh1UyeadFbOXKe1aDsxknJf8@mail.gmail.com> <alpine.LFD.2.00.1011092013290.13911@xanadu.home>
+ <AANLkTinfLT0WYDHek8+QjYKfGC0rtJ3ZFhoZj2fD8-Ri@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101110051813.GS2715@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811582-801402965-1289370794=:13911"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 04:18:13PM +1100, Dave Chinner wrote:
-> On Tue, Nov 09, 2010 at 11:32:46PM +1100, Nick Piggin wrote:
-> > Hi,
-> > 
-> > I'm doing some works that require per-zone shrinkers, I'd like to get
-> > the vmscan part signed off and merged by interested mm people, please.
-> > 
-> 
-> There are still plenty of unresolved issues with this general
-> approach to scaling object caches that I'd like to see sorted out
-> before we merge any significant shrinker API changes. Some things of
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-No changes, it just adds new APIs.
+---1463811582-801402965-1289370794=:13911
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
+On Wed, 10 Nov 2010, Kay Sievers wrote:
 
-> the top of my head:
-> 
-> 	- how to solve impendence mismatches between VM scalability
-> 	  techniques and subsystem scalabilty techniques that result
-> 	  in shrinker cross-muliplication explosions. e.g. XFS
-> 	  tracks reclaimable inodes in per-allocation group trees,
-> 	  so we'd get AG x per-zone LRU trees using this shrinker
-> 	  method.  Think of the overhead on a 1000AG filesystem on a
-> 	  1000 node machine with 3-5 zones per node....
+> On Wed, Nov 10, 2010 at 02:26, Nicolas Pitre
+> <nicolas.pitre@canonical.com> wrote:
+> > On Wed, 10 Nov 2010, Kay Sievers wrote:
+> >
+> >> On Fri, Oct 22, 2010 at 20:21, Greg Kroah-Hartman <gregkh@suse.de> wro=
+te:
+> >> > From: Nicolas Pitre <nico@fluxnic.net>
+> >> >
+> >> > The /dev/vcs* devices are used, amongst other things, by accessibili=
+ty
+> >> > applications such as BRLTTY to display the screen content onto refre=
+shable
+> >> > braille displays. =C2=A0Currently this is performed by constantly re=
+ading from
+> >> > /dev/vcsa0 whether or not the screen content has changed. =C2=A0Give=
+n the
+> >> > default braille refresh rate of 25 times per second, this easily qua=
+lifies
+> >> > as the biggest source of wake-up events preventing laptops from ente=
+ring
+> >> > deeper power saving states.
+> >> >
+> >> > To avoid this periodic polling, let's add support for select()/poll(=
+) and
+> >> > SIGIO with the /dev/vcs* devices. =C2=A0The implemented semantic is =
+to report
+> >> > data availability whenever the corresponding vt has seen some update=
+ after
+> >> > the last read() operation. =C2=A0The application still has to lseek(=
+) back
+> >> > as usual in order to read() the new data.
+> >>
+> >> Shouldn't it raise POLLPRI/POLLERR then, when it's not about new data
+> >> to read? We do this for several files in the kernel where we just want
+> >> to wakup someone, but the pretty well-defined semantics of poll()
+> >> don't apply.
+> >
+> > Hmmm... =C2=A0Maybe POLLPRI, but POLLERR makes no sense.
+>=20
+> I have no opinion about that, but it's what others do:
+>   http://git.kernel.org/?p=3Dlinux/kernel/git/torvalds/linux-2.6.git;a=3D=
+commit;h=3D31b07093c44a7a442394d44423e21d783f5523b8
+>   http://git.kernel.org/?p=3Dlinux/kernel/git/torvalds/linux-2.6.git;a=3D=
+commit;h=3D4508a7a734b111b8b7e39986237d84acb1168dd0
+>=20
+> The POLLIN should definitely go, it's POSIX defined. What we do here
+> is more like an error that wakes up than a stream data to read. :)
 
-That's an interesting question, but no reason to hold anything up.
-It's up to the subsystem to handle it, or if they can't handle it
-sanely, you can elect to get no different behaviour than today.
+OK.  What about this then?
+----- >8
+Subject: [PATCH] vcs: make proper usage of the poll flags
 
-I would say that per-zone is important for the above case, because it
-shrinks properly, based on memory pressure and pressure settings (eg.
-zone reclaim), and also obviously so that the reclaim threads are
-scanning node-local-memory so it doesn't have to pull objects from
-all over the interconnect.
+Kay Sievers pointed out that usage of POLLIN is well defined by POSIX,
+and the current usage here doesn't follow that definition.  So let's
+duplicate the same semantics as implemented by sysfs_poll() instead.
 
-With 1000 nodes and 1000AG filesystem, probably NxM is overkill, but
-there is no reason you couldn't have one LRU per X AGs.
-
-All this is obviously implementation details -- pagecache reclaim does
-not want to know about this, so it doesn't affect the API.
-
-
-> 	- changes from global LRU behaviour to something that is not
-> 	  at all global - effect on workloads that depend on large
-> 	  scale caches that span multiple nodes is largely unknown.
-> 	  It will change IO patterns and affect system balance and
-> 	  performance of the system. How do we
-> 	  test/categorise/understand these problems and address such
-> 	  balance issues?
-
-You've brought this up before several times and I've answered it.
-
-The default configuration basically doesn't change much. Caches are
-allowed to fill up all zones and nodes, exactly the same as today.
-
-On the reclaim side, when you have a global shortage, it will evenly
-shrink objects from all zones, so it still approximates LRU behaviour
-because number of objects far exceeds number of zones. This is exactly
-how per-zone pagecache scanning works too.
-
-
-> 	- your use of this shrinker architecture for VFS
-> 	  inode/dentry cache scalability requires adding lists and
-> 	  locks to the MM struct zone for each object cache type
-> 	  (inode, dentry, etc). As such, it is not a generic
-> 	  solution because it cannot be used for per-instance caches
-> 	  like the per-mount inode caches XFS uses.
-
-Of course it doesn't. You can use kmalloc.
-
- 
-> 	  i.e. nothing can actually use this infrastructure change
-> 	  without tying itself directly into the VM implementation,
-> 	  and even then not every existing shrinker can use this
-> 	  method of scaling. i.e. some level of abstraction from the
-> 	  VM implementation is needed in the shrinker API.
-
-"zones" is the abstraction. The thing which all allocation and
-management of memory is based on, everywhere you do any allocations
-in the kernel. A *shrinker* implementation, a thing which is called
-in response to memory shortage in a given zone, has to know about
-zones. End of story. "Tied to the memory management implementation"
-is true to the extent that it is part of the memory management
-implementation.
- 
-
-> 	- it has been pointed out that slab caches are generally
-> 	  allocated out of a single zone per node, so per-zone
-> 	  shrinker granularity seems unnecessary.
-
-No they are not, that's just total FUD. Where was that "pointed out"?
-
-Slabs are generally allocated from every zone except for highmem and
-movable, and moreover there is nothing to prevent a shrinker
-implementation from needing to shrink highmem and movable pages as
-well.
-
-
-> 	- doesn't solve the unbound direct reclaim shrinker
-> 	  parallelism that is already causing excessive LRU lock
-> 	  contention on 8p single node systems. While
-> 	  per-LRU/per-node solves the larger scalability issue, it
-> 	  doesn't address scalability within the node. This is soon
-> 	  going to be 24p per node and that's more than enough to
-> 	  cause severe problems with a single lock and list...
-
-It doesn't aim to solve that. It doesn't prevent that from being
-solved either (and improving parallelism in a subsystem generally,
-you know, helps with lock contention due to lots of threads in there,
-right?).
-
-
-> > [And before anybody else kindly suggests per-node shrinkers, please go
-> > back and read all the discussion about this first.]
-> 
-> I don't care for any particular solution, but I want these issues
-> resolved before we make any move forward. per-node abstractions is
-> just one possible way that has been suggested to address some of
-> these issues, so it shouldn't be dismissed out of hand like this.
-
-Well if you listen to my follow ups to the FUD that keeps appearing,
-maybe we can "move forward".
-
+Signed-off-by: Nicolas Pitre <nicolas.pitre@canonical.com>
+---
+diff --git a/drivers/tty/vt/vc_screen.c b/drivers/tty/vt/vc_screen.c
+index 273ab44..a93856e 100644
+--- a/drivers/tty/vt/vc_screen.c
++++ b/drivers/tty/vt/vc_screen.c
+@@ -553,12 +553,12 @@ static unsigned int
+ vcs_poll(struct file *file, poll_table *wait)
+ {
+ =09struct vcs_poll_data *poll =3D vcs_poll_data_get(file);
+-=09int ret =3D 0;
++=09int ret =3D DEFAULT_POLLMASK|POLLERR|POLLPRI;
+=20
+ =09if (poll) {
+ =09=09poll_wait(file, &poll->waitq, wait);
+-=09=09if (!poll->seen_last_update)
+-=09=09=09ret =3D POLLIN | POLLRDNORM;
++=09=09if (poll->seen_last_update)
++=09=09=09ret =3D DEFAULT_POLLMASK;=20
+ =09}
+ =09return ret;
+ }
+---1463811582-801402965-1289370794=:13911--
