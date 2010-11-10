@@ -1,80 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430Ab0KJOtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 09:49:22 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:41499 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756353Ab0KJOtT (ORCPT
+	id S1756460Ab0KJOtk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 09:49:40 -0500
+Received: from queueout04-winn.ispmail.ntl.com ([81.103.221.58]:63826 "EHLO
+	queueout04-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756371Ab0KJOtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 09:49:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=kTtTVrDHQu+s95/tnf+w+7iGLBoJaaQNAYb2h42HOez2cRxKjtvemYII+1zpVsx15i
-         29lg5MTcYt7CozCvKDD6RhBQkt4fI19ri5MB1Qna3OWTu+0b1XcjlI5LRauBD0CBVE9P
-         76WT3l4Ci8fYT9yTliXN2WROh4AvQzCpgP6ZQ=
-Subject: Re: [PATCH v2]mm/oom-kill: direct hardware access processes should
- get bonus
-From: "Figo.zhang" <figo1802@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@osdl.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1011091307240.7730@chino.kir.corp.google.com>
-References: <1288662213.10103.2.camel@localhost.localdomain>
-	 <1289305468.10699.2.camel@localhost.localdomain>
-	 <alpine.DEB.2.00.1011091307240.7730@chino.kir.corp.google.com>
+	Wed, 10 Nov 2010 09:49:05 -0500
+From: Ian Campbell <ijc@hellion.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1289380840.28590.132.camel@Joe-Laptop>
+References: <1289380840.28590.132.camel@Joe-Laptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Nov 2010 22:48:16 +0800
-Message-ID: <1289400496.10699.21.camel@localhost.localdomain>
+Date: Wed, 10 Nov 2010 14:27:20 +0000
+Message-ID: <1289399240.724.48.camel@zakaz.uk.xensource.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 62.200.22.2
+X-SA-Exim-Mail-From: ijc@hellion.org.uk
+Subject: Re: [PATCH] MAINTAINERS: Mark XEN lists subscribers-only
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=fd6gu-_BvqYA:10 a=IkcTkHD0fZMA:10 a=IJv9LcIfAAAA:8 a=yPCof4ZbAAAA:8 a=SEF7xSSsAAAA:8 a=tHz9FfFoAAAA:8 a=mLnsDVdbAAAA:8 a=dlI4R5ZWAAAA:8 a=VwQbUJbxAAAA:8 a=W0vUJOdyAAAA:8 a=liAA5opg9DaImOLo6IsA:9 a=UykPPTgvidHpO1TEjTcA:7 a=D47EOPkdHPV5_vW9sp5D-9SStFoA:4 a=QEXdDO2ut3YA:10 a=x8gzFH9gYPwA:10 a=K6kUPx8HyhEA:10 a=7DSvI1NPTFQA:10 a=6O0IECtVFhoA:10 a=viDM6Qac857pQ_Wh:21 a=oreaulfsZZ44oZs4:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-09 at 13:16 -0800, David Rientjes wrote:
-> On Tue, 9 Nov 2010, Figo.zhang wrote:
+AFAIK the Xen lists are "(moderated for non-subscribers)" rather than
+"(subscribers-only)".
+
+I think they also whitelist upon successful moderation but that doesn't
+seem to normally be expressed in the MAINTAINERS file.
+
+Ian.
+
+On Wed, 2010-11-10 at 01:20 -0800, Joe Perches wrote:
+> Standardize mailing address address at the same time.
+>  
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  MAINTAINERS |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> >  
-> > the victim should not directly access hardware devices like Xorg server,
-> > because the hardware could be left in an unpredictable state, although 
-> > user-application can set /proc/pid/oom_score_adj to protect it. so i think
-> > those processes should get 3% bonus for protection.
-> > 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 0094224..70604d5 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -6598,14 +6598,14 @@ F:	drivers/platform/x86
+>  
+>  XEN PCI SUBSYSTEM
+>  M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> -L:	xen-devel@lists.xensource.com
+> +L:	xen-devel@lists.xensource.com (subscribers-only)
+>  S:	Supported
+>  F:	arch/x86/pci/*xen*
+>  F:	drivers/pci/*xen*
+>  
+>  XEN SWIOTLB SUBSYSTEM
+>  M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> -L:	xen-devel@lists.xensource.com
+> +L:	xen-devel@lists.xensource.com (subscribers-only)
+>  S:	Supported
+>  F:	arch/x86/xen/*swiotlb*
+>  F:	drivers/xen/*swiotlb*
+> @@ -6613,7 +6613,7 @@ F:	drivers/xen/*swiotlb*
+>  XEN HYPERVISOR INTERFACE
+>  M:	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>  M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> -L:	xen-devel@lists.xen.org
+> +L:	xen-devel@lists.xensource.com (subscribers-only)
+>  L:	virtualization@lists.osdl.org
+>  S:	Supported
+>  F:	arch/x86/xen/
 > 
-> The logic here is wrong: if killing these tasks can leave hardware in an 
-> unpredictable state (and that state is presumably harmful), then they 
-> should be completely immune from oom killing since you're still leaving 
-> them exposed here to be killed.
-
-we let the processes with hardware access get bonus for protection. the
-goal is not select them to be killed as possible.
-
-
 > 
-> So the question that needs to be answered is: why do these threads deserve 
-> to use 3% more memory (not >4%) than others without getting killed?  If 
-> there was some evidence that these threads have a certain quantity of 
-> memory they require as a fundamental attribute of CAP_SYS_RAWIO, then I 
-> have no objection, but that's going to be expressed in a memory quantity 
-> not a percentage as you have here.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> The CAP_SYS_ADMIN heuristic has a background: it is used in the oom killer 
-> because we have used the same 3% in __vm_enough_memory() for a long time 
-> and we want consistency amongst the heuristics.  Adding additional bonuses 
-> with arbitrary values like 3% of memory for things like CAP_SYS_RAWIO 
-> makes the heuristic less predictable and moves us back toward the old 
-> heuristic which was almost entirely arbitrary.
 
+-- 
+Ian Campbell
+Current Noise: Wolf - Make Friends With Your Nightmares
 
-yes, i think it is be better those processes which be protection maybe
-divided the badness score by 4, like old heuristic.
-
-
-
+Is it possible that software is not like anything else, that it is meant to
+be discarded:  that the whole point is to always see it as a soap bubble?
 
