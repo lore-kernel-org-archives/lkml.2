@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab0KJRbB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:31:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59882 "EHLO mx2.suse.de"
+	id S1753028Ab0KJRbP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:31:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59893 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751195Ab0KJRbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:31:00 -0500
-Date: Wed, 10 Nov 2010 09:28:42 -0800
+	id S1752424Ab0KJRbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 12:31:12 -0500
+Date: Wed, 10 Nov 2010 09:31:38 -0800
 From: Greg KH <gregkh@suse.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Claudio Scordino <claudio@evidence.eu.com>, linux-serial@vger.kernel.org,
-        Grant Edwards <grant.b.edwards@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] Documentation about RS485 serial communications
-Message-ID: <20101110172842.GC12371@suse.de>
-References: <20100408111310.524f7354@lxorguk.ukuu.org.uk> <4CBD8EE4.5040808@evidence.eu.com> <i9ka0s$4ua$1@dough.gmane.org> <201010191727.53314.alexander.stein@systec-electronic.com> <i9kk4o$svc$1@dough.gmane.org> <4CC418A9.6090602@evidence.eu.com> <4CDA630F.4060903@atmel.com>
+To: Michael Ellerman <michael@ellerman.id.au>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+        Stephane Eranian <eranian@google.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [RFC][PATCH] perf: sysfs type id
+Message-ID: <20101110173138.GE12371@suse.de>
+References: <1289339119.2191.92.camel@laptop> <20101109221338.GA19947@suse.de> <1289345811.10536.8.camel@concordia>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CDA630F.4060903@atmel.com>
+In-Reply-To: <1289345811.10536.8.camel@concordia>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 10:17:03AM +0100, Nicolas Ferre wrote:
-> Le 24/10/2010 13:29, Claudio Scordino :
-> 
-> [..]
-> 
-> > Hi all,
+On Wed, Nov 10, 2010 at 10:36:51AM +1100, Michael Ellerman wrote:
+> On Tue, 2010-11-09 at 14:13 -0800, Greg KH wrote:
+> > On Tue, Nov 09, 2010 at 10:45:19PM +0100, Peter Zijlstra wrote:
+> > > The below is a RFC patch adding dynamic type ids to perf.
+> > > 
+> > > We need to represent PMUs in sysfs because we want to allow multiple
+> > > (loadable) PMUs and need a way to identify them.
+> > > 
+> > > This patch creates a new device class "pmu" and adds a single attribute
+> > > "type" to it. This device attribute will expose the dynamic type id as
+> > > required by perf_event_attr::type.
+> > > 
+> > > The sysfs layout looks like:
+> > > 
+> > > [root@westmere ~]# cd /sys/class/pmu/
 > > 
-> > 	sorry for the misuse of the term "transceiver", and thank you
-> > for your corrections.
-> > 
-> > Hopefully, this new version of the document is slightly better.
+> > You missed the embedded track at Plumbers where we talked about never
+> > adding another class to the kernel.  Please use bus_id instead for this.
 > 
-> Hi all,
+> At least in the examples I've seen creating a bus requires a lot more
+> code than a class. Or is there a shortcut I don't know about when it's a
+> virtual bus?
 > 
-> This documentation is floating around for some time now. Claudio has
-> enhanced it and it is maybe time to merge it in mainline...
-> 
-> So, can serial people include it in their tree (Greg?) or should it go
-> through another path?
+> (Interested because I have code that is using a class)
 
-I can take it, if someone resends it with the accumulated acks that I
-think it gathered over the review cycle.
+It shouldn't be that much more code to do so.  Have a pointer to some
+code that you want converted over so I can show you exactly what is
+needed?
 
 thanks,
 
