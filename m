@@ -1,155 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab0KJT3B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 14:29:01 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45571 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756249Ab0KJT27 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 14:28:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:content-type;
-        b=msz01eIe+F+Dqd55KMeMk4laa80/PN1TfgX1wr8DCaNO+3sACnWjNrgV+oSAny0pkl
-         BYP2zSNpi4vUElXJD8MoWLn9QdP+BhEcf9SfyI/0Hv0UtYN8MlfFvTor4r0tvHtjqnu6
-         1PzHNyqoHkGOLgTc2uRkZswpwlp/ufY0LR/v8=
+	id S1756627Ab0KJT3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 14:29:45 -0500
+Received: from kroah.org ([198.145.64.141]:43462 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756386Ab0KJT3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 14:29:43 -0500
+Date: Wed, 10 Nov 2010 11:29:49 -0800
+From: Greg KH <greg@kroah.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Martin Wilck <martin.wilck@ts.fujitsu.com>, gerhard.wichert@ts.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] fix size checks for mmap() on /proc/bus/pci files
+	(updated)
+Message-ID: <20101110192949.GB16140@kroah.com>
+References: <20101109084206.1b6ac66a@jbarnes-desktop> <1289383401-1357-1-git-send-email-martin.wilck@ts.fujitsu.com> <20101110104434.6ed20d33@jbarnes-x201>
 MIME-Version: 1.0
-From: Andrew Lutomirski <andy@luto.us>
-Date: Wed, 10 Nov 2010 14:28:37 -0500
-X-Google-Sender-Auth: hqoq3S8C19oTGUVFqQXDLtO0u68
-Message-ID: <AANLkTi=sQ1_HD7JFBPC0LGZ_GNZTSrdkT_jSC36wG3kQ@mail.gmail.com>
-Subject: Severe reproducible nouveau breakage in 2.6.36 (and maybe .35)
-To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Ben Skeggs <bskeggs@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101110104434.6ed20d33@jbarnes-x201>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all-
+On Wed, Nov 10, 2010 at 10:44:34AM -0800, Jesse Barnes wrote:
+> On Wed, 10 Nov 2010 11:03:21 +0100
+> Martin Wilck <martin.wilck@ts.fujitsu.com> wrote:
+> 
+> > The checks for valid mmaps of PCI resources made
+> > through /proc/bus/pci files that were introduced in
+> > 9eff02e2042f96fb2aedd02e032eca1c5333d767 have several problems:
+> > 
+> > 1. mmap() calls on /proc/bus/pci files are made with real file
+> > offsets > 0, whereas under /sys/bus/pci/devices, the start of the
+> > resource corresponds to offset 0. This may lead to false negatives in
+> > pci_mmap_fits(), which implicitly assumes the /sys/bus/pci/devices
+> > layout.
+> > 
+> > 2. The loop in proc_bus_pci_mmap doesn't skip empty resouces. This
+> > leads to false positives, because pci_mmap_fits() doesn't treat empty
+> > resources correctly (the calculated size is 1 <<
+> > (8*sizeof(resource_size_t)-PAGE_SHIFT) in this case!).
+> > 
+> > 3. If a user maps resources with BAR > 0, pci_mmap_fits will emit
+> > bogus WARNINGS for the first resources that don't fit until the
+> > correct one is found.
+> > 
+> > On many controllers the first 2-4 BARs are used, and the others are
+> > empty. In this case, an mmap attempt will first fail on the non-empty
+> > BARs (including the "right" BAR because of 1.) and emit bogus
+> > WARNINGS because of 3., and finally succeed on the first empty BAR
+> > because of 2. This is certainly not the intended behaviour.
+> > 
+> > This patch addresses all 3 issues.
+> > Updated with an enum type for the additional parameter for
+> > pci_mmap_fits().
+> > 
+> > Signed-off-by: Martin Wilck <martin.wilck@ts.fujitsu.com>
+> 
+> Thanks Martin, I'll push this into my for-linus branch for 2.6.37; may
+> as well cc: stable as well, since this is a long standing bug.
 
-Somewhere between 2.6.34-fedora-whatever and 2.6.36, Nouveau became
-extremely broken on my hardware.  It appears to be triggered by a bug
-in my monitor (HP LP2475w), which causes the monitor to disappear from
-DVI when it goes to sleep.  Every time the console blanks (in X or
-otherwise AFAICT) the system crashes oddly but unrecoverably.  This is
-100% reproducible by Ctrl-Alt-F2 followed by 'echo 1
->/sys/class/graphics/fb0/blank' *from SSH* and waiting a few seconds
-for the monitor to go to sleep, but it also happens if I just walk
-away from the computer long enough for it to blank itself.  This is
-present on F14's kernel and on 2.6.36 from kernel.org.  This may or
-may not be related to the unreproducible crashes that I used to get
-rarely on 2.6.34.
+Please cc: stable, as it is something that -stable releases cares about.
 
-The symptoms are:
+thanks,
 
- - netconsole becomes very unreliable.  (This makes it rather hard to
-get any good debugging info because I don't have a real serial port.)
- - system doesn't answer pings.  userspace seems dead as well.
- - capslock will work intermittently
- - the lockup detector doesn't say anything.
- - After a few seconds, the system thinks that the tsc is massively
-unstable and switches clocksources.  (I think this is because the
-clocksource watchdog fails to schedule for awhile and then somehow
-ends up running and thinking it detected a clocksource failure.)
- - SysRq-c will give me my console back and spew (useless?) garbage.
-Usually it also causes a panic and I get nothing else out of the
-system.
-
-The most recent time I triggered this, I got an amazing amount of
-console spew about unexpected NMIs.  None of it made it to serial
-console, and the part left on the screen was so far down as to be
-pretty much useless.  lockdep shows nothing interesting (or at least
-nothing interesting that stays on the screen long enough for me to
-read).
-
-The best hint I have is from this patch (sorry for whitespace damage):
-
-diff --git a/drivers/gpu/drm/nouveau/nv50_display.c
-b/drivers/gpu/drm/nouveau/nv50_display.c
-index 612fa6d..6823a4d 100644
---- a/drivers/gpu/drm/nouveau/nv50_display.c
-+++ b/drivers/gpu/drm/nouveau/nv50_display.c
-@@ -1014,6 +1014,8 @@ nv50_display_irq_hotplug_bh(struct work_struct *work)
-        uint32_t unplug_mask, plug_mask, change_mask;
-        uint32_t hpd0, hpd1 = 0;
-
-+       printk(KERN_ERR "in nv50_display_irq_hotplug_bh\n");
-+
-        hpd0 = nv_rd32(dev, 0xe054) & nv_rd32(dev, 0xe050);
-        if (dev_priv->chipset >= 0x90)
-                hpd1 = nv_rd32(dev, 0xe074) & nv_rd32(dev, 0xe070);
-@@ -1062,6 +1064,7 @@ nv50_display_irq_hotplug_bh(struct work_struct *work)
-        if (dev_priv->chipset >= 0x90)
-                nv_wr32(dev, 0xe074, nv_rd32(dev, 0xe074));
-
-+       printk(KERN_ERR "about to drm_helper_hpd_irq_event\n");
-        drm_helper_hpd_irq_event(dev);
- }
-
-@@ -1072,6 +1075,7 @@ nv50_display_irq_handler(struct drm_device *dev)
-        uint32_t delayed = 0;
-
-        if (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_HOTPLUG) {
-+               printk(KERN_ERR "nv50 got hpd irq\n");
-                if (!work_pending(&dev_priv->hpd_work))
-                        queue_work(dev_priv->wq, &dev_priv->hpd_work);
-        }
-
-which spews "nv50 got hpd irq" once the display blanks.
-
-Nouveau startup says:
-
-[   15.646535] nouveau 0000:04:00.0: PCI INT A -> GSI 24 (level, low) -> IRQ 24
-[   15.646540] nouveau 0000:04:00.0: setting latency timer to 64
-[   15.650606] [drm] nouveau 0000:04:00.0: Detected an NV50 generation
-card (0x086f00a2)
-[   15.657126] [drm] nouveau 0000:04:00.0: Attempting to load BIOS
-image from PRAMIN
-[   15.714410] [drm] nouveau 0000:04:00.0: ... appears to be valid
-[   15.714413] [drm] nouveau 0000:04:00.0: BIT BIOS found
-[   15.714415] [drm] nouveau 0000:04:00.0: Bios version 60.86.5b.00
-[   15.714418] [drm] nouveau 0000:04:00.0: TMDS table version 2.0
-[   15.714420] [drm] nouveau 0000:04:00.0: Found Display Configuration
-Block version 4.0
-[   15.714423] [drm] nouveau 0000:04:00.0: Raw DCB entry 0: 02011300 00000028
-[   15.714425] [drm] nouveau 0000:04:00.0: Raw DCB entry 1: 01011302 00000010
-[   15.714427] [drm] nouveau 0000:04:00.0: Raw DCB entry 2: 01000310 00000028
-[   15.714429] [drm] nouveau 0000:04:00.0: Raw DCB entry 3: 02000312 00000010
-[   15.714430] [drm] nouveau 0000:04:00.0: Raw DCB entry 4: 0000000e 00000000
-[   15.714433] [drm] nouveau 0000:04:00.0: DCB connector table: VHER 0x40 5 14 2
-[   15.714435] [drm] nouveau 0000:04:00.0:   0: 0x00002030: type 0x30
-idx 0 tag 0x08
-[   15.714438] [drm] nouveau 0000:04:00.0:   1: 0x00001130: type 0x30
-idx 1 tag 0x07
-[   15.714441] [drm] nouveau 0000:04:00.0: Parsing VBIOS init table 0
-at offset 0xC34B
-[   15.740011] [drm] nouveau 0000:04:00.0: Parsing VBIOS init table 1
-at offset 0xC6B5
-[   15.758892] [drm] nouveau 0000:04:00.0: Parsing VBIOS init table 2
-at offset 0xD2F6
-[   15.758903] [drm] nouveau 0000:04:00.0: Parsing VBIOS init table 3
-at offset 0xD3E8
-[   15.760960] [drm] nouveau 0000:04:00.0: Parsing VBIOS init table 4
-at offset 0xD5E2
-[   15.760965] [drm] nouveau 0000:04:00.0: Parsing VBIOS init table at
-offset 0xD647
-[   15.781884] [drm] nouveau 0000:04:00.0: 0xD647: Condition still not
-met after 20ms, skipping following opcodes
-[   15.781953] [drm] nouveau 0000:04:00.0: Detected 256MiB VRAM
-[   15.873252] [TTM] Zone  kernel: Available graphics memory: 3055420 kiB.
-[   15.873256] [TTM] Zone   dma32: Available graphics memory: 2097152 kiB.
-[   15.873259] [TTM] Initializing pool allocator.
-[   15.948218] [drm] nouveau 0000:04:00.0: 512 MiB GART (aperture)
-[   15.983208] [drm] nouveau 0000:04:00.0: Allocating FIFO number 1
-[   15.998872] [drm] nouveau 0000:04:00.0: nouveau_channel_alloc:
-initialised FIFO 1
-[   16.158101] [drm] nouveau 0000:04:00.0: allocated 1920x1200 fb:
-0x40230000, bo ffff8801b48a5000
-[   16.158315] fbcon: nouveaufb (fb0) is primary device
-[   16.165464] Console: switching to colour frame buffer device 240x75
-[   16.168574] fb0: nouveaufb frame buffer device
-[   16.168576] drm: registered panic notifier
-[   16.168601] [drm] Initialized nouveau 0.0.16 20090420 for
-0000:04:00.0 on minor 0
+greg k-h
