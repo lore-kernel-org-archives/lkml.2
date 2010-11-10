@@ -1,47 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab0KJRMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:12:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44181 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757193Ab0KJRMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:12:22 -0500
-Message-ID: <4CDAD255.3050309@zytor.com>
-Date: Wed, 10 Nov 2010 09:11:49 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+	id S1757209Ab0KJRNY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:13:24 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:36317 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757174Ab0KJRNW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 12:13:22 -0500
+From: Carmine IASCONE <carmine.iascone@st.com>
+To: Greg KH <gregkh@suse.de>, Jiri Slaby <jirislaby@gmail.com>
+Cc: Matteo DAMENO <matteo.dameno@st.com>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        mems applications <mems.applications@st.com>
+Date: Wed, 10 Nov 2010 18:12:49 +0100
+Subject: RE: [PATCH] staging: lis331dlh: add lis331dlh driver
+Thread-Topic: [PATCH] staging: lis331dlh: add lis331dlh driver
+Thread-Index: AcuA8xS62f5bGeL2S1mr+EMPQyv1EwABptZg
+Message-ID: <3B4B64FC2A10C148B521CFCC54F4F7E49FA33DB247@SAFEX1MAIL3.st.com>
+References: <1289323527-5501-1-git-send-email-carmine.iascone@st.com>
+ <20101109173540.GA20370@suse.de>
+ <3B4B64FC2A10C148B521CFCC54F4F7E49FA33DB115@SAFEX1MAIL3.st.com>
+ <4CDAB795.5080607@gmail.com> <20101110160412.GB10561@suse.de>
+In-Reply-To: <20101110160412.GB10561@suse.de>
+Accept-Language: it-IT, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: it-IT, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Baruch Siach <baruch@tkos.co.il>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Alex Gershgorin <agersh@rambler.ru>
-Subject: Re: [PATCH] drivers/misc: Altera Cyclone active serial implementation
-References: <879a6320efee16c04f0732a6887b95c1b4c6d10f.1288793522.git.baruch@tkos.co.il>
-In-Reply-To: <879a6320efee16c04f0732a6887b95c1b4c6d10f.1288793522.git.baruch@tkos.co.il>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/03/2010 07:21 AM, Baruch Siach wrote:
-> From: Alex Gershgorin <agersh@rambler.ru>
+Thanks you both for the feedback.
+
+Best regards,
+Carmine
+
+-----Original Message-----
+From: Greg KH [mailto:gregkh@suse.de] 
+Sent: Wednesday, November 10, 2010 5:04 PM
+To: Carmine IASCONE
+Cc: Jiri Slaby; Matteo DAMENO; devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org; mems applications; Alan Cox
+Subject: Re: [PATCH] staging: lis331dlh: add lis331dlh driver
+
+On Wed, Nov 10, 2010 at 04:17:41PM +0100, Jiri Slaby wrote:
+> On 11/10/2010 12:51 PM, Carmine IASCONE wrote:
+> > Hi Greg, Hi JS,
+> > Matteo and I have started to develop linux device drivers for our STMicroelectronics sensors about one year ago. Our main target is the Android platform (mobile phone or tablet pc), and for this reason the drivers are thought to be used on I2C bus. The drivers are enough stable, we have several customers that are using them, and also with the advice of these customers, we would like to make available them for all the linux community, merging them in the kernel upstream to be used in all linux supported platforms.
+> > The drivers have had a initial review by Alan Cox, that gives us some very precious advices to improve the style and robustness of the drivers. 
+> > We are newbies in patch generation and submission: we have followed the instructions in the Greg's video on you tube to create this first patch, so sorry if there is something that we missed. We thought to put the driver in staging directory, because before merging them in the main tree we would like to have a general revision, and also because in this first release we haven't managed the device interrupts yet. At the end the right position for these drivers could be drivers/input/misc.
+> > How do we proceed now? Do we need to generate a new patch adding the TODO file? Please advice.
 > 
-> The active serial protocol can be used to program Altera Cyclone FPGA devices.
-> This driver uses the kernel gpio interface to implement the active serial
-> protocol.
+> Hi, well, I don't think this should go into staging at all as I think
+> it's clean enough to go upstream directly (but I repeat I'm no IIC
+> expert). So please resend to IIC people:
+> I2C SUBSYSTEM
+> M:      "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
+> M:      "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
+> L:      linux-i2c@vger.kernel.org
 > 
+> but before that, move that out of staging to drivers/i2c/ (or anywhere
+> where it make sense).
+> 
+> It's perfectly OK to add functionality later (IRQs).
 
-Calling it "Cyclone" is a bit misleading.  This protocol is used by
-Stratix, Cyclone and Arria devices (at least), and it probably depends
-more on the generation than on the product line which exact version of
-the protocol it is.
+I agree, this should be sent to Jean and the i2c developers first.
+Please work to get your driver into the main tree, only use staging as a
+last-resort if you have a lot of work left to do on the code.
 
-If anything it would probably be more accurate to call it a Statix
-protocol, or just an Altera one.
+thanks,
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+greg k-h
