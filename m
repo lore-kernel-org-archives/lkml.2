@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441Ab0KJGNI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 01:13:08 -0500
-Received: from mga01.intel.com ([192.55.52.88]:29184 "EHLO mga01.intel.com"
+	id S1752996Ab0KJGN0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 01:13:26 -0500
+Received: from mga03.intel.com ([143.182.124.21]:49633 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751772Ab0KJGNE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 01:13:04 -0500
+	id S1752659Ab0KJGNY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 01:13:24 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,177,1288594800"; 
-   d="scan'208";a="625286606"
-Subject: [RFC PATCH 0/2] Use event group to simulate PMI
+   d="scan'208";a="346832939"
+Subject: [RFC PATCH 1/2] perf: Enable group siblings on exec if
+ attr::enable_on_exec set
 From: Lin Ming <ming.m.lin@intel.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Matt Fleming <matt@console-pimps.org>
 Cc: Zhang Rui <rui.zhang@intel.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>
+        lkml <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Nov 2010 14:14:52 +0800
-Message-ID: <1289369692.2430.35.camel@minggr.sh.intel.com>
+Date: Wed, 10 Nov 2010 14:15:11 +0800
+Message-ID: <1289369711.2430.38.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
@@ -26,17 +27,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all
+Currently, only group leader is enabled on exec.
+This patch enables all group events on exec if attr::enable_on_exec is
+set.
 
-The followed 2 patches are based on the discussions at:
-http://marc.info/?l=linux-kernel&m=128220854801819&w=2
-http://marc.info/?l=linux-kernel&m=128317758627990&w=2
+This is needed by next patch.
 
-[RFC PATCH 1/2] perf: Enable group siblings on exec if attr::enable_on_exec set
-[RFC PATCH 2/2] perf stat: Use event group to simulate PMI on PMI-less hardware counter
+Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+---
+ kernel/perf_event.c |   24 +++++++++++++++++++++---
+ 1 files changed, 21 insertions(+), 3 deletions(-)
 
-Any comments?
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 517d827..b94c18d 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1700,11 +1700,29 @@ static int event_enable_on_exec(struct perf_event *event,
+ 	if (event->state >= PERF_EVENT_STATE_INACTIVE)
+ 		return 0;
+ 
+-	__perf_event_mark_enabled(event, ctx);
++	event->state = PERF_EVENT_STATE_INACTIVE;
+ 
+ 	return 1;
+ }
+ 
++static int group_enable_on_exec(struct perf_event *event,
++				struct perf_event_context *ctx)
++{
++	int enabled = 0;
++	struct perf_event *sub;
++
++	list_for_each_entry(sub, &event->sibling_list, group_entry)
++		if (event_enable_on_exec(sub, ctx))
++			enabled++;
++
++	if (event_enable_on_exec(event, ctx))
++		enabled++;
++
++	__perf_event_mark_enabled(event, ctx);
++
++	return enabled;
++}
++
+ /*
+  * Enable all of a task's events that have been marked enable-on-exec.
+  * This expects task == current.
+@@ -1725,13 +1743,13 @@ static void perf_event_enable_on_exec(struct perf_event_context *ctx)
+ 	raw_spin_lock(&ctx->lock);
+ 
+ 	list_for_each_entry(event, &ctx->pinned_groups, group_entry) {
+-		ret = event_enable_on_exec(event, ctx);
++		ret = group_enable_on_exec(event, ctx);
+ 		if (ret)
+ 			enabled = 1;
+ 	}
+ 
+ 	list_for_each_entry(event, &ctx->flexible_groups, group_entry) {
+-		ret = event_enable_on_exec(event, ctx);
++		ret = group_enable_on_exec(event, ctx);
+ 		if (ret)
+ 			enabled = 1;
+ 	}
+-- 
+1.7.1
 
-Thanks,
-Lin Ming
+
 
