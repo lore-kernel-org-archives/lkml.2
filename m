@@ -1,102 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548Ab0KJHvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 02:51:14 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:1100 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753196Ab0KJHvM (ORCPT
+	id S1754424Ab0KJIFr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 03:05:47 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:34960 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752233Ab0KJIFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 02:51:12 -0500
+	Wed, 10 Nov 2010 03:05:44 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=EueJgahA4wUzMNdpRLJkfRQeHhaCux/9UvcjEByJnLvoGrDpkhioABfeF67sRQzwGM
-         PIQKoGDtk7zvNK1ByUbA==
-Date: Tue, 9 Nov 2010 23:49:30 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 43 of 66] don't leave orhpaned swap cache after ksm
- merging
-In-Reply-To: <20101109214036.GE6809@random.random>
-Message-ID: <alpine.LSU.2.00.1011092312360.6873@sister.anvils>
-References: <patchbomb.1288798055@v2.random> <d5aefe85d1dab1bb7e99.1288798098@v2.random> <20101109120747.BC4B.A69D9226@jp.fujitsu.com> <20101109214036.GE6809@random.random>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=m46hipVIwmH3+gTzXcDIcfibjVweEyUwDqh1SwxeeiSmJyK1tevdJNEsfHzRjX6yJo
+         nBB6sYHYrDzGA3xP5ERT8OwGyEHYqeV9Qg8bCfJJjcJ9uFmSyszFleiBBF0bBTnrJp73
+         yeoqA+gIoYmBx/djbeVFmGj8VPBPYm7MzvwTA=
+Date: Wed, 10 Nov 2010 16:05:15 +0800
+From: wzt.wzt@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: john.johansen@canonical.com, apparmor@lists.ubuntu.com,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH] APPARMOR: Fix memory leak of apparmor_init()
+Message-ID: <20101110080515.GA2722@localhost.localdomain>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Nov 2010, Andrea Arcangeli wrote:
-> On Tue, Nov 09, 2010 at 12:08:25PM +0900, KOSAKI Motohiro wrote:
-> > > From: Andrea Arcangeli <aarcange@redhat.com>
-> > > 
-> > > When swapcache is replaced by a ksm page don't leave orhpaned swap cache.
-> > > 
-> > > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> > > Reviewed-by: Rik van Riel <riel@redhat.com>
-> > 
-> > This explanation seems to tell this is bugfix. If so, please separate
-> > this one from THP and will send mainline and -stable soon.
-> 
-> Right. I'm uncertain if this is so bad to require -stable I think, if
-> it was more urgent I would have submitted already separately but it's
-> true it's not THP specific.
+set_init_cxt() allocted sizeof(struct aa_task_cxt) bytes for cxt, 
+if register_security() failed, it will cause memory leak.
 
-Yes, we discussed this a few months ago: it's a welcome catch, but not
-very serious, since it's normal for some pages to evade swap freeing,
-then eventually memory pressure sorts it all out in __remove_mapping().
+Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
 
-We did ask you back then to send in a fix separate from THP, but both
-sides then forgot about it until recently.
-
-We didn't agree on what the fix should look like.  You're keen to change
-the page locking there, I didn't make a persuasive case for keeping it
-as is, yet I can see no point whatever in changing it for this swap fix.
-Could I persuade you to approve this simpler alternative?
-
-
-[PATCH] ksm: free swap when swapcache page is replaced
-
-When a swapcache page is replaced by a ksm page, it's best to free that
-swap immediately.
-
-Reported-by: Andrea Arcangeli <aarcange@redhat.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
 ---
+ security/apparmor/lsm.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
- mm/ksm.c |    2 ++
- 1 file changed, 2 insertions(+)
+diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
+index cf1de44..b7106f1 100644
+--- a/security/apparmor/lsm.c
++++ b/security/apparmor/lsm.c
+@@ -922,7 +922,7 @@ static int __init apparmor_init(void)
+ 	error = register_security(&apparmor_ops);
+ 	if (error) {
+ 		AA_ERROR("Unable to register AppArmor\n");
+-		goto register_security_out;
++		goto set_init_cxt_out;
+ 	}
+ 
+ 	/* Report that AppArmor successfully initialized */
+@@ -936,6 +936,9 @@ static int __init apparmor_init(void)
+ 
+ 	return error;
+ 
++set_init_cxt_out:
++	aa_free_task_context(current->real_cred->security);
++
+ register_security_out:
+ 	aa_free_root_ns();
+ 
+@@ -944,7 +947,6 @@ alloc_out:
+ 
+ 	apparmor_enabled = 0;
+ 	return error;
+-
+ }
+ 
+ security_initcall(apparmor_init);
+-- 
+1.6.5.3
 
---- 2.6.37-rc1/mm/ksm.c	2010-10-20 13:30:22.000000000 -0700
-+++ linux/mm/ksm.c	2010-11-09 23:01:24.000000000 -0800
-@@ -800,6 +800,8 @@ static int replace_page(struct vm_area_s
- 	set_pte_at_notify(mm, addr, ptep, mk_pte(kpage, vma->vm_page_prot));
- 
- 	page_remove_rmap(page);
-+	if (!page_mapped(page))
-+		try_to_free_swap(page);
- 	put_page(page);
- 
- 	pte_unmap_unlock(ptep, ptl);
