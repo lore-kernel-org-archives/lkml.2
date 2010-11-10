@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269Ab0KJRlw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:41:52 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:51614 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751556Ab0KJRlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:41:51 -0500
-Date: Wed, 10 Nov 2010 18:41:22 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@alien8.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        ying.huang@intel.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        mchehab@redhat.com,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [RFC/Requirements/Design] h/w error reporting
-Message-ID: <20101110174122.GA4001@elte.hu>
-References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
- <20101110101450.GA18481@elte.hu>
- <1289400056.12418.139.camel@gandalf.stny.rr.com>
- <1289400234.2191.129.camel@laptop>
- <1289401781.12418.145.camel@gandalf.stny.rr.com>
- <1289403019.2084.17.camel@laptop>
- <1289407960.12418.169.camel@gandalf.stny.rr.com>
- <20101110170559.GA15704@a1.tnic>
+	id S1754186Ab0KJRmR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:42:17 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:35781 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751556Ab0KJRmP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 12:42:15 -0500
+Date: Wed, 10 Nov 2010 18:42:10 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: Andi Kleen <andi@firstfloor.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/4] x86: clear XD_DISABLED flag on Intel to regain NX
+Message-ID: <20101110174210.GA9011@basil.fritz.box>
+References: <20101109181157.GE5876@outflux.net>
+ <20101109181501.GG5876@outflux.net>
+ <87hbfpp390.fsf@basil.nowhere.org>
+ <20101110164708.GN5876@outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101110170559.GA15704@a1.tnic>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20101110164708.GN5876@outflux.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Right, which is why in this code it validates the CPU brand and its
+> family and model to make sure it's safe to read this MSR. The logic
+> is identical to the code in early_init_intel() that also accesses
+> MSR_IA32_MISC_ENABLE. I reviewed the CPU documentation and it seemed
+> to support that MSR_IA32_MISC_ENABLE would be available under those
+> conditions. That said, I only had a limited number of systems available
+> to test it on. If there are adjustments to be made, we can fix them.
 
-* Borislav Petkov <bp@alien8.de> wrote:
+If you can even find out. The system will die silently.
 
-> On Wed, Nov 10, 2010 at 11:52:40AM -0500, Steven Rostedt wrote:
-> > Also, lets not focus now on implementation. Let's try to concentrate on
-> > what we want the tools to be able to do.
-> > 
-> > For example, I would like:
-> > 
-> > Very small entries, and pick and chose what I want in my entries.
-> > 
-> > A way to read it fast to a file or over the network (splice).
-> > 
-> > The read backwards seems like a cool idea, but I would not want to throw
-> > away the read forwards part either.
+Usually the main culprits are simulators. VMs etc. Most do ignore unknown
+MSRs, but not all.
+
 > 
-> It would also be cool to be able to allocate those buffers as early as possible, 
-> even if before MCA is enabled, so that I won't have to copy MCE data which got 
-> logged before the tracing subsystem got enabled to the buffers proper.
+> > I would rather move this code later into the early init code (before the
+> > second mapping is set up, which is still in time). There the exception
+> > handlers are up and you could handle a #GP if it happens.
+> 
+> The problem is that the page tables are set up before early_init, and Peter
+> Anvin and I did not see a way to move the XD_DISABLE logic any later than
+> where I've put it. Though I should let Peter speak for himself here, as I'm
+> less familiar with that aspect of the code.
 
-We could even have some (small) statically enabled build-time buffer that could be 
-enabled straight away before any allocators are enabled.
+On x86-64 there are two kernel mappings: an early one and a final one.
+The final one is only set up in C code.
 
-Thanks,
+On 32bit there's only a single one, but it could be changed (e.g. 
+only add NX later)
 
-	Ingo
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
