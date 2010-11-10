@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756729Ab0KJPbj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 10:31:39 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:33921 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756267Ab0KJPbi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 10:31:38 -0500
-Date: Wed, 10 Nov 2010 10:31:37 -0500
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Mikael Starvik <mikael.starvik@axis.com>
-Cc: Kyle McMartin <kyle@mcmartin.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jesper Nilsson <jespern@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>
-Subject: Re: [PATCH 0/4] cris: kill __do_IRQ
-Message-ID: <20101110153137.GX8332@bombadil.infradead.org>
-References: <20101015040127.GA6333@bombadil.infradead.org>
- <4BEA3FF3CAA35E408EA55C7BE2E61D05583DC035FC@xmail3.se.axis.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BEA3FF3CAA35E408EA55C7BE2E61D05583DC035FC@xmail3.se.axis.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756739Ab0KJPcl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:32:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28968 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756279Ab0KJPck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 10:32:40 -0500
+Subject: Re: linux-next: build failure after merge of the fsnotify tree
+From: Eric Paris <eparis@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        LinoSanfilippo@gmx.de
+In-Reply-To: <20101110125321.79c5c8a2.sfr@canb.auug.org.au>
+References: <20101110125321.79c5c8a2.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Nov 2010 10:32:23 -0500
+Message-ID: <1289403143.3083.54.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 08:13:36AM +0200, Mikael Starvik wrote:
-> Great! These patches were expected and we would have done it ourselves someday soon but it is always great to
-> get help from others, Thanks for caring about CRIS!
+On Wed, 2010-11-10 at 12:53 +1100, Stephen Rothwell wrote:
+> Hi Eric,
 > 
-> We will test these patches as soon as possible
+> After merging the fsnotify tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 > 
+> fs/notify/mark.c: In function 'fsnotify_add_mark':
+> fs/notify/mark.c:230: error: 'struct fsnotify_group' has no member named 'fanotify_data'
+> 
+> Caused by commit 0ed64ab6b338e4269c9f25de83781619ecd624f1 ("fsnotify:
+> code and error path cleanup in fsnotify_add_mark").  This build has
+> CONFIG_FANOTIFY not set.
+> 
+> I have used the fsnotify tree from next-20101109 for today.
 
-Any chance you were able to test these?
+I wasn't actually that commit it was:
 
-regards, Kyle
+5876b30fc2c91d67386f91da62b14f159d7bb41f ("fanotify: Do check against
+max_marks and increase number of group marks atomically")
+
+Lino, I knew there was a reason I was happy with the small race.  Would
+you like to take another stab or should I just revert?
+
+-Eric
+
+
+
+
