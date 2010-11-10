@@ -1,50 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756421Ab0KJUTl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:19:41 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:45160 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756161Ab0KJUTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:19:40 -0500
-X-IronPort-AV: E=Sophos;i="4.59,179,1288594800"; 
-   d="scan'208";a="480391884"
-Message-ID: <4CDAFE4B.1060408@netapp.com>
-Date: Wed, 10 Nov 2010 15:19:23 -0500
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101028 Lightning/1.0b2 Lanikai/3.1.6
+	id S1756538Ab0KJUU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:20:26 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:57125 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755762Ab0KJUUZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 15:20:25 -0500
+Message-ID: <4CDAFE6E.7050200@vlnb.net>
+Date: Wed, 10 Nov 2010 23:19:58 +0300
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Memory leak via nfs_readdir_make_qstr
-References: <1289412737.4513.80.camel@e102109-lin.cambridge.arm.com>
-In-Reply-To: <1289412737.4513.80.camel@e102109-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: Greg KH <greg@kroah.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+References: <20101011213235.GA11489@kroah.com> <4CB4AEB9.30501@vlnb.net> <20101012190345.GA25737@kroah.com> <4CB75E81.7000208@vlnb.net> <20101014200413.GA30831@kroah.com> <4CC1CA4D.1090609@vlnb.net> <20101022175624.GA13640@kroah.com> <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com>
+In-Reply-To: <4CDA6CD4.3010308@panasas.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:u0/88inD+RAUTfCttE3RQwe/lzBI0rNUnef6lJ9CvsP
+ ddr4KhIWqMjr2ucNx/4l7djBELncmXNevkRD+Kam073jP0Mkmz
+ OFgpEEVJcg60GYgtXHAEsSsF6EAHnJX9Ei3AhieGvBEzfVzB3U
+ 7MBMDLKD9zApC3wc5yjCWxzaFS4f+9MmtXIEKKAJYRh2jpAGI2
+ UBucbW1OcddUyiUcxeHFg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2010 01:12 PM, Catalin Marinas wrote:
-> Hi,
+Boaz Harrosh, on 11/10/2010 12:58 PM wrote:
+> On 11/09/2010 10:06 PM, Vladislav Bolkhovitin wrote:
+>>
+>> Sorry, but what is incorrect in the working implementation without any
+>> bugs doing its job in the simplest, smallest and clearest way?
+>>
+>> If those objects remade to free themselves in the kobjects release(),
+>> what value would it add to them? Would the implementation be simpler,
+>> smaller or clearer? Not, I believe, new implementation would be only
+>> bigger and less clear. So, what's the point to do it to make the code worse?
+>>
 > 
-> I tested the 2.6.37-rc1 on an ARM platform with nfsroot filesystem.
-> Kmemleak reports quite a lot (> 150) of leaks like below. You seem to
-> have made changes recently to this area.
+> Totally theoretically speaking, since I have not inspected the code.
 > 
-<snip>
+> If today you wait for the count to reach zero, then unregister
+> and send an event to some other subsystem to free the object.
 > 
-> Any quick thoughts? I'll have a look tomorrow as well.
+> Is it not the same as if you take an extra refcount, unregister and
+> send the event at count=1. Then at that other place decrement the last
+> count to cause the object to be freed.
+> 
+> I agree that it is hard to do lockless. what some places do is have
+> an extra kref. The kobj has a single ref on it. everything takes the
+> other kref. when that reaches zero the unregister and event fires
+> and at free you decrement the only kobj ref to deallocate. This is one
+> way. In some situations you can manage with a single counter it all
+> depends.
 
-Hi
+Thanks for sharing your thoughts with us. But the question isn't about
+if it's possible to implement what we need locklessly. The question is
+in two approaches how to synchronously delete objects with entries on SYSFS:
 
-My first thought is that this is because of how we are caching the result of a readdir now.  We are storing the name of each directory entry as part of the cache, and this requires allocating memory for each string.  These are freed on unmount (see nfs_readdir_clear_array() in fs/nfs/dir.c), but you probably don't want to unmount your root filesytem...
+1. struct object_x {
+	...
+	struct kobject kobj;
+	struct completion *release_completion;
+};
 
-- Bryan
+static void x_release(struct kobject *kobj)
+{
+	struct object_x *x;
+	struct completion *c;
 
-> 
-> Thanks,
-> 
-> Catalin
-> 
+	x = container_of(kobj, struct object_x, kobj);
+	c = x->release_completion;
+	kfree(x);
+	complete_all(c);
+}
 
+void del_object(struct object_x *x)
+{
+	DECLARE_COMPLETION_ONSTACK(completion);
+
+	...
+	x->release_completion = &completion;
+	kobject_put(&x->kobj);
+	wait_for_completion(&completion);
+}
+
+and
+
+2. struct object_x {
+	...
+	struct kobject kobj;
+	struct completion release_completion;
+};
+
+static void x_release(struct kobject *kobj)
+{
+	struct object_x *x;
+
+	x = container_of(kobj, struct object_x, kobj);
+	complete_all(&x->release_completion);
+}
+
+void del_object(struct object_x *x)
+{
+	...
+	kobject_put(&x->kobj);
+	wait_for_completion(&completion);
+	...
+	kfree(x);
+}
+
+Greg asserts that (1) is the only correct approach while (2) is
+incorrect, and I'm trying to justify that (2) is correct too and
+sometimes could be better, i.e. simpler and clearer, because it
+decouples object_x from SYSFS and its kobj. Then kobj becomes an
+ordinary member of struct object_x without any special treatment and
+with the same lifetime rules as other members of struct object_x. While
+in (1) all lifetime of struct object_x is strictly attached to kobj, so
+it needs be specially handled with additional code for that if struct
+object_x has many other members which needed to be initialized/deleted
+_before and after_ kobj as we have in SCST.
+
+Vlad
