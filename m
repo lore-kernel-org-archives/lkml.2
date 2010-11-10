@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab0KJPUo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 10:20:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2792 "EHLO mx1.redhat.com"
+	id S1756622Ab0KJPXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:23:22 -0500
+Received: from gate.crashing.org ([63.228.1.57]:35356 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756130Ab0KJPUn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 10:20:43 -0500
-Date: Wed, 10 Nov 2010 08:21:23 -0700
-From: Pete Zaitcev <zaitcev@redhat.com>
-To: Guy Harris <guy@alum.mit.edu>
-Cc: Developer support list for Wireshark 
-	<wireshark-dev@wireshark.org>,
-        linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: usbmon: size of different fields?
-Message-ID: <20101110082123.2dc1d361@lembas.zaitcev.lan>
-In-Reply-To: <E6FD75ED-7E13-47DC-B9F9-6C8C09C3C4AC@alum.mit.edu>
-References: <4CD8ECE4.1090206@freemail.hu>
-	<20101109075056.59a2e7d8@lembas.zaitcev.lan>
-	<4CD9A96D.1010306@freemail.hu>
-	<E6FD75ED-7E13-47DC-B9F9-6C8C09C3C4AC@alum.mit.edu>
-Organization: Red Hat, Inc.
+	id S1756130Ab0KJPXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 10:23:21 -0500
+Subject: RE: [PATCH] ppc44x:PHY fixup for USB on canyonlands board
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Rupjyoti Sarmah <rsarmah@apm.com>
+Cc: Josh Boyer <jwboyer@linux.vnet.ibm.com>, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <59d17e399e4efb295e802572f16cc395@mail.gmail.com>
+References: <201011101137.oAABbFoc015547@amcc.com>
+	 <20101110141914.GC26193@zod.rchland.ibm.com>
+	 <59d17e399e4efb295e802572f16cc395@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Nov 2010 02:22:55 +1100
+Message-ID: <1289402575.2147.1399.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Nov 2010 13:23:28 -0800
-Guy Harris <guy@alum.mit.edu> wrote:
-> On Nov 9, 2010, at 12:05 PM, Németh Márton wrote:
+On Wed, 2010-11-10 at 20:13 +0530, Rupjyoti Sarmah wrote:
+> >Is this just for canyonlands?  If so, it's probably better off in a
+> >caynonlands specific file, or a function that gets called in the common
+> >platform file if the model matches canyonlands.  It seems a bit overkill
+> >to introduce an entire new file and Kconfig option for this.
 > 
-> > OK, that's clear, the byte order of the API structure fields are in "host endian"
-> > order. The API structures are already saved by Wireshark into file for quite some
-> > time.
 > 
-> ...and tcpdump.  Support for capturing on USB on Linux has been in
-> libpcap since at least libpcap 1.0.
+> We want to have a file that will have fixup codes for all the ppc44x
+> specific boards. Within this ppc44x_fixup.c file we would like to place
+> any fixup code that
+> might come later for any of the ppc44x based boards. Although I released
+> it only with Canyonlands code, it would be ppc44x specific file.
+> 
+> Do let me know if that is ok.
 
-I imagined that Nemeth wanted to implement an alternative to that.
-Surely he knows how libpcap works. In that case a new, host-independent
-format may be introduced. But userland is mysterious to me.
+No. You should have a file per board that needs fixup. Take them out of
+ppc4xx_simple.c and create a board file.
 
-I'll make sure to document ISO descriptors properly. I was sure
-I had done that, sorry.
+Cheers,
+Ben.
 
--- Pete
+
