@@ -1,92 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756490Ab0KJTVv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 14:21:51 -0500
-Received: from casper.infradead.org ([85.118.1.10]:34253 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756143Ab0KJTVu convert rfc822-to-8bit (ORCPT
+	id S1756525Ab0KJTVx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 14:21:53 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38473 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756262Ab0KJTVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 14:21:50 -0500
-Subject: Re: [RFC][PATCH 05/22] sched: SCHED_DEADLINE policy implementation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raistlin <raistlin@linux.it>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1288333814.8661.146.camel@Palantir>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333814.8661.146.camel@Palantir>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 10 Nov 2010 20:21:21 +0100
-Message-ID: <1289416881.2084.41.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 10 Nov 2010 14:21:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ePa9+0iS+tee5mwwmgX4hVnxgox+IV88ed8JYkza/CZHPG5o9ZAJN11GaOezHsKf2y
+         8vpSkKYN8QRjJRU7CAJdU2tBFBOTumLhrqDXoRilJmyIhXFlwrdtGuZbv8klFLp81vbD
+         eBxL7k/6Ac5Wrtk1nh/cJ2TvMaVIwrDKQsYeY=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinQK_9qp-8jJ5j3-ChUjwhGiGzAmCu5cBtHX75g@mail.gmail.com>
+References: <AANLkTinOeby9P847gJFn_t0h5nDY7cfi3cW9hEaUrS1v@mail.gmail.com>
+	<20101106050721.GA2194@kroah.com>
+	<AANLkTinQK_9qp-8jJ5j3-ChUjwhGiGzAmCu5cBtHX75g@mail.gmail.com>
+Date: Wed, 10 Nov 2010 11:21:49 -0800
+Message-ID: <AANLkTikdr=nJF45QUCKAOY8NSh9GNtv8c9K_oNdJeJfc@mail.gmail.com>
+Subject: Re: [RFC] rbd sysfs interface
+From: Yehuda Sadeh Weinraub <yehudasa@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: ceph-devel@vger.kernel.org, Sage Weil <sage@newdream.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-29 at 08:30 +0200, Raistlin wrote:
-> +       if (task_has_dl_policy(p) || task_has_rt_policy(p)) {
-> +               p->se.load.weight = 0;
-> +               p->se.load.inv_weight = WMULT_CONST;
-> +               return;
-> +       } 
+On Fri, Nov 5, 2010 at 10:51 PM, Yehuda Sadeh Weinraub
+<yehudasa@gmail.com> wrote:
+> On Fri, Nov 5, 2010 at 10:07 PM, Greg KH <greg@kroah.com> wrote:
+>> On Fri, Nov 05, 2010 at 04:09:31PM -0700, Yehuda Sadeh Weinraub wrote:
+>>>
+>>> Does this seem sane? Any comments would be greatly appreciated.
+>>
+>> It sounds like you need to use configfs instead of sysfs, as your model
+>> was the reason it was created.
+>>
+>> Have you tried that?
+>
+> Oh, will look at it now. With ceph (although for a different purpose)
+> we went through proc -> sysfs -> debugfs, however, it seems that we've
+> missed at least one userspace-kernel channel.
+>
 
----
-commit 17bdcf949d03306b308c5fb694849cd35f119807
-Author: Linus Walleij <linus.walleij@stericsson.com>
-Date:   Mon Oct 11 16:36:51 2010 +0200
+Well, we looked a bit at what configfs does, and from what we see it
+doesn't really fit our needs. Configfs would be more suitable to
+configuring a static system than to control a dynamic one. The main
+problem is that items creation is only driven by userspace. That would
+be ok if we had a static mapping of the images and snapshots, however,
+we don't. We need the system to reflect any state change with the
+running configuration (e.g., a new snapshot was created by a different
+client), and it doesn't seem possible with configfs as long as items
+creation is only driven by userspace operations. We need a system that
+would be able to reflect changes that happened due to some external
+operation, and this doesn't seem to be the case here.
 
-    sched: Drop all load weight manipulation for RT tasks
-    
-    Load weights are for the CFS, they do not belong in the RT task. This makes all
-    RT scheduling classes leave the CFS weights alone.
-    
-    This fixes a real bug as well: I noticed the following phonomena: a process
-    elevated to SCHED_RR forks with SCHED_RESET_ON_FORK set, and the child is
-    indeed SCHED_OTHER, and the niceval is indeed reset to 0. However the weight
-    inserted by set_load_weight() remains at 0, giving the task insignificat
-    priority.
-    
-    With this fix, the weight is reset to what the task had before being elevated
-    to SCHED_RR/SCHED_FIFO.
-    
-    Cc: Lennart Poettering <lennart@poettering.net>
-    Cc: stable@kernel.org
-    Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
-    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    LKML-Reference: <1286807811-10568-1-git-send-email-linus.walleij@stericsson.com>
-    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+There is second issue and that's committable items are not implemented
+there yet. So the interface itself would be a bit weird. E.g., had
+committable items been implemented we would have done something like
+the following:
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 5f64fed..728081a 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1855,12 +1855,6 @@ static void dec_nr_running(struct rq *rq)
- 
- static void set_load_weight(struct task_struct *p)
- {
--	if (task_has_rt_policy(p)) {
--		p->se.load.weight = 0;
--		p->se.load.inv_weight = WMULT_CONST;
--		return;
--	}
--
- 	/*
- 	 * SCHED_IDLE tasks get minimal weight:
- 	 */
+ /config/rbd# mkdir pending/myimage
+ /config/rbd# echo foo > pending/myimage/name
+ /config/rbd# cat ~/mykey > pending/myimge/key
+ /config/rbd# echo 10.0.0.1 > pending/myimage/addr
+...
+ /config/rbd# mv pending/myimage live/
 
+and that would do what we need in terms of initial configuration.
+However, as this is not really implemented yet, there is no
+distinction between images that are pending and images that are live,
+so configuration would look something like:
+ /config/rbd# mkdir myimage
+ /config/rbd# echo foo > myimage/name
+ /config/rbd# cat ~/mykey > myimge/key
+ /config/rbd# echo 10.0.0.1 > myimage/addr
+...
+ /config/rbd# echo 1 > myimage/go
+
+And having that, the myimage/ directory will still hold all those
+config options that are moot after the image went live. It doesn't
+seem to offer a significant improvement over the current sysfs one
+liner configuration and with sysfs we can have it reflect any dynamic
+change that occurred within the system. So we tend to opt for an
+improved sysfs solution, similar to the one I described before.
+
+Any thoughts? Am I completely off the tracks?
+
+Thanks,
+Yehuda
