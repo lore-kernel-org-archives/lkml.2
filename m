@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925Ab0KJQ2K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 11:28:10 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:56808 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756897Ab0KJQ2I (ORCPT
+	id S1756920Ab0KJQc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 11:32:29 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:51453 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756824Ab0KJQc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 11:28:08 -0500
-Date: Wed, 10 Nov 2010 17:28:06 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, rostedt@goodmis.org, andi@firstfloor.org,
-        lwoodman@redhat.com, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 1/2] tracing,mm - add kernel pagefault tracepoint for
- x86 & x86_64
-Message-ID: <20101110162806.GD7205@basil.fritz.box>
-References: <1289390172-9730-1-git-send-email-jolsa@redhat.com>
- <1289390172-9730-2-git-send-email-jolsa@redhat.com>
- <20101110132954.GA2101@infradead.org>
- <20101110134436.GD1949@jolsa.brq.redhat.com>
- <20101110135244.GA31638@elte.hu>
- <20101110150021.GA5750@nowhere>
- <20101110151750.GA11541@jolsa.brq.redhat.com>
- <20101110152001.GA5707@infradead.org>
+	Wed, 10 Nov 2010 11:32:28 -0500
+Date: Wed, 10 Nov 2010 11:32:25 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [patch 4/6] fs: d_delete change
+Message-ID: <20101110163224.GB15130@infradead.org>
+References: <20101109124610.GB11477@amd>
+ <20101109130133.GE11477@amd>
+ <20101109162516.GB6217@infradead.org>
+ <20101109220833.GG3246@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101110152001.GA5707@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101109220833.GG3246@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 10:20:02AM -0500, Christoph Hellwig wrote:
-> On Wed, Nov 10, 2010 at 04:17:50PM +0100, Jiri Olsa wrote:
-> > I guess I can take the regs out then.. would that patch be acceptable
-> > afterwards..?
+On Wed, Nov 10, 2010 at 09:08:33AM +1100, Nick Piggin wrote:
+> On Tue, Nov 09, 2010 at 11:25:16AM -0500, Christoph Hellwig wrote:
+> > The patch looks fine to me, and I'm also fine with merging it ASAP.
+> > But the patch subject and commit message are not very descriptive.
 > 
-> I really can't make much sense out of this whole trace point.  What
-> use it the task_struct address for example?
-> 
-> What would be much more interesting is telling us if we had a
-> major/minor fault, if ->page_mkwrite was called, etc.
+> How is the commit message not descriptive? The first sentence
+> summarises exactly what the change does. The last says why it
+> is required. In the middle are some details.
 
-Also on x86 I would log the error code.
+foo change is about as useless as a subject could be.
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+"fs: idempotent d_delete" from your old tree was much better.
+
+As far as the commit message is concerned I think the most important
+bit is that we do not call it from prune_one_dentry anymore, which is
+the things that might matter to any complex filesystem maintainer
+looking at the changelog.
+
+The other things I didn't like was the introductionary blurb, but from
+reading the answer to the previous comment is seems like that wsn't
+intentional anyway.
