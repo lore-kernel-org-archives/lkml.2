@@ -1,71 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab0KJWpI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 17:45:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44127 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757218Ab0KJWpG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 17:45:06 -0500
-Date: Wed, 10 Nov 2010 14:45:16 -0800
-From: Greg KH <gregkh@suse.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Maciej Szmigiero <mhej@o2.pl>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Anton Vorontsov <avorontsov@ru.mvista.com>,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Ben Nizette <bn@niasdigital.com>
-Subject: Re: [GPIO]implement sleeping GPIO chip removal
-Message-ID: <20101110224516.GA19567@suse.de>
-References: <4CD6F049.10102@o2.pl> <20101110050947.GC4110@angua.secretlab.ca> <4CDABA03.2050000@o2.pl> <alpine.LFD.2.00.1011102134350.2900@localhost6.localdomain6> <4CDB0834.4080101@o2.pl> <alpine.LFD.2.00.1011102203500.2900@localhost6.localdomain6> <20101110211540.GA7063@angua.secretlab.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101110211540.GA7063@angua.secretlab.ca>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1757335Ab0KJWpt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 17:45:49 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:40605 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757010Ab0KJWps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 17:45:48 -0500
+Subject: Re: [RFC][PATCH 02/22] sched: add extended scheduling interface
+From: Raistlin <raistlin@linux.it>
+To: Dhaval Giani <dhaval.giani@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <AANLkTing2SPvnHUg4tHtn4rp9XYhq3Wip5nFWNVg16W3@mail.gmail.com>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288333622.8661.141.camel@Palantir> <20101110160004.GA9092@gondor.retis>
+	 <AANLkTing2SPvnHUg4tHtn4rp9XYhq3Wip5nFWNVg16W3@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-tJ3lVUplMNasOE5oX8Yf"
+Date: Wed, 10 Nov 2010 23:45:35 +0100
+Message-ID: <1289429135.13577.303.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 02:15:40PM -0700, Grant Likely wrote:
-> On Wed, Nov 10, 2010 at 10:07:05PM +0100, Thomas Gleixner wrote:
-> > Can you please use a mail client which does proper line breaks at 78 ?
-> > 
-> > On Wed, 10 Nov 2010, Maciej Szmigiero wrote:
-> > > You misunderstood me.
-> > 
-> > No, I didnt.
-> > 
-> > > By "looping in hope that somebody will finally release the chip" I
-> > > meant the only real way to handle a GPIO chip unplugging in the
-> > > current kernel.  Which is way worse that preventing new requests,
-> > > then waiting for existing one to be released.  And this is exactly
-> > > what my patch does.
-> > 
-> > That still does not make it a good solution.
-> > 
-> > > I understand that it could be simplified by removing redundant code
-> > > (as Grant Likely had suggested before), and moving it to completion
-> > > interface instead of manipulating a task structure directly, but
-> > > this doesn't mean that the whole GPIO code has to be rewritten just
-> > > to add one functionality.
-> > 
-> > It's not about rewriting, it's about fixing the problem in the right
-> > way and not just hacking around it.
-> > 
-> > If we see a shortcoming like this, we fix it and do not magically work
-> > around it.
-> 
-> +1
-> 
-> Thomas is right.  kobject reference counting is the correct solution.
-> Nack on this approach.
 
-Only use a kobject if you want to be in the sysfs hierarchy (which I
-don't think you want to do here.)  If you want proper reference
-counting, use a 'struct kref' instead.
+--=-tJ3lVUplMNasOE5oX8Yf
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-thanks,
+On Wed, 2010-11-10 at 17:12 +0100, Dhaval Giani wrote:
+> >> + *  @curr_runtime       task's currently available runtime
+> >> + *  @used_runtime       task's totally used runtime
+> >> + *  @curr_deadline      task's current absolute deadline
+> >> + *
+> >> + * Given this task model, there are a multiplicity of scheduling algo=
+rithms
+> >> + * and policies, that can be used to ensure all the tasks will make t=
+heir
+> >> + * timing constraints.
+> >> + */
+> >> +struct sched_param_ex {
+> >> +     int sched_priority;
+> >> +     struct timespec sched_runtime;
+> >> +     struct timespec sched_deadline;
+> >> +     struct timespec sched_period;
+> >> +     unsigned int sched_flags;
+> >> +
+> >> +     struct timespec curr_runtime;
+> >> +     struct timespec used_runtime;
+> >> +     struct timespec curr_deadline;
+>=20
+> Can we expose soem of these details via schedstats as opposed to a syscal=
+l?
+>=20
+Actually, good point... schedstats seems very reasonable to me... What
+do the others think?
 
-greg k-h
+Thanks,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://blog.linux.it/raistlin / raistlin@ekiga.net /
+dario.faggioli@jabber.org
+
+--=-tJ3lVUplMNasOE5oX8Yf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzbII8ACgkQk4XaBE3IOsTVRQCglhkXiMchvjHxKvSQss3O/ML/
+SZoAmwRI8kRMSvZEnOYYw2C6m8j6nxuK
+=O0I2
+-----END PGP SIGNATURE-----
+
+--=-tJ3lVUplMNasOE5oX8Yf--
+
