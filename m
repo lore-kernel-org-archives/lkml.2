@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753791Ab0KJB1C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 20:27:02 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:59420 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab0KJB07 (ORCPT
+	id S1753786Ab0KJB23 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 20:28:29 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:4962 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab0KJB22 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 20:26:59 -0500
-Date: Tue, 9 Nov 2010 20:26:53 -0500 (EST)
-From: Nicolas Pitre <nicolas.pitre@canonical.com>
-X-X-Sender: nico@xanadu.home
-To: Kay Sievers <kay.sievers@vrfy.org>
-cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 29/49] vcs: add poll/fasync support
-In-Reply-To: <AANLkTinVp4C9bRW6=EMHwh1UyeadFbOXKe1aDsxknJf8@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1011092013290.13911@xanadu.home>
-References: <20101022175112.GC13489@kroah.com> <1287771688-14805-29-git-send-email-gregkh@suse.de> <AANLkTinVp4C9bRW6=EMHwh1UyeadFbOXKe1aDsxknJf8@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 9 Nov 2010 20:28:28 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:in-reply-to:message-id:
+	user-agent:mime-version:content-type;
+	b=illHNCvRXzH8QmwRfEiCNCXQkz4JolzXGcCvprweliO+AxhxLALJEbbQxnnoVXM6s
+	2o/WEfMNgozgCfgPTk0Kg==
+From: Greg Thelen <gthelen@google.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <balbir@in.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: mem_cgroup_get_limit() return type, was [patch] memcg: fix unit mismatch in memcg oom limit calculation
+References: <20101109110521.GS23393@cmpxchg.org>
+	<xr93iq068dyd.fsf@ninji.mtv.corp.google.com>
+	<alpine.DEB.2.00.1011091327420.7730@chino.kir.corp.google.com>
+	<xr9362w66tss.fsf@ninji.mtv.corp.google.com>
+	<alpine.DEB.2.00.1011091519420.26837@chino.kir.corp.google.com>
+Date: Tue, 09 Nov 2010 17:26:34 -0800
+In-Reply-To: <alpine.DEB.2.00.1011091519420.26837@chino.kir.corp.google.com>
+	(David Rientjes's message of "Tue, 9 Nov 2010 15:21:50 -0800 (PST)")
+Message-ID: <xr93vd4655px.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811582-1337357285-1289352415=:13911"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+David Rientjes <rientjes@google.com> writes:
 
----1463811582-1337357285-1289352415=:13911
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+> On Tue, 9 Nov 2010, Greg Thelen wrote:
+>
+>> >> > Adding the number of swap pages to the byte limit of a memory control
+>> >> > group makes no sense.  Convert the pages to bytes before adding them.
+>> >> >
+>> >> > The only user of this code is the OOM killer, and the way it is used
+>> >> > means that the error results in a higher OOM badness value.  Since the
+>> >> > cgroup limit is the same for all tasks in the cgroup, the error should
+>> >> > have no practical impact at the moment.
+>> >> >
+>> >> > But let's not wait for future or changing users to trip over it.
+>> >> 
+>> >> Thanks for the fix.
+>> >> 
+>> >
+>> > Nice catch, but it's done in the opposite way: the oom killer doesn't use 
+>> > byte limits but page limits.  So this needs to be
+>> >
+>> > 	(res_counter_read_u64(&memcg->res, RES_LIMIT) >> PAGE_SHIFT) +
+>> > 			total_swap_pages;
+>> 
+>> In -mm, the oom killer queries memcg for a byte limit using
+>> mem_cgroup_get_limit(). The following is from
+>> mem_cgroup_out_of_memory():
+>> 
+>> 	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
+>> 
+>
+> Oops, I missed that.  I think Johannes' patch is better because 
+> mem_cgroup_get_limit() may eventually be used elsewhere and the subsystem 
+> has byte granularity.
 
-On Wed, 10 Nov 2010, Kay Sievers wrote:
+I have no problem with mem_cgroup_get_limit() returning a byte count as
+you prefer.  I think this approach does have an issue.
+"mem_cgroup_get_limit() >> PAGE_SHIFT" may not fit within unsigned long
+on 32-bit machines.  Does this cause a problem for the 'limit' local
+variable in mem_cgroup_out_of_memory():
+ 	limit = mem_cgroup_get_limit(mem) >> PAGE_SHIFT;
 
-> On Fri, Oct 22, 2010 at 20:21, Greg Kroah-Hartman <gregkh@suse.de> wrote:
-> > From: Nicolas Pitre <nico@fluxnic.net>
-> >
-> > The /dev/vcs* devices are used, amongst other things, by accessibility
-> > applications such as BRLTTY to display the screen content onto refresha=
-ble
-> > braille displays. =C2=A0Currently this is performed by constantly readi=
-ng from
-> > /dev/vcsa0 whether or not the screen content has changed. =C2=A0Given t=
-he
-> > default braille refresh rate of 25 times per second, this easily qualif=
-ies
-> > as the biggest source of wake-up events preventing laptops from enterin=
-g
-> > deeper power saving states.
-> >
-> > To avoid this periodic polling, let's add support for select()/poll() a=
-nd
-> > SIGIO with the /dev/vcs* devices. =C2=A0The implemented semantic is to =
-report
-> > data availability whenever the corresponding vt has seen some update af=
-ter
-> > the last read() operation. =C2=A0The application still has to lseek() b=
-ack
-> > as usual in order to read() the new data.
->=20
-> Shouldn't it raise POLLPRI/POLLERR then, when it's not about new data
-> to read? We do this for several files in the kernel where we just want
-> to wakup someone, but the pretty well-defined semantics of poll()
-> don't apply.
-
-Hmmm...  Maybe POLLPRI, but POLLERR makes no sense.
-
-
-Nicolas
----1463811582-1337357285-1289352415=:13911--
+Do we need something like the following in mem_cgroup_out_of_memory() to
+guard against this overflow?
+ 	limit = min(mem_cgroup_get_limit(mem) >> PAGE_SHIFT, ULONG_MAX);
