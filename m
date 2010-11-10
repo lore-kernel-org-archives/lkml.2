@@ -1,67 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab0KJJ6x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 04:58:53 -0500
-Received: from exprod5og103.obsmtp.com ([64.18.0.145]:46732 "HELO
-	exprod5og103.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755280Ab0KJJ6u (ORCPT
+	id S1755399Ab0KJKDq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 05:03:46 -0500
+Received: from dgate10.ts.fujitsu.com ([80.70.172.49]:59030 "EHLO
+	dgate10.ts.fujitsu.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755280Ab0KJKDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 04:58:50 -0500
-Message-ID: <4CDA6CD4.3010308@panasas.com>
-Date: Wed, 10 Nov 2010 11:58:44 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-CC: Greg KH <greg@kroah.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-References: <20101011213235.GA11489@kroah.com> <4CB4AEB9.30501@vlnb.net> <20101012190345.GA25737@kroah.com> <4CB75E81.7000208@vlnb.net> <20101014200413.GA30831@kroah.com> <4CC1CA4D.1090609@vlnb.net> <20101022175624.GA13640@kroah.com> <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net>
-In-Reply-To: <4CD9A9B8.70708@vlnb.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Nov 2010 09:58:48.0971 (UTC) FILETIME=[DF0FA5B0:01CB80BD]
+	Wed, 10 Nov 2010 05:03:41 -0500
+DomainKey-Signature: s=s1536a; d=ts.fujitsu.com; c=nofws; q=dns;
+  h=X-SBRSScore:X-IronPort-AV:Received:X-IronPort-AV:
+   Received:Received:From:To:Cc:Subject:Date:Message-Id:
+   X-Mailer:In-Reply-To:References;
+  b=rla5w1UWZ9xWyRl0VkfOrRblD50r4G6t2dLEkS6r1KNZgyyPrVmb5kGB
+   9PS3JQLoWANFhxeGsVne06TqaMJwJOF9oh5pv9v8+SwflwvMKWaZ4VwOR
+   L0aSXO5fwbjUNHPDZWZEDnsczKudjVYa4Fk0etw+71sNc5FM1ni7NEN4G
+   MUs68cZOeDnWo2M5dvNNftFBLe6cgAKplALkvS+3aynbQ704PKUFZ/Mz5
+   i/FF3ANurzWZfYnpOZv1R2E9IopL+;
+X-SBRSScore: None
+X-IronPort-AV: E=Sophos;i="4.59,177,1288566000"; 
+   d="scan'208";a="58554224"
+X-IronPort-AV: E=Sophos;i="4.59,177,1288566000"; 
+   d="scan'208";a="102636357"
+From: Martin Wilck <martin.wilck@ts.fujitsu.com>
+To: jbarnes@virtuousgeek.org
+Cc: gerhard.wichert@ts.fujitsu.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Martin Wilck <martin.wilck@ts.fujitsu.com>
+Subject: [PATCH] fix size checks for mmap() on /proc/bus/pci files (updated)
+Date: Wed, 10 Nov 2010 11:03:21 +0100
+Message-Id: <1289383401-1357-1-git-send-email-martin.wilck@ts.fujitsu.com>
+X-Mailer: git-send-email 1.6.3.2
+In-Reply-To: <20101109084206.1b6ac66a@jbarnes-desktop>
+References: <20101109084206.1b6ac66a@jbarnes-desktop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2010 10:06 PM, Vladislav Bolkhovitin wrote:
-> 
-> Sorry, but what is incorrect in the working implementation without any
-> bugs doing its job in the simplest, smallest and clearest way?
-> 
-> If those objects remade to free themselves in the kobjects release(),
-> what value would it add to them? Would the implementation be simpler,
-> smaller or clearer? Not, I believe, new implementation would be only
-> bigger and less clear. So, what's the point to do it to make the code worse?
-> 
+The checks for valid mmaps of PCI resources made through /proc/bus/pci files
+that were introduced in 9eff02e2042f96fb2aedd02e032eca1c5333d767 have several
+problems:
 
-Totally theoretically speaking, since I have not inspected the code.
+1. mmap() calls on /proc/bus/pci files are made with real file offsets > 0,
+whereas under /sys/bus/pci/devices, the start of the resource corresponds
+to offset 0. This may lead to false negatives in pci_mmap_fits(), which
+implicitly assumes the /sys/bus/pci/devices layout.
 
-If today you wait for the count to reach zero, then unregister
-and send an event to some other subsystem to free the object.
+2. The loop in proc_bus_pci_mmap doesn't skip empty resouces. This leads
+to false positives, because pci_mmap_fits() doesn't treat empty resources
+correctly (the calculated size is 1 << (8*sizeof(resource_size_t)-PAGE_SHIFT)
+in this case!).
 
-Is it not the same as if you take an extra refcount, unregister and
-send the event at count=1. Then at that other place decrement the last
-count to cause the object to be freed.
+3. If a user maps resources with BAR > 0, pci_mmap_fits will emit bogus
+WARNINGS for the first resources that don't fit until the correct one is found.
 
-I agree that it is hard to do lockless. what some places do is have
-an extra kref. The kobj has a single ref on it. everything takes the
-other kref. when that reaches zero the unregister and event fires
-and at free you decrement the only kobj ref to deallocate. This is one
-way. In some situations you can manage with a single counter it all
-depends.
+On many controllers the first 2-4 BARs are used, and the others are empty.
+In this case, an mmap attempt will first fail on the non-empty BARs
+(including the "right" BAR because of 1.) and emit bogus WARNINGS because
+of 3., and finally succeed on the first empty BAR because of 2.
+This is certainly not the intended behaviour.
 
-Boaz
+This patch addresses all 3 issues.
+Updated with an enum type for the additional parameter for pci_mmap_fits().
+
+Signed-off-by: Martin Wilck <martin.wilck@ts.fujitsu.com>
+---
+ drivers/pci/pci-sysfs.c |   22 ++++++++++++++++------
+ drivers/pci/pci.h       |    7 ++++++-
+ drivers/pci/proc.c      |    2 +-
+ 3 files changed, 23 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index b5a7d9b..25accc9 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -705,17 +705,21 @@ void pci_remove_legacy_files(struct pci_bus *b)
+ 
+ #ifdef HAVE_PCI_MMAP
+ 
+-int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma)
++int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma,
++		  enum pci_mmap_api mmap_api)
+ {
+-	unsigned long nr, start, size;
++	unsigned long nr, start, size, pci_start;
+ 
++	if (pci_resource_len(pdev, resno) == 0)
++		return 0;
+ 	nr = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+ 	start = vma->vm_pgoff;
+ 	size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
+-	if (start < size && size - start >= nr)
++	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
++			pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
++	if (start >= pci_start && start < pci_start + size &&
++			start + nr <= pci_start + size)
+ 		return 1;
+-	WARN(1, "process \"%s\" tried to map 0x%08lx-0x%08lx on %s BAR %d (size 0x%08lx)\n",
+-		current->comm, start, start+nr, pci_name(pdev), resno, size);
+ 	return 0;
+ }
+ 
+@@ -745,8 +749,14 @@ pci_mmap_resource(struct kobject *kobj, struct bin_attribute *attr,
+ 	if (i >= PCI_ROM_RESOURCE)
+ 		return -ENODEV;
+ 
+-	if (!pci_mmap_fits(pdev, i, vma))
++	if (!pci_mmap_fits(pdev, i, vma, PCI_MMAP_SYSFS)) {
++		WARN(1, "process \"%s\" tried to map 0x%08lx bytes "
++			"at page 0x%08lx on %s BAR %d (start 0x%16Lx, size 0x%16Lx)\n",
++			current->comm, vma->vm_end-vma->vm_start, vma->vm_pgoff,
++			pci_name(pdev), i,
++			pci_resource_start(pdev, i), pci_resource_len(pdev, i));
+ 		return -EINVAL;
++	}
+ 
+ 	/* pci_mmap_page_range() expects the same kind of entry as coming
+ 	 * from /proc/bus/pci/ which is a "user visible" value. If this is
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index f5c7c38..7d33f66 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -22,8 +22,13 @@ extern void pci_remove_firmware_label_files(struct pci_dev *pdev);
+ #endif
+ extern void pci_cleanup_rom(struct pci_dev *dev);
+ #ifdef HAVE_PCI_MMAP
++enum pci_mmap_api {
++	PCI_MMAP_SYSFS,	/* mmap on /sys/bus/pci/devices/<BDF>/resource<N> */
++	PCI_MMAP_PROCFS	/* mmap on /proc/bus/pci/<BDF> */
++};
+ extern int pci_mmap_fits(struct pci_dev *pdev, int resno,
+-			 struct vm_area_struct *vma);
++			 struct vm_area_struct *vmai,
++			 enum pci_mmap_api mmap_api);
+ #endif
+ int pci_probe_reset_function(struct pci_dev *dev);
+ 
+diff --git a/drivers/pci/proc.c b/drivers/pci/proc.c
+index 297b72c..ea00647 100644
+--- a/drivers/pci/proc.c
++++ b/drivers/pci/proc.c
+@@ -257,7 +257,7 @@ static int proc_bus_pci_mmap(struct file *file, struct vm_area_struct *vma)
+ 
+ 	/* Make sure the caller is mapping a real resource for this device */
+ 	for (i = 0; i < PCI_ROM_RESOURCE; i++) {
+-		if (pci_mmap_fits(dev, i, vma))
++		if (pci_mmap_fits(dev, i, vma,  PCI_MMAP_PROCFS))
+ 			break;
+ 	}
+ 
+-- 
+1.6.3.2
+
