@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab0KJWzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 17:55:32 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46349 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757318Ab0KJWzb convert rfc822-to-8bit (ORCPT
+	id S1757403Ab0KJWzo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 17:55:44 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:37349 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757392Ab0KJWzm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 17:55:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=C192dyJohMPZRjxkvBEGU2vmKnfuMAbebzc9ZiEwwg401EZI4CKt8DS4SrsEuz70/d
-         xiBiuWXz0QMlPdQ7iOiQKf8LMwH18EVUARW73Y6/uEWtiDRuQWo2fUqJtbZWTdouluN7
-         jp+so5v5IkYTWDOe9I+WwBaL09Ybt/0KBHs2I=
+	Wed, 10 Nov 2010 17:55:42 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinBTnJ0OjVkcYDQmYZ_HjqE4NCSHnCvD1_p_DJs@mail.gmail.com>
-References: <cover.1289423299.git.luto@mit.edu>
-	<cb559f4c96f82d5bf0c132b3330aecd4885a0dda.1289423199.git.luto@mit.edu>
-	<1289427037.9605.3.camel@nisroch>
-	<AANLkTimfrVPaxgGXyLU-YTQBMNz_BBVMhfH+MO_CH2Cn@mail.gmail.com>
-	<1289428526.9605.9.camel@nisroch>
-	<AANLkTinBTnJ0OjVkcYDQmYZ_HjqE4NCSHnCvD1_p_DJs@mail.gmail.com>
-Date: Wed, 10 Nov 2010 23:55:30 +0100
-Message-ID: <AANLkTi=bQtqj2D2UWxZiQ0k-oZU4g5JXrsq4tmn9=ZNZ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] nouveau: Acknowledge HPD irq in handler, not bottom half
-From: Maarten Maathuis <madman2003@gmail.com>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: bskeggs@redhat.com, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 3/4][v2] fsl_rio: move machine_check handler into machine_check_e500 & machine_check_e500mc
+Date: Wed, 10 Nov 2010 14:54:38 -0800
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201538B08@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <1288777018-24259-1-git-send-email-b21989@freescale.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 3/4][v2] fsl_rio: move machine_check handler into machine_check_e500 & machine_check_e500mc
+Thread-Index: Act7PwmUBiCHBVwrRR27jCEHXSOXJQF6Mmuw
+References: <1288777018-24259-1-git-send-email-b21989@freescale.com>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Shaohui Xie" <b21989@freescale.com>, <akpm@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        "Li Yang" <leoli@freescale.com>,
+        "Kumar Gala" <kumar.gala@freescale.com>,
+        "Roy Zang" <tie-fei.zang@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 11:51 PM, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Wed, Nov 10, 2010 at 5:35 PM, Ben Skeggs <bskeggs@redhat.com> wrote:
->> On Wed, 2010-11-10 at 17:25 -0500, Andrew Lutomirski wrote:
->>> On Wed, Nov 10, 2010 at 5:10 PM, Ben Skeggs <bskeggs@redhat.com> wrote:
->>> > On Wed, 2010-11-10 at 16:32 -0500, Andy Lutomirski wrote:
->>> >> The old code generated an interrupt storm bad enough to completely
->>> >> take down my system.
->>> >>
->>> >> This only fixes the bits that are defined nouveau_regs.h.  Newer hardware
->>> >> uses another register that isn't described, and I don't have that hardware
->>> >> to test.
->>> > Thanks for looking at this.  I'll take a closer look at the problem
->>> > today and see what I can come up with too, that'll work with the newer
->>> > hardware too.
->>>
->>> It should be as simple as adding an hpd1 field to the hpd_state and
->>> making exactly the same change.  (It would be nice to put the register
->>> definitions into nouveau_regs.h as well -- I didn't really want to
->>> muck around with a bunch of magic numbers that I can't test.)
->> Yes, it is.  I can confirm the problem on another card, but it doesn't
->> actually cause any crashes here.  If you can rework the patch to support
->> the newer chips too, that'd be great.
->>
->> As for magic numbers, the register names for those regs are wrong
->> anyway.  The joy of reverse-engineering the support.  It doesn't really
->> matter if you want to stick to them or go back to "magic" numbers.
->
-> That explains why INTR and CTRL seemed backwards :)  I'll leave the
-> magic numbers for the 0xe07? stuff.
+Shaohui Xie <b21989@freescale.com> wrote:
+> 
+> diff --git a/arch/powerpc/kernel/traps.c b/arch/powerpc/kernel/traps.c
+> index a45a63c..2a5fb9d 100644
+> --- a/arch/powerpc/kernel/traps.c
+> +++ b/arch/powerpc/kernel/traps.c
+> @@ -55,6 +55,7 @@
+>  #endif
+>  #include <asm/kexec.h>
+>  #include <asm/ppc-opcode.h>
+> +#include <linux/rio.h>
+> 
+>  #if defined(CONFIG_DEBUGGER) || defined(CONFIG_KEXEC)
+>  int (*__debugger)(struct pt_regs *regs) __read_mostly;
+> @@ -500,6 +501,13 @@ int machine_check_e500mc(struct pt_regs *regs)
+>  		       reason & MCSR_MEA ? "Effective" : "Physical",
+addr);
+>  	}
+> 
+> +	if (reason & MCSR_BUS_RBERR) {
+> +		printk("Bus - Read Data Bus Error\n");
+> +#ifdef CONFIG_RAPIDIO
+> +		recoverable = fsl_rio_mcheck_exception(regs);
+> +#endif
+> +	}
+> +
+>  	mtspr(SPRN_MCSR, mcsr);
+>  	return mfspr(SPRN_MCSR) == 0 && recoverable;
+>  }
+> @@ -527,8 +535,12 @@ int machine_check_e500(struct pt_regs *regs)
+>  		printk("Bus - Write Address Error\n");
+>  	if (reason & MCSR_BUS_IBERR)
+>  		printk("Bus - Instruction Data Error\n");
+> -	if (reason & MCSR_BUS_RBERR)
+> +	if (reason & MCSR_BUS_RBERR) {
+>  		printk("Bus - Read Data Bus Error\n");
+> +#ifdef CONFIG_RAPIDIO
+> +		fsl_rio_mcheck_exception(regs);
+> +#endif
+> +	}
+>  	if (reason & MCSR_BUS_WBERR)
+>  		printk("Bus - Read Data Bus Error\n");
+>  	if (reason & MCSR_BUS_IPERR)
 
-Perhaps remove the bad definitions from the reg file, or rename them
-to UNKsomething?
+This implementation breaks an intended use of
+fsl_rio_mcheck_exception(): 
+1. for e500 it does not check the return value of the rio handler and
+crashes the system even after RIO Mchk was serviced. Looks like e500mc
+version handles it better but I have no HW to test it.
+2. the RIO Mchk is expected to be handled quietly but here it has many
+printk's. May be it is better to call the fsl_rio_mcheck_exception()
+handler in very beginning and simply exit if it returns 1.
 
->
-> Also, I accidentally dropped the "& enabled_bits" part -- I'll put that back.
->
-> Patch to follow after I boot and test it here.
->
-> --Andy
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
->
-
-
-
--- 
-Far away from the primal instinct, the song seems to fade away, the
-river get wider between your thoughts and the things we do and say.
+Alex.
+ 
+  
