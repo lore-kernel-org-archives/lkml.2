@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab0KJMsq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 07:48:46 -0500
+	id S1755978Ab0KJMtd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 07:49:33 -0500
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:19080 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab0KJMsn (ORCPT
+	with ESMTP id S1755896Ab0KJMsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 07:48:43 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6162"; a="61428853"
+	Wed, 10 Nov 2010 07:48:40 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6162"; a="61428852"
 From: Trilok Soni <tsoni@codeaurora.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-input@vger.kernel.org, rtc-linux@googlegroups.com,
         linux-arm-msm@vger.kernel.org, Trilok Soni <tsoni@codeaurora.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [RFC v1 PATCH 4/6] input: pmic8058_pwrkey: Add support for power key
-Date: Wed, 10 Nov 2010 18:17:59 +0530
-Message-Id: <1289393281-4459-5-git-send-email-tsoni@codeaurora.org>
+        Richard Purdie <rpurdie@rpsys.net>
+Subject: [RFC v1 PATCH 3/6] led: pmic8058: Add PMIC8058 leds driver
+Date: Wed, 10 Nov 2010 18:17:58 +0530
+Message-Id: <1289393281-4459-4-git-send-email-tsoni@codeaurora.org>
 X-Mailer: git-send-email 1.7.0.2
 In-Reply-To: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org>
 References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org>
@@ -23,61 +23,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for PMIC8058 power key driven over dedicated
-KYPD_PWR_N pin. It allows the user to specify the amount
-of time by which the power key reporting can be delayed.
+Add support for Qualcomm PMIC8058 keyboard
+backlight, flash and low current leds.
 
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
 Signed-off-by: Trilok Soni <tsoni@codeaurora.org>
 ---
- drivers/input/misc/Kconfig            |   11 +
- drivers/input/misc/Makefile           |    1 +
- drivers/input/misc/pmic8058-pwrkey.c  |  322 +++++++++++++++++++++++++++++++++
- include/linux/input/pmic8058-pwrkey.h |   37 ++++
- 4 files changed, 371 insertions(+), 0 deletions(-)
- create mode 100644 drivers/input/misc/pmic8058-pwrkey.c
- create mode 100644 include/linux/input/pmic8058-pwrkey.h
+ drivers/leds/Kconfig          |   11 +
+ drivers/leds/Makefile         |    1 +
+ drivers/leds/leds-pmic8058.c  |  405 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/leds-pmic8058.h |   63 +++++++
+ 4 files changed, 480 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/leds/leds-pmic8058.c
+ create mode 100644 include/linux/leds-pmic8058.h
 
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index b99b8cb..aeb9165 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -348,6 +348,17 @@ config INPUT_PWM_BEEPER
- 	  To compile this driver as a module, choose M here: the module will be
- 	  called pwm-beeper.
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index cc2a88d..e1ebcad 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -214,6 +214,17 @@ config LEDS_PCA955X
+ 	  LED driver chips accessed via the I2C bus.  Supported
+ 	  devices include PCA9550, PCA9551, PCA9552, and PCA9553.
  
-+config INPUT_PMIC8058_PWRKEY
-+	tristate "PMIC8058 power key support"
++config LEDS_PMIC8058
++	tristate "LED Support for Qualcomm PMIC8058"
 +	depends on PMIC8058
 +	help
-+	  Say Y here if you want support for the PMIC8058 power key.
++	  This option enables support for LEDs connected over PMIC8058
++	  (Power Management IC) chip on Qualcomm reference boards,
++	  for example SURF and FFAs.
 +
-+	  If unsure, say N.
++	  To compile this driver as a module, choose M here: the module will
++	  be called leds-pmic8058.
 +
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called pmic8058-pwrkey.
-+
- config INPUT_GPIO_ROTARY_ENCODER
- 	tristate "Rotary encoders connected to GPIO pins"
- 	depends on GPIOLIB && GENERIC_GPIO
-diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-index 1fe1f6c..c4357a0 100644
---- a/drivers/input/misc/Makefile
-+++ b/drivers/input/misc/Makefile
-@@ -31,6 +31,7 @@ obj-$(CONFIG_INPUT_PCF8574)		+= pcf8574_keypad.o
- obj-$(CONFIG_INPUT_PCSPKR)		+= pcspkr.o
- obj-$(CONFIG_INPUT_POWERMATE)		+= powermate.o
- obj-$(CONFIG_INPUT_PWM_BEEPER)		+= pwm-beeper.o
-+obj-$(CONFIG_INPUT_PMIC8058_PWRKEY)	+= pmic8058-pwrkey.o
- obj-$(CONFIG_INPUT_RB532_BUTTON)	+= rb532_button.o
- obj-$(CONFIG_INPUT_GPIO_ROTARY_ENCODER)	+= rotary_encoder.o
- obj-$(CONFIG_INPUT_SGI_BTNS)		+= sgi_btns.o
-diff --git a/drivers/input/misc/pmic8058-pwrkey.c b/drivers/input/misc/pmic8058-pwrkey.c
+ config LEDS_WM831X_STATUS
+ 	tristate "LED support for status LEDs on WM831x PMICs"
+ 	depends on MFD_WM831X
+diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+index 9c96db4..6c51883 100644
+--- a/drivers/leds/Makefile
++++ b/drivers/leds/Makefile
+@@ -21,6 +21,7 @@ obj-$(CONFIG_LEDS_COBALT_QUBE)		+= leds-cobalt-qube.o
+ obj-$(CONFIG_LEDS_COBALT_RAQ)		+= leds-cobalt-raq.o
+ obj-$(CONFIG_LEDS_SUNFIRE)		+= leds-sunfire.o
+ obj-$(CONFIG_LEDS_PCA9532)		+= leds-pca9532.o
++obj-$(CONFIG_LEDS_PMIC8058)		+= leds-pmic8058.o
+ obj-$(CONFIG_LEDS_GPIO)			+= leds-gpio.o
+ obj-$(CONFIG_LEDS_LP3944)		+= leds-lp3944.o
+ obj-$(CONFIG_LEDS_CLEVO_MAIL)		+= leds-clevo-mail.o
+diff --git a/drivers/leds/leds-pmic8058.c b/drivers/leds/leds-pmic8058.c
 new file mode 100644
-index 0000000..3714b24
+index 0000000..2933eb0
 --- /dev/null
-+++ b/drivers/input/misc/pmic8058-pwrkey.c
-@@ -0,0 +1,322 @@
++++ b/drivers/leds/leds-pmic8058.c
+@@ -0,0 +1,405 @@
 +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -94,155 +93,247 @@ index 0000000..3714b24
 + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 + * 02110-1301, USA.
 + */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
 +#include <linux/kernel.h>
-+#include <linux/errno.h>
++#include <linux/init.h>
 +#include <linux/slab.h>
-+#include <linux/input.h>
-+#include <linux/interrupt.h>
 +#include <linux/platform_device.h>
-+#include <linux/mfd/pmic8058.h>
-+#include <linux/log2.h>
++#include <linux/leds.h>
++#include <linux/workqueue.h>
 +#include <linux/spinlock.h>
-+#include <linux/hrtimer.h>
++#include <linux/mfd/pmic8058.h>
++#include <linux/leds-pmic8058.h>
 +
-+#include <linux/input/pmic8058-pwrkey.h>
++#define SSBI_REG_ADDR_DRV_KEYPAD	0x48
++#define PM8058_DRV_KEYPAD_BL_MASK	0xf0
++#define PM8058_DRV_KEYPAD_BL_SHIFT	0x04
 +
-+#define PON_CNTL_1	0x1C
-+#define PON_CNTL_PULL_UP BIT(7)
-+#define PON_CNTL_TRIG_DELAY_MASK (0x7)
++#define SSBI_REG_ADDR_FLASH_DRV0        0x49
++#define PM8058_DRV_FLASH_MASK           0xf0
++#define PM8058_DRV_FLASH_SHIFT          0x04
++
++#define SSBI_REG_ADDR_FLASH_DRV1        0xFB
++
++#define SSBI_REG_ADDR_LED_CTRL_BASE	0x131
++#define SSBI_REG_ADDR_LED_CTRL(n)	(SSBI_REG_ADDR_LED_CTRL_BASE + (n))
++#define PM8058_DRV_LED_CTRL_MASK	0xf8
++#define PM8058_DRV_LED_CTRL_SHIFT	0x03
++
++#define MAX_FLASH_LED_CURRENT	300
++#define MAX_LC_LED_CURRENT	40
++#define MAX_KP_BL_LED_CURRENT	300
++
++#define MAX_KEYPAD_BL_LEVEL	(1 << 4)
++#define MAX_LED_DRV_LEVEL	20 /* 2 * 20 mA */
++
++#define PMIC8058_LED_OFFSET(id) ((id) - PMIC8058_ID_LED_0)
++
++#define PMIC8058_MAX_LEDS	7
 +
 +/**
-+ * struct pmic8058_pwrkey - pmic8058 pwrkey information
-+ * @key_press_irq: key press irq number
-+ * @pm_chip: pmic8058 parent
-+ * @timer: timer for end key simulation
-+ * @key_pressed: flag to keep track for power key reporting
-+ * @pdata: platform data
-+ * @lock:  protect key press update and end key simulation
++ * struct pmic8058_led_data - internal led data structure
++ * @led_classdev - led class device
++ * @id	- led index
++ * @led_brightness - led brightness levels
++ * @pm_chip - parent MFD core device
++ * @work - workqueue for led
++ * @lock - to protect the transactions
++ * @value_lock - to protect the register value writes
++ * @reg_kp - cached value of keypad led backlight register
++ * @reg_led_ctrl - cached values of low-current led registers
++ * @reg_flash_led0 - cached value of first flash led control register
++ * @reg_flash_led1 - cached value of second flash led control register
 + */
-+struct pmic8058_pwrkey {
-+	struct input_dev *pwr;
-+	int key_press_irq;
++struct pmic8058_led_data {
++	struct led_classdev	cdev;
++	int			id;
++	enum led_brightness	brightness;
 +	struct pm8058_chip	*pm_chip;
-+	struct hrtimer timer;
-+	bool key_pressed;
-+	struct pmic8058_pwrkey_pdata *pdata;
-+	spinlock_t lock;
++	struct work_struct	work;
++	struct mutex		lock;
++	spinlock_t		value_lock;
++	u8			reg_kp;
++	u8			reg_led_ctrl[3];
++	u8			reg_flash_led0;
++	u8			reg_flash_led1;
 +};
 +
-+static enum hrtimer_restart pmic8058_pwrkey_timer(struct hrtimer *timer)
++#define PM8058_MAX_LEDS		7
++
++static void led_kp_set(struct pmic8058_led_data *led, enum led_brightness value)
 +{
-+	unsigned long flags;
-+	struct pmic8058_pwrkey *pwrkey = container_of(timer,
-+						struct pmic8058_pwrkey,	timer);
-+
-+	spin_lock_irqsave(&pwrkey->lock, flags);
-+	pwrkey->key_pressed = true;
-+
-+	input_report_key(pwrkey->pwr, KEY_POWER, 1);
-+	input_sync(pwrkey->pwr);
-+	spin_unlock_irqrestore(&pwrkey->lock, flags);
-+
-+	return HRTIMER_NORESTART;
-+}
-+
-+static irqreturn_t pwrkey_press_irq(int irq, void *_pwrkey)
-+{
-+	struct pmic8058_pwrkey *pwrkey = _pwrkey;
-+	struct pmic8058_pwrkey_pdata *pdata = pwrkey->pdata;
++	int rc;
++	u8 level;
 +	unsigned long flags;
 +
-+	/* no pwrkey time duration, means no end key simulation */
-+	if (!pwrkey->pdata->pwrkey_time_ms) {
-+		input_report_key(pwrkey->pwr, KEY_POWER, 1);
-+		input_sync(pwrkey->pwr);
-+		return IRQ_HANDLED;
-+	}
++	spin_lock_irqsave(&led->value_lock, flags);
++	level = (value << PM8058_DRV_KEYPAD_BL_SHIFT) &
++				 PM8058_DRV_KEYPAD_BL_MASK;
 +
-+	spin_lock_irqsave(&pwrkey->lock, flags);
++	led->reg_kp &= ~PM8058_DRV_KEYPAD_BL_MASK;
++	led->reg_kp |= level;
++	spin_unlock_irqrestore(&led->value_lock, flags);
 +
-+	input_report_key(pwrkey->pwr, KEY_END, 1);
-+	input_sync(pwrkey->pwr);
-+
-+	hrtimer_start(&pwrkey->timer,
-+			ktime_set(pdata->pwrkey_time_ms / 1000,
-+				(pdata->pwrkey_time_ms % 1000) * 1000000),
-+			HRTIMER_MODE_REL);
-+	spin_unlock_irqrestore(&pwrkey->lock, flags);
-+
-+	return IRQ_HANDLED;
++	rc = pm8058_write(led->pm_chip, SSBI_REG_ADDR_DRV_KEYPAD,
++				 &led->reg_kp, 1);
++	if (rc < 0)
++		dev_err(led->cdev.dev, "can't set keypad backlight level\n");
 +}
 +
-+static irqreturn_t pwrkey_release_irq(int irq, void *_pwrkey)
++static enum led_brightness led_kp_get(struct pmic8058_led_data *led)
 +{
-+	struct pmic8058_pwrkey *pwrkey = _pwrkey;
++	if ((led->reg_kp & PM8058_DRV_KEYPAD_BL_MASK) >>
++			 PM8058_DRV_KEYPAD_BL_SHIFT)
++		return LED_FULL;
++	else
++		return LED_OFF;
++}
++
++static void led_lc_set(struct pmic8058_led_data *led, enum led_brightness value)
++{
++	unsigned long flags;
++	int rc, offset;
++	u8 level, tmp;
++
++	spin_lock_irqsave(&led->value_lock, flags);
++
++	level = (led->brightness << PM8058_DRV_LED_CTRL_SHIFT) &
++		PM8058_DRV_LED_CTRL_MASK;
++
++	offset = PMIC8058_LED_OFFSET(led->id);
++	tmp = led->reg_led_ctrl[offset];
++
++	tmp &= ~PM8058_DRV_LED_CTRL_MASK;
++	tmp |= level;
++	spin_unlock_irqrestore(&led->value_lock, flags);
++
++	rc = pm8058_write(led->pm_chip,	SSBI_REG_ADDR_LED_CTRL(offset),
++			&tmp, 1);
++	if (rc) {
++		dev_err(led->cdev.dev, "can't set (%d) led value\n",
++				led->id);
++		return;
++	}
++
++	spin_lock_irqsave(&led->value_lock, flags);
++	led->reg_led_ctrl[offset] = tmp;
++	spin_unlock_irqrestore(&led->value_lock, flags);
++}
++
++static enum led_brightness led_lc_get(struct pmic8058_led_data *led)
++{
++	int offset;
++	u8 value;
++
++	offset = PMIC8058_LED_OFFSET(led->id);
++	value = led->reg_led_ctrl[offset];
++
++	if ((value & PM8058_DRV_LED_CTRL_MASK) >>
++			PM8058_DRV_LED_CTRL_SHIFT)
++		return LED_FULL;
++	else
++		return LED_OFF;
++}
++
++static void
++led_flash_set(struct pmic8058_led_data *led, enum led_brightness value)
++{
++	int rc;
++	u8 level;
++	unsigned long flags;
++	u8 reg_flash_led;
++	u16 reg_addr;
++
++	spin_lock_irqsave(&led->value_lock, flags);
++	level = (value << PM8058_DRV_FLASH_SHIFT) &
++				 PM8058_DRV_FLASH_MASK;
++
++	if (led->id == PMIC8058_ID_FLASH_LED_0) {
++		led->reg_flash_led0 &= ~PM8058_DRV_FLASH_MASK;
++		led->reg_flash_led0 |= level;
++		reg_flash_led	    = led->reg_flash_led0;
++		reg_addr	    = SSBI_REG_ADDR_FLASH_DRV0;
++	} else {
++		led->reg_flash_led1 &= ~PM8058_DRV_FLASH_MASK;
++		led->reg_flash_led1 |= level;
++		reg_flash_led	    = led->reg_flash_led1;
++		reg_addr	    = SSBI_REG_ADDR_FLASH_DRV1;
++	}
++	spin_unlock_irqrestore(&led->value_lock, flags);
++
++	rc = pm8058_write(led->pm_chip, reg_addr, &reg_flash_led, 1);
++	if (rc < 0)
++		dev_err(led->cdev.dev, "can't set flash led%d level\n",
++			 led->id);
++}
++
++static void pmic8058_led_work(struct work_struct *work)
++{
++	struct pmic8058_led_data *led = container_of(work,
++					 struct pmic8058_led_data, work);
++
++	mutex_lock(&led->lock);
++
++	switch (led->id) {
++	case PMIC8058_ID_LED_KB_LIGHT:
++		led_kp_set(led, led->brightness);
++		break;
++	case PMIC8058_ID_LED_0:
++	case PMIC8058_ID_LED_1:
++	case PMIC8058_ID_LED_2:
++		led_lc_set(led, led->brightness);
++		break;
++	case PMIC8058_ID_FLASH_LED_0:
++	case PMIC8058_ID_FLASH_LED_1:
++		led_flash_set(led, led->brightness);
++		break;
++	}
++
++	mutex_unlock(&led->lock);
++}
++
++static void pmic8058_led_set(struct led_classdev *led_cdev,
++	enum led_brightness value)
++{
++	struct pmic8058_led_data *led;
 +	unsigned long flags;
 +
-+	/* no pwrkey time, means no delay in pwr key reporting */
-+	if (!pwrkey->pdata->pwrkey_time_ms) {
-+		input_report_key(pwrkey->pwr, KEY_POWER, 0);
-+		input_sync(pwrkey->pwr);
-+		return IRQ_HANDLED;
++	led = container_of(led_cdev, struct pmic8058_led_data, cdev);
++
++	spin_lock_irqsave(&led->value_lock, flags);
++	led->brightness = value;
++	schedule_work(&led->work);
++	spin_unlock_irqrestore(&led->value_lock, flags);
++}
++
++static enum led_brightness pmic8058_led_get(struct led_classdev *led_cdev)
++{
++	struct pmic8058_led_data *led;
++
++	led = container_of(led_cdev, struct pmic8058_led_data, cdev);
++
++	switch (led->id) {
++	case PMIC8058_ID_LED_KB_LIGHT:
++		return led_kp_get(led);
++	case PMIC8058_ID_LED_0:
++	case PMIC8058_ID_LED_1:
++	case PMIC8058_ID_LED_2:
++		return led_lc_get(led);
 +	}
-+
-+	spin_lock_irqsave(&pwrkey->lock, flags);
-+	hrtimer_cancel(&pwrkey->timer);
-+
-+	if (pwrkey->key_pressed) {
-+		pwrkey->key_pressed = false;
-+		input_report_key(pwrkey->pwr, KEY_POWER, 0);
-+		input_sync(pwrkey->pwr);
-+	}
-+
-+	input_report_key(pwrkey->pwr, KEY_END, 0);
-+	input_sync(pwrkey->pwr);
-+
-+	spin_unlock_irqrestore(&pwrkey->lock, flags);
-+
-+	return IRQ_HANDLED;
++	return LED_OFF;
 +}
 +
-+#ifdef CONFIG_PM
-+static int pmic8058_pwrkey_suspend(struct device *dev)
++static int pmic8058_led_probe(struct platform_device *pdev)
 +{
-+	struct pmic8058_pwrkey *pwrkey = dev_get_drvdata(dev);
-+
-+	if (device_may_wakeup(dev))
-+		enable_irq_wake(pwrkey->key_press_irq);
-+
-+	return 0;
-+}
-+
-+static int pmic8058_pwrkey_resume(struct device *dev)
-+{
-+	struct pmic8058_pwrkey *pwrkey = dev_get_drvdata(dev);
-+
-+	if (device_may_wakeup(dev))
-+		disable_irq_wake(pwrkey->key_press_irq);
-+
-+	return 0;
-+}
-+
-+static const struct dev_pm_ops pm8058_pwr_key_pm_ops = {
-+	.suspend	= pmic8058_pwrkey_suspend,
-+	.resume		= pmic8058_pwrkey_resume,
-+};
-+#endif
-+
-+static int __devinit pmic8058_pwrkey_probe(struct platform_device *pdev)
-+{
-+	struct input_dev *pwr;
-+	int key_release_irq = platform_get_irq(pdev, 0);
-+	int key_press_irq = platform_get_irq(pdev, 1);
-+	int err;
-+	unsigned int delay;
-+	u8 pon_cntl;
-+	struct pmic8058_pwrkey *pwrkey;
-+	struct pmic8058_pwrkey_pdata *pdata = pdev->dev.platform_data;
++	struct pmic8058_leds_platform_data *pdata = pdev->dev.platform_data;
++	struct pmic8058_led_data *led_dat;
++	struct pmic8058_led *curr_led;
++	int rc, i = 0;
 +	struct pm8058_chip	*pm_chip;
++	u8			reg_kp;
++	u8			reg_led_ctrl[3];
++	u8			reg_flash_led0;
++	u8			reg_flash_led1;
++	static struct pmic8058_led_data *led;
 +
 +	pm_chip = platform_get_drvdata(pdev);
 +	if (pm_chip == NULL) {
@@ -250,162 +341,153 @@ index 0000000..3714b24
 +		return -EFAULT;
 +	}
 +
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "power key platform data not supplied\n");
++	if (pdata == NULL) {
++		dev_err(&pdev->dev, "platform data not supplied\n");
 +		return -EINVAL;
 +	}
 +
-+	if (pdata->kpd_trigger_delay_us > 62500) {
-+		dev_err(&pdev->dev, "invalid pwr key trigger delay\n");
-+		return -EINVAL;
++	if (pdata->num_leds > PMIC8058_MAX_LEDS) {
++		dev_err(&pdev->dev, "can't handle more than %d LEDS\n",
++				 PMIC8058_MAX_LEDS);
++		return -EFAULT;
 +	}
 +
-+	if (pdata->pwrkey_time_ms &&
-+	     (pdata->pwrkey_time_ms < 500 || pdata->pwrkey_time_ms > 1000)) {
-+		dev_err(&pdev->dev, "invalid pwr key time supplied\n");
-+		return -EINVAL;
-+	}
-+
-+	pwrkey = kzalloc(sizeof(*pwrkey), GFP_KERNEL);
-+	if (!pwrkey)
++	led = kzalloc(sizeof(*led) * pdata->num_leds, GFP_KERNEL);
++	if (led == NULL) {
++		dev_err(&pdev->dev, "failed to alloc memory\n");
 +		return -ENOMEM;
-+
-+	pwrkey->pm_chip = pm_chip;
-+	pwrkey->pdata   = pdata;
-+
-+	pwr = input_allocate_device();
-+	if (!pwr) {
-+		dev_dbg(&pdev->dev, "Can't allocate power button\n");
-+		err = -ENOMEM;
-+		goto free_pwrkey;
 +	}
 +
-+	input_set_capability(pwr, EV_KEY, KEY_POWER);
-+	input_set_capability(pwr, EV_KEY, KEY_END);
-+
-+	pwr->name = "pmic8058_pwrkey";
-+	pwr->phys = "pmic8058_pwrkey/input0";
-+	pwr->dev.parent = &pdev->dev;
-+
-+	delay = (pdata->kpd_trigger_delay_us << 10) / USEC_PER_SEC;
-+	delay = 1 + ilog2(delay);
-+
-+	err = pm8058_read(pwrkey->pm_chip, PON_CNTL_1, &pon_cntl, 1);
-+	if (err < 0) {
-+		dev_err(&pdev->dev, "failed reading PON_CNTL_1 err=%d\n", err);
-+		goto free_input_dev;
++	rc = pm8058_read(pm_chip, SSBI_REG_ADDR_DRV_KEYPAD, &reg_kp,
++				1);
++	if (rc) {
++		dev_err(&pdev->dev, "can't get keypad backlight level\n");
++		goto err_reg_read;
 +	}
 +
-+
-+	pon_cntl &= ~PON_CNTL_TRIG_DELAY_MASK;
-+	pon_cntl |= (delay & PON_CNTL_TRIG_DELAY_MASK);
-+	pon_cntl |= (pdata->pull_up ? PON_CNTL_PULL_UP : ~PON_CNTL_PULL_UP);
-+	err = pm8058_write(pwrkey->pm_chip, PON_CNTL_1, &pon_cntl, 1);
-+	if (err < 0) {
-+		dev_err(&pdev->dev, "failed writing PON_CNTL_1 err=%d\n", err);
-+		goto free_input_dev;
++	rc = pm8058_read(pm_chip, SSBI_REG_ADDR_LED_CTRL_BASE,
++			reg_led_ctrl, 3);
++	if (rc) {
++		dev_err(&pdev->dev, "can't get led levels\n");
++		goto err_reg_read;
 +	}
 +
-+	hrtimer_init(&pwrkey->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	pwrkey->timer.function = pmic8058_pwrkey_timer;
-+
-+	spin_lock_init(&pwrkey->lock);
-+
-+	err = input_register_device(pwr);
-+	if (err) {
-+		dev_dbg(&pdev->dev, "Can't register power key: %d\n", err);
-+		goto free_input_dev;
++	rc = pm8058_read(pm_chip, SSBI_REG_ADDR_FLASH_DRV0,
++			&reg_flash_led0, 1);
++	if (rc) {
++		dev_err(&pdev->dev, "can't read flash led0\n");
++		goto err_reg_read;
 +	}
 +
-+	pwrkey->key_press_irq = key_press_irq;
-+	pwrkey->pwr = pwr;
-+
-+	platform_set_drvdata(pdev, pwrkey);
-+
-+	err = request_any_context_irq(key_press_irq, pwrkey_press_irq,
-+			 IRQF_TRIGGER_RISING, "pmic8058_pwrkey_press", pwrkey);
-+	if (err < 0) {
-+		dev_dbg(&pdev->dev, "Can't get %d IRQ for pwrkey: %d\n",
-+				 key_press_irq, err);
-+		goto unreg_input_dev;
++	rc = pm8058_read(pm_chip, SSBI_REG_ADDR_FLASH_DRV1,
++			&reg_flash_led1, 1);
++	if (rc) {
++		dev_err(&pdev->dev, "can't get flash led1\n");
++		goto err_reg_read;
 +	}
 +
-+	err = request_any_context_irq(key_release_irq, pwrkey_release_irq,
-+			 IRQF_TRIGGER_RISING, "pmic8058_pwrkey_release",
-+				 pwrkey);
-+	if (err < 0) {
-+		dev_dbg(&pdev->dev, "Can't get %d IRQ for pwrkey: %d\n",
-+				 key_release_irq, err);
++	for (i = 0; i < pdata->num_leds; i++) {
++		curr_led	= &pdata->leds[i];
++		led_dat		= &led[curr_led->id];
 +
-+		goto free_press_irq;
++		led_dat->cdev.name		= curr_led->name;
++		led_dat->cdev.default_trigger   = curr_led->default_trigger;
++		led_dat->cdev.brightness_set    = pmic8058_led_set;
++		led_dat->cdev.brightness_get    = pmic8058_led_get;
++		led_dat->cdev.brightness	= LED_OFF;
++		led_dat->cdev.max_brightness	= curr_led->max_brightness;
++		led_dat->cdev.flags		= LED_CORE_SUSPENDRESUME;
++
++		led_dat->id		        = curr_led->id;
++		led_dat->reg_kp			= reg_kp;
++		memcpy(led->reg_led_ctrl, reg_led_ctrl,
++					 sizeof(reg_led_ctrl));
++		led_dat->reg_flash_led0		= reg_flash_led0;
++		led_dat->reg_flash_led1		= reg_flash_led1;
++
++		if (!((led_dat->id >= PMIC8058_ID_LED_KB_LIGHT) &&
++				(led_dat->id <= PMIC8058_ID_FLASH_LED_1))) {
++			dev_err(&pdev->dev, "invalid LED ID (%d) specified\n",
++						 led_dat->id);
++			rc = -EINVAL;
++			goto fail_id_check;
++		}
++
++		led_dat->pm_chip		= pm_chip;
++
++		mutex_init(&led_dat->lock);
++		spin_lock_init(&led_dat->value_lock);
++		INIT_WORK(&led_dat->work, pmic8058_led_work);
++
++		rc = led_classdev_register(&pdev->dev, &led_dat->cdev);
++		if (rc) {
++			dev_err(&pdev->dev, "unable to register led %d\n",
++						 led_dat->id);
++			goto fail_id_check;
++		}
 +	}
 +
-+	device_init_wakeup(&pdev->dev, pdata->wakeup);
++	platform_set_drvdata(pdev, led);
 +
 +	return 0;
 +
-+free_press_irq:
-+	free_irq(key_press_irq, NULL);
-+unreg_input_dev:
-+	input_unregister_device(pwr);
-+	pwr = NULL;
-+free_input_dev:
-+	input_free_device(pwr);
-+free_pwrkey:
-+	kfree(pwrkey);
-+	return err;
++err_reg_read:
++	kfree(led);
++fail_id_check:
++	if (i > 0) {
++		for (i = i - 1; i >= 0; i--)
++			led_classdev_unregister(&led[i].cdev);
++	}
++	return rc;
 +}
 +
-+static int __devexit pmic8058_pwrkey_remove(struct platform_device *pdev)
++static int __devexit pmic8058_led_remove(struct platform_device *pdev)
 +{
-+	struct pmic8058_pwrkey *pwrkey = platform_get_drvdata(pdev);
-+	int key_release_irq = platform_get_irq(pdev, 0);
-+	int key_press_irq = platform_get_irq(pdev, 1);
++	int i;
++	struct pmic8058_leds_platform_data *pdata = pdev->dev.platform_data;
++	struct pmic8058_led_data *led = platform_get_drvdata(pdev);
 +
-+	device_init_wakeup(&pdev->dev, 0);
-+
-+	free_irq(key_press_irq, pwrkey);
-+	free_irq(key_release_irq, pwrkey);
-+	input_unregister_device(pwrkey->pwr);
-+	kfree(pwrkey);
++	for (i = 0; i < pdata->num_leds; i++) {
++		mutex_destroy(&led[led->id].lock);
++		led_classdev_unregister(&led[led->id].cdev);
++		cancel_work_sync(&led[led->id].work);
++	}
 +
 +	return 0;
 +}
 +
-+static struct platform_driver pmic8058_pwrkey_driver = {
-+	.probe		= pmic8058_pwrkey_probe,
-+	.remove		= __devexit_p(pmic8058_pwrkey_remove),
++static struct platform_driver pmic8058_led_driver = {
++	.probe		= pmic8058_led_probe,
++	.remove		= __devexit_p(pmic8058_led_remove),
 +	.driver		= {
-+		.name	= "pm8058-pwrkey",
++		.name	= "pm8058-led",
 +		.owner	= THIS_MODULE,
-+#ifdef CONFIG_PM
-+		.pm	= &pm8058_pwr_key_pm_ops,
-+#endif
 +	},
 +};
 +
-+static int __init pmic8058_pwrkey_init(void)
++static int __init pmic8058_led_init(void)
 +{
-+	return platform_driver_register(&pmic8058_pwrkey_driver);
++	return platform_driver_register(&pmic8058_led_driver);
 +}
-+module_init(pmic8058_pwrkey_init);
++module_init(pmic8058_led_init);
 +
-+static void __exit pmic8058_pwrkey_exit(void)
++static void __exit pmic8058_led_exit(void)
 +{
-+	platform_driver_unregister(&pmic8058_pwrkey_driver);
++	platform_driver_unregister(&pmic8058_led_driver);
 +}
-+module_exit(pmic8058_pwrkey_exit);
++module_exit(pmic8058_led_exit);
 +
-+MODULE_ALIAS("platform:pmic8058_pwrkey");
-+MODULE_DESCRIPTION("PMIC8058 Power Key driver");
++MODULE_DESCRIPTION("PMIC8058 LEDs driver");
 +MODULE_LICENSE("GPL v2");
++MODULE_VERSION("1.0");
++MODULE_ALIAS("platform:pmic8058-led");
 +MODULE_AUTHOR("Trilok Soni <tsoni@codeaurora.org>");
-diff --git a/include/linux/input/pmic8058-pwrkey.h b/include/linux/input/pmic8058-pwrkey.h
+diff --git a/include/linux/leds-pmic8058.h b/include/linux/leds-pmic8058.h
 new file mode 100644
-index 0000000..dd849fe
+index 0000000..c54c7e6
 --- /dev/null
-+++ b/include/linux/input/pmic8058-pwrkey.h
-@@ -0,0 +1,37 @@
++++ b/include/linux/leds-pmic8058.h
+@@ -0,0 +1,63 @@
 +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -423,26 +505,52 @@ index 0000000..dd849fe
 + * 02110-1301, USA.
 + */
 +
-+#ifndef __PMIC8058_PWRKEY_H__
-+#define __PMIC8058_PWRKEY_H__
++#ifndef __LEDS_PMIC8058_H__
++#define __LEDS_PMIC8058_H__
++
 +/**
-+ * struct pmic8058_pwrkey_pdata - platform data for pwrkey driver
-+ * @pull up:  power on register control for pull up/down configuration
-+ * @pwrkey_time_ms: time after which power key event should be generated, if
-+ *                  key is released before then end key is reported.
-+ *                  Supply zero for only power key reporting.
-+ * @kpd_trigger_delay_us: time delay for power key state change interrupt
-+ *                  trigger.
-+ * @wakeup: configure power key as wakeup source
++ * enum pmic8058_leds - PMIC8058 supported led ids
++ * @PMIC8058_ID_LED_KB_LIGHT - keyboard backlight led
++ * @PMIC8058_ID_LED_0 - First low current led
++ * @PMIC8058_ID_LED_1 - Second low current led
++ * @PMIC8058_ID_LED_2 - Third low current led
++ * @PMIC8058_ID_FLASH_LED_0 - First flash led
++ * @PMIC8058_ID_FLASH_LED_0 - Second flash led
 + */
-+struct pmic8058_pwrkey_pdata {
-+	bool pull_up;
-+	u16  pwrkey_time_ms;
-+	u32  kpd_trigger_delay_us;
-+	u32  wakeup;
++enum pmic8058_leds {
++	PMIC8058_ID_LED_KB_LIGHT = 1,
++	PMIC8058_ID_LED_0,
++	PMIC8058_ID_LED_1,
++	PMIC8058_ID_LED_2,
++	PMIC8058_ID_FLASH_LED_0,
++	PMIC8058_ID_FLASH_LED_1,
 +};
 +
-+#endif /* __PMIC8058_PWRKEY_H__ */
++/**
++ * struct pmic8058_led - per led data
++ * @name - name of the led
++ * @default_trigger - default trigger which needs to e attached
++ * @max_brightness - maximum brightness level supported by the led
++ * @id - supported led id
++ */
++struct pmic8058_led {
++	const char	*name;
++	const char	*default_trigger;
++	unsigned	max_brightness;
++	int		id;
++};
++
++/**
++ * struct pmic8058_leds_platform_data - platform data for leds
++ * @num_leds - number of leds
++ * @leds - array of struct pmic8058_led
++ */
++struct pmic8058_leds_platform_data {
++	int			num_leds;
++	struct pmic8058_led	*leds;
++};
++
++#endif /* __LEDS_PMIC8058_H__ */
 -- 
 1.7.0.2
 
