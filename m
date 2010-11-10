@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755973Ab0KJNBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 08:01:53 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:33494 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755875Ab0KJNBw convert rfc822-to-8bit (ORCPT
+	id S1756014Ab0KJNKy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 08:10:54 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43659 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754283Ab0KJNKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 08:01:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=OHSsD4eUwmX3/W44IX/9gyiYbk6oAiD2HqMFQyyEb2BmtL6bxQwzhCGUbvwhzjBksh
-         ktGT+B/D9P/2f70lkg7Q==
+	Wed, 10 Nov 2010 08:10:51 -0500
+Message-ID: <4CDA99D6.20702@monstr.eu>
+Date: Wed, 10 Nov 2010 14:10:46 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-In-Reply-To: <1289339119.2191.92.camel@laptop>
-References: <1289339119.2191.92.camel@laptop>
-Date: Wed, 10 Nov 2010 14:01:48 +0100
-Message-ID: <AANLkTi=ojOnLyRO4hTgYdCCXLsN0wUeTcme=5h8-mjdz@mail.gmail.com>
-Subject: Re: [RFC][PATCH] perf: sysfs type id
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Lin Ming <ming.m.lin@intel.com>,
-        "robert.richter" <robert.richter@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: John Stultz <johnstul@us.ibm.com>
+CC: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 06/10] microblaze: convert to clocksource_register_hz/khz
+References: <1288642350-1599-1-git-send-email-johnstul@us.ibm.com> <1288642350-1599-7-git-send-email-johnstul@us.ibm.com>
+In-Reply-To: <1288642350-1599-7-git-send-email-johnstul@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+John Stultz wrote:
+> This converts the microblaze clocksources to use clocksource_register_hz/khz
+> 
+> This is untested, so any assistance in testing would be appreciated!
+> 
+> CC: Michal Simek <monstr@monstr.eu>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: John Stultz <johnstul@us.ibm.com>
+> ---
+>  arch/microblaze/kernel/timer.c |    6 +-----
+>  1 files changed, 1 insertions(+), 5 deletions(-)
 
-On Tue, Nov 9, 2010 at 10:45 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> The below is a RFC patch adding dynamic type ids to perf.
->
-> We need to represent PMUs in sysfs because we want to allow multiple
-> (loadable) PMUs and need a way to identify them.
->
-> This patch creates a new device class "pmu" and adds a single attribute
-> "type" to it. This device attribute will expose the dynamic type id as
-> required by perf_event_attr::type.
->
-> The sysfs layout looks like:
->
-> [root@westmere ~]# cd /sys/class/pmu/
-> [root@westmere pmu]# ls -la
-> total 0
-> drwxr-xr-x  2 root root 0 2010-11-09 22:22 .
-> drwxr-xr-x 47 root root 0 2010-11-09 22:22 ..
-> lrwxrwxrwx  1 root root 0 2010-11-09 22:22 breakpoint -> ../../devices/virtual/pmu/breakpoint
-> lrwxrwxrwx  1 root root 0 2010-11-09 22:22 cpu -> ../../devices/virtual/pmu/cpu
-> lrwxrwxrwx  1 root root 0 2010-11-09 22:22 frob -> ../../devices/virtual/pmu/frob
-> lrwxrwxrwx  1 root root 0 2010-11-09 22:22 software -> ../../devices/virtual/pmu/software
-> lrwxrwxrwx  1 root root 0 2010-11-09 22:22 tracepoint -> ../../devices/virtual/pmu/tracepoint
-> [root@westmere pmu]# cd frob/
-> [root@westmere frob]# ls -la
-> total 0
-> drwxr-xr-x 3 root root    0 2010-11-09 22:22 .
-> drwxr-xr-x 7 root root    0 2010-11-09 22:22 ..
-> drwxr-xr-x 2 root root    0 2010-11-09 22:23 power
-> lrwxrwxrwx 1 root root    0 2010-11-09 22:23 subsystem -> ../../../../class/pmu
-> -r--r--r-- 1 root root 4096 2010-11-09 22:23 type
-> -rw-r--r-- 1 root root 4096 2010-11-09 22:22 uevent
-> [root@westmere frob]# cat type
-> 6
+I can't see any problem in it.
 
-And then, what do you do with 6?
-I assume you have to pass it in the attr struct.
-How do you plan on doing this while keeping what is already there?
+Tested-by: Michal Simek <monstr@monstr.eu>
+
+
+
+> 
+> diff --git a/arch/microblaze/kernel/timer.c b/arch/microblaze/kernel/timer.c
+> index a5aa33d..68ec7d1 100644
+> --- a/arch/microblaze/kernel/timer.c
+> +++ b/arch/microblaze/kernel/timer.c
+> @@ -217,16 +217,12 @@ static struct clocksource clocksource_microblaze = {
+>  	.rating		= 300,
+>  	.read		= microblaze_read,
+>  	.mask		= CLOCKSOURCE_MASK(32),
+> -	.shift		= 8, /* I can shift it */
+>  	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+>  };
+>  
+>  static int __init microblaze_clocksource_init(void)
+>  {
+> -	clocksource_microblaze.mult =
+> -			clocksource_hz2mult(timer_clock_freq,
+> -						clocksource_microblaze.shift);
+> -	if (clocksource_register(&clocksource_microblaze))
+> +	if (clocksource_register_hz(&clocksource_microblaze, timer_clock_freq))
+>  		panic("failed to register clocksource");
+>  
+>  	/* stop timer1 */
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
