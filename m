@@ -1,122 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab0KJOPH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 09:15:07 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36610 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755816Ab0KJOPD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 09:15:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <20101110133638.GC11388@elte.hu>
-References: <1289339119.2191.92.camel@laptop> <20101109221338.GA19947@suse.de>
- <1289392037.2191.105.camel@laptop> <20101110133638.GC11388@elte.hu>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 10 Nov 2010 15:14:47 +0100
-Message-ID: <AANLkTikkV1pdseitAPkXTyK529vsvbaVb-RMiMY4Ao-+@mail.gmail.com>
-Subject: Re: sysfs: Add an 'events' class. (was: Re: [RFC][PATCH] perf: sysfs
- type id)
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, Greg KH <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, Lin Ming <ming.m.lin@intel.com>,
-        Stephane Eranian <eranian@google.com>,
-        "robert.richter" <robert.richter@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756155Ab0KJOR6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 09:17:58 -0500
+Received: from mga02.intel.com ([134.134.136.20]:3057 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755816Ab0KJOR5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 09:17:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,178,1288594800"; 
+   d="scan'208";a="676138852"
+Subject: Re: [RFC PATCH 1/2] perf: Enable group siblings on exec if
+ attr::enable_on_exec set
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Matt Fleming <matt@console-pimps.org>,
+        "Zhang, Rui" <rui.zhang@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <1289391586.2191.100.camel@laptop>
+References: <1289369711.2430.38.camel@minggr.sh.intel.com>
+	 <1289391586.2191.100.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 10 Nov 2010 22:17:57 +0800
+Message-Id: <1289398677.2479.10.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 14:36, Ingo Molnar <mingo@elte.hu> wrote:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
->
->> On Tue, 2010-11-09 at 14:13 -0800, Greg KH wrote:
->>
->> > You missed the embedded track at Plumbers where we talked about never
->> > adding another class to the kernel.  Please use bus_id instead for this.
->>
->> I did, it was early and I wasn't aware this all comes under the heading
->> of embedded.
->>
->> Anyway, anybody got a good example of bus_type I can 'borrow' ?
->>
->> Also, it would be really nice if you (plural) could make this subsystem thing
->> happen, calling tihngs a bus that aren't a bus just makes me upset ;-)
->
-> Same here - calling events a 'bus' is like totally brain-dead IMHO. It implies
-> something hardware, while many events are not related to any hardware component but
-> are pure software abstractions: such as context-switches, or syscall entries, or VM
-> events.
+On Wed, 2010-11-10 at 20:19 +0800, Peter Zijlstra wrote:
+> On Wed, 2010-11-10 at 14:15 +0800, Lin Ming wrote:
+> > Currently, only group leader is enabled on exec.
+> 
+> That's enough, right? If all sibling events are already enabled enabling
+> the group leader makes the whole thing go.
 
-Please use a bus, regardless of the name, class is dead and you will
-need stuff tha can only happen at bus. We'll fix the name later.
+No.
 
-> So i'd rather have 'events' or 'event_source' as a 'class' temporarily, than have it
-> as a 'bus' temporarily - and we get the real fix whenever the sysfs unification
-> happens.
+If the event group is disabled by default("perf stat" case) and will be
+enabled at next exec, then actually only the group leader will be
+enabled , because all siblings are explicitly disabled(->state ==
+PERF_EVENT_STATE_OFF). So the siblings will never be enabled.
 
-Nope, that can not work.
+/*
+ * Put a event into inactive state and update time fields.
+ * Enabling the leader of a group effectively enables all
+ * the group members that aren't explicitly disabled, so we
+ * have to update their ->tstamp_enabled also.
+ * Note: this works for group members as well as group leaders
+ * since the non-leader members' sibling_lists will be empty.
+ */             
+static void __perf_event_mark_enabled(struct perf_event *event,
+                                        struct perf_event_context *ctx)
+{
+        struct perf_event *sub;
 
-> I also have a question about this future plan mentioned in
-> Documentation/sysfs-rules.txt:
->
->  - Hierarchy in a single device tree
->   There is only one valid place in sysfs where hierarchy can be examined
->   and this is below: /sys/devices.
->   It is planned that all device directories will end up in the tree
->   below this directory.
->
-> So did i get it right, sysfs is going to convert from a VFS hiearchy/enumeration to
-> a flat enumeration of entities, all listed in /dev/devices/?
+        event->state = PERF_EVENT_STATE_INACTIVE;
+        event->tstamp_enabled = ctx->time - event->total_time_enabled;
+        list_for_each_entry(sub, &event->sibling_list, group_entry)
+                if (sub->state >= PERF_EVENT_STATE_INACTIVE)
+                        sub->tstamp_enabled =  
+                                ctx->time - sub->total_time_enabled;
+}
 
-I guess you mean /sys. No, /sys/devices/ is and stays as a hierarchy
-and will not be flat.
 
-> Why is that done? I think it's quite nice that the actual topology is represented
-> right now via the sysfs VFS structure - so that we have things like:
->
->   /sys/devices/system/ioapic/ioapic0/
 
-That does not change at all.
-
-> Where there's is a proper hierarchy showing that we have a 'system', which has an
-> 'ioapic', which has an ioapic numbered '0'. That entity could then grow 'events' and
-> have:
->
->   /sys/devices/system/ioapic/ioapic0/events/
->
-> And could show various IO-APIC events, such as (future, possible events):
->
->   /sys/devices/system/ioapic/ioapic0/events/irq/
->   /sys/devices/system/ioapic/ioapic0/events/register-read/
->   /sys/devices/system/ioapic/ioapic0/events/register-write/
->   /sys/devices/system/ioapic/ioapic0/events/affinity/
->   [...]
->
-> So is the plan to get rid of such rich hiearchies and just use a flat store of
-> everything in /sys/devices/?
-
-No. Where do you get that idea from?
-
-> My hope would be to _increase_ the depth of sysfs in the future, to express every
-> meaningful hiearchy that exists in the system (be that hw hierarchy or some sw
-> abstraction hierarchy). But maybe i got it all wrong so please advise.
-
-Yeah, seems all wrong. :)
-
-/sys/device is the hierarchy (ans will stay as it is), /sys/class,bus
-(later /sys/subsystem/) is the flat list of devices per subsystem (to
-find all devices of a specific subsystem). The list _points_ to
-devices in /sys/devices, it does never contain any devices. You might
-want re-read the last mail in this thread, where I explained the
-difference between hierarchy and classification in more details.
-
-Kay
