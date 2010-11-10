@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab0KJOI3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 09:08:29 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37537 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755816Ab0KJOI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 09:08:28 -0500
-Date: Wed, 10 Nov 2010 15:08:14 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Jesper Juhl <jj@chaosbits.net>,
-        "amd64-microcode@amd64.org" <amd64-microcode@amd64.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip] microcode, AMD: Cleanup code a bit
-Message-ID: <20101110140814.GA8986@elte.hu>
-References: <20101102175248.GA25781@aftab>
- <20101110083121.GD3341@elte.hu>
- <20101110113300.GA9518@aftab>
- <20101110132246.GA11388@elte.hu>
- <20101110135917.GD9518@aftab>
+	id S1756142Ab0KJOIm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 09:08:42 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46870 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756097Ab0KJOIj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 09:08:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=oQY17XBNE6IaQoyHIzPe+EwUrIyFKD20EvhzSpKWmdrBChw0MmWOgrgOKk88YQiWC6
+         NWMtjGPAbLyloqV++rovxcoLdha017S0YsT/2qgTchz7zQf5sytcosBRwglJ6A3eMxtp
+         Pl7exErq0er85+FKfTiayJ0y03d5twIfNkozw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101110135917.GD9518@aftab>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Date: Wed, 10 Nov 2010 22:08:37 +0800
+Message-ID: <AANLkTikbkhHmsVAdGrY0OTnH=gUZW5igjsWSF9y=Ub1u@mail.gmail.com>
+Subject: [PATCH] fix vulnerability of the release method of file operations in
+ Block layer SCSI generic driver
+From: Hillf Danton <dhillf@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, "Zou, Yi" <yi.zou@intel.com>,
+        Joe Eykholt <jeykholt@cisco.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The computation context setup by previous opening the bsg file could
+not survive following open/release operations upon the same file
+object.
 
-* Borislav Petkov <bp@amd64.org> wrote:
+The vulnerability is fixed by deferring the cleanup operation until necessary.
 
-> On Wed, Nov 10, 2010 at 08:22:46AM -0500, Ingo Molnar wrote:
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tip-microcode
-> > 
-> > Ok, good. Please fix commit 35dc0ff46f77 if you want me to pull it, you should be in 
-> > the signoff chain as a submaintainer who pushes bits, i.e. your entry should be:
-> > 
-> >   Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> > 
-> > not:
-> > 
-> >   Acked-by: Borislav Petkov <borislav.petkov@amd.com>
-> 
-> done,
-> 
-> > Also, while touching up details, please remove the colon after the sentence:
-> > 
-> >   35dc0ff46f77: microcode, AMD: Prefer vzalloc() over calls to vmalloc()+memset().
-> 
-> done (simplified commit message, while at it),
-> 
-> > All arch/x86 commit titles are open-ended sentences that start with a verb.
-> > 
-> > Also, please use a 'x86, microcode, AMD: ' prefix.
-> 
-> and done. Branch updated.
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
-Pulled, thanks Boris!
+--- a/block/bsg.c	2010-09-13 07:07:38.000000000 +0800
++++ b/block/bsg.c	2010-11-10 21:43:58.000000000 +0800
+@@ -858,7 +858,8 @@ static int bsg_release(struct inode *ino
+ {
+ 	struct bsg_device *bd = file->private_data;
 
-	Ingo
+-	file->private_data = NULL;
++	if (1 == atomic_read(&bd->ref_count))
++		file->private_data = NULL;
+ 	return bsg_put_device(bd);
+ }
