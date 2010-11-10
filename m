@@ -1,71 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab0KJPxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 10:53:48 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:52492 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756231Ab0KJPxr (ORCPT
+	id S1756790Ab0KJPyg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:54:36 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:59678 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756437Ab0KJPye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 10:53:47 -0500
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=2Zzf6Ss2cq4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=GwmEstuPqUwjGjsdEDwA:9 a=_vMTJuKud1PwGh-L5wQA:7 a=7SD9hlayFWtsfzhUD3iDaYiWTsoA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC/Requirements/Design] h/w error reporting
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, "Luck, Tony" <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, ying.huang@intel.com, bp@alien8.de,
-        tglx@linutronix.de, akpm@linux-foundation.org, mchehab@redhat.com,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <1289403019.2084.17.camel@laptop>
-References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
-	 <20101110101450.GA18481@elte.hu>
-	 <1289400056.12418.139.camel@gandalf.stny.rr.com>
-	 <1289400234.2191.129.camel@laptop>
-	 <1289401781.12418.145.camel@gandalf.stny.rr.com>
-	 <1289403019.2084.17.camel@laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 10 Nov 2010 10:53:45 -0500
-Message-ID: <1289404425.12418.160.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Nov 2010 10:54:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=j72vB5pEMvaVY/BjtylV39J7yAHHbQSEQLx4Q5B1TMmEdUxCOoOhph8wZEwJjZ4EZe
+         sbLnmS3EWDXugDRu5+x8R1A7tzTCyK2V8yFWgszkmlCpeEXgSUdN8Wua5EZ4zAVf9eh6
+         dDIhWo1wtwE1EXL+NTbRIzSZra7fZXvO8HNdg=
+Date: Wed, 10 Nov 2010 16:54:28 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Joe Korty <joe.korty@ccur.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        mathieu.desnoyers@efficios.com, dhowells@redhat.com,
+        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
+        peterz@infradead.org, linux-kernel@vger.kernel.org,
+        josh@joshtriplett.org, houston.jim@comcast.net
+Subject: Re: [PATCH] a local-timer-free version of RCU
+Message-ID: <20101110155419.GC5750@nowhere>
+References: <20101104232148.GA28037@linux.vnet.ibm.com> <20101105210059.GA27317@tsunami.ccur.com> <4CD912E9.1080907@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CD912E9.1080907@cn.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 16:30 +0100, Peter Zijlstra wrote:
+On Tue, Nov 09, 2010 at 05:22:49PM +0800, Lai Jiangshan wrote:
+> It is hardly acceptable when there are memory barriers or
+> atomic operations in the fast paths of rcu_read_lock(),
+> rcu_read_unlock().
+> 
+> We need some thing to drive the completion of GP
+> (and the callbacks process). There is no free lunch,
+> if the completion of GP is driven by rcu_read_unlock(),
+> we very probably need memory barriers or atomic operations
+> in the fast paths of rcu_read_lock(), rcu_read_unlock().
+> 
+> We need look for some periodic/continuous events of
+> the kernel for GP-driven, schedule-tick and schedule() are
+> most ideal events sources in the kernel I think.
+> 
+> schedule-tick and schedule() are not happened when NO_HZ
+> and dyntick-hpc, so we need some approaches to fix it. I vote up
+> for the #5 approach of Paul's.
+> 
+> Also, I propose an unmature idea here.
+> 
+> 	Don't tell RCU about dyntick-hpc mode, but instead
+> 	stop the RCU function of a CPU when the first time RCU disturbs
+> 	dyntick-hpc mode or NO_HZ mode.
+> 
+> 	rcu_read_lock()
+> 		if the RCU function of this CPU is not started, start it and
+> 		start a RCU timer.
+> 		handle rcu_read_lock()
+> 
+> 	enter NO_HZ
+> 		if interrupts are just happened very frequently, do nothing, else:
+> 		stop the rcu function and the rcu timer of the current CPU.
+> 
+> 	exit interrupt:
+> 		if this interrupt is just caused by RCU timer && it just disrurbs
+> 		dyntick-hpc mode or NO_HZ mode(and will reenter these modes),
+> 		stop the rcu function and stop the rcu timer of the current CPU.
+> 
+> 	schedule-tick:
+> 		requeue the rcu timer before it causes an unneeded interrupt.
+> 		handle rcu things.
+> 
+> 	+	Not big changes to RCU, use the same code to handle
+> 		dyntick-hpc mode or NO_HZ mode, reuse some code of rcu_offline_cpu()
+> 
+> 	+	No need to inform RCU of user/kernel transitions.
+> 
+> 	+	No need to turn scheduling-clock interrupts on
+> 		at each user/kernel transition.
+> 
+> 	-	carefully handle some critical region which also implies
+> 		rcu critical region.
+> 
+> 	-	Introduce some unneeded interrupt, but it is very infrequency.
 
 
-> I also don't want to support the stupid concurrent read/write from tail.
 
-You are talking about what you said that ftrace ring buffer is totally
-broken, that if the writer is writing to the tail, and the reader is
-reading from the head, it is broken?
+I like this idea.
 
-Let me get this straight.
+I would just merge the concept of "rcu timer" into the sched tick,
+as per Peter Zijlstra idea:
 
-We have a writer constantly writing to the tail of the buffer. On
-another CPU we have a reader, that will start at that tail (where the
-writer just wrote) and go backwards.
+In this CPU isolation mode, we are going to do a kind of adapative
+sched tick already: run the sched tick and if there was nothing to do
+for some time and we are in userspace, deactivate it. If suddenly
+a new task arrives on the CPU (which means there is now more than
+one task running and we want preemption tick back), or if we have
+timers enqueued, or so, reactivate it.
 
-What happens if the writer continues writing? Do we stop the reader and
-have it write what it just wrote? Or just consider that the reader goes
-the opposite direction of the writer, and when it hits the writer, it
-continues, since now it has the new data again.
+So I would simply merge your rcu idea into this, + the reactivation
+on rcu_read_lock().
 
-Now the question comes, how do we show this data to the user? Does the
-user need to sort the data? If the reader reads X amount of data, it
-gets X from where the writer just wrote. Then the writer writes Y data.
-The reader reads X amount again, but X > Y, do we read the Y where the
-writer wrote, and then read the buffer part that is older than the
-previous read? Thus the user now has the burden to sort the buffer?
-
-I'm really confused to how to use a buffer like this?
-
--- Steve
-
+Someone see a bad thing in this idea?
 
