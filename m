@@ -1,62 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab0KJSBQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 13:01:16 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:44768 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755341Ab0KJSBM (ORCPT
+	id S1755021Ab0KJSFe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:05:34 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:38289 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752684Ab0KJSFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 13:01:12 -0500
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] x86, mrst: Add audio driver bindings
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 10 Nov 2010 17:40:48 +0000
-Message-ID: <20101110174044.11340.78008.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Wed, 10 Nov 2010 13:05:33 -0500
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=2Zzf6Ss2cq4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=5zDFaqfdbTJGaCSBgWMA:9 a=vVzE5YQDUg2h0BS3l7r1m5ACaRAA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC/Requirements/Design] h/w error reporting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        ying.huang@intel.com, bp@alien8.de, tglx@linutronix.de,
+        akpm@linux-foundation.org, mchehab@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <20101110174852.GB4001@elte.hu>
+References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
+	 <20101110101450.GA18481@elte.hu>
+	 <1289400056.12418.139.camel@gandalf.stny.rr.com>
+	 <1289400234.2191.129.camel@laptop>
+	 <1289401781.12418.145.camel@gandalf.stny.rr.com>
+	 <1289403019.2084.17.camel@laptop>  <20101110174852.GB4001@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 10 Nov 2010 13:05:29 -0500
+Message-ID: <1289412329.12418.177.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vinod Koul <vinod.koul@intel.com>
+On Wed, 2010-11-10 at 18:48 +0100, Ingo Molnar wrote:
 
-This patch adds the sound card bindings for Moorestown (pmic_audio) and
-the Medfield platform (msic_audio) as IPC devices. This ensures they will be
-created at the right time.
+> Yep. The obvious direction is to extend the event buffering ABI we already have, 
+> with whatever additions that are needed:
+> 
+>  - document that we already support flight recorder mode
 
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+I thought this was still broken?
 
- arch/x86/platform/mrst/mrst.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+> 
+>  - a more compressed record format
+> 
+>  - NOP filler events up to page boundary, for better splice and for better flight 
+>    recorder
+> 
+>  - splice support
+> 
+> etc. That's how it evolved until now and it's all very extensible.
+> 
+> Steve, could you please list the additions you have in mind, in order of priority?
 
+A few of things that pop up quickly are:
 
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index a3fe2fd..f2bc945 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -499,6 +499,11 @@ static void __init *lis331dl_platform_data(void *info)
- 	return &intr2nd_pdata;
- }
- 
-+static void __init *no_platform_data(void *info)
-+{
-+	return NULL;
-+}
-+
- static const struct devs_id __initconst device_ids[] = {
- 	{"pmic_gpio", SFI_DEV_TYPE_SPI, 1, &pmic_gpio_platform_data},
- 	{"spi_max3111", SFI_DEV_TYPE_SPI, 0, &max3111_platform_data},
-@@ -506,6 +511,8 @@ static const struct devs_id __initconst device_ids[] = {
- 	{"i2c_max7315_2", SFI_DEV_TYPE_I2C, 1, &max7315_platform_data},
- 	{"emc1403", SFI_DEV_TYPE_I2C, 1, &emc1403_platform_data},
- 	{"i2c_accel", SFI_DEV_TYPE_I2C, 0, &lis331dl_platform_data},
-+	{"pmic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data},
-+	{"msic_audio", SFI_DEV_TYPE_IPC, 1, &no_platform_data},
- 	{},
- };
- 
+1) lockless
+
+2) as-fast-as possible
+
+3) support all tasks / all CPUs and still have as-fast-as-possible
+
+Peter said at LPC that the perf buffering system was not designed to
+handle high speed tracing. But he also said he does not like the way the
+ftrace buffering works.
+
+I think if we take a step back, we can come up with a new buffering/ABI
+system that can satisfy everyone. We will still support the current
+method now, but I really don't think it is designed with everything we
+had in mind. I do not envision that we can "envolve" to where we want to
+be. We may have to bite the bullet, just like iptables did when they saw
+the failures of ipchains, and redesign something new now that we
+understand what the requirements are.
+
+I do think we need to come up with something new but still support the
+old methods. Thomas came up with this idea, and Peter, Frederic and
+myself agreed.
+
+-- Steve
+
 
