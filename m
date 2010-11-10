@@ -1,56 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932080Ab0KJRZi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:25:38 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:42923 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757221Ab0KJRZh (ORCPT
+	id S932100Ab0KJR0P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:26:15 -0500
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:3436 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932074Ab0KJR0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:25:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=C4H3hVG3+n79DzqxxGRNR1ywP74r+BwxQ+sGsrm84PMulK1mo0yBHfsweKvpjPJI8n
-         qBDz3kENiNnVkGjHvtYtgQJ5k8Nokp/fNZgthHD+u7fJT7xQqXeKvAf/MxQCaq8n2hrx
-         /4EVgLbaHokbMfDxqCWTLSCOoGJOb7ylFqYv4=
-Date: Wed, 10 Nov 2010 18:25:30 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        ying.huang@intel.com, bp@alien8.de, tglx@linutronix.de,
-        akpm@linux-foundation.org, mchehab@redhat.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [RFC/Requirements/Design] h/w error reporting
-Message-ID: <20101110172528.GB5360@nowhere>
-References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com> <20101110101450.GA18481@elte.hu> <1289400056.12418.139.camel@gandalf.stny.rr.com> <1289400234.2191.129.camel@laptop> <1289401781.12418.145.camel@gandalf.stny.rr.com> <1289403019.2084.17.camel@laptop> <1289407960.12418.169.camel@gandalf.stny.rr.com>
+	Wed, 10 Nov 2010 12:26:12 -0500
+Subject: [PATCH v2] PCI: fix pci_bus_alloc_resource() hang,
+	prefer positive decode
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
+        Charles Butterfield <charles.butterfield@nextcentury.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-pci@vger.kernel.org,
+        "Horst H. von Brand" <vonbrand@inf.utfsm.cl>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@amd64.org>, Stefan Becker <chemobejk@gmail.com>,
+        Chuck Ebbert <cebbert@redhat.com>,
+        Fabrice Bellet <fabrice@bellet.info>, Yinghai Lu <yinghai@kernel.org>,
+        Leann Ogasawara <leann.ogasawara@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 10 Nov 2010 10:26:07 -0700
+Message-ID: <20101110172607.2537.10985.stgit@bob.kio>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289407960.12418.169.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 11:52:40AM -0500, Steven Rostedt wrote:
-> On Wed, 2010-11-10 at 16:30 +0100, Peter Zijlstra wrote:
-> 
-> > As for the buffer, I prefer a u64 aligned data stream, but the very
-> > least I need is frame encapsulation. What I don't want _ever_ is stupid
-> > sub-buffers. And no they're not needed, see the discussion about sync
-> > markers a while back.
-> 
-> BTW, the sub buffers is just an implementation detail. I suspect that
-> we'll have to end up with something that splits the buffer up. Whether
-> we have 'markers' or something else. They all break down the buffer into
-> a "sub-buffer".
+
+When a PCI bus has two resources with the same start/end, e.g.,
+
+    pci_bus 0000:04: resource 2 [mem 0xd0000000-0xd7ffffff pref]
+    pci_bus 0000:04: resource 7 [mem 0xd0000000-0xd7ffffff]
+
+the previous pci_bus_find_resource_prev() implementation would alternate
+between them forever:
+
+    pci_bus_find_resource_prev(... [mem 0xd0000000-0xd7ffffff pref])
+        returns [mem 0xd0000000-0xd7ffffff]
+    pci_bus_find_resource_prev(... [mem 0xd0000000-0xd7ffffff])
+        returns [mem 0xd0000000-0xd7ffffff pref]
+    pci_bus_find_resource_prev(... [mem 0xd0000000-0xd7ffffff pref])
+        returns [mem 0xd0000000-0xd7ffffff]
+    ...
+
+This happened because there was no ordering between two resources with the
+same start and end.  A resource that had the same start and end as the
+cursor, but was not itself the cursor, was considered to be before the
+cursor.
+
+This patch fixes the hang by making a fixed ordering between any two
+resources.
+
+In addition, it tries to allocate from positively decoded regions before
+using any subtractively decoded resources.  This means we will use a
+positive decode region before a subtractive decode one, even if it means
+using a smaller address.
+
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=22062
+Reported-by: Borislav Petkov <bp@amd64.org>
+Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+---
+
+ drivers/pci/bus.c |   70 +++++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 49 insertions(+), 21 deletions(-)
 
 
-If the size of the sub-buffers are tunable (all the same size inside a
-whole buffer, but that size is tunable), then someone who doesn't want
-to use subbuffers can just use a single big subbuffer :)
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 5624db8..003170e 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -64,17 +64,57 @@ void pci_bus_remove_resources(struct pci_bus *bus)
+ 	}
+ }
+ 
++static bool pci_bus_resource_better(struct resource *res1, bool pos1,
++				    struct resource *res2, bool pos2)
++{
++	/* If exactly one is positive decode, always prefer that one */
++	if (pos1 != pos2)
++		return pos1 ? true : false;
++
++	/* Prefer the one that contains the highest address */
++	if (res1->end != res2->end)
++		return (res1->end > res2->end) ? true : false;
++
++	/* Otherwise, prefer the one with highest "center of gravity" */
++	if (res1->start != res2->start)
++		return (res1->start > res2->start) ? true : false;
++
++	/* Otherwise, choose one arbitrarily (but consistently) */
++	return (res1 > res2) ? true : false;
++}
++
++static bool pci_bus_resource_positive(struct pci_bus *bus, struct resource *res)
++{
++	struct pci_bus_resource *bus_res;
++
++	/*
++	 * This relies on the fact that pci_bus.resource[] refers to P2P or
++	 * CardBus bridge base/limit registers, which are always positively
++	 * decoded.  The pci_bus.resources list contains host bridge or
++	 * subtractively decoded resources.
++	 */
++	list_for_each_entry(bus_res, &bus->resources, list) {
++		if (bus_res->res == res)
++			return (bus_res->flags & PCI_SUBTRACTIVE_DECODE) ?
++				false : true;
++	}
++	return true;
++}
++
+ /*
+- * Find the highest-address bus resource below the cursor "res".  If the
+- * cursor is NULL, return the highest resource.
++ * Find the next-best bus resource after the cursor "res".  If the cursor is
++ * NULL, return the best resource.  "Best" means that we prefer positive
++ * decode regions over subtractive decode, then those at higher addresses.
+  */
+ static struct resource *pci_bus_find_resource_prev(struct pci_bus *bus,
+ 						   unsigned int type,
+ 						   struct resource *res)
+ {
++	bool res_pos, r_pos, prev_pos = false;
+ 	struct resource *r, *prev = NULL;
+ 	int i;
+ 
++	res_pos = pci_bus_resource_positive(bus, res);
+ 	pci_bus_for_each_resource(bus, r, i) {
+ 		if (!r)
+ 			continue;
+@@ -82,26 +122,14 @@ static struct resource *pci_bus_find_resource_prev(struct pci_bus *bus,
+ 		if ((r->flags & IORESOURCE_TYPE_BITS) != type)
+ 			continue;
+ 
+-		/* If this resource is at or past the cursor, skip it */
+-		if (res) {
+-			if (r == res)
+-				continue;
+-			if (r->end > res->end)
+-				continue;
+-			if (r->end == res->end && r->start > res->start)
+-				continue;
++		r_pos = pci_bus_resource_positive(bus, r);
++		if (!res || pci_bus_resource_better(res, res_pos, r, r_pos)) {
++			if (!prev || pci_bus_resource_better(r, r_pos,
++							     prev, prev_pos)) {
++				prev = r;
++				prev_pos = r_pos;
++			}
+ 		}
+-
+-		if (!prev)
+-			prev = r;
+-
+-		/*
+-		 * A small resource is higher than a large one that ends at
+-		 * the same address.
+-		 */
+-		if (r->end > prev->end ||
+-		    (r->end == prev->end && r->start > prev->start))
+-			prev = r;
+ 	}
+ 
+ 	return prev;
 
