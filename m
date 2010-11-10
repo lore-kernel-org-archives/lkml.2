@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab0KJSwn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 13:52:43 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37326 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755527Ab0KJSwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 13:52:40 -0500
-Date: Wed, 10 Nov 2010 19:52:13 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        ying.huang@intel.com, tglx@linutronix.de, akpm@linux-foundation.org,
-        mchehab@redhat.com,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [RFC/Requirements/Design] h/w error reporting
-Message-ID: <20101110185213.GJ22410@elte.hu>
-References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
- <20101110101450.GA18481@elte.hu>
- <1289400056.12418.139.camel@gandalf.stny.rr.com>
- <1289400234.2191.129.camel@laptop>
- <1289401781.12418.145.camel@gandalf.stny.rr.com>
- <1289403019.2084.17.camel@laptop>
- <1289407960.12418.169.camel@gandalf.stny.rr.com>
- <20101110170559.GA15704@a1.tnic>
- <20101110174122.GA4001@elte.hu>
- <1289412587.12418.179.camel@gandalf.stny.rr.com>
+	id S1755525Ab0KJSzN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:55:13 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:34951 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754305Ab0KJSzL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 13:55:11 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBABd52kxLd/sX/2dsb2JhbAAHgzLNSJEJgSKDNXMEhFqLdw
+X-IronPort-AV: E=Sophos;i="4.59,179,1288584000"; 
+   d="scan'208";a="82133355"
+Message-ID: <4CDAEA8A.7090002@teksavvy.com>
+Date: Wed, 10 Nov 2010 13:55:06 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289412587.12418.179.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
+        dave b <db.pub.mail@gmail.com>, Sanjoy Mahajan <sanjoy@olin.edu>,
+        Jesper Juhl <jj@chaosbits.net>, Chris Mason <chris.mason@oracle.com>,
+        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
+        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
+Subject: Re: 2.6.36 io bring the system to its knees
+References: <20101105014334.GF13830@dastard>	<E1PELiI-0001Pj-8g@approx.mit.edu>	<AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>	<4CD696B4.6070002@kernel.dk>	<AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>	<20101110013255.GR2715@dastard>	<AANLkTinpLuzd5c+WqXoa_0Z=nv=mDgd-k4QZbBZHsQnD@mail.gmail.com>	<AANLkTinYZ2wPeeunFv4Ljm+D9SDLbgzTVmw_P9KQdK16@mail.gmail.com>	<AANLkTik1zyrP5DBGC+MmSKF2Eeep3fSu=-8TdOY8BTJj@mail.gmail.com> <AANLkTi=8uwjAqSmMWbAwX1gGbjS8Q8Rh1mPu7RArdLJt@mail.gmail.com>
+In-Reply-To: <AANLkTi=8uwjAqSmMWbAwX1gGbjS8Q8Rh1mPu7RArdLJt@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 10-11-10 12:10 PM, Alexey Dobriyan wrote:
+> On Wed, Nov 10, 2010 at 6:55 PM, Linus Torvalds
+> <torvalds@linux-foundation.org>  wrote:
+>> On Wed, Nov 10, 2010 at 8:46 AM, Alexey Dobriyan<adobriyan@gmail.com>  wrote:
+>>> Those of us, who did (without UPS), will never do it again.
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+I've used ext2 and ext3 extensively on all of the boxes here,
+every since each first became available.   I developed Linux IDE,
+the first IDE DMA, lots of custom storage drivers, and more recently
+worked on libata drivers.  This meant a LOT of sudden and catastrophic
+system failures, as the bugs and other kinks were worked on.
 
-> On Wed, 2010-11-10 at 18:41 +0100, Ingo Molnar wrote:
-> 
-> > > It would also be cool to be able to allocate those buffers as early as possible, 
-> > > even if before MCA is enabled, so that I won't have to copy MCE data which got 
-> > > logged before the tracing subsystem got enabled to the buffers proper.
-> > 
-> > We could even have some (small) statically enabled build-time buffer that could be 
-> > enabled straight away before any allocators are enabled.
-> 
-> I'm not sure it needs to be small. We can have a persistent buffer that may be 
-> resized at any time. It can start off small, or with a kernel command line, be as 
-> big as you want it.
+Never lost a nibble.  Totally, utterly reliable stuff for everyday use.
+*WITH* the write-caches all enabled on all of the drives, too.
 
-Sure.
+Sure, sudden power-failures could have a better chance of corrupting data,
+but those are really rare, and the few that have happened were again non-events 
+here.
 
-> Basically, what ftrace has now.
-> 
-> Also, with a way that root user can get a handle on this buffer, and just trace 
-> global events with it.
+That's the difference between theory and practice.
 
-Yeah.
-
-Thanks,
-
-	Ingo
+Cheers
+-ml
