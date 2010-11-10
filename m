@@ -1,78 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519Ab0KJU6h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:58:37 -0500
-Received: from www.tglx.de ([62.245.132.106]:46285 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753654Ab0KJU6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:58:36 -0500
-Date: Wed, 10 Nov 2010 21:58:13 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andrew Lutomirski <luto@mit.edu>
-cc: Borislav Petkov <bp@amd64.org>, Clemens Ladisch <clemens@ladisch.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86 <x86@kernel.org>,
-        =?ISO-8859-15?Q?J=F6rg_R=F6del?= <joerg.roedel@amd.com>
-Subject: Re: [FALSE ALARM] Re: HPET (?) related hangs and breakage in
- 2.6.35,36
-In-Reply-To: <AANLkTimP1F=GsnEqp-koTdy4jfaxzKpetC3Suo1Yidcm@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1011102157000.2900@localhost6.localdomain6>
-References: <AANLkTikA6hZDV0A30fku7VT7Z1P8OqxcsF-EK95pBdD=@mail.gmail.com> <4CD966D8.4000602@ladisch.de> <20101109153805.GB3146@kryptos.osrc.amd.com> <AANLkTi=cUGGpkgWcbX=KMxzu+E=Toy_O+LeLoAFFUAsh@mail.gmail.com> <20101109180123.GB31121@aftab>
- <AANLkTik107mFOqvxsBtBrc14RHwhkkZTOGgctxKPPNfW@mail.gmail.com> <AANLkTik1JdQRh_Gkz_240csVGp4sS0W8nzR5d9Pv1G-X@mail.gmail.com> <20101110185031.GB13539@aftab> <AANLkTimNuSJz0nXZCR2zu963VQ_Y9R8ix73+QbbUy7nt@mail.gmail.com> <alpine.LFD.2.00.1011102147580.2900@localhost6.localdomain6>
- <AANLkTimP1F=GsnEqp-koTdy4jfaxzKpetC3Suo1Yidcm@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756820Ab0KJVAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 16:00:42 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:50771 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756349Ab0KJVAl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 16:00:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=GcuKf/KGws7ny+L+oSduyWY/qjqyd3gEUdIHsNy8iwC4ILbf2q+V3EIagCqJgmBpMl
+         mmGq8DccIbJCbsASEj2A==
+Date: Wed, 10 Nov 2010 13:00:34 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Figo.zhang" <figo1802@gmail.com>
+cc: lkml <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@osdl.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Figo.zhang" <zhangtianfei@leadcoretech.com>
+Subject: Re: [PATCH v3]mm/oom-kill: direct hardware access processes should
+ get bonus
+In-Reply-To: <1289402666.10699.28.camel@localhost.localdomain>
+Message-ID: <alpine.DEB.2.00.1011101252260.830@chino.kir.corp.google.com>
+References: <1288662213.10103.2.camel@localhost.localdomain> <1289305468.10699.2.camel@localhost.localdomain> <1289402093.10699.25.camel@localhost.localdomain> <1289402666.10699.28.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-441092936-1289422695=:2900"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, 10 Nov 2010, Figo.zhang wrote:
 
----1463795968-441092936-1289422695=:2900
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-
-On Wed, 10 Nov 2010, Andrew Lutomirski wrote:
-> On Wed, Nov 10, 2010 at 3:52 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Wed, 10 Nov 2010, Andrew Lutomirski wrote:
-> >
-> >> On Wed, Nov 10, 2010 at 1:50 PM, Borislav Petkov <bp@amd64.org> wrote:
-> >> > On Wed, Nov 10, 2010 at 01:48:00PM -0500, Andrew Lutomirski wrote:
-> >> >> > Clocksource: tsc unstable (delta = -34355296774 ns)
-> >> >> > Switching: to clocksource hpet
-> >> >>
-> >> >> Please disregard -- this is a bug in nouveau (or drm) not hpet.  I'll
-> >> >> send a bug report to the maintainers.
-> >> >
-> >> > Interesting! Joerg was complaining about similar symptoms with .36 today
-> >> > too.
-> >>
-> >> Well, there is a clocksource sort-of-bug that could cause confusion:
-> >> when something totally unrelated to clocksources goes out to lunch,
-> >> the clocksource watchdog decides that the clocksource is unstable and
-> >> complains, steering everyone toward filing the wrong bug.
-> >
-> > How should the clocksource watchdog code know that something went to
-> > lunch? The fact that we need to monitor TSC at all is horrible enough,
-> > adding further heuristics to detect extended lunch breaks would be
-> > just a PITA.
+> the victim should not directly access hardware devices like Xorg server,
+> because the hardware could be left in an unpredictable state, although 
+> user-application can set /proc/pid/oom_score_adj to protect it. so i think
+> those processes should get bonus for protection.
 > 
-> Could the clocksource watchdog detect when it gets woken up (i.e. when
-> the hardware timer fires) instead of when it gets scheduled?  It is
-> internal to the timing code, after all...
+
+Again, this argument doesn't work: if killing the task leaves hardware in 
+an unpredictable state (and that's presumably harmful), then they 
+shouldn't be killed at all.
+
+Please show why CAP_SYS_RESOURCE equates to 3% additional memory for such 
+tasks.
+
+CAP_SYS_RESOURCE allows those threads to override resource limits, so 
+these have potentially unbounded amounts of memory usage.  Thus, they may 
+have the highest memory usage on the machine and now your patch has caused 
+other innocent tasks to be killed before this is actually targeted.  
+That's a bad result.  Why do we need this type of hack in the oom killer 
+when these threads have the privilege to modify oom killing priorities for 
+all tasks on the system?  Laziness, at the cost of a less predictable 
+heuristic?
+
+Why aren't you doing the same change for __vm_enough_memory() for LSMs?
+
+> in v2, fix the incorrect comment.
+> in v3, change the divided the badness score by 4, like old heuristic for protection. we just
+> want the oom_killer don't select Root/RESOURCE/RAWIO process as possible.
 > 
-> Alternatively, maybe the watchdog could just compare the TSC timestamp
-> to the current value according to some other clock (PIT?  whatever
-> clockevent is in use?) instead of just using the time passed into the
-> delayed work in the first place.
+> suppose that if a user process A such as email cleint "evolution" and a process B with
+> ditecly hareware access such as "Xorg", they have eat the equal memory (the badness score is 
+> the same),so which process are you want to kill? so in new heuristic, it will kill the process B.
+> but in reality, we want to kill process A.
+> 
 
-It compares to some other clock. i.e. HPET in your case, but the
-extended lunch break was larger than the HPET wrap around time :(
+Then you need to protect process B accordingly and since it has 
+CAP_SYS_RESOURCE it can easily do that on its own or the admin can protect 
+Xorg.
 
-Thanks,
+> Signed-off-by: Figo.zhang <figo1802@gmail.com>
+> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-	tglx
----1463795968-441092936-1289422695=:2900--
+Unless you did this in private, I didn't see KOSAKI-san's reviewed-by line 
+for this change and it is drastically different from what you've proposed 
+before.
+
+> ---
+> mm/oom_kill.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 4029583..f43d759 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -202,6 +202,15 @@ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+>  		points -= 30;
+>  
+>  	/*
+> +	 * Root and direct hareware access processes are usually more 
+> +	 * important, so they should get bonus for protection. 
+> +	 */
+> +	if (has_capability_noaudit(p, CAP_SYS_ADMIN) ||
+> +	    has_capability_noaudit(p, CAP_SYS_RESOURCE) ||
+> +	    has_capability_noaudit(p, CAP_SYS_RAWIO))
+> +		points /= 4;
+> +
+
+What on earth?  So now CAP_SYS_ADMIN gets a 3% bonus in the if-clause 
+above this, then we divide a percentage of memory use by 4?  What does 
+that mean AT ALL?
+
+And now you've thrown CAP_SYS_RAWIO in there without any mention in the 
+changelog?
+
+Are you just trying to introduce all the old arbitrary heuristics from 
+before the rewrite back into the oom killer like this?
+
+Do you actually have a log from an event where the oom killer targeted the 
+incorrect task?
