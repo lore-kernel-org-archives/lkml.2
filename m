@@ -1,66 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757034Ab0KJQqZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 11:46:25 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:58091 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756858Ab0KJQqY (ORCPT
+	id S1757067Ab0KJQqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 11:46:43 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46373 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757058Ab0KJQqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 11:46:24 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=VRWi85xLS3pBgx5NtUc+LBqXoqxca+xwLbmESXy0DfcG2G1NQRuGvGXxNB4WmPXHPV
-         V89HgnIJy+qdIdXxS1GQ5p+p4wNVySs44RjN14BkwNCX08wae1uEgjTNWwEOgDW13xQP
-         rAW1cru6UAMjLeTyYxWcIJXIshS1Yq0kWRTis=
+	Wed, 10 Nov 2010 11:46:42 -0500
+Date: Wed, 10 Nov 2010 17:46:40 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Nguyen Dinh-R00091 <R00091@freescale.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, u.kleine-koenig@pengutronix.de,
+        amit.kucheria@canonical.com, eric@eukrea.com
+Subject: Re: [PATCHv3 1/2] ARM: imx: Add core definitions for MX53
+Message-ID: <20101110164640.GV6017@pengutronix.de>
+References: <1288972551-21877-1-git-send-email-Dinh.Nguyen@freescale.com> <20101109214607.GG6017@pengutronix.de> <86A0E76937111F4C92FABEC0A20988510523D224@az33exm21>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinpLuzd5c+WqXoa_0Z=nv=mDgd-k4QZbBZHsQnD@mail.gmail.com>
-References: <20101105014334.GF13830@dastard>
-	<E1PELiI-0001Pj-8g@approx.mit.edu>
-	<AANLkTimON_GL6vRF9=_U6oRFQ30EYssx3wv5xdNsU9JM@mail.gmail.com>
-	<4CD696B4.6070002@kernel.dk>
-	<AANLkTikNPEcwWjEQuC-_=9yH5DCCiwUAY265ggeygcSQ@mail.gmail.com>
-	<20101110013255.GR2715@dastard>
-	<AANLkTinpLuzd5c+WqXoa_0Z=nv=mDgd-k4QZbBZHsQnD@mail.gmail.com>
-Date: Wed, 10 Nov 2010 18:46:21 +0200
-Message-ID: <AANLkTinYZ2wPeeunFv4Ljm+D9SDLbgzTVmw_P9KQdK16@mail.gmail.com>
-Subject: Re: 2.6.36 io bring the system to its knees
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
-        dave b <db.pub.mail@gmail.com>, Sanjoy Mahajan <sanjoy@olin.edu>,
-        Jesper Juhl <jj@chaosbits.net>, Chris Mason <chris.mason@oracle.com>,
-        Ingo Molnar <mingo@elte.hu>, Pekka Enberg <penberg@kernel.org>,
-        Aidar Kultayev <the.aidar@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Nick Piggin <npiggin@suse.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "Ted Ts'o" <tytso@mit.edu>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>, Steven Barrett <damentz@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <86A0E76937111F4C92FABEC0A20988510523D224@az33exm21>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 17:45:36 up 130 days,  7:56, 40 users,  load average: 1.89, 0.79,
+	0.43
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 5:59 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Nov 9, 2010 at 5:32 PM, Dave Chinner <david@fromorbit.com> wrote:
->>
->> Don't forget to mention data=writeback is not the default because if
->> your system crashes or you lose power running in this mode it will
->> *CORRUPT YOUR FILESYSTEM* and you *WILL LOSE DATA*.
->
-> You will lose data even with data=ordered. All the data that didn't
-> get logged before the crash is lost anyway.
+On Wed, Nov 10, 2010 at 08:51:19AM -0700, Nguyen Dinh-R00091 wrote:
+> Hi Sascha,
+> 
+> >-----Original Message-----
+> >From: Sascha Hauer [mailto:s.hauer@pengutronix.de]
+> >Sent: Tuesday, November 09, 2010 3:46 PM
+> >To: Nguyen Dinh-R00091
+> >Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
+> linux@arm.linux.org.uk;
+> >u.kleine-koenig@pengutronix.de; amit.kucheria@canonical.com;
+> eric@eukrea.com
+> >Subject: Re: [PATCHv3 1/2] ARM: imx: Add core definitions for MX53
+> >
+> >Hi Dinh,
+> >
+> >On Fri, Nov 05, 2010 at 10:55:50AM -0500, Dinh.Nguyen@freescale.com
+> wrote:
+> >> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> >>
+> >> Add iomux, clocks,  and memory map for Freescale's MX53 SoC.
+> >> Add cpu_is_mx53 function to common.h.
+> >> Add 3 more banks of gpio's to mxc_gpio_ports.
+> >> Add MX53 phys offset address.
+> >>
+> >> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> >> ---
+> >>  arch/arm/mach-mx5/clock-mx53.c              |  857
+> +++++++++++++++++++++++++++
+> >>  arch/arm/mach-mx5/devices.c                 |   27 +
+> >>  arch/arm/plat-mxc/include/mach/common.h     |    4 +
+> >>  arch/arm/plat-mxc/include/mach/iomux-mx53.h |  303 ++++++++++
+> >>  arch/arm/plat-mxc/include/mach/memory.h     |    1 +
+> >>  arch/arm/plat-mxc/include/mach/mx53.h       |  406 +++++++++++++
+> >>  6 files changed, 1598 insertions(+), 0 deletions(-)
+> >>  create mode 100644 arch/arm/mach-mx5/clock-mx53.c
+> >>  create mode 100644 arch/arm/plat-mxc/include/mach/iomux-mx53.h
+> >>  create mode 100644 arch/arm/plat-mxc/include/mach/mx53.h
+> >>
+> >> diff --git a/arch/arm/mach-mx5/clock-mx53.c
+> b/arch/arm/mach-mx5/clock-mx53.c
+> >> new file mode 100644
+> >> index 0000000..d547cb8
+> >> --- /dev/null
+> >> +++ b/arch/arm/mach-mx5/clock-mx53.c
+> >
+> >Most of this code looks like it could be shared with clock-mx51.c
+> 
+> Agreed, but I was unsure how to proceed with adding clock code for mx53.
+> Should I merge mx53 clock code into clock-mx51 and rename clock-mx51?
 
-Linus, are you using with data=writeback?
+Yes, to something like clock-mx51-mx53.c
 
-Those of us, who did (without UPS), will never do it again.
+Sascha
 
-Propability of non-trivial FS corruption becomes so much bigger.
-I believe from my experience, average number of crashes before
-one loses FS becomes single digit number.
-
-With data=ordered, it's quite hard.
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
