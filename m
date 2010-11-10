@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab0KJEFr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 9 Nov 2010 23:05:47 -0500
-Received: from static-220-247-10-204.b-man.svips.gol.ne.jp ([220.247.10.204]:56978
-	"EHLO smtp.kamineko.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752605Ab0KJEFp (ORCPT
+	id S1753686Ab0KJEZu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 9 Nov 2010 23:25:50 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:34283 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab0KJEZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 9 Nov 2010 23:05:45 -0500
-X-Greylist: delayed 444 seconds by postgrey-1.27 at vger.kernel.org; Tue, 09 Nov 2010 23:05:44 EST
-Date: Wed, 10 Nov 2010 12:58:33 +0900
-From: Mattia Dongili <malattia@linux.it>
-To: Norbert Preining <preining@logic.at>
-Cc: linux-kernel@vger.kernel.org,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Subject: Re: regression since 2.6.36: backlight in sony-laptop not working
-Message-ID: <20101110035833.GB3029@kamineko.org>
-References: <20101104142915.GC7650@gamma.logic.tuwien.ac.at>
+	Tue, 9 Nov 2010 23:25:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=esvGkHufHrcZTgahwAj0T8m5eJzq86ab77e+v5Ew0D3bmOERZ4pUyT5IAo1p60GQrE
+         f5g8f3XDjXy6idgRcoXp/MUEZU54OoxxuuMNKvvdjbJhus7EeraIHU+/VvTpKom0xjDm
+         m9tFNXnqkTVl/ikPlPn/E+PYckIHc59PmXDjY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101104142915.GC7650@gamma.logic.tuwien.ac.at>
-X-Operating-System: Linux 2.6.35+ x86_64
-X-Disclaimer: Buh!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 10 Nov 2010 12:25:47 +0800
+Message-ID: <AANLkTik2jL_wXDydNiH-r-RUcxRDYUEY30maPhkS94o9@mail.gmail.com>
+Subject: [PATCH] kdb: fix kernel fault when register kdb debug command exceeds KDB_BASE_CMD_MAX
+From: jovi zhang <bookjovi@gmail.com>
+To: Jason Wessel <jason.wessel@windriver.com>, Martin Hicks <mort@sgi.com>,
+        Dmitry Torokhov <dtor@mail.ru>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oAA4QFDA027744
 
-On Thu, Nov 04, 2010 at 11:29:15PM +0900, Norbert Preining wrote:
-> Hi Mattia, hi all,
-> 
-> (please keep me in Cc)
-> 
-> when switching from 2.6.36 to 2.6.37-rc1(+git) I realize that I cannot
-> adjust the backlight anymore. Before this was possible with the
-> Fn-F5 and Fn-F6 keys, but now nothing happens.
+If we register kdb debug command numbers exceeds KDB_BASE_CMD_MAX,
+kernel will fault
+This patch fix it
 
-It's ages sony_laptop doesn't change, it may be some other change in the
-acpi layer that causes this.
+Signed-off-by: jovi zhang <bookjovi@gmail.com>
+kernel/debug/kdb/kdb_main.c |   10 ++++------
+1 files changed, 4 insertions(+), 6 deletions(-)
 
-> acpi_listen does not issue anything when these keys are pressed.
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index 37755d6..abd46c9 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -82,7 +82,7 @@ static kdbtab_t kdb_base_commands[50];
+#define for_each_kdbcmd(cmd, num)                                      \
+       for ((cmd) = kdb_base_commands, (num) = 0;                      \
+            num < kdb_max_commands;                                    \
+-            num == KDB_BASE_CMD_MAX ? cmd = kdb_commands : cmd++, num++)
++            num++, num == KDB_BASE_CMD_MAX ? cmd = kdb_commands : cmd++)
 
-How about the input layer? /proc/acpi/event is deprecated and you should
-not rely on that.
-But anyway, it's a Fn key issue, not backlight control itself, right?
-Can you change brightness echoing to the sysfs files directly?
+typedef struct _kdbmsg {
+       int     km_diag;        /* kdb diagnostic */
+@@ -2730,7 +2730,7 @@ int kdb_register_repeat(char *cmd,
+       }
 
-> Is there any obvious oversight from my side?
-
-don't know, can you bisect it?
-
-> config is attached.
-
-can you attach dmesg output after loading sony_laptop with debug=1 and
-pressing the brightness keys?
--- 
-mattia
-:wq!
+       if (i >= kdb_max_commands) {
+-               kdbtab_t *new = kmalloc((kdb_max_commands - KDB_BASE_CMD_MAX +
++               kdbtab_t *new = kzalloc((kdb_max_commands - KDB_BASE_CMD_MAX +
+                        kdb_command_extend) * sizeof(*new), GFP_KDB);
+               if (!new) {
+                       kdb_printf("Could not allocate new kdb_command "
+@@ -2739,13 +2739,11 @@ int kdb_register_repeat(char *cmd,
+               }
+               if (kdb_commands) {
+                       memcpy(new, kdb_commands,
+-                              kdb_max_commands * sizeof(*new));
++                       (kdb_max_commands - KDB_BASE_CMD_MAX) * sizeof(*new));
+                       kfree(kdb_commands);
+               }
+-               memset(new + kdb_max_commands, 0,
+-                      kdb_command_extend * sizeof(*new));
+               kdb_commands = new;
+-               kp = kdb_commands + kdb_max_commands;
++               kp = kdb_commands + kdb_max_commands - KDB_BASE_CMD_MAX;
+               kdb_max_commands += kdb_command_extend;
+       }
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
