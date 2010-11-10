@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756651Ab0KJPS2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 10:18:28 -0500
-Received: from palinux.external.hp.com ([192.25.206.14]:46278 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756583Ab0KJPS0 (ORCPT
+	id S1756654Ab0KJPS4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 10:18:56 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42203 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756130Ab0KJPSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 10:18:26 -0500
-Date: Wed, 10 Nov 2010 08:18:24 -0700
-From: Matthew Wilcox <matthew@wil.cx>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        "Zou, Yi" <yi.zou@intel.com>, Joe Eykholt <jeykholt@cisco.com>
-Subject: Re: [PATCH] fix vulnerability of the release method of file
-	operations in Block layer SCSI generic driver
-Message-ID: <20101110151823.GC18258@parisc-linux.org>
-References: <AANLkTikbkhHmsVAdGrY0OTnH=gUZW5igjsWSF9y=Ub1u@mail.gmail.com>
+	Wed, 10 Nov 2010 10:18:54 -0500
+Date: Wed, 10 Nov 2010 15:18:01 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: saeed bishara <saeed.bishara@gmail.com>
+Cc: Alexey Charkov <alchark@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6 v4] ARM: Add basic architecture support for
+	VIA/WonderMedia 85xx SoC's
+Message-ID: <20101110151801.GC24305@n2100.arm.linux.org.uk>
+References: <1289147348-31969-1-git-send-email-alchark@gmail.com> <20101107165745.GB1759@n2100.arm.linux.org.uk> <AANLkTimFJ=Brx4pDiUqZOKDfABaDg0s_yFC7EkZGi7D8@mail.gmail.com> <20101107171726.GF1759@n2100.arm.linux.org.uk> <20101108171930.GA1471@alchark-u3s.lan> <AANLkTinqpP8WN2h-kR7svZ6GZxi+0RMPBfPyMnzCpAuO@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikbkhHmsVAdGrY0OTnH=gUZW5igjsWSF9y=Ub1u@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTinqpP8WN2h-kR7svZ6GZxi+0RMPBfPyMnzCpAuO@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 10:08:37PM +0800, Hillf Danton wrote:
-> The computation context setup by previous opening the bsg file could
-> not survive following open/release operations upon the same file
-> object.
+On Wed, Nov 10, 2010 at 05:16:17PM +0200, saeed bishara wrote:
+> > diff --git a/arch/arm/mach-vt8500/include/mach/uncompress.h b/arch/arm/mach-vt8500/include/mach/uncompress.h
+> > new file mode 100644
+> > index 0000000..bb9e2d2
+> > --- /dev/null
+> > +++ b/arch/arm/mach-vt8500/include/mach/uncompress.h
+> > @@ -0,0 +1,37 @@
+> > +/* arch/arm/mach-vt8500/include/mach/uncompress.h
+> > + *
+> > + * Copyright (C) 2010 Alexey Charkov <alchark@gmail.com>
+> > + *
+> > + * Based on arch/arm/mach-dove/include/mach/uncompress.h
+> please  replace dove with vt8500
 
-Umm .. release is called on final close of a file, not on every close
-of a file.
-
-> The vulnerability is fixed by deferring the cleanup operation until necessary.
-> 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> ---
-> 
-> --- a/block/bsg.c	2010-09-13 07:07:38.000000000 +0800
-> +++ b/block/bsg.c	2010-11-10 21:43:58.000000000 +0800
-> @@ -858,7 +858,8 @@ static int bsg_release(struct inode *ino
->  {
->  	struct bsg_device *bd = file->private_data;
-> 
-> -	file->private_data = NULL;
-> +	if (1 == atomic_read(&bd->ref_count))
-> +		file->private_data = NULL;
->  	return bsg_put_device(bd);
->  }
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+That doesn't make sense - how can a file be created, based upon itself?
