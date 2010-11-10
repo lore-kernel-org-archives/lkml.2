@@ -1,112 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448Ab0KJX2f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 18:28:35 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:58171 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757010Ab0KJX2d (ORCPT
+	id S1757474Ab0KJX2u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 18:28:50 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:45788 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757411Ab0KJX2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 18:28:33 -0500
-Date: Wed, 10 Nov 2010 18:28:29 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, "bp@alien8.de" <bp@alien8.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
-	reporting)
-Message-ID: <20101110232829.GC9299@Krystal>
-References: <20101110174852.GB4001@elte.hu> <1289412329.12418.177.camel@gandalf.stny.rr.com> <1289413460.2084.27.camel@laptop> <20101110184105.GH22410@elte.hu> <1289415645.12418.180.camel@gandalf.stny.rr.com> <20101110191127.GA6190@nowhere> <20101110202316.GA32396@Krystal> <987664A83D2D224EAE907B061CE93D5301649A71DC@orsmsx505.amr.corp.intel.com> <20101110225115.GB9299@Krystal> <alpine.LFD.2.00.1011110004520.2900@localhost6.localdomain6>
+	Wed, 10 Nov 2010 18:28:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=X0Qv2C5UcszCJdjmO75ZIbvlYEiKNJzMoO0ZuH5Bzs4RUw4xdfAO6KNGa82+j1W0x1
+         BoA857TXWBDaGZ9pwZFXQBscJJIbZurbg7h8IXCVRBIrnQrAnvPtfbCoFm2Cdxor1MpH
+         2E/U7eHQq6DRDvayBZHA8xQ/ZuAvn3rbufeFk=
+Date: Wed, 10 Nov 2010 15:28:41 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Trilok Soni <tsoni@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, rtc-linux@googlegroups.com,
+        linux-arm-msm@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: [RFC v1 PATCH 3/6] led: pmic8058: Add PMIC8058 leds driver
+Message-ID: <20101110232840.GA2121@core.coreip.homeip.net>
+References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org>
+ <1289393281-4459-4-git-send-email-tsoni@codeaurora.org>
+ <4CDB0451.3090303@metafoo.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011110004520.2900@localhost6.localdomain6>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 18:25:05 up 49 days,  3:27,  1 user,  load average: 0.21, 0.20,
-	0.12
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4CDB0451.3090303@metafoo.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Gleixner (tglx@linutronix.de) wrote:
-> On Wed, 10 Nov 2010, Mathieu Desnoyers wrote:
-> 
-> > * Luck, Tony (tony.luck@intel.com) wrote:
-> > > >- Perf does not support flight recorder tracing (concurrent read/write)
-> > > >  - Sub-buffers are needed to support concurrent read/writes
-> > > 
-> > > When I hear somebody say "flight recorder" - I think of "black boxes"
-> > > in airplanes that log data while the flight is running, and are only
-> > > looked at offline later.  So I'm confused by the "concurrent read/write"
-> > > requirement.
-> > > 
-> > > Perhaps you could explain the use cases of your "flight recorder",
-> > > because it seems that the name doesn't fit exactly, and this is
-> > > causing me (and maybe others) some confusion.
-> > 
-> > As Steven pointed out, the flight recorder buffers are set to overwrite the
-> > oldest data when the buffer is filled. Therefore, the tracer can be used in
-> > close-circuit mode (without extracting the data out of the memory buffers) to
-> > keep a trace of the recent events. The trace can be extracted when an
-> > interesting condition (trigger) occurs.
-> > 
-> > A typical use-case is to let it run on an end-user machine to enhance
-> > application crash diagnosis with tracing information, albeit using a very small
-> > fraction of the system resources to do so.
-> > 
-> > The reason why "concurrent read/write" is required is for server-class machines
-> > which needs to continuously be able to gather trace data to report/find/locate
-> > problematic scenarios happening. This means we're not only interested in one
-> > single failure, but rather by a whole set of erroneous/warning conditions that
-> > need to be reported. Stopping tracing every time data is gathered is
-> > inappropriate, because it would hide errors/warnings that would be happening
-> > during data collection.
-> 
-> Aargh! Just because it can be done all in one with an insane amount of
-> complexity does not mean that it's an absolute requirement and a good
-> solution.
-> 
-> So if you want to have both the flight recorder crash documentation
-> and the ongoing monitoring then use two separate sessions with
-> separate modes and be done with it.
-> 
-> Cramming both into the same session is just insane.
+On Wed, Nov 10, 2010 at 09:45:05PM +0100, Lars-Peter Clausen wrote:
+> Trilok Soni wrote:
+> > +
+> > +static void led_kp_set(struct pmic8058_led_data *led, enum led_brightness value)
+> > +{
+> > +	int rc;
+> > +	u8 level;
+> > +	unsigned long flags;
+> > +
+> > +	spin_lock_irqsave(&led->value_lock, flags);
+> This function is only ever called from within the workqueue so there is no need for
+> locking.
 > 
 
-I'm afraid this is not what I proposed above. I'm open to use different tracing
-sessions for different things. However, the server-class case needs to
-continuously gather data so that "trace-shots" can be gathered when problems
-occur. But if you hit two problems back to back, you don't want to lose the
-trace leading to the second issue. Hence the motivation for supporting
-concurrent reading while writing.
+That is a common misconception, unfortunately. The same work may
+be executing on several CPUs at the same time if it was scheduled on
+multi-threaded work queue.
 
-> The first rule is "Keep It Simple!".  Period.
+...
 
-I'd like to start with an implementation that skips some of these requirements
-initially, but what I really think we need to figure out is how we organize our
-ABIs to finally support these requirements.
+> > +	schedule_work(&led->work);
 
-Thanks,
+And sure enough, keventd is such workqueue.
 
-Mathieu
-
-> 
-> Thanks,
-> 
-> 	tglx
+Now, whether having the same work run simultaneously is OK or not is a
+different question altogether...
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Dmitry
