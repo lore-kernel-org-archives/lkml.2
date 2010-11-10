@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab0KJMtF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 07:49:05 -0500
+	id S1755936Ab0KJMsq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 07:48:46 -0500
 Received: from wolverine01.qualcomm.com ([199.106.114.254]:19080 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857Ab0KJMss (ORCPT
+	with ESMTP id S1755919Ab0KJMsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 07:48:48 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6162"; a="61428858"
+	Wed, 10 Nov 2010 07:48:43 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6162"; a="61428853"
 From: Trilok Soni <tsoni@codeaurora.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-input@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-arm-msm@vger.kernel.org, Anirudh Ghayal <aghayal@codeaurora.org>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: [RFC v1 PATCH 6/6] drivers: rtc: Add support for Qualcomm PMIC8058 RTC
-Date: Wed, 10 Nov 2010 18:18:01 +0530
-Message-Id: <1289393281-4459-7-git-send-email-tsoni@codeaurora.org>
+        linux-arm-msm@vger.kernel.org, Trilok Soni <tsoni@codeaurora.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [RFC v1 PATCH 4/6] input: pmic8058_pwrkey: Add support for power key
+Date: Wed, 10 Nov 2010 18:17:59 +0530
+Message-Id: <1289393281-4459-5-git-send-email-tsoni@codeaurora.org>
 X-Mailer: git-send-email 1.7.0.2
 In-Reply-To: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org>
 References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org>
@@ -23,61 +23,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anirudh Ghayal <aghayal@codeaurora.org>
+Add support for PMIC8058 power key driven over dedicated
+KYPD_PWR_N pin. It allows the user to specify the amount
+of time by which the power key reporting can be delayed.
 
-PMIC8058 is Qualcomm's power management IC. A
-32-bit RTC is housed inside this PMIC. The RTC driver
-uses SSBI to communicate with the RTC module.
-
-Cc: Alessandro Zummo <a.zummo@towertech.it>
-Signed-off-by: Anirudh Ghayal <aghayal@codeaurora.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Trilok Soni <tsoni@codeaurora.org>
 ---
- drivers/rtc/Kconfig            |    9 +
- drivers/rtc/Makefile           |    1 +
- drivers/rtc/rtc-pm8058.c       |  487 ++++++++++++++++++++++++++++++++++++++++
- include/linux/rtc/rtc-pm8058.h |   29 +++
- 4 files changed, 526 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rtc/rtc-pm8058.c
- create mode 100644 include/linux/rtc/rtc-pm8058.h
+ drivers/input/misc/Kconfig            |   11 +
+ drivers/input/misc/Makefile           |    1 +
+ drivers/input/misc/pmic8058-pwrkey.c  |  322 +++++++++++++++++++++++++++++++++
+ include/linux/input/pmic8058-pwrkey.h |   37 ++++
+ 4 files changed, 371 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/input/misc/pmic8058-pwrkey.c
+ create mode 100644 include/linux/input/pmic8058-pwrkey.h
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 2883428..9f4ea00 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -665,6 +665,15 @@ config RTC_DRV_NUC900
- 	  If you say yes here you get support for the RTC subsystem of the
- 	  NUC910/NUC920 used in embedded systems.
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index b99b8cb..aeb9165 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -348,6 +348,17 @@ config INPUT_PWM_BEEPER
+ 	  To compile this driver as a module, choose M here: the module will be
+ 	  called pwm-beeper.
  
-+config RTC_DRV_PM8058
-+	tristate "Qualcomm PMIC8058 RTC"
++config INPUT_PMIC8058_PWRKEY
++	tristate "PMIC8058 power key support"
 +	depends on PMIC8058
 +	help
-+	  Say Y here if you want to support the Qualcomm PMIC8058 RTC.
++	  Say Y here if you want support for the PMIC8058 power key.
++
++	  If unsure, say N.
 +
 +	  To compile this driver as a module, choose M here: the
-+	  module will be called pmic8058-rtc.
++	  module will be called pmic8058-pwrkey.
 +
- comment "on-CPU RTC drivers"
- 
- config RTC_DRV_DAVINCI
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 4c2832d..d7a4f7d 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -73,6 +73,7 @@ obj-$(CONFIG_RTC_DRV_PCF8563)	+= rtc-pcf8563.o
- obj-$(CONFIG_RTC_DRV_PCF8583)	+= rtc-pcf8583.o
- obj-$(CONFIG_RTC_DRV_PCF2123)	+= rtc-pcf2123.o
- obj-$(CONFIG_RTC_DRV_PCF50633)	+= rtc-pcf50633.o
-+obj-$(CONFIG_RTC_DRV_PM8058)	+= rtc-pm8058.o
- obj-$(CONFIG_RTC_DRV_PL030)	+= rtc-pl030.o
- obj-$(CONFIG_RTC_DRV_PL031)	+= rtc-pl031.o
- obj-$(CONFIG_RTC_DRV_PS3)	+= rtc-ps3.o
-diff --git a/drivers/rtc/rtc-pm8058.c b/drivers/rtc/rtc-pm8058.c
+ config INPUT_GPIO_ROTARY_ENCODER
+ 	tristate "Rotary encoders connected to GPIO pins"
+ 	depends on GPIOLIB && GENERIC_GPIO
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 1fe1f6c..c4357a0 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -31,6 +31,7 @@ obj-$(CONFIG_INPUT_PCF8574)		+= pcf8574_keypad.o
+ obj-$(CONFIG_INPUT_PCSPKR)		+= pcspkr.o
+ obj-$(CONFIG_INPUT_POWERMATE)		+= powermate.o
+ obj-$(CONFIG_INPUT_PWM_BEEPER)		+= pwm-beeper.o
++obj-$(CONFIG_INPUT_PMIC8058_PWRKEY)	+= pmic8058-pwrkey.o
+ obj-$(CONFIG_INPUT_RB532_BUTTON)	+= rb532_button.o
+ obj-$(CONFIG_INPUT_GPIO_ROTARY_ENCODER)	+= rotary_encoder.o
+ obj-$(CONFIG_INPUT_SGI_BTNS)		+= sgi_btns.o
+diff --git a/drivers/input/misc/pmic8058-pwrkey.c b/drivers/input/misc/pmic8058-pwrkey.c
 new file mode 100644
-index 0000000..9fef82d
+index 0000000..3714b24
 --- /dev/null
-+++ b/drivers/rtc/rtc-pm8058.c
-@@ -0,0 +1,487 @@
++++ b/drivers/input/misc/pmic8058-pwrkey.c
+@@ -0,0 +1,322 @@
 +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -95,482 +95,317 @@ index 0000000..9fef82d
 + * 02110-1301, USA.
 + */
 +
-+#define pr_fmt(fmt) "%s: " fmt, __func__
-+
 +#include <linux/module.h>
 +#include <linux/init.h>
-+#include <linux/rtc.h>
-+#include <linux/mfd/pmic8058.h>
-+#include <linux/pm.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
 +#include <linux/slab.h>
-+#include <linux/rtc/rtc-pm8058.h>
++#include <linux/input.h>
++#include <linux/interrupt.h>
++#include <linux/platform_device.h>
++#include <linux/mfd/pmic8058.h>
++#include <linux/log2.h>
++#include <linux/spinlock.h>
++#include <linux/hrtimer.h>
 +
-+/* RTC control registers */
-+#define PM8058_RTC_CTRL		0x1E8
-+#define PM8058_RTC_ALARM_CTRL	0x1E9
-+#define PM8058_RTC_TEST		0x1F6
++#include <linux/input/pmic8058-pwrkey.h>
 +
-+/* RTC register bases */
-+#define PM8058_RTC_READ_BASE	0x1EE
-+#define PM8058_RTC_WRITE_BASE	0x1EA
-+#define PM8058_RTC_ALARM_BASE	0x1F2
-+
-+/* RTC_CTRL register bit fields */
-+#define PM8058_RTC_ENABLE	BIT(7)
-+#define PM8058_RTC_ALARM_ENABLE	BIT(1)
-+
-+#define NUM_8_BIT_RTC_REGS	0x4
++#define PON_CNTL_1	0x1C
++#define PON_CNTL_PULL_UP BIT(7)
++#define PON_CNTL_TRIG_DELAY_MASK (0x7)
 +
 +/**
-+ * struct pm8058_rtc - rtc driver internal structure
-+ * @rtc0 - rtc device for this driver
-+ * @rtc_irq - rtc irq number
-+ * @rtc_alarm_irq - rtc alarm irq number
-+ * @pm_chip - pointer to pm8058 parent structure
++ * struct pmic8058_pwrkey - pmic8058 pwrkey information
++ * @key_press_irq: key press irq number
++ * @pm_chip: pmic8058 parent
++ * @timer: timer for end key simulation
++ * @key_pressed: flag to keep track for power key reporting
++ * @pdata: platform data
++ * @lock:  protect key press update and end key simulation
 + */
-+struct pm8058_rtc {
-+	struct rtc_device *rtc0;
-+	int rtc_irq;
-+	int rtc_alarm_irq;
-+	struct pm8058_chip *pm_chip;
++struct pmic8058_pwrkey {
++	struct input_dev *pwr;
++	int key_press_irq;
++	struct pm8058_chip	*pm_chip;
++	struct hrtimer timer;
++	bool key_pressed;
++	struct pmic8058_pwrkey_pdata *pdata;
++	spinlock_t lock;
 +};
 +
-+static int
-+pm8058_rtc_read_bytes(struct pm8058_rtc *rtc_dd, u8 *rtc_val, int base)
++static enum hrtimer_restart pmic8058_pwrkey_timer(struct hrtimer *timer)
 +{
-+	int i, rc;
++	unsigned long flags;
++	struct pmic8058_pwrkey *pwrkey = container_of(timer,
++						struct pmic8058_pwrkey,	timer);
 +
-+	/* Read the 32-bit register value, 8 bits at a time. */
-+	for (i = 0; i < NUM_8_BIT_RTC_REGS; i++) {
-+		rc = pm8058_read(rtc_dd->pm_chip, base + i, &rtc_val[i], 1);
-+		if (rc < 0) {
-+			pr_err("PM8058 read failed\n");
-+			return rc;
-+		}
-+	}
++	spin_lock_irqsave(&pwrkey->lock, flags);
++	pwrkey->key_pressed = true;
 +
-+	return 0;
++	input_report_key(pwrkey->pwr, KEY_POWER, 1);
++	input_sync(pwrkey->pwr);
++	spin_unlock_irqrestore(&pwrkey->lock, flags);
++
++	return HRTIMER_NORESTART;
 +}
 +
-+static int
-+pm8058_rtc_write_bytes(struct pm8058_rtc *rtc_dd, u8 *rtc_val, int base)
++static irqreturn_t pwrkey_press_irq(int irq, void *_pwrkey)
 +{
-+	int i, rc;
++	struct pmic8058_pwrkey *pwrkey = _pwrkey;
++	struct pmic8058_pwrkey_pdata *pdata = pwrkey->pdata;
++	unsigned long flags;
 +
-+	/* Write the 32-bit register value, 8 bits at a time. */
-+	for (i = 0; i < NUM_8_BIT_RTC_REGS; i++) {
-+		rc = pm8058_write(rtc_dd->pm_chip, base + i, &rtc_val[i], 1);
-+		if (rc < 0) {
-+			pr_err("PM8058 read failed\n");
-+			return rc;
-+		}
++	/* no pwrkey time duration, means no end key simulation */
++	if (!pwrkey->pdata->pwrkey_time_ms) {
++		input_report_key(pwrkey->pwr, KEY_POWER, 1);
++		input_sync(pwrkey->pwr);
++		return IRQ_HANDLED;
 +	}
 +
-+	return 0;
-+}
++	spin_lock_irqsave(&pwrkey->lock, flags);
 +
-+/*
-+ * Steps to write the RTC registers.
-+ * 1. Disable alarm if enabled.
-+ * 2. Write 0x00 to LSB.
-+ * 3. Write Byte[1], Byte[2], Byte[3] then Byte[0].
-+ * 4. Enable alarm if disabled in step 1.
-+ */
-+static int
-+pm8058_rtc0_set_time(struct device *dev, struct rtc_time *tm)
-+{
-+	int rc;
-+	unsigned long secs = 0;
-+	u8 value[4], reg = 0, alarm_enabled = 0, ctrl_reg = 0, i;
-+	struct pm8058_rtc *rtc_dd = dev_get_drvdata(dev);
++	input_report_key(pwrkey->pwr, KEY_END, 1);
++	input_sync(pwrkey->pwr);
 +
-+	rtc_tm_to_time(tm, &secs);
-+
-+	value[0] = secs & 0xFF;
-+	value[1] = (secs >> 8) & 0xFF;
-+	value[2] = (secs >> 16) & 0xFF;
-+	value[3] = (secs >> 24) & 0xFF;
-+
-+	pr_debug("Seconds value to be written to RTC = %lu\n", secs);
-+
-+	/* Disable alarm before updating RTC */
-+	rc = pm8058_read(rtc_dd->pm_chip, PM8058_RTC_CTRL, &ctrl_reg, 1);
-+	if (rc < 0) {
-+		pr_err("PM8058 read failed\n");
-+		return rc;
-+	}
-+
-+	if (ctrl_reg & PM8058_RTC_ALARM_ENABLE) {
-+		alarm_enabled = 1;
-+		ctrl_reg &= ~PM8058_RTC_ALARM_ENABLE;
-+		rc = pm8058_write(rtc_dd->pm_chip, PM8058_RTC_CTRL,
-+							&ctrl_reg, 1);
-+		if (rc < 0) {
-+			pr_err("PM8058 write failed\n");
-+			return rc;
-+		}
-+	}
-+
-+	/* Write Byte[1], Byte[2], Byte[3], Byte[0] */
-+	reg = 0;
-+	rc = pm8058_write(rtc_dd->pm_chip, PM8058_RTC_WRITE_BASE, &reg, 1);
-+	if (rc < 0) {
-+		pr_err("PM8058 write failed\n");
-+		return rc;
-+	}
-+
-+	for (i = 1; i < NUM_8_BIT_RTC_REGS; i++) {
-+		rc = pm8058_write(rtc_dd->pm_chip, PM8058_RTC_WRITE_BASE + i,
-+								&value[i], 1);
-+		if (rc < 0) {
-+			pr_err("Write to RTC registers failed\n");
-+			return rc;
-+		}
-+	}
-+
-+	rc = pm8058_write(rtc_dd->pm_chip, PM8058_RTC_WRITE_BASE,
-+							&value[0], 1);
-+	if (rc < 0) {
-+		pr_err("PM8058 write failed\n");
-+		return rc;
-+	}
-+
-+	if (alarm_enabled) {
-+		ctrl_reg |= PM8058_RTC_ALARM_ENABLE;
-+		rc = pm8058_write(rtc_dd->pm_chip, PM8058_RTC_CTRL,
-+							&ctrl_reg, 1);
-+		if (rc < 0) {
-+			pr_err("PM8058 write failed\n");
-+			return rc;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int
-+pm8058_rtc0_read_time(struct device *dev, struct rtc_time *tm)
-+{
-+	int rc;
-+	u8 value[4], reg;
-+	unsigned long secs = 0;
-+	struct pm8058_rtc *rtc_dd = dev_get_drvdata(dev);
-+
-+	rc = pm8058_rtc_read_bytes(rtc_dd, value, PM8058_RTC_READ_BASE);
-+	if (rc < 0) {
-+		pr_err("RTC time read failed\n");
-+		return rc;
-+	}
-+
-+	/*
-+	 * Read the LSB again and check if there has been a carry over.
-+	 * If there is, redo the read operation.
-+	 */
-+	rc = pm8058_read(rtc_dd->pm_chip, PM8058_RTC_READ_BASE, &reg, 1);
-+	if (rc < 0) {
-+		pr_err("PM8058 read failed\n");
-+		return rc;
-+	}
-+
-+	if (unlikely(reg < value[0])) {
-+		rc = pm8058_rtc_read_bytes(rtc_dd, value,
-+						PM8058_RTC_READ_BASE);
-+		if (rc < 0) {
-+			pr_err("RTC time read failed\n");
-+			return rc;
-+		}
-+	}
-+
-+	secs = value[0] | (value[1] << 8) | (value[2] << 16) | (value[3] << 24);
-+
-+	rtc_time_to_tm(secs, tm);
-+
-+	rc = rtc_valid_tm(tm);
-+	if (rc < 0) {
-+		pr_err("Invalid time read from PMIC8058\n");
-+		return rc;
-+	}
-+
-+	pr_debug("secs = %lu, h::m:s == %d::%d::%d, d/m/y = %d/%d/%d\n",
-+			secs, tm->tm_hour, tm->tm_min, tm->tm_sec,
-+			tm->tm_mday, tm->tm_mon, tm->tm_year);
-+
-+	return 0;
-+}
-+
-+static int
-+pm8058_rtc0_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
-+{
-+	int rc;
-+	u8 value[4], reg;
-+	unsigned long secs = 0;
-+	struct pm8058_rtc *rtc_dd = dev_get_drvdata(dev);
-+
-+	/* Check if a alarm is valid */
-+	rc = rtc_valid_tm(&alarm->time);
-+	if (rc < 0) {
-+		pr_err("Alarm time invalid\n");
-+		return -EINVAL;
-+	}
-+
-+	rtc_tm_to_time(&alarm->time, &secs);
-+
-+	value[0] = secs & 0xFF;
-+	value[1] = (secs >> 8) & 0xFF;
-+	value[2] = (secs >> 16) & 0xFF;
-+	value[3] = (secs >> 24) & 0xFF;
-+
-+	rc = pm8058_rtc_write_bytes(rtc_dd, value, PM8058_RTC_ALARM_BASE);
-+	if (rc < 0) {
-+		pr_err("Alarm could not be set\n");
-+		return rc;
-+	}
-+
-+	rc = pm8058_read(rtc_dd->pm_chip, PM8058_RTC_CTRL, &reg, 1);
-+	if (rc < 0) {
-+		pr_err("PM8058 read failed\n");
-+		return rc;
-+	}
-+
-+	reg = (alarm->enabled) ? (reg | PM8058_RTC_ALARM_ENABLE) :
-+					(reg & ~PM8058_RTC_ALARM_ENABLE);
-+
-+	rc = pm8058_write(rtc_dd->pm_chip, PM8058_RTC_CTRL, &reg, 1);
-+	if (rc < 0) {
-+		pr_err("PM8058 write failed\n");
-+		return rc;
-+	}
-+
-+	pr_debug("Alarm Set for h:r:s=%d:%d:%d, d/m/y=%d/%d/%d\n",
-+			alarm->time.tm_hour, alarm->time.tm_min,
-+			alarm->time.tm_sec, alarm->time.tm_mday,
-+			alarm->time.tm_mon, alarm->time.tm_year);
-+
-+	return 0;
-+}
-+
-+static int
-+pm8058_rtc0_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
-+{
-+	int rc;
-+	u8 value[4], reg;
-+	unsigned long secs = 0;
-+	struct pm8058_rtc *rtc_dd = dev_get_drvdata(dev);
-+
-+	/* Check if the alarm is enabled */
-+	rc = pm8058_read(rtc_dd->pm_chip, PM8058_RTC_CTRL, &reg, 1);
-+	if (rc < 0) {
-+		pr_err("PM8058 read failed\n");
-+		return rc;
-+	}
-+	alarm->enabled = !!(reg & PM8058_RTC_ALARM_ENABLE);
-+
-+	rc = pm8058_rtc_read_bytes(rtc_dd, value,
-+					PM8058_RTC_ALARM_BASE);
-+	if (rc < 0) {
-+		pr_err("RTC alarm time read failed\n");
-+		return rc;
-+	}
-+
-+	secs = value[0] | (value[1] << 8) | (value[2] << 16) | (value[3] << 24);
-+
-+	rtc_time_to_tm(secs, &alarm->time);
-+
-+	rc = rtc_valid_tm(&alarm->time);
-+	if (rc < 0) {
-+		pr_err("Invalid time read from PMIC8058\n");
-+		return rc;
-+	}
-+
-+	pr_debug("Alarm set for - h:r:s=%d:%d:%d, d/m/y=%d/%d/%d\n",
-+		alarm->time.tm_hour, alarm->time.tm_min,
-+				alarm->time.tm_sec, alarm->time.tm_mday,
-+				alarm->time.tm_mon, alarm->time.tm_year);
-+
-+	return 0;
-+}
-+
-+static struct rtc_class_ops pm8058_rtc0_ops = {
-+	.read_time	= pm8058_rtc0_read_time,
-+	.set_alarm	= pm8058_rtc0_set_alarm,
-+	.read_alarm	= pm8058_rtc0_read_alarm,
-+};
-+
-+static irqreturn_t pm8058_alarm_trigger(int irq, void *dev_id)
-+{
-+	unsigned long events = 0;
-+	struct pm8058_rtc *rtc_dd = dev_id;
-+
-+	events = RTC_IRQF | RTC_AF;
-+	rtc_update_irq(rtc_dd->rtc0, 1, events);
-+
-+	pr_debug("Alarm Triggered !!\n");
++	hrtimer_start(&pwrkey->timer,
++			ktime_set(pdata->pwrkey_time_ms / 1000,
++				(pdata->pwrkey_time_ms % 1000) * 1000000),
++			HRTIMER_MODE_REL);
++	spin_unlock_irqrestore(&pwrkey->lock, flags);
 +
 +	return IRQ_HANDLED;
 +}
 +
-+static int __devinit pm8058_rtc_probe(struct platform_device *pdev)
++static irqreturn_t pwrkey_release_irq(int irq, void *_pwrkey)
 +{
-+	int rc;
-+	u8 reg;
-+	struct pm8058_rtc *rtc_dd;
-+	struct pm8058_chip *pm_chip;
-+	struct pm8058_rtc_pdata *pdata = pdev->dev.platform_data;
++	struct pmic8058_pwrkey *pwrkey = _pwrkey;
++	unsigned long flags;
 +
-+	if (pdata == NULL) {
-+		dev_err(&pdev->dev, "Platform data absent!\n");
-+		return -ENXIO;
++	/* no pwrkey time, means no delay in pwr key reporting */
++	if (!pwrkey->pdata->pwrkey_time_ms) {
++		input_report_key(pwrkey->pwr, KEY_POWER, 0);
++		input_sync(pwrkey->pwr);
++		return IRQ_HANDLED;
 +	}
 +
-+	pm_chip = platform_get_drvdata(pdev);
-+	if (pm_chip == NULL) {
-+		dev_err(&pdev->dev, "Invalid driver information!\n");
-+		return -ENXIO;
++	spin_lock_irqsave(&pwrkey->lock, flags);
++	hrtimer_cancel(&pwrkey->timer);
++
++	if (pwrkey->key_pressed) {
++		pwrkey->key_pressed = false;
++		input_report_key(pwrkey->pwr, KEY_POWER, 0);
++		input_sync(pwrkey->pwr);
 +	}
 +
-+	rtc_dd = kzalloc(sizeof(*rtc_dd), GFP_KERNEL);
-+	if (rtc_dd == NULL) {
-+		dev_err(&pdev->dev, "Unable to allocate memory!\n");
-+		return -ENOMEM;
-+	}
++	input_report_key(pwrkey->pwr, KEY_END, 0);
++	input_sync(pwrkey->pwr);
 +
-+	rtc_dd->rtc_irq = platform_get_irq(pdev, 0);
-+	rtc_dd->rtc_alarm_irq = platform_get_irq(pdev, 1);
-+	if (!rtc_dd->rtc_alarm_irq || !rtc_dd->rtc_irq) {
-+		dev_err(&pdev->dev, "RTC / Alarm IRQ resource absent!\n");
-+		rc = -ENXIO;
-+		goto fail_rtc_enable;
-+	}
++	spin_unlock_irqrestore(&pwrkey->lock, flags);
 +
-+	rtc_dd->pm_chip = pm_chip;
-+
-+	/* Check if the RTC is on, else turn it on */
-+	rc = pm8058_read(pm_chip, PM8058_RTC_CTRL, &reg, 1);
-+	if (rc < 0) {
-+		dev_err(&pdev->dev, "PM8058 read failed!\n");
-+		goto fail_rtc_enable;
-+	}
-+
-+	if (!(reg & PM8058_RTC_ENABLE)) {
-+		reg |= PM8058_RTC_ENABLE;
-+		rc = pm8058_write(pm_chip, PM8058_RTC_CTRL, &reg, 1);
-+		if (rc < 0) {
-+			dev_err(&pdev->dev, "PM8058 write failed!\n");
-+			goto fail_rtc_enable;
-+		}
-+	}
-+
-+	if (pdata->rtc_write_enable == true)
-+		pm8058_rtc0_ops.set_time = pm8058_rtc0_set_time,
-+
-+	/* Register the RTC device */
-+	rtc_dd->rtc0 = rtc_device_register("pm8058_rtc0", &pdev->dev,
-+				&pm8058_rtc0_ops, THIS_MODULE);
-+	if (IS_ERR(rtc_dd->rtc0)) {
-+		dev_err(&pdev->dev, "%s: RTC registration failed (%ld)\n",
-+					__func__, PTR_ERR(rtc_dd->rtc0));
-+		rc = PTR_ERR(rtc_dd->rtc0);
-+		goto fail_rtc_enable;
-+	}
-+
-+	platform_set_drvdata(pdev, rtc_dd);
-+
-+	/* Request the alarm IRQ */
-+	rc = request_any_context_irq(rtc_dd->rtc_alarm_irq,
-+				 pm8058_alarm_trigger, IRQF_TRIGGER_RISING,
-+				 "pm8058_rtc_alarm", rtc_dd);
-+	if (rc < 0) {
-+		dev_err(&pdev->dev, "Request IRQ failed (%d)\n", rc);
-+		goto fail_req_irq;
-+	}
-+
-+	device_init_wakeup(&pdev->dev, 1);
-+
-+	dev_dbg(&pdev->dev, "Probe success !!\n");
-+
-+	return 0;
-+
-+fail_req_irq:
-+	rtc_device_unregister(rtc_dd->rtc0);
-+fail_rtc_enable:
-+	kfree(rtc_dd);
-+	return rc;
++	return IRQ_HANDLED;
 +}
 +
 +#ifdef CONFIG_PM
-+static int pm8058_rtc_resume(struct device *dev)
++static int pmic8058_pwrkey_suspend(struct device *dev)
 +{
-+	struct pm8058_rtc *rtc_dd = dev_get_drvdata(dev);
++	struct pmic8058_pwrkey *pwrkey = dev_get_drvdata(dev);
 +
 +	if (device_may_wakeup(dev))
-+		disable_irq_wake(rtc_dd->rtc_alarm_irq);
++		enable_irq_wake(pwrkey->key_press_irq);
 +
 +	return 0;
 +}
 +
-+static int pm8058_rtc_suspend(struct device *dev)
++static int pmic8058_pwrkey_resume(struct device *dev)
 +{
-+	struct pm8058_rtc *rtc_dd = dev_get_drvdata(dev);
++	struct pmic8058_pwrkey *pwrkey = dev_get_drvdata(dev);
 +
 +	if (device_may_wakeup(dev))
-+		enable_irq_wake(rtc_dd->rtc_alarm_irq);
++		disable_irq_wake(pwrkey->key_press_irq);
 +
 +	return 0;
 +}
 +
-+static const struct dev_pm_ops pm8058_rtc_pm_ops = {
-+	.suspend = pm8058_rtc_suspend,
-+	.resume = pm8058_rtc_resume,
++static const struct dev_pm_ops pm8058_pwr_key_pm_ops = {
++	.suspend	= pmic8058_pwrkey_suspend,
++	.resume		= pmic8058_pwrkey_resume,
 +};
 +#endif
 +
-+static int __devexit pm8058_rtc_remove(struct platform_device *pdev)
++static int __devinit pmic8058_pwrkey_probe(struct platform_device *pdev)
 +{
-+	struct pm8058_rtc *rtc_dd = platform_get_drvdata(pdev);
++	struct input_dev *pwr;
++	int key_release_irq = platform_get_irq(pdev, 0);
++	int key_press_irq = platform_get_irq(pdev, 1);
++	int err;
++	unsigned int delay;
++	u8 pon_cntl;
++	struct pmic8058_pwrkey *pwrkey;
++	struct pmic8058_pwrkey_pdata *pdata = pdev->dev.platform_data;
++	struct pm8058_chip	*pm_chip;
++
++	pm_chip = platform_get_drvdata(pdev);
++	if (pm_chip == NULL) {
++		dev_err(&pdev->dev, "no parent data passed in\n");
++		return -EFAULT;
++	}
++
++	if (!pdata) {
++		dev_err(&pdev->dev, "power key platform data not supplied\n");
++		return -EINVAL;
++	}
++
++	if (pdata->kpd_trigger_delay_us > 62500) {
++		dev_err(&pdev->dev, "invalid pwr key trigger delay\n");
++		return -EINVAL;
++	}
++
++	if (pdata->pwrkey_time_ms &&
++	     (pdata->pwrkey_time_ms < 500 || pdata->pwrkey_time_ms > 1000)) {
++		dev_err(&pdev->dev, "invalid pwr key time supplied\n");
++		return -EINVAL;
++	}
++
++	pwrkey = kzalloc(sizeof(*pwrkey), GFP_KERNEL);
++	if (!pwrkey)
++		return -ENOMEM;
++
++	pwrkey->pm_chip = pm_chip;
++	pwrkey->pdata   = pdata;
++
++	pwr = input_allocate_device();
++	if (!pwr) {
++		dev_dbg(&pdev->dev, "Can't allocate power button\n");
++		err = -ENOMEM;
++		goto free_pwrkey;
++	}
++
++	input_set_capability(pwr, EV_KEY, KEY_POWER);
++	input_set_capability(pwr, EV_KEY, KEY_END);
++
++	pwr->name = "pmic8058_pwrkey";
++	pwr->phys = "pmic8058_pwrkey/input0";
++	pwr->dev.parent = &pdev->dev;
++
++	delay = (pdata->kpd_trigger_delay_us << 10) / USEC_PER_SEC;
++	delay = 1 + ilog2(delay);
++
++	err = pm8058_read(pwrkey->pm_chip, PON_CNTL_1, &pon_cntl, 1);
++	if (err < 0) {
++		dev_err(&pdev->dev, "failed reading PON_CNTL_1 err=%d\n", err);
++		goto free_input_dev;
++	}
++
++
++	pon_cntl &= ~PON_CNTL_TRIG_DELAY_MASK;
++	pon_cntl |= (delay & PON_CNTL_TRIG_DELAY_MASK);
++	pon_cntl |= (pdata->pull_up ? PON_CNTL_PULL_UP : ~PON_CNTL_PULL_UP);
++	err = pm8058_write(pwrkey->pm_chip, PON_CNTL_1, &pon_cntl, 1);
++	if (err < 0) {
++		dev_err(&pdev->dev, "failed writing PON_CNTL_1 err=%d\n", err);
++		goto free_input_dev;
++	}
++
++	hrtimer_init(&pwrkey->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	pwrkey->timer.function = pmic8058_pwrkey_timer;
++
++	spin_lock_init(&pwrkey->lock);
++
++	err = input_register_device(pwr);
++	if (err) {
++		dev_dbg(&pdev->dev, "Can't register power key: %d\n", err);
++		goto free_input_dev;
++	}
++
++	pwrkey->key_press_irq = key_press_irq;
++	pwrkey->pwr = pwr;
++
++	platform_set_drvdata(pdev, pwrkey);
++
++	err = request_any_context_irq(key_press_irq, pwrkey_press_irq,
++			 IRQF_TRIGGER_RISING, "pmic8058_pwrkey_press", pwrkey);
++	if (err < 0) {
++		dev_dbg(&pdev->dev, "Can't get %d IRQ for pwrkey: %d\n",
++				 key_press_irq, err);
++		goto unreg_input_dev;
++	}
++
++	err = request_any_context_irq(key_release_irq, pwrkey_release_irq,
++			 IRQF_TRIGGER_RISING, "pmic8058_pwrkey_release",
++				 pwrkey);
++	if (err < 0) {
++		dev_dbg(&pdev->dev, "Can't get %d IRQ for pwrkey: %d\n",
++				 key_release_irq, err);
++
++		goto free_press_irq;
++	}
++
++	device_init_wakeup(&pdev->dev, pdata->wakeup);
++
++	return 0;
++
++free_press_irq:
++	free_irq(key_press_irq, NULL);
++unreg_input_dev:
++	input_unregister_device(pwr);
++	pwr = NULL;
++free_input_dev:
++	input_free_device(pwr);
++free_pwrkey:
++	kfree(pwrkey);
++	return err;
++}
++
++static int __devexit pmic8058_pwrkey_remove(struct platform_device *pdev)
++{
++	struct pmic8058_pwrkey *pwrkey = platform_get_drvdata(pdev);
++	int key_release_irq = platform_get_irq(pdev, 0);
++	int key_press_irq = platform_get_irq(pdev, 1);
 +
 +	device_init_wakeup(&pdev->dev, 0);
-+	free_irq(rtc_dd->rtc_alarm_irq, rtc_dd);
-+	rtc_device_unregister(rtc_dd->rtc0);
-+	kfree(rtc_dd);
++
++	free_irq(key_press_irq, pwrkey);
++	free_irq(key_release_irq, pwrkey);
++	input_unregister_device(pwrkey->pwr);
++	kfree(pwrkey);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver pm8058_rtc_driver = {
-+	.probe		= pm8058_rtc_probe,
-+	.remove		= __devexit_p(pm8058_rtc_remove),
-+	.driver	= {
-+		.name	= "pm8058-rtc",
++static struct platform_driver pmic8058_pwrkey_driver = {
++	.probe		= pmic8058_pwrkey_probe,
++	.remove		= __devexit_p(pmic8058_pwrkey_remove),
++	.driver		= {
++		.name	= "pm8058-pwrkey",
 +		.owner	= THIS_MODULE,
 +#ifdef CONFIG_PM
-+		.pm	= &pm8058_rtc_pm_ops,
++		.pm	= &pm8058_pwr_key_pm_ops,
 +#endif
 +	},
 +};
 +
-+static int __init pm8058_rtc_init(void)
++static int __init pmic8058_pwrkey_init(void)
 +{
-+	return platform_driver_register(&pm8058_rtc_driver);
++	return platform_driver_register(&pmic8058_pwrkey_driver);
 +}
++module_init(pmic8058_pwrkey_init);
 +
-+static void __exit pm8058_rtc_exit(void)
++static void __exit pmic8058_pwrkey_exit(void)
 +{
-+	platform_driver_unregister(&pm8058_rtc_driver);
++	platform_driver_unregister(&pmic8058_pwrkey_driver);
 +}
++module_exit(pmic8058_pwrkey_exit);
 +
-+module_init(pm8058_rtc_init);
-+module_exit(pm8058_rtc_exit);
-+
-+MODULE_ALIAS("platform:pm8058-rtc");
-+MODULE_DESCRIPTION("PMIC8058 RTC driver");
++MODULE_ALIAS("platform:pmic8058_pwrkey");
++MODULE_DESCRIPTION("PMIC8058 Power Key driver");
 +MODULE_LICENSE("GPL v2");
-+MODULE_AUTHOR(Anirudh Ghayal "<aghayal@codeaurora.org>");
-diff --git a/include/linux/rtc/rtc-pm8058.h b/include/linux/rtc/rtc-pm8058.h
++MODULE_AUTHOR("Trilok Soni <tsoni@codeaurora.org>");
+diff --git a/include/linux/input/pmic8058-pwrkey.h b/include/linux/input/pmic8058-pwrkey.h
 new file mode 100644
-index 0000000..51f7c0b
+index 0000000..dd849fe
 --- /dev/null
-+++ b/include/linux/rtc/rtc-pm8058.h
-@@ -0,0 +1,29 @@
++++ b/include/linux/input/pmic8058-pwrkey.h
+@@ -0,0 +1,37 @@
 +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
@@ -588,18 +423,26 @@ index 0000000..51f7c0b
 + * 02110-1301, USA.
 + */
 +
-+#ifndef __RTC_PM8058_H__
-+#define __RTC_PM8058_H__
-+
++#ifndef __PMIC8058_PWRKEY_H__
++#define __PMIC8058_PWRKEY_H__
 +/**
-+ * struct pm8058_rtc_pdata - RTC driver platform data
-+ * @rtc_write_enable - variable stating RTC write capability
++ * struct pmic8058_pwrkey_pdata - platform data for pwrkey driver
++ * @pull up:  power on register control for pull up/down configuration
++ * @pwrkey_time_ms: time after which power key event should be generated, if
++ *                  key is released before then end key is reported.
++ *                  Supply zero for only power key reporting.
++ * @kpd_trigger_delay_us: time delay for power key state change interrupt
++ *                  trigger.
++ * @wakeup: configure power key as wakeup source
 + */
-+struct pm8058_rtc_pdata {
-+	bool rtc_write_enable;
++struct pmic8058_pwrkey_pdata {
++	bool pull_up;
++	u16  pwrkey_time_ms;
++	u32  kpd_trigger_delay_us;
++	u32  wakeup;
 +};
 +
-+#endif /* __RTC_PM8058_H__ */
++#endif /* __PMIC8058_PWRKEY_H__ */
 -- 
 1.7.0.2
 
