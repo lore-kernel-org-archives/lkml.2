@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754952Ab0KJSYV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 13:24:21 -0500
-Received: from mail.perches.com ([173.55.12.10]:4933 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab0KJSYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 13:24:19 -0500
-Subject: Re: [PATCH v3] msm: smd: Reduce driver log chatter
-From: Joe Perches <joe@perches.com>
-To: David Brown <davidb@codeaurora.org>
-Cc: linux-arm-msm@vger.kernel.org, Daniel Walker <dwalker@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Brian Swetland <swetland@google.com>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-In-Reply-To: <1289411969-24650-1-git-send-email-davidb@codeaurora.org>
-References: <1289349036-16941-1-git-send-email-davidb@codeaurora.org>
-	 <1289411969-24650-1-git-send-email-davidb@codeaurora.org>
+	id S1755351Ab0KJSY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 13:24:27 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:48375 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192Ab0KJSY0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 13:24:26 -0500
+Subject: Re: [RFC/Requirements/Design] h/w error reporting
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "Luck, Tony" <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org, ying.huang@intel.com, bp@alien8.de,
+        tglx@linutronix.de, akpm@linux-foundation.org, mchehab@redhat.com,
+        =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <1289412329.12418.177.camel@gandalf.stny.rr.com>
+References: <4cd9edd7543527b78@agluck-desktop.sc.intel.com>
+	 <20101110101450.GA18481@elte.hu>
+	 <1289400056.12418.139.camel@gandalf.stny.rr.com>
+	 <1289400234.2191.129.camel@laptop>
+	 <1289401781.12418.145.camel@gandalf.stny.rr.com>
+	 <1289403019.2084.17.camel@laptop>  <20101110174852.GB4001@elte.hu>
+	 <1289412329.12418.177.camel@gandalf.stny.rr.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Nov 2010 10:24:17 -0800
-Message-ID: <1289413457.15905.95.camel@Joe-Laptop>
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 10 Nov 2010 19:24:20 +0100
+Message-ID: <1289413460.2084.27.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 09:59 -0800, David Brown wrote:
->  arch/arm/mach-msm/smd.c |   18 ++++++++++--------
+On Wed, 2010-11-10 at 13:05 -0500, Steven Rostedt wrote:
+> 
+> Peter said at LPC that the perf buffering system was not designed to
+> handle high speed tracing. But he also said he does not like the way the
+> ftrace buffering works. 
 
-Hi again David.  More trivia. Ignore at your pleasure.
+You're not very good at listening, I said the perf infrastructure and
+event handling mechanism isn't geared towards full throughput but
+instead on sampling.
 
->  1 files changed, 10 insertions(+), 8 deletions(-)
-> diff --git a/arch/arm/mach-msm/smd.c b/arch/arm/mach-msm/smd.c
+There is lots of code between getting the event and landing it in the
+buffer. The buffer itself is perfectly suited for high speed low
+overhead stuffs, the perf data format possibly not because its not
+bitfield happy.
 
-A moderately common kernel style uses macros like:
 
-#define FUNC_ENTER()	pr_debug("--> %s\n", __func__);
-#define FUNC_EXIT()	pr_debug("<-- %s\n", __func__);
-or
-#define FUNC_ENTER()	pr_debug("Enter %s\n", __func__);
-#define FUNC_EXIT()	pr_debug("Exit  %s\n", __func__);
 
-The macro names vary.
-I've seen enter, _enter, kenter, func_enter, etc.
-
-> @@ -939,7 +941,7 @@ int smsm_set_sleep_duration(uint32_t delay)
->  int smd_core_init(void)
->  {
->  	int r;
-> -	pr_info("smd_core_init()\n");
-> +	pr_debug("smd_core_init()\n");
-
-	FUNC_ENTER();
-
-> @@ -992,14 +994,14 @@ int smd_core_init(void)
->  	smsm_change_state(SMSM_STATE_APPS_DEM, ~0, 0);
->  #endif
->  
-> -	pr_info("smd_core_init() done\n");
-> +	pr_debug("smd_core_init() done\n");
-
-	FUNC_EXIT();
-
->  static int __devinit msm_smd_probe(struct platform_device *pdev)
->  {
-> -	pr_info("smd_init()\n");
-> +	pr_debug("smd_init()\n");
-
-wrong function name? FUNC_ENTER();
 
