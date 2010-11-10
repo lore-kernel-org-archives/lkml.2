@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756933Ab0KJVeh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 16:34:37 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50283 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756142Ab0KJVeg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 16:34:36 -0500
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=0Gcdu3wDtgIA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=G1koFLn1gv4A7iRKHjMA:9 a=e_l8eaHGDtHmwEckP8QPlvm7O2UA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: RE: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
- reporting)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, "bp@alien8.de" <bp@alien8.de>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <1289423194.12418.195.camel@gandalf.stny.rr.com>
-References: <1289400056.12418.139.camel@gandalf.stny.rr.com>
-	 <1289400234.2191.129.camel@laptop>
-	 <1289401781.12418.145.camel@gandalf.stny.rr.com>
-	 <1289403019.2084.17.camel@laptop> <20101110174852.GB4001@elte.hu>
-	 <1289412329.12418.177.camel@gandalf.stny.rr.com>
-	 <1289413460.2084.27.camel@laptop> <20101110184105.GH22410@elte.hu>
-	 <1289415645.12418.180.camel@gandalf.stny.rr.com>
-	 <20101110191127.GA6190@nowhere> <20101110202316.GA32396@Krystal>
-	 <987664A83D2D224EAE907B061CE93D5301649A71DC@orsmsx505.amr.corp.intel.com>
-	 <1289423194.12418.195.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 10 Nov 2010 16:34:34 -0500
-Message-ID: <1289424874.12418.199.camel@gandalf.stny.rr.com>
+	id S1757036Ab0KJVfD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 16:35:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26295 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756843Ab0KJVfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 16:35:01 -0500
+Subject: Re: [PATCH] fs/gfs2/glock.h: Add
+ __attribute__((format(printf,2,3)) to gfs2_print_dbg
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+In-Reply-To: <1289423946.15905.103.camel@Joe-Laptop>
+References: <cover.1289348757.git.joe@perches.com>
+	 <5918196ac71b4e3184a534643cdf499b54416541.1289348757.git.joe@perches.com>
+	 <1289422527.2438.20.camel@dolmen>  <1289423946.15905.103.camel@Joe-Laptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Wed, 10 Nov 2010 21:35:00 +0000
+Message-ID: <1289424900.2438.21.camel@dolmen>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 16:06 -0500, Steven Rostedt wrote:
+Hi,
 
-> > Perhaps you could explain the use cases of your "flight recorder",
-> > because it seems that the name doesn't fit exactly, and this is
-> > causing me (and maybe others) some confusion.
+Now in the GFS2 -nmw git tree. Thanks,
 
-> 2) overwrite mode (flight recorder) - when the writer reaches the
-> reader, it pushes the reader forward, and writes the new events over the
-> old ones. This way, new events are always existent, where as old events
-> are lost.
+Steve.
 
-Ah, I forgot to mention use cases.
-
-Even when recording a trace (lots of data, so it is saved to disk and
-not all in kernel memory) I like to know that if something happens and
-disables the trace, I have all the trace information up to the point of
-failure.
-
-With producer/consumer mode, you risk the reader being late and the
-events in the trace that led up to failure (or any other anomaly) were
-dropped.
-
--- Steve
+On Wed, 2010-11-10 at 13:19 -0800, Joe Perches wrote:
+> Functions that use printf formatting, especially
+> those that use %pV, should have their uses of
+> printf format and arguments checked by the compiler.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> No current uses report any error in an allyesconfig build.
+>  
+>  fs/gfs2/glock.h |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/gfs2/glock.h b/fs/gfs2/glock.h
+> index db1c26d..a12d117 100644
+> --- a/fs/gfs2/glock.h
+> +++ b/fs/gfs2/glock.h
+> @@ -212,6 +212,8 @@ int gfs2_glock_nq_num(struct gfs2_sbd *sdp,
+>  int gfs2_glock_nq_m(unsigned int num_gh, struct gfs2_holder *ghs);
+>  void gfs2_glock_dq_m(unsigned int num_gh, struct gfs2_holder *ghs);
+>  void gfs2_glock_dq_uninit_m(unsigned int num_gh, struct gfs2_holder *ghs);
+> +
+> +__attribute__ ((format(printf, 2, 3)))
+>  void gfs2_print_dbg(struct seq_file *seq, const char *fmt, ...);
+>  
+>  /**
+> 
+> 
 
 
