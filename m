@@ -1,34 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab0KJUw7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 15:52:59 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36045
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756560Ab0KJUw5 (ORCPT
+	id S1756700Ab0KJUxQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 15:53:16 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:12210 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753769Ab0KJUxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 15:52:57 -0500
-Date: Wed, 10 Nov 2010 12:53:21 -0800 (PST)
-Message-Id: <20101110.125321.179944968.davem@davemloft.net>
-To: mk@lab.zgora.pl
-Cc: sri@us.ibm.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix header size check for GSO case in recvmsg
- (af_packet)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1289253525-7020-1-git-send-email-mk@lab.zgora.pl>
-References: <1289253525-7020-1-git-send-email-mk@lab.zgora.pl>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Nov 2010 15:53:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=VCsmIGuKZICHiaI5xL5pdnDOEzELNi2d+fBE+EOqO2R7NmZtY/DvarRVa4pll7EmsM
+         fcuwNYHXEdcalrxWkItw==
+MIME-Version: 1.0
+In-Reply-To: <1289421164.2084.56.camel@laptop>
+References: <1289339119.2191.92.camel@laptop>
+	<AANLkTi=ojOnLyRO4hTgYdCCXLsN0wUeTcme=5h8-mjdz@mail.gmail.com>
+	<1289398207.2191.117.camel@laptop>
+	<1289398763.2191.121.camel@laptop>
+	<AANLkTimQ7w38wzrYT4MgjHFr6LCVj2M5fB11-n3XCD2w@mail.gmail.com>
+	<1289421164.2084.56.camel@laptop>
+Date: Wed, 10 Nov 2010 21:53:10 +0100
+Message-ID: <AANLkTiku7UsVoYv_+6r79rvGPJU7OU=VGDiaYo0H=82y@mail.gmail.com>
+Subject: Re: [RFC][PATCH] perf: sysfs type id
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Lin Ming <ming.m.lin@intel.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mariusz Kozlowski <mk@lab.zgora.pl>
-Date: Mon,  8 Nov 2010 22:58:45 +0100
+On Wed, Nov 10, 2010 at 9:32 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-11-10 at 21:08 +0100, Stephane Eranian wrote:
+>> Would that be by passing the full filename to the tool?
+>
+> possible, or something like <pmu-name>:<event-name>, cpu:cycles would
+> map to /sys/class/pmu/cpu/events/cycles (given the previous patch).
+>
+>
+Ok, but I think you're proposal is missing one bit. You are addressing
+the class (or type) of PMU, but you are not addressing the naming of
+an instance.
 
-> Parameter 'len' is size_t type so it will never get negative.
-> 
-> Signed-off-by: Mariusz Kozlowski <mk@lab.zgora.pl>
+Let's take an example, suppose you have counters on a graphic card.
+Your system has two such graphic cards. In your scheme you would
+end up with a sys/class/pmu/gfx/.....
 
-Applied, thank you!
+But now, suppose I want to count cycles on the first graphic card.
+Seems to me you need to expose the instances as well. The instance
+number needs to be passed in the attr struct somehow.
+
+You can either create multiple subdir under gfx, or have this info somewhere
+else in the sysfs tree, if people really care about class vs. instance.
+
+I can see users doing:
+$ perf stat -e gfx@1::cycles ...  -> sys/class/gfx/1/event/cycles
+
+The reason I am using :: here is because libpfm4 is already using
+this as a separator for PMU type vs. event.
