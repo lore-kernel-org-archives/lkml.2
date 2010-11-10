@@ -1,128 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757127Ab0KJWMa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 17:12:30 -0500
-Received: from imr4.ericy.com ([198.24.6.8]:38452 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756610Ab0KJWM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 17:12:29 -0500
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>, Henrik Rydberg <rydberg@euromail.se>
-CC: <lm-sensors@lm-sensors.org>, <linux-kernel@vger.kernel.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: [PATCH v2] hwmon: (applesmc) Fix checkpatch errors and value range checks
-Date: Wed, 10 Nov 2010 14:30:31 -0800
-Message-ID: <1289428231-14950-1-git-send-email-guenter.roeck@ericsson.com>
-X-Mailer: git-send-email 1.7.3.1
+	id S1757225Ab0KJWOQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 17:14:16 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55504 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756993Ab0KJWOP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 17:14:15 -0500
+Date: Wed, 10 Nov 2010 15:14:12 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Maciej Szmigiero <mhej@o2.pl>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Ben Nizette <bn@niasdigital.com>
+Subject: Re: [GPIO]implement sleeping GPIO chip removal
+Message-ID: <20101110221412.GB7063@angua.secretlab.ca>
+References: <4CD6F049.10102@o2.pl>
+ <20101110050947.GC4110@angua.secretlab.ca>
+ <4CDABA03.2050000@o2.pl>
+ <alpine.LFD.2.00.1011102134350.2900@localhost6.localdomain6>
+ <4CDB0834.4080101@o2.pl>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CDB0834.4080101@o2.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes all checkpatch errors and most of the checkpatch warnings.
-It also fixes the range check in applesmc_store_fan_speed().
+On Wed, Nov 10, 2010 at 10:01:40PM +0100, Maciej Szmigiero wrote:
+> W dniu 10.11.2010 21:42, Thomas Gleixner pisze:
+> > On Wed, 10 Nov 2010, Maciej Szmigiero wrote:
+> >> W dniu 10.11.2010 10:49, Thomas Gleixner pisze:
+> >>> Maybe because it open codes a sloppy refcounting with a loop and magic
+> >>> sleeps instead of converting the code to kobjects and proper
+> >>> refcounting ?
+> >>>
+> >>
+> >> The only way to do GPIO chip removal in the current code is to busy-loop.
+> >> "Sloppy" (as you called it) waiting is still more CPU-friendly than looping 
+> >> in hope that somebody will finally release the chip.
+> >> If you would like to implement it as kobject then go ahead and post the code
+> >> so it can be used in drivers.
+> > 
+> > Wait a moment. You are getting something backwards here.
+> > 
+> > Fact is that the current code is not designed for easy hotunplugging
+> > and therefor requires looping.
+> > 
+> > So _you_ propose a work-around to replace the busy-loop by a sleeping
+> > loop with "hope that ....". Hope is the least thing what counts in
+> > programming.
+> > 
+> > Now a reviewer tells you that your idea of replacing the busy-loop by
+> > a sleeping in hope loop is flawed, because it does not solve the
+> > underlying design problem of the GPIO code. And you get a suggestion
+> > how to solve it correctly.
+> > 
+> > Now you go and request from that reviewer to implement that? That's
+> > not how it works.
+> > 
+> > You sent a flawed patch in the first place and people try to tell you
+> > how to do it right. Then it's on you to either go and do it right or
+> > at least ask politely for help and pointers.
+> > 
+> > Thanks,
+> > 
+> > 	tglx
+> > 
+> 
+> You misunderstood me.
+> By "looping in hope that somebody will finally release the chip" I meant the only
+> real way to handle a GPIO chip unplugging in the current kernel.
+> Which is way worse that preventing new requests, then waiting for existing one to be released.
+> And this is exactly what my patch does.
+> 
+> I understand that it could be simplified by removing redundant code (as Grant Likely had suggested before), and
+> moving it to completion interface instead of manipulating a task structure directly, but this doesn't mean
+> that the whole GPIO code has to be rewritten just to add one functionality.
 
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
----
-v2:
-- Moved change in applesmc_key_at_index_store() into a previous patch
-  (Introduce a register lookup table) where a range check was added as well.
-- Updated description to indicate that a minor bug was fixed in addition
-  to the formatting changes.
+BTW, switching to using a kobject != rewriting the whole GPIO code.
+kobjects are not all that scary and the biggest impact is adding
+kobject get/put operation on the gpio get/release apis.  I don't
+expect it to end up being overly complex.
 
- drivers/hwmon/applesmc.c |   34 ++++++++++++++++------------------
- 1 files changed, 16 insertions(+), 18 deletions(-)
+The Documentation/kobject.txt file should offer some insight.
 
-diff --git a/drivers/hwmon/applesmc.c b/drivers/hwmon/applesmc.c
-index 81792ca..ce0372f 100644
---- a/drivers/hwmon/applesmc.c
-+++ b/drivers/hwmon/applesmc.c
-@@ -174,9 +174,8 @@ static int __wait_status(u8 val)
- 
- 	for (us = APPLESMC_MIN_WAIT; us < APPLESMC_MAX_WAIT; us <<= 1) {
- 		udelay(us);
--		if ((inb(APPLESMC_CMD_PORT) & APPLESMC_STATUS_MASK) == val) {
-+		if ((inb(APPLESMC_CMD_PORT) & APPLESMC_STATUS_MASK) == val)
- 			return 0;
--		}
- 	}
- 
- 	return -EIO;
-@@ -431,7 +430,7 @@ static int applesmc_has_key(const char *key, bool *value)
- /*
-  * applesmc_read_motion_sensor - Read motion sensor (X, Y or Z).
-  */
--static int applesmc_read_motion_sensor(int index, s16* value)
-+static int applesmc_read_motion_sensor(int index, s16 *value)
- {
- 	u8 buffer[2];
- 	int ret;
-@@ -779,14 +778,12 @@ static ssize_t applesmc_store_fan_speed(struct device *dev,
- 					const char *sysfsbuf, size_t count)
- {
- 	int ret;
--	u32 speed;
-+	unsigned long speed;
- 	char newkey[5];
- 	u8 buffer[2];
- 
--	speed = simple_strtoul(sysfsbuf, NULL, 10);
--
--	if (speed > 0x4000) /* Bigger than a 14-bit value */
--		return -EINVAL;
-+	if (strict_strtoul(sysfsbuf, 10, &speed) < 0 || speed >= 0x4000)
-+		return -EINVAL;		/* Bigger than a 14-bit value */
- 
- 	sprintf(newkey, fan_speed_fmt[to_option(attr)], to_index(attr));
- 
-@@ -822,10 +819,11 @@ static ssize_t applesmc_store_fan_manual(struct device *dev,
- {
- 	int ret;
- 	u8 buffer[2];
--	u32 input;
-+	unsigned long input;
- 	u16 val;
- 
--	input = simple_strtoul(sysfsbuf, NULL, 10);
-+	if (strict_strtoul(sysfsbuf, 10, &input) < 0)
-+		return -EINVAL;
- 
- 	ret = applesmc_read_key(FANS_MANUAL, buffer, 2);
- 	val = (buffer[0] << 8 | buffer[1]);
-@@ -1198,24 +1196,24 @@ static __initdata struct dmi_system_id applesmc_whitelist[] = {
- 	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookAir") },
- 	},
- 	{ applesmc_dmi_match, "Apple MacBook Pro", {
--	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
--	  DMI_MATCH(DMI_PRODUCT_NAME,"MacBookPro") },
-+	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
-+	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBookPro") },
- 	},
- 	{ applesmc_dmi_match, "Apple MacBook", {
--	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
--	  DMI_MATCH(DMI_PRODUCT_NAME,"MacBook") },
-+	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
-+	  DMI_MATCH(DMI_PRODUCT_NAME, "MacBook") },
- 	},
- 	{ applesmc_dmi_match, "Apple Macmini", {
--	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
--	  DMI_MATCH(DMI_PRODUCT_NAME,"Macmini") },
-+	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
-+	  DMI_MATCH(DMI_PRODUCT_NAME, "Macmini") },
- 	},
- 	{ applesmc_dmi_match, "Apple MacPro", {
- 	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
- 	  DMI_MATCH(DMI_PRODUCT_NAME, "MacPro") },
- 	},
- 	{ applesmc_dmi_match, "Apple iMac", {
--	  DMI_MATCH(DMI_BOARD_VENDOR,"Apple"),
--	  DMI_MATCH(DMI_PRODUCT_NAME,"iMac") },
-+	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
-+	  DMI_MATCH(DMI_PRODUCT_NAME, "iMac") },
- 	},
- 	{ .ident = NULL }
- };
--- 
-1.7.3.1
-
+g.
