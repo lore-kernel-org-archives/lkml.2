@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab0KJRry (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 12:47:54 -0500
-Received: from mail.perches.com ([173.55.12.10]:4926 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753152Ab0KJRrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 12:47:53 -0500
-Subject: [PATCH V2] MAINTAINERS: Mark XEN lists as moderated
-From: Joe Perches <joe@perches.com>
-To: Ian Campbell <ijc@hellion.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-In-Reply-To: <1289410745.724.56.camel@zakaz.uk.xensource.com>
-References: <1289380840.28590.132.camel@Joe-Laptop>
-	 <1289399240.724.48.camel@zakaz.uk.xensource.com>
-	 <1289399731.28590.136.camel@Joe-Laptop>
-	 <1289401042.724.54.camel@zakaz.uk.xensource.com>
-	 <1289401337.15905.1.camel@Joe-Laptop>
-	 <1289410745.724.56.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 10 Nov 2010 09:47:51 -0800
-Message-ID: <1289411271.15905.78.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755071Ab0KJRsH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 12:48:07 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:37622 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754919Ab0KJRsA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 12:48:00 -0500
+Message-ID: <4CDADACC.4070405@codemonkey.ws>
+Date: Wed, 10 Nov 2010 11:47:56 -0600
+From: Anthony Liguori <anthony@codemonkey.ws>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Ian Molton <ian.molton@collabora.co.uk>
+CC: QEMU Developers <qemu-devel@nongnu.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        virtualization@lists.osdl.org, Alon Levy <alevy@redhat.com>,
+        Avi Kivity <avi@redhat.com>
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+References: <1097264455.965471288612409433.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>	<4CCEC090.3050009@codemonkey.ws>	<4CD1A406.3090909@collabora.co.uk> <4CD1A73B.2010406@codemonkey.ws> <4CD44759.5020500@collabora.co.uk> <4CDAD4D4.3070009@collabora.co.uk>
+In-Reply-To: <4CDAD4D4.3070009@collabora.co.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Standardize list email address at the same time.
- 
-Signed-off-by: Joe Perches <joe@perches.com>
----
-On Wed, 2010-11-10 at 17:39 +0000, Ian Campbell wrote:
-> It's been confirmed, non-subscribers are moderated for xen-devel.
+On 11/10/2010 11:22 AM, Ian Molton wrote:
+> Ping ?
 
-changes from v1: Mark as moderated instead of subscribers-only
+I think the best way forward is to post patches.
 
- MAINTAINERS |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+To summarize what I was trying to express in the thread, I think this is 
+not the right long term architecture but am not opposed to it as a short 
+term solution.  I think having a new virtio device is a bad design 
+choice but am not totally opposed to it.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 0094224..70604d5 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6598,14 +6598,14 @@ F:	drivers/platform/x86
- 
- XEN PCI SUBSYSTEM
- M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
--L:	xen-devel@lists.xensource.com
-+L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
- S:	Supported
- F:	arch/x86/pci/*xen*
- F:	drivers/pci/*xen*
- 
- XEN SWIOTLB SUBSYSTEM
- M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
--L:	xen-devel@lists.xensource.com
-+L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
- S:	Supported
- F:	arch/x86/xen/*swiotlb*
- F:	drivers/xen/*swiotlb*
-@@ -6613,7 +6613,7 @@ F:	drivers/xen/*swiotlb*
- XEN HYPERVISOR INTERFACE
- M:	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
- M:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
--L:	xen-devel@lists.xen.org
-+L:	xen-devel@lists.xensource.com (moderated for non-subscribers)
- L:	virtualization@lists.osdl.org
- S:	Supported
- F:	arch/x86/xen/
+My advice is that using virtio-serial + an external tool is probably the 
+least amount of work to get something working and usable with QEMU.  If 
+you want to go for the path of integration, you're going to have to fix 
+all of the coding style issues and make the code fit into QEMU.  
+Dropping a bunch of junk into target-i386/ is not making the code fit 
+into QEMU.
 
+If you post just what you have now in patch form, I can try to provide 
+more concrete advice ignoring the coding style problems.
+
+Regards,
+
+Anthony Liguori
 
