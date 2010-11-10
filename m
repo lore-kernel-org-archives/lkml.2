@@ -1,52 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab0KJWtD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 17:49:03 -0500
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:39051 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757218Ab0KJWtB (ORCPT
+	id S1757374Ab0KJWtu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 17:49:50 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44051 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757218Ab0KJWts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 17:49:01 -0500
-Message-ID: <4CDB2148.8080404@euromail.se>
-Date: Wed, 10 Nov 2010 23:48:40 +0100
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Wed, 10 Nov 2010 17:49:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=anNpT3FC9Y6m9qSCWLFkgRxhzOzNdxtJDbSAxKXmA3wZ3gJ6x4f48MLiY48iw5YDC2
+         AxbUJlebKG1e02vmNWr7dUALm0QRhb/vE/GV+pAU7bmw3yWjDwO2c1xLuIUYLGpoICu4
+         blPjbRmCS5HXKLcaMEk1pmAD9m+4MzLs7mjOI=
+Date: Wed, 10 Nov 2010 23:49:44 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        ying.huang@intel.com, bp@alien8.de, tglx@linutronix.de,
+        akpm@linux-foundation.org, mchehab@redhat.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
+	reporting)
+Message-ID: <20101110224942.GB5355@nowhere>
+References: <1289403019.2084.17.camel@laptop> <20101110174852.GB4001@elte.hu> <1289412329.12418.177.camel@gandalf.stny.rr.com> <1289413460.2084.27.camel@laptop> <20101110184105.GH22410@elte.hu> <1289415645.12418.180.camel@gandalf.stny.rr.com> <20101110191127.GA6190@nowhere> <20101110202316.GA32396@Krystal> <20101110213033.GA7682@nowhere> <1289426059.12418.209.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] hwmon: (applesmc) Introduce a register lookup table
-References: <1289429274-30289-1-git-send-email-guenter.roeck@ericsson.com>
-In-Reply-To: <1289429274-30289-1-git-send-email-guenter.roeck@ericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1PGJT8-0003UD-4x.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PGJT8-0003UD-4x 351e847fca3d98b7d9bfa0ba4462723c
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289426059.12418.209.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2010 11:47 PM, Guenter Roeck wrote:
-
-> From: Henrik Rydberg <rydberg@euromail.se>
+On Wed, Nov 10, 2010 at 04:54:19PM -0500, Steven Rostedt wrote:
+> On Wed, 2010-11-10 at 22:30 +0100, Frederic Weisbecker wrote:
+> > >     - 0 ns IRQ/SOFTIRQ handler duration side-effect
+> > 
+> > 
+> > 
+> > ditto.
 > 
-> One main problem with the current driver is the inability to quickly
-> search for supported keys, resulting in detailed feature maps per
-> machine model which are cumbersome to maintain.
+> If an interrupt (or softirq) preempts the recorded trace, then events
+> that are recorded in that interrupt all get the same time as the event
+> it preempted. Giving us the assumption that all events happened at once.
 > 
-> This patch adds a register lookup table, which enables binary search
-> for supported keys. The lookup also reduces the io frequency, so the
-> original mutex is replaced by locks around the actual io.
+> Again, this is just a side effect and the fix is trivial. But may
+> require ABI breakage to do so.
+
+
+
+Right, now I recall I discussed that with Mathieu lately.
+
+
+ 
 > 
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> [guenter.roeck@ericsson.com: Added value range check to key_at_index_store()]
-> Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> ---
-> Patch as applied, with added value range check to applesmc_key_at_index_store().
+> > 
+> > If we need/want to cure that, then we need an:
+> > 
+> > => ABI breakage
+> > 
+> > 
+> > 
+> > > - Event size limited to one page
+> > 
+> > 
+> > 
+> > Perf too needs more (userspace stack dumps).
+> 
+> That was actually a decision made by Linus. But is trivial to change. As
+> there's nothing hard coded about the design that forces us to have page
+> size sub buffers. I don't even think that it would require an ABI
+> breakage, except I think my tools I wrote (incorrectly) assumed it.
 
 
-Works nicely, much obliged. It's a wrap. :-)
+Ok.
 
-Thanks,
-Henrik
+
+
+> 
+> > 
+> > 
+> > 
+> > > - Ftrace event headers are still too large
+> > 
+> > 
+> > (described in the beginning)
+> 
+> Yep, they are large, but can be trimmed. This would require no abi
+> breakage since the these headers are also described in the event
+> formats. Thus changing the current tools should cope with the headers
+> changing. In fact they were designed too since the lock-depth was known
+> to be deprecated soon.
+
+
+Hmm, in practice this is an ABI breakage as we have scripts that rely on
+the common_pid field for example. We can fix this, but older tools won't
+work with new kernels.
+
+
+
+> > > - Handling of dynamically added instrumentation while trace is recorded is
+> > >   inexistent.
+> > 
+> > 
+> > 
+> > 
+> > I still don't understand this point
+> 
+> He's talking about tracing the tracepoints in a loaded module. We
+> currently have no way to add them while a trace is happening. The trace
+> formats do not exist and may not exist (if module is unloaded) when the
+> trace ends.
+> 
+> But who really loads and then unloads a module during tracing. As pretty
+> much all kernel developers cringe at the fact that modules get
+> unloaded ;-)
+
+
+
+Hehe :)
+
+Anyway this can be expressed through an ABI extension,
+using a kind of lazy tracepoint registration or so.
+
