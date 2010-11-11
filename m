@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756096Ab0KKMJQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 07:09:16 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:54810 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755748Ab0KKMJO (ORCPT
+	id S1756122Ab0KKMJs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 07:09:48 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61320 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755748Ab0KKMJr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 07:09:14 -0500
-Subject: Re: linux-next: build failure after merge of the voltage tree
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101111114644.GC6052@rakim.wolfsonmicro.main>
-References: <20101111113638.eb3101d0.sfr@canb.auug.org.au>
-	 <20101111114644.GC6052@rakim.wolfsonmicro.main>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Nov 2010 12:09:10 +0000
-Message-ID: <1289477350.3273.10.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Nov 2010 07:09:47 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=M8dwWVJue3J9cH3Zsckqenr311kzdpbwmj9nuC+suKmUVwooI+uj88YBPJmeVWcK2a
+         zeGtlhYXUY9ckM6qsV7LLLOn9c6PTvrZr9E977u0xh9nyjn1zLXgHiNRCSZgtpl1F3eX
+         1HqXcPf8uN2DF16XtWB2oRD6ABzg0NqX4P054=
+MIME-Version: 1.0
+In-Reply-To: <1289473363-29440-10-git-send-email-tj@kernel.org>
+References: <1289473363-29440-1-git-send-email-tj@kernel.org>
+	<1289473363-29440-10-git-send-email-tj@kernel.org>
+Date: Thu, 11 Nov 2010 14:09:46 +0200
+X-Google-Sender-Auth: Bb8sPIixt-R5ewKasMnr-l5V9H0
+Message-ID: <AANLkTi=Hoa20zPcBg4g+cp_hsini0ASB9w2TQNWZYhMw@mail.gmail.com>
+Subject: Re: [PATCH 9/9] x86: Unify NUMA initialization between 32 and 64bit
+From: Pekka Enberg <penberg@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
+        yinghai@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-11 at 11:46 +0000, Mark Brown wrote:
-> On Thu, Nov 11, 2010 at 11:36:38AM +1100, Stephen Rothwell wrote:
-> 
-> > After merging the voltage tree, today's linux-next build (x86_64
-> > allmodconfig) failed like this:
-> 
-> Oh, a platform where pcap can actually be built!  That's useful, thanks.
-> 
-> > drivers/regulator/pcap-regulator.c:155: error: expected declaration specifiers or '...' before 'unsiged'
-> > drivers/regulator/pcap-regulator.c: In function 'pcap_regulator_set_voltage':
-> > drivers/regulator/pcap-regulator.c:175: error: 'selector' undeclared (first use in this function)
-> > drivers/regulator/pcap-regulator.c: At top level:
-> > drivers/regulator/pcap-regulator.c:251: warning: initialization from incompatible pointer type
-> 
-> > Caused by commit d2f03ebfe8c63d1e3e1ab2352dd32d161546003e ("regulator:
-> > Report actual configured voltage to set_voltage()").  Please always build
-> > changed files ...
-> 
-> With a lot of the embedded drivers that can be difficult - often there
-> are dependencies on APIs that are only available on a small set of
-> platforms (which may not even be documented).  For example, with PCAP
-> the core driver uses irq_to_gpio() which is not implemented on any of
-> the platforms I commonly build for.
-> --
+On Thu, Nov 11, 2010 at 1:02 PM, Tejun Heo <tj@kernel.org> wrote:
+> Now that everything else is unified, NUMA initialization can be
+> unified too.
+>
+> * numa_init_array() and init_cpu_to_node() are moved from numa_64 to
+>  numa.
+>
+> * numa_32::initmem_init() is updated to call numa_init_array() and
+>  setup_arch() to call init_cpu_to_node() on 32bit too.
+>
+> * x86_cpu_to_node_map is now initialized to NUMA_NO_NODE on 32bit too.
+>  This is safe now as numa_init_array() will initialize it early
+>  during boot.
+>
+> This makes NUMA mapping fully initialized before setup_per_cpu_areas()
+> on 32bit too and thus makes the first percpu chunk which contains all
+> the static variables and some of dynamic area allocated with NUMA
+> affinity correctly considered.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-Fix now applied.
-
-Thanks
-
-Liam
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
-
+Acked-by: Pekka Enberg <penberg@kernel.org>
