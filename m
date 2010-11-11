@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169Ab0KKIgZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 03:36:25 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:38413 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932128Ab0KKIgY (ORCPT
+	id S932193Ab0KKIjs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 03:39:48 -0500
+Received: from dallas.jonmasters.org ([72.29.103.172]:46423 "EHLO
+	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932122Ab0KKIjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 03:36:24 -0500
-Date: Thu, 11 Nov 2010 17:36:22 +0900
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [RFC-PATCH] clocksource: update lpj if clocksource has been changed.
-To: linux-kernel@vger.kernel.org
-Cc: kyungmin.park@samsung.com, myungjoo.ham@gmail.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, Magnus Damm <damm@opensource.se>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jon Hunter <jon-hunter@ti.com>
-Message-id: <1289464582-26898-1-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.6.3.3
-Content-transfer-encoding: 7BIT
-X-OriginalArrivalTime: 11 Nov 2010 08:36:22.0860 (UTC)
- FILETIME=[855CC0C0:01CB817B]
+	Thu, 11 Nov 2010 03:39:47 -0500
+Subject: Re: [PATCH] drm/i915: Fix LVDS fixed-mode regression from 219adae1
+From: Jon Masters <jonathan@jonmasters.org>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1289258652-22665-1-git-send-email-chris@chris-wilson.co.uk>
+References: <1289257727.3916.429.camel@constitution.bos.jonmasters.org>
+	 <1289258652-22665-1-git-send-email-chris@chris-wilson.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+Organization: World Organi[sz]ation of Broken Dreams
+Date: Thu, 11 Nov 2010 03:39:27 -0500
+Message-ID: <1289464767.3916.596.camel@constitution.bos.jonmasters.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With a clocksource change, loops_per_jiffy may have been changed; thus,
-the loops_per_jiffy in each cpu should be updated. Especially after some
-of the cpus were turned off and on, their loops_per_jiffy values are
-updated while the cpus kept on are not. Therefore, in order to make them
-"normalized equally", we need to let the loops_per_jiffy values of
-different cpus be based on the same clocksource.
+On Mon, 2010-11-08 at 23:24 +0000, Chris Wilson wrote:
+> Commit 219adae1 cached the EDID found during LVDS init, but in the
+> process prevented the init routine from discovering the preferred
+> fixed-mode for the panel. This was causing us to guess the correct mode,
+> which sometimes is wide of the mark.
+> 
+> Reported-by: Jon Masters <jonathan@jonmasters.org>
+> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- kernel/time/clocksource.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+This is now being tracked at the following k.o BZ:
 
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index c18d7ef..a9d7935 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -30,6 +30,9 @@
- #include <linux/sched.h> /* for spin_unlock_irq() using preempt_count() m68k */
- #include <linux/tick.h>
- #include <linux/kthread.h>
-+#include <linux/delay.h>
- 
- void timecounter_init(struct timecounter *tc,
- 		      const struct cyclecounter *cc,
-@@ -592,6 +593,9 @@ static inline void clocksource_select(void) { }
-  */
- static int __init clocksource_done_booting(void)
- {
-+#ifdef CONFIG_SMP
-+	int cpu;
-+#endif
- 	mutex_lock(&clocksource_mutex);
- 	curr_clocksource = clocksource_default_clock();
- 	mutex_unlock(&clocksource_mutex);
-@@ -606,6 +610,13 @@ static int __init clocksource_done_booting(void)
- 	mutex_lock(&clocksource_mutex);
- 	clocksource_select();
- 	mutex_unlock(&clocksource_mutex);
-+
-+	calibrate_delay();
-+#ifdef CONFIG_SMP
-+	/* loops_per_jiffy may have been changed. */
-+	for_each_online_cpu(cpu)
-+		smp_store_cpu_info(cpu);
-+#endif
- 	return 0;
- }
- fs_initcall(clocksource_done_booting);
--- 
-1.6.3.3
+https://bugzilla.kernel.org/show_bug.cgi?id=22712
+
+Please mark the BZ when you push the patch. Thanks.
+
+Jon.
+
 
