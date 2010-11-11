@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab0KKTf0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 14:35:26 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:33953 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753298Ab0KKTfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 14:35:25 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/WWndx1pvWLv6hXYuICUlNWzWr7SKcPUOxX+n9w5
-	H1DAKslFMwqH2Y
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101111191556.GA1564@arch.trippelsdorf.de>
-References: <1287514410.7368.10.camel@marge.simson.net>
-	 <20101020025652.GB26822@elte.hu>
-	 <1287648715.9021.20.camel@marge.simson.net>
-	 <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
-	 <20101021162924.GA3225@redhat.com>
-	 <1288076838.11930.1.camel@marge.simson.net>
-	 <1288078144.7478.9.camel@marge.simson.net>
-	 <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
-	 <1289489200.11397.21.camel@maggy.simson.net>
-	 <20101111191556.GA1564@arch.trippelsdorf.de>
+	id S1755539Ab0KKTgk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 14:36:40 -0500
+Received: from casper.infradead.org ([85.118.1.10]:38928 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754502Ab0KKTgj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 14:36:39 -0500
+Subject: Re: [PATCH 1/3] perf-events: Add support for supplementary event
+ registers
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@elte.hu,
+        acme@redhat.com, eranian@google.com, Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <20101111192551.GI18718@basil.fritz.box>
+References: <1289492117-18066-1-git-send-email-andi@firstfloor.org>
+	 <1289502554.2084.153.camel@laptop> <20101111192551.GI18718@basil.fritz.box>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Nov 2010 12:35:11 -0700
-Message-ID: <1289504111.21413.2.camel@maggy.simson.net>
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 11 Nov 2010 20:36:37 +0100
+Message-ID: <1289504197.2084.172.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-11 at 20:15 +0100, Markus Trippelsdorf wrote:
+On Thu, 2010-11-11 at 20:25 +0100, Andi Kleen wrote:
+> On Thu, Nov 11, 2010 at 08:09:14PM +0100, Peter Zijlstra wrote:
 
-> Just to add some data; here are the results from my machine (AMD 4
-> cores) running a -j4 kernel build, while I browsed the web:
+> > > +	int 				percore_used;
+> > > +	struct intel_percore		*per_core;
+> > 
+> > Either per_core != NULL implies percore_used or it should be state
+> > inside the struct.
 > 
-> 1) perf sched record sleep 30
-> 
-> without:
-> total_wakeups: 44306
-> avg_wakeup_latency (ns): 36784
-> min_wakeup_latency (ns): 0
-> max_wakeup_latency (ns): 9378852
-> 
-> with:
-> total_wakeups: 43836
-> avg_wakeup_latency (ns): 67607
-> min_wakeup_latency (ns): 0
-> max_wakeup_latency (ns): 8983036
-> 
-> 2) perf record -a -e sched:sched_switch -e sched:sched_wakeup sleep 10
-> 
-> without:
-> total_wakeups: 13195
-> avg_wakeup_latency (ns): 48484
-> min_wakeup_latency (ns): 0
-> max_wakeup_latency (ns): 8722497
-> 
-> with:
-> total_wakeups: 14106
-> avg_wakeup_latency (ns): 92532
-> min_wakeup_latency (ns): 20
-> max_wakeup_latency (ns): 5642393
-> 
-> So the avg_wakeup_latency nearly doubled with your patch, while the
-> max_wakeup_latency is lowered by a good amount.
+> It does not, I'll clarify.
 
-When you say with/without, does that mean enabled/disabled, or
-patched/virgin and/or cgroups/nocgroups?
+Can we make it so, that is, move that int inside the intel_percore
+struct?
 
-	-Mike
+> > > +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> > > @@ -1,5 +1,14 @@
+> > >  #ifdef CONFIG_CPU_SUP_INTEL
+> > >  
+> > > +struct intel_percore {
+> > > +	raw_spinlock_t lock;
+> > > +	int ref;
+> > > +	u64 config;
+> > > +	unsigned extra_reg;
+> > > +	u64 extra_config;
+> > > +};
+> > > +static DEFINE_PER_CPU(struct intel_percore, intel_percore);
+> > 
+> > Please dynamically allocate these when needed, just like the AMD
+> > north-bridge structure.
+> 
+> Fully dynamic is difficult because the topology discovery does not 
+> really handle that nicely.
+> 
+> I can allocate at boot, but it will not save a lot of memory
+> (just one entry per core)
+> 
+> To be honest I would prefer not to do that change, are you sure
+> you want it?
 
+Hrm,.. but we only need to do this on nhm/wsm init, we already have code
+detecting the cpu model. And I'm quite sure you know where to poke to
+see if HT is enabled.
