@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab0KKQ4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 11:56:30 -0500
-Received: from kroah.org ([198.145.64.141]:57348 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754419Ab0KKQ43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 11:56:29 -0500
-Date: Thu, 11 Nov 2010 08:57:17 -0800
-From: Greg KH <greg@kroah.com>
-To: Luben Tuikov <ltuikov@yahoo.com>
-Cc: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH take 2] [USB] Use normalized sense when emulating
-	autosense
-Message-ID: <20101111165717.GA8526@kroah.com>
-References: <20101111134450.GB12291@kroah.com> <892012.17950.qm@web31804.mail.mud.yahoo.com>
+	id S1754567Ab0KKRFq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 12:05:46 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:40625 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660Ab0KKRFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 12:05:45 -0500
+Date: Thu, 11 Nov 2010 12:05:35 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Brian Gitonga Marete <marete@toshnix.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: Re: [PATCH] [PERF] (Userspace Tools) Fix a compilation error with
+ -fstack-protector and -Werror
+Message-ID: <20101111170535.GA2203@ghostprotocols.net>
+References: <AANLkTinHc7tMntW5NFAhu40RC7m2=HwbqOBeE-21vL8J@mail.gmail.com>
+ <20101018233834.GC5370@nowhere>
+ <AANLkTi=Ssz4WdMDXq-93GE9bPHoaQ8QyTSrWXDSCa7eH@mail.gmail.com>
+ <20101019064000.GC21782@elte.hu>
+ <AANLkTimqaTKu23HrgbffAht_Otn9L5k2oHMZDGki8MK+@mail.gmail.com>
+ <AANLkTin=0N0b=wK8974RGwXuTxpQ4BtH4bHwjsea+1tS@mail.gmail.com>
+ <20101019114904.GB25371@elte.hu>
+ <20101019131152.GB3826@ghostprotocols.net>
+ <1289471135.17691.1026.camel@edumazet-laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <892012.17950.qm@web31804.mail.mud.yahoo.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1289471135.17691.1026.camel@edumazet-laptop>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 08:49:51AM -0800, Luben Tuikov wrote:
-> --- On Thu, 11/11/10, Greg KH <greg@kroah.com> wrote:
-> > On Fri, Oct 22, 2010 at 02:12:51PM
-> > -0700, Luben Tuikov wrote:
-> > > This patch solves two things:
-> > > 1) Enables autosense emulation code to correctly
-> > > interpret descriptor format sense data, and
-> > > 2) Fixes a bug whereby the autosense emulation
-> > > code would overwrite descriptor format sense data
-> > > with SENSE KEY HARDWARE ERROR in fixed format, to
-> > > incorrectly look like this:
-> > > 
-> > > Oct 21 14:11:07 localhost kernel: sd 7:0:0:0:
-> > [sdc]? Sense Key : Recovered Error [current]
-> > [descriptor]
-> > > Oct 21 14:11:07 localhost kernel: Descriptor sense
-> > data with sense descriptors (in hex):
-> > > Oct 21 14:11:07 localhost kernel:? ? ?
-> > ? 72 01 04 1d 00 00 00 0e 09 0c 00 00 00 00 00 00
-> > > Oct 21 14:11:07 localhost kernel:? ? ?
-> > ? 00 4f 00 c2 00 50
-> > > Oct 21 14:11:07 localhost kernel: sd 7:0:0:0:
-> > [sdc]? ASC=0x4 ASCQ=0x1d
-> > > 
-> > > Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
-> > 
-> > I need to get the ack from the usb-storage
-> > maintainer.? Can you get that
-> > so that I can apply this?
+Em Thu, Nov 11, 2010 at 11:25:35AM +0100, Eric Dumazet escreveu:
+> Hi Arnaldo
 > 
-> Hi Greg,
+> Sorry if I missed something, but current linux-2.6 tree has the problem.
 > 
-> I don't know who the usb-storage maintainer is, as I've mostly
-> contributed to linux-scsi. Do you?
+> Is the fix under control ?
 
-$ ./scripts/get_maintainer.pl --roles --file drivers/usb/storage/usb.c
-Matthew Dharm <mdharm-usb@one-eyed-alien.net> (maintainer:USB MASS STORAGE...)
-Greg Kroah-Hartman <gregkh@suse.de> (supporter:USB SUBSYSTEM)
-linux-usb@vger.kernel.org (open list:USB MASS STORAGE...)
-usb-storage@lists.one-eyed-alien.net (open list:USB MASS STORAGE...)
-linux-kernel@vger.kernel.org (open list)
+Ingo merged this while I'm away, its in tip/urgent.
 
-Or you can just look in the MAINTAINERS file :)
+commit a3da8e451321c31d88cebd12c234d0aac2a1cc35
+Author: Cyrill Gorcunov <gorcunov@gmail.com>
+Date:   Sat Nov 6 11:47:24 2010 +0300
 
-> I know Alan acked this patch. Is it him? Any reason you didn't CC the
-> usb-storage maintainer in this email?  Can you reply back to this
-> thread CC-ing him? The only email I have in my address book is yours.
+    perf, ui: Eliminate stack-smashing protection compiler complaint
 
-Please resend your patch to Matthew, and the people and lists listed
-above.  I need his ack before I can take it.
 
-thanks,
-
-greg k-h
+- Arnaldo
