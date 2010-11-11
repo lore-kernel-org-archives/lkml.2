@@ -1,155 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab0KKQo3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 11:44:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47015 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754490Ab0KKQo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 11:44:27 -0500
-Date: Thu, 11 Nov 2010 17:44:24 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Christoph Hellwig <hch@lst.de>,
-        Jan Engelhardt <jengelh@medozas.de>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/5] writeback: stop background/kupdate works from
- livelocking other works
-Message-ID: <20101111164424.GC3934@quack.suse.cz>
-References: <20101108230916.826791396@intel.com>
- <20101108231726.993880740@intel.com>
- <20101109131310.f442d210.akpm@linux-foundation.org>
- <20101109222827.GJ4936@quack.suse.cz>
- <20101109150006.05892241.akpm@linux-foundation.org>
- <20101109235632.GD11214@quack.suse.cz>
- <20101110153729.81ae6b19.akpm@linux-foundation.org>
+	id S1754586Ab0KKQpA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 11:45:00 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:46775 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754437Ab0KKQo6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 11:44:58 -0500
+Date: Thu, 11 Nov 2010 11:35:31 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Arnd Hannemann <arnd@arndnet.de>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH] net: b43legacy: fix compile error
+Message-ID: <20101111163531.GB2559@tuxdriver.com>
+References: <1288017690-31248-1-git-send-email-arnd@arndnet.de>
+ <4CC5A301.1080606@lwfinger.net>
+ <4CC5CBC4.7060308@arndnet.de>
+ <4CC5CE47.2020607@lwfinger.net>
+ <4CC5D01C.20804@arndnet.de>
+ <4CC5D3A7.3080709@lwfinger.net>
+ <4CC5E4D2.6080606@arndnet.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101110153729.81ae6b19.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4CC5E4D2.6080606@arndnet.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 10-11-10 15:37:29, Andrew Morton wrote:
-> On Wed, 10 Nov 2010 00:56:32 +0100
-> Jan Kara <jack@suse.cz> wrote:
-> > On Tue 09-11-10 15:00:06, Andrew Morton wrote:
-> > > On Tue, 9 Nov 2010 23:28:27 +0100
-> > > Jan Kara <jack@suse.cz> wrote:
-> > > >   New description which should address above questions:
-> > > > Background writeback is easily livelockable in a loop in wb_writeback() by
-> > > > a process continuously re-dirtying pages (or continuously appending to a
-> > > > file). This is in fact intended as the target of background writeback is to
-> > > > write dirty pages it can find as long as we are over
-> > > > dirty_background_threshold.
-> > > 
-> > > Well.  The objective of the kupdate function is utterly different.
-> > > 
-> > > > But the above behavior gets inconvenient at times because no other work
-> > > > queued in the flusher thread's queue gets processed. In particular,
-> > > > since e.g. sync(1) relies on flusher thread to do all the IO for it,
-> > > 
-> > > That's fixable by doing the work synchronously within sync_inodes_sb(),
-> > > rather than twiddling thumbs wasting a thread resource while waiting
-> > > for kernel threads to do it.  As an added bonus, this even makes cpu
-> > > time accounting more accurate ;)
-> > > 
-> > > Please remind me why we decided to hand the sync_inodes_sb() work off
-> > > to other threads?
-> >   Because when sync(1) does IO on it's own, it competes for the device with
-> > the flusher thread running in parallel thus resulting in more seeks.
-> 
-> Skeptical.  Has that effect been demonstrated?  Has it been shown to be
-> a significant problem?  A worse problem than livelocking the machine? ;)
-  I don't think Jens has tested this when merging per-bdi writeback
-patches. Just the argument makes sense to me (I've seen some loads where
-application doing IO from balance_dirty_pages() together with pdflush doing
-writeback did seriously harm performance and this looks like a similar
-scenario). But I'd be also interested whether the theory and practice
-matches here so I'll try to do some test to compare the two approaches.
-
-> If this _is_ a problem then it's also a problem for fsync/msync.  But
-> see below.
-> 
-> > > > sync(1) can hang forever waiting for flusher thread to do the work.
-> > > > 
-> > > > Generally, when a flusher thread has some work queued, someone submitted
-> > > > the work to achieve a goal more specific than what background writeback
-> > > > does. Moreover by working on the specific work, we also reduce amount of
-> > > > dirty pages which is exactly the target of background writeout. So it makes
-> > > > sense to give specific work a priority over a generic page cleaning.
-> > > > 
-> > > > Thus we interrupt background writeback if there is some other work to do. We
-> > > > return to the background writeback after completing all the queued work.
-> > > > 
-> > ...
-> > > > > So...  what prevents higher priority works (eg, sync(1)) from
-> > > > > livelocking or seriously retarding background or kudate writeout?
-> > > >   If other work than background or kupdate writeout livelocks, it's a bug
-> > > > which should be fixed (either by setting sensible nr_to_write or by tagging
-> > > > like we do it for WB_SYNC_ALL writeback). Of course, higher priority work
-> > > > can be running when background or kupdate writeout would need to run as
-> > > > well. But the idea here is that the purpose of background/kupdate types of
-> > > > writeout is to get rid of dirty data and any type of writeout does this so
-> > > > working on it we also work on background/kupdate writeout only possibly
-> > > > less efficiently.
-> > > 
-> > > The kupdate function is a data-integrity/quality-of-service sort of
-> > > thing.
-> > > 
-> > > And what I'm asking is whether this change enables scenarios in which
-> > > these threads can be kept so busy that the kupdate function gets
-> > > interrupted so frequently that we can have dirty memory not being
-> > > written back for arbitrarily long periods of time?
-> >   So let me compare:
-> > What kupdate writeback does:
-> >   queue inodes older than dirty_expire_centisecs
-> >   while some inode in the queue
-> >     write MAX_WRITEBACK_PAGES from each inode queued
-> >     break if nr_to_write <= 0
+On Mon, Oct 25, 2010 at 10:13:06PM +0200, Arnd Hannemann wrote:
+> Am 25.10.2010 20:59, schrieb Larry Finger:
+> > On 10/25/2010 01:44 PM, Arnd Hannemann wrote:
+> >> Am 25.10.2010 20:36, schrieb Larry Finger:
+> >>> On 10/25/2010 01:26 PM, Arnd Hannemann wrote:
+> >>>> Am 25.10.2010 17:32, schrieb Larry Finger:
+> >>>>> On 10/25/2010 09:41 AM, Arnd Hannemann wrote:
+> >>>>>> On todays linus tree the following compile error happened to me:
+> >>>>>>
+> >>>>>>   CC [M]  drivers/net/wireless/b43legacy/xmit.o
+> >>>>>> In file included from include/net/dst.h:11,
+> >>>>>>                  from drivers/net/wireless/b43legacy/xmit.c:31:
+> >>>>>> include/net/dst_ops.h:28: error: expected ':', ',', ';', '}' or '__attribute__' before '____cacheline_aligned_in_smp'
+> >>>>>> include/net/dst_ops.h: In function 'dst_entries_get_fast':
+> >>>>>> include/net/dst_ops.h:33: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> >>>>>> include/net/dst_ops.h: In function 'dst_entries_get_slow':
+> >>>>>> include/net/dst_ops.h:41: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> >>>>>> include/net/dst_ops.h: In function 'dst_entries_add':
+> >>>>>> include/net/dst_ops.h:49: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> >>>>>> include/net/dst_ops.h: In function 'dst_entries_init':
+> >>>>>> include/net/dst_ops.h:55: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> >>>>>> include/net/dst_ops.h: In function 'dst_entries_destroy':
+> >>>>>> include/net/dst_ops.h:60: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> >>>>>> make[4]: *** [drivers/net/wireless/b43legacy/xmit.o] Error 1
+> >>>>>> make[3]: *** [drivers/net/wireless/b43legacy] Error 2
+> >>>>>> make[2]: *** [drivers/net/wireless] Error 2
+> >>>>>> make[1]: *** [drivers/net] Error 2
+> >>>>>> make: *** [drivers] Error 2
+> >>>>>>
+> >>>>>> This patch fixes this issue by adding "linux/cache.h" as an include to
+> >>>>>> "include/net/dst_ops.h".
+> >>>>>
+> >>>>> Strange. Compiling b43legacy from the linux-2.6.git tree (git describe is
+> >>>>> v2.6.36-4464-g229aebb) works fine on x86_64. I wonder what is different.
+> >>>>
+> >>>> Exactly the same git describe here.
+> >>>> Maybe your arch includes cache.h already, in my case its a compile for ARM (shmobile).
+> >>>
+> >>> That probably makes the difference. Using Eric's fix that removes the #include
+> >>> <linux/dst.h> should be better. Does it work for you?
+> >>>
+> >>> There are probably a lot more of the system includes that may not be needed. If
+> >>> I send you a patch removing them, could you test?
+> >>
+> >> As it turns out my card is not supported by b43legacy, but compilation testing,
+> >> sure I can test that.
 > > 
-> > What any other WB_SYNC_NONE writeback (let me call it "normal WB_SYNC_NONE
-> > writeback") does:
-> >   queue all dirty inodes 
-> >   while some inode in the queue
-> >     write MAX_WRITEBACK_PAGES from each inode queued
-> >     break if nr_to_write <= 0
-> > 
-> > 
-> > There only one kind of WB_SYNC_ALL writeback - the one which writes
-> > everything.
+> > If it is a Broadcom card, it is likely handled by b43.
 > 
-> fsync() uses WB_SYNC_ALL and it doesn't write "everything".
-  Yes, but nobody submits fsync() work to a flusher thread (currently,
-there's no way to tell flusher thread to operate only on a single inode).
-But as you write below *if* somebody started doing it and fsync() would be
-called often enough, we would have a problem.
+> Yes. It seems it should work with b43 (its an SDIO card) and it almost does...
+> 
+> > Attached is a trial removal of a number of include statements. Does it compile?
+> 
+> Nope:
+> NSTALL_MOD_PATH=/home/arnd/projekte/renesas-2/nfs modules
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+> make[1]: `include/generated/mach-types.h' is up to date.
+>   CALL    scripts/checksyscalls.sh
+>   CC [M]  drivers/net/wireless/b43legacy/main.o
+> drivers/net/wireless/b43legacy/main.c: In function 'b43legacy_upload_microcode':
+> drivers/net/wireless/b43legacy/main.c:1688: error: implicit declaration of function 'signal_pending'
+> make[4]: *** [drivers/net/wireless/b43legacy/main.o] Error 1
+> make[3]: *** [drivers/net/wireless/b43legacy] Error 2
+> make[2]: *** [drivers/net/wireless] Error 2
+> make[1]: *** [drivers/net] Error 2
+> make: *** [drivers] Error 2
 
-> > So after WB_SYNC_ALL writeback (provided all livelocks are fixed ;)
-> > obviously no old data should be unwritten in memory. Normal WB_SYNC_NONE
-> > writeback differs from a kupdate one *only* in the fact that we queue all
-> > inodes instead of only the old ones.
-> 
-> whoa.
-> 
-> That's only true for sync(), or sync_filesystem().  It isn't true for,
-> say, fsync() and msync().  Now when someone comes along and changes
-> fsync/msync to use flusher threads ("resulting in less seeks") then we
-> could get into a situation where fsync-serving flusher threads never
-> serve kupdate?
-> 
-> > We start writing old inodes first and
-> 
-> OT, but: your faith in those time-ordered inode lists is touching ;)
-> Put a debug function in there which checks that the lists _are_
-> time-ordered, and call that function from every site in the kernel
-> which modifies the lists.   I bet there are still gremlins.
-  ;-)
+Is this issue resolved?  Should I be expecting a b43 patch?
 
-								Honza
+John
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
