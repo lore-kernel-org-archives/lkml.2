@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab0KKJRo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 04:17:44 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46347 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751160Ab0KKJRi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 04:17:38 -0500
-Date: Thu, 11 Nov 2010 09:17:34 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Questions] How to run 'perf top' on ARM to profile kernel
- functions with modules loaded
-Message-ID: <20101111091733.GA2929@pulham.picochip.com>
-References: <AANLkTinwAL8dFsDbd-ZTQEcEziq6jZk82KPzNqMVxnOx@mail.gmail.com>
- <AANLkTim+BAYKWqiJzSQQLc4e_yNkMsNNnEp5u8YgC2Fk@mail.gmail.com>
-MIME-Version: 1.0
+	id S1752469Ab0KKJUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 04:20:23 -0500
+Received: from mail.tnnet.fi ([217.112.240.26]:42280 "EHLO mail.tnnet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751160Ab0KKJUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 04:20:21 -0500
+Message-ID: <4CDBB552.6E9A0484@users.sourceforge.net>
+Date: Thu, 11 Nov 2010 11:20:18 +0200
+From: Jari Ruusu <jariruusu@users.sourceforge.net>
+To: linux-crypto@nl.linux.org
+CC: linux-kernel@vger.kernel.org
+Subject: Announce loop-AES-v3.5b file/swap crypto package
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim+BAYKWqiJzSQQLc4e_yNkMsNNnEp5u8YgC2Fk@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 03:52:07PM +0800, Ming Lei wrote:
-> 2010/11/11 Ming Lei <tom.leiming@gmail.com>:
-> > Hi,
-> >
-> > 'perf top' can't display any functions when modules are loaded on ARM.
-> 
-> Sorry, should be can't display any kernel functions when modules are loaded
-> on ARM.
-I've noticed this myself and I spent a bit of time looking into it last week 
-but didn't get too far. I did wonder if it was something to do with the map 
-fixups after loading the modules. If you look at the raw events after a perf 
-record with 'perf report -D' then the last module has a size that takes it to 
-0xFFFFFFFF which overlaps with the rest of the kernel symbols.
+loop-AES changes since previous release:
+- Fixed a race that could temporarily occour between two (or more) loop
+  helper threads for same loop device. Two threads could interact with each
+  other an not go to sleep when they should. This race wasted CPU cycles,
+  but had no other ill effects.
 
-On x86 it looks like the modules are loaded after the kernel image in VM 
-unlike ARM.
 
-Jamie
+bzip2 compressed tarball is here:
+
+    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.5b.tar.bz2
+    md5sum f5efb1dea4cd7cd5b7ae7522ff8e7959
+
+    http://loop-aes.sourceforge.net/loop-AES/loop-AES-v3.5b.tar.bz2.sign
+
+-- 
+Jari Ruusu  1024R/3A220F51 5B 4B F9 BB D3 3F 52 E9  DB 1D EB E3 24 0E A9 DD
