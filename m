@@ -1,90 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932140Ab0KKA4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 19:56:14 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2922 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932115Ab0KKA4K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 19:56:10 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp04.nvidia.com on Wed, 10 Nov 2010 16:55:58 -0800
-From: Rhyland Klein <rklein@nvidia.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: Lars-Peter Clausen <lars@metafoo.de>,
-        "broonie@opensource.wolfsonmicro.com" 
-	<broonie@opensource.wolfsonmicro.com>,
-        Andrew Chew <AChew@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Nov 2010 16:53:12 -0800
-Subject: RE: [PATCH v2] POWER: Add gpio charger driver
-Thread-Topic: [PATCH v2] POWER: Add gpio charger driver
-Thread-Index: Act8SGtQsPsB6sZrSuCdaGKUefx3OgE8jhIQ
-Message-ID: <E88A1D35AF5437468E5B14C7C4BA61C702D41B4F4F@HQMAIL01.nvidia.com>
-References: <1287663957-30099-1-git-send-email-lars@metafoo.de>
- <1287676501-23254-1-git-send-email-lars@metafoo.de>
- <20101021162617.GA10447@oksana.dev.rtsoft.ru> <4CC07CB4.9060108@metafoo.de>
- <E88A1D35AF5437468E5B14C7C4BA61C702D3E13FB3@HQMAIL01.nvidia.com>
- <20101104174746.GA16349@oksana.dev.rtsoft.ru>
-In-Reply-To: <20101104174746.GA16349@oksana.dev.rtsoft.ru>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1757600Ab0KKBCU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 20:02:20 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:59630 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757401Ab0KKBCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 20:02:19 -0500
+Subject: Re: [RFC][PATCH 05/22] sched: SCHED_DEADLINE policy implementation
+From: Raistlin <raistlin@linux.it>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1289418214.2084.48.camel@laptop>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288333814.8661.146.camel@Palantir>  <1289418214.2084.48.camel@laptop>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-WRPI+puqxdqNDydKB5YJ"
+Date: Thu, 11 Nov 2010 02:02:05 +0100
+Message-ID: <1289437325.13577.445.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oAB0ujlP001252
 
-> From: Anton Vorontsov [mailto:cbouatmailru@gmail.com]
-> Sent: Thursday, November 04, 2010 10:48 AM
-> To: Rhyland Klein
-> Cc: Lars-Peter Clausen; broonie@opensource.wolfsonmicro.com; Andrew Chew;
-> olof@lixom.net; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v2] POWER: Add gpio charger driver
-> 
-> On Thu, Oct 28, 2010 at 02:17:41PM -0700, Rhyland Klein wrote:
-> [...]
-> > > Hm... I guess it can be, but on the other hand most platform bus
-> chargers
-> > > type
-> > > devices can be, because the pda_power driver is keep pretty generic
-> with
-> > > custom init,
-> > > status and exit callbacks.
-> > >
-> > > - Lars
-> >
-> > I didn't see any more discussion on this. Is the plan to integrate
-> > the gpio-charger driver as is or to instead try to integrate support
-> > for this into pda_power?
-> 
-> Sorry for the delayed response, and thanks for the pings! ;-)
-> 
-> The main thing I'm afraid of is duplication. I.e. someday you
-> will want debouncing (include/linux/pda_power.h's wait_for_status,
-> wait_for_charger parameters) support, regulators support etc.
-> 
-> And your gpio driver will look very similar to pda_power.
-> 
-> So I'd vote for adding the GPIO functionality to pda_power, and
-> refactoring it if needed.
-> 
-> Though, if there are strong objections against this idea, I
-> can merge the GPIO driver, and let's see how things will evolve.
-> 
-> Thanks!
-> 
-> --
-> Anton Vorontsov
-> email: cbouatmailru@gmail.com
-> irc://irc.freenode.net/bd2
 
-My guess, is that since no one has responded, no one is working on integrating the functionality into pda-power?
+--=-WRPI+puqxdqNDydKB5YJ
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
--rhyland
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Wed, 2010-11-10 at 20:43 +0100, Peter Zijlstra wrote:
+> On Fri, 2010-10-29 at 08:30 +0200, Raistlin wrote:
+> > + * We are being explicitly informed that a new instance is starting,
+> > + * and this means that:
+> > + *  - the absolute deadline of the entity has to be placed at
+> > + *    current time + relative deadline;
+> > + *  - the runtime of the entity has to be set to the maximum value.
+>=20
+> When exactly are we a new instance? From a quick look dl_new gets set
+> after a sched_setscheduler() call, is that the only way?
+>=20
+One of the only two ways. Later in the queue, that flag is set by a new
+system call, i.e., sched_wait_interval, that can be used to inform the
+scheduler (for example at the end of a periodic/sporadic job) that an
+instance just ended. Moreover, it can be exploited by a task which want
+the scheduler to wake it up when it can be given its full runtime.
+It as been added as a consequence of the discussion happened in Dresden,
+at last year RTLWS, aside of my presentation...
+
+Whether or not this could be useful, I don't know, and I accept comments
+as usual. My opinion is that it might be something worthwhile to have,
+especially from the point of view of hard real-time-ish scenarios, but
+we can remove it appears unnecessary.
+
+> Could a task calling sched_setscheduler() on itself cheat the system?
+>
+I obviously might be wrong (especially at this time), but I would say no
+for the following reasons.
+
+If you are an overrunning -deadline task calling sched_setscheduler()
+the deactivate_task->dequeue_task->dequeue_task_dl() below will trigger
+the bandwidth enforcement, i.e., will set dl_throttled=3D1 and start
+dl_timer:
+	...
+        on_rq =3D p->se.on_rq;                                             =
+                                            =20
+        running =3D task_current(rq, p);                                   =
+                                            =20
+        if (on_rq)
+                deactivate_task(rq, p, 0);
+        if (running)
+                p->sched_class->put_prev_task(rq, p);
+	...
+
+Later, this enqueue:
+	...
+	if (running)                                                              =
+                                   =20
+                p->sched_class->set_curr_task(rq);                         =
+                                          =20
+        if (on_rq) {
+                activate_task(rq, p, 0);                                   =
+                                          =20
+                                                                           =
+                                          =20
+                check_class_changed(rq, p, prev_class, oldprio, running);
+        }
+	...
+
+even if it will find dl_new=3D1, will not enqueue the task back in its
+dl_rq (since dl_throttled=3D1). The actual enqueueing happens at the
+firing of dl_timer, where an update instead than a replenishment will be
+performed, right because of the fact that dl_new=3D1. This means the
+runtime will be fully replenished and the deadline moved toward
+rq->clock+dl_se->dl_deadline.
+
+Did this answer your question?
+
+Thanks and Regards,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://blog.linux.it/raistlin / raistlin@ekiga.net /
+dario.faggioli@jabber.org
+
+--=-WRPI+puqxdqNDydKB5YJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzbQI0ACgkQk4XaBE3IOsRuHwCfb8AaTHS07d0u93HMYstvh3Tp
+FC8AnA6FfuUvp4WjzZi2OOuYAG4pW0kh
+=C9cI
+-----END PGP SIGNATURE-----
+
+--=-WRPI+puqxdqNDydKB5YJ--
+
