@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab0KKQpA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 11:45:00 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:46775 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754437Ab0KKQo6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 11:44:58 -0500
-Date: Thu, 11 Nov 2010 11:35:31 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Arnd Hannemann <arnd@arndnet.de>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH] net: b43legacy: fix compile error
-Message-ID: <20101111163531.GB2559@tuxdriver.com>
-References: <1288017690-31248-1-git-send-email-arnd@arndnet.de>
- <4CC5A301.1080606@lwfinger.net>
- <4CC5CBC4.7060308@arndnet.de>
- <4CC5CE47.2020607@lwfinger.net>
- <4CC5D01C.20804@arndnet.de>
- <4CC5D3A7.3080709@lwfinger.net>
- <4CC5E4D2.6080606@arndnet.de>
+	id S1754578Ab0KKQtz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 11:49:55 -0500
+Received: from web31804.mail.mud.yahoo.com ([68.142.207.67]:47775 "HELO
+	web31804.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754504Ab0KKQtx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 11:49:53 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=4TkZTdwYYzsvAddykMp3RwyFlebdk5yw9AyERlXs+ABgxq1A3mnAlpFlD+J3GBGYSPr71Yz/rq1dlDd3JjIT72W3PnV3o/D5xsNVrHKyWM7CmsjeeuxkkOD7ZFAX1Evmd3jK+te3f72v1u6qlgIbaezrCSXGFcBqumgY01kSzSs=;
+Message-ID: <892012.17950.qm@web31804.mail.mud.yahoo.com>
+X-YMail-OSG: tn1BarYVM1nhOi5cpAv4gfYRH8I9n3J926l9Qid6b0af85i
+ 396CIHtcklWeafZyO00UYM0A193JyQ4WP4FhPUvxj4DWMeE2F9wyXLbT_X2c
+ nnTaTq1WLR.X1666iQCbjETnWceveikls1SPrfccEIzjBejz61XiKjCtnYIv
+ vsIxdTRqVK7kMmNzDP3CvArMl3N4UCjau2kYmIUbwIwkIlA5CQWrgK31smT2
+ szCGgjw0bYe1.XaWxDgzac2jcrJOsGzm23pFw0NQsWDI8gaZTNYggKIRGZrU
+ hDhoVsGqR.lfkq0795Zqq4bHaUgvjfRFtiTAet7s1DL2uClUzenN1iyPjy6C
+ o3K0dIhQx6LpEqXImkaNd4c2D2CXfvaqyAA--
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
+Date: Thu, 11 Nov 2010 08:49:51 -0800 (PST)
+From: Luben Tuikov <ltuikov@yahoo.com>
+Reply-To: ltuikov@yahoo.com
+Subject: Re: [PATCH take 2] [USB] Use normalized sense when emulating autosense
+To: Greg KH <greg@kroah.com>
+Cc: linux-usb@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101111134450.GB12291@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CC5E4D2.6080606@arndnet.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 25, 2010 at 10:13:06PM +0200, Arnd Hannemann wrote:
-> Am 25.10.2010 20:59, schrieb Larry Finger:
-> > On 10/25/2010 01:44 PM, Arnd Hannemann wrote:
-> >> Am 25.10.2010 20:36, schrieb Larry Finger:
-> >>> On 10/25/2010 01:26 PM, Arnd Hannemann wrote:
-> >>>> Am 25.10.2010 17:32, schrieb Larry Finger:
-> >>>>> On 10/25/2010 09:41 AM, Arnd Hannemann wrote:
-> >>>>>> On todays linus tree the following compile error happened to me:
-> >>>>>>
-> >>>>>>   CC [M]  drivers/net/wireless/b43legacy/xmit.o
-> >>>>>> In file included from include/net/dst.h:11,
-> >>>>>>                  from drivers/net/wireless/b43legacy/xmit.c:31:
-> >>>>>> include/net/dst_ops.h:28: error: expected ':', ',', ';', '}' or '__attribute__' before '____cacheline_aligned_in_smp'
-> >>>>>> include/net/dst_ops.h: In function 'dst_entries_get_fast':
-> >>>>>> include/net/dst_ops.h:33: error: 'struct dst_ops' has no member named 'pcpuc_entries'
-> >>>>>> include/net/dst_ops.h: In function 'dst_entries_get_slow':
-> >>>>>> include/net/dst_ops.h:41: error: 'struct dst_ops' has no member named 'pcpuc_entries'
-> >>>>>> include/net/dst_ops.h: In function 'dst_entries_add':
-> >>>>>> include/net/dst_ops.h:49: error: 'struct dst_ops' has no member named 'pcpuc_entries'
-> >>>>>> include/net/dst_ops.h: In function 'dst_entries_init':
-> >>>>>> include/net/dst_ops.h:55: error: 'struct dst_ops' has no member named 'pcpuc_entries'
-> >>>>>> include/net/dst_ops.h: In function 'dst_entries_destroy':
-> >>>>>> include/net/dst_ops.h:60: error: 'struct dst_ops' has no member named 'pcpuc_entries'
-> >>>>>> make[4]: *** [drivers/net/wireless/b43legacy/xmit.o] Error 1
-> >>>>>> make[3]: *** [drivers/net/wireless/b43legacy] Error 2
-> >>>>>> make[2]: *** [drivers/net/wireless] Error 2
-> >>>>>> make[1]: *** [drivers/net] Error 2
-> >>>>>> make: *** [drivers] Error 2
-> >>>>>>
-> >>>>>> This patch fixes this issue by adding "linux/cache.h" as an include to
-> >>>>>> "include/net/dst_ops.h".
-> >>>>>
-> >>>>> Strange. Compiling b43legacy from the linux-2.6.git tree (git describe is
-> >>>>> v2.6.36-4464-g229aebb) works fine on x86_64. I wonder what is different.
-> >>>>
-> >>>> Exactly the same git describe here.
-> >>>> Maybe your arch includes cache.h already, in my case its a compile for ARM (shmobile).
-> >>>
-> >>> That probably makes the difference. Using Eric's fix that removes the #include
-> >>> <linux/dst.h> should be better. Does it work for you?
-> >>>
-> >>> There are probably a lot more of the system includes that may not be needed. If
-> >>> I send you a patch removing them, could you test?
-> >>
-> >> As it turns out my card is not supported by b43legacy, but compilation testing,
-> >> sure I can test that.
+--- On Thu, 11/11/10, Greg KH <greg@kroah.com> wrote:
+> On Fri, Oct 22, 2010 at 02:12:51PM
+> -0700, Luben Tuikov wrote:
+> > This patch solves two things:
+> > 1) Enables autosense emulation code to correctly
+> > interpret descriptor format sense data, and
+> > 2) Fixes a bug whereby the autosense emulation
+> > code would overwrite descriptor format sense data
+> > with SENSE KEY HARDWARE ERROR in fixed format, to
+> > incorrectly look like this:
 > > 
-> > If it is a Broadcom card, it is likely handled by b43.
+> > Oct 21 14:11:07 localhost kernel: sd 7:0:0:0:
+> [sdc]  Sense Key : Recovered Error [current]
+> [descriptor]
+> > Oct 21 14:11:07 localhost kernel: Descriptor sense
+> data with sense descriptors (in hex):
+> > Oct 21 14:11:07 localhost kernel:     
+>   72 01 04 1d 00 00 00 0e 09 0c 00 00 00 00 00 00
+> > Oct 21 14:11:07 localhost kernel:     
+>   00 4f 00 c2 00 50
+> > Oct 21 14:11:07 localhost kernel: sd 7:0:0:0:
+> [sdc]  ASC=0x4 ASCQ=0x1d
+> > 
+> > Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
 > 
-> Yes. It seems it should work with b43 (its an SDIO card) and it almost does...
-> 
-> > Attached is a trial removal of a number of include statements. Does it compile?
-> 
-> Nope:
-> NSTALL_MOD_PATH=/home/arnd/projekte/renesas-2/nfs modules
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
-> make[1]: `include/generated/mach-types.h' is up to date.
->   CALL    scripts/checksyscalls.sh
->   CC [M]  drivers/net/wireless/b43legacy/main.o
-> drivers/net/wireless/b43legacy/main.c: In function 'b43legacy_upload_microcode':
-> drivers/net/wireless/b43legacy/main.c:1688: error: implicit declaration of function 'signal_pending'
-> make[4]: *** [drivers/net/wireless/b43legacy/main.o] Error 1
-> make[3]: *** [drivers/net/wireless/b43legacy] Error 2
-> make[2]: *** [drivers/net/wireless] Error 2
-> make[1]: *** [drivers/net] Error 2
-> make: *** [drivers] Error 2
+> I need to get the ack from the usb-storage
+> maintainer.  Can you get that
+> so that I can apply this?
 
-Is this issue resolved?  Should I be expecting a b43 patch?
+Hi Greg,
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+I don't know who the usb-storage maintainer is, as I've mostly contributed to linux-scsi. Do you? I know Alan acked this patch. Is it him? Any reason you didn't CC the usb-storage maintainer in this email?  Can you reply back to this thread CC-ing him? The only email I have in my address book is yours.
+
+Thank you for being so nice and patient in this long, difficult, arduous and intimidating[1] process.
+
+   Luben
+[1]linux-2.6/Documentation/development-process/6.Followthrough:22:
+"Working with reviewers can be, for many developers, the most intimidating part of the kernel development process."
+
