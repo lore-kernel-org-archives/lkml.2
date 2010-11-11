@@ -1,117 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab0KKA4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 19:56:16 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:46541 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932116Ab0KKA4M (ORCPT
+	id S932140Ab0KKA4O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 19:56:14 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2922 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932115Ab0KKA4K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 19:56:12 -0500
-Message-ID: <4CDB3EBB.4010800@kernel.org>
-Date: Wed, 10 Nov 2010 16:54:19 -0800
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
+	Wed, 10 Nov 2010 19:56:10 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp04.nvidia.com on Wed, 10 Nov 2010 16:55:58 -0800
+From: Rhyland Klein <rklein@nvidia.com>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+CC: Lars-Peter Clausen <lars@metafoo.de>,
+        "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        Andrew Chew <AChew@nvidia.com>, "olof@lixom.net" <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 10 Nov 2010 16:53:12 -0800
+Subject: RE: [PATCH v2] POWER: Add gpio charger driver
+Thread-Topic: [PATCH v2] POWER: Add gpio charger driver
+Thread-Index: Act8SGtQsPsB6sZrSuCdaGKUefx3OgE8jhIQ
+Message-ID: <E88A1D35AF5437468E5B14C7C4BA61C702D41B4F4F@HQMAIL01.nvidia.com>
+References: <1287663957-30099-1-git-send-email-lars@metafoo.de>
+ <1287676501-23254-1-git-send-email-lars@metafoo.de>
+ <20101021162617.GA10447@oksana.dev.rtsoft.ru> <4CC07CB4.9060108@metafoo.de>
+ <E88A1D35AF5437468E5B14C7C4BA61C702D3E13FB3@HQMAIL01.nvidia.com>
+ <20101104174746.GA16349@oksana.dev.rtsoft.ru>
+In-Reply-To: <20101104174746.GA16349@oksana.dev.rtsoft.ru>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-CC: Jan Beulich <jbeulich@novell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH -v2 2/2] x86/pci: Add mmconf range into e820 for when it is
- from MSR with amd faml0h
-References: <4CDB3E85.9010604@kernel.org>
-In-Reply-To: <4CDB3E85.9010604@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oAB0ujlP001252
 
+> From: Anton Vorontsov [mailto:cbouatmailru@gmail.com]
+> Sent: Thursday, November 04, 2010 10:48 AM
+> To: Rhyland Klein
+> Cc: Lars-Peter Clausen; broonie@opensource.wolfsonmicro.com; Andrew Chew;
+> olof@lixom.net; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH v2] POWER: Add gpio charger driver
+> 
+> On Thu, Oct 28, 2010 at 02:17:41PM -0700, Rhyland Klein wrote:
+> [...]
+> > > Hm... I guess it can be, but on the other hand most platform bus
+> chargers
+> > > type
+> > > devices can be, because the pda_power driver is keep pretty generic
+> with
+> > > custom init,
+> > > status and exit callbacks.
+> > >
+> > > - Lars
+> >
+> > I didn't see any more discussion on this. Is the plan to integrate
+> > the gpio-charger driver as is or to instead try to integrate support
+> > for this into pda_power?
+> 
+> Sorry for the delayed response, and thanks for the pings! ;-)
+> 
+> The main thing I'm afraid of is duplication. I.e. someday you
+> will want debouncing (include/linux/pda_power.h's wait_for_status,
+> wait_for_charger parameters) support, regulators support etc.
+> 
+> And your gpio driver will look very similar to pda_power.
+> 
+> So I'd vote for adding the GPIO functionality to pda_power, and
+> refactoring it if needed.
+> 
+> Though, if there are strong objections against this idea, I
+> can merge the GPIO driver, and let's see how things will evolve.
+> 
+> Thanks!
+> 
+> --
+> Anton Vorontsov
+> email: cbouatmailru@gmail.com
+> irc://irc.freenode.net/bd2
 
-for AMD Fam10h, it we read mmconf from MSR early, we should just trust it
-because we check it and correct it already.
+My guess, is that since no one has responded, no one is working on integrating the functionality into pda-power?
 
-so add it to e820
-
-Also correct the base calulating to make it work below 4g case.
-
--v2: remove unrelated sort_range changes.
-     also make FAM10H_MMIO_CONF_BASE_MASK to be ULL pointed by Jan.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Jan Beulich <jbeulich@novell.com>
-
----
- arch/x86/include/asm/msr-index.h   |    2 +-
- arch/x86/kernel/mmconf-fam10h_64.c |   21 ++++++++++++++++++++-
- 2 files changed, 21 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/arch/x86/kernel/mmconf-fam10h_64.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/mmconf-fam10h_64.c
-+++ linux-2.6/arch/x86/kernel/mmconf-fam10h_64.c
-@@ -16,6 +16,7 @@
- #include <asm/acpi.h>
- #include <asm/mmconfig.h>
- #include <asm/pci_x86.h>
-+#include <asm/e820.h>
- 
- struct pci_hostbridge_probe {
- 	u32 bus;
-@@ -27,6 +28,21 @@ struct pci_hostbridge_probe {
- static u64 __cpuinitdata fam10h_pci_mmconf_base;
- static int __cpuinitdata fam10h_pci_mmconf_base_status;
- 
-+/* only on BSP */
-+static void __init_refok e820_add_mmconf_range(int busnbits)
-+{
-+	u64 end;
-+
-+	end = fam10h_pci_mmconf_base + (1ULL<<(busnbits + 20)) - 1;
-+	if (!e820_all_mapped(fam10h_pci_mmconf_base, end+1, E820_RESERVED)) {
-+		printk(KERN_DEBUG "Fam 10h mmconf [%llx, %llx]\n",
-+				 fam10h_pci_mmconf_base, end);
-+		e820_add_region(fam10h_pci_mmconf_base, 1ULL<<(busnbits + 20),
-+				 E820_RESERVED);
-+		sanitize_e820_map();
-+	}
-+}
-+
- static struct pci_hostbridge_probe pci_probes[] __cpuinitdata = {
- 	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1200 },
- 	{ 0xff, 0, PCI_VENDOR_ID_AMD, 0x1200 },
-@@ -169,6 +185,7 @@ fail:
- out:
- 	fam10h_pci_mmconf_base = base;
- 	fam10h_pci_mmconf_base_status = 1;
-+	e820_add_mmconf_range(8);
- }
- 
- void __cpuinit fam10h_check_enable_mmcfg(void)
-@@ -191,10 +208,12 @@ void __cpuinit fam10h_check_enable_mmcfg
- 		/* only trust the one handle 256 buses, if acpi=off */
- 		if (!acpi_pci_disabled || busnbits >= 8) {
- 			u64 base;
--			base = val & (0xffffULL << 32);
-+			base = val & (FAM10H_MMIO_CONF_BASE_MASK <<
-+					FAM10H_MMIO_CONF_BASE_SHIFT);
- 			if (fam10h_pci_mmconf_base_status <= 0) {
- 				fam10h_pci_mmconf_base = base;
- 				fam10h_pci_mmconf_base_status = 1;
-+				e820_add_mmconf_range(busnbits);
- 				return;
- 			} else if (fam10h_pci_mmconf_base ==  base)
- 				return;
-Index: linux-2.6/arch/x86/include/asm/msr-index.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/msr-index.h
-+++ linux-2.6/arch/x86/include/asm/msr-index.h
-@@ -128,7 +128,7 @@
- #define FAM10H_MMIO_CONF_ENABLE		(1<<0)
- #define FAM10H_MMIO_CONF_BUSRANGE_MASK	0xf
- #define FAM10H_MMIO_CONF_BUSRANGE_SHIFT 2
--#define FAM10H_MMIO_CONF_BASE_MASK	0xfffffff
-+#define FAM10H_MMIO_CONF_BASE_MASK	0xfffffffULL
- #define FAM10H_MMIO_CONF_BASE_SHIFT	20
- #define MSR_FAM10H_NODE_ID		0xc001100c
- 
+-rhyland
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
