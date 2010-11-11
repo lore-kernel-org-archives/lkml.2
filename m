@@ -1,102 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab0KKXdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 18:33:50 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:33591 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753593Ab0KKXdt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 18:33:49 -0500
-Message-ID: <4CDC7D57.2070008@sssup.it>
-Date: Fri, 12 Nov 2010 00:33:43 +0100
-From: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1754256Ab0KKXff (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 18:35:35 -0500
+Received: from claw.goop.org ([74.207.240.146]:41048 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406Ab0KKXfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 18:35:34 -0500
+Message-ID: <4CDC7DC4.5070406@goop.org>
+Date: Thu, 11 Nov 2010 15:35:32 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Raistlin <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 09/22] sched: add period support for -deadline tasks
-References: <1288333128.8661.137.camel@Palantir>	 <1288334050.8661.150.camel@Palantir>  <1289503054.2084.156.camel@laptop>	 <1289503883.6525.107.camel@Palantir> <1289504635.2084.179.camel@laptop>
-In-Reply-To: <1289504635.2084.179.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Subject: [GIT PULL] Xen bug fixes
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/11/2010 20:43, Peter Zijlstra ha scritto:
->> The more correct --in the sense that it at least yield a sufficient (not
->> necessary!) condition-- thing to do would be
->> sum_i(runtime_i/min{deadline_i,period_i})<=threshold.
->>
->> So, what you think we should do? Can I go for this latter option?
-> So sufficient (but not necessary) means its still a pessimistic approach
-> but better than the one currently employed, or does it mean its
-> optimistic and allows for unschedulable sets to be allowed in?
-It means that, if the new task passes the test, then it has its 
-guaranteed runtime_i over each time horizon as long as min{deadline_i, 
-period_i} (and all of the other tasks already admitted have their 
-guarantees as well of course). From the perspective of analyzing 
-capability of the attached task to meet its own deadlines, if the task 
-has a WCET of runtime_i, a minimum inter-arrival period of period_i, and 
-a relative deadline of deadline_i, then it is guaranteed to meet all of 
-its deadlines.
+Hi Linus,
 
-Therefore, this kind of test is sufficient for ensuring schedulability 
-of all of the tasks, but it is not actually necessary, because it is too 
-pessimistic. In fact, consider a task with a period of 10ms, a runtime 
-of 3ms and a relative deadline of 5ms. After the test passed, you have 
-actually allocated a "share" of the CPU capable of handling 3ms of 
-workload every 5ms. Instead, we actually know that (or, we may actually 
-force it to), after the deadline at 5ms, this task will actually be idle 
-for further 5ms, till its new period. There are more complex tests which 
-account for this, in the analysis.
+Here are some Xen bugfixes against -rc1.  This is another spin of the
+"don't free memory below 1M" patch the last time around.  I played
+around with it a bit and slightly improved it, but I couldn't find
+anything substantially prettier.
 
-Generally speaking, with deadlines different from periods, a tighter 
-test (for partitioned EDF) is one making use of the demand-bound 
-function, which unfortunately is far more heavyweight than a mere 
-utilization check (for example, you should perform a number of checks 
-along a time horizon that can go as far as the hyper-period [LCM of the 
-periods] of the considered task-set -- something that may require 
-arbitrary precision arithmetics in the worst-case). However, you can 
-check the *RT* conferences in the last 10 years in order to see all the 
-possible trade-offs between accuracy of the test and the imposed 
-computation requirement/overhead.
+The other significant fix here is from Stefano which allows domain
+creation to work - it seems that one or both of aaead25b9 and
+c9d0bf24145 exposed the fact that we should have been setting VM_PFNMAP
+on these cross-domain mappings.
 
-Summarizing, the test suggested by Dario is sufficient to ensure the 
-correct behavior of the accepted tasks, under the assumption that they 
-stick to the "sporadic RT task model", it is very simple to implement in 
-the kernel, but it is somewhat pessimistic. Also, it actually uses only 
-2 parameters, the runtime and the min{deadline_i, period_i}.
-This clarifies also why I was raising the issue of whether to have at 
-all the specification of a deadline \neq period, in my other e-mail. If 
-the first implementation will just use the minimum of 2 of the supplied 
-parameters, then let them be specified as 1 parameter only: it will be 
-easier for developers to understand and use. If we identify later a 
-proper test we want to use, then we can exploit the "extensibility" of 
-the sched_params.
+There's also a fix for save/restore - we have IPI interrupts which
+should not be disabled by a suspend, but they still need some specific
+setup on resume.
 
-My 2 cents.
+There are two branches:
 
-     T.
+  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/core
 
--- 
-Tommaso Cucinotta, Computer Engineering PhD, Researcher
-ReTiS Lab, Scuola Superiore Sant'Anna, Pisa, Italy
-Tel +39 050 882 024, Fax +39 050 882 003
-http://retis.sssup.it/people/tommaso
+Ian Campbell (3):
+      xen: correct size of level2_kernel_pgt
+      xen: events: do not unmask event channels on resume
+      xen: do not release any memory under 1M in domain 0
+
+ arch/x86/xen/mmu.c   |    2 +-
+ arch/x86/xen/setup.c |   18 +++++++++++-------
+ drivers/xen/events.c |   25 ++++++++++++++++++-------
+ 3 files changed, 30 insertions(+), 15 deletions(-)
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/xenfs
+
+Stefano Stabellini (1):
+      xen: set vma flag VM_PFNMAP in the privcmd mmap file_op
+
+Vasiliy Kulikov (1):
+      xen: xenfs: privcmd: check put_user() return code
+
+ arch/x86/xen/mmu.c          |    3 ++-
+ drivers/xen/xenfs/privcmd.c |   13 +++++--------
+ 2 files changed, 7 insertions(+), 9 deletions(-)
+
+Thanks,
+	J
+
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index c237b81..21ed8d7 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2126,7 +2126,7 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
+ {
+ 	pmd_t *kernel_pmd;
+ 
+-	level2_kernel_pgt = extend_brk(sizeof(pmd_t *) * PTRS_PER_PMD, PAGE_SIZE);
++	level2_kernel_pgt = extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
+ 
+ 	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
+ 				  xen_start_info->nr_pt_frames * PAGE_SIZE +
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index b1dbdaa..769c4b0 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -118,16 +118,18 @@ static unsigned long __init xen_return_unused_memory(unsigned long max_pfn,
+ 						     const struct e820map *e820)
+ {
+ 	phys_addr_t max_addr = PFN_PHYS(max_pfn);
+-	phys_addr_t last_end = 0;
++	phys_addr_t last_end = ISA_END_ADDRESS;
+ 	unsigned long released = 0;
+ 	int i;
+ 
++	/* Free any unused memory above the low 1Mbyte. */
+ 	for (i = 0; i < e820->nr_map && last_end < max_addr; i++) {
+ 		phys_addr_t end = e820->map[i].addr;
+ 		end = min(max_addr, end);
+ 
+-		released += xen_release_chunk(last_end, end);
+-		last_end = e820->map[i].addr + e820->map[i].size;
++		if (last_end < end)
++			released += xen_release_chunk(last_end, end);
++		last_end = max(last_end, e820->map[i].addr + e820->map[i].size);
+ 	}
+ 
+ 	if (last_end < max_addr)
+@@ -164,6 +166,7 @@ char * __init xen_memory_setup(void)
+ 		XENMEM_memory_map;
+ 	rc = HYPERVISOR_memory_op(op, &memmap);
+ 	if (rc == -ENOSYS) {
++		BUG_ON(xen_initial_domain());
+ 		memmap.nr_entries = 1;
+ 		map[0].addr = 0ULL;
+ 		map[0].size = mem_end;
+@@ -201,12 +204,13 @@ char * __init xen_memory_setup(void)
+ 	}
+ 
+ 	/*
+-	 * Even though this is normal, usable memory under Xen, reserve
+-	 * ISA memory anyway because too many things think they can poke
++	 * In domU, the ISA region is normal, usable memory, but we
++	 * reserve ISA memory anyway because too many things poke
+ 	 * about in there.
+ 	 *
+-	 * In a dom0 kernel, this region is identity mapped with the
+-	 * hardware ISA area, so it really is out of bounds.
++	 * In Dom0, the host E820 information can leave gaps in the
++	 * ISA range, which would cause us to release those pages.  To
++	 * avoid this, we unconditionally reserve them here.
+ 	 */
+ 	e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
+ 			E820_RESERVED);
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 97612f5..321a0c8 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1299,9 +1299,6 @@ static void restore_cpu_virqs(unsigned int cpu)
+ 		evtchn_to_irq[evtchn] = irq;
+ 		irq_info[irq] = mk_virq_info(evtchn, virq);
+ 		bind_evtchn_to_cpu(evtchn, cpu);
+-
+-		/* Ready for use. */
+-		unmask_evtchn(evtchn);
+ 	}
+ }
+ 
+@@ -1327,10 +1324,6 @@ static void restore_cpu_ipis(unsigned int cpu)
+ 		evtchn_to_irq[evtchn] = irq;
+ 		irq_info[irq] = mk_ipi_info(evtchn, ipi);
+ 		bind_evtchn_to_cpu(evtchn, cpu);
+-
+-		/* Ready for use. */
+-		unmask_evtchn(evtchn);
+-
+ 	}
+ }
+ 
+@@ -1390,6 +1383,7 @@ void xen_poll_irq(int irq)
+ void xen_irq_resume(void)
+ {
+ 	unsigned int cpu, irq, evtchn;
++	struct irq_desc *desc;
+ 
+ 	init_evtchn_cpu_bindings();
+ 
+@@ -1408,6 +1402,23 @@ void xen_irq_resume(void)
+ 		restore_cpu_virqs(cpu);
+ 		restore_cpu_ipis(cpu);
+ 	}
++
++	/*
++	 * Unmask any IRQF_NO_SUSPEND IRQs which are enabled. These
++	 * are not handled by the IRQ core.
++	 */
++	for_each_irq_desc(irq, desc) {
++		if (!desc->action || !(desc->action->flags & IRQF_NO_SUSPEND))
++			continue;
++		if (desc->status & IRQ_DISABLED)
++			continue;
++
++		evtchn = evtchn_from_irq(irq);
++		if (evtchn == -1)
++			continue;
++
++		unmask_evtchn(evtchn);
++	}
+ }
+ 
+ static struct irq_chip xen_dynamic_chip __read_mostly = {
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index f08ea04..792de43 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -2299,7 +2299,8 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+ 
+ 	prot = __pgprot(pgprot_val(prot) | _PAGE_IOMAP);
+ 
+-	vma->vm_flags |= VM_IO | VM_RESERVED | VM_PFNMAP;
++	BUG_ON(!((vma->vm_flags & (VM_PFNMAP | VM_RESERVED | VM_IO)) ==
++				(VM_PFNMAP | VM_RESERVED | VM_IO)));
+ 
+ 	rmd.mfn = mfn;
+ 	rmd.prot = prot;
+diff --git a/drivers/xen/xenfs/privcmd.c b/drivers/xen/xenfs/privcmd.c
+index f80be7f..88474d4 100644
+--- a/drivers/xen/xenfs/privcmd.c
++++ b/drivers/xen/xenfs/privcmd.c
+@@ -266,9 +266,7 @@ static int mmap_return_errors(void *data, void *state)
+ 	xen_pfn_t *mfnp = data;
+ 	struct mmap_batch_state *st = state;
+ 
+-	put_user(*mfnp, st->user++);
+-
+-	return 0;
++	return put_user(*mfnp, st->user++);
+ }
+ 
+ static struct vm_operations_struct privcmd_vm_ops;
+@@ -323,10 +321,8 @@ static long privcmd_ioctl_mmap_batch(void __user *udata)
+ 	up_write(&mm->mmap_sem);
+ 
+ 	if (state.err > 0) {
+-		ret = 0;
+-
+ 		state.user = m.arr;
+-		traverse_pages(m.num, sizeof(xen_pfn_t),
++		ret = traverse_pages(m.num, sizeof(xen_pfn_t),
+ 			       &pagelist,
+ 			       mmap_return_errors, &state);
+ 	}
+@@ -384,8 +380,9 @@ static int privcmd_mmap(struct file *file, struct vm_area_struct *vma)
+ 	if (xen_feature(XENFEAT_auto_translated_physmap))
+ 		return -ENOSYS;
+ 
+-	/* DONTCOPY is essential for Xen as copy_page_range is broken. */
+-	vma->vm_flags |= VM_RESERVED | VM_IO | VM_DONTCOPY;
++	/* DONTCOPY is essential for Xen because copy_page_range doesn't know
++	 * how to recreate these mappings */
++	vma->vm_flags |= VM_RESERVED | VM_IO | VM_DONTCOPY | VM_PFNMAP;
+ 	vma->vm_ops = &privcmd_vm_ops;
+ 	vma->vm_private_data = NULL;
+ 
+
 
