@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757089Ab0KKXUa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 18:20:30 -0500
-Received: from claw.goop.org ([74.207.240.146]:38343 "EHLO claw.goop.org"
+	id S1757190Ab0KKXVa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 18:21:30 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:54665 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755924Ab0KKXU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 18:20:29 -0500
-Message-ID: <4CDC7A3C.8070206@goop.org>
-Date: Thu, 11 Nov 2010 15:20:28 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: "\"Xen-devel@lists.xensource.com\" li" 
-	<Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>,
-        Daniel Stodden <daniel.stodden@citrix.com>
-Subject: [GIT PULL] xen blkfront barrier updates
-Content-Type: text/plain; charset=UTF-8
+	id S1753063Ab0KKXV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 18:21:29 -0500
+Subject: Re: [PATCH 04/10] tile: convert to use clocksource_register_hz
+From: john stultz <johnstul@us.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, lkml <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1289514133.2084.207.camel@laptop>
+References: <1288642350-1599-1-git-send-email-johnstul@us.ibm.com>
+	 <1288642350-1599-5-git-send-email-johnstul@us.ibm.com>
+	 <4CDC5E70.90102@tilera.com>  <1289513176.2742.56.camel@work-vm>
+	 <1289514133.2084.207.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Nov 2010 15:21:15 -0800
+Message-ID: <1289517675.2742.125.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+On Thu, 2010-11-11 at 23:22 +0100, Peter Zijlstra wrote:
+> On Thu, 2010-11-11 at 14:06 -0800, john stultz wrote:
+> > 1) How often is sched_clock guaranteed to be called? Once each tick, (so
+> > the maximum time in nohz mode would be reasonable?)
+> 
+> Never,.. sparc64 for example can stay in nohz mode for hours. We have a
+> nohz_exit hook for the kernel/sched_clock.c code though which resyncs us
+> against the GTOD.
 
-Here's the xen-blkfront barrier changes we discussed in Boston (its
-identical to the last posted version).
+Well, I suspect after hours in nohz, timekeeping might not be 100%
+correct, unless a low enough shift value is used.
 
-The only comment was Christoph pointing out EOPNOTSUPP is not used in
-the block interface, but blkfront is just using it as a local
-placeholder and it never gets returned up to the block layer.
+And that's part of the motivation for the clocksource_register_hz bits:
+to consolidate assumptions about adjustment granularity and safe nohz
+limits, so they can be tuned in a generic and clean fashion without
+assumptions being made in the arch specific code.
 
-I still haven't sorted out what's going on with the backends; we
-definitely need either a FLUSH operation or make empty WRITE_BARRIER
-work to flush disk caches.
+> > 2) What considerations for sched_clock wrapping is there in generic
+> > code? I see some considerations in kernel/sched_clock.c, but its not
+> > obvious the limits. On x86, the 64-bit TSC won't wrap (but might jump on
+> > non-synced systems, or halt in idle modes). Do architectures that have
+> > faster-wrapping counters need to handle the cycle accumulation
+> > internally? 
+> 
+> Basically all code assumes we wrap on the u64 boundary.
+> 
+> So the whole kernel/sched_clock.c machinery tries to make a crummy arch
+> sched_clock() usable, it syncs against the GTOD code (on tick, idle_exit
+> and nohz_exit) and only assumes the arch sched_clock() wraps at the u64
+> boundary, jumps, inter-cpu drift etc are all taken care of.
 
-Thanks,
-    J
+So at some point it might be worth having a clocksource-like structure
+to register for sched_clock and allowing generic code manage calculating
+the cycles to ns conversion and accumulation method so we don't run into
+arch specific issues.
 
-The following changes since commit c8ddb2713c624f432fa5fe3c7ecffcdda46ea0d4:
+That said, for now, I think it would be easiest to make sure the arch
+specific sched_clock implementations don't mis-use the timekeeping logic
+that is built for different assumptions.
 
-  Linux 2.6.37-rc1 (2010-11-01 07:54:12 -0400)
+It looks the tile folks have done the right thing, hopefully we can fix
+the few other cases (like the lpj issue brought up earlier) fairly
+easily in the arch code.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/blkfront
-
-Jeremy Fitzhardinge (4):
-      xen/blkfront: map REQ_FLUSH into a full barrier
-      xen/blkfront: change blk_shadow.request to proper pointer
-      xen/blkfront: Implement FUA with BLKIF_OP_WRITE_BARRIER
-      xen/blkfront: cope with backend that fail empty BLKIF_OP_WRITE_BARRIER requests
-
- drivers/block/xen-blkfront.c |   55 ++++++++++++++++++++++++-----------------
- 1 files changed, 32 insertions(+), 23 deletions(-)
+thanks
+-john
 
 
