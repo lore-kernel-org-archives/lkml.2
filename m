@@ -1,199 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab0KKJcC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 04:32:02 -0500
-Received: from cantor.suse.de ([195.135.220.2]:58846 "EHLO mx1.suse.de"
+	id S1753969Ab0KKJoe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 04:44:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35301 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751997Ab0KKJb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 04:31:58 -0500
-Date: Thu, 11 Nov 2010 10:31:55 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] Make swap accounting default behavior configurable
-Message-ID: <20101111093155.GA20630@tiehlicka.suse.cz>
-References: <20101110125154.GC5867@tiehlicka.suse.cz>
- <20101111094613.eab2ec0b.nishimura@mxp.nes.nec.co.jp>
+	id S1753152Ab0KKJod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 04:44:33 -0500
+Message-ID: <4CDBBAD4.1020301@redhat.com>
+Date: Thu, 11 Nov 2010 11:43:48 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101111094613.eab2ec0b.nishimura@mxp.nes.nec.co.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC -tip] x86, apic: Merge x2apic code
+References: <20101110192053.GA6978@lenovo>
+In-Reply-To: <20101110192053.GA6978@lenovo>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 11-11-10 09:46:13, Daisuke Nishimura wrote:
-> On Wed, 10 Nov 2010 13:51:54 +0100
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > Hi,
-> > could you consider the patch bellow? It basically changes the default
-> > swap accounting behavior (when it is turned on in configuration) to be
-> > configurable as well. 
-> > 
-> > The rationale is described in the patch but in short it makes it much
-> > more easier to enable this feature in distribution kernels as the
-> > functionality can be provided in the general purpose kernel (with the
-> > option disabled) without any drawbacks and interested users can enable
-> > it. This is not possible currently.
-> > 
-> > I am aware that boot command line parameter name change is not ideal but
-> > the original semantic wasn't good enough and I don't like
-> > noswapaccount=yes|no very much. 
-> > 
-> > If we really have to stick to it I can rework the patch to keep the name
-> > and just add the yes|no logic, though. Or we can keep the original one
-> > and add swapaccount paramete which would mean the oposite as the other
-> > one.
-> > 
-> hmm, I agree that current parameter name(noswapaccount) is not desirable
-> for yes|no, but IMHO changing the user interface(iow, making what worked before 
-> unusable) is worse.
-> 
-> Although I'm not sure how many people are using this parameter, I vote for
-> using "noswapaccount[=(yes|no)]".
+On 11/10/2010 09:20 PM, Cyrill Gorcunov wrote:
+>   Hi, while being at x2apic_x.c code I noted that files look similar to
+> each other so I guessed may be we could merge them. As result --
+> this patch.
+>
+>   Note that patch was only _compile_ tested, I don't have such apic for
+> real. I've trying to make it carefully but more reviews are needed,
+> I definitely might miss something.
+>
 
-Isn't a new swapaccount parameter better than that? I know we don't want
-to have too many parameters but having a something with a clear meaning
-is better IMO (noswapaccount=no doesn't sound very intuitive to me).
-
-> And you should update Documentation/kernel-parameters.txt too.
-
-Yes, I am aware of that and will do that once there is an agreement on
-the patch itself. At this stage, I just wanted to have a feadback about
-the change.
-
-> 
-> Thanks,
-> Daisuke Nishimura.
-> 
-> > The patch is based on the current Linus tree.
-> > 
-> > Any thoughts?
-> > ---
-> > 
-> > From c874f2c1ff1493e49611f19308434e564c2d37c6 Mon Sep 17 00:00:00 2001
-> > From: Michal Hocko <mhocko@suse.cz>
-> > Date: Wed, 10 Nov 2010 13:30:04 +0100
-> > Subject: [PATCH] Make swap accounting default behavior configurable
-> > 
-> > Swap accounting can be configured by CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-> > configuration option and then it is turned on by default. There is
-> > a boot option (noswapaccount) which can disable this feature.
-> > 
-> > This makes it hard for distributors to enable the configuration option
-> > as this feature leads to a bigger memory consumption and this is a no-go
-> > for general purpose distribution kernel. On the other hand swap
-> > accounting may be very usuful for some workloads.
-> > 
-> > This patch adds a new configuration option which controls the default
-> > behavior (CGROUP_MEM_RES_CTLR_SWAP_ENABLED) and changes the original
-> > noswapaccount parameter to swapaccount=true|false which provides
-> > a more fine grained way to control this feature.
-> > 
-> > The default behavior is unchanged (if CONFIG_CGROUP_MEM_RES_CTLR_SWAP is
-> > enabled then CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED is enabled as well)
-> > 
-> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> > ---
-> >  init/Kconfig    |   13 +++++++++++++
-> >  mm/memcontrol.c |   19 ++++++++++++++-----
-> >  2 files changed, 27 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index 88c1046..61d55a7 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -613,6 +613,19 @@ config CGROUP_MEM_RES_CTLR_SWAP
-> >  	  if boot option "noswapaccount" is set, swap will not be accounted.
-> >  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
-> >  	  size is 4096bytes, 512k per 1Gbytes of swap.
-> > +config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
-> > +	bool "Memory Resource Controller Swap Extension enabled by default"
-> > +	depends on CGROUP_MEM_RES_CTLR_SWAP
-> > +	default y
-> > +	help
-> > +	  Memory Resource Controller Swap Extension comes with its price in
-> > +	  a bigger memory consumption. General purpose distribution kernels
-> > +	  which want to enable the feautre but keep it disabled by default
-> > +	  and let the user enable it by swapaccount=true boot command line
-> > +	  parameter should have this option unselected.
-> > +	  For those who want to have the feature enabled by default should
-> > +	  select this option (if, for some reason, they need to disable it
-> > +	  then swapaccount=false does the trick).
-> >  
-> >  menuconfig CGROUP_SCHED
-> >  	bool "Group CPU scheduler"
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > index 9a99cfa..7c699b3 100644
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -61,7 +61,14 @@ struct mem_cgroup *root_mem_cgroup __read_mostly;
-> >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-> >  /* Turned on only when memory cgroup is enabled && really_do_swap_account = 1 */
-> >  int do_swap_account __read_mostly;
-> > -static int really_do_swap_account __initdata = 1; /* for remember boot option*/
-> > +
-> > +/* for remember boot option*/
-> > +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED
-> > +static int really_do_swap_account __initdata = 1;
-> > +#else
-> > +static int really_do_swap_account __initdata = 0;
-> > +#endif
-> > +
-> >  #else
-> >  #define do_swap_account		(0)
-> >  #endif
-> > @@ -4909,11 +4916,13 @@ struct cgroup_subsys mem_cgroup_subsys = {
-> >  };
-> >  
-> >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-> > -
-> > -static int __init disable_swap_account(char *s)
-> > +static int __init enable_swap_account(char *s)
-> >  {
-> > -	really_do_swap_account = 0;
-> > +	if (!s || !strcmp(s, "true"))
-> > +		really_do_swap_account = 1;
-> > +	else if (!strcmp(s, "false"))
-> > +		really_do_swap_account = 0;
-> >  	return 1;
-> >  }
-> > -__setup("noswapaccount", disable_swap_account);
-> > +__setup("swapaccount", enable_swap_account);
-> >  #endif
-> > -- 
-> > 1.7.2.3
-> > 
-> > 
-> > -- 
-> > Michal Hocko
-> > L3 team 
-> > SUSE LINUX s.r.o.
-> > Lihovarska 1060/12
-> > 190 00 Praha 9    
-> > Czech Republic
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Note kvm supports x2apic even if your host doesn't have one.  Boot with 
+qemu -cpu host,+x2apic to enable the feature.
 
 -- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+error compiling committee.c: too many arguments to function
+
