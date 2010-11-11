@@ -1,320 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab0KKLDl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 06:03:41 -0500
-Received: from hera.kernel.org ([140.211.167.34]:41242 "EHLO hera.kernel.org"
+	id S1755598Ab0KKLDT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 06:03:19 -0500
+Received: from hera.kernel.org ([140.211.167.34]:41219 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755628Ab0KKLDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 06:03:21 -0500
+	id S1755535Ab0KKLDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 06:03:17 -0500
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
         hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
         yinghai@kernel.org
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 9/9] x86: Unify NUMA initialization between 32 and 64bit
-Date: Thu, 11 Nov 2010 12:02:43 +0100
-Message-Id: <1289473363-29440-10-git-send-email-tj@kernel.org>
+Subject: [PATCHSET RFC] x86: unify x86_32 and 64 NUMA init paths
+Date: Thu, 11 Nov 2010 12:02:34 +0100
+Message-Id: <1289473363-29440-1-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1289473363-29440-1-git-send-email-tj@kernel.org>
-References: <1289473363-29440-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 11 Nov 2010 11:02:50 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 11 Nov 2010 11:02:46 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that everything else is unified, NUMA initialization can be
-unified too.
+Hello,
 
-* numa_init_array() and init_cpu_to_node() are moved from numa_64 to
-  numa.
+This patchset started as an attempt to fix percpu setup problem on
+x86_32 NUMA configurations reported by Eric Dumazet.  On x86_32, NUMA
+configuration is initialized during SMP bringup which happens way
+later than percpu setup.  As percpu setup code doesn't have access to
+NUMA configuration, it gets set up as if the system is UMA.
 
-* numa_32::initmem_init() is updated to call numa_init_array() and
-  setup_arch() to call init_cpu_to_node() on 32bit too.
+The NUMA init paths differ subtly yet significantly between x86_32 and
+64 making it quite difficult to follow.  Custom apic configurations on
+x86_32 worsens the problem.
 
-* x86_cpu_to_node_map is now initialized to NUMA_NO_NODE on 32bit too.
-  This is safe now as numa_init_array() will initialize it early
-  during boot.
+There is no fundamental reason why x86_32 can't be initialized in the
+same steps as x86_64.  They just were written differently and just
+weren't unified during x86_32/64 code merge.  This patchset unifies
+them and in the process fixes percpu setup problem on 32bit NUMA.
 
-This makes NUMA mapping fully initialized before setup_per_cpu_areas()
-on 32bit too and thus makes the first percpu chunk which contains all
-the static variables and some of dynamic area allocated with NUMA
-affinity correctly considered.
+This patchset contains the following nine patches.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- arch/x86/include/asm/numa.h    |    4 ++
- arch/x86/include/asm/numa_64.h |    3 --
- arch/x86/kernel/setup.c        |    2 -
- arch/x86/mm/numa.c             |   76 +++++++++++++++++++++++++++++++++++++--
- arch/x86/mm/numa_32.c          |    1 +
- arch/x86/mm/numa_64.c          |   75 ---------------------------------------
- 6 files changed, 77 insertions(+), 84 deletions(-)
+ 0001-x86-Kill-unused-static-boot_cpu_logical_apicid-in-sm.patch
+ 0002-x86-Rename-x86_32-MAX_APICID-to-MAX_LOCAL_APIC.patch
+ 0003-x86-Make-default_send_IPI_mask_sequence-allbutself_l.patch
+ 0004-x86-Initialize-32bit-logical-apicid-mapping-early-du.patch
+ 0005-x86-Replace-apic-apicid_to_node-with-numa_cpu_node.patch
+ 0006-x86-Unify-cpu-apicid-NUMA-node-mapping-between-32-an.patch
+ 0007-x86-Unify-CPU-NUMA-node-mapping-between-32-and-64bit.patch
+ 0008-x86-Unify-node_to_cpumask_map-handling-between-32-an.patch
+ 0009-x86-Unify-NUMA-initialization-between-32-and-64bit.patch
 
-diff --git a/arch/x86/include/asm/numa.h b/arch/x86/include/asm/numa.h
-index 77f8bcb..b131348 100644
---- a/arch/x86/include/asm/numa.h
-+++ b/arch/x86/include/asm/numa.h
-@@ -37,6 +37,8 @@ static inline void set_apicid_to_node(int apicid, s16 node)
- #ifdef CONFIG_NUMA
- extern void __cpuinit numa_set_node(int cpu, int node);
- extern void __cpuinit numa_clear_node(int cpu);
-+extern void __init numa_init_array(void);
-+extern void __init init_cpu_to_node(void);
- 
- # ifdef CONFIG_DEBUG_PER_CPU_MAPS
- extern void __cpuinit numa_add_cpu(int cpu);
-@@ -55,6 +57,8 @@ static inline void __cpuinit numa_remove_cpu(int cpu)
- #else	/* CONFIG_NUMA */
- static inline void numa_set_node(int cpu, int node)	{ }
- static inline void numa_clear_node(int cpu)		{ }
-+static inline void numa_init_array(void)		{ }
-+static inline void init_cpu_to_node(void)		{ }
- static inline void numa_add_cpu(int cpu)		{ }
- static inline void numa_remove_cpu(int cpu)		{ }
- #endif	/* CONFIG_NUMA */
-diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
-index 6331190..db3baa2 100644
---- a/arch/x86/include/asm/numa_64.h
-+++ b/arch/x86/include/asm/numa_64.h
-@@ -13,7 +13,6 @@ extern int compute_hash_shift(struct bootnode *nodes, int numblks,
- 
- #define ZONE_ALIGN (1UL << (MAX_ORDER+PAGE_SHIFT))
- 
--extern void numa_init_array(void);
- extern int numa_off;
- 
- extern unsigned long numa_free_all_bootmem(void);
-@@ -28,7 +27,6 @@ extern void setup_node_bootmem(int nodeid, unsigned long start,
-  */
- #define NODE_MIN_SIZE (4*1024*1024)
- 
--extern void __init init_cpu_to_node(void);
- extern int __cpuinit numa_cpu_node(int cpu);
- 
- #ifdef CONFIG_NUMA_EMU
-@@ -36,7 +34,6 @@ extern int __cpuinit numa_cpu_node(int cpu);
- #define FAKE_NODE_MIN_HASH_MASK	(~(FAKE_NODE_MIN_SIZE - 1UL))
- #endif /* CONFIG_NUMA_EMU */
- #else
--static inline void init_cpu_to_node(void)		{ }
- static inline int numa_cpu_node(int cpu)		{ return NUMA_NO_NODE; }
- #endif
- 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 21c6746..fca6d54 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1030,9 +1030,7 @@ void __init setup_arch(char **cmdline_p)
- 
- 	prefill_possible_map();
- 
--#ifdef CONFIG_X86_64
- 	init_cpu_to_node();
--#endif
- 
- 	init_apic_mappings();
- 	ioapic_init_mappings();
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index c52c267..dd93a41 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -16,11 +16,7 @@ EXPORT_SYMBOL(node_to_cpumask_map);
- /*
-  * Map cpu index to node index
-  */
--#ifdef CONFIG_X86_32
--DEFINE_EARLY_PER_CPU(int, x86_cpu_to_node_map, 0);
--#else
- DEFINE_EARLY_PER_CPU(int, x86_cpu_to_node_map, NUMA_NO_NODE);
--#endif
- EXPORT_EARLY_PER_CPU_SYMBOL(x86_cpu_to_node_map);
- 
- void __cpuinit numa_set_node(int cpu, int node)
-@@ -77,6 +73,78 @@ void __init setup_node_to_cpumask_map(void)
- 	pr_debug("Node to cpumask map for %d nodes\n", nr_node_ids);
- }
- 
-+/*
-+ * There are unfortunately some poorly designed mainboards around that
-+ * only connect memory to a single CPU. This breaks the 1:1 cpu->node
-+ * mapping. To avoid this fill in the mapping for all possible CPUs,
-+ * as the number of CPUs is not known yet. We round robin the existing
-+ * nodes.
-+ */
-+void __init numa_init_array(void)
-+{
-+	int rr, i;
-+
-+	rr = first_node(node_online_map);
-+	for (i = 0; i < nr_cpu_ids; i++) {
-+		if (early_cpu_to_node(i) != NUMA_NO_NODE)
-+			continue;
-+		numa_set_node(i, rr);
-+		rr = next_node(rr, node_online_map);
-+		if (rr == MAX_NUMNODES)
-+			rr = first_node(node_online_map);
-+	}
-+}
-+
-+static __init int find_near_online_node(int node)
-+{
-+	int n, val;
-+	int min_val = INT_MAX;
-+	int best_node = -1;
-+
-+	for_each_online_node(n) {
-+		val = node_distance(node, n);
-+
-+		if (val < min_val) {
-+			min_val = val;
-+			best_node = n;
-+		}
-+	}
-+
-+	return best_node;
-+}
-+
-+/*
-+ * Setup early cpu_to_node.
-+ *
-+ * Populate cpu_to_node[] only if x86_cpu_to_apicid[],
-+ * and apicid_to_node[] tables have valid entries for a CPU.
-+ * This means we skip cpu_to_node[] initialisation for NUMA
-+ * emulation and faking node case (when running a kernel compiled
-+ * for NUMA on a non NUMA box), which is OK as cpu_to_node[]
-+ * is already initialized in a round robin manner at numa_init_array,
-+ * prior to this call, and this initialization is good enough
-+ * for the fake NUMA cases.
-+ *
-+ * Called before the per_cpu areas are setup.
-+ */
-+void __init init_cpu_to_node(void)
-+{
-+	int cpu;
-+	u16 *cpu_to_apicid = early_per_cpu_ptr(x86_cpu_to_apicid);
-+
-+	BUG_ON(cpu_to_apicid == NULL);
-+
-+	for_each_possible_cpu(cpu) {
-+		int node = numa_cpu_node(cpu);
-+
-+		if (node == NUMA_NO_NODE)
-+			continue;
-+		if (!node_online(node))
-+			node = find_near_online_node(node);
-+		numa_set_node(cpu, node);
-+	}
-+}
-+
- #ifdef CONFIG_DEBUG_PER_CPU_MAPS
- 
- int __cpu_to_node(int cpu)
-diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
-index 9f27ae2..0bad0f8 100644
---- a/arch/x86/mm/numa_32.c
-+++ b/arch/x86/mm/numa_32.c
-@@ -367,6 +367,7 @@ void __init initmem_init(unsigned long start_pfn, unsigned long end_pfn,
- 	 */
- 
- 	get_memcfg_numa();
-+	numa_init_array();
- 
- 	kva_pages = roundup(calculate_numa_remap_pages(), PTRS_PER_PTE);
- 
-diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
-index c8c2e29..e7b1ab5 100644
---- a/arch/x86/mm/numa_64.c
-+++ b/arch/x86/mm/numa_64.c
-@@ -225,28 +225,6 @@ setup_node_bootmem(int nodeid, unsigned long start, unsigned long end)
- 	node_set_online(nodeid);
- }
- 
--/*
-- * There are unfortunately some poorly designed mainboards around that
-- * only connect memory to a single CPU. This breaks the 1:1 cpu->node
-- * mapping. To avoid this fill in the mapping for all possible CPUs,
-- * as the number of CPUs is not known yet. We round robin the existing
-- * nodes.
-- */
--void __init numa_init_array(void)
--{
--	int rr, i;
--
--	rr = first_node(node_online_map);
--	for (i = 0; i < nr_cpu_ids; i++) {
--		if (early_cpu_to_node(i) != NUMA_NO_NODE)
--			continue;
--		numa_set_node(i, rr);
--		rr = next_node(rr, node_online_map);
--		if (rr == MAX_NUMNODES)
--			rr = first_node(node_online_map);
--	}
--}
--
- #ifdef CONFIG_NUMA_EMU
- /* Numa emulation */
- static struct bootnode nodes[MAX_NUMNODES] __initdata;
-@@ -669,59 +647,6 @@ static __init int numa_setup(char *opt)
- }
- early_param("numa", numa_setup);
- 
--#ifdef CONFIG_NUMA
--
--static __init int find_near_online_node(int node)
--{
--	int n, val;
--	int min_val = INT_MAX;
--	int best_node = -1;
--
--	for_each_online_node(n) {
--		val = node_distance(node, n);
--
--		if (val < min_val) {
--			min_val = val;
--			best_node = n;
--		}
--	}
--
--	return best_node;
--}
--
--/*
-- * Setup early cpu_to_node.
-- *
-- * Populate cpu_to_node[] only if x86_cpu_to_apicid[],
-- * and apicid_to_node[] tables have valid entries for a CPU.
-- * This means we skip cpu_to_node[] initialisation for NUMA
-- * emulation and faking node case (when running a kernel compiled
-- * for NUMA on a non NUMA box), which is OK as cpu_to_node[]
-- * is already initialized in a round robin manner at numa_init_array,
-- * prior to this call, and this initialization is good enough
-- * for the fake NUMA cases.
-- *
-- * Called before the per_cpu areas are setup.
-- */
--void __init init_cpu_to_node(void)
--{
--	int cpu;
--	u16 *cpu_to_apicid = early_per_cpu_ptr(x86_cpu_to_apicid);
--
--	BUG_ON(cpu_to_apicid == NULL);
--
--	for_each_possible_cpu(cpu) {
--		int node = numa_cpu_node(cpu);
--
--		if (node == NUMA_NO_NODE)
--			continue;
--		if (!node_online(node))
--			node = find_near_online_node(node);
--		numa_set_node(cpu, node);
--	}
--}
--#endif
--
- int __cpuinit numa_cpu_node(int cpu)
- {
- 	int apicid = early_per_cpu(x86_cpu_to_apicid, cpu);
--- 
-1.7.1
+0001-0003 are small preparation patches.
 
+0004 changes the role of apic->cpu_to_logical_apicid().  It's now
+called once for each cpu early during boot and the output is recorded.
+apic works fine but I couldn't test other apic configurations.  If you
+know and can test one of bigsmp, numaq, es7000 and summit, please
+review and test this one.
+
+Please note that I couldn't figure out how to determine logical_apicid
+early for numaq and just made it return BAD_APICID which would result
+in suboptimal percpu configuration.  NUMA configuration is still
+updated during SMP bringup, so the situation isn't worse than the
+patch, but if someone knows how to convert this one, please go ahead.
+
+0005 replaces apic->apicid_to_node() with ->numa_cpu_node() as some
+need physical apicid while others logical and both can be easily found
+from cpu.
+
+0006-0009 unify different parts of NUMA initialization/handling step
+by step.  Afterwards, x86_32 and 64 behave mostly the same regarding
+NUMA initialization making the whole thing much easier to understand
+and percpu setup works correctly on x86_32 too.
+
+This patchset is on top of the current mainline
+(f6614b7bb405a9b35dd28baea989a749492c46b2) and also avaialbe in the
+following git branch,
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git x86_32-numa
+
+and contains the following changes.
+
+ arch/x86/Kconfig                      |    2 
+ arch/x86/include/asm/apic.h           |   22 ++-
+ arch/x86/include/asm/apicdef.h        |    1 
+ arch/x86/include/asm/mpspec.h         |    3 
+ arch/x86/include/asm/numa.h           |   61 ++++++++++
+ arch/x86/include/asm/numa_32.h        |    7 -
+ arch/x86/include/asm/numa_64.h        |   16 --
+ arch/x86/include/asm/smp.h            |    3 
+ arch/x86/include/asm/topology.h       |   17 --
+ arch/x86/kernel/acpi/boot.c           |    8 -
+ arch/x86/kernel/apic/apic.c           |   46 +++++--
+ arch/x86/kernel/apic/apic_flat_64.c   |    4 
+ arch/x86/kernel/apic/apic_noop.c      |    4 
+ arch/x86/kernel/apic/bigsmp_32.c      |   33 ++---
+ arch/x86/kernel/apic/es7000_32.c      |   34 +----
+ arch/x86/kernel/apic/ipi.c            |   12 -
+ arch/x86/kernel/apic/numaq_32.c       |   26 ++--
+ arch/x86/kernel/apic/probe_32.c       |    2 
+ arch/x86/kernel/apic/summit_32.c      |   47 ++-----
+ arch/x86/kernel/apic/x2apic_cluster.c |    2 
+ arch/x86/kernel/apic/x2apic_phys.c    |    2 
+ arch/x86/kernel/apic/x2apic_uv_x.c    |    2 
+ arch/x86/kernel/cpu/amd.c             |   18 +-
+ arch/x86/kernel/cpu/common.c          |    2 
+ arch/x86/kernel/cpu/intel.c           |    5 
+ arch/x86/kernel/setup.c               |    2 
+ arch/x86/kernel/setup_percpu.c        |    4 
+ arch/x86/kernel/smpboot.c             |   68 -----------
+ arch/x86/mm/k8topology_64.c           |    2 
+ arch/x86/mm/numa.c                    |  179 +++++++++++++++++++++++++++++
+ arch/x86/mm/numa_32.c                 |    7 +
+ arch/x86/mm/numa_64.c                 |  205 ----------------------------------
+ arch/x86/mm/srat_32.c                 |    6 
+ arch/x86/mm/srat_64.c                 |   10 -
+ 34 files changed, 413 insertions(+), 449 deletions(-)
+
+Thanks.
+
+--
+tejun
