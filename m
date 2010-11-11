@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab0KKOZm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 09:25:42 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:57312 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755888Ab0KKOZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 09:25:41 -0500
-Date: Thu, 11 Nov 2010 14:25:27 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Michel Lespinasse <walken@google.com>
-Cc: Rik van Riel <riel@redhat.com>, Wu Fengguang <fengguang.wu@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Ying Han <yinghan@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [BUG] Commit d065bd81 severely regresses huge page allocation
-	success rates
-Message-ID: <20101111142527.GG19679@csn.ul.ie>
-References: <20101111121545.GF19679@csn.ul.ie> <AANLkTinxYntXjK7V8W3+3j7m0xQUVpB1eeysSE0ifO1k@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <AANLkTinxYntXjK7V8W3+3j7m0xQUVpB1eeysSE0ifO1k@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1756575Ab0KKO20 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 09:28:26 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:55398 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752464Ab0KKO2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 09:28:24 -0500
+Subject: Re: [RFC][PATCH 05/22] sched: SCHED_DEADLINE policy implementation
+From: Raistlin <raistlin@linux.it>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1289484787.2084.115.camel@laptop>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288333814.8661.146.camel@Palantir>  <1289484787.2084.115.camel@laptop>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-tX18rqwI2qQqW+IwVnGK"
+Date: Thu, 11 Nov 2010 15:28:10 +0100
+Message-ID: <1289485690.6525.12.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 04:25:00AM -0800, Michel Lespinasse wrote:
-> On Thu, Nov 11, 2010 at 4:15 AM, Mel Gorman <mel@csn.ul.ie> wrote:
-> > When testing 2.6.37-rc1, I noticed that huge page allocation success
-> > rates were severely impaired. Bisection showed that commit [d065bd81: mm:
-> > retry page fault when blocking on disk transfer] was the biggest factor.
-> > Reverting the patch confirmed this. Here are the results of a high-order
-> > allocation stress test. The vanilla kernel is 2.6.37-rc1 and the revert
-> > kernel has this commit removed with minor conflicts cleaned up.
-> [...]
-> > I have not digested what the patch is doing but am reporting it in case
-> > people familiar with the patch spot the problem quickly.
-> 
-> There was a bug in that commit, which was fixed in
-> d88c0922fa0e2c021a028b310a641126c6d4b7dc
-> 
-> I think this may explain the issue; compaction won't work well if
-> extra references are kept :/
-> 
 
-Reclaim would not work either as it is effectively a leak.
+--=-tX18rqwI2qQqW+IwVnGK
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> Can you check that this indeed solves your test case ?
-> 
+On Thu, 2010-11-11 at 15:13 +0100, Peter Zijlstra wrote:
+> On Fri, 2010-10-29 at 08:30 +0200, Raistlin wrote:
+> > +       delta_exec =3D rq->clock - curr->se.exec_start;
+>=20
+> This changed to rq->clock_task, the difference between rq->clock and
+> rq->clock_task is that the latter only counts time actually spend on the
+> task context (ie. it doesn't count softirq and hardirq context).
+>=20
+Yeah, I noticed later that Venki's changes in accounting could be
+super-useful here. I'm already on it! :-P
 
-It does. Thanks very much.
+Thanks,
+Dario
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://blog.linux.it/raistlin / raistlin@ekiga.net /
+dario.faggioli@jabber.org
+
+--=-tX18rqwI2qQqW+IwVnGK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzb/XoACgkQk4XaBE3IOsTWkQCggz1+LsvDrekfMQClQzUUHyBz
+y+0An0vXk3VohlT9P4J2D/7E6pCr+NEL
+=GCBN
+-----END PGP SIGNATURE-----
+
+--=-tX18rqwI2qQqW+IwVnGK--
+
