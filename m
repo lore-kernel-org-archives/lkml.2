@@ -1,55 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab0KKKc3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 05:32:29 -0500
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:58607 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753242Ab0KKKc1 (ORCPT
+	id S1755226Ab0KKKeS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 05:34:18 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:47613 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754830Ab0KKKeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 05:32:27 -0500
-Message-ID: <4CDBC60F.8070905@stericsson.com>
-Date: Thu, 11 Nov 2010 11:31:43 +0100
-From: Linus Walleij <linus.walleij@stericsson.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Thu, 11 Nov 2010 05:34:17 -0500
+Date: Thu, 11 Nov 2010 11:34:15 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: mingo@elte.hu, rostedt@goodmis.org, andi@firstfloor.org,
+        lwoodman@redhat.com, hch@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 1/2] tracing - fix recursive user stack trace
+Message-ID: <20101111103415.GD18718@basil.fritz.box>
+References: <20101110164413.GA5360@nowhere>
+ <1289466549-7602-2-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Colin Cross <ccross@google.com>,
-        Rabin VINCENT <rabin.vincent@stericsson.com>
-Subject: Re: [PATCH] RFC: nomadik: expand timesource to 63 bits
-References: <1289466356-16697-1-git-send-email-linus.walleij@stericsson.com> <alpine.LFD.2.00.1011111054010.2900@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1011111054010.2900@localhost6.localdomain6>
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289466549-7602-2-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner wrote:
+On Thu, Nov 11, 2010 at 10:09:08AM +0100, Jiri Olsa wrote:
+> The user stack trace can fault when examining the trace. Which
+> would call the do_page_fault handler, which would trace again,
+> which would do the user stack trace, which would fault and call
+> do_page_fault again ...
+> 
+> Thus this is causing a recursive bug. We need to have a recursion
+> detector here.
 
-> There is only one caveat. When nohz is on and you sleep longer than 16
-> seconds then the limitation we have in place does not work anymore, as
-> it would say that the long sleep time is less than the 63bit
-> wraparound time. With 32bit clocksource it limits the sleep correclty
-> to avoid the clocksource wrap issue.
+I suspect this problem is in more trace points: any NMI or MCE 
+trace point or any other trace point that can be triggered
+from a page. so it seems to be a general bug fix independent
+of the other patch.
 
-Hm! So the .mask has that side effect (as I suspected), and with
-this the sleep will be limited to what time you can get into 63 bits
-(2200 years). And we sure want NOHZ...
-
-But if I complement the solution with the keepwarm() timer from
-Orion doing just a dummy read() on the clocksource every say 15 secs
-it will work even if the system sleeps for so long.
-
-> Aside of that you are trading a bit less source code with extra code
-> in the clock read() function, which is called pretty frequently.
-
-Hm, yeah. I would have to go to metrics but it's O(n)
-is it not? Shouldn't hurt a high-frequency SMP system
-I believe.
-
-Yours,
-Linus Walleij
+-Andi
