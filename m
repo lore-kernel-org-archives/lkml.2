@@ -1,310 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757721Ab0KKHAf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 02:00:35 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:40653 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752608Ab0KKHAe (ORCPT
+	id S1757763Ab0KKHDl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 02:03:41 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40914 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757722Ab0KKHDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 02:00:34 -0500
-Message-ID: <000901cb816e$22528490$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Alan Cox" <alan@linux.intel.com>
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, "Ben Dooks" <ben-linux@fluff.org>,
-        "Kukjin Kim" <kgene.kim@samsung.com>,
-        "Mike Frysinger" <vapier@gentoo.org>,
-        "Feng Tang" <feng.tang@intel.com>,
-        "Tobias Klauser" <tklauser@distanz.ch>,
-        "LKML" <linux-kernel@vger.kernel.org>, <yong.y.wang@intel.com>,
-        <qi.wang@intel.com>, <kok.howg.ewe@intel.com>,
-        <andrew.chih.howe.khor@intel.com>
-References: <4CD8D5A2.1080202@dsn.okisemi.com> <20101109103737.40bfab7b@linux.intel.com>
-Subject: Re: [PATCH] EG20T: Update PCH_UART driver to 2.6.36
-Date: Thu, 11 Nov 2010 16:00:30 +0900
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
+	Thu, 11 Nov 2010 02:03:40 -0500
+Date: Wed, 10 Nov 2010 23:00:16 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: subrata@linux.vnet.ibm.com
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        DIVYA PRAKASH <dipraksh@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Linuxppc-dev <Linuxppc-dev@ozlabs.org>
+Subject: Re: [Call Trace: 2.6.37-rc1-git7 & 2.6.37-rc1-git8, Powerpc] LTP
+ msgctl11 test case
+Message-Id: <20101110230016.40e4875e.akpm@linux-foundation.org>
+In-Reply-To: <1289457219.5622.15.camel@subratamodak.linux.ibm.com>
+References: <1289457219.5622.15.camel@subratamodak.linux.ibm.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 09, 2010 7:37 PM,  Alan Cox wrote:
+On Thu, 11 Nov 2010 12:03:39 +0530 Subrata Modak <subrata@linux.vnet.ibm.com> wrote:
 
+> Hi Peter/Ingo,
 > 
-> > +#ifdef CONFIG_PCH_DMA
-> > + #include <linux/dmaengine.h>
-> > + #include <linux/pch_dma.h>
-> > +#endif
+> LTP__ msgctl11 test case creates Call trace and Exception for kernels
+> 2.6.37-rc1-git7 & 2.6.37-rc1-git8. Please see the dmesg below:
 > 
-> The PCH DMA will have been included in the kernel anyway before this
-> merge so you can remove the ifdefs and include it regardless
+> ================================================
+> msgctl11: page allocation failure. order:0, mode:0x20
+> Call Trace:
+> [c0000000fffcef30] [c000000000014c74] .show_stack+0x74/0x1c0 (unreliable)
+> [c0000000fffcefe0] [c00000000015e938] .__alloc_pages_nodemask+0x6d8/0x950
+> [c0000000fffcf160] [c0000000001a0c60] .alloc_pages_current+0xa0/0x160
+> [c0000000fffcf200] [c0000000001abfd8] .new_slab+0x358/0x370
+> [c0000000fffcf2b0] [c0000000001ac1cc] .__slab_alloc+0x1dc/0x500
+> [c0000000fffcf390] [c0000000001ad808] .kmem_cache_alloc+0x1a8/0x1b0
+> [c0000000fffcf440] [c0000000004eec88] .scsi_pool_alloc_command+0x58/0xa0
+> [c0000000fffcf4d0] [c0000000004eed60] .scsi_host_alloc_command+0x30/0xb0
+> [c0000000fffcf560] [c0000000004eee00] .__scsi_get_command+0x20/0xd0
+> [c0000000fffcf5f0] [c0000000004ef158] .scsi_get_command+0x58/0xf0
+> [c0000000fffcf690] [c0000000004f7948] .scsi_setup_fs_cmnd+0x108/0x120
+> [c0000000fffcf720] [d000000001484ad8] .sd_prep_fn+0x2b8/0xc70 [sd_mod]
+> [c0000000fffcf800] [c0000000003ea92c] .blk_peek_request+0x14c/0x310
+> [c0000000fffcf8b0] [c0000000004f6b14] .scsi_request_fn+0x94/0x560
+> [c0000000fffcf980] [c0000000003eba00] .__blk_run_queue+0x90/0x1b0
+> [c0000000fffcfa00] [c0000000003ebc20] .blk_run_queue+0x30/0x60
+> [c0000000fffcfa90] [c0000000004f5d84] .scsi_run_queue+0x104/0x3c0
+> [c0000000fffcfb60] [c0000000004f7228] .scsi_next_command+0x48/0x70
+> [c0000000fffcfbf0] [c0000000004f8280] .scsi_io_completion+0x3e0/0x580
+> [c0000000fffcfcd0] [c0000000004ee0a8] .scsi_finish_command+0x128/0x180
+> [c0000000fffcfd70] [c0000000004f8548] .scsi_softirq_done+0x118/0x1e0
+> [c0000000fffcfe10] [c0000000003f2410] .blk_done_softirq+0xb0/0xe0
+> [c0000000fffcfea0] [c0000000000943c8] .__do_softirq+0x118/0x290
+> [c0000000fffcff90] [c000000000031f58] .call_do_softirq+0x14/0x24
+> [c0000000a0992a20] [c00000000000f554] .do_softirq+0xf4/0x120
+> [c0000000a0992ac0] [c0000000000941d4] .irq_exit+0xb4/0xc0
+> [c0000000a0992b40] [c00000000000f7e0] .do_IRQ+0x160/0x2c0
+> [c0000000a0992c00] [c000000000004898] hardware_interrupt_entry+0x18/0x80
+> --- Exception: 501 at .do_raw_spin_unlock+0x80/0xe0
+>     LR = ._raw_spin_unlock+0x30/0x50
+> [c0000000a0992f70] [c00000000018943c] .__page_check_address+0x16c/0x1a0
+> [c0000000a0993010] [c00000000018a5b4] .page_referenced_one+0x54/0x200
+> [c0000000a09930d0] [c00000000018ab4c] .page_referenced+0x3ec/0x490
+> [c0000000a0993200] [c000000000168bbc] .shrink_page_list+0x2bc/0x6d0
+> [c0000000a0993350] [c00000000016942c] .shrink_inactive_list+0x15c/0x580
+> [c0000000a0993460] [c000000000169f10] .shrink_zone+0x2e0/0x4b0
+> [c0000000a0993580] [c00000000016b3c0] .do_try_to_free_pages+0x110/0x510
+> [c0000000a0993670] [c00000000016bb3c] .try_to_free_pages+0xbc/0x1a0
+> [c0000000a0993780] [c00000000015e7a0] .__alloc_pages_nodemask+0x540/0x950
+> [c0000000a0993900] [c0000000001a0db8] .alloc_page_vma+0x98/0x1d0
+> [c0000000a09939a0] [c00000000017c7f4] .do_wp_page+0x144/0xb60
+> [c0000000a0993a90] [c00000000017eef0] .handle_mm_fault+0x670/0xb50
+> [c0000000a0993b80] [c0000000006feea4] .do_page_fault+0x344/0x780
+> [c0000000a0993e30] [c00000000000522c] handle_page_fault+0x20/0x74
 
-No.
-PCH DMA have been already included at 2.6.36.
-You can see "pch_dma.c" in drivers/dma.
+That trace is impressively hard to understand.  Who called
+do_raw_spin_unlock?
 
-> 
-> 
-> > +#if !defined(PORT_PCH_256FIFO) || !defined(PORT_PCH_64FIFO)
-> > + #undef PORT_PCH_256FIFO
-> > + #undef PORT_PCH_64FIFO
-> > + #define PORT_PCH_256FIFO (PORT_MAX_8250+1) /* PCH UART with
-> > 256 byte
-> > +      FIFO */
-> > + #define PORT_PCH_64FIFO (PORT_MAX_8250+2) /* PCH UART with
-> > 64 byte
-> > +      FIFO */
-> > +#endif
-> 
-> FIFO config really all wants to be done at runtime.
-
-I will modify.
-
-> 
-> 
-> 
-> > +static inline void wr(void __iomem *addr, unsigned int value)
-> > +{
-> > +#if PCH_UART_DMA_REG_BOUNDARY == 4
-> > + iowrite32(value, addr);
-> > +#else
-> > + iowrite8(value, (void *)addr);
-> 
-> Why the cast ?
-
-I will delete the cast.
-
-> 
-> > +#endif
-> 
-> Again you've got magic ifdefs with no explanation ?
-
-I will delete this.
-
-> > +}
-> > +
-> > +static void pch_uart_hal_request(struct pci_dev *pdev, int fifosize,
-> > + int base_baud)
-> > +{
-> > + struct eg20t_port *priv = pci_get_drvdata(pdev);
-> > +
-> > + priv->trigger_level = 1;
-> > + priv->fcr = 0;
-> > +}
-> > +
-> > +static int __get_msr(struct eg20t_port *priv, void __iomem *base)
-> > +{
-> 
-> Please avoid __ names for functions
-
-I will modify.
-
-> 
-> > + unsigned int msr;
-> > +
-> > + msr = rr(base + PCH_UART_MSR);
-> > + priv->dmsr |= msr & PCH_UART_MSR_DELTA;
-> > +
-> > + return (int)msr;
-> 
-> Why - if it is unsigned then why not return unsigned values ?
-
-I will modify.
-
-> 
-> 
-> > +static int pch_uart_hal_enable_interrupt(struct eg20t_port *priv,
-> > + unsigned int flag)
-> > +{
-> > + void __iomem *base;
-> > + int ret;
-> > +
-> > + base = priv->membase;
-> > + ret = __pch_uart_hal_enable_interrupt(base, flag);
-> > +
-> > + return ret;
-> 
-> Why not just
-> 
-> "return __pch_uart_hal_enable_interrupt(priv->membase, flag);"
-> 
-> in fact why not just remove all these wrappers entirely ?
-
-I agree.
-I will delete thease wrappers.
-
-> 
-> 
-> > +static int push_rx(struct eg20t_port *priv, const unsigned char *buf,
-> > +    int size)
-> > +{
-> > + struct uart_port *port;
-> > + struct tty_struct *tty;
-> > + int sz, i, j;
-> > + int loop;
-> > + int pushed;
-> > +
-> > + port = &priv->port;
-> > + tty = port->state->port.tty;
-> 
-> tty ports are refcounted
-> 
-> tty = tty_port_tty_get(...)
-> 
-> and when finished tty_kref_put(tty);
-> 
-> Also tty may be NULL, if the port closed as you were doing this, so
-> check the return from tty_port_tty_get and act accordingly.
-
-I have a question.
-Though I can't find any accepted UART driver uses these functions(tty_port.../tty_kref...),
-What's for ?
-
-> 
-> 
-> > +static int handle_error(struct eg20t_port *priv, int err)
-> > +{
-> > + int ret = 0;
-> > + return ret;
-> > +}
-> 
-> Why ?????
-> 
-
-I will modify.
-
-> > +
-> > +#ifndef CONFIG_PCH_DMA
-> 
-> DMA should be runtime configuration - vendors need to build generic
-> kernels so need things like DMA switching to be done on load not on
-> compile
-> 
-Do you mean we souldn't use both below?
-#ifndef CONFIG_PCH_DMA
-#ifdef CONFIG_PCH_DMA
-
-Many UART drivers accepted by upstream use the above macro, right ?
-
-> 
-> 
-> 
-> > +static void pch_uart_set_mctrl(struct uart_port *port, unsigned int
-> > mctrl) +{
-> > +}
-> 
-> Seems to be unimplemented ?
-
-I will implement.
-
-> 
-> 
-> > +static void pch_uart_set_termios(struct uart_port *port,
-> > + struct ktermios *termios, struct
-> > ktermios *old) +{
-> > + int baud;
-> > + unsigned int parity, bits, stb;
-> > + struct eg20t_port *priv;
-> > + unsigned long flags;
-> > +
-> > + priv = container_of(port, struct eg20t_port, port);
-> > + switch (termios->c_cflag & CSIZE) {
-> > + case CS5:
-> > + bits = PCH_UART_HAL_5BIT;
-> > + break;
-> > + case CS6:
-> > + bits = PCH_UART_HAL_6BIT;
-> > + break;
-> > + case CS7:
-> > + bits = PCH_UART_HAL_7BIT;
-> > + break;
-> > + default: /* CS8 */
-> > + bits = PCH_UART_HAL_8BIT;
-> > + break;
-> > + }
-> > + if (termios->c_cflag & CSTOPB)
-> > + stb = PCH_UART_HAL_STB2;
-> > + else
-> > + stb = PCH_UART_HAL_STB1;
-> > +
-> > + if (termios->c_cflag & PARENB) {
-> > + if (!(termios->c_cflag & PARODD))
-> > + parity = PCH_UART_HAL_PARITY_ODD;
-> > + else
-> > + parity = PCH_UART_HAL_PARITY_EVEN;
-> > +
-> > + } else {
-> > + parity = PCH_UART_HAL_PARITY_NONE;
-> > + }
-> 
-> If you don't support CPARMRK then you should clear that bit in
-> termios->c_flag so the caller knows it couldn't be set.
-
-Sorry, I don't know CPARMRK.
-What's CPARMRK ?
-
-> 
-> 
-> > + baud = uart_get_baud_rate(port, termios, old, 0,
-> > port->uartclk / 16); +
-> > + spin_lock_irqsave(&port->lock, flags);
-> > +
-> > + uart_update_timeout(port, termios->c_cflag, baud);
-> > + pch_uart_hal_set_line(priv, baud, parity, bits, stb);
-> 
-> Baud rate should also be written back here
-> 
->        /* Don't rewrite B0 */
->         if (tty_termios_baud_rate(termios))
->                 tty_termios_encode_baud_rate(termios, baud, baud);
-> 
-
-I will add above.
-
-
-> > + txbuf = __get_free_page(GFP_KERNEL|GFP_DMA);
-> > + if (!txbuf)
-> > + goto init_port_error_end;
-> > +
-> > + rxbuf = __get_free_page(GFP_KERNEL|GFP_DMA);
-> > + if (!rxbuf)
-> > + goto init_port_free_txbuf;
-> 
-> No - for bus masterable DMA buffers use the dma_alloc_coherent
-> interfaces with the correct device pointer, otherwise it will break on
-> a system with an IOMMU.
-
-I will use dma_alloc_coherent.
-
-> 
-> I assume the correct device in this case would be the DMA controller ?
-
-Sorry, I can't understand your saying "correct device".
-What does "correct device" mean ?
-
-> 
-> 
-> The big thing I don't understand here is the locking model - what stops
-> interrupts and other things interfering with each other. For almost all
-> of the calls coming from the serial layer the port lock protects them
-> but I see no protection on the IRQ side at all ?
-> 
-
-Do you mean UART Rx/Tx interrupt Enable/Disable ?
-If yes, the control hava been already implemented.
-For example, in handle_tx (called from IRQ handler),
-you can see pch_uart_hal_disable_interrupt().
-
-
----
-Thanks,
-
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
