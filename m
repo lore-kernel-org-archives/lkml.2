@@ -1,77 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab0KKFVZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 00:21:25 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:22276 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751407Ab0KKFVY (ORCPT
+	id S1757400Ab0KKFVi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 00:21:38 -0500
+Received: from mail30g.wh2.ocn.ne.jp ([220.111.41.239]:7621 "HELO
+	mail30g.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757030Ab0KKFVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 00:21:24 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAHEK20x5LcZK/2dsb2JhbACiPHK/RoVKBA
-Date: Thu, 11 Nov 2010 16:21:18 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch] mm: vmscan implement per-zone shrinkers
-Message-ID: <20101111052118.GA6484@amd>
-References: <20101109123246.GA11477@amd>
- <20101110051813.GS2715@dastard>
- <20101110063229.GA5700@amd>
- <20101110110549.GV2715@dastard>
- <20101111002339.GA3372@amd>
+	Thu, 11 Nov 2010 00:21:36 -0500
+From: Bruno Randolf <br1@einfach.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v6] Add generic exponentially weighted moving average (EWMA) function
+Date: Thu, 11 Nov 2010 14:21:49 +0900
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; x86_64; ; )
+Cc: randy.dunlap@oracle.com, peterz@infradead.org, blp@cs.stanford.edu,
+        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
+        kosaki.motohiro@jp.fujitsu.com, kevin.granade@gmail.com,
+        "John W. Linville" <linville@tuxdriver.com>
+References: <20101111034756.15014.2156.stgit@localhost6.localdomain6> <20101110200231.aaa51b47.akpm@linux-foundation.org>
+In-Reply-To: <20101110200231.aaa51b47.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101111002339.GA3372@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011111421.49464.br1@einfach.org>
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 11:23:39AM +1100, Nick Piggin wrote:
-> On Wed, Nov 10, 2010 at 10:05:49PM +1100, Dave Chinner wrote:
-> > I've previously stated that reducing/controlling the level of
-> > parallelism can be just as effective at providing serious
-> > scalability improvements as fine grained locking. So you don't
-> > simply scoff and mock me for suggesting it like you did last time,
+On Thu November 11 2010 13:02:31 Andrew Morton wrote:
+> On Thu, 11 Nov 2010 12:47:56 +0900 Bruno Randolf <br1@einfach.org> wrote:
+> > ...
+> > 
+> > The original idea for this implementation came from the rt2x00 driver
+> > (rt2x00link.c). I would like to use it in several places in the mac80211
+> > and ath5k code and I hope it can be useful in many other places in the
+> > kernel code.
+> > 
+> > ...
+> > 
+> > --- a/lib/Makefile
+> > +++ b/lib/Makefile
+> > @@ -21,7 +21,7 @@ lib-y	+= kobject.o kref.o klist.o
+> > 
+> >  obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o
+> >  random32.o \
+> >  
+> >  	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+> > 
+> > -	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o
+> > +	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o average.o
 > 
-> I didn't mock you. On the contrary I agreed that there are 2 problems
-> here, and that lots of threads in reclaim is one of them. I know this
+> It would be a bit strange to merge this into 2.6.36-rcX when there are
+> no callers.  But you do want it to be present in some tree for your own
+> testing and distribution purposes.
+> 
+> So perhaps it would be best to merge this via the wireless tree, so
+> everything exists in one place and it can be fed into linux-next and
+> into mainline in an orderly fashion.
+> 
+> If that sounds like a plan then I can send this patch in John's
+> direction.  Which means that if he merges it into mainline without also
+> merging any of your patches which _use_ this function then we still end
+> up with unused code in mainline, but at least that way it wasn't my fault
+> ;)
+> 
+> Let me know your thoughts?
 
-Here, this is the second time I wrote _exactly_ the same reply to your
-_exact_ same question (the first time I wrote _exactly_ the same reply
-to your exact same question was IIRC a few months before but I couldn't
-find the archive.
+Sounds like a good plan to me. But let's hear Johns opinion.
 
-http://archives.free.net.ph/message/20101015.033017.65c46426.ca.html
+I have a patch or two using this function, which I hope will get merged into 
+wireless-testing soon after, but obviously it's up to John. There are more 
+places in the wireless part which could make use of this function (right now 
+each have their own EWMA implementation), and I'll try to get them all 
+updated, but finally it's the individual maintainers, who decide if they want 
+to make that change or not, I guess.
 
-So at this point, shut up. You had ample time to put up, and didn't.
-Now you're just obstructing and being unreasonable. To quote Christoph,
-you don't have carte blance power to delay progress. So stop being an
-arsehole, and don't fucking accuse me of scoffing and mocking you.
+> (And it's a bit sad that the function will exist in the base vmlinux
+> even for people who don't ever use it, but that's a problem which we
+> don't really have a good solution for).
 
-Because I've been bending over backwards to answer _exactly_ the same
-questions multiple times from you and trying to show how either your
-assumptions are wrong, or reasonable ways we can mitigate potential
-regressions, and trying to be polite and civil the whole time. (which I
-might add is much more courtesy than you showed me when you tried to
-railroad your inode changes through without bothering to answer or even
-read half my comments about them). And what you have done is just ignore
-totally my replies to your concerns, stay quiet about them for a month,
-and then come back with exactly the same thing again. Like 3 or 4 times.
+Hmm, should I switch it back to all inlines?
 
-Really. At this point, if you have already posted a particular comment
-more than 50 times, do everybody a favour and redirect the next verbatim
-copy /dev/null, OK? I'm sick of it. *Constructive* criticism only, from
-now on. Thanks.
+On the other hand, if a generic EWMA function is useful at all I guess it 
+could be used in many places all over the kernel. Unfortunately I don't have 
+time and knowledge to find all these places and update them to use the generic 
+code.
 
-I need a zone input to the shinker API, I have demonstrated what for
-and why, with good justification, and so I am going to get that API
-change merged. It is a simple superset of the current API's
-functionality and not some big scary monster (except by somebody who
-fundmantally doesn't understand it). 
-
+bruno
