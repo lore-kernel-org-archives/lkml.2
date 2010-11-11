@@ -1,137 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab0KKBCU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 20:02:20 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:59630 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757401Ab0KKBCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 20:02:19 -0500
-Subject: Re: [RFC][PATCH 05/22] sched: SCHED_DEADLINE policy implementation
-From: Raistlin <raistlin@linux.it>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1289418214.2084.48.camel@laptop>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333814.8661.146.camel@Palantir>  <1289418214.2084.48.camel@laptop>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-WRPI+puqxdqNDydKB5YJ"
-Date: Thu, 11 Nov 2010 02:02:05 +0100
-Message-ID: <1289437325.13577.445.camel@Palantir>
+	id S1757627Ab0KKBF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 20:05:57 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:61112 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757427Ab0KKBF4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 20:05:56 -0500
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=UWg-Qlbn-4MA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=taGs_qngAAAA:8 a=CvOBL4saVFUMqDW05vwA:9 a=jKRIg8DYmaLSi5vqNGMA:7 a=7VNV9A5D4tkJthJ1nejdtkVCHFsA:4 a=PUjeQqilurYA:10 a=n7Cch7CHiCMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] Delegate unknown module parameters to interested
+ parties
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
+In-Reply-To: <201011111105.09255.rusty@rustcorp.com.au>
+References: <0d30dc$k4dmjb@orsmga001.jf.intel.com>
+	 <201011101621.28946.rusty@rustcorp.com.au>
+	 <1289397360.12418.119.camel@gandalf.stny.rr.com>
+	 <201011111105.09255.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 10 Nov 2010 20:05:53 -0500
+Message-ID: <1289437553.12418.217.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-11-11 at 11:05 +1030, Rusty Russell wrote:
+>  
+> > Yep, this way we could even enable tracepoints that are in the init
+> > section.
+> 
+> *Exactly* how would it be used though?  Please provide a synopsis for
+> someone unaware of what tracing does these days?
 
---=-WRPI+puqxdqNDydKB5YJ
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Well, if you have a tracepoint in the module, and you want to enable it
+as soon as the module is loaded, it would be nice to have that ability.
 
-On Wed, 2010-11-10 at 20:43 +0100, Peter Zijlstra wrote:
-> On Fri, 2010-10-29 at 08:30 +0200, Raistlin wrote:
-> > + * We are being explicitly informed that a new instance is starting,
-> > + * and this means that:
-> > + *  - the absolute deadline of the entity has to be placed at
-> > + *    current time + relative deadline;
-> > + *  - the runtime of the entity has to be set to the maximum value.
->=20
-> When exactly are we a new instance? From a quick look dl_new gets set
-> after a sched_setscheduler() call, is that the only way?
->=20
-One of the only two ways. Later in the queue, that flag is set by a new
-system call, i.e., sched_wait_interval, that can be used to inform the
-scheduler (for example at the end of a periodic/sporadic job) that an
-instance just ended. Moreover, it can be exploited by a task which want
-the scheduler to wake it up when it can be given its full runtime.
-It as been added as a consequence of the discussion happened in Dresden,
-at last year RTLWS, aside of my presentation...
+> 
+> Because we could compile an extra module_parm() into the module using
+> modpost, for example, at a cost of an extra 16/32 bytes per module.
+> 
+> > But, personally, I like the generic addition. Perhaps others will hook into
+> > it without fear of having to hack the module code, which can be quite
+> > intimidating to some.
+> 
+> We *all* want to build infrastructure; when other coders are forced to use
+> it we rise up the kernel dominance hierarchy. Ook ook!  (Every Unix app has
+> its own config language for the same reason: the author distils the mental
+> sweat of the users into some kind of Elixer of Coder Hubris).
 
-Whether or not this could be useful, I don't know, and I accept comments
-as usual. My opinion is that it might be something worthwhile to have,
-especially from the point of view of hard real-time-ish scenarios, but
-we can remove it appears unnecessary.
+Note, I would have just done the hack, but I liked Chris's generic
+approach. /me ook ooks Chris!
 
-> Could a task calling sched_setscheduler() on itself cheat the system?
->
-I obviously might be wrong (especially at this time), but I would say no
-for the following reasons.
 
-If you are an overrunning -deadline task calling sched_setscheduler()
-the deactivate_task->dequeue_task->dequeue_task_dl() below will trigger
-the bandwidth enforcement, i.e., will set dl_throttled=3D1 and start
-dl_timer:
-	...
-        on_rq =3D p->se.on_rq;                                             =
-                                            =20
-        running =3D task_current(rq, p);                                   =
-                                            =20
-        if (on_rq)
-                deactivate_task(rq, p, 0);
-        if (running)
-                p->sched_class->put_prev_task(rq, p);
-	...
+> 
+> Yet abstractions obfuscate: let's resist our primal urges to add another
+> speed hump on the lengthening road to kernel expertese.
 
-Later, this enqueue:
-	...
-	if (running)                                                              =
-                                   =20
-                p->sched_class->set_curr_task(rq);                         =
-                                          =20
-        if (on_rq) {
-                activate_task(rq, p, 0);                                   =
-                                          =20
-                                                                           =
-                                          =20
-                check_class_changed(rq, p, prev_class, oldprio, running);
-        }
-	...
+Adding a generic way to do global module options is a primal urge?
 
-even if it will find dl_new=3D1, will not enqueue the task back in its
-dl_rq (since dl_throttled=3D1). The actual enqueueing happens at the
-firing of dl_timer, where an update instead than a replenishment will be
-performed, right because of the fact that dl_new=3D1. This means the
-runtime will be fully replenished and the deadline moved toward
-rq->clock+dl_se->dl_deadline.
+> 
+> And this one's classicly easy: in single uses cases we always get the
+> infrastructure wrong for future users anyway, so let's not do it until
+> we have more than one user.
 
-Did this answer your question?
+OK, we can add the hack for now. But perhaps have an archive of this
+patch (maybe even sneak a link to it in the change log).
 
-Thanks and Regards,
-Dario
+Hmm, we can just add:
 
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+LKML-Reference: <1289311867-10096-1-git-send-email-chris@chris-wilson.co.uk>
 
-http://blog.linux.it/raistlin / raistlin@ekiga.net /
-dario.faggioli@jabber.org
 
---=-WRPI+puqxdqNDydKB5YJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+-- Steve
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkzbQI0ACgkQk4XaBE3IOsRuHwCfb8AaTHS07d0u93HMYstvh3Tp
-FC8AnA6FfuUvp4WjzZi2OOuYAG4pW0kh
-=C9cI
------END PGP SIGNATURE-----
-
---=-WRPI+puqxdqNDydKB5YJ--
 
