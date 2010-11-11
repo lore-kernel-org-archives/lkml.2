@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab0KKKZn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 05:25:43 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52045 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755250Ab0KKKZl (ORCPT
+	id S1754957Ab0KKKc3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 05:32:29 -0500
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:58607 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753242Ab0KKKc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 05:25:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=k4EiYXYaHX0oAvB+ZGIGkCEwNZKIiVihilMbZB97AQmMnWHGgnI5jHnsuqAlHrj6yb
-         Ie1qJFSM75Dqu3EaOxT69sXHm8bxaAZ0xs7x8TNLZ46hTrdGKK21tnywKwQdT5nYGpFD
-         BH7LcpVXVw3MiXsZVpobhKccWaviHi+FUq3Vs=
-Subject: Re: [PATCH] [PERF] (Userspace Tools) Fix a compilation error with
- -fstack-protector and -Werror
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Brian Gitonga Marete <marete@toshnix.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <20101019131152.GB3826@ghostprotocols.net>
-References: <AANLkTinHc7tMntW5NFAhu40RC7m2=HwbqOBeE-21vL8J@mail.gmail.com>
-	 <20101018233834.GC5370@nowhere>
-	 <AANLkTi=Ssz4WdMDXq-93GE9bPHoaQ8QyTSrWXDSCa7eH@mail.gmail.com>
-	 <20101019064000.GC21782@elte.hu>
-	 <AANLkTimqaTKu23HrgbffAht_Otn9L5k2oHMZDGki8MK+@mail.gmail.com>
-	 <AANLkTin=0N0b=wK8974RGwXuTxpQ4BtH4bHwjsea+1tS@mail.gmail.com>
-	 <20101019114904.GB25371@elte.hu> <20101019131152.GB3826@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Nov 2010 11:25:35 +0100
-Message-ID: <1289471135.17691.1026.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 11 Nov 2010 05:32:27 -0500
+Message-ID: <4CDBC60F.8070905@stericsson.com>
+Date: Thu, 11 Nov 2010 11:31:43 +0100
+From: Linus Walleij <linus.walleij@stericsson.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Colin Cross <ccross@google.com>,
+        Rabin VINCENT <rabin.vincent@stericsson.com>
+Subject: Re: [PATCH] RFC: nomadik: expand timesource to 63 bits
+References: <1289466356-16697-1-git-send-email-linus.walleij@stericsson.com> <alpine.LFD.2.00.1011111054010.2900@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1011111054010.2900@localhost6.localdomain6>
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 19 octobre 2010 à 11:11 -0200, Arnaldo Carvalho de Melo a
-écrit :
-> Em Tue, Oct 19, 2010 at 01:49:04PM +0200, Ingo Molnar escreveu:
-> > 
-> > * Brian Gitonga Marete <marete@toshnix.com> wrote:
-> > 
-> > > > OK. Now that I actually look closely at that fragment I can see its useless to 
-> > > > create the automatic arrays. Local string literals would also work (i.e. just 
-> > > > pass `"Yes"' and `"No"' to newtWinChoice). But can also do what you suggested if 
-> > > > it is anticipated that they will be used somewhere else within the file at some 
-> > > > other time -- Currently they are not.
-> > > 
-> > > Oops. Sorry. What I suggested won't work because of the -Wwrite-strings default 
-> > > option. Which actually makes me understand why the original author of the code 
-> > > made it the way it is. Your suggestion of file-scope, static does solve the 
-> > > problem.
-> > 
-> > Btw., -Wwrite-strings has proven to be a really useful warning in practice, in that 
-> > it ensured that we propagate string immutability/const-ness as widely as possible. 
-> > This resulted is cleaner perf code in the long run.
-> > 
-> > Here we cannot fix the Newt prototype (it's an existing library outside of our 
-> > control) to take a const so we have to do the (mild) workaround of moving it to file 
-> > scope. (if this becomes common then we'd have to re-evaluate the use of this 
-> > warning)
-> > 
-> > I think Arnaldo has plans to get rid of the libnewt dependency altogether - that 
-> > might be a fix too.
-> 
-> Yeah, but for now I'll just reap the results of this long discussion
-> about this issue. :)
-> 
+Thomas Gleixner wrote:
 
-Hi Arnaldo
+> There is only one caveat. When nohz is on and you sleep longer than 16
+> seconds then the limitation we have in place does not work anymore, as
+> it would say that the long sleep time is less than the 63bit
+> wraparound time. With 32bit clocksource it limits the sleep correclty
+> to avoid the clocksource wrap issue.
 
-Sorry if I missed something, but current linux-2.6 tree has the problem.
+Hm! So the .mask has that side effect (as I suspected), and with
+this the sleep will be limited to what time you can get into 63 bits
+(2200 years). And we sure want NOHZ...
 
-Is the fix under control ?
+But if I complement the solution with the keepwarm() timer from
+Orion doing just a dummy read() on the clocksource every say 15 secs
+it will work even if the system sleeps for so long.
 
-Thanks !
+> Aside of that you are trading a bit less source code with extra code
+> in the clock read() function, which is called pretty frequently.
 
+Hm, yeah. I would have to go to metrics but it's O(n)
+is it not? Shouldn't hurt a high-frequency SMP system
+I believe.
 
+Yours,
+Linus Walleij
