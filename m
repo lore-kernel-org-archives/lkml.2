@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab0KKMyc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 07:54:32 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46175 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756316Ab0KKMyb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 07:54:31 -0500
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-nfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Bryan Schumaker <bjschuma@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [PATCH] nfs: Ignore kmemleak false positive in nfs_readdir_make_qstr
-Date: Thu, 11 Nov 2010 12:53:47 +0000
-Message-Id: <1289480027-7361-1-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.3.2.164.g6f10c
-X-OriginalArrivalTime: 11 Nov 2010 12:54:06.0995 (UTC) FILETIME=[86B47E30:01CB819F]
+	id S1756693Ab0KKM7D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 07:59:03 -0500
+Received: from dtp.xs4all.nl ([80.101.171.8]:64810 "HELO abra2.bitwizard.nl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1756357Ab0KKM7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 07:59:02 -0500
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Nov 2010 07:59:01 EST
+Date: Thu, 11 Nov 2010 13:52:19 +0100
+From: Rogier Wolff <R.E.Wolff@BitWizard.nl>
+To: linux-kernel@vger.kernel.org
+Subject: Sync semantics. 
+Message-ID: <20101111125219.GA945@bitwizard.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: BitWizard.nl
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Strings allocated via kmemdup() in nfs_readdir_make_qstr() are
-referenced from the nfs_cache_array which is stored in a page cache
-page. Kmemleak does not scan such pages and it reports several false
-positives. This patch annotates the string->name pointer so that
-kmemleak does not consider it a real leak.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Bryan Schumaker <bjschuma@netapp.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
----
- fs/nfs/dir.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+Hi, 
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 07ac384..a9f9e14 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -34,6 +34,7 @@
- #include <linux/mount.h>
- #include <linux/sched.h>
- #include <linux/vmalloc.h>
-+#include <linux/kmemleak.h>
- 
- #include "delegation.h"
- #include "iostat.h"
-@@ -231,6 +232,11 @@ int nfs_readdir_make_qstr(struct qstr *string, const char *name, unsigned int le
- 	string->name = kmemdup(name, len, GFP_KERNEL);
- 	if (string->name == NULL)
- 		return -ENOMEM;
-+	/*
-+	 * Avoid a kmemleak false positive. The pointer to the name is stored
-+	 * in a page cache page which kmemleak does not scan.
-+	 */
-+	kmemleak_not_leak(string->name);
- 	string->hash = full_name_hash(name, len);
- 	return 0;
- }
+What should I expect from a "sync" system call?
+
+The manual says: 
+
+   sync() first commits inodes to buffers, and then buffers to disk.
+
+and then goes on to state: 
+
+   ... since  version  1.3.20 Linux does actually wait.
+
+[for the buffers to be handed over to the drive]
+
+So how long can I expect a "sync" call to take? 
+
+I would expect that all buffers that are dirty at the time of the
+"sync" call are written by the time that sync returns. I'm currently
+bombarding my fileserver with some 40-60Mbytes per second of data to
+be written (*). The fileserver has 8G of memory. So max 8000 Mb of
+dirty buffers can be stored, right? The server writes an average of
+(at least) 40Mb/second to disk. According to my calculator, I will
+have to wait up to 200 seconds for the sync system call to return....
+
+
+# time sync
+0.000u 0.220s 2:22:23.96 0.0%   0+0k 0+0io 2pf+0w
+
+Two hours 22 minutes. 
+
+I typed the "time sync" again, and it hasn't returned yet.... Actually
+I don't expect it to before 6-hours-from-now because that's when the
+clients will run out of data to send.
+
+wolff    13706  0.0  0.0   1816   208 pts/12   D+   12:08   0:00 sync
+wolff    14116  0.0  0.0   1908   520 pts/34   S+   13:48   0:00 grep sync
+
+It's been running 100 minutes by now..... 
+
+
+(*) The three clients are each sending 20-35 Mb/second but are being
+held up by the server who doesn't seem to be handling more than about
+40-50Mb/sec total.
+
 -- 
-1.7.3.GIT
-
+** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
+**    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
+*-- BitWizard writes Linux device drivers for any device you may have! --*
+Q: It doesn't work. A: Look buddy, doesn't work is an ambiguous statement. 
+Does it sit on the couch all day? Is it unemployed? Please be specific! 
+Define 'it' and what it isn't doing. --------- Adapted from lxrbot FAQ
