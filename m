@@ -1,137 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab0KKSp4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 13:45:56 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32182 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753525Ab0KKSpy (ORCPT
+	id S1755684Ab0KKSsm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 13:48:42 -0500
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:54885 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754980Ab0KKSsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 13:45:54 -0500
-Date: Thu, 11 Nov 2010 10:44:22 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mike Thomas <rmthomas@sciolus.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        gregkh@suse.de
-Subject: [PATCH -next] staging/easycap: make module params private/static,
- fix build
-Message-Id: <20101111104422.28594510.randy.dunlap@oracle.com>
-In-Reply-To: <20101111125655.15fa7188.sfr@canb.auug.org.au>
-References: <20101111125655.15fa7188.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Thu, 11 Nov 2010 13:48:40 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=lWaTera2WPj2zbwaLS9bNGm1YzlejE9Bzb0OXkEudJ6Pq5DbEBph+GoiT2w3UFt0TaaMspjLzShS5MrIW3GeGBIKIfwcEiLqa/GnQHuhl3YKrCUh0Oy/XXUCNIzQfXoB;
+Date: Thu, 11 Nov 2010 10:48:36 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
+        Charles Butterfield <charles.butterfield@nextcentury.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        linux-pci@vger.kernel.org,
+        "Horst H. von Brand" <vonbrand@inf.utfsm.cl>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
+        Borislav Petkov <bp@amd64.org>, Stefan Becker <chemobejk@gmail.com>,
+        Chuck Ebbert <cebbert@redhat.com>,
+        Fabrice Bellet <fabrice@bellet.info>, Yinghai Lu <yinghai@kernel.org>,
+        Leann Ogasawara <leann.ogasawara@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH v2] PCI: fix pci_bus_alloc_resource() hang, prefer
+ positive decode
+Message-ID: <20101111104836.0368d858@jbarnes-desktop>
+In-Reply-To: <20101110172607.2537.10985.stgit@bob.kio>
+References: <20101110172607.2537.10985.stgit@bob.kio>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, 10 Nov 2010 10:26:07 -0700
+Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
 
-The easycap driver has module parameters (bars, gain, & debug)
-with global scope that intrude on the kernel namespace and cause
-build problems.  Change the names of them to be driver-specific
-and make 2 of them static.
+> 
+> When a PCI bus has two resources with the same start/end, e.g.,
+> 
+>     pci_bus 0000:04: resource 2 [mem 0xd0000000-0xd7ffffff pref]
+>     pci_bus 0000:04: resource 7 [mem 0xd0000000-0xd7ffffff]
+> 
+> the previous pci_bus_find_resource_prev() implementation would alternate
+> between them forever:
+> 
+>     pci_bus_find_resource_prev(... [mem 0xd0000000-0xd7ffffff pref])
+>         returns [mem 0xd0000000-0xd7ffffff]
+>     pci_bus_find_resource_prev(... [mem 0xd0000000-0xd7ffffff])
+>         returns [mem 0xd0000000-0xd7ffffff pref]
+>     pci_bus_find_resource_prev(... [mem 0xd0000000-0xd7ffffff pref])
+>         returns [mem 0xd0000000-0xd7ffffff]
+>     ...
+> 
+> This happened because there was no ordering between two resources with the
+> same start and end.  A resource that had the same start and end as the
+> cursor, but was not itself the cursor, was considered to be before the
+> cursor.
+> 
+> This patch fixes the hang by making a fixed ordering between any two
+> resources.
+> 
+> In addition, it tries to allocate from positively decoded regions before
+> using any subtractively decoded resources.  This means we will use a
+> positive decode region before a subtractive decode one, even if it means
+> using a smaller address.
+> 
+> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=22062
+> Reported-by: Borislav Petkov <bp@amd64.org>
+> Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> ---
 
-drivers/built-in.o:(.bss+0x97c00): multiple definition of `debug'
-ld: Warning: size of symbol `debug' changed from 58 in arch/x86/built-in.o to 4 in drivers/built-in.o
+How does this one look, Linus?  If you're ok with this version I'll
+include it in my next pull request.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Mike Thomas <rmthomas@sciolus.org>
----
- drivers/staging/easycap/easycap.h       |    4 ++--
- drivers/staging/easycap/easycap_debug.h |    4 ++--
- drivers/staging/easycap/easycap_low.c   |   10 +++++-----
- drivers/staging/easycap/easycap_main.c  |   18 +++++++++---------
- 4 files changed, 18 insertions(+), 18 deletions(-)
-
---- linux-next-20101111.orig/drivers/staging/easycap/easycap_main.c
-+++ linux-next-20101111/drivers/staging/easycap/easycap_main.c
-@@ -32,12 +32,12 @@
- #include "easycap_standard.h"
- #include "easycap_ioctl.h"
- 
--int debug;
--int bars;
--int gain = 16;
--module_param(debug, int, S_IRUGO | S_IWUSR);
--module_param(bars, int, S_IRUGO | S_IWUSR);
--module_param(gain, int, S_IRUGO | S_IWUSR);
-+static int easycap_debug;
-+static int easycap_bars;
-+int easycap_gain = 16;
-+module_param_named(debug, easycap_debug, int, S_IRUGO | S_IWUSR);
-+module_param_named(bars, easycap_bars, int, S_IRUGO | S_IWUSR);
-+module_param_named(gain, easycap_gain, int, S_IRUGO | S_IWUSR);
- 
- /*---------------------------------------------------------------------------*/
- /*
-@@ -1464,7 +1464,7 @@ if (peasycap->field_read == peasycap->fi
- easycap_testcard(peasycap, peasycap->field_read);
- #else
- if (0 <= input && INPUT_MANY > input) {
--	if (bars && VIDEO_LOST_TOLERATE <= peasycap->lost[input])
-+	if (easycap_bars && VIDEO_LOST_TOLERATE <= peasycap->lost[input])
- 		easycap_testcard(peasycap, peasycap->field_read);
- }
- #endif /*EASYCAP_TESTCARD*/
-@@ -5008,8 +5008,8 @@ easycap_module_init(void)
- int result;
- 
- SAY("========easycap=======\n");
--JOT(4, "begins.  %i=debug %i=bars %i=gain\n", debug, bars, \
--						gain);
-+JOT(4, "begins.  %i=debug %i=bars %i=gain\n", easycap_debug, easycap_bars, \
-+						easycap_gain);
- SAY("version: " EASYCAP_DRIVER_VERSION "\n");
- /*---------------------------------------------------------------------------*/
- /*
---- linux-next-20101111.orig/drivers/staging/easycap/easycap_debug.h
-+++ linux-next-20101111/drivers/staging/easycap/easycap_debug.h
-@@ -24,6 +24,6 @@
-  *
- */
- /*****************************************************************************/
--extern int debug;
--extern int gain;
-+extern int easycap_debug;
-+extern int easycap_gain;
- extern struct easycap_dongle easycap_dongle[];
---- linux-next-20101111.orig/drivers/staging/easycap/easycap.h
-+++ linux-next-20101111/drivers/staging/easycap/easycap.h
-@@ -630,13 +630,13 @@ unsigned long long int remainder;
- 
- #if defined(EASYCAP_DEBUG)
- #define JOT(n, format, args...) do { \
--	if (n <= debug) { \
-+	if (n <= easycap_debug) { \
- 		printk(KERN_DEBUG "easycap:: %s: " \
- 			format, __func__, ##args);\
- 	} \
- } while (0)
- #define JOM(n, format, args...) do { \
--	if (n <= debug) { \
-+	if (n <= easycap_debug) { \
- 		printk(KERN_DEBUG "easycap::%i%s: " \
- 			format, peasycap->isdongle, __func__, ##args);\
- 	} \
---- linux-next-20101111.orig/drivers/staging/easycap/easycap_low.c
-+++ linux-next-20101111/drivers/staging/easycap/easycap_low.c
-@@ -1082,11 +1082,11 @@ SAM("0x%04X:0x%04X is audio vendor id\n"
-  *  SELECT AUDIO SOURCE "LINE IN" AND SET THE AUDIO GAIN.
- */
- /*---------------------------------------------------------------------------*/
--if (31 < gain)
--	gain = 31;
--if (0 > gain)
--	gain = 0;
--if (0 != audio_gainset(pusb_device, (__s8)gain))
-+if (31 < easycap_gain)
-+	easycap_gain = 31;
-+if (0 > easycap_gain)
-+	easycap_gain = 0;
-+if (0 != audio_gainset(pusb_device, (__s8)easycap_gain))
- 	SAY("ERROR: audio_gainset() failed\n");
- check_vt(pusb_device);
- return 0;
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
