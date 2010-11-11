@@ -1,102 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab0KKUC5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 15:02:57 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:56341 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756301Ab0KKUC4 (ORCPT
+	id S1756301Ab0KKUNI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 15:13:08 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:39349 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754662Ab0KKUNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 15:02:56 -0500
-Subject: Re: [RFC-PATCH] clocksource: update lpj if clocksource has been
- changed.
-From: john stultz <johnstul@us.ibm.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        myungjoo.ham@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
-        Magnus Damm <damm@opensource.se>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jon Hunter <jon-hunter@ti.com>
-In-Reply-To: <1289464582-26898-1-git-send-email-myungjoo.ham@samsung.com>
-References: <1289464582-26898-1-git-send-email-myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Nov 2010 12:02:41 -0800
-Message-ID: <1289505761.2742.24.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Nov 2010 15:13:07 -0500
+Date: Thu, 11 Nov 2010 21:12:59 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@elte.hu, acme@redhat.com, eranian@google.com
+Subject: Re: [PATCH 2/3] perf: Add support for extra parameters for raw
+ events
+Message-ID: <20101111201259.GL18718@basil.fritz.box>
+References: <1289492117-18066-1-git-send-email-andi@firstfloor.org>
+ <1289492117-18066-2-git-send-email-andi@firstfloor.org>
+ <4CDC2DDD.50508@linux.vnet.ibm.com>
+ <4CDC3845.4030104@linux.intel.com>
+ <4CDC4628.8020109@linux.vnet.ibm.com>
+ <20101111194936.GJ18718@basil.fritz.box>
+ <1289505587.2084.193.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289505587.2084.193.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-11 at 17:36 +0900, MyungJoo Ham wrote:
-> With a clocksource change, loops_per_jiffy may have been changed; thus,
-> the loops_per_jiffy in each cpu should be updated. Especially after some
-> of the cpus were turned off and on, their loops_per_jiffy values are
-> updated while the cpus kept on are not. Therefore, in order to make them
-> "normalized equally", we need to let the loops_per_jiffy values of
-> different cpus be based on the same clocksource.
+On Thu, Nov 11, 2010 at 08:59:47PM +0100, Peter Zijlstra wrote:
+> On Thu, 2010-11-11 at 20:49 +0100, Andi Kleen wrote:
+> > > I think it would have parsed OK, but it is a confusing syntax to
+> > > look at.  I should point out that there are also the u,k,h modifiers
+> > > which can be specified, even on raw events, so the full syntax looks
+> > > something like:
+> > > 
+> > > -e rXXXX[+YYYY][:u|:k|:h]
+> > 
+> > Ok I can fix the help text for that.
 > 
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> If we're frobbing it in the existing config qword, do we still need
+> special syntax?
 
-First, Thanks for reporting the issue and submitting the patch!
+No, it could be all merged then.
 
-So the premise is that read_current_timer -> get_cycles ->
-clocksource_read on some arches. And then when we select a different
-clocksource for timekeeping, this also changes the get_cycles source
-breaking delay loops.
-
-The clocksource selected for timekeeping and the counter being used for
-get_cycles really shouldn't be explicitly bound. On most systems I don't
-think that is the case, so this patch would force needless recalibration
-calls on clocksource changes.
-
-Which arch specifically are you seeing the issue on? I suspect there is
-be a better way to fix this.
-
-thanks
--john
-
-
-> ---
->  kernel/time/clocksource.c |   13 +++++++++++++
->  1 files changed, 13 insertions(+), 0 deletions(-)
 > 
-> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-> index c18d7ef..a9d7935 100644
-> --- a/kernel/time/clocksource.c
-> +++ b/kernel/time/clocksource.c
-> @@ -30,6 +30,9 @@
->  #include <linux/sched.h> /* for spin_unlock_irq() using preempt_count() m68k */
->  #include <linux/tick.h>
->  #include <linux/kthread.h>
-> +#include <linux/delay.h>
-> 
->  void timecounter_init(struct timecounter *tc,
->  		      const struct cyclecounter *cc,
-> @@ -592,6 +593,9 @@ static inline void clocksource_select(void) { }
->   */
->  static int __init clocksource_done_booting(void)
->  {
-> +#ifdef CONFIG_SMP
-> +	int cpu;
-> +#endif
->  	mutex_lock(&clocksource_mutex);
->  	curr_clocksource = clocksource_default_clock();
->  	mutex_unlock(&clocksource_mutex);
-> @@ -606,6 +610,13 @@ static int __init clocksource_done_booting(void)
->  	mutex_lock(&clocksource_mutex);
->  	clocksource_select();
->  	mutex_unlock(&clocksource_mutex);
-> +
-> +	calibrate_delay();
-> +#ifdef CONFIG_SMP
-> +	/* loops_per_jiffy may have been changed. */
-> +	for_each_online_cpu(cpu)
-> +		smp_store_cpu_info(cpu);
-> +#endif
->  	return 0;
->  }
->  fs_initcall(clocksource_done_booting);
+> Also, I think we can use the same mechanism to program the
+> PEBS-load-latency MSR, right?
 
+I haven't looked at that, but if it's a per core resource
+the infrastructure can be reused at least.
 
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
