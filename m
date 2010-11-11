@@ -1,55 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab0KKRN0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 12:13:26 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47128 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab0KKRNZ (ORCPT
+	id S1754873Ab0KKRO7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 12:14:59 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:35090 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754365Ab0KKRO5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 12:13:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=ZH/CrBurTI81LACcOhsL8hjz/IFYFlZ9TUI+xrop+e3v4QsMwGEu2Ctw5QT95tfvsk
-         ccBPYi5LLN7Bqy+1DzcLZHKCnlnM5S8xxvtfVfbVV+fWXrBw+xjfqRbrT1fuaHuTGwrk
-         QvO+T3bITlzzyzEl0R0y9QLAmAW9ZZonlf6gg=
-Subject: Re: [PATCH] [PERF] (Userspace Tools) Fix a compilation error with
- -fstack-protector and -Werror
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Ingo Molnar <mingo@elte.hu>, Brian Gitonga Marete <marete@toshnix.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Cyrill Gorcunov <gorcunov@gmail.com>
-In-Reply-To: <20101111170535.GA2203@ghostprotocols.net>
-References: <AANLkTinHc7tMntW5NFAhu40RC7m2=HwbqOBeE-21vL8J@mail.gmail.com>
-	 <20101018233834.GC5370@nowhere>
-	 <AANLkTi=Ssz4WdMDXq-93GE9bPHoaQ8QyTSrWXDSCa7eH@mail.gmail.com>
-	 <20101019064000.GC21782@elte.hu>
-	 <AANLkTimqaTKu23HrgbffAht_Otn9L5k2oHMZDGki8MK+@mail.gmail.com>
-	 <AANLkTin=0N0b=wK8974RGwXuTxpQ4BtH4bHwjsea+1tS@mail.gmail.com>
-	 <20101019114904.GB25371@elte.hu> <20101019131152.GB3826@ghostprotocols.net>
-	 <1289471135.17691.1026.camel@edumazet-laptop>
-	 <20101111170535.GA2203@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Nov 2010 18:13:20 +0100
-Message-ID: <1289495600.17691.1533.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 11 Nov 2010 12:14:57 -0500
+Date: Thu, 11 Nov 2010 12:07:10 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Arnd Hannemann <arnd@arndnet.de>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [PATCH] net: b43legacy: fix compile error
+Message-ID: <20101111170710.GA2259@tuxdriver.com>
+References: <1288017690-31248-1-git-send-email-arnd@arndnet.de>
+ <4CC5A301.1080606@lwfinger.net>
+ <4CC5CBC4.7060308@arndnet.de>
+ <4CC5CE47.2020607@lwfinger.net>
+ <4CC5D01C.20804@arndnet.de>
+ <4CC5D3A7.3080709@lwfinger.net>
+ <4CC5E4D2.6080606@arndnet.de>
+ <20101111163531.GB2559@tuxdriver.com>
+ <4CDC2298.1050803@lwfinger.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CDC2298.1050803@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 11 novembre 2010 à 12:05 -0500, Arnaldo Carvalho de Melo a
-écrit :
+On Thu, Nov 11, 2010 at 11:06:32AM -0600, Larry Finger wrote:
+> On 11/11/2010 10:35 AM, John W. Linville wrote:
+> > On Mon, Oct 25, 2010 at 10:13:06PM +0200, Arnd Hannemann wrote:
+> >> Am 25.10.2010 20:59, schrieb Larry Finger:
+> >>> On 10/25/2010 01:44 PM, Arnd Hannemann wrote:
+> >>>> Am 25.10.2010 20:36, schrieb Larry Finger:
+> >>>>> On 10/25/2010 01:26 PM, Arnd Hannemann wrote:
+> >>>>>> Am 25.10.2010 17:32, schrieb Larry Finger:
+> >>>>>>> On 10/25/2010 09:41 AM, Arnd Hannemann wrote:
+> >>>>>>>> On todays linus tree the following compile error happened to me:
+> >>>>>>>>
+> >>>>>>>>   CC [M]  drivers/net/wireless/b43legacy/xmit.o
+> >>>>>>>> In file included from include/net/dst.h:11,
+> >>>>>>>>                  from drivers/net/wireless/b43legacy/xmit.c:31:
+> >>>>>>>> include/net/dst_ops.h:28: error: expected ':', ',', ';', '}' or '__attribute__' before '____cacheline_aligned_in_smp'
+> >>>>>>>> include/net/dst_ops.h: In function 'dst_entries_get_fast':
+> >>>>>>>> include/net/dst_ops.h:33: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> >>>>>>>> include/net/dst_ops.h: In function 'dst_entries_get_slow':
+> >>>>>>>> include/net/dst_ops.h:41: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> >>>>>>>> include/net/dst_ops.h: In function 'dst_entries_add':
+> >>>>>>>> include/net/dst_ops.h:49: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> >>>>>>>> include/net/dst_ops.h: In function 'dst_entries_init':
+> >>>>>>>> include/net/dst_ops.h:55: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> >>>>>>>> include/net/dst_ops.h: In function 'dst_entries_destroy':
+> >>>>>>>> include/net/dst_ops.h:60: error: 'struct dst_ops' has no member named 'pcpuc_entries'
+> >>>>>>>> make[4]: *** [drivers/net/wireless/b43legacy/xmit.o] Error 1
+> >>>>>>>> make[3]: *** [drivers/net/wireless/b43legacy] Error 2
+> >>>>>>>> make[2]: *** [drivers/net/wireless] Error 2
+> >>>>>>>> make[1]: *** [drivers/net] Error 2
+> >>>>>>>> make: *** [drivers] Error 2
+> >>>>>>>>
+> >>>>>>>> This patch fixes this issue by adding "linux/cache.h" as an include to
+> >>>>>>>> "include/net/dst_ops.h".
+> >>>>>>>
+> >>>>>>> Strange. Compiling b43legacy from the linux-2.6.git tree (git describe is
+> >>>>>>> v2.6.36-4464-g229aebb) works fine on x86_64. I wonder what is different.
+> >>>>>>
+> >>>>>> Exactly the same git describe here.
+> >>>>>> Maybe your arch includes cache.h already, in my case its a compile for ARM (shmobile).
+> >>>>>
+> >>>>> That probably makes the difference. Using Eric's fix that removes the #include
+> >>>>> <linux/dst.h> should be better. Does it work for you?
+> >>>>>
+> >>>>> There are probably a lot more of the system includes that may not be needed. If
+> >>>>> I send you a patch removing them, could you test?
+> >>>>
+> >>>> As it turns out my card is not supported by b43legacy, but compilation testing,
+> >>>> sure I can test that.
+> >>>
+> >>> If it is a Broadcom card, it is likely handled by b43.
+> >>
+> >> Yes. It seems it should work with b43 (its an SDIO card) and it almost does...
+> >>
+> >>> Attached is a trial removal of a number of include statements. Does it compile?
+> >>
+> >> Nope:
+> >> NSTALL_MOD_PATH=/home/arnd/projekte/renesas-2/nfs modules
+> >>   CHK     include/linux/version.h
+> >>   CHK     include/generated/utsrelease.h
+> >> make[1]: `include/generated/mach-types.h' is up to date.
+> >>   CALL    scripts/checksyscalls.sh
+> >>   CC [M]  drivers/net/wireless/b43legacy/main.o
+> >> drivers/net/wireless/b43legacy/main.c: In function 'b43legacy_upload_microcode':
+> >> drivers/net/wireless/b43legacy/main.c:1688: error: implicit declaration of function 'signal_pending'
+> >> make[4]: *** [drivers/net/wireless/b43legacy/main.o] Error 1
+> >> make[3]: *** [drivers/net/wireless/b43legacy] Error 2
+> >> make[2]: *** [drivers/net/wireless] Error 2
+> >> make[1]: *** [drivers/net] Error 2
+> >> make: *** [drivers] Error 2
+> > 
+> > Is this issue resolved?  Should I be expecting a b43 patch?
+> 
+> I don't know if a similar patch for b43 is needed. I tried to set up a cross
+> compiler for ARM. My initial attempt failed and I did not have time to explore
+> the situation. If anyone has links to a cross-compiler solution for x86_64 on
+> openSUSE, please let me know.
 
-> Ingo merged this while I'm away, its in tip/urgent.
+Sorry, I mean b43legacy -- will there be a formal patch?
 
-So far so good ;)
-
-Thanks !
-
-
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
