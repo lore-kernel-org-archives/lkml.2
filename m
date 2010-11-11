@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354Ab0KKNfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 08:35:52 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:51715 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754834Ab0KKNfv (ORCPT
+	id S1756533Ab0KKNhm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 08:37:42 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:55547 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755183Ab0KKNhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 08:35:51 -0500
-Date: Thu, 11 Nov 2010 14:34:42 +0100
-From: Borislav Petkov <bp@amd64.org>
+	Thu, 11 Nov 2010 08:37:41 -0500
+Date: Thu, 11 Nov 2010 08:37:38 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: Ben Gamari <bgamari@gmail.com>, "acme@infradead.org" <acme@infradead.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+Cc: Thomas Gleixner <tglx@linutronix.de>, "Luck, Tony" <tony.luck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 03/20] x86, mce: Add persistent MCE event
-Message-ID: <20101111133442.GA21803@aftab>
-References: <1288885016-18295-1-git-send-email-bp@amd64.org>
- <1288885016-18295-4-git-send-email-bp@amd64.org>
- <87lj50vq0s.fsf@gmail.com>
- <20101110222157.GA23945@elte.hu>
- <20101111061725.GA19321@aftab>
- <20101111085825.GB18789@elte.hu>
+        "Huang, Ying" <ying.huang@intel.com>, "bp@alien8.de" <bp@alien8.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mchehab@redhat.com" <mchehab@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
+	reporting)
+Message-ID: <20101111133737.GF3992@Krystal>
+References: <20101110184105.GH22410@elte.hu> <1289415645.12418.180.camel@gandalf.stny.rr.com> <20101110191127.GA6190@nowhere> <20101110202316.GA32396@Krystal> <987664A83D2D224EAE907B061CE93D5301649A71DC@orsmsx505.amr.corp.intel.com> <20101110225115.GB9299@Krystal> <alpine.LFD.2.00.1011110004520.2900@localhost6.localdomain6> <20101110232829.GC9299@Krystal> <alpine.LFD.2.00.1011110046370.2900@localhost6.localdomain6> <20101111091704.GA31380@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101111085825.GB18789@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101111091704.GA31380@elte.hu>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 08:18:54 up 49 days, 17:21,  4 users,  load average: 1.27, 1.18,
+	1.18
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 03:58:25AM -0500, Ingo Molnar wrote:
-> > Yep, event enumeration will land in /sysfs eventually but in this case debugfs is 
-> > used to export the buffers with the events recorded so far to the daemon which 
-> > mmaps them. And I remember also being mentioned that debugfs will thus be always 
-> > compiled in because of that.
+Hi Ingo,
+
+* Ingo Molnar (mingo@elte.hu) wrote:
 > 
-> The event ring-buffer can be mmap()-ed off the fd that sys_perf_event_open() gives.
+> * Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> > On Wed, 10 Nov 2010, Mathieu Desnoyers wrote:
+> 
+> > > I'd like to start with an implementation that skips some of these requirements 
+> > > initially, but what I really think we need to figure out is how we organize our 
+> > > ABIs to finally support these requirements.
+> 
+> Note, there is an existing ABI in place, please use that. (It's highly extensible so 
+> it can support just about any ABI experiment that can even be turned into a smooth 
+> ABI replacement.)
 
-This is what I did in the first version of the patchset...
+Is there any way we could proceed without piling up work-arounds over Perf's ABI ?
+At this point, the only benefit of growing from the Perf ABI is comparable to
+dragging a ball and chain all along. Yes, I agree that a smooth transition
+should be the target, but I disagree on the means. I propose to come up with a
+new ABI and eventually move the perf tools to this ABI, which is not a split in
+the tracing developers community; rather more a unification.
 
-> This is what all of tools/perf/ does - it uses debugfs only for even enumeration
-> (which will move to sysfs).
+Which do you prefer: a sequence of continuous ABI breakages or a single ABI
+switch when the new ABI is ready ? In terms of contributor and user pain, I
+think the second option is much better. We'll have to keep the old Perf ABI
+around for a while anyway to keep users and tool developers happy. As Linus
+pointed out at KS, this ABI is now cast in stone. If we need to break it, the
+only thing we can do is create a new one. He said that he will personally revert
+any ABI-breaking tracing patch if he ever receives a single complaint from a
+user. This is not a context in which we want to start playing games with the
+existing ABIs.
 
-but then PeterZ suggested I should use debugfs to export the buffers
-and not teach sys_perf_event_open of persistent events. Which is also
-the right thing to do (maybe not through debugfs) since we want to have
-a single per-cpu buffer with all MCEs in there which even multiple
-userspace tools can access. So the question is, how do I mmap() those
-properly?
+Thanks,
 
-So we either
-
-1) use the perf syscall and teach it about persistent events and it always
-returns the same fd whenever a persistent event is requested over its attr
-argument;
-
-2) use debugfs (current approach);
-
-3) enable the persistent event and stash its fd in some /sysfs member
-which the RAS daemon reads out and mmaps. This last one actually sounds
-pretty neat.
-
-4) another idea which I'm missing.
-
-So what do you guys think?
+Mathieu
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
