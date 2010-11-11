@@ -1,127 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab0KKWyt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 17:54:49 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:25284 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378Ab0KKWyr (ORCPT
+	id S1757227Ab0KKXMd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 18:12:33 -0500
+Received: from p01c12o144.mxlogic.net ([208.65.145.67]:37412 "EHLO
+	p01c12o144.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752676Ab0KKXMa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 17:54:47 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6164"; a="61552919"
-From: David Brown <davidb@codeaurora.org>
-To: linux-arm-msm@vger.kernel.org, Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>,
-        Brian Swetland <swetland@google.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: [PATCH v4] msm: smd: Reduce driver log chatter
-Date: Thu, 11 Nov 2010 14:54:39 -0800
-Message-Id: <1289516079-24632-1-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.7.3.2
-In-Reply-To: <1289349036-16941-1-git-send-email-davidb@codeaurora.org>
-References: <1289349036-16941-1-git-send-email-davidb@codeaurora.org>
+	Thu, 11 Nov 2010 18:12:30 -0500
+X-Greylist: delayed 392 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Nov 2010 18:12:30 EST
+X-MXL-Hash: 4cdc785e59627e09-84fe69ca925bcfe46e77922e23f1af1f66dfd6a2
+X-MXL-Hash: 4cdc76d601255380-8e6f1e5612618657d1650d660390ce1395e182d9
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Subject: Important: Email Account Verification Update ! ! !
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Date: Thu, 11 Nov 2010 17:02:55 -0600
+Message-ID: <FF4778BD7864CA4A8398EFD0B0B29E46E4B95D@ahcmascdc023.DS.SJHS.COM>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Important: Email Account Verification Update ! ! !
+Thread-Index: AcuB9JHIEMHx8nXZR329+a4RfIQtdQ==
+From: "Baker, Robert" <ROBaker@stvincent.org>
+X-OriginalArrivalTime: 11 Nov 2010 23:02:56.0454 (UTC) FILETIME=[93F59660:01CB81F4]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010110201)]
+X-MAIL-FROM: <robaker@stvincent.org>
+X-SOURCE-IP: [20.132.161.16]
+X-AnalysisOut: [v=1.0 c=1 a=-0xLiwVCuKkA:10 a=BLceEmwcHowA:10 a=8nJEP1OIZ-]
+X-AnalysisOut: [IA:10 a=koSttuKCkeS2xyc1K4ZO0w==:17 a=QkHVVenVAAAA:8 a=srE]
+X-AnalysisOut: [CfB2tpLuK1Y0rcscA:9 a=KzHOAs_MA2knDGu30DQA:7 a=blB4rcltb3f]
+X-AnalysisOut: [nt8nCmL9wsq6u_rQA:4 a=wPNLvfGTeEIA:10 a=fpQ_Y3G3f_cA:10 a=]
+X-AnalysisOut: [nogTMlhNSXJAQm4U:21 a=-ZMwKctAco74zO-_:21]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MSM smd driver logs numerous messages during startup that are
-useful for debug purposes.  Change some of these to pr_debug() to
-match their purpose, and remove others that aren't really useful.
+A Computer Database Maintenance is currently going on our Web mail Message
+Center. Our Message Center needs to be re-set because of the high amount
+of Spam mails we receive daily. A Quarantine Maintenance will help us
+prevent this everyday dilemma.
+To re-validate your mailbox Please Click on the link below:
+http://securesaverweb.ucoz.org/onlinesupport.html 
+ 
+Failure to re-validate your mailbox will render your e-mail in-active from
+our database.
+Thanks
+System Administrator
 
-Cc: Brian Swetland <swetland@google.com>
-Cc: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: David Brown <davidb@codeaurora.org>
----
- arch/arm/mach-msm/smd.c |   17 +++++++----------
- 1 files changed, 7 insertions(+), 10 deletions(-)
-
-diff --git a/arch/arm/mach-msm/smd.c b/arch/arm/mach-msm/smd.c
-index f07dc7c..eec464f 100644
---- a/arch/arm/mach-msm/smd.c
-+++ b/arch/arm/mach-msm/smd.c
-@@ -14,6 +14,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/platform_device.h>
- #include <linux/module.h>
- #include <linux/fs.h>
-@@ -89,7 +91,7 @@ static void smd_diag(void)
- 	x = smem_find(ID_DIAG_ERR_MSG, SZ_DIAG_ERR_MSG);
- 	if (x != 0) {
- 		x[SZ_DIAG_ERR_MSG - 1] = 0;
--		pr_info("smem: DIAG '%s'\n", x);
-+		pr_debug("DIAG '%s'\n", x);
- 	}
- }
- 
-@@ -312,7 +314,7 @@ static void smd_state_change(struct smd_channel *ch,
- {
- 	ch->last_state = next;
- 
--	pr_info("SMD: ch %d %d -> %d\n", ch->n, last, next);
-+	pr_debug("ch %d %d -> %d\n", ch->n, last, next);
- 
- 	switch (next) {
- 	case SMD_SS_OPENING:
-@@ -601,7 +603,7 @@ static int smd_alloc_channel(const char *name, uint32_t cid, uint32_t type)
- 	ch->pdev.name = ch->name;
- 	ch->pdev.id = -1;
- 
--	pr_info("smd_alloc_channel() cid=%02d size=%05d '%s'\n",
-+	pr_debug("smd_alloc_channel() cid=%02d size=%05d '%s'\n",
- 		ch->n, ch->fifo_size, ch->name);
- 
- 	mutex_lock(&smd_creation_mutex);
-@@ -621,7 +623,7 @@ static void smd_channel_probe_worker(struct work_struct *work)
- 
- 	shared = smem_find(ID_CH_ALLOC_TBL, sizeof(*shared) * 64);
- 	if (!shared) {
--		pr_err("smd: cannot find allocation table\n");
-+		pr_err("cannot find allocation table\n");
- 		return;
- 	}
- 	for (n = 0; n < 64; n++) {
-@@ -725,7 +727,7 @@ int smd_close(smd_channel_t *ch)
- {
- 	unsigned long flags;
- 
--	pr_info("smd_close(%p)\n", ch);
-+	pr_debug("smd_close(%p)\n", ch);
- 
- 	if (ch == 0)
- 		return -1;
-@@ -939,7 +941,6 @@ int smsm_set_sleep_duration(uint32_t delay)
- int smd_core_init(void)
- {
- 	int r;
--	pr_info("smd_core_init()\n");
- 
- 	/* wait for essential items to be initialized */
- 	for (;;) {
-@@ -992,15 +993,11 @@ int smd_core_init(void)
- 	smsm_change_state(SMSM_STATE_APPS_DEM, ~0, 0);
- #endif
- 
--	pr_info("smd_core_init() done\n");
--
- 	return 0;
- }
- 
- static int __devinit msm_smd_probe(struct platform_device *pdev)
- {
--	pr_info("smd_init()\n");
--
- 	/*
- 	 * If we haven't waited for the ARM9 to boot up till now,
- 	 * then we need to wait here. Otherwise this should just
--- 
-1.7.3.2
-
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+CONFIDENTIALITY NOTICE: 
+This email message and any accompanying data or files is confidential and may
+contain privileged information intended only for the named recipient(s). If 
+you are not the intended recipient(s), you are hereby notified that the 
+dissemination, distribution, and or copying of this message is strictly 
+prohibited. If you receive this message in error, or are not the named 
+recipient(s), please notify the sender at the email address above, delete 
+this email from your computer, and destroy any copies in any form immediately.
+Receipt by anyone other than the named recipient(s) is not a waiver of any 
+attorney-client, work product, or other applicable privilege.
