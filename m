@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab0KKXpv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 18:45:51 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:39559 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab0KKXpu (ORCPT
+	id S1754942Ab0KKXuF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 18:50:05 -0500
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:47973 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755099Ab0KKXuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 18:45:50 -0500
-Subject: Re: [PATCHv6 0/7] system time changes notification
-From: john stultz <johnstul@us.ibm.com>
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Shishkin <virtuoso@slind.org>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-In-Reply-To: <AANLkTimMWcYc2OF1uS0zwRjMyjSGyysMVAsAFMtyOQ-D@mail.gmail.com>
-References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
-	 <22542.1289507293@localhost> <20101111205123.GC10585@shisha.kicks-ass.net>
-	 <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
-	 <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
-	 <1289514994.2742.81.camel@work-vm>
-	 <AANLkTimMWcYc2OF1uS0zwRjMyjSGyysMVAsAFMtyOQ-D@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Nov 2010 15:45:42 -0800
-Message-ID: <1289519142.2742.148.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Nov 2010 18:50:03 -0500
+Date: Fri, 12 Nov 2010 08:50:00 +0900
+From: Norbert Preining <preining@logic.at>
+To: Mattia Dongili <malattia@linux.it>
+Cc: linux-kernel@vger.kernel.org,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Subject: Re: regression since 2.6.36: backlight in sony-laptop not working
+Message-ID: <20101111235000.GA6651@gamma.logic.tuwien.ac.at>
+References: <20101104142915.GC7650@gamma.logic.tuwien.ac.at> <20101110035833.GB3029@kamineko.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101110035833.GB3029@kamineko.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-11 at 18:19 -0500, Kyle Moffett wrote:
-> Then consider the possibility of creating "virtual clocksources" which
-> are measured against an existing clocksource.  They could be
-> independently slewed and adjusted relative to the parent clocksource.
-> Then the "UTS namespace" feature could also affect the current
-> clocksource used for CLOCK_MONOTONIC, etc.
-> 
-> You could perform various forms of time-sensitive software testing
-> without causing problems for a "make" process running elsewhere on the
-> system.  You could test the operation of various kinds of software
-> across large jumps or long periods of time (at a highly accelerated
-> rate) without impacting your development environment.
+On Mi, 10 Nov 2010, Mattia Dongili wrote:
+> It's ages sony_laptop doesn't change, it may be some other change in the
+> acpi layer that causes this.
 
-Oh, and I forgot, if you want to actually do something like this, the
-best way is to create a LD_PRELOAD library that intercepts gettimeofday,
-clock_gettime, and all the other syscalls that utilize time values and
-adjust them as desired.
+Seems so that the sys files have changed to new locations:
+/sys/devices/virtual/backlight/acpi_video0/brightness
 
-This way you only affect the specific application and not the rest of
-the system, and avoid all the nasty hardware time domain assumptions
-that the kernel makes when working with hardware.
+(mind the additional "virtual")
+as well as thermal zone etc etc.
 
-thanks
--john
+Could that explain the problem?
 
+Best wishes
 
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+CAARNDUNCAN (n.)
+The high-pitched and insistent cry of the young female human urging
+one of its peer group to do something dangerous on a cliff-edge or
+piece of toxic waste ground.
+			--- Douglas Adams, The Meaning of Liff
