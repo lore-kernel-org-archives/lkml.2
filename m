@@ -1,79 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab0KKVFU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 16:05:20 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:54829 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756779Ab0KKVFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 16:05:19 -0500
-Message-Id: <20101111210515.112937290@gulag1.americas.sgi.com>
-User-Agent: quilt/0.47-1
-Date: Thu, 11 Nov 2010 15:05:07 -0600
-From: Robin@sgi.com, "Holt <holt"@sgi.com
-To: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: [Patch] XPC fails to discover partitions with all nasids above 128.
-References: <20101111210506.081564086@gulag1.americas.sgi.com>
-Content-Disposition: inline; filename=uv_max_regions
+	id S1756957Ab0KKVII (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 16:08:08 -0500
+Received: from 254.185.140-88.rev.gaoland.net ([88.140.185.254]:44078 "EHLO
+	electric-eye.fr.zoreil.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756483Ab0KKVIH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 16:08:07 -0500
+X-Greylist: delayed 1080 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Nov 2010 16:08:06 EST
+Date: Thu, 11 Nov 2010 21:49:55 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Michael Monnerie <michael.monnerie@is.it-management.at>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: Regression 2.6.36 - driver rtl8169 crashes kernel, triggered by
+ user app
+Message-ID: <20101111204955.GA8348@electric-eye.fr.zoreil.com>
+References: <201011111933.04343@zmi.at>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201011111933.04343@zmi.at>
+X-Organisation: Land of Sunshine Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UV hardware defines 256 memory protection regions versus the baseline
-64 with increasing size for the SN2 ia64.  This was overlooked when XPC
-was modified to accomodate both UV and SN2.
+Michael Monnerie <michael.monnerie@is.it-management.at> :
+[...]
+> With kernel 2.6.34.7-0.5-desktop, this runs with ~41MiB/s without 
+> problems.
+> 
+> With kernel 2.6.36, it runs at ~26MiB/s, and while doing so, dmesg shows 
+> a lot of noise about r8169 complaining:
+> http://zmi.at/x/kernel2.6.36-crash86.jpg
 
-Without this patch, a user could reconfigure their existing system and
-suddenly disable cross-partition communications with no indication of
-what has gone wrong.  It also prevents larger configurations from using
-cross-partition communication.
+Can you test again after reverting 801e147cde02f04b5c2f42764cd43a89fc7400a2 ?
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-Cc: stable@kernel.org
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
+Thanks.
 
----
-
- drivers/misc/sgi-xp/xpc_partition.c |   25 +++++++++++++++----------
- 1 file changed, 15 insertions(+), 10 deletions(-)
-
-Index: pv1012187/drivers/misc/sgi-xp/xpc_partition.c
-===================================================================
---- pv1012187.orig/drivers/misc/sgi-xp/xpc_partition.c	2010-11-11 15:01:51.963024726 -0600
-+++ pv1012187/drivers/misc/sgi-xp/xpc_partition.c	2010-11-11 15:02:26.471574791 -0600
-@@ -439,18 +439,23 @@ xpc_discovery(void)
- 	 * nodes that can comprise an access protection grouping. The access
- 	 * protection is in regards to memory, IOI and IPI.
- 	 */
--	max_regions = 64;
- 	region_size = xp_region_size;
- 
--	switch (region_size) {
--	case 128:
--		max_regions *= 2;
--	case 64:
--		max_regions *= 2;
--	case 32:
--		max_regions *= 2;
--		region_size = 16;
--		DBUG_ON(!is_shub2());
-+	if (is_uv())
-+		max_regions = 256;
-+	else {
-+		max_regions = 64;
-+
-+		switch (region_size) {
-+		case 128:
-+			max_regions *= 2;
-+		case 64:
-+			max_regions *= 2;
-+		case 32:
-+			max_regions *= 2;
-+			region_size = 16;
-+			DBUG_ON(!is_shub2());
-+		}
- 	}
- 
- 	for (region = 0; region < max_regions; region++) {
-
+-- 
+Ueimor
