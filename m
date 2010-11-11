@@ -1,75 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab0KKM7D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 07:59:03 -0500
-Received: from dtp.xs4all.nl ([80.101.171.8]:64810 "HELO abra2.bitwizard.nl"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1756357Ab0KKM7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 07:59:02 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Nov 2010 07:59:01 EST
-Date: Thu, 11 Nov 2010 13:52:19 +0100
-From: Rogier Wolff <R.E.Wolff@BitWizard.nl>
-To: linux-kernel@vger.kernel.org
-Subject: Sync semantics. 
-Message-ID: <20101111125219.GA945@bitwizard.nl>
+	id S1756067Ab0KKNCU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 08:02:20 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:60473 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755146Ab0KKNCS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 08:02:18 -0500
+Date: Thu, 11 Nov 2010 08:02:12 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        David Sharp <dhsharp@google.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [RFD tracing] Tracing ABI Work Plan
+Message-ID: <20101111130212.GD3992@Krystal>
+References: <20101111004612.GB32564@Krystal> <4CDBA251.4010505@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Organization: BitWizard.nl
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <4CDBA251.4010505@hitachi.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 07:43:58 up 49 days, 16:46,  1 user,  load average: 1.26, 1.32,
+	1.27
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Masami Hiramatsu (masami.hiramatsu.pt@hitachi.com) wrote:
+> Hi,
+> 
+> (2010/11/11 9:46), Mathieu Desnoyers wrote:
+> > A) New ABI for user-space
+> > 
+> > This new ABI will provide the features long-awaited by tracing users. We've
+> > already started this discussion by listing the requirements and acknowledging
+> > them. It is now time to start discussing the ABI. Upon disagreement on answering
+> > a specific requirement, two questions will arise:
+> > 
+> > 1. How much trouble it really is to take care of this requirement. If the answer
+> >    is "not much", then we simply take care of it.
+> > 2. If it really is a big deal to take care of a requirement at the ABI level,
+> >    then we will have to discuss the use-cases.
+> > 
+> > Once we are on the same page with respect to these requirements, we can come up
+> > with an ABI proposal for:
+> > 
+> > - Tracing control
+> > - Trace format
+> > 
+> > 
+> > B) Internal Instrumentation API
+> > 
+> > I propose to standardize the instrumentation mechanisms (Tracepoints, Function
+> > Tracer, Dynamic Probes, System Call Tracing, etc), so they can be used by
+> > Ftrace, Perf, and by the new ABI without requiring to build all three tracer
+> > ABI code-bases in the kernel. This involves modularizing the instrumentation
+> > sources, taking the following aspects into account:
+> > 
+> > - They should be stand-alone objects, which can be built without a full tracer
+> >   enabled.
+> > - They should offer a "registration/unregistration" API to tracers, so tracers
+> >   can register a callback along with a private data pointer (this would fit
+> >   with the "multiple concurrent tracing session" requirement).
+> > - They should call these callbacks passing the private data pointer when the
+> >   instrumentation is hit.
+> > - They should provide a mechanism to list the available instrumentation (when it
+> >   makes sense) and active instrumentation. E.g., it makes sense for tracepoints
+> >   to list the available tracepoints, but it only makes sense for dynamic probes
+> >   to list the enabled probes.
+> > 
+> > Masami Hiramatsu and Frederic Weisbecker already showed interest in undertaking
+> > this task.
+> 
+> Actually, I didn't talked about what API should be provided internally.
+> (Yeah, I know LTTng handler want that. However, there is no "external" handler
+>  _inside_ linux kernel tree)
 
-Hi, 
+My target here is not LTTng. My goal is to get the ball rolling for the improved
+ABI. If we make sure all instrumentation sources provide a clean API to Ftrace,
+Perf, and eventually the new ABI, then it makes it easier to transition from one
+ABI to another; we would not have to change the "whole world", but rather just
+to switch to the new ABI when it is deemed ready.
 
-What should I expect from a "sync" system call?
+> Instead, I and Frederic talked shortly about something like user interface
+> for events. (so it would be more close to A, about controlling)
 
-The manual says: 
+Yep, this too makes sense.
 
-   sync() first commits inodes to buffers, and then buffers to disk.
+> As Thomas said, eventually kernel internal tracer should simply provide
+> "events tracing" functionality. User tools will analyze it and it's not
+> kernel's business. I agree with his opinion.
 
-and then goes on to state: 
+Right.
 
-   ... since  version  1.3.20 Linux does actually wait.
+> From above viewpoint, currently only trace-events(tracepoint-based events)
+> and dynamic-events (kprobe-based events) are providing same interface for
+> users. And, for example, perf's PMU events or ftrace's mcount events aren't
+> shown up under debugfs/tracing/events. IMHO, all events provided by kernel
+> should be there, so that user tools can read the format and control those
+> events same way.
 
-[for the buffers to be handed over to the drive]
+We should decide if we keep this stuff under /debugfs or move it elsewhere. This
+is part of the ABI after all. Independently of where this ends up, the
+operations we need to perform are:
 
-So how long can I expect a "sync" call to take? 
+- For each instrumentation source (tracepoints, function tracing, dynamic
+  probes, PMC, ...)
+  - List available instrumentation
+    - Makes sense for tracepoints and PMC, but function graph tracer and dynamic
+      probes might skip this part.
+  - List activated instrumentation
+  - Control interface
+    - Activate/deactivate instrumentation, on a per trace session basis
+      - Note: the concept of "trace session" is currently inexisting in both
+        perf and ftrace. We'll have to think of something in terms of ABI here.
+      - Note2: each instrumentation source will expects its own sets of
+        parameters to specify the instrumentation to control.
+      - Note3: Handling of instrumentation in dynamically loadable modules
+        (which applies also to dynamic probes) might require that we allow the
+        control interface to activate a tracepoint or dynamic probe for a trace
+        session (e.g. by name) before the instrumentation point is listed as
+        available instrumentation. The goal is to deal with modules dynamically
+        loaded and dynamic instrumentation dynamically added while the trace is
+        being recorded; without requiring any user knowledge about
+        module-specific parameters whatsoever.
 
-I would expect that all buffers that are dirty at the time of the
-"sync" call are written by the time that sync returns. I'm currently
-bombarding my fileserver with some 40-60Mbytes per second of data to
-be written (*). The fileserver has 8G of memory. So max 8000 Mb of
-dirty buffers can be stored, right? The server writes an average of
-(at least) 40Mb/second to disk. According to my calculator, I will
-have to wait up to 200 seconds for the sync system call to return....
+> For this purpose, I'd like to expand trace-event/dynamic-event framework to
+> those events. It seems that some PMU events can be treated as trace-events,
+> mcount and other parametric events can be treated as dynamic-events.
+> 
+> Anyway, those stuffs can be done without new-ring-buffer-ABI things.
+> I'll just expand dyn-events a bit far from here :-)
 
+Steven wanted to clean up his debugfs event description files, so this would fit
+well with this effort, and is indeed an ABI change. One way to do it is to keep
+the old files around and come up with a new hierarchy for the "cleaned up"
+files, along with the new features you want to add.
 
-# time sync
-0.000u 0.220s 2:22:23.96 0.0%   0+0k 0+0io 2pf+0w
+Also, we might want to consider moving the debugfs event description files to a
+slightly different format (see my metadata proposal). It expands a bit on the
+current information, and allows us to deal with bitfields much more elegantly.
+However this is also an ABI change.
 
-Two hours 22 minutes. 
+Thanks,
 
-I typed the "time sync" again, and it hasn't returned yet.... Actually
-I don't expect it to before 6-hours-from-now because that's when the
-clients will run out of data to send.
+Mathieu
 
-wolff    13706  0.0  0.0   1816   208 pts/12   D+   12:08   0:00 sync
-wolff    14116  0.0  0.0   1908   520 pts/34   S+   13:48   0:00 grep sync
-
-It's been running 100 minutes by now..... 
-
-
-(*) The three clients are each sending 20-35 Mb/second but are being
-held up by the server who doesn't seem to be handling more than about
-40-50Mb/sec total.
+> 
+> Best Regards,
+> 
+> -- 
+> Masami HIRAMATSU
+> 2nd Dept. Linux Technology Center
+> Hitachi, Ltd., Systems Development Laboratory
+> E-mail: masami.hiramatsu.pt@hitachi.com
 
 -- 
-** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
-**    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
-*-- BitWizard writes Linux device drivers for any device you may have! --*
-Q: It doesn't work. A: Look buddy, doesn't work is an ambiguous statement. 
-Does it sit on the couch all day? Is it unemployed? Please be specific! 
-Define 'it' and what it isn't doing. --------- Adapted from lxrbot FAQ
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
