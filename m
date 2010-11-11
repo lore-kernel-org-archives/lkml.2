@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808Ab0KKJAY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 04:00:24 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45242 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072Ab0KKJAW (ORCPT
+	id S1752963Ab0KKJDw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 04:03:52 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:39632 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab0KKJDs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 04:00:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ay+4IyPKtDZhSVWM23cr2/FEj8h5rjCfI9Ybza3s1kcqUe2lzXpg5ViEovVRZ746In
-         XLHLBeTtBAokD6DaGc8yCjQjyYaekOBn+6K4SmuFGJ5RSGAKLf8ck8xhOXP4EbKsvqCj
-         +oVaQzo5Eyp9lOuDzvoKN1XYftUOsVVIEAsIw=
-Date: Thu, 11 Nov 2010 01:00:16 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Jiri Kosina <jkosina@suse.cz>,
-        Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
-        Stephane Chatty <chatty@enac.fr>,
-        Don Prince <dhprince-devel@yahoo.co.uk>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH] HID: roccat: Add support for Roccat Kone[+]
-Message-ID: <20101111090015.GG24415@core.coreip.homeip.net>
-References: <1287943025.2623.16.camel@neuromancer>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287943025.2623.16.camel@neuromancer>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 11 Nov 2010 04:03:48 -0500
+Subject: Re: Patch added to scsi-rc-fixes-2.6:  [SCSI] host lock push-down
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jeff Garzik <jeff@garzik.org>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4CDB3028.6080605@garzik.org>
+References: <201011102240.oAAMe86a001486@hera.kernel.org>
+	 <4CDB2A81.5030100@garzik.org> <1289432759.3016.63.camel@mulgrave.site>
+	 <4CDB3028.6080605@garzik.org>
+Content-Type: text/plain
+Date: Thu, 11 Nov 2010 00:58:35 -0800
+Message-Id: <1289465915.2867.68.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stefan,
+On Wed, 2010-11-10 at 18:52 -0500, Jeff Garzik wrote:
+> On 11/10/2010 06:45 PM, James Bottomley wrote:
+> > On Wed, 2010-11-10 at 18:28 -0500, Jeff Garzik wrote:
+> >> On 11/10/2010 05:40 PM, James Bottomley wrote:
+> >>> Your commit:
+> >>>
+> >>>       [SCSI] host lock push-down
+> >>>
+> >>>       Move the mid-layer's ->queuecommand() invocation from being locked
+> >>>       with the host lock to being unlocked to facilitate speeding up the
+> >>>       critical path for drivers who don't need this lock taken anyway.
+> >>>
+> >>>       The patch below presents a simple SCSI host lock push-down as an
+> >>>       equivalent transformation.  No locking or other behavior should change
+> >>>       with this patch.  All existing bugs and locking orders are preserved.
+> >>>
+> >>>       Minimal code disturbance was attempted with this change.  Most drivers
+> >>>       needed only two one-line modifications for their host lock push-down.
+> >>>
+> >>>       Signed-off-by: Jeff Garzik<jgarzik@redhat.com>
+> >>>       Signed-off-by: James Bottomley<James.Bottomley@suse.de>
+> >>>
+> >>> has been added to the upstream SCSI tree
+> >>> You can find it here:
+> >>
+> >> No comments on renaming ->queuecommand to something else?
+> >
+> > What we wondered about doing differently isn't really relevant for a
+> > change log ... that should just really be about what was done (to avoid
+> > confusion).
+> 
+> Wasn't referring to the changelog (perhaps shouldn't have quoted that); 
+> just asking the question generally.
+> 
+> 
+> >> The consequences are rather dire if this goes unnoticed, yes?
+> >
+> > You mean if there's a missed in-tree driver?  Yes, but I took care to
+> > make sure all SCSI drivers were accounted for.  For out of tree drivers,
+> > as with the eh lock push down, it's caveat emptor.
+> 
+> Thinking about out-of-tree drivers, yes.
+> 
 
-On Sun, Oct 24, 2010 at 07:57:05PM +0200, Stefan Achatz wrote:
-> +
-> +static int koneplus_create_sysfs_attributes(struct usb_interface *intf)
-> +{
-> +	int retval;
-> +
-> +	retval = sysfs_create_group(&intf->dev.kobj, &koneplus_attribute_group);
-> +	if (retval)
-> +		goto exit_1;
-> +
-> +	retval = sysfs_create_bin_file(&intf->dev.kobj,
-> +			&koneplus_profile_settings_attr);
-> +	if (retval)
-> +		goto exit_2;
-> +
-> +	retval = sysfs_create_bin_file(&intf->dev.kobj,
-> +			&koneplus_profile1_settings_attr);
-> +	if (retval)
-> +		goto exit_3;
-> +
+Hi Jeff and James,
 
-...
+Thank you for getting this initial patch merged.  I really think this
+was and is the best choice moving forward.   Also, a seriously big thank
+you to all of the other folks who have helped identify LLDs issues for
+host_lock less mode for drivers!!
 
-> +
-> +	retval = sysfs_create_bin_file(&intf->dev.kobj,
-> +			&koneplus_sensor_attr);
-> +	if (retval)
-> +		goto exit_17;
-> +
+In the next days I will get a atomic_t scsi_host->cmd_serial_number
+patch rebased (which is really very minor at this point w/o the
+scsi_error.c changes), and merge the current host_lock-less 'scoreboard'
+on top of jgarzik's code and tag for .38.   So, please let me know if
+you would to include minor the atomic_t scsi_host->cmd_serial_number
+patch for .37 or if you would rather have this immediately preceed the
+first series of "enable host-lock_less for LLD vendor superturbo hba"
+for the .38 round.
 
-I think we are ready to sysfs_binary_attribute_group ;) Please add it to
-sysfs code and send it to GregKH.
+Best,
 
-Thanks.
+--nab
 
--- 
-Dmitry
