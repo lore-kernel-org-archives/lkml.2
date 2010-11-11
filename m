@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab0KKSAl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 13:00:41 -0500
-Received: from mx01.hut.fi ([130.233.228.108]:59570 "EHLO mx01.hut.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755154Ab0KKSAk convert rfc822-to-8bit (ORCPT
+	id S1755509Ab0KKSBT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 13:01:19 -0500
+Received: from smtp-out-138.synserver.de ([212.40.180.138]:1135 "HELO
+	smtp-out-138.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755375Ab0KKSBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 13:00:40 -0500
-X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Nov 2010 13:00:39 EST
-Message-ID: <20101111195536.2z7hngny84o0scw4@webmail1.tkk.fi>
-Date: Thu, 11 Nov 2010 19:55:36 +0200
-From: "Mr. Beuker Hendrik" <lejven@tkk.fi>
-Reply-to: bhendrik1@mspil.edu.cn
-To: undisclosed-recipients:;
-Subject: Work with me
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	DelSp=Yes	format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
-X-Originating-IP: 190.144.40.195
-X-Authenticated-User: lejarven
-X-PMX-Version: 5.4.6.353000, Antispam-Engine: 2.6.1.350677, Antispam-Data: 2010.11.11.173920
-X-Spam-Probability: 54%
-X-PMX-Spam: Gauge=XXXXXIIII, Probability=54%, Report='FRAUD_X3 1.667, FRAUD_X4 1.667, FRAUD_HIGH_X3_WEBMAIL 1, CN_TLD 0.5, SXL_IP_SPAM_RCVD 0.5, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1500_1599 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, FRAUD_HIGH_X3 0, FROM_NAME_PHRASE 0, TO_UNDISCLOSED_RECIPIENTS 0, WEBMAIL_SOURCE 0, WEBMAIL_USER_AGENT 0, WEBMAIL_XOIP 0, WEBMAIL_X_IP_HDR 0, __CD 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FRAUD_CONTACT 0, __FRAUD_FAMILY 0, __FRAUD_MONEY 0, __FRAUD_MONEY_GENERIC 0, __FRAUD_MONEY_VALUE 0, __HAS_MSGID 0, __INT_PROD_LOC 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_PHRASE5 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __SANE_MSGID 0, __STOCK_PHRASE_7 0, __STOCK_PHRASE_8 0, __TO_MALFORMED_3 0, __URI_NO_PATH 0, __USER_AGENT 0'
+	Thu, 11 Nov 2010 13:01:17 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 9573
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] POWER: jz4740-battery: Check if platform_data is supplied
+Date: Thu, 11 Nov 2010 19:00:53 +0100
+Message-Id: <1289498453-9938-2-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1289498453-9938-1-git-send-email-lars@metafoo.de>
+References: <1289498453-9938-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Currently platform_data is dereferenced without checking whether it is actually
+set, which can lead to kernel crashes.
+This patch adds a check which will abort the drivers probe function gracefully
+if no platform_data is supplied.
 
-UBS International Holdings BV
-Herengracht 600
-NL-1017 CJ Amsterdam, Netherlands.
-www.ubs.com/investmentbank
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/power/jz4740-battery.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Greetings,
-
-I am an investment consultant working with UBS International Holdings BV
-in the Netherlands. I will be happy to work this transaction out with you
-if you have a corporate or personal Bank Account and if you are reliable
-and honest. I need strong Assurance that you will never let me down, as I
-can arrange and provide you details/documentatal proof so that
-funds($8.5 million) will be transferred into your account as the next of
-kin to the late depositor(Abbas Farhan al-Jabouri, who was an Election
-candidate and also a business man). Abbas Farhan al-Jabouri and his two
-relatives were executed in Mohammed al Malih, near Mandali onthe 29th of
-January 2009.  During one of our periodic auditing I discovered a dormant
-accounts with the said balance (Eight million, five Hundred thousand
-Dollars only), this account have not been operated for some years now.
-
-At this moment I will not be able to issue more details about this
-business, until your response is received.
-
-If you are not familiar with my Bank profile, please take a moment of your
-very busy schedules to read about my Bank
-website(www.ubs.com/investment bank). I look forward to hearing from you as
-soon as possible via my private email; bhendrik1@mspil.edu.cn
-
-Thank you for your time and attention.
-
-Warmest Regards,
-Mr. Beuker Hendrik
-Investment Consultant.
-UBS.
-
-
-
-
-
-
+diff --git a/drivers/power/jz4740-battery.c b/drivers/power/jz4740-battery.c
+index 2bbe04a..5b48215 100644
+--- a/drivers/power/jz4740-battery.c
++++ b/drivers/power/jz4740-battery.c
+@@ -246,6 +246,11 @@ static int __devinit jz_battery_probe(struct platform_device *pdev)
+ 	struct jz_battery *jz_battery;
+ 	struct power_supply *battery;
+ 
++	if (!pdata) {
++		dev_err(&pdev->dev, "No platform_data supplied\n");
++		return -ENXIO;
++	}
++
+ 	jz_battery = kzalloc(sizeof(*jz_battery), GFP_KERNEL);
+ 	if (!jz_battery) {
+ 		dev_err(&pdev->dev, "Failed to allocate driver structure\n");
+-- 
+1.5.6.5
 
