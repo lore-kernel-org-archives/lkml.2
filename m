@@ -1,91 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757673Ab0KKAxv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 19:53:51 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:39642 "EHLO ogre.sisk.pl"
+	id S1757694Ab0KKAyN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 19:54:13 -0500
+Received: from kroah.org ([198.145.64.141]:35024 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757406Ab0KKAxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 19:53:49 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: [PATCH] PM: Hide OPP configuration when SoCs do not provide an implementation
-Date: Thu, 11 Nov 2010 01:52:55 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Nishanth Menon <nm@ti.com>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-References: <1289327056-27950-1-git-send-email-broonie@opensource.wolfsonmicro.com> <87fwvaqpb5.fsf@deeprootsystems.com>
-In-Reply-To: <87fwvaqpb5.fsf@deeprootsystems.com>
+	id S1757555Ab0KKAyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 19:54:11 -0500
+Date: Wed, 10 Nov 2010 16:47:30 -0800
+From: Greg KH <greg@kroah.com>
+To: Roland Dreier <rdreier@cisco.com>
+Cc: Arnaud Lacombe <lacombar@gmail.com>, Anca Emanuel <anca.emanuel@gmail.com>,
+        Elvis Dowson <elvis.dowson@mac.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Forked android kernel development from linux kernel mainline
+Message-ID: <20101111004730.GC22463@kroah.com>
+References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com> <AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com> <20101106181202.GA6927@kroah.com> <39580686-A899-4689-BAAD-AF5546B34E49@mac.com> <AANLkTimVsUsrmTvsHqFiqJh1hhryMBemGyW+kYLKGgEu@mail.gmail.com> <20101107155757.GA13736@kroah.com> <AANLkTik=UWwRLOaHMfVifYiQPpSwoYuA6J1EoL5BOgJY@mail.gmail.com> <20101107215908.GA21070@kroah.com> <adar5esn1gd.fsf@cisco.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011110152.55311.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <adar5esn1gd.fsf@cisco.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 09, 2010, Kevin Hilman wrote:
-> Mark Brown <broonie@opensource.wolfsonmicro.com> writes:
+On Wed, Nov 10, 2010 at 04:33:38PM -0800, Roland Dreier wrote:
+>  > Isn't the openwrt stuff just drivers and some arch specific code?
+>  > Nothing that is core infrastructure, and nothing preventing them from
+>  > submitting the drivers and arch code if they want to, right?
 > 
-> > Since the OPP API is only useful with an appropraite SoC-specific
-> > implementation there is no point in offering the ability to enable
-> > the API on general systems. Provide an ARCH_HAS OPP Kconfig symbol
-> > which masks out the option unless selected by an implementation.
-> >
-> > Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> 
-> Acked-by: Kevin Hilman <khilman@deeprootsystems.com>
+> Actually openwrt has some core infrastructure for managing (ethernet)
+> switches as extra-fancy multiport PHYs.  That means that all the drivers
+> in openwrt for the typical 5-8 port switches in home routers don't
+> really apply to mainline.
 
-Applied to suspend-2.6/linux-next, will push to Linus next week.
+Why can't we merge that core infrastructure as well?  Has it been
+rejected for any specific reasons?
 
-Thanks,
-Rafael
+thanks,
 
-
-> > ---
-> >  Documentation/power/opp.txt |    3 +++
-> >  kernel/power/Kconfig        |    4 ++++
-> >  2 files changed, 7 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/Documentation/power/opp.txt b/Documentation/power/opp.txt
-> > index 44d87ad..cd44558 100644
-> > --- a/Documentation/power/opp.txt
-> > +++ b/Documentation/power/opp.txt
-> > @@ -37,6 +37,9 @@ Typical usage of the OPP library is as follows:
-> >  SoC framework	-> modifies on required cases certain OPPs	-> OPP layer
-> >  		-> queries to search/retrieve information	->
-> >  
-> > +Architectures that provide a SoC framework for OPP should select ARCH_HAS_OPP
-> > +to make the OPP layer available.
-> > +
-> >  OPP layer expects each domain to be represented by a unique device pointer. SoC
-> >  framework registers a set of initial OPPs per device with the OPP layer. This
-> >  list is expected to be an optimally small number typically around 5 per device.
-> > diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
-> > index 29bff61..a5aff3e 100644
-> > --- a/kernel/power/Kconfig
-> > +++ b/kernel/power/Kconfig
-> > @@ -246,9 +246,13 @@ config PM_OPS
-> >  	depends on PM_SLEEP || PM_RUNTIME
-> >  	default y
-> >  
-> > +config ARCH_HAS_OPP
-> > +	bool
-> > +
-> >  config PM_OPP
-> >  	bool "Operating Performance Point (OPP) Layer library"
-> >  	depends on PM
-> > +	depends on ARCH_HAS_OPP
-> >  	---help---
-> >  	  SOCs have a standard set of tuples consisting of frequency and
-> >  	  voltage pairs that the device will support per voltage domain. This
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-
+greg k-h
