@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab0KKT6A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 14:58:00 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:34562 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756156Ab0KKT56 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 14:57:58 -0500
-Subject: Re: [RFC][PATCH 13/22] sched: add resource limits for -deadline
- tasks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raistlin <raistlin@linux.it>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1288334250.8661.154.camel@Palantir>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288334250.8661.154.camel@Palantir>
+	id S1756652Ab0KKT6U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 14:58:20 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:58795 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1756607Ab0KKT6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 14:58:18 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18zsZ86l7IzUXTL1FB6wX25Fa7YCGKjc5JliTeD/Y
+	evIOFN1ULThKkS
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+From: Mike Galbraith <efault@gmx.de>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101111193810.GB1564@arch.trippelsdorf.de>
+References: <1287648715.9021.20.camel@marge.simson.net>
+	 <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
+	 <20101021162924.GA3225@redhat.com>
+	 <1288076838.11930.1.camel@marge.simson.net>
+	 <1288078144.7478.9.camel@marge.simson.net>
+	 <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
+	 <1289489200.11397.21.camel@maggy.simson.net>
+	 <20101111191556.GA1564@arch.trippelsdorf.de>
+	 <1289504111.21413.2.camel@maggy.simson.net>
+	 <20101111193810.GB1564@arch.trippelsdorf.de>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 11 Nov 2010 20:57:51 +0100
-Message-ID: <1289505471.2084.191.camel@laptop>
+Date: Thu, 11 Nov 2010 12:58:06 -0700
+Message-ID: <1289505486.21413.17.camel@maggy.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-29 at 08:37 +0200, Raistlin wrote:
-> Add resource limits for non-root tasks in using the SCHED_DEADLINE
-> policy, very similarly to what already exists for RT policies.
-> 
-> In fact, this patch:
->  - adds the resource limit RLIMIT_DLDLINE, which is the minimum value
->    a user task can use as its own deadline;
->  - adds the resource limit RLIMIT_DLRTIME, which is the maximum value
->    a user task can use as it own runtime.
-> 
-> Notice that to exploit these, a modified version of the ulimit
-> utility and a modified resource.h header file are needed. They
-> both will be available on the website of the project.
+On Thu, 2010-11-11 at 20:38 +0100, Markus Trippelsdorf wrote:
+> On 2010.11.11 at 12:35 -0700, Mike Galbraith wrote:
 
-We might also want to add an additional !SYS_CAP_ADMIN global bandwidth
-cap much like the existing sysctl bandwidth cap.
+> > When you say with/without, does that mean enabled/disabled, or
+> > patched/virgin and/or cgroups/nocgroups?
+> 
+> Patched/virgin and nocgroups
 
+Figures.  As you can see, group scheduling is not wonderful for extreme
+switchers.  Fortunately, most apps do a bit of work in between.
+
+	-Mike
 
