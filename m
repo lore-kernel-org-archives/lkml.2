@@ -1,93 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab0KKM0x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 07:26:53 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:43288 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756512Ab0KKM0v (ORCPT
+	id S1756594Ab0KKM1D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 07:27:03 -0500
+Received: from gate.crashing.org ([63.228.1.57]:41335 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756565Ab0KKM07 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 07:26:51 -0500
-Date: Thu, 11 Nov 2010 07:26:46 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Sharp <dhsharp@google.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC tracing] Common Trace Format for Linux (v1.1)
-Message-ID: <20101111122645.GA3992@Krystal>
-References: <20101111004612.GB32564@Krystal> <alpine.LFD.2.00.1011110158390.2900@localhost6.localdomain6> <20101111021614.GA5782@Krystal> <alpine.LFD.2.00.1011111011530.2900@localhost6.localdomain6>
-MIME-Version: 1.0
+	Thu, 11 Nov 2010 07:26:59 -0500
+Subject: Re: [PATCH 3/4][v2] fsl_rio: move machine_check handler into machine_check_e500 & machine_check_e500mc
+Mime-Version: 1.0 (Apple Message framework v1081)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011111011530.2900@localhost6.localdomain6>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 07:25:52 up 49 days, 16:28,  1 user,  load average: 1.41, 1.29,
-	1.21
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <9FCE46230501DF4D9461B9ACC152FD7104DDA26D@zmy16exm20.fsl.freescale.net>
+Date: Thu, 11 Nov 2010 06:26:33 -0600
+Cc: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
+        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, Li Yang-R58472 <R58472@freescale.com>,
+        Gala Kumar-B11780 <B11780@freescale.com>,
+        Zang Roy-R61911 <R61911@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A530CF80-F6B6-40BE-A465-18884B887432@kernel.crashing.org>
+References: <1288777018-24259-1-git-send-email-b21989@freescale.com> <0CE8B6BE3C4AD74AB97D9D29BD24E55201538B08@CORPEXCH1.na.ads.idt.com> <9FCE46230501DF4D9461B9ACC152FD7104DDA26D@zmy16exm20.fsl.freescale.net>
+To: Xie Shaohui-B21989 <B21989@freescale.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Thomas Gleixner (tglx@linutronix.de) wrote:
-> Mathieu,
-> 
-> On Wed, 10 Nov 2010, Mathieu Desnoyers wrote:
-> 
-> > * Thomas Gleixner (tglx@linutronix.de) wrote:
-> > [...]
-> > 
-> > > The requirement list has been beaten to death several times already
-> > > along with the various options of trace formats, so we really are at
-> > > the point where you folks need to sit down and come up with real code
-> > > which can be discussed and improved on a technical base.
-> > 
-> > I understand and share your frustration about things having been standing still
-> > for way too long.
-> > 
-> > In order to get things rolling, I hereby append my trace format proposal as RFC.
-> > I did implement the core elements of it already in the BabelTrace trace
-> > converter project, so it's not one of these dreaded "design by committee without
-> > any understanding of the practicality aspects" standards. I try make sure it
-> > translates to something realistic and useful.
-> > 
-> > Feedback is welcome, thanks,
-> > 
-> > Mathieu
-> > 
-> > RFC: Common Trace Format Proposal for Linux (v1.1)
-> 
-> Groan. Did you read what I wrote ?
-> 
-> > >                                              ... so we really are at
-> > > the point where you folks need to sit down and come up with real code
-> > > which can be discussed and improved on a technical base.
-> 
-> Your reaction on this is to send yet another proposal, which has not
-> really anything new in it.
-> 
-> What we are waiting for is a sensible incremental patch series, which
-> extends or replaces functionality in the existing perf ABI up to the
-> point, where we can eventually see the need for a sensible
-> replacement. That's the way we work, not with tons of proposals.
 
-OK, I'll work on this. Meanwhile, anyone interested to provide feedback on the
-RFC I sent is still welcome to do so.
+On Nov 11, 2010, at 4:19 AM, Xie Shaohui-B21989 wrote:
 
-Thanks,
+> 
+> 
+> 
+> Best Regards, 
+> Shaohui Xie 
+> 
+> 
+>> -----Original Message-----
+>> From: Bounine, Alexandre [mailto:Alexandre.Bounine@idt.com]
+>> Sent: Thursday, November 11, 2010 6:55 AM
+>> To: Xie Shaohui-B21989; akpm@linux-foundation.org
+>> Cc: linux-kernel@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; Li
+> Yang-
+>> R58472; Gala Kumar-B11780; Zang Roy-R61911
+>> Subject: RE: [PATCH 3/4][v2] fsl_rio: move machine_check handler into
+>> machine_check_e500 & machine_check_e500mc
+>> 
+>> Shaohui Xie <b21989@freescale.com> wrote:
+>>> 
+>>> diff --git a/arch/powerpc/kernel/traps.c
+> b/arch/powerpc/kernel/traps.c
+>>> index a45a63c..2a5fb9d 100644
+>>> --- a/arch/powerpc/kernel/traps.c
+>>> +++ b/arch/powerpc/kernel/traps.c
+>>> @@ -55,6 +55,7 @@
+>>> #endif
+>>> #include <asm/kexec.h>
+>>> #include <asm/ppc-opcode.h>
+>>> +#include <linux/rio.h>
+>>> 
+>>> #if defined(CONFIG_DEBUGGER) || defined(CONFIG_KEXEC)  int
+>>> (*__debugger)(struct pt_regs *regs) __read_mostly; @@ -500,6 +501,13
+>>> @@ int machine_check_e500mc(struct pt_regs *regs)
+>>> 		       reason & MCSR_MEA ? "Effective" : "Physical",
+>> addr);
+>>> 	}
+>>> 
+>>> +	if (reason & MCSR_BUS_RBERR) {
+>>> +		printk("Bus - Read Data Bus Error\n"); #ifdef
+> CONFIG_RAPIDIO
+>>> +		recoverable = fsl_rio_mcheck_exception(regs); #endif
+>>> +	}
+>>> +
+>>> 	mtspr(SPRN_MCSR, mcsr);
+>>> 	return mfspr(SPRN_MCSR) == 0 && recoverable;  } @@ -527,8
+> +535,12
+>> @@
+>>> int machine_check_e500(struct pt_regs *regs)
+>>> 		printk("Bus - Write Address Error\n");
+>>> 	if (reason & MCSR_BUS_IBERR)
+>>> 		printk("Bus - Instruction Data Error\n");
+>>> -	if (reason & MCSR_BUS_RBERR)
+>>> +	if (reason & MCSR_BUS_RBERR) {
+>>> 		printk("Bus - Read Data Bus Error\n");
+>>> +#ifdef CONFIG_RAPIDIO
+>>> +		fsl_rio_mcheck_exception(regs);
+>>> +#endif
+>>> +	}
+>>> 	if (reason & MCSR_BUS_WBERR)
+>>> 		printk("Bus - Read Data Bus Error\n");
+>>> 	if (reason & MCSR_BUS_IPERR)
+>> 
+>> This implementation breaks an intended use of
+>> fsl_rio_mcheck_exception():
+>> 1. for e500 it does not check the return value of the rio handler and
+>> crashes the system even after RIO Mchk was serviced. Looks like e500mc
+>> version handles it better but I have no HW to test it.
+>> 2. the RIO Mchk is expected to be handled quietly but here it has many
+>> printk's. May be it is better to call the fsl_rio_mcheck_exception()
+>> handler in very beginning and simply exit if it returns 1.
+>> 
+>> Alex.
+> [Xie Shaohui-B21989] Hi Alex, seems your suggestion is some kind of
+> conflict with Kumar, you can have a look at 
+> http://patchwork.ozlabs.org/patch/67774/
 
-Mathieu
+I think Alex's comment is the fact we ignore the 'return' value in the machine_check_e500 case.
 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+- k
