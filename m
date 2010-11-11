@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab0KKUdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 15:33:40 -0500
-Received: from mail.digidescorp.com ([66.244.163.200]:23796 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753034Ab0KKUdj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 15:33:39 -0500
-X-Spam-Processed: digidescorp.com, Thu, 11 Nov 2010 14:33:34 -0600
-X-Authenticated-Sender: steve@digidescorp.com
-X-MDRemoteIP: 99.142.19.240
-X-Return-Path: prvs=1931d8b490=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, "Steven J. Magnani" <steve@digidescorp.com>
-Subject: [PATCH][RESEND] nommu: yield CPU periodically while disposing large VM
-Date: Thu, 11 Nov 2010 14:33:16 -0600
-Message-Id: <1289507596-17613-1-git-send-email-steve@digidescorp.com>
-X-Mailer: git-send-email 1.6.0.6
+	id S1756749Ab0KKUeR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 15:34:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32574 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751931Ab0KKUeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 15:34:16 -0500
+Date: Thu, 11 Nov 2010 21:27:03 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101111202703.GA16282@redhat.com>
+References: <1287514410.7368.10.camel@marge.simson.net> <20101020025652.GB26822@elte.hu> <1287648715.9021.20.camel@marge.simson.net> <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins> <20101021162924.GA3225@redhat.com> <1288076838.11930.1.camel@marge.simson.net> <1288078144.7478.9.camel@marge.simson.net> <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com> <1289489200.11397.21.camel@maggy.simson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289489200.11397.21.camel@maggy.simson.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Depending on processor speed, page size, and the amount of memory a process
-is allowed to amass, cleanup of a large VM may freeze the system for many
-seconds. This can result in a watchdog timeout.
+I didn't read this patch carefully (yet) but,
 
-Make sure other tasks receive some service when cleaning up large VMs.
+On 11/11, Mike Galbraith wrote:
+>
+> @@ -2569,6 +2576,7 @@ void sched_fork(struct task_struct *p, i
+>  	 * Silence PROVE_RCU.
+>  	 */
+>  	rcu_read_lock();
+> +	autogroup_fork(p);
 
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
----
-diff -uprN a/mm/nommu.c b/mm/nommu.c
---- a/mm/nommu.c	2010-10-21 07:42:23.000000000 -0500
-+++ b/mm/nommu.c	2010-10-21 07:46:50.000000000 -0500
-@@ -1656,6 +1656,7 @@ SYSCALL_DEFINE2(munmap, unsigned long, a
- void exit_mmap(struct mm_struct *mm)
- {
- 	struct vm_area_struct *vma;
-+	unsigned long next_yield = jiffies + HZ;
- 
- 	if (!mm)
- 		return;
-@@ -1668,6 +1669,11 @@ void exit_mmap(struct mm_struct *mm)
- 		mm->mmap = vma->vm_next;
- 		delete_vma_from_mm(vma);
- 		delete_vma(mm, vma);
-+		/* Yield periodically to prevent watchdog timeout */
-+		if (time_after(jiffies, next_yield)) {
-+			cond_resched();
-+			next_yield = jiffies + HZ;
-+		}
- 	}
- 
- 	kleave("");
+Surely this doesn't need rcu.
+
+But the real problem is that copy_process() can fail after that,
+and in this case we have the unbalanced kref_get().
+
+> +++ linux-2.6.36.git/kernel/exit.c
+> @@ -174,6 +174,7 @@ repeat:
+>  	write_lock_irq(&tasklist_lock);
+>  	tracehook_finish_release_task(p);
+>  	__exit_signal(p);
+> +	sched_autogroup_exit(p);
+
+This doesn't look right. Note that "p" can run/sleep after that
+(or in parallel), set_task_rq() can use the freed ->autogroup.
+
+Btw, I can't apply this patch...
+
+Oleg.
 
