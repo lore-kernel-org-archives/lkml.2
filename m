@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752376Ab0KKJMc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 04:12:32 -0500
-Received: from hera.kernel.org ([140.211.167.34]:40283 "EHLO hera.kernel.org"
+	id S1751997Ab0KKJRf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 04:17:35 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42718 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751195Ab0KKJMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 04:12:30 -0500
-Message-ID: <4CDBB309.9020406@kernel.org>
-Date: Thu, 11 Nov 2010 10:10:33 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1750857Ab0KKJRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 04:17:32 -0500
+Date: Thu, 11 Nov 2010 10:17:04 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, "bp@alien8.de" <bp@alien8.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mchehab@redhat.com" <mchehab@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
+ reporting)
+Message-ID: <20101111091704.GA31380@elte.hu>
+References: <1289413460.2084.27.camel@laptop>
+ <20101110184105.GH22410@elte.hu>
+ <1289415645.12418.180.camel@gandalf.stny.rr.com>
+ <20101110191127.GA6190@nowhere>
+ <20101110202316.GA32396@Krystal>
+ <987664A83D2D224EAE907B061CE93D5301649A71DC@orsmsx505.amr.corp.intel.com>
+ <20101110225115.GB9299@Krystal>
+ <alpine.LFD.2.00.1011110004520.2900@localhost6.localdomain6>
+ <20101110232829.GC9299@Krystal>
+ <alpine.LFD.2.00.1011110046370.2900@localhost6.localdomain6>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com
-Subject: Re: [PATCH RFC tip/core/rcu 11/12] rcu: fix race condition in synchronize_sched_expedited()
-References: <20101107020507.GA4974@linux.vnet.ibm.com> <1289095532-5398-11-git-send-email-paulmck@linux.vnet.ibm.com> <4CD94C0D.3030007@kernel.org> <4CDA5E40.3080205@cn.fujitsu.com> <20101111042014.GE3134@linux.vnet.ibm.com>
-In-Reply-To: <20101111042014.GE3134@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 11 Nov 2010 09:10:36 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1011110046370.2900@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Paul, Lai.
 
-On 11/11/2010 05:20 AM, Paul E. McKenney wrote:
-> On Wed, Nov 10, 2010 at 04:56:32PM +0800, Lai Jiangshan wrote:
->> On 11/09/2010 09:26 PM, Tejun Heo wrote:
->>> Hello, Paul.
->>>
->>>
->>> How about something like the following?  It's slightly bigger but I
->>> think it's a bit easier to understand.  Thanks.
->>
->> Hello, Paul, Tejun,
->>
->> I think this approach is good and much better when several tasks
->> call synchronize_sched_expedited() at the same time.
-> 
-> I am becoming more comfortable with it as well.  Tejun, what kind of
-> testing did you do?  Lai, could you please run it on your systems?
+* Thomas Gleixner <tglx@linutronix.de> wrote:
 
-I just compile tested it (so no SOB).  Please feel free to take it and
-shape it into a proper patch.  Oh, I think we can drop both mb()'s at
-the top and bottom as both atomic_inc_return() and atomic_cmpxchg()
-imply full memory barrier.
+> On Wed, 10 Nov 2010, Mathieu Desnoyers wrote:
 
-Thanks.
+> > I'd like to start with an implementation that skips some of these requirements 
+> > initially, but what I really think we need to figure out is how we organize our 
+> > ABIs to finally support these requirements.
 
--- 
-tejun
+Note, there is an existing ABI in place, please use that. (It's highly extensible so 
+it can support just about any ABI experiment that can even be turned into a smooth 
+ABI replacement.)
+
+I think Frederic just started iterating it - but if Mathieu and Steve helps out it 
+will all happen faster.
+
+> I did not say, that you should not think about this, but the progress so far in 
+> more than TWO YEARS is exaclty ZERO. And that's what I'm concerned about.
+
+Yes, indeed that is the main problem i see as well.
+
+Most of the problems listed in the various documents can be solved iteratively in 
+the existing facilities. There is not a single requirement where Peter or me said 
+'No, this cannot be done, go away!'. Each and every item was answered with: 'sure, 
+we can do that' - or at worst with a 'do we really need it?'. Each and every item 
+fits naturally into existing goals as well - so it's not like some different world 
+view is being forced on anyone.
+
+We only have one basic condition: please introduce these thing step by step in the 
+existing ABI.
+
+This is a must-have for tools, and there is another very important factor as well: a 
+couple of items can have disadvantages beyond the claimed advantages, so we want to 
+be able to evaluate the effects in isolation, test them and if needed, undo them. It 
+will settle the 'do we really need this?' kind of sub-arguments for sub-features.
+
+So being intelligent about it, being iterative is my only requirement to you guys: 
+you are free to change anything, go wild, but please make it iterative and dont try 
+to fork the tooling and developer community.
+
+The time has come to not grow the list of requirements but to shrink it.
+
+Thanks,
+
+	Ingo
