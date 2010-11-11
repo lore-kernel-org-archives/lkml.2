@@ -1,248 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab0KKXff (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 18:35:35 -0500
-Received: from claw.goop.org ([74.207.240.146]:41048 "EHLO claw.goop.org"
+	id S1755732Ab0KKXlg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 18:41:36 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:37862 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406Ab0KKXfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 18:35:34 -0500
-Message-ID: <4CDC7DC4.5070406@goop.org>
-Date: Thu, 11 Nov 2010 15:35:32 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Subject: [GIT PULL] Xen bug fixes
-Content-Type: text/plain; charset=UTF-8
+	id S1751360Ab0KKXlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 18:41:36 -0500
+Subject: Re: [PATCHv6 0/7] system time changes notification
+From: john stultz <johnstul@us.ibm.com>
+To: Kyle Moffett <kyle@moffetthome.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Shishkin <virtuoso@slind.org>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+In-Reply-To: <AANLkTimMWcYc2OF1uS0zwRjMyjSGyysMVAsAFMtyOQ-D@mail.gmail.com>
+References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
+	 <22542.1289507293@localhost> <20101111205123.GC10585@shisha.kicks-ass.net>
+	 <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
+	 <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
+	 <1289514994.2742.81.camel@work-vm>
+	 <AANLkTimMWcYc2OF1uS0zwRjMyjSGyysMVAsAFMtyOQ-D@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Nov 2010 15:41:19 -0800
+Message-ID: <1289518879.2742.144.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 2010-11-11 at 18:19 -0500, Kyle Moffett wrote:
+> On Thu, Nov 11, 2010 at 17:50, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > On Thu, 11 Nov 2010, Kyle Moffett wrote:
+> >> What about maybe adding device nodes for various kinds of "clock"
+> >> devices?  You could then do:
+> >>
+> >> #define CLOCK_FD 0x80000000
+> >> fd = open("/dev/clock/realtime", O_RDWR);
+> >> poll(fd);
+> >> clock_gettime(CLOCK_FD|fd, &ts);
+> >
+> > That won't work due to the posix-cputimers occupying the negative
+> > number space already.
+> 
+> Hmm, looks like the manpages clock_gettime(2) et. al. need updating,
+> they don't mention anything at all about negative clockids.  The same
+> thing could still be done with, EG:
+> 
+> #define CLOCK_FD 0x40000000
 
-Here are some Xen bugfixes against -rc1.  This is another spin of the
-"don't free memory below 1M" patch the last time around.  I played
-around with it a bit and slightly improved it, but I couldn't find
-anything substantially prettier.
+Again, see Richard's patch and the discussion around it for various
+complications here (which cause pid_t size limits and run into
+limitations with max number of fds per process).
 
-The other significant fix here is from Stefano which allows domain
-creation to work - it seems that one or both of aaead25b9 and
-c9d0bf24145 exposed the fact that we should have been setting VM_PFNMAP
-on these cross-domain mappings.
+> > This is very similar in spirit to what's being done by Richard Cochran's
+> > dynamic clock devices code: http://lwn.net/Articles/413332/
+> 
+> Hmm, I've just been poking around and thinking about an extension of
+> this concept.  Right now we have:
+> 
+> /sys/devices/system/clocksource
+> /sys/devices/system/clocksource/clocksource0
+> /sys/devices/system/clocksource/clocksource0/current_clocksource
+> /sys/devices/system/clocksource/clocksource0/available_clocksource
+> 
+> Could we actually register the separate clocksources (hpet, acpi_pm,
+> etc) in the device model properly?
+> 
+> Then consider the possibility of creating "virtual clocksources" which
+> are measured against an existing clocksource.  They could be
+> independently slewed and adjusted relative to the parent clocksource.
+> Then the "UTS namespace" feature could also affect the current
+> clocksource used for CLOCK_MONOTONIC, etc.
+> 
+> You could perform various forms of time-sensitive software testing
+> without causing problems for a "make" process running elsewhere on the
+> system.  You could test the operation of various kinds of software
+> across large jumps or long periods of time (at a highly accelerated
+> rate) without impacting your development environment.
 
-There's also a fix for save/restore - we have IPI interrupts which
-should not be disabled by a suspend, but they still need some specific
-setup on resume.
+This can already be done by registering a bogus clocksource that returns
+a counter value <<'ed up. 
 
-There are two branches:
+That said, the entire system will then see time run faster, and since
+timer irqs are triggered off of other devices and other devices notion
+of time would not be accelerated, the irqs would seem late. At extreme
+values, this would cause system issues, like instant device timeouts.
+Further, it wouldn't accelerate the cpu execution time, so applications
+would seem to run very slowly.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/core
+At one time I looked at doing this in the other direction (slowing down
+system time to emulate what a faster cpu would be like), but there's
+tons of issues around the fact that there are numerous time domains in a
+system that are all very close to actual time, so lots of assumptions
+are made as if there is really only one time domain. So by speeding up
+the system time, you break the assumption between devices and things
+don't function properly.
 
-Ian Campbell (3):
-      xen: correct size of level2_kernel_pgt
-      xen: events: do not unmask event channels on resume
-      xen: do not release any memory under 1M in domain 0
+Again, you might be able to get away with very minor freq adjustments,
+but that can easily be done by registering a clocksource with an
+incorrect freq value.
 
- arch/x86/xen/mmu.c   |    2 +-
- arch/x86/xen/setup.c |   18 +++++++++++-------
- drivers/xen/events.c |   25 ++++++++++++++++++-------
- 3 files changed, 30 insertions(+), 15 deletions(-)
+> One really nice example would be testing "ntpd" itself; you could run
+> a known-good "ntpd" in the base system to maintain a very stable
+> clock, then simulate all kinds of terrifyingly bad clock hardware and
+> kernel problems (sudden frequency changes, etc) in a container.  This
+> kind of stuff can currently only be easily simulated with specialized
+> hardware.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/xenfs
+Eh, this stuff is emulated in software frequently. 
 
-Stefano Stabellini (1):
-      xen: set vma flag VM_PFNMAP in the privcmd mmap file_op
+Also, doing what you propose could be easily done via virtualization or
+a hardware emulator where you really can manage all the different time
+domains properly.
 
-Vasiliy Kulikov (1):
-      xen: xenfs: privcmd: check put_user() return code
 
- arch/x86/xen/mmu.c          |    3 ++-
- drivers/xen/xenfs/privcmd.c |   13 +++++--------
- 2 files changed, 7 insertions(+), 9 deletions(-)
+> You could also improve "container-based" virtualization, allowing
+> perceived "CPU-time" to be slewed based on the cgroup.  IE: Processes
+> inside of a container allocated only "33%" of one CPU might see their
+> "CPU-time" accrue 3 times faster than a process outside of the
+> container, as though the process was the only thing running on the
+> system.  Running "top" inside of the container might show 100% CPU
+> even though the hardware is at 33% utilization, or 200% CPU if the
+> container is currently bursting much higher.
 
-Thanks,
-	J
+I just don't see the real benefit to greatly complicating the
+timekeeping code to keep track of multiple fake time domains when these
+things can be achieved in other ways (emulation, or virtualization with
+freq adjusted clocksources).
 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index c237b81..21ed8d7 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2126,7 +2126,7 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
- {
- 	pmd_t *kernel_pmd;
- 
--	level2_kernel_pgt = extend_brk(sizeof(pmd_t *) * PTRS_PER_PMD, PAGE_SIZE);
-+	level2_kernel_pgt = extend_brk(sizeof(pmd_t) * PTRS_PER_PMD, PAGE_SIZE);
- 
- 	max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->pt_base) +
- 				  xen_start_info->nr_pt_frames * PAGE_SIZE +
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index b1dbdaa..769c4b0 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -118,16 +118,18 @@ static unsigned long __init xen_return_unused_memory(unsigned long max_pfn,
- 						     const struct e820map *e820)
- {
- 	phys_addr_t max_addr = PFN_PHYS(max_pfn);
--	phys_addr_t last_end = 0;
-+	phys_addr_t last_end = ISA_END_ADDRESS;
- 	unsigned long released = 0;
- 	int i;
- 
-+	/* Free any unused memory above the low 1Mbyte. */
- 	for (i = 0; i < e820->nr_map && last_end < max_addr; i++) {
- 		phys_addr_t end = e820->map[i].addr;
- 		end = min(max_addr, end);
- 
--		released += xen_release_chunk(last_end, end);
--		last_end = e820->map[i].addr + e820->map[i].size;
-+		if (last_end < end)
-+			released += xen_release_chunk(last_end, end);
-+		last_end = max(last_end, e820->map[i].addr + e820->map[i].size);
- 	}
- 
- 	if (last_end < max_addr)
-@@ -164,6 +166,7 @@ char * __init xen_memory_setup(void)
- 		XENMEM_memory_map;
- 	rc = HYPERVISOR_memory_op(op, &memmap);
- 	if (rc == -ENOSYS) {
-+		BUG_ON(xen_initial_domain());
- 		memmap.nr_entries = 1;
- 		map[0].addr = 0ULL;
- 		map[0].size = mem_end;
-@@ -201,12 +204,13 @@ char * __init xen_memory_setup(void)
- 	}
- 
- 	/*
--	 * Even though this is normal, usable memory under Xen, reserve
--	 * ISA memory anyway because too many things think they can poke
-+	 * In domU, the ISA region is normal, usable memory, but we
-+	 * reserve ISA memory anyway because too many things poke
- 	 * about in there.
- 	 *
--	 * In a dom0 kernel, this region is identity mapped with the
--	 * hardware ISA area, so it really is out of bounds.
-+	 * In Dom0, the host E820 information can leave gaps in the
-+	 * ISA range, which would cause us to release those pages.  To
-+	 * avoid this, we unconditionally reserve them here.
- 	 */
- 	e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
- 			E820_RESERVED);
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 97612f5..321a0c8 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -1299,9 +1299,6 @@ static void restore_cpu_virqs(unsigned int cpu)
- 		evtchn_to_irq[evtchn] = irq;
- 		irq_info[irq] = mk_virq_info(evtchn, virq);
- 		bind_evtchn_to_cpu(evtchn, cpu);
--
--		/* Ready for use. */
--		unmask_evtchn(evtchn);
- 	}
- }
- 
-@@ -1327,10 +1324,6 @@ static void restore_cpu_ipis(unsigned int cpu)
- 		evtchn_to_irq[evtchn] = irq;
- 		irq_info[irq] = mk_ipi_info(evtchn, ipi);
- 		bind_evtchn_to_cpu(evtchn, cpu);
--
--		/* Ready for use. */
--		unmask_evtchn(evtchn);
--
- 	}
- }
- 
-@@ -1390,6 +1383,7 @@ void xen_poll_irq(int irq)
- void xen_irq_resume(void)
- {
- 	unsigned int cpu, irq, evtchn;
-+	struct irq_desc *desc;
- 
- 	init_evtchn_cpu_bindings();
- 
-@@ -1408,6 +1402,23 @@ void xen_irq_resume(void)
- 		restore_cpu_virqs(cpu);
- 		restore_cpu_ipis(cpu);
- 	}
-+
-+	/*
-+	 * Unmask any IRQF_NO_SUSPEND IRQs which are enabled. These
-+	 * are not handled by the IRQ core.
-+	 */
-+	for_each_irq_desc(irq, desc) {
-+		if (!desc->action || !(desc->action->flags & IRQF_NO_SUSPEND))
-+			continue;
-+		if (desc->status & IRQ_DISABLED)
-+			continue;
-+
-+		evtchn = evtchn_from_irq(irq);
-+		if (evtchn == -1)
-+			continue;
-+
-+		unmask_evtchn(evtchn);
-+	}
- }
- 
- static struct irq_chip xen_dynamic_chip __read_mostly = {
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index f08ea04..792de43 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -2299,7 +2299,8 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
- 
- 	prot = __pgprot(pgprot_val(prot) | _PAGE_IOMAP);
- 
--	vma->vm_flags |= VM_IO | VM_RESERVED | VM_PFNMAP;
-+	BUG_ON(!((vma->vm_flags & (VM_PFNMAP | VM_RESERVED | VM_IO)) ==
-+				(VM_PFNMAP | VM_RESERVED | VM_IO)));
- 
- 	rmd.mfn = mfn;
- 	rmd.prot = prot;
-diff --git a/drivers/xen/xenfs/privcmd.c b/drivers/xen/xenfs/privcmd.c
-index f80be7f..88474d4 100644
---- a/drivers/xen/xenfs/privcmd.c
-+++ b/drivers/xen/xenfs/privcmd.c
-@@ -266,9 +266,7 @@ static int mmap_return_errors(void *data, void *state)
- 	xen_pfn_t *mfnp = data;
- 	struct mmap_batch_state *st = state;
- 
--	put_user(*mfnp, st->user++);
--
--	return 0;
-+	return put_user(*mfnp, st->user++);
- }
- 
- static struct vm_operations_struct privcmd_vm_ops;
-@@ -323,10 +321,8 @@ static long privcmd_ioctl_mmap_batch(void __user *udata)
- 	up_write(&mm->mmap_sem);
- 
- 	if (state.err > 0) {
--		ret = 0;
--
- 		state.user = m.arr;
--		traverse_pages(m.num, sizeof(xen_pfn_t),
-+		ret = traverse_pages(m.num, sizeof(xen_pfn_t),
- 			       &pagelist,
- 			       mmap_return_errors, &state);
- 	}
-@@ -384,8 +380,9 @@ static int privcmd_mmap(struct file *file, struct vm_area_struct *vma)
- 	if (xen_feature(XENFEAT_auto_translated_physmap))
- 		return -ENOSYS;
- 
--	/* DONTCOPY is essential for Xen as copy_page_range is broken. */
--	vma->vm_flags |= VM_RESERVED | VM_IO | VM_DONTCOPY;
-+	/* DONTCOPY is essential for Xen because copy_page_range doesn't know
-+	 * how to recreate these mappings */
-+	vma->vm_flags |= VM_RESERVED | VM_IO | VM_DONTCOPY | VM_PFNMAP;
- 	vma->vm_ops = &privcmd_vm_ops;
- 	vma->vm_private_data = NULL;
- 
+The only cases I see where exposing alternative time domains to the
+system time is a good thing is where you actually need to precisely
+interact with a device that is adjusted or runs on a different time
+crystal (as is the case with the PTP clock Richard is working on, or the
+clocks on audio hardware).
 
+thanks
+-john
 
