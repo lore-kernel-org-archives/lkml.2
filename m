@@ -1,85 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757346Ab0KKX6d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 18:58:33 -0500
-Received: from claw.goop.org ([74.207.240.146]:33442 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757250Ab0KKX6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 18:58:16 -0500
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Xen-devel <xen-devel@lists.xensource.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 3/3] xen/microcode: partially enable even for non-privileged kernels
-Date: Thu, 11 Nov 2010 15:58:06 -0800
-Message-Id: <049ad0809c51dedebab0b8e4bfcf58f5f26375b7.1289519130.git.jeremy.fitzhardinge@citrix.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <cover.1289519130.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1289519130.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1289519130.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1289519130.git.jeremy.fitzhardinge@citrix.com>
+	id S1757367Ab0KKX6o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 18:58:44 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59066 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756888Ab0KKX6l convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 18:58:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=IHHlL2cD2pIu6I22W3JGjZ099vWUrOiGsKHXNeeR7hNdF46VAmA2t0cVUrUjSG/S1h
+         Gg+f8QeaE+7eb4RJZQSpawYWJ7ztQCtClgtCIGl9cs+Z+yjvCcombBOe6yP3pNkgF5tl
+         1wE4aJHJ85J+eB/gUk8a7iK+42gddpe0miO0U=
+MIME-Version: 1.0
+In-Reply-To: <1289505761.2742.24.camel@work-vm>
+References: <1289464582-26898-1-git-send-email-myungjoo.ham@samsung.com>
+	<1289505761.2742.24.camel@work-vm>
+Date: Fri, 12 Nov 2010 08:58:40 +0900
+X-Google-Sender-Auth: 6J7bmvnn04nLdZ8ilefwKN5zyNw
+Message-ID: <AANLkTimwTUUBNmg=ZUkS3_u7B_5F9V-m0d8TRYLfs3Lt@mail.gmail.com>
+Subject: Re: [RFC-PATCH] clocksource: update lpj if clocksource has been changed.
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        Thomas Gleixner <tglx@linutronix.de>, Magnus Damm <damm@opensource.se>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jon Hunter <jon-hunter@ti.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+On Fri, Nov 12, 2010 at 5:02 AM, john stultz <johnstul@us.ibm.com> wrote:
+> On Thu, 2010-11-11 at 17:36 +0900, MyungJoo Ham wrote:
+>> With a clocksource change, loops_per_jiffy may have been changed; thus,
+>> the loops_per_jiffy in each cpu should be updated. Especially after some
+>> of the cpus were turned off and on, their loops_per_jiffy values are
+>> updated while the cpus kept on are not. Therefore, in order to make them
+>> "normalized equally", we need to let the loops_per_jiffy values of
+>> different cpus be based on the same clocksource.
+>>
+>> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>
+> First, Thanks for reporting the issue and submitting the patch!
+>
+> So the premise is that read_current_timer -> get_cycles ->
+> clocksource_read on some arches. And then when we select a different
+> clocksource for timekeeping, this also changes the get_cycles source
+> breaking delay loops.
+>
+> The clocksource selected for timekeeping and the counter being used for
+> get_cycles really shouldn't be explicitly bound. On most systems I don't
+> think that is the case, so this patch would force needless recalibration
+> calls on clocksource changes.
+>
+> Which arch specifically are you seeing the issue on? I suspect there is
+> be a better way to fix this.
+>
+> thanks
+> -john
 
-Don't attempt to load microcode on non-privileged kernels.  Kernels
-compiled without privileged support just get vestigial Xen detection
-to skip loading altogether; kernels with privileged support will
-load microcode if running privileged.  In either case, the normal
-Intel/AMD microcode loader is skipped under Xen.
+We are working on ARM/S5PC210 with two cores. Actually, in single core
+systems, clocksource changes that affect loops-per-jiffy do not matter
+much as in multi-core systems because we do not have something to
+compare with in such a system. This patch adds some overheads on
+changing system clocksources; however, is happens only once at boot.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
----
- arch/x86/include/asm/microcode.h |    2 +-
- arch/x86/kernel/Makefile         |    2 +-
- arch/x86/xen/Kconfig             |    6 +++++-
- 3 files changed, 7 insertions(+), 3 deletions(-)
+Or, would it be better if we add another entry to struct clocksource;
+i.e., "bool recalibrate" in struct clocksource? Then, we can put
+recalibration routine in clocksource_select() at the end of the
+function deciding whether to recalibrate based on the
+"base->recalibrate" value. How about this?
 
-diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
-index e15fca1..3e61afe 100644
---- a/arch/x86/include/asm/microcode.h
-+++ b/arch/x86/include/asm/microcode.h
-@@ -55,7 +55,7 @@ static inline struct microcode_ops * __init init_amd_microcode(void)
- }
- #endif
- 
--#ifdef CONFIG_MICROCODE_XEN
-+#ifdef CONFIG_MICROCODE_XEN_LOADER
- extern struct microcode_ops * __init init_xen_microcode(void);
- #else
- static inline struct microcode_ops * __init init_xen_microcode(void)
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 0036150..768c5dc 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -104,7 +104,7 @@ obj-$(CONFIG_PCSPKR_PLATFORM)	+= pcspeaker.o
- microcode-y				:= microcode_core.o
- microcode-$(CONFIG_MICROCODE_INTEL)	+= microcode_intel.o
- microcode-$(CONFIG_MICROCODE_AMD)	+= microcode_amd.o
--microcode-$(CONFIG_MICROCODE_XEN)	+= microcode_xen.o
-+microcode-$(CONFIG_MICROCODE_XEN_LOADER)	+= microcode_xen.o
- obj-$(CONFIG_MICROCODE)			+= microcode.o
- 
- obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
-diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-index 384e0a5..9a0d2fc 100644
---- a/arch/x86/xen/Kconfig
-+++ b/arch/x86/xen/Kconfig
-@@ -51,4 +51,8 @@ config XEN_DEBUG_FS
- 
- config MICROCODE_XEN
-        def_bool y
--       depends on XEN_DOM0 && MICROCODE
-\ No newline at end of file
-+       depends on XEN && MICROCODE
-+
-+config MICROCODE_XEN_LOADER
-+	def_bool y
-+	depends on MICROCODE_XEN && DOM0
+
+
+Cheers!
+- MyungJoo
+
+>
+>
+>> ---
+>>  kernel/time/clocksource.c |   13 +++++++++++++
+>>  1 files changed, 13 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+>> index c18d7ef..a9d7935 100644
+>> --- a/kernel/time/clocksource.c
+>> +++ b/kernel/time/clocksource.c
+>> @@ -30,6 +30,9 @@
+>>  #include <linux/sched.h> /* for spin_unlock_irq() using preempt_count() m68k */
+>>  #include <linux/tick.h>
+>>  #include <linux/kthread.h>
+>> +#include <linux/delay.h>
+>>
+>>  void timecounter_init(struct timecounter *tc,
+>>                     const struct cyclecounter *cc,
+>> @@ -592,6 +593,9 @@ static inline void clocksource_select(void) { }
+>>   */
+>>  static int __init clocksource_done_booting(void)
+>>  {
+>> +#ifdef CONFIG_SMP
+>> +     int cpu;
+>> +#endif
+>>       mutex_lock(&clocksource_mutex);
+>>       curr_clocksource = clocksource_default_clock();
+>>       mutex_unlock(&clocksource_mutex);
+>> @@ -606,6 +610,13 @@ static int __init clocksource_done_booting(void)
+>>       mutex_lock(&clocksource_mutex);
+>>       clocksource_select();
+>>       mutex_unlock(&clocksource_mutex);
+>> +
+>> +     calibrate_delay();
+>> +#ifdef CONFIG_SMP
+>> +     /* loops_per_jiffy may have been changed. */
+>> +     for_each_online_cpu(cpu)
+>> +             smp_store_cpu_info(cpu);
+>> +#endif
+>>       return 0;
+>>  }
+>>  fs_initcall(clocksource_done_booting);
+>
+>
+>
+
+
+
 -- 
-1.7.2.3
-
+MyungJoo Ham (함명주), Ph.D.
+Mobile Software Platform Lab,
+Digital Media and Communications (DMC) Business
+Samsung Electronics
+cell: 82-10-6714-2858
