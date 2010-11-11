@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924Ab0KKLqt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 06:46:49 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38710 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755488Ab0KKLqs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 06:46:48 -0500
-Date: Thu, 11 Nov 2010 11:46:45 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the voltage tree
-Message-ID: <20101111114644.GC6052@rakim.wolfsonmicro.main>
-References: <20101111113638.eb3101d0.sfr@canb.auug.org.au>
+	id S1755988Ab0KKLrR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 06:47:17 -0500
+Received: from www.tglx.de ([62.245.132.106]:32859 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755896Ab0KKLrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 06:47:16 -0500
+Date: Thu, 11 Nov 2010 12:47:08 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH 4/6] ce4100: Add errata fixes for UART on CE4100
+In-Reply-To: <4CDBD91A.2010805@gmail.com>
+Message-ID: <alpine.LFD.2.00.1011111246200.2900@localhost6.localdomain6>
+References: <cover.1289331834.git.dirk.brandewie@gmail.com> <395c11879580e72e3a47272ef8cf5e04fa334210.1289331834.git.dirk.brandewie@gmail.com> <alpine.LFD.2.00.1011111231430.2900@localhost6.localdomain6> <4CDBD91A.2010805@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101111113638.eb3101d0.sfr@canb.auug.org.au>
-X-Cookie: Nihilism should commence with oneself.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 11:36:38AM +1100, Stephen Rothwell wrote:
+On Thu, 11 Nov 2010, Dirk Brandewie wrote:
 
-> After merging the voltage tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
+> On 11/11/2010 03:34 AM, Thomas Gleixner wrote:
+> > 
+> > 
+> > > +	 * Over ride the legacy port configuration that comes from
+> > > +	 * asm/serial.h. Using the ioport driver then switching to the
+> > > +	 * PCI memmaped driver hangs the IOAPIC
+> > > +	 */
+> > > +	if (up->iotype !=  UPIO_MEM32) {
+> > > +		up->uartclk  = 14745600;
+> > > +		up->mapbase = 0xdffe0200;
+> > 
+> >    What does the uartclk, mapbase fixups in the CONFIG_EARLY_PRINTK=n case ?
+> > 
+> This is setup in the PCI driver patch #3 in the series
 
-Oh, a platform where pcap can actually be built!  That's useful, thanks.
+I just can't find it there, that's why I'm asking :)
 
-> drivers/regulator/pcap-regulator.c:155: error: expected declaration specifiers or '...' before 'unsiged'
-> drivers/regulator/pcap-regulator.c: In function 'pcap_regulator_set_voltage':
-> drivers/regulator/pcap-regulator.c:175: error: 'selector' undeclared (first use in this function)
-> drivers/regulator/pcap-regulator.c: At top level:
-> drivers/regulator/pcap-regulator.c:251: warning: initialization from incompatible pointer type
+Thanks,
 
-> Caused by commit d2f03ebfe8c63d1e3e1ab2352dd32d161546003e ("regulator:
-> Report actual configured voltage to set_voltage()").  Please always build
-> changed files ...
-
-With a lot of the embedded drivers that can be difficult - often there
-are dependencies on APIs that are only available on a small set of
-platforms (which may not even be documented).  For example, with PCAP
-the core driver uses irq_to_gpio() which is not implemented on any of
-the platforms I commonly build for.
+	tglx
