@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756798Ab0KKNyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 08:54:47 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:28428
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753412Ab0KKNyq (ORCPT
+	id S1751535Ab0KKN46 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 08:56:58 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:25470
+	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1749667Ab0KKN44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 08:54:46 -0500
+	Thu, 11 Nov 2010 08:56:56 -0500
 X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzzz32i2a8h668h65h)
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i2a8h668h65h)
 X-Spam-TCS-SCL: 4:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3extmailp02.amd.com;RD:ausb3extmailp02.amd.com;EFVD:NLI
-X-WSS-ID: 0LBQ3YF-02-ALP-02
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:ausb3extmailp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LBQ3YG-02-ALR-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: Greg KH <greg@kroah.com>
 CC: Borislav Petkov <bp@amd64.org>, <linux-kernel@vger.kernel.org>,
-        <stable@kernel.org>
-Subject: [PATCH 0/3] Erratum 383 fix for 32 bit x86 kernels
-Date: Thu, 11 Nov 2010 14:56:12 +0100
-Message-ID: <1289483775-17632-1-git-send-email-joerg.roedel@amd.com>
+        <stable@kernel.org>, Hugh Dickins <hughd@google.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 2/3] x86, mm: Fix CONFIG_VMSPLIT_1G and 2G_OPT trampoline
+Date: Thu, 11 Nov 2010 14:56:14 +0100
+Message-ID: <1289483775-17632-3-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <20101022162038.GA10343@kroah.com>
 References: <20101022162038.GA10343@kroah.com>
@@ -30,18 +31,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+From: Hugh Dickins <hughd@google.com>
 
-ok, these are the 3 patches required for the Erratum 383 fix on 32 bit
-for the 2.6.32.25 kernel. The patches apply cleanly on-top of it. I
-tested the kernel with defconfig and allnoconfig and on 32 and 64 bit.
-Every of the 4 combinations comiled fine and booted fine on and UMP and
-SMP virtual machine until the point where they wanted to mount a
-root-fs.
-The problems you had with the previous patches should be solved now.
-Sorry for the inconvenience.
+rc2 kernel crashes when booting second cpu on this CONFIG_VMSPLIT_2G_OPT
+laptop: whereas cloning from kernel to low mappings pgd range does need
+to limit by both KERNEL_PGD_PTRS and KERNEL_PGD_BOUNDARY, cloning kernel
+pgd range itself must not be limited by the smaller KERNEL_PGD_BOUNDARY.
 
-Regards,
-	Joerg
+Signed-off-by: Hugh Dickins <hughd@google.com>
+LKML-Reference: <alpine.LSU.2.00.1008242235120.2515@sister.anvils>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/trampoline.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/trampoline.c b/arch/x86/kernel/trampoline.c
+index 4e816a4..0ac23a7 100644
+--- a/arch/x86/kernel/trampoline.c
++++ b/arch/x86/kernel/trampoline.c
+@@ -47,8 +47,7 @@ void __init setup_trampoline_page_table(void)
+ 	/* Copy kernel address range */
+ 	clone_pgd_range(trampoline_pg_dir + KERNEL_PGD_BOUNDARY,
+ 			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
+-			min_t(unsigned long, KERNEL_PGD_PTRS,
+-			      KERNEL_PGD_BOUNDARY));
++			KERNEL_PGD_PTRS);
+ 
+ 	/* Initialize low mappings */
+ 	clone_pgd_range(trampoline_pg_dir,
+-- 
+1.7.0.4
 
 
