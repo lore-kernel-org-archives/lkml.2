@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab0KKWLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 17:11:38 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57732 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756348Ab0KKWLg (ORCPT
+	id S1756872Ab0KKWL6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 17:11:58 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43688 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754642Ab0KKWL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 17:11:36 -0500
-Date: Thu, 11 Nov 2010 14:10:37 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Ken Sumrall <ksumrall@android.com>, linux-kernel@vger.kernel.org,
-        jens.axboe@oracle.com, anfei.zhou@gmail.com, avati@gluster.com,
-        fuse-devel@lists.sourceforge.net
-Subject: Re: [PATCH] Fix bug in FUSE where the attribute cache for a file
- was not cleared when a file is opened with O_TRUNC.
-Message-Id: <20101111141037.b1358d1c.akpm@linux-foundation.org>
-In-Reply-To: <E1PC9ed-00045m-LA@pomaz-ex.szeredi.hu>
-References: <1288395700-9527-1-git-send-email-ksumrall@android.com>
-	<20101029170209.0aced0ca.akpm@linux-foundation.org>
-	<AANLkTimJWX5WnG6oiUfBxiD=BBJ=Q5iRc73iar=gPKCy@mail.gmail.com>
-	<E1PC9ed-00045m-LA@pomaz-ex.szeredi.hu>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Nov 2010 17:11:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
+References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
+ <22542.1289507293@localhost> <20101111205123.GC10585@shisha.kicks-ass.net> <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Thu, 11 Nov 2010 17:11:35 -0500
+Message-ID: <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
+Subject: Re: [PATCHv6 0/7] system time changes notification
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Alexander Shishkin <virtuoso@slind.org>, Valdis.Kletnieks@vt.edu,
+        linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 30 Oct 2010 13:31:23 +0200
-Miklos Szeredi <miklos@szeredi.hu> wrote:
+On Thu, Nov 11, 2010 at 16:16, Thomas Gleixner <tglx@linutronix.de> wrote:
+> The notification itself is pointless unless your application is
+> dealing with timers which need to be adjusted the one way or the
+> other.
+>
+> That said, I'm still not convinced that this usecase justifies a new
+> systemcall.
+>
+> 1) We can make timers wake up when a clock change happens
+> 2) Can't we use existing notification stuff like uevents or such ?
 
-> Subject: fuse: fix attributes after open(O_TRUNC)
-> From: Ken Sumrall <ksumrall@android.com>
-> 
-> The attribute cache for a file was not being cleared when a file is
-> opened with O_TRUNC.
-> 
-> If the filesystem's open operation truncates the file
-> ("atomic_o_trunc" feature flag is set) then the kernel should
-> invalidate the cached st_mtime and st_ctime attributes.
-> 
-> Also i_size should be explicitly be set to zero as it is used
-> sometimes without refreshing the cache.
-> 
-> Signed-off-by: Ken Sumrall <ksumrall@android.com>
-> Cc: Anfei <anfei.zhou@gmail.com>
-> Cc: "Anand V. Avati" <avati@gluster.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Miklos Szeredi <miklos@szeredi.hu>
-> Cc: stable@kernel.org
-> ---
-> 
->  fs/fuse/file.c |   10 ++++++++++
->  1 file changed, 10 insertions(+)
-> 
-> Index: linux-2.6/fs/fuse/file.c
-> ===================================================================
-> --- linux-2.6.orig/fs/fuse/file.c	2010-10-27 14:04:02.000000000 +0200
-> +++ linux-2.6/fs/fuse/file.c	2010-10-30 13:14:07.000000000 +0200
-> @@ -134,6 +134,7 @@ EXPORT_SYMBOL_GPL(fuse_do_open);
->  void fuse_finish_open(struct inode *inode, struct file *file)
->  {
->  	struct fuse_file *ff = file->private_data;
-> +	struct fuse_conn *fc = get_fuse_conn(inode);
->  
->  	if (ff->open_flags & FOPEN_DIRECT_IO)
->  		file->f_op = &fuse_direct_io_file_operations;
-> @@ -141,6 +142,15 @@ void fuse_finish_open(struct inode *inod
->  		invalidate_inode_pages2(inode->i_mapping);
->  	if (ff->open_flags & FOPEN_NONSEEKABLE)
->  		nonseekable_open(inode, file);
-> +	if (fc->atomic_o_trunc && (file->f_flags & O_TRUNC)) {
-> +		struct fuse_inode *fi = get_fuse_inode(inode);
-> +
-> +		spin_lock(&fc->lock);
-> +		fi->attr_version = ++fc->attr_version;
-> +		i_size_write(inode, 0);
+What about maybe adding device nodes for various kinds of "clock"
+devices?  You could then do:
 
-i_size_write() requires that i_mutex be held, as described at the
-i_size_write() definition site.
+#define CLOCK_FD 0x80000000
+fd = open("/dev/clock/realtime", O_RDWR);
+poll(fd);
+clock_gettime(CLOCK_FD|fd, &ts);
+[...]
 
-Is it reliably the case that i_mutex is held here?
+This would also enable the folks who want to support things like PHY
+hardware clocks (for very-low-latency ethernet timestamping).  It
+would resolve the enumeration problem; instead of 0, 1, 2, ... as
+constants, they would show up in sysfs and be open()able.  Ideally you
+would be able to set up ntpd to slew the "realtime" clock by following
+a particular hardware clock, or vice versa.
 
-> +		spin_unlock(&fc->lock);
-> +		fuse_invalidate_attr(inode);
-> +	}
->  }
->  
->  int fuse_open_common(struct inode *inode, struct file *file, bool isdir)
-
+Cheers,
+Kyle Moffett
