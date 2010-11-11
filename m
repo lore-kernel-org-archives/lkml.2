@@ -1,81 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921Ab0KKWvH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 17:51:07 -0500
-Received: from www.tglx.de ([62.245.132.106]:35847 "EHLO www.tglx.de"
+	id S1757051Ab0KKWxk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 17:53:40 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:42918 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754717Ab0KKWvF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 17:51:05 -0500
-Date: Thu, 11 Nov 2010 23:50:38 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Kyle Moffett <kyle@moffetthome.net>
-cc: Alexander Shishkin <virtuoso@slind.org>, Valdis.Kletnieks@vt.edu,
-        LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Davide Libenzi <davidel@xmailserver.org>
-Subject: Re: [PATCHv6 0/7] system time changes notification
-In-Reply-To: <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6>
-References: <1289503802-22444-1-git-send-email-virtuoso@slind.org> <22542.1289507293@localhost> <20101111205123.GC10585@shisha.kicks-ass.net> <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
- <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753288Ab0KKWxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 17:53:39 -0500
+Date: Thu, 11 Nov 2010 23:53:35 +0100 (CET)
+From: Julia Lawall <julia@diku.dk>
+To: Emese Revfy <re.emese@gmail.com>
+Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+        cocci@diku.dk, Lionel Debroux <lionel_debroux@yahoo.fr>,
+        Brad Spengler <spender@grsecurity.net>
+Subject: Re: [Cocci] Re: status of constification
+In-Reply-To: <4CDC64B9.8070208@gmail.com>
+Message-ID: <Pine.LNX.4.64.1011112352030.27612@ask.diku.dk>
+References: <20101108223844.GS5876@outflux.net> <4CD9BF25.4090306@gmail.com>
+ <Pine.LNX.4.64.1011100727370.352@ask.diku.dk> <4CDC64B9.8070208@gmail.com>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-B1;2401;0cOn Thu, 11 Nov 2010, Kyle Moffett wrote:
-> On Thu, Nov 11, 2010 at 16:16, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > The notification itself is pointless unless your application is
-> > dealing with timers which need to be adjusted the one way or the
-> > other.
-> >
-> > That said, I'm still not convinced that this usecase justifies a new
-> > systemcall.
-> >
-> > 1) We can make timers wake up when a clock change happens
-> > 2) Can't we use existing notification stuff like uevents or such ?
+On Thu, 11 Nov 2010, Emese Revfy wrote:
+
+> On 11/10/10 07:35, Julia Lawall wrote:
+> >> I tried to automate the whole process with Coccinelle but I abandoned it
+> >> because Coccinelle didn't support recursive header file inclusion at the time.
+> >> If someone feels like fixing Coccinelle then I would quickly finish my script
+> >> (it has a few bugs because I could never test it for real), but see the end
+> >> of the mail for the current version. I think it would be a good idea because
+> >> it would take a few hours only to generate a constification patch for a new
+> >> kernel. One thing that probably cannot be automated with Coccinelle is that
+> >> once the script determines that a given structure cannot be constified, it
+> >> cannot undo already emitted patches for the given structure so it must be
+> >> cleaned up by post processing script.
+> > 
+> > What would the right approach be?  It is not obvious to find 100% of the 
+> > header files, because some of them depend on information in Makefiles.  
 > 
-> What about maybe adding device nodes for various kinds of "clock"
-> devices?  You could then do:
+> For 100% coverage you can look at how the Linux Makefiles invoke sparse.
+
+I haven't looked at it, but I doubt it gives 100% coverage, because one 
+can have code in both the if and else branches of an ifdef.  I would 
+imagine that it gives 100% coverage for whatever architecture you would be 
+compiling for?
+
+julia
+
+> > You can use that information by running the preprocessor on Coccinelle 
+> > first, but then the result is only useful for finding files that need 
+> > changing, but not actually making the changes because Coccinelle does not 
+> > relate the preprocessed code back to the original code.  But if you run 
+> > the preprocessor, you only get information for your current configuration, 
+> > which is probably not what you want.
+> > 
+> > Coccinelle could certainly get a new option -really_all_includes, or 
+> > something like that, that would recursively include among what it can find 
+> > and what has not been included already.  Would that be what is wanted?
 > 
-> #define CLOCK_FD 0x80000000
-> fd = open("/dev/clock/realtime", O_RDWR);
-> poll(fd);
-> clock_gettime(CLOCK_FD|fd, &ts);
-
-That won't work due to the posix-cputimers occupying the negative
-number space already.
-
-> [...]
+> Yes, this is exactly what I'd like to have, missing the few includes
+> you referred to above is not a problem for my purposes.
 > 
-> This would also enable the folks who want to support things like PHY
-> hardware clocks (for very-low-latency ethernet timestamping).  It
-> would resolve the enumeration problem; instead of 0, 1, 2, ... as
-> constants, they would show up in sysfs and be open()able.  Ideally you
-> would be able to set up ntpd to slew the "realtime" clock by following
-> a particular hardware clock, or vice versa.
-
-There are other plans for the various interesting clocks floating
-around which look pretty good.
-
-But what you folks really want for this stuff is an extension to
-timerfd as you want to be able to poll, right?
-
-So what about the following:
-
-Add a new flag TDF_NOTIFY_CLOCK_WAS_SET to the timerfd flags. Now this
-flag adds the timer to a separate list, which gets woken up when the
-clock is set.
-
-No new syscall, just a few lines of code in fs/timerfd.c and
-clock_was_set().
-
-Thoughts ?
-
-	 tglx
+> Thanks, Emese
+> 
+> > 
+> > I guess that in practice the includes are only being used for type 
+> > information?  Wouldn't it be safe to run the semantic patch based on the 
+> > includes that are available?
+> > 
+> > julia
+> > 
+> >>
+> >> --
+> >> Emese
+> >>
+> >>
+> >> // spatch.opt -sp_file $1 -include_headers -local_includes -all_includes -I "include/" -dir $2
+> >>
+> >> @initialize:python@
+> >> noconst = []
+> >>
+> >> @stc@
+> >> identifier idtype, y;
+> >> type t;
+> >> position p;
+> >> @@
+> >> struct idtype {
+> >> 	...
+> >> 	t (*y)(...);@p
+> >> 	...
+> >> };
+> >>
+> >> @notjustfp@
+> >> identifier stc.idtype, y;
+> >> type t;
+> >> position p != stc.p;
+> >> @@
+> >> struct idtype {
+> >> 	...
+> >> 	t y;@p
+> >> 	...
+> >> };
+> >>
+> >> @script:python depends on notjustfp@
+> >> @@
+> >> cocci.include_match(False)
+> >>
+> >> @variable@
+> >> identifier stc.idtype, idvariant, id;
+> >> @@
+> >> (
+> >> 	struct idtype idvariant = {
+> >> 		...
+> >> 	};
+> >> |
+> >> 	struct idtype idvariant;
+> >> |
+> >> 	struct idtype *idvariant;
+> >> |
+> >> 	struct id {
+> >> 		...
+> >> 		struct idtype idvariant;
+> >> 		...
+> >> 	};
+> >> )
+> >>
+> >> @script:python@
+> >> y << variable.idvariant;
+> >> @@
+> >> if y in noconst:
+> >> 	cocci.include_match(False)
+> >>
+> >> @alreadyconst@
+> >> identifier stc.idtype, variable.idvariant, id;
+> >> @@
+> >> (
+> >> 	const struct idtype idvariant;
+> >> |
+> >> 	const struct idtype idvariant = {
+> >> 		...
+> >> 	};
+> >> |
+> >> 	const struct idtype *idvariant;
+> >> |
+> >> 	struct id {
+> >> 		...
+> >> 		const struct idtype idvariant;
+> >> 		...
+> >> 	};
+> >> )
+> >>
+> >> @script:python depends on alreadyconst@
+> >> @@
+> >> cocci.include_match(False)
+> >>
+> >> @fn_declaration@
+> >> identifier stc.idtype, variable.idvariant, fn;
+> >> type t;
+> >> @@
+> >> t fn(struct idtype *idvariant);
+> >>
+> >> @fn_definition@
+> >> identifier stc.idtype, variable.idvariant, fn;
+> >> type t;
+> >> @@
+> >> t fn(struct idtype *idvariant)
+> >> {
+> >> 	...
+> >> }
+> >>
+> >> // TODO: handle var.field1.field2, var->field1->field2
+> >> @assignement@
+> >> identifier variable.idvariant, x, idptr;
+> >> @@
+> >> (
+> >> 	idvariant.x = ...;
+> >> |
+> >> 	idvariant->x = ...;
+> >> |
+> >> 	idptr = &idvariant;
+> >> 	...
+> >> 	idptr->x = ...;
+> >> |
+> >> 	memcpy(&idvariant, ...);
+> >> |
+> >> 	memcpy(idvariant.x, ...);
+> >> |
+> >> 	memcpy(idvariant->x, ...);
+> >> |
+> >> 	idvariant = kzalloc(...);
+> >> |
+> >> 	idvariant = kmalloc(...);
+> >> )
+> >>
+> >> @script:python depends on assignement@
+> >> x << stc.idtype;
+> >> y << variable.idvariant;
+> >> @@
+> >> print "Cannot be const: %s-%s" % (x, y)
+> >> noconst.append(y)
+> >> cocci.include_match(False)
+> >>
+> >> @depends on stc && !fn_declaration && !fn_definition@
+> >> identifier stc.idtype, variable.idvariant, id;
+> >> @@
+> >> (
+> >> -struct idtype idvariant = {
+> >> +const struct idtype idvariant = {
+> >> 		...
+> >>  };
+> >> |
+> >> -struct idtype idvariant;
+> >> +const struct idtype idvariant;
+> >> |
+> >> -struct idtype *idvariant;
+> >> +const struct idtype *idvariant;
+> >> |
+> >> -struct idtype *idvariant = NULL;
+> >> +const struct idtype *idvariant = NULL;
+> >> |
+> >> struct id {
+> >> ...
+> >> -struct idtype idvariant;
+> >> +const struct idtype idvariant;
+> >> ...
+> >>  };
+> >> )
+> >>
+> >> @depends on stc && fn_declaration && !fn_definition@
+> >> identifier stc.idtype, variable.idvariant, fn_declaration.fn;
+> >> type fn_declaration.t;
+> >> @@
+> >> t fn(
+> >> -struct idtype *idvariant
+> >> +const struct idtype *idvariant
+> >>  );
+> >>
+> >> @depends on stc && !fn_declaration && fn_definition@
+> >> identifier stc.idtype, variable.idvariant, fn_definition.fn;
+> >> type fn_definition.t;
+> >> @@
+> >> t fn(
+> >> -struct idtype *idvariant
+> >> +const struct idtype *idvariant
+> >>  )
+> >>  {
+> >>  	...
+> >>  }
+> >>
+> >>
+> > 
+> 
+> 
