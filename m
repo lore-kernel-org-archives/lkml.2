@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757627Ab0KKBF5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 20:05:57 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:61112 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757427Ab0KKBF4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 20:05:56 -0500
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=UWg-Qlbn-4MA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=taGs_qngAAAA:8 a=CvOBL4saVFUMqDW05vwA:9 a=jKRIg8DYmaLSi5vqNGMA:7 a=7VNV9A5D4tkJthJ1nejdtkVCHFsA:4 a=PUjeQqilurYA:10 a=n7Cch7CHiCMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH] Delegate unknown module parameters to interested
- parties
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
-In-Reply-To: <201011111105.09255.rusty@rustcorp.com.au>
-References: <0d30dc$k4dmjb@orsmga001.jf.intel.com>
-	 <201011101621.28946.rusty@rustcorp.com.au>
-	 <1289397360.12418.119.camel@gandalf.stny.rr.com>
-	 <201011111105.09255.rusty@rustcorp.com.au>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 10 Nov 2010 20:05:53 -0500
-Message-ID: <1289437553.12418.217.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S932121Ab0KKBHz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 20:07:55 -0500
+Received: from kroah.org ([198.145.64.141]:43632 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757339Ab0KKBHy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 20:07:54 -0500
+Date: Wed, 10 Nov 2010 17:08:41 -0800
+From: Greg KH <greg@kroah.com>
+To: Yehuda Sadeh Weinraub <yehudasa@gmail.com>
+Cc: ceph-devel@vger.kernel.org, Sage Weil <sage@newdream.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] rbd sysfs interface
+Message-ID: <20101111010841.GA23127@kroah.com>
+References: <AANLkTinOeby9P847gJFn_t0h5nDY7cfi3cW9hEaUrS1v@mail.gmail.com> <20101106050721.GA2194@kroah.com> <AANLkTinQK_9qp-8jJ5j3-ChUjwhGiGzAmCu5cBtHX75g@mail.gmail.com> <AANLkTikdr=nJF45QUCKAOY8NSh9GNtv8c9K_oNdJeJfc@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikdr=nJF45QUCKAOY8NSh9GNtv8c9K_oNdJeJfc@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-11 at 11:05 +1030, Rusty Russell wrote:
->  
-> > Yep, this way we could even enable tracepoints that are in the init
-> > section.
+On Wed, Nov 10, 2010 at 11:21:49AM -0800, Yehuda Sadeh Weinraub wrote:
+> On Fri, Nov 5, 2010 at 10:51 PM, Yehuda Sadeh Weinraub
+> <yehudasa@gmail.com> wrote:
+> > On Fri, Nov 5, 2010 at 10:07 PM, Greg KH <greg@kroah.com> wrote:
+> >> On Fri, Nov 05, 2010 at 04:09:31PM -0700, Yehuda Sadeh Weinraub wrote:
+> >>>
+> >>> Does this seem sane? Any comments would be greatly appreciated.
+> >>
+> >> It sounds like you need to use configfs instead of sysfs, as your model
+> >> was the reason it was created.
+> >>
+> >> Have you tried that?
+> >
+> > Oh, will look at it now. With ceph (although for a different purpose)
+> > we went through proc -> sysfs -> debugfs, however, it seems that we've
+> > missed at least one userspace-kernel channel.
+> >
 > 
-> *Exactly* how would it be used though?  Please provide a synopsis for
-> someone unaware of what tracing does these days?
-
-Well, if you have a tracepoint in the module, and you want to enable it
-as soon as the module is loaded, it would be nice to have that ability.
-
+> Well, we looked a bit at what configfs does, and from what we see it
+> doesn't really fit our needs. Configfs would be more suitable to
+> configuring a static system than to control a dynamic one. The main
+> problem is that items creation is only driven by userspace. That would
+> be ok if we had a static mapping of the images and snapshots, however,
+> we don't. We need the system to reflect any state change with the
+> running configuration (e.g., a new snapshot was created by a different
+> client), and it doesn't seem possible with configfs as long as items
+> creation is only driven by userspace operations. We need a system that
+> would be able to reflect changes that happened due to some external
+> operation, and this doesn't seem to be the case here.
 > 
-> Because we could compile an extra module_parm() into the module using
-> modpost, for example, at a cost of an extra 16/32 bytes per module.
+> There is second issue and that's committable items are not implemented
+> there yet. So the interface itself would be a bit weird. E.g., had
+> committable items been implemented we would have done something like
+> the following:
 > 
-> > But, personally, I like the generic addition. Perhaps others will hook into
-> > it without fear of having to hack the module code, which can be quite
-> > intimidating to some.
+>  /config/rbd# mkdir pending/myimage
+>  /config/rbd# echo foo > pending/myimage/name
+>  /config/rbd# cat ~/mykey > pending/myimge/key
+>  /config/rbd# echo 10.0.0.1 > pending/myimage/addr
+> ...
+>  /config/rbd# mv pending/myimage live/
 > 
-> We *all* want to build infrastructure; when other coders are forced to use
-> it we rise up the kernel dominance hierarchy. Ook ook!  (Every Unix app has
-> its own config language for the same reason: the author distils the mental
-> sweat of the users into some kind of Elixer of Coder Hubris).
-
-Note, I would have just done the hack, but I liked Chris's generic
-approach. /me ook ooks Chris!
-
-
+> and that would do what we need in terms of initial configuration.
+> However, as this is not really implemented yet, there is no
+> distinction between images that are pending and images that are live,
+> so configuration would look something like:
+>  /config/rbd# mkdir myimage
+>  /config/rbd# echo foo > myimage/name
+>  /config/rbd# cat ~/mykey > myimge/key
+>  /config/rbd# echo 10.0.0.1 > myimage/addr
+> ...
+>  /config/rbd# echo 1 > myimage/go
 > 
-> Yet abstractions obfuscate: let's resist our primal urges to add another
-> speed hump on the lengthening road to kernel expertese.
+> And having that, the myimage/ directory will still hold all those
+> config options that are moot after the image went live. It doesn't
+> seem to offer a significant improvement over the current sysfs one
+> liner configuration and with sysfs we can have it reflect any dynamic
+> change that occurred within the system. So we tend to opt for an
+> improved sysfs solution, similar to the one I described before.
 
-Adding a generic way to do global module options is a primal urge?
+Ok, that makes sense as to why configfs would not work (I really wish
+someone would add the commit stuff to configfs, as you aren't the first
+ones to want that.)
 
-> 
-> And this one's classicly easy: in single uses cases we always get the
-> infrastructure wrong for future users anyway, so let's not do it until
-> we have more than one user.
+So, back to sysfs.  But I can't recall what your sysfs interface looked
+like, do you have Documentation/ABI/ files that show what it does?  If
+not, you are required to, so you might as well write them now :)
 
-OK, we can add the hack for now. But perhaps have an archive of this
-patch (maybe even sneak a link to it in the change log).
+thanks,
 
-Hmm, we can just add:
-
-LKML-Reference: <1289311867-10096-1-git-send-email-chris@chris-wilson.co.uk>
-
-
--- Steve
-
-
+greg k-h
