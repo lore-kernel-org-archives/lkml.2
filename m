@@ -1,54 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757157Ab0KKVeM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 16:34:12 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:16985 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753090Ab0KKVeK (ORCPT
+	id S1756048Ab0KKVi5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 16:38:57 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:35038 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753761Ab0KKVi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 16:34:10 -0500
+	Thu, 11 Nov 2010 16:38:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=oO6rqkGag83c0s8PSg+gkvVOvw1Yw3i/O4i/IMPXZQTw0YNhKH3Y94LayOBZWVvcJ9
-         EQXkPb5A+1fJUS0CAjoQ==
-Date: Thu, 11 Nov 2010 13:34:05 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Vasiliy Kulikov <segooon@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, kernel-janitors@vger.kernel.org,
-        =?UTF-8?Q?Andr=C3=A9_Goddard_Rosa?= <andre.goddard@gmail.com>,
-        Joe Perches <joe@perches.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib: vsprintf: fix invalid arg check
-In-Reply-To: <20101111210251.GA26283@albatros>
-Message-ID: <alpine.DEB.2.00.1011111319110.25829@chino.kir.corp.google.com>
-References: <1289421490-23950-1-git-send-email-segooon@gmail.com> <20101110130834.02496b48.akpm@linux-foundation.org> <alpine.DEB.2.00.1011101335410.7756@chino.kir.corp.google.com> <20101111083408.GA3471@albatros> <alpine.DEB.2.00.1011111224161.25829@chino.kir.corp.google.com>
- <20101111210251.GA26283@albatros>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=h2UNjE+v5i/GoSFhneXsTD4DI9Qeo0c61SVbzCWzSw6eTUQ6U2vIXCGLRPjPXdAj7b
+         zw1m74bwUwkWMXggdhkl3r/BqWmPodpLMOvfFu9OnYY1Mwk1OW9dvwlF0T5vw0tWs3Em
+         j++LxOAakpCYklZ66QC6AmOXKiAsAoKbZpfTk=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <AANLkTikCajWfF9=7SLTxo+6PQFaLszZ9HwxJkbXNmTws@mail.gmail.com>
+References: <AANLkTikCajWfF9=7SLTxo+6PQFaLszZ9HwxJkbXNmTws@mail.gmail.com>
+Date: Thu, 11 Nov 2010 22:38:55 +0100
+Message-ID: <AANLkTik0X6msJkm5M6y1hWMJStU=4E5LA+tBw=UwMVHD@mail.gmail.com>
+Subject: Re: i915 on 2.6.37-rc1: backlight always off after "xset dpms standby"
+From: Alex Riesen <raa.lkml@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Nov 2010, Vasiliy Kulikov wrote:
+On Thu, Nov 11, 2010 at 22:10, Alex Riesen <raa.lkml@gmail.com> wrote:
+> an alternative way to reproduce it, is to just wait for screensaver.
+> Only the backlight is off, it is possible to see the image on LCD
+> matrix if you get the angle right.
 
-> OK, if the main reason here is return value type, then the correct
-> handling should be:
-> 
-> 	/* Reject out-of-range values early.  Large positive sizes are
-> 	   used for unknown buffer sizes. */
-> -	if (WARN_ON_ONCE((int) size < 0))
-> +	if (WARN_ON_ONCE(size > INT_MAX)
-> 		return 0;
-> 
-> This should catch all underflows and too big integers.
-> 
+Bugzilla bug:
 
-That is equivalent since size_t is always unsigned; if you'd like to 
-change it, it should be presented only as a style change.  More important 
-would be writing a less cryptic comment :)
+https://bugzilla.kernel.org/show_bug.cgi?id=22672
