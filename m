@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756792Ab0KKOdV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 09:33:21 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:38021 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753188Ab0KKOdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 09:33:20 -0500
-Subject: Re: [RFC][PATCH 05/22] sched: SCHED_DEADLINE policy implementation
-From: Raistlin <raistlin@linux.it>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1289485509.2084.120.camel@laptop>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333814.8661.146.camel@Palantir>  <1289485509.2084.120.camel@laptop>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-8dUUMKEa5KjwLiSIybv/"
-Date: Thu, 11 Nov 2010 15:33:11 +0100
-Message-ID: <1289485991.6525.14.camel@Palantir>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756232Ab0KKOew (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 09:34:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25946 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752618Ab0KKOev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 09:34:51 -0500
+Date: Thu, 11 Nov 2010 09:34:25 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Dongdong Deng <dongdong.deng@windriver.com>, peterz@infradead.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [V3 PATCH] x86: avoid calling arch_trigger_all_cpu_backtrace()
+ at the same time on SMP
+Message-ID: <20101111143425.GG4823@redhat.com>
+References: <1289473307-7965-1-git-send-email-dongdong.deng@windriver.com>
+ <20101111111702.GA12644@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101111111702.GA12644@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 11, 2010 at 12:17:02PM +0100, Ingo Molnar wrote:
+> 
+> Hm, another thing i noticed is that there's two of these:
 
---=-8dUUMKEa5KjwLiSIybv/
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I guess it depends how we want to deprecate the old nmi watchdog.
+Dongdong was just patching the old and new code.
 
-On Thu, 2010-11-11 at 15:25 +0100, Peter Zijlstra wrote:
-> On Fri, 2010-10-29 at 08:30 +0200, Raistlin wrote:
-> > +static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p=
-,
-> > +                                 int flags)
-> > +{
-> > +       if (!dl_task(rq->curr) || (dl_task(p) &&
-> > +           dl_time_before(p->dl.deadline, rq->curr->dl.deadline)))
-> > +               resched_task(rq->curr);
-> > +}=20
->=20
-> every moment now a patch will hit -tip that ensures
-> ->check_preempt_curr() is only called when both the current and waking
-> task belong to the same sched_class.
->
-Again, I saw your fix to this, which is later than this patchset... :-)
+There are 3 ways we can go here.
 
-I'll take care of this while rebasing right in these days.
+- rip out the 'arch_trigger_all_cpu_backtrace' from the old nmi_watchdog,
+  rework the Makefile and have both watchdogs use common code in hw_nmi.c
 
-Thanks,
-Dario
+- patch both places
 
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+- rely on the fact that the old watchdog doesn't really work any more and
+  only patch the new watchdog
 
-http://blog.linux.it/raistlin / raistlin@ekiga.net /
-dario.faggioli@jabber.org
+I can put together a patch to do the first one, then have Dongdong put his
+patch on top.  Selfishly I wouldn't mind just doing the third option. ;-)
 
---=-8dUUMKEa5KjwLiSIybv/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Thoughts?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Cheers,
+Don
 
-iEYEABECAAYFAkzb/qcACgkQk4XaBE3IOsRnCwCfb6tScCoXsz80up/9/y7dUhmw
-1LUAoJ07vaVIHdZUUwgUtrt0xUKxJxi+
-=jOHn
------END PGP SIGNATURE-----
-
---=-8dUUMKEa5KjwLiSIybv/--
-
+> 
+> >  #ifdef ARCH_HAS_NMI_WATCHDOG
+> > +/* "in progress" flag of arch_trigger_all_cpu_backtrace */
+> > +static unsigned long backtrace_flag;
+> > +
+> >  void arch_trigger_all_cpu_backtrace(void)
+> >  {
+> >  	int i;
+> > +	unsigned long flags;
+> > +
+> > +	/*
+> > +	 * Have to disable irq here, as the
+> > +	 * arch_trigger_all_cpu_backtrace() could be
+> > +	 * triggered by "spin_lock()" with irqs on.
+> > +	 */
+> > +	local_irq_save(flags);
+> 
+> > +/* "in progress" flag of arch_trigger_all_cpu_backtrace */
+> > +static unsigned long backtrace_flag;
+> > +
+> >  void arch_trigger_all_cpu_backtrace(void)
+> >  {
+> >  	int i;
+> > +	unsigned long flags;
+> > +
+> > +	/*
+> > +	 * Have to disable irq here, as the
+> > +	 * arch_trigger_all_cpu_backtrace() could be
+> > +	 * triggered by "spin_lock()" with irqs on.
+> > +	 */
+> > +	local_irq_save(flags);
+> > +
+> > +	if (test_and_set_bit(0, &backtrace_flag))
+> 
+> A fair amount of code is being duplicated in two places - which is not nice. Lets 
+> try to create a shared facility instead?
+> 
+> Thanks,
+> 
+> 	Ingo
