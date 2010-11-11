@@ -1,134 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755623Ab0KKTJO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 14:09:14 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42338 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754252Ab0KKTJM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 14:09:12 -0500
-Subject: Re: [PATCH 1/3] perf-events: Add support for supplementary event
- registers
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@elte.hu,
-        acme@redhat.com, eranian@google.com, Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <1289492117-18066-1-git-send-email-andi@firstfloor.org>
-References: <1289492117-18066-1-git-send-email-andi@firstfloor.org>
+	id S1756079Ab0KKTIq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 14:08:46 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:50463 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753582Ab0KKTIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 14:08:45 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX199uGte4XN9nCcASuRvkiknzP9GGj9zMLri5vuHX5
+	KlwXGHUR/cirBQ
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+From: Mike Galbraith <efault@gmx.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+In-Reply-To: <AANLkTinbtfuipoene_M0Om_QtycHGL15Q5E8BOmLU-bh@mail.gmail.com>
+References: <1287479765.9920.9.camel@marge.simson.net>
+	 <1287487757.24189.40.camel@marge.simson.net>
+	 <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
+	 <1287511983.7417.45.camel@marge.simson.net>
+	 <1287514410.7368.10.camel@marge.simson.net>
+	 <20101020025652.GB26822@elte.hu>
+	 <1287648715.9021.20.camel@marge.simson.net>
+	 <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
+	 <20101021162924.GA3225@redhat.com>
+	 <1288076838.11930.1.camel@marge.simson.net>
+	 <1288078144.7478.9.camel@marge.simson.net>
+	 <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
+	 <1289489200.11397.21.camel@maggy.simson.net>
+	 <AANLkTinbtfuipoene_M0Om_QtycHGL15Q5E8BOmLU-bh@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 11 Nov 2010 20:09:14 +0100
-Message-ID: <1289502554.2084.153.camel@laptop>
+Date: Thu, 11 Nov 2010 12:08:31 -0700
+Message-ID: <1289502511.11397.36.camel@maggy.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-11 at 17:15 +0100, Andi Kleen wrote:
+On Thu, 2010-11-11 at 10:34 -0800, Linus Torvalds wrote:
+> On Thu, Nov 11, 2010 at 7:26 AM, Mike Galbraith <efault@gmx.de> wrote:
+> >
+> > I _finally_ got back to this yesterday, and implemented your suggestion,
+> > though with a couple minor variations.  Putting the autogroup pointer in
+> > the signal struct didn't look right to me, so I plugged it into the task
+> > struct instead.  I also didn't refcount taskgroups, wanted the patchlet
+> > to be as self-contained as possible, so refcounted the autogroup struct
+> > instead.  I also left group movement on tty disassociation in place, but
+> > may nuke it.
+> 
+> Ok, the patch looks fine, but I do have a few comments:
+> 
+>  - the reason I suggested the signal struct was really that I thought
+> it would avoid extra (unnecessary) cost in thread creation/teardown.
+> 
+>    Maybe I should have made that clear, but this seems to
+> unnecessarily do the whole atomic_inc/dec for each thread. That seems
+> a bit sad.
+> 
+>    That said, if not having to dereference ->signal simplifies the
+> scheduler interaction, I guess the extra atomic ref at thread
+> creation/deletion is fine. So I don't think this is wrong, it's just
+> something I wanted to bring up.
 
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index ed63101..97133ec 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -93,6 +93,8 @@ struct amd_nb {
->  	struct event_constraint event_constraints[X86_PMC_IDX_MAX];
->  };
->  
-> +struct intel_percore;
-> +
->  #define MAX_LBR_ENTRIES		16
->  
->  struct cpu_hw_events {
-> @@ -126,6 +128,8 @@ struct cpu_hw_events {
->  	void				*lbr_context;
->  	struct perf_branch_stack	lbr_stack;
->  	struct perf_branch_entry	lbr_entries[MAX_LBR_ENTRIES];
+Ah, ok.  Anything that cuts overhead is worth doing.
 
-There wants to be a comment here, this is definitely not LBR stuff.
+>  - You misspelled "detach". That just drives me wild. Please fix.
 
-> +	int 				percore_used;
-> +	struct intel_percore		*per_core;
+(well, _somebody_ has to keep the speeling police occupied;)
 
-Either per_core != NULL implies percore_used or it should be state
-inside the struct.
+>  - What I _do_ think is wrong is how I think you're trying to be "too
+> precise". I think that's fundamentally wrong, because I think we
+> should make it very clear that it's a heuristic. So I dislike seeing
+> these functions: sched_autogroup_handler() -  we shouldn't care about
+> old state, sched_autogroup_detach() - even with the fixed spelling I
+> don't really see why a tty hangup should cause the process to go back
+> to the default group, for example.
+> 
+> IOW, I think you tried a bit _too_ hard to make it a 1:1 relationship
+> with the tty. I don't think it needs to be. Just because a process
+> loses its tty because of a hangup, I don't think that that should have
+> any real implications for the auto-group scheduling. Or maybe it
+> should, but that decision should be based on "does it help scheduling
+> behavior" rather than on "it always matches the tty".  See what I'm
+> saying?
 
->  
->  	/*
->  	 * AMD specific bits
-> @@ -175,6 +179,24 @@ struct cpu_hw_events {
->  #define for_each_event_constraint(e, c)	\
->  	for ((e) = (c); (e)->weight; (e)++)
->  
-> +/*
-> + * Extra registers for specific events.
-> + * Some events need large masks and require external MSRs.
-> + * Define a mapping to these extra registers.
-> + */
-> +
-> +struct extra_reg {
-> +	unsigned event;
-> +	unsigned msr;
-> +	u64 config_mask;
-> +	u64 valid_mask;
-> +};
+Yeah, and it doesn't in the common case at least.  The handler's
+classifier was because a 100% pinned hog would never obey the user's
+wishes, but I can whack it along with the hangup.  Less is more in the
+scheduler. 
 
-s/unsigned/unsigned int/ (also later in the patch) and then align the
-variable names.
+Thanks for the comments.
 
-> +
-> +#define EVENT_EXTRA_REG(event, msr, m, vm) { event, msr, m, vm }
-
-C99 initializers please
-
-> +#define INTEL_EVENT_EXTRA_REG(event, msr, vm) \
-> +	EVENT_EXTRA_REG(event, msr, ARCH_PERFMON_EVENTSEL_EVENT, vm)
-> +#define EVENT_EXTRA_END {}
-
-Does that imply a zero filled struct?
-
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index c8f5c08..bbe7fba 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -1,5 +1,14 @@
->  #ifdef CONFIG_CPU_SUP_INTEL
->  
-> +struct intel_percore {
-> +	raw_spinlock_t lock;
-> +	int ref;
-> +	u64 config;
-> +	unsigned extra_reg;
-> +	u64 extra_config;
-> +};
-> +static DEFINE_PER_CPU(struct intel_percore, intel_percore);
-
-Please dynamically allocate these when needed, just like the AMD
-north-bridge structure.
-
->  /*
->   * Intel PerfMon, used on Core and later.
->   */
-
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 057bf22..a353594 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -224,7 +224,10 @@ struct perf_event_attr {
->  	};
->  
->  	__u32			bp_type;
-> -	__u64			bp_addr;
-> +	union {
-> +		__u64			bp_addr;
-> +		__u64		        event_extra; /* Extra for some events */
-> +	};
->  	__u64			bp_len;
->  };
-
-I think I like Stephane's suggestion better, frob them into the existing
-u64 word, since its model specific and we still have 33 empty bits in
-the control register there's plenty space.
-
-
+	-Mike
 
