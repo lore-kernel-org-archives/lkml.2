@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565Ab0KKMas (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 07:30:48 -0500
-Received: from casper.infradead.org ([85.118.1.10]:51692 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755543Ab0KKMar convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 07:30:47 -0500
-Subject: Re: [Questions] How to run 'perf top' on ARM to profile kernel
- functions with modules loaded
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: Ming Lei <tom.leiming@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20101111122143.GF2929@pulham.picochip.com>
-References: <AANLkTinwAL8dFsDbd-ZTQEcEziq6jZk82KPzNqMVxnOx@mail.gmail.com>
-	 <AANLkTim+BAYKWqiJzSQQLc4e_yNkMsNNnEp5u8YgC2Fk@mail.gmail.com>
-	 <20101111091733.GA2929@pulham.picochip.com>
-	 <1289477176.2084.64.camel@laptop>
-	 <20101111122143.GF2929@pulham.picochip.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 11 Nov 2010 13:30:26 +0100
-Message-ID: <1289478626.2084.73.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756584Ab0KKMbw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 07:31:52 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:33979 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756085Ab0KKMbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 07:31:50 -0500
+Date: Thu, 11 Nov 2010 04:31:46 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        darren@dvhart.com
+Subject: Re: [PATCH RFC tip/core/rcu 11/12] rcu: fix race condition in
+ synchronize_sched_expedited()
+Message-ID: <20101111123146.GF3134@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101107020507.GA4974@linux.vnet.ibm.com>
+ <1289095532-5398-11-git-send-email-paulmck@linux.vnet.ibm.com>
+ <4CD94C0D.3030007@kernel.org>
+ <4CDA5E40.3080205@cn.fujitsu.com>
+ <20101111042014.GE3134@linux.vnet.ibm.com>
+ <4CDBB309.9020406@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CDBB309.9020406@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-11 at 12:21 +0000, Jamie Iles wrote:
-> On Thu, Nov 11, 2010 at 01:06:16PM +0100, Peter Zijlstra wrote:
-> > On Thu, 2010-11-11 at 09:17 +0000, Jamie Iles wrote:
-> > > On Thu, Nov 11, 2010 at 03:52:07PM +0800, Ming Lei wrote:
-> > > > 2010/11/11 Ming Lei <tom.leiming@gmail.com>:
-> > > > > Hi,
-> > > > >
-> > > > > 'perf top' can't display any functions when modules are loaded on ARM.
-> > > > 
-> > > > Sorry, should be can't display any kernel functions when modules are loaded
-> > > > on ARM.
-> > > I've noticed this myself and I spent a bit of time looking into it last week 
-> > > but didn't get too far. I did wonder if it was something to do with the map 
-> > > fixups after loading the modules. If you look at the raw events after a perf 
-> > > record with 'perf report -D' then the last module has a size that takes it to 
-> > > 0xFFFFFFFF which overlaps with the rest of the kernel symbols.
-> > > 
-> > > On x86 it looks like the modules are loaded after the kernel image in VM 
-> > > unlike ARM.
+On Thu, Nov 11, 2010 at 10:10:33AM +0100, Tejun Heo wrote:
+> Hello, Paul, Lai.
+> 
+> On 11/11/2010 05:20 AM, Paul E. McKenney wrote:
+> > On Wed, Nov 10, 2010 at 04:56:32PM +0800, Lai Jiangshan wrote:
+> >> On 11/09/2010 09:26 PM, Tejun Heo wrote:
+> >>> Hello, Paul.
+> >>>
+> >>>
+> >>> How about something like the following?  It's slightly bigger but I
+> >>> think it's a bit easier to understand.  Thanks.
+> >>
+> >> Hello, Paul, Tejun,
+> >>
+> >> I think this approach is good and much better when several tasks
+> >> call synchronize_sched_expedited() at the same time.
 > > 
-> > Order shouldn't matter, but that overlap is very likely what kills it.
-> > That module size is buggy.
-> I'm guessing that its in util/symbol.c:__map_groups__fixup_end():
+> > I am becoming more comfortable with it as well.  Tejun, what kind of
+> > testing did you do?  Lai, could you please run it on your systems?
 > 
-> 	for (nd = rb_next(prevnd); nd; nd = rb_next(nd)) {
->                 prev = curr;
->                 curr = rb_entry(nd, struct map, rb_node);
->                 prev->end = curr->start - 1;
->         }
-> 
->         /*
->          * We still haven't the actual symbols, so guess the
->          * last map final address.
->          */
->         curr->end = ~0UL;
-> 
-> I've noticed that if I change the symbol_conf.{use_modules,try_vmlinux_path} 
-> then I can get perf events for kernel symbols from /proc/kallsyms but nothing 
-> for the modules.
+> I just compile tested it (so no SOB).  Please feel free to take it and
+> shape it into a proper patch.  Oh, I think we can drop both mb()'s at
+> the top and bottom as both atomic_inc_return() and atomic_cmpxchg()
+> imply full memory barrier.
 
-Hrm,.. depending on how we load things this might be easy or hard to
-fix. If we load the module symbols after having loaded the kernel
-symbols we can replace ~0ULL with the address before the next symbol.
+Actually, the memory barriers are still one source of discomfort to me.
+I am concerned about the path out of the function that skips the
+atomic_cmpxchg(), which seem to happen if some concurrent invocation
+advances the "done" counter past us before we get around to checking it.
+I agree on the atomic_inc_return() upon entry to the function, though.
 
-If however we load modules first we're in a bind and should look at
-changing the load order to make the first suggestion work.
+And this is going to need some serious testing either way.  ;-)
+
+							Thanx, Paul
