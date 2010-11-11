@@ -1,131 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756674Ab0KKWGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 17:06:43 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:50629 "EHLO e8.ny.us.ibm.com"
+	id S1757180Ab0KKWHK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 17:07:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50647 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756236Ab0KKWGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 17:06:42 -0500
-Subject: Re: [PATCH 04/10] tile: convert to use clocksource_register_hz
-From: john stultz <johnstul@us.ibm.com>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <4CDC5E70.90102@tilera.com>
-References: <1288642350-1599-1-git-send-email-johnstul@us.ibm.com>
-	 <1288642350-1599-5-git-send-email-johnstul@us.ibm.com>
-	 <4CDC5E70.90102@tilera.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Nov 2010 14:06:16 -0800
-Message-ID: <1289513176.2742.56.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756709Ab0KKWHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 17:07:08 -0500
+Date: Thu, 11 Nov 2010 23:00:49 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: INFO: suspicious rcu_dereference_check() usage -
+	kernel/pid.c:419 invoked rcu_dereference_check() without protection!
+Message-ID: <20101111220048.GA19979@redhat.com>
+References: <xr93fwwbdh1d.fsf@ninji.mtv.corp.google.com> <20101107182028.GZ15561@linux.vnet.ibm.com> <20101108151509.GA3702@redhat.com> <20101109202900.GV4032@linux.vnet.ibm.com> <20101110155530.GA1905@redhat.com> <20101110160211.GA2562@redhat.com> <4CDBD12C.4010807@kernel.dk> <20101111123015.GA25991@redhat.com> <4CDBE401.7040401@kernel.dk> <xr93sjz73ar6.fsf@ninji.mtv.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <xr93sjz73ar6.fsf@ninji.mtv.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-11 at 16:21 -0500, Chris Metcalf wrote:
-> On 11/1/2010 4:12 PM, John Stultz wrote:
-> > Convert tile to use clocksource_register_hz.
-> >
-> > Untested. Help from maintainers would be appreciated.
-> >
-> > CC: Chris Metcalf <cmetcalf@tilera.com>
-> > CC: Thomas Gleixner <tglx@linutronix.de>
-> > Signed-off-by: John Stultz <johnstul@us.ibm.com>
-> > ---
-> >  arch/tile/kernel/time.c |    5 +----
-> >  1 files changed, 1 insertions(+), 4 deletions(-)
-> >
-> > diff --git a/arch/tile/kernel/time.c b/arch/tile/kernel/time.c
-> > index 6bed820..8c06cb2 100644
-> > --- a/arch/tile/kernel/time.c
-> > +++ b/arch/tile/kernel/time.c
-> > @@ -76,7 +76,6 @@ static struct clocksource cycle_counter_cs = {
-> >  	.rating = 300,
-> >  	.read = clocksource_get_cycles,
-> >  	.mask = CLOCKSOURCE_MASK(64),
-> > -	.shift = 22,   /* typical value, e.g. x86 tsc uses this */
-> >  	.flags = CLOCK_SOURCE_IS_CONTINUOUS,
-> >  };
-> 
-> We were using clocksource_calc_mult_shift() for a while to compute both
-> this value and our sched_clock() value, and, like
-> clocksource_register_hz(), it suggested that a shift value of 31 was best.
-> 
-> Perhaps unsurprisingly, we saw wraparound with sched_clock(), which is why
-> we use a fixed shift value of "10" to avoid problems.  This is clearly
-> required since sched_clock() values are fairly long-lived.
+On 11/11, Greg Thelen wrote:
+>
+> a) my original report added rcu_read_lock() to sys_ioprio_get() and
+>    claims that "something" is needed in sys_ioprio_set().
+>
+> c) http://lkml.org/lkml/2010/10/29/168 added rcu locks to both
+>    sys_ioprio_get() and sys_ioprio_set() thus addressing the issues
+>    raised in a).  However, I do not see this patch in -mm.
 
-Heh. This is the third case *today* of issues cropping up due to
-sched_clock utilizing the timekeeping clocksource. Interesting
-confluence of events.
+Well, I do not know what happened with this patch, but
 
-Obviously the interactions here need some clarification and cleanup. :)
+>    I can resubmit my patch, but want to know if there is a reason that
+>    http://lkml.org/lkml/2010/10/29/168 did not make it into either -mm
+>    or linux-next?
 
-> I admit that I don't really understand what the wraparound implications of
-> using a shift of "31" for the clocksource is, but since it will cause the
-> clocksource to wrap around fairly quickly, I wanted to make sure this shift
-> value was OK for whatever uses that clocksource is put to.  (The underlying
-> clock in question is a 64-bit cycle counter, so with "<< 31" at e.g. 1 GHz
-> it will wrap negative after about four seconds.)
+I am looking at http://lkml.org/lkml/2010/10/29/168 now, and I think
+it should be dropped or you can submit the patch on top of it.
 
-Its not so much an issue of wraparound of the clocksource, but
-multiplication overflow when we are using long cycle deltas.
+It only adds rcu_read_lock() around of find_task_by_vpid(), but we can
+use rcu_read_lock() instead of tasklist_lock.
 
-The shift calculation works backwards from an software defined max time
-delta, converts it to a cycle delta, then reduces it if the cycle
-counter's own wrap limit is smaller. It then calculates the largest
-shift value possible where the resulting mult for the given freq won't
-cause an overflow from that max cycle delta.
+> d) the sys_ioprio_set() comment indicating that "we can't use
+>    rcu_read_lock()" needs to be updated to be more clear.  I'm not sure
+>    what this should be updated to, which leads into the next
+>    sub-topic...
 
-This gives us the best freq estimate, and finest grained adjustment
-ability for that defined max time delta. That the max time delta needs
-to be centrally managed, as it provides the trade-off between fine
-grained ntp adjustments and the maximum NOHZ time, so we don't want to
-chase issues surrounding these tradeoffs all over different
-architectures.
+It should be just removed. It doesn't match the reality today.
 
-Now, almost all of the clocksource shift calculation code has been done
-with concern around how frequently we call update_wall_time, which
-accumulates cycles from the clocksource (allowing the clocksource to
-wrap safely without losing time). 
+> e) possibly removing tasklist_lock,
 
-Not much thought on my part has gone into the sched_clock usage of the
-clocksource. Folks saw a good way to access a counter and a way to
-convert it to ns, so it seemed reasonable, but I don't think the proper
-consideration was given to the requirements of the sched_clock behavior.
+Yes.
 
-In many cases sched_clock used its own counter-extension hacks, or
-per-cpu offset calculations to allow faster-non-timekeeping acceptable
-clocksources (like the TSC on some machines) to be used. Its a bit more
-of an arch specific thing, so there's more chances for it to go wrong
-somewhere.
+> though there seems to be some
+>    concern that this might introduce task->io_context usage race.
 
-So some quick questions for Peter and Ingo to help clarify this:
+No!
 
-1) How often is sched_clock guaranteed to be called? Once each tick, (so
-the maximum time in nohz mode would be reasonable?)
+I am sorry for confusion, those ->io_context races are completely
+orthogonal to s/tasklist/rcu/.
 
-2) What considerations for sched_clock wrapping is there in generic
-code? I see some considerations in kernel/sched_clock.c, but its not
-obvious the limits. On x86, the 64-bit TSC won't wrap (but might jump on
-non-synced systems, or halt in idle modes). Do architectures that have
-faster-wrapping counters need to handle the cycle accumulation
-internally?
-
-3) If there is generic code to handle counter wrapping, what is the
-limit of the length of time that a old sched_clock value might be around
-for before being updated? In other words, if there was a second granular
-counter that wrapped every minute, you wouldn't want to compare two
-values that were longer then a minute apart. So if that was scaled down
-to counter frequencies, how long might it be between storing a
-sched_clock reference and using it?
-
-
-Chris: Thanks for pointing out this issue!
-
-thanks
--john
+Oleg.
 
