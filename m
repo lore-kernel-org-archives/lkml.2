@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755491Ab0KKSky (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 13:40:54 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36631 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755286Ab0KKSkw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 13:40:52 -0500
+	id S1755629Ab0KKSlN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 13:41:13 -0500
+Received: from mx02.hut.fi ([130.233.228.109]:58757 "EHLO mx02.hut.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752747Ab0KKSlK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 13:41:10 -0500
+X-Greylist: delayed 2903 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Nov 2010 13:41:09 EST
+Message-ID: <20101111194946.i0a4fweyo00o8408@webmail1.tkk.fi>
+Date: Thu, 11 Nov 2010 19:49:46 +0200
+From: "Mr. Beuker Hendrik" <lejven@tkk.fi>
+Reply-to: bhendrik1@mspil.edu.cn
+To: undisclosed-recipients:;
+Subject: Work with me
 MIME-Version: 1.0
-In-Reply-To: <1289489200.11397.21.camel@maggy.simson.net>
-References: <1287479765.9920.9.camel@marge.simson.net> <1287487757.24189.40.camel@marge.simson.net>
- <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
- <1287511983.7417.45.camel@marge.simson.net> <1287514410.7368.10.camel@marge.simson.net>
- <20101020025652.GB26822@elte.hu> <1287648715.9021.20.camel@marge.simson.net>
- <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
- <20101021162924.GA3225@redhat.com> <1288076838.11930.1.camel@marge.simson.net>
- <1288078144.7478.9.camel@marge.simson.net> <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
- <1289489200.11397.21.camel@maggy.simson.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 11 Nov 2010 10:34:08 -0800
-Message-ID: <AANLkTinbtfuipoene_M0Om_QtycHGL15Q5E8BOmLU-bh@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-To: Mike Galbraith <efault@gmx.de>
-Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII;
+	DelSp=Yes	format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+X-Originating-IP: 190.144.40.195
+X-Authenticated-User: lejarven
+X-PMX-Version: 5.4.6.353000, Antispam-Engine: 2.6.1.350677, Antispam-Data: 2010.11.11.173920
+X-Spam-Probability: 54%
+X-PMX-Spam: Gauge=XXXXXIIII, Probability=54%, Report='FRAUD_X3 1.667, FRAUD_X4 1.667, FRAUD_HIGH_X3_WEBMAIL 1, CN_TLD 0.5, SXL_IP_SPAM_RCVD 0.5, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1500_1599 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, FRAUD_HIGH_X3 0, FROM_NAME_PHRASE 0, TO_UNDISCLOSED_RECIPIENTS 0, WEBMAIL_SOURCE 0, WEBMAIL_USER_AGENT 0, WEBMAIL_XOIP 0, WEBMAIL_X_IP_HDR 0, __CD 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FRAUD_CONTACT 0, __FRAUD_FAMILY 0, __FRAUD_MONEY 0, __FRAUD_MONEY_GENERIC 0, __FRAUD_MONEY_VALUE 0, __HAS_MSGID 0, __INT_PROD_LOC 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_PHRASE5 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __SANE_MSGID 0, __STOCK_PHRASE_7 0, __STOCK_PHRASE_8 0, __TO_MALFORMED_3 0, __URI_NO_PATH 0, __USER_AGENT 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 7:26 AM, Mike Galbraith <efault@gmx.de> wrote:
->
-> I _finally_ got back to this yesterday, and implemented your suggestion,
-> though with a couple minor variations.  Putting the autogroup pointer in
-> the signal struct didn't look right to me, so I plugged it into the task
-> struct instead.  I also didn't refcount taskgroups, wanted the patchlet
-> to be as self-contained as possible, so refcounted the autogroup struct
-> instead.  I also left group movement on tty disassociation in place, but
-> may nuke it.
 
-Ok, the patch looks fine, but I do have a few comments:
+UBS International Holdings BV
+Herengracht 600
+NL-1017 CJ Amsterdam, Netherlands.
+www.ubs.com/investmentbank
 
- - the reason I suggested the signal struct was really that I thought
-it would avoid extra (unnecessary) cost in thread creation/teardown.
+Greetings,
 
-   Maybe I should have made that clear, but this seems to
-unnecessarily do the whole atomic_inc/dec for each thread. That seems
-a bit sad.
+I am an investment consultant working with UBS International Holdings BV
+in the Netherlands. I will be happy to work this transaction out with you
+if you have a corporate or personal Bank Account and if you are reliable
+and honest. I need strong Assurance that you will never let me down, as I
+can arrange and provide you details/documentatal proof so that
+funds($8.5 million) will be transferred into your account as the next of
+kin to the late depositor(Abbas Farhan al-Jabouri, who was an Election
+candidate and also a business man). Abbas Farhan al-Jabouri and his two
+relatives were executed in Mohammed al Malih, near Mandali onthe 29th of
+January 2009.  During one of our periodic auditing I discovered a dormant
+accounts with the said balance (Eight million, five Hundred thousand
+Dollars only), this account have not been operated for some years now.
 
-   That said, if not having to dereference ->signal simplifies the
-scheduler interaction, I guess the extra atomic ref at thread
-creation/deletion is fine. So I don't think this is wrong, it's just
-something I wanted to bring up.
+At this moment I will not be able to issue more details about this
+business, until your response is received.
 
- - You misspelled "detach". That just drives me wild. Please fix.
+If you are not familiar with my Bank profile, please take a moment of your
+very busy schedules to read about my Bank
+website(www.ubs.com/investment bank). I look forward to hearing from you as
+soon as possible via my private email; bhendrik1@mspil.edu.cn
 
- - What I _do_ think is wrong is how I think you're trying to be "too
-precise". I think that's fundamentally wrong, because I think we
-should make it very clear that it's a heuristic. So I dislike seeing
-these functions: sched_autogroup_handler() -  we shouldn't care about
-old state, sched_autogroup_detach() - even with the fixed spelling I
-don't really see why a tty hangup should cause the process to go back
-to the default group, for example.
+Thank you for your time and attention.
 
-IOW, I think you tried a bit _too_ hard to make it a 1:1 relationship
-with the tty. I don't think it needs to be. Just because a process
-loses its tty because of a hangup, I don't think that that should have
-any real implications for the auto-group scheduling. Or maybe it
-should, but that decision should be based on "does it help scheduling
-behavior" rather than on "it always matches the tty".  See what I'm
-saying?
+Warmest Regards,
+Mr. Beuker Hendrik
+Investment Consultant.
+UBS.
 
-That said, I do love how the patch looks. I think this is absolutely
-the right thing to do. My issues are small details. I'd Ack it even in
-this form (well, as long as spelling is fixed, that really does rub me
-the wrong way), and the other things are more details that are about
-how I'm thinking about it rather than "you need to do it this way".
 
-                             Linus
+
+
+
+
+
