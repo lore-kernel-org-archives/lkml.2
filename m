@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756657Ab0KKMxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 07:53:31 -0500
-Received: from hera.kernel.org ([140.211.167.34]:37562 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756154Ab0KKMxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 07:53:30 -0500
-Message-ID: <4CDBE6FC.1010106@kernel.org>
-Date: Thu, 11 Nov 2010 13:52:12 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        darren@dvhart.com
-Subject: Re: [PATCH RFC tip/core/rcu 11/12] rcu: fix race condition in synchronize_sched_expedited()
-References: <20101107020507.GA4974@linux.vnet.ibm.com> <1289095532-5398-11-git-send-email-paulmck@linux.vnet.ibm.com> <4CD94C0D.3030007@kernel.org> <4CDA5E40.3080205@cn.fujitsu.com> <20101111042014.GE3134@linux.vnet.ibm.com> <4CDBB309.9020406@kernel.org> <20101111123146.GF3134@linux.vnet.ibm.com>
-In-Reply-To: <20101111123146.GF3134@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 11 Nov 2010 12:52:14 +0000 (UTC)
+	id S1756667Ab0KKMyc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 07:54:32 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46175 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756316Ab0KKMyb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 07:54:31 -0500
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: linux-nfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Bryan Schumaker <bjschuma@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH] nfs: Ignore kmemleak false positive in nfs_readdir_make_qstr
+Date: Thu, 11 Nov 2010 12:53:47 +0000
+Message-Id: <1289480027-7361-1-git-send-email-catalin.marinas@arm.com>
+X-Mailer: git-send-email 1.7.3.2.164.g6f10c
+X-OriginalArrivalTime: 11 Nov 2010 12:54:06.0995 (UTC) FILETIME=[86B47E30:01CB819F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Strings allocated via kmemdup() in nfs_readdir_make_qstr() are
+referenced from the nfs_cache_array which is stored in a page cache
+page. Kmemleak does not scan such pages and it reports several false
+positives. This patch annotates the string->name pointer so that
+kmemleak does not consider it a real leak.
 
-On 11/11/2010 01:31 PM, Paul E. McKenney wrote:
-> Actually, the memory barriers are still one source of discomfort to me.
-> I am concerned about the path out of the function that skips the
-> atomic_cmpxchg(), which seem to happen if some concurrent invocation
-> advances the "done" counter past us before we get around to checking it.
-> I agree on the atomic_inc_return() upon entry to the function, though.
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Bryan Schumaker <bjschuma@netapp.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+---
+ fs/nfs/dir.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-Oooh, you're right.  It needs to be smp_mb().  We can put it right
-before break but I don't think it would worth the ugliness.
-
-> And this is going to need some serious testing either way.  ;-)
-
-Definitely.  This is a scary piece of code.  :-)
-
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index 07ac384..a9f9e14 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -34,6 +34,7 @@
+ #include <linux/mount.h>
+ #include <linux/sched.h>
+ #include <linux/vmalloc.h>
++#include <linux/kmemleak.h>
+ 
+ #include "delegation.h"
+ #include "iostat.h"
+@@ -231,6 +232,11 @@ int nfs_readdir_make_qstr(struct qstr *string, const char *name, unsigned int le
+ 	string->name = kmemdup(name, len, GFP_KERNEL);
+ 	if (string->name == NULL)
+ 		return -ENOMEM;
++	/*
++	 * Avoid a kmemleak false positive. The pointer to the name is stored
++	 * in a page cache page which kmemleak does not scan.
++	 */
++	kmemleak_not_leak(string->name);
+ 	string->hash = full_name_hash(name, len);
+ 	return 0;
+ }
 -- 
-tejun
+1.7.3.GIT
+
