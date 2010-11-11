@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab0KKMVx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 07:21:53 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:61016 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756133Ab0KKMVw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 07:21:52 -0500
-Date: Thu, 11 Nov 2010 12:21:43 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Jamie Iles <jamie@jamieiles.com>, Ming Lei <tom.leiming@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [Questions] How to run 'perf top' on ARM to profile kernel
- functions with modules loaded
-Message-ID: <20101111122143.GF2929@pulham.picochip.com>
-References: <AANLkTinwAL8dFsDbd-ZTQEcEziq6jZk82KPzNqMVxnOx@mail.gmail.com>
- <AANLkTim+BAYKWqiJzSQQLc4e_yNkMsNNnEp5u8YgC2Fk@mail.gmail.com>
- <20101111091733.GA2929@pulham.picochip.com>
- <1289477176.2084.64.camel@laptop>
+	id S1756416Ab0KKMXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 07:23:47 -0500
+Received: from kroah.org ([198.145.64.141]:53054 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755759Ab0KKMXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 07:23:46 -0500
+Date: Thu, 11 Nov 2010 04:19:17 -0800
+From: Greg KH <greg@kroah.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] fs, sysfs: Change sysfs_pathname function prototype.
+Message-ID: <20101111121917.GA933@kroah.com>
+References: <AANLkTikDXtLrfjYkQrkGi44qi0cpp-C+Lxr5j1UkFd2G@mail.gmail.com> <20101109224450.GB21992@kroah.com> <AANLkTimHOAdUieTzFvNNhaPxwvas2wBDfSL8aPu764HZ@mail.gmail.com> <20101110183940.GA15089@kroah.com> <AANLkTimTy0vngwuM=jWfeU7qgqznamPgAftX7=2LShL+@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289477176.2084.64.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTimTy0vngwuM=jWfeU7qgqznamPgAftX7=2LShL+@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 01:06:16PM +0100, Peter Zijlstra wrote:
-> On Thu, 2010-11-11 at 09:17 +0000, Jamie Iles wrote:
-> > On Thu, Nov 11, 2010 at 03:52:07PM +0800, Ming Lei wrote:
-> > > 2010/11/11 Ming Lei <tom.leiming@gmail.com>:
-> > > > Hi,
-> > > >
-> > > > 'perf top' can't display any functions when modules are loaded on ARM.
-> > > 
-> > > Sorry, should be can't display any kernel functions when modules are loaded
-> > > on ARM.
-> > I've noticed this myself and I spent a bit of time looking into it last week 
-> > but didn't get too far. I did wonder if it was something to do with the map 
-> > fixups after loading the modules. If you look at the raw events after a perf 
-> > record with 'perf report -D' then the last module has a size that takes it to 
-> > 0xFFFFFFFF which overlaps with the rest of the kernel symbols.
-> > 
-> > On x86 it looks like the modules are loaded after the kernel image in VM 
-> > unlike ARM.
+On Thu, Nov 11, 2010 at 12:11:34PM +0600, Rakib Mullick wrote:
+> On Thu, Nov 11, 2010 at 12:39 AM, Greg KH <greg@kroah.com> wrote:
+> > On Wed, Nov 10, 2010 at 10:53:37AM +0600, Rakib Mullick wrote:
+> >> On Wed, Nov 10, 2010 at 4:44 AM, Greg KH <greg@kroah.com> wrote:
+> >> >
+> >> > If it's really not used then why would marking it inline help out any?
+> >> > Shouldn't we just delete the function instead?
+> >> >
+> >> As far as I can see, its been called recursively and also from
+> >> sysfs_add_one. Am I missing anything?
+> >
+> > If so, then what is the compiler warning that is being generated that
+> > you are trying to resolve?
+> >
 > 
-> Order shouldn't matter, but that overlap is very likely what kills it.
-> That module size is buggy.
-I'm guessing that its in util/symbol.c:__map_groups__fixup_end():
+> Yes - its really confusing. Actually, sysfs_pathname is called from
+> WARN(). So - when #ifndef WARN is false, then we're having that
+> problem and sysfs_pathname isn't used that time. So, the proposed
+> patch isn't the correct fix. Maybe, splitting up the WARN message and
+> calling sysfs_pathname is the correct one. Am I right?
 
-	for (nd = rb_next(prevnd); nd; nd = rb_next(nd)) {
-                prev = curr;
-                curr = rb_entry(nd, struct map, rb_node);
-                prev->end = curr->start - 1;
-        }
+perhaps, yes, that might be correct, but as almost no one builds with
+WARN not enabled, is this a real issue?
 
-        /*
-         * We still haven't the actual symbols, so guess the
-         * last map final address.
-         */
-        curr->end = ~0UL;
+thanks,
 
-I've noticed that if I change the symbol_conf.{use_modules,try_vmlinux_path} 
-then I can get perf events for kernel symbols from /proc/kallsyms but nothing 
-for the modules.
-
-Jamie
+greg k-h
