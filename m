@@ -1,103 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab0KKJHs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 04:07:48 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56138 "EHLO mx3.mail.elte.hu"
+	id S1752474Ab0KKJJl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 04:09:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042Ab0KKJHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 04:07:46 -0500
-Date: Thu, 11 Nov 2010 10:07:13 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: matthieu castet <castet.matthieu@free.fr>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Security] proactive defense: using read-only memory, RO/NX
- modules
-Message-ID: <20101111090713.GC18789@elte.hu>
-References: <20101107193520.GO5327@outflux.net>
- <20101108061324.GA30540@elte.hu>
- <20101108214228.GQ5876@outflux.net>
- <20101110090415.GC8370@elte.hu>
- <20101111065658.GA5876@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101111065658.GA5876@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1749667Ab0KKJJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 04:09:38 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: mingo@elte.hu, rostedt@goodmis.org, andi@firstfloor.org,
+        lwoodman@redhat.com, hch@infradead.org
+Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCHv2 1/2] tracing - fix recursive user stack trace
+Date: Thu, 11 Nov 2010 10:09:08 +0100
+Message-Id: <1289466549-7602-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <20101110164413.GA5360@nowhere>
+References: <20101110164413.GA5360@nowhere>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The user stack trace can fault when examining the trace. Which
+would call the do_page_fault handler, which would trace again,
+which would do the user stack trace, which would fault and call
+do_page_fault again ...
 
-* Kees Cook <kees.cook@canonical.com> wrote:
+Thus this is causing a recursive bug. We need to have a recursion
+detector here.
 
-> Hi Ingo,
-> 
-> On Wed, Nov 10, 2010 at 10:04:15AM +0100, Ingo Molnar wrote:
-> > * Kees Cook <kees.cook@canonical.com> wrote:
-> > > Oh, well, yes, that's a good reason. :) Where was this covered? I'd like to help 
-> > > get it reproduced and ironed out.
-> > 
-> > Matthieu Castet seems to have dusted off those patches and submitted two of them in 
-> > this mail:
-> > 
-> >   Subject: [RFC] reworked NX protection for kernel data
-> > 
-> > Matthieu, are you still interested in this topic?
-> > 
-> > The original, broken patches were these -tip commits:
-> > 
-> >  1e858c081af5: x86, mm: RO/NX protection for loadable kernel modules
-> >  18c60ddc9eff: x86, mm: NX protection for kernel data
-> >  c226a2feba21: x86, mm: Set first MB as RW+NX
-> >  b29d530510d4: x86, mm: Correcting improper large page preservation
-> > 
-> > I reported one of the crashes in:
-> > 
-> >   Subject: Re: [tip:x86/mm] x86, mm: Set first MB as RW+NX
-> > 
-> > on lkml.
-> 
-> Thanks for looking this up!
-> 
-> Can we get 1e858c081af5 and 18c60ddc9eff back in, and then work forward
-> from there?
 
-Yeah. Please port them to latest -tip:
+Signed-off-by: Steven Rostedt <srostedt@redhat.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ kernel/trace/trace.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
 
-   http://people.redhat.com/mingo/tip.git/README
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 82d9b81..1905a72 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1284,6 +1284,8 @@ void trace_dump_stack(void)
+ 	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count());
+ }
+ 
++static DEFINE_PER_CPU(int, user_stack_count);
++
+ void
+ ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags, int pc)
+ {
+@@ -1302,6 +1304,16 @@ ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags, int pc)
+ 	if (unlikely(in_nmi()))
+ 		return;
+ 
++	/*
++	 * Prevent recursion, since the user stack tracing may
++	 * trigger other kernel events.
++	 */
++	preempt_disable();
++	if (__get_cpu_var(user_stack_count))
++		goto out;
++
++	__get_cpu_var(user_stack_count)++;
++
+ 	event = trace_buffer_lock_reserve(buffer, TRACE_USER_STACK,
+ 					  sizeof(*entry), flags, pc);
+ 	if (!event)
+@@ -1319,6 +1331,11 @@ ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags, int pc)
+ 	save_stack_trace_user(&trace);
+ 	if (!filter_check_discard(call, entry, buffer, event))
+ 		ring_buffer_unlock_commit(buffer, event);
++
++	__get_cpu_var(user_stack_count)--;
++
++ out:
++	preempt_enable();
+ }
+ 
+ #ifdef UNUSED
+-- 
+1.7.1
 
-And give them some testing, and send out the new series. I'll re-report the crash to 
-you for a new kernel, if it still occurs.
-
-(Please also keep Rusty and Linus Cc:-ed for the module bits.)
-
-In hindsight, i think the kernel/module.c bits should be in arch/x86/kernel/module.c 
-- the new code is full of x86 only names and facilities.
-
-Also, please remove various checkpatch col80 artifacts, such as:
-
-+               if (end_pfn > begin_pfn)
-+                       set_memory_nx(begin_pfn << PAGE_SHIFT,
-+                                               end_pfn - begin_pfn);
-
-that should be:
-
-+               if (end_pfn > begin_pfn)
-+                       set_memory_nx(begin_pfn << PAGE_SHIFT, end_pfn - begin_pfn);
-
-Thanks,
-
-	Ingo
