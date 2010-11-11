@@ -1,65 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab0KKNS2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 08:18:28 -0500
-Received: from kroah.org ([198.145.64.141]:55781 "EHLO coco.kroah.org"
+	id S1756620Ab0KKNcg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 08:32:36 -0500
+Received: from verein.lst.de ([213.95.11.210]:55503 "EHLO verein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755759Ab0KKNS1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 08:18:27 -0500
-Date: Thu, 11 Nov 2010 05:17:56 -0800
-From: Greg KH <greg@kroah.com>
-To: Omar Ramirez Luna <omar.ramirez@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Tony Lindgren <tony@atomide.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-kernel@vger.kernel.org, Fernando Guzman Lugo <x0095840@ti.com>,
-        linux-omap@vger.kernel.org, Rene Sapiens <rene.sapiens@ti.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 00/02] staging: tidspbridge: 2.6.37-rcX fixes
-Message-ID: <20101111131756.GA26064@kroah.com>
-References: <1289440225-27221-1-git-send-email-omar.ramirez@ti.com>
-MIME-Version: 1.0
+	id S1756427Ab0KKNcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 08:32:33 -0500
+Date: Thu, 11 Nov 2010 14:32:11 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Christoph Hellwig <hch@lst.de>,
+        Jan Engelhardt <jengelh@medozas.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/5] writeback: stop background/kupdate works from livelocking other works
+Message-ID: <20101111133211.GC12940@lst.de>
+References: <20101108230916.826791396@intel.com> <20101108231726.993880740@intel.com> <20101109131310.f442d210.akpm@linux-foundation.org> <20101109222827.GJ4936@quack.suse.cz> <20101109150006.05892241.akpm@linux-foundation.org> <20101109235632.GD11214@quack.suse.cz> <20101110153729.81ae6b19.akpm@linux-foundation.org> <20101111004047.GA7879@localhost>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289440225-27221-1-git-send-email-omar.ramirez@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101111004047.GA7879@localhost>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 2.142 (**) BAYES_70
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 07:50:23PM -0600, Omar Ramirez Luna wrote:
-> Hi Greg,
+On Thu, Nov 11, 2010 at 08:40:47AM +0800, Wu Fengguang wrote:
+> Seriously, I also doubt the value of doing sync() in the flusher thread.
+> sync() is by definition inefficient. In the block layer, it's served
+> with less emphasis on throughput. In the VFS layer, it may sleep in
+> inode_wait_for_writeback() and filemap_fdatawait(). In various FS,
+> pages won't be skipped at the cost of more lock waiting.
 > 
-> Please consider the following patch set for tidspbridge driver in
-> staging tree, the following has been tested on an omap3430 based board
-> + gst-dsp environment. Many thanks to Felipe Contreras for piling this up,
-> as I'm just propagating his patches.
+> So when a flusher thread is serving sync(), it has difficulties
+> saturating the storage device.
 > 
-> First two patches:
-> 1. omap: dsp: remove shm from normal memory
-> 2. staging: tidspbridge: hardcode SCM macros while fix is upstreamed
-> 
-> Resolve a couple of build breaks due to adaptations for memblock
-> and SCM layer.
-> 
-> (2) Is meant as a temporary fix, until the patches to fix this
->     (currently in review) are upstreamed. [1]
-> 
-> The rest of the series, is the revert of iommu migration changes. These
-> are needed because, without modifications made to iommu module, they do not
-> work; these modifications (on iommu code) didn't make it for the previous
-> merge window either.
-> 
-> I will avoid posting the reverts (unless required), they can be found
-> (along with the two patches of this series) at:
-> 
-> git://dev.omapzoom.org/pub/scm/tidspbridge/kernel-dspbridge.git 
-> 	tidspbridge-2.6.37-rc1
+> btw, it seems current sync() does not take advantage of the flusher
+> threads to sync multiple disks in parallel.
 
-I've pulled from this tree and pushed it out to the staging-linus branch
-to get sent to Linus before .37 is released.
+sys_sync does a wakeup_flusher_threads(0) which kicks all flusher
+threads to write back all data.  We then do another serialized task
+of kicking per-sb writeback, and then do synchronous per-sb writeback,
+interwinded with non-blocking and blocking quota sync, ->sync_fs
+and __sync_blockdev calls.
 
-thanks,
+The way sync ended up looking like it did is rather historic:
 
-greg k-h
+ First Jan and I fixed sync to actually get data correctly to disk,
+ the way is was done traditionally had a lot of issues with ordering
+ it's steps.  For that we changed it to just loop around sync_filesystem
+ to have one common place to define the proper order for it.
+ That caused a large performance regression, which Yanmin Zhang found
+ and fixed, which added back the wakeup_pdflush(0) (which later became
+ wakeup_flusher_threads).
+
+ The introduction of the per-bdi writeback threads by Jens changed
+ writeback_inodes_sb and sync_inodes_sb to offload the I/O submission
+ to the I/O thread.
+
+I'm not overly happy with the current situation.  Part of that is
+the rather complex callchain in __sync_filesystem.  If we moved the
+quota sync and the sync_blockdev into ->sync_fs we'd already be down
+to a much more managable level, and we could optimize sync down to:
+
+
+	wakeup_flusher_threads(0);
+
+	for_each_sb
+		sb->sync_fs(sb, 0)
+
+	for_each_sb {
+		sync_inodes_sb(sb);
+		sb->sync_fs(sb, 1)
+	}
+
+We would still try to do most of the I/O from the flusher thread,
+but only if we can do it non-blocking.  If we have to block we'll
+get less optimal I/O patterns, but at least we don't block other
+writeback while waiting for it.
+
+I suspect a big problem for the statving workloads is that we only
+do the live-lock avoidance tagging inside sync_inodes_sb, so
+any page written by wakeup_flusher_threads, or the writeback_inodes_sb
+in the two first passes that gets redirties is synced out again.
+
+But I'd feel very vary doing this without a lot of performance testing.
+dpkg package install workloads, the ffsb create_4k test Yanmin used,
+or fs_mark in one of the sync using versions would be a good benchmark.
+
+Btw, where in the block I/O code do we penalize sync?
+
+
+I don't think moving the I/O submission into the caller is going to
+help us anything.  What we should look into instead is to make as
+much of the I/O submission non-blocking even inside sync.  
+
+> And I guess (concurrent) sync/fsync/msync calls will be rare,
+> especially for really performance demanding workloads (which will
+> optimize sync away in the first place).
+
+There is no way to optimize a sync away if you want your data on disk.
+
+The most common case is fsync, followed by O_SYNC, but for example due
+to the massive fsync suckage on ext3 dpkg for example has switched to
+sync instead, which is quite nasty if you have other work going on.
+
+Offloading fsync to the flusher thread is an interesting idea, but I
+wonder how well it works.  Both fsync and sync are calls the application
+waits on to make progress, so naturally we gave them some preference
+to decrease the latency will penalizing background writeback.  By
+first trying an asynchronous pass via the flusher thread we could
+optimize the I/O pattern, but at a huge cost to the latency for
+the caller.
+
+
