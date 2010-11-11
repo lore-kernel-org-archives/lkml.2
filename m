@@ -1,64 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab0KKJ6C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 04:58:02 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60847 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753242Ab0KKJ6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 04:58:00 -0500
-Date: Thu, 11 Nov 2010 10:57:50 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Dongdong Deng <dongdong.deng@windriver.com>, dzickus@redhat.com,
-        peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: avoid calling arch_trigger_all_cpu_backtrace() at
- the same time on SMP
-Message-ID: <20101111095750.GA24558@elte.hu>
-References: <1289442042-2515-1-git-send-email-dongdong.deng@windriver.com>
- <20101111092301.GD18789@elte.hu>
- <1289469104.17691.1025.camel@edumazet-laptop>
+	id S1754164Ab0KKJ7i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 04:59:38 -0500
+Received: from exprod5og107.obsmtp.com ([64.18.0.184]:52052 "HELO
+	exprod5og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753516Ab0KKJ7f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 04:59:35 -0500
+Message-ID: <4CDBBE80.40908@panasas.com>
+Date: Thu, 11 Nov 2010 11:59:28 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1289469104.17691.1025.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+CC: Greg KH <greg@kroah.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+References: <20101011213235.GA11489@kroah.com> <4CB4AEB9.30501@vlnb.net> <20101012190345.GA25737@kroah.com> <4CB75E81.7000208@vlnb.net> <20101014200413.GA30831@kroah.com> <4CC1CA4D.1090609@vlnb.net> <20101022175624.GA13640@kroah.com> <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net>
+In-Reply-To: <4CDAFE6E.7050200@vlnb.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Nov 2010 09:59:33.0583 (UTC) FILETIME=[2410A5F0:01CB8187]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/10/2010 10:19 PM, Vladislav Bolkhovitin wrote:
+> Boaz Harrosh, on 11/10/2010 12:58 PM wrote:
+>> On 11/09/2010 10:06 PM, Vladislav Bolkhovitin wrote:
+>>>
+>>> Sorry, but what is incorrect in the working implementation without any
+>>> bugs doing its job in the simplest, smallest and clearest way?
+>>>
+>>> If those objects remade to free themselves in the kobjects release(),
+>>> what value would it add to them? Would the implementation be simpler,
+>>> smaller or clearer? Not, I believe, new implementation would be only
+>>> bigger and less clear. So, what's the point to do it to make the code worse?
+>>>
+>>
+>> Totally theoretically speaking, since I have not inspected the code.
+>>
+>> If today you wait for the count to reach zero, then unregister
+>> and send an event to some other subsystem to free the object.
+>>
+>> Is it not the same as if you take an extra refcount, unregister and
+>> send the event at count=1. Then at that other place decrement the last
+>> count to cause the object to be freed.
+>>
+>> I agree that it is hard to do lockless. what some places do is have
+>> an extra kref. The kobj has a single ref on it. everything takes the
+>> other kref. when that reaches zero the unregister and event fires
+>> and at free you decrement the only kobj ref to deallocate. This is one
+>> way. In some situations you can manage with a single counter it all
+>> depends.
+> 
+> Thanks for sharing your thoughts with us. But the question isn't about
+> if it's possible to implement what we need locklessly. The question is
+> in two approaches how to synchronously delete objects with entries on SYSFS:
+> 
 
-* Eric Dumazet <eric.dumazet@gmail.com> wrote:
+Thanks for putting up an example we can now speak more specifically.
+(And saved me the time to actually look at code)
+I'll first comment on your code below and I have some questions, please
+see if I understood you correctly. Later below I'll try to explain what I
+meant.
 
-> Le jeudi 11 novembre 2010 à 10:23 +0100, Ingo Molnar a écrit :
-> 
-> > Also, variables that cmpxchg or test_and_set operates on need to be long, not int.
-> 
-> Hmm, ok for test_and_set(), it operates on a long.
-> 
-> cmpxchg() is ok on an int AFAIK. If not we have to make some changes :(
-> 
-> btrfs_orphan_cleanup() for example does this :
-> 
-> 	if (cmpxchg(&root->orphan_cleanup_state, 0, ORPHAN_CLEANUP_STARTED))
-> 		...
-> 
-> 
-> Same in build_ehash_secret() (net/ipv4/af_inet.c)
-> 
-> 	cmpxchg(&inet_ehash_secret, 0, rnd);
+> 1. struct object_x {
+> 	...
+> 	struct kobject kobj;
+> 	struct completion *release_completion; 
 
-You are right - cmpxchg() auto-detects the word size and thus should work on int 
-too.
+release_completion is only to be used by del_object!
 
-Thanks,
+> };
+> 
+> static void x_release(struct kobject *kobj)
 
-	Ingo
+This one is put on the kobj.release Right?
+
+> {
+> 	struct object_x *x;
+> 	struct completion *c;
+> 
+> 	x = container_of(kobj, struct object_x, kobj);
+> 	c = x->release_completion;
+> 	kfree(x);
+> 	complete_all(c);
+> }
+> 
+
+I don't see the unregister of the object_x.kobj, where do
+you do this one in x_release or del_object below?
+ 
+> void del_object(struct object_x *x)
+> {
+> 	DECLARE_COMPLETION_ONSTACK(completion);
+> 
+> 	...
+> 	x->release_completion = &completion;
+> 	kobject_put(&x->kobj);
+
+This put might not be the last put on the object, IOs in flight
+and/or open files might have extra reference on the object.
+We release our initial ref, and below wait for all operations
+to complete. (Is there a matter of timeout like files not closing?)
+
+> 	wait_for_completion(&completion);
+> }
+> 
+> and
+> 
+> 2. struct object_x {
+> 	...
+> 	struct kobject kobj;
+> 	struct completion release_completion;
+> };
+> 
+> static void x_release(struct kobject *kobj)
+> {
+> 	struct object_x *x;
+> 
+> 	x = container_of(kobj, struct object_x, kobj);
+> 	complete_all(&x->release_completion);
+> }
+> 
+> void del_object(struct object_x *x)
+> {
+ 	DECLARE_COMPLETION_ONSTACK(completion);
+	x->release_completion = &completion;
+Right?
+
+> 	...
+> 	kobject_put(&x->kobj);
+> 	wait_for_completion(&completion);
+> 	...
+> 	kfree(x);
+> }
+> 
+> Greg asserts that (1) is the only correct approach while (2) is
+> incorrect, and I'm trying to justify that (2) is correct too and
+> sometimes could be better, i.e. simpler and clearer, because it
+> decouples object_x from SYSFS and its kobj. Then kobj becomes an
+> ordinary member of struct object_x without any special treatment and
+> with the same lifetime rules as other members of struct object_x. While
+> in (1) all lifetime of struct object_x is strictly attached to kobj, so
+> it needs be specially handled with additional code for that if struct
+> object_x has many other members which needed to be initialized/deleted
+> _before and after_ kobj as we have in SCST.
+> 
+> Vlad
+
+One possibility (There are others)
+
+3. struct object_x {
+	...
+	struct kref kref;
+	struct kobject kobj;
+	struct completion *release_completion;
+};
+
+Every body takes kref_put(&object_x.kref) and  kref_get(&object_x.kref)
+I hope you have x_get/x_put, Yes?
+
+static void x_kref_release(struct kref *kref)
+{
+	struct object_x *x = container_of(kref, struct object_x, kref);
+
+	complete_all(&x->release_completion);
+}
+
+static void x_obj_release(struct kobject *kobj)
+{
+	struct object_x *x = container_of(kobj, struct object_x, kobj);
+
+	kfree(x);
+}
+
+int x_put(struct object_x *x)
+{
+	return kref_put(&x->kref, x_kref_release);
+}
+
+void del_object(struct object_x *x)
+{
+	DECLARE_COMPLETION_ONSTACK(completion);
+
+	...
+	x->release_completion = &completion;
+	x_put(x)
+	wait_for_completion(&completion);
+	kobject_put(&x->kobj);
+}
+
+Or
+
+4. Exactly Like 3 but without the extra kref member
+   Only x_put() changes and x_kref_release() now receives
+   an x_object
+
+int x_put(struct object_x *x)
+{
+	if (kobject_put(&x->kobj) == 1)
+		// Like above [3] x_kref_release()
+		x_kref_release(x);
+}
+
+Note that in 4 you don't actually have a kref member, and that you have
+one extra ref on kobj from the beginning. In del_object above the first
+x_put(x) makes it possible to reach the "1" count and then the final
+kobject_put(&x->kobj); frees the object.
+(You need to be carfull with [4] because it must have a refcount==2 before
+you expose it to any IO or sysfs.)
+
+So this is what I meant.
+Cheers
+Boaz
+
