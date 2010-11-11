@@ -1,67 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab0KKD4g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 22:56:36 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56868 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932393Ab0KKD4d (ORCPT
+	id S932446Ab0KKD5E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 22:57:04 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:11479 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932337Ab0KKDzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 22:56:33 -0500
-Date: Wed, 10 Nov 2010 19:53:29 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Bruno Randolf <br1@einfach.org>
-Cc: randy.dunlap@oracle.com, peterz@infradead.org, blp@cs.stanford.edu,
-        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
-        kosaki.motohiro@jp.fujitsu.com, kevin.granade@gmail.com
-Subject: Re: [PATCH v6] Add generic exponentially weighted moving average
- (EWMA) function
-Message-Id: <20101110195329.d456e29b.akpm@linux-foundation.org>
-In-Reply-To: <20101111034756.15014.2156.stgit@localhost6.localdomain6>
-References: <20101111034756.15014.2156.stgit@localhost6.localdomain6>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 10 Nov 2010 22:55:07 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:references:user-agent:date:from:to:cc:subject:content-disposition;
+	b=LpTMItbVfHxH5pTQ+WA8s2HPK6/SNqJo5lpK+VU/+XRTEN9J2BKtFJgRP+Hz1N5t+
+	Fc+dSChIUFsXAMtYI/SIQ==
+Message-Id: <20101111035050.845348302@google.com>
+References: <20101111035005.443640006@google.com>
+User-Agent: quilt/0.46-1
+Date: Wed, 10 Nov 2010 19:50:11 -0800
+From: Paul Turner <pjt@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Chris Friesen <cfriesen@nortel.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Pierre Bourdon <pbourdon@excellency.fr>, Paul Turner <pjt@google.com>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: [tg_shares_up rewrite v2 06/11] sched: hierarchal order on shares update list
+Content-Disposition: inline; filename=sched-tg-order-ondemand-list.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Nov 2010 12:47:56 +0900 Bruno Randolf <br1@einfach.org> wrote:
+Avoid duplicate shares update calls by ensuring children always appear before
+parents in rq->leaf_cfs_rq_list.
 
-> This adds generic functions for calculating Exponentially Weighted Moving
-> Averages (EWMA). This implementation makes use of a structure which keeps the
-> EWMA parameters and a scaled up internal representation to reduce rounding
-> errors.
-> 
-> The original idea for this implementation came from the rt2x00 driver
-> (rt2x00link.c). I would like to use it in several places in the mac80211 and
-> ath5k code and I hope it can be useful in many other places in the kernel code.
-> 
-> Signed-off-by: Bruno Randolf <br1@einfach.org>
-> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> --
-> 
-> Excuse me, but can I expect this to be merged anytime soon? Where do I check if
-> it got merged? I'm resending the patch in case it got lost.
+This allows us to do a single in-order traversal for update_shares().
 
-Yes, sorry, this is buried in my exponentially increasing backlog. 
-It's going to take me a while to catch up again.
+Since we always enqueue in bottom-up order this reduces to 2 cases:
+1) Our parent is already in the list, e.g.
 
-Unless I just merge stuff without looking at it.  hm, I wonder if that
-would make any difference??
+   root
+     \
+      b
+      /\
+      c d* (root->b->c already enqueued)
 
-> +/**
-> + * DOC: Exponentially Weighted Moving Average (EWMA)
-> + *
-> + * These are generic functions for calculating Exponentially Weighted Moving
-> + * Averages (EWMA). We keep a structure with the EWMA parameters and a scaled
-> + * up internal representation of the average value to prevent rounding errors.
-> + * The factor for scaling up and the exponential weight (or decay rate) have to
-> + * be specified thru the init fuction. The structure should not be accessed
-> + * directly but only thru the helper functions.
-> + */
+Since d's parent is enqueued we push it to the head of the list, implicitly ahead of b.
 
-<reads Documentation/kernel-doc-nano-HOWTO.txt>
+2) Our parent does not appear in the list (or we have no parent)
+In this case we enqueue to the tail of the list, if our parent is subsequently enqueued 
+(bottom-up) it will appear to our right by the same rule.
 
-Well, I never knew about "DOC:".
+Signed-off-by: Paul Turner <pjt@google.com>
+
+---
+ kernel/sched_fair.c |   26 ++++++++++++++++----------
+ 1 file changed, 16 insertions(+), 10 deletions(-)
+
+Index: kernel/sched_fair.c
+===================================================================
+--- kernel/sched_fair.c.orig
++++ kernel/sched_fair.c
+@@ -146,8 +146,20 @@ static inline struct cfs_rq *cpu_cfs_rq(
+ static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
+ {
+ 	if (!cfs_rq->on_list) {
+-		list_add_rcu(&cfs_rq->leaf_cfs_rq_list,
++		/*
++		 * Ensure we either appear before our parent (if already
++		 * enqueued) or force our parent to appear after us when it is
++		 * enqueued.  The fact that we always enqueue bottom-up
++		 * reduces this to two cases.
++		 */
++		if (cfs_rq->tg->parent &&
++		    cfs_rq->tg->parent->cfs_rq[cpu_of(rq_of(cfs_rq))]->on_list) {
++			list_add_rcu(&cfs_rq->leaf_cfs_rq_list,
++				&rq_of(cfs_rq)->leaf_cfs_rq_list);
++		} else {
++			list_add_tail_rcu(&cfs_rq->leaf_cfs_rq_list,
+ 				&rq_of(cfs_rq)->leaf_cfs_rq_list);
++		}
+ 
+ 		cfs_rq->on_list = 1;
+ 	}
+@@ -2009,7 +2021,7 @@ out:
+ /*
+  * update tg->load_weight by folding this cpu's load_avg
+  */
+-static int tg_shares_up(struct task_group *tg, int cpu)
++static int update_shares_cpu(struct task_group *tg, int cpu)
+ {
+ 	struct cfs_rq *cfs_rq;
+ 	unsigned long flags;
+@@ -2049,14 +2061,8 @@ static void update_shares(int cpu)
+ 	struct rq *rq = cpu_rq(cpu);
+ 
+ 	rcu_read_lock();
+-	for_each_leaf_cfs_rq(rq, cfs_rq) {
+-		struct task_group *tg = cfs_rq->tg;
+-
+-		do {
+-			tg_shares_up(tg, cpu);
+-			tg = tg->parent;
+-		} while (tg);
+-	}
++	for_each_leaf_cfs_rq(rq, cfs_rq)
++		update_shares_cpu(cfs_rq->tg, cpu);
+ 	rcu_read_unlock();
+ }
+ 
+
+-- 
+
