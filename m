@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755105Ab0KKKZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 05:25:28 -0500
-Received: from smtp104.sbc.mail.mud.yahoo.com ([68.142.198.203]:20261 "HELO
-	smtp104.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754372Ab0KKKZ1 (ORCPT
+	id S1755309Ab0KKKZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 05:25:43 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52045 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755250Ab0KKKZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 05:25:27 -0500
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: p9Zv5hUVM1l5utNxfQ75fcxFKHkt.6l5pLjaJYBoAjh77lL
- WWaPET5ejWxtl.C_FuqD_drJYNedeIjFQcmxC8jtc2cNCz.I.eMXDquaMzyf
- 7MOgpZINSXIcSZlUatqhVoS4qT_oGMPYLcrL.lrWK4Ug0gQxN9cK3do54zLg
- dTZPDh5kKUPwUVmAxeTthyrLV7qqjgb6BWp_AkLVJziL55k5W12sCbNcAaxi
- yn3aJCafa2cG.VMFcmmmh_I1xvkANmv42NvxuNG4Vxh9rqFwHA0GYKNhKGda
- bt7BaYqyjh30MJehklGMJ0vdQZnJSYikTf9CW6BsCEebrKa95DWZsU6AfvH8
- OZEOHM3f_EIuJego7O4hj_g.shA--
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jeff Garzik <jeff@garzik.org>,
-        James Bottomley <James.Bottomley@suse.de>
-Cc: Christoph Hellwig <hch@lst.de>, Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH] tcm_loop: Drop legacy host_lock usage in SHT->queuecommand() caller
-Date: Thu, 11 Nov 2010 02:25:23 -0800
-Message-Id: <1289471123-29097-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	Thu, 11 Nov 2010 05:25:41 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=k4EiYXYaHX0oAvB+ZGIGkCEwNZKIiVihilMbZB97AQmMnWHGgnI5jHnsuqAlHrj6yb
+         Ie1qJFSM75Dqu3EaOxT69sXHm8bxaAZ0xs7x8TNLZ46hTrdGKK21tnywKwQdT5nYGpFD
+         BH7LcpVXVw3MiXsZVpobhKccWaviHi+FUq3Vs=
+Subject: Re: [PATCH] [PERF] (Userspace Tools) Fix a compilation error with
+ -fstack-protector and -Werror
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Brian Gitonga Marete <marete@toshnix.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <20101019131152.GB3826@ghostprotocols.net>
+References: <AANLkTinHc7tMntW5NFAhu40RC7m2=HwbqOBeE-21vL8J@mail.gmail.com>
+	 <20101018233834.GC5370@nowhere>
+	 <AANLkTi=Ssz4WdMDXq-93GE9bPHoaQ8QyTSrWXDSCa7eH@mail.gmail.com>
+	 <20101019064000.GC21782@elte.hu>
+	 <AANLkTimqaTKu23HrgbffAht_Otn9L5k2oHMZDGki8MK+@mail.gmail.com>
+	 <AANLkTin=0N0b=wK8974RGwXuTxpQ4BtH4bHwjsea+1tS@mail.gmail.com>
+	 <20101019114904.GB25371@elte.hu> <20101019131152.GB3826@ghostprotocols.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Nov 2010 11:25:35 +0100
+Message-ID: <1289471135.17691.1026.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+Le mardi 19 octobre 2010 à 11:11 -0200, Arnaldo Carvalho de Melo a
+écrit :
+> Em Tue, Oct 19, 2010 at 01:49:04PM +0200, Ingo Molnar escreveu:
+> > 
+> > * Brian Gitonga Marete <marete@toshnix.com> wrote:
+> > 
+> > > > OK. Now that I actually look closely at that fragment I can see its useless to 
+> > > > create the automatic arrays. Local string literals would also work (i.e. just 
+> > > > pass `"Yes"' and `"No"' to newtWinChoice). But can also do what you suggested if 
+> > > > it is anticipated that they will be used somewhere else within the file at some 
+> > > > other time -- Currently they are not.
+> > > 
+> > > Oops. Sorry. What I suggested won't work because of the -Wwrite-strings default 
+> > > option. Which actually makes me understand why the original author of the code 
+> > > made it the way it is. Your suggestion of file-scope, static does solve the 
+> > > problem.
+> > 
+> > Btw., -Wwrite-strings has proven to be a really useful warning in practice, in that 
+> > it ensured that we propagate string immutability/const-ness as widely as possible. 
+> > This resulted is cleaner perf code in the long run.
+> > 
+> > Here we cannot fix the Newt prototype (it's an existing library outside of our 
+> > control) to take a const so we have to do the (mild) workaround of moving it to file 
+> > scope. (if this becomes common then we'd have to re-evaluate the use of this 
+> > warning)
+> > 
+> > I think Arnaldo has plans to get rid of the libnewt dependency altogether - that 
+> > might be a fix too.
+> 
+> Yeah, but for now I'll just reap the results of this long discussion
+> about this issue. :)
+> 
 
-Following the the great host lock push-down in 3039f3ffcc5, this patch drops
-the historical optimization (and most certain deadlock) of:
+Hi Arnaldo
 
-	 spin_unlock_irq(host_lock); do_some_lld_work(); spin_lock_irq(host_lock)
+Sorry if I missed something, but current linux-2.6 tree has the problem.
 
-from within tcm_loop_queuecommand()
+Is the fix under control ?
 
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
+Thanks !
 
-diff --git a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-index 80f2940..8175681 100644
---- a/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-+++ b/drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
-@@ -311,7 +311,6 @@ static int tcm_loop_queuecommand(
- {
- 	struct se_cmd *se_cmd;
- 	struct se_portal_group *se_tpg;
--	struct Scsi_Host *host = sc->device->host;
- 	struct tcm_loop_hba *tl_hba;
- 	struct tcm_loop_tpg *tl_tpg;
- 
-@@ -321,8 +320,6 @@ static int tcm_loop_queuecommand(
- 		" scsi_buf_len: %u\n", sc->device->host->host_no,
- 		sc->device->id, sc->device->channel, sc->device->lun,
- 		sc->cmnd[0], scsi_bufflen(sc));
--
--	spin_unlock_irq(host->host_lock);
- 	/*
- 	 * Locate the tcm_loop_hba_t pointer 
- 	 */
-@@ -342,7 +339,6 @@ static int tcm_loop_queuecommand(
- 	 */
- 	se_cmd = tcm_loop_allocate_core_cmd(tl_hba, se_tpg, sc);
- 	if (!(se_cmd)) {
--		spin_lock_irq(host->host_lock);
- 		sc->result = host_byte(DID_ERROR);
- 		(*done)(sc);
- 		return 0;
-@@ -351,10 +347,6 @@ static int tcm_loop_queuecommand(
- 	 * Queue up the newly allocated to be processed in TCM thread context.
- 	*/
- 	transport_generic_handle_cdb_map(se_cmd);
--	/*
--	 * Reaquire the the struct scsi_host->host_lock before returning
--	 */
--	spin_lock_irq(host->host_lock);
- 	return 0;
- }
- 
--- 
-1.5.6.5
 
