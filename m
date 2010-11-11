@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755869Ab0KKTdf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 14:33:35 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:52728 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755208Ab0KKTde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 14:33:34 -0500
-Subject: Re: [RFC][PATCH 10/22] sched: add a syscall to wait for the next
- instance
-From: Raistlin <raistlin@linux.it>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1289503317.2084.158.camel@laptop>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288334104.8661.151.camel@Palantir>  <1289503317.2084.158.camel@laptop>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-SLVdGm0ARJW/GLNp6UxW"
-Date: Thu, 11 Nov 2010 20:33:24 +0100
-Message-ID: <1289504004.6525.109.camel@Palantir>
+	id S1755321Ab0KKTf0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 14:35:26 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:33953 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753298Ab0KKTfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 14:35:25 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/WWndx1pvWLv6hXYuICUlNWzWr7SKcPUOxX+n9w5
+	H1DAKslFMwqH2Y
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+From: Mike Galbraith <efault@gmx.de>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101111191556.GA1564@arch.trippelsdorf.de>
+References: <1287514410.7368.10.camel@marge.simson.net>
+	 <20101020025652.GB26822@elte.hu>
+	 <1287648715.9021.20.camel@marge.simson.net>
+	 <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
+	 <20101021162924.GA3225@redhat.com>
+	 <1288076838.11930.1.camel@marge.simson.net>
+	 <1288078144.7478.9.camel@marge.simson.net>
+	 <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
+	 <1289489200.11397.21.camel@maggy.simson.net>
+	 <20101111191556.GA1564@arch.trippelsdorf.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Nov 2010 12:35:11 -0700
+Message-ID: <1289504111.21413.2.camel@maggy.simson.net>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-11-11 at 20:15 +0100, Markus Trippelsdorf wrote:
 
---=-SLVdGm0ARJW/GLNp6UxW
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> Just to add some data; here are the results from my machine (AMD 4
+> cores) running a -j4 kernel build, while I browsed the web:
+> 
+> 1) perf sched record sleep 30
+> 
+> without:
+> total_wakeups: 44306
+> avg_wakeup_latency (ns): 36784
+> min_wakeup_latency (ns): 0
+> max_wakeup_latency (ns): 9378852
+> 
+> with:
+> total_wakeups: 43836
+> avg_wakeup_latency (ns): 67607
+> min_wakeup_latency (ns): 0
+> max_wakeup_latency (ns): 8983036
+> 
+> 2) perf record -a -e sched:sched_switch -e sched:sched_wakeup sleep 10
+> 
+> without:
+> total_wakeups: 13195
+> avg_wakeup_latency (ns): 48484
+> min_wakeup_latency (ns): 0
+> max_wakeup_latency (ns): 8722497
+> 
+> with:
+> total_wakeups: 14106
+> avg_wakeup_latency (ns): 92532
+> min_wakeup_latency (ns): 20
+> max_wakeup_latency (ns): 5642393
+> 
+> So the avg_wakeup_latency nearly doubled with your patch, while the
+> max_wakeup_latency is lowered by a good amount.
 
-On Thu, 2010-11-11 at 20:21 +0100, Peter Zijlstra wrote:
-> On Fri, 2010-10-29 at 08:35 +0200, Raistlin wrote:
-> >=20
-> > Introduce sched_wait_interval() syscall (and scheduling class
-> > interface call). In general, this aims at providing each scheduling
-> > class with a mean of making one of its own task sleep for some time
-> > according to some specific rule of the scheduling class itself.
-> >=20
-> Did we have an actual use case for this? I seem to remember that the
-> last time we seemed to thing job wakeups are due to external events, in
-> which case we don't need this.
->=20
-Might find out something, but I mostly agree with what you're saying.
+When you say with/without, does that mean enabled/disabled, or
+patched/virgin and/or cgroups/nocgroups?
 
-> I think we should try without this patch first and only consider this
-> once we merged the base functionality and have a solid use-case for
-> this.
->
-Consider it as already dropped! :-)
-
-Thanks,
-Dario
-
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
-
-http://blog.linux.it/raistlin / raistlin@ekiga.net /
-dario.faggioli@jabber.org
-
---=-SLVdGm0ARJW/GLNp6UxW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkzcRQQACgkQk4XaBE3IOsTD5ACcC2KQLblKSsVkkvNsD7rvsUci
-P+IAoKia3Hg1k2QQwXksFZyYYySeZ1a7
-=s4rS
------END PGP SIGNATURE-----
-
---=-SLVdGm0ARJW/GLNp6UxW--
+	-Mike
 
