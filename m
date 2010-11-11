@@ -1,55 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab0KKJ3L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 04:29:11 -0500
-Received: from dallas.jonmasters.org ([72.29.103.172]:60339 "EHLO
-	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752423Ab0KKJ3J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 04:29:09 -0500
-Subject: Re: PROBLEM: first read of /dev/mcelog fails
-From: Jon Masters <jonathan@jonmasters.org>
-To: andi@firstfloor.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <1289385151.3916.554.camel@constitution.bos.jonmasters.org>
-References: <1289385151.3916.554.camel@constitution.bos.jonmasters.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: World Organi[sz]ation of Broken Dreams
-Date: Thu, 11 Nov 2010 04:29:09 -0500
-Message-ID: <1289467749.3916.607.camel@constitution.bos.jonmasters.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
+	id S1753392Ab0KKJcC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 04:32:02 -0500
+Received: from cantor.suse.de ([195.135.220.2]:58846 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751997Ab0KKJb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 04:31:58 -0500
+Date: Thu, 11 Nov 2010 10:31:55 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] Make swap accounting default behavior configurable
+Message-ID: <20101111093155.GA20630@tiehlicka.suse.cz>
+References: <20101110125154.GC5867@tiehlicka.suse.cz>
+ <20101111094613.eab2ec0b.nishimura@mxp.nes.nec.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101111094613.eab2ec0b.nishimura@mxp.nes.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 05:32 -0500, Jon Masters wrote:
+On Thu 11-11-10 09:46:13, Daisuke Nishimura wrote:
+> On Wed, 10 Nov 2010 13:51:54 +0100
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > Hi,
+> > could you consider the patch bellow? It basically changes the default
+> > swap accounting behavior (when it is turned on in configuration) to be
+> > configurable as well. 
+> > 
+> > The rationale is described in the patch but in short it makes it much
+> > more easier to enable this feature in distribution kernels as the
+> > functionality can be provided in the general purpose kernel (with the
+> > option disabled) without any drawbacks and interested users can enable
+> > it. This is not possible currently.
+> > 
+> > I am aware that boot command line parameter name change is not ideal but
+> > the original semantic wasn't good enough and I don't like
+> > noswapaccount=yes|no very much. 
+> > 
+> > If we really have to stick to it I can rework the patch to keep the name
+> > and just add the yes|no logic, though. Or we can keep the original one
+> > and add swapaccount paramete which would mean the oposite as the other
+> > one.
+> > 
+> hmm, I agree that current parameter name(noswapaccount) is not desirable
+> for yes|no, but IMHO changing the user interface(iow, making what worked before 
+> unusable) is worse.
+> 
+> Although I'm not sure how many people are using this parameter, I vote for
+> using "noswapaccount[=(yes|no)]".
 
-> I recently took some time to look at the daemon side of mcelog. I found
-> a few issues with that[0] that I will detail in a separate mail, but I
-> am more concerned that in recent kernels, the first read() of the mcelog
-> device performed by mcelog after boot always fails. 100% reproducible on
-> several machines - mcelog client always bombs out in process() due to
-> getting a "no such device" error from the kernel read attempt.
-> The /dev/mcelog device exists, but the first read fails.
+Isn't a new swapaccount parameter better than that? I know we don't want
+to have too many parameters but having a something with a clear meaning
+is better IMO (noswapaccount=no doesn't sound very intuitive to me).
 
-I am looking into this, time permitting. Can you give me an indication
-of the current plans for mcelog support in the kernel? Given that we've
-had various discussion recently about EDAC and other error reporting
-mechanisms, I would like to know if you plan for mcelog to stick around.
+> And you should update Documentation/kernel-parameters.txt too.
 
-> [0] ignoredev not documented, cache-error-trigger uses $CPUS_AFFECTED
-> when it should be $AFFECTED_CPUS, mcelog-client socket is always created
-> no matter what the config says (and not deleted on shutdown).
+Yes, I am aware of that and will do that once there is an agreement on
+the patch itself. At this stage, I just wanted to have a feadback about
+the change.
 
-I sent you a separate mail with a pull request containing the first
-batch of fixes to this tool (already in the Fedora package).
+> 
+> Thanks,
+> Daisuke Nishimura.
+> 
+> > The patch is based on the current Linus tree.
+> > 
+> > Any thoughts?
+> > ---
+> > 
+> > From c874f2c1ff1493e49611f19308434e564c2d37c6 Mon Sep 17 00:00:00 2001
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Date: Wed, 10 Nov 2010 13:30:04 +0100
+> > Subject: [PATCH] Make swap accounting default behavior configurable
+> > 
+> > Swap accounting can be configured by CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+> > configuration option and then it is turned on by default. There is
+> > a boot option (noswapaccount) which can disable this feature.
+> > 
+> > This makes it hard for distributors to enable the configuration option
+> > as this feature leads to a bigger memory consumption and this is a no-go
+> > for general purpose distribution kernel. On the other hand swap
+> > accounting may be very usuful for some workloads.
+> > 
+> > This patch adds a new configuration option which controls the default
+> > behavior (CGROUP_MEM_RES_CTLR_SWAP_ENABLED) and changes the original
+> > noswapaccount parameter to swapaccount=true|false which provides
+> > a more fine grained way to control this feature.
+> > 
+> > The default behavior is unchanged (if CONFIG_CGROUP_MEM_RES_CTLR_SWAP is
+> > enabled then CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED is enabled as well)
+> > 
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > ---
+> >  init/Kconfig    |   13 +++++++++++++
+> >  mm/memcontrol.c |   19 ++++++++++++++-----
+> >  2 files changed, 27 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/init/Kconfig b/init/Kconfig
+> > index 88c1046..61d55a7 100644
+> > --- a/init/Kconfig
+> > +++ b/init/Kconfig
+> > @@ -613,6 +613,19 @@ config CGROUP_MEM_RES_CTLR_SWAP
+> >  	  if boot option "noswapaccount" is set, swap will not be accounted.
+> >  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
+> >  	  size is 4096bytes, 512k per 1Gbytes of swap.
+> > +config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
+> > +	bool "Memory Resource Controller Swap Extension enabled by default"
+> > +	depends on CGROUP_MEM_RES_CTLR_SWAP
+> > +	default y
+> > +	help
+> > +	  Memory Resource Controller Swap Extension comes with its price in
+> > +	  a bigger memory consumption. General purpose distribution kernels
+> > +	  which want to enable the feautre but keep it disabled by default
+> > +	  and let the user enable it by swapaccount=true boot command line
+> > +	  parameter should have this option unselected.
+> > +	  For those who want to have the feature enabled by default should
+> > +	  select this option (if, for some reason, they need to disable it
+> > +	  then swapaccount=false does the trick).
+> >  
+> >  menuconfig CGROUP_SCHED
+> >  	bool "Group CPU scheduler"
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 9a99cfa..7c699b3 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -61,7 +61,14 @@ struct mem_cgroup *root_mem_cgroup __read_mostly;
+> >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+> >  /* Turned on only when memory cgroup is enabled && really_do_swap_account = 1 */
+> >  int do_swap_account __read_mostly;
+> > -static int really_do_swap_account __initdata = 1; /* for remember boot option*/
+> > +
+> > +/* for remember boot option*/
+> > +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED
+> > +static int really_do_swap_account __initdata = 1;
+> > +#else
+> > +static int really_do_swap_account __initdata = 0;
+> > +#endif
+> > +
+> >  #else
+> >  #define do_swap_account		(0)
+> >  #endif
+> > @@ -4909,11 +4916,13 @@ struct cgroup_subsys mem_cgroup_subsys = {
+> >  };
+> >  
+> >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+> > -
+> > -static int __init disable_swap_account(char *s)
+> > +static int __init enable_swap_account(char *s)
+> >  {
+> > -	really_do_swap_account = 0;
+> > +	if (!s || !strcmp(s, "true"))
+> > +		really_do_swap_account = 1;
+> > +	else if (!strcmp(s, "false"))
+> > +		really_do_swap_account = 0;
+> >  	return 1;
+> >  }
+> > -__setup("noswapaccount", disable_swap_account);
+> > +__setup("swapaccount", enable_swap_account);
+> >  #endif
+> > -- 
+> > 1.7.2.3
+> > 
+> > 
+> > -- 
+> > Michal Hocko
+> > L3 team 
+> > SUSE LINUX s.r.o.
+> > Lihovarska 1060/12
+> > 190 00 Praha 9    
+> > Czech Republic
+> > 
+> > --
+> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> > the body to majordomo@kvack.org.  For more info on Linux MM,
+> > see: http://www.linux-mm.org/ .
+> > Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
+> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Jon.
-
-
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
