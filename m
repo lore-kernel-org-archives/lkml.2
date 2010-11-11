@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab0KKMGs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 07:06:48 -0500
-Received: from www.tglx.de ([62.245.132.106]:53752 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755665Ab0KKMGr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 07:06:47 -0500
-Date: Thu, 11 Nov 2010 13:06:39 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-cc: linux-kernel@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH 4/6] ce4100: Add errata fixes for UART on CE4100
-In-Reply-To: <4CDBDD4A.9030702@gmail.com>
-Message-ID: <alpine.LFD.2.00.1011111306210.2900@localhost6.localdomain6>
-References: <cover.1289331834.git.dirk.brandewie@gmail.com> <395c11879580e72e3a47272ef8cf5e04fa334210.1289331834.git.dirk.brandewie@gmail.com> <alpine.LFD.2.00.1011111231430.2900@localhost6.localdomain6> <4CDBD91A.2010805@gmail.com>
- <alpine.LFD.2.00.1011111246200.2900@localhost6.localdomain6> <4CDBDD4A.9030702@gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756096Ab0KKMJQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 07:09:16 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:54810 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755748Ab0KKMJO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 07:09:14 -0500
+Subject: Re: linux-next: build failure after merge of the voltage tree
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101111114644.GC6052@rakim.wolfsonmicro.main>
+References: <20101111113638.eb3101d0.sfr@canb.auug.org.au>
+	 <20101111114644.GC6052@rakim.wolfsonmicro.main>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Nov 2010 12:09:10 +0000
+Message-ID: <1289477350.3273.10.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Nov 2010, Dirk Brandewie wrote:
-
-> On 11/11/2010 03:47 AM, Thomas Gleixner wrote:
-> > On Thu, 11 Nov 2010, Dirk Brandewie wrote:
-> > 
-> > > On 11/11/2010 03:34 AM, Thomas Gleixner wrote:
-> > > > 
-> > > > 
-> > > > > +	 * Over ride the legacy port configuration that comes from
-> > > > > +	 * asm/serial.h. Using the ioport driver then switching to the
-> > > > > +	 * PCI memmaped driver hangs the IOAPIC
-> > > > > +	 */
-> > > > > +	if (up->iotype !=  UPIO_MEM32) {
-> > > > > +		up->uartclk  = 14745600;
-> > > > > +		up->mapbase = 0xdffe0200;
-> > > > 
-> > > >     What does the uartclk, mapbase fixups in the CONFIG_EARLY_PRINTK=n
-> > > > case ?
-> > > > 
-> > > This is setup in the PCI driver patch #3 in the series
-> > 
-> > I just can't find it there, that's why I'm asking :)
-> The weird clock is dealt with in:
-> +	[pbn_ce4100_1_115200] = {
-> +		.flags		= FL_BASE0,
-> +		.num_ports	= 1,
-> +		.base_baud	= 921600,
-> +		.reg_shift      = 2,
-> +	},
+On Thu, 2010-11-11 at 11:46 +0000, Mark Brown wrote:
+> On Thu, Nov 11, 2010 at 11:36:38AM +1100, Stephen Rothwell wrote:
 > 
-> That map base is setup in the generic pci driver in setup_port(). I didn't
-> need to do anything special.
+> > After merging the voltage tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> 
+> Oh, a platform where pcap can actually be built!  That's useful, thanks.
+> 
+> > drivers/regulator/pcap-regulator.c:155: error: expected declaration specifiers or '...' before 'unsiged'
+> > drivers/regulator/pcap-regulator.c: In function 'pcap_regulator_set_voltage':
+> > drivers/regulator/pcap-regulator.c:175: error: 'selector' undeclared (first use in this function)
+> > drivers/regulator/pcap-regulator.c: At top level:
+> > drivers/regulator/pcap-regulator.c:251: warning: initialization from incompatible pointer type
+> 
+> > Caused by commit d2f03ebfe8c63d1e3e1ab2352dd32d161546003e ("regulator:
+> > Report actual configured voltage to set_voltage()").  Please always build
+> > changed files ...
+> 
+> With a lot of the embedded drivers that can be difficult - often there
+> are dependencies on APIs that are only available on a small set of
+> platforms (which may not even be documented).  For example, with PCAP
+> the core driver uses irq_to_gpio() which is not implemented on any of
+> the platforms I commonly build for.
+> --
 
-Thanks for the clarification.
+Fix now applied.
 
-       tglx
+Thanks
+
+Liam
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
+
