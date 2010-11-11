@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756054Ab0KKTHN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 14:07:13 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:38371 "EHLO gir.skynet.ie"
+	id S1756087Ab0KKTHO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 14:07:14 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:38364 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754618Ab0KKTHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753658Ab0KKTHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 11 Nov 2010 14:07:07 -0500
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrea Arcangeli <aarcange@redhat.com>
@@ -12,170 +12,120 @@ Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] mm,vmscan: Convert lumpy_mode into a bitmask
-Date: Thu, 11 Nov 2010 19:07:02 +0000
-Message-Id: <1289502424-12661-2-git-send-email-mel@csn.ul.ie>
+Subject: [RFC PATCH 0/3] Use compaction to reduce a dependency on lumpy reclaim
+Date: Thu, 11 Nov 2010 19:07:01 +0000
+Message-Id: <1289502424-12661-1-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1289502424-12661-1-git-send-email-mel@csn.ul.ie>
-References: <1289502424-12661-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently lumpy_mode is an enum and determines if lumpy reclaim is off,
-syncronous or asyncronous. In preparation for using compaction instead of
-lumpy reclaim, this patch converts the flags into a bitmap.
+(cc'ing people currently looking at transparent hugepages as this series
+is aimed at avoiding lumpy reclaim being deleted)
 
-Signed-off-by: Mel Gorman <mel@csn.ul.ie>
----
- include/trace/events/vmscan.h |    6 +++---
- mm/vmscan.c                   |   37 +++++++++++++++++++------------------
- 2 files changed, 22 insertions(+), 21 deletions(-)
+Huge page allocations are not expected to be cheap but lumpy reclaim is still
+very disruptive. While it is far better than reclaiming random order-0 pages
+and hoping for the best, it still ignore the reference bit of pages near the
+reference page selected from the LRU. Memory compaction was merged in 2.6.35
+to use less lumpy reclaim by moving pages around instead of reclaiming when
+there were enough pages free. It has been tested fairly heavily at this point.
+This is a prototype series to use compaction more aggressively.
 
-diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
-index c255fcc..be76429 100644
---- a/include/trace/events/vmscan.h
-+++ b/include/trace/events/vmscan.h
-@@ -25,13 +25,13 @@
- 
- #define trace_reclaim_flags(page, sync) ( \
- 	(page_is_file_cache(page) ? RECLAIM_WB_FILE : RECLAIM_WB_ANON) | \
--	(sync == LUMPY_MODE_SYNC ? RECLAIM_WB_SYNC : RECLAIM_WB_ASYNC)   \
-+	(sync & LUMPY_MODE_SYNC ? RECLAIM_WB_SYNC : RECLAIM_WB_ASYNC)   \
- 	)
- 
- #define trace_shrink_flags(file, sync) ( \
--	(sync == LUMPY_MODE_SYNC ? RECLAIM_WB_MIXED : \
-+	(sync & LUMPY_MODE_SYNC ? RECLAIM_WB_MIXED : \
- 			(file ? RECLAIM_WB_FILE : RECLAIM_WB_ANON)) |  \
--	(sync == LUMPY_MODE_SYNC ? RECLAIM_WB_SYNC : RECLAIM_WB_ASYNC) \
-+	(sync & LUMPY_MODE_SYNC ? RECLAIM_WB_SYNC : RECLAIM_WB_ASYNC) \
- 	)
- 
- TRACE_EVENT(mm_vmscan_kswapd_sleep,
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index b8a6fdc..ffa438e 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -51,11 +51,11 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/vmscan.h>
- 
--enum lumpy_mode {
--	LUMPY_MODE_NONE,
--	LUMPY_MODE_ASYNC,
--	LUMPY_MODE_SYNC,
--};
-+typedef unsigned __bitwise__ lumpy_mode;
-+#define LUMPY_MODE_SINGLE		((__force lumpy_mode)0x01u)
-+#define LUMPY_MODE_ASYNC		((__force lumpy_mode)0x02u)
-+#define LUMPY_MODE_SYNC			((__force lumpy_mode)0x04u)
-+#define LUMPY_MODE_CONTIGRECLAIM	((__force lumpy_mode)0x08u)
- 
- struct scan_control {
- 	/* Incremented by the number of inactive pages that were scanned */
-@@ -88,7 +88,7 @@ struct scan_control {
- 	 * Intend to reclaim enough continuous memory rather than reclaim
- 	 * enough amount of memory. i.e, mode for high order allocation.
- 	 */
--	enum lumpy_mode lumpy_reclaim_mode;
-+	lumpy_mode lumpy_reclaim_mode;
- 
- 	/* Which cgroup do we reclaim from */
- 	struct mem_cgroup *mem_cgroup;
-@@ -274,13 +274,13 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
- static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc,
- 				   bool sync)
- {
--	enum lumpy_mode mode = sync ? LUMPY_MODE_SYNC : LUMPY_MODE_ASYNC;
-+	lumpy_mode mode = sync ? LUMPY_MODE_SYNC : LUMPY_MODE_ASYNC;
- 
- 	/*
- 	 * Some reclaim have alredy been failed. No worth to try synchronous
- 	 * lumpy reclaim.
- 	 */
--	if (sync && sc->lumpy_reclaim_mode == LUMPY_MODE_NONE)
-+	if (sync && sc->lumpy_reclaim_mode & LUMPY_MODE_SINGLE)
- 		return;
- 
- 	/*
-@@ -288,17 +288,18 @@ static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc,
- 	 * trouble getting a small set of contiguous pages, we
- 	 * will reclaim both active and inactive pages.
- 	 */
-+	sc->lumpy_reclaim_mode = LUMPY_MODE_CONTIGRECLAIM;
- 	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
--		sc->lumpy_reclaim_mode = mode;
-+		sc->lumpy_reclaim_mode |= mode;
- 	else if (sc->order && priority < DEF_PRIORITY - 2)
--		sc->lumpy_reclaim_mode = mode;
-+		sc->lumpy_reclaim_mode |= mode;
- 	else
--		sc->lumpy_reclaim_mode = LUMPY_MODE_NONE;
-+		sc->lumpy_reclaim_mode = LUMPY_MODE_SINGLE | LUMPY_MODE_ASYNC;
- }
- 
- static void disable_lumpy_reclaim_mode(struct scan_control *sc)
- {
--	sc->lumpy_reclaim_mode = LUMPY_MODE_NONE;
-+	sc->lumpy_reclaim_mode = LUMPY_MODE_SINGLE | LUMPY_MODE_ASYNC;
- }
- 
- static inline int is_page_cache_freeable(struct page *page)
-@@ -429,7 +430,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
- 		 * first attempt to free a range of pages fails.
- 		 */
- 		if (PageWriteback(page) &&
--		    sc->lumpy_reclaim_mode == LUMPY_MODE_SYNC)
-+		    (sc->lumpy_reclaim_mode & LUMPY_MODE_SYNC))
- 			wait_on_page_writeback(page);
- 
- 		if (!PageWriteback(page)) {
-@@ -615,7 +616,7 @@ static enum page_references page_check_references(struct page *page,
- 	referenced_page = TestClearPageReferenced(page);
- 
- 	/* Lumpy reclaim - ignore references */
--	if (sc->lumpy_reclaim_mode != LUMPY_MODE_NONE)
-+	if (sc->lumpy_reclaim_mode & LUMPY_MODE_CONTIGRECLAIM)
- 		return PAGEREF_RECLAIM;
- 
- 	/*
-@@ -732,7 +733,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 			 * for any page for which writeback has already
- 			 * started.
- 			 */
--			if (sc->lumpy_reclaim_mode == LUMPY_MODE_SYNC &&
-+			if ((sc->lumpy_reclaim_mode & LUMPY_MODE_SYNC) &&
- 			    may_enter_fs)
- 				wait_on_page_writeback(page);
- 			else {
-@@ -1317,7 +1318,7 @@ static inline bool should_reclaim_stall(unsigned long nr_taken,
- 		return false;
- 
- 	/* Only stall on lumpy reclaim */
--	if (sc->lumpy_reclaim_mode == LUMPY_MODE_NONE)
-+	if (sc->lumpy_reclaim_mode & LUMPY_MODE_SINGLE)
- 		return false;
- 
- 	/* If we have relaimed everything on the isolated list, no stall */
-@@ -1368,7 +1369,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
- 	if (scanning_global_lru(sc)) {
- 		nr_taken = isolate_pages_global(nr_to_scan,
- 			&page_list, &nr_scanned, sc->order,
--			sc->lumpy_reclaim_mode == LUMPY_MODE_NONE ?
-+			sc->lumpy_reclaim_mode & LUMPY_MODE_SINGLE ?
- 					ISOLATE_INACTIVE : ISOLATE_BOTH,
- 			zone, 0, file);
- 		zone->pages_scanned += nr_scanned;
-@@ -1381,7 +1382,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
- 	} else {
- 		nr_taken = mem_cgroup_isolate_pages(nr_to_scan,
- 			&page_list, &nr_scanned, sc->order,
--			sc->lumpy_reclaim_mode == LUMPY_MODE_NONE ?
-+			sc->lumpy_reclaim_mode & LUMPY_MODE_SINGLE ?
- 					ISOLATE_INACTIVE : ISOLATE_BOTH,
- 			zone, sc->mem_cgroup,
- 			0, file);
--- 
-1.7.1
+When CONFIG_COMPACTION is set, lumpy reclaim is avoided where possible. What
+it does instead is reclaim a number of order-0 pages and then compact the
+zone to try and satisfy the allocation. This keeps a larger number of active
+pages in memory at the cost of increased use of migration and compaction
+scanning. As this is a prototype, it's also very clumsy. For example,
+set_lumpy_reclaim_mode() still allows lumpy reclaim to be used and the
+decision on when to use it is primitive. Lumpy reclaim can be avoided
+entirely of course but the tests were a bit inconclusive - allocation
+latency was lower if lumpy reclaim was never used but the test completion
+times and reclaim statistics looked worse so I need to reconsider both the
+analysis and the implementation. It's also about as subtle as a brick when
+it comes to compaction doing a blind compaction of the zone after reclaiming
+which is almost certainly more frequent than it needs to be but I'm leaving
+optimisation considerations for the moment.
+
+Ultimately, what I'd like to do is implement "lumpy compaction" where a
+number of order-0 pages are reclaimed and then the pages that would be lumpy
+reclaimed are instead migrated but it would be longer term and involve a
+tight integration of compaction and reclaim which maybe we'd like to avoid
+in the first pass. This series was to establish if just order-0 reclaims
+and compaction is potentially workable and the test results are reasonably
+promising. kernbench and sysbench were run as sniff tests even though they do
+not exercise reclaim and performance was not affected as expected. The target
+test was a high-order allocation stress test. Testing was based on kernel
+2.6.37-rc1 with commit d88c0922 applied which fixes an important bug related
+to page reference counting. The test machine was x86-64 with 3G of RAM.
+
+STRESS-HIGHALLOC
+                  fix-d88c0922 lumpycompact-v1r2
+Pass 1          90.00 ( 0.00%)    89.00 (-1.00%)
+Pass 2          91.00 ( 0.00%)    91.00 ( 0.00%)
+At Rest         94.00 ( 0.00%)    94.00 ( 0.00%)
+
+MMTests Statistics: duration
+User/Sys Time Running Test (seconds)       3356.15   3336.46
+Total Elapsed Time (seconds)               2052.07   1853.79
+
+Success rates the same so functionally it's similar and it completed a bit
+faster.
+
+FTrace Reclaim Statistics: vmscan
+                                      fix-d88c0922 lumpycompact-v1r2
+Direct reclaims                                673        468 
+Direct reclaim pages scanned                 60521     108221 
+Direct reclaim pages reclaimed               37300      67114 
+Direct reclaim write file async I/O           1459       3825 
+Direct reclaim write anon async I/O           7989      10694 
+Direct reclaim write file sync I/O               0          0 
+Direct reclaim write anon sync I/O              92         53 
+Wake kswapd requests                           823      11681 
+Kswapd wakeups                                 608        558 
+Kswapd pages scanned                       4509407    3682736 
+Kswapd pages reclaimed                     2278056    2176076 
+Kswapd reclaim write file async I/O          58446      46853 
+Kswapd reclaim write anon async I/O         696616     410210 
+Kswapd reclaim write file sync I/O               0          0 
+Kswapd reclaim write anon sync I/O               0          0 
+Time stalled direct reclaim (seconds)       139.75     128.09 
+Time kswapd awake (seconds)                 833.03     669.29 
+
+Total pages scanned                        4569928   3790957
+Total pages reclaimed                      2315356   2243190
+%age total pages scanned/reclaimed          50.67%    59.17%
+%age total pages scanned/written            16.73%    12.44%
+%age  file pages scanned/written             1.31%     1.34%
+Percentage Time Spent Direct Reclaim         4.00%     3.70%
+Percentage Time kswapd Awake                40.59%    36.10%
+
+The time spent stalled and with kswapd awake are both
+reduced as well as the total number of pages scanned and
+reclaimed. Some of the ratios looks nicer but it's not very
+obviously better except for the average latencies which I have posted at
+http://www.csn.ul.ie/~mel/postings/lumpycompact-20101111/highalloc-interlatency-hydra-mean.ps
+. Similar, the stddev graph in the same directory shows that allocation
+times is more predictable.
+
+The tarball I used for testing is available at
+http://www.csn.ul.ie/~mel/mmtests-0.01-lumpycompact-0.01.tar.gz . The suite
+assumes that the kernel source being tested was built and deployed on the
+test machine. Otherwise, it should be a case of 
+
+1. build + deploy kernel with d88c0922 applied
+2. ./run-mmtests.sh --run-monitor vanilla
+3. build + deploy with this series applies
+4. ./run-mmtests.sh --run-monitor lumpycompact-v1r3
+
+Results for comparison are in work/log . There is a rudimentary reporting
+script called compare-kernel.sh which should be run with a CWD of work/log.
+
+Comments?
+
+ include/linux/compaction.h    |    9 +++++-
+ include/linux/kernel.h        |    7 +++++
+ include/trace/events/vmscan.h |    6 ++--
+ mm/compaction.c               |    2 +-
+ mm/vmscan.c                   |   61 +++++++++++++++++++++++++---------------
+ 5 files changed, 57 insertions(+), 28 deletions(-)
 
