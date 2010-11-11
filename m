@@ -1,79 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267Ab0KKRn2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 12:43:28 -0500
-Received: from adsl-67-113-118-6.dsl.sndg02.pacbell.net ([67.113.118.6]:48003
-	"EHLO multivac.one-eyed-alien.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755013Ab0KKRn1 (ORCPT
+	id S1755304Ab0KKRtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 12:49:09 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27507 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329Ab0KKRtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 12:43:27 -0500
-Date: Thu, 11 Nov 2010 09:43:22 -0800
-From: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
-To: Luben Tuikov <ltuikov@yahoo.com>
-Cc: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH take 2] [USB] Use normalized sense when emulating autosense
-Message-ID: <20101111174322.GB20296@one-eyed-alien.net>
-Mail-Followup-To: Luben Tuikov <ltuikov@yahoo.com>,
-	Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20101111165717.GA8526@kroah.com> <151524.65160.qm@web31809.mail.mud.yahoo.com>
+	Thu, 11 Nov 2010 12:49:07 -0500
+Date: Thu, 11 Nov 2010 09:48:32 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Tony Finch <dot@dotat.at>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for November 11 (unifdef)
+Message-Id: <20101111094832.827aaab3.randy.dunlap@oracle.com>
+In-Reply-To: <20101111125655.15fa7188.sfr@canb.auug.org.au>
+References: <20101111125655.15fa7188.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="dTy3Mrz/UPE2dbVg"
-Content-Disposition: inline
-In-Reply-To: <151524.65160.qm@web31809.mail.mud.yahoo.com>
-User-Agent: Mutt/1.4.2.3i
-Organization: One Eyed Alien Networks
-X-Copyright: (C) 2010 Matthew Dharm, all rights reserved.
-X-Message-Flag: Get a real e-mail client.  http://www.mutt.org/
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (multivac.one-eyed-alien.net [127.0.0.1]); Thu, 11 Nov 2010 09:43:22 -0800 (PST)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 11 Nov 2010 12:56:55 +1100 Stephen Rothwell wrote:
 
---dTy3Mrz/UPE2dbVg
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Hi all,
+> 
+> Changes since 20101110:
 
-On Thu, Nov 11, 2010 at 09:07:53AM -0800, Luben Tuikov wrote:
->=20
-> Oh, I see. I'll re-post the patch then to Matthew and the people and list=
-s you listed above.
 
-Now that I'm on the CC, I see this.
+Hi Tony,
+For the last week or so, linux-next tree has generated this warning:
 
-What's the 10k-foot level summary here?  Is there an alternate sense-data
-format that uses some sort of "descriptor" structure?  I'm assuming this is
-a new SCSI-III thing, or did I just miss it in SCSI-II?
+unifdef: linux-next-20101111/X32/usr/include/xen/privcmd.h.tmp: 79: Premature EOF (#if line 33 depth 1)
 
-This *looks* like you're using functions provided by the SCSI core to
-access and modify the sense data... so I'm assuming that's because there
-are alternate formats...
+linux/include/xen/privcmd.h contains:
 
-Matt
+#ifndef __user
+#define __user
+#endif
 
---=20
-Matthew Dharm                              Home: mdharm-usb@one-eyed-alien.=
-net=20
-Maintainer, Linux USB Mass Storage Driver
+and linux/X32/usr/include/xen/privcmd.h contains:
 
-It was a new hope.
-					-- Dust Puppy
-User Friendly, 12/25/1998
+#ifndef #define #endif
 
---dTy3Mrz/UPE2dbVg
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+!!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.7 (GNU/Linux)
 
-iD8DBQFM3Cs63gL8qCooyc4RAueZAJ9jGVBPAAE3zD347PvhPkd2oXwkVgCfUf+r
-qpnq01Eto5IpYc6mHJWOwR0=
-=KhuC
------END PGP SIGNATURE-----
+Is this a problem with privcmd.h or unifdef or ???
 
---dTy3Mrz/UPE2dbVg--
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
