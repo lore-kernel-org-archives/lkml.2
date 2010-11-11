@@ -1,134 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab0KKKqu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 05:46:50 -0500
-Received: from smtp126.sbc.mail.sp1.yahoo.com ([69.147.65.185]:45852 "HELO
-	smtp126.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753788Ab0KKKqs (ORCPT
+	id S1755166Ab0KKKxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 05:53:15 -0500
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:51677 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751358Ab0KKKxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 05:46:48 -0500
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 8oJgdJcVM1mlC2CZqhV8k8pQ91KecSLdfXkPx5Cn7aEDSqt
- o474gW8zej8tilwNuFFuo9nC.jCUJz7JWeXsoUNgzs9eFbK_zYw.7vwBizWD
- 7TNSXe08XQlVlGJtugeApUXwAP9KRXRHhFwLIBjf57UE0nyJ7JMu78KiW9ix
- UiC_Z7DhrE6Qmhmgaem2BOxcm8sEGtacZkEg8YVwiEJnr.8FCQ8qKH0FupId
- DpkwxFIDB2mh_v0jYQgeqrDYHfI_bk.umt0x37UZhydFqgfJjGbS6teNudVG
- XDx1p2dW1JzVcGvl8GPIPZuc3TysuI1BeBLbQvYaR78VfwMBDpZ_TBWhMPQ-
- -
-X-Yahoo-Newman-Property: ymail-3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jeff Garzik <jeff@garzik.org>,
-        James Bottomley <James.Bottomley@suse.de>
-Cc: Christoph Hellwig <hch@lst.de>, Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH] scsi: Convert scsi_host->cmd_serial_number to odd numbered atomic_t counter
-Date: Thu, 11 Nov 2010 02:46:45 -0800
-Message-Id: <1289472405-31003-1-git-send-email-nab@linux-iscsi.org>
-X-Mailer: git-send-email 1.5.6.5
+	Thu, 11 Nov 2010 05:53:14 -0500
+Message-ID: <4CDBCB0E.2020005@euromail.se>
+Date: Thu, 11 Nov 2010 11:53:02 +0100
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Rafi Rubin <rafi@seas.upenn.edu>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chris Bagwell <chris@cnpbagwell.com>,
+        Chase Douglas <chasedouglas@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+        =?ISO-8859-1?Q?St=E9phane_Chatty?= <chatty@enac.fr>
+Subject: Re: [PATCH] input: Introduce light-weight contact tracking
+References: <1289161108-32309-1-git-send-email-rydberg@euromail.se> <4CD724BC.8020702@seas.upenn.edu> <4CD80FCB.20903@euromail.se> <4CD82B28.4060706@seas.upenn.edu> <4CD84A81.3000208@euromail.se> <4CDB7C05.1090306@seas.upenn.edu>
+In-Reply-To: <4CDB7C05.1090306@seas.upenn.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1PGUm8-0001KI-4K.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1PGUm8-0001KI-4K 5e738a9cb40c0a1339dd23425884b69b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+On 11/11/2010 06:15 AM, Rafi Rubin wrote:
 
-This patch converts struct scsi_host->cmd_serial_number to a 'odd incremented by 2'
-atomic_t counter in scsi_cmd_get_serial(), and moves the host_lock held call in
-jgarzik's DEF_SCSI_QCMD() wrapper back into it's original location in scsi_dispatch_cmd().
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+> 
+>> For every (number of used slots, number of current contacts) pair, two
+>> consecutive arrays of values are generated. The first contains the matrix
+>> indices corresponding to a certain mapping from contacts to slots. The second
+>> contains the actual slot assignment.
+>>
+>> To find the optimal matching, one simply scans through the appropriate index
+>> array, extracting the slot assignment corresponding to the minimum sum of matrix
+>> elements. This process is combinatorial and in general scales much worse than
+>> for instance the hungarian algorithm, but for small numbers, it can be
+>> implemented with very good speed.
+> 
+> It occurs to me that it might be a good idea to restate our goals and assumptions.
 
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- drivers/scsi/hosts.c     |    1 +
- drivers/scsi/scsi.c      |   20 ++++++++++++++------
- include/scsi/scsi_host.h |    7 ++-----
- 3 files changed, 17 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/scsi/hosts.c b/drivers/scsi/hosts.c
-index 4f7a582..317af8e 100644
---- a/drivers/scsi/hosts.c
-+++ b/drivers/scsi/hosts.c
-@@ -381,6 +381,7 @@ struct Scsi_Host *scsi_host_alloc(struct scsi_host_template *sht, int privsize)
- 	shost->unchecked_isa_dma = sht->unchecked_isa_dma;
- 	shost->use_clustering = sht->use_clustering;
- 	shost->ordered_tag = sht->ordered_tag;
-+	atomic_set(&shost->cmd_serial_number, 1);
- 
- 	if (sht->supported_mode == MODE_UNKNOWN)
- 		/* means we didn't set it ... default to INITIATOR */
-diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
-index e3d0629..bdc0837 100644
---- a/drivers/scsi/scsi.c
-+++ b/drivers/scsi/scsi.c
-@@ -632,15 +632,17 @@ void scsi_log_completion(struct scsi_cmnd *cmd, int disposition)
-  * @cmd: command to assign serial number to
-  *
-  * Description: a serial number identifies a request for error recovery
-- * and debugging purposes.  Protected by the Host_Lock of host.
-+ * and debugging purposes.  Called directly by scsi_dispatch_cmd() for all LLDs
-+ * after the great host_lock pushdown. 
-  */
--void scsi_cmd_get_serial(struct Scsi_Host *host, struct scsi_cmnd *cmd)
-+static inline void scsi_cmd_get_serial(struct Scsi_Host *host, struct scsi_cmnd *cmd)
- {
--	cmd->serial_number = host->cmd_serial_number++;
--	if (cmd->serial_number == 0) 
--		cmd->serial_number = host->cmd_serial_number++;
-+	/*
-+	 * Increment the host->cmd_serial_number by 2 so cmd->serial_number
-+	 * is always odd and wraps to 1 instead of 0.
-+	 */
-+	cmd->serial_number = atomic_add_return(2, &host->cmd_serial_number);
- }
--EXPORT_SYMBOL(scsi_cmd_get_serial);
- 
- /**
-  * scsi_dispatch_command - Dispatch a command to the low-level driver.
-@@ -736,6 +738,12 @@ int scsi_dispatch_cmd(struct scsi_cmnd *cmd)
- 		scsi_done(cmd);
- 		goto out;
- 	}
-+	/*
-+	 * Assign a cmd->serial_number from host->cmd_serial_number that
-+	 * is used by scsi_softirq_done() to signal scsi_try_to_abort_cmd()
-+	 * that a outstanding cmd has been completed.
-+	 */
-+	scsi_cmd_get_serial(host, cmd);
- 
- 	if (unlikely(host->shost_state == SHOST_DEL)) {
- 		cmd->result = (DID_NO_CONNECT << 16);
-diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
-index cea74ba..6909038 100644
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -518,7 +518,6 @@ struct scsi_host_template {
- 		int rc;							\
- 		struct Scsi_Host *shost = cmd->device->host;		\
- 		spin_lock_irqsave(shost->host_lock, irq_flags);		\
--		scsi_cmd_get_serial(shost, cmd);			\
- 		rc = func_name##_lck (cmd, done);			\
- 		spin_unlock_irqrestore(shost->host_lock, irq_flags);	\
- 		return rc;						\
-@@ -625,10 +624,9 @@ struct Scsi_Host {
- 	short unsigned int max_sectors;
- 	unsigned long dma_boundary;
- 	/* 
--	 * Used to assign serial numbers to the cmds.
--	 * Protected by the host lock.
-+	 * Used to assign serial numbers to the cmds in scsi_cmd_get_serial()
- 	 */
--	unsigned long cmd_serial_number;
-+	atomic_t cmd_serial_number;
- 	
- 	unsigned active_mode:2;
- 	unsigned unchecked_isa_dma:1;
-@@ -773,7 +771,6 @@ extern struct Scsi_Host *scsi_host_get(struct Scsi_Host *);
- extern void scsi_host_put(struct Scsi_Host *t);
- extern struct Scsi_Host *scsi_host_lookup(unsigned short);
- extern const char *scsi_host_state_name(enum scsi_host_state);
--extern void scsi_cmd_get_serial(struct Scsi_Host *, struct scsi_cmnd *);
- 
- extern u64 scsi_calculate_bounce_limit(struct Scsi_Host *);
- 
--- 
-1.5.6.5
+The main goal of my patch is to device a simple, stable, parameter-free matching
+function that can be used in interrupt context. If you have such a function,
+about a hundred lines of code, completes in a couple of hundred cycles, tested
+and benchmarked in the mtdev framework, and which can do six fingers, I would be
+happy to use that instead. Otherwise, I suggest we focus on this patch.
 
+> So that's why I selected the approach and data structures I used.  Now if you
+> can tell me the studio 17 is going to be the only device that will ever run
+> these routines that has more than 4 contacts and is not tracked, then sure,
+> screw it.  I have no reason to believe that is a good assumption.
+
+
+The N-trig device is the only device in the kernel that requires special ghost
+filtering. All other devices send reliable data, and either have fewer contacts,
+handle their own tracking, or send all data to userspace. Future devices will
+most likely have tracking capabilities, and even if they do not, protocol A and
+mtdev handles that case. Thus, the question is really whether a new device would
+produce unreliable contact data. I find that unlikely.
+
+
+> Even if we do want to limit the code to 4 contacts, we still need some motion
+> estimation, particularly for the lower frame rate devices.
+
+
+Second-order methods for a device that does not even produce zeroth-order
+contact data? As far as I know, the first-order tracking in mtdev has not
+disappointed anyone yet, so your statement seems to need elaboration.
+
+Henrik
