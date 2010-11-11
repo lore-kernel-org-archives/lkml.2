@@ -1,101 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab0KKTQD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 14:16:03 -0500
-Received: from smtp-out-138.synserver.de ([212.40.180.138]:1094 "HELO
-	smtp-out-138.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754535Ab0KKTQA (ORCPT
+	id S1755034Ab0KKTQk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 14:16:40 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:45531 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753275Ab0KKTQj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 14:16:00 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 10032
-Date: Thu, 11 Nov 2010 20:15:56 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101111191556.GA1564@arch.trippelsdorf.de>
-References: <1287514410.7368.10.camel@marge.simson.net>
- <20101020025652.GB26822@elte.hu>
- <1287648715.9021.20.camel@marge.simson.net>
- <20101021105114.GA10216@Krystal>
- <1287660312.3488.103.camel@twins>
- <20101021162924.GA3225@redhat.com>
- <1288076838.11930.1.camel@marge.simson.net>
- <1288078144.7478.9.camel@marge.simson.net>
- <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
- <1289489200.11397.21.camel@maggy.simson.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1289489200.11397.21.camel@maggy.simson.net>
+	Thu, 11 Nov 2010 14:16:39 -0500
+Subject: Re: [RFC][PATCH 08/22] sched: SCHED_DEADLINE avg_update accounting
+From: Peter Zijlstra <peterz@infradead.org>
+To: Raistlin <raistlin@linux.it>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1288333990.8661.149.camel@Palantir>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288333990.8661.149.camel@Palantir>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 11 Nov 2010 20:16:16 +0100
+Message-ID: <1289502976.2084.155.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010.11.11 at 08:26 -0700, Mike Galbraith wrote:
-> I _finally_ got back to this yesterday, and implemented your suggestion,
-> though with a couple minor variations.  Putting the autogroup pointer in
-> the signal struct didn't look right to me, so I plugged it into the task
-> struct instead.  I also didn't refcount taskgroups, wanted the patchlet
-> to be as self-contained as possible, so refcounted the autogroup struct
-> instead.  I also left group movement on tty disassociation in place, but
-> may nuke it.
-...
-> 
-> With taskset -c 3 make -j 10 running..
-> 
-> taskset -c 3 ./wakeup-latency& sleep 30;killall wakeup-latency
-> 
-> without:
-> maximum latency: 42963.2 탎
-> average latency: 9077.0 탎
-> missed timer events: 0
-> 
-> with:
-> maximum latency: 4160.7 탎
-> average latency: 149.4 탎
-> missed timer events: 0
+On Fri, 2010-10-29 at 08:33 +0200, Raistlin wrote:
+> Make the core scheduler and load balancer aware of the load
+> produced by -deadline tasks, by updating the moving average
+> like for sched_rt.
 
-Just to add some data; here are the results from my machine (AMD 4
-cores) running a -j4 kernel build, while I browsed the web:
+I think you can simply add your dl time to sched_rt_avg_update(), no
+need to track a second avg, its about !fair anyway.
 
-1) perf sched record sleep 30
-
-without:
-total_wakeups: 44306
-avg_wakeup_latency (ns): 36784
-min_wakeup_latency (ns): 0
-max_wakeup_latency (ns): 9378852
-
-with:
-total_wakeups: 43836
-avg_wakeup_latency (ns): 67607
-min_wakeup_latency (ns): 0
-max_wakeup_latency (ns): 8983036
-
-2) perf record -a -e sched:sched_switch -e sched:sched_wakeup sleep 10
-
-without:
-total_wakeups: 13195
-avg_wakeup_latency (ns): 48484
-min_wakeup_latency (ns): 0
-max_wakeup_latency (ns): 8722497
-
-with:
-total_wakeups: 14106
-avg_wakeup_latency (ns): 92532
-min_wakeup_latency (ns): 20
-max_wakeup_latency (ns): 5642393
-
-So the avg_wakeup_latency nearly doubled with your patch, while the
-max_wakeup_latency is lowered by a good amount.
-
--- 
-Markus
