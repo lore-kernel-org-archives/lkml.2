@@ -1,41 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754273Ab0KKQcJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 11:32:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64871 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753064Ab0KKQcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 11:32:08 -0500
-Message-ID: <4CDC1A5F.9050803@redhat.com>
-Date: Thu, 11 Nov 2010 11:31:27 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1754321Ab0KKQeS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 11:34:18 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:42168 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753064Ab0KKQeR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 11:34:17 -0500
+Date: Thu, 11 Nov 2010 11:34:15 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        ying.huang@intel.com, bp@alien8.de, tglx@linutronix.de,
+        akpm@linux-foundation.org, mchehab@redhat.com,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
+	reporting)
+Message-ID: <20101111163415.GB11348@Krystal>
+References: <20101110174852.GB4001@elte.hu> <1289412329.12418.177.camel@gandalf.stny.rr.com> <1289413460.2084.27.camel@laptop> <20101110184105.GH22410@elte.hu> <1289415645.12418.180.camel@gandalf.stny.rr.com> <20101110191127.GA6190@nowhere> <20101110202316.GA32396@Krystal> <20101110213033.GA7682@nowhere> <20101111001110.GA32564@Krystal> <1289491816.12418.255.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Jeff Layton <jlayton@redhat.com>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        esandeen@redhat.com, jmoyer@redhat.com, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] clear PageError bit in msync & fsync
-References: <20101109114422.3918e7f6@annuminas.surriel.com> <20101109142109.224267d0@corrin.poochiereds.net> <4CD9A209.6070807@redhat.com> <20101109210715.GJ3099@thunk.org>
-In-Reply-To: <20101109210715.GJ3099@thunk.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289491816.12418.255.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 11:30:33 up 49 days, 20:32,  4 users,  load average: 0.25, 0.23,
+	0.18
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/09/2010 04:07 PM, Ted Ts'o wrote:
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Wed, 2010-11-10 at 19:11 -0500, Mathieu Desnoyers wrote:
+> 
+> > > There are also the other common fields:
+> > > 
+> > > 	struct trace_entry {
+> > > 		unsigned short		type;
+> > > 
+> > > 
+> > > Type is needed by perf. If we have one buffer per event, we could
+> > > retrieve which event we are dealing with. But if buffers are
+> > > multiplexed per cpu, we need this.
+> > 
+> > Agreed, although 65536 types ID is probably overkill for the common case.
+> > I prefer to go for approaches with a header that contains a smaller number of
+> > bits, and use an extended header for those rare cases that need it.
+> 
+> Note, ftrace currently has over 600 event types. Unless we compact it
+> down into bits, using two bytes is fine.
 
-> Do we guarantee that the application will get EIO at least once?  I
-> thought there were issues where the error bit could get lost if the
-> page writeback was triggered by sync() run by a third-party
-> application.
+I understand that overall the numer of events overflows 256. However, this does
+not mean they are typically all activated. Moreover, if we add multiple buffer
+support, these events don't necessarily have to end up in the same buffer. This
+numeric identifier is only there to distinguish between events ending in the
+same buffer after all.
 
-Andrew, both the current kernel before and after my patch does
-not guarantee the behaviour Ted has pointed out is required.
+So the number of available events does not count as an argument for choosing the
+typical number of bytes to represent the event IDs. The number of events
+typically activated for a trace session does.
 
-Johannes came up with a way to guarantee that - I'll send in
-a patch for that today.  That patch will obsolete the patch
-I sent before (I don't think you've applied it yet).
+Thanks,
+
+Mathieu
 
 -- 
-All rights reversed
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
