@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab0KKOPV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 09:15:21 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:46744 "EHLO mgw-da01.nokia.com"
+	id S1755784Ab0KKOPb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 09:15:31 -0500
+Received: from kroah.org ([198.145.64.141]:33485 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751660Ab0KKOPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 09:15:20 -0500
-From: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>
-To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2] OMAP: Serial: Define OMAP uart MDR1 register definitions
-Date: Thu, 11 Nov 2010 16:13:32 +0200
-Message-Id: <1289484812-17278-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-X-Nokia-AV: Clean
+	id S1754902Ab0KKOP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 09:15:29 -0500
+Date: Thu, 11 Nov 2010 06:16:11 -0800
+From: Greg KH <greg@kroah.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+Message-ID: <20101111141611.GA4679@kroah.com>
+References: <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <20101111120453.GA672@kroah.com> <4CDBF837.7050608@panasas.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CDBF837.7050608@panasas.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+On Thu, Nov 11, 2010 at 04:05:43PM +0200, Boaz Harrosh wrote:
+> On 11/11/2010 02:04 PM, Greg KH wrote:
+> > On Thu, Nov 11, 2010 at 11:59:28AM +0200, Boaz Harrosh wrote:
+> >> 4. Exactly Like 3 but without the extra kref member
+> >>    Only x_put() changes and x_kref_release() now receives
+> >>    an x_object
+> >>
+> >> int x_put(struct object_x *x)
+> >> {
+> >> 	if (kobject_put(&x->kobj) == 1)
+> >> 		// Like above [3] x_kref_release()
+> >> 		x_kref_release(x);
+> >> }
+> > 
+> > This is racy, please never do this.
+> > 
+> 
+> The last ref belongs to the core code. 1 means there are no
+> more external clients on the object. So it can not race with
+> decrements. But I guess there is a possibility that it can
+> race with new increments.
 
-Define MDR1 register serial definitions used in serial and
-bluetooth drivers. Remove magic numbers there.
-*v2	added OMAP keyword
+Exactly.
 
-Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
----
- include/linux/serial_reg.h |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+> If it is the case that new increments
+> can only come from, say, sysfs access, then if we call the
+> x_put() == 1 after we are unregistered from sysfs and no new
+> users are allowed then the counter can only go down and we
+> have the last reference. No?
 
-diff --git a/include/linux/serial_reg.h b/include/linux/serial_reg.h
-index c7a0ce1..6f38234 100644
---- a/include/linux/serial_reg.h
-+++ b/include/linux/serial_reg.h
-@@ -341,5 +341,17 @@
- #define UART_OMAP_SYSS		0x16	/* System status register */
- #define UART_OMAP_WER		0x17	/* Wake-up enable register */
- 
-+/*
-+ * These are the definitions for the MDR1 register
-+ */
-+#define UART_OMAP_MDR1_16X_MODE		0x00	/* UART 16x mode */
-+#define UART_OMAP_MDR1_SIR_MODE		0x01	/* SIR mode */
-+#define UART_OMAP_MDR1_16X_ABAUD_MODE	0x02	/* UART 16x auto-baud */
-+#define UART_OMAP_MDR1_13X_MODE		0x03	/* UART 13x mode */
-+#define UART_OMAP_MDR1_MIR_MODE		0x04	/* MIR mode */
-+#define UART_OMAP_MDR1_FIR_MODE		0x05	/* FIR mode */
-+#define UART_OMAP_MDR1_CIR_MODE		0x06	/* CIR mode */
-+#define UART_OMAP_MDR1_DISABLE		0x07	/* Disable (default state) */
-+
- #endif /* _LINUX_SERIAL_REG_H */
- 
--- 
-1.7.0.4
+Just don't do this, it's not worth it and will break over time when
+others mess with the code.
 
+Also note that kobject_put() does not even return a value, so the code
+above will not even compile, let alone work.
+
+thanks,
+
+greg k-h
