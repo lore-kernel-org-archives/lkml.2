@@ -1,89 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857Ab0KKO2z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 09:28:55 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55727 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754260Ab0KKO2x convert rfc822-to-8bit (ORCPT
+	id S1756763Ab0KKO3s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 09:29:48 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:52171 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751377Ab0KKO3r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 09:28:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tmJl8dXld6T97SQVQvShmlUtWFWDQ6RmyzdB5ToClNOAzbHfAS/vhteSJeBUULpfUN
-         MlXZEicjG15kWJmRM+V18UaPsEvNl3FOgUSPOVx6PSBnnf3ARTa/pr4EYMUmtA7vUk29
-         QQZvndvn9jSlfvJJlpaDy8ElWcEzr6UDuTn6Y=
+	Thu, 11 Nov 2010 09:29:47 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-In-Reply-To: <201011080624.49224.arnd@arndb.de>
-References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com>
-	<20101031120429.1ca38140@pyx>
-	<AANLkTimEYAmocFh_c-KftpL2zRm+LaHzgJOBX31iicLj@mail.gmail.com>
-	<201011080624.49224.arnd@arndb.de>
-Date: Thu, 11 Nov 2010 15:28:51 +0100
-Message-ID: <AANLkTinzcRv5Mc+9HRwxYgxZCBNER_RdTVHTOyVtozJf@mail.gmail.com>
-Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
-From: Par-Gunnar Hjalmdahl <pghatwork@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lukasz.Rymanowski@tieto.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 3/4][v2] fsl_rio: move machine_check handler into machine_check_e500 & machine_check_e500mc
+Date: Thu, 11 Nov 2010 06:29:01 -0800
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E55201538C58@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <0B482EBF-AF82-4C61-A35E-D9619246D259@freescale.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 3/4][v2] fsl_rio: move machine_check handler into machine_check_e500 & machine_check_e500mc
+Thread-Index: AcuBnHIS4jyPuMkHTW6glt4psaBfggAD4stQ
+References: <1288777018-24259-1-git-send-email-b21989@freescale.com> <0B482EBF-AF82-4C61-A35E-D9619246D259@freescale.com>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Kumar Gala" <kumar.gala@freescale.com>,
+        "Shaohui Xie" <b21989@freescale.com>
+Cc: <akpm@linux-foundation.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/8 Arnd Bergmann <arnd@arndb.de>:
-> On Friday 05 November 2010, Par-Gunnar Hjalmdahl wrote:
->> 2010/10/31, Alan Cox <alan@lxorguk.ukuu.org.uk>:
->> >> It's about the ldisc number. Both bluetooth and cg2900 register themselves
->> >> to ldisc 15 (N_HCI). A user doing TIOCSETD can only get one of the two.
->> >
->> > Ah I see - I had assumed any actual final merge would be assigning it a
->> > new LDISC code as is required.
->>
->> Sorry for not answering quicker. We in my department have been
->> discussing new design as well as trying out some solutions.
->>
->> As an answer to previous comments, both from Arnd and Alan, we would
->> like to do the following:
->>  - Introduce a new ldisc called N_H4_COMBO with a ldisc driver
->> accordingly that will be placed under drivers/char
->
-> I'm not convinced, although that's what Alan was suggesting. I'd like
-> to hear from the bluetooth people what they think about this.
->
-> Could you summarize why you think that cg2900 is different enough from
-> an HCI to require a different line discipline? From your previous
-> explanation it sounded like it was mostly added functionality,
-> not something entirely different.
->
->> We were thinking about if we could re-use the existing hci_ldisc
->> driver. As stated before the big problem here is however that
->> hci_ldisc directly registers to the Bluetooth stack. We could separate
->> the data for FM and GPS in the protocol driver, but it is pretty ugly
->> to have two separate data paths within the same driver.
->
-> One of us must be misreading the code. As far as I can tell, hci_ldisc
-> does not register to the bluetooth stack at all, it just provides
-> the basic multiplex for multiple HCI protocols, while hci_h4.c
-> communicates to the bluetooth stack.
->
-> If I read it correctly, that means that you can still use hci_ldisc,
-> but need to add another protocol next to hci_h4 and hci_bcsp for
-> your cg2900.
->
+Kumar Gala <kumar.gala@freescale.com> wrote:
+> > @@ -527,8 +535,12 @@ int machine_check_e500(struct pt_regs *regs)
+> 
+> To deal w/Alex's comment do:
+> 
+> machine_check_e500(...) {
+> 
+> 	int ret = 0;
+> 
+> 
+> > 		printk("Bus - Write Address Error\n");
+> > 	if (reason & MCSR_BUS_IBERR)
+> > 		printk("Bus - Instruction Data Error\n");
+> > -	if (reason & MCSR_BUS_RBERR)
+> > +	if (reason & MCSR_BUS_RBERR) {
+> > 		printk("Bus - Read Data Bus Error\n");
+> > +#ifdef CONFIG_RAPIDIO
+> > +		fsl_rio_mcheck_exception(regs);
+> > +#endif
+> 
+> make this like 'ret = fsl_rio...
+> 
 
-If you look in function hci_ldisc.c/hci_uart_register_dev(), it here
-registers as a driver to the Bluetooth stack. This means that received
-Bluetooth packets would go ldisc->protocol->ldisc->bluetooth, while FM
-and GPS would go ldisc->protocol->(FM/GPS)stack. I think it's quite
-bad to have two different data paths like this. The new ldisc we're
-creating looks a lot like hci_ldisc, but it does not register itself
-to an overlaying stack directly.
-One option would of course be to modify the existing hci_ldisc.c but I
-feel that be rather dangerous and which could create a lot of
-problems.
+Please, place it in the beginning of the machine_check_e500[mc](...) as
+well to avoid any 'printk' if RIO exception was handled properly.
 
-/P-G
+Alex. 
