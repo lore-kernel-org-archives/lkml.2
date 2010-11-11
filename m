@@ -1,49 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab0KKPrz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 10:47:55 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:38285 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753525Ab0KKPry (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 10:47:54 -0500
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd/mc13xxx: don't open-code mc13xxx_unlock
-Date: Thu, 11 Nov 2010 16:47:50 +0100
-Message-Id: <1289490470-14195-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1754141Ab0KKPuS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 10:50:18 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:46735 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753034Ab0KKPuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 10:50:16 -0500
+X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Nov 2010 10:50:16 EST
+Subject: Re: [RFC][PATCH 06/22] sched: SCHED_DEADLINE handles spacial
+ kthreads
+From: Dario Faggioli <faggioli@gandalf.sssup.it>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1289485861.2084.122.camel@laptop>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288333876.8661.147.camel@Palantir>  <1289485861.2084.122.camel@laptop>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-F943yZMdYrWF4hgFk7IB"
+Date: Thu, 11 Nov 2010 15:50:02 +0100
+Message-ID: <1289487002.6525.22.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/mfd/mc13xxx-core.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-index a2ac2ed..b9fcaf0 100644
---- a/drivers/mfd/mc13xxx-core.c
-+++ b/drivers/mfd/mc13xxx-core.c
-@@ -749,7 +749,7 @@ static int mc13xxx_probe(struct spi_device *spi)
- 	if (ret) {
- err_mask:
- err_revision:
--		mutex_unlock(&mc13xxx->lock);
-+		mc13xxx_unlock(mc13xxx);
- 		dev_set_drvdata(&spi->dev, NULL);
- 		kfree(mc13xxx);
- 		return ret;
--- 
-1.7.2.3
+--=-F943yZMdYrWF4hgFk7IB
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
+
+On Thu, 2010-11-11 at 15:31 +0100, Peter Zijlstra wrote:
+> > Since SCHED_DEADLINE is now the highest priority scheduling class
+> > these tasks have to be handled therein, but it is not obvious how
+> > to choose a runtime and a deadline that guarantee what explained
+> > above. Therefore, we need a mean of recognizing system tasks inside
+> > the -deadline class and always run them as soon as possible, without
+> > any kind of runtime and bandwidth limitation.
+>=20
+> Yet in the previous patch you had this hunk:
+>=20
+> > +++ b/kernel/sched_stoptask.c
+> > @@ -81,7 +81,7 @@ get_rr_interval_stop(struct rq *rq, struct
+> > task_struct *task)
+> >   * Simple, special scheduling class for the per-CPU stop tasks:
+> >   */
+> >  static const struct sched_class stop_sched_class =3D {
+> > -       .next                   =3D &rt_sched_class,
+> > +       .next                   =3D &dl_sched_class,
+> > =20
+> >         .enqueue_task           =3D enqueue_task_stop,
+> >         .dequeue_task           =3D dequeue_task_stop,
+>=20
+Yep. And (as said on IRC) this needs serious cleanup, in favour of
+stop_task!
+
+I'll completely drop patch 06 for next releases.
+
+Thanks,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://blog.linux.it/raistlin / raistlin@ekiga.net /
+dario.faggioli@jabber.org
+
+--=-F943yZMdYrWF4hgFk7IB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzcApoACgkQk4XaBE3IOsRLeQCgnt+wJvCRSSBS8pOzRxB6I3qC
+pOkAoKTidqthRhKRzaHmIQTeQ0+wWxgU
+=FYgs
+-----END PGP SIGNATURE-----
+
+--=-F943yZMdYrWF4hgFk7IB--
 
