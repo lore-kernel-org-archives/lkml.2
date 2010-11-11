@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285Ab0KKQCc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 11:02:32 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:63796 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370Ab0KKQCb (ORCPT
+	id S1754300Ab0KKQJz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 11:09:55 -0500
+Received: from smtp23.services.sfr.fr ([93.17.128.19]:4293 "EHLO
+	smtp23.services.sfr.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab0KKQJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 11:02:31 -0500
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2] OMAP: Serial: Define OMAP uart MDR1 register definitions
-Organization: Deep Root Systems, LLC
-References: <1289484812-17278-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-Date: Thu, 11 Nov 2010 08:02:27 -0800
-In-Reply-To: <1289484812-17278-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-	(Emeltchenko Andrei's message of "Thu, 11 Nov 2010 16:13:32 +0200")
-Message-ID: <87hbfnx2zw.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Thu, 11 Nov 2010 11:09:53 -0500
+X-SFR-UUID: 20101111160933175.2ABAE7000084@msfrf2321.sfr.fr
+Reply-To: <phl111mikejack@live.com.my>
+From: "PRIVATE HOME LENDER INC" <thiery455@sfr.fr>
+To: thiery455@sfr.fr
+Subject: SEASON LOAN!
+Date: Fri, 12 Nov 2010 00:10:28 +0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset="_iso-2022-jp$ESC"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1081
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
+Message-Id: <20101111160933.2ABAE7000084@msfrf2321.sfr.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com> writes:
+Apply for a loan to establish your business.
+Our interest is very affordable and our loan process is very fast as well as
+percentage rate of 2.5% yea rly from $5 000.00 Min. To $100 000 000.00 M a x.
+Contact us via email if you are interested with the following details
 
-> From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
->
-> Define MDR1 register serial definitions used in serial and
-> bluetooth drivers. Remove magic numbers there.
 
-Remove magic numbers where?  This patch doesn't remove anything.
+NAME:
+PHONE:
+DURATION:
+ADDRESS:
+AMOUNT:
 
-> *v2	added OMAP keyword
+Regards,
+Private Money Lender Inc
+phl111mikejack@live.com.my
 
-This info should go after the '---' as it is not needed in the final
-git history.
-
-Kevin
-
-> Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
-> ---
->  include/linux/serial_reg.h |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/serial_reg.h b/include/linux/serial_reg.h
-> index c7a0ce1..6f38234 100644
-> --- a/include/linux/serial_reg.h
-> +++ b/include/linux/serial_reg.h
-> @@ -341,5 +341,17 @@
->  #define UART_OMAP_SYSS		0x16	/* System status register */
->  #define UART_OMAP_WER		0x17	/* Wake-up enable register */
->  
-> +/*
-> + * These are the definitions for the MDR1 register
-> + */
-> +#define UART_OMAP_MDR1_16X_MODE		0x00	/* UART 16x mode */
-> +#define UART_OMAP_MDR1_SIR_MODE		0x01	/* SIR mode */
-> +#define UART_OMAP_MDR1_16X_ABAUD_MODE	0x02	/* UART 16x auto-baud */
-> +#define UART_OMAP_MDR1_13X_MODE		0x03	/* UART 13x mode */
-> +#define UART_OMAP_MDR1_MIR_MODE		0x04	/* MIR mode */
-> +#define UART_OMAP_MDR1_FIR_MODE		0x05	/* FIR mode */
-> +#define UART_OMAP_MDR1_CIR_MODE		0x06	/* CIR mode */
-> +#define UART_OMAP_MDR1_DISABLE		0x07	/* Disable (default state) */
-> +
->  #endif /* _LINUX_SERIAL_REG_H */
