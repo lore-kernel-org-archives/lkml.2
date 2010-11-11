@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab0KKRyt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 12:54:49 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:22166 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755357Ab0KKRyr convert rfc822-to-8bit (ORCPT
+	id S1755363Ab0KKSAl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 13:00:41 -0500
+Received: from mx01.hut.fi ([130.233.228.108]:59570 "EHLO mx01.hut.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755154Ab0KKSAk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 12:54:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NQhif/9CqX7bofuKEAYLHxzu1vKQlROIqaNj4kn5zgsZBDvCEmMhtNPwO4tm6NmfnS
-         P1wTScTTmOE9jrEQJanA==
+	Thu, 11 Nov 2010 13:00:40 -0500
+X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Nov 2010 13:00:39 EST
+Message-ID: <20101111195536.2z7hngny84o0scw4@webmail1.tkk.fi>
+Date: Thu, 11 Nov 2010 19:55:36 +0200
+From: "Mr. Beuker Hendrik" <lejven@tkk.fi>
+Reply-to: bhendrik1@mspil.edu.cn
+To: undisclosed-recipients:;
+Subject: Work with me
 MIME-Version: 1.0
-In-Reply-To: <8762w3pxuy.fsf@basil.nowhere.org>
-References: <1289492117-18066-1-git-send-email-andi@firstfloor.org>
-	<8762w3pxuy.fsf@basil.nowhere.org>
-Date: Thu, 11 Nov 2010 18:54:42 +0100
-Message-ID: <AANLkTi=-OjDaz9iDm1aNYzeFsHmewTNnGBS8pRx1vfJT@mail.gmail.com>
-Subject: Re: [PATCH/FIX] perf-events: Put the per cpu state for intel_pmu too
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, a.p.zijlstra@chello.nl,
-        mingo@elte.hu, acme@redhat.com, Andi Kleen <ak@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=US-ASCII;
+	DelSp=Yes	format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+X-Originating-IP: 190.144.40.195
+X-Authenticated-User: lejarven
+X-PMX-Version: 5.4.6.353000, Antispam-Engine: 2.6.1.350677, Antispam-Data: 2010.11.11.173920
+X-Spam-Probability: 54%
+X-PMX-Spam: Gauge=XXXXXIIII, Probability=54%, Report='FRAUD_X3 1.667, FRAUD_X4 1.667, FRAUD_HIGH_X3_WEBMAIL 1, CN_TLD 0.5, SXL_IP_SPAM_RCVD 0.5, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1500_1599 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, FRAUD_HIGH_X3 0, FROM_NAME_PHRASE 0, TO_UNDISCLOSED_RECIPIENTS 0, WEBMAIL_SOURCE 0, WEBMAIL_USER_AGENT 0, WEBMAIL_XOIP 0, WEBMAIL_X_IP_HDR 0, __CD 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FRAUD_CONTACT 0, __FRAUD_FAMILY 0, __FRAUD_MONEY 0, __FRAUD_MONEY_GENERIC 0, __FRAUD_MONEY_VALUE 0, __HAS_MSGID 0, __INT_PROD_LOC 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_PHRASE5 0, __PHISH_SPEAR_HTTP_RECEIVED 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __SANE_MSGID 0, __STOCK_PHRASE_7 0, __STOCK_PHRASE_8 0, __TO_MALFORMED_3 0, __URI_NO_PATH 0, __USER_AGENT 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 6:35 PM, Andi Kleen <andi@firstfloor.org> wrote:
->
-> Small bug fix for the earlier offcore_response patch:
-> need to put the events for intel_pmu too, not only core_pmu.
->
 
-You don't need it for core pmu, this is for Core Duo/Solo
-if I recall correctly.
+UBS International Holdings BV
+Herengracht 600
+NL-1017 CJ Amsterdam, Netherlands.
+www.ubs.com/investmentbank
+
+Greetings,
+
+I am an investment consultant working with UBS International Holdings BV
+in the Netherlands. I will be happy to work this transaction out with you
+if you have a corporate or personal Bank Account and if you are reliable
+and honest. I need strong Assurance that you will never let me down, as I
+can arrange and provide you details/documentatal proof so that
+funds($8.5 million) will be transferred into your account as the next of
+kin to the late depositor(Abbas Farhan al-Jabouri, who was an Election
+candidate and also a business man). Abbas Farhan al-Jabouri and his two
+relatives were executed in Mohammed al Malih, near Mandali onthe 29th of
+January 2009.  During one of our periodic auditing I discovered a dormant
+accounts with the said balance (Eight million, five Hundred thousand
+Dollars only), this account have not been operated for some years now.
+
+At this moment I will not be able to issue more details about this
+business, until your response is received.
+
+If you are not familiar with my Bank profile, please take a moment of your
+very busy schedules to read about my Bank
+website(www.ubs.com/investment bank). I look forward to hearing from you as
+soon as possible via my private email; bhendrik1@mspil.edu.cn
+
+Thank you for your time and attention.
+
+Warmest Regards,
+Mr. Beuker Hendrik
+Investment Consultant.
+UBS.
 
 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
->
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index a06dae3..9a71ffd 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -1031,6 +1031,7 @@ static __initconst const struct x86_pmu intel_pmu = {
->         */
->        .max_period             = (1ULL << 31) - 1,
->        .get_event_constraints  = intel_get_event_constraints,
-> +       .put_event_constraints  = intel_put_event_constraints,
->
->        .cpu_starting           = intel_pmu_cpu_starting,
->        .cpu_dying              = intel_pmu_cpu_dying,
->
-> --
-> ak@linux.intel.com -- Speaking for myself only.
->
+
+
+
+
+
