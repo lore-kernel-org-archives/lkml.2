@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab0KKOKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 09:10:44 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57541 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754027Ab0KKOKn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 09:10:43 -0500
-Date: Thu, 11 Nov 2010 15:09:32 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Tracey Dent <tdent48227@gmail.com>
-Cc: "mchehab@redhat.com" <mchehab@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Drivers: edac: Makfile: Cleaned up Makefile
-Message-ID: <20101111140932.GB21803@aftab>
-References: <1289141013-1399-1-git-send-email-tdent48227@gmail.com>
+	id S1755557Ab0KKOLA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 09:11:00 -0500
+Received: from kroah.org ([198.145.64.141]:34181 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755480Ab0KKOK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 09:10:58 -0500
+Date: Thu, 11 Nov 2010 06:11:30 -0800
+From: Greg KH <greg@kroah.com>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Borislav Petkov <bp@amd64.org>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, Hugh Dickins <hughd@google.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 2/3] x86, mm: Fix CONFIG_VMSPLIT_1G and 2G_OPT
+	trampoline
+Message-ID: <20101111141130.GB4323@kroah.com>
+References: <20101022162038.GA10343@kroah.com> <1289483775-17632-3-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289141013-1399-1-git-send-email-tdent48227@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1289483775-17632-3-git-send-email-joerg.roedel@amd.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 07, 2010 at 09:43:33AM -0500, Tracey Dent wrote:
-> Changed Makefile to use <modules>-y instead of <modules>-objs because -objs is
-> deprecated and should now be switched. According to (documentation/kbuild/makefiles.txt).
+On Thu, Nov 11, 2010 at 02:56:14PM +0100, Joerg Roedel wrote:
+> From: Hugh Dickins <hughd@google.com>
 > 
-> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+> rc2 kernel crashes when booting second cpu on this CONFIG_VMSPLIT_2G_OPT
+> laptop: whereas cloning from kernel to low mappings pgd range does need
+> to limit by both KERNEL_PGD_PTRS and KERNEL_PGD_BOUNDARY, cloning kernel
+> pgd range itself must not be limited by the smaller KERNEL_PGD_BOUNDARY.
+> 
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> LKML-Reference: <alpine.LSU.2.00.1008242235120.2515@sister.anvils>
+> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+> ---
+>  arch/x86/kernel/trampoline.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
 
-Applied, thanks.
+Why are you sending this to me?  I'm not the x86 maintainer.
 
--- 
-Regards/Gruss,
-Boris.
+confused,
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+greg k-h
