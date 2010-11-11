@@ -1,124 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757102Ab0KKXTf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 18:19:35 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:40776 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755924Ab0KKXTe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 18:19:34 -0500
+	id S1757089Ab0KKXUa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 18:20:30 -0500
+Received: from claw.goop.org ([74.207.240.146]:38343 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755924Ab0KKXU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 18:20:29 -0500
+Message-ID: <4CDC7A3C.8070206@goop.org>
+Date: Thu, 11 Nov 2010 15:20:28 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <1289514994.2742.81.camel@work-vm>
-References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
- <22542.1289507293@localhost> <20101111205123.GC10585@shisha.kicks-ass.net>
- <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
- <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com> <1289514994.2742.81.camel@work-vm>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Thu, 11 Nov 2010 18:19:10 -0500
-Message-ID: <AANLkTimMWcYc2OF1uS0zwRjMyjSGyysMVAsAFMtyOQ-D@mail.gmail.com>
-Subject: Re: [PATCHv6 0/7] system time changes notification
-To: john stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
-Cc: Alexander Shishkin <virtuoso@slind.org>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Jens Axboe <axboe@kernel.dk>
+CC: "\"Xen-devel@lists.xensource.com\" li" 
+	<Xen-devel@lists.xensource.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        Daniel Stodden <daniel.stodden@citrix.com>
+Subject: [GIT PULL] xen blkfront barrier updates
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 17:50, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Thu, 11 Nov 2010, Kyle Moffett wrote:
->> What about maybe adding device nodes for various kinds of "clock"
->> devices?  You could then do:
->>
->> #define CLOCK_FD 0x80000000
->> fd = open("/dev/clock/realtime", O_RDWR);
->> poll(fd);
->> clock_gettime(CLOCK_FD|fd, &ts);
->
-> That won't work due to the posix-cputimers occupying the negative
-> number space already.
+Hi Jens,
 
-Hmm, looks like the manpages clock_gettime(2) et. al. need updating,
-they don't mention anything at all about negative clockids.  The same
-thing could still be done with, EG:
+Here's the xen-blkfront barrier changes we discussed in Boston (its
+identical to the last posted version).
 
-#define CLOCK_FD 0x40000000
+The only comment was Christoph pointing out EOPNOTSUPP is not used in
+the block interface, but blkfront is just using it as a local
+placeholder and it never gets returned up to the block layer.
+
+I still haven't sorted out what's going on with the backends; we
+definitely need either a FLUSH operation or make empty WRITE_BARRIER
+work to flush disk caches.
+
+Thanks,
+    J
+
+The following changes since commit c8ddb2713c624f432fa5fe3c7ecffcdda46ea0d4:
+
+  Linux 2.6.37-rc1 (2010-11-01 07:54:12 -0400)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/blkfront
+
+Jeremy Fitzhardinge (4):
+      xen/blkfront: map REQ_FLUSH into a full barrier
+      xen/blkfront: change blk_shadow.request to proper pointer
+      xen/blkfront: Implement FUA with BLKIF_OP_WRITE_BARRIER
+      xen/blkfront: cope with backend that fail empty BLKIF_OP_WRITE_BARRIER requests
+
+ drivers/block/xen-blkfront.c |   55 ++++++++++++++++++++++++-----------------
+ 1 files changed, 32 insertions(+), 23 deletions(-)
 
 
-On Thu, Nov 11, 2010 at 17:36, john stultz <johnstul@us.ibm.com> wrote:
-> On Thu, 2010-11-11 at 17:11 -0500, Kyle Moffett wrote:
->> On Thu, Nov 11, 2010 at 16:16, Thomas Gleixner <tglx@linutronix.de> wrote:
->> > 2) Can't we use existing notification stuff like uevents or such ?
->>
->> What about maybe adding device nodes for various kinds of "clock"
->> devices?  You could then do:
->>
->> #define CLOCK_FD 0x80000000
->> fd = open("/dev/clock/realtime", O_RDWR);
->> poll(fd);
->> clock_gettime(CLOCK_FD|fd, &ts);
->
-> Ehh.. I'm not a huge fan of creating dynamic ids for what are static
-> clocksources (REALTIME, MONOTONIC, etc).
->
-> That said...
->
->> [...]
->>
->> This would also enable the folks who want to support things like PHY
->> hardware clocks (for very-low-latency ethernet timestamping).  It
->> would resolve the enumeration problem; instead of 0, 1, 2, ... as
->> constants, they would show up in sysfs and be open()able.  Ideally you
->> would be able to set up ntpd to slew the "realtime" clock by following
->> a particular hardware clock, or vice versa.
->
-> This is very similar in spirit to what's being done by Richard Cochran's
-> dynamic clock devices code: http://lwn.net/Articles/413332/
-
-Hmm, I've just been poking around and thinking about an extension of
-this concept.  Right now we have:
-
-/sys/devices/system/clocksource
-/sys/devices/system/clocksource/clocksource0
-/sys/devices/system/clocksource/clocksource0/current_clocksource
-/sys/devices/system/clocksource/clocksource0/available_clocksource
-
-Could we actually register the separate clocksources (hpet, acpi_pm,
-etc) in the device model properly?
-
-Then consider the possibility of creating "virtual clocksources" which
-are measured against an existing clocksource.  They could be
-independently slewed and adjusted relative to the parent clocksource.
-Then the "UTS namespace" feature could also affect the current
-clocksource used for CLOCK_MONOTONIC, etc.
-
-You could perform various forms of time-sensitive software testing
-without causing problems for a "make" process running elsewhere on the
-system.  You could test the operation of various kinds of software
-across large jumps or long periods of time (at a highly accelerated
-rate) without impacting your development environment.
-
-One really nice example would be testing "ntpd" itself; you could run
-a known-good "ntpd" in the base system to maintain a very stable
-clock, then simulate all kinds of terrifyingly bad clock hardware and
-kernel problems (sudden frequency changes, etc) in a container.  This
-kind of stuff can currently only be easily simulated with specialized
-hardware.
-
-You could also improve "container-based" virtualization, allowing
-perceived "CPU-time" to be slewed based on the cgroup.  IE: Processes
-inside of a container allocated only "33%" of one CPU might see their
-"CPU-time" accrue 3 times faster than a process outside of the
-container, as though the process was the only thing running on the
-system.  Running "top" inside of the container might show 100% CPU
-even though the hardware is at 33% utilization, or 200% CPU if the
-container is currently bursting much higher.
-
-Cheers,
-Kyle Moffett
