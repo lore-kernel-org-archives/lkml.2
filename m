@@ -1,94 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756963Ab0KKVEf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 16:04:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1928 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756855Ab0KKVEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 16:04:34 -0500
-From: Eric Paris <eparis@redhat.com>
-Subject: [RFC PATCH] network: return errors if we know tcp_connect failed
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: davem@davemloft.net, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net
-Date: Thu, 11 Nov 2010 16:03:41 -0500
-Message-ID: <20101111210341.31350.86916.stgit@paris.rdu.redhat.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1756995Ab0KKVFU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 16:05:20 -0500
+Received: from relay2.sgi.com ([192.48.179.30]:54829 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756779Ab0KKVFT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 16:05:19 -0500
+Message-Id: <20101111210515.112937290@gulag1.americas.sgi.com>
+User-Agent: quilt/0.47-1
+Date: Thu, 11 Nov 2010 15:05:07 -0600
+From: Robin@sgi.com, "Holt <holt"@sgi.com
+To: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org
+Subject: [Patch] XPC fails to discover partitions with all nasids above 128.
+References: <20101111210506.081564086@gulag1.americas.sgi.com>
+Content-Disposition: inline; filename=uv_max_regions
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-THIS PATCH IS VERY POSSIBLY WRONG!  But if it is I want some feedback.
+UV hardware defines 256 memory protection regions versus the baseline
+64 with increasing size for the SN2 ia64.  This was overlooked when XPC
+was modified to accomodate both UV and SN2.
 
-Basically what I found was that if I added an iptables rule like so:
+Without this patch, a user could reconfigure their existing system and
+suddenly disable cross-partition communications with no indication of
+what has gone wrong.  It also prevents larger configurations from using
+cross-partition communication.
 
-iptables -A OUTPUT -p tcp --dport 80 -j DROP
+Signed-off-by: Robin Holt <holt@sgi.com>
+Cc: stable@kernel.org
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
 
-And then ran a web browser like links it would just hang on 'establishing
-connection.'  I expected that the application would immediately, or at least
-very quickly, get notified that the connect failed.   This waiting for timeout
-would be expected if something else dropped the SYN or if we were dropping the
-SYN/ACK packet coming back, but I figured if we knew we threw away the SYN we knew
-right away that the connection was denied and we should be able to indicate
-that to the application.  Yes, I realize this is little different than if the
-SYN was dropped in the first network device, but it is different because we
-know what happened!  We know that connect() call failed and that there isn't
-anything coming back.
-
-What I discovered was that we actually had 2 problems in making it possible.
-For userspace to quickly realize the connect failed.  The first was a problem
-in the netfilter code which wasn't passing errors back up the stack correctly,
-due to what I believe to be a mistake in precedence rules.
-
-http://marc.info/?l=netfilter-devel&m=128950262021804&w=2
-
-And the second was that tcp_connect() was just ignoring the return value from
-tcp_transmit_skb().  Maybe this was intentional but I really wish we could
-find out that connect failed long before the minutes long timeout.  Once I
-fixed both of those issues I find that links gets denied (with EPERM)
-immediately when it calls connect().  Is this wrong?  Is this bad to tell
-userspace more quickly what happened?  Does passing this error code back up
-the stack here break something else?  Why do some functions seem to pay
-attention to tcp_transmit_skb() return codes and some functions just ignore
-it?  What do others think?
-
-NOT-AT-ALL-SIGNED-OFF-BY
 ---
 
- net/ipv4/tcp_output.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/misc/sgi-xp/xpc_partition.c |   25 +++++++++++++++----------
+ 1 file changed, 15 insertions(+), 10 deletions(-)
 
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index e961522..67b8535 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -2592,6 +2592,7 @@ int tcp_connect(struct sock *sk)
- {
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	struct sk_buff *buff;
-+	int ret;
+Index: pv1012187/drivers/misc/sgi-xp/xpc_partition.c
+===================================================================
+--- pv1012187.orig/drivers/misc/sgi-xp/xpc_partition.c	2010-11-11 15:01:51.963024726 -0600
++++ pv1012187/drivers/misc/sgi-xp/xpc_partition.c	2010-11-11 15:02:26.471574791 -0600
+@@ -439,18 +439,23 @@ xpc_discovery(void)
+ 	 * nodes that can comprise an access protection grouping. The access
+ 	 * protection is in regards to memory, IOI and IPI.
+ 	 */
+-	max_regions = 64;
+ 	region_size = xp_region_size;
  
- 	tcp_connect_init(sk);
+-	switch (region_size) {
+-	case 128:
+-		max_regions *= 2;
+-	case 64:
+-		max_regions *= 2;
+-	case 32:
+-		max_regions *= 2;
+-		region_size = 16;
+-		DBUG_ON(!is_shub2());
++	if (is_uv())
++		max_regions = 256;
++	else {
++		max_regions = 64;
++
++		switch (region_size) {
++		case 128:
++			max_regions *= 2;
++		case 64:
++			max_regions *= 2;
++		case 32:
++			max_regions *= 2;
++			region_size = 16;
++			DBUG_ON(!is_shub2());
++		}
+ 	}
  
-@@ -2614,7 +2615,7 @@ int tcp_connect(struct sock *sk)
- 	sk->sk_wmem_queued += buff->truesize;
- 	sk_mem_charge(sk, buff->truesize);
- 	tp->packets_out += tcp_skb_pcount(buff);
--	tcp_transmit_skb(sk, buff, 1, sk->sk_allocation);
-+	ret = tcp_transmit_skb(sk, buff, 1, sk->sk_allocation);
- 
- 	/* We change tp->snd_nxt after the tcp_transmit_skb() call
- 	 * in order to make this packet get counted in tcpOutSegs.
-@@ -2626,7 +2627,7 @@ int tcp_connect(struct sock *sk)
- 	/* Timer for repeating the SYN until an answer. */
- 	inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
- 				  inet_csk(sk)->icsk_rto, TCP_RTO_MAX);
--	return 0;
-+	return ret;
- }
- EXPORT_SYMBOL(tcp_connect);
- 
+ 	for (region = 0; region < max_regions; region++) {
 
