@@ -1,61 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227Ab0KKXMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 18:12:33 -0500
-Received: from p01c12o144.mxlogic.net ([208.65.145.67]:37412 "EHLO
-	p01c12o144.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676Ab0KKXMa convert rfc822-to-8bit (ORCPT
+	id S1757256Ab0KKXPm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 18:15:42 -0500
+Received: from mail-in-04.arcor-online.net ([151.189.21.44]:55274 "EHLO
+	mail-in-04.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755924Ab0KKXPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 18:12:30 -0500
-X-Greylist: delayed 392 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Nov 2010 18:12:30 EST
-X-MXL-Hash: 4cdc785e59627e09-84fe69ca925bcfe46e77922e23f1af1f66dfd6a2
-X-MXL-Hash: 4cdc76d601255380-8e6f1e5612618657d1650d660390ce1395e182d9
-Content-class: urn:content-classes:message
+	Thu, 11 Nov 2010 18:15:41 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-02.arcor-online.net EE0A43039C
+Message-Id: <E1PGgMk-0001AW-OD@be1.7eggert.dyndns.org>
+From: Bodo Eggert <7eggert@web.de>
+Subject: Re: [PATCH] oom: create a resource limit for oom_adj
+To: David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        linux-kernel@vger.kernel.org, gspencer@chromium.org,
+        piman@chromium.org, wad@chromium.org, olofj@chromium.org
+Reply-To: 7eggert@gmx.de
+Date: Fri, 12 Nov 2010 00:15:38 +0100
+References: <fNx73-1cI-1@gated-at.bofh.it> <fNzVf-5UY-3@gated-at.bofh.it> <fNKdY-6FU-11@gated-at.bofh.it> <fNMps-1S1-21@gated-at.bofh.it>
+User-Agent: KNode/0.10.4
 MIME-Version: 1.0
-Subject: Important: Email Account Verification Update ! ! !
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Date: Thu, 11 Nov 2010 17:02:55 -0600
-Message-ID: <FF4778BD7864CA4A8398EFD0B0B29E46E4B95D@ahcmascdc023.DS.SJHS.COM>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Important: Email Account Verification Update ! ! !
-Thread-Index: AcuB9JHIEMHx8nXZR329+a4RfIQtdQ==
-From: "Baker, Robert" <ROBaker@stvincent.org>
-X-OriginalArrivalTime: 11 Nov 2010 23:02:56.0454 (UTC) FILETIME=[93F59660:01CB81F4]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010110201)]
-X-MAIL-FROM: <robaker@stvincent.org>
-X-SOURCE-IP: [20.132.161.16]
-X-AnalysisOut: [v=1.0 c=1 a=-0xLiwVCuKkA:10 a=BLceEmwcHowA:10 a=8nJEP1OIZ-]
-X-AnalysisOut: [IA:10 a=koSttuKCkeS2xyc1K4ZO0w==:17 a=QkHVVenVAAAA:8 a=srE]
-X-AnalysisOut: [CfB2tpLuK1Y0rcscA:9 a=KzHOAs_MA2knDGu30DQA:7 a=blB4rcltb3f]
-X-AnalysisOut: [nt8nCmL9wsq6u_rQA:4 a=wPNLvfGTeEIA:10 a=fpQ_Y3G3f_cA:10 a=]
-X-AnalysisOut: [nogTMlhNSXJAQm4U:21 a=-ZMwKctAco74zO-_:21]
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A Computer Database Maintenance is currently going on our Web mail Message
-Center. Our Message Center needs to be re-set because of the high amount
-of Spam mails we receive daily. A Quarantine Maintenance will help us
-prevent this everyday dilemma.
-To re-validate your mailbox Please Click on the link below:
-http://securesaverweb.ucoz.org/onlinesupport.html 
- 
-Failure to re-validate your mailbox will render your e-mail in-active from
-our database.
-Thanks
-System Administrator
+David Rientjes <rientjes@google.com> wrote:
+> On Thu, 11 Nov 2010, Mandeep Singh Baines wrote:
 
-CONFIDENTIALITY NOTICE: 
-This email message and any accompanying data or files is confidential and may
-contain privileged information intended only for the named recipient(s). If 
-you are not the intended recipient(s), you are hereby notified that the 
-dissemination, distribution, and or copying of this message is strictly 
-prohibited. If you receive this message in error, or are not the named 
-recipient(s), please notify the sender at the email address above, delete 
-this email from your computer, and destroy any copies in any form immediately.
-Receipt by anyone other than the named recipient(s) is not a waiver of any 
-attorney-client, work product, or other applicable privilege.
+>> > What is the anticipated use case for this?  We know that you want to lower
+>> > oom_adj without CAP_SYS_RESOURCE, but what's the expected behavior when an
+>> > app moves from foreground to background?  I assume it's something like
+>> 
+>> The focus here is the web browser's tabs. In our case, each is a process. If
+>> OOM is going to kill a process, you'd rather it kill the tab you looked at
+>> hours ago instead of the one you're looking at now. So you'd like to have a
+>> policy where the LRU tab gets killed first. We'd like to use oom_score_adj
+>> as the mechanism to implement an LRU policy like this.
+>> 
+> 
+> Hmm, at first glance that seems potentially dangerous if the current tab
+> generates a burt of memory allocations and it ends up killing all other
+> tabs before finally targeting the culprit whereas currently the heuristic
+> should do a good job of finding this problematic tab and killing it
+> instantly.
+
+The original oom_adj design would e.g. adjust all background tabs to seem
+twice as bad as the current tab, so a ever-growing current tab would
+only be able to get one or two tabs killed in the worst case:
+
+System is near OOM while the current tab starts using a normal amount of
+mem and grows beyond limits. After it easily killed the first bg tab by
+allocating one byte, it needs to grow to twice the normal tab memsize to
+start the OOM killer again. By then, it's score will be equal to normal
+background tabs (half size, double score), and killing the second tab will
+be luck. Killing the third tab should be impossible.
+
+(If you adjust the bg tabs to be four times as killable, you'll get what
+ you asked for.)
+
+
+I don't know the current oom_score_adj, it should be able to do something
+similar? Or should there be a oom_score_mul?
+
+>> > What do you anticipate will be writing to oom_score_adj with this patch,
+>> > the app itself?
+>> 
+>> A process in the browser session will do the adusting. We'd rather not give
+>> it CAP_SYS_RESOURCE. It should only be allowed to change oom_score_adj up
+>> and down within the bounds set by the administrator. Analagous to renice()
+>> which we also do using a similar policy.
+>> 
+> 
+> So as more and more tabs get used, the least recently used tab gets its
+> oom_score_adj raised higher and higher until it is reused itself and then
+> it gets reset back to 0 for the current tab?
+
+As far as I understand, a background tab should get a higher score if it
+rests untouched for some time, and if it gets used again, it will jump to
+neutral oom_adj.
+
+> Is there a reason you don't want to give the underlying browser session
+> process CAP_SYS_RESOURCE?
+
+I should not have control over a CAP_SYS_RESOURCE process while being a user,
+but I should be able to tell the system which process to kill. When I designed
+the oom_adj, I did not think about one-process-per-tab, so I did not suggest
+a soft/hard limit.
+
+I think the concept of using an rlimit is the right thing to do, I did not yet
+look/think about the mapping. Glancing at oom_score_adj does suggest a different
+range ...
+
