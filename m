@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757620Ab0KKGSc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 01:18:32 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:35548 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636Ab0KKGSb (ORCPT
+	id S1757665Ab0KKGWW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 01:22:22 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:8004 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab0KKGWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 01:18:31 -0500
-Date: Thu, 11 Nov 2010 07:17:25 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Ben Gamari <bgamari@gmail.com>, "acme@infradead.org" <acme@infradead.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/20] x86, mce: Add persistent MCE event
-Message-ID: <20101111061725.GA19321@aftab>
-References: <1288885016-18295-1-git-send-email-bp@amd64.org>
- <1288885016-18295-4-git-send-email-bp@amd64.org>
- <87lj50vq0s.fsf@gmail.com>
- <20101110222157.GA23945@elte.hu>
+	Thu, 11 Nov 2010 01:22:21 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6163"; a="61548724"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: <tlinder@codeaurora.org>, "'David Brownell'" <david-b@pacbell.net>
+Cc: <linux-usb@vger.kernel.org>,
+        "'David Brownell'" <dbrownell@users.sourceforge.net>,
+        "'Greg Kroah-Hartman'" <gregkh@suse.de>,
+        "'Michal Nazarewicz'" <m.nazarewicz@samsung.com>,
+        "'Randy Dunlap'" <randy.dunlap@oracle.com>,
+        "'Laurent Pinchart'" <laurent.pinchart@ideasonboard.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Robert Lukassen'" <robert.lukassen@tomtom.com>,
+        "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>,
+        "'Matthew Wilcox'" <willy@linux.intel.com>,
+        "'Fabien Chouteau'" <fabien.chouteau@barco.com>,
+        "'Tejun Heo'" <tj@kernel.org>, <linux-kernel@vger.kernel.org>
+References: <594730.42296.qm@web180308.mail.gq1.yahoo.com> <7d9b495656759bd678ed91212b279a6c.squirrel@www.codeaurora.org>
+In-Reply-To: <7d9b495656759bd678ed91212b279a6c.squirrel@www.codeaurora.org>
+Subject: RE: [RFC/PATCH 2/2 RESENd] usb:gadget: Add SuperSpeed support to the      Gadget Framework
+Date: Thu, 11 Nov 2010 08:24:59 +0200
+Message-ID: <001e01cb8169$2dc11990$89434cb0$@org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101110222157.GA23945@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: ActkXQZD6jtyt57RT3ixaFsI9H9YdwdDA9iQ
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 05:21:57PM -0500, Ingo Molnar wrote:
-> 
-> * Ben Gamari <bgamari@gmail.com> wrote:
-> 
-> > On Thu,  4 Nov 2010 16:36:39 +0100, Borislav Petkov <bp@amd64.org> wrote:
-> > > From: Borislav Petkov <borislav.petkov@amd.com>
-> > > 
-> > > Add the necessary glue to enable the mce_record tracepoint on boot
-> > > turning it into a persistent event. This exports the MCE buffer
-> > > read-only to a userspace daemon which will hook into it through debugfs
-> > > when booting is finished.
-> > 
-> > While MCE technically is a diagnostics service, do we want to start adding 
-> > dependencies on debugfs in long-running, common-place daemons? I was under the 
-> > impression we were to avoid using debugfs for anything other than values for 
-> > one-off debugging.
-> 
-> See this current discussion thread on lkml:
-> 
->    [RFC][PATCH] perf: sysfs type id
-> 
-> Events are being added to sysfs as we want to avoid the debugfs dependency.
+Resending since not everyone received my reply.
 
-Yep, event enumeration will land in /sysfs eventually but in this case
-debugfs is used to export the buffers with the events recorded so far to
-the daemon which mmaps them. And I remember also being mentioned that
-debugfs will thus be always compiled in because of that.
+-----Original Message-----
+From: tlinder@codeaurora.org [mailto:tlinder@codeaurora.org] 
+Sent: Tuesday, October 05, 2010 9:15 AM
+To: David Brownell
+Cc: linux-usb@vger.kernel.org; tlinder; David Brownell; Greg Kroah-Hartman;
+Michal Nazarewicz; Randy Dunlap; Laurent Pinchart; Kyungmin Park; Robert
+Lukassen; Sarah Sharp; Matthew Wilcox; Fabien Chouteau; Tejun Heo;
+linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH 2/2] usb:gadget: Add SuperSpeed support to the
+Gadget Framework
 
-In any case, we need some kind of a facility with which to export those
-buffers for userspace to mmap. sysfs is clearly not that and debugfs is
-what we currently use. I'm open for better suggestions though.
+Hi Dave
 
-Thanks.
+We're currently working on USB Device Controller implementation. We
+already have a working setup in our lab which these changes were verified
+on. We passed USBCV 3.0 and 2.0 tests with this setup.
+In parallel we added SuperSpeed support to the dummy_hcd module and tested
+the patch using it as well. Changes to dummy_hcd will be release in a few
+days.
 
--- 
-Regards/Gruss,
-Boris.
+Regards,
+Tanya
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+I seem to have missed any posting of a SuperSpeed
+> capable USB Device Controller driver, even as RFC.
+>
+> So these patches can't actually achieve what their
+> subjects say.
+>
+> I'd rather hold off such interface changes until
+> there's a orking vertical slice through the stack,
+> complete enough to test and evaluate the changes.
+>
+> That said:  yes, propose the interface changes first
+> before diving into the rest.
+>
+> - Dave
+>
+>
+>
+>
+>
+
+
