@@ -1,124 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562Ab0KKJta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 04:49:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22969 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab0KKJt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 04:49:29 -0500
-From: Jiri Olsa <jolsa@redhat.com>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, oleg@redhat.com,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH] tracing - add indexes to the array values definitions
-Date: Thu, 11 Nov 2010 10:49:25 +0100
-Message-Id: <1289468965-8166-1-git-send-email-jolsa@redhat.com>
+	id S1753966Ab0KKJvi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 04:51:38 -0500
+Received: from mail.windriver.com ([147.11.1.11]:59364 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469Ab0KKJvh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 04:51:37 -0500
+Message-ID: <4CDBBCA5.50306@windriver.com>
+Date: Thu, 11 Nov 2010 17:51:33 +0800
+From: DDD <dongdong.deng@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: dzickus@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: avoid calling arch_trigger_all_cpu_backtrace() at
+ the same time on SMP
+References: <1289442042-2515-1-git-send-email-dongdong.deng@windriver.com> <20101111092301.GD18789@elte.hu>
+In-Reply-To: <20101111092301.GD18789@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Nov 2010 09:50:59.0608 (UTC) FILETIME=[F1B64980:01CB8185]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding indexes to trace_options and err_text arrays definitions.
-It helps the code readability.
+Ingo Molnar wrote:
+> * Dongdong Deng <dongdong.deng@windriver.com> wrote:
+> 
+>> +static int backtrace_flag;
+> 
+>> +	if (cmpxchg(&backtrace_flag, 0, 1) != 0)
+> 
+> Sorry to be a PITA, but i asked for test_and_set() because that's the simplest 
+> primitive. cmpxchg() semantics is not nearly as obvious and people regularly get it 
+> wrong :-/
 
-wbr,
-jirka
+As the 'backtrace_flag' could be accessed by multi-cpus on SMP at the 
+same time, I use cmpxchg() for getting a atomic/memory barrier operation 
+for 'backtrace_flag' variable.
+
+If we use test_and_set, maybe we need smp_wmb() after test_and_set. (If 
+I wrong, please correct me, thanks. :-) )
+
+Should we still need to use test_and_set?
+If need, I will use test_and_set at my next patch.
+
+> 
+> Also, variables that cmpxchg or test_and_set operates on need to be long, not int.
+
+Got it, I will change it to 'unsigned long' type.
+
+Thanks for your teaching.
+
+Dongdong
 
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- kernel/trace/trace.c               |   42 ++++++++++++++++++------------------
- kernel/trace/trace_events_filter.c |   25 +++++++++++----------
- 2 files changed, 34 insertions(+), 33 deletions(-)
-
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 82d9b81..cf2b0e5 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -405,27 +405,27 @@ unsigned long nsecs_to_usecs(unsigned long nsecs)
- 
- /* These must match the bit postions in trace_iterator_flags */
- static const char *trace_options[] = {
--	"print-parent",
--	"sym-offset",
--	"sym-addr",
--	"verbose",
--	"raw",
--	"hex",
--	"bin",
--	"block",
--	"stacktrace",
--	"trace_printk",
--	"ftrace_preempt",
--	"branch",
--	"annotate",
--	"userstacktrace",
--	"sym-userobj",
--	"printk-msg-only",
--	"context-info",
--	"latency-format",
--	"sleep-time",
--	"graph-time",
--	"record-cmd",
-+	[TRACE_ITER_PRINT_PARENT]   = "print-parent",
-+	[TRACE_ITER_SYM_OFFSET]     = "sym-offset",
-+	[TRACE_ITER_SYM_ADDR]       = "sym-addr",
-+	[TRACE_ITER_VERBOSE]        = "verbose",
-+	[TRACE_ITER_RAW]            = "raw",
-+	[TRACE_ITER_HEX]            = "hex",
-+	[TRACE_ITER_BIN]            = "bin",
-+	[TRACE_ITER_BLOCK]          = "block",
-+	[TRACE_ITER_STACKTRACE]     = "stacktrace",
-+	[TRACE_ITER_PRINTK]         = "trace_printk",
-+	[TRACE_ITER_PREEMPTONLY]    = "ftrace_preempt",
-+	[TRACE_ITER_BRANCH]         = "branch",
-+	[TRACE_ITER_ANNOTATE]       = "annotate",
-+	[TRACE_ITER_USERSTACKTRACE] = "userstacktrace",
-+	[TRACE_ITER_SYM_USEROBJ]    = "sym-userobj",
-+	[TRACE_ITER_PRINTK_MSGONLY] = "printk-msg-only",
-+	[TRACE_ITER_CONTEXT_INFO]   = "context-info",
-+	[TRACE_ITER_LATENCY_FMT]    = "latency-format",
-+	[TRACE_ITER_SLEEP_TIME]     = "sleep-time",
-+	[TRACE_ITER_GRAPH_TIME]     = "graph-time",
-+	[TRACE_ITER_RECORD_CMD]     = "record-cmd",
- 	NULL
- };
- 
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 36d4010..efb50eb 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -78,18 +78,19 @@ enum {
- };
- 
- static char *err_text[] = {
--	"No error",
--	"Invalid operator",
--	"Unbalanced parens",
--	"Too many operands",
--	"Operand too long",
--	"Field not found",
--	"Illegal operation for field type",
--	"Illegal integer value",
--	"Couldn't find or set field in one of a subsystem's events",
--	"Too many terms in predicate expression",
--	"Missing field name and/or value",
--	"Meaningless filter expression",
-+	[FILT_ERR_NONE]              = "No error",
-+	[FILT_ERR_INVALID_OP]        = "Invalid operator",
-+	[FILT_ERR_UNBALANCED_PAREN]  = "Unbalanced parens",
-+	[FILT_ERR_TOO_MANY_OPERANDS] = "Too many operands",
-+	[FILT_ERR_OPERAND_TOO_LONG]  = "Operand too long",
-+	[FILT_ERR_FIELD_NOT_FOUND]   = "Field not found",
-+	[FILT_ERR_ILLEGAL_FIELD_OP]  = "Illegal operation for field type",
-+	[FILT_ERR_ILLEGAL_INTVAL]    = "Illegal integer value",
-+	[FILT_ERR_BAD_SUBSYS_FILTER] = "Couldn't find or set field in one of"
-+				       " a subsystem's events",
-+	[FILT_ERR_TOO_MANY_PREDS]    = "Too many terms in predicate expression",
-+	[FILT_ERR_MISSING_FIELD]     = "Missing field name and/or value",
-+	[FILT_ERR_INVALID_FILTER]    = "Meaningless filter expression",
- };
- 
- struct opstack_op {
--- 
-1.7.1
+> 
+> 	Ingo
+> 
 
