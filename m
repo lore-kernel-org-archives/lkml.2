@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab0KKFVi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 00:21:38 -0500
-Received: from mail30g.wh2.ocn.ne.jp ([220.111.41.239]:7621 "HELO
-	mail30g.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757030Ab0KKFVg (ORCPT
+	id S1757433Ab0KKF4Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 00:56:16 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50875
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751535Ab0KKF4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 00:21:36 -0500
-From: Bruno Randolf <br1@einfach.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v6] Add generic exponentially weighted moving average (EWMA) function
-Date: Thu, 11 Nov 2010 14:21:49 +0900
-User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; x86_64; ; )
-Cc: randy.dunlap@oracle.com, peterz@infradead.org, blp@cs.stanford.edu,
-        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
-        kosaki.motohiro@jp.fujitsu.com, kevin.granade@gmail.com,
-        "John W. Linville" <linville@tuxdriver.com>
-References: <20101111034756.15014.2156.stgit@localhost6.localdomain6> <20101110200231.aaa51b47.akpm@linux-foundation.org>
-In-Reply-To: <20101110200231.aaa51b47.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 11 Nov 2010 00:56:14 -0500
+Date: Wed, 10 Nov 2010 21:56:39 -0800 (PST)
+Message-Id: <20101110.215639.189706684.davem@davemloft.net>
+To: ccaulfie@redhat.com
+CC: teigland@redhat.com, cluster-devel@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] dlm: Handle application limited situations properly.
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011111421.49464.br1@einfach.org>
-X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu November 11 2010 13:02:31 Andrew Morton wrote:
-> On Thu, 11 Nov 2010 12:47:56 +0900 Bruno Randolf <br1@einfach.org> wrote:
-> > ...
-> > 
-> > The original idea for this implementation came from the rt2x00 driver
-> > (rt2x00link.c). I would like to use it in several places in the mac80211
-> > and ath5k code and I hope it can be useful in many other places in the
-> > kernel code.
-> > 
-> > ...
-> > 
-> > --- a/lib/Makefile
-> > +++ b/lib/Makefile
-> > @@ -21,7 +21,7 @@ lib-y	+= kobject.o kref.o klist.o
-> > 
-> >  obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o
-> >  random32.o \
-> >  
-> >  	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
-> > 
-> > -	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o
-> > +	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o average.o
-> 
-> It would be a bit strange to merge this into 2.6.36-rcX when there are
-> no callers.  But you do want it to be present in some tree for your own
-> testing and distribution purposes.
-> 
-> So perhaps it would be best to merge this via the wireless tree, so
-> everything exists in one place and it can be fed into linux-next and
-> into mainline in an orderly fashion.
-> 
-> If that sounds like a plan then I can send this patch in John's
-> direction.  Which means that if he merges it into mainline without also
-> merging any of your patches which _use_ this function then we still end
-> up with unused code in mainline, but at least that way it wasn't my fault
-> ;)
-> 
-> Let me know your thoughts?
 
-Sounds like a good plan to me. But let's hear Johns opinion.
+In the normal regime where an application uses non-blocking I/O
+writes on a socket, they will handle -EAGAIN and use poll() to
+wait for send space.
 
-I have a patch or two using this function, which I hope will get merged into 
-wireless-testing soon after, but obviously it's up to John. There are more 
-places in the wireless part which could make use of this function (right now 
-each have their own EWMA implementation), and I'll try to get them all 
-updated, but finally it's the individual maintainers, who decide if they want 
-to make that change or not, I guess.
+They don't actually sleep on the socket I/O write.
 
-> (And it's a bit sad that the function will exist in the base vmlinux
-> even for people who don't ever use it, but that's a problem which we
-> don't really have a good solution for).
+But kernel level RPC layers that do socket I/O operations directly
+and key off of -EAGAIN on the write() to "try again later" don't
+use poll(), they instead have their own sleeping mechanism and
+rely upon ->sk_write_space() to trigger the wakeup.
 
-Hmm, should I switch it back to all inlines?
+So they do effectively sleep on the write(), but this mechanism
+alone does not let the socket layers know what's going on.
 
-On the other hand, if a generic EWMA function is useful at all I guess it 
-could be used in many places all over the kernel. Unfortunately I don't have 
-time and knowledge to find all these places and update them to use the generic 
-code.
+Therefore they must emulate what would have happened, otherwise
+TCP cannot possibly see that the connection is application window
+size limited.
 
-bruno
+Handle this, therefore, like SUNRPC by setting SOCK_NOSPACE and
+bumping the ->sk_write_count as needed when we hit the send buffer
+limits.
+
+This should make TCP send buffer size auto-tuning and the
+->sk_write_space() callback invocations actually happen.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+
+diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
+index 37a34c2..77720f8 100644
+--- a/fs/dlm/lowcomms.c
++++ b/fs/dlm/lowcomms.c
+@@ -108,6 +108,7 @@ struct connection {
+ #define CF_INIT_PENDING 4
+ #define CF_IS_OTHERCON 5
+ #define CF_CLOSE 6
++#define CF_APP_LIMITED 7
+ 	struct list_head writequeue;  /* List of outgoing writequeue_entries */
+ 	spinlock_t writequeue_lock;
+ 	int (*rx_action) (struct connection *);	/* What to do when active */
+@@ -295,7 +296,17 @@ static void lowcomms_write_space(struct sock *sk)
+ {
+ 	struct connection *con = sock2con(sk);
+ 
+-	if (con && !test_and_set_bit(CF_WRITE_PENDING, &con->flags))
++	if (!con)
++		return;
++
++	clear_bit(SOCK_NOSPACE, &con->sock->flags);
++
++	if (test_and_clear_bit(CF_APP_LIMITED, &con->flags)) {
++		con->sock->sk->sk_write_pending--;
++		clear_bit(SOCK_ASYNC_NOSPACE, &con->sock->flags);
++	}
++
++	if (!test_and_set_bit(CF_WRITE_PENDING, &con->flags))
+ 		queue_work(send_workqueue, &con->swork);
+ }
+ 
+@@ -1319,6 +1330,15 @@ static void send_to_sock(struct connection *con)
+ 			ret = kernel_sendpage(con->sock, e->page, offset, len,
+ 					      msg_flags);
+ 			if (ret == -EAGAIN || ret == 0) {
++				if (ret == -EAGAIN &&
++				    test_bit(SOCK_ASYNC_NOSPACE, &con->sock->flags) &&
++				    !test_and_set_bit(CF_APP_LIMITED, &con->flags)) {
++					/* Notify TCP that we're limited by the
++					 * application window size.
++					 */
++					set_bit(SOCK_NOSPACE, &con->sock->flags);
++					con->sock->sk->sk_write_pending++;
++				}
+ 				cond_resched();
+ 				goto out;
+ 			}
