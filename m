@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab0KKPEC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 10:04:02 -0500
-Received: from nm1.bullet.mail.ac4.yahoo.com ([98.139.52.198]:24554 "HELO
-	nm1.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751233Ab0KKPEA (ORCPT
+	id S1752899Ab0KKPLw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 10:11:52 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:54744 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab0KKPLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 10:04:00 -0500
-X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Nov 2010 10:04:00 EST
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 27408.11299.bm@omp1054.mail.ac4.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
-  b=WlKs4RGXCqqSEC2iTSu108N1FZk2pqhUdpimD9wH6+zGcpshoedxmXYEpKBjbOS7i83qCN6tbUyX6ABhrCLAulAqIoQ04ta4MxyJYyGR6g3E1F/Sn8QB2B4OA3wVlwMSXfw2JndN6W2Ynkhoxwn77+iUj9Oj635AjNkMnvhHKqU=;
-Message-ID: <805862.49452.qm@web51006.mail.re2.yahoo.com>
-X-YMail-OSG: FpYNHYAVM1mWkrWbHgyfDYl58dhE62Xt5fhc16plNl3azGV
- KJJteTv7ILyKEDRZQPqTLfnFA8cQAICPbgmO4c5vM7Oynxr.mjCIfzAZbAiR
- XPMto4vST4lLNlT79HpWYQ40DrhBteW_H6.WED_FLTwIExFNgtLkMembQY.h
- n4Kr8lS_YfborXlK8Kz9p6HBVXumHThP77oK.US1yYxrjIeNFhk91dRtdAe7
- y6d0GKyHw3I0vMdA3TVhuYEErCpsBcntbOr9HaDh8RW7SfmxqwxS7Zy3v66e
- fliqNV1gqGn0nAL31jFbWETNREo3RyBHmVv.2bBY2.yihuh.0DxekOu6paOM
- BU8ge8xnrdzWow__umxMTMtBaSkKTuiQLb2gnCw--
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
-Date: Thu, 11 Nov 2010 06:58:14 -0800 (PST)
-From: Fabio Estevam <fabioestevam@yahoo.com>
-Subject: [PATCH] mfd: check for NULL platform data
-To: linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, s.hauer@pengutronix.de,
-        u.kleine-koenig@pengutronix.de
+	Thu, 11 Nov 2010 10:11:51 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Par-Gunnar Hjalmdahl" <pghatwork@gmail.com>
+Subject: Re: [PATCH 5/9] mfd: Add UART support for the ST-Ericsson CG2900.
+Date: Thu, 11 Nov 2010 16:12:30 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linus.walleij@stericsson.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lukasz.Rymanowski@tieto.com
+References: <AANLkTi=XTUau_GbASJEUBgsZ_FYYmRAX6W43YtRdv2wS@mail.gmail.com> <AANLkTinzcRv5Mc+9HRwxYgxZCBNER_RdTVHTOyVtozJf@mail.gmail.com> <AANLkTi=J_K0sEwyfr4PoFBzEYp4yqYVm3NCRLv6mfLBx@mail.gmail.com>
+In-Reply-To: <AANLkTi=J_K0sEwyfr4PoFBzEYp4yqYVm3NCRLv6mfLBx@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011111612.30515.arnd@arndb.de>
+X-Provags-ID: V02:K0:21KPrLDQwqpkBl27X0/UewS5nmZCuBNHsLhu4noUNul
+ Hfa/Dxes6q95L/smh7rjf2wIRcS2CpPZzuqTH7IZAVfpAGUIRr
+ kxtGD01VA7bl3wRaJJ9EMI7FeIzN1xswzov7gApwdAiSeVSHhp
+ Dd1dLXiVc2TcYHbto1vAEU0EftkSybKhovkMKcwFKAKpfM0RLA
+ dK0Z3V91ayK6lvO7OLlOQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid kernel crash if platform data is NULL.
+On Thursday 11 November 2010, Par-Gunnar Hjalmdahl wrote:
+> > One option would of course be to modify the existing hci_ldisc.c but I
+> > feel that be rather dangerous and which could create a lot of
+> > problems.
+>
+> After looking again at the code I see that I was wrong.
+> For the receiving path the data will go ldics->protocol->stack. It's
+> actually the TX path (to the chip) that is a bit strange where
+> Bluetooth data is going to stack->ldisc->protocol->ldisc->uart. Here
+> we would have a separate path for FM and GPS.
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/mfd/mc13xxx-core.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Ok, but is that a problem? You really should not be afraid of
+touching existing code in order to make it more generic or removing
+strange code paths like the one you just described. Cleaning up
+code is usually better than duplicating it when you notice something
+wrong with the existing implementation.
 
-diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-index a2ac2ed..b4d6bb1 100644
---- a/drivers/mfd/mc13xxx-core.c
-+++ b/drivers/mfd/mc13xxx-core.c
-@@ -757,6 +757,9 @@ err_revision:
- 
- 	mc13xxx_unlock(mc13xxx);
- 
-+	if (pdata == NULL)
-+		return 0;
-+
- 	if (pdata->flags & MC13XXX_USE_ADC)
- 		mc13xxx_add_subdevice(mc13xxx, "%s-adc");
- 
--- 
-1.6.0.4
+Simply calling the underlying ldisc module from the FM and GPS modules
+should not even require changes, right?
 
+> I still don't like the idea of making a tty/ldisc for the SPI
+> transport. I definitely would prefer instead a new ldisc which doesn't
+> register to any stack on top.
 
+Yes, agreed. You had already convinced me in the previous reply, sorry
+if that wasn't clear.
 
-      
+> My preference would be to keep the
+> solutions independent, where we use tty/ldisc for UART and a direct
+> transport protocol driver for SPI (i.e. registering using
+> spi_register_driver).
+
+Yes. However, you can probably share substantial parts of the code
+between the spi_driver and the hci_uart_proto implementations.
+You can do this either by making them a single module that registers
+to both hci_ldisc and spi_bus, or having a common cg2900 base module
+that does the common parts and add separate modules for spi and
+hci_uart that register a small wrapper to the respective subsystems.
+
+	Arnd
