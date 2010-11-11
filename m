@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab0KKLQL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 06:16:11 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:55716 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754927Ab0KKLQJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 06:16:09 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:reply-to:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=exyxl184WfBk3M6NIItmF1YH/CZUiPPWTT7BPJj2k+HjQmb2uGdpJg+uFUPPXPBhtN
-         chfLwd1R6nVVMiW4TFYULsmXMHNQKiBXBcyXxehzeyPN9HWiu4lX5az6FavgQOZikety
-         i+mxCriDTl7lWvNtfJAESma2vo/ZwTvn2X5Bg=
-From: Florian Fainelli <florian@openwrt.org>
-Reply-To: Florian Fainelli <florian@openwrt.org>
-To: Roland Dreier <rdreier@cisco.com>
-Subject: Re: Forked android kernel development from linux kernel mainline
-Date: Thu, 11 Nov 2010 12:18:14 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-trunk-amd64; KDE/4.4.5; x86_64; ; )
-Cc: Greg KH <greg@kroah.com>, Arnaud Lacombe <lacombar@gmail.com>,
-        Anca Emanuel <anca.emanuel@gmail.com>,
-        Elvis Dowson <elvis.dowson@mac.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com> <20101107215908.GA21070@kroah.com> <adar5esn1gd.fsf@cisco.com>
-In-Reply-To: <adar5esn1gd.fsf@cisco.com>
+	id S1755820Ab0KKLRa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 06:17:30 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51740 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755483Ab0KKLR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 06:17:29 -0500
+Date: Thu, 11 Nov 2010 12:17:02 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Dongdong Deng <dongdong.deng@windriver.com>
+Cc: dzickus@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [V3 PATCH] x86: avoid calling arch_trigger_all_cpu_backtrace()
+ at the same time on SMP
+Message-ID: <20101111111702.GA12644@elte.hu>
+References: <1289473307-7965-1-git-send-email-dongdong.deng@windriver.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201011111218.15668.florian@openwrt.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289473307-7965-1-git-send-email-dongdong.deng@windriver.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Roland,
 
-Le Thursday 11 November 2010 01:33:38, Roland Dreier a écrit :
->  > Isn't the openwrt stuff just drivers and some arch specific code?
->  > Nothing that is core infrastructure, and nothing preventing them from
->  > submitting the drivers and arch code if they want to, right?
-> 
-> Actually openwrt has some core infrastructure for managing (ethernet)
-> switches as extra-fancy multiport PHYs.  That means that all the drivers
-> in openwrt for the typical 5-8 port switches in home routers don't
-> really apply to mainline.
+Hm, another thing i noticed is that there's two of these:
 
-This is called "swconfig"  in OpenWrt and it works in two parts:
+>  #ifdef ARCH_HAS_NMI_WATCHDOG
+> +/* "in progress" flag of arch_trigger_all_cpu_backtrace */
+> +static unsigned long backtrace_flag;
+> +
+>  void arch_trigger_all_cpu_backtrace(void)
+>  {
+>  	int i;
+> +	unsigned long flags;
+> +
+> +	/*
+> +	 * Have to disable irq here, as the
+> +	 * arch_trigger_all_cpu_backtrace() could be
+> +	 * triggered by "spin_lock()" with irqs on.
+> +	 */
+> +	local_irq_save(flags);
 
-- a swconfig driver, which interfaces the getting and setting of switches 
-attributes using netlink, therefore there is an user-space counter-part
+> +/* "in progress" flag of arch_trigger_all_cpu_backtrace */
+> +static unsigned long backtrace_flag;
+> +
+>  void arch_trigger_all_cpu_backtrace(void)
+>  {
+>  	int i;
+> +	unsigned long flags;
+> +
+> +	/*
+> +	 * Have to disable irq here, as the
+> +	 * arch_trigger_all_cpu_backtrace() could be
+> +	 * triggered by "spin_lock()" with irqs on.
+> +	 */
+> +	local_irq_save(flags);
+> +
+> +	if (test_and_set_bit(0, &backtrace_flag))
 
-- the switch drivers are implemented as phylib drivers with a phylib fixup 
-callback to allow proper detection of these (you cannot alwasy simply read the 
-standard PHY ID), the config_init callback will set correct defaults for the 
-switch to be usable even without swconfig
+A fair amount of code is being duplicated in two places - which is not nice. Lets 
+try to create a shared facility instead?
 
-The rationale behind swconfig comes from the fact that the Marvell DSA switch 
-infrastructure is both too complex and too-specific to driver relatively 
-simpler switches.
+Thanks,
 
-One could therefore just use the "phylib switch driver" without swconfig and 
-have it working.
---
-Florian
+	Ingo
