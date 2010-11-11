@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab0KKMA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 07:00:29 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:11216 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab0KKMA1 (ORCPT
+	id S1756039Ab0KKMBi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 07:01:38 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:43590 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755762Ab0KKMBh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 07:00:27 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6163"; a="61484711"
-Message-ID: <4CDBDAD5.90406@codeaurora.org>
-Date: Thu, 11 Nov 2010 17:30:21 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Thu, 11 Nov 2010 07:01:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=V3HA50AKVcrzVtpSChqlXhSyAJ27uoegcbs3f3G6C8UqUg5HBoOOvhMEucXkmh8BxT
+         XylcNTO9wioHbeZXTO0MwLsd+lskjLmLPZb/w9zr0ZZ24KfurkbtYeYB557JiQfxa4+L
+         jXow3/o5zkOAuoI6GpBFcd1BOw9a3l8NbPp3I=
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-arm-msm@vger.kernel.org
-Subject: Re: [RFC v1 PATCH 4/6] input: pmic8058_pwrkey: Add support for power
- key
-References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org> <1289393281-4459-5-git-send-email-tsoni@codeaurora.org> <20101111072107.GA24415@core.coreip.homeip.net>
-In-Reply-To: <20101111072107.GA24415@core.coreip.homeip.net>
+In-Reply-To: <1289473363-29440-7-git-send-email-tj@kernel.org>
+References: <1289473363-29440-1-git-send-email-tj@kernel.org>
+	<1289473363-29440-7-git-send-email-tj@kernel.org>
+Date: Thu, 11 Nov 2010 14:01:36 +0200
+X-Google-Sender-Auth: 4v5eJ7WtLXA8K6l5dkH1wtoa5nk
+Message-ID: <AANLkTimLimZqmneezs_UBvDYmoK_YUd0fHKMtkUyggp=@mail.gmail.com>
+Subject: Re: [PATCH 6/9] x86: Unify cpu/apicid <-> NUMA node mapping between
+ 32 and 64bit
+From: Pekka Enberg <penberg@kernel.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
+        yinghai@kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Thu, Nov 11, 2010 at 1:02 PM, Tejun Heo <tj@kernel.org> wrote:
+> The mapping between cpu/apicid and node is done via apicid_to_node[]
+> on 64bit and apicid_2_node[] + apic->numa_cpu_node() on 32bit.  This
+> difference makes it difficult to further unify 32 and 64bit NUMA
+> hanlding.
+>
+> This patch unifies it by replacing both apicid_to_node[] and
+> apicid_2_node[] with __apicid_to_node[] array, which is accessed by
+> two accessors - set_apicid_to_node() and numa_cpu_node().  On 64bit,
+> numa_cpu_node() always consults __apicid_to_node[] directly while
+> 32bit goes through apic->numa_cpu_node() method to allow apic
+> implementation to override it.
+>
+> There are several places where using numa_cpu_node() is awkward and
+> the override doesn't matter.  In those places, __apicid_to_node[] are
+> used directly.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-On 11/11/2010 12:51 PM, Dmitry Torokhov wrote:
-> Hi Trilkok,
-> 
-> On Wed, Nov 10, 2010 at 06:17:59PM +0530, Trilok Soni wrote:
->> Add support for PMIC8058 power key driven over dedicated
->> KYPD_PWR_N pin. It allows the user to specify the amount
->> of time by which the power key reporting can be delayed.
->>
-> 
-> Why do we need to delay KEY_POWER reporting? Do we need to use high
-> resolution timers or regular timers would do as well? KEY_END appears to
-> be abused (you don't want to move your cursor to the end of line, do
-> you?). Also I wonder if header file should reside in linux/mfd with the
-> rest of pmic8058 components.
-
-Most of the time Mobile devices come with single physical key for POWER,
-which if pressed for less than 500ms (configurable) then it will only
-report KEY_END (which say locks the screen on mobile) and if it pressed
-more than 500ms then it will also report KEY_POWER event too, which will
-say display menu on your mobile for asking you to suspend/switch off/etc, operations.
-
-For the timers I can move from hrtimers to regular timers.
-
-For the header file, I can move them to include/linux/mfd too. No problem on that.
-
----Trilok Soni
-
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Acked-by: Pekka Enberg <penberg@kernel.org>
