@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab0KKRw2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 12:52:28 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:48391 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754014Ab0KKRw1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 12:52:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=RoRLNZwfQe+OdJeapo0uvwe3Nm5+qbDAfX/ZMnif0TGfzMpG/FbRPSD6+ou/+/LZkk
-         SjEo7U53VUKjSwllQi+03B7NJ+gicG1/8X7ADhSRAiPWJt38hsQk/5CtAa/PPhZptS/C
-         TlH3n/cyeQ/jcyeJZzlB6ZE7sdpSvS9ONVhjE=
-Date: Thu, 11 Nov 2010 20:52:22 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
-        yinghai@kernel.org
-Subject: Re: [PATCH UPDATED 3/9] x86: Make
-	default_send_IPI_mask_sequence/allbutself_logical() 32bit only
-Message-ID: <20101111175222.GB6517@lenovo>
-References: <1289473363-29440-1-git-send-email-tj@kernel.org> <1289473363-29440-4-git-send-email-tj@kernel.org> <4CDC2914.5060403@kernel.org>
+	id S1755245Ab0KKRyo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 12:54:44 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:47666 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753242Ab0KKRyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 12:54:43 -0500
+Message-ID: <4CDC2DDD.50508@linux.vnet.ibm.com>
+Date: Thu, 11 Nov 2010 09:54:37 -0800
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CDC2914.5060403@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Andi Kleen <andi@firstfloor.org>
+CC: linux-kernel@vger.kernel.org, fweisbec@gmail.com, a.p.zijlstra@chello.nl,
+        mingo@elte.hu, acme@redhat.com, eranian@google.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] perf: Add support for extra parameters for raw events
+References: <1289492117-18066-1-git-send-email-andi@firstfloor.org> <1289492117-18066-2-git-send-email-andi@firstfloor.org>
+In-Reply-To: <1289492117-18066-2-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 06:34:12PM +0100, Tejun Heo wrote:
-> Both functions are used only in 32bit.  Put them inside CONFIG_X86_32.
-> This is to prepare for logical apicid handling update.
-> 
-> - Cyrill Gorcunov spotted that I forgot to move declarations in ipi.h
->   under CONFIG_X86_32.  Fixed.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reviewed-by: Pekka Enberg <penberg@kernel.org>
-> Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-> ---
+On 11/11/2010 08:15 AM, Andi Kleen wrote:
+> From: Andi Kleen<ak@linux.intel.com>
+>
+> Add support to the perf tool to specify extra values for raw events
+> and pass them to the kernel.
+>
+> The new format is -e rXXXX[,YYYY]
 
-yup, thanks Tejun,
-Reviewed-by: Cyrill Gorcunov <gorcunov@gmail.com>
+It's not clear to me that a comma is the best character to use in this 
+instance, because multiple events can be listed after the -e separated 
+by commas as well, for example:  -e rXXXX,cycles.
+-e rXXXX,YYYY,cycles would be confusing to read.
+
+How about -e rXXXX[+YYYY]
+
+- Corey
