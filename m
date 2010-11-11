@@ -1,75 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab0KKJp4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 04:45:56 -0500
-Received: from www.tglx.de ([62.245.132.106]:38640 "EHLO www.tglx.de"
+	id S1753562Ab0KKJta (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 04:49:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22969 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752591Ab0KKJpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 04:45:54 -0500
-Date: Thu, 11 Nov 2010 10:45:27 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Sharp <dhsharp@google.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC tracing] Common Trace Format for Linux (v1.1)
-In-Reply-To: <20101111021614.GA5782@Krystal>
-Message-ID: <alpine.LFD.2.00.1011111011530.2900@localhost6.localdomain6>
-References: <20101111004612.GB32564@Krystal> <alpine.LFD.2.00.1011110158390.2900@localhost6.localdomain6> <20101111021614.GA5782@Krystal>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751850Ab0KKJt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 04:49:29 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, oleg@redhat.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH] tracing - add indexes to the array values definitions
+Date: Thu, 11 Nov 2010 10:49:25 +0100
+Message-Id: <1289468965-8166-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathieu,
+Adding indexes to trace_options and err_text arrays definitions.
+It helps the code readability.
 
-On Wed, 10 Nov 2010, Mathieu Desnoyers wrote:
+wbr,
+jirka
 
-> * Thomas Gleixner (tglx@linutronix.de) wrote:
-> [...]
-> 
-> > The requirement list has been beaten to death several times already
-> > along with the various options of trace formats, so we really are at
-> > the point where you folks need to sit down and come up with real code
-> > which can be discussed and improved on a technical base.
-> 
-> I understand and share your frustration about things having been standing still
-> for way too long.
-> 
-> In order to get things rolling, I hereby append my trace format proposal as RFC.
-> I did implement the core elements of it already in the BabelTrace trace
-> converter project, so it's not one of these dreaded "design by committee without
-> any understanding of the practicality aspects" standards. I try make sure it
-> translates to something realistic and useful.
-> 
-> Feedback is welcome, thanks,
-> 
-> Mathieu
-> 
-> RFC: Common Trace Format Proposal for Linux (v1.1)
 
-Groan. Did you read what I wrote ?
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ kernel/trace/trace.c               |   42 ++++++++++++++++++------------------
+ kernel/trace/trace_events_filter.c |   25 +++++++++++----------
+ 2 files changed, 34 insertions(+), 33 deletions(-)
 
-> >                                              ... so we really are at
-> > the point where you folks need to sit down and come up with real code
-> > which can be discussed and improved on a technical base.
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 82d9b81..cf2b0e5 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -405,27 +405,27 @@ unsigned long nsecs_to_usecs(unsigned long nsecs)
+ 
+ /* These must match the bit postions in trace_iterator_flags */
+ static const char *trace_options[] = {
+-	"print-parent",
+-	"sym-offset",
+-	"sym-addr",
+-	"verbose",
+-	"raw",
+-	"hex",
+-	"bin",
+-	"block",
+-	"stacktrace",
+-	"trace_printk",
+-	"ftrace_preempt",
+-	"branch",
+-	"annotate",
+-	"userstacktrace",
+-	"sym-userobj",
+-	"printk-msg-only",
+-	"context-info",
+-	"latency-format",
+-	"sleep-time",
+-	"graph-time",
+-	"record-cmd",
++	[TRACE_ITER_PRINT_PARENT]   = "print-parent",
++	[TRACE_ITER_SYM_OFFSET]     = "sym-offset",
++	[TRACE_ITER_SYM_ADDR]       = "sym-addr",
++	[TRACE_ITER_VERBOSE]        = "verbose",
++	[TRACE_ITER_RAW]            = "raw",
++	[TRACE_ITER_HEX]            = "hex",
++	[TRACE_ITER_BIN]            = "bin",
++	[TRACE_ITER_BLOCK]          = "block",
++	[TRACE_ITER_STACKTRACE]     = "stacktrace",
++	[TRACE_ITER_PRINTK]         = "trace_printk",
++	[TRACE_ITER_PREEMPTONLY]    = "ftrace_preempt",
++	[TRACE_ITER_BRANCH]         = "branch",
++	[TRACE_ITER_ANNOTATE]       = "annotate",
++	[TRACE_ITER_USERSTACKTRACE] = "userstacktrace",
++	[TRACE_ITER_SYM_USEROBJ]    = "sym-userobj",
++	[TRACE_ITER_PRINTK_MSGONLY] = "printk-msg-only",
++	[TRACE_ITER_CONTEXT_INFO]   = "context-info",
++	[TRACE_ITER_LATENCY_FMT]    = "latency-format",
++	[TRACE_ITER_SLEEP_TIME]     = "sleep-time",
++	[TRACE_ITER_GRAPH_TIME]     = "graph-time",
++	[TRACE_ITER_RECORD_CMD]     = "record-cmd",
+ 	NULL
+ };
+ 
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 36d4010..efb50eb 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -78,18 +78,19 @@ enum {
+ };
+ 
+ static char *err_text[] = {
+-	"No error",
+-	"Invalid operator",
+-	"Unbalanced parens",
+-	"Too many operands",
+-	"Operand too long",
+-	"Field not found",
+-	"Illegal operation for field type",
+-	"Illegal integer value",
+-	"Couldn't find or set field in one of a subsystem's events",
+-	"Too many terms in predicate expression",
+-	"Missing field name and/or value",
+-	"Meaningless filter expression",
++	[FILT_ERR_NONE]              = "No error",
++	[FILT_ERR_INVALID_OP]        = "Invalid operator",
++	[FILT_ERR_UNBALANCED_PAREN]  = "Unbalanced parens",
++	[FILT_ERR_TOO_MANY_OPERANDS] = "Too many operands",
++	[FILT_ERR_OPERAND_TOO_LONG]  = "Operand too long",
++	[FILT_ERR_FIELD_NOT_FOUND]   = "Field not found",
++	[FILT_ERR_ILLEGAL_FIELD_OP]  = "Illegal operation for field type",
++	[FILT_ERR_ILLEGAL_INTVAL]    = "Illegal integer value",
++	[FILT_ERR_BAD_SUBSYS_FILTER] = "Couldn't find or set field in one of"
++				       " a subsystem's events",
++	[FILT_ERR_TOO_MANY_PREDS]    = "Too many terms in predicate expression",
++	[FILT_ERR_MISSING_FIELD]     = "Missing field name and/or value",
++	[FILT_ERR_INVALID_FILTER]    = "Meaningless filter expression",
+ };
+ 
+ struct opstack_op {
+-- 
+1.7.1
 
-Your reaction on this is to send yet another proposal, which has not
-really anything new in it.
-
-What we are waiting for is a sensible incremental patch series, which
-extends or replaces functionality in the existing perf ABI up to the
-point, where we can eventually see the need for a sensible
-replacement. That's the way we work, not with tons of proposals.
-
-Thanks,
-
-	tglx
