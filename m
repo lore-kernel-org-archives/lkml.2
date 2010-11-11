@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab0KKWHK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 17:07:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50647 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756709Ab0KKWHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 17:07:08 -0500
-Date: Thu, 11 Nov 2010 23:00:49 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: INFO: suspicious rcu_dereference_check() usage -
-	kernel/pid.c:419 invoked rcu_dereference_check() without protection!
-Message-ID: <20101111220048.GA19979@redhat.com>
-References: <xr93fwwbdh1d.fsf@ninji.mtv.corp.google.com> <20101107182028.GZ15561@linux.vnet.ibm.com> <20101108151509.GA3702@redhat.com> <20101109202900.GV4032@linux.vnet.ibm.com> <20101110155530.GA1905@redhat.com> <20101110160211.GA2562@redhat.com> <4CDBD12C.4010807@kernel.dk> <20101111123015.GA25991@redhat.com> <4CDBE401.7040401@kernel.dk> <xr93sjz73ar6.fsf@ninji.mtv.corp.google.com>
+	id S1757109Ab0KKWI2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 17:08:28 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41548 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753775Ab0KKWI1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 17:08:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <xr93sjz73ar6.fsf@ninji.mtv.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101111002702.GA3477@amd>
+References: <20101109124610.GB11477@amd> <20101109130133.GE11477@amd>
+ <20101109162516.GB6217@infradead.org> <20101109220833.GG3246@amd>
+ <20101110163224.GB15130@infradead.org> <20101111002702.GA3477@amd>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 11 Nov 2010 14:07:36 -0800
+Message-ID: <AANLkTimyQvo5PPjvk-3u3uCfK--YdDi0qM=smt+g=gN-@mail.gmail.com>
+Subject: Re: [patch 4/6] fs: d_delete change
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11, Greg Thelen wrote:
+On Wed, Nov 10, 2010 at 4:27 PM, Nick Piggin <npiggin@kernel.dk> wrote:
 >
-> a) my original report added rcu_read_lock() to sys_ioprio_get() and
->    claims that "something" is needed in sys_ioprio_set().
->
-> c) http://lkml.org/lkml/2010/10/29/168 added rcu locks to both
->    sys_ioprio_get() and sys_ioprio_set() thus addressing the issues
->    raised in a).  However, I do not see this patch in -mm.
+> Right, I'll switch to a different way of commenting that git-am
+> does not pick up.
 
-Well, I do not know what happened with this patch, but
+The standard way is to just put it after the "---" thing. So you end
+up having the actual kernel changelog at the top (which is, after all,
+the summary and should be readable on its own, so making people read
+that first makes perfect sense), and then put the extended explanation
+that doesn't make sense for the changelog after the "---".
 
->    I can resubmit my patch, but want to know if there is a reason that
->    http://lkml.org/lkml/2010/10/29/168 did not make it into either -mm
->    or linux-next?
+Of course, quite often you would want the commit message to be
+exhaustive, so maybe the extended explanation ends up making sense for
+the changelog too. But if it's more of a "discussion material" thing
+(eg things like "Hi guys, this is _why_ I think this is the right
+approach: ...") that way it's clear both to tools and by now to most
+developers that the stuff that comes after the "---" is really
+extended material.
 
-I am looking at http://lkml.org/lkml/2010/10/29/168 now, and I think
-it should be dropped or you can submit the patch on top of it.
-
-It only adds rcu_read_lock() around of find_task_by_vpid(), but we can
-use rcu_read_lock() instead of tasklist_lock.
-
-> d) the sys_ioprio_set() comment indicating that "we can't use
->    rcu_read_lock()" needs to be updated to be more clear.  I'm not sure
->    what this should be updated to, which leads into the next
->    sub-topic...
-
-It should be just removed. It doesn't match the reality today.
-
-> e) possibly removing tasklist_lock,
-
-Yes.
-
-> though there seems to be some
->    concern that this might introduce task->io_context usage race.
-
-No!
-
-I am sorry for confusion, those ->io_context races are completely
-orthogonal to s/tasklist/rcu/.
-
-Oleg.
-
+                      Linus
