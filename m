@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757316Ab0KKX6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 18:58:20 -0500
-Received: from claw.goop.org ([74.207.240.146]:33447 "EHLO claw.goop.org"
+	id S1757346Ab0KKX6d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 18:58:33 -0500
+Received: from claw.goop.org ([74.207.240.146]:33442 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757261Ab0KKX6R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 18:58:17 -0500
+	id S1757250Ab0KKX6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 18:58:16 -0500
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: "H. Peter Anvin" <hpa@zytor.com>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Xen-devel <xen-devel@lists.xensource.com>,
         the arch/x86 maintainers <x86@kernel.org>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 2/3] xen: add CPU microcode update driver
-Date: Thu, 11 Nov 2010 15:58:05 -0800
-Message-Id: <37a80bdde5957ffa81c2ecdffc4ccc2e874e34cb.1289519130.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 3/3] xen/microcode: partially enable even for non-privileged kernels
+Date: Thu, 11 Nov 2010 15:58:06 -0800
+Message-Id: <049ad0809c51dedebab0b8e4bfcf58f5f26375b7.1289519130.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <cover.1289519130.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1289519130.git.jeremy.fitzhardinge@citrix.com>
@@ -26,298 +26,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Xen does all the hard work for us, including choosing the right update
-method for this cpu type and actually doing it for all cpus.  We just
-need to supply it with the firmware blob.
+Don't attempt to load microcode on non-privileged kernels.  Kernels
+compiled without privileged support just get vestigial Xen detection
+to skip loading altogether; kernels with privileged support will
+load microcode if running privileged.  In either case, the normal
+Intel/AMD microcode loader is skipped under Xen.
 
-Because Xen updates all CPUs (and the kernel's virtual cpu numbers have
-no fixed relationship with the underlying physical cpus), we only bother
-doing anything for cpu "0".
-
-[ Impact: allow CPU microcode update in Xen dom0 ]
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/microcode.h |    9 ++
- arch/x86/kernel/Makefile         |    1 +
- arch/x86/kernel/microcode_core.c |    5 +-
- arch/x86/kernel/microcode_xen.c  |  201 ++++++++++++++++++++++++++++++++++++++
- arch/x86/xen/Kconfig             |    4 +
- 5 files changed, 219 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/kernel/microcode_xen.c
+ arch/x86/include/asm/microcode.h |    2 +-
+ arch/x86/kernel/Makefile         |    2 +-
+ arch/x86/xen/Kconfig             |    6 +++++-
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/include/asm/microcode.h b/arch/x86/include/asm/microcode.h
-index ef51b50..e15fca1 100644
+index e15fca1..3e61afe 100644
 --- a/arch/x86/include/asm/microcode.h
 +++ b/arch/x86/include/asm/microcode.h
-@@ -55,4 +55,13 @@ static inline struct microcode_ops * __init init_amd_microcode(void)
+@@ -55,7 +55,7 @@ static inline struct microcode_ops * __init init_amd_microcode(void)
  }
  #endif
  
-+#ifdef CONFIG_MICROCODE_XEN
-+extern struct microcode_ops * __init init_xen_microcode(void);
-+#else
-+static inline struct microcode_ops * __init init_xen_microcode(void)
-+{
-+	return NULL;
-+}
-+#endif
-+
- #endif /* _ASM_X86_MICROCODE_H */
+-#ifdef CONFIG_MICROCODE_XEN
++#ifdef CONFIG_MICROCODE_XEN_LOADER
+ extern struct microcode_ops * __init init_xen_microcode(void);
+ #else
+ static inline struct microcode_ops * __init init_xen_microcode(void)
 diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 9e13763..0036150 100644
+index 0036150..768c5dc 100644
 --- a/arch/x86/kernel/Makefile
 +++ b/arch/x86/kernel/Makefile
-@@ -104,6 +104,7 @@ obj-$(CONFIG_PCSPKR_PLATFORM)	+= pcspeaker.o
+@@ -104,7 +104,7 @@ obj-$(CONFIG_PCSPKR_PLATFORM)	+= pcspeaker.o
  microcode-y				:= microcode_core.o
  microcode-$(CONFIG_MICROCODE_INTEL)	+= microcode_intel.o
  microcode-$(CONFIG_MICROCODE_AMD)	+= microcode_amd.o
-+microcode-$(CONFIG_MICROCODE_XEN)	+= microcode_xen.o
+-microcode-$(CONFIG_MICROCODE_XEN)	+= microcode_xen.o
++microcode-$(CONFIG_MICROCODE_XEN_LOADER)	+= microcode_xen.o
  obj-$(CONFIG_MICROCODE)			+= microcode.o
  
  obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION) += check.o
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index 1cca374..6550539 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -83,6 +83,7 @@
- #include <linux/fs.h>
- #include <linux/mm.h>
- 
-+#include <xen/xen.h>
- #include <asm/microcode.h>
- #include <asm/processor.h>
- 
-@@ -506,7 +507,9 @@ static int __init microcode_init(void)
- 	struct cpuinfo_x86 *c = &cpu_data(0);
- 	int error;
- 
--	if (c->x86_vendor == X86_VENDOR_INTEL)
-+	if (xen_pv_domain())
-+		microcode_ops = init_xen_microcode();
-+	else if (c->x86_vendor == X86_VENDOR_INTEL)
- 		microcode_ops = init_intel_microcode();
- 	else if (c->x86_vendor == X86_VENDOR_AMD)
- 		microcode_ops = init_amd_microcode();
-diff --git a/arch/x86/kernel/microcode_xen.c b/arch/x86/kernel/microcode_xen.c
-new file mode 100644
-index 0000000..16c742e
---- /dev/null
-+++ b/arch/x86/kernel/microcode_xen.c
-@@ -0,0 +1,201 @@
-+/*
-+ * Xen microcode update driver
-+ *
-+ * Xen does most of the work here.  We just pass the whole blob into
-+ * Xen, and it will apply it to all CPUs as appropriate.  Xen will
-+ * worry about how different CPU models are actually updated.
-+ */
-+#include <linux/sched.h>
-+#include <linux/module.h>
-+#include <linux/firmware.h>
-+#include <linux/vmalloc.h>
-+#include <linux/uaccess.h>
-+
-+#include <asm/microcode.h>
-+
-+#include <xen/xen.h>
-+#include <xen/interface/platform.h>
-+#include <xen/interface/xen.h>
-+
-+#include <asm/xen/hypercall.h>
-+#include <asm/xen/hypervisor.h>
-+
-+MODULE_DESCRIPTION("Xen microcode update driver");
-+MODULE_LICENSE("GPL");
-+
-+struct xen_microcode {
-+	size_t len;
-+	char data[0];
-+};
-+
-+static int xen_microcode_update(int cpu)
-+{
-+	int err;
-+	struct xen_platform_op op;
-+	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
-+	struct xen_microcode *uc = uci->mc;
-+
-+	if (uc == NULL || uc->len == 0) {
-+		/*
-+		 * We do all cpus at once, so we don't need to do
-+		 * other cpus explicitly (besides, these vcpu numbers
-+		 * have no relationship to underlying physical cpus).
-+		 */
-+		return 0;
-+	}
-+
-+	op.cmd = XENPF_microcode_update;
-+	set_xen_guest_handle(op.u.microcode.data, uc->data);
-+	op.u.microcode.length = uc->len;
-+
-+	err = HYPERVISOR_dom0_op(&op);
-+
-+	if (err != 0)
-+		printk(KERN_WARNING "microcode_xen: microcode update failed: %d\n", err);
-+
-+	return err;
-+}
-+
-+static enum ucode_state xen_request_microcode_fw(int cpu, struct device *device)
-+{
-+	char name[30];
-+	struct cpuinfo_x86 *c = &cpu_data(cpu);
-+	const struct firmware *firmware;
-+	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
-+	enum ucode_state ret;
-+	struct xen_microcode *uc;
-+	size_t size;
-+	int err;
-+
-+	switch (c->x86_vendor) {
-+	case X86_VENDOR_INTEL:
-+		snprintf(name, sizeof(name), "intel-ucode/%02x-%02x-%02x",
-+			 c->x86, c->x86_model, c->x86_mask);
-+		break;
-+
-+	case X86_VENDOR_AMD:
-+		snprintf(name, sizeof(name), "amd-ucode/microcode_amd.bin");
-+		break;
-+
-+	default:
-+		return UCODE_NFOUND;
-+	}
-+
-+	err = request_firmware(&firmware, name, device);
-+	if (err) {
-+		pr_debug("microcode: data file %s load failed\n", name);
-+		return UCODE_NFOUND;
-+	}
-+
-+	/*
-+	 * Only bother getting real firmware for cpu 0; the others get
-+	 * dummy placeholders.
-+	 */
-+	if (cpu == 0)
-+		size = firmware->size;
-+	else
-+		size = 0;
-+
-+	if (uci->mc != NULL) {
-+		vfree(uci->mc);
-+		uci->mc = NULL;
-+	}
-+
-+	ret = UCODE_ERROR;
-+	uc = vmalloc(sizeof(*uc) + size);
-+	if (uc == NULL)
-+		goto out;
-+
-+	ret = UCODE_OK;
-+	uc->len = size;
-+	memcpy(uc->data, firmware->data, uc->len);
-+
-+	uci->mc = uc;
-+
-+out:
-+	release_firmware(firmware);
-+
-+	return ret;
-+}
-+
-+static enum ucode_state xen_request_microcode_user(int cpu,
-+						   const void __user *buf, size_t size)
-+{
-+	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
-+	struct xen_microcode *uc;
-+	enum ucode_state ret;
-+	size_t unread;
-+
-+	if (cpu != 0) {
-+		/* No real firmware for non-zero cpus; just store a
-+		   placeholder */
-+		size = 0;
-+	}
-+
-+	if (uci->mc != NULL) {
-+		vfree(uci->mc);
-+		uci->mc = NULL;
-+	}
-+
-+	ret = UCODE_ERROR;
-+	uc = vmalloc(sizeof(*uc) + size);
-+	if (uc == NULL)
-+		goto out;
-+
-+	uc->len = size;
-+
-+	ret = UCODE_NFOUND;
-+
-+	/* XXX This sporadically returns uncopied bytes, so we return
-+	   EFAULT.  As far as I can see, the usermode code
-+	   (microcode_ctl) isn't doing anything wrong... */
-+	unread = copy_from_user(uc->data, buf, size);
-+
-+	if (unread != 0) {
-+		printk(KERN_WARNING "failed to read %zd of %zd bytes at %p -> %p\n",
-+		       unread, size, buf, uc->data);
-+		goto out;
-+	}
-+
-+	ret = UCODE_OK;
-+
-+out:
-+	if (ret == 0)
-+		uci->mc = uc;
-+	else
-+		vfree(uc);
-+
-+	return ret;
-+}
-+
-+static void xen_microcode_fini_cpu(int cpu)
-+{
-+	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
-+
-+	vfree(uci->mc);
-+	uci->mc = NULL;
-+}
-+
-+static int xen_collect_cpu_info(int cpu, struct cpu_signature *sig)
-+{
-+	sig->sig = 0;
-+	sig->pf = 0;
-+	sig->rev = 0;
-+
-+	return 0;
-+}
-+
-+static struct microcode_ops microcode_xen_ops = {
-+	.request_microcode_user		  = xen_request_microcode_user,
-+	.request_microcode_fw             = xen_request_microcode_fw,
-+	.collect_cpu_info                 = xen_collect_cpu_info,
-+	.apply_microcode                  = xen_microcode_update,
-+	.microcode_fini_cpu               = xen_microcode_fini_cpu,
-+};
-+
-+struct microcode_ops * __init init_xen_microcode(void)
-+{
-+	if (!xen_initial_domain())
-+		return NULL;
-+	return &microcode_xen_ops;
-+}
 diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-index 5b54892..384e0a5 100644
+index 384e0a5..9a0d2fc 100644
 --- a/arch/x86/xen/Kconfig
 +++ b/arch/x86/xen/Kconfig
-@@ -48,3 +48,7 @@ config XEN_DEBUG_FS
- 	help
- 	  Enable statistics output and various tuning options in debugfs.
- 	  Enabling this option may incur a significant performance overhead.
-+
-+config MICROCODE_XEN
-+       def_bool y
-+       depends on XEN_DOM0 && MICROCODE
+@@ -51,4 +51,8 @@ config XEN_DEBUG_FS
+ 
+ config MICROCODE_XEN
+        def_bool y
+-       depends on XEN_DOM0 && MICROCODE
 \ No newline at end of file
++       depends on XEN && MICROCODE
++
++config MICROCODE_XEN_LOADER
++	def_bool y
++	depends on MICROCODE_XEN && DOM0
 -- 
 1.7.2.3
 
