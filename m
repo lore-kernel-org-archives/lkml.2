@@ -1,107 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab0KKRVj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 12:21:39 -0500
-Received: from claw.goop.org ([74.207.240.146]:35395 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754405Ab0KKRVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 12:21:38 -0500
-Message-ID: <4CDC261E.5060106@goop.org>
-Date: Thu, 11 Nov 2010 09:21:34 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        xen-devel@lists.xensource.com, Ian Campbell <Ian.Campbell@citrix.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen: set vma flag VM_PFNMAP in the privcmd
- mmap file_op
-References: <alpine.DEB.2.00.1011111550230.1407@kaball-desktop> <20101111164029.GB29405@dumpdata.com>
-In-Reply-To: <20101111164029.GB29405@dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754911Ab0KKR2L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 12:28:11 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:42541 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751041Ab0KKR2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 12:28:09 -0500
+Subject: Re: [RFC][PATCH 02/22] sched: add extended scheduling interface
+From: Raistlin <raistlin@linux.it>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1289484531.2084.113.camel@laptop>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288333622.8661.141.camel@Palantir>  <1289410114.2084.23.camel@laptop>
+	 <1289427476.13577.285.camel@Palantir>  <1289482333.2084.102.camel@laptop>
+	 <1289483648.6525.10.camel@Palantir>  <1289484531.2084.113.camel@laptop>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-hWW1icVQTuXn5tg+uJSC"
+Date: Thu, 11 Nov 2010 18:27:56 +0100
+Message-ID: <1289496476.6525.25.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2010 08:40 AM, Konrad Rzeszutek Wilk wrote:
-> On Thu, Nov 11, 2010 at 03:55:49PM +0000, Stefano Stabellini wrote:
->> Hi all,
->> this patch fixes the dom0 kernel crash when creating a VM.
->> Now I am able to create VMs successfully on 2.6.37 rc1, even though
->> without disk or network access.
->>
->> ---
->>
->> xen: set vma flag VM_PFNMAP in the privcmd mmap file_op
->>
->> Set VM_PFNMAP in the privcmd mmap file_op, rather than later in
->> xen_remap_domain_mfn_range when it is too late because
->> vma_wants_writenotify has already been called and vm_page_prot has
-> So vma_wants_writenotify sets the invalid flags on vma->vm_flags?
->> already been modified.
-> By whom? vma_wants_writenotify looks to just return 0 or 1
->
-> Ah, depending on that return value it sets vma->vm_page_prot.
-> That looks odd, so if this:
->
-> 1215         if (vma_wants_writenotify(vma))
-> 1216                 vma->vm_page_prot = vm_get_page_prot(vm_flags & ~VM_SHARED);
-> 1217 
->
-> does not set the vma->vm_page_prot we never set the vm_page_prot?
->
-> .. and it looks to not set that value earlier on either.
->
-> So VM_PFNMAP inhibits the mmap code from setting the vm_page_prot.
-> Is that what we want, not have vma->vm_page_prot set anything? Why?
 
-It is already set unconditionally earlier in mmap_region().  The
-writenotify stuff will knobble the mapping to be RO so we can track the
-first write with faults, but we don't want that in this case.
+--=-hWW1icVQTuXn5tg+uJSC
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-The VM_PFNMAP flag is generally correct anyway, since it means that the
-mapping is of a random PFN which no corresponding struct page.
+On Thu, 2010-11-11 at 15:08 +0100, Peter Zijlstra wrote:
+> I'm not really a fan of schedstat, esp if you have to use it very
+> frequently, the overhead of open()+read()+close() + parsing text is
+> quite high.
+>=20
+> Then again, if people are really going to use this (big if I guess) we
+> could add yet another syscall for this or whatever.
+>=20
+Ok, we'll see at that time.
 
-    J
+> grmbl, so I was going to say, just pad it to a nice 2^n size, but then I
+> saw that struct timespec is defined as two long's, which means we're
+> going to have to do compat crap.
+>=20
+> Thomas is there a sane time format in existence? I thought the whole
+> purpose of timeval/timespec was to avoid having to use a u64, but then
+> using longs as opposed to int totally defeats the purpose.=20
+>=20
+Fine, and u64 will be. Going for that...
 
->> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->>
->> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
->> index c237b81..2be1f36 100644
->> --- a/arch/x86/xen/mmu.c
->> +++ b/arch/x86/xen/mmu.c
->> @@ -2627,7 +2627,7 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
->>  
->>  	prot = __pgprot(pgprot_val(prot) | _PAGE_IOMAP);
->>  
->> -	vma->vm_flags |= VM_IO | VM_RESERVED | VM_PFNMAP;
->> +	BUG_ON(!(vma->vm_flags & (VM_PFNMAP | VM_RESERVED | VM_IO)));
->>  
->>  	rmd.mfn = mfn;
->>  	rmd.prot = prot;
->> diff --git a/drivers/xen/xenfs/privcmd.c b/drivers/xen/xenfs/privcmd.c
->> index f80be7f..9aab216 100644
->> --- a/drivers/xen/xenfs/privcmd.c
->> +++ b/drivers/xen/xenfs/privcmd.c
->> @@ -385,7 +385,7 @@ static int privcmd_mmap(struct file *file, struct vm_area_struct *vma)
->>  		return -ENOSYS;
->>  
->>  	/* DONTCOPY is essential for Xen as copy_page_range is broken. */
->> -	vma->vm_flags |= VM_RESERVED | VM_IO | VM_DONTCOPY;
->> +	vma->vm_flags |= VM_RESERVED | VM_IO | VM_DONTCOPY | VM_PFNMAP;
->>  	vma->vm_ops = &privcmd_vm_ops;
->>  	vma->vm_private_data = NULL;
->>  
->>
->> _______________________________________________
->> Xen-devel mailing list
->> Xen-devel@lists.xensource.com
->> http://lists.xensource.com/xen-devel
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
+> > what about the len <=3D=3D sizeof(struct sched_param2) in
+> > sched_{set,get}{param,scheduler}2()... Does this still make sense, or
+> > are we removing it?=20
+>=20
+> Since we're going for a constant sized structure we might as well take
+> it out.
 >
+... and for that!
+
+thanks,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://blog.linux.it/raistlin / raistlin@ekiga.net /
+dario.faggioli@jabber.org
+
+--=-hWW1icVQTuXn5tg+uJSC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzcJ5wACgkQk4XaBE3IOsSUwACfW0PJW1GkkaJBxazBn+6TRcZB
+7+0AoJfjumi0ph1yJuulY88Ecz69et4t
+=Lkft
+-----END PGP SIGNATURE-----
+
+--=-hWW1icVQTuXn5tg+uJSC--
 
