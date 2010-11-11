@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550Ab0KKGPj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 01:15:39 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38687
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751535Ab0KKGPi (ORCPT
+	id S1757620Ab0KKGSc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 01:18:32 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:35548 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753636Ab0KKGSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 01:15:38 -0500
-Date: Wed, 10 Nov 2010 22:16:02 -0800 (PST)
-Message-Id: <20101110.221602.112602821.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-2.6 2010-11-10
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101110185843.GC2714@tuxdriver.com>
-References: <20101110185843.GC2714@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Nov 2010 01:18:31 -0500
+Date: Thu, 11 Nov 2010 07:17:25 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Ben Gamari <bgamari@gmail.com>, "acme@infradead.org" <acme@infradead.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/20] x86, mce: Add persistent MCE event
+Message-ID: <20101111061725.GA19321@aftab>
+References: <1288885016-18295-1-git-send-email-bp@amd64.org>
+ <1288885016-18295-4-git-send-email-bp@amd64.org>
+ <87lj50vq0s.fsf@gmail.com>
+ <20101110222157.GA23945@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101110222157.GA23945@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Wed, 10 Nov 2010 13:58:43 -0500
-
-> Here is a batch of fixes intended for 2.6.37.  Also mixed-in are a few
-> device ID updates.  I think the changelog entries are reasonably
-> documentary of the issues being fixed, so I won't belabor them. ;-)
+On Wed, Nov 10, 2010 at 05:21:57PM -0500, Ingo Molnar wrote:
 > 
-> This also includes a round of Bluetooth fixes from Gustavo:
+> * Ben Gamari <bgamari@gmail.com> wrote:
 > 
-> "The following batch contains some bugfixes for 2.6.37. A fix for unaligned
-> access in L2CAP, a Kconfig error, two fixes related to security of
-> the Bluetooth links, and support for the a MacBook Air Bluetooth device.
-> There is also a one line patch from Matthew Garret, that enables USB
-> autosuspend for btusb module, which shall be completely safe. Please
-> pull, thanks."
+> > On Thu,  4 Nov 2010 16:36:39 +0100, Borislav Petkov <bp@amd64.org> wrote:
+> > > From: Borislav Petkov <borislav.petkov@amd.com>
+> > > 
+> > > Add the necessary glue to enable the mce_record tracepoint on boot
+> > > turning it into a persistent event. This exports the MCE buffer
+> > > read-only to a userspace daemon which will hook into it through debugfs
+> > > when booting is finished.
+> > 
+> > While MCE technically is a diagnostics service, do we want to start adding 
+> > dependencies on debugfs in long-running, common-place daemons? I was under the 
+> > impression we were to avoid using debugfs for anything other than values for 
+> > one-off debugging.
+> 
+> See this current discussion thread on lkml:
+> 
+>    [RFC][PATCH] perf: sysfs type id
+> 
+> Events are being added to sysfs as we want to avoid the debugfs dependency.
 
-Pulled, thanks.
+Yep, event enumeration will land in /sysfs eventually but in this case
+debugfs is used to export the buffers with the events recorded so far to
+the daemon which mmaps them. And I remember also being mentioned that
+debugfs will thus be always compiled in because of that.
+
+In any case, we need some kind of a facility with which to export those
+buffers for userspace to mmap. sysfs is clearly not that and debugfs is
+what we currently use. I'm open for better suggestions though.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
