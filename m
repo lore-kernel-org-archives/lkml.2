@@ -1,118 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196Ab0KKBeV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 20:34:21 -0500
-Received: from www.tglx.de ([62.245.132.106]:56396 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932183Ab0KKBeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 20:34:20 -0500
-Date: Thu, 11 Nov 2010 02:33:47 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Sharp <dhsharp@google.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFD tracing] Tracing ABI Work Plan
-In-Reply-To: <20101111004612.GB32564@Krystal>
-Message-ID: <alpine.LFD.2.00.1011110158390.2900@localhost6.localdomain6>
-References: <20101111004612.GB32564@Krystal>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932194Ab0KKBqf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 20:46:35 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58878 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932078Ab0KKBqe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 20:46:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=H+GvYdNgEMMy11iJ0U4uNaSdQm8wbCcQ/UvdE3eaIFKDoK5lcxZupG5cLTOnC81P3d
+         ZoAp5n5kT2X8kS/xSTPc5kuRvG3O53ALROqjUT3x9Q0iAlIgYhg9gDLOCZzU4usWVBHn
+         sUAM8J9QSjIywBjPuuh5/vUxkboW3OY5eYs9s=
+Message-ID: <4CDB4B1D.7000503@lwfinger.net>
+Date: Wed, 10 Nov 2010 19:47:09 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Chris Wilson <chris@chris-wilson.co.uk>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Regression in 2.6.37-rc1 for Intel 915 Graphics Adapter - bisected
+ to commit e9e331a
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathieu,
+On my HP Mini 110 netbook with an Intel 945GME graphics adapter and kernel
+2.6.37-rc1, screen blanking has a problem. On this machine, the screen is
+blanked in two stages. The first leaves the backlight on, the second turns the
+backlight off.
 
-On Wed, 10 Nov 2010, Mathieu Desnoyers wrote:
+The details of the graphics adapter are as follows:
 
-> Following the Kernel Summit 2010 and Linux Plumber Conference, we came up to
-> the following conclusions (we're finally making progress !!):
->
-> - The ABIs of Ftrace and Perf are in active use, thus Linus has stated
->   that they can not be changed.
-> - It has been stated at Kernel Summit that new ABIs should not go into
->   mainline first, but should be tested in an out-of-tree first, and get
->   feed back from their users.
-> - The goal is to have both Perf and Ftrace work well together, and have
->   a more generic ABI. But the current ABI of both Perf and Ftrace fail to
->   meet each others requirements, as well as requirement from a large user-base.
-> 
-> Therefore, as Thomas Gleixner pointed out, we have two choices: either we stop
-> there, keep the current ABIs and give up, or we create a new set of ABIs. I
-> hereby propose to come up with a new set of tracing ABIs and, this time, that we
-> _take our time_ before mainlining them -- trying them out in a separate tree for
-> a while beforehand. There is no hurry to push anything to mainline anyway,
-> because Ftrace and Perf answer the most pressing kernel developer tracing needs.
-> Let's work on the new ABI at the pace that everyone is happy with it.
+00:02.0 VGA compatible controller [0300]: Intel Corporation Mobile 945GME
+Express Integrated Graphics Controller [8086:27ae] (rev 03)
+        Subsystem: Hewlett-Packard Company Device [103c:308f]
+        Kernel driver in use: i915
+00:02.1 Display controller [0380]: Intel Corporation Mobile 945GM/GMS/GME,
+943/940GML Express Integrated Graphics Controller [8086:27a6] (rev 03)
+        Subsystem: Hewlett-Packard Company Device [103c:308f]
 
-Using the observed progress rate so far that means pace is infinite
-slow.
 
-> First of all, I'm not a big fan of "hide-and-seek" games regarding motives and
-> end-goals, especially when it comes to designing ABIs. So here is my entire
-> high-level roadmap towards having tracer fully usable by my user-base in the
+Beginning with commit e9e331a8abeece1565d383510ed985945132ffe3 as determined
+with bisection, the system no longer reawakens from the second stage with mouse
+movements or key presses. The only way to bring it back that I have found is to
+close the cover. After reopening the cover and entering the password to unlock
+the system, the screen is restored.
 
-Roadmap? You failed to provide the corresponding spreadsheets, project
-plans and milestones along with that.
+The commit message is:
 
-> mainline kernel. I propose to split the upcoming task in the following 4
-> sub-items.
-> 
-> 
-> A) New ABI for user-space
-> 
-> This new ABI will provide the features long-awaited by tracing users. We've
-> already started this discussion by listing the requirements and acknowledging
-> them. It is now time to start discussing the ABI. Upon disagreement on answering
-> a specific requirement, two questions will arise:
-> 
-> 1. How much trouble it really is to take care of this requirement. If the answer
->    is "not much", then we simply take care of it.
-> 2. If it really is a big deal to take care of a requirement at the ABI level,
->    then we will have to discuss the use-cases.
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Mon Sep 13 01:16:10 2010 +0100
 
-Sorry for being sarcastic, but that reads like it was adopted from the
-worst possible management course handout. You forgot to mention that
-the process should involve rating matrixes and other state of the art
-evaluation methods.
+    drm/i915/lvds: Ensure panel is unlocked for Ironlake or the panel fitter
 
-> Once we are on the same page with respect to these requirements, we can come up
-> with an ABI proposal for:
-> 
-> - Tracing control
-> - Trace format
+    Commit 77d07fd9d73ef28689737c0952dbd5d6a5017743 introduced a regression
+    where by not waiting for the panel to be turned off, left the panel and
+    PLL registers locked across the modeset. Thus the panel remaining blank.
 
-That's going to happen somewhere around 2050, right? That's good as I
-won't be in your way then anymore.
+    As pointed out by Daniel Vetter, when testing LVDS it helps to open the
+    laptop and look at the actual panel you are purporting to test.
 
-<Snipping the other proposals as I need some sleep>
+    A second issue with the patch was that in order to modify the panel
+    fitter before gen5, the pipe and the panel must have be completely
+    powered down. So we wait.
 
-I just want to tell you once more, that these marvelous writeups and
-proposals which we have seen repeatedly in the last years do not solve
-anything. Quite the contrary, they make folks loose interest, cause
-grumpiness and prevent any useful outcome.
+Larry
 
-The time wasted on all these managerial proposals and work plans which
-we have seen come by in the last years plus the resulting fruitless
-discussions would have been sufficient to write at least two
-generations of useful tracers.
-
-The requirement list has been beaten to death several times already
-along with the various options of trace formats, so we really are at
-the point where you folks need to sit down and come up with real code
-which can be discussed and improved on a technical base.
-
-Either that or you immediately install the "Work Plan Committee" which
-will make sure that there will be no progress ever.
-
-Thanks,
-
-	tglx
