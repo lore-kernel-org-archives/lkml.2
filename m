@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab0KKOTR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 09:19:17 -0500
-Received: from exprod5og101.obsmtp.com ([64.18.0.141]:48878 "HELO
-	exprod5og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752663Ab0KKOTQ (ORCPT
+	id S1756201Ab0KKOY0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 09:24:26 -0500
+Received: from mga09.intel.com ([134.134.136.24]:18465 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755358Ab0KKOYZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 09:19:16 -0500
-Message-ID: <4CDBFB5E.5030504@panasas.com>
-Date: Thu, 11 Nov 2010 16:19:10 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Thu, 11 Nov 2010 09:24:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,183,1288594800"; 
+   d="scan'208";a="676527534"
+From: "Lighthart, EricX" <ericx.lighthart@intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "pb@handhelds.org" <pb@handhelds.org>,
+        "ext-mika.1.westerberg@nokia.com" <ext-mika.1.westerberg@nokia.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 11 Nov 2010 06:24:21 -0800
+Subject: RE: [PATCH] input: Add sysfs interface to on/off state of GPIO	keys
+ and switches
+Thread-Topic: [PATCH] input: Add sysfs interface to on/off state of GPIO
+	keys and switches
+Thread-Index: AcuBqvHqZTo7AEsZQcC+EUyCntFghwAAO2Mg
+Message-ID: <E559D19195578B4E9ECB3919FF99F9792A585A8BBC@orsmsx509.amr.corp.intel.com>
+References: <E559D19195578B4E9ECB3919FF99F9792A585A8BB1@orsmsx509.amr.corp.intel.com>
+ <20101111141545.GB5043@sirena.org.uk>
+In-Reply-To: <20101111141545.GB5043@sirena.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-References: <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <20101111120453.GA672@kroah.com> <4CDBF837.7050608@panasas.com> <20101111141611.GA4679@kroah.com>
-In-Reply-To: <20101111141611.GA4679@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Nov 2010 14:19:15.0533 (UTC) FILETIME=[6BA187D0:01CB81AB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2010 04:16 PM, Greg KH wrote:
-> On Thu, Nov 11, 2010 at 04:05:43PM +0200, Boaz Harrosh wrote:
->> On 11/11/2010 02:04 PM, Greg KH wrote:
->>> On Thu, Nov 11, 2010 at 11:59:28AM +0200, Boaz Harrosh wrote:
->>>> 4. Exactly Like 3 but without the extra kref member
->>>>    Only x_put() changes and x_kref_release() now receives
->>>>    an x_object
->>>>
->>>> int x_put(struct object_x *x)
->>>> {
->>>> 	if (kobject_put(&x->kobj) == 1)
->>>> 		// Like above [3] x_kref_release()
->>>> 		x_kref_release(x);
->>>> }
->>>
->>> This is racy, please never do this.
->>>
->>
->> The last ref belongs to the core code. 1 means there are no
->> more external clients on the object. So it can not race with
->> decrements. But I guess there is a possibility that it can
->> race with new increments.
-> 
-> Exactly.
-> 
->> If it is the case that new increments
->> can only come from, say, sysfs access, then if we call the
->> x_put() == 1 after we are unregistered from sysfs and no new
->> users are allowed then the counter can only go down and we
->> have the last reference. No?
-> 
-> Just don't do this, it's not worth it and will break over time when
-> others mess with the code.
-> 
-> Also note that kobject_put() does not even return a value, so the code
-> above will not even compile, let alone work.
-> 
+There's the already-existing solution I was looking for.
+Thanks Mark.
 
-OK Point taken, it is fragile. So there is option [3] then, with the extra
-kref. I think I've seen other places with this approach.
+Dmitry, et al, please withdraw the patch.
 
-> thanks,
+> -----Original Message-----
+> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+> Sent: Thursday, November 11, 2010 6:16 AM
+> To: Lighthart, EricX
+> Cc: dmitry.torokhov@gmail.com; pb@handhelds.org; ext-
+> mika.1.westerberg@nokia.com; linux-input@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH] input: Add sysfs interface to on/off state of GPIO
+> keys and switches
 > 
-> greg k-h
-
-Thanks
-Boaz
+> On Thu, Nov 11, 2010 at 06:03:35AM -0800, Lighthart, EricX wrote:
+> > User space cannot learn the current state of a GPIO key or switch.
+> > Input system reports only changes, not state.
+> >
+> > Add two sysfs attributes, one each for keys and switches, that
+> > report lists of keys or switches currently "on."
+> 
+> There's EVIOCG* ioctl()s for this.  Something sysfs (or a widely
+> distributed utility) would be very helpful but there is actually a
+> facility to read the state.
+> 
+> >  drivers/input/keyboard/gpio_keys.c |   68
+> ++++++++++++++++++++++++++++--------
+> 
+> If something is needed here it should be done as part of the input
+> layer, not in a driver specific fashion - there's nothing specific to
+> GPIO keys here.
