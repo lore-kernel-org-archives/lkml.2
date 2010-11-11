@@ -1,72 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905Ab0KKOFu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 09:05:50 -0500
-Received: from exprod5og114.obsmtp.com ([64.18.0.28]:57266 "HELO
-	exprod5og114.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751139Ab0KKOFt (ORCPT
+	id S1754837Ab0KKOJH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 09:09:07 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44830 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752492Ab0KKOJE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 09:05:49 -0500
-Message-ID: <4CDBF837.7050608@panasas.com>
-Date: Thu, 11 Nov 2010 16:05:43 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-References: <4CC1CA4D.1090609@vlnb.net> <20101022175624.GA13640@kroah.com> <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <20101111120453.GA672@kroah.com>
-In-Reply-To: <20101111120453.GA672@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Nov 2010 14:05:48.0163 (UTC) FILETIME=[8A66A530:01CB81A9]
+	Thu, 11 Nov 2010 09:09:04 -0500
+Subject: Re: [RFC][PATCH 02/22] sched: add extended scheduling interface
+From: Peter Zijlstra <peterz@infradead.org>
+To: Raistlin <raistlin@linux.it>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1289483648.6525.10.camel@Palantir>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288333622.8661.141.camel@Palantir>  <1289410114.2084.23.camel@laptop>
+	 <1289427476.13577.285.camel@Palantir>  <1289482333.2084.102.camel@laptop>
+	 <1289483648.6525.10.camel@Palantir>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 11 Nov 2010 15:08:51 +0100
+Message-ID: <1289484531.2084.113.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/11/2010 02:04 PM, Greg KH wrote:
-> On Thu, Nov 11, 2010 at 11:59:28AM +0200, Boaz Harrosh wrote:
->> 4. Exactly Like 3 but without the extra kref member
->>    Only x_put() changes and x_kref_release() now receives
->>    an x_object
->>
->> int x_put(struct object_x *x)
->> {
->> 	if (kobject_put(&x->kobj) == 1)
->> 		// Like above [3] x_kref_release()
->> 		x_kref_release(x);
->> }
-> 
-> This is racy, please never do this.
-> 
+On Thu, 2010-11-11 at 14:54 +0100, Raistlin wrote:
+> > The last three parameters look to be output only as I've not yet found
+> > code that reads it, and __getparam_dl() doesn't even appear to set
+> > used_runtime.
+> > 
+> Yeah, just kind of statistical reporting of the task's behaviour. That's
+> why I was in agreement with Dhaval about using schedstats for those
+> (bumping the version, obviously). What do you think?
 
-The last ref belongs to the core code. 1 means there are no
-more external clients on the object. So it can not race with
-decrements. But I guess there is a possibility that it can
-race with new increments. If it is the case that new increments
-can only come from, say, sysfs access, then if we call the
-x_put() == 1 after we are unregistered from sysfs and no new
-users are allowed then the counter can only go down and we
-have the last reference. No?
+So its pure output?  In that case its not really a nice fit for
+sched_param, however..
 
-Like I said option 4 is delicate it must be done carefully.
+I'm not really a fan of schedstat, esp if you have to use it very
+frequently, the overhead of open()+read()+close() + parsing text is
+quite high.
 
-> thanks,
-> 
-> greg k-h
+Then again, if people are really going to use this (big if I guess) we
+could add yet another syscall for this or whatever.
 
-Thanks
-Boaz
+> > One thing you can do is add some padding, versioning and void*
+> > extentions are doable for the setparam() path, but getparam() is going
+> > to be mighty interesting.
+> > 
+> Mmm... So, tell me if I got it well: I remove the last three parameters
+> (e.g., moving them toward schedstats) and add (besides _var and _max)
+> some padding? It that correct?
+
+grmbl, so I was going to say, just pad it to a nice 2^n size, but then I
+saw that struct timespec is defined as two long's, which means we're
+going to have to do compat crap.
+
+Thomas is there a sane time format in existence? I thought the whole
+purpose of timeval/timespec was to avoid having to use a u64, but then
+using longs as opposed to int totally defeats the purpose. 
+
+> what about the len <== sizeof(struct sched_param2) in
+> sched_{set,get}{param,scheduler}2()... Does this still make sense, or
+> are we removing it? 
+
+Since we're going for a constant sized structure we might as well take
+it out.
