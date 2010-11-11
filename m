@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905Ab0KKOrI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 09:47:08 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37245 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755527Ab0KKOrG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 09:47:06 -0500
-Subject: Re: [RFC][PATCH 06/22] sched: SCHED_DEADLINE handles spacial
- kthreads
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raistlin <raistlin@linux.it>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1288333876.8661.147.camel@Palantir>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333876.8661.147.camel@Palantir>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 11 Nov 2010 15:46:58 +0100
-Message-ID: <1289486818.2084.135.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756911Ab0KKOv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 09:51:29 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:7837 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756863Ab0KKOv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 09:51:28 -0500
+X-IronPort-AV: E=Sophos;i="4.59,183,1288594800"; 
+   d="scan'208";a="480774752"
+Message-ID: <4CDC02DE.6060700@netapp.com>
+Date: Thu, 11 Nov 2010 09:51:10 -0500
+From: Bryan Schumaker <bjschuma@netapp.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101028 Lightning/1.0b2 Lanikai/3.1.6
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [PATCH] nfs: Ignore kmemleak false positive in nfs_readdir_make_qstr
+References: <1289480027-7361-1-git-send-email-catalin.marinas@arm.com>
+In-Reply-To: <1289480027-7361-1-git-send-email-catalin.marinas@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-29 at 08:31 +0200, Raistlin wrote:
-> diff --git a/kernel/softirq.c b/kernel/softirq.c
-> index d4d918a..9c4c967 100644
-> --- a/kernel/softirq.c
-> +++ b/kernel/softirq.c
-> @@ -853,13 +853,9 @@ static int __cpuinit cpu_callback(struct notifier_block *nfb,
->                              cpumask_any(cpu_online_mask));
->         case CPU_DEAD:
->         case CPU_DEAD_FROZEN: {
-> -               static struct sched_param param = {
-> -                       .sched_priority = MAX_RT_PRIO-1
-> -               };
-> -
->                 p = per_cpu(ksoftirqd, hotcpu);
->                 per_cpu(ksoftirqd, hotcpu) = NULL;
-> -               sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
-> +               setscheduler_dl_special(p);
->                 kthread_stop(p);
->                 takeover_tasklets(hotcpu);
->                 break;
+Thanks!  The patch works for me.
 
-So this comes from 1c6b4aa94576, which is something I wouldn't have
-bothered merging in the first place, if you pin a cpu with RT tasks like
-that you get to keep the pieces, hotplug isn't the only thing that will
-go wonky.
+Bryan
 
-Anyway, if you leave the code as is you'll be fine, it'll me above any
-FIFO task, but still below deadline tasks and the stop task, neither of
-which should be hogging the system like that anyway.
-
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 94ca779..2b7f259 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -307,10 +307,9 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->   */
->  static int watchdog(void *unused)
->  {
-> -       static struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
->         struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
+On 11/11/2010 07:53 AM, Catalin Marinas wrote:
+> Strings allocated via kmemdup() in nfs_readdir_make_qstr() are
+> referenced from the nfs_cache_array which is stored in a page cache
+> page. Kmemleak does not scan such pages and it reports several false
+> positives. This patch annotates the string->name pointer so that
+> kmemleak does not consider it a real leak.
+> 
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Bryan Schumaker <bjschuma@netapp.com>
+> Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+> ---
+>  fs/nfs/dir.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> index 07ac384..a9f9e14 100644
+> --- a/fs/nfs/dir.c
+> +++ b/fs/nfs/dir.c
+> @@ -34,6 +34,7 @@
+>  #include <linux/mount.h>
+>  #include <linux/sched.h>
+>  #include <linux/vmalloc.h>
+> +#include <linux/kmemleak.h>
 >  
-> -       sched_setscheduler(current, SCHED_FIFO, &param);
-> +       setscheduler_dl_special(current);
->  
->         /* initialize timestamp */
->         __touch_watchdog(); 
+>  #include "delegation.h"
+>  #include "iostat.h"
+> @@ -231,6 +232,11 @@ int nfs_readdir_make_qstr(struct qstr *string, const char *name, unsigned int le
+>  	string->name = kmemdup(name, len, GFP_KERNEL);
+>  	if (string->name == NULL)
+>  		return -ENOMEM;
+> +	/*
+> +	 * Avoid a kmemleak false positive. The pointer to the name is stored
+> +	 * in a page cache page which kmemleak does not scan.
+> +	 */
+> +	kmemleak_not_leak(string->name);
+>  	string->hash = full_name_hash(name, len);
+>  	return 0;
+>  }
 
-I'd be inclined to drop this too, if people get watchdog timeouts it
-means the system is really over-commited on deadline tasks and the
-watchdog FIFO thread didn't get around to running, something which I
-think we both agree shouldn't be happening.
