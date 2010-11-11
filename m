@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab0KKS1O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 13:27:14 -0500
-Received: from web31801.mail.mud.yahoo.com ([68.142.207.64]:47943 "HELO
-	web31801.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754231Ab0KKS1M convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 13:27:12 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=Nl46YxBgmZ/tLBGTsSkBbsXvgT0Gy6O89dtOYDu2anbz95lj+Zi+JNlq4Vpf6/K7fSWb2dEiqdcPKVljMZEC+KZvW1LWYnPaiguo6a5Pi0dkENFqTQeQxYjD8YW03rBBLE8zpnT3H/UtsjVHLSCzeoZsBY4MvXYX/nxjxdnxung=;
-Message-ID: <673670.8195.qm@web31801.mail.mud.yahoo.com>
-X-YMail-OSG: 99BYRPEVM1m13abKoLABTnKIV288GMchsiNLebJpJN3bo7H
- R4bz1_P7mtpz_fdjgaaztvEBnNDu.B8KaA4Se2F1c377lu1ItZJ3C5BYyjbK
- oTNZFjMrNkXqabvnbw7HrPk51z_3srlj6SNRN0qW1w1qK_pv9yH2EoER10wp
- FAqNR8lKXlMiI48CRYI5U4Fwl5SKsOEwK59lhtv4CFu66QP7LgW5js37PaNs
- QY4n6ruhyL90.J9RmVDNi81Z89azte6aivqUItYF1Os9v_3mBoaCYP1e6jGD
- PTsU9WE9jp_cYWjKDtFL0Sq3d3E4bDtTjCqrsyg.KsAh0z.ViF7ShkJ0IsoK
- D_SQIXwFjcgOE.6_KvOdwHRCBTA--
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
-Date: Thu, 11 Nov 2010 10:27:11 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: Re: [PATCH take 2] [USB] Use normalized sense when emulating autosense
-To: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
-Cc: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101111174322.GB20296@one-eyed-alien.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755190Ab0KKS2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 13:28:09 -0500
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:31492 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294Ab0KKS2I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 13:28:08 -0500
+Subject: Re: divide error in select_task_rq_fair()
+From: Myron Stowe <myron.stowe@hp.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        linux-kernel@vger.kernel.org, knikanth@suse.de, rjenties@google.com
+In-Reply-To: <1288937844.3234.1.camel@edumazet-laptop>
+References: <20101104041236.GA9389@helgaas.com>
+	 <1288847992.2718.37.camel@edumazet-laptop>
+	 <20101104142853.GA11656@helgaas.com>
+	 <1288881474.2659.123.camel@edumazet-laptop>
+	 <20101105020013.GA13484@helgaas.com>
+	 <1288937844.3234.1.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Nov 2010 11:28:04 -0700
+Message-ID: <1289500084.2698.12.camel@zim>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Thu, 11/11/10, Matthew Dharm <mdharm-kernel@one-eyed-alien.net> wrote:
-> On Thu, Nov 11, 2010 at 09:07:53AM -0800, Luben Tuikov wrote:
+On Fri, 2010-11-05 at 07:17 +0100, Eric Dumazet wrote:
+> Le jeudi 04 novembre 2010 Ã  20:00 -0600, Bjorn Helgaas a Ã©crit :
+> 
+> > Is that going to help you debug the problem?  The solution is not going
+> > to be something like "set NR_CPUS=x".  If NR_CPUS is too small, the
+> > machine should still *boot*, even if we can't use all the CPUs in the
+> > box.
 > > 
-> > Oh, I see. I'll re-post the patch then to Matthew and
-> the people and lists you listed above.
 > 
-> Now that I'm on the CC, I see this.
+> Yes, it will help to understand the layout of cpu / domains and make
+> appropriate changes.
 > 
-> What's the 10k-foot level summary here?
+> Alternative is you send me such a machine :=)
 
-I'm not sure either. It's apparently the procedure of getting a patch into the linux kernel nowadays. Last time I did this was 5 years ago and in linux-scsi--I remember it being easier, again that was 5 years ago.
+I opened a BZ on this issue as it seems to be a regression -
+https://bugzilla.kernel.org/show_bug.cgi?id=22662
 
-> Is there an alternate sense-data format that uses some sort of "descriptor" structure?
+I also, as indicated in the BZ, bisected the kernel which gave the
+following results and reverting 50f2d7f682f9c0ed58191d0982fe77888d59d162
+did re-enable booting on the box in question (an HP dl980g7).  Let me
+know what further info you need or patches to test for debugging this.
 
-Yes. Some devices return this format of sense data for some commands.
+Thanks,
 
-> I'm assuming this is
-> a new SCSI-III thing, or did I just miss it in SCSI-II?
-> This *looks* like you're using functions provided by the
-> SCSI core to
-> access and modify the sense data... so I'm assuming that's
-> because there
-> are alternate formats...
+commit 50f2d7f682f9c0ed58191d0982fe77888d59d162
+Author: Nikanth Karthikesan <knikanth@suse.de>
+Date:   Thu Sep 30 17:34:10 2010 +0530
 
-The patch doesn't add code that modifies the sense data. That modification code is already there, the patch fixes the modification which assumed only one type of format of sense data.
+    x86, numa: Assign CPUs to nodes in round-robin manner on fake NUMA
 
-The patch uses SCSI functions to abstract the sense information irrespective of the type of format of sense data.
+    commit d9c2d5ac6af87b4491bff107113aaf16f6c2b2d9 "x86, numa: Use near(er)
+    online node instead of roundrobin for NUMA" changed NUMA initialization on
+    Intel to choose the nearest online node or first node.  Fake NUMA would be
+    better of with round-robin initialization, instead of the all CPUS on
+    first node.  Change the choice of first node, back to round-robin.
 
+    For testing NUMA kernel behaviour without cpusets and NUMA aware
+    applications, it would be better to have cpus in different nodes, rather
+    than all in a single node.  With cpusets migration of tasks scenarios
+    cannot not be tested.
+
+    I guess having it round-robin shouldn't affect the use cases for all cpus
+    on the first node.
+
+    The code comments in arch/x86/mm/numa_64.c:759 indicate that this used to
+    be the case, which was changed by commit d9c2d5ac6.  It changed from
+    roundrobin to nearer or first node.  And I couldn't find any reason for
+    this change in its changelog.
+
+    Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
+    Cc: David Rientjes <rientjes@google.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 > 
-> Matt
+> Thanks
+>  
 > 
-> -- 
-> Matthew Dharm           
->                
->   Home: mdharm-usb@one-eyed-alien.net
-> 
-> Maintainer, Linux USB Mass Storage Driver
-> 
-> It was a new hope.
->            
->         -- Dust Puppy
-> User Friendly, 12/25/1998
-> 
+
+
+-- 
+Myron Stowe                             Linux Kernel Developer
+Fort Collins, CO                        Office of Corporate Strategy and Technology
+
