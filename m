@@ -1,93 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab0KKJDw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 04:03:52 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:39632 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab0KKJDs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 04:03:48 -0500
-Subject: Re: Patch added to scsi-rc-fixes-2.6:  [SCSI] host lock push-down
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4CDB3028.6080605@garzik.org>
-References: <201011102240.oAAMe86a001486@hera.kernel.org>
-	 <4CDB2A81.5030100@garzik.org> <1289432759.3016.63.camel@mulgrave.site>
-	 <4CDB3028.6080605@garzik.org>
-Content-Type: text/plain
-Date: Thu, 11 Nov 2010 00:58:35 -0800
-Message-Id: <1289465915.2867.68.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1752823Ab0KKJG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 04:06:26 -0500
+Received: from mail.df.lth.se ([194.47.250.12]:41246 "EHLO df.lth.se"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1749667Ab0KKJGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 04:06:22 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Nicolas Pitre <nico@fluxnic.net>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Colin Cross <ccross@google.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Subject: [PATCH] RFC: nomadik: expand timesource to 63 bits
+Date: Thu, 11 Nov 2010 10:05:56 +0100
+Message-Id: <1289466356-16697-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 18:52 -0500, Jeff Garzik wrote:
-> On 11/10/2010 06:45 PM, James Bottomley wrote:
-> > On Wed, 2010-11-10 at 18:28 -0500, Jeff Garzik wrote:
-> >> On 11/10/2010 05:40 PM, James Bottomley wrote:
-> >>> Your commit:
-> >>>
-> >>>       [SCSI] host lock push-down
-> >>>
-> >>>       Move the mid-layer's ->queuecommand() invocation from being locked
-> >>>       with the host lock to being unlocked to facilitate speeding up the
-> >>>       critical path for drivers who don't need this lock taken anyway.
-> >>>
-> >>>       The patch below presents a simple SCSI host lock push-down as an
-> >>>       equivalent transformation.  No locking or other behavior should change
-> >>>       with this patch.  All existing bugs and locking orders are preserved.
-> >>>
-> >>>       Minimal code disturbance was attempted with this change.  Most drivers
-> >>>       needed only two one-line modifications for their host lock push-down.
-> >>>
-> >>>       Signed-off-by: Jeff Garzik<jgarzik@redhat.com>
-> >>>       Signed-off-by: James Bottomley<James.Bottomley@suse.de>
-> >>>
-> >>> has been added to the upstream SCSI tree
-> >>> You can find it here:
-> >>
-> >> No comments on renaming ->queuecommand to something else?
-> >
-> > What we wondered about doing differently isn't really relevant for a
-> > change log ... that should just really be about what was done (to avoid
-> > confusion).
-> 
-> Wasn't referring to the changelog (perhaps shouldn't have quoted that); 
-> just asking the question generally.
-> 
-> 
-> >> The consequences are rather dire if this goes unnoticed, yes?
-> >
-> > You mean if there's a missed in-tree driver?  Yes, but I took care to
-> > make sure all SCSI drivers were accounted for.  For out of tree drivers,
-> > as with the eh lock push down, it's caveat emptor.
-> 
-> Thinking about out-of-tree drivers, yes.
-> 
+After wraparound-problems in sched_clock() we expand the 32bit
+timer in the MTU from 32 to 63 bits so the scheduling and
+timeline is more stable. At current max operating frequency for
+the MTU, 133 MHz, this should be sufficient for rougly 2200
+years.
 
-Hi Jeff and James,
+Cc: Colin Cross <ccross@google.com>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+tglx, nico: can you help out on reviewing this?
 
-Thank you for getting this initial patch merged.  I really think this
-was and is the best choice moving forward.   Also, a seriously big thank
-you to all of the other folks who have helped identify LLDs issues for
-host_lock less mode for drivers!!
+The solution in this patch is based on the similar approach
+taken by the Tegra platform in arch/arm/mach-tegra/timer.c.
 
-In the next days I will get a atomic_t scsi_host->cmd_serial_number
-patch rebased (which is really very minor at this point w/o the
-scsi_error.c changes), and merge the current host_lock-less 'scoreboard'
-on top of jgarzik's code and tag for .38.   So, please let me know if
-you would to include minor the atomic_t scsi_host->cmd_serial_number
-patch for .37 or if you would rather have this immediately preceed the
-first series of "enable host-lock_less for LLD vendor superturbo hba"
-for the .38 round.
+Orion on the other hand will only expand the timer to 63
+bits in the sched_clock() function in arch/arm/plat-orion/time.c
 
-Best,
+What we need to know is whether it's OK to simply blow up
+clocksource to 63 bits like this. In that case this
+simplification should also apply to Orion, meaning that it
+would base it's sched_clock() on the clocksource, using
+simply clocksource_cyc2ns() cutting down the code
+significantly.
 
---nab
+My main obstacle is that I cannot really determine whether
+clocksource.read() will be called often enough for the
+cnt32_to_63 algorithm.
+
+If this won't work the Tegra platform probably needs fixing
+too.
+
+We had a rather heated debate about this internally already
+so I'm seeking the advice of the elders.
+---
+ arch/arm/plat-nomadik/timer.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/plat-nomadik/timer.c b/arch/arm/plat-nomadik/timer.c
+index aedf9c1..e887bf8 100644
+--- a/arch/arm/plat-nomadik/timer.c
++++ b/arch/arm/plat-nomadik/timer.c
+@@ -16,6 +16,7 @@
+ #include <linux/clk.h>
+ #include <linux/jiffies.h>
+ #include <linux/err.h>
++#include <linux/cnt32_to_63.h>
+ #include <asm/mach/time.h>
+ 
+ #include <plat/mtu.h>
+@@ -34,14 +35,14 @@ static cycle_t nmdk_read_timer_dummy(struct clocksource *cs)
+ /* clocksource: MTU decrements, so we negate the value being read. */
+ static cycle_t nmdk_read_timer(struct clocksource *cs)
+ {
+-	return -readl(mtu_base + MTU_VAL(0));
++	return cnt32_to_63(-readl(mtu_base + MTU_VAL(0)));
+ }
+ 
+ static struct clocksource nmdk_clksrc = {
+ 	.name		= "mtu_0",
+ 	.rating		= 200,
+ 	.read		= nmdk_read_timer_dummy,
+-	.mask		= CLOCKSOURCE_MASK(32),
++	.mask		= CLOCKSOURCE_MASK(63),
+ 	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
+ };
+ 
+-- 
+1.6.3.3
 
