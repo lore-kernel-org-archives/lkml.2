@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab0KKQSY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 11:18:24 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:42384 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752107Ab0KKQSX (ORCPT
+	id S1754168Ab0KKQXb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 11:23:31 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38238 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab0KKQXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 11:18:23 -0500
+	Thu, 11 Nov 2010 11:23:30 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=iCGtmyoK9QPD86jiOt1URtJzQD172riyucvpUj75ZNAjnH0TPYS0WgeR2GiF2zLecD
-         wdaLk/HeZWFfoTnqBHbPtJpzsiGYEEBCfefl7czRk4QRNDkLk8tTGzu6rCbXrHx5hZKg
-         D1bmcAforX5bqhmV7gYiya9f/3eqxKW1UkK0E=
-Date: Thu, 11 Nov 2010 19:18:17 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
-        yinghai@kernel.org
-Subject: Re: [PATCH 3/9] x86: Make
-	default_send_IPI_mask_sequence/allbutself_logical() 32bit only
-Message-ID: <20101111161817.GA6517@lenovo>
-References: <1289473363-29440-1-git-send-email-tj@kernel.org> <1289473363-29440-4-git-send-email-tj@kernel.org>
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=T8KiPJH3vpvphgwpZ1QXihTmtTboFu2KnJOV/4mszsqcpqbn3SYk856NzfqT6jbsyA
+         TcSXjJYVLuzayy9WEieW76sWrTJjXkHvouavKBzPYx16WkhBvNloWjQ7QrXxyl4l8QfX
+         L64UFGwK1jOPo2o6Agk80yditW9XiGfQY9X1w=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289473363-29440-4-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4CC5DF22.6020203@nolaviz.org>
+References: <1287859409-13810-1-git-send-email-alon-git@nolaviz.org>
+	<1287859409-13810-3-git-send-email-alon-git@nolaviz.org>
+	<20101025111126.GA4046@localhost>
+	<4CC5DF22.6020203@nolaviz.org>
+Date: Thu, 11 Nov 2010 17:23:29 +0100
+Message-ID: <AANLkTikWLBr7WOd9K9WqFSvYTfoUdrQ3R+qdyMaVZWf_@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] opticon: use generic code where possible
+From: Johan Hovold <jhovold@gmail.com>
+To: Alon Ziv <alon@nolaviz.org>
+Cc: Alon Ziv <alon+git@nolaviz.org>, linux-usb@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 12:02:37PM +0100, Tejun Heo wrote:
-> Both functions are used only in 32bit.  Put them inside CONFIG_X86_32.
-> This is to prepare for logical apicid handling update.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->  arch/x86/kernel/apic/ipi.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/apic/ipi.c b/arch/x86/kernel/apic/ipi.c
-> index 08385e0..5037736 100644
-> --- a/arch/x86/kernel/apic/ipi.c
-> +++ b/arch/x86/kernel/apic/ipi.c
-> @@ -56,6 +56,8 @@ void default_send_IPI_mask_allbutself_phys(const struct cpumask *mask,
->  	local_irq_restore(flags);
->  }
->  
-> +#ifdef CONFIG_X86_32
-> +
->  void default_send_IPI_mask_sequence_logical(const struct cpumask *mask,
->  						 int vector)
+On Mon, Oct 25, 2010 at 9:48 PM, Alon Ziv <alon@nolaviz.org> wrote:
+>> Here it seems you're turning write into a blocking function if you have
+>> no bulk-out end-point. I'm not sure that is desired.
+>
+> Right...
+> I considered doing it differently (which would require more code--I
+> would need to track the outstanding control URBs, and would need a
+> callback to free the kmalloc()ed setup packet). In the end, I left it as
+> blocking because the actual protocol used by the OPN2001 is very light
+> on writes (in fact, it never writes anything without waiting for a
+> response, and its longest outgoing message is
+> limited to 70 bytes).
 
-It still remains defined in ipi.h as external symbol without CONFIG_X86_32.
+But you already had a working non-blocking implementation in place
+(authored by yourself, if I'm not mistaken) which did exactly that.
+Why not simply keep it?
 
- Cyrill
+Thanks,
+Johan
