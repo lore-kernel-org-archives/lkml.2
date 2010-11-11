@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301Ab0KKUNI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 15:13:08 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:39349 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754662Ab0KKUNH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 15:13:07 -0500
-Date: Thu, 11 Nov 2010 21:12:59 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@elte.hu, acme@redhat.com, eranian@google.com
-Subject: Re: [PATCH 2/3] perf: Add support for extra parameters for raw
- events
-Message-ID: <20101111201259.GL18718@basil.fritz.box>
-References: <1289492117-18066-1-git-send-email-andi@firstfloor.org>
- <1289492117-18066-2-git-send-email-andi@firstfloor.org>
- <4CDC2DDD.50508@linux.vnet.ibm.com>
- <4CDC3845.4030104@linux.intel.com>
- <4CDC4628.8020109@linux.vnet.ibm.com>
- <20101111194936.GJ18718@basil.fritz.box>
- <1289505587.2084.193.camel@laptop>
+	id S1756510Ab0KKUPc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 15:15:32 -0500
+Received: from tundra.namei.org ([65.99.196.166]:34645 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756027Ab0KKUPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 15:15:31 -0500
+Date: Fri, 12 Nov 2010 07:14:35 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Ingo Molnar <mingo@elte.hu>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dan Rosenberg <drosenberg@vsecurity.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        kees.cook@canonical.com, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH v3] Restrict unprivileged access to kernel syslog
+In-Reply-To: <20101111085514.GA18789@elte.hu>
+Message-ID: <alpine.LRH.2.00.1011120713310.29212@tundra.namei.org>
+References: <1289431735.3847.9.camel@dan> <20101110154956.83a3f84d.akpm@linux-foundation.org> <20101111085514.GA18789@elte.hu>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289505587.2084.193.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 08:59:47PM +0100, Peter Zijlstra wrote:
-> On Thu, 2010-11-11 at 20:49 +0100, Andi Kleen wrote:
-> > > I think it would have parsed OK, but it is a confusing syntax to
-> > > look at.  I should point out that there are also the u,k,h modifiers
-> > > which can be specified, even on raw events, so the full syntax looks
-> > > something like:
-> > > 
-> > > -e rXXXX[+YYYY][:u|:k|:h]
+On Thu, 11 Nov 2010, Ingo Molnar wrote:
+
+> 
+> * Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > > CC: stable <stable@kernel.org>
 > > 
-> > Ok I can fix the help text for that.
+> > hm.  Reasons for this?
 > 
-> If we're frobbing it in the existing config qword, do we still need
-> special syntax?
+> I dont think so. Can we still try it for .37 though?
 
-No, it could be all merged then.
+I don't have any objections, but how about we give it a week in -next at 
+least?
 
-> 
-> Also, I think we can use the same mechanism to program the
-> PEBS-load-latency MSR, right?
 
-I haven't looked at that, but if it's a per core resource
-the infrastructure can be reused at least.
 
--Andi
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+James Morris
+<jmorris@namei.org>
