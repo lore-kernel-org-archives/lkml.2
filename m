@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab0KKTcO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 14:32:14 -0500
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:38974 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754636Ab0KKTac (ORCPT
+	id S1756485Ab0KKTcc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 14:32:32 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:42233 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756039Ab0KKTab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 14:30:32 -0500
+	Thu, 11 Nov 2010 14:30:31 -0500
 From: Alexander Shishkin <virtuoso@slind.org>
 To: linux-kernel@vger.kernel.org
 Cc: John Stultz <johnstul@us.ibm.com>,
@@ -17,15 +17,14 @@ Cc: John Stultz <johnstul@us.ibm.com>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         Thomas Gleixner <tglx@linutronix.de>,
         Alexander Shishkin <virtuoso@slind.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Robin Getz <robin.getz@analog.com>, Philippe Gerum <rpm@xenomai.org>,
-        "David S. Miller" <davem@davemloft.net>, Yi Li <yi.li@analog.com>,
-        uclinux-dist-devel@blackfin.uclinux.org
-Subject: [PATCHv6 7/7] wire up sys_time_change_notify() on blackfin
-Date: Thu, 11 Nov 2010 21:30:02 +0200
-Message-Id: <1289503802-22444-8-git-send-email-virtuoso@slind.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Andreas Schwab <schwab@linux-m68k.org>, Christoph Hellwig <hch@lst.de>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: [PATCHv6 6/7] wire up sys_time_change_notify() on powerpc
+Date: Thu, 11 Nov 2010 21:30:01 +0200
+Message-Id: <1289503802-22444-7-git-send-email-virtuoso@slind.org>
 X-Mailer: git-send-email 1.7.2.1.45.gb66c2
 In-Reply-To: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
 References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
@@ -34,49 +33,46 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
-CC: Mike Frysinger <vapier@gentoo.org>
-CC: Alexander Shishkin <virtuoso@slind.org>
-CC: Arjan van de Ven <arjan@linux.intel.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 CC: Paul Mackerras <paulus@samba.org>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Robin Getz <robin.getz@analog.com>
-CC: Philippe Gerum <rpm@xenomai.org>
-CC: "David S. Miller" <davem@davemloft.net>
-CC: Yi Li <yi.li@analog.com>
-CC: uclinux-dist-devel@blackfin.uclinux.org
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Andreas Schwab <schwab@linux-m68k.org>
+CC: Alexander Shishkin <virtuoso@slind.org>
+CC: Christoph Hellwig <hch@lst.de>
+CC: Jesper Nilsson <jesper.nilsson@axis.com>
+CC: linuxppc-dev@lists.ozlabs.org
 CC: linux-kernel@vger.kernel.org
 ---
- arch/blackfin/include/asm/unistd.h |    3 ++-
- arch/blackfin/mach-common/entry.S  |    1 +
+ arch/powerpc/include/asm/systbl.h |    1 +
+ arch/powerpc/include/asm/unistd.h |    3 ++-
  2 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/arch/blackfin/include/asm/unistd.h b/arch/blackfin/include/asm/unistd.h
-index 928ae97..e4a3f730 100644
---- a/arch/blackfin/include/asm/unistd.h
-+++ b/arch/blackfin/include/asm/unistd.h
-@@ -393,8 +393,9 @@
- #define __NR_fanotify_mark	372
- #define __NR_prlimit64		373
- #define __NR_cacheflush		374
-+#define __NR_time_change_notify 375
+diff --git a/arch/powerpc/include/asm/systbl.h b/arch/powerpc/include/asm/systbl.h
+index aa0f1eb..a57cc82 100644
+--- a/arch/powerpc/include/asm/systbl.h
++++ b/arch/powerpc/include/asm/systbl.h
+@@ -348,3 +348,4 @@ COMPAT_SYS_SPU(sendmsg)
+ COMPAT_SYS_SPU(recvmsg)
+ COMPAT_SYS_SPU(recvmmsg)
+ SYSCALL_SPU(accept4)
++SYSCALL(time_change_notify)
+diff --git a/arch/powerpc/include/asm/unistd.h b/arch/powerpc/include/asm/unistd.h
+index 6151937..bea2c9e 100644
+--- a/arch/powerpc/include/asm/unistd.h
++++ b/arch/powerpc/include/asm/unistd.h
+@@ -367,10 +367,11 @@
+ #define __NR_recvmsg		342
+ #define __NR_recvmmsg		343
+ #define __NR_accept4		344
++#define __NR_time_change_notify 345
  
--#define __NR_syscall		375
-+#define __NR_syscall		376
- #define NR_syscalls		__NR_syscall
+ #ifdef __KERNEL__
  
- /* Old optional stuff no one actually uses */
-diff --git a/arch/blackfin/mach-common/entry.S b/arch/blackfin/mach-common/entry.S
-index 2ca915e..8e85a9a 100644
---- a/arch/blackfin/mach-common/entry.S
-+++ b/arch/blackfin/mach-common/entry.S
-@@ -1738,6 +1738,7 @@ ENTRY(_sys_call_table)
- 	.long _sys_fanotify_mark
- 	.long _sys_prlimit64
- 	.long _sys_cacheflush
-+	.long _sys_time_change_notify	/* 375 */
+-#define __NR_syscalls		345
++#define __NR_syscalls		346
  
- 	.rept NR_syscalls-(.-_sys_call_table)/4
- 	.long _sys_ni_syscall
+ #define __NR__exit __NR_exit
+ #define NR_syscalls	__NR_syscalls
 -- 
 1.7.2.1.45.gb66c2
 
