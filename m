@@ -1,69 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761Ab0KKNt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 08:49:58 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:64828 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756034Ab0KKNt5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 08:49:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=Ku2VVtzzRshBpOx3R4wWdEF0V4w0ddwOTSeDBnqPXEzcFPY/Us4bBoIKhr3LHUpzfh
-         kZaUfOWSn2Y7It1tlFmDMua97Y1r7iQVJXrW6WOCAZSL5mdSlChwKMLmAca35cXpq2d7
-         SU43F/CxtZC52UschItrvN8iBVWVjX3ZjqBNk=
-MIME-Version: 1.0
-Date: Thu, 11 Nov 2010 21:49:56 +0800
-Message-ID: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
-Subject: Kernel rwlock design, Multicore and IGMP
-From: Cypher Wu <cypher.w@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756754Ab0KKNyV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 08:54:21 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:43778 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756159Ab0KKNyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 08:54:20 -0500
+Subject: Re: [RFC][PATCH 02/22] sched: add extended scheduling interface
+From: Raistlin <raistlin@linux.it>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1289482333.2084.102.camel@laptop>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288333622.8661.141.camel@Palantir>  <1289410114.2084.23.camel@laptop>
+	 <1289427476.13577.285.camel@Palantir>  <1289482333.2084.102.camel@laptop>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-lLRaCVA6WHHEuI6pBg2Q"
+Date: Thu, 11 Nov 2010 14:54:08 +0100
+Message-ID: <1289483648.6525.10.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm using TILEPro and its rwlock in kernel is a liitle different than
-other platforms. It have a priority for write lock that when tried it
-will block the following read lock even if read lock is hold by
-others. Its code can be read in Linux Kernel 2.6.36 in
-arch/tile/lib/spinlock_32.c.
 
-That different could cause a deadlock in kernel if we join/leave
-Multicast Group simultaneous and frequently on mutlicores. IGMP
-message is sent by
+--=-lLRaCVA6WHHEuI6pBg2Q
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-igmp_ifc_timer_expire() -> igmpv3_send_cr() -> igmpv3_sendpack()
+On Thu, 2010-11-11 at 14:32 +0100, Peter Zijlstra wrote:
+> > BTW, as Dhaval was suggesting, are (after those changes) fine with this
+> > new sched_param? Do we need some further mechanism to grant its
+> > extendability?
+> > Padding?
+> > Versioning?
+> > void *data field?
+> > Whatever?
+> >=20
+> > :-O
+> >=20
+> > I'd like very much to have some discussion here, if you think it is
+> > needed, in hope of avoiding future ABI issues as much as possible! :-P
+>=20
+> Right, so you mentioned doing s/_ex/2/ on all this stuff, which brings
+> it more in line with that other syscalls have done.
+>=20
+Sure, this is necessary and easy to achieve. :-)
 
-in timer interrupt, igmpv3_send_cr() will generate the sk_buff for
-IGMP message with mc_list_lock read locked and then call
-igmpv3_sendpack() with it unlocked.
-But if we have so many join/leave messages have to generate and it
-can't be sent in one sk_buff then igmpv3_send_cr() -> add_grec() will
-call igmpv3_sendpack() to send it and reallocate a new buffer. When
-the message is sent:
+> The last three parameters look to be output only as I've not yet found
+> code that reads it, and __getparam_dl() doesn't even appear to set
+> used_runtime.
+>=20
+Yeah, just kind of statistical reporting of the task's behaviour. That's
+why I was in agreement with Dhaval about using schedstats for those
+(bumping the version, obviously). What do you think?
 
-__mkroute_output() -> ip_check_mc()
+> One thing you can do is add some padding, versioning and void*
+> extentions are doable for the setparam() path, but getparam() is going
+> to be mighty interesting.
+>=20
+Mmm... So, tell me if I got it well: I remove the last three parameters
+(e.g., moving them toward schedstats) and add (besides _var and _max)
+some padding? It that correct?
 
-will read lock mc_list_lock again. If there is another core is try
-write lock mc_list_lock between the two read lock, then deadlock
-ocurred.
+what about the len <=3D=3D sizeof(struct sched_param2) in
+sched_{set,get}{param,scheduler}2()... Does this still make sense, or
+are we removing it?
 
-The rwlock on other platforms I've check, say, PowerPC, x86, ARM, is
-just read lock shared and write_lock mutex, so if we've hold read lock
-the write lock will just wait, and if there have a read lock again it
-will success.
+Thanks,
+Dario
 
-So, What's the criteria of rwlock design in the Linux kernel? Is that
-read lock re-hold of IGMP a design error in Linux kernel, or the read
-lock has to be design like that?
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
 
-There is a other thing, that the timer interrupt will start timer on
-the same in_dev, should that be optimized?
+http://blog.linux.it/raistlin / raistlin@ekiga.net /
+dario.faggioli@jabber.org
 
-BTW: If we have so many cores, say 64, is there other things we have
-to think about spinlock? If there have collisions ocurred, should we
-just read the shared memory again and again, or just a very little
-'delay' is better? I've seen relax() is called in the implementation
-of spinlock on TILEPro platform.
+--=-lLRaCVA6WHHEuI6pBg2Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzb9YAACgkQk4XaBE3IOsSU+gCgp20y4JyQBxQxN1YEdTaAIggj
+RF4AmgMaUGfcN/5uKWjVi3wJAX3l9yJH
+=davI
+-----END PGP SIGNATURE-----
+
+--=-lLRaCVA6WHHEuI6pBg2Q--
+
