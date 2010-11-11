@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab0KKNnj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 08:43:39 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64619 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755774Ab0KKNni convert rfc822-to-8bit (ORCPT
+	id S1756761Ab0KKNt6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 08:49:58 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:64828 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756034Ab0KKNt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 08:43:38 -0500
+	Thu, 11 Nov 2010 08:49:57 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=eKZz5lctiEZ+jykS1us5oow8dzivlGAmJt0SuZ6qPqq0McDuGlQKy64PTsQ19k6xWW
-         MrXkgzvG4ppIl5n61vn/aY26TaB9LSv0TgIbjROkmtOQpJFn1RRgrCuKUUz8NVrFdPVN
-         6hwVh0VFskuZHU6OsN8hnA0ee5v4aPA1RM+vI=
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=Ku2VVtzzRshBpOx3R4wWdEF0V4w0ddwOTSeDBnqPXEzcFPY/Us4bBoIKhr3LHUpzfh
+         kZaUfOWSn2Y7It1tlFmDMua97Y1r7iQVJXrW6WOCAZSL5mdSlChwKMLmAca35cXpq2d7
+         SU43F/CxtZC52UschItrvN8iBVWVjX3ZjqBNk=
 MIME-Version: 1.0
-In-Reply-To: <20101110151823.GC18258@parisc-linux.org>
-References: <AANLkTikbkhHmsVAdGrY0OTnH=gUZW5igjsWSF9y=Ub1u@mail.gmail.com>
-	<20101110151823.GC18258@parisc-linux.org>
-Date: Thu, 11 Nov 2010 21:43:36 +0800
-Message-ID: <AANLkTin_ac34CT9gqSRfJm3qHG1NUjp=HC=G2ncVnAoL@mail.gmail.com>
-Subject: Re: [PATCH] fix vulnerability of the release method of file
- operations in Block layer SCSI generic driver
-From: Hillf Danton <dhillf@gmail.com>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        "Zou, Yi" <yi.zou@intel.com>, Joe Eykholt <jeykholt@cisco.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Date: Thu, 11 Nov 2010 21:49:56 +0800
+Message-ID: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
+Subject: Kernel rwlock design, Multicore and IGMP
+From: Cypher Wu <cypher.w@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 11:18 PM, Matthew Wilcox <matthew@wil.cx> wrote:
-> On Wed, Nov 10, 2010 at 10:08:37PM +0800, Hillf Danton wrote:
->> The computation context setup by previous opening the bsg file could
->> not survive following open/release operations upon the same file
->> object.
->
-> Umm .. release is called on final close of a file, not on every close
-> of a file.
->
-right, thanks//Hillf
+I'm using TILEPro and its rwlock in kernel is a liitle different than
+other platforms. It have a priority for write lock that when tried it
+will block the following read lock even if read lock is hold by
+others. Its code can be read in Linux Kernel 2.6.36 in
+arch/tile/lib/spinlock_32.c.
 
->> The vulnerability is fixed by deferring the cleanup operation until necessary.
->>
->> Signed-off-by: Hillf Danton <dhillf@gmail.com>
->> ---
->>
->> --- a/block/bsg.c     2010-09-13 07:07:38.000000000 +0800
->> +++ b/block/bsg.c     2010-11-10 21:43:58.000000000 +0800
->> @@ -858,7 +858,8 @@ static int bsg_release(struct inode *ino
->>  {
->>       struct bsg_device *bd = file->private_data;
->>
->> -     file->private_data = NULL;
->> +     if (1 == atomic_read(&bd->ref_count))
->> +             file->private_data = NULL;
->>       return bsg_put_device(bd);
->>  }
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> --
-> Matthew Wilcox                          Intel Open Source Technology Centre
-> "Bill, look, we understand that you're interested in selling us this
-> operating system, but compare it to ours.  We can't possibly take such
-> a retrograde step."
->
+That different could cause a deadlock in kernel if we join/leave
+Multicast Group simultaneous and frequently on mutlicores. IGMP
+message is sent by
+
+igmp_ifc_timer_expire() -> igmpv3_send_cr() -> igmpv3_sendpack()
+
+in timer interrupt, igmpv3_send_cr() will generate the sk_buff for
+IGMP message with mc_list_lock read locked and then call
+igmpv3_sendpack() with it unlocked.
+But if we have so many join/leave messages have to generate and it
+can't be sent in one sk_buff then igmpv3_send_cr() -> add_grec() will
+call igmpv3_sendpack() to send it and reallocate a new buffer. When
+the message is sent:
+
+__mkroute_output() -> ip_check_mc()
+
+will read lock mc_list_lock again. If there is another core is try
+write lock mc_list_lock between the two read lock, then deadlock
+ocurred.
+
+The rwlock on other platforms I've check, say, PowerPC, x86, ARM, is
+just read lock shared and write_lock mutex, so if we've hold read lock
+the write lock will just wait, and if there have a read lock again it
+will success.
+
+So, What's the criteria of rwlock design in the Linux kernel? Is that
+read lock re-hold of IGMP a design error in Linux kernel, or the read
+lock has to be design like that?
+
+There is a other thing, that the timer interrupt will start timer on
+the same in_dev, should that be optimized?
+
+BTW: If we have so many cores, say 64, is there other things we have
+to think about spinlock? If there have collisions ocurred, should we
+just read the shared memory again and again, or just a very little
+'delay' is better? I've seen relax() is called in the implementation
+of spinlock on TILEPro platform.
