@@ -1,49 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab0KKRQG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 12:16:06 -0500
-Received: from hera.kernel.org ([140.211.167.34]:49511 "EHLO hera.kernel.org"
+	id S1754920Ab0KKRVj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 12:21:39 -0500
+Received: from claw.goop.org ([74.207.240.146]:35395 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754365Ab0KKRQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 12:16:03 -0500
-Message-ID: <4CDC2488.1030801@kernel.org>
-Date: Thu, 11 Nov 2010 18:14:48 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1754405Ab0KKRVi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 12:21:38 -0500
+Message-ID: <4CDC261E.5060106@goop.org>
+Date: Thu, 11 Nov 2010 09:21:34 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-To: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
-        petero2@telia.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com,
-        aelder@sgi.com, dm-devel@redhat.com, drbd-dev@lists.linbit.com,
-        neilb@suse.de, leochen@broadcom.com, sbranden@broadcom.com,
-        chris.mason@oracle.com, swhiteho@redhat.com, shaggy@linux.vnet.ibm.com,
-        joern@logfs.org, konishi.ryusuke@lab.ntt.co.jp,
-        reiserfs-devel@vger.kernel.org, viro@zeniv.linux.org.uk
-Subject: Re: [PATCHSET] block: clean up bdev claim/release handling
-References: <1288628129-12811-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1288628129-12811-1-git-send-email-tj@kernel.org>
-X-Enigmail-Version: 1.1.1
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        xen-devel@lists.xensource.com, Ian Campbell <Ian.Campbell@citrix.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen: set vma flag VM_PFNMAP in the privcmd
+ mmap file_op
+References: <alpine.DEB.2.00.1011111550230.1407@kaball-desktop> <20101111164029.GB29405@dumpdata.com>
+In-Reply-To: <20101111164029.GB29405@dumpdata.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 11 Nov 2010 17:14:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 11/11/2010 08:40 AM, Konrad Rzeszutek Wilk wrote:
+> On Thu, Nov 11, 2010 at 03:55:49PM +0000, Stefano Stabellini wrote:
+>> Hi all,
+>> this patch fixes the dom0 kernel crash when creating a VM.
+>> Now I am able to create VMs successfully on 2.6.37 rc1, even though
+>> without disk or network access.
+>>
+>> ---
+>>
+>> xen: set vma flag VM_PFNMAP in the privcmd mmap file_op
+>>
+>> Set VM_PFNMAP in the privcmd mmap file_op, rather than later in
+>> xen_remap_domain_mfn_range when it is too late because
+>> vma_wants_writenotify has already been called and vm_page_prot has
+> So vma_wants_writenotify sets the invalid flags on vma->vm_flags?
+>> already been modified.
+> By whom? vma_wants_writenotify looks to just return 0 or 1
+>
+> Ah, depending on that return value it sets vma->vm_page_prot.
+> That looks odd, so if this:
+>
+> 1215         if (vma_wants_writenotify(vma))
+> 1216                 vma->vm_page_prot = vm_get_page_prot(vm_flags & ~VM_SHARED);
+> 1217 
+>
+> does not set the vma->vm_page_prot we never set the vm_page_prot?
+>
+> .. and it looks to not set that value earlier on either.
+>
+> So VM_PFNMAP inhibits the mmap code from setting the vm_page_prot.
+> Is that what we want, not have vma->vm_page_prot set anything? Why?
 
-I just appended two patches to the series.  These two are the
-blkdev_get_by_*() cleanup patches suggested in the fourth patch which
-Christoph liked.
+It is already set unconditionally earlier in mmap_region().  The
+writenotify stuff will knobble the mapping to be RO so we can track the
+first write with faults, but we don't want that in this case.
 
-I updated the git tree accordingly and added acked-by's.
+The VM_PFNMAP flag is generally correct anyway, since it means that the
+mapping is of a random PFN which no corresponding struct page.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git cleanup-bd_claim
+    J
 
-Jens, if you want the whole series resent, please let me know.
+>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>>
+>> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+>> index c237b81..2be1f36 100644
+>> --- a/arch/x86/xen/mmu.c
+>> +++ b/arch/x86/xen/mmu.c
+>> @@ -2627,7 +2627,7 @@ int xen_remap_domain_mfn_range(struct vm_area_struct *vma,
+>>  
+>>  	prot = __pgprot(pgprot_val(prot) | _PAGE_IOMAP);
+>>  
+>> -	vma->vm_flags |= VM_IO | VM_RESERVED | VM_PFNMAP;
+>> +	BUG_ON(!(vma->vm_flags & (VM_PFNMAP | VM_RESERVED | VM_IO)));
+>>  
+>>  	rmd.mfn = mfn;
+>>  	rmd.prot = prot;
+>> diff --git a/drivers/xen/xenfs/privcmd.c b/drivers/xen/xenfs/privcmd.c
+>> index f80be7f..9aab216 100644
+>> --- a/drivers/xen/xenfs/privcmd.c
+>> +++ b/drivers/xen/xenfs/privcmd.c
+>> @@ -385,7 +385,7 @@ static int privcmd_mmap(struct file *file, struct vm_area_struct *vma)
+>>  		return -ENOSYS;
+>>  
+>>  	/* DONTCOPY is essential for Xen as copy_page_range is broken. */
+>> -	vma->vm_flags |= VM_RESERVED | VM_IO | VM_DONTCOPY;
+>> +	vma->vm_flags |= VM_RESERVED | VM_IO | VM_DONTCOPY | VM_PFNMAP;
+>>  	vma->vm_ops = &privcmd_vm_ops;
+>>  	vma->vm_private_data = NULL;
+>>  
+>>
+>> _______________________________________________
+>> Xen-devel mailing list
+>> Xen-devel@lists.xensource.com
+>> http://lists.xensource.com/xen-devel
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
+>
 
-Thanks.
-
--- 
-tejun
