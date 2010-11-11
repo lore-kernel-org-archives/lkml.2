@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab0KKRbH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 12:31:07 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33101 "EHLO mx3.mail.elte.hu"
+	id S1755011Ab0KKRbq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 12:31:46 -0500
+Received: from imr4.ericy.com ([198.24.6.8]:44876 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754128Ab0KKRbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 12:31:05 -0500
-Date: Thu, 11 Nov 2010 18:30:48 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ben Gamari <bgamari@gmail.com>,
-        "acme@infradead.org" <acme@infradead.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/20] x86, mce: Add persistent MCE event
-Message-ID: <20101111173048.GA5769@elte.hu>
-References: <1288885016-18295-1-git-send-email-bp@amd64.org>
- <1288885016-18295-4-git-send-email-bp@amd64.org>
- <87lj50vq0s.fsf@gmail.com>
- <20101110222157.GA23945@elte.hu>
- <20101111061725.GA19321@aftab>
- <20101111085825.GB18789@elte.hu>
- <20101111133442.GA21803@aftab>
- <1289489930.2084.138.camel@laptop>
- <20101111155559.GD21803@aftab>
+	id S1753944Ab0KKRbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 12:31:45 -0500
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: torvalds@linux-foundation.org
+CC: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon fixes for 2.6.37
+Date: Thu, 11 Nov 2010 09:50:03 -0800
+Message-ID: <1289497803-15160-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101111155559.GD21803@aftab>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-* Borislav Petkov <bp@amd64.org> wrote:
+Please pull hwmon subsystem fixes for Linux 2.6.37 from:
 
-> On Thu, Nov 11, 2010 at 10:38:50AM -0500, Peter Zijlstra wrote:
-> > On Thu, 2010-11-11 at 14:34 +0100, Borislav Petkov wrote:
-> > > 3) enable the persistent event and stash its fd in some /sysfs member
-> > > which the RAS daemon reads out and mmaps. This last one actually sounds
-> > > pretty neat. 
-> > 
-> > Right, stashing the thing in sysfs, which you can open()+mmap() seems
-> > the best way. Not sure you want to make it a RAS specific place, maybe a
-> > generic persistent buffer place.
-> > 
-> > You'll get multiple files anyway, one per cpu, so maybe something like:
-> > 
-> > /sysfs/persistent_buffer/ras[0..n]
-> 
-> Yeah, or even integrate it even further into the events hierarchy like
-> this:
-> 
-> /sys/.../cpu/events/mce		-> this is the trace_mce_record tracepoint
-> /sys/.../cpu/events/mce_pers	-> persistent buffer fd
-> 
-> or an additional level further down
-> 
-> /sys/.../cpu/events/mce/persistent/...
-> 
-> or whatever.
-> 
-> Generally I don't care too much where we put it at the end.
-
-It should be in a nice logical place though :-)
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
 
 Thanks,
+Guenter Roeck
 
-	Ingo
+------
+
+The following changes since commit f6614b7bb405a9b35dd28baea989a749492c46b2:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6 (2010-11-09 10:34:48 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/staging.git hwmon-for-linus
+
+Axel Lin (3):
+      hwmon: (adt7470) Return proper error code for adt7470_probe()
+      hwmon: (ad7414) Return proper error code for ad7414_probe()
+      hwmon: (gpio-fan) Fix fan_ctrl_init error path
+
+ drivers/hwmon/ad7414.c   |    6 ++++--
+ drivers/hwmon/adt7470.c  |    4 +++-
+ drivers/hwmon/gpio-fan.c |    8 ++++----
+ 3 files changed, 11 insertions(+), 7 deletions(-)
