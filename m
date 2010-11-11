@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248Ab0KKCBE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 21:01:04 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:35366 "EHLO bear.ext.ti.com"
+	id S932269Ab0KKCBa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 21:01:30 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60131 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932192Ab0KKCBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 21:01:01 -0500
+	id S932219Ab0KKCBD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 21:01:03 -0500
 From: Omar Ramirez Luna <omar.ramirez@ti.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
@@ -15,9 +15,9 @@ Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
         Rene Sapiens <rene.sapiens@ti.com>, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         devel@driverdev.osuosl.org
-Subject: [PATCH 01/02] omap: dsp: remove shm from normal memory
-Date: Wed, 10 Nov 2010 19:50:24 -0600
-Message-Id: <1289440225-27221-2-git-send-email-omar.ramirez@ti.com>
+Subject: [PATCH 02/02] staging: tidspbridge: hardcode SCM macros while fix is upstreamed
+Date: Wed, 10 Nov 2010 19:50:25 -0600
+Message-Id: <1289440225-27221-3-git-send-email-omar.ramirez@ti.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1289440225-27221-1-git-send-email-omar.ramirez@ti.com>
 References: <1289440225-27221-1-git-send-email-omar.ramirez@ti.com>
@@ -27,40 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Felipe Contreras <felipe.contreras@gmail.com>
 
-Also, don't be picky about the location, which incidentally fixes the
-build since MEMBLOCK_REAL_LIMIT is gone on 2.6.37.
+On 2.6.37-rc1, omap platform internals for SCM have changed,
+so the build is broken again.
 
-arch/arm/plat-omap/devices.c: In function 'omap_dsp_reserve_sdram_memblock':
-arch/arm/plat-omap/devices.c:287: error: 'MEMBLOCK_REAL_LIMIT'
-    undeclared (first use in this function)
+drivers/staging/tidspbridge/core/tiomap3430.c:26:
+    fatal error: plat/control.h: No such file or directory
+
+This is a totally ugly layer violation, but needed until
+omap_ctrl_set_dsp_boot*() are provided.
 
 Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-Acked-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
 ---
- arch/arm/plat-omap/devices.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ drivers/staging/tidspbridge/core/tiomap3430.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/plat-omap/devices.c b/arch/arm/plat-omap/devices.c
-index 6f42a18..fc81912 100644
---- a/arch/arm/plat-omap/devices.c
-+++ b/arch/arm/plat-omap/devices.c
-@@ -284,12 +284,14 @@ void __init omap_dsp_reserve_sdram_memblock(void)
- 	if (!size)
- 		return;
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index f22bc12..d302e30 100644
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -23,7 +23,6 @@
+ #include <dspbridge/host_os.h>
+ #include <linux/mm.h>
+ #include <linux/mmzone.h>
+-#include <plat/control.h>
  
--	paddr = __memblock_alloc_base(size, SZ_1M, MEMBLOCK_REAL_LIMIT);
-+	paddr = memblock_alloc(size, SZ_1M);
- 	if (!paddr) {
- 		pr_err("%s: failed to reserve %x bytes\n",
- 				__func__, size);
- 		return;
- 	}
-+	memblock_free(paddr, size);
-+	memblock_remove(paddr, size);
+ /*  ----------------------------------- DSP/BIOS Bridge */
+ #include <dspbridge/dbdefs.h>
+@@ -68,6 +67,19 @@
+ #define OMAP3_IVA2_BOOTADDR_MASK 0xFFFFFC00
+ #define PAGES_II_LVL_TABLE   512
  
- 	omap_dsp_phys_mempool_base = paddr;
- }
++/*
++ * This is a totally ugly layer violation, but needed until
++ * omap_ctrl_set_dsp_boot*() are provided.
++ */
++#define OMAP3_IVA2_BOOTMOD_IDLE 1
++#define OMAP2_CONTROL_GENERAL 0x270
++#define OMAP343X_CONTROL_IVA2_BOOTADDR (OMAP2_CONTROL_GENERAL + 0x0190)
++#define OMAP343X_CONTROL_IVA2_BOOTMOD (OMAP2_CONTROL_GENERAL + 0x0194)
++
++#define OMAP343X_CTRL_REGADDR(reg) \
++	OMAP2_L4_IO_ADDRESS(OMAP343X_CTRL_BASE + (reg))
++
++
+ /* Forward Declarations: */
+ static int bridge_brd_monitor(struct bridge_dev_context *dev_ctxt);
+ static int bridge_brd_read(struct bridge_dev_context *dev_ctxt,
 -- 
 1.7.1
 
