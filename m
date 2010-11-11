@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab0KKLTF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 06:19:05 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60162 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755396Ab0KKLTC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 06:19:02 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:reply-to:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=OAgBdzD5DLhmJ6i4IpOGNaHRvr7+Nb5oxZ9/ucTa/nOvlnYoW9VORgNDgci0sIgNXK
-         aa2RHqYdTzxtfYAJbaVlUDkDAjjTJwfvR+C41CGWGFcdMNwUUleDjfbO6HblTEIEFdld
-         kJa/Q0kdux4VMXF8a04/My07O7OqHJ1EK+k9M=
-From: Florian Fainelli <florian@openwrt.org>
-Reply-To: Florian Fainelli <florian@openwrt.org>
-To: Greg KH <greg@kroah.com>
-Subject: Re: Forked android kernel development from linux kernel mainline
-Date: Thu, 11 Nov 2010 12:21:08 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-trunk-amd64; KDE/4.4.5; x86_64; ; )
-Cc: Roland Dreier <rdreier@cisco.com>, Arnaud Lacombe <lacombar@gmail.com>,
-        Anca Emanuel <anca.emanuel@gmail.com>,
-        Elvis Dowson <elvis.dowson@mac.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com> <adar5esn1gd.fsf@cisco.com> <20101111004730.GC22463@kroah.com>
-In-Reply-To: <20101111004730.GC22463@kroah.com>
+	id S1755925Ab0KKLTP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 06:19:15 -0500
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:39039 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755872Ab0KKLTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 06:19:11 -0500
+Message-ID: <4CDBD12C.4010807@kernel.dk>
+Date: Thu, 11 Nov 2010 12:19:08 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201011111221.09237.florian@openwrt.org>
+To: Oleg Nesterov <oleg@redhat.com>
+CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: INFO: suspicious rcu_dereference_check() usage -  kernel/pid.c:419
+ invoked rcu_dereference_check() without protection!
+References: <xr93fwwbdh1d.fsf@ninji.mtv.corp.google.com> <20101107182028.GZ15561@linux.vnet.ibm.com> <20101108151509.GA3702@redhat.com> <20101109202900.GV4032@linux.vnet.ibm.com> <20101110155530.GA1905@redhat.com> <20101110160211.GA2562@redhat.com>
+In-Reply-To: <20101110160211.GA2562@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le Thursday 11 November 2010 01:47:30, Greg KH a écrit :
-> On Wed, Nov 10, 2010 at 04:33:38PM -0800, Roland Dreier wrote:
-> >  > Isn't the openwrt stuff just drivers and some arch specific code?
-> >  > Nothing that is core infrastructure, and nothing preventing them from
-> >  > submitting the drivers and arch code if they want to, right?
-> > 
-> > Actually openwrt has some core infrastructure for managing (ethernet)
-> > switches as extra-fancy multiport PHYs.  That means that all the drivers
-> > in openwrt for the typical 5-8 port switches in home routers don't
-> > really apply to mainline.
+On 2010-11-10 17:02, Oleg Nesterov wrote:
+> (another try with the proper email address)
 > 
-> Why can't we merge that core infrastructure as well?  Has it been
-> rejected for any specific reasons?
+> On 11/09, Paul E. McKenney wrote:
+>>
+>> Thank you, Oleg!  Greg, would you be willing to update your patch
+>> to remove the comment?  (Perhaps tasklist_lock as well...)
+> 
+> Agreed, I think tasklock should be killed.
+> 
+> 
+> But wait. Whatever we do, isn't this code racy? I do not see why, say,
+> sys_ioprio_set(IOPRIO_WHO_PROCESS) can't install ->io_context after
+> this task has already passed exit_io_context().
+> 
+> Jens, am I missed something?
 
-It has been not been submitted for review yet, I suppose we could do that 
-within the next couple days.
---
-Florian
+Not sure, I think the original intent was for the tasklist_lock to
+protect from a concurrent exit, but that looks like nonsense and it was
+just there to protect the task lookup.
+
+How about moving the ->io_context check and exit_io_context() in
+do_exit() under the task lock? Coupled with a check for PF_EXITING in
+set_task_ioprio().
+
+
+-- 
+Jens Axboe
 
