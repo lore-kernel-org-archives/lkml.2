@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab0KKQ32 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 11:29:28 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:60927 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984Ab0KKQ31 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 11:29:27 -0500
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=AaMaIMOBXK0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=otCdQUQxrSFt9X05veoA:9 a=J2Qm0gxqkVbpLHwld1bM0pOo7wkA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH] staging: ft1000: Copy from user into correct data
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Greg KH <greg@kroah.com>, Marek Belisko <marek.belisko@open-nandra.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 11 Nov 2010 11:29:25 -0500
-Message-ID: <1289492965.12418.262.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754273Ab0KKQcJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 11:32:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64871 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753064Ab0KKQcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 11:32:08 -0500
+Message-ID: <4CDC1A5F.9050803@redhat.com>
+Date: Thu, 11 Nov 2010 11:31:27 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+MIME-Version: 1.0
+To: "Ted Ts'o" <tytso@mit.edu>, Jeff Layton <jlayton@redhat.com>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        esandeen@redhat.com, jmoyer@redhat.com, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] clear PageError bit in msync & fsync
+References: <20101109114422.3918e7f6@annuminas.surriel.com> <20101109142109.224267d0@corrin.poochiereds.net> <4CD9A209.6070807@redhat.com> <20101109210715.GJ3099@thunk.org>
+In-Reply-To: <20101109210715.GJ3099@thunk.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While doing a ktest.pl I used a MIN_CONFIG that had STAGING enabled, and
-a randconfig with CONFIG_DEBUG_STRICT_USER_COPY_CHECKS enabled caught
-the following bug:
+On 11/09/2010 04:07 PM, Ted Ts'o wrote:
 
-In file included from /home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/include/asm/uaccess.h:571:0,
-                 from /home/rostedt/work/autotest/nobackup/linux-test.git/include/linux/poll.h:14,
-                 from /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c:32:
-In function 'copy_from_user',
-    inlined from 'ft1000_ChIoctl' at /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c:702:36:
-/home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/include/asm/uaccess_32.h:212:26: error: call to 'copy_from_user_overflow' declared with attribute error: copy_from_user() buffer size is not provably correct
+> Do we guarantee that the application will get EIO at least once?  I
+> thought there were issues where the error bit could get lost if the
+> page writeback was triggered by sync() run by a third-party
+> application.
 
+Andrew, both the current kernel before and after my patch does
+not guarantee the behaviour Ted has pointed out is required.
 
-Looking at the code it was obvious what the problem was. The pointer
-dpram_data was being allocated but the address was being written to.
-Looking at the comment above the code shows that it use to write into an
-element of that pointer where the '&' is appropriate. But now that it
-writes to the pointer itself, we need to remove the '&' otherwise we
-write over the pointer and not into the data it points to.
+Johannes came up with a way to guarantee that - I'll send in
+a patch for that today.  That patch will obsolete the patch
+I sent before (I don't think you've applied it yet).
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-index 87a6487..8e8197d 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-@@ -699,7 +699,7 @@ static long ft1000_ChIoctl (struct file *File, unsigned int Command,
- 			break;
- 
-                 //if ( copy_from_user(&(dpram_command.dpram_blk), (PIOCTL_DPRAM_BLK)Argument, msgsz+2) ) {
--                if ( copy_from_user(&dpram_data, argp, msgsz+2) ) {
-+                if ( copy_from_user(dpram_data, argp, msgsz+2) ) {
-                     DEBUG("FT1000:ft1000_ChIoctl: copy fault occurred\n");
-                     result = -EFAULT;
-                 }
-
-
+-- 
+All rights reversed
