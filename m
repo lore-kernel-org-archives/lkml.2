@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754321Ab0KKQeS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 11:34:18 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:42168 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753064Ab0KKQeR (ORCPT
+	id S1754387Ab0KKQgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 11:36:35 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:62178 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753360Ab0KKQge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 11:34:17 -0500
-Date: Thu, 11 Nov 2010 11:34:15 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
-        ying.huang@intel.com, bp@alien8.de, tglx@linutronix.de,
-        akpm@linux-foundation.org, mchehab@redhat.com,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
-	reporting)
-Message-ID: <20101111163415.GB11348@Krystal>
-References: <20101110174852.GB4001@elte.hu> <1289412329.12418.177.camel@gandalf.stny.rr.com> <1289413460.2084.27.camel@laptop> <20101110184105.GH22410@elte.hu> <1289415645.12418.180.camel@gandalf.stny.rr.com> <20101110191127.GA6190@nowhere> <20101110202316.GA32396@Krystal> <20101110213033.GA7682@nowhere> <20101111001110.GA32564@Krystal> <1289491816.12418.255.camel@gandalf.stny.rr.com>
+	Thu, 11 Nov 2010 11:36:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Vk6IPanJE/NntBPNOAZFcDer+PjFgI9XPd8Skl9SUL8D8i572CotKRHHtJ3pbdUY7Q
+         fXtMJQmOEvG9YkL5cPDh0jc4mQitxkRtI846LoceMhvfQaKJhEa1ERsGg/fqy+iRkoZZ
+         9YMK9KI9VxI0hyTCyCkypUsyfa6jBOBjLh18A=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289491816.12418.255.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:30:33 up 49 days, 20:32,  4 users,  load average: 0.25, 0.23,
-	0.18
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101111121917.GA933@kroah.com>
+References: <AANLkTikDXtLrfjYkQrkGi44qi0cpp-C+Lxr5j1UkFd2G@mail.gmail.com>
+	<20101109224450.GB21992@kroah.com>
+	<AANLkTimHOAdUieTzFvNNhaPxwvas2wBDfSL8aPu764HZ@mail.gmail.com>
+	<20101110183940.GA15089@kroah.com>
+	<AANLkTimTy0vngwuM=jWfeU7qgqznamPgAftX7=2LShL+@mail.gmail.com>
+	<20101111121917.GA933@kroah.com>
+Date: Thu, 11 Nov 2010 22:36:25 +0600
+Message-ID: <AANLkTi=dTW3WA-eLnnaHNcLdVKz7Bn41e8FE=67iVCyJ@mail.gmail.com>
+Subject: Re: [PATCH] fs, sysfs: Change sysfs_pathname function prototype.
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Wed, 2010-11-10 at 19:11 -0500, Mathieu Desnoyers wrote:
-> 
-> > > There are also the other common fields:
-> > > 
-> > > 	struct trace_entry {
-> > > 		unsigned short		type;
-> > > 
-> > > 
-> > > Type is needed by perf. If we have one buffer per event, we could
-> > > retrieve which event we are dealing with. But if buffers are
-> > > multiplexed per cpu, we need this.
-> > 
-> > Agreed, although 65536 types ID is probably overkill for the common case.
-> > I prefer to go for approaches with a header that contains a smaller number of
-> > bits, and use an extended header for those rare cases that need it.
-> 
-> Note, ftrace currently has over 600 event types. Unless we compact it
-> down into bits, using two bytes is fine.
+On 11/11/10, Greg KH <greg@kroah.com> wrote:
+>
+> perhaps, yes, that might be correct, but as almost no one builds with
+> WARN not enabled, is this a real issue?
 
-I understand that overall the numer of events overflows 256. However, this does
-not mean they are typically all activated. Moreover, if we add multiple buffer
-support, these events don't necessarily have to end up in the same buffer. This
-numeric identifier is only there to distinguish between events ending in the
-same buffer after all.
+I'm trying to find out the config, which causes the warning (it gets
+overwritten). Not all config produces the warning. Maybe - it was a
+randconfig, which generates the warning. I'll again try some
+randconfig and will try to find the config which generates the
+warning. If I find something I'll notice. But, I think the issue is
+real.
 
-So the number of available events does not count as an argument for choosing the
-typical number of bytes to represent the event IDs. The number of events
-typically activated for a trace session does.
 
-Thanks,
 
-Mathieu
+thanks,
+rakib
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+>
+> thanks,
+>
+> greg k-h
+>
