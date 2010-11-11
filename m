@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690Ab0KKORU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 09:17:20 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:59338 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660Ab0KKORT convert rfc822-to-8bit (ORCPT
+	id S1755872Ab0KKOTR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 09:19:17 -0500
+Received: from exprod5og101.obsmtp.com ([64.18.0.141]:48878 "HELO
+	exprod5og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752663Ab0KKOTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 09:17:19 -0500
-Subject: Re: [RFC][PATCH 05/22] sched: SCHED_DEADLINE policy implementation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raistlin <raistlin@linux.it>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1288333814.8661.146.camel@Palantir>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333814.8661.146.camel@Palantir>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 11 Nov 2010 15:17:03 +0100
-Message-ID: <1289485023.2084.117.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 11 Nov 2010 09:19:16 -0500
+Message-ID: <4CDBFB5E.5030504@panasas.com>
+Date: Thu, 11 Nov 2010 16:19:10 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+References: <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <20101111120453.GA672@kroah.com> <4CDBF837.7050608@panasas.com> <20101111141611.GA4679@kroah.com>
+In-Reply-To: <20101111141611.GA4679@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Nov 2010 14:19:15.0533 (UTC) FILETIME=[6BA187D0:01CB81AB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-29 at 08:30 +0200, Raistlin wrote:
-> +static void update_curr_dl(struct rq *rq)
-> +{
-> +       struct task_struct *curr = rq->curr;
-> +       struct sched_dl_entity *dl_se = &curr->dl;
-> +       u64 delta_exec;
-> +
-> +       if (!dl_task(curr) || !on_dl_rq(dl_se))
-> +               return;
-> +
-> +       delta_exec = rq->clock - curr->se.exec_start;
-> +       if (unlikely((s64)delta_exec < 0))
-> +               delta_exec = 0;
-> +
-> +       schedstat_set(curr->se.statistics.exec_max,
-> +                     max(curr->se.statistics.exec_max, delta_exec));
-> +
-> +       curr->se.sum_exec_runtime += delta_exec;
-> +       account_group_exec_runtime(curr, delta_exec);
-> +
-> +       curr->se.exec_start = rq->clock;
-> +       cpuacct_charge(curr, delta_exec);
-> +
-> +       dl_se->runtime -= delta_exec;
-> +       if (dl_runtime_exceeded(rq, dl_se)) {
-> +               __dequeue_task_dl(rq, curr, 0);
-> +               if (likely(start_dl_timer(dl_se)))
-> +                       dl_se->dl_throttled = 1;
-> +               else
-> +                       enqueue_task_dl(rq, curr, ENQUEUE_REPLENISH);
-> +
-> +               resched_task(curr);
-> +       }
-> +} 
+On 11/11/2010 04:16 PM, Greg KH wrote:
+> On Thu, Nov 11, 2010 at 04:05:43PM +0200, Boaz Harrosh wrote:
+>> On 11/11/2010 02:04 PM, Greg KH wrote:
+>>> On Thu, Nov 11, 2010 at 11:59:28AM +0200, Boaz Harrosh wrote:
+>>>> 4. Exactly Like 3 but without the extra kref member
+>>>>    Only x_put() changes and x_kref_release() now receives
+>>>>    an x_object
+>>>>
+>>>> int x_put(struct object_x *x)
+>>>> {
+>>>> 	if (kobject_put(&x->kobj) == 1)
+>>>> 		// Like above [3] x_kref_release()
+>>>> 		x_kref_release(x);
+>>>> }
+>>>
+>>> This is racy, please never do this.
+>>>
+>>
+>> The last ref belongs to the core code. 1 means there are no
+>> more external clients on the object. So it can not race with
+>> decrements. But I guess there is a possibility that it can
+>> race with new increments.
+> 
+> Exactly.
+> 
+>> If it is the case that new increments
+>> can only come from, say, sysfs access, then if we call the
+>> x_put() == 1 after we are unregistered from sysfs and no new
+>> users are allowed then the counter can only go down and we
+>> have the last reference. No?
+> 
+> Just don't do this, it's not worth it and will break over time when
+> others mess with the code.
+> 
+> Also note that kobject_put() does not even return a value, so the code
+> above will not even compile, let alone work.
+> 
 
-So you keep the current task in the rb-tree? If you remove the current
-task from the tree you don't have to do the whole dequeue/enqueue thing.
-Then again, I guess it only really matters once you push the deadline,
-which shouldn't be that often.
+OK Point taken, it is fragile. So there is option [3] then, with the extra
+kref. I think I've seen other places with this approach.
 
-Also, you might want to put a conditional around that resched, no point
-rescheduling if you're still the leftmost task.
+> thanks,
+> 
+> greg k-h
 
-
+Thanks
+Boaz
