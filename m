@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab0KKThY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 14:37:24 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:42360 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502Ab0KKThX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 14:37:23 -0500
-Subject: Re: [RFC][PATCH 12/22] sched: add runtime reporting for -deadline
- tasks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raistlin <raistlin@linux.it>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1288334202.8661.153.camel@Palantir>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288334202.8661.153.camel@Palantir>
-Content-Type: text/plain; charset="UTF-8"
+	id S1756092Ab0KKTiA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 14:38:00 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40711 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754676Ab0KKTh7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 14:37:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <1289502511.11397.36.camel@maggy.simson.net>
+References: <1287479765.9920.9.camel@marge.simson.net> <1287487757.24189.40.camel@marge.simson.net>
+ <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
+ <1287511983.7417.45.camel@marge.simson.net> <1287514410.7368.10.camel@marge.simson.net>
+ <20101020025652.GB26822@elte.hu> <1287648715.9021.20.camel@marge.simson.net>
+ <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
+ <20101021162924.GA3225@redhat.com> <1288076838.11930.1.camel@marge.simson.net>
+ <1288078144.7478.9.camel@marge.simson.net> <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
+ <1289489200.11397.21.camel@maggy.simson.net> <AANLkTinbtfuipoene_M0Om_QtycHGL15Q5E8BOmLU-bh@mail.gmail.com>
+ <1289502511.11397.36.camel@maggy.simson.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 11 Nov 2010 11:37:28 -0800
+Message-ID: <AANLkTi=hKhsU0Nsenq-jezDVNYQ4fCXFBbUy5c7EFk=U@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+To: Mike Galbraith <efault@gmx.de>
+Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 11 Nov 2010 20:37:03 +0100
-Message-ID: <1289504223.2084.174.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-29 at 08:36 +0200, Raistlin wrote:
-> Make it available for the user-space the total amount of runtime
-> time it has used from since it became a -deadline task.
-> 
-> This is something that is typically useful for monitoring from
-> user-space the task CPU usage, and maybe implementing at that level
-> some more sophisticated scheduling behaviour.
-> 
-> One example is feedback scheduling, where you try to adapt the
-> scheduling parameters of a task by looking at its behaviour in
-> a certain interval of time, applying concepts coming from control
-> engineering.
-> 
-> Signed-off-by: Dario Faggioli <raistlin@linux.it>
-> ---
->  include/linux/sched.h |    7 +++----
->  kernel/sched.c        |    3 +++
->  kernel/sched_debug.c  |    1 +
->  kernel/sched_dl.c     |    1 +
->  4 files changed, 8 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 8ae947b..b6f0635 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1242,14 +1242,15 @@ struct sched_rt_entity {
->  #endif
->  };
->  
-> -#ifdef CONFIG_SCHEDSTATS
->  struct sched_stats_dl {
-> +#ifdef CONFIG_SCHEDSTATS
->  	u64			last_dmiss;
->  	u64			last_rorun;
->  	u64			dmiss_max;
->  	u64			rorun_max;
-> -};
->  #endif
-> +	u64			tot_rtime;
-> +};
->  
+On Thu, Nov 11, 2010 at 11:08 AM, Mike Galbraith <efault@gmx.de> wrote:
+>
+>>  - the reason I suggested the signal struct was really that I thought
+>> it would avoid extra (unnecessary) cost in thread creation/teardown.
+>>
+>>    Maybe I should have made that clear, but this seems to
+>> unnecessarily do the whole atomic_inc/dec for each thread. That seems
+>> a bit sad.
+>>
+>>    That said, if not having to dereference ->signal simplifies the
+>> scheduler interaction, I guess the extra atomic ref at thread
+>> creation/deletion is fine. So I don't think this is wrong, it's just
+>> something I wanted to bring up.
+>
+> Ah, ok.  Anything that cuts overhead is worth doing.
 
-I know we agreed to pull this from the sched_param2 structure and delay
-exposing this information for a while until the base patches got merged
-and came up with a solid use-case, but reading this patch makes me
-wonder why tsk->se.sum_exec_runtime isn't good enough?
+Well, it cuts both ways. Maybe your approach is simpler and avoids
+overhead at scheduling time. And "tsk->signal" may not be reliable due
+to races with exit etc, so it may well be that going through the
+signal struct could end up being a source of nasty races. I didn't
+look whether the scheduler already derefenced ->signal for some other
+reason, for example.
+
+So your patch may well have done the exact right thing.
+
+                              Linus
