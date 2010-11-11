@@ -1,93 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757140Ab0KKVmD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 16:42:03 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:62305 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754330Ab0KKVmA (ORCPT
+	id S1757114Ab0KKVnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 16:43:10 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:38223 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754780Ab0KKVnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 16:42:00 -0500
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=QHqalcCKOTcA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=omOdbC7AAAAA:8 a=Tty9oNO6AAAA:8 a=meVymXHHAAAA:8 a=N56VC1Z3b-zy9rtOjdYA:9 a=UzhZ_sH7CmyWa5jKpMMA:7 a=Moqt5YQ9x8SQcoAnbRLGidgU4bwA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=AjVVRxw9dd0-IgkE:21 a=uLEDjVwJ7mJyNyoX:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20101111214158.271364095@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Thu, 11 Nov 2010 16:41:12 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 1/2] tracing: Fix module use of trace_bprintk()
-References: <20101111214111.675303594@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Fix-module-use-of-trace_bprintk.patch
+	Thu, 11 Nov 2010 16:43:08 -0500
+Subject: Re: [PATCH] scsi: Convert scsi_host->cmd_serial_number to odd
+	numbered atomic_t counter
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>,
+        Mike Anderson <andmike@linux.vnet.ibm.com>
+In-Reply-To: <1289490783.2982.33.camel@mulgrave.site>
+References: <1289472405-31003-1-git-send-email-nab@linux-iscsi.org>
+	 <1289490783.2982.33.camel@mulgrave.site>
+Content-Type: text/plain
+Date: Thu, 11 Nov 2010 13:37:55 -0800
+Message-Id: <1289511475.2867.138.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+On Thu, 2010-11-11 at 09:53 -0600, James Bottomley wrote:
+> On Thu, 2010-11-11 at 02:46 -0800, Nicholas A. Bellinger wrote:
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > This patch converts struct scsi_host->cmd_serial_number to a 'odd incremented by 2'
+> > atomic_t counter in scsi_cmd_get_serial(), and moves the host_lock held call in
+> > jgarzik's DEF_SCSI_QCMD() wrapper back into it's original location in scsi_dispatch_cmd().
+> 
+> Actually, no ... this isn't really a good idea; you're lengthening our
+> critical path here (an atomic costs a lot more than a simple add under
+> spinlock).
+> 
 
-On use of trace_printk() there's a macro that determines if the format
-is static or a variable. If it is static, it defaults to __trace_bprintk()
-otherwise it uses __trace_printk().
+Fair enough, but this is only less expensive with a spinlock w/p
+interrupts disabled, yes..?
 
-A while ago, Lai Jiangshan added __trace_bprintk(). In that patch, we
-discussed a way to allow modules to use it. The difference between
-__trace_bprintk() and __trace_printk() is that for faster processing,
-just the format and args are stored in the trace instead of running
-it through a sprintf function. In order to do this, the format used
-by the __trace_bprintk() had to be persistent.
+> There are only a few drivers left that actually make use of a serial
+> number.  Of those, the only modern ones are qla4, lpfc, mpt2sas and
+> megaraid.
+> 
 
-See commit 1ba28e02a18cbdbea123836f6c98efb09cbf59ec
+I am not exactly sure that qla4 or lpfc is on the list of LLDs that use
+and still need a cmd->serial_number for anything beyond simple printk()
+purposes..  
 
-The problem comes with trace_bprintk() where the module is unloaded.
-The pointer left in the buffer is still pointing to the format.
+> So the next logical step seems to be eliminate the overloading of the
+> serial number zero value, which removes the last mid-layer use (dpt_i2o
+> seems to abuse this unnecessarily as well), then the serial number code
+> can be pushed down into the queuecommand routines of only those drivers
+> that actually use it.
 
-To solve this issue, the formats in the module were copied into kernel
-core. If the same format was used, they would use the same copy (to prevent
-memory leak). This all worked well until we tried to merge everything.
+Correct, this is what we where originally doing in the
+host_lock-less-for-37-v6 series here:
 
-At the time this was written, Lai Jiangshan, Frederic Weisbecker,
-Ingo Molnar and myself were all touching the same code. When this was
-merged, we lost the part of it that was in module.c. This kept out the
-copying of the formats and unloading the module could cause bad pointers
-left in the ring buffer.
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-4.0.git;a=commitdiff;h=72a72033661506ead54e0f366218fd0aef2e5339
 
-This patch adds back (with updates required for current kernel) the
-module code that sets up the necessary pointers.
+The LLDs that ended up requring the explict calls for:
 
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/module.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+mpt2sas: Add scsi_cmd_get_serial() call and set SHT->queuecommand_unlocked()
+mpt/fusion: Add scsi_cmd_get_serial() call and set SHT->queuecommand_unlocked()
+dpt_i2o: Add scsi_cmd_get_serial() call
+eata: Add scsi_cmd_get_serial() call
+u14-34f: Add scsi_cmd_get_serial() call
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 437a74a..d190664 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2326,6 +2326,18 @@ static void find_module_sections(struct module *mod, struct load_info *info)
- 	kmemleak_scan_area(mod->trace_events, sizeof(*mod->trace_events) *
- 			   mod->num_trace_events, GFP_KERNEL);
- #endif
-+#ifdef CONFIG_TRACING
-+	mod->trace_bprintk_fmt_start = section_objs(info, "__trace_printk_fmt",
-+					 sizeof(*mod->trace_bprintk_fmt_start),
-+					 &mod->num_trace_bprintk_fmt);
-+	/*
-+	 * This section contains pointers to allocated objects in the trace
-+	 * code and not scanning it leads to false positives.
-+	 */
-+	kmemleak_scan_area(mod->trace_bprintk_fmt_start,
-+			   sizeof(*mod->trace_bprintk_fmt_start) *
-+			   mod->num_trace_bprintk_fmt, GFP_KERNEL);
-+#endif
- #ifdef CONFIG_FTRACE_MCOUNT_RECORD
- 	/* sechdrs[0].sh_size is always zero */
- 	mod->ftrace_callsites = section_objs(info, "__mcount_loc",
--- 
-1.7.1
+> None of the modern ones seems to have a
+> legitimate use, so I think their uses can mostly be eliminated.
 
+>From the above 5 LLDs, they all appear to be releated to using
+cmd->serial_number in their internal error recovery handling.
+
+> Thus,
+> we might be able to get away with a simple queuecommand push down and
+> never bother with atomics for this (since it's unlikely the legacy users
+> would convert away from a lock wrapping their queuecommand routines).
+> 
+
+Sounds good to me, but you will recall the last attempt to make
+scsi_cmd_get_serial() optional for the special case LLDs, that we
+started running quickly in the legacy usage of cmd->serial_number in
+scsi_softirq_done() and the side effects in scsi_try_to_abort_cmd(), who
+use is complex enough that we have not found a proper resolution
+sufficent to andmike discussed here:
+
+http://marc.info/?l=linux-scsi&m=128535319915212&w=2
+http://marc.info/?l=linux-scsi&m=128820726325009&w=2
+
+Any takers..?  ;)
+
+--nab
+
+> James
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
