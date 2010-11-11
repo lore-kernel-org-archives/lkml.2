@@ -1,338 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757513Ab0KKAXs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 19:23:48 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:13696 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756699Ab0KKAXr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 19:23:47 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAAfF2kx5LcZK/2dsb2JhbACiPHK/cYVKBA
-Date: Thu, 11 Nov 2010 11:23:39 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Nick Piggin <npiggin@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch] mm: vmscan implement per-zone shrinkers
-Message-ID: <20101111002339.GA3372@amd>
-References: <20101109123246.GA11477@amd>
- <20101110051813.GS2715@dastard>
- <20101110063229.GA5700@amd>
- <20101110110549.GV2715@dastard>
+	id S1757550Ab0KKAYm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 19:24:42 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:40490 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756699Ab0KKAYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 19:24:41 -0500
+Date: Thu, 11 Nov 2010 00:24:27 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1011110021320.12522@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101110110549.GV2715@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-45100448-1289435067=:12522"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 10:05:49PM +1100, Dave Chinner wrote:
-> On Wed, Nov 10, 2010 at 05:32:29PM +1100, Nick Piggin wrote:
-> > On Wed, Nov 10, 2010 at 04:18:13PM +1100, Dave Chinner wrote:
-> > > On Tue, Nov 09, 2010 at 11:32:46PM +1100, Nick Piggin wrote:
-> > > > Hi,
-> > > > 
-> > > > I'm doing some works that require per-zone shrinkers, I'd like to get
-> > > > the vmscan part signed off and merged by interested mm people, please.
-> > > > 
-> > > 
-> > > There are still plenty of unresolved issues with this general
-> > > approach to scaling object caches that I'd like to see sorted out
-> > > before we merge any significant shrinker API changes. Some things of
-> > 
-> > No changes, it just adds new APIs.
-> > 
-> > 
-> > > the top of my head:
-> > > 
-> > > 	- how to solve impendence mismatches between VM scalability
-> > > 	  techniques and subsystem scalabilty techniques that result
-> > > 	  in shrinker cross-muliplication explosions. e.g. XFS
-> > > 	  tracks reclaimable inodes in per-allocation group trees,
-> > > 	  so we'd get AG x per-zone LRU trees using this shrinker
-> > > 	  method.  Think of the overhead on a 1000AG filesystem on a
-> > > 	  1000 node machine with 3-5 zones per node....
-> > 
-> > That's an interesting question, but no reason to hold anything up.
-> > It's up to the subsystem to handle it, or if they can't handle it
-> > sanely, you can elect to get no different behaviour than today.
-> 
-> See, this is what I think is the problem - you answer any concerns
-> by saying that the problem is entirely the responsibility of the
-> subsystem to handle. You've decided how you want shrinkers to work,
-> and everything else is SEP (somebody else's problem).
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Um, wrong. I provide an API to drive shrinkers, giving sufficient
-information (and nothing more). You are the one deciding that it is
-the problem of the API to somehow fix up all the implementations.
-
-If you can actually suggest how such a magical API would look like,
-please do. Otherwise, please try to get a better understanding of
-my API and understand it does nothing more than provide required
-information for proper zone based scanning.
+--29444707-45100448-1289435067=:12522
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
 
-> > I would say that per-zone is important for the above case, because it
-> > shrinks properly, based on memory pressure and pressure settings (eg.
-> > zone reclaim), and also obviously so that the reclaim threads are
-> > scanning node-local-memory so it doesn't have to pull objects from
-> > all over the interconnect.
-> > 
-> > With 1000 nodes and 1000AG filesystem, probably NxM is overkill, but
-> > there is no reason you couldn't have one LRU per X AGs.
-> 
-> And when it's only 1 node or 50 nodes or 50 AGs or 5000 AGs? I don't
-> like encoding _guesses_ at what might be a good configuration for an
-> arbitrary NxM configuration because they are rarely right. That's
-> exactly what you are suggesting here - that I solve this problem by
-> making guesses at how it might scale and coming up with some
-> arbitrary mapping scheme to handle it.
+Hi Linus,
 
-Still, it's off topic for shrinker API discussion, I'd be happy to
-help with ideas or questions about your particular implementation.
+This is a bunch of drm fixes, it includes couple of regression fixers on 
+radeon that could cause oops/memory corruptions, along with few Intel 
+fixers. It also fixes the Kconfig for the poulsbo stub.
 
-Note you can a: ignore the new information the API gives you, or b:
-understand that your current case of 1000 LRUs spread globally over
-1000 nodes sucks much much worse than even a poor per-zone distribution,
-and make some actual use of the new information.
+I've started taking Chris's pull requests now, so all the intel drm 
+changes should start coming via my tree always now, unless they are pretty 
+exceptional or I'm away.
 
+Dave.
 
-> > All this is obviously implementation details -- pagecache reclaim does
-> > not want to know about this, so it doesn't affect the API.
-> 
-> i.e. it's another SEP solution.
+The following changes since commit a7bcf21e60c73cb7f7c13fad928967d7e47c3cac:
 
-Uh, yes in fact it is the problem of the shrinker implementation to
-be a good implementation.
+  Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2010-11-08 11:54:53 -0800)
 
+are available in the git repository at:
 
-> > > 	- changes from global LRU behaviour to something that is not
-> > > 	  at all global - effect on workloads that depend on large
-> > > 	  scale caches that span multiple nodes is largely unknown.
-> > > 	  It will change IO patterns and affect system balance and
-> > > 	  performance of the system. How do we
-> > > 	  test/categorise/understand these problems and address such
-> > > 	  balance issues?
-> > 
-> > You've brought this up before several times and I've answered it.
-> > 
-> > The default configuration basically doesn't change much. Caches are
-> > allowed to fill up all zones and nodes, exactly the same as today.
-> > 
-> > On the reclaim side, when you have a global shortage, it will evenly
-> > shrink objects from all zones, so it still approximates LRU behaviour
-> > because number of objects far exceeds number of zones. This is exactly
-> > how per-zone pagecache scanning works too.
-> 
-> The whole point of the zone-based reclaim is that shrinkers run
-> when there are _local_ shortages on the _local_ LRUs and this will
-> happen much more often than global shortages, especially on large
-> machines. It will result in a change of behaviour, no question about
-> it.
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
 
-But if you have a global workload, then you tend to get relatively
-even pressure and it tends to approximate global LRU (especially if
-you do memory spreading of your slabs).
+Alex Deucher (5):
+      drm/radeon/kms/evergreen: add missing pm.vblank_sync update in vbl handler
+      drm/radeon/kms: make the connector code less verbose
+      drm/radeon/kms: don't disable shared encoders on pre-DCE3 display blocks
+      drm/radeon/kms: add support for clock/data path routers
+      drm/radeon/kms: fix thermal sensor reporting on rv6xx
 
-Yes there will be some differences, but it's not some giant scary
-change, it just can be tested with some benchmarks and people can
-complain if something hurts. Bringing reclaim closer to how pagecache
-is reclaimed I think should make things more understandable though.
+Chris Wilson (7):
+      drm/i915: Flush read-only buffers from the active list upon idle as well
+      drm/i915: Apply big hammer to serialise buffer access between rings
+      drm/i915: Allow powersave modparam to be adjusted at runtime.
+      drm/i915: SNB BLT workaround
+      drm/i915: Avoid might_fault during pwrite whilst holding our mutex
+      drm/i915/ringbuffer: Use the HEAD auto-reporting mechanism
+      drm/i915: Fix LVDS fixed-mode regression from 219adae1
 
+Christoph Fritz (1):
+      drm/i915: opregion_setup: iounmap correct address
 
-> However, this is not reason for not moving to this model - what I'm
-> asking is what the plan for categorising problems that arise as a
-> result of such a change? How do we go about translating random
-> reports like "I do this and it goes X% slower on 2.6.xx" to "that's
-> a result of the new LRU reclaim model, and you should do <this> to
-> try to resolve it". How do we triage such reports? What are our
-> options to resolve such problems? Are there any knobs we should add
-> at the beginning to give users ways of changing the behaviour to be
-> more like the curent code? We've got lots of different knobs to
-> control page cache reclaim behaviour - won't some of them be
-> relevant to per-zone slab cache reclaim?
+Dan Carpenter (1):
+      i915: signedness bug in check_overlay_src()
 
-Really? Same as any other heuristic or performance change. We merge
-thousands of them every release cycle, and at least a couple of major
-ones.
+Dave Airlie (1):
+      Merge branch 'drm-intel-fixes' of git://git.kernel.org/.../ickle/drm-intel
 
+Ingo Molnar (1):
+      drm/stub/Kconfig: fix Kconfig for stub driver.
 
-> > > 	- your use of this shrinker architecture for VFS
-> > > 	  inode/dentry cache scalability requires adding lists and
-> > > 	  locks to the MM struct zone for each object cache type
-> > > 	  (inode, dentry, etc). As such, it is not a generic
-> > > 	  solution because it cannot be used for per-instance caches
-> > > 	  like the per-mount inode caches XFS uses.
-> > 
-> > Of course it doesn't. You can use kmalloc.
-> 
-> Right - another SEP solution.
+Jesse Barnes (1):
+      drm/i915: Fix the graphics frequency clamping at init and when IPS is active.
 
-What??? Stop saying this. In the above paragraph you were going crazy
-about your wrong and obviously unfounded solution that other subsystems
-can't use it. I tell you that they can, ie. with kmalloc.
+Joe Perches (3):
+      drivers/gpu/drm/vmwgfx: Fix k.alloc switched arguments
+      drivers/gpu/drm: Update WARN uses
+      drivers/gpu: Use vzalloc
 
-I could spell it out if it is not obvious. You would allocate an array
-of LRU structures to fit all zones in the system. And then you would
-index into that array with zone_to_nid and zone_idx. OK?
+Kulikov Vasiliy (1):
+      drm: vmwgfx: fix information leak to userland
 
-It is not "SEP solution". If a shrinker implementation wants to use per
-zone LRUs, then it is that shrinker implementation's problem to allocate
-space for them. OK so far?
+Kyle McMartin (1):
+      i915: reprogram power monitoring registers on resume
 
-And if a shrinker implementation doesn't want to do that, and instead
-wants a global LRU, then it's the implementation's problem to allocate
-space for that. And if it wants per AG LRUs, then it's the
-implementation's problem to allocate space for that. See any patterns
-emerging?
+Michel Dänzer (1):
+      drm/radeon/kms: Fix retrying ttm_bo_init() after it failed once.
 
-> The reason people are using shrinkers is that it is simple to
-> implement a basic one. But implementing a scalable shrinker right
-> now is fucking hard - look at all the problems we've had with XFS
-> mostly because of the current API and the unbound parallelism of
-> direct reclaim.
-> 
-> This new API is a whole new adventure that not many people are going
-> to have machines capable of executing behavioural testing or
-> stressing. If everyone is forced to implement their own "scalable
-> shrinker" we'll end up with a rat's nest of different
-> implementations with similar but subtly different sets of bugs...
+Sam Tygier (1):
+      DRM: ignore invalid EDID extensions
 
-No, they are not forced to do anything. Stop with this strawman already.
-Did you read the patch? 0 change to any existing implementation.
+Takashi Iwai (1):
+      drm/i915: Fix typo from "Enable DisplayPort Audio"
 
+Thomas Hellstrom (10):
+      drm/ttm: Documentation update
+      drm/ttm: Use private locks for the default bo range manager
+      drm/ttm: Remove pointless list_empty check
+      drm/ttm: Remove mm init error printouts and checks
+      drm/ttm: Add a barrier when unreserving
+      drm/ttm: remove failed ttm binding error printout
+      drm/ttm: Make sure a sync object doesn't disappear while we use it
+      drm/ttm: Remove the CAP_SYS_ADMIN requirement for bo pinning
+      drm/vmwgfx: Fix oops on failing bo pin
+      drm/ttm: Be consistent on ttm_bo_init() failures
 
-> > > 	  i.e. nothing can actually use this infrastructure change
-> > > 	  without tying itself directly into the VM implementation,
-> > > 	  and even then not every existing shrinker can use this
-> > > 	  method of scaling. i.e. some level of abstraction from the
-> > > 	  VM implementation is needed in the shrinker API.
-> > 
-> > "zones" is the abstraction. The thing which all allocation and
-> > management of memory is based on, everywhere you do any allocations
-> > in the kernel. A *shrinker* implementation, a thing which is called
-> > in response to memory shortage in a given zone, has to know about
-> > zones. End of story. "Tied to the memory management implementation"
-> > is true to the extent that it is part of the memory management
-> > implementation.
-> >  
-> > 
-> > > 	- it has been pointed out that slab caches are generally
-> > > 	  allocated out of a single zone per node, so per-zone
-> > > 	  shrinker granularity seems unnecessary.
-> > 
-> > No they are not, that's just total FUD. Where was that "pointed out"?
-> 
-> Christoph Hellwig mentioned it, I think Christoph Lameter asked
-> exactly this question, I've mentioned it, and you even mentioned at
-> one point that zones were effectively a per-node construct....
+Tyson Whitehead (1):
+      drm/radeon/kms: fix bugs in ddc and cd path router code
 
-Christoph Hellwig mentioned lots of things that were wrong.
+Zhenyu Wang (4):
+      drm/i915: Fix KMS regression on Sandybridge/CPT
+      drm/i915; Don't apply Ironlake FDI clock workaround to Sandybridge
+      agp/intel: restore cache behavior on sandybridge
+      agp/intel: fix cache control for sandybridge
 
-Lameter had a reasonable discussion and I showed how per-node shrinker
-can cause imbalance, and how subsystems that only care about nodes can
-use the zone shrinker to get exactly the same information (because it
-provides a superset). And that was the end of that. If you had followed
-the discussion you wouldn't keep bringing up this again and again.
-
-
-> > Slabs are generally allocated from every zone except for highmem and
-> > movable, and moreover there is nothing to prevent a shrinker
-> > implementation from needing to shrink highmem and movable pages as
-> > well.
-> >
-> > > 	- doesn't solve the unbound direct reclaim shrinker
-> > > 	  parallelism that is already causing excessive LRU lock
-> > > 	  contention on 8p single node systems. While
-> > > 	  per-LRU/per-node solves the larger scalability issue, it
-> > > 	  doesn't address scalability within the node. This is soon
-> > > 	  going to be 24p per node and that's more than enough to
-> > > 	  cause severe problems with a single lock and list...
-> > 
-> > It doesn't aim to solve that. It doesn't prevent that from being
-> > solved either (and improving parallelism in a subsystem generally,
-> > you know, helps with lock contention due to lots of threads in there,
-> > right?).
-> 
-> Sure, but you keep missing the point that it's a problem that is
-> more important to solve for the typical 2S or 4S server than scaling
-
-I am not missing that point. I am solving a different problem. Other
-people are looking at the reclaim parallelism problem. Why don't you
-go and bother them?
-
-> to 1000 nodes is.  An architecture that allows unbounded parallelism
-> is, IMO, fundamentally broken from a scalability point of view.
-> Such behaviour indicates that the effects of such levels of
-> parallelism weren't really considered with the subsystem was
-> designed.
-> 
-> I make this point because of the observation I made that shrinkers
-> are by far the most efficient when only a single thread is running
-> reclaim on a particular LRU.  Reclaim parallelism on a single LRU
-> only made reclaim go slower and consume more CPU, and direct reclaim
-> is definitely causing such parallelism and slowdowns (I can point
-> you to the XFS mailing list posting again if you want).
-
-And having more LRUs, more locks, fewer CPUs contending each lock
-and LRU, and node locality (yes it is important even on 2S and 4S
-systems) is going to do nothing but help that.
-
-
-> I've previously stated that reducing/controlling the level of
-> parallelism can be just as effective at providing serious
-> scalability improvements as fine grained locking. So you don't
-> simply scoff and mock me for suggesting it like you did last time,
-
-I didn't mock you. On the contrary I agreed that there are 2 problems
-here, and that lots of threads in reclaim is one of them. I know this
-myself first hand because the pagecache LRUs have the same problems.
-And I pointed out that people were looking at the other problem, and
-that it was mostly indpendent of per-zone locking in implementation,
-and in functionality the per-zone locking would help the unbounded
-paralellism anyway.
-
-That you thought I was mocking you by providing an answer like that,
-I don't know. Maybe I got frustrated sometime after the 5th time you
-brought up exactly the same thing.
-
-
-> >From that experience, what I suggest is that we provide the same
-> sort of _controlled parallelism_ for the generic shrinker
-> infrastructure. We abstract out the lists and locks completely, and
-> simply provide a "can you free this object" callback to the
-> subsystem. I suggested we move shrinker callbacks out of direct
-> reclaim to the (per-node) kswapd. having thought about it a bit
-> more, a simpler (and probably better) alternative would be to allow
-> only a single direct reclaimer to act on a specific LRU at a time,
-> as this would allow different LRUs to be reclaimed in parallel.
-> Either way, this bounds the amount of parallelism the shrinker will
-> place on the lists and locks, thereby solving both the internal node
-> scalability issues and the scaling to many nodes problems.
-
-No to abstracting lists and locks completely, and adding callbacks.
-That just way over complicates things and doesn't allow shrinkers
-flexibility. There is nothing wrong with allowing shrinkers to do
-whatever they need to shrink memory.
-
-The problem is that reclaim allows too many threads into the shrinkers.
-And it is not a shrinker only problem, it also affects the pagecache
-LRUs. So the right way to do it is solve it the same way for both
-shrinkers and pagecache, and put some limiting in reclaim/direct reclaim
-paths. When you do that, shrinkers will be limited as well. People have
-looked at this at various points (I don't know what progress is on it
-now though).
-
-
-> Such an abstraction also keeps all the details of how the objects
-> are stored in LRUs and selected for reclaim completely hidden from
-> the subsystems.
-
-Well then that would be wrong because the locking and the access
-patterns are fundamental properties of the subsystem, not the MM
-reclaim subsystem.
-
+ drivers/char/agp/intel-gtt.c               |    6 +-
+ drivers/gpu/drm/drm_crtc_helper.c          |    2 +-
+ drivers/gpu/drm/drm_edid.c                 |   26 +++++--
+ drivers/gpu/drm/i915/i915_drv.c            |    2 +-
+ drivers/gpu/drm/i915/i915_drv.h            |    1 +
+ drivers/gpu/drm/i915/i915_gem.c            |  118 +++++++++++++++----------
+ drivers/gpu/drm/i915/i915_gem_evict.c      |    8 +--
+ drivers/gpu/drm/i915/i915_suspend.c        |    4 +-
+ drivers/gpu/drm/i915/intel_display.c       |   70 +++++++++------
+ drivers/gpu/drm/i915/intel_dp.c            |    2 +-
+ drivers/gpu/drm/i915/intel_drv.h           |    1 +
+ drivers/gpu/drm/i915/intel_lvds.c          |   16 +++-
+ drivers/gpu/drm/i915/intel_opregion.c      |    2 +-
+ drivers/gpu/drm/i915/intel_overlay.c       |    4 +-
+ drivers/gpu/drm/i915/intel_ringbuffer.c    |  129 +++++++++++++++++++++++++++-
+ drivers/gpu/drm/i915/intel_ringbuffer.h    |    3 +
+ drivers/gpu/drm/radeon/evergreen.c         |    8 ++-
+ drivers/gpu/drm/radeon/r100.c              |    4 +-
+ drivers/gpu/drm/radeon/r300.c              |    2 +-
+ drivers/gpu/drm/radeon/r600.c              |   12 +--
+ drivers/gpu/drm/radeon/radeon_atombios.c   |   27 ++++--
+ drivers/gpu/drm/radeon/radeon_connectors.c |   16 ++--
+ drivers/gpu/drm/radeon/radeon_display.c    |   18 +++--
+ drivers/gpu/drm/radeon/radeon_encoders.c   |   26 ++++++
+ drivers/gpu/drm/radeon/radeon_fence.c      |    3 +-
+ drivers/gpu/drm/radeon/radeon_i2c.c        |   41 +++++++--
+ drivers/gpu/drm/radeon/radeon_mode.h       |   17 +++-
+ drivers/gpu/drm/radeon/radeon_object.c     |    4 +-
+ drivers/gpu/drm/radeon/radeon_ttm.c        |    3 +-
+ drivers/gpu/drm/radeon/rs400.c             |    2 +-
+ drivers/gpu/drm/radeon/rs600.c             |    4 +-
+ drivers/gpu/drm/ttm/ttm_bo.c               |   86 +++++--------------
+ drivers/gpu/drm/ttm/ttm_bo_manager.c       |   81 ++++++++++--------
+ drivers/gpu/drm/ttm/ttm_tt.c               |    4 +-
+ drivers/gpu/drm/via/via_dmablit.c          |    4 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c    |    1 +
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c        |    5 +
+ drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c        |    2 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_overlay.c    |    2 +-
+ drivers/gpu/stub/Kconfig                   |    3 +
+ include/drm/ttm/ttm_bo_api.h               |    4 +
+ include/drm/ttm/ttm_bo_driver.h            |   79 ++++++++++++++++-
+ 42 files changed, 577 insertions(+), 275 deletions(-)
+--29444707-45100448-1289435067=:12522--
