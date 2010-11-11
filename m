@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142Ab0KKWhB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 17:37:01 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:49337 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754524Ab0KKWg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 17:36:59 -0500
-Date: Thu, 11 Nov 2010 14:36:50 -0800
-From: Mike Anderson <andmike@linux.vnet.ibm.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH] scsi: Convert scsi_host->cmd_serial_number to odd
- numbered atomic_t counter
-Message-ID: <20101111223650.GA10257@linux.vnet.ibm.com>
-References: <1289472405-31003-1-git-send-email-nab@linux-iscsi.org>
- <1289490783.2982.33.camel@mulgrave.site>
- <1289511475.2867.138.camel@haakon2.linux-iscsi.org>
- <1289512549.2982.44.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289512549.2982.44.camel@mulgrave.site>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756231Ab0KKWtN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 17:49:13 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64823 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255Ab0KKWtM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 17:49:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=MncUCm+HO4cvcr7ub/nnJT3xJ3iIcy5f0UWPxrnaPn02AtbyJR0hjRe+vXH80FG5/U
+         o+LKfQbFpkFveSXFi4NYh6xmYHRI8zCpeIueuVCoL7rrlkE1kfDU+Exbb3F6hLJycNpi
+         YC6JS4CK55PY2qgJOQBB6hQnUOw4Jw95UndOc=
+Subject: Re: 2.6.3x-rty where x > 3 and y >= 1?
+From: Ng Oon-Ee <ngoonee@gmail.com>
+To: =?ISO-8859-1?Q?Niccol=F2?= Belli <darkbasic4@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
+        linux-kernel@vger.kernel.org,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        johnstul@us.ibm.com, rostedt@goodmis.org, npiggin@suse.de
+In-Reply-To: <4CDC0429.8090506@gmail.com>
+References: <4CDAF425.4050800@ccrma.stanford.edu>
+	 <alpine.LFD.2.00.1011102154330.2900@localhost6.localdomain6>
+	 <4CDC0429.8090506@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-9"
+Date: Fri, 12 Nov 2010 06:49:02 +0800
+Message-ID: <1289515742.14141.0.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley <James.Bottomley@suse.de> wrote:
-> On Thu, 2010-11-11 at 13:37 -0800, Nicholas A. Bellinger wrote:
-> >
-> >  ..snip..
-> >
-> > Sounds good to me, but you will recall the last attempt to make
-> > scsi_cmd_get_serial() optional for the special case LLDs, that we
-> > started running quickly in the legacy usage of cmd->serial_number in
-> > scsi_softirq_done() and the side effects in scsi_try_to_abort_cmd(), who
-> > use is complex enough that we have not found a proper resolution
-> > sufficent to andmike discussed here:
+On Thu, 2010-11-11 at 15:56 +0100, Niccolò Belli wrote:
+> Il 10/11/2010 21:54, Thomas Gleixner ha scritto:
+> > Working on it :)
 > 
-> Yes, that's what I meant by "eliminate the overloading of the serial
-> number zero value" above.  This needs fixing before the serial number
-> can be dumped for fast hba drivers.
+> Glad to hear that, I can't use 2.6.33-rt anymore because of problems
+> with my intel video card and my band is starting to blame because of xruns.
 > 
+> Darkbasic
 
-In the last email referenced below I believed that since
-scsi_softirq_done is calling scsi_eh_scmd_add without the
-SCSI_EH_CANCEL_CMD flag set this will stop scsi_try_to_abort_cmd from
-being called. Since scsi_softirq_done is the one setting serial_number
-to 0 I do not believe we can hit the serial number == 0 check in
-scsi_try_to_abort_cmd anymore.
+In the meantime, the -bfs kernel does improve the situation somewhat.
 
-> > http://marc.info/?l=linux-scsi&m=128820726325009&w=2
-
--andmike
---
-Michael Anderson
-andmike@linux.vnet.ibm.com
