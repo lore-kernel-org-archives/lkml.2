@@ -1,99 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433Ab0KKF4Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 00:56:16 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50875
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751535Ab0KKF4O (ORCPT
+	id S1757609Ab0KKGJA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 01:09:00 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:64650 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755247Ab0KKGI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 00:56:14 -0500
-Date: Wed, 10 Nov 2010 21:56:39 -0800 (PST)
-Message-Id: <20101110.215639.189706684.davem@davemloft.net>
-To: ccaulfie@redhat.com
-CC: teigland@redhat.com, cluster-devel@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] dlm: Handle application limited situations properly.
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Nov 2010 01:08:58 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6163"; a="61454864"
+Message-ID: <94b5e0c5f9e16620a6ff80de37ff69e2.squirrel@www.codeaurora.org>
+In-Reply-To: <4b3ddcee66c62d34bd9cb8fb3bf0c447.squirrel@www.codeaurora.org>
+References: <568203.56459.qm@web180308.mail.gq1.yahoo.com>
+    <4b3ddcee66c62d34bd9cb8fb3bf0c447.squirrel@www.codeaurora.org>
+Date: Wed, 10 Nov 2010 22:11:26 -0800 (PST)
+Subject: Re: [RFC/PATCH 2/2 RESEND] usb:gadget: Add SuperSpeed support to 
+     the      Gadget Framework
+From: tlinder@codeaurora.org
+To: "David Brownell" <david-b@pacbell.net>
+Cc: linux-usb@vger.kernel.org, "tlinder" <tlinder@codeaurora.org>,
+        "David Brownell" <dbrownell@users.sourceforge.net>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "Michal Nazarewicz" <m.nazarewicz@samsung.com>,
+        "Randy Dunlap" <randy.dunlap@oracle.com>,
+        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Robert Lukassen" <robert.lukassen@tomtom.com>,
+        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
+        "Matthew Wilcox" <willy@linux.intel.com>,
+        "Fabien Chouteau" <fabien.chouteau@barco.com>,
+        "Tejun Heo" <tj@kernel.org>, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It seems that not everyone received this email.
 
-In the normal regime where an application uses non-blocking I/O
-writes on a socket, they will handle -EAGAIN and use poll() to
-wait for send space.
+>>
+>>
+>> --- On Sun, 10/3/10, tlinder <tlinder@codeaurora.org> wrote:
+>>
+>>> In order not to force all the FDs to supply
+>>
+>> What do File Descriptors have to do with this?
+>>
+>> If you don't mean FD == File Descriptor, then
+>> please spell out what you do mean, instead of
+>> trying to repurpose a widely used abbreviation.
+>
+> By FD we meant Function Drivers. We'll update the patch description.
+>
+>>
+>>
+>> SuperSpeed
+>>> descriptors when
+>>> operating in SuperSpeed mode the following approach was
+>>> taken:
+>>> If we're operating in SuperSpeed mode and the FD didn't
+>>> supply SuperSpeed
+>>> descriptors, the composite layer will automatically create
+>>> SuperSpeed
+>>> descriptors with default values.
+>>
+>> That bothers me in two ways.  First, I want to
+>> see a solution that maintains today's policy where
+>> the composite framework is optional for all gadget
+>> drivers.
+>
+> This policy is maintained. Gadget drivers are not required to use the
+> composite framework in order to work in SuperSpeed mode. If a certain
+> driver wishes to do so, without using the composite framework, it should
+> add definitions of SuperSpeed descriptors and support of new SuperSpeed
+> features. If a driver wishes to work in High/Low speeds then no changes
+> are needed.
+> Please note that this change is backward compatible.
+> In order to test a non composite gadget driver we used the File storage.
+> We managed to load the file_storage gadget driver (while the SuperSpeed
+> gadget flag is enabled) and the File Storage successfully registered as a
+> high speed driver and enumerated with a super speed host.
+> We also tested a composite gadget driver (mass storage) that defines the
+> descriptors and doesn't use the automatic and it worked successfully.
+> All the other gadget drivers were also tested using the automatic
+> composite framework and managed to enumerate.
+>
+>
+>>
+>> Second, that kind of automagic bothers me.
+>>
+>> What could be wrong with expecting gadget
+>> drivers to provide all the descriptors they need,
+>> instead of introducing automagic?
+>
+> In the current implementation a gadget driver can still provide his own
+> SuperSpeed descriptors as it provides HighSpeed descriptors and not use
+> the automation.
+> Implementing the automatic creation of the SuperSpeed descriptors approach
+> has several benefits:
+> 1. All existing gadget drivers (that use the composite framework) are
+> operational in SuperSpeed mode without any modifications to their code
+> 2. Code duplication, of the additional SuperSpeed descriptors in each
+> existing gadget driver, is spared: A gadget driver that doesn't wish to
+> exploit the SuperSpeed capabilities (such as streaming for example) but
+> wishes to operate in a SuperSpeed mode is not required to provide
+> additional SuperSpeed descriptors with default values (meaning, that none
+> of the SuperSpeed capabilities are supported by it). Such will be created
+> for it automatically.
+> 2. Single snippet of code tested for all existing gadget drivers
+>
+>
+>>
+>>
+>>> Support for new SuperSpeed BOS descriptor was
+>>
+>> Wireless USB BOS descriptors exist too, yes?  Does
+>> this approach cover them, or just SuperSpeed?  (We
+>> may someday want to support Wireless USB on the
+>> peripheral/gadget side too...
+>
+> In the current implementation the composite framework supports
+> GetDescriptor(BOS) request only if the gadget driver supports SuperSpeed.
+> In order to extend this functionality for wireless USB one should add
+> another condition (is_wireless_USB()) to the existing if().
+>
+>>
+>>
+>>
+>>> +++++++++++++++++++++++++++++++++++++---
+>>>  include/linux/usb/ch9.h
+>>
+>> I like to see patches related to USB-IF formats
+>> and protocols be separate from functional changes
+>> in the USB stack or its drivers. which may rely
+>> on those formats/protocols; less entanglement.
+>
+> We will divide this patch into two patches.
+>
+>>        
+>>> +
+>>
+>>> +config USB_GADGET_SUPERSPEED
+>>> +    boolean "Gadget opperating in Super
+>>> Speed"
+>>> +    depends on USB_GADGET
+>>> +    depends on USB_GADGET_DUALSPEED
+>>> +    default n
+>>> +    help
+>>> +      Enabling this feature enables
+>>> Super Speed support in the Gadget
+>>> +      driver. It means that gadget
+>>> drivers should include extra (SuperSpeed)
+>>> +      descriptors.
+>>
+>> That is:  the automagic isn't needed.  The
+>> concepts in this patch seem to be a bit on
+>> the self-contradictory side...
+>
+> You are correct. We should change the comment as follows;
+> "...It means that gadget drivers should provide extra (SuperSpeed)
+> descriptors to the host."
+>
+>>
+>> ep_comp_desc = {
+>>> +        .bDescriptorType =
+>>> USB_DT_SS_ENDPOINT_COMP,
+>>> +        .bLength = 0x06,
+>>> +        .bMaxBurst = 0,
+>>> /*the default is we don't support bursting*/
+>>
+>> I've not followed the SuperSpeed stuff as closely
+>> as I might, but ... doesn't bursting require some
+>> hardware support?  So that not all UDC + driver
+>> stacks can support it?   (That'd be a case, if so,
+>> for more sanity checks ... and the gadget driver to
+>> explicitly say if it handles bursting.
+>
+> You're right. Bursting and streaming functionality support is defined by
+> the UDC and not the gadget framework.
+> Due to the above, the create_ss_descriptors() is used for providing
+> default SuperSpeed descriptors, meaning that streaming and bursting is not
+> supported.
+>
+>
+>>
+>>
+>>
+>>
+>
+>
 
-They don't actually sleep on the socket I/O write.
 
-But kernel level RPC layers that do socket I/O operations directly
-and key off of -EAGAIN on the write() to "try again later" don't
-use poll(), they instead have their own sleeping mechanism and
-rely upon ->sk_write_space() to trigger the wakeup.
-
-So they do effectively sleep on the write(), but this mechanism
-alone does not let the socket layers know what's going on.
-
-Therefore they must emulate what would have happened, otherwise
-TCP cannot possibly see that the connection is application window
-size limited.
-
-Handle this, therefore, like SUNRPC by setting SOCK_NOSPACE and
-bumping the ->sk_write_count as needed when we hit the send buffer
-limits.
-
-This should make TCP send buffer size auto-tuning and the
-->sk_write_space() callback invocations actually happen.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
-
-diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
-index 37a34c2..77720f8 100644
---- a/fs/dlm/lowcomms.c
-+++ b/fs/dlm/lowcomms.c
-@@ -108,6 +108,7 @@ struct connection {
- #define CF_INIT_PENDING 4
- #define CF_IS_OTHERCON 5
- #define CF_CLOSE 6
-+#define CF_APP_LIMITED 7
- 	struct list_head writequeue;  /* List of outgoing writequeue_entries */
- 	spinlock_t writequeue_lock;
- 	int (*rx_action) (struct connection *);	/* What to do when active */
-@@ -295,7 +296,17 @@ static void lowcomms_write_space(struct sock *sk)
- {
- 	struct connection *con = sock2con(sk);
- 
--	if (con && !test_and_set_bit(CF_WRITE_PENDING, &con->flags))
-+	if (!con)
-+		return;
-+
-+	clear_bit(SOCK_NOSPACE, &con->sock->flags);
-+
-+	if (test_and_clear_bit(CF_APP_LIMITED, &con->flags)) {
-+		con->sock->sk->sk_write_pending--;
-+		clear_bit(SOCK_ASYNC_NOSPACE, &con->sock->flags);
-+	}
-+
-+	if (!test_and_set_bit(CF_WRITE_PENDING, &con->flags))
- 		queue_work(send_workqueue, &con->swork);
- }
- 
-@@ -1319,6 +1330,15 @@ static void send_to_sock(struct connection *con)
- 			ret = kernel_sendpage(con->sock, e->page, offset, len,
- 					      msg_flags);
- 			if (ret == -EAGAIN || ret == 0) {
-+				if (ret == -EAGAIN &&
-+				    test_bit(SOCK_ASYNC_NOSPACE, &con->sock->flags) &&
-+				    !test_and_set_bit(CF_APP_LIMITED, &con->flags)) {
-+					/* Notify TCP that we're limited by the
-+					 * application window size.
-+					 */
-+					set_bit(SOCK_NOSPACE, &con->sock->flags);
-+					con->sock->sk->sk_write_pending++;
-+				}
- 				cond_resched();
- 				goto out;
- 			}
