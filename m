@@ -1,122 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab0KKKSY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 05:18:24 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:4700 "EHLO
-	VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755026Ab0KKKSW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 05:18:22 -0500
-X-SpamScore: -26
-X-BigFish: VS-26(zz542N1432N98dN9371Pzz1202hzz8275bh8275dhz2dh2a8h668h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw01.freescale.net;RD:de01egw01.freescale.net;EFVD:NLI
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-Class: urn:content-classes:message
+	id S1755192Ab0KKKWn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 05:22:43 -0500
+Received: from borg.asidev.net ([95.141.38.199]:48888 "EHLO borg.asidev.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755053Ab0KKKWl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 05:22:41 -0500
+Message-ID: <4CDBC3EC.6020707@evidence.eu.com>
+Date: Thu, 11 Nov 2010 11:22:36 +0100
+From: Claudio Scordino <claudio@evidence.eu.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 3/4][v2] fsl_rio: move machine_check handler into machine_check_e500 & machine_check_e500mc
-Date: Thu, 11 Nov 2010 18:19:04 +0800
-Message-ID: <9FCE46230501DF4D9461B9ACC152FD7104DDA26D@zmy16exm20.fsl.freescale.net>
-In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E55201538B08@CORPEXCH1.na.ads.idt.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 3/4][v2] fsl_rio: move machine_check handler into machine_check_e500 & machine_check_e500mc
-Thread-Index: Act7PwmUBiCHBVwrRR27jCEHXSOXJQF6MmuwABhG+mA=
-References: <1288777018-24259-1-git-send-email-b21989@freescale.com> <0CE8B6BE3C4AD74AB97D9D29BD24E55201538B08@CORPEXCH1.na.ads.idt.com>
-From: Xie Shaohui-B21989 <B21989@freescale.com>
-To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
-        <akpm@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        Li Yang-R58472 <R58472@freescale.com>,
-        Gala Kumar-B11780 <B11780@freescale.com>,
-        Zang Roy-R61911 <R61911@freescale.com>
-X-OriginatorOrg: freescale.com
+To: Greg KH <gregkh@suse.de>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>, linux-serial@vger.kernel.org,
+        Grant Edwards <grant.b.edwards@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] Documentation about RS485 serial communications
+References: <20100408111310.524f7354@lxorguk.ukuu.org.uk> <4CBD8EE4.5040808@evidence.eu.com> <i9ka0s$4ua$1@dough.gmane.org> <201010191727.53314.alexander.stein@systec-electronic.com> <i9kk4o$svc$1@dough.gmane.org> <4CC418A9.6090602@evidence.eu.com> <4CDA630F.4060903@atmel.com> <20101110172842.GC12371@suse.de>
+In-Reply-To: <20101110172842.GC12371@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-
-Best Regards, 
-Shaohui Xie 
-
-
-> -----Original Message-----
-> From: Bounine, Alexandre [mailto:Alexandre.Bounine@idt.com]
-> Sent: Thursday, November 11, 2010 6:55 AM
-> To: Xie Shaohui-B21989; akpm@linux-foundation.org
-> Cc: linux-kernel@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; Li
-Yang-
-> R58472; Gala Kumar-B11780; Zang Roy-R61911
-> Subject: RE: [PATCH 3/4][v2] fsl_rio: move machine_check handler into
-> machine_check_e500 & machine_check_e500mc
+Greg KH ha scritto:
+> On Wed, Nov 10, 2010 at 10:17:03AM +0100, Nicolas Ferre wrote:
+>> Le 24/10/2010 13:29, Claudio Scordino :
+>>
+>> [..]
+>>
+>>> Hi all,
+>>>
+>>> 	sorry for the misuse of the term "transceiver", and thank you
+>>> for your corrections.
+>>>
+>>> Hopefully, this new version of the document is slightly better.
+>> Hi all,
+>>
+>> This documentation is floating around for some time now. Claudio has
+>> enhanced it and it is maybe time to merge it in mainline...
+>>
+>> So, can serial people include it in their tree (Greg?) or should it go
+>> through another path?
 > 
-> Shaohui Xie <b21989@freescale.com> wrote:
-> >
-> > diff --git a/arch/powerpc/kernel/traps.c
-b/arch/powerpc/kernel/traps.c
-> > index a45a63c..2a5fb9d 100644
-> > --- a/arch/powerpc/kernel/traps.c
-> > +++ b/arch/powerpc/kernel/traps.c
-> > @@ -55,6 +55,7 @@
-> >  #endif
-> >  #include <asm/kexec.h>
-> >  #include <asm/ppc-opcode.h>
-> > +#include <linux/rio.h>
-> >
-> >  #if defined(CONFIG_DEBUGGER) || defined(CONFIG_KEXEC)  int
-> > (*__debugger)(struct pt_regs *regs) __read_mostly; @@ -500,6 +501,13
-> > @@ int machine_check_e500mc(struct pt_regs *regs)
-> >  		       reason & MCSR_MEA ? "Effective" : "Physical",
-> addr);
-> >  	}
-> >
-> > +	if (reason & MCSR_BUS_RBERR) {
-> > +		printk("Bus - Read Data Bus Error\n"); #ifdef
-CONFIG_RAPIDIO
-> > +		recoverable = fsl_rio_mcheck_exception(regs); #endif
-> > +	}
-> > +
-> >  	mtspr(SPRN_MCSR, mcsr);
-> >  	return mfspr(SPRN_MCSR) == 0 && recoverable;  } @@ -527,8
-+535,12
-> @@
-> > int machine_check_e500(struct pt_regs *regs)
-> >  		printk("Bus - Write Address Error\n");
-> >  	if (reason & MCSR_BUS_IBERR)
-> >  		printk("Bus - Instruction Data Error\n");
-> > -	if (reason & MCSR_BUS_RBERR)
-> > +	if (reason & MCSR_BUS_RBERR) {
-> >  		printk("Bus - Read Data Bus Error\n");
-> > +#ifdef CONFIG_RAPIDIO
-> > +		fsl_rio_mcheck_exception(regs);
-> > +#endif
-> > +	}
-> >  	if (reason & MCSR_BUS_WBERR)
-> >  		printk("Bus - Read Data Bus Error\n");
-> >  	if (reason & MCSR_BUS_IPERR)
-> 
-> This implementation breaks an intended use of
-> fsl_rio_mcheck_exception():
-> 1. for e500 it does not check the return value of the rio handler and
-> crashes the system even after RIO Mchk was serviced. Looks like e500mc
-> version handles it better but I have no HW to test it.
-> 2. the RIO Mchk is expected to be handled quietly but here it has many
-> printk's. May be it is better to call the fsl_rio_mcheck_exception()
-> handler in very beginning and simply exit if it returns 1.
-> 
-> Alex.
-[Xie Shaohui-B21989] Hi Alex, seems your suggestion is some kind of
-conflict with Kumar, you can have a look at 
-http://patchwork.ozlabs.org/patch/67774/
+> I can take it, if someone resends it with the accumulated acks that I
+> think it gathered over the review cycle.
 
-Thanks
-Shaohui
+Here it is.
 
-> 
-> 
+Thanks,
+
+	Claudio
+
+
+Documentation about RS485 serial communications
+
+Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+Acked-by: Russell King <linux@arm.linux.org.uk>
+Acked-by: Grant Edwards <grant.b.edwards@gmail.com>
+---
+ Documentation/serial/00-INDEX         |    2 +
+ Documentation/serial/serial-rs485.txt |  119 +++++++++++++++++++++++++++++++++
+ 2 files changed, 121 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/serial/serial-rs485.txt
+
+diff --git a/Documentation/serial/00-INDEX b/Documentation/serial/00-INDEX
+index 07dcdb0..e09468a 100644
+--- a/Documentation/serial/00-INDEX
++++ b/Documentation/serial/00-INDEX
+@@ -14,6 +14,8 @@ riscom8.txt
+ 	- notes on using the RISCom/8 multi-port serial driver.
+ rocket.txt
+ 	- info on the Comtrol RocketPort multiport serial driver.
++serial-rs485.txt
++	- info about RS485 structures and support in the kernel.
+ specialix.txt
+ 	- info on hardware/driver for specialix IO8+ multiport serial card.
+ stallion.txt
+diff --git a/Documentation/serial/serial-rs485.txt b/Documentation/serial/serial-rs485.txt
+new file mode 100644
+index 0000000..40f09c6
+--- /dev/null
++++ b/Documentation/serial/serial-rs485.txt
+@@ -0,0 +1,119 @@
++                        RS485 SERIAL COMMUNICATIONS
++
++1. INTRODUCTION
++
++   EIA-485, also known as TIA/EIA-485 or RS-485, is a standard defining the
++   electrical characteristics of drivers and receivers for use in balanced
++   digital multipoint systems.
++   This standard is widely used for communications in industrial automation
++   because it can be used effectively over long distances and in electrically
++   noisy environments.
++
++2. HARDWARE-RELATED CONSIDERATIONS
++
++   Some CPUs (e.g., Atmel AT91) contain a built-in half-duplex mode capable of
++   automatically controlling line direction by toggling RTS. That can used to
++   control external half-duplex hardware like an RS485 transceiver or any
++   RS232-connected half-duplex device like some modems.
++
++   For these microcontrollers, the Linux driver should be made capable of
++   working in both modes, and proper ioctls (see later) should be made
++   available at user-level to allow switching from one mode to the other, and
++   vice versa.
++
++3. DATA STRUCTURES ALREADY AVAILABLE IN THE KERNEL
++
++   The Linux kernel provides the serial_rs485 structure (see [1]) to handle
++   RS485 communications. This data structure is used to set and configure RS485
++   parameters in the platform data and in ioctls.
++
++   Any driver for devices capable of working both as RS232 and RS485 should
++   provide at least the following ioctls:
++
++    - TIOCSRS485 (typically associated with number 0x542F). This ioctl is used
++      to enable/disable RS485 mode from user-space
++
++    - TIOCGRS485 (typically associated with number 0x542E). This ioctl is used
++      to get RS485 mode from kernel-space (i.e., driver) to user-space.
++
++   In other words, the serial driver should contain a code similar to the next
++   one:
++
++	static struct uart_ops atmel_pops = {
++		/* ... */
++		.ioctl		= handle_ioctl,
++	};
++
++	static int handle_ioctl(struct uart_port *port,
++		unsigned int cmd,
++		unsigned long arg)
++	{
++		struct serial_rs485 rs485conf;
++
++		switch (cmd) {
++		case TIOCSRS485:
++			if (copy_from_user(&rs485conf,
++				(struct serial_rs485 *) arg,
++				sizeof(rs485conf)))
++					return -EFAULT;
++
++			/* ... */
++			break;
++
++		case TIOCGRS485:
++			if (copy_to_user((struct serial_rs485 *) arg,
++				...,
++				sizeof(rs485conf)))
++					return -EFAULT;
++			/* ... */
++			break;
++
++		/* ... */
++		}
++	}
++
++
++4. USAGE FROM USER-LEVEL
++
++   From user-level, RS485 configuration can be get/set using the previous
++   ioctls. For instance, to set RS485 you can use the following code:
++
++	#include <linux/serial.h>
++
++	/* Driver-specific ioctls: */
++	#define TIOCGRS485      0x542E
++	#define TIOCSRS485      0x542F
++
++	/* Open your specific device (e.g., /dev/mydevice): */
++	int fd = open ("/dev/mydevice", O_RDWR);
++	if (fd < 0) {
++		/* Error handling. See errno. */
++	}
++
++	struct serial_rs485 rs485conf;
++
++	/* Set RS485 mode: */
++	rs485conf.flags |= SER_RS485_ENABLED;
++
++	/* Set rts delay before send, if needed: */
++	rs485conf.flags |= SER_RS485_RTS_BEFORE_SEND;
++	rs485conf.delay_rts_before_send = ...;
++
++	/* Set rts delay after send, if needed: */
++	rs485conf.flags |= SER_RS485_RTS_AFTER_SEND;
++	rs485conf.delay_rts_after_send = ...;
++
++	if (ioctl (fd, TIOCSRS485, &rs485conf) < 0) {
++		/* Error handling. See errno. */
++	}
++
++	/* Use read() and write() syscalls here... */
++
++	/* Close the device when finished: */
++	if (close (fd) < 0) {
++		/* Error handling. See errno. */
++	}
++
++5. REFERENCES
++
++ [1]	include/linux/serial.h
+-- 
+1.6.0.4
 
 
