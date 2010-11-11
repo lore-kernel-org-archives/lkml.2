@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756209Ab0KKTaf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 14:30:35 -0500
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:38937 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553Ab0KKTaa (ORCPT
+	id S1756353Ab0KKTb5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 14:31:57 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:42258 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756053Ab0KKTac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 14:30:30 -0500
+	Thu, 11 Nov 2010 14:30:32 -0500
 From: Alexander Shishkin <virtuoso@slind.org>
 To: linux-kernel@vger.kernel.org
 Cc: John Stultz <johnstul@us.ibm.com>,
@@ -16,97 +16,98 @@ Cc: John Stultz <johnstul@us.ibm.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         "Kirill A. Shutemov" <kirill@shutemov.name>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Shishkin <virtuoso@slind.org>
-Subject: [PATCHv6 0/7] system time changes notification
-Date: Thu, 11 Nov 2010 21:29:55 +0200
-Message-Id: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
+        Alexander Shishkin <virtuoso@slind.org>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Christoph Hellwig <hch@lst.de>, Eric Paris <eparis@redhat.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        David Howells <dhowells@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCHv6 3/7] wire up sys_time_change_notify() on x86
+Date: Thu, 11 Nov 2010 21:29:58 +0200
+Message-Id: <1289503802-22444-4-git-send-email-virtuoso@slind.org>
 X-Mailer: git-send-email 1.7.2.1.45.gb66c2
+In-Reply-To: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
+References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch adds a new syscall of the following form:
 
-This is the sixth version of system time change notification mechanism
-for linux kernel. The need for it comes from applications which would
-like to keep track of time changes without having to wake up every
-$TIMEOUT and calling gettimeofday().
+int sys_time_change_notify(int fd, unsigned int flags)
 
-An excellent description for one of the usecases, written by Kay Sievers
-(http://kerneltrap.org/mailarchive/linux-kernel/2010/8/5/4603531):
-"""
-This is the example Lennart and I thought about when we considered
-adding cron-like stuff to systemd's timer configs, but didn't want to
-do silly things like scheduled checks for the actual time, so we
-delayed this feature until such a notification becomes available.
+This syscall is used for registering an eventfd for system time
+change notification.
 
-Consider we want stuff like "wakeup every day at 3pm", the next wakeup
-might be earlier than the timer we calculated last time, on system
-time changes. We need to re-calculate it. This is necessary for all
-repeating events.
+Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>
+CC: x86@kernel.org
+CC: Christoph Hellwig <hch@lst.de>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Eric Paris <eparis@redhat.com>
+CC: Russell King <rmk+kernel@arm.linux.org.uk>
+CC: David Howells <dhowells@redhat.com>
+CC: Jiri Slaby <jslaby@suse.cz>
+CC: "David S. Miller" <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org
+---
+ arch/x86/ia32/ia32entry.S          |    1 +
+ arch/x86/include/asm/unistd_32.h   |    3 ++-
+ arch/x86/include/asm/unistd_64.h   |    2 ++
+ arch/x86/kernel/syscall_table_32.S |    1 +
+ 4 files changed, 6 insertions(+), 1 deletions(-)
 
-Say we want to wakeup at 3pm, now it's 4pm, so we schedule it in 23
-hours. Now the system time changes to 2pm, and we would expect to
-wakeup in one hour, but we take 25.
-"""
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 518bb99..6981bdc 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -851,4 +851,5 @@ ia32_sys_call_table:
+ 	.quad sys_fanotify_init
+ 	.quad sys32_fanotify_mark
+ 	.quad sys_prlimit64		/* 340 */
++	.quad sys_time_change_notify
+ ia32_syscall_end:
+diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
+index b766a5e..17ac4f5 100644
+--- a/arch/x86/include/asm/unistd_32.h
++++ b/arch/x86/include/asm/unistd_32.h
+@@ -346,10 +346,11 @@
+ #define __NR_fanotify_init	338
+ #define __NR_fanotify_mark	339
+ #define __NR_prlimit64		340
++#define __NR_time_change_notify	341
+ 
+ #ifdef __KERNEL__
+ 
+-#define NR_syscalls 341
++#define NR_syscalls 342
+ 
+ #define __ARCH_WANT_IPC_PARSE_VERSION
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
+index 363e9b8..3d745f9 100644
+--- a/arch/x86/include/asm/unistd_64.h
++++ b/arch/x86/include/asm/unistd_64.h
+@@ -669,6 +669,8 @@ __SYSCALL(__NR_fanotify_init, sys_fanotify_init)
+ __SYSCALL(__NR_fanotify_mark, sys_fanotify_mark)
+ #define __NR_prlimit64				302
+ __SYSCALL(__NR_prlimit64, sys_prlimit64)
++#define __NR_time_change_notify			303
++__SYSCALL(__NR_time_change_notify, sys_time_change_notify)
+ 
+ #ifndef __NO_STUBS
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
+index b35786d..b1ae9d4 100644
+--- a/arch/x86/kernel/syscall_table_32.S
++++ b/arch/x86/kernel/syscall_table_32.S
+@@ -340,3 +340,4 @@ ENTRY(sys_call_table)
+ 	.long sys_fanotify_init
+ 	.long sys_fanotify_mark
+ 	.long sys_prlimit64		/* 340 */
++	.long sys_time_change_notify
+-- 
+1.7.2.1.45.gb66c2
 
-Changes since v5:
- - addressed Thomas Gleixner's comments
- - added clockid syscall parameter as suggested by John Stultz
- - updated powerpc and blackfin syscalls
-Changes since v4:
- - updated arm and s390 syscall wiring
- - removed RFC
-Changes since v3:
- - broken out separate patches adding time_change_notify syscall to
-   arm, powerpc, x86, ia64, s390 and blackfin
-Changes since v2:
- - replaced sysfs interface with a syscall
- - added sysctl/procfs handle to set a limit to the number of users
- - fixed issues pointed out by Greg.
-Changes since v1:
- - updated against 2.6.36-rc1,
- - added notification/filtering options,
- - added Documentation/ABI/sysfs-kernel-time-notify interface description.
-
-Alexander Shishkin (7):
-      notify userspace about time changes
-      wire up sys_time_change_notify() on ARM
-      wire up sys_time_change_notify() on x86
-      wire up sys_time_change_notify() on ia64
-      wire up sys_time_change_notify() on s390
-      wire up sys_time_change_notify() on powerpc
-      wire up sys_time_change_notify() on blackfin
-
- Documentation/time-change-notify-example.c |   65 +++++++++++
- arch/arm/include/asm/unistd.h              |    1 +
- arch/arm/kernel/calls.S                    |    1 +
- arch/blackfin/include/asm/unistd.h         |    3 +-
- arch/blackfin/mach-common/entry.S          |    1 +
- arch/ia64/include/asm/unistd.h             |    3 +-
- arch/ia64/kernel/entry.S                   |    1 +
- arch/powerpc/include/asm/systbl.h          |    1 +
- arch/powerpc/include/asm/unistd.h          |    3 +-
- arch/s390/include/asm/unistd.h             |    3 +-
- arch/s390/kernel/compat_wrapper.S          |    7 ++
- arch/s390/kernel/syscalls.S                |    1 +
- arch/x86/ia32/ia32entry.S                  |    1 +
- arch/x86/include/asm/unistd_32.h           |    3 +-
- arch/x86/include/asm/unistd_64.h           |    2 +
- arch/x86/kernel/syscall_table_32.S         |    1 +
- include/asm-generic/unistd.h               |    4 +-
- include/linux/syscalls.h                   |    2 +
- include/linux/time.h                       |   13 +++
- kernel/sys_ni.c                            |    3 +
- kernel/time/Kconfig                        |    7 ++
- kernel/time/Makefile                       |    1 +
- kernel/time/notify.c                       |  163 ++++++++++++++++++++++++++++
- kernel/time/ntp.c                          |    3 +
- kernel/time/timekeeping.c                  |    3 +
- 25 files changed, 290 insertions(+), 6 deletions(-)
- create mode 100644 Documentation/time-change-notify-example.c
- create mode 100644 kernel/time/notify.c
-
-Regards,
---
-Alex
