@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719Ab0KKUa3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 15:30:29 -0500
-Received: from [78.129.236.108] ([78.129.236.108]:39016 "EHLO
-	server4.kwikkermail.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1756431Ab0KKUa1 (ORCPT
+	id S1756697Ab0KKUcB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 15:32:01 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19666 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753034Ab0KKUcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 15:30:27 -0500
-X-Greylist: delayed 11592 seconds by postgrey-1.27 at vger.kernel.org; Thu, 11 Nov 2010 15:30:27 EST
-To: linux-kernel@vger.kernel.org
-Subject: Activate your free fax to email number
-Recieved: 
-Date: Thu, 11 Nov 2010 10:22:20 -0800
-From: inboxfax01@live.co.za
-Message-ID: <bb3fcadc11c759aa8fbb81b516ef96b1@www.othnielmail.co.za>
-X-Priority: 3
-X-Mailer: PHPMailer [version 1.73]
-X-Mailer: phplist v2.10.10
-X-MessageID: 25
-X-ListMember: linux-kernel@vger.kernel.org
+	Thu, 11 Nov 2010 15:32:00 -0500
+Message-ID: <4CDC3BCD.700@kernel.org>
+Date: Thu, 11 Nov 2010 10:54:05 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - server4.kwikkermail.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [508 508] / [47 12]
-X-AntiAbuse: Sender Address Domain - server4.kwikkermail.com
+To: Jan Beulich <JBeulich@novell.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v2 2/2] x86/pci: Add mmconf range into e820 for	 when
+ it is from MSR with amd faml0h
+References: <4CDB3E85.9010604@kernel.org> <4CDB3EBB.4010800@kernel.org> <4CDBBC7E0200007800021A2D@vpn.id2.novell.com>
+In-Reply-To: <4CDBBC7E0200007800021A2D@vpn.id2.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 11/11/2010 12:50 AM, Jan Beulich wrote:
+>>>> On 11.11.10 at 01:54, Yinghai Lu <yinghai@kernel.org> wrote:
+>> @@ -191,10 +208,12 @@ void __cpuinit fam10h_check_enable_mmcfg
+>>  		/* only trust the one handle 256 buses, if acpi=off */
+>>  		if (!acpi_pci_disabled || busnbits >= 8) {
+>>  			u64 base;
+>> -			base = val & (0xffffULL << 32);
+>> +			base = val & (FAM10H_MMIO_CONF_BASE_MASK <<
+>> +					FAM10H_MMIO_CONF_BASE_SHIFT);
+>>  			if (fam10h_pci_mmconf_base_status <= 0) {
+>>  				fam10h_pci_mmconf_base = base;
+>>  				fam10h_pci_mmconf_base_status = 1;
+>> +				e820_add_mmconf_range(busnbits);
+>>  				return;
+>>  			} else if (fam10h_pci_mmconf_base ==  base)
+>>  				return;
+> 
+> I don't think adding the range in this case is correct: Here, we
+> found that the BIOS enabled the feature, and we're doing
+> nothing to "correct" it, so we also should expect the range
+> to be reserved by the BIOS.
 
-EasyFax2Email invites you to receive a free fax to email number
-within seconds on replying to this email with subject only.
+this function is protected by PCI_CHECK_ENABLE_AMD_MMCONF
 
-Regards
+void __cpuinit fam10h_check_enable_mmcfg(void)
+{
+        u64 val;
+        u32 address;
 
-EasyFax2Email
+        if (!(pci_probe & PCI_CHECK_ENABLE_AMD_MMCONF))
+                return;
 
+and could have systems that setting in hw config is right, but BIOS doesn't put
+them with e820 reserved entries.
 
+Thanks
 
---
-If you do not want to receive any more newsletters, 
-http://www.othnielmail.co.za/lists/?p=unsubscribe&uid=de00978df0f2d482059c867dc2a88127
-
-To update your preferences and to unsubscribe visit
-http://www.othnielmail.co.za/lists/?p=preferences&uid=de00978df0f2d482059c867dc2a88127
-Forward a Message to Someone
-http://www.othnielmail.co.za/lists/?p=forward&uid=de00978df0f2d482059c867dc2a88127&mid=25
-
-
-
-
-
-
+	Yinghai
