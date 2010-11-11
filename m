@@ -1,150 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab0KKUuy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 15:50:54 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:51480 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756204Ab0KKUuw (ORCPT
+	id S1756875Ab0KKUv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 15:51:26 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:54484 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756728Ab0KKUvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 15:50:52 -0500
-Message-ID: <4CDC56F9.9040601@vlnb.net>
-Date: Thu, 11 Nov 2010 23:50:01 +0300
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: Greg KH <greg@kroah.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
+	Thu, 11 Nov 2010 15:51:25 -0500
+Date: Thu, 11 Nov 2010 22:51:23 +0200
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-References: <20101011213235.GA11489@kroah.com> <4CB4AEB9.30501@vlnb.net> <20101012190345.GA25737@kroah.com> <4CB75E81.7000208@vlnb.net> <20101014200413.GA30831@kroah.com> <4CC1CA4D.1090609@vlnb.net> <20101022175624.GA13640@kroah.com> <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com>
-In-Reply-To: <4CDBBE80.40908@panasas.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:5RcbZ1ndVXaZCeIqmEby4cFujFsLcIa3Zn+udvVUNr+
- K37rcSIqa2J+NCgT76iXG+rSKj1JL/vVJId6tQj7+lnj9um0Yb
- /zUnv1jLvL+5lXEzW3Y4jUex8KSPKFP8CUGQlgexMpTBD6A9J5
- F4Gm2XXjX5sUWrCchxUXvdEC1QKSmdB9XvKbxiIh67XzfP4/s4
- v5f9EFBGo/Er/PdIw39UQ==
+        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alexander Shishkin <virtuoso@slind.org>
+Subject: Re: [PATCHv6 0/7] system time changes notification
+Message-ID: <20101111205123.GC10585@shisha.kicks-ass.net>
+References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
+ <22542.1289507293@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <22542.1289507293@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boaz Harrosh, on 11/11/2010 12:59 PM wrote:
->> static void x_release(struct kobject *kobj)
+On Thu, Nov 11, 2010 at 03:28:13PM -0500, Valdis.Kletnieks@vt.edu wrote:
+> On Thu, 11 Nov 2010 21:29:55 +0200, Alexander Shishkin said:
+> 
+> > Consider we want stuff like "wakeup every day at 3pm", the next wakeup
+> > might be earlier than the timer we calculated last time, on system
+> > time changes. We need to re-calculate it. This is necessary for all
+> > repeating events.
+> > 
+> > Say we want to wakeup at 3pm, now it's 4pm, so we schedule it in 23
+> > hours. Now the system time changes to 2pm, and we would expect to
+> > wakeup in one hour, but we take 25.
+> 
+> Sorry, I tuned in late here...
+> 
+> So the plan is that if you're not using this new interface, it will go off at
+> the same absolute offset (23 hours after timer was set), but if you're using
+> this interface, your timer event gets interrupted, you get woken up (say)
+> 15 hours into your 23, and it's your job to decide if you need to set a
+> new timer for the remaining 6, 7, 8 hours or some other number?
 
-Yes. Precisely speaking, of its kobj_type.
+Yes. This interface doesn't deal with timers, it only provides notifications.
 
-> This one is put on the kobj.release Right?
-> 
->> {
->> 	struct object_x *x;
->> 	struct completion *c;
->>
->> 	x = container_of(kobj, struct object_x, kobj);
->> 	c = x->release_completion;
->> 	kfree(x);
->> 	complete_all(c);
->> }
->>
-> 
-> I don't see the unregister of the object_x.kobj, where do
-> you do this one in x_release or del_object below?
-
-Which unregister? Put for object_x.kobj is in del_object()
-
->> void del_object(struct object_x *x)
->> {
->> 	DECLARE_COMPLETION_ONSTACK(completion);
->>
->> 	...
->> 	x->release_completion = &completion;
->> 	kobject_put(&x->kobj);
-> 
-> This put might not be the last put on the object, IOs in flight
-> and/or open files might have extra reference on the object.
-> We release our initial ref, and below wait for all operations
-> to complete. (Is there a matter of timeout like files not closing?)
-
-This is the last internal put. All other references are from outsiders.
-So, we are waiting for all them to put before we go on.
-
-> One possibility (There are others)
-> 
-> 3. struct object_x {
-> 	...
-> 	struct kref kref;
-> 	struct kobject kobj;
-> 	struct completion *release_completion;
-> };
-> 
-> Every body takes kref_put(&object_x.kref) and  kref_get(&object_x.kref)
-> I hope you have x_get/x_put, Yes?
-> 
-> static void x_kref_release(struct kref *kref)
-> {
-> 	struct object_x *x = container_of(kref, struct object_x, kref);
-> 
-> 	complete_all(&x->release_completion);
-> }
-> 
-> static void x_obj_release(struct kobject *kobj)
-> {
-> 	struct object_x *x = container_of(kobj, struct object_x, kobj);
-> 
-> 	kfree(x);
-> }
-> 
-> int x_put(struct object_x *x)
-> {
-> 	return kref_put(&x->kref, x_kref_release);
-> }
-> 
-> void del_object(struct object_x *x)
-> {
-> 	DECLARE_COMPLETION_ONSTACK(completion);
-> 
-> 	...
-> 	x->release_completion = &completion;
-> 	x_put(x)
-> 	wait_for_completion(&completion);
-> 	kobject_put(&x->kobj);
-> }
-> 
-> Or
-> 
-> 4. Exactly Like 3 but without the extra kref member
->    Only x_put() changes and x_kref_release() now receives
->    an x_object
-> 
-> int x_put(struct object_x *x)
-> {
-> 	if (kobject_put(&x->kobj) == 1)
-> 		// Like above [3] x_kref_release()
-> 		x_kref_release(x);
-> }
-> 
-> Note that in 4 you don't actually have a kref member, and that you have
-> one extra ref on kobj from the beginning. In del_object above the first
-> x_put(x) makes it possible to reach the "1" count and then the final
-> kobject_put(&x->kobj); frees the object.
-> (You need to be carfull with [4] because it must have a refcount==2 before
-> you expose it to any IO or sysfs.)
-> 
-> So this is what I meant.
-
-OK, I see. You know, all non-trivial things can be done in >1 correct
-way ;) (Although (4) is not too correct as Greg already wrote)
-
-Vlad
+Regards,
+--
+Alex
