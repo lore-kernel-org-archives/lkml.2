@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab0KKPbp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 10:31:45 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:42928 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753078Ab0KKPbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 10:31:45 -0500
-Subject: Re: [Jfs-discussion] [PATCH 5/6] fs/jfs: Add printf
- format/argument verification
-From: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, jfs-discussion@lists.sourceforge.net
-In-Reply-To: <a22ba4f754931aabc3928435e613a1b809d31f9e.1289432524.git.joe@perches.com>
-References: <cover.1289432524.git.joe@perches.com>
-	 <a22ba4f754931aabc3928435e613a1b809d31f9e.1289432524.git.joe@perches.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Organization: IBM Linux Technology Center
-Date: Thu, 11 Nov 2010 09:31:41 -0600
-Message-ID: <1289489501.6848.13.camel@shaggy-w500>
+	id S1753963Ab0KKPc1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 10:32:27 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49928 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078Ab0KKPc0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 10:32:26 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=QL1tTRKci4BIuO5TyumVTIrPjKymD5d7vub0Z/NSNDDWX6nFVl3dUk2v9/4+IwlRWI
+         5jruf0AMXcLx4d3RAT+M7DJka4xmBpzjeV9sJYEnkRE5LNyK0U/RAZa2fwnQFtZziKCE
+         DSRpoLeb8c2ghudP2mHmpaucpRNyZ5NAr/+xc=
+Subject: Re: Kernel rwlock design, Multicore and IGMP
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Cypher Wu <cypher.w@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <1289489007.17691.1310.camel@edumazet-laptop>
+References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
+	 <1289489007.17691.1310.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 11 Nov 2010 16:32:22 +0100
+Message-ID: <1289489542.17691.1325.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-10 at 15:46 -0800, Joe Perches wrote:
-> Add __attribute__((format... to jfs_error.
+Le jeudi 11 novembre 2010 à 16:23 +0100, Eric Dumazet a écrit :
+> Le jeudi 11 novembre 2010 à 21:49 +0800, Cypher Wu a écrit :
 > 
-> All arguments matched formats, no other changes necessary.
+> Hi
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-
-Acked-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
-
-Would you like to push this patchset as a group, or would you like me to
-push this patch through the jfs tree?
-
-Shaggy
-
-> ---
->  fs/jfs/jfs_superblock.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> CC netdev, since you ask questions about network stuff _and_ rwlock
 > 
-> diff --git a/fs/jfs/jfs_superblock.h b/fs/jfs/jfs_superblock.h
-> index 884fc21..1da2538 100644
-> --- a/fs/jfs/jfs_superblock.h
-> +++ b/fs/jfs/jfs_superblock.h
-> @@ -108,6 +108,8 @@ struct jfs_superblock {
 > 
->  extern int readSuper(struct super_block *, struct buffer_head **);
->  extern int updateSuper(struct super_block *, uint);
-> +
-> +__attribute__((format(printf, 2, 3)))
->  extern void jfs_error(struct super_block *, const char *, ...);
->  extern int jfs_mount(struct super_block *);
->  extern int jfs_mount_rw(struct super_block *, int);
+> > I'm using TILEPro and its rwlock in kernel is a liitle different than
+> > other platforms. It have a priority for write lock that when tried it
+> > will block the following read lock even if read lock is hold by
+> > others. Its code can be read in Linux Kernel 2.6.36 in
+> > arch/tile/lib/spinlock_32.c.
+> 
+> This seems a bug to me.
+> 
+> read_lock() can be nested. We used such a schem in the past in iptables
+> (it can re-enter itself),
+> and we used instead a spinlock(), but with many discussions with lkml
+> and Linus himself if I remember well.
 
--- 
-Dave Kleikamp
-IBM Linux Technology Center
+I meant, a percpu spinlock, and extra logic to spin_lock() it one time,
+even if nested.
+
+static inline void xt_info_rdlock_bh(void)
+{
+        struct xt_info_lock *lock;
+
+        local_bh_disable();
+        lock = &__get_cpu_var(xt_info_locks);
+        if (likely(!lock->readers++))
+                spin_lock(&lock->lock);
+}
+
+static inline void xt_info_rdunlock_bh(void)
+{
+        struct xt_info_lock *lock = &__get_cpu_var(xt_info_locks);
+
+        if (likely(!--lock->readers))
+                spin_unlock(&lock->lock);
+        local_bh_enable();
+}
+
+The write 'rwlock' side has to lock the percpu spinlock of all possible
+cpus.
+
+/*
+ * The "writer" side needs to get exclusive access to the lock,
+ * regardless of readers.  This must be called with bottom half
+ * processing (and thus also preemption) disabled.
+ */
+static inline void xt_info_wrlock(unsigned int cpu)
+{
+        spin_lock(&per_cpu(xt_info_locks, cpu).lock);
+}
+
+static inline void xt_info_wrunlock(unsigned int cpu)
+{
+        spin_unlock(&per_cpu(xt_info_locks, cpu).lock);
+}
+
+
 
