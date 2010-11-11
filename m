@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628Ab0KKAjZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 19:39:25 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2555 "EHLO mga02.intel.com"
+	id S1757640Ab0KKAlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 19:41:09 -0500
+Received: from www.tglx.de ([62.245.132.106]:39577 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753616Ab0KKAjX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 19:39:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,180,1288594800"; 
-   d="scan'208";a="572336743"
-From: "Hefty, Sean" <sean.hefty@intel.com>
-To: Roland Dreier <rdreier@cisco.com>, Vasiliy Kulikov <segooon@gmail.com>
-CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Roland Dreier <rolandd@cisco.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Alex Chiang <achiang@hp.com>, Andi Kleen <ak@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Julia Lawall <julia@diku.dk>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 10 Nov 2010 16:39:20 -0800
-Subject: RE: [PATCH] infiniband: core: fix information leak to userland
-Thread-Topic: [PATCH] infiniband: core: fix information leak to userland
-Thread-Index: AcuBM5nWmLc0beQzSEWbJbpgtMiz9AAAuTYA
-Message-ID: <CF9C39F99A89134C9CF9C4CCB68B8DDF25B84C5C8D@orsmsx501.amr.corp.intel.com>
-References: <1289054481-18145-1-git-send-email-segooon@gmail.com>
- <ada39r8ohiz.fsf@cisco.com>
-In-Reply-To: <ada39r8ohiz.fsf@cisco.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757597Ab0KKAlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 19:41:07 -0500
+Date: Thu, 11 Nov 2010 01:40:54 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Roland Dreier <rdreier@cisco.com>
+cc: Greg KH <greg@kroah.com>, Arnaud Lacombe <lacombar@gmail.com>,
+        Anca Emanuel <anca.emanuel@gmail.com>,
+        Elvis Dowson <elvis.dowson@mac.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Forked android kernel development from linux kernel mainline
+In-Reply-To: <adar5esn1gd.fsf@cisco.com>
+Message-ID: <alpine.LFD.2.00.1011110139200.2900@localhost6.localdomain6>
+References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com> <AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com> <20101106181202.GA6927@kroah.com> <39580686-A899-4689-BAAD-AF5546B34E49@mac.com> <AANLkTimVsUsrmTvsHqFiqJh1hhryMBemGyW+kYLKGgEu@mail.gmail.com>
+ <20101107155757.GA13736@kroah.com> <AANLkTik=UWwRLOaHMfVifYiQPpSwoYuA6J1EoL5BOgJY@mail.gmail.com> <20101107215908.GA21070@kroah.com> <adar5esn1gd.fsf@cisco.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sean, what is intended for qp_state handling here?  It seems
-> ib_copy_qp_attr_to_user() should either clear it or set it to something
-> sensible.
+On Wed, 10 Nov 2010, Roland Dreier wrote:
 
-I'm not sure what the original intent was, but both libibcm and librdmacm provide the qp_state as input to the init_qp_attr calls.  It doesn't end up mattering if the kernel returns the value because the corresponding call in libibverbs (ibv_copy_qp_attr_from_kern) doesn't copy out the qp_state.  So, the value that was originally specified ends up being used.  The flow looks something like this:
+>  > Isn't the openwrt stuff just drivers and some arch specific code?
+>  > Nothing that is core infrastructure, and nothing preventing them from
+>  > submitting the drivers and arch code if they want to, right?
+> 
+> Actually openwrt has some core infrastructure for managing (ethernet)
+> switches as extra-fancy multiport PHYs.  That means that all the drivers
+> in openwrt for the typical 5-8 port switches in home routers don't
+> really apply to mainline.
 
-qp_attr.qp_state = INIT;
-cmd.qp_state = qp_attr.qp_state;
-write(..cmd..);
-ibv_copy_qp_attr_from_kern(&qp_attr, cmd.resp)
+Why not? Those switches _ARE_ extra-fancy multiport PHYs. And AFAICT
+we have no support for this stuff in mainline at all.
 
-I agree that it makes sense for ib_copy_qp_attr_to_user() to set the qp_state.  Deciding what to do in libibverbs seems more troublesome.
+So where is the problem ?
 
-- Sean
+Thanks,
+
+	tglx
