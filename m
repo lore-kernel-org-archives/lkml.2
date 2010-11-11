@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab0KKPxK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 10:53:10 -0500
-Received: from cantor.suse.de ([195.135.220.2]:45592 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753148Ab0KKPxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 10:53:09 -0500
-Subject: Re: [PATCH] scsi: Convert scsi_host->cmd_serial_number to odd
- numbered atomic_t counter
-From: James Bottomley <James.Bottomley@suse.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>
-In-Reply-To: <1289472405-31003-1-git-send-email-nab@linux-iscsi.org>
-References: <1289472405-31003-1-git-send-email-nab@linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Nov 2010 09:53:03 -0600
-Message-ID: <1289490783.2982.33.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1753906Ab0KKP5K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 10:57:10 -0500
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:54636 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407Ab0KKP5J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 10:57:09 -0500
+Date: Thu, 11 Nov 2010 16:55:59 +0100
+From: Borislav Petkov <bp@amd64.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Ben Gamari <bgamari@gmail.com>,
+        "acme@infradead.org" <acme@infradead.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/20] x86, mce: Add persistent MCE event
+Message-ID: <20101111155559.GD21803@aftab>
+References: <1288885016-18295-1-git-send-email-bp@amd64.org>
+ <1288885016-18295-4-git-send-email-bp@amd64.org>
+ <87lj50vq0s.fsf@gmail.com>
+ <20101110222157.GA23945@elte.hu>
+ <20101111061725.GA19321@aftab>
+ <20101111085825.GB18789@elte.hu>
+ <20101111133442.GA21803@aftab>
+ <1289489930.2084.138.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289489930.2084.138.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-11 at 02:46 -0800, Nicholas A. Bellinger wrote:
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Thu, Nov 11, 2010 at 10:38:50AM -0500, Peter Zijlstra wrote:
+> On Thu, 2010-11-11 at 14:34 +0100, Borislav Petkov wrote:
+> > 3) enable the persistent event and stash its fd in some /sysfs member
+> > which the RAS daemon reads out and mmaps. This last one actually sounds
+> > pretty neat. 
 > 
-> This patch converts struct scsi_host->cmd_serial_number to a 'odd incremented by 2'
-> atomic_t counter in scsi_cmd_get_serial(), and moves the host_lock held call in
-> jgarzik's DEF_SCSI_QCMD() wrapper back into it's original location in scsi_dispatch_cmd().
+> Right, stashing the thing in sysfs, which you can open()+mmap() seems
+> the best way. Not sure you want to make it a RAS specific place, maybe a
+> generic persistent buffer place.
+> 
+> You'll get multiple files anyway, one per cpu, so maybe something like:
+> 
+> /sysfs/persistent_buffer/ras[0..n]
 
-Actually, no ... this isn't really a good idea; you're lengthening our
-critical path here (an atomic costs a lot more than a simple add under
-spinlock).
+Yeah, or even integrate it even further into the events hierarchy like
+this:
 
-There are only a few drivers left that actually make use of a serial
-number.  Of those, the only modern ones are qla4, lpfc, mpt2sas and
-megaraid.
+/sys/.../cpu/events/mce		-> this is the trace_mce_record tracepoint
+/sys/.../cpu/events/mce_pers	-> persistent buffer fd
 
-So the next logical step seems to be eliminate the overloading of the
-serial number zero value, which removes the last mid-layer use (dpt_i2o
-seems to abuse this unnecessarily as well), then the serial number code
-can be pushed down into the queuecommand routines of only those drivers
-that actually use it.  None of the modern ones seems to have a
-legitimate use, so I think their uses can mostly be eliminated.  Thus,
-we might be able to get away with a simple queuecommand push down and
-never bother with atomics for this (since it's unlikely the legacy users
-would convert away from a lock wrapping their queuecommand routines).
+or an additional level further down
 
-James
+/sys/.../cpu/events/mce/persistent/...
 
+or whatever.
 
+Generally I don't care too much where we put it at the end.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
