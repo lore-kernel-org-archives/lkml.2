@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756374Ab0KKMXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 07:23:46 -0500
-Received: from kroah.org ([198.145.64.141]:53041 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756222Ab0KKMXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 07:23:45 -0500
-Date: Thu, 11 Nov 2010 04:04:53 -0800
-From: Greg KH <greg@kroah.com>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Vladislav Bolkhovitin <vst@vlnb.net>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-Message-ID: <20101111120453.GA672@kroah.com>
-References: <4CC1CA4D.1090609@vlnb.net> <20101022175624.GA13640@kroah.com> <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com>
+	id S1756346Ab0KKMZJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 07:25:09 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:6261 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756299Ab0KKMZH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 07:25:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=g3CTlrkNnvQSJHOlKIkICBJhpysOsVPzDbrABqVW873rBt6v6gxDY11lj/CHwBNqVG
+         JVdA9iHSYR0r9CNkQWUQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CDBBE80.40908@panasas.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20101111121545.GF19679@csn.ul.ie>
+References: <20101111121545.GF19679@csn.ul.ie>
+Date: Thu, 11 Nov 2010 04:25:00 -0800
+Message-ID: <AANLkTinxYntXjK7V8W3+3j7m0xQUVpB1eeysSE0ifO1k@mail.gmail.com>
+Subject: Re: [BUG] Commit d065bd81 severely regresses huge page allocation
+ success rates
+From: Michel Lespinasse <walken@google.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Rik van Riel <riel@redhat.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Ying Han <yinghan@google.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 11:59:28AM +0200, Boaz Harrosh wrote:
-> 4. Exactly Like 3 but without the extra kref member
->    Only x_put() changes and x_kref_release() now receives
->    an x_object
-> 
-> int x_put(struct object_x *x)
-> {
-> 	if (kobject_put(&x->kobj) == 1)
-> 		// Like above [3] x_kref_release()
-> 		x_kref_release(x);
-> }
+On Thu, Nov 11, 2010 at 4:15 AM, Mel Gorman <mel@csn.ul.ie> wrote:
+> When testing 2.6.37-rc1, I noticed that huge page allocation success
+> rates were severely impaired. Bisection showed that commit [d065bd81: mm:
+> retry page fault when blocking on disk transfer] was the biggest factor.
+> Reverting the patch confirmed this. Here are the results of a high-order
+> allocation stress test. The vanilla kernel is 2.6.37-rc1 and the revert
+> kernel has this commit removed with minor conflicts cleaned up.
+[...]
+> I have not digested what the patch is doing but am reporting it in case
+> people familiar with the patch spot the problem quickly.
 
-This is racy, please never do this.
+There was a bug in that commit, which was fixed in
+d88c0922fa0e2c021a028b310a641126c6d4b7dc
 
-thanks,
+I think this may explain the issue; compaction won't work well if
+extra references are kept :/
 
-greg k-h
+Can you check that this indeed solves your test case ?
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
