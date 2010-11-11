@@ -1,78 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab0KKI6k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 03:58:40 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52810 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757862Ab0KKI6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 03:58:39 -0500
-Date: Thu, 11 Nov 2010 09:58:25 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Ben Gamari <bgamari@gmail.com>, "acme@infradead.org" <acme@infradead.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 03/20] x86, mce: Add persistent MCE event
-Message-ID: <20101111085825.GB18789@elte.hu>
-References: <1288885016-18295-1-git-send-email-bp@amd64.org>
- <1288885016-18295-4-git-send-email-bp@amd64.org>
- <87lj50vq0s.fsf@gmail.com>
- <20101110222157.GA23945@elte.hu>
- <20101111061725.GA19321@aftab>
+	id S1755808Ab0KKJAY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 04:00:24 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45242 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751072Ab0KKJAW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 04:00:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ay+4IyPKtDZhSVWM23cr2/FEj8h5rjCfI9Ybza3s1kcqUe2lzXpg5ViEovVRZ746In
+         XLHLBeTtBAokD6DaGc8yCjQjyYaekOBn+6K4SmuFGJ5RSGAKLf8ck8xhOXP4EbKsvqCj
+         +oVaQzo5Eyp9lOuDzvoKN1XYftUOsVVIEAsIw=
+Date: Thu, 11 Nov 2010 01:00:16 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Jiri Kosina <jkosina@suse.cz>,
+        Bruno =?iso-8859-1?Q?Pr=E9mont?= <bonbons@linux-vserver.org>,
+        Stephane Chatty <chatty@enac.fr>,
+        Don Prince <dhprince-devel@yahoo.co.uk>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH] HID: roccat: Add support for Roccat Kone[+]
+Message-ID: <20101111090015.GG24415@core.coreip.homeip.net>
+References: <1287943025.2623.16.camel@neuromancer>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101111061725.GA19321@aftab>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1287943025.2623.16.camel@neuromancer>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Stefan,
 
-* Borislav Petkov <bp@amd64.org> wrote:
+On Sun, Oct 24, 2010 at 07:57:05PM +0200, Stefan Achatz wrote:
+> +
+> +static int koneplus_create_sysfs_attributes(struct usb_interface *intf)
+> +{
+> +	int retval;
+> +
+> +	retval = sysfs_create_group(&intf->dev.kobj, &koneplus_attribute_group);
+> +	if (retval)
+> +		goto exit_1;
+> +
+> +	retval = sysfs_create_bin_file(&intf->dev.kobj,
+> +			&koneplus_profile_settings_attr);
+> +	if (retval)
+> +		goto exit_2;
+> +
+> +	retval = sysfs_create_bin_file(&intf->dev.kobj,
+> +			&koneplus_profile1_settings_attr);
+> +	if (retval)
+> +		goto exit_3;
+> +
 
-> On Wed, Nov 10, 2010 at 05:21:57PM -0500, Ingo Molnar wrote:
-> > 
-> > * Ben Gamari <bgamari@gmail.com> wrote:
-> > 
-> > > On Thu,  4 Nov 2010 16:36:39 +0100, Borislav Petkov <bp@amd64.org> wrote:
-> > > > From: Borislav Petkov <borislav.petkov@amd.com>
-> > > > 
-> > > > Add the necessary glue to enable the mce_record tracepoint on boot
-> > > > turning it into a persistent event. This exports the MCE buffer
-> > > > read-only to a userspace daemon which will hook into it through debugfs
-> > > > when booting is finished.
-> > > 
-> > > While MCE technically is a diagnostics service, do we want to start adding 
-> > > dependencies on debugfs in long-running, common-place daemons? I was under the 
-> > > impression we were to avoid using debugfs for anything other than values for 
-> > > one-off debugging.
-> > 
-> > See this current discussion thread on lkml:
-> > 
-> >    [RFC][PATCH] perf: sysfs type id
-> > 
-> > Events are being added to sysfs as we want to avoid the debugfs dependency.
-> 
-> Yep, event enumeration will land in /sysfs eventually but in this case debugfs is 
-> used to export the buffers with the events recorded so far to the daemon which 
-> mmaps them. And I remember also being mentioned that debugfs will thus be always 
-> compiled in because of that.
+...
 
-The event ring-buffer can be mmap()-ed off the fd that sys_perf_event_open() gives. 
-This is what all of tools/perf/ does - it uses debugfs only for even enumeration 
-(which will move to sysfs).
+> +
+> +	retval = sysfs_create_bin_file(&intf->dev.kobj,
+> +			&koneplus_sensor_attr);
+> +	if (retval)
+> +		goto exit_17;
+> +
 
-Thanks,
+I think we are ready to sysfs_binary_attribute_group ;) Please add it to
+sysfs code and send it to GregKH.
 
-	Ingo
+Thanks.
+
+-- 
+Dmitry
