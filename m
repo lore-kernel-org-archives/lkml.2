@@ -1,16 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab0KKObT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 09:31:19 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:59710 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755190Ab0KKObS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 09:31:18 -0500
-Subject: Re: [RFC][PATCH 06/22] sched: SCHED_DEADLINE handles spacial
- kthreads
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raistlin <raistlin@linux.it>
+	id S1756792Ab0KKOdV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 09:33:21 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:38021 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753188Ab0KKOdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 09:33:20 -0500
+Subject: Re: [RFC][PATCH 05/22] sched: SCHED_DEADLINE policy implementation
+From: Raistlin <raistlin@linux.it>
+To: Peter Zijlstra <peterz@infradead.org>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>,
         Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
@@ -27,54 +25,64 @@ Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
         Harald Gustafsson <hgu1972@gmail.com>,
         paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1288333876.8661.147.camel@Palantir>
+In-Reply-To: <1289485509.2084.120.camel@laptop>
 References: <1288333128.8661.137.camel@Palantir>
-	 <1288333876.8661.147.camel@Palantir>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 11 Nov 2010 15:31:01 +0100
-Message-ID: <1289485861.2084.122.camel@laptop>
+	 <1288333814.8661.146.camel@Palantir>  <1289485509.2084.120.camel@laptop>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-8dUUMKEa5KjwLiSIybv/"
+Date: Thu, 11 Nov 2010 15:33:11 +0100
+Message-ID: <1289485991.6525.14.camel@Palantir>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-29 at 08:31 +0200, Raistlin wrote:
-> 
-> There sometimes is the need of executing a task as if it would
-> have the maximum possible priority in the entire system, i.e.,
-> whenever it gets ready it must run! This is for example the case
-> for some maintainance kernel thread like migration and (sometimes)
-> watchdog or ksoftirq.
-> 
-> Since SCHED_DEADLINE is now the highest priority scheduling class
-> these tasks have to be handled therein, but it is not obvious how
-> to choose a runtime and a deadline that guarantee what explained
-> above. Therefore, we need a mean of recognizing system tasks inside
-> the -deadline class and always run them as soon as possible, without
-> any kind of runtime and bandwidth limitation.
-> 
-> This patch:
->  - adds the SF_HEAD flag, which identify a special task that need
->    absolute prioritization among any other task;
->  - ensures that special tasks always preempt everyone else (and,
->    obviously, are not preempted by non special tasks);
->  - disables runtime and bandwidth checking for such tasks, hoping
->    that the interference they cause is small enough.
-> 
 
-Yet in the previous patch you had this hunk:
+--=-8dUUMKEa5KjwLiSIybv/
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> +++ b/kernel/sched_stoptask.c
-> @@ -81,7 +81,7 @@ get_rr_interval_stop(struct rq *rq, struct
-> task_struct *task)
->   * Simple, special scheduling class for the per-CPU stop tasks:
->   */
->  static const struct sched_class stop_sched_class = {
-> -       .next                   = &rt_sched_class,
-> +       .next                   = &dl_sched_class,
->  
->         .enqueue_task           = enqueue_task_stop,
->         .dequeue_task           = dequeue_task_stop,
+On Thu, 2010-11-11 at 15:25 +0100, Peter Zijlstra wrote:
+> On Fri, 2010-10-29 at 08:30 +0200, Raistlin wrote:
+> > +static void check_preempt_curr_dl(struct rq *rq, struct task_struct *p=
+,
+> > +                                 int flags)
+> > +{
+> > +       if (!dl_task(rq->curr) || (dl_task(p) &&
+> > +           dl_time_before(p->dl.deadline, rq->curr->dl.deadline)))
+> > +               resched_task(rq->curr);
+> > +}=20
+>=20
+> every moment now a patch will hit -tip that ensures
+> ->check_preempt_curr() is only called when both the current and waking
+> task belong to the same sched_class.
+>
+Again, I saw your fix to this, which is later than this patchset... :-)
+
+I'll take care of this while rebasing right in these days.
+
+Thanks,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://blog.linux.it/raistlin / raistlin@ekiga.net /
+dario.faggioli@jabber.org
+
+--=-8dUUMKEa5KjwLiSIybv/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzb/qcACgkQk4XaBE3IOsRnCwCfb6tScCoXsz80up/9/y7dUhmw
+1LUAoJ07vaVIHdZUUwgUtrt0xUKxJxi+
+=jOHn
+-----END PGP SIGNATURE-----
+
+--=-8dUUMKEa5KjwLiSIybv/--
 
