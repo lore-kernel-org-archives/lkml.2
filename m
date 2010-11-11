@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343Ab0KKEFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 23:05:25 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40142 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932256Ab0KKEFY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 23:05:24 -0500
-Date: Wed, 10 Nov 2010 20:02:31 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Bruno Randolf <br1@einfach.org>
-Cc: randy.dunlap@oracle.com, peterz@infradead.org, blp@cs.stanford.edu,
-        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
-        kosaki.motohiro@jp.fujitsu.com, kevin.granade@gmail.com,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [PATCH v6] Add generic exponentially weighted moving average
- (EWMA) function
-Message-Id: <20101110200231.aaa51b47.akpm@linux-foundation.org>
-In-Reply-To: <20101111034756.15014.2156.stgit@localhost6.localdomain6>
-References: <20101111034756.15014.2156.stgit@localhost6.localdomain6>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932368Ab0KKETZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 23:19:25 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:58828 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932256Ab0KKETY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 23:19:24 -0500
+Date: Wed, 10 Nov 2010 20:19:20 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Joe Korty <joe.korty@ccur.com>,
+        mathieu.desnoyers@efficios.com, dhowells@redhat.com,
+        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
+        houston.jim@comcast.net
+Subject: Re: [PATCH] a local-timer-free version of RCU
+Message-ID: <20101111041920.GD3134@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101104232148.GA28037@linux.vnet.ibm.com>
+ <20101105210059.GA27317@tsunami.ccur.com>
+ <4CD912E9.1080907@cn.fujitsu.com>
+ <20101110155419.GC5750@nowhere>
+ <1289410271.2084.25.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289410271.2084.25.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Nov 2010 12:47:56 +0900 Bruno Randolf <br1@einfach.org> wrote:
-
+On Wed, Nov 10, 2010 at 06:31:11PM +0100, Peter Zijlstra wrote:
+> On Wed, 2010-11-10 at 16:54 +0100, Frederic Weisbecker wrote:
+> > run the sched tick and if there was nothing to do
+> > for some time and we are in userspace, deactivate it. 
 > 
-> ...
->
-> The original idea for this implementation came from the rt2x00 driver
-> (rt2x00link.c). I would like to use it in several places in the mac80211 and
-> ath5k code and I hope it can be useful in many other places in the kernel code.
+> Not for some time, immediately, have the tick track if it was useful, if
+> it was not, have it stop itself, like:
 > 
-> ...
->
-> --- a/lib/Makefile
-> +++ b/lib/Makefile
-> @@ -21,7 +21,7 @@ lib-y	+= kobject.o kref.o klist.o
->  
->  obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
->  	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
-> -	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o
-> +	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o average.o
+> tick()
+> {
+>  int stop = 1;
+> 
+>  if (nr_running > 1)
+>   stop = 0;
+> 
+>  if(rcu_needs_cpu())
+>   stop = 0;
+> 
+>  ...
+> 
+> 
+>  if (stop)
+>   enter_nohz_mode();
+> }
 
-It would be a bit strange to merge this into 2.6.36-rcX when there are
-no callers.  But you do want it to be present in some tree for your own
-testing and distribution purposes.
+I am still holding out for a dyntick-hpc version of RCU that does not
+need the tick.  ;-)
 
-So perhaps it would be best to merge this via the wireless tree, so
-everything exists in one place and it can be fed into linux-next and
-into mainline in an orderly fashion.
-
-If that sounds like a plan then I can send this patch in John's
-direction.  Which means that if he merges it into mainline without also
-merging any of your patches which _use_ this function then we still end
-up with unused code in mainline, but at least that way it wasn't my fault ;)
-
-Let me know your thoughts?
-
-
-(And it's a bit sad that the function will exist in the base vmlinux
-even for people who don't ever use it, but that's a problem which we
-don't really have a good solution for).
-
+							Thanx, Paul
