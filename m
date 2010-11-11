@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab0KKJoe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 04:44:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35301 "EHLO mx1.redhat.com"
+	id S1753944Ab0KKJp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 04:45:56 -0500
+Received: from www.tglx.de ([62.245.132.106]:38640 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753152Ab0KKJod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 04:44:33 -0500
-Message-ID: <4CDBBAD4.1020301@redhat.com>
-Date: Thu, 11 Nov 2010 11:43:48 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1752591Ab0KKJpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 04:45:54 -0500
+Date: Thu, 11 Nov 2010 10:45:27 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        David Sharp <dhsharp@google.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC tracing] Common Trace Format for Linux (v1.1)
+In-Reply-To: <20101111021614.GA5782@Krystal>
+Message-ID: <alpine.LFD.2.00.1011111011530.2900@localhost6.localdomain6>
+References: <20101111004612.GB32564@Krystal> <alpine.LFD.2.00.1011110158390.2900@localhost6.localdomain6> <20101111021614.GA5782@Krystal>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC -tip] x86, apic: Merge x2apic code
-References: <20101110192053.GA6978@lenovo>
-In-Reply-To: <20101110192053.GA6978@lenovo>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2010 09:20 PM, Cyrill Gorcunov wrote:
->   Hi, while being at x2apic_x.c code I noted that files look similar to
-> each other so I guessed may be we could merge them. As result --
-> this patch.
->
->   Note that patch was only _compile_ tested, I don't have such apic for
-> real. I've trying to make it carefully but more reviews are needed,
-> I definitely might miss something.
->
+Mathieu,
 
-Note kvm supports x2apic even if your host doesn't have one.  Boot with 
-qemu -cpu host,+x2apic to enable the feature.
+On Wed, 10 Nov 2010, Mathieu Desnoyers wrote:
 
--- 
-error compiling committee.c: too many arguments to function
+> * Thomas Gleixner (tglx@linutronix.de) wrote:
+> [...]
+> 
+> > The requirement list has been beaten to death several times already
+> > along with the various options of trace formats, so we really are at
+> > the point where you folks need to sit down and come up with real code
+> > which can be discussed and improved on a technical base.
+> 
+> I understand and share your frustration about things having been standing still
+> for way too long.
+> 
+> In order to get things rolling, I hereby append my trace format proposal as RFC.
+> I did implement the core elements of it already in the BabelTrace trace
+> converter project, so it's not one of these dreaded "design by committee without
+> any understanding of the practicality aspects" standards. I try make sure it
+> translates to something realistic and useful.
+> 
+> Feedback is welcome, thanks,
+> 
+> Mathieu
+> 
+> RFC: Common Trace Format Proposal for Linux (v1.1)
 
+Groan. Did you read what I wrote ?
+
+> >                                              ... so we really are at
+> > the point where you folks need to sit down and come up with real code
+> > which can be discussed and improved on a technical base.
+
+Your reaction on this is to send yet another proposal, which has not
+really anything new in it.
+
+What we are waiting for is a sensible incremental patch series, which
+extends or replaces functionality in the existing perf ABI up to the
+point, where we can eventually see the need for a sensible
+replacement. That's the way we work, not with tons of proposals.
+
+Thanks,
+
+	tglx
