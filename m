@@ -1,87 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab0KKSTI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 13:19:08 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:55116 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492Ab0KKSTG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 13:19:06 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4CDC333E.4070104@s5r6.in-berlin.de>
-Date: Thu, 11 Nov 2010 19:17:34 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	id S1754773Ab0KKS0A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 13:26:00 -0500
+Received: from thunk.org ([69.25.196.29]:57471 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751294Ab0KKSZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 13:25:59 -0500
+Date: Thu, 11 Nov 2010 13:25:40 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, "bp@alien8.de" <bp@alien8.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mchehab@redhat.com" <mchehab@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: Tracing Requirements (was: [RFC/Requirements/Design] h/w error
+ reporting)
+Message-ID: <20101111182540.GM3099@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+	"Luck, Tony" <tony.luck@intel.com>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Ingo Molnar <mingo@elte.hu>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"Huang, Ying" <ying.huang@intel.com>, "bp@alien8.de" <bp@alien8.de>,
+	"akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+	"mchehab@redhat.com" <mchehab@redhat.com>,
+	Arnaldo Carvalho de Melo <acme@redhat.com>,
+	Arjan van de Ven <arjan@infradead.org>
+References: <1289412329.12418.177.camel@gandalf.stny.rr.com>
+ <1289413460.2084.27.camel@laptop>
+ <20101110184105.GH22410@elte.hu>
+ <1289415645.12418.180.camel@gandalf.stny.rr.com>
+ <20101110191127.GA6190@nowhere>
+ <20101110202316.GA32396@Krystal>
+ <987664A83D2D224EAE907B061CE93D5301649A71DC@orsmsx505.amr.corp.intel.com>
+ <20101110225115.GB9299@Krystal>
+ <alpine.LFD.2.00.1011110004520.2900@localhost6.localdomain6>
+ <1289431227.12418.211.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Bruno Randolf <br1@einfach.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, randy.dunlap@oracle.com,
-        peterz@infradead.org, blp@cs.stanford.edu,
-        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
-        kosaki.motohiro@jp.fujitsu.com, kevin.granade@gmail.com,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [PATCH v6] Add generic exponentially weighted moving average
- (EWMA) function
-References: <20101111034756.15014.2156.stgit@localhost6.localdomain6> <20101110200231.aaa51b47.akpm@linux-foundation.org> <201011111421.49464.br1@einfach.org>
-In-Reply-To: <201011111421.49464.br1@einfach.org>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289431227.12418.211.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bruno Randolf wrote:
-> On Thu November 11 2010 13:02:31 Andrew Morton wrote:
->> So perhaps it would be best to merge this via the wireless tree, so
->> everything exists in one place and it can be fed into linux-next and
->> into mainline in an orderly fashion.
->>
->> If that sounds like a plan then I can send this patch in John's
->> direction.  Which means that if he merges it into mainline without also
->> merging any of your patches which _use_ this function then we still end
->> up with unused code in mainline, but at least that way it wasn't my fault
->> ;)
->>
->> Let me know your thoughts?
+On Wed, Nov 10, 2010 at 06:20:27PM -0500, Steven Rostedt wrote:
+> On Thu, 2010-11-11 at 00:12 +0100, Thomas Gleixner wrote:
 > 
-> Sounds like a good plan to me. But let's hear Johns opinion.
+> > Cramming both into the same session is just insane.
 > 
-> I have a patch or two using this function, which I hope will get merged into 
-> wireless-testing soon after, but obviously it's up to John. There are more 
-> places in the wireless part which could make use of this function (right now 
-> each have their own EWMA implementation), and I'll try to get them all 
-> updated, but finally it's the individual maintainers, who decide if they want 
-> to make that change or not, I guess.
+> That just doubled the overhead of the tracer.
 
-It seems totally clear-cut to me that code like this is submitted together
-with at least one call site, and it is submitted through the tree in which
-that call site is maintained.
+At least when I've used ftrace for the "flight recorder" use case, I'm
+not tracing as well.  What I do is enable a bunch of trace points,
+maybe I've sprinkled in some "trace_printk()'s" into various kernel
+code paths, and then I run the workload which locks up the kernel.
+When locks up, I've used sysrq-z to dump out the ftrace ring buffer,
+and usually _exactly_ what I need to debug the lock up is waiting for
+me in the ring buffer.
 
->> (And it's a bit sad that the function will exist in the base vmlinux
->> even for people who don't ever use it, but that's a problem which we
->> don't really have a good solution for).
-> 
-> Hmm, should I switch it back to all inlines?
+So, this use case, is incredibly useful, and I hope whatever folks do
+with the new-fangled API, that somehow "overwrite mode" is supported.
+Even if for speed reasons, what you do is wait until for the head to
+overrun the tail, that the tail gets bumped up by 50% and we lose half
+the log (so that whatever expensive locking is necessary only happens
+once in a while), I at least would find that quite acceptable.
 
-Add a hidden Kconfig variable for it which is SELECTed by those Kconfig
-prompts that require it?  That's the good solution that we use for a number of
-similar library functions.
-$ cat lib/Makefile
+The other feature/requirements request I would make is that there
+should be a way that common kernel abstractions, such as converting a
+dev_t to either a MAJOR/MINOR number pair, or to a device name, be
+made available.  For now I've changed the tracepoints to translate
+MAJOR/MINOR and drop integers into the ring buffer, and a generic
+workaround in the future is to always drop strings into the ring
+buffer instead of allowing the translation to be done in TP_printk
+(which doesn't work for perf; it causes the userspace perf client to
+fall over and die, without even skipping the problematic tracepoint
+record --- boo, hiss).  But that can be relatively inefficient,
+because we're now having to drop potentially fairly large text strings
+into ring buffer, because of limitations that perf has in its output
+transformations step.
 
-> On the other hand, if a generic EWMA function is useful at all I guess it 
-> could be used in many places all over the kernel. Unfortunately I don't have 
-> time and knowledge to find all these places and update them to use the generic 
-> code.
+I know that because perf is doing its output transformation in
+userspace, there are fundamental limitations about what it can do.
+But it would be nice if it could be expanded at least _somewhat_, and
+either way, there needs to be some clear documentation about what it
+can and can not accept.  And if these limitations means that I should
+just simply continue using ftrace, and not use perf, it would be nice
+if the tracepoints I create that work with ftrace don't cause perf to
+just die horribly when it tries to parse them.
 
-Don't worry.  There are people who specialize in this sort of activity.
-
-Two remarks on your patch:
-
-You use WARN_ON in lib/average.c.  You should include <linux/bug.h>.
-
-Why do ewma_init() and ewma_add() return their first argument?  They look to
-me like they can be straight-forward void functions.
--- 
-Stefan Richter
--=====-==-=- =-== -=-==
-http://arcgraph.de/sr/
+						- Ted
