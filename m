@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab0KKA1J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 19:27:09 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:14624 "EHLO
+	id S1757588Ab0KKAaB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 19:30:01 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:15373 "EHLO
 	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756719Ab0KKA1H (ORCPT
+	by vger.kernel.org with ESMTP id S1753586Ab0KKAaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 19:27:07 -0500
+	Wed, 10 Nov 2010 19:30:00 -0500
 X-IronPort-Anti-Spam-Filtered: true
 X-IronPort-Anti-Spam-Result: AvsEAAfF2kx5LcZK/2dsb2JhbACiPHK/cYVKBI9m
-Date: Thu, 11 Nov 2010 11:27:02 +1100
+Date: Thu, 11 Nov 2010 11:29:57 +1100
 From: Nick Piggin <npiggin@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 4/6] fs: d_delete change
-Message-ID: <20101111002702.GA3477@amd>
-References: <20101109124610.GB11477@amd>
- <20101109130133.GE11477@amd>
- <20101109162516.GB6217@infradead.org>
- <20101109220833.GG3246@amd>
- <20101110163224.GB15130@infradead.org>
+To: Salman Qazi <sqazi@google.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, paulmck@us.ibm.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, adurbin@google.com
+Subject: Re: [PATCH] Fixed a mismatch between the users of radix_tree and
+ the implementation.
+Message-ID: <20101111002957.GB3477@amd>
+References: <1281957914.1926.1249.camel@laptop>
+ <20100816182834.3541.42317.stgit@bumblebee1.mtv.corp.google.com>
+ <20100817152352.GA10785@amd>
+ <AANLkTimYJ3KfHfd9dFWinowm+J7KdM0dtt-wMU9Rv9=o@mail.gmail.com>
+ <AANLkTimKokqHoQ0GGKuN1frbz7BrYJV9iQZ12Y111329@mail.gmail.com>
+ <AANLkTi=hFPFHyZC3tpkF4mOgUYa+B_eVPdeKq-BwVaB9@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20101110163224.GB15130@infradead.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=hFPFHyZC3tpkF4mOgUYa+B_eVPdeKq-BwVaB9@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 11:32:25AM -0500, Christoph Hellwig wrote:
-> On Wed, Nov 10, 2010 at 09:08:33AM +1100, Nick Piggin wrote:
-> > On Tue, Nov 09, 2010 at 11:25:16AM -0500, Christoph Hellwig wrote:
-> > > The patch looks fine to me, and I'm also fine with merging it ASAP.
-> > > But the patch subject and commit message are not very descriptive.
-> > 
-> > How is the commit message not descriptive? The first sentence
-> > summarises exactly what the change does. The last says why it
-> > is required. In the middle are some details.
+On Wed, Nov 10, 2010 at 11:16:21AM -0800, Salman Qazi wrote:
+> On Mon, Aug 30, 2010 at 4:27 PM, Salman Qazi <sqazi@google.com> wrote:
+> > On Tue, Aug 17, 2010 at 2:28 PM, Salman Qazi <sqazi@google.com> wrote:
+> >> > -               if (unlikely(page == RADIX_TREE_RETRY))
+> >> > +               if (radix_tree_deref_retry(page))
+> >> >                        goto restart;
+> >> >
+> >> >                if (!page_cache_get_speculative(page))
+> >> >
+> >>
+> >> I just verified that your patch fixes the issue.  Thanks for doing this.
+> >
+> > Are we going to proceed with this?
+> >
 > 
-> foo change is about as useless as a subject could be.
 > 
-> "fs: idempotent d_delete" from your old tree was much better.
+> This bug is still unresolved.  Can we please follow this patch through
+> to conclusion?
 
-It's not only idempotent, though, so I thought it was better to
-change it. Seeing as the change could not be summarised in a
-changelog, at least the ambiguous subject would draw the reader
-to look at the changelog.
+Yep, I'm about 30 minutes ahead of you (if you ignore the couple of
+months I am behind).
 
+I forgot to add you to cc, sorry -- patch just went to lkml and Linus.
 
-> As far as the commit message is concerned I think the most important
-> bit is that we do not call it from prune_one_dentry anymore, which is
-> the things that might matter to any complex filesystem maintainer
-> looking at the changelog.
+Thanks for following up.
 
-See: first sentence of the changelog.
-
-
-> The other things I didn't like was the introductionary blurb, but from
-> reading the answer to the previous comment is seems like that wsn't
-> intentional anyway.
-
-Right, I'll switch to a different way of commenting that git-am
-does not pick up.
-
+Thanks,
+Nick
