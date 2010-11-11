@@ -1,190 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245Ab0KKP6N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 10:58:13 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:42376 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751407Ab0KKP6K (ORCPT
+	id S1754266Ab0KKP7c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 10:59:32 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45122 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752984Ab0KKP7a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 10:58:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=cMycwlK+uAfD99clakGHn0ewGyM1PlRAQuz29sf4oam1JvW7fAzCYsSv4y+Zc+uqL4
-         ESxsBbbt7zTNMjFnuRoqAUQFJFuq3U3w6fTx/34+huHlS5YeAH0ukR8menlV79XMf5e3
-         32t3ugof5/LpoOkFGWIac+xyYAse/IxENTEqk=
-From: Damian Varayud <davarayud@gmail.com>
-To: gregkh@suse.de, abbotti@mev.co.uk, arun.thomas@gmail.com,
-        andre.goddard@gmail.com, tj@kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Brian Acosta <nickcs_4@hotmail.com>
-Subject: [PATCH] Staging: comedi: fix coding style issue in pcl816.c
-Date: Thu, 11 Nov 2010 12:57:55 -0300
-Message-Id: <1289491075-3750-1-git-send-email-user@netbu>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 11 Nov 2010 10:59:30 -0500
+Subject: Re: [PATCH] SUNRPC: Simplify rpc_alloc_iostats by removing pointless local variable
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <alpine.LNX.2.00.1011102229370.625@swampdragon.chaosbits.net>
+Date: Thu, 11 Nov 2010 10:57:47 -0500
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>,
+        Neil Brown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <1745E543-5867-4814-9678-5E73AD2C25BA@oracle.com>
+References: <alpine.LNX.2.00.1011072205370.26247@swampdragon.chaosbits.net> <alpine.LNX.2.00.1011102229370.625@swampdragon.chaosbits.net>
+To: Jesper Juhl <jj@chaosbits.net>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the pcl816.c file that fixes up overlines warnings found by the checkpatch.pl tool
 
-Signed-off-by: Brian Acosta <nickcs_4@hotmail.com>
----
- drivers/staging/comedi/drivers/pcl816.c |  115 +++++++++++++++++++++----------
- 1 files changed, 77 insertions(+), 38 deletions(-)
+On Nov 10, 2010, at 4:32 PM, Jesper Juhl wrote:
 
-diff --git a/drivers/staging/comedi/drivers/pcl816.c b/drivers/staging/comedi/drivers/pcl816.c
-index 3d0f018..e7c7019 100644
---- a/drivers/staging/comedi/drivers/pcl816.c
-+++ b/drivers/staging/comedi/drivers/pcl816.c
-@@ -104,16 +104,25 @@ static const struct comedi_lrange range_pcl816 = { 8, {
- };
- 
- struct pcl816_board {
-+	/*  board name */
-+	const char *name;
-+	/*  len of range list */
-+	int n_ranges;
-+	/*  num of A/D chans in diferencial mode */
-+	int n_aichan;
-+	/*  minimal alllowed delay between samples (in ns) */
-+	unsigned int ai_ns_min;
-+	/*  num of D/A chans */
-+	int n_aochan;
-+	/*  num of DI chans */
-+	int n_dichan;
-+	/*  num of DO chans */
-+	int n_dochan;
-+	/*  default A/D rangelist */
-+	const struct comedi_lrange *ai_range_type;
-+	/*  default D/A rangelist */
-+	const struct comedi_lrange *ao_range_type;
- 
--	const char *name;	/*  board name */
--	int n_ranges;		/*  len of range list */
--	int n_aichan;		/*  num of A/D chans in diferencial mode */
--	unsigned int ai_ns_min;	/*  minimal alllowed delay between samples (in ns) */
--	int n_aochan;		/*  num of D/A chans */
--	int n_dichan;		/*  num of DI chans */
--	int n_dochan;		/*  num of DO chans */
--	const struct comedi_lrange *ai_range_type;	/*  default A/D rangelist */
--	const struct comedi_lrange *ao_range_type;	/*  default D/A rangelist */
- 	unsigned int io_range;	/*  len of IO space */
- 	unsigned int IRQbits;	/*  allowed interrupts */
- 	unsigned int DMAbits;	/*  allowed DMA chans */
-@@ -154,8 +163,10 @@ static int pcl816_attach(struct comedi_device *dev,
- static int pcl816_detach(struct comedi_device *dev);
- 
- #ifdef unused
--static int RTC_lock = 0;	/* RTC lock */
--static int RTC_timer_lock = 0;	/* RTC int lock */
-+/* RTC lock */
-+static int RTC_lock;
-+/* RTC int lock */
-+static int RTC_timer_lock;
- #endif
- 
- static struct comedi_driver driver_pcl816 = {
-@@ -190,36 +201,63 @@ struct pcl816_private {
- 	unsigned int rtc_iosize;
- 	unsigned int rtc_irq;
- #endif
--	unsigned long dmabuf[2];	/*  pointers to begin of DMA buffers */
--	unsigned int dmapages[2];	/*  len of DMA buffers in PAGE_SIZEs */
--	unsigned int hwdmaptr[2];	/*  hardware address of DMA buffers */
--	unsigned int hwdmasize[2];	/*  len of DMA buffers in Bytes */
--	unsigned int dmasamplsize;	/*  size in samples hwdmasize[0]/2 */
--	unsigned int last_top_dma;	/*  DMA pointer in last RTC int */
--	int next_dma_buf;	/*  which DMA buffer will be used next round */
--	long dma_runs_to_end;	/*  how many we must permorm DMA transfer to end of record */
--	unsigned long last_dma_run;	/*  how many bytes we must transfer on last DMA page */
--
--	unsigned int ai_scans;	/*  len of scanlist */
--	unsigned char ai_neverending;	/*  if=1, then we do neverending record (you must use cancel()) */
--	int irq_free;		/*  1=have allocated IRQ */
--	int irq_blocked;	/*  1=IRQ now uses any subdev */
-+	/*  pointers to begin of DMA buffers */
-+	unsigned long dmabuf[2];
-+	/*  len of DMA buffers in PAGE_SIZEs */
-+	unsigned int dmapages[2];
-+	/*  hardware address of DMA buffers */
-+	unsigned int hwdmaptr[2];
-+	/*  len of DMA buffers in Bytes */
-+	unsigned int hwdmasize[2];
-+	/*  size in samples hwdmasize[0]/2 */
-+	unsigned int dmasamplsize;
-+	/*  DMA pointer in last RTC int */
-+	unsigned int last_top_dma;
-+	/*  which DMA buffer will be used next round */
-+	int next_dma_buf;
-+	/*  how many we must permorm DMA transfer to end of record */
-+	long dma_runs_to_end;
-+	/*  how many bytes we must transfer on last DMA page */
-+	unsigned long last_dma_run;
-+
-+	/*  len of scanlist */
-+	unsigned int ai_scans;
-+	/*  if=1, then we do neverending record (you must use cancel()) */
-+	unsigned char ai_neverending;
-+	/*  1=have allocated IRQ */
-+	int irq_free;
-+	/*  1=IRQ now uses any subdev */
-+	int irq_blocked;
-+
- #ifdef unused
- 	int rtc_irq_blocked;	/*  1=we now do AI with DMA&RTC */
- #endif
--	int irq_was_now_closed;	/*  when IRQ finish, there's stored int816_mode for last interrupt */
--	int int816_mode;	/*  who now uses IRQ - 1=AI1 int, 2=AI1 dma, 3=AI3 int, 4AI3 dma */
--	struct comedi_subdevice *last_int_sub;	/*  ptr to subdevice which now finish */
--	int ai_act_scan;	/*  how many scans we finished */
--	unsigned int ai_act_chanlist[16];	/*  MUX setting for actual AI operations */
--	unsigned int ai_act_chanlist_len;	/*  how long is actual MUX list */
--	unsigned int ai_act_chanlist_pos;	/*  actual position in MUX list */
--	unsigned int ai_n_chan;		/*  how many channels per scan */
--	unsigned int ai_poll_ptr;	/*  how many sampes transfer poll */
--	struct comedi_subdevice *sub_ai;	/*  ptr to AI subdevice */
-+	/*  when IRQ finish, there's stored int816_mode for last interrupt */
-+	int irq_was_now_closed;
-+	/*  who now uses IRQ - 1=AI1 int, 2=AI1 dma, 3=AI3 int, 4AI3 dma */
-+	int int816_mode;
-+	/*  ptr to subdevice which now finish */
-+	struct comedi_subdevice *last_int_sub;
-+	/*  how many scans we finished */
-+	int ai_act_scan;
-+
-+	/*  MUX setting for actual AI operations */
-+	unsigned int ai_act_chanlist[16];
-+	/*  how long is actual MUX list */
-+	unsigned int ai_act_chanlist_len;
-+	/*  actual position in MUX list */
-+	unsigned int ai_act_chanlist_pos;
-+	/*  how many channels per scan */
-+	unsigned int ai_n_chan;
-+	/*  how many sampes transfer poll */
-+	unsigned int ai_poll_ptr;
-+	/*  ptr to AI subdevice */
-+	struct comedi_subdevice *sub_ai;
- #ifdef unused
--	struct timer_list rtc_irq_timer;	/*  timer for RTC sanity check */
--	unsigned long rtc_freq;	/*  RTC int freq */
-+	/*  timer for RTC sanity check */
-+	struct timer_list rtc_irq_timer;
-+	/*  RTC int freq */
-+	unsigned long rtc_freq;
- #endif
- };
- 
-@@ -1254,7 +1292,8 @@ no_rtc:
- 		devpriv->dmapages[0] = pages;
- 		devpriv->hwdmaptr[0] = virt_to_bus((void *)devpriv->dmabuf[0]);
- 		devpriv->hwdmasize[0] = (1 << pages) * PAGE_SIZE;
--		/* printk("%d %d %ld, ",devpriv->dmapages[0],devpriv->hwdmasize[0],PAGE_SIZE); */
-+		/* printk("%d %d %ld, ",devpriv->dmapages[0],
-+		devpriv->hwdmasize[0],PAGE_SIZE); */
- 
- 		if (devpriv->dma_rtc == 0) {	/*  we must do duble buff :-( */
- 			devpriv->dmabuf[1] = __get_dma_pages(GFP_KERNEL, pages);
+> On Sun, 7 Nov 2010, Jesper Juhl wrote:
+> 
+>> Hi,
+>> 
+>> We can simplify net/sunrpc/stats.c::rpc_alloc_iostats() a bit by getting 
+>> rid of the unneeded local variable 'new'.
+>> 
+>> 
+>> Please CC me on replies.
+>> 
+>> 
+>> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+>> ---
+>> stats.c |    4 +---
+>> 1 file changed, 1 insertion(+), 3 deletions(-)
+>> 
+>> diff --git 
+>> a/net/sunrpc/stats.c b/net/sunrpc/stats.c
+>> index f71a731..80df89d 100644
+>> --- a/net/sunrpc/stats.c
+>> +++ b/net/sunrpc/stats.c
+>> @@ -115,9 +115,7 @@ EXPORT_SYMBOL_GPL(svc_seq_show);
+>>  */
+>> struct rpc_iostats *rpc_alloc_iostats(struct rpc_clnt *clnt)
+>> {
+>> -	struct rpc_iostats *new;
+>> -	new = kcalloc(clnt->cl_maxproc, sizeof(struct rpc_iostats), GFP_KERNEL);
+>> -	return new;
+>> +	return kcalloc(clnt->cl_maxproc, sizeof(struct rpc_iostats), GFP_KERNEL);
+>> }
+>> EXPORT_SYMBOL_GPL(rpc_alloc_iostats);
+>> 
+>> 
+>> 
+> 
+> Ok, no response to this for a couple of days.
+> Is there some problem or did it just get missed?
+> Could someone merge this and push it up-stream, please, if there are no 
+> problems with it...
+
+The NFS maintainer is traveling.
+
 -- 
-1.7.0.4
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
 
