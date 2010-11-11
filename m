@@ -1,187 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab0KKDrp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 22:47:45 -0500
-Received: from mail30f.wh2.ocn.ne.jp ([220.111.41.203]:5918 "HELO
-	mail30f.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756693Ab0KKDro (ORCPT
+	id S932364Ab0KKDzM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 22:55:12 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:43811 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932322Ab0KKDzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 22:47:44 -0500
-Subject: [PATCH v6] Add generic exponentially weighted moving average (EWMA)
-	function
-To: akpm@linux-foundation.org
-From: Bruno Randolf <br1@einfach.org>
-Cc: randy.dunlap@oracle.com, peterz@infradead.org, blp@cs.stanford.edu,
-        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
-        kosaki.motohiro@jp.fujitsu.com, kevin.granade@gmail.com
-Date: Thu, 11 Nov 2010 12:47:56 +0900
-Message-ID: <20101111034756.15014.2156.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-SF-Loop: 1
+	Wed, 10 Nov 2010 22:55:09 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:references:user-agent:date:from:to:cc:subject:content-disposition;
+	b=fSAabBI5+gZiQKIP2DBWzouuDDJ/uqs9eHAAZR8mF38P05reaPIS5MbagEtCDMsEK
+	ABBa5qebWABCH9j2y78QA==
+Message-Id: <20101111035050.693012668@google.com>
+References: <20101111035005.443640006@google.com>
+User-Agent: quilt/0.46-1
+Date: Wed, 10 Nov 2010 19:50:09 -0800
+From: Paul Turner <pjt@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Chris Friesen <cfriesen@nortel.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Pierre Bourdon <pbourdon@excellency.fr>, Paul Turner <pjt@google.com>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: [tg_shares_up rewrite v2 04/11] sched: fix load corruption from update_cfs_shares
+Content-Disposition: inline; filename=sched-tg-fix-update_cfs_shares.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds generic functions for calculating Exponentially Weighted Moving
-Averages (EWMA). This implementation makes use of a structure which keeps the
-EWMA parameters and a scaled up internal representation to reduce rounding
-errors.
+as part of enqueue_entity both a new entity weight and its contribution to the
+queuing cfs_rq / rq are updated.  Since update_cfs_shares will only update the
+queueing weights when the entity is on_rq (which in this case it is not yet),
+there's a dependency loop here:
 
-The original idea for this implementation came from the rt2x00 driver
-(rt2x00link.c). I would like to use it in several places in the mac80211 and
-ath5k code and I hope it can be useful in many other places in the kernel code.
+update_cfs_shares needs account_entity_enqueue to update cfs_rq->load.weight
+account_entity_enqueue needs the updated weight for the queuing cfs_rq load[*]
 
-Signed-off-by: Bruno Randolf <br1@einfach.org>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Fix this and avoid spurious dequeue/enqueues by issuing update_cfs_shares as
+if we had accounted the enqueue already.
 
---
+This was also resulting in rq->load corruption previously.
 
-Excuse me, but can I expect this to be merged anytime soon? Where do I check if
-it got merged? I'm resending the patch in case it got lost.
+[*]: this dependency also exists when using the group cfs_rq w/ 
+update_cfs_shares as the weight of the enqueued entity changes without the
+load being updated.
 
-Thanks,
-bruno
-
---
-
-v6: Fixed ULONG_MAX in comment. Add reviewed by KOSAKI Motohiro.
-
-v5: Use unsigned long instead of insigned int.
-
-v4: Initialize internal variable to 0. Remove unneeded const qualifiers.
-
-v3: Addressing Andrew Mortons comments: Implement in lib/average.c and make
-    access and initalization functions. Use unsigned int for values. Rename
-    functions to ewma_* since there might be other moving average
-    implementations which are not exponentially weighted.
-
-v2: Renamed 'samples' to 'weight'. Added more documentation. Use avg_val
-    pointer. Add a WARN_ON_ONCE for invalid values of 'weight'. Divide
-    and round up/down.
+Signed-off-by: Paul Turner <pjt@google.com>
 ---
- include/linux/average.h |   32 ++++++++++++++++++++++++++
- lib/Makefile            |    2 +-
- lib/average.c           |   58 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 91 insertions(+), 1 deletions(-)
- create mode 100644 include/linux/average.h
- create mode 100644 lib/average.c
+ kernel/sched_fair.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/include/linux/average.h b/include/linux/average.h
-new file mode 100644
-index 0000000..f3b36d4
---- /dev/null
-+++ b/include/linux/average.h
-@@ -0,0 +1,32 @@
-+#ifndef _LINUX_AVERAGE_H
-+#define _LINUX_AVERAGE_H
-+
-+#include <linux/kernel.h>
-+
-+/* Exponentially weighted moving average (EWMA) */
-+
-+/* For more documentation see lib/average.c */
-+
-+struct ewma {
-+	unsigned long internal;
-+	unsigned long factor;
-+	unsigned long weight;
-+};
-+
-+extern struct ewma *ewma_init(struct ewma *avg, unsigned long factor,
-+			      unsigned long weight);
-+
-+extern struct ewma *ewma_add(struct ewma *avg, unsigned long val);
-+
-+/**
-+ * ewma_get() - Get average value
-+ * @avg: Average structure
-+ *
-+ * Returns the average value held in @avg.
-+ */
-+static inline unsigned long ewma_get(const struct ewma *avg)
-+{
-+	return DIV_ROUND_CLOSEST(avg->internal, avg->factor);
-+}
-+
-+#endif /* _LINUX_AVERAGE_H */
-diff --git a/lib/Makefile b/lib/Makefile
-index e6a3763..f66acf7 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -21,7 +21,7 @@ lib-y	+= kobject.o kref.o klist.o
+Index: kernel/sched_fair.c
+===================================================================
+--- kernel/sched_fair.c.orig
++++ kernel/sched_fair.c
+@@ -718,7 +718,7 @@ static void reweight_entity(struct cfs_r
+ 		account_entity_enqueue(cfs_rq, se);
+ }
  
- obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
- 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
--	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o
-+	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o average.o
+-static void update_cfs_shares(struct cfs_rq *cfs_rq)
++static void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta)
+ {
+ 	struct task_group *tg;
+ 	struct sched_entity *se;
+@@ -732,7 +732,7 @@ static void update_cfs_shares(struct cfs
+ 	if (!se)
+ 		return;
  
- ifeq ($(CONFIG_DEBUG_KOBJECT),y)
- CFLAGS_kobject.o += -DDEBUG
-diff --git a/lib/average.c b/lib/average.c
-new file mode 100644
-index 0000000..3262e04
---- /dev/null
-+++ b/lib/average.c
-@@ -0,0 +1,58 @@
-+/*
-+ * lib/average.c
-+ *
-+ * This source code is licensed under the GNU General Public License,
-+ * Version 2.  See the file COPYING for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/average.h>
-+
-+/**
-+ * DOC: Exponentially Weighted Moving Average (EWMA)
-+ *
-+ * These are generic functions for calculating Exponentially Weighted Moving
-+ * Averages (EWMA). We keep a structure with the EWMA parameters and a scaled
-+ * up internal representation of the average value to prevent rounding errors.
-+ * The factor for scaling up and the exponential weight (or decay rate) have to
-+ * be specified thru the init fuction. The structure should not be accessed
-+ * directly but only thru the helper functions.
-+ */
-+
-+/**
-+ * ewma_init() - Initialize EWMA parameters
-+ * @avg: Average structure
-+ * @factor: Factor to use for the scaled up internal value. The maximum value
-+ *	of averages can be ULONG_MAX/(factor*weight).
-+ * @weight: Exponential weight, or decay rate. This defines how fast the
-+ *	influence of older values decreases. Has to be bigger than 1.
-+ *
-+ * Initialize the EWMA parameters for a given struct ewma @avg.
-+ */
-+struct ewma *ewma_init(struct ewma *avg, unsigned long factor,
-+		       unsigned long weight)
-+{
-+	WARN_ON(weight <= 1 || factor == 0);
-+	avg->internal = 0;
-+	avg->weight = weight;
-+	avg->factor = factor;
-+	return avg;
-+}
-+EXPORT_SYMBOL(ewma_init);
-+
-+/**
-+ * ewma_add() - Exponentially weighted moving average (EWMA)
-+ * @avg: Average structure
-+ * @val: Current value
-+ *
-+ * Add a sample to the average.
-+ */
-+struct ewma *ewma_add(struct ewma *avg, unsigned long val)
-+{
-+	avg->internal = avg->internal  ?
-+		(((avg->internal * (avg->weight - 1)) +
-+			(val * avg->factor)) / avg->weight) :
-+		(val * avg->factor);
-+	return avg;
-+}
-+EXPORT_SYMBOL(ewma_add);
+-	load = cfs_rq->load.weight;
++	load = cfs_rq->load.weight + weight_delta;
+ 
+ 	load_weight = atomic_read(&tg->load_weight);
+ 	load_weight -= cfs_rq->load_contribution;
+@@ -754,7 +754,7 @@ static inline void update_cfs_load(struc
+ {
+ }
+ 
+-static inline void update_cfs_shares(struct cfs_rq *cfs_rq)
++static inline void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta)
+ {
+ }
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+@@ -881,8 +881,8 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+ 	 */
+ 	update_curr(cfs_rq);
+ 	update_cfs_load(cfs_rq, 0);
++	update_cfs_shares(cfs_rq, se->load.weight);
+ 	account_entity_enqueue(cfs_rq, se);
+-	update_cfs_shares(cfs_rq);
+ 
+ 	if (flags & ENQUEUE_WAKEUP) {
+ 		place_entity(cfs_rq, se, 0);
+@@ -944,7 +944,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+ 	update_cfs_load(cfs_rq, 0);
+ 	account_entity_dequeue(cfs_rq, se);
+ 	update_min_vruntime(cfs_rq);
+-	update_cfs_shares(cfs_rq);
++	update_cfs_shares(cfs_rq, 0);
+ 
+ 	/*
+ 	 * Normalize the entity after updating the min_vruntime because the
+@@ -1177,7 +1177,7 @@ enqueue_task_fair(struct rq *rq, struct 
+ 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
+ 
+ 		update_cfs_load(cfs_rq, 0);
+-		update_cfs_shares(cfs_rq);
++		update_cfs_shares(cfs_rq, 0);
+ 	}
+ 
+ 	hrtick_update(rq);
+@@ -1207,7 +1207,7 @@ static void dequeue_task_fair(struct rq 
+ 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
+ 
+ 		update_cfs_load(cfs_rq, 0);
+-		update_cfs_shares(cfs_rq);
++		update_cfs_shares(cfs_rq, 0);
+ 	}
+ 
+ 	hrtick_update(rq);
+@@ -2030,7 +2030,7 @@ static int tg_shares_up(struct task_grou
+ 	 * We need to update shares after updating tg->load_weight in
+ 	 * order to adjust the weight of groups with long running tasks.
+ 	 */
+-	update_cfs_shares(cfs_rq);
++	update_cfs_shares(cfs_rq, 0);
+ 
+ 	raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 
+
+-- 
 
