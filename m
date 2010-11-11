@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757190Ab0KKXVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 18:21:30 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:54665 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753063Ab0KKXV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 18:21:29 -0500
-Subject: Re: [PATCH 04/10] tile: convert to use clocksource_register_hz
-From: john stultz <johnstul@us.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>, lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1289514133.2084.207.camel@laptop>
-References: <1288642350-1599-1-git-send-email-johnstul@us.ibm.com>
-	 <1288642350-1599-5-git-send-email-johnstul@us.ibm.com>
-	 <4CDC5E70.90102@tilera.com>  <1289513176.2742.56.camel@work-vm>
-	 <1289514133.2084.207.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 11 Nov 2010 15:21:15 -0800
-Message-ID: <1289517675.2742.125.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757283Ab0KKXV5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 18:21:57 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:19274 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063Ab0KKXV4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 18:21:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=rU2wfcXWRhGKYlDykBLtZWernc189RAkcm3jIxxHRXFWs89vIUzZVEQD2r/6ca5yxh
+         NeZI/E3VaPjMKEOUmv+w==
+Date: Thu, 11 Nov 2010 15:21:50 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Bodo Eggert <7eggert@gmx.de>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        linux-kernel@vger.kernel.org, gspencer@chromium.org,
+        piman@chromium.org, wad@chromium.org, olofj@chromium.org
+Subject: Re: [PATCH] oom: create a resource limit for oom_adj
+In-Reply-To: <E1PGgMk-0001AW-OD@be1.7eggert.dyndns.org>
+Message-ID: <alpine.DEB.2.00.1011111519330.3775@chino.kir.corp.google.com>
+References: <fNx73-1cI-1@gated-at.bofh.it> <fNzVf-5UY-3@gated-at.bofh.it> <fNKdY-6FU-11@gated-at.bofh.it> <fNMps-1S1-21@gated-at.bofh.it> <E1PGgMk-0001AW-OD@be1.7eggert.dyndns.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-11 at 23:22 +0100, Peter Zijlstra wrote:
-> On Thu, 2010-11-11 at 14:06 -0800, john stultz wrote:
-> > 1) How often is sched_clock guaranteed to be called? Once each tick, (so
-> > the maximum time in nohz mode would be reasonable?)
+On Fri, 12 Nov 2010, Bodo Eggert wrote:
+
+> The original oom_adj design would e.g. adjust all background tabs to seem
+> twice as bad as the current tab, so a ever-growing current tab would
+> only be able to get one or two tabs killed in the worst case:
 > 
-> Never,.. sparc64 for example can stay in nohz mode for hours. We have a
-> nohz_exit hook for the kernel/sched_clock.c code though which resyncs us
-> against the GTOD.
-
-Well, I suspect after hours in nohz, timekeeping might not be 100%
-correct, unless a low enough shift value is used.
-
-And that's part of the motivation for the clocksource_register_hz bits:
-to consolidate assumptions about adjustment granularity and safe nohz
-limits, so they can be tuned in a generic and clean fashion without
-assumptions being made in the arch specific code.
-
-> > 2) What considerations for sched_clock wrapping is there in generic
-> > code? I see some considerations in kernel/sched_clock.c, but its not
-> > obvious the limits. On x86, the 64-bit TSC won't wrap (but might jump on
-> > non-synced systems, or halt in idle modes). Do architectures that have
-> > faster-wrapping counters need to handle the cycle accumulation
-> > internally? 
+> System is near OOM while the current tab starts using a normal amount of
+> mem and grows beyond limits. After it easily killed the first bg tab by
+> allocating one byte, it needs to grow to twice the normal tab memsize to
+> start the OOM killer again. By then, it's score will be equal to normal
+> background tabs (half size, double score), and killing the second tab will
+> be luck. Killing the third tab should be impossible.
 > 
-> Basically all code assumes we wrap on the u64 boundary.
+> (If you adjust the bg tabs to be four times as killable, you'll get what
+>  you asked for.)
 > 
-> So the whole kernel/sched_clock.c machinery tries to make a crummy arch
-> sched_clock() usable, it syncs against the GTOD code (on tick, idle_exit
-> and nohz_exit) and only assumes the arch sched_clock() wraps at the u64
-> boundary, jumps, inter-cpu drift etc are all taken care of.
+> 
+> I don't know the current oom_score_adj, it should be able to do something
+> similar? Or should there be a oom_score_mul?
+> 
 
-So at some point it might be worth having a clocksource-like structure
-to register for sched_clock and allowing generic code manage calculating
-the cycles to ns conversion and accumulation method so we don't run into
-arch specific issues.
-
-That said, for now, I think it would be easiest to make sure the arch
-specific sched_clock implementations don't mis-use the timekeeping logic
-that is built for different assumptions.
-
-It looks the tile folks have done the right thing, hopefully we can fix
-the few other cases (like the lpj issue brought up earlier) fairly
-easily in the arch code.
-
-thanks
--john
-
-
+oom_score_adj is done on a linear scale instead of exponential so instead 
+of increasing oom_adj by 1 for each hop to the current tab, you would need 
+to double it.
