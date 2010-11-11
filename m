@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab0KKLB1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 06:01:27 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40693 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab0KKLBZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 06:01:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=GEVksc1m1PHQ6YBJeWuziMFa+zcPFw5xHRhYywUJJRQ15RKmRSdt7hGUQuNUzdiqUn
-         eX3dIClXwjBCm8DmZUcRj3MERmtvI/bFRC9day9fd66G8lT75v8D/wXAByWxaBCfd7aq
-         Zj4oQ80EgRRY9lzjRgOFMud3h11u+M4dEhfEU=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTin4OtWZf_uWdFfCMqVyZoR_xm3-jmt0e7f04xc_@mail.gmail.com>
-References: <1289412737.4513.80.camel@e102109-lin.cambridge.arm.com>
-	<4CDAFE4B.1060408@netapp.com>
-	<AANLkTin4OtWZf_uWdFfCMqVyZoR_xm3-jmt0e7f04xc_@mail.gmail.com>
-Date: Thu, 11 Nov 2010 11:01:24 +0000
-X-Google-Sender-Auth: oCPG1G_QZQHcg0tbmxMDYM71EPo
-Message-ID: <AANLkTinUjnWfs4vSDvQ24zw0pbpnfsnEo1aCRZQo0DJW@mail.gmail.com>
-Subject: Re: Memory leak via nfs_readdir_make_qstr
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Bryan Schumaker <bjschuma@netapp.com>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755489Ab0KKLDP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 06:03:15 -0500
+Received: from hera.kernel.org ([140.211.167.34]:41205 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754305Ab0KKLDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 06:03:14 -0500
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
+        yinghai@kernel.org
+Cc: Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/9] x86: Kill unused static boot_cpu_logical_apicid in smpboot.c
+Date: Thu, 11 Nov 2010 12:02:35 +0100
+Message-Id: <1289473363-29440-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1289473363-29440-1-git-send-email-tj@kernel.org>
+References: <1289473363-29440-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 11 Nov 2010 11:02:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 November 2010 21:24, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> On 10 November 2010 20:19, Bryan Schumaker <bjschuma@netapp.com> wrote:
->> On 11/10/2010 01:12 PM, Catalin Marinas wrote:
->>> I tested the 2.6.37-rc1 on an ARM platform with nfsroot filesystem.
->>> Kmemleak reports quite a lot (> 150) of leaks like below. You seem to
->>> have made changes recently to this area.
->>>
->> <snip>
->>>
->>> Any quick thoughts? I'll have a look tomorrow as well.
->>
->> My first thought is that this is because of how we are caching the result of a readdir now.  We are storing the name of each directory entry as part of the cache, and this requires allocating memory for each string.  These are freed on unmount (see nfs_readdir_clear_array() in fs/nfs/dir.c), but you probably don't want to unmount your root filesytem...
->
-> Ah, I got it now. It seems to be a kmemleak false positive since
-> kmemleak doesn't scan page cache pages. The easiest thing is to mark
-> the leak with kmemleak_not_leak(), with the disadvantage that if at
-> some point we get a real leak from the same place it will be missed.
->
-> If there is a function that gets called only once for each array
-> before it is populated (maybe nfs_do_filldir?), we could inform
-> kmemleak about this page so that it can scan it.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ arch/x86/kernel/smpboot.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
 
-These pages may be highmem and kmemleak doesn't do any kmap, therefore
-not possible to scan the nfs_cache_array. I'll send a separate patch
-to annotate the false positive.
-
-Thanks.
-
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 083e99d..4de6a00 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -165,8 +165,6 @@ static void unmap_cpu_to_node(int cpu)
+ #endif
+ 
+ #ifdef CONFIG_X86_32
+-static int boot_cpu_logical_apicid;
+-
+ u8 cpu_2_logical_apicid[NR_CPUS] __read_mostly =
+ 					{ [0 ... NR_CPUS-1] = BAD_APICID };
+ 
+@@ -1101,9 +1099,7 @@ void __init native_smp_prepare_cpus(unsigned int max_cpus)
+ 	 * Setup boot CPU information
+ 	 */
+ 	smp_store_cpu_info(0); /* Final full version of the data */
+-#ifdef CONFIG_X86_32
+-	boot_cpu_logical_apicid = logical_smp_processor_id();
+-#endif
++
+ 	current_thread_info()->cpu = 0;  /* needed? */
+ 	for_each_possible_cpu(i) {
+ 		zalloc_cpumask_var(&per_cpu(cpu_sibling_map, i), GFP_KERNEL);
 -- 
-Catalin
+1.7.1
+
