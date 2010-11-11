@@ -1,175 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757474Ab0KKAwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 10 Nov 2010 19:52:24 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:37788 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757305Ab0KKAwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 10 Nov 2010 19:52:22 -0500
-Date: Thu, 11 Nov 2010 09:46:13 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	id S1757519Ab0KKAxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 10 Nov 2010 19:53:46 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:39641 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757406Ab0KKAxp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 10 Nov 2010 19:53:45 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: markgross@thegnar.org
+Subject: Re: [PATCH] pm_qos: Fix reversed min and max
+Date: Thu, 11 Nov 2010 01:52:34 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Colin Cross <ccross@android.com>, linux-pm@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC PATCH] Make swap accounting default behavior configurable
-Message-Id: <20101111094613.eab2ec0b.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20101110125154.GC5867@tiehlicka.suse.cz>
-References: <20101110125154.GC5867@tiehlicka.suse.cz>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        James Bottomley <James.Bottomley@suse.de>, stable <stable@kernel.org>
+References: <1288852803-12356-1-git-send-email-ccross@android.com> <20101104180107.GA20826@gvim.org>
+In-Reply-To: <20101104180107.GA20826@gvim.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201011110152.34547.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Nov 2010 13:51:54 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+On Thursday, November 04, 2010, mark gross wrote:
+> On Wed, Nov 03, 2010 at 11:40:03PM -0700, Colin Cross wrote:
+> > pm_qos_get_value had min and max reversed, causing all pm_qos
+> > requests to have no effect.
+> sorry.
+> 
+> Acked-by : mark <markgross@thegnar.org>
 
-> Hi,
-> could you consider the patch bellow? It basically changes the default
-> swap accounting behavior (when it is turned on in configuration) to be
-> configurable as well. 
-> 
-> The rationale is described in the patch but in short it makes it much
-> more easier to enable this feature in distribution kernels as the
-> functionality can be provided in the general purpose kernel (with the
-> option disabled) without any drawbacks and interested users can enable
-> it. This is not possible currently.
-> 
-> I am aware that boot command line parameter name change is not ideal but
-> the original semantic wasn't good enough and I don't like
-> noswapaccount=yes|no very much. 
-> 
-> If we really have to stick to it I can rework the patch to keep the name
-> and just add the yes|no logic, though. Or we can keep the original one
-> and add swapaccount paramete which would mean the oposite as the other
-> one.
-> 
-hmm, I agree that current parameter name(noswapaccount) is not desirable
-for yes|no, but IMHO changing the user interface(iow, making what worked before 
-unusable) is worse.
-
-Although I'm not sure how many people are using this parameter, I vote for
-using "noswapaccount[=(yes|no)]".
-And you should update Documentation/kernel-parameters.txt too.
+Applied to suspend-2.6/linux-next, will push to Linus next week.
 
 Thanks,
-Daisuke Nishimura.
+Rafael
 
-> The patch is based on the current Linus tree.
-> 
-> Any thoughts?
-> ---
-> 
-> From c874f2c1ff1493e49611f19308434e564c2d37c6 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Wed, 10 Nov 2010 13:30:04 +0100
-> Subject: [PATCH] Make swap accounting default behavior configurable
-> 
-> Swap accounting can be configured by CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-> configuration option and then it is turned on by default. There is
-> a boot option (noswapaccount) which can disable this feature.
-> 
-> This makes it hard for distributors to enable the configuration option
-> as this feature leads to a bigger memory consumption and this is a no-go
-> for general purpose distribution kernel. On the other hand swap
-> accounting may be very usuful for some workloads.
-> 
-> This patch adds a new configuration option which controls the default
-> behavior (CGROUP_MEM_RES_CTLR_SWAP_ENABLED) and changes the original
-> noswapaccount parameter to swapaccount=true|false which provides
-> a more fine grained way to control this feature.
-> 
-> The default behavior is unchanged (if CONFIG_CGROUP_MEM_RES_CTLR_SWAP is
-> enabled then CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED is enabled as well)
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  init/Kconfig    |   13 +++++++++++++
->  mm/memcontrol.c |   19 ++++++++++++++-----
->  2 files changed, 27 insertions(+), 5 deletions(-)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 88c1046..61d55a7 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -613,6 +613,19 @@ config CGROUP_MEM_RES_CTLR_SWAP
->  	  if boot option "noswapaccount" is set, swap will not be accounted.
->  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
->  	  size is 4096bytes, 512k per 1Gbytes of swap.
-> +config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
-> +	bool "Memory Resource Controller Swap Extension enabled by default"
-> +	depends on CGROUP_MEM_RES_CTLR_SWAP
-> +	default y
-> +	help
-> +	  Memory Resource Controller Swap Extension comes with its price in
-> +	  a bigger memory consumption. General purpose distribution kernels
-> +	  which want to enable the feautre but keep it disabled by default
-> +	  and let the user enable it by swapaccount=true boot command line
-> +	  parameter should have this option unselected.
-> +	  For those who want to have the feature enabled by default should
-> +	  select this option (if, for some reason, they need to disable it
-> +	  then swapaccount=false does the trick).
->  
->  menuconfig CGROUP_SCHED
->  	bool "Group CPU scheduler"
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 9a99cfa..7c699b3 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -61,7 +61,14 @@ struct mem_cgroup *root_mem_cgroup __read_mostly;
->  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
->  /* Turned on only when memory cgroup is enabled && really_do_swap_account = 1 */
->  int do_swap_account __read_mostly;
-> -static int really_do_swap_account __initdata = 1; /* for remember boot option*/
-> +
-> +/* for remember boot option*/
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED
-> +static int really_do_swap_account __initdata = 1;
-> +#else
-> +static int really_do_swap_account __initdata = 0;
-> +#endif
-> +
->  #else
->  #define do_swap_account		(0)
->  #endif
-> @@ -4909,11 +4916,13 @@ struct cgroup_subsys mem_cgroup_subsys = {
->  };
->  
->  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-> -
-> -static int __init disable_swap_account(char *s)
-> +static int __init enable_swap_account(char *s)
->  {
-> -	really_do_swap_account = 0;
-> +	if (!s || !strcmp(s, "true"))
-> +		really_do_swap_account = 1;
-> +	else if (!strcmp(s, "false"))
-> +		really_do_swap_account = 0;
->  	return 1;
->  }
-> -__setup("noswapaccount", disable_swap_account);
-> +__setup("swapaccount", enable_swap_account);
->  #endif
-> -- 
-> 1.7.2.3
-> 
-> 
-> -- 
-> Michal Hocko
-> L3 team 
-> SUSE LINUX s.r.o.
-> Lihovarska 1060/12
-> 190 00 Praha 9    
-> Czech Republic
-> 
+  
+> > Change-Id: I252c764821eac8d94de57eb482c05bf6afcea15b
+> > Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> > Cc: mark gross <markgross@thegnar.org>
+> > Cc: James Bottomley <James.Bottomley@suse.de>
+> > Cc: stable <stable@kernel.org>
+> > Signed-off-by: Colin Cross <ccross@android.com>
+> > ---
+> >  kernel/pm_qos_params.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+> > index 645e541..0da2837 100644
+> > --- a/kernel/pm_qos_params.c
+> > +++ b/kernel/pm_qos_params.c
+> > @@ -120,10 +120,10 @@ static inline int pm_qos_get_value(struct pm_qos_object *o)
+> >  
+> >  	switch (o->type) {
+> >  	case PM_QOS_MIN:
+> > -		return plist_last(&o->requests)->prio;
+> > +		return plist_first(&o->requests)->prio;
+> >  
+> >  	case PM_QOS_MAX:
+> > -		return plist_first(&o->requests)->prio;
+> > +		return plist_last(&o->requests)->prio;
+> >  
+> >  	default:
+> >  		/* runtime check for not using enum */
 > --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+
