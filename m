@@ -1,111 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab0KKM1D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 07:27:03 -0500
-Received: from gate.crashing.org ([63.228.1.57]:41335 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756565Ab0KKM07 convert rfc822-to-8bit (ORCPT
+	id S1756565Ab0KKMas (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 07:30:48 -0500
+Received: from casper.infradead.org ([85.118.1.10]:51692 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755543Ab0KKMar convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 07:26:59 -0500
-Subject: Re: [PATCH 3/4][v2] fsl_rio: move machine_check handler into machine_check_e500 & machine_check_e500mc
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <9FCE46230501DF4D9461B9ACC152FD7104DDA26D@zmy16exm20.fsl.freescale.net>
-Date: Thu, 11 Nov 2010 06:26:33 -0600
-Cc: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>,
-        <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, Li Yang-R58472 <R58472@freescale.com>,
-        Gala Kumar-B11780 <B11780@freescale.com>,
-        Zang Roy-R61911 <R61911@freescale.com>
+	Thu, 11 Nov 2010 07:30:47 -0500
+Subject: Re: [Questions] How to run 'perf top' on ARM to profile kernel
+ functions with modules loaded
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: Ming Lei <tom.leiming@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <20101111122143.GF2929@pulham.picochip.com>
+References: <AANLkTinwAL8dFsDbd-ZTQEcEziq6jZk82KPzNqMVxnOx@mail.gmail.com>
+	 <AANLkTim+BAYKWqiJzSQQLc4e_yNkMsNNnEp5u8YgC2Fk@mail.gmail.com>
+	 <20101111091733.GA2929@pulham.picochip.com>
+	 <1289477176.2084.64.camel@laptop>
+	 <20101111122143.GF2929@pulham.picochip.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <A530CF80-F6B6-40BE-A465-18884B887432@kernel.crashing.org>
-References: <1288777018-24259-1-git-send-email-b21989@freescale.com> <0CE8B6BE3C4AD74AB97D9D29BD24E55201538B08@CORPEXCH1.na.ads.idt.com> <9FCE46230501DF4D9461B9ACC152FD7104DDA26D@zmy16exm20.fsl.freescale.net>
-To: Xie Shaohui-B21989 <B21989@freescale.com>
-X-Mailer: Apple Mail (2.1081)
+Date: Thu, 11 Nov 2010 13:30:26 +0100
+Message-ID: <1289478626.2084.73.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-11-11 at 12:21 +0000, Jamie Iles wrote:
+> On Thu, Nov 11, 2010 at 01:06:16PM +0100, Peter Zijlstra wrote:
+> > On Thu, 2010-11-11 at 09:17 +0000, Jamie Iles wrote:
+> > > On Thu, Nov 11, 2010 at 03:52:07PM +0800, Ming Lei wrote:
+> > > > 2010/11/11 Ming Lei <tom.leiming@gmail.com>:
+> > > > > Hi,
+> > > > >
+> > > > > 'perf top' can't display any functions when modules are loaded on ARM.
+> > > > 
+> > > > Sorry, should be can't display any kernel functions when modules are loaded
+> > > > on ARM.
+> > > I've noticed this myself and I spent a bit of time looking into it last week 
+> > > but didn't get too far. I did wonder if it was something to do with the map 
+> > > fixups after loading the modules. If you look at the raw events after a perf 
+> > > record with 'perf report -D' then the last module has a size that takes it to 
+> > > 0xFFFFFFFF which overlaps with the rest of the kernel symbols.
+> > > 
+> > > On x86 it looks like the modules are loaded after the kernel image in VM 
+> > > unlike ARM.
+> > 
+> > Order shouldn't matter, but that overlap is very likely what kills it.
+> > That module size is buggy.
+> I'm guessing that its in util/symbol.c:__map_groups__fixup_end():
+> 
+> 	for (nd = rb_next(prevnd); nd; nd = rb_next(nd)) {
+>                 prev = curr;
+>                 curr = rb_entry(nd, struct map, rb_node);
+>                 prev->end = curr->start - 1;
+>         }
+> 
+>         /*
+>          * We still haven't the actual symbols, so guess the
+>          * last map final address.
+>          */
+>         curr->end = ~0UL;
+> 
+> I've noticed that if I change the symbol_conf.{use_modules,try_vmlinux_path} 
+> then I can get perf events for kernel symbols from /proc/kallsyms but nothing 
+> for the modules.
 
-On Nov 11, 2010, at 4:19 AM, Xie Shaohui-B21989 wrote:
+Hrm,.. depending on how we load things this might be easy or hard to
+fix. If we load the module symbols after having loaded the kernel
+symbols we can replace ~0ULL with the address before the next symbol.
 
-> 
-> 
-> 
-> Best Regards, 
-> Shaohui Xie 
-> 
-> 
->> -----Original Message-----
->> From: Bounine, Alexandre [mailto:Alexandre.Bounine@idt.com]
->> Sent: Thursday, November 11, 2010 6:55 AM
->> To: Xie Shaohui-B21989; akpm@linux-foundation.org
->> Cc: linux-kernel@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; Li
-> Yang-
->> R58472; Gala Kumar-B11780; Zang Roy-R61911
->> Subject: RE: [PATCH 3/4][v2] fsl_rio: move machine_check handler into
->> machine_check_e500 & machine_check_e500mc
->> 
->> Shaohui Xie <b21989@freescale.com> wrote:
->>> 
->>> diff --git a/arch/powerpc/kernel/traps.c
-> b/arch/powerpc/kernel/traps.c
->>> index a45a63c..2a5fb9d 100644
->>> --- a/arch/powerpc/kernel/traps.c
->>> +++ b/arch/powerpc/kernel/traps.c
->>> @@ -55,6 +55,7 @@
->>> #endif
->>> #include <asm/kexec.h>
->>> #include <asm/ppc-opcode.h>
->>> +#include <linux/rio.h>
->>> 
->>> #if defined(CONFIG_DEBUGGER) || defined(CONFIG_KEXEC)  int
->>> (*__debugger)(struct pt_regs *regs) __read_mostly; @@ -500,6 +501,13
->>> @@ int machine_check_e500mc(struct pt_regs *regs)
->>> 		       reason & MCSR_MEA ? "Effective" : "Physical",
->> addr);
->>> 	}
->>> 
->>> +	if (reason & MCSR_BUS_RBERR) {
->>> +		printk("Bus - Read Data Bus Error\n"); #ifdef
-> CONFIG_RAPIDIO
->>> +		recoverable = fsl_rio_mcheck_exception(regs); #endif
->>> +	}
->>> +
->>> 	mtspr(SPRN_MCSR, mcsr);
->>> 	return mfspr(SPRN_MCSR) == 0 && recoverable;  } @@ -527,8
-> +535,12
->> @@
->>> int machine_check_e500(struct pt_regs *regs)
->>> 		printk("Bus - Write Address Error\n");
->>> 	if (reason & MCSR_BUS_IBERR)
->>> 		printk("Bus - Instruction Data Error\n");
->>> -	if (reason & MCSR_BUS_RBERR)
->>> +	if (reason & MCSR_BUS_RBERR) {
->>> 		printk("Bus - Read Data Bus Error\n");
->>> +#ifdef CONFIG_RAPIDIO
->>> +		fsl_rio_mcheck_exception(regs);
->>> +#endif
->>> +	}
->>> 	if (reason & MCSR_BUS_WBERR)
->>> 		printk("Bus - Read Data Bus Error\n");
->>> 	if (reason & MCSR_BUS_IPERR)
->> 
->> This implementation breaks an intended use of
->> fsl_rio_mcheck_exception():
->> 1. for e500 it does not check the return value of the rio handler and
->> crashes the system even after RIO Mchk was serviced. Looks like e500mc
->> version handles it better but I have no HW to test it.
->> 2. the RIO Mchk is expected to be handled quietly but here it has many
->> printk's. May be it is better to call the fsl_rio_mcheck_exception()
->> handler in very beginning and simply exit if it returns 1.
->> 
->> Alex.
-> [Xie Shaohui-B21989] Hi Alex, seems your suggestion is some kind of
-> conflict with Kumar, you can have a look at 
-> http://patchwork.ozlabs.org/patch/67774/
-
-I think Alex's comment is the fact we ignore the 'return' value in the machine_check_e500 case.
-
-- k
+If however we load modules first we're in a bind and should look at
+changing the load order to make the first suggestion work.
