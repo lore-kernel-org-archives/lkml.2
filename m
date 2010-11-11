@@ -1,49 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757763Ab0KKHhF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 02:37:05 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55896 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757698Ab0KKHhD (ORCPT
+	id S1757837Ab0KKHwK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 02:52:10 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51058 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757356Ab0KKHwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 02:37:03 -0500
+	Thu, 11 Nov 2010 02:52:08 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=YMMI4tuV7tK4fr24sm6+JcxHAwHQUn8wEA0NKkUspGfk8buKgYIoSFXAoAvrkIieJv
-         Sbv+Vpo5n5OAA9booPTxjB/stkpa5lhk8w5K4eivr/muZGSLK4aDCN0OfCELXiojBv/o
-         JJeCfzD6tykhUrL15rvwae14yUDBJhrlYCLpk=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=wpsxjdZbPBB6ORFSQFSUYnm3cEAr7lqiT6o9fTsJuTOqLqmc6kwf2d6rXG23Z+ELvR
+         7Pc2nadfTZuxWrgORtuO0ovG8RB3HfXGFJoOqY3hOFN07Qr4aY1zlbxcUJt2gvyEBCtA
+         7l0AhPqAIOJd+HoIZHRBQURYo4eEZqhgA+0M0=
 MIME-Version: 1.0
-In-Reply-To: <20101110020018.GH5876@outflux.net>
-References: <20101025235804.GA11760@outflux.net>
-	<AANLkTi=c4kt46Pa1FA-e8=36Vn0KcmZgHHKWKZ_bgvzL@mail.gmail.com>
-	<20101109205008.GU5876@outflux.net>
-	<AANLkTint3yM44CouOvG_oA2K=_iC9AJuw-sJoB_HTUMT@mail.gmail.com>
-	<20101109234852.GC5876@outflux.net>
-	<AANLkTinCLMGWWD=8do9pv0vnFMX8njYyNgsMS+VeRfpQ@mail.gmail.com>
-	<1289351010.28590.81.camel@Joe-Laptop>
-	<20101110020018.GH5876@outflux.net>
-Date: Thu, 11 Nov 2010 09:37:02 +0200
-X-Google-Sender-Auth: fT0KCPi6oQlNg05xK_MYKCVJigk
-Message-ID: <AANLkTinvqpW-YA1+MZGeJwv4RG2onUKvhsD1TrOWBw6o@mail.gmail.com>
-Subject: Re: [PATCH] ipc: explicitly clear stack memory in user structs
-From: Pekka Enberg <penberg@kernel.org>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Joe Perches <joe@perches.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hugh Dickins <hughd@google.com>,
-        Manfred Spraul <manfred@colorfullife.com>
+In-Reply-To: <AANLkTinwAL8dFsDbd-ZTQEcEziq6jZk82KPzNqMVxnOx@mail.gmail.com>
+References: <AANLkTinwAL8dFsDbd-ZTQEcEziq6jZk82KPzNqMVxnOx@mail.gmail.com>
+Date: Thu, 11 Nov 2010 15:52:07 +0800
+Message-ID: <AANLkTim+BAYKWqiJzSQQLc4e_yNkMsNNnEp5u8YgC2Fk@mail.gmail.com>
+Subject: Re: [Questions] How to run 'perf top' on ARM to profile kernel
+ functions with modules loaded
+From: Ming Lei <tom.leiming@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 4:00 AM, Kees Cook <kees.cook@canonical.com> wrote:
-> If I fast-forward to today and run it, I get the same output you do.
+2010/11/11 Ming Lei <tom.leiming@gmail.com>:
+> Hi,
+>
+> 'perf top' can't display any functions when modules are loaded on ARM.
 
-Your patch had two parts and I only see one of them in mainline. Care
-to resubmit?
+Sorry, should be can't display any kernel functions when modules are loaded
+on ARM.
+
+Also, when modules are loaded, 'perf report' can't display functions names,
+follows result of 'perf report':
+
+root@beagleboard:~# perf report
+# Events: 4K cycles
+#
+# Overhead      Command      Shared Object                  Symbol
+# ........  ...........  .................  ......................
+#
+    97.36%      swapper  [musb_hdrc]        [k]  10466c4
+     2.19%         perf  [musb_hdrc]        [k]  10da070
+     0.09%  ksoftirqd/0  [musb_hdrc]        [k]  10db998
+     0.06%         perf  libc-2.9.so        [.] memchr
+     0.04%         perf  libc-2.9.so        [.]    663c0
+     0.02%         perf  perf               [.]     2e80
+     0.02%         perf  libc-2.9.so        [.] closedir
+     0.02%         perf  libc-2.9.so        [.] __read
+     0.02%  flush-179:0  [musb_hdrc]        [k]  10ff124
+     0.02%         perf  libc-2.9.so        [.] memset
+     0.02%         perf  libc-2.9.so        [.] __memcpy_chk
+     0.02%         perf  perf               [.] event__synthesize_comm
+     0.02%         perf           ffff0fc4  [.] ffff0fc4
+     0.02%         perf  perf               [.] hex2u64
+     0.02%         perf  libc-2.9.so        [.] _IO_vfprintf
+     0.02%         perf  libc-2.9.so        [.] fgets
+     0.02%         perf  libpthread-2.9.so  [.] flockfile
+     0.02%         perf  perf               [.] kallsyms__parse
+     0.02%         perf  libc-2.9.so        [.] _IO_getline_info
+
+Any suggestions or comments?
+
+thanks,
+-- 
+Lei Ming
