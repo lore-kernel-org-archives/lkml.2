@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab0KKTTE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 14:19:04 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:55587 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753275Ab0KKTTB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 14:19:01 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Thu, 11 Nov 2010 14:19:01 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Colin Cross <ccross@google.com>,
-        Rabin VINCENT <rabin.vincent@stericsson.com>
-Subject: Re: [PATCH] RFC: nomadik: expand timesource to 63 bits
-In-reply-to: <alpine.LFD.2.00.1011111958460.2900@localhost6.localdomain6>
-Message-id: <alpine.LFD.2.00.1011111413410.13911@xanadu.home>
-References: <1289466356-16697-1-git-send-email-linus.walleij@stericsson.com>
- <alpine.LFD.2.00.1011111054010.2900@localhost6.localdomain6>
- <4CDBC60F.8070905@stericsson.com>
- <alpine.LFD.2.00.1011111203140.2900@localhost6.localdomain6>
- <alpine.LFD.2.00.1011111330170.13911@xanadu.home>
- <alpine.LFD.2.00.1011111958460.2900@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755702Ab0KKTVI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 14:21:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54142 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753956Ab0KKTVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 14:21:06 -0500
+Subject: Re: [PATCH 7/5] block: clean up blkdev_get() wrappers and their
+ users
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
+        petero2@telia.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
+        tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com,
+        aelder@sgi.com, dm-devel@redhat.com, drbd-dev@lists.linbit.com,
+        neilb@suse.de, leochen@broadcom.com, sbranden@broadcom.com,
+        chris.mason@oracle.com, shaggy@linux.vnet.ibm.com, joern@logfs.org,
+        konishi.ryusuke@lab.ntt.co.jp, reiserfs-devel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, philipp.reisner@linbit.com,
+        snitzer@redhat.com
+In-Reply-To: <4CDC23BB.10505@kernel.org>
+References: <1288628129-12811-1-git-send-email-tj@kernel.org>
+	 <4CDC23BB.10505@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Thu, 11 Nov 2010 19:19:18 +0000
+Message-ID: <1289503158.2451.18.camel@dolmen>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Nov 2010, Thomas Gleixner wrote:
+Hi,
 
-> On Thu, 11 Nov 2010, Nicolas Pitre wrote:
-> > On Thu, 11 Nov 2010, Thomas Gleixner wrote:
-> > > Well, you don't need the keepwarm() timer, if you just call
-> > > sched_clock() in the idle wakeup path, so the magic in the NOHZ code
-> > > will ensure that you reread the thing timely.
-> > 
-> > You still have to make sure you get out of idle before 16 secs has 
-> > passed.
+On Thu, 2010-11-11 at 18:11 +0100, Tejun Heo wrote:
+> After recent blkdev_get() modifications, open_by_devnum() and
+> open_bdev_exclusive() are simple wrappers around blkdev_get().
+> Replace them with blkdev_get_by_dev() and blkdev_get_by_path().
 > 
-> No, I meant to put it into the idle loop, right after mach_idle() or
-> whatever is called to put the CPU into deep power sleep. The
-> clockevents core code makes sure that you get interrupted in time.
+> blkdev_get_by_dev() is identical to open_by_devnum().
+> blkdev_get_by_path() is slightly different in that it doesn't
+> automatically add %FMODE_EXCL to @mode.
+> 
+> All users are converted.  Most conversions are mechanical and don't
+> introduce any behavior difference.  There are several exceptions.
+> 
+> * btrfs now sets FMODE_EXCL in btrfs_device->mode, so there's no
+>   reason to OR it explicitly on blkdev_put().
+> 
+> * gfs2, nilfs2 and the generic mount_bdev() now set FMODE_EXCL in
+>   sb->s_mode.
+> 
+> * With the above changes, sb->s_mode now always should contain
+>   FMODE_EXCL.  WARN_ON_ONCE() added to kill_block_super() to detect
+>   errors.
+> 
+> The new blkdev_get_*() functions are with proper docbook comments.
+> While at it, add function description to blkdev_get() too.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Philipp Reisner <philipp.reisner@linbit.com>
+> Cc: Neil Brown <neilb@suse.de>
+> Cc: Mike Snitzer <snitzer@redhat.com>
+> Cc: Joern Engel <joern@lazybastard.org>
+> Cc: Chris Mason <chris.mason@oracle.com>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: "Theodore Ts'o" <tytso@mit.edu>
+> Cc: KONISHI Ryusuke <konishi.ryusuke@lab.ntt.co.jp>
+> Cc: reiserfs-devel@vger.kernel.org
+> Cc: xfs-masters@oss.sgi.com
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Acked-by: Steven Whitehouse <swhiteho@redhat.com>
 
-OK, if the clockevents core code takes care of that then fine.
-
-Of course one could claim that the sched_clock() code could be called 
-needlessly when frequently entering and leaving idle mode.  That's why 
-I've used a simple timer for this purpose so far, which also makes the 
-implementation and its algorithm constraint workaround close together.
+Steve.
 
 
-Nicolas
