@@ -1,112 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757827Ab0KKH7W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 02:59:22 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:39055 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757789Ab0KKH7V (ORCPT
+	id S1757848Ab0KKIAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 03:00:19 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:2271 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757795Ab0KKIAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 02:59:21 -0500
-X-AuditID: b753bd60-a41a1ba000003e7d-5e-4cdba255a294
-Message-ID: <4CDBA251.4010505@hitachi.com>
-Date: Thu, 11 Nov 2010 16:59:13 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Thu, 11 Nov 2010 03:00:18 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AloEANgw20x5LcZKgWdsb2JhbACiPhYBARYiIr9lhUoE
+Date: Thu, 11 Nov 2010 19:00:12 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: [patches] seqlock: add barrier-less special cases for seqcounts
+Message-ID: <20101111080012.GB10210@amd>
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Sharp <dhsharp@google.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [RFD tracing] Tracing ABI Work Plan
-References: <20101111004612.GB32564@Krystal>
-In-Reply-To: <20101111004612.GB32564@Krystal>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add branch annotations for seqlock read fastpath, and introduce
+__read_seqcount_begin and __read_seqcount_end functions, that can avoid
+the smp_rmb() if it is provided with some other barrier. Read barriers
+have non trivial cost on many architectures.
 
-(2010/11/11 9:46), Mathieu Desnoyers wrote:
-> A) New ABI for user-space
-> 
-> This new ABI will provide the features long-awaited by tracing users. We've
-> already started this discussion by listing the requirements and acknowledging
-> them. It is now time to start discussing the ABI. Upon disagreement on answering
-> a specific requirement, two questions will arise:
-> 
-> 1. How much trouble it really is to take care of this requirement. If the answer
->    is "not much", then we simply take care of it.
-> 2. If it really is a big deal to take care of a requirement at the ABI level,
->    then we will have to discuss the use-cases.
-> 
-> Once we are on the same page with respect to these requirements, we can come up
-> with an ABI proposal for:
-> 
-> - Tracing control
-> - Trace format
-> 
-> 
-> B) Internal Instrumentation API
-> 
-> I propose to standardize the instrumentation mechanisms (Tracepoints, Function
-> Tracer, Dynamic Probes, System Call Tracing, etc), so they can be used by
-> Ftrace, Perf, and by the new ABI without requiring to build all three tracer
-> ABI code-bases in the kernel. This involves modularizing the instrumentation
-> sources, taking the following aspects into account:
-> 
-> - They should be stand-alone objects, which can be built without a full tracer
->   enabled.
-> - They should offer a "registration/unregistration" API to tracers, so tracers
->   can register a callback along with a private data pointer (this would fit
->   with the "multiple concurrent tracing session" requirement).
-> - They should call these callbacks passing the private data pointer when the
->   instrumentation is hit.
-> - They should provide a mechanism to list the available instrumentation (when it
->   makes sense) and active instrumentation. E.g., it makes sense for tracepoints
->   to list the available tracepoints, but it only makes sense for dynamic probes
->   to list the enabled probes.
-> 
-> Masami Hiramatsu and Frederic Weisbecker already showed interest in undertaking
-> this task.
+These will be used by store-free path walking algorithm, where
+performance is critical and seqlocks are widely used.
 
-Actually, I didn't talked about what API should be provided internally.
-(Yeah, I know LTTng handler want that. However, there is no "external" handler
- _inside_ linux kernel tree)
-Instead, I and Frederic talked shortly about something like user interface
-for events. (so it would be more close to A, about controlling)
+Also expand and kerneldocify comments for seqlock functions in general.
 
-As Thomas said, eventually kernel internal tracer should simply provide
-"events tracing" functionality. User tools will analyze it and it's not
-kernel's business. I agree with his opinion.
+Signed-off-by: Nick Piggin <npiggin@kernel.dk>
 
->From above viewpoint, currently only trace-events(tracepoint-based events)
-and dynamic-events (kprobe-based events) are providing same interface for
-users. And, for example, perf's PMU events or ftrace's mcount events aren't
-shown up under debugfs/tracing/events. IMHO, all events provided by kernel
-should be there, so that user tools can read the format and control those
-events same way.
+---
+ include/linux/seqlock.h |   67 ++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 60 insertions(+), 7 deletions(-)
 
-For this purpose, I'd like to expand trace-event/dynamic-event framework to
-those events. It seems that some PMU events can be treated as trace-events,
-mcount and other parametric events can be treated as dynamic-events.
-
-Anyway, those stuffs can be done without new-ring-buffer-ABI things.
-I'll just expand dyn-events a bit far from here :-)
-
-Best Regards,
-
--- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Index: linux-2.6/include/linux/seqlock.h
+===================================================================
+--- linux-2.6.orig/include/linux/seqlock.h	2010-10-21 23:29:46.000000000 +1100
++++ linux-2.6/include/linux/seqlock.h	2010-10-21 23:29:59.000000000 +1100
+@@ -107,7 +107,7 @@ static __always_inline int read_seqretry
+ {
+ 	smp_rmb();
+ 
+-	return (sl->sequence != start);
++	return unlikely(sl->sequence != start);
+ }
+ 
+ 
+@@ -125,14 +125,25 @@ typedef struct seqcount {
+ #define SEQCNT_ZERO { 0 }
+ #define seqcount_init(x)	do { *(x) = (seqcount_t) SEQCNT_ZERO; } while (0)
+ 
+-/* Start of read using pointer to a sequence counter only.  */
+-static inline unsigned read_seqcount_begin(const seqcount_t *s)
++/**
++ * __read_seqcount_begin - begin a seq-read critical section (without barrier)
++ * @s: pointer to seqcount_t
++ * Returns: count to be passed to read_seqcount_retry
++ *
++ * __read_seqcount_begin is like read_seqcount_begin, but has no smp_rmb()
++ * barrier. Callers should ensure that smp_rmb() or equivalent ordering is
++ * provided before actually loading any of the variables that are to be
++ * protected in this critical section.
++ *
++ * Use carefully, only in critical code, and comment how the barrier is
++ * provided.
++ */
++static inline unsigned __read_seqcount_begin(const seqcount_t *s)
+ {
+ 	unsigned ret;
+ 
+ repeat:
+ 	ret = s->sequence;
+-	smp_rmb();
+ 	if (unlikely(ret & 1)) {
+ 		cpu_relax();
+ 		goto repeat;
+@@ -140,14 +151,56 @@ static inline unsigned read_seqcount_beg
+ 	return ret;
+ }
+ 
+-/*
+- * Test if reader processed invalid data because sequence number has changed.
++/**
++ * read_seqcount_begin - begin a seq-read critical section
++ * @s: pointer to seqcount_t
++ * Returns: count to be passed to read_seqcount_retry
++ *
++ * read_seqcount_begin opens a read critical section of the given seqcount.
++ * Validity of the critical section is tested by checking read_seqcount_retry
++ * function.
++ */
++static inline unsigned read_seqcount_begin(const seqcount_t *s)
++{
++	unsigned ret = __read_seqcount_begin(s);
++	smp_rmb();
++	return ret;
++}
++
++/**
++ * __read_seqcount_retry - end a seq-read critical section (without barrier)
++ * @s: pointer to seqcount_t
++ * @start: count, from read_seqcount_begin
++ * Returns: 1 if retry is required, else 0
++ *
++ * __read_seqcount_retry is like read_seqcount_retry, but has no smp_rmb()
++ * barrier. Callers should ensure that smp_rmb() or equivalent ordering is
++ * provided before actually loading any of the variables that are to be
++ * protected in this critical section.
++ *
++ * Use carefully, only in critical code, and comment how the barrier is
++ * provided.
++ */
++static inline int __read_seqcount_retry(const seqcount_t *s, unsigned start)
++{
++	return unlikely(s->sequence != start);
++}
++
++/**
++ * read_seqcount_retry - end a seq-read critical section
++ * @s: pointer to seqcount_t
++ * @start: count, from read_seqcount_begin
++ * Returns: 1 if retry is required, else 0
++ *
++ * read_seqcount_retry closes a read critical section of the given seqcount.
++ * If the critical section was invalid, it must be ignored (and typically
++ * retried).
+  */
+ static inline int read_seqcount_retry(const seqcount_t *s, unsigned start)
+ {
+ 	smp_rmb();
+ 
+-	return s->sequence != start;
++	return __read_seqcount_retry(s, start);
+ }
+ 
+ 
