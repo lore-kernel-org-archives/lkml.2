@@ -1,129 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab0KKXnO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 18:43:14 -0500
-Received: from web31805.mail.mud.yahoo.com ([68.142.207.68]:31212 "HELO
-	web31805.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751360Ab0KKXnM (ORCPT
+	id S1756663Ab0KKXoI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 18:44:08 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:39505 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753165Ab0KKXoG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 18:43:12 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type;
-  b=2SVk/ofvlg/aeX2AlFfK3lKwrTYVbxCxbcprlmTToQ4DVTT9P/FZx1ngJkAChVA/LEjSBD7xKXyuG4ppIEStkgEgt1RsnESsX2OuKVo1+IOvRrF36g01eK/o1yTMMo198hrvH6Gfw9qmnV6sTcTHUbRKiBF5zYYbB+r7XrbJTV4=;
-Message-ID: <929551.13749.qm@web31805.mail.mud.yahoo.com>
-X-YMail-OSG: yJBntu8VM1nxhnahJdjkQXiRoZGdrPck7T9nqB4sR0Z_KtP
- e2wJqxK1zebrR7mzo64AYvOEPk0zPPBhEx_egaUuixxMw2.lhY9715Qe6ADG
- 036eQbgGM3rmzv4hL1RtUjTm8XyIkbfbrD1EFCsvz3iKNxRnkQCybCmPdq5A
- 1ob0noItU0MFDF39t231uPZ6G3v6th_MbcWp75z6l2ErGqohsT84Xl_b1uQK
- PlODACAmO5FEgOi6WPD_01pG2NTHVKJdTWqSh.9EP8fp2febjZKj04UZhZgo
- kJN9odWNiLM9ERexam098zkHblb03lmUzv4sqez0U62zyqGZl3W2cN6Iu5m5
- CIFmbfPqlj4ctC_BDyt1HRRZj9l9gf1INYeM-
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.107.285259
-Date: Thu, 11 Nov 2010 15:43:11 -0800 (PST)
-From: Luben Tuikov <ltuikov@yahoo.com>
-Reply-To: ltuikov@yahoo.com
-Subject: [PATCH] [USB] Use normalized sense when emulating autosense
-To: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+	Thu, 11 Nov 2010 18:44:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=o66L4kMAUNpGirsYN+tNb8LaTyAtOJW192qnHqUUSVUg/cQz918CyYAwvII1WjIErD
+         uJjLIdBrzKZrOgv6u4qLyeZU4/ner9ZH/iKUDwS2Ur3xS0suAExvWPiQwcAu6D9qxMeL
+         7ofEOp5rsQl7FqwSyJSScdRLAuE6o5n593QGI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1289515742.14141.0.camel@localhost.localdomain>
+References: <4CDAF425.4050800@ccrma.stanford.edu>
+	<alpine.LFD.2.00.1011102154330.2900@localhost6.localdomain6>
+	<4CDC0429.8090506@gmail.com>
+	<1289515742.14141.0.camel@localhost.localdomain>
+Date: Thu, 11 Nov 2010 18:44:04 -0500
+Message-ID: <AANLkTik6x=7jewJ-82yEH=6z9dSVevEbKWLtAqpSecEg@mail.gmail.com>
+Subject: Re: 2.6.3x-rty where x > 3 and y >= 1?
+From: Bernardo Barros <bernardobarros2@gmail.com>
+To: Ng Oon-Ee <ngoonee@gmail.com>
+Cc: =?UTF-8?Q?Niccol=C3=B2_Belli?= <darkbasic4@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Fernando Lopez-Lezcano <nando@ccrma.stanford.edu>,
+        linux-kernel@vger.kernel.org,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        johnstul@us.ibm.com, rostedt@goodmis.org, npiggin@suse.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch solves two things:
-1) Enables autosense emulation code to correctly
-interpret descriptor format sense data, and
-2) Fixes a bug whereby the autosense emulation
-code would overwrite descriptor format sense data
-with SENSE KEY HARDWARE ERROR in fixed format, to
-incorrectly look like this:
+I'm trying to install the 2.6.36-bfs here, let's see what happens.. :-)
 
-Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  Sense Key : Recovered Error [current] [descriptor]
-Oct 21 14:11:07 localhost kernel: Descriptor sense data with sense descriptors (in hex):
-Oct 21 14:11:07 localhost kernel:        72 01 04 1d 00 00 00 0e 09 0c 00 00 00 00 00 00
-Oct 21 14:11:07 localhost kernel:        00 4f 00 c2 00 50
-Oct 21 14:11:07 localhost kernel: sd 7:0:0:0: [sdc]  ASC=0x4 ASCQ=0x1d
-
-Signed-off-by: Luben Tuikov <ltuikov@yahoo.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Acked-by: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
----
- drivers/usb/storage/transport.c |   34 +++++++++++++++++++---------------
- 1 files changed, 19 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/usb/storage/transport.c b/drivers/usb/storage/transport.c
-index 64ec073..cb04664 100644
---- a/drivers/usb/storage/transport.c
-+++ b/drivers/usb/storage/transport.c
-@@ -691,6 +691,9 @@ void usb_stor_invoke_transport(struct scsi_cmnd *srb, struct us_data *us)
- 		int temp_result;
- 		struct scsi_eh_save ses;
- 		int sense_size = US_SENSE_SIZE;
-+		struct scsi_sense_hdr sshdr;
-+		const u8 *scdd;
-+		u8 fm_ili;
- 
- 		/* device supports and needs bigger sense buffer */
- 		if (us->fflags & US_FL_SANE_SENSE)
-@@ -774,32 +777,30 @@ Retry_Sense:
- 			srb->sense_buffer[7] = (US_SENSE_SIZE - 8);
- 		}
- 
-+		scsi_normalize_sense(srb->sense_buffer, SCSI_SENSE_BUFFERSIZE,
-+				     &sshdr);
-+
- 		US_DEBUGP("-- Result from auto-sense is %d\n", temp_result);
- 		US_DEBUGP("-- code: 0x%x, key: 0x%x, ASC: 0x%x, ASCQ: 0x%x\n",
--			  srb->sense_buffer[0],
--			  srb->sense_buffer[2] & 0xf,
--			  srb->sense_buffer[12], 
--			  srb->sense_buffer[13]);
-+			  sshdr.response_code, sshdr.sense_key,
-+			  sshdr.asc, sshdr.ascq);
- #ifdef CONFIG_USB_STORAGE_DEBUG
--		usb_stor_show_sense(
--			  srb->sense_buffer[2] & 0xf,
--			  srb->sense_buffer[12], 
--			  srb->sense_buffer[13]);
-+		usb_stor_show_sense(sshdr.sense_key, sshdr.asc, sshdr.ascq);
- #endif
- 
- 		/* set the result so the higher layers expect this data */
- 		srb->result = SAM_STAT_CHECK_CONDITION;
- 
-+		scdd = scsi_sense_desc_find(srb->sense_buffer,
-+					    SCSI_SENSE_BUFFERSIZE, 4);
-+		fm_ili = (scdd ? scdd[3] : srb->sense_buffer[2]) & 0xA0;
-+
- 		/* We often get empty sense data.  This could indicate that
- 		 * everything worked or that there was an unspecified
- 		 * problem.  We have to decide which.
- 		 */
--		if (	/* Filemark 0, ignore EOM, ILI 0, no sense */
--				(srb->sense_buffer[2] & 0xaf) == 0 &&
--			/* No ASC or ASCQ */
--				srb->sense_buffer[12] == 0 &&
--				srb->sense_buffer[13] == 0) {
--
-+		if (sshdr.sense_key == 0 && sshdr.asc == 0 && sshdr.ascq == 0 &&
-+		    fm_ili == 0) {
- 			/* If things are really okay, then let's show that.
- 			 * Zero out the sense buffer so the higher layers
- 			 * won't realize we did an unsolicited auto-sense.
-@@ -814,7 +815,10 @@ Retry_Sense:
- 			 */
- 			} else {
- 				srb->result = DID_ERROR << 16;
--				srb->sense_buffer[2] = HARDWARE_ERROR;
-+				if ((sshdr.response_code & 0x72) == 0x72)
-+					srb->sense_buffer[1] = HARDWARE_ERROR;
-+				else
-+					srb->sense_buffer[2] = HARDWARE_ERROR;
- 			}
- 		}
- 	}
--- 
-1.7.0.1
-
+2010/11/11 Ng Oon-Ee <ngoonee@gmail.com>:
+> On Thu, 2010-11-11 at 15:56 +0100, Niccolò Belli wrote:
+>> Il 10/11/2010 21:54, Thomas Gleixner ha scritto:
+>> > Working on it :)
+>>
+>> Glad to hear that, I can't use 2.6.33-rt anymore because of problems
+>> with my intel video card and my band is starting to blame because of xruns.
+>>
+>> Darkbasic
+>
+> In the meantime, the -bfs kernel does improve the situation somewhat.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
