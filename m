@@ -1,85 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755684Ab0KKSsm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 13:48:42 -0500
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:54885 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754980Ab0KKSsk (ORCPT
+	id S1755948Ab0KKStv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 13:49:51 -0500
+Received: from adsl-67-113-118-6.dsl.sndg02.pacbell.net ([67.113.118.6]:49465
+	"EHLO multivac.one-eyed-alien.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753230Ab0KKStt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 13:48:40 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=lWaTera2WPj2zbwaLS9bNGm1YzlejE9Bzb0OXkEudJ6Pq5DbEBph+GoiT2w3UFt0TaaMspjLzShS5MrIW3GeGBIKIfwcEiLqa/GnQHuhl3YKrCUh0Oy/XXUCNIzQfXoB;
-Date: Thu, 11 Nov 2010 10:48:36 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
-        Charles Butterfield <charles.butterfield@nextcentury.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        linux-pci@vger.kernel.org,
-        "Horst H. von Brand" <vonbrand@inf.utfsm.cl>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Borislav Petkov <bp@amd64.org>, Stefan Becker <chemobejk@gmail.com>,
-        Chuck Ebbert <cebbert@redhat.com>,
-        Fabrice Bellet <fabrice@bellet.info>, Yinghai Lu <yinghai@kernel.org>,
-        Leann Ogasawara <leann.ogasawara@canonical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v2] PCI: fix pci_bus_alloc_resource() hang, prefer
- positive decode
-Message-ID: <20101111104836.0368d858@jbarnes-desktop>
-In-Reply-To: <20101110172607.2537.10985.stgit@bob.kio>
-References: <20101110172607.2537.10985.stgit@bob.kio>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Thu, 11 Nov 2010 13:49:49 -0500
+Date: Thu, 11 Nov 2010 10:49:46 -0800
+From: Matthew Dharm <mdharm-kernel@one-eyed-alien.net>
+To: Luben Tuikov <ltuikov@yahoo.com>
+Cc: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH take 2] [USB] Use normalized sense when emulating autosense
+Message-ID: <20101111184946.GC20296@one-eyed-alien.net>
+Mail-Followup-To: Luben Tuikov <ltuikov@yahoo.com>,
+	Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org,
+	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20101111174322.GB20296@one-eyed-alien.net> <673670.8195.qm@web31801.mail.mud.yahoo.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VywGB/WGlW4DM4P8"
+Content-Disposition: inline
+In-Reply-To: <673670.8195.qm@web31801.mail.mud.yahoo.com>
+User-Agent: Mutt/1.4.2.3i
+Organization: One Eyed Alien Networks
+X-Copyright: (C) 2010 Matthew Dharm, all rights reserved.
+X-Message-Flag: Get a real e-mail client.  http://www.mutt.org/
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-2.1.12 (multivac.one-eyed-alien.net [127.0.0.1]); Thu, 11 Nov 2010 10:49:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Nov 2010 10:26:07 -0700
-Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
 
-> 
-> When a PCI bus has two resources with the same start/end, e.g.,
-> 
->     pci_bus 0000:04: resource 2 [mem 0xd0000000-0xd7ffffff pref]
->     pci_bus 0000:04: resource 7 [mem 0xd0000000-0xd7ffffff]
-> 
-> the previous pci_bus_find_resource_prev() implementation would alternate
-> between them forever:
-> 
->     pci_bus_find_resource_prev(... [mem 0xd0000000-0xd7ffffff pref])
->         returns [mem 0xd0000000-0xd7ffffff]
->     pci_bus_find_resource_prev(... [mem 0xd0000000-0xd7ffffff])
->         returns [mem 0xd0000000-0xd7ffffff pref]
->     pci_bus_find_resource_prev(... [mem 0xd0000000-0xd7ffffff pref])
->         returns [mem 0xd0000000-0xd7ffffff]
->     ...
-> 
-> This happened because there was no ordering between two resources with the
-> same start and end.  A resource that had the same start and end as the
-> cursor, but was not itself the cursor, was considered to be before the
-> cursor.
-> 
-> This patch fixes the hang by making a fixed ordering between any two
-> resources.
-> 
-> In addition, it tries to allocate from positively decoded regions before
-> using any subtractively decoded resources.  This means we will use a
-> positive decode region before a subtractive decode one, even if it means
-> using a smaller address.
-> 
-> Reference: https://bugzilla.kernel.org/show_bug.cgi?id=22062
-> Reported-by: Borislav Petkov <bp@amd64.org>
-> Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> ---
+--VywGB/WGlW4DM4P8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-How does this one look, Linus?  If you're ok with this version I'll
-include it in my next pull request.
+On Thu, Nov 11, 2010 at 10:27:11AM -0800, Luben Tuikov wrote:
+> The patch uses SCSI functions to abstract the sense information irrespect=
+ive of the type of format of sense data.
 
-Thanks,
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Looks reasonable.  The underlying SCSI functions seem to all have the tests
+to distinguish between sense format types.  Let's just hope there are no
+devices out there which can confuse those tests, or we'll be buried in
+regressions.
+
+ACKed-by: Matthew Dharm <mdharm-usb@one-eyed-alien.net>
+
+Matt
+
+--=20
+Matthew Dharm                              Home: mdharm-usb@one-eyed-alien.=
+net=20
+Maintainer, Linux USB Mass Storage Driver
+
+My mother not mind to die for stoppink Windows NT!  She is rememberink=20
+Stalin!
+					-- Pitr
+User Friendly, 9/6/1998
+
+--VywGB/WGlW4DM4P8
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.7 (GNU/Linux)
+
+iD8DBQFM3DrK3gL8qCooyc4RAky0AJ9lH9VGKO2/jkDqQKrcloV5a4TJWgCeILba
+VjOrIrVK99RYWvEj1e5qzhY=
+=PSWE
+-----END PGP SIGNATURE-----
+
+--VywGB/WGlW4DM4P8--
