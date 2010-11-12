@@ -1,54 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757453Ab0KLL1O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 06:27:14 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52745 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756612Ab0KLL1N (ORCPT
+	id S1757458Ab0KLL2e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 06:28:34 -0500
+Received: from lon1-post-1.mail.demon.net ([195.173.77.148]:58782 "EHLO
+	lon1-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755743Ab0KLL2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 06:27:13 -0500
-Date: Fri, 12 Nov 2010 11:25:09 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Richard Cochran <richardcochran@gmail.com>
-Cc: Kyle Moffett <kyle@moffetthome.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Shishkin <virtuoso@slind.org>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCHv6 0/7] system time changes notification
-Message-ID: <20101112112509.5948219a@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101112105358.GA20425@riccoc20.at.omicron.at>
-References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
-	<22542.1289507293@localhost>
-	<20101111205123.GC10585@shisha.kicks-ass.net>
-	<alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
-	<AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
-	<20101112092504.6b8db05b@lxorguk.ukuu.org.uk>
-	<20101112105358.GA20425@riccoc20.at.omicron.at>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Fri, 12 Nov 2010 06:28:33 -0500
+Subject: [PATCH/RFC] MM slub: add a sysfs entry to show the calculated
+ number of fallback slabs
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Pekka Enberg <penberg@kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 12 Nov 2010 11:28:29 +0000
+Message-ID: <1289561309.1972.30.camel@castor.rsk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Did you see my recent post on dynamic clock ids, from Nov 4th?
-> It implements the clock lifetime cycle, and I would like to here your
-> comments on that.
+Add a slub sysfs entry to show the calculated number of fallback slabs.
 
-Its hard to see the intended API from the patches, but I remain strongly
-convinced that you must be able to open/close and use normal file
-operations on a clock.
+Using the information already available it is straightforward to
+calculate the number of fallback & full size slabs. We can then track
+which slabs are particularly effected by memory fragmentation and how
+long they take to recover. 
 
-Having the id space nibble away at the future cpu clock range and pid
-size is always a bit iffy.
+There is no change to the mainline code, the calculation is only
+performed on request, and the value is available without having to
+enable CONFIG_SLUB_STATS.  
 
-The rest of the stuff - kref counting and the like look nice and it's
-definitely going the right way about that.
+Note that this could give the wrong value if the user changes the slab
+order via the sysfs interface.
 
-Alan
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+---
+
+
+As we have the information needed to do this calculation is seem useful
+to expose it and provide another way to understand what is happening
+inside the memory manager.
+
+On my desktop workloads (kernel compile etc) I'm seeing surprisingly
+little slab fragmentation. Do you have any suggestions for test cases
+that will fragment the memory?
+
+I copied the code to count the total objects from the slabinfo s_show
+function, but as I don't need the partial count I didn't extract it into
+a helper function.
+
+regards
+Richard
+ 
+
+diff --git a/mm/slub.c b/mm/slub.c
+index 8fd5401..8c79eaa 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -4043,6 +4043,46 @@ static ssize_t destroy_by_rcu_show(struct kmem_cache *s, char *buf)
+ }
+ SLAB_ATTR_RO(destroy_by_rcu);
+ 
++/* The number of fallback slabs can be calculated to give an
++ * indication of how fragmented this slab is.
++ * This is a snapshot of the current makeup of this cache.
++ *
++ *  Given
++ *
++ *  total_objects = (nr_fallback_slabs * objects_per_fallback_slab) +
++ *     ( nr_normal_slabs * objects_per_slab)
++ *  and
++ *  nr_slabs = nr_normal_slabs + nr_fallback_slabs
++ *
++ * then we can easily calculate nr_fallback_slabs.
++ *
++ * Note that this can give the wrong answer if the user has changed the
++ * order of this slab via sysfs.
++ */
++
++static ssize_t fallback_show(struct kmem_cache *s, char *buf)
++{
++	unsigned long nr_objects = 0;
++	unsigned long nr_slabs = 0;
++	unsigned long nr_fallback = 0;
++	unsigned long acc;
++	int node;
++
++	if (oo_order(s->oo) != oo_order(s->min)) {
++		for_each_online_node(node) {
++			struct kmem_cache_node *n = get_node(s, node);
++			nr_slabs += atomic_long_read(&n->nr_slabs);
++			nr_objects += atomic_long_read(&n->total_objects);
++		}
++		acc = nr_objects - nr_slabs * oo_objects(s->min);
++		acc /= (oo_objects(s->oo) - oo_objects(s->min));
++		nr_fallback = nr_slabs - acc;
++	}
++	return sprintf(buf, "%lu\n", nr_fallback);
++}
++SLAB_ATTR_RO(fallback);
++
++
+ #ifdef CONFIG_SLUB_DEBUG
+ static ssize_t slabs_show(struct kmem_cache *s, char *buf)
+ {
+@@ -4329,6 +4369,7 @@ static struct attribute *slab_attrs[] = {
+ 	&reclaim_account_attr.attr,
+ 	&destroy_by_rcu_attr.attr,
+ 	&shrink_attr.attr,
++	&fallback_attr.attr,
+ #ifdef CONFIG_SLUB_DEBUG
+ 	&total_objects_attr.attr,
+ 	&slabs_attr.attr,
+
+
