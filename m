@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932212Ab0KLVf6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 16:35:58 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50259
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752733Ab0KLVf4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 16:35:56 -0500
-Date: Fri, 12 Nov 2010 13:36:20 -0800 (PST)
-Message-Id: <20101112.133620.241452814.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: kuznet@ms2.inr.ac.ru, kaber@trash.net, equinox@diac24.net,
-        eparis@redhat.com, hzhong@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, paul.moore@hp.com, damian@tvk.rwth-aachen.de
-Subject: Re: a problem tcp_v4_err()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1289596718.2743.2.camel@edumazet-laptop>
-References: <1289586803.3185.275.camel@edumazet-laptop>
-	<20101112.112224.112610807.davem@davemloft.net>
-	<1289596718.2743.2.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S932433Ab0KLVgr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 16:36:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39044 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752733Ab0KLVgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 16:36:45 -0500
+Date: Fri, 12 Nov 2010 16:36:34 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: sandeen@redhat.com
+Cc: Rik van Riel <riel@redhat.com>, Zan Lynx <zlynx@acm.org>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        jmoyer@redhat.com, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] clear PageError bit in msync & fsync
+Message-ID: <20101112163634.7bf09326@tlielax.poochiereds.net>
+In-Reply-To: <4CDDA8E7.2090003@redhat.com>
+References: <20101109114422.3918e7f6@annuminas.surriel.com>
+	<20101109142109.224267d0@corrin.poochiereds.net>
+	<4CD9A209.6070807@redhat.com>
+	<4CD9BB5B.2090206@acm.org>
+	<4CD9BBF9.8020600@redhat.com>
+	<4CDDA8E7.2090003@redhat.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Fri, 12 Nov 2010 22:18:38 +0100
+On Fri, 12 Nov 2010 14:51:51 -0600
+Eric Sandeen <esandeen@redhat.com> wrote:
 
-> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+> On 11/09/2010 03:24 PM, Rik van Riel wrote:
+> > On 11/09/2010 04:21 PM, Zan Lynx wrote:
+> >> On 11/9/10 12:33 PM, Rik van Riel wrote:
+> >>> On 11/09/2010 02:21 PM, Jeff Layton wrote:
+> >>>
+> >>>> This does leave the page in sort of a funky state. The uptodate bit
+> >>>> will still probably be set, but the dirty bit won't be. The page will
+> >>>> be effectively "disconnected" from the backing store until someone
+> >>>> writes to it.
+> >>>>
+> >>>> I suppose though that this is the best that can reasonably be done in
+> >>>> this situation however...
+> >>>
+> >>> I spent a few days looking for alternatives, and indeed I found
+> >>> nothing better...
+> >>
+> >> Just an off the top of my head crazy idea...
+> >>
+> >> Could you leave the error bit set on the page and treat it as a dirty
+> >> bit during a future msync, clearing the error bit at that point.
+> >>
+> >> The general idea would be to leave the error set unless an explicit
+> >> write was requested.
+> > 
+> > The problem with that is that the page will be unreclaimable,
+> > and the VM could get filled with PageError pages and be unable
+> > to make further progress (if the IO path does not come back).
+> 
+> As a further crazy idea ;)  what if it only persisted for "X" write
+> attempts?  Maybe (sigh) a tunable?
+> 
+> That way several fsyncs get the chance to see it, but eventually
+> enough writebacks will go off to give up and clear it.  Hacky,
+> but an idea ...
 
-Thanks for reviewing, here is the final bit I committed and
-I'll queue this up for whatever -stable trees need this.
+That is an interesting idea. Not losing your dirty data in the face of
+a transient error would certainly be a nice-to-have. One has to
+consider that applications using mmap might have a hard time reissuing
+the writes. Keeping the dirty bit set might be less problematic in that
+situation.
 
---------------------
-tcp: Don't change unlocked socket state in tcp_v4_err().
+Blue-skying for a min...
 
-Alexey Kuznetsov noticed a regression introduced by
-commit f1ecd5d9e7366609d640ff4040304ea197fbc618
-("Revert Backoff [v3]: Revert RTO on ICMP destination unreachable")
+1) you could instead or in addition allow some method for discarding
+the dirty pages that are backed by this device manually. Some magical
+file under /sys maybe? That way you have some way to get rid of the data
+when you know that the device isn't coming back. Doing that manually
+might be safer than relying on a certain number of retries (though it
+does require someone to know what they're doing in order to clear the
+problem).
 
-The RTO and timer modification code added to tcp_v4_err()
-doesn't check sock_owned_by_user(), which if true means we
-don't have exclusive access to the socket and therefore cannot
-modify it's critical state.
+2) Could you prevent new pages that are backed by this device from
+being dirtied or mmapped until the problem is cleared? Not exactly sure
+how to implement that, but it might keep someone from making things
+worse when this sort of problem occurs.
 
-Just skip this new code block if sock_owned_by_user() is true
-and eliminate the now superfluous sock_owned_by_user() code
-block contained within.
-
-Reported-by: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-CC: Damian Lukowski <damian@tvk.rwth-aachen.de>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- net/ipv4/tcp_ipv4.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
-
-diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-index 8f8527d..69ccbc1 100644
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -415,6 +415,9 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
- 		    !icsk->icsk_backoff)
- 			break;
- 
-+		if (sock_owned_by_user(sk))
-+			break;
-+
- 		icsk->icsk_backoff--;
- 		inet_csk(sk)->icsk_rto = __tcp_set_rto(tp) <<
- 					 icsk->icsk_backoff;
-@@ -429,11 +432,6 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
- 		if (remaining) {
- 			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
- 						  remaining, TCP_RTO_MAX);
--		} else if (sock_owned_by_user(sk)) {
--			/* RTO revert clocked out retransmission,
--			 * but socket is locked. Will defer. */
--			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
--						  HZ/20, TCP_RTO_MAX);
- 		} else {
- 			/* RTO revert clocked out retransmission.
- 			 * Will retransmit now */
 -- 
-1.7.3.2
-
+Jeff Layton <jlayton@redhat.com>
