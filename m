@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756972Ab0KLSgk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 13:36:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36883 "EHLO mx1.redhat.com"
+	id S1756943Ab0KLSlJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 13:41:09 -0500
+Received: from mout.perfora.net ([74.208.4.195]:50822 "EHLO mout.perfora.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932728Ab0KLSgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 13:36:37 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1289583592.4341.58.camel@localhost.localdomain>
-References: <1289583592.4341.58.camel@localhost.localdomain> <1289404309-15955-4-git-send-email-zohar@linux.vnet.ibm.com> <1289404309-15955-1-git-send-email-zohar@linux.vnet.ibm.com> <24801.1289580779@redhat.com>
-To: David Safford <safford@watson.ibm.com>
-Cc: dhowells@redhat.com, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        James Morris <jmorris@namei.org>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH v1.3 3/4] keys: add new trusted key-type
-Date: Fri, 12 Nov 2010 18:36:09 +0000
-Message-ID: <25964.1289586969@redhat.com>
+	id S1751753Ab0KLSlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 13:41:08 -0500
+Message-ID: <4CDD8A42.6010401@nctritech.com>
+Date: Fri, 12 Nov 2010 13:41:06 -0500
+From: Jody Bruchon <jody@nctritech.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100111 Thunderbird/3.0.1
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] fs/cifs/Kconfig: CIFS depends on CRYPTO_HMAC
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:QoCnvKE51JCSoQh/CW7dF2tn3Q5zXYFlTR2Q2Sltqdz
+ +BT3r4iWpSW+9M4oEGriVEOlYE43vmnoZ6ODDqx1jqWMYlTKtc
+ msdZFuPyb60XCwW3Oq6JTsWuacxHHEmdFMfDaCtQtWP+ADPqPa
+ JS+DkdFwG0+liHXHlKvb1OApQI0piZcwORSwsfCBSIdpIjEtpB
+ DK7Vsm3pyfnCMc7n9ebnIDnnQLE+XDS3oZcHZdS7Yc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Safford <safford@watson.ibm.com> wrote:
+linux-2.6.37-rc1: I compiled a kernel with CIFS which subsequently 
+failed with an error indicating it couldn't initialize crypto module 
+"hmacmd5".  CONFIG_CRYPTO_HMAC=y fixed the problem.
 
-> > > +#define TPM_DEBUG 0
-> > 
-> > The TPM_DEBUG stuff should probably be in the directory with the sources,
-> > not in a directory for others to include.
-> 
-> Maybe some confusion here - trusted_defined.h is in the sources - only
-> trusted-type.h is public in include/keys/.
+This patch makes CIFS depend on CRYPTO_HMAC in kconfig.
 
-Sorry, you're right.
+Signed-off-by: Jody Bruchon <jody@nctritech.com>
+---
 
-David
+diff -Naur linux-2.6.37-rc1/fs/cifs/Kconfig b/fs/cifs/Kconfig
+--- linux-2.6.37-rc1/fs/cifs/Kconfig    2010-11-12 13:22:31.742999981 -0500
++++ b/fs/cifs/Kconfig    2010-11-12 13:22:27.528998658 -0500
+@@ -4,6 +4,7 @@
+      select NLS
+      select CRYPTO
+      select CRYPTO_MD5
++    select CRYPTO_HMAC
+      select CRYPTO_ARC4
+      help
+        This is the client VFS module for the Common Internet File System
+
+
