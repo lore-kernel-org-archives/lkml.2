@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab0KLNsX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 08:48:23 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:45229 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755369Ab0KLNsV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 08:48:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=iuMmX6T1iYBM4vpwOkgay75cZDf+sMQpTzUyNvwb++5gCsd0pAxAuMQZixYdcp6jJr
-         zLbPZwfm3ryGZc4U6y6xgsVW5kty/BxotNZ+UIN8c9O3MNvJdosexqK8dxMtf2PS+rfz
-         9YGBmodfQcrsSLWsU3yKaSj6fWDwVy1YOZ2j4=
+	id S1757656Ab0KLNyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 08:54:11 -0500
+Received: from mail0.unitn.it ([193.205.206.51]:54148 "EHLO mail0.unitn.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757591Ab0KLNyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 08:54:10 -0500
+X-Greylist: delayed 452 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Nov 2010 08:54:10 EST
+Message-ID: <4CDD453A.70502@unitn.it>
+Date: Fri, 12 Nov 2010 14:46:34 +0100
+From: Luca Abeni <luca.abeni@unitn.it>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <E0D41E29EB0DAC4E9F3FF173962E9E9402DC24F069@dbde02.ent.ti.com>
-References: <1289567043-6213-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-	<E0D41E29EB0DAC4E9F3FF173962E9E9402DC24F05C@dbde02.ent.ti.com>
-	<AANLkTin-j1Aww+Nu4zRdAP5TH-t+ftpW6VEWUdejb1Pn@mail.gmail.com>
-	<E0D41E29EB0DAC4E9F3FF173962E9E9402DC24F069@dbde02.ent.ti.com>
-Date: Fri, 12 Nov 2010 15:48:19 +0200
-Message-ID: <AANLkTikd51vvT+=1TUU08s8Pxo7oNBX415=rnQEf6Wtv@mail.gmail.com>
-Subject: Re: [PATCHv4 0/4] OMAP: Serial: remove magic and diplicates
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: "G, Manjunath Kondaiah" <manjugk@ti.com>
-Cc: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Raistlin <raistlin@linux.it>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH 09/22] sched: add period support for -deadline tasks
+References: <1288333128.8661.137.camel@Palantir>	 <1288334050.8661.150.camel@Palantir>  <1289503054.2084.156.camel@laptop> <1289503883.6525.107.camel@Palantir>
+In-Reply-To: <1289503883.6525.107.camel@Palantir>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
->> -----Original Message-----
->> From: Andrei Emeltchenko [mailto:andrei.emeltchenko.news@gmail.com]
->> Sent: Friday, November 12, 2010 6:50 PM
->> To: G, Manjunath Kondaiah
->> Cc: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org;
->> linux-arm@lists.arm.linux.org.uk; linux-serial@vger.kernel.org
->> Subject: Re: [PATCHv4 0/4] OMAP: Serial: remove magic and diplicates
+On 11/11/2010 08:31 PM, Raistlin wrote:
+> On Thu, 2010-11-11 at 20:17 +0100, Peter Zijlstra wrote:
+>> On Fri, 2010-10-29 at 08:34 +0200, Raistlin wrote:
+>>> Make it possible to specify a period (different or equal than
+>>> deadline) for -deadline tasks.
+>>>
+>> I would expect it to be:
 >>
->> On Fri, Nov 12, 2010 at 3:17 PM, G, Manjunath Kondaiah
->> <manjugk@ti.com> wrote:
->> >
->> >
->> >> -----Original Message-----
->> >> From: linux-omap-owner@vger.kernel.org
->> >> [mailto:linux-omap-owner@vger.kernel.org] On Behalf Of
->> >> Emeltchenko Andrei
->> >> Sent: Friday, November 12, 2010 6:34 PM
->> >> To: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org;
->> >> linux-arm@lists.arm.linux.org.uk; linux-serial@vger.kernel.org
->> >> Subject: [PATCHv4 0/4] OMAP: Serial: remove magic and diplicates
->> >
->> > s/diplicates/duplicates
->> >
->> >>
->> >> From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
->> >>
->> >> Add MDR1 Serial register definition to serial_reg and remove
->> >> duplicated
->> >> code, remove magic MDR1 register numbers from serial drivers.
->> >>
->> >> *v2 add OMAP keyword to MDR1 definition
->> >> *v3 remove magic from serial drivers
->> >> *v4 taking comments from Manjunath and Govindraj: typos, CC
->> >>
->> >> Andrei Emeltchenko (4):
->> >>   OMAP: Serial: Define OMAP uart MDR1 register definitions
->> >>   OMAP1: Serial: remove magic numbers for MDR1 reg
->> >>   OMAP2: Serial: remove magic numbers for MDR1 reg
->> >>   OMAP: Serial: remove redefined MDR1 register definitions
->> >>
->> >>  arch/arm/mach-omap1/serial.c                  |    6 ++++--
->> >>  arch/arm/mach-omap2/serial.c                  |   15
->> +++++++++------
->> >>  arch/arm/plat-omap/include/plat/omap-serial.h |    3 ---
->> >>  drivers/serial/omap-serial.c                  |    6 +++---
->> >>  include/linux/serial_reg.h                    |   12 ++++++++++++
->> >>  5 files changed, 28 insertions(+), 14 deletions(-)
->> >
->> > Do you think patch series is required for these changes? How about
->> > merging with single patch?
+>> runtime<= deadline<= period
 >>
->> I can merge, sometimes somebody need patches to be split,
+> Well, apart from that really unhappy comment/changelog, it should be
+> like that in the code, and if it's not, it is what I meant and I'll
+> change to that as soon as I can! :-)
 >
-> why? can you give example?
+> Since you spotted it... The biggest issue here is admission control
+> test. Right now this is done against task's bandwidth, i.e.,
+> sum_i(runtime_i/period_i)<=threshold, but it is unfortunately wrong...
+> Or at least very, very loose, to the point of being almost useless! :-(
+The point is that when the relative deadline is different from the period,
+the concept of "task utilisation", or "bandwidth" becomes fuzzy at least
+(I would say it becomes almost meaningless, but...).
 
-Maybe I got it wrong.
+The test with min{D,P} is technically more correct (meaning that it will
+never accept unschedulable tasks), but it rejects some schedulable tasks.
+As Tommaso pointed out, a more complex admission test would be needed.
 
-> Please read: http://lwn.net/Articles/139918/
-> "if you make a single change to numerous files, group those changes into
-> a single patch.  Thus a single logical change is contained within a
-> single patch."
+> The more correct --in the sense that it at least yield a sufficient (not
+> necessary!) condition-- thing to do would be
+> sum_i(runtime_i/min{deadline_i,period_i})<=threshold.
+>
+> So, what you think we should do? Can I go for this latter option?
+The one with min{} is at lest correct :)
 
-I have squashed those patches to the single one.
 
-Regards,
-Andrei
+				Luca
