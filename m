@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932946Ab0KLVyJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 16:54:09 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:27551 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754850Ab0KLVyG (ORCPT
+	id S933035Ab0KLWAj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 17:00:39 -0500
+Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:60381 "HELO
+	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753527Ab0KLWAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 16:54:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
-         :mime-version:content-type;
-        b=DxjKrGpc0D1xeOyGKV96MlOl+CO9oz/W/uOdZ0dCoDq0YsgD/sfmDMD24TpiQTzEmZ
-         KmqPsYyTYwtQWLGD18lg==
-Date: Fri, 12 Nov 2010 13:53:57 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 1/5] x86: reduce minimum fake node size to 32M
-Message-ID: <alpine.DEB.2.00.1011121352050.13699@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 12 Nov 2010 17:00:35 -0500
+X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Nov 2010 17:00:35 EST
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+In-Reply-To: <1289594026.22931.388.camel@groeck-laptop>
+References: <1289594026.22931.388.camel@groeck-laptop>
+Date: Fri, 12 Nov 2010 13:53:50 -0800
+Message-ID: <AANLkTimERGh2yGGX_E_N4ajxg_-0QTFS54QSKj2+AAfF@mail.gmail.com>
+Subject: Re: [lm-sensors] Location for thermal drivers
+From: Phil Pokorny <ppokorny@penguincomputing.com>
+To: guenter.roeck@ericsson.com
+Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the minimum fake node size from 64MB to 32MB so it is
-possible to test NUMA code at a greater scale on smaller machines
-(64 nodes on a 2G machine, 1024 nodes on 32G machine with
-CONFIG_NODES_SHIFT=10).
+On Fri, Nov 12, 2010 at 12:33 PM, Guenter Roeck
+<guenter.roeck@ericsson.com> wrote:
+> I think a better location for the driver would be drivers/thermal.
+> drivers/hwmon is not really a good fit, since hwmon support for thermal
+> drivers is optional. Potential problem with drivers/thermal is that
+> there are no thermal drivers in there (yet), and there does not seem to
+> be a maintainer.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
----
- arch/x86/include/asm/numa_64.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+What is the difference between a "thermal" sensor and a "temperature"
+sensor?  Aren't they the same thing?
 
-diff --git a/arch/x86/include/asm/numa_64.h b/arch/x86/include/asm/numa_64.h
---- a/arch/x86/include/asm/numa_64.h
-+++ b/arch/x86/include/asm/numa_64.h
-@@ -38,7 +38,7 @@ extern void __cpuinit numa_add_cpu(int cpu);
- extern void __cpuinit numa_remove_cpu(int cpu);
- 
- #ifdef CONFIG_NUMA_EMU
--#define FAKE_NODE_MIN_SIZE	((u64)64 << 20)
-+#define FAKE_NODE_MIN_SIZE	((u64)32 << 20)
- #define FAKE_NODE_MIN_HASH_MASK	(~(FAKE_NODE_MIN_SIZE - 1UL))
- #endif /* CONFIG_NUMA_EMU */
- #else
+Why does drivers/thermal exist if there are no drivers in it and no maintainer?
+
+Phil P.
