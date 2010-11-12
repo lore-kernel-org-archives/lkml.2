@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932155Ab0KLLOi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 06:14:38 -0500
-Received: from exprod5og114.obsmtp.com ([64.18.0.28]:43382 "EHLO
-	exprod5og114.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932140Ab0KLLOg (ORCPT
+	id S932203Ab0KLLOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 06:14:51 -0500
+Received: from exprod5og112.obsmtp.com ([64.18.0.24]:40305 "EHLO
+	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932182Ab0KLLOt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 06:14:36 -0500
-Subject: [PATCH 05/17] staging/vme/tsi148: use list_for_each_safe when
-	deleting resources in .remove
+	Fri, 12 Nov 2010 06:14:49 -0500
+Subject: [PATCH 07/17] staging/vme/tsi148: fix warning in free_irq
 To: Greg KH <greg@kroah.com>
 From: Martyn Welch <martyn.welch@ge.com>
 Cc: devel@driverdev.osuosl.org,
         Juan David Gonzalez Cobas <david.cobas@gmail.com>,
         "Emilio G. Cota" <cota@braap.org>, LKML <linux-kernel@vger.kernel.org>,
         Bill Pemberton <wfp5p@virginia.edu>
-Date: Fri, 12 Nov 2010 11:14:34 +0000
-Message-ID: <20101112111434.11631.66336.stgit@ES-BJ21R4J>
+Date: Fri, 12 Nov 2010 11:14:47 +0000
+Message-ID: <20101112111447.11631.53375.stgit@ES-BJ21R4J>
 In-Reply-To: <20101112111359.11631.84086.stgit@ES-BJ21R4J>
 References: <20101112111359.11631.84086.stgit@ES-BJ21R4J>
 User-Agent: StGit/0.15
@@ -29,53 +28,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Emilio G. Cota <cota@braap.org>
 
-This fixes an oops when removing the module.
+The cookie passed to request_irq isn't the same as the one passed
+to free_irq, which results in the following warning:
+
+[   63.243533] WARNING: at kernel/irq/manage.c:899 __free_irq+0x9b/0x17d()
+[   63.243533] Hardware name:
+[   63.243533] Trying to free already-free IRQ 17
+[   63.243533] Modules linked in: vme_tsi148(-) vme e1000e iTCO_wdt iTCO_vendor_support [last unloaded: scsi_wait_scan]
+[   63.243533] Pid: 2013, comm: rmmod Not tainted 2.6.35 #2
+[   63.243533] Call Trace:
+[   63.243533]  [<ffffffff81036ea3>] warn_slowpath_common+0x80/0x98
+[   63.243533]  [<ffffffff81036f4f>] warn_slowpath_fmt+0x41/0x43
+[   63.243533]  [<ffffffff810678c4>] __free_irq+0x9b/0x17d
+[   63.243533]  [<ffffffff810679d9>] free_irq+0x33/0x4e
+[   63.243533]  [<ffffffffa004a897>] tsi148_irq_exit+0x6b/0x70 [vme_tsi148]
+[...]
+[   63.243533] ---[ end trace bbf92311d969efb4 ]---
+
+Fix it by passing the same cookie to both functions.
 
 Signed-off-by: Emilio G. Cota <cota@braap.org>
-Acked-by: Martyn Welch <martyn.welch@ge.com>
+[martyn.welch@ge.com: modified to remove checkpatch warnings]
+Signed-off-by: Martyn Welch <martyn.welch@ge.com>
 ---
 
- drivers/staging/vme/bridges/vme_tsi148.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/staging/vme/bridges/Module.symvers |    0 
+ drivers/staging/vme/bridges/vme_tsi148.c   |   11 +++++++----
+ 2 files changed, 7 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/staging/vme/bridges/Module.symvers
 
 
+diff --git a/drivers/staging/vme/bridges/Module.symvers b/drivers/staging/vme/bridges/Module.symvers
+new file mode 100644
+index 0000000..e69de29
 diff --git a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
-index 1cba1fa..5c25cd8 100644
+index 2f8f399..70c9e41 100644
 --- a/drivers/staging/vme/bridges/vme_tsi148.c
 +++ b/drivers/staging/vme/bridges/vme_tsi148.c
-@@ -2531,6 +2531,7 @@ err_struct:
- static void tsi148_remove(struct pci_dev *pdev)
+@@ -374,8 +374,11 @@ static int tsi148_irq_init(struct vme_bridge *tsi148_bridge)
+ 	return 0;
+ }
+ 
+-static void tsi148_irq_exit(struct tsi148_driver *bridge, struct pci_dev *pdev)
++static void tsi148_irq_exit(struct vme_bridge *tsi148_bridge,
++	struct pci_dev *pdev)
  {
- 	struct list_head *pos = NULL;
-+	struct list_head *tmplist;
- 	struct vme_master_resource *master_image;
- 	struct vme_slave_resource *slave_image;
- 	struct vme_dma_resource *dma_ctrlr;
-@@ -2589,21 +2590,21 @@ static void tsi148_remove(struct pci_dev *pdev)
- 	tsi148_crcsr_exit(tsi148_bridge, pdev);
++	struct tsi148_driver *bridge = tsi148_bridge->driver_priv;
++
+ 	/* Turn off interrupts */
+ 	iowrite32be(0x0, bridge->base + TSI148_LCSR_INTEO);
+ 	iowrite32be(0x0, bridge->base + TSI148_LCSR_INTEN);
+@@ -384,7 +387,7 @@ static void tsi148_irq_exit(struct tsi148_driver *bridge, struct pci_dev *pdev)
+ 	iowrite32be(0xFFFFFFFF, bridge->base + TSI148_LCSR_INTC);
  
- 	/* resources are stored in link list */
--	list_for_each(pos, &tsi148_bridge->dma_resources) {
-+	list_for_each_safe(pos, tmplist, &tsi148_bridge->dma_resources) {
- 		dma_ctrlr = list_entry(pos, struct vme_dma_resource, list);
- 		list_del(pos);
- 		kfree(dma_ctrlr);
+ 	/* Detach interrupt handler */
+-	free_irq(pdev->irq, pdev);
++	free_irq(pdev->irq, tsi148_bridge);
+ }
+ 
+ /*
+@@ -2511,7 +2514,7 @@ err_master:
+ 		kfree(master_image);
  	}
  
- 	/* resources are stored in link list */
--	list_for_each(pos, &tsi148_bridge->slave_resources) {
-+	list_for_each_safe(pos, tmplist, &tsi148_bridge->slave_resources) {
- 		slave_image = list_entry(pos, struct vme_slave_resource, list);
- 		list_del(pos);
- 		kfree(slave_image);
- 	}
+-	tsi148_irq_exit(tsi148_device, pdev);
++	tsi148_irq_exit(tsi148_bridge, pdev);
+ err_irq:
+ err_test:
+ 	iounmap(tsi148_device->base);
+@@ -2583,7 +2586,7 @@ static void tsi148_remove(struct pci_dev *pdev)
+ 	iowrite32be(0x0, bridge->base + TSI148_LCSR_INTM1);
+ 	iowrite32be(0x0, bridge->base + TSI148_LCSR_INTM2);
  
- 	/* resources are stored in link list */
--	list_for_each(pos, &tsi148_bridge->master_resources) {
-+	list_for_each_safe(pos, tmplist, &tsi148_bridge->master_resources) {
- 		master_image = list_entry(pos, struct vme_master_resource,
- 			list);
- 		list_del(pos);
+-	tsi148_irq_exit(bridge, pdev);
++	tsi148_irq_exit(tsi148_bridge, pdev);
+ 
+ 	vme_unregister_bridge(tsi148_bridge);
+ 
 
 
 --
