@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932835Ab0KLTOj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 14:14:39 -0500
-Received: from fieldses.org ([174.143.236.118]:57600 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932304Ab0KLTOh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 14:14:37 -0500
-Date: Fri, 12 Nov 2010 14:14:33 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org, Trond Myklebust <trond@netapp.com>
-Subject: Re: [PATCH] NET: sunrpc, remove unneeded NULL tests
-Message-ID: <20101112191433.GC32745@fieldses.org>
-References: <1288180325-20009-1-git-send-email-jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1288180325-20009-1-git-send-email-jslaby@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932841Ab0KLTPJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 14:15:09 -0500
+Received: from relais.videotron.ca ([24.201.245.36]:34390 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932443Ab0KLTPH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 14:15:07 -0500
+MIME-version: 1.0
+Content-type: multipart/mixed; boundary="Boundary_(ID_1yzk1yLOYgi/J579mFm7Iw)"
+Date: Fri, 12 Nov 2010 14:15:05 -0500 (EST)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: john stultz <johnstul@us.ibm.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        linux-kernel@vger.kernel.org, Colin Cross <ccross@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] RFC: nomadik: expand timesource to 63 bits
+In-reply-to: <20101112095739.GH18358@pengutronix.de>
+Message-id: <alpine.LFD.2.00.1011121406040.13911@xanadu.home>
+References: <1289466356-16697-1-git-send-email-linus.walleij@stericsson.com>
+ <AANLkTi=ysONhPQBTbVNRgTOx5PGEM=STaUYY6RnUpfES@mail.gmail.com>
+ <20101112095739.GH18358@pengutronix.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the slow response, this one's for Trond if it hasn't already
-been handled.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
---b.
+--Boundary_(ID_1yzk1yLOYgi/J579mFm7Iw)
+Content-type: TEXT/PLAIN; charset=iso-8859-1
+Content-transfer-encoding: 8BIT
 
-On Wed, Oct 27, 2010 at 01:52:05PM +0200, Jiri Slaby wrote:
-> Stanse found that req in xprt_reserve_xprt is dereferenced prior its
-> test to NULL. If that's the case, the checks are unnecessary, so
-> remove them.
-> 
-> The alternative is not to dereference it before the test. The patch
-> is to point out the problem, you have to decide.
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: "J. Bruce Fields" <bfields@fieldses.org>
-> Cc: Neil Brown <neilb@suse.de>
-> Cc: linux-nfs@vger.kernel.org
-> ---
->  net/sunrpc/xprt.c |    8 +++-----
->  1 files changed, 3 insertions(+), 5 deletions(-)
-> 
-> diff --git a/net/sunrpc/xprt.c b/net/sunrpc/xprt.c
-> index 4c8f18a..5355c71 100644
-> --- a/net/sunrpc/xprt.c
-> +++ b/net/sunrpc/xprt.c
-> @@ -202,10 +202,8 @@ int xprt_reserve_xprt(struct rpc_task *task)
->  		goto out_sleep;
->  	}
->  	xprt->snd_task = task;
-> -	if (req) {
-> -		req->rq_bytes_sent = 0;
-> -		req->rq_ntrans++;
-> -	}
-> +	req->rq_bytes_sent = 0;
-> +	req->rq_ntrans++;
->  	return 1;
->  
->  out_sleep:
-> @@ -213,7 +211,7 @@ out_sleep:
->  			task->tk_pid, xprt);
->  	task->tk_timeout = 0;
->  	task->tk_status = -EAGAIN;
-> -	if (req && req->rq_ntrans)
-> +	if (req->rq_ntrans)
->  		rpc_sleep_on(&xprt->resend, task, NULL);
->  	else
->  		rpc_sleep_on(&xprt->sending, task, NULL);
-> -- 
-> 1.7.3.1
-> 
-> 
+On Fri, 12 Nov 2010, Uwe Kleine-König wrote:
+
+> On Thu, Nov 11, 2010 at 01:33:41PM -0800, john stultz wrote:
+> > Instead, I'd use this extension at the sched_clock level, where it
+> > seems reasonable that it will be called frequently enough to not brake
+> > the cnt32_to_63 magic.
+> Instead of implementing sched_clock for each architecture seperatly,
+> wouldn't it be nice to have a generic sched_clock that uses the
+> architecture's clocksource?  I tried to implement that some time ago,
+> but tglx shoot it down because of locking problems.
+
+They also have different goals.
+
+sched_clock: fast implementation with a moderate 
+accuracy.  Used for things like scheduler time slices and printk 
+timestamping, and since it is called often it needs to be as lightweight 
+as possible and accuracy is secondary.
+
+clocksource: as accurate as possible, used for POSIX timers and the 
+like, and is typically more heavyweight than sched_clock().
+
+> Maybe doing that became easier since then?
+
+Maybe having a fallback sched_clock implementation based on clocksource 
+might make sense, but the current fallback is based on jiffies which is 
+probably good enough as a fallback.
+
+
+Nicolas
+
+--Boundary_(ID_1yzk1yLOYgi/J579mFm7Iw)--
