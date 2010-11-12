@@ -1,83 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932528Ab0KLPxF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 10:53:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52486 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932513Ab0KLPxC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 10:53:02 -0500
-Date: Fri, 12 Nov 2010 10:52:50 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, "Ted Ts'o" <tytso@mit.edu>,
-        linux-kernel@vger.kernel.org, esandeen@redhat.com, jmoyer@redhat.com,
-        linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>, lmcilroy@redhat.com
-Subject: Re: [PATCH] clear PageError bit in msync & fsync
-Message-ID: <20101112105250.75f01670@tlielax.poochiereds.net>
-In-Reply-To: <4CDCC457.9030400@redhat.com>
-References: <20101109114422.3918e7f6@annuminas.surriel.com>
-	<20101109142109.224267d0@corrin.poochiereds.net>
-	<4CD9A209.6070807@redhat.com>
-	<20101109210715.GJ3099@thunk.org>
-	<4CD9BA08.2000002@redhat.com>
-	<20101109134139.c6f9f6dc.akpm@linux-foundation.org>
-	<4CDCC457.9030400@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932521Ab0KLP4a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 10:56:30 -0500
+Received: from mail.windriver.com ([147.11.1.11]:57728 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757402Ab0KLP43 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 10:56:29 -0500
+Message-ID: <4CDD6389.2080206@windriver.com>
+Date: Fri, 12 Nov 2010 09:55:53 -0600
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+MIME-Version: 1.0
+To: Don Zickus <dzickus@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
+References: <1289573033-2889-1-git-send-email-dzickus@redhat.com> <4CDD579F.80009@windriver.com> <20101112154231.GN4823@redhat.com>
+In-Reply-To: <20101112154231.GN4823@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Nov 2010 15:55:54.0863 (UTC) FILETIME=[16B6CFF0:01CB8282]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Nov 2010 23:36:39 -0500
-Rik van Riel <riel@redhat.com> wrote:
+On 11/12/2010 09:42 AM, Don Zickus wrote:
+> On Fri, Nov 12, 2010 at 09:05:03AM -0600, Jason Wessel wrote:
+>   
+>> On 11/12/2010 08:43 AM, Don Zickus wrote:
+>>     
+>>> Restructuring the nmi handler to be more readable and simpler.
+>>>
+>>> This is just laying the ground work for future improvements in this area.
+>>>
+>>> I also left out one of Huang's patch until we figure out how we are going
+>>> to proceed with a new notifier.
+>>>
+>>> Tested 32-bit and 64-bit on AMD and Intel machines.
+>>>
+>>> V2:  add a patch to kill DIE_NMI_IPI and add in priorities
+>>>
+>>>   
+>>>       
+>> Had you tested this code with kgdb boot tests at all?
+>>
+>> CONFIG_LOCKUP_DETECTOR=y
+>> CONFIG_HARDLOCKUP_DETECTOR=y
+>> CONFIG_KGDB=y
+>> CONFIG_KGDB_TESTS_ON_BOOT=y
+>> CONFIG_KGDB_TESTS_BOOT_STRING="V1F100"
+>>
+>> There has been a regression in kgdb due to the use of perf/NMI in the
+>> lockup detector ever since the new version has been introduced.   The
+>> perf callbacks in the lockup detector were consuming NMI events not
+>> related to the call back and causing the kernel debugger not to work at
+>> all on SMP systems configured with the lockup detector.
+>>     
+>
+> Well 2.6.36 should have fixed that.  Perf was blindly eating all NMI
+> events if it had a user.  With the new lockup detector, that created a
+> 'user' for perf and it happily ate everything.  But we spent a lot of time
+> trying to fix that for 2.6.36.  If we missed something, we would like to
+> know.
+>
+> To answer your question, I doubt this patch series will change that
+> outcome if it is still broken.
+>
+>   
 
-> On 11/09/2010 04:41 PM, Andrew Morton wrote:
-> 
-> > yup.  It's a userspace bug, really.  Although that bug might be
-> > expressed as "userspace didn't know about linux-specific EIO
-> > behaviour".
-> 
-> Looking at this some more, I am not convinced this is a userspace
-> bug.
-> 
-> First, let me describe the problem scenario:
-> 1) process A calls write
-> 2) process B calls write
-> 3) process A calls fsync, runs into an IO error, returns -EIO
-> 4) process B calls fsync, returns success
->         (even though data could have been lost!)
-> 
-> Common sense, as well as these snippets from the fsync man
-> page, suggest that this behaviour is incorrect:
-> 
-> DESCRIPTION
->         fsync()  transfers ("flushes") all modified in-core data of (i.e.,
->         modified buffer cache pages for) the file referred to by the  file
->         descriptor  fd  to  the  disk  device
-> ...
-> RETURN VALUE
->         On  success,  these  system  calls  return  zero.  On error, -1 is
->         returned, and errno is set appropriately.
-> 
+It was most definitely broken in 2.6.36->2.6.37-rc1.  Randy Dunlap had
+pointed this out in a separate exchange that was not on LKML.
 
-I'll agree that that situation sucks for userspace but I'm not sure
-that problem scenario is technically wrong. The error got reported to
-userspace after all, just not to both processes that had done writes.
+The symptom you would see looks like:
 
-The root cause here is that we don't track the file descriptor that was
-used to dirty specific pages. The reason is simple, IMO -- it would be
-an unmanageable rabbit-hole.
+...kernel boot...
+Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+serial8250: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
+00:06: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
+brd: module loaded
+kgdb: Registered I/O driver kgdbts.
+kgdbts:RUN plant and detach test
+[...HARD HANG STARTS HERE...]
 
-Here's another related "problem" scenario (for purposes of argument):
+The kernel is looping at that point waiting for the master kgdb cpu to
+have all the slaves join the debugger but it never happens because the
+perf callback chain which is used by the lockup detector eats the NMI
+IPI event.  After the perf callback is processed perf returns
+NOTIFY_STOP so the notifier which brings the slave CPU into the debugger
+never fires.
 
-Suppose between steps 2 and 3, the VM decides to flush out the pages
-dirtied by process A, but not the ones from process B. That succeeds,
-but just afterward the disk goes toes-up.
+You can even see the behavior booting a kernel with the kgdb tests using
+kvm with -smp 2.
 
-Now, process A issues an fsync. He gets an error but his data was
-flushed to disk just fine. Is that also incorrect behavior?
+I did build with your 6 part series, and the behavior is no different
+(meaning it is still broken).
 
--- 
-Jeff Layton <jlayton@redhat.com>
+Jason.
