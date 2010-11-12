@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932926Ab0KLVZA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 16:25:00 -0500
-Received: from e24smtp02.br.ibm.com ([32.104.18.86]:45866 "EHLO
-	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751152Ab0KLVY7 (ORCPT
+	id S1757366Ab0KLV0k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 16:26:40 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:46311 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757059Ab0KLV0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 16:24:59 -0500
-Message-ID: <4CDDB0A2.7090606@linux.vnet.ibm.com>
-Date: Fri, 12 Nov 2010 19:24:50 -0200
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b2 Thunderbird/3.1.4
+	Fri, 12 Nov 2010 16:26:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=L9WFscyx+m4F2WPtu6zDaX4aZ7MHeNGFoLagHMHyzDLGZKjZ7CM8ilcVpet0h6GkEX
+         Flsrq4dJbdN5Tfm0uNKg==
 MIME-Version: 1.0
-To: David Safford <safford@watson.ibm.com>
-CC: David Howells <dhowells@redhat.com>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        James Morris <jmorris@namei.org>
-Subject: Re: [PATCH v1.3 2/4] key: add tpm_send command
-References: <1289514356.2726.18.camel@localhost.localdomain> <1289404309-15955-3-git-send-email-zohar@linux.vnet.ibm.com> <1289404309-15955-1-git-send-email-zohar@linux.vnet.ibm.com> <6651.1289504931@redhat.com>  <22962.1289571072@redhat.com> <1289573330.4341.31.camel@localhost.localdomain>
-In-Reply-To: <1289573330.4341.31.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1289583192.2084.339.camel@laptop>
+References: <1289580941-29744-1-git-send-email-andi@firstfloor.org>
+	<AANLkTimJ3nLwmRfmf+uTuUvg6HVrHBzrjgQXuTi5dxyp@mail.gmail.com>
+	<1289583192.2084.339.camel@laptop>
+Date: Fri, 12 Nov 2010 22:26:36 +0100
+Message-ID: <AANLkTimpw=Y+JX3vD=Q-AMvDJC8Y=zHQ3DDoqGm8WKe9@mail.gmail.com>
+Subject: Re: [PATCH 1/2] perf-events: Add support for supplementary event
+ registers v2
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu, fweisbec@gmail.com,
+        Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Hi Dave,
-
-On 11/12/2010 12:48 PM, David Safford wrote:
-
-> On Fri, 2010-11-12 at 14:11 +0000, David Howells wrote:
->> Mimi Zohar<zohar@linux.vnet.ibm.com>  wrote:
+On Fri, Nov 12, 2010 at 6:33 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Fri, 2010-11-12 at 18:17 +0100, Stephane Eranian wrote:
+>> I looked at this patch thinking how could this be reused for LBR_SELECT.
 >>
->>>>> +	module_put(chip->dev->driver->owner);
->>>> Where's the corresponding module_get()?  I suspect this should be wrapped to
->>>> match tpm_chip_find_get().
->>>>
->>>> David
->>> The module_get() is in tpm_chip_find_get(), which is just a helper.
->>> (It's used this way throughout tpm.c)
->> I'd make a function tpm_chip_find_put() just to wrap module_put() and then
->> place it with tpm_chip_find_get() in the sources.  That makes it easier to see
->> what's going on.
-> Or alternately rename the helper to tpm_chip_find_and_module_get()?
-> In either case, this is really up to Rajiv (the maintainer for tpm.c
-> who has already acked this patch), as this usage already appears in
-> other places in tpm.c. There would have to be a separate patch fixing
-> this for all of the instances. Rajiv, your thoughts?
+>> I am wondering if storing the extra MSR value in attr.config is really the way
+>> to go now as opposed to adding/overloading a field.
+>>
+>> For OFFCORE_RESPONSE, it makes sense to use attr.config because this is
+>> a refinement of the event (a sub-sub event if you want).
 >
-> dave
-Rename the helper to tpm_chip_find_and_module_get() solves the naming issue in a simpler and better way in my opinion.
+> Correct, it makes sense for offcore and load-latency, not so much for
+> lbr_config.
+>
+Good.
 
-Thanks,
-Rajiv
+>> For LBR_SELECT, you also need to pass a value, but there is no specific event
+>> associated with it. You can enable LBR with any event you want. Thus,
+>> storing the
+>> LBR_SELECT value independently would also make sense. And if we have this
+>> field for LBR_SELECT then we may as well use it for OFFCORE_REPONSE.
+>
+> That would assume a single event doesn't contain offcore and lbr, no?
+> Currently the extra_reg thing assumes there's only one extra reg encoded
+> in the config word.
+>
+Good point. You want to allow simultaneous LBR + OFFCORE, i.e., to figure
+out the path that led to the event (with some skid). So those need to be in
+separate fields. I would go with offcore in attr.config, lbr somewhere else.
+If you do this then you have the issue of how generic in the content of that
+extra field.
 
+
+>> The alternative would be to consider LBR_SELECT also as a refinement of
+>> the event being measured. Though by itself, it wouldn't do anything, it would
+>> have to be combine with a PERF_SAMPLE_BRANCH_STACK to attr.sample_type.
+>
+> A separate field for the lbr_config seems to make most sense, we could
+> of course use the top 16 bits for lbr, the next 16 for offcore/ll and
+> the bottom 32 for eventsel, but that's mighty crowded.
+>
+Agreed, not such a good idea. I like the separate lbr_config better.
+Could be made
+more generic, e.g., branch_stack_config. This is how you've named LBR in the
+generic code currently.
