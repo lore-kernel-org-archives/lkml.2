@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751014Ab0KLFpf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 00:45:35 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:58343 "EHLO lunge.queued.net"
+	id S1751481Ab0KLFpw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 00:45:52 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:58358 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750849Ab0KLFpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 00:45:34 -0500
-Date: Thu, 11 Nov 2010 21:45:26 -0800
+	id S1751341Ab0KLFpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 00:45:50 -0500
+Date: Thu, 11 Nov 2010 21:45:46 -0800
 From: Andres Salomon <dilinger@queued.net>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Cc: devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 1/3] x86: of: define irq functions to allow drivers/of/* to
- build on x86
-Message-ID: <20101111214526.5de7121b@queued.net>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: devicetree-discuss@lists.ozlabs.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 3/3] x86: OLPC: speed up device tree creation during boot
+ (v2)
+Message-ID: <20101111214546.4e573cad@queued.net>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -24,65 +24,66 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
- - Define a stub irq_create_of_mapping for x86 as a stop-gap solution until
-   drivers/of/irq is further along.
- - Define irq_dispose_mapping for x86 to appease of_i2c.c
+Calling alloc_bootmem() for tiny chunks of memory over and over is really
+slow; on an XO-1, it caused the time between when the kernel started
+booting and when the display came alive (post-lxfb probe) to increase
+to 44s.  This patch optimizes the prom_early_alloc function by
+calling alloc_bootmem for 4k-sized blocks of memory, and handing out
+chunks of that to callers.  With this patch, the time between kernel load
+and display initialization decreased to 23s.  If there's a better way to
+do this early in the boot process, please let me know.
 
-These are needed to allow stuff in drivers/of/ to build on x86.  This stuff
-will eventually get replaced; quoting Grant,
+(Note: increasing the chunk size to 16k didn't noticably affect boot time,
+and wasted 9k.)
 
-"The long term plan is to have the drivers/of/ code handling the mapping
-intelligently like powerpc currently does."  But for now, just provide
-these functions.
+v2: reorder function as suggested by Grant.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- arch/x86/include/asm/irq.h |    3 +++
- arch/x86/kernel/irq.c      |   10 ++++++++++
- 2 files changed, 13 insertions(+), 0 deletions(-)
+ arch/x86/platform/olpc/olpc_dt.c |   27 ++++++++++++++++++++++-----
+ 1 files changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
-index 13b0eba..8d2c671 100644
---- a/arch/x86/include/asm/irq.h
-+++ b/arch/x86/include/asm/irq.h
-@@ -10,6 +10,9 @@
- #include <asm/apicdef.h>
- #include <asm/irq_vectors.h>
+diff --git a/arch/x86/platform/olpc/olpc_dt.c b/arch/x86/platform/olpc/olpc_dt.c
+index b8c8ff9..0ab824d 100644
+--- a/arch/x86/platform/olpc/olpc_dt.c
++++ b/arch/x86/platform/olpc/olpc_dt.c
+@@ -126,14 +126,31 @@ static unsigned int prom_early_allocated __initdata;
  
-+/* Even though we don't support this, supply it to appease OF */
-+static inline void irq_dispose_mapping(unsigned int virq) { }
-+
- static inline int irq_canonicalize(int irq)
+ void * __init prom_early_alloc(unsigned long size)
  {
- 	return ((irq == 2) ? 9 : irq);
-diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 83ec017..d833d1b 100644
---- a/arch/x86/kernel/irq.c
-+++ b/arch/x86/kernel/irq.c
-@@ -4,6 +4,7 @@
- #include <linux/cpu.h>
- #include <linux/interrupt.h>
- #include <linux/kernel_stat.h>
-+#include <linux/of.h>
- #include <linux/seq_file.h>
- #include <linux/smp.h>
- #include <linux/ftrace.h>
-@@ -275,6 +276,15 @@ void smp_x86_platform_ipi(struct pt_regs *regs)
++	static u8 *mem = NULL;
++	static size_t free_mem = 0;
+ 	void *res;
  
- EXPORT_SYMBOL_GPL(vector_used_by_percpu_irq);
- 
-+#ifdef CONFIG_OF
-+unsigned int irq_create_of_mapping(struct device_node *controller,
-+		const u32 *intspec, unsigned int intsize)
-+{
-+	return intspec[0];
-+}
-+EXPORT_SYMBOL_GPL(irq_create_of_mapping);
-+#endif
+-	res = alloc_bootmem(size);
+-	if (res)
+-		memset(res, 0, size);
+-
+-	prom_early_allocated += size;
++	if (free_mem < size) {
++		const size_t chunk_size = max(PAGE_SIZE, size);
 +
- #ifdef CONFIG_HOTPLUG_CPU
- /* A cpu has been removed from cpu_online_mask.  Reset irq affinities. */
- void fixup_irqs(void)
++		/*
++		 * To mimimize the number of allocations, grab at least 4k of
++		 * memory (that's an arbitrary choice that matches PAGE_SIZE on
++		 * the platforms we care about, and minimizes wasted bootmem)
++		 * and hand off chunks of it to callers.
++		 */
++		res = mem = alloc_bootmem(chunk_size);
++		if (!res)
++			return NULL;
++		prom_early_allocated += chunk_size;
++		memset(res, 0, chunk_size);
++		free_mem = chunk_size;
++	}
+ 
++	/* allocate from the local cache */
++	free_mem -= size;
++	res = mem;
++	mem += size;
+ 	return res;
+ }
+ 
 -- 
 1.7.2.3
 
