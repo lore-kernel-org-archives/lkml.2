@@ -1,197 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757325Ab0KLVeU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 16:34:20 -0500
-Received: from kroah.org ([198.145.64.141]:57073 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752374Ab0KLVeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 16:34:19 -0500
-Date: Fri, 12 Nov 2010 13:32:09 -0800
-From: Greg KH <greg@kroah.com>
-To: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org
-Subject: [GIT PATCH] STAGING fixes for .37-rc
-Message-ID: <20101112213209.GA9294@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932212Ab0KLVf6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 16:35:58 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50259
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752733Ab0KLVf4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 16:35:56 -0500
+Date: Fri, 12 Nov 2010 13:36:20 -0800 (PST)
+Message-Id: <20101112.133620.241452814.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: kuznet@ms2.inr.ac.ru, kaber@trash.net, equinox@diac24.net,
+        eparis@redhat.com, hzhong@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, paul.moore@hp.com, damian@tvk.rwth-aachen.de
+Subject: Re: a problem tcp_v4_err()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1289596718.2743.2.camel@edumazet-laptop>
+References: <1289586803.3185.275.camel@edumazet-laptop>
+	<20101112.112224.112610807.davem@davemloft.net>
+	<1289596718.2743.2.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are a number of staging tree fixes for your .37-rc tree.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Fri, 12 Nov 2010 22:18:38 +0100
 
-The majority of the size here is reverting a bunch of tidspbridge
-patches that went in during the .37-rc1 merge that turned out to be
-incorrect, breaking the driver.  So they are now reverted here, and a
-tiny fixup was added to get the driver back into working shape.  Part of
-that included an OMAP core change, which was acked by the OMAP
-maintainer.
+> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-Outside of the tidspbridge fixes, there are a number of smaller patches
-that resolve a few build fixes and other minor bugs that have shown up.
+Thanks for reviewing, here is the final bit I committed and
+I'll queue this up for whatever -stable trees need this.
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/staging-2.6.git/ staging-linus
+--------------------
+tcp: Don't change unlocked socket state in tcp_v4_err().
 
-All of these patches have been in the -next trees for a while.
-These patches will be sent to the linux driver project list for all to
-see.
+Alexey Kuznetsov noticed a regression introduced by
+commit f1ecd5d9e7366609d640ff4040304ea197fbc618
+("Revert Backoff [v3]: Revert RTO on ICMP destination unreachable")
 
-thanks,
+The RTO and timer modification code added to tcp_v4_err()
+doesn't check sock_owned_by_user(), which if true means we
+don't have exclusive access to the socket and therefore cannot
+modify it's critical state.
 
-greg k-h
+Just skip this new code block if sock_owned_by_user() is true
+and eliminate the now superfluous sock_owned_by_user() code
+block contained within.
 
---------------
+Reported-by: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+CC: Damian Lukowski <damian@tvk.rwth-aachen.de>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ net/ipv4/tcp_ipv4.c |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
 
-
- MAINTAINERS                                        |    2 +-
- arch/arm/plat-omap/devices.c                       |    4 +-
- drivers/staging/ath6kl/Kconfig                     |    2 +-
- drivers/staging/ath6kl/os/linux/ar6000_drv.c       |    5 +-
- drivers/staging/ath6kl/os/linux/cfg80211.c         |    7 +-
- drivers/staging/batman-adv/hard-interface.c        |   15 +-
- drivers/staging/batman-adv/routing.c               |   12 +-
- drivers/staging/batman-adv/routing.h               |    4 +-
- drivers/staging/batman-adv/unicast.c               |    2 +-
- drivers/staging/bcm/Bcmchar.c                      |   49 +-
- drivers/staging/brcm80211/README                   |    2 +-
- drivers/staging/brcm80211/TODO                     |    2 +-
- drivers/staging/brcm80211/brcmfmac/dhd_linux.c     |    2 -
- drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c   |   12 +-
- drivers/staging/cpia/cpia.c                        |    6 +-
- drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c   |    1 -
- drivers/staging/hv/hv_utils.c                      |    3 -
- .../staging/intel_sst/intel_sst_app_interface.c    |  284 +++---
- drivers/staging/intel_sst/intel_sst_common.h       |    4 +-
- drivers/staging/keucr/init.c                       |   18 +-
- drivers/staging/keucr/ms.c                         |   14 +-
- drivers/staging/keucr/msscsi.c                     |    6 +-
- drivers/staging/keucr/sdscsi.c                     |    4 +-
- drivers/staging/keucr/smilsub.c                    |   18 +-
- drivers/staging/keucr/transport.c                  |    2 +-
- drivers/staging/rt2860/common/cmm_aes.c            |    2 -
- drivers/staging/rt2860/usb_main_dev.c              |    1 +
- drivers/staging/rtl8192e/r8192E_core.c             |    3 +
- drivers/staging/stradis/stradis.c                  |   11 +-
- drivers/staging/tidspbridge/Kconfig                |    1 -
- drivers/staging/tidspbridge/Makefile               |    7 +-
- drivers/staging/tidspbridge/core/_deh.h            |    5 +-
- drivers/staging/tidspbridge/core/_tiomap.h         |   19 +-
- drivers/staging/tidspbridge/core/dsp-mmu.c         |  317 ------
- drivers/staging/tidspbridge/core/io_sm.c           |  180 +++-
- drivers/staging/tidspbridge/core/tiomap3430.c      | 1083 ++++++++++++++++++--
- drivers/staging/tidspbridge/core/tiomap3430_pwr.c  |    4 +
- drivers/staging/tidspbridge/core/tiomap_io.c       |   17 +-
- drivers/staging/tidspbridge/core/ue_deh.c          |  115 ++-
- drivers/staging/tidspbridge/hw/EasiGlobal.h        |   41 +
- drivers/staging/tidspbridge/hw/MMUAccInt.h         |   76 ++
- drivers/staging/tidspbridge/hw/MMURegAcM.h         |  225 ++++
- drivers/staging/tidspbridge/hw/hw_defs.h           |   58 ++
- drivers/staging/tidspbridge/hw/hw_mmu.c            |  562 ++++++++++
- drivers/staging/tidspbridge/hw/hw_mmu.h            |  163 +++
- .../tidspbridge/include/dspbridge/cfgdefs.h        |    1 +
- .../staging/tidspbridge/include/dspbridge/dev.h    |   24 +
- .../staging/tidspbridge/include/dspbridge/dmm.h    |   75 ++
- .../staging/tidspbridge/include/dspbridge/drv.h    |   10 +
- .../tidspbridge/include/dspbridge/dsp-mmu.h        |   67 --
- .../tidspbridge/include/dspbridge/dspdefs.h        |   44 +
- .../tidspbridge/include/dspbridge/dspioctl.h       |    7 +
- .../staging/tidspbridge/include/dspbridge/proc.h   |   46 +
- drivers/staging/tidspbridge/pmgr/dev.c             |   63 ++-
- drivers/staging/tidspbridge/pmgr/dmm.c             |  533 ++++++++++
- drivers/staging/tidspbridge/pmgr/dspapi.c          |   34 +-
- drivers/staging/tidspbridge/rmgr/drv.c             |   15 +
- drivers/staging/tidspbridge/rmgr/drv_interface.c   |    2 +
- drivers/staging/tidspbridge/rmgr/node.c            |   48 +-
- drivers/staging/tidspbridge/rmgr/proc.c            |  197 ++++-
- drivers/staging/udlfb/udlfb.c                      |    2 +-
- drivers/staging/vt6656/main_usb.c                  |    3 +-
- .../staging/westbridge/astoria/api/src/cyasusb.c   |    1 -
- drivers/staging/wlan-ng/cfg80211.c                 |    6 +-
- drivers/staging/wlan-ng/p80211netdev.c             |    2 +-
- 65 files changed, 3755 insertions(+), 795 deletions(-)
- delete mode 100644 drivers/staging/tidspbridge/core/dsp-mmu.c
- create mode 100644 drivers/staging/tidspbridge/hw/EasiGlobal.h
- create mode 100644 drivers/staging/tidspbridge/hw/MMUAccInt.h
- create mode 100644 drivers/staging/tidspbridge/hw/MMURegAcM.h
- create mode 100644 drivers/staging/tidspbridge/hw/hw_defs.h
- create mode 100644 drivers/staging/tidspbridge/hw/hw_mmu.c
- create mode 100644 drivers/staging/tidspbridge/hw/hw_mmu.h
- create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dmm.h
- delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dsp-mmu.h
- create mode 100644 drivers/staging/tidspbridge/pmgr/dmm.c
-
----------------
-
-Ben Hutchings (2):
-      Staging: ath6kl: Fix pointer casts on 64-bit architectures
-      Staging: Update parameters for cfg80211 key management operation
-
-Brett Rudley (1):
-      staging: brcm80211: Maintainer change
-
-Chris Lang (1):
-      Staging: batman-adv: fix interface alternating and bonding reggression
-
-Dan Carpenter (6):
-      Staging: sst: dereferencing user pointers
-      Staging: sst: more dereferencing user pointers
-      Staging: sst: fixups in SNDRV_SST_STREAM_DECODE
-      Staging: sst: user pointers in intel_sst_mmap_play_capture()
-      Staging: sst: add some __user anotations
-      Staging: bcm: use get_user() to access user pointers
-
-Daniel Lichtenberger (1):
-      Staging: rtl8192e: fix IOMMU memory leak
-
-Felipe Contreras (14):
-      omap: dsp: remove shm from normal memory
-      staging: tidspbridge: hardcode SCM macros while fix is upstreamed
-      Revert "staging: tidspbridge - update Kconfig to select IOMMU module"
-      Revert "staging: tidspbridge - remove dmm custom module"
-      Revert "staging: tidspbridge - deprecate reserve/unreserve_memory funtions"
-      Revert "staging: tidspbridge - remove reserved memory clean up"
-      Revert "staging: tidspbridge: remove dw_dmmu_base from cfg_hostres struct"
-      Revert "staging: tidspbridge - move all iommu related code to a new file"
-      Revert "staging: tidspbridge - remove hw directory"
-      Revert "staging: tidspbridge - fix mmufault support"
-      Revert "staging: tidspbridge - remove custom mmu code from tiomap3430.c"
-      Revert "staging: tidspbridge - rename bridge_brd_mem_map/unmap to a proper name"
-      Revert "staging: tidspbridge - move shared memory iommu maps to tiomap3430.c"
-      Revert "staging: tidspbridge: replace iommu custom for opensource implementation"
-
-Greg Kroah-Hartman (1):
-      Staging: the MAINTAINERS git location was incorrect
-
-Hauke Mehrtens (1):
-      Staging: ath6kl: Adapt API changes in cfg80211
-
-Joe Perches (1):
-      Staging: udlfb.c: Fix k.alloc switched arguments
-
-Julia Lawall (2):
-      drivers/staging: delete double assignment
-      drivers/staging/brcm80211/brcmfmac/dhd_linux.c: delete double assignment
-
-Konstantin Katuev (1):
-      Staging: keucr driver: fix uninitialized variable & proper memset length
-
-Larry Finger (1):
-      staging: rt2870: Add new USB ID for Belkin F6D4050 v1
-
-Marek Lindner (1):
-      Staging: batman-adv: suppress false warning when changing the mac address
-
-Maximiliano David Bustos (1):
-      Staging: wlan-ng: Fix wrong #ifdef #endif sequence
-
-Randy Dunlap (1):
-      Staging: ath6kl: ATH6KL_CFG80211 depends on CFG80211
-
-Vasiliy Kulikov (3):
-      staging: cpia: fix camera file owner in cpia_open()
-      staging: stradis: fix error handling and information leak to userland
-      staging: vt6656: implement missing brackets
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 8f8527d..69ccbc1 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -415,6 +415,9 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
+ 		    !icsk->icsk_backoff)
+ 			break;
+ 
++		if (sock_owned_by_user(sk))
++			break;
++
+ 		icsk->icsk_backoff--;
+ 		inet_csk(sk)->icsk_rto = __tcp_set_rto(tp) <<
+ 					 icsk->icsk_backoff;
+@@ -429,11 +432,6 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
+ 		if (remaining) {
+ 			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
+ 						  remaining, TCP_RTO_MAX);
+-		} else if (sock_owned_by_user(sk)) {
+-			/* RTO revert clocked out retransmission,
+-			 * but socket is locked. Will defer. */
+-			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
+-						  HZ/20, TCP_RTO_MAX);
+ 		} else {
+ 			/* RTO revert clocked out retransmission.
+ 			 * Will retransmit now */
+-- 
+1.7.3.2
 
