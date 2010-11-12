@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab0KLJXd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 04:23:33 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:53341 "EHLO mgw-da01.nokia.com"
+	id S1756482Ab0KLJXq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 04:23:46 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:53371 "EHLO mgw-da01.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755459Ab0KLJXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 04:23:31 -0500
+	id S1756259Ab0KLJXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 04:23:32 -0500
 From: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>
 To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv3 0/4] OMAP: Serial: remove magic and diplicates
-Date: Fri, 12 Nov 2010 11:21:38 +0200
-Message-Id: <1289553702-28041-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+Subject: [PATCHv3 2/4] OMAP1: Serial: remobe magic from MDR1 register
+Date: Fri, 12 Nov 2010 11:21:40 +0200
+Message-Id: <1289553702-28041-3-git-send-email-Andrei.Emeltchenko.news@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1289553702-28041-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+References: <1289553702-28041-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -19,21 +21,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
 
-Add MDR1 Serial register definition to serial_reg and remove duplicated
-code.
-*v2 add OMAP keyword to MDR1 definition
-*v3 remove magic from serial drivers
+Change magic number to ones defined in serial_reg
+for omap1 serial driver
 
-Andrei Emeltchenko (4):
-  OMAP: Serial: Define OMAP uart MDR1 register definitions
-  OMAP1: Serial: remobe magic from MDR1 register
-  OMAP2: Serial: remobe magic from MDR1 register
-  OMAP: Serial: remove redefined MDR1 register definitions
+Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+---
+ arch/arm/mach-omap1/serial.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
- arch/arm/mach-omap1/serial.c                  |    6 ++++--
- arch/arm/mach-omap2/serial.c                  |   15 +++++++++------
- arch/arm/plat-omap/include/plat/omap-serial.h |    3 ---
- drivers/serial/omap-serial.c                  |    6 +++---
- include/linux/serial_reg.h                    |   12 ++++++++++++
- 5 files changed, 28 insertions(+), 14 deletions(-)
+diff --git a/arch/arm/mach-omap1/serial.c b/arch/arm/mach-omap1/serial.c
+index b78d074..c73d1b7 100644
+--- a/arch/arm/mach-omap1/serial.c
++++ b/arch/arm/mach-omap1/serial.c
+@@ -52,9 +52,11 @@ static inline void omap_serial_outp(struct plat_serial8250_port *p, int offset,
+  */
+ static void __init omap_serial_reset(struct plat_serial8250_port *p)
+ {
+-	omap_serial_outp(p, UART_OMAP_MDR1, 0x07);	/* disable UART */
++	omap_serial_outp(p, UART_OMAP_MDR1,
++			UART_OMAP_MDR1_DISABLE);	/* disable UART */
+ 	omap_serial_outp(p, UART_OMAP_SCR, 0x08);	/* TX watermark */
+-	omap_serial_outp(p, UART_OMAP_MDR1, 0x00);	/* enable UART */
++	omap_serial_outp(p, UART_OMAP_MDR1,
++			UART_OMAP_MDR1_16X_MODE);	/* enable UART */
+ 
+ 	if (!cpu_is_omap15xx()) {
+ 		omap_serial_outp(p, UART_OMAP_SYSC, 0x01);
+-- 
+1.7.0.4
 
