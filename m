@@ -1,77 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab0KLOBW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 09:01:22 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:56545 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932094Ab0KLOBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 09:01:21 -0500
-Message-ID: <4CDD48A3.7030506@interlog.com>
-Date: Fri, 12 Nov 2010 09:01:07 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: SCSI development list <linux-scsi@vger.kernel.org>
-CC: =?ISO-8859-1?Q?Dan_Hor=E1k?= <dhorak@redhat.com>,
-        Ritesh Raj Sarraf <rrs@researchut.com>,
-        "Robin H. Johnson" <robbat2@gentoo.org>,
-        Martin Pitt <mpitt@debian.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [Announce] sg3_utils-1.30 available
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932248Ab0KLOBp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 09:01:45 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:60089 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932212Ab0KLOBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 09:01:43 -0500
+Subject: Re: [RFC][PATCH 09/22] sched: add period support for -deadline
+ tasks
+From: Raistlin <raistlin@linux.it>
+To: Luca Abeni <luca.abeni@unitn.it>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <4CDD453A.70502@unitn.it>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288334050.8661.150.camel@Palantir>  <1289503054.2084.156.camel@laptop>
+	 <1289503883.6525.107.camel@Palantir>  <4CDD453A.70502@unitn.it>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-n8Qx5F62TFvU11rQVYvB"
+Date: Fri, 12 Nov 2010 15:01:28 +0100
+Message-ID: <1289570488.6525.415.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sg3_utils is a package of command line utilities for sending
-SCSI and some ATA commands to devices. This package targets
-the linux kernel (lk) 2.6 and lk 2.4 series. It also has
-ports to FreeBSD, Tru64, Solaris, and Windows (cygwin and mingw).
 
-This version tracks various changes made by www.t10.org
-since April 2010. Note that "thin provisioning" has been
-renamed to "logical block provisioning". There is a copy of
-ChangeLog below.
+--=-n8Qx5F62TFvU11rQVYvB
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-For an overview of sg3_utils and downloads see this page:
-     http://sg.danny.cz/sg/sg3_utils.html
-The sg_dd utility has its own page at:
-     http://sg.danny.cz/sg/sg_dd.html
-The SG_IO ioctl is discussed at:
-     http://sg.danny.cz/sg/sg_io.html
-A full changelog can be found at:
-     http://sg.danny.cz/sg/p/sg3_utils.ChangeLog
+On Fri, 2010-11-12 at 14:46 +0100, Luca Abeni wrote:
+> > So, what you think we should do? Can I go for this latter option?
+> The one with min{} is at lest correct :)
+>=20
+Seems that Peter agrees (and I'm Tommaso would agree too) so, copy
+that! ;-P
 
-A release announcement will be sent to freshmeat.net .
+Thanks,
+Dario
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
 
-Changelog for sg3_utils-1.30 [20101111] [svn: r363]
-   - sg_referrals: new utility for REPORT REFERRALS
-   - sbc3r25 renames 'thin' provisioning' to 'logical block
-     provisioning': changes in sg_format, sg_inq, sg_logs,
-     sg_modes, sg_readcap, sg_vpd
-   - sg_inq: update version descriptor list to spc4r27
-     - extended inquiry vpd page add extended self test
-       completion minutes field
-   - sg_lib: sync asc/ascq list to spc4r27
-     - dStrHex(): trim excess trailing spaces
-   - sg_read_long: add --readonly option (open() is rw)
-   - sg_raw: add --readonly option (open() is rw)
-     - allow bidirectional commands
-   - sg_vpd: rdac vendor page [0xc8] parse corrections
-     - extended inquiry vpd page add extended self test
-       completion minutes field
-   - sg_ses: expand --date (in) buffer to 2048 bytes
-   - sg_opcodes: add extended parameter data for TMFs (spc4r26)
-   - sg_dd: clean count calculation, document nocache flag
-     - treat bsg devices as implicit sg_io
-   - sg_write_same: if READ CAPACITY(16) fails try 10 byte variant
-     - anticipate approval of proposal to allow UNMAP and ANCHOR
-       bits to be set on WRITE SAME(10) with '--10' option
-   - sg3_utils man page: sections added for OS device names
+http://blog.linux.it/raistlin / raistlin@ekiga.net /
+dario.faggioli@jabber.org
 
-Changelog for sg3_utils-1.29 [20100406] [svn: r334]
-...
+--=-n8Qx5F62TFvU11rQVYvB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Doug Gilbert
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzdSLgACgkQk4XaBE3IOsRQSQCfb9jvcYNfoFuu8y8yA8wgseVe
+oecAnR7qGzUt2uZzEwcB8rMgZmj4NGwx
+=PChD
+-----END PGP SIGNATURE-----
+
+--=-n8Qx5F62TFvU11rQVYvB--
+
