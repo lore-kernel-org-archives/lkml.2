@@ -1,64 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab0KLK17 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 05:27:59 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:41509 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756525Ab0KLK16 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 05:27:58 -0500
-Date: Fri, 12 Nov 2010 11:27:49 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@elte.hu, acme@redhat.com, eranian@google.com
-Subject: Re: [PATCH 2/3] perf: Add support for extra parameters for raw
- events
-Message-ID: <20101112102748.GA8020@basil.fritz.box>
-References: <1289492117-18066-1-git-send-email-andi@firstfloor.org>
- <1289492117-18066-2-git-send-email-andi@firstfloor.org>
- <4CDC2DDD.50508@linux.vnet.ibm.com>
- <4CDC3845.4030104@linux.intel.com>
- <4CDC4628.8020109@linux.vnet.ibm.com>
- <20101111194936.GJ18718@basil.fritz.box>
- <1289505587.2084.193.camel@laptop>
- <20101111201259.GL18718@basil.fritz.box>
- <1289507858.2084.195.camel@laptop>
+	id S1756806Ab0KLK3J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 05:29:09 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:54222 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756275Ab0KLK3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 05:29:08 -0500
+Message-ID: <4CDD17F3.2000704@cn.fujitsu.com>
+Date: Fri, 12 Nov 2010 18:33:23 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289507858.2084.195.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH 2/4] KVM: MMU: rename 'reset_host_protection' to 'host_writeable'
+References: <4CDD173E.8010706@cn.fujitsu.com>
+In-Reply-To: <4CDD173E.8010706@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-12 18:29:30,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-12 18:29:30,
+	Serialize complete at 2010-11-12 18:29:30
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 09:37:38PM +0100, Peter Zijlstra wrote:
-> On Thu, 2010-11-11 at 21:12 +0100, Andi Kleen wrote:
-> > > Also, I think we can use the same mechanism to program the
-> > > PEBS-load-latency MSR, right?
-> > 
-> > I haven't looked at that, but if it's a per core resource
-> > the infrastructure can be reused at least. 
-> 
-> Can't remember if the load-latency msr is per-core, but its an extra reg
-> that needs to be set.
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
-Ok. I guess it shouldn't be too hard to add.
+Rename it to fix the sense better 
 
-Load-latency is pretty useful too.
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c         |    8 ++++----
+ arch/x86/kvm/paging_tmpl.h |   10 +++++-----
+ 2 files changed, 9 insertions(+), 9 deletions(-)
 
-> 
-> The nhm/wsm LBR config msr is per-core though, so that could use your
-> infrastructure too.
-
-Stephane mentioned that too. Not right now, but perhaps later I'll
-look at using this.
-
--Andi
-
-
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 1a93ab4..94d157f 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1973,7 +1973,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		    unsigned pte_access, int user_fault,
+ 		    int write_fault, int dirty, int level,
+ 		    gfn_t gfn, pfn_t pfn, bool speculative,
+-		    bool can_unsync, bool reset_host_protection)
++		    bool can_unsync, bool host_writeable)
+ {
+ 	u64 spte;
+ 	int ret = 0;
+@@ -2000,7 +2000,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		spte |= kvm_x86_ops->get_mt_mask(vcpu, gfn,
+ 			kvm_is_mmio_pfn(pfn));
+ 
+-	if (reset_host_protection)
++	if (host_writeable)
+ 		spte |= SPTE_HOST_WRITEABLE;
+ 
+ 	spte |= (u64)pfn << PAGE_SHIFT;
+@@ -2064,7 +2064,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 			 int user_fault, int write_fault, int dirty,
+ 			 int *ptwrite, int level, gfn_t gfn,
+ 			 pfn_t pfn, bool speculative,
+-			 bool reset_host_protection)
++			 bool host_writeable)
+ {
+ 	int was_rmapped = 0;
+ 	int rmap_count;
+@@ -2099,7 +2099,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 
+ 	if (set_spte(vcpu, sptep, pte_access, user_fault, write_fault,
+ 		      dirty, level, gfn, pfn, speculative, true,
+-		      reset_host_protection)) {
++		      host_writeable)) {
+ 		if (write_fault)
+ 			*ptwrite = 1;
+ 		kvm_mmu_flush_tlb(vcpu);
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index ba00eef..291342d 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -329,7 +329,7 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 		return;
+ 	kvm_get_pfn(pfn);
+ 	/*
+-	 * we call mmu_set_spte() with reset_host_protection = true beacuse that
++	 * we call mmu_set_spte() with host_writeable = true beacuse that
+ 	 * vcpu->arch.update_pte.pfn was fetched from get_user_pages(write = 1).
+ 	 */
+ 	mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
+@@ -742,7 +742,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 			    bool clear_unsync)
+ {
+ 	int i, offset, nr_present;
+-	bool reset_host_protection;
++	bool host_writeable;
+ 	gpa_t first_pte_gpa;
+ 
+ 	offset = nr_present = 0;
+@@ -788,14 +788,14 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 		pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte);
+ 		if (!(sp->spt[i] & SPTE_HOST_WRITEABLE)) {
+ 			pte_access &= ~ACC_WRITE_MASK;
+-			reset_host_protection = 0;
++			host_writeable = 0;
+ 		} else {
+-			reset_host_protection = 1;
++			host_writeable = 1;
+ 		}
+ 		set_spte(vcpu, &sp->spt[i], pte_access, 0, 0,
+ 			 is_dirty_gpte(gpte), PT_PAGE_TABLE_LEVEL, gfn,
+ 			 spte_to_pfn(sp->spt[i]), true, false,
+-			 reset_host_protection);
++			 host_writeable);
+ 	}
+ 
+ 	return !nr_present;
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.7.0.4
+
