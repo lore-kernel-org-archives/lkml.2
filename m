@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757612Ab0KLNGK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 08:06:10 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:36565 "EHLO mgw-da01.nokia.com"
+	id S1757161Ab0KLNRZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 08:17:25 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52501 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757565Ab0KLNGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 08:06:07 -0500
-From: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>
-To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm@lists.arm.linux.org.uk, linux-serial@vger.kernel.org
-Subject: [PATCHv4 4/4] OMAP: Serial: remove redefined MDR1 register definitions
-Date: Fri, 12 Nov 2010 15:04:03 +0200
-Message-Id: <1289567043-6213-5-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1289567043-6213-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+	id S1754014Ab0KLNRX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 08:17:23 -0500
+From: "G, Manjunath Kondaiah" <manjugk@ti.com>
+To: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm@lists.arm.linux.org.uk" <linux-arm@lists.arm.linux.org.uk>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
+Date: Fri, 12 Nov 2010 18:47:13 +0530
+Subject: RE: [PATCHv4 0/4] OMAP: Serial: remove magic and diplicates
+Thread-Topic: [PATCHv4 0/4] OMAP: Serial: remove magic and diplicates
+Thread-Index: AcuCams2esgLX2BsS66tSm4dmiPoTAAANzEw
+Message-ID: <E0D41E29EB0DAC4E9F3FF173962E9E9402DC24F05C@dbde02.ent.ti.com>
 References: <1289567043-6213-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-X-Nokia-AV: Clean
+In-Reply-To: <1289567043-6213-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
 
-Use definitions defined in serial_reg
 
-Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
----
- arch/arm/plat-omap/include/plat/omap-serial.h |    3 ---
- drivers/serial/omap-serial.c                  |    6 +++---
- 2 files changed, 3 insertions(+), 6 deletions(-)
+> -----Original Message-----
+> From: linux-omap-owner@vger.kernel.org 
+> [mailto:linux-omap-owner@vger.kernel.org] On Behalf Of 
+> Emeltchenko Andrei
+> Sent: Friday, November 12, 2010 6:34 PM
+> To: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org; 
+> linux-arm@lists.arm.linux.org.uk; linux-serial@vger.kernel.org
+> Subject: [PATCHv4 0/4] OMAP: Serial: remove magic and diplicates
 
-diff --git a/arch/arm/plat-omap/include/plat/omap-serial.h b/arch/arm/plat-omap/include/plat/omap-serial.h
-index c8dae02..6a17880 100644
---- a/arch/arm/plat-omap/include/plat/omap-serial.h
-+++ b/arch/arm/plat-omap/include/plat/omap-serial.h
-@@ -31,9 +31,6 @@
-  */
- #define OMAP_SERIAL_NAME	"ttyO"
- 
--#define OMAP_MDR1_DISABLE	0x07
--#define OMAP_MDR1_MODE13X	0x03
--#define OMAP_MDR1_MODE16X	0x00
- #define OMAP_MODE13X_SPEED	230400
- 
- /*
-diff --git a/drivers/serial/omap-serial.c b/drivers/serial/omap-serial.c
-index 14365f7..03a96db 100644
---- a/drivers/serial/omap-serial.c
-+++ b/drivers/serial/omap-serial.c
-@@ -753,7 +753,7 @@ serial_omap_set_termios(struct uart_port *port, struct ktermios *termios,
- 
- 	/* Protocol, Baud Rate, and Interrupt Settings */
- 
--	serial_out(up, UART_OMAP_MDR1, OMAP_MDR1_DISABLE);
-+	serial_out(up, UART_OMAP_MDR1, UART_OMAP_MDR1_DISABLE);
- 	serial_out(up, UART_LCR, OMAP_UART_LCR_CONF_MDB);
- 
- 	up->efr = serial_in(up, UART_EFR);
-@@ -774,9 +774,9 @@ serial_omap_set_termios(struct uart_port *port, struct ktermios *termios,
- 	serial_out(up, UART_LCR, cval);
- 
- 	if (baud > 230400 && baud != 3000000)
--		serial_out(up, UART_OMAP_MDR1, OMAP_MDR1_MODE13X);
-+		serial_out(up, UART_OMAP_MDR1, UART_OMAP_MDR1_13X_MODE);
- 	else
--		serial_out(up, UART_OMAP_MDR1, OMAP_MDR1_MODE16X);
-+		serial_out(up, UART_OMAP_MDR1, UART_OMAP_MDR1_16X_MODE);
- 
- 	/* Hardware Flow Control Configuration */
- 
--- 
-1.7.0.4
+s/diplicates/duplicates
+
+> 
+> From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+> 
+> Add MDR1 Serial register definition to serial_reg and remove 
+> duplicated
+> code, remove magic MDR1 register numbers from serial drivers.
+> 
+> *v2 add OMAP keyword to MDR1 definition
+> *v3 remove magic from serial drivers
+> *v4 taking comments from Manjunath and Govindraj: typos, CC
+> 
+> Andrei Emeltchenko (4):
+>   OMAP: Serial: Define OMAP uart MDR1 register definitions
+>   OMAP1: Serial: remove magic numbers for MDR1 reg
+>   OMAP2: Serial: remove magic numbers for MDR1 reg
+>   OMAP: Serial: remove redefined MDR1 register definitions
+> 
+>  arch/arm/mach-omap1/serial.c                  |    6 ++++--
+>  arch/arm/mach-omap2/serial.c                  |   15 +++++++++------
+>  arch/arm/plat-omap/include/plat/omap-serial.h |    3 ---
+>  drivers/serial/omap-serial.c                  |    6 +++---
+>  include/linux/serial_reg.h                    |   12 ++++++++++++
+>  5 files changed, 28 insertions(+), 14 deletions(-)
+
+Do you think patch series is required for these changes? How about
+merging with single patch? 
+
+-Manjunath
+
 
