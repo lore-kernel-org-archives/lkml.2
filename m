@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670Ab0KLSBw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 13:01:52 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50935 "EHLO
+	id S932601Ab0KLSBT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 13:01:19 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50933 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932562Ab0KLSBS (ORCPT
+	by vger.kernel.org with ESMTP id S932536Ab0KLSBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 13:01:18 -0500
+	Fri, 12 Nov 2010 13:01:16 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 16/20] ARM: LPAE: mark memory banks with start > ULONG_MAX as highmem
-Date: Fri, 12 Nov 2010 18:00:36 +0000
-Message-Id: <1289584840-18097-17-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v2 15/20] ARM: LPAE: Use generic dma_addr_t type definition
+Date: Fri, 12 Nov 2010 18:00:35 +0000
+Message-Id: <1289584840-18097-16-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.3.2.164.g6f10c
 In-Reply-To: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
 References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 12 Nov 2010 18:00:54.0032 (UTC) FILETIME=[8C913100:01CB8293]
+X-OriginalArrivalTime: 12 Nov 2010 18:00:53.0735 (UTC) FILETIME=[8C63DF70:01CB8293]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Will Deacon <will.deacon@arm.com>
 
-Memory banks living outside of the 32-bit physical address
-space do not have a 1:1 pa <-> va mapping and therefore the
-__va macro may wrap.
+This patch uses the types.h implementation in asm-generic to define the
+dma_addr_t type as the same width as phys_addr_t.
 
-This patch ensures that such banks are marked as highmem so
-that the Kernel doesn't try to split them up when it sees that
-the wrapped virtual address overlaps the vmalloc space.
+NOTE: this is a temporary patch until the corresponding patches unifying
+the dma_addr_t and removing the dma64_addr_t are merged into mainline.
 
 Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/mm/mmu.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ arch/arm/include/asm/types.h |   20 +-------------------
+ 1 files changed, 1 insertions(+), 19 deletions(-)
 
-diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
-index b03e431..787a409 100644
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -785,7 +785,8 @@ static void __init sanity_check_meminfo(void)
+diff --git a/arch/arm/include/asm/types.h b/arch/arm/include/asm/types.h
+index 345df01..dc1bdbb 100644
+--- a/arch/arm/include/asm/types.h
++++ b/arch/arm/include/asm/types.h
+@@ -1,30 +1,12 @@
+ #ifndef __ASM_ARM_TYPES_H
+ #define __ASM_ARM_TYPES_H
  
- #ifdef CONFIG_HIGHMEM
- 		if (__va(bank->start) > vmalloc_min ||
--		    __va(bank->start) < (void *)PAGE_OFFSET)
-+		    __va(bank->start) < (void *)PAGE_OFFSET ||
-+		    bank->start > ULONG_MAX)
- 			highmem = 1;
+-#include <asm-generic/int-ll64.h>
++#include <asm-generic/types.h>
  
- 		bank->highmem = highmem;
-@@ -794,7 +795,7 @@ static void __init sanity_check_meminfo(void)
- 		 * Split those memory banks which are partially overlapping
- 		 * the vmalloc area greatly simplifying things later.
- 		 */
--		if (__va(bank->start) < vmalloc_min &&
-+		if (!highmem && __va(bank->start) < vmalloc_min &&
- 		    bank->size > vmalloc_min - __va(bank->start)) {
- 			if (meminfo.nr_banks >= NR_BANKS) {
- 				printk(KERN_CRIT "NR_BANKS too low, "
+-#ifndef __ASSEMBLY__
+-
+-typedef unsigned short umode_t;
+-
+-#endif /* __ASSEMBLY__ */
+-
+-/*
+- * These aren't exported outside the kernel to avoid name space clashes
+- */
+ #ifdef __KERNEL__
+ 
+ #define BITS_PER_LONG 32
+ 
+-#ifndef __ASSEMBLY__
+-
+-/* Dma addresses are 32-bits wide.  */
+-
+-typedef u32 dma_addr_t;
+-typedef u32 dma64_addr_t;
+-
+-#endif /* __ASSEMBLY__ */
+-
+ #endif /* __KERNEL__ */
+ 
+ #endif
