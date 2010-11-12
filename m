@@ -1,44 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab0KLKV4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 05:21:56 -0500
-Received: from mga01.intel.com ([192.55.52.88]:33047 "EHLO mga01.intel.com"
+	id S1756636Ab0KLKWv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 05:22:51 -0500
+Received: from hera.kernel.org ([140.211.167.34]:55439 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752711Ab0KLKVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 05:21:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,186,1288594800"; 
-   d="scan'208";a="856816805"
-Date: Fri, 12 Nov 2010 11:21:51 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Andres Salomon <dilinger@queued.net>
-Cc: linux-geode@lists.infradead.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, cjb@laptop.org, dsd@laptop.org
-Subject: Re: [PATCH 1/4] MFD: add cs5535-mfd driver for CS5535/CS5536
- support
-Message-ID: <20101112102150.GC2383@sortiz-mobl>
-References: <20101023004102.674cdc45@queued.net>
- <20101112004701.4dd43d63@queued.net>
+	id S1752711Ab0KLKWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 05:22:50 -0500
+Message-ID: <4CDD1556.4010109@kernel.org>
+Date: Fri, 12 Nov 2010 11:22:14 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101112004701.4dd43d63@queued.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com
+Subject: Re: [PATCH UPDATED 4/9] x86: Initialize 32bit logical apicid mapping
+ early during boot
+References: <1289473363-29440-1-git-send-email-tj@kernel.org> <1289473363-29440-5-git-send-email-tj@kernel.org> <4CDD0B1F.4060701@kernel.org> <4CDD0FD0.1020807@kernel.org>
+In-Reply-To: <4CDD0FD0.1020807@kernel.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 12 Nov 2010 10:22:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andres,
+On 11/12/2010 10:58 AM, Yinghai Lu wrote:
+> those replacing smp_processor_id() with cpu should be in another patch.
 
-On Fri, Nov 12, 2010 at 12:47:01AM -0800, Andres Salomon wrote:
-> Hi,
-> 
-> Has anyone had the chance to take a look at this set of patches?
-I'll be looking at them (and other MFD patches) sometime next week.
+It's a mechanical cleanup.  I can add 'while at it, ...' to the patch
+description.  Oh well, what the hell, I'll split it.
 
-Cheers,
-Samuel.
+Thanks.
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+tejun
