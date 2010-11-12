@@ -1,128 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab0KLDdE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 22:33:04 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:45697 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755788Ab0KLDdB convert rfc822-to-8bit (ORCPT
+	id S1756032Ab0KLDdV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 22:33:21 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:11504 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436Ab0KLDdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 22:33:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PQq6iCLkTKw2o4Tgr9jDUylIjAAc0x5eHSL23A3vlZIdW5jzfe86UQwTXJiuHRonPI
-         SarkNaKnwBv8ZuaQQsZCeLt0C9Doo7WuOKqpT32ws7QVuQVdbfg76RdNVwS7Lnl6DFmY
-         QabWKrMNCQ6X62D7/YnKetRWeLKNrFXMM7GLM=
-MIME-Version: 1.0
-In-Reply-To: <1289489007.17691.1310.camel@edumazet-laptop>
-References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
-	<1289489007.17691.1310.camel@edumazet-laptop>
-Date: Fri, 12 Nov 2010 11:32:59 +0800
-Message-ID: <AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>
-Subject: Re: Kernel rwlock design, Multicore and IGMP
-From: Cypher Wu <cypher.w@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 11 Nov 2010 22:33:02 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:references:user-agent:date:from:to:cc:subject:content-disposition;
+	b=aCuZAnFK2FyPOo2fejn0UVRFdkp3dASpZYfjeIEBtujxwXPu1SWvvaGKvDrtKiuxO
+	gLVtK6UgYGW3xSGOziuYw==
+Message-Id: <20101112032702.102388161@google.com>
+References: <20101112032405.657789056@google.com>
+User-Agent: quilt/0.46-1
+Date: Thu, 11 Nov 2010 19:24:15 -0800
+From: Paul Turner <pjt@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Chris Friesen <cfriesen@nortel.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Pierre Bourdon <pbourdon@excellency.fr>, Paul Turner <pjt@google.com>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>
+Subject: [tg_shares_up rewrite v3 10/11] sched: allow update_cfs_load to update global load
+Content-Disposition: inline; filename=sched-tg-global_update_load.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 11:23 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le jeudi 11 novembre 2010 à 21:49 +0800, Cypher Wu a écrit :
->
-> Hi
->
-> CC netdev, since you ask questions about network stuff _and_ rwlock
->
->
->> I'm using TILEPro and its rwlock in kernel is a liitle different than
->> other platforms. It have a priority for write lock that when tried it
->> will block the following read lock even if read lock is hold by
->> others. Its code can be read in Linux Kernel 2.6.36 in
->> arch/tile/lib/spinlock_32.c.
->
-> This seems a bug to me.
->
-> read_lock() can be nested. We used such a schem in the past in iptables
-> (it can re-enter itself),
-> and we used instead a spinlock(), but with many discussions with lkml
-> and Linus himself if I remember well.
->
-It seems not a problem that read_lock() can be nested or not since
-rwlock doesn't have 'owner', it's just that should we give
-write_lock() a priority than read_lock() since if there have a lot
-read_lock()s then they'll starve write_lock().
-We should work out a well defined behavior so all the
-platform-dependent raw_rwlock has to design under that principle.
->
->>
->> That different could cause a deadlock in kernel if we join/leave
->> Multicast Group simultaneous and frequently on mutlicores. IGMP
->> message is sent by
->>
->> igmp_ifc_timer_expire() -> igmpv3_send_cr() -> igmpv3_sendpack()
->>
->> in timer interrupt, igmpv3_send_cr() will generate the sk_buff for
->> IGMP message with mc_list_lock read locked and then call
->> igmpv3_sendpack() with it unlocked.
->> But if we have so many join/leave messages have to generate and it
->> can't be sent in one sk_buff then igmpv3_send_cr() -> add_grec() will
->> call igmpv3_sendpack() to send it and reallocate a new buffer. When
->> the message is sent:
->>
->> __mkroute_output() -> ip_check_mc()
->>
->> will read lock mc_list_lock again. If there is another core is try
->> write lock mc_list_lock between the two read lock, then deadlock
->> ocurred.
->>
->> The rwlock on other platforms I've check, say, PowerPC, x86, ARM, is
->> just read lock shared and write_lock mutex, so if we've hold read lock
->> the write lock will just wait, and if there have a read lock again it
->> will success.
->>
->> So, What's the criteria of rwlock design in the Linux kernel? Is that
->> read lock re-hold of IGMP a design error in Linux kernel, or the read
->> lock has to be design like that?
->>
->
-> Well, we try to get rid of all rwlocks in performance critical sections.
->
-> I would say, if you believe one rwlock can justify the special TILE
-> behavior you tried to make, then we should instead migrate this rwlock
-> to a RCU + spinlock schem (so that all arches benefit from this work,
-> not only TILE)
+Refactor the global load updates from update_shares_cpu() so that
+update_cfs_load() can update global load when it is more than ~10% out of sync.
 
-IGMP in not very performance critical so maybe rwlock is enough?
+The new global_load parameter allows us to force an update, regardless of
+the error factor so that we can synchronize w/ update_shares().
 
->
->> There is a other thing, that the timer interrupt will start timer on
->> the same in_dev, should that be optimized?
->>
->
-> Not sure I understand what you mean.
+Signed-off-by: Paul Turner <pjt@google.com>
 
-Since mc_list & mc_tomb is shared list in the kernel we needn't to
-start multiple timers on different cores for them, we can synchronize
-it on one core.
+---
+ kernel/sched_fair.c |   44 +++++++++++++++++++++++++++++---------------
+ 1 file changed, 29 insertions(+), 15 deletions(-)
 
->
->> BTW: If we have so many cores, say 64, is there other things we have
->> to think about spinlock? If there have collisions ocurred, should we
->> just read the shared memory again and again, or just a very little
->> 'delay' is better? I've seen relax() is called in the implementation
->> of spinlock on TILEPro platform.
->> --
->
-> Is TILE using ticket spinlocks ?
->
+Index: kernel/sched_fair.c
+===================================================================
+--- kernel/sched_fair.c.orig
++++ kernel/sched_fair.c
+@@ -539,7 +539,7 @@ static u64 sched_vslice(struct cfs_rq *c
+ 	return calc_delta_fair(sched_slice(cfs_rq, se), se);
+ }
+ 
+-static void update_cfs_load(struct cfs_rq *cfs_rq);
++static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update);
+ static void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta);
+ 
+ /*
+@@ -565,7 +565,7 @@ __update_curr(struct cfs_rq *cfs_rq, str
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	cfs_rq->load_unacc_exec_time += delta_exec;
+ 	if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
+-		update_cfs_load(cfs_rq);
++		update_cfs_load(cfs_rq, 0);
+ 		update_cfs_shares(cfs_rq, 0);
+ 	}
+ #endif
+@@ -704,7 +704,22 @@ account_entity_dequeue(struct cfs_rq *cf
+ }
+ 
+ #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
+-static void update_cfs_load(struct cfs_rq *cfs_rq)
++static void update_cfs_rq_load_contribution(struct cfs_rq *cfs_rq,
++					    int global_update)
++{
++	struct task_group *tg = cfs_rq->tg;
++	long load_avg;
++
++	load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
++	load_avg -= cfs_rq->load_contribution;
++
++	if (global_update || abs(load_avg) > cfs_rq->load_contribution / 8) {
++		atomic_add(load_avg, &tg->load_weight);
++		cfs_rq->load_contribution += load_avg;
++	}
++}
++
++static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
+ {
+ 	u64 period = sysctl_sched_shares_window;
+ 	u64 now, delta;
+@@ -731,6 +746,11 @@ static void update_cfs_load(struct cfs_r
+ 		cfs_rq->load_avg += delta * load;
+ 	}
+ 
++	/* consider updating load contribution on each fold or truncate */
++	if (global_update || cfs_rq->load_period > period
++	    || !cfs_rq->load_period)
++		update_cfs_rq_load_contribution(cfs_rq, global_update);
++
+ 	while (cfs_rq->load_period > period) {
+ 		/*
+ 		 * Inline assembly required to prevent the compiler
+@@ -790,7 +810,7 @@ static void update_cfs_shares(struct cfs
+ 	reweight_entity(cfs_rq_of(se), se, shares);
+ }
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+-static inline void update_cfs_load(struct cfs_rq *cfs_rq)
++static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
+ {
+ }
+ 
+@@ -920,7 +940,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+ 	 * Update run-time statistics of the 'current'.
+ 	 */
+ 	update_curr(cfs_rq);
+-	update_cfs_load(cfs_rq);
++	update_cfs_load(cfs_rq, 0);
+ 	update_cfs_shares(cfs_rq, se->load.weight);
+ 	account_entity_enqueue(cfs_rq, se);
+ 
+@@ -981,7 +1001,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+ 	if (se != cfs_rq->curr)
+ 		__dequeue_entity(cfs_rq, se);
+ 	se->on_rq = 0;
+-	update_cfs_load(cfs_rq);
++	update_cfs_load(cfs_rq, 0);
+ 	account_entity_dequeue(cfs_rq, se);
+ 	update_min_vruntime(cfs_rq);
+ 	update_cfs_shares(cfs_rq, 0);
+@@ -1216,7 +1236,7 @@ enqueue_task_fair(struct rq *rq, struct 
+ 	for_each_sched_entity(se) {
+ 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
+ 
+-		update_cfs_load(cfs_rq);
++		update_cfs_load(cfs_rq, 0);
+ 		update_cfs_shares(cfs_rq, 0);
+ 	}
+ 
+@@ -1246,7 +1266,7 @@ static void dequeue_task_fair(struct rq 
+ 	for_each_sched_entity(se) {
+ 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
+ 
+-		update_cfs_load(cfs_rq);
++		update_cfs_load(cfs_rq, 0);
+ 		update_cfs_shares(cfs_rq, 0);
+ 	}
+ 
+@@ -2048,7 +2068,6 @@ static int update_shares_cpu(struct task
+ 	struct cfs_rq *cfs_rq;
+ 	unsigned long flags;
+ 	struct rq *rq;
+-	long load_avg;
+ 
+ 	if (!tg->se[cpu])
+ 		return 0;
+@@ -2059,12 +2078,7 @@ static int update_shares_cpu(struct task
+ 	raw_spin_lock_irqsave(&rq->lock, flags);
+ 
+ 	update_rq_clock(rq);
+-	update_cfs_load(cfs_rq);
+-
+-	load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
+-	load_avg -= cfs_rq->load_contribution;
+-	atomic_add(load_avg, &tg->load_weight);
+-	cfs_rq->load_contribution += load_avg;
++	update_cfs_load(cfs_rq, 1);
+ 
+ 	/*
+ 	 * We need to update shares after updating tg->load_weight in
 
-What ticket spinlocks means? Could you explain a little, pls:) I'm not
-familiar with Linux kernel, I'm trying to get more understanding of it
-since I'm working on Linux platform now.
+-- 
 
->
->
