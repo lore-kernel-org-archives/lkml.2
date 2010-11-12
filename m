@@ -1,95 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab0KLIPZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 03:15:25 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:37380 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052Ab0KLIPX (ORCPT
+	id S1755484Ab0KLIST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 03:18:19 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37000 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755375Ab0KLISR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 03:15:23 -0500
+	Fri, 12 Nov 2010 03:18:17 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=iRN9Rfnt+wJ5bhrwF0YmEs2WSjRXTCuUBcgfDGo+uLOAPT6V3WuP88ufv4d+AdPHM1
-         KC1b97ATMDLkVMRhyLjrEiltLo3WpyI2Fz7XjS+EObnIdAF9l/PWI7BO2oArSzFhkupp
-         ipGA+xxWM3NxJuyb6gCxqfJl1Y5uZZnj+kNSo=
-Date: Fri, 12 Nov 2010 16:19:45 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Cypher Wu <cypher.w@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: Kernel rwlock design, Multicore and IGMP
-Message-ID: <20101112081945.GA5949@cr0.nay.redhat.com>
-References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
- <1289489007.17691.1310.camel@edumazet-laptop>
- <AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>
- <20101112071323.GB5660@cr0.nay.redhat.com>
- <1289546874.17691.1774.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1289546874.17691.1774.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=from:to:cc:date:message-id:in-reply-to:references:subject;
+        b=BYOCiTP+ugh+F7vnMMwCbaEFTUiabIt4vRokt/KV3Pfoum7ORLIXMNmBsQyqWG+6hz
+         HyZPLNSs8zI+VWr6yp3+9Fcy7/xtJhA4rUk2aCij1PRjzy82P+ZeuY4R3G9CRJp8AuoN
+         z/9tClAQdcs46o3M9YVlISQgUhpXX4AOS5Q2A=
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux@arm.linux.org.uk
+Cc: kgene.kim@samsung.com, kmpark@infradead.org, konkers@android.com,
+        tony@atomide.com, adharmap@codeaurora.org, avorontsov@mvista.com,
+        linux-kernel@vger.kernel.org, srinidhikasagar@gmail.com,
+        dwalker@codeaurora.org, santosh.shilimkar@ti.com, ccross@android.com,
+        olof@lixom.net, Magnus Damm <magnus.damm@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Date: Fri, 12 Nov 2010 17:21:10 +0900
+Message-Id: <20101112082110.27221.55529.sendpatchset@t400s>
+In-Reply-To: <20101112082059.27221.52879.sendpatchset@t400s>
+References: <20101112082059.27221.52879.sendpatchset@t400s>
+Subject: [PATCH 01/07] ARM: Introduce asm/hardware/entry-macro-gic.S
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 08:27:54AM +0100, Eric Dumazet wrote:
->Le vendredi 12 novembre 2010 à 15:13 +0800, Américo Wang a écrit :
->> On Fri, Nov 12, 2010 at 11:32:59AM +0800, Cypher Wu wrote:
->> >On Thu, Nov 11, 2010 at 11:23 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->> >> Le jeudi 11 novembre 2010 à 21:49 +0800, Cypher Wu a écrit :
->> >>
->> >> Hi
->> >>
->> >> CC netdev, since you ask questions about network stuff _and_ rwlock
->> >>
->> >>
->> >>> I'm using TILEPro and its rwlock in kernel is a liitle different than
->> >>> other platforms. It have a priority for write lock that when tried it
->> >>> will block the following read lock even if read lock is hold by
->> >>> others. Its code can be read in Linux Kernel 2.6.36 in
->> >>> arch/tile/lib/spinlock_32.c.
->> >>
->> >> This seems a bug to me.
->> >>
->> >> read_lock() can be nested. We used such a schem in the past in iptables
->> >> (it can re-enter itself),
->> >> and we used instead a spinlock(), but with many discussions with lkml
->> >> and Linus himself if I remember well.
->> >>
->> >It seems not a problem that read_lock() can be nested or not since
->> >rwlock doesn't have 'owner', it's just that should we give
->> >write_lock() a priority than read_lock() since if there have a lot
->> >read_lock()s then they'll starve write_lock().
->> >We should work out a well defined behavior so all the
->> >platform-dependent raw_rwlock has to design under that principle.
->> 
->
->AFAIK, Lockdep allows read_lock() to be nested.
->
->> It is a known weakness of rwlock, it is designed like that. :)
->> 
->
->Agreed.
->
+From: Magnus Damm <damm@opensource.se>
 
-Just for record, both Tile and X86 implement rwlock with a write-bias,
-this somewhat reduces the write-starvation problem.
+This patch is the identical GIC demux implementation
+merge V3. Instead of implementing same code over and
+over simply share it in entry-macro-gic.S. The shared
+code is based on the realview implementation.
 
+Each GIC demux instance still has to setup the base address
+of the controller using the get_irqnr_preamble macro. The
+rest of the GIC specific code can be shared.
 
->> The solution is to use RCU or seqlock, but I don't think seqlock
->> is proper for this case you described. So, try RCU lock.
->
->In the IGMP case, it should be easy for the task owning a read_lock() to
->pass a parameter to the called function saying 'I already own the
->read_lock(), dont try to re-acquire it'
->
->A RCU conversion is far more complex.
->
+Signed-off-by: Magnus Damm <damm@opensource.se>
+Acked-by: Srinidhi Kasagar<srinidhi.kasagar@stericsson.com>
+---
 
-Yup.
+ Changes since V2:
+ - broke out patches into base + per sub-arch
+
+ arch/arm/include/asm/hardware/entry-macro-gic.S |   68 +++++++++++++++++++++++
+ 1 file changed, 68 insertions(+)
+
+--- /dev/null
++++ work/arch/arm/include/asm/hardware/entry-macro-gic.S	2010-11-12 15:57:05.000000000 +0900
+@@ -0,0 +1,68 @@
++/*
++ * arch/arm/include/asm/hardware/entry-macro-gic.S
++ *
++ * Low-level IRQ helper macros for GIC
++ *
++ * This file is licensed under  the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <asm/hardware/gic.h>
++
++/*
++ * The interrupt numbering scheme is defined in the
++ * interrupt controller spec.  To wit:
++ *
++ * Interrupts 0-15 are IPI
++ * 16-28 are reserved
++ * 29-31 are local.  We allow 30 to be used for the watchdog.
++ * 32-1020 are global
++ * 1021-1022 are reserved
++ * 1023 is "spurious" (no interrupt)
++ *
++ * For now, we ignore all local interrupts so only return an interrupt if it's
++ * between 30 and 1020.  The test_for_ipi routine below will pick up on IPIs.
++ *
++ * A simple read from the controller will tell us the number of the highest
++ * priority enabled interrupt.  We then just need to check whether it is in the
++ * valid range for an IRQ (30-1020 inclusive).
++ */
++
++	.macro  get_irqnr_and_base, irqnr, irqstat, base, tmp
++
++	ldr     \irqstat, [\base, #GIC_CPU_INTACK]
++	/* bits 12-10 = src CPU, 9-0 = int # */
++
++	ldr	\tmp, =1021
++	bic     \irqnr, \irqstat, #0x1c00
++	cmp     \irqnr, #29
++	cmpcc	\irqnr, \irqnr
++	cmpne	\irqnr, \tmp
++	cmpcs	\irqnr, \irqnr
++	.endm
++
++/* We assume that irqstat (the raw value of the IRQ acknowledge
++ * register) is preserved from the macro above.
++ * If there is an IPI, we immediately signal end of interrupt on the
++ * controller, since this requires the original irqstat value which
++ * we won't easily be able to recreate later.
++ */
++
++	.macro test_for_ipi, irqnr, irqstat, base, tmp
++	bic	\irqnr, \irqstat, #0x1c00
++	cmp	\irqnr, #16
++	strcc	\irqstat, [\base, #GIC_CPU_EOI]
++	cmpcs	\irqnr, \irqnr
++	.endm
++
++/* As above, this assumes that irqstat and base are preserved.. */
++
++	.macro test_for_ltirq, irqnr, irqstat, base, tmp
++	bic	\irqnr, \irqstat, #0x1c00
++	mov 	\tmp, #0
++	cmp	\irqnr, #29
++	moveq	\tmp, #1
++	streq	\irqstat, [\base, #GIC_CPU_EOI]
++	cmp	\tmp, #0
++	.endm
