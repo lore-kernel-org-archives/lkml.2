@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab0KLKlb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 05:41:31 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:60749 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756525Ab0KLKl3 (ORCPT
+	id S1756907Ab0KLKpH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 05:45:07 -0500
+Received: from mail.bugwerft.de ([212.112.241.193]:52479 "EHLO
+	mail.bugwerft.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756672Ab0KLKpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 05:41:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=fYgIkhvEwFyzaVaQgFBN1+MvDwgcCrV3CLW+6LBOcmLLBsYs6leLeqYHgxPcbl6DCv
-         2i42BWu5tczPr/HvEX2g==
-MIME-Version: 1.0
-In-Reply-To: <1289507858.2084.195.camel@laptop>
-References: <1289492117-18066-1-git-send-email-andi@firstfloor.org>
-	<1289492117-18066-2-git-send-email-andi@firstfloor.org>
-	<4CDC2DDD.50508@linux.vnet.ibm.com>
-	<4CDC3845.4030104@linux.intel.com>
-	<4CDC4628.8020109@linux.vnet.ibm.com>
-	<20101111194936.GJ18718@basil.fritz.box>
-	<1289505587.2084.193.camel@laptop>
-	<20101111201259.GL18718@basil.fritz.box>
-	<1289507858.2084.195.camel@laptop>
-Date: Fri, 12 Nov 2010 11:41:27 +0100
-Message-ID: <AANLkTimag1+h4ujWYmWXXBspizL1+j2JtJDf+=AmWpPa@mail.gmail.com>
-Subject: Re: [PATCH 2/3] perf: Add support for extra parameters for raw events
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@elte.hu, acme@redhat.com
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Fri, 12 Nov 2010 05:45:06 -0500
+X-Greylist: delayed 500 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Nov 2010 05:45:06 EST
+From: Sven Neumann <s.neumann@raumfeld.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Sven Neumann <s.neumann@raumfeld.com>
+Subject: [PATCH] ds2760_battery: fix calculation of time_to_empty_now
+Date: Fri, 12 Nov 2010 11:36:22 +0100
+Message-Id: <1289558182-28817-1-git-send-email-s.neumann@raumfeld.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 9:37 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Thu, 2010-11-11 at 21:12 +0100, Andi Kleen wrote:
->> > Also, I think we can use the same mechanism to program the
->> > PEBS-load-latency MSR, right?
->>
->> I haven't looked at that, but if it's a per core resource
->> the infrastructure can be reused at least.
->
-> Can't remember if the load-latency msr is per-core, but its an extra reg
-> that needs to be set.
+A check against division by zero was modified in commit b0525b48.
+Since this change time_to_empty_now is always reported as zero
+while the battery is discharging and as a negative value while
+the battery is charging. This is because current is negative while
+the battery is discharging.
 
-Load latency is luckily per thread. Nothing special to do to handle this one.
-We can restore its value from attr->config.
+Fix the check introduced by commit b0525b48 so that time_to_empty_now
+is reported correctly during discharge and as zero while charging.
 
->
-> The nhm/wsm LBR config msr is per-core though, so that could use your
-> infrastructure too.
->
-Exactly.
+Signed-off-by: Sven Neumann <s.neumann@raumfeld.com>
+Acked-by: Daniel Mack <daniel@caiaq.de>
+---
+ drivers/power/ds2760_battery.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/power/ds2760_battery.c b/drivers/power/ds2760_battery.c
+index 4d3b272..c8d26df 100644
+--- a/drivers/power/ds2760_battery.c
++++ b/drivers/power/ds2760_battery.c
+@@ -212,7 +212,7 @@ static int ds2760_battery_read_status(struct ds2760_device_info *di)
+ 	if (di->rem_capacity > 100)
+ 		di->rem_capacity = 100;
+ 
+-	if (di->current_uA >= 100L)
++	if (di->current_uA < -100L)
+ 		di->life_sec = -((di->accum_current_uAh - di->empty_uAh) * 36L)
+ 					/ (di->current_uA / 100L);
+ 	else
+-- 
+1.7.1
+
