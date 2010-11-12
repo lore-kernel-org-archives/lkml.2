@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757575Ab0KLNV6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 08:21:58 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:40808 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711Ab0KLNV5 (ORCPT
+	id S932102Ab0KLNWI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 08:22:08 -0500
+Received: from casper.infradead.org ([85.118.1.10]:47276 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932069Ab0KLNWF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 08:21:57 -0500
-Message-ID: <4CDD3F71.5030908@codemonkey.ws>
-Date: Fri, 12 Nov 2010 07:21:53 -0600
-From: Anthony Liguori <anthony@codemonkey.ws>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Ian Molton <ian.molton@collabora.co.uk>
-CC: QEMU Developers <qemu-devel@nongnu.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        virtualization@lists.osdl.org, Alon Levy <alevy@redhat.com>,
-        Avi Kivity <avi@redhat.com>
-Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
-References: <1097264455.965471288612409433.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>	<4CCEC090.3050009@codemonkey.ws>	<4CD1A406.3090909@collabora.co.uk> <4CD1A73B.2010406@codemonkey.ws> <4CD44759.5020500@collabora.co.uk> <4CDAD4D4.3070009@collabora.co.uk> <4CDADACC.4070405@codemonkey.ws> <4CDD2F9A.7000702@collabora.co.uk>
-In-Reply-To: <4CDD2F9A.7000702@collabora.co.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Nov 2010 08:22:05 -0500
+Subject: Re: [PATCH 2/3] perf: Add support for extra parameters for raw
+ events
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@elte.hu, acme@redhat.com,
+        paulus <paulus@samba.org>, Tony Luck <tony.luck@intel.com>
+In-Reply-To: <AANLkTinjzZnv8dzfKPzgGtRnk5C-XsAt=gyf_4G0+gf8@mail.gmail.com>
+References: <1289492117-18066-1-git-send-email-andi@firstfloor.org>
+	 <1289492117-18066-2-git-send-email-andi@firstfloor.org>
+	 <4CDC2DDD.50508@linux.vnet.ibm.com> <4CDC3845.4030104@linux.intel.com>
+	 <4CDC4628.8020109@linux.vnet.ibm.com>
+	 <20101111194936.GJ18718@basil.fritz.box> <1289505587.2084.193.camel@laptop>
+	 <20101111201259.GL18718@basil.fritz.box> <1289507858.2084.195.camel@laptop>
+	 <20101112102748.GA8020@basil.fritz.box>
+	 <AANLkTi=idvNVyccD53Xwjp5mWfJb=S8UXekhXNqhzRPC@mail.gmail.com>
+	 <1289561817.2084.240.camel@laptop>
+	 <AANLkTinjzZnv8dzfKPzgGtRnk5C-XsAt=gyf_4G0+gf8@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 12 Nov 2010 14:21:17 +0100
+Message-ID: <1289568077.2084.256.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2010 06:14 AM, Ian Molton wrote:
-> On 10/11/10 17:47, Anthony Liguori wrote:
->> On 11/10/2010 11:22 AM, Ian Molton wrote:
->>> Ping ?
->>
->> I think the best way forward is to post patches.
->
-> I posted links to the git trees. I can post patches, but they are 
-> *large*. Do you really want me to post them?
+On Fri, 2010-11-12 at 14:00 +0100, Stephane Eranian wrote:
+> I don't understand what aspect you think is messy. When you are sampling
+> cache misses, you expect to get the tuple (instr addr, data addr, latency,
+> data source). 
 
-Yes, and they have to be split up into something reviewable.
+Its the data source thing I have most trouble with -- see below. The
+latency isn't immediately clear either, I mean the larger the bubble the
+more hits the instruction will get, so there should be a correlation
+between samples and latency.
 
->
->> To summarize what I was trying to express in the thread, I think this is
->> not the right long term architecture but am not opposed to it as a short
->> term solution. I think having a new virtio device is a bad design choice
->> but am not totally opposed to it.
->
-> Ok! (I agree (that this should be a short term solution) :) )
->
->> you want to go for the path of integration, you're going to have to fix
->> all of the coding style issues and make the code fit into QEMU. Dropping
->> a bunch of junk into target-i386/ is not making the code fit into QEMU.
->
-> I agree. how about hw/gl for the renderer and hw/ for the virtio module?
+> That is what you get with AMD IBS, Nehalem PEBS-LL and
+> also Itanium D-EAR. I am sure IBM Power has something similar as well.
+> To collect this, you can either store the info in registers (AMD, Itanium)
+> or in a buffer (PEBS). But regardless of that you will always have to expose
+> the tuple. We have a solution for two out of 4 fields that reuses the existing
+> infrastructure. We need something else for the other two.
 
-That would be fine.
+Well, if Intel PEBS, IA64 and PPC64 all have a data source thing we can
+simply add PERF_SAMPLE_SOURCE or somesuch and use that. 
 
->> If you post just what you have now in patch form, I can try to provide
->> more concrete advice ignoring the coding style problems.
->
-> I can post patches, although I dont think LKML would appreciate the 
-> volume! I can post them to the qemu list if you do.
+Do IA64/PPC64 have latency fields as well? PERF_SAMPLE_LATENCY would
+seem to be the thing to use in that case.
 
-Yes, qemu is where I was suggesting you post them.
+BTW, what's the status of perf on IA64? And do we really still care
+about that platform, its pretty much dead isn't it?
 
-Regards,
+> We should expect that in the future PMUs will collect more than code addresses. 
 
-Anthony Liguori
+Sure, but I hate stuff that counts multiple events on a single base like
+IBS does, and LL is similar to that, its a fetch retire counter and then
+you report where fetch was satisfied from. So in effect you're measuring
+l1/l2/l3/dram hit/miss all at the same time but on a fetch basis.
 
-> -Ian
-
+Note that we need proper userspace for such crap as well, and libpfm
+doesn't count, we need a full analysis tool in perf itself.
