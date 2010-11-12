@@ -1,39 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933035Ab0KLWAj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 17:00:39 -0500
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:60381 "HELO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753527Ab0KLWAf (ORCPT
+	id S933119Ab0KLWCv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 17:02:51 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:48661 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932938Ab0KLWCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 17:00:35 -0500
-X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Nov 2010 17:00:35 EST
+	Fri, 12 Nov 2010 17:02:47 -0500
+Date: Fri, 12 Nov 2010 17:02:45 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
+cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/RFT] OHCI: Fix for regression in 2.6.37-rc1 since commit
+ 3df7169e7
+In-Reply-To: <AANLkTikgzdggq4HdBiS7M_6qs1vKbZRkbR70Y=m2JxVu@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1011121702001.22449-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1289594026.22931.388.camel@groeck-laptop>
-References: <1289594026.22931.388.camel@groeck-laptop>
-Date: Fri, 12 Nov 2010 13:53:50 -0800
-Message-ID: <AANLkTimERGh2yGGX_E_N4ajxg_-0QTFS54QSKj2+AAfF@mail.gmail.com>
-Subject: Re: [lm-sensors] Location for thermal drivers
-From: Phil Pokorny <ppokorny@penguincomputing.com>
-To: guenter.roeck@ericsson.com
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        lm-sensors@lm-sensors.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 12:33 PM, Guenter Roeck
-<guenter.roeck@ericsson.com> wrote:
-> I think a better location for the driver would be drivers/thermal.
-> drivers/hwmon is not really a good fit, since hwmon support for thermal
-> drivers is optional. Potential problem with drivers/thermal is that
-> there are no thermal drivers in there (yet), and there does not seem to
-> be a maintainer.
+On Fri, 12 Nov 2010, [UTF-8] Pali Rohár wrote:
 
-What is the difference between a "thermal" sensor and a "temperature"
-sensor?  Aren't they the same thing?
+> Hello,
+> 
+> sorry for late. Can I test this patch (with usb shutdown patch) or is wrong?
 
-Why does drivers/thermal exist if there are no drivers in it and no maintainer?
+It is wrong.  You can test it if you like, but it's not going to be 
+accepted into the kernel.
 
-Phil P.
+Alan Stern
+
