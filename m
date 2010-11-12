@@ -1,92 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab0KLPMo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 10:12:44 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:35821 "EHLO
+	id S932502Ab0KLPMp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 10:12:45 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:40795 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932450Ab0KLPMY (ORCPT
+	with ESMTP id S932442Ab0KLPMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Nov 2010 10:12:24 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=A0sVMyVSXXMA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=omOdbC7AAAAA:8 a=Tty9oNO6AAAA:8 a=meVymXHHAAAA:8 a=N56VC1Z3b-zy9rtOjdYA:9 a=UzhZ_sH7CmyWa5jKpMMA:7 a=Moqt5YQ9x8SQcoAnbRLGidgU4bwA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=AjVVRxw9dd0-IgkE:21 a=uLEDjVwJ7mJyNyoX:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=hHUGQOVUbM8A:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=AgZKqvVX_7YeQFwo2cUA:9 a=HHv1o2s-yiuT5b8Wmt8A:7 a=q7QeflhYWY_7-ic_ictTKi94KbMA:4 a=DHQQ7jDAcw4A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101112151222.573331126@goodmis.org>
+Message-Id: <20101112151223.183540991@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Fri, 12 Nov 2010 10:10:46 -0500
+Date: Fri, 12 Nov 2010 10:10:48 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 1/3] tracing: Fix module use of trace_bprintk()
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 3/3] tracing: Fix recursive user stack trace
 References: <20101112151045.672405637@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Fix-module-use-of-trace_bprintk.patch
+Content-Disposition: inline; filename=0003-tracing-Fix-recursive-user-stack-trace.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-On use of trace_printk() there's a macro that determines if the format
-is static or a variable. If it is static, it defaults to __trace_bprintk()
-otherwise it uses __trace_printk().
+The user stack trace can fault when examining the trace. Which
+would call the do_page_fault handler, which would trace again,
+which would do the user stack trace, which would fault and call
+do_page_fault again ...
 
-A while ago, Lai Jiangshan added __trace_bprintk(). In that patch, we
-discussed a way to allow modules to use it. The difference between
-__trace_bprintk() and __trace_printk() is that for faster processing,
-just the format and args are stored in the trace instead of running
-it through a sprintf function. In order to do this, the format used
-by the __trace_bprintk() had to be persistent.
+Thus this is causing a recursive bug. We need to have a recursion
+detector here.
 
-See commit 1ba28e02a18cbdbea123836f6c98efb09cbf59ec
-
-The problem comes with trace_bprintk() where the module is unloaded.
-The pointer left in the buffer is still pointing to the format.
-
-To solve this issue, the formats in the module were copied into kernel
-core. If the same format was used, they would use the same copy (to prevent
-memory leak). This all worked well until we tried to merge everything.
-
-At the time this was written, Lai Jiangshan, Frederic Weisbecker,
-Ingo Molnar and myself were all touching the same code. When this was
-merged, we lost the part of it that was in module.c. This kept out the
-copying of the formats and unloading the module could cause bad pointers
-left in the ring buffer.
-
-This patch adds back (with updates required for current kernel) the
-module code that sets up the necessary pointers.
-
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
+[ Resubmitted by Jiri Olsa ]
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+LKML-Reference: <1289390172-9730-3-git-send-email-jolsa@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/module.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+ kernel/trace/trace.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 437a74a..d190664 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2326,6 +2326,18 @@ static void find_module_sections(struct module *mod, struct load_info *info)
- 	kmemleak_scan_area(mod->trace_events, sizeof(*mod->trace_events) *
- 			   mod->num_trace_events, GFP_KERNEL);
- #endif
-+#ifdef CONFIG_TRACING
-+	mod->trace_bprintk_fmt_start = section_objs(info, "__trace_printk_fmt",
-+					 sizeof(*mod->trace_bprintk_fmt_start),
-+					 &mod->num_trace_bprintk_fmt);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 82d9b81..0215e87 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1284,6 +1284,8 @@ void trace_dump_stack(void)
+ 	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count());
+ }
+ 
++static DEFINE_PER_CPU(int, user_stack_count);
++
+ void
+ ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags, int pc)
+ {
+@@ -1302,6 +1304,18 @@ ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags, int pc)
+ 	if (unlikely(in_nmi()))
+ 		return;
+ 
 +	/*
-+	 * This section contains pointers to allocated objects in the trace
-+	 * code and not scanning it leads to false positives.
++	 * prevent recursion, since the user stack tracing may
++	 * trigger other kernel events.
 +	 */
-+	kmemleak_scan_area(mod->trace_bprintk_fmt_start,
-+			   sizeof(*mod->trace_bprintk_fmt_start) *
-+			   mod->num_trace_bprintk_fmt, GFP_KERNEL);
-+#endif
- #ifdef CONFIG_FTRACE_MCOUNT_RECORD
- 	/* sechdrs[0].sh_size is always zero */
- 	mod->ftrace_callsites = section_objs(info, "__mcount_loc",
++	preempt_disable();
++	if (__get_cpu_var(user_stack_count))
++		goto out;
++
++	__get_cpu_var(user_stack_count)++;
++
++
++
+ 	event = trace_buffer_lock_reserve(buffer, TRACE_USER_STACK,
+ 					  sizeof(*entry), flags, pc);
+ 	if (!event)
+@@ -1319,6 +1333,11 @@ ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags, int pc)
+ 	save_stack_trace_user(&trace);
+ 	if (!filter_check_discard(call, entry, buffer, event))
+ 		ring_buffer_unlock_commit(buffer, event);
++
++	__get_cpu_var(user_stack_count)--;
++
++ out:
++	preempt_enable();
+ }
+ 
+ #ifdef UNUSED
 -- 
 1.7.1
 
