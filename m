@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645Ab0KLA5x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 19:57:53 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:50624 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab0KLA5v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 19:57:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZP6Sp/qAF4Z4gBLLgRakjo5rGEWNBMhAqdBwKc2nTOW45Do7dzDYYODJBpJZjPl7Br
-         uHPss6ogMP4WZvrynNFOxjrM3mTnRPKS1vesSatF0B6wsDxyUNYi1NKKfHnxcSPd8j1Z
-         +VvVpbeYZb3/OhsYEg8zgTMsZHX9U3o/y4jAk=
-Date: Thu, 11 Nov 2010 16:57:41 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Trilok Soni <tsoni@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-arm-msm@vger.kernel.org
-Subject: Re: [RFC v1 PATCH 4/6] input: pmic8058_pwrkey: Add support for power
- key
-Message-ID: <20101112005741.GC17097@core.coreip.homeip.net>
-References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org>
- <1289393281-4459-5-git-send-email-tsoni@codeaurora.org>
- <20101111072107.GA24415@core.coreip.homeip.net>
- <4CDBDAD5.90406@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CDBDAD5.90406@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757344Ab0KLBL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 20:11:27 -0500
+Received: from mga09.intel.com ([134.134.136.24]:13487 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755804Ab0KLBL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 20:11:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,185,1288594800"; 
+   d="scan'208";a="572740203"
+Subject: Re: [PATCH] acpi: Provide decls for standalone compilation of
+ video.h without ACPI (v2)
+From: Zhang Rui <rui.zhang@intel.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, "Brown, Len" <len.brown@intel.com>
+In-Reply-To: <1283694709-8504-1-git-send-email-chris@chris-wilson.co.uk>
+References: <1283693757-8199-1-git-send-email-chris@chris-wilson.co.uk>
+	 <1283694709-8504-1-git-send-email-chris@chris-wilson.co.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 12 Nov 2010 09:12:37 +0800
+Message-ID: <1289524357.8148.1396.camel@rui>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 05:30:21PM +0530, Trilok Soni wrote:
-> Hi Dmitry,
-> 
-> On 11/11/2010 12:51 PM, Dmitry Torokhov wrote:
-> > Hi Trilkok,
-> > 
-> > On Wed, Nov 10, 2010 at 06:17:59PM +0530, Trilok Soni wrote:
-> >> Add support for PMIC8058 power key driven over dedicated KYPD_PWR_N
-> >> pin. It allows the user to specify the amount of time by which the
-> >> power key reporting can be delayed.
-> >>
-> > 
-> > Why do we need to delay KEY_POWER reporting? Do we need to use high
-> > resolution timers or regular timers would do as well? KEY_END
-> > appears to be abused (you don't want to move your cursor to the end
-> > of line, do you?). Also I wonder if header file should reside in
-> > linux/mfd with the rest of pmic8058 components.
-> 
-> Most of the time Mobile devices come with single physical key for
-> POWER, which if pressed for less than 500ms (configurable) then it
-> will only report KEY_END (which say locks the screen on mobile) and if
-> it pressed more than 500ms then it will also report KEY_POWER event
-> too, which will say display menu on your mobile for asking you to
-> suspend/switch off/etc, operations.
-> 
+On Sun, 2010-09-05 at 21:51 +0800, Chris Wilson wrote:
+> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+> Cc: Matthew Garrett <mjg@redhat.com>
+> Cc: Zhang Rui <rui.zhang@intel.com>
+> Cc: Len Brown <len.brown@intel.com>
 
-I see,. If you would have used KEY_SCREENLOCK iinstead of KEY_END I
-would likely not ask this question ;)
+Acked-by: Zhang Rui <rui.zhang@intel.com>
 
-> For the timers I can move from hrtimers to regular timers.
+> ---
+>  include/acpi/video.h |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
 > 
-> For the header file, I can move them to include/linux/mfd too. No
-> problem on that.
-> 
+> diff --git a/include/acpi/video.h b/include/acpi/video.h
+> index 551793c..0e98e67 100644
+> --- a/include/acpi/video.h
+> +++ b/include/acpi/video.h
+> @@ -1,6 +1,10 @@
+>  #ifndef __ACPI_VIDEO_H
+>  #define __ACPI_VIDEO_H
+>  
+> +#include <linux/errno.h> /* for ENODEV */
+> +
+> +struct acpi_device;
+> +
+>  #define ACPI_VIDEO_DISPLAY_CRT  1
+>  #define ACPI_VIDEO_DISPLAY_TV   2
+>  #define ACPI_VIDEO_DISPLAY_DVI  3
+> @@ -26,4 +30,3 @@ static inline int acpi_video_get_edid(struct acpi_device *device, int type,
+>  #endif
+>  
+>  #endif
+> -
 
-I am not even sure we need to keep them in separate header files, but it
-is up to you.
 
-Thanks.
-
--- 
-Dmitry
