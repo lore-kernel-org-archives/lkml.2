@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757147Ab0KLQOy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 11:14:54 -0500
-Received: from caiajhbdccah.dreamhost.com ([208.97.132.207]:41932 "EHLO
-	homiemail-a38.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753410Ab0KLQOw (ORCPT
+	id S932573Ab0KLQPN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 11:15:13 -0500
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:5240 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932337Ab0KLQPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 11:14:52 -0500
-Subject: [PATCH RESEND] aic7xxx: Add a better library-dependency
- description when libdb is needed
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Hannes Reinecke <hare@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 12 Nov 2010 13:14:45 -0300
-Message-ID: <1289578485.2298.0.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Nov 2010 11:15:11 -0500
+From: Lee Schermerhorn <lee.schermerhorn@hp.com>
+To: qemu-devel@nongnu.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org
+Date: Fri, 12 Nov 2010 11:15:06 -0500
+Message-Id: <20101112161506.4425.11535.sendpatchset@localhost6.localdomain6>
+Subject: Announce: Auto/Lazy-migration Patches RFC on linux-numa list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <dave@gnu.org>
+At last weeks' LPC, there was some interest in my patches for Auto/Lazy
+Migration to improve locality and possibly performance of unpinned guest
+VMs on a NUMA platform.  As a result of these conversations I have reposted
+the patches [4 series, ~40 patches] as RFCs to the linux-numa list.  Links
+to threads given below.
 
-While recently building aicasm_symbol.c it failed because I didn't have the berkeley libdb, so no aicdb.h file was created. With this patch I wouldn't have had to gone to google to see what "development library" it was referring to.
-make -C drivers/scsi/aic7xxx/aicasm
-*** Install db development libraries
-bison -d -b aicasm_gram aicasm_gram.y
-mv aicasm_gram.tab.c aicasm_gram.c
-mv aicasm_gram.tab.h aicasm_gram.h
-bison -d -b aicasm_macro_gram -p mm aicasm_macro_gram.y
-mv aicasm_macro_gram.tab.c aicasm_macro_gram.c
-mv aicasm_macro_gram.tab.h aicasm_macro_gram.h
-flex  -oaicasm_scan.c aicasm_scan.l
-flex  -Pmm -oaicasm_macro_scan.c aicasm_macro_scan.l
-gcc -I/usr/include -I. aicasm.c aicasm_symbol.c aicasm_gram.c aicasm_macro_gram.c aicasm_scan.c aicasm_macro_scan.c -o aicasm -ldb
-aicasm_symbol.c:48: fatal error: aicdb.h: No such file or directory
-compilation terminated.
-make[4]: *** [aicasm] Error 1
-make[3]: *** [drivers/scsi/aic7xxx/aicasm/aicasm] Error 2
-make[2]: *** [drivers/scsi/aic7xxx] Error 2
-
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- drivers/scsi/aic7xxx/aicasm/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/scsi/aic7xxx/aicasm/Makefile b/drivers/scsi/aic7xxx/aicasm/Makefile
-index b98c5c1..b399d46 100644
---- a/drivers/scsi/aic7xxx/aicasm/Makefile
-+++ b/drivers/scsi/aic7xxx/aicasm/Makefile
-@@ -49,7 +49,7 @@ aicdb.h:
- 	 elif [ -e "/usr/include/db_185.h" ]; then		\
- 		echo "#include <db_185.h>" > aicdb.h;		\
- 	 else							\
--		echo "*** Install db development libraries";	\
-+		echo "*** Install Berkeley DB (libdb) development libraries";	\
- 	 fi
- 
- clean:
--- 
-1.7.1
+I have rebased the patches atop 3Nov10 mmotm series [2.6.36 + 3nov mmotm].
+The patched kernel builds, boots and survives some fairly heavy testing on
+an 8 node istanbul x86_64.  Under heavy load, I do encounter a race in the
+somewhat optional migration cache.  Currently this generates a warning and
+carries on, but the one migration cache entry and related page is then
+wedged.  This would need to be resolved.
 
 
+The series/threads in the order applied:
 
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+[PATCH/RFC 0/14] Shared Policy Overview
+http://markmail.org/message/trvpl3t7gimvwht6
+
+[PATCH/RFC 0/8] numa - Migrate-on-Fault
+http://markmail.org/message/mdwbcitql5ka4uws
+
+[PATCH/RFC 0/11] numa - Automatic-migration
+http://markmail.org/message/zik3itmqed65mol2
+
+[PATCH/RFC 1/5] numa - migration cache - core implementation
+http://markmail.org/message/xvck7enyezx6chyi
+
+RESEND: [PATCH/RFC 1/5] numa - migration cache - core implementation
+http://markmail.org/message/xgvvrnn2nk4nsn2e
+
+	resend to add back the patch description missing from 1st attempt.
+
 
 
 
