@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933077Ab0KLVlQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 16:41:16 -0500
-Received: from kroah.org ([198.145.64.141]:41588 "EHLO coco.kroah.org"
+	id S933092Ab0KLVlT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 16:41:19 -0500
+Received: from kroah.org ([198.145.64.141]:41595 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933026Ab0KLVlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 16:41:09 -0500
+	id S933048Ab0KLVlK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 16:41:10 -0500
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
 Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 02/19] tty: Fix formatting in tty.h
-Date: Fri, 12 Nov 2010 13:40:49 -0800
-Message-Id: <1289598066-10112-2-git-send-email-gregkh@suse.de>
+Subject: [PATCH 04/19] nozomi: Fix warning from the previous TIOCGCOUNT changes
+Date: Fri, 12 Nov 2010 13:40:51 -0800
+Message-Id: <1289598066-10112-4-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101112213215.GB9294@kroah.com>
 References: <20101112213215.GB9294@kroah.com>
@@ -21,28 +21,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-Someone added a new ldisc number and messed up the tabbing. Fix it before
-anyone else copies it.
+Just remove a now unused variable
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/tty.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/char/nozomi.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 2a75474..c7ea9bc 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -50,7 +50,7 @@
- #define N_V253		19	/* Codec control over voice modem */
- #define N_CAIF		20      /* CAIF protocol for talking to modems */
- #define N_GSM0710	21	/* GSM 0710 Mux */
--#define N_TI_WL	22	/* for TI's WL BT, FM, GPS combo chips */
-+#define N_TI_WL		22	/* for TI's WL BT, FM, GPS combo chips */
+diff --git a/drivers/char/nozomi.c b/drivers/char/nozomi.c
+index dd3f9b1..294d03e 100644
+--- a/drivers/char/nozomi.c
++++ b/drivers/char/nozomi.c
+@@ -1828,7 +1828,6 @@ static int ntty_ioctl(struct tty_struct *tty, struct file *file,
+ 		      unsigned int cmd, unsigned long arg)
+ {
+ 	struct port *port = tty->driver_data;
+-	void __user *argp = (void __user *)arg;
+ 	int rval = -ENOIOCTLCMD;
  
- /*
-  * This character is the same as _POSIX_VDISABLE: it cannot be used as
+ 	DBG1("******** IOCTL, cmd: %d", cmd);
 -- 
 1.7.1
 
