@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757748Ab0KLRCl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 12:02:41 -0500
-Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:43160 "EHLO
-	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757560Ab0KLRCl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 12:02:41 -0500
-X-Greylist: delayed 2394 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Nov 2010 12:02:40 EST
-Subject: Re: [PATCH/RFC] MM slub: add a sysfs entry to show the calculated
- number of fallback slabs
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-In-Reply-To: <alpine.DEB.2.00.1011120911310.11746@router.home>
-References: <1289561309.1972.30.camel@castor.rsk>
-	 <alpine.DEB.2.00.1011120911310.11746@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 12 Nov 2010 16:22:44 +0000
-Message-ID: <1289578964.1972.43.camel@castor.rsk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+	id S932745Ab0KLRFA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 12:05:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:18792 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757558Ab0KLRE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 12:04:59 -0500
+Message-ID: <4CDD73AF.8070505@redhat.com>
+Date: Fri, 12 Nov 2010 12:04:47 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Jeff Layton <jlayton@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, "Ted Ts'o" <tytso@mit.edu>,
+        linux-kernel@vger.kernel.org, esandeen@redhat.com, jmoyer@redhat.com,
+        linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>, lmcilroy@redhat.com
+Subject: Re: [PATCH] clear PageError bit in msync & fsync
+References: <20101109114422.3918e7f6@annuminas.surriel.com>	<20101109142109.224267d0@corrin.poochiereds.net>	<4CD9A209.6070807@redhat.com>	<20101109210715.GJ3099@thunk.org>	<4CD9BA08.2000002@redhat.com>	<20101109134139.c6f9f6dc.akpm@linux-foundation.org>	<4CDCC457.9030400@redhat.com> <20101112105250.75f01670@tlielax.poochiereds.net>
+In-Reply-To: <20101112105250.75f01670@tlielax.poochiereds.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-12 at 09:13 -0600, Christoph Lameter wrote:
-> On Fri, 12 Nov 2010, Richard Kennedy wrote:
-> 
-> > On my desktop workloads (kernel compile etc) I'm seeing surprisingly
-> > little slab fragmentation. Do you have any suggestions for test cases
-> > that will fragment the memory?
-> 
-> Do a massive scan through huge amounts of files that triggers inode and
-> dentry reclaim?
+On 11/12/2010 10:52 AM, Jeff Layton wrote:
 
-thanks, I'll give it a try.
+> Now, process A issues an fsync. He gets an error but his data was
+> flushed to disk just fine. Is that also incorrect behavior?
 
-> > + * Note that this can give the wrong answer if the user has changed the
-> > + * order of this slab via sysfs.
-> 
-> Not good. Maybe have an additional counter in kmem_cache_node instead?
+I suspect it is better for fsync to return an error when
+it wasn't process A's error (but there was an error), than
+to pretend everything was just fine when in fact an error
+did happen.
 
+When getting an error, the program can retry the write
+(to redirty the pages) and retry the IO by calling fsync
+again.
 
-I know it's not ideal. Of course there already is a counter in
-CONFIG_SLUB_STATS but it only counts the total number of fallback slabs
-issued since boot time.
-I'm not sure if I can reliably decrement a fallback counter when a slab
-get freed. If the size was changed then we could have slabs with several
-different sizes, and off the top of my head I'm not sure if I can
-identify which ones were created as fallback slabs. I don't suppose
-there's a spare flag anywhere. 
+If no real error happened, at worst it gets to do the
+IO twice.
 
-I'll give this some more thought.
-
-regards
-Richard   
-
+-- 
+All rights reversed
