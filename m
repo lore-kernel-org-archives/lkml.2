@@ -1,60 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab0KLByy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 20:54:54 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38469 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab0KLByw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 20:54:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=lSX3KIe7EMbC5+1XJ/Y0d8DCsbpooPv0dOhhqx3K02XVmlZOF1vbQKbzW8IL8OiCG4
-         R4SflR1xQq0Wv5BOVbjzT7aUto1AScqUB9tfCcNskO6HFT/YWMhmeQSGzpSPdIMKRoIE
-         HokdwtmchPcnwAoG5VYEHxJEmS7alb6lD52dg=
-MIME-Version: 1.0
-In-Reply-To: <1289473363-29440-5-git-send-email-tj@kernel.org>
-References: <1289473363-29440-1-git-send-email-tj@kernel.org>
-	<1289473363-29440-5-git-send-email-tj@kernel.org>
-Date: Thu, 11 Nov 2010 20:54:51 -0500
-Message-ID: <AANLkTimAx0+nXF+yRKyr28H8uYxbsiZizkKG7v0b6HEq@mail.gmail.com>
-Subject: Re: [PATCH 4/9] x86: Initialize 32bit logical apicid mapping early
- during boot
-From: Brian Gerst <brgerst@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
-        yinghai@kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1756351Ab0KLB6B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 20:58:01 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:41769 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753148Ab0KLB6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 20:58:00 -0500
+Date: Fri, 12 Nov 2010 12:57:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russ Gorby <richardx.r.gorby@intel.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: linux-next: build failure after merge of the final tree (tty tree
+ related)
+Message-Id: <20101112125751.7f364d58.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__12_Nov_2010_12_57_51_+1100_8xoS=YtTgE86SAiz"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 6:02 AM, Tejun Heo <tj@kernel.org> wrote:
-> On x86_32, non-standard logical apicid mapping can be used by
-> different NUMA setups and the mapping is queried while bringing up
-> each CPU using apic->cpu_to_logical_apicid() to build
-> cpu_2_logical_apicid[] array.  The logical apicid is then used to
-> deliver IPIs and determine NUMA configuration.
->
-> Unfortunately, initializing at SMP bring up is too late for percpu
-> setup making static percpu variables setup w/o considering NUMA.  This
-> also is different from how x86_64 is configured making the code
-> difficult to follow and maintain.
->
-> This patch updates logical apicid mapping handling such that,
->
-> * early_percpu variable x86_cpu_to_logical_apicid replaces
->  cpu_2_logical_apicid[].
+--Signature=_Fri__12_Nov_2010_12_57_51_+1100_8xoS=YtTgE86SAiz
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You are missing code in setup_percpu.c to copy the values from the
-early array to the percpu variable.  This isn't handled automatically.
+Hi Greg,
 
-Also make sure that any direct use of the percpu variable (ie. not via
-early_per_cpu()) can happen only after percpu setup.
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
---
-Brian Gerst
+drivers/serial/ifx6x60.c: In function 'ifx_spi_reset':
+drivers/serial/ifx6x60.c:928: error: implicit declaration of function 'msle=
+ep'
+
+Caused by commit af3b8881f4c9852eefe9c7f1a997b3ecf580561b ("ifx6x60: SPI
+protocol driver for Infineon 6x60 modem").  An include is missing
+(linux/delay.h).  See Rule 1 in Documentation/SubmitChecklist.
+
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__12_Nov_2010_12_57_51_+1100_8xoS=YtTgE86SAiz
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM3J8fAAoJEDMEi1NhKgbs/9wH/j7bihjQ6fMdQI5Jar8z9eny
+AudVgRiGqVx5SIhnRS02VUIySuZpcPCwjPewY1LTqLcH68xfE1gJYyKtnbLRcc7q
+ZZsZ4jvJai7dsuqqu/hzdZe5HLWvlJJsVqVFHbRRZglFiBsC8BEppaeOmu/8JiFH
+Optzsuvdu/SIxNWwYWiWTaxb2D6Hd7VJrfE7Mc5GPl0dqnAFnjAVtwD+d4TEwgr0
+7Wqfh9C/pzRzIQ+3iA9opqmg50iF5jzHEl9LZ66yXjhjCPM8LHyRhKrUoBNzKUwU
+ikEwbVVQgBZ7JQZoqmN+uL+Qe0eBDvWTldfvj+9dm5krDyVW9ddtxxx+0Yh16j4=
+=N5F7
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__12_Nov_2010_12_57_51_+1100_8xoS=YtTgE86SAiz--
