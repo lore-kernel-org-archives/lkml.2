@@ -1,111 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab0KLOv1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 09:51:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932381Ab0KLOvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 09:51:25 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Dongdong Deng <dongdong.deng@windriver.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 3/3] x86: Avoid calling arch_trigger_all_cpu_backtrace() at the same time
-Date: Fri, 12 Nov 2010 09:50:55 -0500
-Message-Id: <1289573455-3410-3-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1289573455-3410-1-git-send-email-dzickus@redhat.com>
-References: <1289573455-3410-1-git-send-email-dzickus@redhat.com>
+	id S1757638Ab0KLO5p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 09:57:45 -0500
+Received: from syscomptechweb.com ([72.55.168.116]:43124 "EHLO
+	cl-t085-170cl.privatedns.com" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1753493Ab0KLO5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 09:57:44 -0500
+Message-ID: <53c1f39b01c61412fbd61a4c3b72e1ee.squirrel@www.harbal123.com>
+Date: Fri, 12 Nov 2010 18:41:22 +0400
+Subject: Interesting deal
+From: "Mr. Michael Hardwick Tomalin" <michael.tomalin@g.pl>
+Reply-To: michaeltomalin@g.pl
+User-Agent: SquirrelMail/1.4.21
+MIME-Version: 1.0
+Content-Type: multipart/mixed;boundary="----=_20101112184122_45415"
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cl-t085-170cl.privatedns.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - g.pl
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dongdong Deng <dongdong.deng@windriver.com>
+------=_20101112184122_45415
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
 
-The spin_lock_debug/rcu_cpu_stall detector uses
-trigger_all_cpu_backtrace() to dump cpu backtrace.
-Therefore it is possible that trigger_all_cpu_backtrace()
-could be called at the same time on different CPUs, which
-triggers and 'unknown reason NMI' warning. The following case
-illustrates the problem:
 
-      CPU1                    CPU2                     ...   CPU N
-                       trigger_all_cpu_backtrace()
-                       set "backtrace_mask" to cpu mask
-                               |
-generate NMI interrupts  generate NMI interrupts       ...
-    \                          |                               /
-     \                         |                              /
 
-The "backtrace_mask" will be cleaned by the first NMI interrupt
-at nmi_watchdog_tick(), then the following NMI interrupts generated
-by other cpus's arch_trigger_all_cpu_backtrace() will be taken as
-unknown reason NMI interrupts.
+Greeting,
 
-This patch uses a test_and_set to avoid the problem, and stop the
-arch_trigger_all_cpu_backtrace() from calling to avoid dumping a
-double cpu backtrace info when there is already a
-trigger_all_cpu_backtrace() in progress.
+My name is Mr. Michael Hardwick Tomalin, I live and work in
+Abu Dhabi UAE. I have an urgent business which I believe will
+interest you. Find the enclose for details.
 
-Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
-Reviewed-by: Bruce Ashfield <bruce.ashfield@windriver.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: x86@kernel.org
-CC: linux-kernel@vger.kernel.org
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- arch/x86/kernel/apic/hw_nmi.c |   24 ++++++++++++++++++++++++
- 1 files changed, 24 insertions(+), 0 deletions(-)
+For any reason you cannot open that attachment, please let me
+know so that I can resend it in the body of the mail, thank you.
 
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index f349647..d892896 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -27,9 +27,27 @@ u64 hw_nmi_get_sample_period(void)
- /* For reliability, we're prepared to waste bits here. */
- static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
- 
-+/* "in progress" flag of arch_trigger_all_cpu_backtrace */
-+static unsigned long backtrace_flag;
-+
- void arch_trigger_all_cpu_backtrace(void)
- {
- 	int i;
-+	unsigned long flags;
-+
-+	/*
-+	 * Have to disable irq here, as the
-+	 * arch_trigger_all_cpu_backtrace() could be
-+	 * triggered by "spin_lock()" with irqs on.
-+	 */
-+	local_irq_save(flags);
-+
-+	if (test_and_set_bit(0, &backtrace_flag))
-+		/*
-+		 * If there is already a trigger_all_cpu_backtrace() in progress
-+		 * (backtrace_flag == 1), don't output double cpu dump infos.
-+		 */
-+		goto out_restore_irq;
- 
- 	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
- 
-@@ -42,6 +60,12 @@ void arch_trigger_all_cpu_backtrace(void)
- 			break;
- 		mdelay(1);
- 	}
-+
-+	clear_bit(0, &backtrace_flag);
-+	smp_mb__after_clear_bit();
-+
-+out_restore_irq:
-+	local_irq_restore(flags);
- }
- 
- static int __kprobes
--- 
-1.7.2.3
+I wait for your response, Thank you.
+
+Regards
+
+Michael Hardwick Tomalin
+------=_20101112184122_45415
+Content-Type: application/pdf; name="Interesting deal.pdf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="Interesting deal.pdf"
+
+JVBERi0xLjUNCiW1tbW1DQoxIDAgb2JqDQo8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFIvTGFu
+Zyhlbi1VUykgPj4NCmVuZG9iag0KMiAwIG9iag0KPDwvVHlwZS9QYWdlcy9Db3VudCAxL0tpZHNb
+IDMgMCBSXSA+Pg0KZW5kb2JqDQozIDAgb2JqDQo8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL1Jl
+c291cmNlczw8L0ZvbnQ8PC9GMSA1IDAgUj4+L1Byb2NTZXRbL1BERi9UZXh0L0ltYWdlQi9JbWFn
+ZUMvSW1hZ2VJXSA+Pi9NZWRpYUJveFsgMCAwIDYxMiA3OTJdIC9Db250ZW50cyA0IDAgUi9Hcm91
+cDw8L1R5cGUvR3JvdXAvUy9UcmFuc3BhcmVuY3kvQ1MvRGV2aWNlUkdCPj4vVGFicy9TPj4NCmVu
+ZG9iag0KNCAwIG9iag0KPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0xlbmd0aCAyNTI4Pj4NCnN0cmVh
+bQ0KeJyVWVmP28gRfh9g/kM/JIAIzNC8j0d749izySZAVvsQ7OZBoloHzCHpJiVZ/z51dJNsZXqk
+wBiPNKzurq7jq6+Kn5aPDx/+GoowEsvt40MoAvgXijzygygReVD6CTx5fXwIxA7/+/L48Pvii/ec
+LJSUgxcvDt5zvGh2/ZP3H7H8+fHhM2z4aTntFIalnxfznX5fCIesPjUrk/tl89KPtegvqMpF/AN/
+rVDFVy9ZSAEapoteeGHIEsoXv3gpK17tQTBbSK9c1MIrFl9pndqc4Wm0qL6JZfsKsvTX+oD/N08g
+Jla4p4BVn8bDGi8MFt/wq/jnFgyzPVRSiT0+koq0ABnxce1liyNJ/QU2pscr+LCm508Cj2WT4u6/
+0Sf6jraWG1r4UcEjOnPtME4K1g5t49yyY5aMop/hKDQdnatWqBKd3vvihW+OT8VZHYZDs0Mh1nvb
+1jVo1p71X1m2EW3XtWqAJUf7OhdBVm7Eqxfit3a7NQFVSYELtHngP5QX7JW6ptPWkn61W4GGZxfA
+hqwceb7ppVhLOkJu9akue2V+WVhGcNkLTRvboqhbe8u+CXik0AvW7bAXqA8oTzbpfVf2RIGf2otv
+HRQn98uGs31f0A8puGFDJus4EwZtUNkM4gV9QCFIxuwreNaevOccA3wjpkwAx0Nssvc35KQGM4xF
++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
+gbqDuKJvNSYomnQ4VCPmd5OXRnZgTZtKU96UrAyG31jT1dIgey8h+Xpsz814xMkqoHDnhX11PbUh
+ai5lh2PQYJ6CTlod+FFkb3XD4lFRTLLWFA46OnrngUMIE91Xgwhnwcf5QWjvfUsP+F3eSQ6iNJ9k
+P01lVii543cVG/cb4zjAnLe2uHVc8n+oFuXozNkrY3ohPA7Q9qZ6yFp8HVnA/I0whswIIvqt8LWd
+6Z166AeJ9Vo9ikI/SW0V5ur+F0cE9tINCmVuZHN0cmVhbQ0KZW5kb2JqDQo1IDAgb2JqDQo8PC9U
+eXBlL0ZvbnQvU3VidHlwZS9UeXBlMS9OYW1lL0YxL0Jhc2VGb250L0Fybm8jMjBQcm8jMjBTbVRl
+eHQvRW5jb2RpbmcvV2luQW5zaUVuY29kaW5nL0ZvbnREZXNjcmlwdG9yIDYgMCBSL0ZpcnN0Q2hh
+ciAzMi9MYXN0Q2hhciAxMjEvV2lkdGhzIDggMCBSPj4NCmVuZG9iag0KNiAwIG9iag0KPDwvVHlw
+ZS9Gb250RGVzY3JpcHRvci9Gb250TmFtZS9Bcm5vIzIwUHJvIzIwU21UZXh0L0ZsYWdzIDMyL0l0
+YWxpY0FuZ2xlIDAvQXNjZW50IDY3NS9EZXNjZW50IC0zMjUvQ2FwSGVpZ2h0IDY3NS9BdmdXaWR0
+aCA1NzcvTWF4V2lkdGggMTYxNS9Gb250V2VpZ2h0IDQwMC9YSGVpZ2h0IDM5OS9TdGVtViA1Ny9G
+b250QkJveFsgLTE0NCAtMzI1IDE1NzYgNjc1XSA+Pg0KZW5kb2JqDQo3IDAgb2JqDQo8PC9BdXRo
+b3IoZ3JlZW4pL0NyZWF0b3Io/v8ATQBpAGMAcgBvAHMAbwBmAHQArgAgAE8AZgBmAGkAYwBlACAA
+VwBvAHIAZAAgADIAMAAwADcpL0NyZWF0aW9uRGF0ZShEOjIwMTAxMTEyMTUwOTEyKSAvTW9kRGF0
+ZShEOjIwMTAxMTEyMTUwOTEyKSAvUHJvZHVjZXIo/v8ATQBpAGMAcgBvAHMAbwBmAHQArgAgAE8A
+ZgBmAGkAYwBlACAAVwBvAHIAZAAgADIAMAAwADcpPj4NCmVuZG9iag0KOCAwIG9iag0KWyAxOTkg
+MCAwIDAgNDg0IDcxOSAwIDAgNDE1IDQxNiAwIDAgMjE4IDI5NSAyMTggNDYyIDQ4NCAwIDQ4NCAw
+IDQ4NCA0ODQgNDg0IDQ4NCAwIDAgMCAwIDAgMCAwIDAgMCA2MjggNTg2IDY4MiA3MTYgNTczIDAg
+NzE1IDc2MCAzMzIgMzMwIDY1NyA1NjIgODY2IDc0NSA3NTMgMCAwIDYyMyA0OTQgNjUzIDcxNiAw
+IDAgMCA1NzEgMCAwIDAgMCAwIDAgMCA0MTUgNDk5IDQxMyA1MDcgNDI5IDI3MSA0NDggNTA1IDI0
+NiAwIDQ1NiAyMzkgNzY0IDUxMCA1MDAgNTAwIDUwMCAzMzIgMzUyIDMwMyA0OTYgNDMyIDY1MiA0
+MDggNDQyXSANCmVuZG9iag0KOSAwIG9iag0KPDwvVHlwZS9YUmVmL1NpemUgOS9XWyAxIDQgMl0g
+L1Jvb3QgMSAwIFIvSW5mbyA3IDAgUi9JRFs8QkJDQzYwMjRBQ0IwREM0RTlDNTkwMEI5QzkyODZB
+QjA+PEJCQ0M2MDI0QUNCMERDNEU5QzU5MDBCOUM5Mjg2QUIwPl0gL0ZpbHRlci9GbGF0ZURlY29k
+ZS9MZW5ndGggNDQ+Pg0Kc3RyZWFtDQp4nGNgAIL//xmBpCADA4jyg1BtYIoxBkxxt4MpHgMwxSsM
+oX4wMAAAukYFPA0KZW5kc3RyZWFtDQplbmRvYmoNCnhyZWYNCjAgMTANCjAwMDAwMDAwMDAgNjU1
+MzUgZg0KMDAwMDAwMDAxNyAwMDAwMCBuDQowMDAwMDAwMDc4IDAwMDAwIG4NCjAwMDAwMDAxMzQg
+MDAwMDAgbg0KMDAwMDAwMDM0OCAwMDAwMCBuDQowMDAwMDAyOTUxIDAwMDAwIG4NCjAwMDAwMDMx
+MjAgMDAwMDAgbg0KMDAwMDAwMzM0NyAwMDAwMCBuDQowMDAwMDAzNTc2IDAwMDAwIG4NCjAwMDAw
+MDM4OTQgMDAwMDAgbg0KdHJhaWxlcg0KPDwvU2l6ZSAxMC9Sb290IDEgMCBSL0luZm8gNyAwIFIv
+SURbPEJCQ0M2MDI0QUNCMERDNEU5QzU5MDBCOUM5Mjg2QUIwPjxCQkNDNjAyNEFDQjBEQzRFOUM1
+OTAwQjlDOTI4NkFCMD5dID4+DQpzdGFydHhyZWYNCjQxMzUNCiUlRU9GDQp4cmVmDQowIDANCnRy
+YWlsZXINCjw8L1NpemUgMTAvUm9vdCAxIDAgUi9JbmZvIDcgMCBSL0lEWzxCQkNDNjAyNEFDQjBE
+QzRFOUM1OTAwQjlDOTI4NkFCMD48QkJDQzYwMjRBQ0IwREM0RTlDNTkwMEI5QzkyODZBQjA+XSAv
+UHJldiA0MTM1L1hSZWZTdG0gMzg5ND4+DQpzdGFydHhyZWYNCjQ0OTANCiUlRU9G
+------=_20101112184122_45415--
+
 
