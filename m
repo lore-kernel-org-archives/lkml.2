@@ -1,184 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933199Ab0KLXds (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 18:33:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42161 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313Ab0KLXdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 18:33:47 -0500
-Date: Sat, 13 Nov 2010 00:33:43 +0100
-From: Jan Kara <jack@suse.cz>
-To: Valdis.Kletnieks@vt.edu
-Cc: Andrew Morton <akpm@linux-foundation.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: mmotm 2010-11-09 - lockdep splat in ext4/quota code
-Message-ID: <20101112233343.GA12153@quack.suse.cz>
-References: <201011100003.oAA03O3c015222@imap1.linux-foundation.org>
- <19688.1289503541@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <19688.1289503541@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757602Ab0KLXki (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 18:40:38 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:59301 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab0KLXkg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 18:40:36 -0500
+Subject: Re: [PATCH] Improve clocksource unstable warning
+From: john stultz <johnstul@us.ibm.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        pc@us.ibm.com
+In-Reply-To: <AANLkTimAfULHTkyLVpGv5r3DcSfVXzsgGiHgTdamNpt2@mail.gmail.com>
+References: <80b5a10ac1a6ef51afca3c113b624bf1b5049452.1289427381.git.luto@mit.edu>
+	 <AANLkTi=s+0i36qd-bd3=MdeiJS-TThos9RmeUCsfHyy=@mail.gmail.com>
+	 <AANLkTimAfULHTkyLVpGv5r3DcSfVXzsgGiHgTdamNpt2@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 12 Nov 2010 15:40:21 -0800
+Message-ID: <1289605221.3292.53.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 11-11-10 14:25:41, Valdis.Kletnieks@vt.edu wrote:
-> On Tue, 09 Nov 2010 15:31:15 PST, akpm@linux-foundation.org said:
-> > The mm-of-the-moment snapshot 2010-11-09-15-31 has been uploaded to
-> > 
-> >    http://userweb.kernel.org/~akpm/mmotm/
+On Fri, 2010-11-12 at 16:52 -0500, Andrew Lutomirski wrote:
+> On Fri, Nov 12, 2010 at 4:31 PM, john stultz <johnstul@us.ibm.com> wrote:
+> > Ideas:
+> > 1) Maybe should we check that we get two sequential failures where the
+> > cpu seems fast before we throw out the TSC? This will still fall over
+> > in some stall cases (ie: a poor rt task hogging the cpu  for 10
+> > minutes, pausing for a 10th of a second and then continuing to hog the
+> > cpu).
+> >
+> > 2) We could look at the TSC delta, and if it appears outside the order
+> > of 2-10x faster (i don't think any cpus scale up even close to 10x in
+> > freq, but please correct me if so), then assume we just have been
+> > blocked from running and don't throw out the TSC.
+> >
+> > 3) Similar to #2 we could look at the max interval that the watchdog
+> > clocksource provides, and if the TSC delta is greater then that, avoid
+> > throwing things out. This combined with #2 might narrow out the false
+> > positives fairly well.
+> >
+> > Any additional thoughts here?
 > 
-> Still seeing this just after quotas get turned on ext4. First seen in
-> 2.6.36-mmotm1022, but problem has apparently been there since
-> 2.6.36-rc5-mmotm0922 (oldest kernel I have lying around).
-  Thanks for the report. In fact, it is a false positive caused by the fact
-that EXT4(inode)->i_data_sem for quota file inode would need a special
-locking class (or subclass) but does not have one. I'll have a look into
-implementing that sometime next week hopefully.
+> Yes.  As far as I know, the watchdog doesn't give arbitrary values
+> when it wraps; it just wraps.  Here's a possible heuristic, in
+> pseudocode:
+> 
+> wd_now_1 = (read watchdog)
+> cs_now = (read clocksource)
+> 
+> cs_elapsed = cs_now - cs_last;
+> wd_elapsed = wd_now_1 - wd_last;
+> 
+> if ( abs(wd_elapsed - cs_elapsed) < MAX_DELTA)
+>   return;  // We're OK.
+> 
+> wd_now_2 = (read watchdog again)
+> if (abs(wd_now_1 - wd_now_2) > MAX_DELTA / 2)
+>   bail;  // The clocksource might be unstable, but we either just
+> lagged or the watchdog is unstable, and in either case we don't gain
+> anything by marking the clocksource unstable.
 
-								Honza
+This is more easily done by just bounding the clocksource read:
+wd_now_1 = watchdog->read()
+cs_now = clocksource->read()
+wd_now_2 = watchdog->read()
 
-> The last few relevant commands from rc.sysinit:
-> 
-> /sbin/quotaon -aug
-> dd if=/dev/urandom of=/var/lib/random-seed count=1 bs=512   <- this triggers the trace
-> 
-> [   48.967833] =======================================================
-> [   48.968162] [ INFO: possible circular locking dependency detected ]
-> [   48.968411] 2.6.37-rc1-mmotm1109 #1
-> [   48.968553] -------------------------------------------------------
-> [   48.968592] dd/3253 is trying to acquire lock:
-> [   48.968592]  (&s->s_dquot.dqio_mutex){+.+...}, at: [<ffffffff81141b0a>] dquot_commit+0x26/0xda
-> [   48.968592] 
-> [   48.968592] but task is already holding lock:
-> [   48.968592]  (&s->s_dquot.dqptr_sem){++++..}, at: [<ffffffff81143e70>] __dquot_free_space+0x66/0x16b
-> [   48.968592] 
-> [   48.968592] which lock already depends on the new lock.
-> [   48.968592] 
-> [   48.968592] 
-> [   48.968592] the existing dependency chain (in reverse order) is:
-> [   48.968592] 
-> [   48.968592] -> #2 (&s->s_dquot.dqptr_sem){++++..}:
-> [   48.968592]        [<ffffffff8106b441>] lock_acquire+0x100/0x126
-> [   48.968592]        [<ffffffff81565615>] down_read+0x42/0x51
-> [   48.968592]        [<ffffffff81143e70>] __dquot_free_space+0x66/0x16b
-> [   48.968592]        [<ffffffff81199a70>] dquot_free_block+0x19/0x2a
-> [   48.968592]        [<ffffffff8119fc4f>] ext4_free_blocks+0x75b/0x810
-> [   48.968592]        [<ffffffff81196f0f>] ext4_ext_truncate+0x3af/0x853
-> [   48.968592]        [<ffffffff8117a02e>] ext4_truncate+0x98/0x51a
-> [   48.968592]        [<ffffffff810c46a4>] vmtruncate+0x3f/0x4b
-> [   48.968592]        [<ffffffff8117af55>] ext4_setattr+0x305/0x3a7
-> [   48.968592]        [<ffffffff8110c6d9>] notify_change+0x1a1/0x2a1
-> [   48.968592]        [<ffffffff810f49fa>] do_truncate+0x67/0x84
-> [   48.968592]        [<ffffffff811029f5>] do_last+0x4ce/0x5b2
-> [   48.968592]        [<ffffffff81102d21>] do_filp_open+0x248/0x64a
-> [   48.968592]        [<ffffffff810f5481>] do_sys_open+0x60/0xfb
-> [   48.968592]        [<ffffffff810f5537>] sys_open+0x1b/0x1d
-> [   48.968592]        [<ffffffff810027eb>] system_call_fastpath+0x16/0x1b
-> [   48.968592] 
-> [   48.968592] -> #1 (&ei->i_data_sem){++++..}:
-> [   48.968592]        [<ffffffff8106b441>] lock_acquire+0x100/0x126
-> [   48.968592]        [<ffffffff81565615>] down_read+0x42/0x51
-> [   48.968592]        [<ffffffff81179383>] ext4_map_blocks+0x3e/0x20e
-> [   48.968592]        [<ffffffff81179e0b>] ext4_getblk+0x71/0x19b
-> [   48.968592]        [<ffffffff81179f46>] ext4_bread+0x11/0x61
-> [   48.968592]        [<ffffffff8118b297>] ext4_quota_read+0x86/0xf0
-> [   48.968592]        [<ffffffff81145131>] v2_read_header+0x1e/0x4f
-> [   48.968592]        [<ffffffff811455de>] v2_read_file_info+0x20/0x2ae
-> [   48.968592]        [<ffffffff81144423>] vfs_load_quota_inode+0x292/0x448
-> [   48.968592]        [<ffffffff8114480e>] dquot_quota_on_path+0x4c/0x55
-> [   48.968592]        [<ffffffff8118bc97>] ext4_quota_on+0x123/0x175
-> [   48.968592]        [<ffffffff81146cf2>] do_quotactl+0x1d1/0x465
-> [   48.968592]        [<ffffffff81147083>] sys_quotactl+0xfd/0x11a
-> [   48.968592]        [<ffffffff810027eb>] system_call_fastpath+0x16/0x1b
-> [   48.968592] 
-> [   48.968592] -> #0 (&s->s_dquot.dqio_mutex){+.+...}:
-> [   48.968592]        [<ffffffff8106ac2d>] __lock_acquire+0xa4c/0xd4e
-> [   48.968592]        [<ffffffff8106b441>] lock_acquire+0x100/0x126
-> [   48.968592]        [<ffffffff81564bbf>] __mutex_lock_common+0x5d/0x56c
-> [   48.968592]        [<ffffffff81565174>] mutex_lock_nested+0x34/0x39
-> [   48.968592]        [<ffffffff81141b0a>] dquot_commit+0x26/0xda
-> [   48.968592]        [<ffffffff8118d622>] ext4_write_dquot+0x65/0x87
-> [   48.968592]        [<ffffffff8118d682>] ext4_mark_dquot_dirty+0x3e/0x49
-> [   48.968592]        [<ffffffff81141790>] mark_all_dquot_dirty+0x22/0x48
-> [   48.968592]        [<ffffffff81143f43>] __dquot_free_space+0x139/0x16b
-> [   48.968592]        [<ffffffff81199a70>] dquot_free_block+0x19/0x2a
-> [   48.968592]        [<ffffffff8119fc4f>] ext4_free_blocks+0x75b/0x810
-> [   48.968592]        [<ffffffff81196f0f>] ext4_ext_truncate+0x3af/0x853
-> [   48.968592]        [<ffffffff8117a02e>] ext4_truncate+0x98/0x51a
-> [   48.968592]        [<ffffffff810c46a4>] vmtruncate+0x3f/0x4b
-> [   48.968592]        [<ffffffff8117af55>] ext4_setattr+0x305/0x3a7
-> [   48.968592]        [<ffffffff8110c6d9>] notify_change+0x1a1/0x2a1
-> [   48.968592]        [<ffffffff810f49fa>] do_truncate+0x67/0x84
-> [   48.968592]        [<ffffffff811029f5>] do_last+0x4ce/0x5b2
-> [   48.968592]        [<ffffffff81102d21>] do_filp_open+0x248/0x64a
-> [   48.968592]        [<ffffffff810f5481>] do_sys_open+0x60/0xfb
-> [   48.968592]        [<ffffffff810f5537>] sys_open+0x1b/0x1d
-> [   48.968592]        [<ffffffff810027eb>] system_call_fastpath+0x16/0x1b
-> [   48.968592] 
-> [   48.968592] other info that might help us debug this:
-> [   48.968592] 
-> [   49.458584] 5 locks held by dd/3253:
-> [   49.458584]  #0:  (&sb->s_type->i_mutex_key#13){+.+.+.}, at: [<ffffffff810f49ee>] do_truncate+0x5b/0x84
-> [   49.458584]  #1:  (&sb->s_type->i_alloc_sem_key#5){+.+...}, at: [<ffffffff8110c6c1>] notify_change+0x189/0x2a1
-> [   49.458584]  #2:  (jbd2_handle){+.+...}, at: [<ffffffff811ad5b4>] start_this_handle+0x57a/0x605
-> [   49.458584]  #3:  (&ei->i_data_sem){++++..}, at: [<ffffffff81196bf1>] ext4_ext_truncate+0x91/0x853
-> [   49.458584]  #4:  (&s->s_dquot.dqptr_sem){++++..}, at: [<ffffffff81143e70>] __dquot_free_space+0x66/0x16b
-> [   49.458584] 
-> [   49.458584] stack backtrace:
-> [   49.458584] Pid: 3253, comm: dd Not tainted 2.6.37-rc1-mmotm1109 #1
-> [   49.458584] Call Trace:
-> [   49.458584]  [<ffffffff81069591>] print_circular_bug+0xa8/0xb7
-> [   49.458584]  [<ffffffff8106ac2d>] __lock_acquire+0xa4c/0xd4e
-> [   49.458584]  [<ffffffff81141b0a>] ? dquot_commit+0x26/0xda
-> [   49.458584]  [<ffffffff8106b441>] lock_acquire+0x100/0x126
-> [   49.458584]  [<ffffffff81141b0a>] ? dquot_commit+0x26/0xda
-> [   49.458584]  [<ffffffff81564bbf>] __mutex_lock_common+0x5d/0x56c
-> [   49.458584]  [<ffffffff81141b0a>] ? dquot_commit+0x26/0xda
-> [   49.458584]  [<ffffffff81141ef2>] ? dquot_mark_dquot_dirty+0x27/0x7a
-> [   49.458584]  [<ffffffff81141b0a>] ? dquot_commit+0x26/0xda
-> [   49.458584]  [<ffffffff81565174>] mutex_lock_nested+0x34/0x39
-> [   49.458584]  [<ffffffff81141b0a>] dquot_commit+0x26/0xda
-> [   49.458584]  [<ffffffff8118d622>] ext4_write_dquot+0x65/0x87
-> [   49.458584]  [<ffffffff8118d682>] ext4_mark_dquot_dirty+0x3e/0x49
-> [   49.458584]  [<ffffffff81141790>] mark_all_dquot_dirty+0x22/0x48
-> [   49.458584]  [<ffffffff81143f43>] __dquot_free_space+0x139/0x16b
-> [   49.458584]  [<ffffffff81199a70>] dquot_free_block+0x19/0x2a
-> [   49.458584]  [<ffffffff8119fc4f>] ext4_free_blocks+0x75b/0x810
-> [   49.458584]  [<ffffffff811ada1d>] ? jbd2_journal_extend+0x5d/0xb8
-> [   49.458584]  [<ffffffff81196f0f>] ext4_ext_truncate+0x3af/0x853
-> [   49.458584]  [<ffffffff810a5759>] ? trace_preempt_on+0x15/0x28
-> [   49.458584]  [<ffffffff810d63f6>] ? unmap_mapping_range+0x279/0x288
-> [   49.458584]  [<ffffffff8117a02e>] ext4_truncate+0x98/0x51a
-> [   49.458584]  [<ffffffff810d63f6>] ? unmap_mapping_range+0x279/0x288
-> [   49.458584]  [<ffffffff8106b861>] ? trace_hardirqs_on_caller+0x117/0x13b
-> [   49.458584]  [<ffffffff8106b892>] ? trace_hardirqs_on+0xd/0xf
-> [   49.458584]  [<ffffffff810c46a4>] vmtruncate+0x3f/0x4b
-> [   49.458584]  [<ffffffff8117af55>] ext4_setattr+0x305/0x3a7
-> [   49.458584]  [<ffffffff8110c6d9>] notify_change+0x1a1/0x2a1
-> [   49.458584]  [<ffffffff810f49fa>] do_truncate+0x67/0x84
-> [   49.458584]  [<ffffffff810ff92d>] ? get_write_access+0x49/0x50
-> [   49.458584]  [<ffffffff81566794>] ? _raw_spin_unlock+0x30/0x69
-> [   49.458584]  [<ffffffff8156a040>] ? sub_preempt_count+0x35/0x48
-> [   49.458584]  [<ffffffff811e0833>] ? security_path_truncate+0x48/0x4d
-> [   49.458584]  [<ffffffff811029f5>] do_last+0x4ce/0x5b2
-> [   49.458584]  [<ffffffff81102d21>] do_filp_open+0x248/0x64a
-> [   49.458584]  [<ffffffff810a5759>] ? trace_preempt_on+0x15/0x28
-> [   49.458584]  [<ffffffff8110d8ce>] ? alloc_fd+0x17c/0x18e
-> [   49.458584]  [<ffffffff81566794>] ? _raw_spin_unlock+0x30/0x69
-> [   49.458584]  [<ffffffff8156a040>] ? sub_preempt_count+0x35/0x48
-> [   49.458584]  [<ffffffff8110d8ce>] ? alloc_fd+0x17c/0x18e
-> [   49.458584]  [<ffffffff810f5481>] do_sys_open+0x60/0xfb
-> [   49.458584]  [<ffffffff81565fde>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> [   49.458584]  [<ffffffff810f5537>] sys_open+0x1b/0x1d
-> [   49.458584]  [<ffffffff810027eb>] system_call_fastpath+0x16/0x1b
-> 
-> 
+if (((wd_now_2 - wd_now_1)&watchdog->mask) > SOMETHING_SMALL)
+	bail; // hit an SMI or some sort of long preemption
+
+> if ( wd_elapsed < cs_elapsed and ( (cs_elapsed - wd_elapsed) %
+> wd_wrapping_time ) < (something fairly small) )
+>   bail;  // The watchdog most likely wrapped.
+
+Huh. The modulo bit may need tweaking as its not immediately clear its
+right. Maybe the following is clearer?:
+
+if ((cs_elapsed > wd_wrapping_time) 
+	&& (abs((cs_elapsed % wd_wrapping_time)-wd_elapsed) < MAX_DELTA)
+	// should be ok.
 
 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> The idea is that there are three obvious causes for false positives.
+> 
+> 1. Something caused the watchdog itself to lag.  In this case, the
+> second watchdog read will differ from the first one by a lot and we'll
+> bail.
+> 
+> 2. The TSC wrapped in the time between two watchdog checks.  I don't
+> think that this is very likely on x86 CPUs.  (Tsn't the TSC always 64
+> bits?  By the time that a 20GHz CPU wraps a 64-bit TSC, you're
+> probably already replaced the computer.)
+
+Yea, current TSCs won't wrap in our lifetime. And even if it ever does
+get close, it will have to wrap between watchdog checks to be an issue
+(since twos-compliment math makes the subtraction work even if it does
+roll over).
+
+
+> 3. The watchdog wrapped in the time between two watchdog checks.  In
+> this case, unless something else went wrong simultaneously, we'll
+> detect it.
+> 
+> On the other hand, the chance that the TSC was unstable by almost
+> exactly a multiple of the watchdog wrapping time is pretty unlikely.
+> 
+> 
+> If we're using a non-TSC clocksource, then you could get false
+> positives if that clocksource wraps, but maybe the watchdog is
+> unnecessary in that case.
+
+Yea. Some similar extra modulo conditions could probably handle that
+too. But again, the only clocksource that needs the watchdog is the TSC.
+
+thanks
+-john
+
+
