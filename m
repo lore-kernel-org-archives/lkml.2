@@ -1,77 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab0KLJ5s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 04:57:48 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58233 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756629Ab0KLJ5p (ORCPT
+	id S1756738Ab0KLKAg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 05:00:36 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18241 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753246Ab0KLKAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 04:57:45 -0500
-Date: Fri, 12 Nov 2010 10:57:39 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Nicolas Pitre <nico@fluxnic.net>, linux-kernel@vger.kernel.org,
-        Colin Cross <ccross@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] RFC: nomadik: expand timesource to 63 bits
-Message-ID: <20101112095739.GH18358@pengutronix.de>
-References: <1289466356-16697-1-git-send-email-linus.walleij@stericsson.com> <AANLkTi=ysONhPQBTbVNRgTOx5PGEM=STaUYY6RnUpfES@mail.gmail.com>
+	Fri, 12 Nov 2010 05:00:35 -0500
+Message-ID: <4CDD0FD0.1020807@kernel.org>
+Date: Fri, 12 Nov 2010 01:58:40 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=ysONhPQBTbVNRgTOx5PGEM=STaUYY6RnUpfES@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com
+Subject: Re: [PATCH UPDATED 4/9] x86: Initialize 32bit logical apicid mapping
+ early during boot
+References: <1289473363-29440-1-git-send-email-tj@kernel.org> <1289473363-29440-5-git-send-email-tj@kernel.org> <4CDD0B1F.4060701@kernel.org>
+In-Reply-To: <4CDD0B1F.4060701@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John,
-
-On Thu, Nov 11, 2010 at 01:33:41PM -0800, john stultz wrote:
-> On Thu, Nov 11, 2010 at 1:05 AM, Linus Walleij
-> <linus.walleij@stericsson.com> wrote:
-> > After wraparound-problems in sched_clock() we expand the 32bit
-> > timer in the MTU from 32 to 63 bits so the scheduling and
-> > timeline is more stable. At current max operating frequency for
-> > the MTU, 133 MHz, this should be sufficient for rougly 2200
-> > years.
-> >
-> [snip]
-> > What we need to know is whether it's OK to simply blow up
-> > clocksource to 63 bits like this. In that case this
-> > simplification should also apply to Orion, meaning that it
-> > would base it's sched_clock() on the clocksource, using
-> > simply clocksource_cyc2ns() cutting down the code
-> > significantly.
+On 11/12/2010 01:38 AM, Tejun Heo wrote:
+> On x86_32, non-standard logical apicid mapping can be used by
+> different NUMA setups and the mapping is queried while bringing up
+> each CPU using apic->cpu_to_logical_apicid() to build
+> cpu_2_logical_apicid[] array.  The logical apicid is then used to
+> deliver IPIs and determine NUMA configuration.
 > 
-> I would advise against expanding the hardware counter to 63bits via
-> software at the clocksource layer. This breaks the
-> CLOCK_SOURCE_IS_CONTINUOUS flag rule (since the hardware will wrap
-> below the mask value if not updated in the software layer). And as
-> Thomas said, this will cause problems in the nohz idle limiting code
-> (which makes sure we wake up before the clocksource wraps).
+> Unfortunately, initializing at SMP bring up is too late for percpu
+> setup making static percpu variables setup w/o considering NUMA.  This
+> also is different from how x86_64 is configured making the code
+> difficult to follow and maintain.
 > 
-> Instead, I'd use this extension at the sched_clock level, where it
-> seems reasonable that it will be called frequently enough to not brake
-> the cnt32_to_63 magic.
-Instead of implementing sched_clock for each architecture seperatly,
-wouldn't it be nice to have a generic sched_clock that uses the
-architecture's clocksource?  I tried to implement that some time ago,
-but tglx shoot it down because of locking problems.
+> This patch updates logical apicid mapping handling such that,
+> 
+> * early_percpu variable x86_cpu_to_logical_apicid replaces
+>   cpu_2_logical_apicid[].
+> 
+> * apic->cpu_to_logical_apicid() is called once during get_smp_config()
+>   and the output is recorded in x86_cpu_to_logical_apicid.
+> 
+> * apic->cpu_to_logical_apicid() is allowed to return BAD_APICID if it
+>   can't determine the value that early during boot.  In this case, the
+>   mapping will be initialized during SMP bring up by reading APIC LDR
+>   as before.
+> 
+> - Brian Gerst spotted that setup_per_cpu_areas() was not copying the
+>   early x86_cpu_to_logical_apicid to the permanent percpu area and
+>   es7000_32 is using per_cpu() instead of early_per_cpu(), which in
+>   itself is not incorrect as they're never used before setup_per_cpu()
+>   but still confusing.  Both updated.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Brian Gerst <brgerst@gmail.com>
+> ---
+> Updated as per Brian's comment.  The rest of the patchset apply okay
+> on top of this change.  The git tree is updated accordingly.
+> 
+> Thanks.
+> 
+>  arch/x86/include/asm/apic.h      |   18 +++++++++++++-----
+>  arch/x86/include/asm/smp.h       |    3 +++
+>  arch/x86/kernel/apic/apic.c      |   36 ++++++++++++++++++++++++++++--------
+>  arch/x86/kernel/apic/bigsmp_32.c |   26 ++++++++++++++------------
+>  arch/x86/kernel/apic/es7000_32.c |   27 ++++++++++-----------------
+>  arch/x86/kernel/apic/ipi.c       |    8 ++++----
+>  arch/x86/kernel/apic/numaq_32.c  |   15 +++++++--------
+>  arch/x86/kernel/apic/summit_32.c |   36 ++++++++++++++++--------------------
+>  arch/x86/kernel/setup_percpu.c   |    7 +++++++
+>  arch/x86/kernel/smpboot.c        |   10 +++-------
+>  10 files changed, 105 insertions(+), 81 deletions(-)
+> 
+> Index: work/arch/x86/kernel/apic/apic.c
+> ===================================================================
+> --- work.orig/arch/x86/kernel/apic/apic.c
+> +++ work/arch/x86/kernel/apic/apic.c
+> @@ -1202,6 +1207,7 @@ static void __cpuinit lapic_setup_esr(vo
+>   */
+>  void __cpuinit setup_local_APIC(void)
+>  {
+> +	int cpu = smp_processor_id();
+>  	unsigned int value, queued;
+>  	int i, j, acked = 0;
+>  	unsigned long long tsc = 0, ntsc;
+> @@ -1343,21 +1362,19 @@ void __cpuinit setup_local_APIC(void)
+>  	 * TODO: set up through-local-APIC from through-I/O-APIC? --macro
+>  	 */
+>  	value = apic_read(APIC_LVT0) & APIC_LVT_MASKED;
+> -	if (!smp_processor_id() && (pic_mode || !value)) {
+> +	if (!cpu && (pic_mode || !value)) {
+>  		value = APIC_DM_EXTINT;
+> -		apic_printk(APIC_VERBOSE, "enabled ExtINT on CPU#%d\n",
+> -				smp_processor_id());
+> +		apic_printk(APIC_VERBOSE, "enabled ExtINT on CPU#%d\n", cpu);
+>  	} else {
+>  		value = APIC_DM_EXTINT | APIC_LVT_MASKED;
+> -		apic_printk(APIC_VERBOSE, "masked ExtINT on CPU#%d\n",
+> -				smp_processor_id());
+> +		apic_printk(APIC_VERBOSE, "masked ExtINT on CPU#%d\n", cpu);
+>  	}
+>  	apic_write(APIC_LVT0, value);
+> 
+>  	/*
+>  	 * only the BP should see the LINT1 NMI signal, obviously.
+>  	 */
+> -	if (!smp_processor_id())
+> +	if (!cpu)
+>  		value = APIC_DM_NMI;
+>  	else
+>  		value = APIC_DM_NMI | APIC_LVT_MASKED;
+> @@ -1369,7 +1386,7 @@ void __cpuinit setup_local_APIC(void)
+> 
+>  #ifdef CONFIG_X86_MCE_INTEL
+>  	/* Recheck CMCI information after local APIC is up on CPU #0 */
+> -	if (smp_processor_id() == 0)
+> +	if (cpu == 0)
+>  		cmci_recheck();
+>  #endif
+>  }
 
-Maybe doing that became easier since then?
+those replacing smp_processor_id() with cpu should be in another patch.
 
-Best regards
-Uwe
+Thanks
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+	Yinghai
