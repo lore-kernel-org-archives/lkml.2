@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757124Ab0KLKtV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 05:49:21 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:2571 "EHLO
+	id S1756828Ab0KLKwX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 05:52:23 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:22094 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756352Ab0KLKtT (ORCPT
+	with ESMTP id S1756167Ab0KLKwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 05:49:19 -0500
+	Fri, 12 Nov 2010 05:52:22 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=J5792S4tEO+6aRY58WC8VAqwoqjr9ZgstoCV7eRXIudHtpDFkuAFzb6R9W6Wz5eel/
-         KyGMvpZ5GBRQT8R1TyOg==
+        b=Y4DutMNQGAHkTaQs+yw/PToN0/5KeC6OO3qs31/ZGMsDWmftV10fLPvH+F5jiWTEdv
+         UP5yxn1lcpd6vEyEP6kQ==
 MIME-Version: 1.0
-In-Reply-To: <20101112102748.GA8020@basil.fritz.box>
+In-Reply-To: <20101112104804.GB8020@basil.fritz.box>
 References: <1289492117-18066-1-git-send-email-andi@firstfloor.org>
 	<1289492117-18066-2-git-send-email-andi@firstfloor.org>
 	<4CDC2DDD.50508@linux.vnet.ibm.com>
@@ -22,11 +22,10 @@ References: <1289492117-18066-1-git-send-email-andi@firstfloor.org>
 	<4CDC4628.8020109@linux.vnet.ibm.com>
 	<20101111194936.GJ18718@basil.fritz.box>
 	<1289505587.2084.193.camel@laptop>
-	<20101111201259.GL18718@basil.fritz.box>
-	<1289507858.2084.195.camel@laptop>
-	<20101112102748.GA8020@basil.fritz.box>
-Date: Fri, 12 Nov 2010 11:49:16 +0100
-Message-ID: <AANLkTi=idvNVyccD53Xwjp5mWfJb=S8UXekhXNqhzRPC@mail.gmail.com>
+	<AANLkTin3khDj2FpJ-SY+xhLykiKer23uAjRdBM4m8gXD@mail.gmail.com>
+	<20101112104804.GB8020@basil.fritz.box>
+Date: Fri, 12 Nov 2010 11:52:19 +0100
+Message-ID: <AANLkTin1Tw5x0J8iW5jNZJNN5t-8BBpt4qvQ84kGRzd=@mail.gmail.com>
 Subject: Re: [PATCH 2/3] perf: Add support for extra parameters for raw events
 From: Stephane Eranian <eranian@google.com>
 To: Andi Kleen <andi@firstfloor.org>
@@ -40,44 +39,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 11:27 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> On Thu, Nov 11, 2010 at 09:37:38PM +0100, Peter Zijlstra wrote:
->> On Thu, 2010-11-11 at 21:12 +0100, Andi Kleen wrote:
->> > > Also, I think we can use the same mechanism to program the
->> > > PEBS-load-latency MSR, right?
+On Fri, Nov 12, 2010 at 11:48 AM, Andi Kleen <andi@firstfloor.org> wrote:
+>> I don't think you need special syntax. You can simply come up with
+>> the 64-bit raw hex value. corey recently added a small utility to do
+>> this via libpfm4: perf stat -e `evt2raw unhalted_core_cycles:u` ....
+>
+> I added a small patch to perf to read event mappings from a flat mapping file.
+>
+>> > Also, I think we can use the same mechanism to program the
+>> > PEBS-load-latency MSR, right?
 >> >
->> > I haven't looked at that, but if it's a per core resource
->> > the infrastructure can be reused at least.
->>
->> Can't remember if the load-latency msr is per-core, but its an extra reg
->> that needs to be set.
+>> Yes, we could hardcode the latency the same way.
 >
-> Ok. I guess it shouldn't be too hard to add.
+> At least right now it would still need a constraint, because only
+> one counter can use it.
 >
-> Load-latency is pretty useful too.
->
-Yes, it is to figure out where cache misses are.
 
->>
->> The nhm/wsm LBR config msr is per-core though, so that could use your
->> infrastructure too.
->
-> Stephane mentioned that too. Not right now, but perhaps later I'll
-> look at using this.
->
-The difficulty with PEBS-LL (load latency) is not so much the encoding of the
-latency. It is more how to expose the data back to user. You get a full PEBS
-record for each miss. So you get the PEBS machine state + data addr, miss
-latency, and data source (where did the line come from). We have already
-discussed how to expose machine state in general. I'll work on a patch for this.
-So we can get the general PEBS machine state out. However, the question is
-how do we expose data addr, latency, data source? We can reuse the
-SAMPLE_ADDR for the data address. Sample IP would point to the load
-instruction (with help from LBR to correct the off by one issue). For
-the latency
-and data source, I proposed using pseudo regs and leveraging the sampled machine
-state mechanism. An alternative may be to define a new record type that would b
-generic enough to be reusable, for instance { instr_addr, data_addr,
-latency, data_src, flags; }.
-
-But let's fix OFFCORE_RESPONSE_* first.
+True. But there are already contraint tables for PEBS. For instance,
+if I use INST_RETIRED (0x3c) with PEBS, then it cannot use a fixed
+counter. So you can do a constraint for MEM_LOAD_RETIRED:LAT_ABOVE_THRES
+the same way (include the umask).
