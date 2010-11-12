@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab0KLCen (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 21:34:43 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:42141 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188Ab0KLCel (ORCPT
+	id S1754071Ab0KLChi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 21:37:38 -0500
+Received: from x35.xmailserver.org ([64.71.152.41]:59091 "EHLO
+	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753064Ab0KLChh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 21:34:41 -0500
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=lS9FhW_GDbgA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=NtpouL_lAAAA:8 a=QyXUC8HyAAAA:8 a=meVymXHHAAAA:8 a=_El_dS-V1HuMqFBqbv4A:9 a=RdW5RjCLN8d2PK1wnRVaCFrlHX0A:4 a=PUjeQqilurYA:10 a=sx0aeZmlSPoA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [PATCH][BUG FIX] leds: Fix bug with reading NAS SS4200 dmi code
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Dave Hansen <dave@sr71.net>, Richard Purdie <rpurdie@linux.intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 11 Nov 2010 21:34:38 -0500
-Message-ID: <1289529278.12418.391.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 11 Nov 2010 21:37:37 -0500
+X-AuthUser: davidel@xmailserver.org
+Date: Thu, 11 Nov 2010 18:35:51 -0800 (PST)
+From: Davide Libenzi <davidel@xmailserver.org>
+X-X-Sender: davide@davide-lnx1
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Kyle Moffett <kyle@moffetthome.net>,
+        Alexander Shishkin <virtuoso@slind.org>, Valdis.Kletnieks@vt.edu,
+        LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCHv6 0/7] system time changes notification
+In-Reply-To: <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6>
+Message-ID: <alpine.DEB.2.00.1011111813070.32375@davide-lnx1>
+References: <1289503802-22444-1-git-send-email-virtuoso@slind.org> <22542.1289507293@localhost> <20101111205123.GC10585@shisha.kicks-ass.net> <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6> <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
+ <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
+X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While running randconfg with ktest.pl I stumbled upon this bug:
+On Thu, 11 Nov 2010, Thomas Gleixner wrote:
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000003
-IP: [<ffffffff815fe44f>] strstr+0x39/0x86
-PGD 0 
-Oops: 0000 [#1] SMP 
-last sysfs file: 
-CPU 0 
-Modules linked in:
+> > [...]
+> > 
+> > This would also enable the folks who want to support things like PHY
+> > hardware clocks (for very-low-latency ethernet timestamping).  It
+> > would resolve the enumeration problem; instead of 0, 1, 2, ... as
+> > constants, they would show up in sysfs and be open()able.  Ideally you
+> > would be able to set up ntpd to slew the "realtime" clock by following
+> > a particular hardware clock, or vice versa.
+> 
+> There are other plans for the various interesting clocks floating
+> around which look pretty good.
+> 
+> But what you folks really want for this stuff is an extension to
+> timerfd as you want to be able to poll, right?
+> 
+> So what about the following:
+> 
+> Add a new flag TDF_NOTIFY_CLOCK_WAS_SET to the timerfd flags. Now this
+> flag adds the timer to a separate list, which gets woken up when the
+> clock is set.
 
-Pid: 1, comm: swapper Not tainted 2.6.37-rc1-test+ #6 DG965MQ/        
-RIP: 0010:[<ffffffff815fe44f>]  [<ffffffff815fe44f>] strstr+0x39/0x86
-RSP: 0018:ffff8800797cbd80  EFLAGS: 00010213
-RAX: 0000000000000000 RBX: 0000000000000003 RCX: ffffffffffffffff
-RDX: 0000000000000000 RSI: ffffffff82eb7ac9 RDI: 0000000000000003
-RBP: ffff8800797cbda0 R08: ffff880000000003 R09: 0000000000030725
-R10: ffff88007d294c00 R11: 0000000000014c00 R12: 0000000000000020
-R13: ffffffff82eb7ac9 R14: ffffffffffffffff R15: ffffffff82eb7b08
-FS:  0000000000000000(0000) GS:ffff88007d200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000003 CR3: 0000000002a1d000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper (pid: 1, threadinfo ffff8800797ca000, task ffff8800797d0000)
-Stack:
- 00000000000000ba ffffffff82eb7ac9 ffffffff82eb7ab8 00000000000000ba
- ffff8800797cbdf0 ffffffff81e2050f ffff8800797cbdc0 00000000815f913b
- ffff8800797cbe00 ffffffff82eb7ab8 0000000000000000 0000000000000000
-Call Trace:
- [<ffffffff81e2050f>] dmi_matches+0x117/0x154
- [<ffffffff81e205d7>] dmi_check_system+0x3d/0x8d
- [<ffffffff82e1ad25>] ? nas_gpio_init+0x0/0x2c8
- [<ffffffff82e1ad49>] nas_gpio_init+0x24/0x2c8
- [<ffffffff820d750d>] ? wm8350_led_init+0x0/0x20
- [<ffffffff82e1ad25>] ? nas_gpio_init+0x0/0x2c8
- [<ffffffff810022f7>] do_one_initcall+0xab/0x1b2
- [<ffffffff82da749c>] kernel_init+0x248/0x331
- [<ffffffff8100e624>] kernel_thread_helper+0x4/0x10
- [<ffffffff82da7254>] ? kernel_init+0x0/0x331
+What chu talkin bout Willis? :)
+This borders the interface multiplexing, if I got your idea correctly.
+Timerfd is about expiring private timers, not about getting out 
+notifications about system-wide time changes.
+I understand your concerns about that code, but please do not use timerfd 
+as a sacrificial mule to fit something which IMO does not belong there.
 
 
-Found that the nas_led_whitelist dmi_system_id structure array had no
-NULL end delimiter, causing the dmi_check_system() loop to read an
-undefined entry.
 
-Cc: Dave Hansen <dave@sr71.net>
-Cc: Richard Purdie <rpurdie@linux.intel.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/drivers/leds/leds-ss4200.c b/drivers/leds/leds-ss4200.c
-index a688293..614ebeb 100644
---- a/drivers/leds/leds-ss4200.c
-+++ b/drivers/leds/leds-ss4200.c
-@@ -102,6 +102,7 @@ static struct dmi_system_id __initdata nas_led_whitelist[] = {
- 			DMI_MATCH(DMI_PRODUCT_VERSION, "1.00.00")
- 		}
- 	},
-+	{}
- };
- 
- /*
+- Davide
 
 
