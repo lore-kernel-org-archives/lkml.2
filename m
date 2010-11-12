@@ -1,75 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932598Ab0KLUXT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 15:23:19 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:53560 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932269Ab0KLUXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 15:23:18 -0500
-Subject: Re: [PATCH] RFC: nomadik: expand timesource to 63 bits
-From: john stultz <johnstul@us.ibm.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Rabin VINCENT <rabin.vincent@stericsson.com>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Colin Cross <ccross@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <4CDD18F9.5090005@stericsson.com>
-References: <1289466356-16697-1-git-send-email-linus.walleij@stericsson.com>
-	 <AANLkTi=ysONhPQBTbVNRgTOx5PGEM=STaUYY6RnUpfES@mail.gmail.com>
-	 <20101112095739.GH18358@pengutronix.de> <4CDD120A.2050401@stericsson.com>
-	 <alpine.LFD.2.00.1011121130350.2900@localhost6.localdomain6>
-	 <4CDD18F9.5090005@stericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 12 Nov 2010 12:22:42 -0800
-Message-ID: <1289593362.3292.14.camel@localhost.localdomain>
+	id S932822Ab0KLUZa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 15:25:30 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47696
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932661Ab0KLUZ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 15:25:28 -0500
+Date: Fri, 12 Nov 2010 12:25:53 -0800 (PST)
+Message-Id: <20101112.122553.246519981.davem@davemloft.net>
+To: jasowang@redhat.com
+Cc: rusty@rustcorp.com.au, markmc@redhat.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, mst@redhat.com
+Subject: Re: [V2 PATCH] virtio-net: init link state correctly
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101105025008.3277.87697.stgit@dhcp-91-158.nay.redhat.com>
+References: <20101105025008.3277.87697.stgit@dhcp-91-158.nay.redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-12 at 11:37 +0100, Linus Walleij wrote:
-> Incidentally the dual use of a single free-running timer as both
-> single clocksource and sched_clock() baseline seem to creep up in
-> a lot of embedded platforms...
+From: Jason Wang <jasowang@redhat.com>
+Date: Fri, 05 Nov 2010 10:50:08 +0800
 
-And really, using the same underlying hardware for both isn't a bad
-thing. The main issue is that the product of the clocksource code and
-the sched_clock code have different requirements.
+> For device that supports VIRTIO_NET_F_STATUS, there's no need to
+> assume the link is up and we need to call nerif_carrier_off() before
+> querying device status, otherwise we may get wrong operstate after
+> diver was loaded because the link watch event was not fired as
+> expected.
+> 
+> For device that does not support VIRITO_NET_F_STATUS, we could not get
+> its status through virtnet_update_status() and what we can only do is
+> always assuming the link is up.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-1) sched_clock needs to be a fast lightweight ns value, that wraps on
-64bit boundaries. Performance is very critical. Transient consistency
-errors are acceptable.
-
-2) clocksources care most about correctness, so that the counter is
-never mis-read, and that its is accumulated from once every wrap period.
-Ideally fine adjustment granularity is desired as well (which
-sched_clock doesn't require). Performance is important, but secondary to
-correctness.
-
-So there isn't a problem with the same hardware being used for both, but
-there is an issue trying to base one implementation off of the other.
-
-I do think a generic sched_clock implementation could be useful,
-specifically if it added an accumulation hook so we can more easily and
-generically deal with using 32bit counters. I don't think it should try
-to re-use the clocksource infrastructure code, as I think that may
-stretch that infrastructure too far (ie: having to deal with the
-conflicting assumptions of both interfaces). 
-
-But having arches register a similar read() and cyc2ns conversion hook
-(or freq values to generate such conversion) would probably be a good
-approach.
-
-That said, I don't have the space on my plate to look at this in the
-near term, but I'd be happy to review code.
-
-thanks
--john
-
+I've applied Rusty's submission of this patch which has Michael T.'s
+ACK, etc.
