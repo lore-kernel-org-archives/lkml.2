@@ -1,83 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756128Ab0KLVNA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 16:13:00 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:46181 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755384Ab0KLVNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 16:13:00 -0500
-Subject: Re: [RFC][PATCH 12/22] sched: add runtime reporting for -deadline
- tasks
-From: Raistlin <raistlin@linux.it>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1289579251.2084.316.camel@laptop>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288334202.8661.153.camel@Palantir>  <1289504223.2084.174.camel@laptop>
-	 <1289578543.6525.535.camel@Palantir>  <1289579251.2084.316.camel@laptop>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-EU8d/XT4o/dbfZ8MRkQv"
-Date: Fri, 12 Nov 2010 22:12:45 +0100
-Message-ID: <1289596365.6525.768.camel@Palantir>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756173Ab0KLVQn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 16:16:43 -0500
+Received: from spaceboyz.net ([87.106.131.203]:57050 "EHLO spaceboyz.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753108Ab0KLVQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 16:16:42 -0500
+Date: Fri, 12 Nov 2010 22:16:27 +0100
+From: David Lamparter <equinox@diac24.net>
+To: Patrick McHardy <kaber@trash.net>
+Cc: David Lamparter <equinox@diac24.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Eric Paris <eparis@redhat.com>,
+        Hua Zhong <hzhong@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, paul.moore@hp.com
+Subject: Re: [RFC PATCH] network: return errors if we know tcp_connect failed
+Message-ID: <20101112211627.GC122902@jupiter.n2.diac24.net>
+References: <20101111210341.31350.86916.stgit@paris.rdu.redhat.com>
+ <00c201cb81eb$84e18160$8ea48420$@com>
+ <1289578108.3083.95.camel@localhost.localdomain>
+ <1289578532.3185.265.camel@edumazet-laptop>
+ <20101112163543.GB122902@jupiter.n2.diac24.net>
+ <4CDD7145.8070606@trash.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4CDD7145.8070606@trash.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Nov 12, 2010 at 05:54:29PM +0100, Patrick McHardy wrote:
+> Am 12.11.2010 17:35, schrieb David Lamparter:
+> > On Fri, Nov 12, 2010 at 05:15:32PM +0100, Eric Dumazet wrote:
+> >> Le vendredi 12 novembre 2010 à 11:08 -0500, Eric Paris a écrit :
+> >>
+> >>> 2) What should the generic TCP code (tcp_connect()) do if the skb failed
+> >>> to send.  Should it return error codes back up the stack somehow or
+> >>> should they continue to be ignored?  Obviously continuing to just ignore
+> >>> information we have doesn't make me happy (otherwise I wouldn't have
+> >>> started scratching this itch).  But the point about ENOBUFS is well
+> >>> taken.  Maybe I should make tcp_connect(), or the caller to
+> >>> tcp_connect() more intelligent about specific error codes?
+> >>>
+> >>> I'm looking for a path forward.  If SELinux is rejecting the SYN packets
+> >>> on connect() I want to pass that info to userspace rather than just
+> >>> hanging.  What's the best way to accomplish that?
+> >>>
+> >>
+> >> Eric, if you can differentiate a permanent reject, instead of a
+> >> temporary one (congestion, or rate limiting, or ENOBUF, or ...), then
+> >> yes, you could make tcp_connect() report to user the permanent error,
+> >> and ignore the temporary one.
+> 
+> Indeed. We could even make the NF_DROP return value configurable
+> by encoding it in the verdict.
 
---=-EU8d/XT4o/dbfZ8MRkQv
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> There is no NF_REJECT.
+Ah, sorry, not at home in netfilter, coming from an user perspective here.
 
-On Fri, 2010-11-12 at 17:27 +0100, Peter Zijlstra wrote:
-> > Might be, but what you usually want is something reporting you total
-> > runtime from when you became a -deadline task, which may not be the cas=
-e
-> > of sum_exec_runtime, is it?=20
->=20
-> Correct, it wouldn't be. However since I expect a user to be mostly
-> interested in deltas between two readings, in which case it really
-> doesn't matter, does it?
->
-Good point. So we won't need this new stat anyway.
+> Returning NF_DROP results in -EPERM getting reported back. As Eric
+> noticed, this is ignored for SYN packets.
 
-Thanks,
-Dario
+Hrm. But how do you silently drop packets? This seems counterintuitive
+or even buggy to me; or at least the netfilter DROP target shouldn't use
+this kind of error-reporting drop.
 
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+As food for thought I'd like to pose the following rule:
+iptables -A OUTPUT -m statistic --mode nth --every 5 -j DROP
+which should, to my understanding, still allow the connect to complete,
+even if the first SYN got (silently!...) dropped.
 
-http://blog.linux.it/raistlin / raistlin@ekiga.net /
-dario.faggioli@jabber.org
+Also, i'm *very* sure i was able to trigger a "permission denied" from
+either firewall or route rules; weirdly enough i can't get that on my
+2.6.35.7 router... (poking older boxes to reproduce it right now)
 
---=-EU8d/XT4o/dbfZ8MRkQv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Just for reference some test results: (heavily cropped)
+TL;DR: only tcp-reset and route prohibit work immediately.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEABECAAYFAkzdrc0ACgkQk4XaBE3IOsR58gCdHNV3SOmryoBHy/g1qQSaGC/A
-ky0AoIE6v49X40ommh0x3u9JeGMDUFmf
-=BF/f
------END PGP SIGNATURE-----
++ telnet 74.125.43.105 80
+Connected to 74.125.43.105.
++ iptables -I OUTPUT -p tcp -d 74.125.43.105 --dport 80 -j REJECT
+  # default w/o reject-with is icmp-port-unreachable
++ telnet 74.125.43.105 80
+telnet: connect to address 74.125.43.105: Connection refused
+real    0m3.014s
++ iptables -I OUTPUT -p tcp -d 74.125.43.105 --dport 80 -j REJECT --reject-with tcp-reset
++ telnet 74.125.43.105 80
+telnet: connect to address 74.125.43.105: Connection refused
+real    0m0.007s
++ iptables -I OUTPUT -p tcp -d 74.125.43.105 --dport 80 -j REJECT --reject-with host-prohib
++ telnet 74.125.43.105 80
+telnet: connect to address 74.125.43.105: No route to host
+real    0m3.010s
++ iptables -I OUTPUT -p tcp -d 74.125.43.105 --dport 80 -j REJECT --reject-with admin-prohib
++ telnet 74.125.43.105 80
+telnet: connect to address 74.125.43.105: No route to host
+real    0m3.009s
++ iptables -I OUTPUT -p tcp -d 74.125.43.105 --dport 80 -j REJECT --reject-with net-prohib
++ telnet 74.125.43.105 80
+telnet: connect to address 74.125.43.105: Network is unreachable
+real    0m3.011s
++ iptables -F OUTPUT
++ ip route add prohibit 74.125.43.105
++ ip route flush cache
++ telnet 74.125.43.105 80
+telnet: connect to address 74.125.43.105: Network is unreachable
+real    0m0.007s
 
---=-EU8d/XT4o/dbfZ8MRkQv--
+
+-David
 
