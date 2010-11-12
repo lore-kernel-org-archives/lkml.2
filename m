@@ -1,121 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751295Ab0KLGTJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 01:19:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40057 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750907Ab0KLGTH convert rfc822-to-8bit (ORCPT
+	id S1751579Ab0KLGWG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 01:22:06 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50172 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab0KLGWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 01:19:07 -0500
-From: Nikanth Karthikesan <knikanth@suse.de>
-Organization: suse.de
-To: Myron Stowe <myron.stowe@hp.com>
-Subject: Re: divide error in select_task_rq_fair()
-Date: Fri, 12 Nov 2010 11:52:29 +0530
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, rjenties@google.com
-References: <20101104041236.GA9389@helgaas.com> <1288937844.3234.1.camel@edumazet-laptop> <1289500084.2698.12.camel@zim>
-In-Reply-To: <1289500084.2698.12.camel@zim>
+	Fri, 12 Nov 2010 01:22:05 -0500
+Date: Fri, 12 Nov 2010 07:22:04 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
+        amit.kucheria@canonical.com, eric@eukrea.com
+Subject: Re: [PATCHv4 3/3] ARM: imx: Get the silicon version from the IIM
+	module
+Message-ID: <20101112062204.GE18358@pengutronix.de>
+References: <1289518217-26716-1-git-send-email-Dinh.Nguyen@freescale.com> <1289518217-26716-2-git-send-email-Dinh.Nguyen@freescale.com> <1289518217-26716-3-git-send-email-Dinh.Nguyen@freescale.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201011121152.30204.knikanth@suse.de>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1289518217-26716-3-git-send-email-Dinh.Nguyen@freescale.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 11 November 2010 23:58:04 Myron Stowe wrote:
-> On Fri, 2010-11-05 at 07:17 +0100, Eric Dumazet wrote:
-> > Le jeudi 04 novembre 2010 à 20:00 -0600, Bjorn Helgaas a écrit :
-> > > Is that going to help you debug the problem?  The solution is not going
-> > > to be something like "set NR_CPUS=x".  If NR_CPUS is too small, the
-> > > machine should still *boot*, even if we can't use all the CPUs in the
-> > > box.
-> >
-> > Yes, it will help to understand the layout of cpu / domains and make
-> > appropriate changes.
-> >
-> > Alternative is you send me such a machine :=)
+On Thu, Nov 11, 2010 at 05:30:17PM -0600, Dinh.Nguyen@freescale.com wrote:
+> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 > 
-> I opened a BZ on this issue as it seems to be a regression -
-> https://bugzilla.kernel.org/show_bug.cgi?id=22662
+> Instead of reading the silicon version from ROM, we should
+> read the SREV register from the IIM.
 > 
-> I also, as indicated in the BZ, bisected the kernel which gave the
-> following results and reverting 50f2d7f682f9c0ed58191d0982fe77888d59d162
-> did re-enable booting on the box in question (an HP dl980g7).  Let me
-> know what further info you need or patches to test for debugging this.
+> Freescale has dropped all support for MX51 REV1.0, only MX51
+> REV 2.0 and 3.0 are valid.
 > 
-> Thanks,
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> ---
+>  arch/arm/mach-mx5/clock-mx5x.c |   16 ++++++++++++++++
+>  arch/arm/mach-mx5/cpu.c        |   34 ++++++++++++++++------------------
+>  2 files changed, 32 insertions(+), 18 deletions(-)
 > 
-> commit 50f2d7f682f9c0ed58191d0982fe77888d59d162
-> Author: Nikanth Karthikesan <knikanth@suse.de>
-> Date:   Thu Sep 30 17:34:10 2010 +0530
-> 
->     x86, numa: Assign CPUs to nodes in round-robin manner on fake NUMA
-> 
->     commit d9c2d5ac6af87b4491bff107113aaf16f6c2b2d9 "x86, numa: Use
->  near(er) online node instead of roundrobin for NUMA" changed NUMA
->  initialization on Intel to choose the nearest online node or first node. 
->  Fake NUMA would be better of with round-robin initialization, instead of
->  the all CPUS on first node.  Change the choice of first node, back to
->  round-robin.
-> 
->     For testing NUMA kernel behaviour without cpusets and NUMA aware
->     applications, it would be better to have cpus in different nodes,
->  rather than all in a single node.  With cpusets migration of tasks
->  scenarios cannot not be tested.
-> 
->     I guess having it round-robin shouldn't affect the use cases for all
->  cpus on the first node.
-> 
->     The code comments in arch/x86/mm/numa_64.c:759 indicate that this used
->  to be the case, which was changed by commit d9c2d5ac6.  It changed from
->  roundrobin to nearer or first node.  And I couldn't find any reason for
->  this change in its changelog.
-> 
->     Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
->     Cc: David Rientjes <rientjes@google.com>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> 
-> > Thanks
-> 
+> diff --git a/arch/arm/mach-mx5/clock-mx5x.c b/arch/arm/mach-mx5/clock-mx5x.c
+> index 9216ac1..82779fb 100644
+> --- a/arch/arm/mach-mx5/clock-mx5x.c
+> +++ b/arch/arm/mach-mx5/clock-mx5x.c
+> @@ -780,6 +780,12 @@ static struct clk ahb_clk = {
+>  	.round_rate = _clk_ahb_round_rate,
+>  };
+>  
+> +static struct clk iim_clk = {
+> +	.parent = &ipg_clk,
+> +	.enable_reg = MXC_CCM_CCGR0,
+> +	.enable_shift = MXC_CCM_CCGRx_CG15_OFFSET,
+> +};
+> +
+>  /* Main IP interface clock for access to registers */
+>  static struct clk ipg_clk = {
+>  	.parent = &ahb_clk,
+> @@ -1099,6 +1105,7 @@ static struct clk_lookup mx51_lookups[] = {
+>  	_REGISTER_CLOCK("sdhci-esdhc-imx.0", NULL, esdhc1_clk)
+>  	_REGISTER_CLOCK("sdhci-esdhc-imx.1", NULL, esdhc2_clk)
+>  	_REGISTER_CLOCK(NULL, "cpu_clk", cpu_clk)
+> +	_REGISTER_CLOCK(NULL, "iim_clk", iim_clk)
+>  };
+>  
+>  static struct clk_lookup mx53_lookups[] = {
+> @@ -1107,6 +1114,7 @@ static struct clk_lookup mx53_lookups[] = {
+>  	_REGISTER_CLOCK("imx-uart.2", NULL, uart3_clk)
+>  	_REGISTER_CLOCK(NULL, "gpt", gpt_clk)
+>  	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
+> +	_REGISTER_CLOCK(NULL, "iim_clk", iim_clk)
+>  };
+>  
+>  static void clk_tree_init(void)
+> @@ -1147,6 +1155,10 @@ int __init mx51_clocks_init(unsigned long ckil, unsigned long osc,
+>  	clk_enable(&cpu_clk);
+>  	clk_enable(&main_bus_clk);
+>  
+> +	clk_enable(&iim_clk);
+> +	mx51_revision();
+> +	clk_disable(&iim_clk);
+> +
+>  	/* set the usboh3_clk parent to pll2_sw_clk */
+>  	clk_set_parent(&usboh3_clk, &pll2_sw_clk);
+>  
+> @@ -1182,6 +1194,10 @@ int __init mx53_clocks_init(unsigned long ckil, unsigned long osc,
+>  	clk_enable(&cpu_clk);
+>  	clk_enable(&main_bus_clk);
+>  
+> +	clk_enable(&iim_clk);
+> +	mx53_revision();
+> +	clk_disable(&iim_clk);
+> +
+>  	/* System timer */
+>  	mxc_timer_init(&gpt_clk, MX53_IO_ADDRESS(MX53_GPT1_BASE_ADDR),
+>  		MX53_MXC_INT_GPT);
+> diff --git a/arch/arm/mach-mx5/cpu.c b/arch/arm/mach-mx5/cpu.c
+> index a00d2bc..92cc832 100644
+> --- a/arch/arm/mach-mx5/cpu.c
+> +++ b/arch/arm/mach-mx5/cpu.c
+> @@ -20,37 +20,35 @@
+>  
+>  static int cpu_silicon_rev = -1;
+>  
+> -#define SI_REV 0x48
+> +#define SREV 0x24
+>  
+>  static void query_silicon_parameter(void)
+>  {
+> -	void __iomem *rom = ioremap(MX51_IROM_BASE_ADDR, MX51_IROM_SIZE);
+> +	void __iomem *iim_base;
+>  	u32 rev;
+>  
+> -	if (!rom) {
+> -		cpu_silicon_rev = -EINVAL;
+> -		return;
+> -	}
+> +	if (cpu_is_mx51())
+> +		iim_base = MX51_IO_ADDRESS(MX51_IIM_BASE_ADDR);
+> +	else if (cpu_is_mx53())
+> +		iim_base = MX53_IO_ADDRESS(MX53_IIM_BASE_ADDR);
+>  
+> -	rev = readl(rom + SI_REV);
+> +	rev = readl(iim_base + SREV) & 0xff;
+>  	switch (rev) {
+> -	case 0x1:
+> -		cpu_silicon_rev = MX51_CHIP_REV_1_0;
+> -		break;
+> -	case 0x2:
+> -		cpu_silicon_rev = MX51_CHIP_REV_1_1;
+> +	case 0x0:
+> +		if (cpu_is_mx51())
+> +			cpu_silicon_rev = MX51_CHIP_REV_2_0;
+> +		else if (cpu_is_mx53())
+> +			cpu_silicon_rev = MX53_CHIP_REV_1_0;
+>  		break;
+>  	case 0x10:
+> -		cpu_silicon_rev = MX51_CHIP_REV_2_0;
+> -		break;
+> -	case 0x20:
+> -		cpu_silicon_rev = MX51_CHIP_REV_3_0;
+> +		if (cpu_is_mx51())
+> +			cpu_silicon_rev = MX51_CHIP_REV_3_0;
+> +		else if (cpu_is_mx53())
+> +			cpu_silicon_rev = MX53_CHIP_REV_2_0;
+>  		break;
+>  	default:
+>  		cpu_silicon_rev = 0;
+>  	}
+I'd prefer something like this instead of the switch above:
 
-Can you try with this patch?
+	if (cpu_is_mx51())
+		cpu_silicon_rev = mx51_something_sensibe(rev);
+	else if (cpu_is_mx53())
+		cpu_silicon_rev = mx53_something_sensibe(rev);
 
-Thanks
-Nikanth
+Best regards
+Uwe
 
-Fallback to first node, if the node is not online.
-
-Fixes regression of commit 50f2d7f682f9c0ed58191d0982fe77888d59d162
-x86, numa: Assign CPUs to nodes in round-robin manner on fake NUMA
-
-When some of the NUMA nodes are disabled, and the CPUs are assigned
-in round-robin fashion, CPUs might be assigned to disabled nodes
-resulting in the crash. While using round-robin assignment, check if the
-node is online. If the node is not online, use the first online node.
-
-Reported-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
-
----
-
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index d16c2c5..f31237c 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -287,6 +287,8 @@ static void __cpuinit srat_detect_node(struct cpuinfo_x86 *c)
- 	if (node == NUMA_NO_NODE || !node_online(node)) {
- 		/* reuse the value from init_cpu_to_node() */
- 		node = cpu_to_node(cpu);
-+		if (!node_online(node))
-+			node = first_node(node_online_map);
- 	}
- 	numa_set_node(cpu, node);
- #endif
+-- 
+Pengutronix e.K.                           | Uwe Kleine-K�nig            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
