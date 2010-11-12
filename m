@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab0KLKKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 05:10:16 -0500
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:35581 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752465Ab0KLKKM (ORCPT
+	id S1756560Ab0KLKKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 05:10:45 -0500
+Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:38901 "EHLO
+	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756263Ab0KLKKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 05:10:12 -0500
-Date: Fri, 12 Nov 2010 19:10:08 +0900
-From: Norbert Preining <preining@logic.at>
-To: Zhang Rui <rui.zhang@intel.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Mattia Dongili <malattia@linux.it>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Subject: Re: regression since 2.6.36: backlight in sony-laptop not working
-Message-ID: <20101112101008.GC6726@gamma.logic.tuwien.ac.at>
-References: <20101104142915.GC7650@gamma.logic.tuwien.ac.at> <20101110035833.GB3029@kamineko.org> <20101111235000.GA6651@gamma.logic.tuwien.ac.at> <20101112034423.GA7407@srcf.ucam.org> <20101112035027.GD26742@gamma.logic.tuwien.ac.at> <1289547519.8148.1795.camel@rui>
+	Fri, 12 Nov 2010 05:10:44 -0500
+Message-ID: <4CDD120A.2050401@stericsson.com>
+Date: Fri, 12 Nov 2010 11:08:10 +0100
+From: Linus Walleij <linus.walleij@stericsson.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289547519.8148.1795.camel@rui>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: john stultz <johnstul@us.ibm.com>,
+        Rabin VINCENT <rabin.vincent@stericsson.com>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Colin Cross <ccross@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] RFC: nomadik: expand timesource to 63 bits
+References: <1289466356-16697-1-git-send-email-linus.walleij@stericsson.com> <AANLkTi=ysONhPQBTbVNRgTOx5PGEM=STaUYY6RnUpfES@mail.gmail.com> <20101112095739.GH18358@pengutronix.de>
+In-Reply-To: <20101112095739.GH18358@pengutronix.de>
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zhang,
+Uwe Kleine-König wrote:
 
-On Fr, 12 Nov 2010, Zhang Rui wrote:
-> I think the /sys/class/thermal/ and /sys/class/backlight/acpi_video0
-> still exists, right?
+> Instead of implementing sched_clock for each architecture seperatly,
+> wouldn't it be nice to have a generic sched_clock that uses the
+> architecture's clocksource?  I tried to implement that some time ago,
+> but tglx shoot it down because of locking problems.
 
-Yes, right.
+I was and still am a big fan of this approach, I am willing to help
+testing it if you want to dust off this patch set...
 
-> we make ACPI video procfs I/F depend on CONFIG_ACPI_PROCFS, which is
-> cleared by default, in 2.6.36, and removed this I/F in 2.6.37-rc1.
-> perhaps the backlight control depends on the procfs I/F?
-
-Hmm, I would have expected that the backlight adjustment reacts to the
-key sent, as I can use xbacklight by hand, and that is old.
-
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-ADRIGOLE (n.)
-The centrepiece of a merry-go-round on which the man with the tickets
-stands unnervingly still.
-			--- Douglas Adams, The Meaning of Liff
+Yours,
+Linus Walleij
