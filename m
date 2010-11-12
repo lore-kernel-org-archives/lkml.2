@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757174Ab0KLMmj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 07:42:39 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64194 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab0KLMmh convert rfc822-to-8bit (ORCPT
+	id S1757291Ab0KLMxc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 07:53:32 -0500
+Received: from mailgw10.se.ericsson.net ([193.180.251.61]:54498 "EHLO
+	mailgw10.se.ericsson.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754778Ab0KLMxb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 07:42:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=W2HK+5YFbbmNsi0bromETuY9iu5LswGXbeDQPrtnIb550ENdEK+HuQb8P0l4GiWA3k
-         s90J/u1zFxitHnCyJTjvGX6iu+ugysTHeAH3hcO6cOUvqf1JewFUI10kraSaiFxnuGQN
-         7f1/kA4w9f1AG6Bvarlt3+PMxaQWZAdWRVKgo=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=6qNSOuHxzbLjUAcg=Mn-ucO8KRZreiVQ9PAkM@mail.gmail.com>
-References: <1289553702-28041-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-	<AANLkTimd4AruJa2BvqOFw-aP9VpHubsx5Xrwkma+Um5X@mail.gmail.com>
-	<AANLkTi=6qNSOuHxzbLjUAcg=Mn-ucO8KRZreiVQ9PAkM@mail.gmail.com>
-Date: Fri, 12 Nov 2010 18:12:34 +0530
-Message-ID: <AANLkTinO176o81bZCmt+c4OW6j3Yb9zMRTy8vJuHoE0E@mail.gmail.com>
-Subject: Re: [PATCHv3 0/4] OMAP: Serial: remove magic and diplicates
-From: Govindraj <govindraj.ti@gmail.com>
-To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 12 Nov 2010 07:53:31 -0500
+X-AuditID: c1b4fb3d-b7b28ae00000135b-e0-4cdd38c93635
+From: Harald Gustafsson <harald.gustafsson@ericsson.com>
+To: Linus Walleij <linus.ml.walleij@gmail.com>,
+        Colin Cross <ccross@android.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
+        Varun Swara <Varun.Swara@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Rickard ANDERSSON <Rickard.Andersson@stericsson.com>
+Date: Fri, 12 Nov 2010 13:49:50 +0100
+Subject: RE: [PATCH] [ARM] twd: Allow twd rescaling to match cpu frequency
+Thread-Topic: [PATCH] [ARM] twd: Allow twd rescaling to match cpu frequency
+Thread-Index: AcuCZrd7inK6IVsuQW+DFluTgJX8+gAAWC9G
+Message-ID: <DB5ED9F94071134F8D813944A461CF1A0196031CBA@ESESSCMS0361.eemea.ericsson.se>
+References: <1283396674-4865-1-git-send-email-ccross@android.com>,<AANLkTinsRCinLdhq1xj0tx09Jb=Tohdbd7PUD=ae1q3m@mail.gmail.com>
+In-Reply-To: <AANLkTinsRCinLdhq1xj0tx09Jb=Tohdbd7PUD=ae1q3m@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 5:55 PM, Andrei Emeltchenko
-<andrei.emeltchenko.news@gmail.com> wrote:
-> On Fri, Nov 12, 2010 at 1:34 PM, Govindraj <govindraj.ti@gmail.com> wrote:
->> Looks fine to me.
->>
->> I think you need to CC this patch series to
->> arm list and serial list as well.
->
-> Govindraj, Do I need to resend the patch including arm and serial MLs?
+Hi,
 
-yes, probably after incorporating manjunath's comments.
+Don't forget the other patches to make this work:
 
---
-Govindraj.R
+[ARM] twd: Always calibrate local timer
+[ARM] twd: Fix updating control register in set_mode
+[ARM] twd: Fix prescaler getting cleared by set_mode
 
+/Harald Gustafsson
+________________________________________
+From: Linus Walleij [linus.ml.walleij@gmail.com]
+Sent: Friday, November 12, 2010 1:39 PM
+To: Colin Cross
+Cc: linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; Russell King; srinidhi kasagar; Varun Swara; Catalin Marinas; Harald Gustafsson; Rickard ANDERSSON
+Subject: Re: [PATCH] [ARM] twd: Allow twd rescaling to match cpu frequency
+
+Hi Colin,
+
+2010/9/2 Colin Cross <ccross@android.com>:
+
+> The clock to the ARM TWD local timer scales with the cpu
+> frequency.  To allow the cpu frequency to change while
+> maintaining a constant TWD frequency, pick a lower target
+> frequency for the TWD and use the prescaler to divide down
+> to the closest lower frequency.
 >
-> Regards,
-> Andrei
->
->>
->> Thanks,
->> Govindraj.R
->>
->>
->> On Fri, Nov 12, 2010 at 2:51 PM, Emeltchenko Andrei
->> <Andrei.Emeltchenko.news@gmail.com> wrote:
->>> From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
->>>
->>> Add MDR1 Serial register definition to serial_reg and remove duplicated
->>> code.
->>> *v2 add OMAP keyword to MDR1 definition
->>> *v3 remove magic from serial drivers
->>>
->>> Andrei Emeltchenko (4):
->>>  OMAP: Serial: Define OMAP uart MDR1 register definitions
->>>  OMAP1: Serial: remobe magic from MDR1 register
->>>  OMAP2: Serial: remobe magic from MDR1 register
->>>  OMAP: Serial: remove redefined MDR1 register definitions
->>>
->>>  arch/arm/mach-omap1/serial.c                  |    6 ++++--
->>>  arch/arm/mach-omap2/serial.c                  |   15 +++++++++------
->>>  arch/arm/plat-omap/include/plat/omap-serial.h |    3 ---
->>>  drivers/serial/omap-serial.c                  |    6 +++---
->>>  include/linux/serial_reg.h                    |   12 ++++++++++++
->>>  5 files changed, 28 insertions(+), 14 deletions(-)
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
->>
->
+> This patch provides a new initialization function that takes
+> a target TWD frequency and the relation between the cpu
+> clock and the TWD clock, required to be an integer divider
+>>= 2 by the ARM spec.  It also provides a function to be
+> called from cpufreq drivers to set the prescaler whenever
+> the cpu frequency changes.
+
+What's the status of this patch?
+
+We have basically the same problem so we'd really like
+a generic solution to this problem.
+
+Our only comment is that we cannot see the reason for
+not using the CPUfreq notifiers as most scaling code
+is, but I assume there is some specific reason for this?
+
+Unless something holds this back, could you post it to
+Russells patch tracker, we might have an add-on patch
+for the U8500 later.
+
+Yours,
+Linus Walleij
