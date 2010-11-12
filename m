@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757557Ab0KLNGF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 08:06:05 -0500
-Received: from mailgw9.se.ericsson.net ([193.180.251.57]:46327 "EHLO
-	mailgw9.se.ericsson.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab0KLNGB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 08:06:01 -0500
-X-AuditID: c1b4fb39-b7b54ae000003464-ac-4cdd3bb827ca
-From: Harald Gustafsson <harald.gustafsson@ericsson.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Linus Walleij <linus.ml.walleij@gmail.com>,
-        Colin Cross <ccross@android.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
-        Varun Swara <Varun.Swara@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rickard ANDERSSON <Rickard.Andersson@stericsson.com>
-Date: Fri, 12 Nov 2010 14:05:59 +0100
-Subject: RE: [PATCH] [ARM] twd: Allow twd rescaling to match cpu frequency
-Thread-Topic: [PATCH] [ARM] twd: Allow twd rescaling to match cpu frequency
-Thread-Index: AcuCaWb6999dqclKQeGaOzUKMCYuzwAABthw
-Message-ID: <2D4BBBBAD3C3714F8E8675F927E908210A210908@ESESSCMS0361.eemea.ericsson.se>
-References: <1283396674-4865-1-git-send-email-ccross@android.com>
- <AANLkTinsRCinLdhq1xj0tx09Jb=Tohdbd7PUD=ae1q3m@mail.gmail.com>
- <DB5ED9F94071134F8D813944A461CF1A0196031CBA@ESESSCMS0361.eemea.ericsson.se>
- <20101112125901.GA3619@n2100.arm.linux.org.uk>
-In-Reply-To: <20101112125901.GA3619@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Brightmail-Tracker: AAAAAA==
+	id S1757658Ab0KLNGO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 08:06:14 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:36563 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751775Ab0KLNGH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 08:06:07 -0500
+From: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>
+To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm@lists.arm.linux.org.uk, linux-serial@vger.kernel.org
+Subject: [PATCHv4 2/4] OMAP1: Serial: remove magic numbers for MDR1 reg
+Date: Fri, 12 Nov 2010 15:04:01 +0200
+Message-Id: <1289567043-6213-3-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1289567043-6213-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+References: <1289567043-6213-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Don't forget the other patches to make this work:
-> > 
-> > [ARM] twd: Always calibrate local timer [ARM] twd: Fix updating 
-> > control register in set_mode [ARM] twd: Fix prescaler 
-> getting cleared 
-> > by set_mode
-> 
-> ... which have never been posted to this mailing list, so no 
-> one here knows of them.
+From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
 
-They are on the tegra branch git also authored by Colin. So I would suggest that Colin make all the changes into a new patch.
+Change magic number to ones defined in serial_reg
+for omap1 serial driver
 
-http://android.git.kernel.org/?p=kernel%2Ftegra.git&a=search&h=refs%2Fheads%2Flinux-tegra-2.6.35&st=commit&s=twd
+Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+---
+ arch/arm/mach-omap1/serial.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-/Harald
+diff --git a/arch/arm/mach-omap1/serial.c b/arch/arm/mach-omap1/serial.c
+index b78d074..c73d1b7 100644
+--- a/arch/arm/mach-omap1/serial.c
++++ b/arch/arm/mach-omap1/serial.c
+@@ -52,9 +52,11 @@ static inline void omap_serial_outp(struct plat_serial8250_port *p, int offset,
+  */
+ static void __init omap_serial_reset(struct plat_serial8250_port *p)
+ {
+-	omap_serial_outp(p, UART_OMAP_MDR1, 0x07);	/* disable UART */
++	omap_serial_outp(p, UART_OMAP_MDR1,
++			UART_OMAP_MDR1_DISABLE);	/* disable UART */
+ 	omap_serial_outp(p, UART_OMAP_SCR, 0x08);	/* TX watermark */
+-	omap_serial_outp(p, UART_OMAP_MDR1, 0x00);	/* enable UART */
++	omap_serial_outp(p, UART_OMAP_MDR1,
++			UART_OMAP_MDR1_16X_MODE);	/* enable UART */
+ 
+ 	if (!cpu_is_omap15xx()) {
+ 		omap_serial_outp(p, UART_OMAP_SYSC, 0x01);
+-- 
+1.7.0.4
+
