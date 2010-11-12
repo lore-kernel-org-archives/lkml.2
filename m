@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab0KLDdp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 22:33:45 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:11411 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755537Ab0KLDcm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755559Ab0KLDcm (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 11 Nov 2010 22:32:42 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:3830 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754535Ab0KLDcg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 22:32:36 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:user-agent:date:from:to:cc:subject;
-	b=WoQ3KRA3+uoFOQzSpY/CXp6QPTytXKDsyek66iNrzQxydCxYU51nLfjB4ilSD81wQ
-	v5DzGQBuaLPqeuNZGbNVw==
-Message-Id: <20101112032405.657789056@google.com>
+	h=message-id:references:user-agent:date:from:to:cc:subject:content-disposition;
+	b=Hy/rdxvGju2Wefua0YoW66dgGzDlQG/vedFYjGryLBZw6PxEuel3NijEQrF/gTsb1
+	lUjf9pkeg+hCra3n1t81Q==
+Message-Id: <20101112032702.181229371@google.com>
+References: <20101112032405.657789056@google.com>
 User-Agent: quilt/0.46-1
-Date: Thu, 11 Nov 2010 19:24:05 -0800
+Date: Thu, 11 Nov 2010 19:24:16 -0800
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
@@ -24,65 +25,97 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Bharata B Rao <bharata@linux.vnet.ibm.com>,
         Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
         David Miller <davem@davemloft.net>
-Subject: [tg_shares_up rewrite v3 00/11] reduce overhead for tg->shares distribution
+Subject: [tg_shares_up rewrite v3 11/11] sched: update tg->shares after cpu.shares write
+Content-Disposition: inline; filename=sched-tg-fix_group_set_shares.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Formerly sched_group_set_shares would force a rebalance by overflowing domain
+share sums.  Now that per-cpu averages are maintained we can set the true value
+by issuing an update_cfs_shares() following a tg->shares update.
+
+Also initialize tg se->load to 0 for consistency since we'll now set correct
+weights on enqueue.
+
+Signed-off-by: Paul Turner <pjt@google.com?>
+
+---
+ kernel/sched.c |   42 +++++++++++-------------------------------
+ 1 file changed, 11 insertions(+), 31 deletions(-)
+
+Index: kernel/sched.c
+===================================================================
+--- kernel/sched.c.orig
++++ kernel/sched.c
+@@ -7575,7 +7575,7 @@ static void init_tg_cfs_entry(struct tas
+ 		se->cfs_rq = parent->my_q;
+ 
+ 	se->my_q = cfs_rq;
+-	update_load_set(&se->load, tg->shares);
++	update_load_set(&se->load, 0);
+ 	se->parent = parent;
+ }
+ #endif
+@@ -8194,37 +8194,12 @@ void sched_move_task(struct task_struct 
+ #endif /* CONFIG_CGROUP_SCHED */
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-static void __set_se_shares(struct sched_entity *se, unsigned long shares)
+-{
+-	struct cfs_rq *cfs_rq = se->cfs_rq;
+-	int on_rq;
+-
+-	on_rq = se->on_rq;
+-	if (on_rq)
+-		dequeue_entity(cfs_rq, se, 0);
+-
+-	update_load_set(&se->load, shares);
+-
+-	if (on_rq)
+-		enqueue_entity(cfs_rq, se, 0);
+-}
+-
+-static void set_se_shares(struct sched_entity *se, unsigned long shares)
+-{
+-	struct cfs_rq *cfs_rq = se->cfs_rq;
+-	struct rq *rq = cfs_rq->rq;
+-	unsigned long flags;
+-
+-	raw_spin_lock_irqsave(&rq->lock, flags);
+-	__set_se_shares(se, shares);
+-	raw_spin_unlock_irqrestore(&rq->lock, flags);
+-}
+-
+ static DEFINE_MUTEX(shares_mutex);
+ 
+ int sched_group_set_shares(struct task_group *tg, unsigned long shares)
+ {
+ 	int i;
++	unsigned long flags;
+ 
+ 	/*
+ 	 * We can't change the weight of the root cgroup.
+@@ -8243,10 +8218,15 @@ int sched_group_set_shares(struct task_g
+ 
+ 	tg->shares = shares;
+ 	for_each_possible_cpu(i) {
+-		/*
+-		 * force a rebalance
+-		 */
+-		set_se_shares(tg->se[i], shares);
++		struct rq *rq = cpu_rq(i);
++		struct sched_entity *se;
++
++		se = tg->se[i];
++		/* Propagate contribution to hierarchy */
++		raw_spin_lock_irqsave(&rq->lock, flags);
++		for_each_sched_entity(se)
++			update_cfs_shares(group_cfs_rq(se), 0);
++		raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 	}
+ 
+ done:
+
 -- 
-
-This is v3 of the tg_shares_up re-write previously posted at:
-http://lkml.org/lkml/2010/10/16/17
-
-It corrects compile errors in the !CONFIG_FAIR_GROUP_SCHED present in v2 posted
-yesterday (Thanks to David Miller for catching this) as well as a race in the
-destruction of a task_group.
-http://lkml.org/lkml/2010/11/10/618
-
-The key idea behind this patchset is an idea of Peter Zijlstra'a to compute
-global loads as a function of local averages, avoiding the cpu-cpu interactions
-which previously plagued tg_shares_up.
-
-Not much 'material' has changed since v1 since results seem favourable/stable.
-
-Changes:
-v3
-sched-rework-tg_shares_up.patch
-- remove lint: {max,min}_sched_shares_ratelimit from sysctl.c 
-
-sched-tg-ondemand.patch
-- (bug fix) fix synchronization on leaf_cfs_rq_list removal during task_group reclaim.
-- fix !CONFIG_FAIR_GROUP_SCHED build 
-- fix comment on what task_group_lock protects
-
-sched-tg-global_update_load.patch
-- add missing arguments to update_cfs_load() in !CONFIG_FAIR_GROUP_SCHED case
-
-v2 (http://lkml.org/lkml/2010/11/10/618)
-sched-rework-tg_shares_up.patch
-- (bug fix) use owning tg->shares value in effective_load
-- remove redundant cfs_rq_of() in {enqueue,dequeue}_entity
-
-sched-tg-add-shares_window_sysctl.patch
-- update comment on sysctl interpretation
-
-sched-tg-fix-update_cfs_load.patch
-- update comment to reflect periods instead of foldings (more intuitive)
-
-Some motivation again:
-24 thread Intel box, 150 active cgroups, multiple threads/group, system load at ~90% (sample size=10s):
-tip:
-    2.64%  [k] tg_shares_up <!>
-    0.15%  [k] __set_se_shares
-
-patched:
-    0.02%  [k] update_cfs_load
-    0.01%  [k] update_cpu_load
-    0.00%  [k] update_cfs_shares
-
-Fairness coverage for the above at: http://rs5.risingnet.net/~pjt/patches/shares_data_v1.txt
-
-Thanks,
-
-- Paul
 
