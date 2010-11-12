@@ -1,44 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab0KLRfq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 12:35:46 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:51909 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750810Ab0KLRfn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 12:35:43 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/+O4goYbBaInFWiZI+tLg5
-Date: Fri, 12 Nov 2010 09:35:32 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm@lists.arm.linux.org.uk, linux-serial@vger.kernel.org
-Subject: Re: [PATCHv5] OMAP: Serial: Define OMAP uart MDR1 reg and remove
- magic numbers
-Message-ID: <20101112173531.GD9264@atomide.com>
-References: <1289568557-9727-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+	id S1755202Ab0KLRkX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 12:40:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50106 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753572Ab0KLRkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 12:40:22 -0500
+Date: Fri, 12 Nov 2010 18:34:00 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] ioprio: grab rcu_read_lock in sys_ioprio_{set,get}()
+Message-ID: <20101112173400.GA8659@redhat.com>
+References: <1289547167-32675-1-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289568557-9727-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1289547167-32675-1-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com> [101112 05:22]:
-> From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+On 11/11, Greg Thelen wrote:
+>
+> The fix is to:
+> a) grab rcu lock in sys_ioprio_{set,get}() and
+> b) avoid grabbing tasklist_lock.
+> Discussion in: http://marc.info/?l=linux-kernel&m=128951324702889
+>
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+
+Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+
+> ---
+>  fs/ioprio.c |   13 ++++---------
+>  1 files changed, 4 insertions(+), 9 deletions(-)
 > 
-> Define MDR1 register serial definitions used in serial and
-> bluetooth drivers.
-> Change magic number to ones defined in serial_reg for omap1/2
-> serial driver.
-> Remove redefined MDR1 register definitions in omap-serial driver.
+> diff --git a/fs/ioprio.c b/fs/ioprio.c
+> index 748cfb9..7da2a06 100644
+> --- a/fs/ioprio.c
+> +++ b/fs/ioprio.c
+> @@ -103,12 +103,7 @@ SYSCALL_DEFINE3(ioprio_set, int, which, int, who, int, ioprio)
+>  	}
+>  
+>  	ret = -ESRCH;
+> -	/*
+> -	 * We want IOPRIO_WHO_PGRP/IOPRIO_WHO_USER to be "atomic",
+> -	 * so we can't use rcu_read_lock(). See re-copy of ->ioprio
+> -	 * in copy_process().
+> -	 */
+> -	read_lock(&tasklist_lock);
+> +	rcu_read_lock();
+>  	switch (which) {
+>  		case IOPRIO_WHO_PROCESS:
+>  			if (!who)
+> @@ -153,7 +148,7 @@ free_uid:
+>  			ret = -EINVAL;
+>  	}
+>  
+> -	read_unlock(&tasklist_lock);
+> +	rcu_read_unlock();
+>  	return ret;
+>  }
+>  
+> @@ -197,7 +192,7 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
+>  	int ret = -ESRCH;
+>  	int tmpio;
+>  
+> -	read_lock(&tasklist_lock);
+> +	rcu_read_lock();
+>  	switch (which) {
+>  		case IOPRIO_WHO_PROCESS:
+>  			if (!who)
+> @@ -250,6 +245,6 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
+>  			ret = -EINVAL;
+>  	}
+>  
+> -	read_unlock(&tasklist_lock);
+> +	rcu_read_unlock();
+>  	return ret;
+>  }
+> -- 
+> 1.7.3.1
+> 
 
-Thanks, queueing this for 2.6.38 and adding the ack from Greg from
-the previous version.
-
-Tony
