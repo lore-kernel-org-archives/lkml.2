@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932809Ab0KLTLG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 14:11:06 -0500
-Received: from duck.dooz.org ([194.146.227.125]:37090 "EHLO duck.dooz.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755721Ab0KLTLD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 14:11:03 -0500
-X-Greylist: delayed 1978 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Nov 2010 14:11:03 EST
-From: =?UTF-8?q?Lo=C3=AFc=20Minier?= <loic.minier@linaro.org>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Lukas Czerner <lczerner@redhat.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
+	id S932816Ab0KLTOS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 14:14:18 -0500
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:24147 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932757Ab0KLTOQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 14:14:16 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: gP0lfWYVM1lttI9NxgP0BWFGMJXZ9eRjQoO7JYLn.jy2.pu
+ v.EGfdXX_EmhEO9Yebfz_JMdmToP0tm74qecWjE_rtK653Cfo2bILvV.fvYP
+ ZCgkUGd2Lnsul7jGKx4FhbWSrOfil33MnWX6VHJsToZVdcYjt1iPHtFYfs0l
+ Ldmh4d89Mm4N7d58XuOqHintfGaW7gr3cIPpPc0Dk9GZDDW.GrJpN3VYm8ny
+ bZH6Y
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 12 Nov 2010 13:14:12 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Eric Dumazet <eric.dumazet@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?q?Lo=C3=AFc=20Minier?= <loic.minier@linaro.org>
-Subject: [PATCH] Fix userspace build of linux/fs.h
-Date: Fri, 12 Nov 2010 19:37:38 +0100
-Message-Id: <1289587058-3493-1-git-send-email-loic.minier@linaro.org>
-X-Mailer: git-send-email 1.7.2.3
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
+In-Reply-To: <20101105195101.GC15561@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1011121313001.16754@router.home>
+References: <1288975980.2882.877.camel@edumazet-laptop> <20101105102038.53e36f9e.akpm@linux-foundation.org> <1288980046.2882.1054.camel@edumazet-laptop> <20101105110828.52f061b3.akpm@linux-foundation.org> <1288981224.2882.1105.camel@edumazet-laptop>
+ <20101105112821.57f80481.akpm@linux-foundation.org> <1288984844.2665.52.camel@edumazet-laptop> <20101105195101.GC15561@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dpkg uses fiemap but didn't particularly need to include stdint.h so
-far.  Since 367a51a33902 ("fs: Add FITRIM ioctl"), build of linux/fs.h
-failed in dpkg with:
-In file included from ../../src/filesdb.c:27:0:
-/usr/include/linux/fs.h:37:2: error: expected specifier-qualifier-list before 'uint64_t'
 
-Use exportable type __u64 to avoid the dependency on stdint.h.
+prefetchw() would be too much overhead?
 
-b31d42a5af18 fixed only the kernel build by including linux/types.h, but
-this also fixed "make headers_check", so don't revert it.
 
-Signed-off-by: Loïc Minier <loic.minier@linaro.org>
-Tested-by: Arnd Bergmann <arnd.bergmann@linaro.org>
-Cc: Lukas Czerner <lczerner@redhat.com>
-Cc: Dmitry Monakhov <dmonakhov@openvz.org>
-Cc: Theodore Ts'o <tytso@mit.edu>
----
- include/linux/fs.h |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 334d68a..c734e64 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -34,9 +34,9 @@
- #define SEEK_MAX	SEEK_END
- 
- struct fstrim_range {
--	uint64_t start;
--	uint64_t len;
--	uint64_t minlen;
-+	__u64 start;
-+	__u64 len;
-+	__u64 minlen;
- };
- 
- /* And dynamically-tunable limits and defaults: */
--- 
-1.7.2.3
 
