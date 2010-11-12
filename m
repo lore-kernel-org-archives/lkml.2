@@ -1,44 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757477Ab0KLM7V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 07:59:21 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40368 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757104Ab0KLM7U (ORCPT
+	id S1757542Ab0KLM77 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 07:59:59 -0500
+Received: from igw2.watson.ibm.com ([129.34.20.6]:55483 "EHLO
+	igw2.watson.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757104Ab0KLM76 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 07:59:20 -0500
-Date: Fri, 12 Nov 2010 12:59:01 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Harald Gustafsson <harald.gustafsson@ericsson.com>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-        Colin Cross <ccross@android.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
-        Varun Swara <Varun.Swara@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Rickard ANDERSSON <Rickard.Andersson@stericsson.com>
-Subject: Re: [PATCH] [ARM] twd: Allow twd rescaling to match cpu frequency
-Message-ID: <20101112125901.GA3619@n2100.arm.linux.org.uk>
-References: <1283396674-4865-1-git-send-email-ccross@android.com> <AANLkTinsRCinLdhq1xj0tx09Jb=Tohdbd7PUD=ae1q3m@mail.gmail.com> <DB5ED9F94071134F8D813944A461CF1A0196031CBA@ESESSCMS0361.eemea.ericsson.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DB5ED9F94071134F8D813944A461CF1A0196031CBA@ESESSCMS0361.eemea.ericsson.se>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Fri, 12 Nov 2010 07:59:58 -0500
+Subject: Re: [PATCH v1.3 3/4] keys: add new trusted key-type
+From: David Safford <safford@watson.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-crypto@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        James Morris <jmorris@namei.org>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+In-Reply-To: <8100.1289512670@redhat.com>
+References: <1289404309-15955-4-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1289404309-15955-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <8100.1289512670@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 12 Nov 2010 07:58:11 -0500
+Message-ID: <1289566691.4341.21.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 01:49:50PM +0100, Harald Gustafsson wrote:
-> Hi,
-> 
-> Don't forget the other patches to make this work:
-> 
-> [ARM] twd: Always calibrate local timer
-> [ARM] twd: Fix updating control register in set_mode
-> [ARM] twd: Fix prescaler getting cleared by set_mode
+On Thu, 2010-11-11 at 21:57 +0000, David Howells wrote:
+> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 
-... which have never been posted to this mailing list, so no one here
-knows of them.
+Thanks for the helpful comments - much appreciated.
+Willdo on all of them - just one question on the last comment:
+
+> > +/*
+> > + * Have the TPM seal(encrypt) the trusted key, possibly based on
+> > + * Platform Configuration Registers (PCRs). AUTH1 for sealing key.
+> > + */
+> > +static int tpm_seal(struct tpm_buf *tb, uint16_t keytype,
+> > +		    uint32_t keyhandle, unsigned char *keyauth,
+> > +		    unsigned char *data, uint32_t datalen,
+> > +		    unsigned char *blob, uint32_t * bloblen,
+> > +		    unsigned char *blobauth,
+> > +		    unsigned char *pcrinfo, uint32_t pcrinfosize)
+> > +{
+> > +	struct osapsess sess;
+> > +	unsigned char encauth[TPM_HASH_SIZE];
+> > +	unsigned char pubauth[TPM_HASH_SIZE];
+> > +	unsigned char xorwork[TPM_HASH_SIZE * 2];
+> > +	unsigned char xorhash[TPM_HASH_SIZE];
+> > +	unsigned char nonceodd[TPM_NONCE_SIZE];
+> 
+> That's quite a lot of stack space, and you're calling other functions that
+> also allocate chunks of stack space.
+
+checkstack showed that the max stack usage was for tpm_seal, at 530
+bytes. (The rest were 300 or less.)  I can certainly throw the hashes
+and nonce (120 bytes) into a dynamically allocated struct, if you
+think it is worth the extra code...
+
+thanks
+dave
