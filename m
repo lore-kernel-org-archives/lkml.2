@@ -1,179 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965Ab0KLWyS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 17:54:18 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64891 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147Ab0KLWyP convert rfc822-to-8bit (ORCPT
+	id S1757604Ab0KLXHF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 18:07:05 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:21843 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751313Ab0KLXHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 17:54:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=pkk338G4X2iLVi3j46WMdAlri6DTlmrbz0Y7at7QVMlxzZG7kQzra4IrpR5v9jR0Ks
-         4+27ozvIgfPUznH3i2m5W7r19/8Bc61B4PBbwbjPTMoa2SqfUkv1pcPj/758iPoYCB++
-         beJpSab4mahrgW0JylPo0ovPiZ6Uc/fjwIe4s=
+	Fri, 12 Nov 2010 18:07:02 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAIJV3Ux5LcEI/2dsb2JhbACiUHK+cIVKBA
+Date: Sat, 13 Nov 2010 10:06:50 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [patches] seqlock: add barrier-less special cases for seqcounts
+Message-ID: <20101112230650.GA3317@amd>
+References: <20101111080012.GB10210@amd>
+ <AANLkTinAY=jbtEEFa0XgYiHs8Lj21Q58FhPpU+TOtWnf@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1289147348-31969-3-git-send-email-alchark@gmail.com>
-References: <1289147348-31969-1-git-send-email-alchark@gmail.com>
-	<1289147348-31969-3-git-send-email-alchark@gmail.com>
-Date: Sat, 13 Nov 2010 01:54:14 +0300
-Message-ID: <AANLkTi=zvGxpukjAv-XFAMLpKYiqqKD=p9S5FtGowdDu@mail.gmail.com>
-Subject: Re: [PATCH 3/6 v2] input: Add support for VIA VT8500 and compatibles
- in i8042
-From: Alexey Charkov <alchark@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: vt8500-wm8505-linux-kernel@googlegroups.com,
-        Alexey Charkov <alchark@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, Feng Tang <feng.tang@intel.com>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinAY=jbtEEFa0XgYiHs8Lj21Q58FhPpU+TOtWnf@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/7 Alexey Charkov <alchark@gmail.com>:
-> VIA and WonderMedia Systems-on-Chip feature a standard i8042-compatible
-> keyboard and mouse controller. This adds necessary glue to enable use
-> of the standard driver with these systems.
->
-> Signed-off-by: Alexey Charkov <alchark@gmail.com>
-> ---
->
-> Please review and (if appropriate) commit to a relevant git tree for
-> further integration in 2.6.38.
->
-> Previous version of this code was 'Acked-by: Dmitry Torokhov <dtor@mail.ru>'
-> This one only differs by using runtime-selected IRQ definitions instead
-> of static compile-time preprocessor macros.
->
-> Relevant register and interrupt definitions are provided by PATCH 1/6 in
-> this series, so one would need that to make use of this code.
->
->  drivers/input/serio/Kconfig        |    3 +-
->  drivers/input/serio/i8042-vt8500.h |   74 ++++++++++++++++++++++++++++++++++++
->  drivers/input/serio/i8042.h        |    2 +
->  3 files changed, 78 insertions(+), 1 deletions(-)
->  create mode 100644 drivers/input/serio/i8042-vt8500.h
->
-> diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
-> index 6256233..ff799f3 100644
-> --- a/drivers/input/serio/Kconfig
-> +++ b/drivers/input/serio/Kconfig
-> @@ -21,7 +21,8 @@ if SERIO
->  config SERIO_I8042
->        tristate "i8042 PC Keyboard controller" if EMBEDDED || !X86
->        default y
-> -       depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
-> +       depends on !PARISC && \
-> +                 (!ARM || ARCH_SHARK || ARCH_VT8500 || FOOTBRIDGE_HOST) && \
->                   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN
->        help
->          i8042 is the chip over which the standard AT keyboard and PS/2
-> diff --git a/drivers/input/serio/i8042-vt8500.h b/drivers/input/serio/i8042-vt8500.h
-> new file mode 100644
-> index 0000000..4ff9e1c
-> --- /dev/null
-> +++ b/drivers/input/serio/i8042-vt8500.h
-> @@ -0,0 +1,74 @@
-> +#ifndef _I8042_VT8500_H
-> +#define _I8042_VT8500_H
-> +
-> +#include <mach/mmio_regs.h>
-> +#include <mach/irq_defs.h>
-> +
-> +/*
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + */
-> +
-> +static void __iomem *regbase;
-> +
-> +/*
-> + * Names.
-> + */
-> +
-> +#define I8042_KBD_PHYS_DESC "vt8500ps2/serio0"
-> +#define I8042_AUX_PHYS_DESC "vt8500ps2/serio1"
-> +#define I8042_MUX_PHYS_DESC "vt8500ps2/serio%d"
-> +
-> +/*
-> + * IRQs.
-> + */
-> +
-> +#define I8042_KBD_IRQ  (wmt_current_irqs->ps2kbd)
-> +#define I8042_AUX_IRQ  (wmt_current_irqs->ps2mouse)
-> +
-> +
-> +/*
-> + * Register numbers.
-> + */
-> +
-> +#define I8042_COMMAND_REG      (regbase + 0x4)
-> +#define I8042_STATUS_REG       (regbase + 0x4)
-> +#define I8042_DATA_REG         (regbase + 0x0)
-> +
-> +static inline int i8042_read_data(void)
-> +{
-> +       return readl(I8042_DATA_REG);
-> +}
-> +
-> +static inline int i8042_read_status(void)
-> +{
-> +       return readl(I8042_STATUS_REG);
-> +}
-> +
-> +static inline void i8042_write_data(int val)
-> +{
-> +       writel(val, I8042_DATA_REG);
-> +}
-> +
-> +static inline void i8042_write_command(int val)
-> +{
-> +       writel(val, I8042_COMMAND_REG);
-> +}
-> +
-> +static inline int i8042_platform_init(void)
-> +{
-> +       i8042_reset = true;
-> +       regbase = ioremap(wmt_current_regs->ps2, SZ_1K);
-> +       if (!regbase)
-> +               return -ENODEV;
-> +
-> +       return 0;
-> +}
-> +
-> +static inline void i8042_platform_exit(void)
-> +{
-> +       iounmap(regbase);
-> +}
-> +
-> +#endif /* _I8042_VT8500_H */
-> diff --git a/drivers/input/serio/i8042.h b/drivers/input/serio/i8042.h
-> index cbc1beb..bdb2aeb 100644
-> --- a/drivers/input/serio/i8042.h
-> +++ b/drivers/input/serio/i8042.h
-> @@ -16,6 +16,8 @@
->
->  #if defined(CONFIG_MACH_JAZZ)
->  #include "i8042-jazzio.h"
-> +#elif defined(CONFIG_ARCH_VT8500)
-> +#include "i8042-vt8500.h"
->  #elif defined(CONFIG_SGI_HAS_I8042)
->  #include "i8042-ip22io.h"
->  #elif defined(CONFIG_SNI_RM)
-> --
-> 1.7.3.2
->
->
+On Fri, Nov 12, 2010 at 08:39:17AM -0800, Linus Torvalds wrote:
+> On Thu, Nov 11, 2010 at 12:00 AM, Nick Piggin <npiggin@kernel.dk> wrote:
+> > Add branch annotations for seqlock read fastpath, and introduce
+> > __read_seqcount_begin and __read_seqcount_end functions, that can avoid
+> > the smp_rmb() if it is provided with some other barrier. Read barriers
+> > have non trivial cost on many architectures.
+> >
+> > These will be used by store-free path walking algorithm, where
+> > performance is critical and seqlocks are widely used.
+> 
+> A couple of questions:
+> 
+>  - what are the barriers in question? IOW, describe some normal use.
 
-Any comments about this?
+OK, anything that provides smp_rmb() or stronger. I really prefer not
+to have a "normal" usage for these things, only *really* carefully
+controlled and critical parts. I came up with these after doing some
+testing on a POWER7 to really shave off cycles.
 
-Thanks,
-Alexey
+In the case of rcu-walk, we basically have a chain of dentries to walk
+down, and so we need to take seqlocks as we go. So the pattern goes:
+
+dentry = cwd;
+seq = read_seqlock(&dentry->d_seq);
+/* do path walk */
+child = d_lookup(dentry, name);
+seq2 = read_seqlock(&child->d_seq);
+if (read_seqretry(&dentry->d_seq, seq))
+  /* bail out */
+
+So we have to have these inter-linked chain of seqlocks covering the
+walk. As such, the smp_rmb tends to get repeated in each one, wheras
+we don't actually have to have the smp_rmb for the child issued until
+after we verify the parent's sequence (because we don't load anything
+from the child until after that).
+
+I really don't anticipate many other users, but perhaps similar case
+like walking down nodes of a tree or something.
+
+
+>  - do we really want the "repeat until seqlock is even" code in the
+> __read_seqcount_begin() code for those kinds of internal cases?
+> 
+> That second one is very much a question for the use-case like the
+> pathname walk where you have a fall-back that uses "real" locking
+> rather than the optimistic sequence locks. I have a suspicion that if
+> seq_locks are used as an "optimistic lockless path with a locking
+> fallback", then if we see an odd value at the beginning we should
+> consider it a hint that the sequence lock is contended and the
+> optimistic path should be aborted early.
+> 
+> In other words, I kind of suspect that anybody that wants to use some
+> internal sequence lock function like __read_seqcount_begin() would
+> also want to do its own decision about what happens when the seqlock
+> is already in the middle of having an active writer.
+> 
+> So the interface seems a bit broken: if we really want to expose these
+> kinds of internal helper functions, then I suspect not only the
+> smp_rmb(), but also the whole "loop until even" should be in the
+> normal "read_seqcount_begin()" function, and __read_seqcount_begin()
+> would _literally_ just do the single sequence counter access.
+> 
+> I dunno. Just a gut feel. Added Al, Ingo and Thomas to the Cc - the
+> whole "loop in begin" was added by Ingo and Thomas a few years ago to
+> avoid a live-lock, but that live-lock issue really isn't an issue if
+> you end up falling back on a locking algorithm and have a "early
+> failure" case for the __read_seqcount_begin() the same way we have the
+> final failure case for [__]read_seqcount_retry().
+
+Possibly, you're right. Now the fallback case is obviously suboptimal
+and heavyweight, so we do want to avoid it if we can. Also not having
+an error to handle in seqcount_begin is just one less thing to worry
+about.
+
+I mean, we can just fall out immediately if we want to, but is there
+much advantage in doing so? The write side critical sections on these
+things are very small -- pretty much only when the ->d_inode goes
+away or ->d_name changes.
+
