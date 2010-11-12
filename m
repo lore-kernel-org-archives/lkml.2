@@ -1,189 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab0KLI0B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 03:26:01 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:35170 "EHLO bear.ext.ti.com"
+	id S1755695Ab0KLI1L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 03:27:11 -0500
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:58590 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752052Ab0KLIZ7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 03:25:59 -0500
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-To: Magnus Damm <magnus.damm@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "kmpark@infradead.org" <kmpark@infradead.org>,
-        "konkers@android.com" <konkers@android.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "adharmap@codeaurora.org" <adharmap@codeaurora.org>,
-        "avorontsov@mvista.com" <avorontsov@mvista.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "srinidhikasagar@gmail.com" <srinidhikasagar@gmail.com>,
-        "dwalker@codeaurora.org" <dwalker@codeaurora.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 12 Nov 2010 13:55:25 +0530
-Subject: RE: [PATCH 07/07] ARM: Use shared GIC entry macros on OMAP
-Thread-Topic: [PATCH 07/07] ARM: Use shared GIC entry macros on OMAP
-Thread-Index: AcuCQk6ASopku0I4TtS0ea8Ir4zYjwAAHcAw
-Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB030D58AE84@dbde02.ent.ti.com>
-References: <20101112082059.27221.52879.sendpatchset@t400s>
- <20101112082211.27221.47096.sendpatchset@t400s>
-In-Reply-To: <20101112082211.27221.47096.sendpatchset@t400s>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752052Ab0KLI1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 03:27:09 -0500
+Date: Fri, 12 Nov 2010 00:27:04 -0800
+From: Andres Salomon <dilinger@queued.net>
+To: Milton Miller <miltonm@bga.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] x86: OLPC: speed up device tree creation during
+ boot (v2)
+Message-ID: <20101112002704.50c629e2@queued.net>
+In-Reply-To: <reply-olpc-3-v2@mdm.bga.com>
+References: <20101111214546.4e573cad@queued.net>
+	<reply-olpc-3-v2@mdm.bga.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Magnus Damm [mailto:magnus.damm@gmail.com]
-> Sent: Friday, November 12, 2010 1:52 PM
-> To: linux@arm.linux.org.uk
-> Cc: kgene.kim@samsung.com; kmpark@infradead.org; konkers@android.com;
-> tony@atomide.com; adharmap@codeaurora.org; avorontsov@mvista.com; linux-
-> kernel@vger.kernel.org; srinidhikasagar@gmail.com; dwalker@codeaurora.org;
-> Shilimkar, Santosh; ccross@android.com; olof@lixom.net; Magnus Damm;
-> linux-arm-kernel@lists.infradead.org
-> Subject: [PATCH 07/07] ARM: Use shared GIC entry macros on OMAP
+On Fri, 12 Nov 2010 01:48:30 -0600
+Milton Miller <miltonm@bga.com> wrote:
+
+> On Thu, 11 Nov 2010 around 21:45:46 -0800, Andres Salomon wrote:
+> > diff --git a/arch/x86/platform/olpc/olpc_dt.c
+> > b/arch/x86/platform/olpc/olpc_dt.c index b8c8ff9..0ab824d 100644
+> > --- a/arch/x86/platform/olpc/olpc_dt.c
+> > +++ b/arch/x86/platform/olpc/olpc_dt.c
+> > @@ -126,14 +126,31 @@  static unsigned int prom_early_allocated
+> > __initdata; 
+> >  void * __init prom_early_alloc(unsigned long size)
+> >  {
+> > +	static u8 *mem = NULL;
+> > +	static size_t free_mem = 0;
 > 
-> From: Magnus Damm <damm@opensource.se>
+> Static variables are implicitly 0 and NULL
+
+That's true for global static variables; is it also true for static
+variables that are local to a function?
+
+
 > 
-> Common GIC entry macro for omap
+> >  	void *res;
+> >  
+> > -	res = alloc_bootmem(size);
+> > -	if (res)
+> > -		memset(res, 0, size);
+> > -
+> > -	prom_early_allocated += size;
+> > +	if (free_mem < size) {
+> > +		const size_t chunk_size = max(PAGE_SIZE, size);
+> > +
+> > +		/*
+> > +		 * To mimimize the number of allocations, grab at
+> > least 4k of
+> > +		 * memory (that's an arbitrary choice that matches
+> > PAGE_SIZE on
+> > +		 * the platforms we care about, and minimizes
+> > wasted bootmem)
+> > +		 * and hand off chunks of it to callers.
+> > +		 */
+> > +		res = mem = alloc_bootmem(chunk_size);
+> > +		if (!res)
+> > +			return NULL;
 > 
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Magnus Damm <damm@opensource.se>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
+> Oops.  If alloc_bootmem fails, we loose mem but don't reset free_mem,
+> so a later call (possibly for a smaller chunk) may return memory
+> starting at NULL.
+
+You're right, good catch.  Thanks!
+
+
 > 
->  arch/arm/mach-omap2/include/mach/entry-macro.S |   92 ++++++++-----------
-> -----
->  1 file changed, 31 insertions(+), 61 deletions(-)
+> I suggest just assinging res above and then add mem = res inside this
+> if.
 > 
-> --- 0001/arch/arm/mach-omap2/include/mach/entry-macro.S
-> +++ work/arch/arm/mach-omap2/include/mach/entry-macro.S	2010-11-12
-> 16:10:51.000000000 +0900
-> @@ -105,6 +105,35 @@ omap_irq_base:	.word	0
->  9999:
->  		.endm
+> Oh, this is alloc_bootmem not alloc_bootmem_nopainc ... should it be?
 > 
-> +#ifdef CONFIG_SMP
-> +		/* We assume that irqstat (the raw value of the IRQ
-> acknowledge
-> +		 * register) is preserved from the macro above.
-> +		 * If there is an IPI, we immediately signal end of interrupt
-> +		 * on the controller, since this requires the original irqstat
-> +		 * value which we won't easily be able to recreate later.
-> +		 */
-> +
-> +		.macro test_for_ipi, irqnr, irqstat, base, tmp
-> +		bic	\irqnr, \irqstat, #0x1c00
-> +		cmp	\irqnr, #16
-> +		it	cc
-> +		strcc	\irqstat, [\base, #GIC_CPU_EOI]
-> +		it	cs
-> +		cmpcs	\irqnr, \irqnr
-> +		.endm
-> +
-> +		/* As above, this assumes that irqstat and base are preserved
-> */
-> +
-> +		.macro test_for_ltirq, irqnr, irqstat, base, tmp
-> +		bic	\irqnr, \irqstat, #0x1c00
-> +		mov 	\tmp, #0
-> +		cmp	\irqnr, #29
-> +		itt	eq
-> +		moveq	\tmp, #1
-> +		streq	\irqstat, [\base, #GIC_CPU_EOI]
-> +		cmp	\tmp, #0
-> +		.endm
-> +#endif	/* CONFIG_SMP */
+
+Currently, nothing in drivers/of/pdt.c actually checks alloc_bootmem
+results.. so we're panicking whether we like it or not.  It would be
+good to actually handle memory failures gracefully and not oops (the DT
+certainly isn't essential to booting in OLPC's case), but that's a
+separate patch (series).
+
+
+> > +		prom_early_allocated += chunk_size;
+> > +		memset(res, 0, chunk_size);
+> > +		free_mem = chunk_size;
+> > +	}
+> >  
+> > +	/* allocate from the local cache */
+> > +	free_mem -= size;
+> > +	res = mem;
+> > +	mem += size;
+> >  	return res;
+> >  }
+> >  
 > 
->  #else	/* MULTI_OMAP2 */
-> 
-> @@ -141,74 +170,15 @@ omap_irq_base:	.word	0
-> 
-> 
->  #ifdef CONFIG_ARCH_OMAP4
-> +#include <asm/hardware/entry-macro-gic.S>
-> 
->  		.macro  get_irqnr_preamble, base, tmp
->  		ldr     \base, =OMAP4_IRQ_BASE
->  		.endm
-> 
-> -		/*
-> -		 * The interrupt numbering scheme is defined in the
-> -		 * interrupt controller spec.  To wit:
-> -		 *
-> -		 * Interrupts 0-15 are IPI
-> -		 * 16-28 are reserved
-> -		 * 29-31 are local.  We allow 30 to be used for the watchdog.
-> -		 * 32-1020 are global
-> -		 * 1021-1022 are reserved
-> -		 * 1023 is "spurious" (no interrupt)
-> -		 *
-> -		 * For now, we ignore all local interrupts so only return an
-> -		 * interrupt if it's between 30 and 1020.  The test_for_ipi
-> -		 * routine below will pick up on IPIs.
-> -		 * A simple read from the controller will tell us the number
-> -		 * of the highest priority enabled interrupt.
-> -		 * We then just need to check whether it is in the
-> -		 * valid range for an IRQ (30-1020 inclusive).
-> -		 */
-> -		.macro  get_irqnr_and_base, irqnr, irqstat, base, tmp
-> -		ldr     \irqstat, [\base, #GIC_CPU_INTACK]
-> -
-> -		ldr     \tmp, =1021
-> -
-> -		bic     \irqnr, \irqstat, #0x1c00
-> -
-> -		cmp     \irqnr, #29
-> -		cmpcc   \irqnr, \irqnr
-> -		cmpne   \irqnr, \tmp
-> -		cmpcs   \irqnr, \irqnr
-> -		.endm
->  #endif
-> -#endif	/* MULTI_OMAP2 */
-> -
-> -#ifdef CONFIG_SMP
-> -		/* We assume that irqstat (the raw value of the IRQ
-> acknowledge
-> -		 * register) is preserved from the macro above.
-> -		 * If there is an IPI, we immediately signal end of interrupt
-> -		 * on the controller, since this requires the original irqstat
-> -		 * value which we won't easily be able to recreate later.
-> -		 */
-> -
-> -		.macro test_for_ipi, irqnr, irqstat, base, tmp
-> -		bic	\irqnr, \irqstat, #0x1c00
-> -		cmp	\irqnr, #16
-> -		it	cc
-> -		strcc	\irqstat, [\base, #GIC_CPU_EOI]
-> -		it	cs
-> -		cmpcs	\irqnr, \irqnr
-> -		.endm
-> -
-> -		/* As above, this assumes that irqstat and base are preserved
-> */
-> 
-> -		.macro test_for_ltirq, irqnr, irqstat, base, tmp
-> -		bic	\irqnr, \irqstat, #0x1c00
-> -		mov 	\tmp, #0
-> -		cmp	\irqnr, #29
-> -		itt	eq
-> -		moveq	\tmp, #1
-> -		streq	\irqstat, [\base, #GIC_CPU_EOI]
-> -		cmp	\tmp, #0
-> -		.endm
-> -#endif	/* CONFIG_SMP */
-> +#endif	/* MULTI_OMAP2 */
-> 
->  		.macro	irq_prio_table
->  		.endm
+> milton
