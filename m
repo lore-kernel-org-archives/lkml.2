@@ -1,44 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab0KLT2N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 14:28:13 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54549
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756825Ab0KLT2L (ORCPT
+	id S932808Ab0KLTaB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 14:30:01 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33583 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932276Ab0KLTaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 14:28:11 -0500
-Date: Fri, 12 Nov 2010 11:28:36 -0800 (PST)
-Message-Id: <20101112.112836.183042210.davem@davemloft.net>
-To: kuznet@ms2.inr.ac.ru
-Cc: eparis@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net
-Subject: Re: [RFC PATCH] network: return errors if we know tcp_connect
- failed
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101112174620.GA16544@ms2.inr.ac.ru>
-References: <20101111210341.31350.86916.stgit@paris.rdu.redhat.com>
-	<20101112174620.GA16544@ms2.inr.ac.ru>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 12 Nov 2010 14:30:00 -0500
+Date: Fri, 12 Nov 2010 11:29:04 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, jdike@addtoit.com,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: [PATCH] um: mark CONFIG_HIGHMEM as broken
+Message-Id: <20101112112904.4b91d140.akpm@linux-foundation.org>
+In-Reply-To: <1289517488-17628-1-git-send-email-richard@nod.at>
+References: <1289517488-17628-1-git-send-email-richard@nod.at>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Date: Fri, 12 Nov 2010 20:46:20 +0300
+On Fri, 12 Nov 2010 00:18:08 +0100
+Richard Weinberger <richard@nod.at> wrote:
 
-> The only loophole is ICMP error in the same case as yours. In
-> _violation_ of specs linux immediately aborts unestablished connect
-> on an icmp error. IMHO that thing which you suggest is correct (of
-> course, provided you filter out transient errors and react only to
-> EPERM or something like this). It was not done because it was
-> expected firewall rule prescribing immediate abort is configured
-> with "--reject-with icmp-port-unreachable", otherwise the rule
-> orders real blackhole.
+> Currently CONFIG_HIGHMEM is broken on User Mode Linux.
+> I'm not sure if it worked ever.
+> 
 
-The idea to signal on -EPERM might be OK, but if that's also
-what things like "-m statistical" and friends end up reporting
-then we still cannot do it.
+What is "broken" about it?
+
