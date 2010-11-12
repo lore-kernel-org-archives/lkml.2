@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932588Ab0KLQMs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 11:12:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62496 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932535Ab0KLQMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 11:12:47 -0500
-Date: Fri, 12 Nov 2010 11:12:20 -0500
-From: David Teigland <teigland@redhat.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: dlm: Use cmwq for send and receive workqueues
-Message-ID: <20101112161220.GA11037@redhat.com>
-References: <1289563949.2419.13.camel@dolmen>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289563949.2419.13.camel@dolmen>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754671Ab0KLQOK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 11:14:10 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:47881 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750810Ab0KLQOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 11:14:08 -0500
+Subject: Re: [RFC][PATCH 15/22] sched: add traceporints for -deadline tasks
+From: Raistlin <raistlin@linux.it>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <1289505274.2084.187.camel@laptop>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288334334.8661.156.camel@Palantir>  <1289505274.2084.187.camel@laptop>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-GJOZCfx2C5IJtIWmv25y"
+Date: Fri, 12 Nov 2010 17:13:29 +0100
+Message-ID: <1289578409.6525.533.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 12:12:29PM +0000, Steven Whitehouse wrote:
-> 
-> So far as I can tell, there is no reason to use a single-threaded
-> send workqueue for dlm, since it may need to send to several sockets
-> concurrently. Both workqueues are set to WQ_MEM_RECLAIM to avoid
-> any possible deadlocks, WQ_HIGHPRI since locking traffic is highly
-> latency sensitive (and to avoid a priority inversion wrt GFS2's
-> glock_workqueue) and WQ_FREEZABLE just in case someone needs to do
-> that (even though with current cluster infrastructure, it doesn't
-> make sense as the node will most likely land up ejected from the
-> cluster) in the future.
 
-Thanks, I'll want to do some testing with this, but my test machines do
-not seem to create more than one dlm_recv workqueue thread (prior to this
-patch).  Have you tested in any cases where many threads end up being
-created?  I've noticed while debugging some many-cpu machines a huge
-number of dlm_recv threads, which is just excessive.  Does this patch
-address that?
+--=-GJOZCfx2C5IJtIWmv25y
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
+On Thu, 2010-11-11 at 20:54 +0100, Peter Zijlstra wrote:
+> On Fri, 2010-10-29 at 08:38 +0200, Raistlin wrote:
+> > Add tracepoints for the most notable events related to -deadline
+> > tasks scheduling (new task arrival, context switch, runtime accounting,
+> > bandwidth enforcement timer, etc.).
+> >
+> We've already got sched_switch(), better extend that. Same for the next
+> patch, we already have a migration tracepoint, extend that.
+>=20
+> And I recently rejected a fifo push/pull tracepoint patch from Steve
+> because the migration tracepoint was able to provide the same
+> information.
+>=20
+Perfectly fine. I'll see how do that without spamming too much the trace
+with data that are meaningless for non-deadline tasks.
 
-> Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> 
-> diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
-> index 37a34c2..0893b30 100644
-> --- a/fs/dlm/lowcomms.c
-> +++ b/fs/dlm/lowcomms.c
-> @@ -1431,14 +1431,16 @@ static void work_stop(void)
->  static int work_start(void)
->  {
->  	int error;
-> -	recv_workqueue = create_workqueue("dlm_recv");
-> +	recv_workqueue = alloc_workqueue("dlm_recv", WQ_MEM_RECLAIM |
-> +					 WQ_HIGHPRI | WQ_FREEZEABLE, 0);
->  	error = IS_ERR(recv_workqueue);
->  	if (error) {
->  		log_print("can't start dlm_recv %d", error);
->  		return error;
->  	}
->  
-> -	send_workqueue = create_singlethread_workqueue("dlm_send");
-> +	send_workqueue = alloc_workqueue("dlm_send", WQ_MEM_RECLAIM |
-> +					 WQ_HIGHPRI | WQ_FREEZEABLE, 0);
->  	error = IS_ERR(send_workqueue);
->  	if (error) {
->  		log_print("can't start dlm_send %d", error);
-> 
-> 
+Thanks,
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://blog.linux.it/raistlin / raistlin@ekiga.net /
+dario.faggioli@jabber.org
+
+--=-GJOZCfx2C5IJtIWmv25y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzdZ6kACgkQk4XaBE3IOsRr2wCaAlOEYTgNGS2+x36cTJGRONWd
+0C4AoKRgbFJ3gp/rO0JRkehR+4wvl/YI
+=wi+n
+-----END PGP SIGNATURE-----
+
+--=-GJOZCfx2C5IJtIWmv25y--
+
