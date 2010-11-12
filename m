@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932691Ab0KLUJM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 15:09:12 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51840 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756777Ab0KLUJK (ORCPT
+	id S932769Ab0KLUOQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 15:14:16 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40105 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932526Ab0KLUOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 15:09:10 -0500
-Date: Fri, 12 Nov 2010 12:08:34 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: select: fix information leak to userspace
-Message-Id: <20101112120834.33062900.akpm@linux-foundation.org>
-In-Reply-To: <1289421483-23907-1-git-send-email-segooon@gmail.com>
-References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Nov 2010 15:14:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=N5lkpeGLSt06LojS0+/vxo/pEC06h9iJIJxf/54cJthReCfmYTTQpb81IsFJkwaMcJ
+         0OrGvXOyOIIk4Ro+l1aB1R4plZ1SVqDDFOfZKzpkZ4WY/S8zQJA5UJCmtsTqFI24vbQU
+         4stuAajZTj+1c94af7XaKq2aV+hbxW4YpJvJI=
+MIME-Version: 1.0
+In-Reply-To: <20101112165420.GA6928@alchark-u3s.lan>
+References: <1289147348-31969-1-git-send-email-alchark@gmail.com>
+	<20101107165745.GB1759@n2100.arm.linux.org.uk>
+	<AANLkTimFJ=Brx4pDiUqZOKDfABaDg0s_yFC7EkZGi7D8@mail.gmail.com>
+	<20101107171726.GF1759@n2100.arm.linux.org.uk>
+	<20101108171930.GA1471@alchark-u3s.lan>
+	<20101111212322.GA15533@alchark-u3s.lan>
+	<20101111234957.GA28735@n2100.arm.linux.org.uk>
+	<20101112165420.GA6928@alchark-u3s.lan>
+Date: Fri, 12 Nov 2010 23:14:12 +0300
+Message-ID: <AANLkTimvMz6EJcCPjhVq5u8x3BWjCCgspbjfa0DQXJr-@mail.gmail.com>
+Subject: Re: [PATCH 1/6 v6] ARM: Add basic architecture support for
+ VIA/WonderMedia 85xx SoC's
+From: Alexey Charkov <alchark@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Alexey Charkov <alchark@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Eric Miao <eric.y.miao@gmail.com>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 10 Nov 2010 23:38:02 +0300
-Vasiliy Kulikov <segooon@gmail.com> wrote:
+> Russell, could you please elaborate on your comment regarding spinlocks
+> and irq handlers? I always compile my kernel with all kinds of lock
+> debugging, and have not run into any associated warnings. Is there
+> anything suspicious specifically?
 
-> On some architectures __kernel_suseconds_t is int.
+My fault: actually, those were not all lock debugging functions. It
+really prints errors when lock correctness proving is enabled. I thus
+decided to just assign the callback functions directly to irq_desc
+struct fields, as it is done in mach-msm.
 
-On sparc and parisc.  On all other architectures this patch is a waste
-of cycles.
+There is, however, another error showing up: it complains about my use
+of ioremap inside arch_reset(). Is it fine to just hardcode the
+virtual address of the respective register and use that directly in
+this case? Something along the lines of:
 
->  On these archs
-> struct timeval has padding bytes at the end.  This struct is copied to
-> userspace with these padding bytes uninitialized.  This leads to leaking
-> of contents of kernel stack memory.
-> 
-> This bug was added with v2.6.27-rc5-286-gb773ad4.
-> 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> ---
->  Compile tested.
-> 
->  fs/select.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/select.c b/fs/select.c
-> index b7b10aa..32cf018 100644
-> --- a/fs/select.c
-> +++ b/fs/select.c
-> @@ -306,6 +306,7 @@ static int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
->  		rts.tv_sec = rts.tv_nsec = 0;
->  
->  	if (timeval) {
-> +		memset(&rtv, 0, sizeof(rtv));
->  		rtv.tv_sec = rts.tv_sec;
->  		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
+/* PM Software Reset request register */
+#define VT8500_PMSR_VIRT	0xf8130060
 
-How about this?
+static inline void arch_reset(char mode, const char *cmd)
+{
+	writel(1, VT8500_PMSR_VIRT);
+}
 
---- a/fs/select.c~fs-select-fix-information-leak-to-userspace-fix
-+++ a/fs/select.c
-@@ -306,7 +306,8 @@ static int poll_select_copy_remaining(st
- 		rts.tv_sec = rts.tv_nsec = 0;
- 
- 	if (timeval) {
--		memset(&rtv, 0, sizeof(rtv));
-+		if (sizeof(rtv) > sizeof(rtv.tv_sec) + sizeof(rtv.tv_usec))
-+			memset(&rtv, 0, sizeof(rtv));
- 		rtv.tv_sec = rts.tv_sec;
- 		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
- 
-_
-
-
-The `if' gets eliminated at compile time.  With this approach we add
-four bytes of text to the sparc64 build and zero bytes of text to the
-x86_64 build.
-
-
+Thanks,
+Alexey
