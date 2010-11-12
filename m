@@ -1,90 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221Ab0KLS4U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 13:56:20 -0500
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:45094 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932068Ab0KLS4T (ORCPT
+	id S1757043Ab0KLS5L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 13:57:11 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:56172 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752967Ab0KLS5I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 13:56:19 -0500
-Subject: (mem hotplug, pcpu_alloc) BUG: sleeping function called from
-	invalid context at kernel/mutex.c:94
-From: Alok Kataria <akataria@vmware.com>
-Reply-To: akataria@vmware.com
-To: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Petr Vandrovec <petr@vmware.com>
-Content-Type: text/plain
-Organization: VMware INC.
-Date: Fri, 12 Nov 2010 10:56:18 -0800
-Message-Id: <1289588178.7486.15.camel@ank32.eng.vmware.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Nov 2010 13:57:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uNL5/IbO+dK1E5rxErWu5g5EdP8045LInHKnYlT2yhjwcwzRy3UbTO2Cim/r46/lIJ
+         dtbfwGnFhwRcdp1bvqxBGcWmQHzUvfkP+r12ZTFWtaoEnfg7hotciAY1XrC9wZUKXBlU
+         EHh62zto+zPQ3Ujo07K0mSQwM6RvD46CeWiMg=
+Date: Fri, 12 Nov 2010 10:57:00 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Stefan Achatz <stefan_achatz@web.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+        "Serge E. Hallyn" <serue@us.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Benjamin Thery <benjamin.thery@bull.net>
+Subject: Re: [PATCH 1/2] sysfs: Introducing sysfs_create_bin_group()
+Message-ID: <20101112185700.GE1224@core.coreip.homeip.net>
+References: <1289585918.2629.12.camel@neuromancer>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289585918.2629.12.camel@neuromancer>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Nov 12, 2010 at 07:18:38PM +0100, Stefan Achatz wrote:
+> Implemented group functions for easier creation of multiple binary sysfs
+> attributes similar to existing attribute_group handling functions.
+> The code reuses struct attribute_group instead of inventing a new struct
+> binary_attribute_group.
+> 
+> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
 
-We have seen following might_sleep warning while hot adding memory...
+Looks good to me, thanks for implementing this.
 
-[  142.339267] BUG: sleeping function called from invalid context at kernel/mutex.c:94
-[  142.339276] in_atomic(): 0, irqs_disabled(): 1, pid: 4, name: migration/0
-[  142.339283] Pid: 4, comm: migration/0 Not tainted 2.6.35.6-45.fc14.x86_64 #1
-[  142.339288] Call Trace:
-[  142.339305]  [<ffffffff8103d12b>] __might_sleep+0xeb/0xf0
-[  142.339316]  [<ffffffff81468245>] mutex_lock+0x24/0x50
-[  142.339326]  [<ffffffff8110eaa6>] pcpu_alloc+0x6d/0x7ee
-[  142.339336]  [<ffffffff81048888>] ? load_balance+0xbe/0x60e
-[  142.339343]  [<ffffffff8103a1b3>] ? rt_se_boosted+0x21/0x2f
-[  142.339349]  [<ffffffff8103e1cf>] ? dequeue_rt_stack+0x18b/0x1ed
-[  142.339356]  [<ffffffff8110f237>] __alloc_percpu+0x10/0x12
-[  142.339362]  [<ffffffff81465e22>] setup_zone_pageset+0x38/0xbe
-[  142.339373]  [<ffffffff810d6d81>] ? build_zonelists_node.clone.58+0x79/0x8c
-[  142.339384]  [<ffffffff81452539>] __build_all_zonelists+0x419/0x46c
-[  142.339395]  [<ffffffff8108ef01>] ? cpu_stopper_thread+0xb2/0x198
-[  142.339401]  [<ffffffff8108f075>] stop_machine_cpu_stop+0x8e/0xc5
-[  142.339407]  [<ffffffff8108efe7>] ? stop_machine_cpu_stop+0x0/0xc5
-[  142.339414]  [<ffffffff8108ef57>] cpu_stopper_thread+0x108/0x198
-[  142.339420]  [<ffffffff81467a37>] ? schedule+0x5b2/0x5cc
-[  142.339426]  [<ffffffff8108ee4f>] ? cpu_stopper_thread+0x0/0x198
-[  142.339434]  [<ffffffff81065f29>] kthread+0x7f/0x87
-[  142.339443]  [<ffffffff8100aae4>] kernel_thread_helper+0x4/0x10
-[  142.339449]  [<ffffffff81065eaa>] ? kthread+0x0/0x87
-[  142.339455]  [<ffffffff8100aae0>] ? kernel_thread_helper+0x0/0x10
-[  142.340099] Built 5 zonelists in Node order, mobility grouping on.  Total pages: 289456
-[  142.340108] Policy zone: Normal
+> ---
+>  fs/sysfs/group.c      |   76 ++++++++++++++++++++++++++++++++++++------------
+>  include/linux/sysfs.h |   11 +++++++
+>  2 files changed, 68 insertions(+), 19 deletions(-)
+> 
+> diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+> index 442f34f..841baed 100644
+> --- a/fs/sysfs/group.c
+> +++ b/fs/sysfs/group.c
+> @@ -27,7 +27,7 @@ static void remove_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
+>  }
+>  
+>  static int create_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
+> -			const struct attribute_group *grp, int update)
+> +			const struct attribute_group *grp, int update, int type)
+>  {
+>  	struct attribute *const* attr;
+>  	int error = 0, i;
+> @@ -45,7 +45,7 @@ static int create_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
+>  			if (!mode)
+>  				continue;
+>  		}
+> -		error = sysfs_add_file_mode(dir_sd, *attr, SYSFS_KOBJ_ATTR,
+> +		error = sysfs_add_file_mode(dir_sd, *attr, type,
+>  					    (*attr)->mode | mode);
+>  		if (unlikely(error))
+>  			break;
+> @@ -57,7 +57,7 @@ static int create_files(struct sysfs_dirent *dir_sd, struct kobject *kobj,
+>  
+>  
+>  static int internal_create_group(struct kobject *kobj, int update,
+> -				 const struct attribute_group *grp)
+> +				 const struct attribute_group *grp, int type)
+>  {
+>  	struct sysfs_dirent *sd;
+>  	int error;
+> @@ -75,7 +75,7 @@ static int internal_create_group(struct kobject *kobj, int update,
+>  	} else
+>  		sd = kobj->sd;
+>  	sysfs_get(sd);
+> -	error = create_files(sd, kobj, grp, update);
+> +	error = create_files(sd, kobj, grp, update, type);
+>  	if (error) {
+>  		if (grp->name)
+>  			sysfs_remove_subdir(sd);
+> @@ -97,9 +97,16 @@ static int internal_create_group(struct kobject *kobj, int update,
+>  int sysfs_create_group(struct kobject *kobj,
+>  		       const struct attribute_group *grp)
+>  {
+> -	return internal_create_group(kobj, 0, grp);
+> +	return internal_create_group(kobj, 0, grp, SYSFS_KOBJ_ATTR);
+>  }
+>  
+> +int sysfs_create_bin_group(struct kobject *kobj,
+> +			   const struct attribute_group *grp)
+> +{
+> +	return internal_create_group(kobj, 0, grp, SYSFS_KOBJ_BIN_ATTR);
+> +}
+> +EXPORT_SYMBOL_GPL(sysfs_create_bin_group);
+> +
+>  /**
+>   * sysfs_update_group - given a directory kobject, create an attribute group
+>   * @kobj:	The kobject to create the group on
+> @@ -120,10 +127,15 @@ int sysfs_create_group(struct kobject *kobj,
+>  int sysfs_update_group(struct kobject *kobj,
+>  		       const struct attribute_group *grp)
+>  {
+> -	return internal_create_group(kobj, 1, grp);
+> +	return internal_create_group(kobj, 1, grp, SYSFS_KOBJ_ATTR);
+>  }
+>  
+> -
+> +int sysfs_update_bin_group(struct kobject *kobj,
+> +			   const struct attribute_group *grp)
+> +{
+> +	return internal_create_group(kobj, 1, grp, SYSFS_KOBJ_BIN_ATTR);
+> +}
+> +EXPORT_SYMBOL_GPL(sysfs_update_bin_group);
+>  
+>  void sysfs_remove_group(struct kobject * kobj, 
+>  			const struct attribute_group * grp)
+> @@ -148,17 +160,15 @@ void sysfs_remove_group(struct kobject * kobj,
+>  	sysfs_put(sd);
+>  }
+>  
+> -/**
+> - * sysfs_merge_group - merge files into a pre-existing attribute group.
+> - * @kobj:	The kobject containing the group.
+> - * @grp:	The files to create and the attribute group they belong to.
+> - *
+> - * This function returns an error if the group doesn't exist or any of the
+> - * files already exist in that group, in which case none of the new files
+> - * are created.
+> - */
+> -int sysfs_merge_group(struct kobject *kobj,
+> -		       const struct attribute_group *grp)
+> +void sysfs_remove_bin_group(struct kobject * kobj,
+> +			    const struct attribute_group * grp)
+> +{
+> +	sysfs_remove_group(kobj, grp);
+> +}
+> +EXPORT_SYMBOL_GPL(sysfs_remove_bin_group);
+> +
+> +int internal_merge_group(struct kobject *kobj,
+> +		       const struct attribute_group *grp, int type)
+>  {
+>  	struct sysfs_dirent *dir_sd;
+>  	int error = 0;
+> @@ -173,7 +183,7 @@ int sysfs_merge_group(struct kobject *kobj,
+>  		return -ENOENT;
+>  
+>  	for ((i = 0, attr = grp->attrs); *attr && !error; (++i, ++attr))
+> -		error = sysfs_add_file(dir_sd, *attr, SYSFS_KOBJ_ATTR);
+> +		error = sysfs_add_file(dir_sd, *attr, type);
+>  	if (error) {
+>  		while (--i >= 0)
+>  			sysfs_hash_and_remove(dir_sd, NULL, (*--attr)->name);
+> @@ -182,8 +192,30 @@ int sysfs_merge_group(struct kobject *kobj,
+>  
+>  	return error;
+>  }
+> +
+> +/**
+> + * sysfs_merge_group - merge files into a pre-existing attribute group.
+> + * @kobj:	The kobject containing the group.
+> + * @grp:	The files to create and the attribute group they belong to.
+> + *
+> + * This function returns an error if the group doesn't exist or any of the
+> + * files already exist in that group, in which case none of the new files
+> + * are created.
+> + */
+> +int sysfs_merge_group(struct kobject *kobj,
+> +		       const struct attribute_group *grp)
+> +{
+> +	return internal_merge_group(kobj, grp, SYSFS_KOBJ_ATTR);
+> +}
+>  EXPORT_SYMBOL_GPL(sysfs_merge_group);
+>  
+> +int sysfs_merge_bin_group(struct kobject *kobj,
+> +			  const struct attribute_group *grp)
+> +{
+> +	return internal_merge_group(kobj, grp, SYSFS_KOBJ_BIN_ATTR);
+> +}
+> +EXPORT_SYMBOL_GPL(sysfs_merge_bin_group);
+> +
+>  /**
+>   * sysfs_unmerge_group - remove files from a pre-existing attribute group.
+>   * @kobj:	The kobject containing the group.
+> @@ -207,6 +239,12 @@ void sysfs_unmerge_group(struct kobject *kobj,
+>  }
+>  EXPORT_SYMBOL_GPL(sysfs_unmerge_group);
+>  
+> +void sysfs_unmerge_bin_group(struct kobject *kobj,
+> +			     const struct attribute_group *grp)
+> +{
+> +	sysfs_unmerge_group(kobj, grp);
+> +}
+> +EXPORT_SYMBOL_GPL(sysfs_unmerge_bin_group);
+>  
+>  EXPORT_SYMBOL_GPL(sysfs_create_group);
+>  EXPORT_SYMBOL_GPL(sysfs_update_group);
+> diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+> index 30b8815..653b0b0 100644
+> --- a/include/linux/sysfs.h
+> +++ b/include/linux/sysfs.h
+> @@ -169,6 +169,17 @@ int sysfs_merge_group(struct kobject *kobj,
+>  void sysfs_unmerge_group(struct kobject *kobj,
+>  		       const struct attribute_group *grp);
+>  
+> +int sysfs_create_bin_group(struct kobject *kobj,
+> +			   const struct attribute_group *grp);
+> +int sysfs_update_bin_group(struct kobject *kobj,
+> +			   const struct attribute_group *grp);
+> +void sysfs_remove_bin_group(struct kobject * kobj,
+> +			const struct attribute_group * grp);
+> +int sysfs_merge_bin_group(struct kobject *kobj,
+> +		       const struct attribute_group *grp);
+> +void sysfs_unmerge_bin_group(struct kobject *kobj,
+> +		       const struct attribute_group *grp);
+> +
+>  void sysfs_notify(struct kobject *kobj, const char *dir, const char *attr);
+>  void sysfs_notify_dirent(struct sysfs_dirent *sd);
+>  struct sysfs_dirent *sysfs_get_dirent(struct sysfs_dirent *parent_sd,
+> -- 
+> 1.7.2.3
+> 
+> 
+> 
 
-
-This warning was seen on the FC14 kernel, though looking at the current
-git, the problem seems to exist on mainline too.
-The problem is that pcpu_alloc expects that it is called from non-atomic
-context as a result it grabs the pcpu_alloc_mutex. 
-In the memory-hotplug case though, we do end up calling pcpu_alloc from
-atomic context, while all cpus are stopped.
-
-void build_all_zonelists(void *data)
-{
-   set_zonelist_order();
-
-   if (system_state == SYSTEM_BOOTING) {
-      __build_all_zonelists(NULL);
-      mminit_verify_zonelist();
-      cpuset_init_current_mems_allowed();
-   } else {
-      /* we have to stop all cpus to guarantee there is no user
-         of zonelist */
-      stop_machine(__build_all_zonelists, data, NULL);   <=========
-      /* cpuset refresh routine should be here */
-   }
-
-__build_all_zonelists eventually calls pcpu_alloc. 
-
-I didn't dive through the history, so am not sure when was this
-regression introduced, but could have regressed with the new pcpu memory
-allocator.
-
---
-Alok
-
+-- 
+Dmitry
