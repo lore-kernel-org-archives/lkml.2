@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab0KLQH3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 11:07:29 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:49085 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932550Ab0KLQH0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 11:07:26 -0500
-Subject: Re: [RFC][PATCH 18/22] sched: add reclaiming logic to -deadline
- tasks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raistlin <raistlin@linux.it>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1289576177.6525.509.camel@Palantir>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288334546.8661.161.camel@Palantir>  <1289513573.2084.199.camel@laptop>
-	 <1289576177.6525.509.camel@Palantir>
+	id S932554Ab0KLQKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 11:10:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38247 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757566Ab0KLQKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 11:10:14 -0500
+Subject: RE: [RFC PATCH] network: return errors if we know tcp_connect
+ failed
+From: Eric Paris <eparis@redhat.com>
+To: Hua Zhong <hzhong@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
+        paul.moore@hp.com
+In-Reply-To: <00c201cb81eb$84e18160$8ea48420$@com>
+References: <20101111210341.31350.86916.stgit@paris.rdu.redhat.com>
+	 <00c201cb81eb$84e18160$8ea48420$@com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 12 Nov 2010 17:04:01 +0100
-Message-ID: <1289577841.2084.302.camel@laptop>
+Date: Fri, 12 Nov 2010 11:08:28 -0500
+Message-ID: <1289578108.3083.95.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-12 at 16:36 +0100, Raistlin wrote:
-> But at this point I can't avoid asking. That model aims at _pure_
-> hard real-time scheduling *without* resource reservation capabilities,
-> provided it deals with temporal overruns by means of a probabilistic
-> analysis, right? 
+On Thu, 2010-11-11 at 13:58 -0800, Hua Zhong wrote:
+> > Yes, I realize this is little different than if the
+> > SYN was dropped in the first network device, but it is different
+> > because we know what happened!  We know that connect() call failed
+> > and that there isn't anything coming back.
+> 
+> I would argue that -j DROP should behave exactly as the packet is dropped in the network, while -j REJECT should signal the failure to the application as soon as possible (which it doesn't seem to do).
+> 
+> It does not only make sense, but also is a highly useful testing technique that we use -j DROP in OUTPUT to emulate network losses and see how the application behaves.
 
->From what I understood from it, its a soft real-time scheduling
-algorithm with resource reservation. It explicitly allows for deadline
-misses, but requires the tardiness of those misses to be bounded, ie.
-the UNC soft real-time definition.
+I guess I can be a bit more descriptive of my specific situation,
+although I'm not sure it matters.  I don't actually plan to drop packets
+with -j REJECT or -j DROP, that's just a simple example everyone can see
+on their own machine.  I plan to have the packets drop in the selinux
+netfilter hook.  The SELinux hook uses NF_DROP/NF_ACCEPT just like any
+other netfilter hook.  Maybe the answer is that I need to duplicate the
+-j REJECT type operations in the SELinux hook.  -j REJECT doesn't do
+what I want today, but if that's the right way forward tell me and I'll
+look down that path.
 
-The problem the stochastic execution time model tries to address is the
-WCET computation mess, WCET computation is hard and often overly
-pessimistic, resulting in under-utilized systems.
+But the path I first started looking down rules in 2 distinct questions:
 
-By using the average CET (much more easily obtained) we get a much
-higher system utilization, but since its an average we need to deal with
-deadline overruns due to temporal overload scenarios.
+1) What should netfilter pass back up the stack.  From my looking at
+this I see that nf_hook_slow() will convert NF_DROP into -EPERM and pass
+that back up the stack.  Is this wrong?  Should it more intelligently
+pass errors back up the stack?  Maybe it needs an NF_REJECT as well as
+NF_DROP?  NF_DROP returns 0 maybe and NF_REJECT return EPERM?
 
-Their reasoning goes that since its an average, an overrun must be
-compensated by a short run in the near future. The variance parameter
-provides a measure of 'near'. Once we've 'consumed' this short run and
-are back to the average case our tardiness is back to 0 as well
-(considering an otherwise tight scheduler, say P-EDF), since then we've
-met the bandwidth requirements placed by this scheduler.
+2) What should the generic TCP code (tcp_connect()) do if the skb failed
+to send.  Should it return error codes back up the stack somehow or
+should they continue to be ignored?  Obviously continuing to just ignore
+information we have doesn't make me happy (otherwise I wouldn't have
+started scratching this itch).  But the point about ENOBUFS is well
+taken.  Maybe I should make tcp_connect(), or the caller to
+tcp_connect() more intelligent about specific error codes?
 
-And since the pure statistics allow for an arbitrary large deviation
-from the average it also requires a max runtime in order to be able to
-place a bound on tardiness.
+I'm looking for a path forward.  If SELinux is rejecting the SYN packets
+on connect() I want to pass that info to userspace rather than just
+hanging.  What's the best way to accomplish that?
 
-So for G-EDF with stochastic ET we still get a bounded tardiness, its a
-simple sum of bounds, one due to the G in G-EDF and one due to the
-stochastic ET.
-
+-Eric
 
