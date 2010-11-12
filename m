@@ -1,44 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754549Ab0KLHcM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 02:32:12 -0500
-Received: from stinky.trash.net ([213.144.137.162]:55810 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab0KLHcL (ORCPT
+	id S1754979Ab0KLHdV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 02:33:21 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:35179 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752746Ab0KLHdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 02:32:11 -0500
-Message-ID: <4CDCED7A.9040202@trash.net>
-Date: Fri, 12 Nov 2010 08:32:10 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
-MIME-Version: 1.0
-To: Jan Engelhardt <jengelh@medozas.de>
-CC: Eric Paris <eparis@redhat.com>, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netfilter: NF_HOOK_COND has wrong conditional
-References: <20101111190954.29005.61686.stgit@paris.rdu.redhat.com> <alpine.LNX.2.01.1011112148100.30863@obet.zrqbmnf.qr>
-In-Reply-To: <alpine.LNX.2.01.1011112148100.30863@obet.zrqbmnf.qr>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Nov 2010 02:33:20 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=IcP/v1EnFCgFMYXfYSyRbXSLtFLC5D4O4jBKo7fPr3Ipw9OhtoCmu5NKLDrFx7+co
+	eIkEIwdZJJOgqcCPWvJzg==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Greg Thelen <gthelen@google.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: [PATCH] ioprio: grab rcu_read_lock in sys_ioprio_{set,get}()
+Date: Thu, 11 Nov 2010 23:32:47 -0800
+Message-Id: <1289547167-32675-1-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.11.2010 21:49, Jan Engelhardt wrote:
-> On Thursday 2010-11-11 20:09, Eric Paris wrote:
-> 
->> The NF_HOOK_COND returns 0 when it shouldn't due to what I believe to be an
->> error in the code as the order of operations is not what was intended.  C will
->> evalutate == before =.  Which means ret is getting set to the bool result,
->> rather than the return value of the function call.  The code says
->>
->> if (ret = function() == 1)
->> when it meant to say:
->> if ((ret = function()) == 1)
-> 
-> Thanks for catching. Indeed (ret = f) == 1 is desired, as can be seen in 
-> patch 2249065f4b22b493bae2caf549b86f175f33188e.
+Using:
+- CONFIG_LOCKUP_DETECTOR=y
+- CONFIG_PREEMPT=y
+- CONFIG_LOCKDEP=y
+- CONFIG_PROVE_LOCKING=y
+- CONFIG_PROVE_RCU=y
+found a missing rcu lock during boot on a 512 MiB x86_64 ubuntu vm:
+  ===================================================
+  [ INFO: suspicious rcu_dereference_check() usage. ]
+  ---------------------------------------------------
+  kernel/pid.c:419 invoked rcu_dereference_check() without protection!
 
-Applied, thanks Eric.
+  other info that might help us debug this:
+
+  rcu_scheduler_active = 1, debug_locks = 0
+  1 lock held by ureadahead/1355:
+   #0:  (tasklist_lock){.+.+..}, at: [<ffffffff8115bc09>] sys_ioprio_set+0x7f/0x29e
+
+  stack backtrace:
+  Pid: 1355, comm: ureadahead Not tainted 2.6.37-dbg-DEV #1
+  Call Trace:
+   [<ffffffff8109c10c>] lockdep_rcu_dereference+0xaa/0xb3
+   [<ffffffff81088cbf>] find_task_by_pid_ns+0x44/0x5d
+   [<ffffffff81088cfa>] find_task_by_vpid+0x22/0x24
+   [<ffffffff8115bc3e>] sys_ioprio_set+0xb4/0x29e
+   [<ffffffff8147cf21>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+   [<ffffffff8105c409>] sysenter_dispatch+0x7/0x2c
+   [<ffffffff8147cee2>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+
+The fix is to:
+a) grab rcu lock in sys_ioprio_{set,get}() and
+b) avoid grabbing tasklist_lock.
+Discussion in: http://marc.info/?l=linux-kernel&m=128951324702889
+
+Signed-off-by: Greg Thelen <gthelen@google.com>
+---
+ fs/ioprio.c |   13 ++++---------
+ 1 files changed, 4 insertions(+), 9 deletions(-)
+
+diff --git a/fs/ioprio.c b/fs/ioprio.c
+index 748cfb9..7da2a06 100644
+--- a/fs/ioprio.c
++++ b/fs/ioprio.c
+@@ -103,12 +103,7 @@ SYSCALL_DEFINE3(ioprio_set, int, which, int, who, int, ioprio)
+ 	}
+ 
+ 	ret = -ESRCH;
+-	/*
+-	 * We want IOPRIO_WHO_PGRP/IOPRIO_WHO_USER to be "atomic",
+-	 * so we can't use rcu_read_lock(). See re-copy of ->ioprio
+-	 * in copy_process().
+-	 */
+-	read_lock(&tasklist_lock);
++	rcu_read_lock();
+ 	switch (which) {
+ 		case IOPRIO_WHO_PROCESS:
+ 			if (!who)
+@@ -153,7 +148,7 @@ free_uid:
+ 			ret = -EINVAL;
+ 	}
+ 
+-	read_unlock(&tasklist_lock);
++	rcu_read_unlock();
+ 	return ret;
+ }
+ 
+@@ -197,7 +192,7 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
+ 	int ret = -ESRCH;
+ 	int tmpio;
+ 
+-	read_lock(&tasklist_lock);
++	rcu_read_lock();
+ 	switch (which) {
+ 		case IOPRIO_WHO_PROCESS:
+ 			if (!who)
+@@ -250,6 +245,6 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
+ 			ret = -EINVAL;
+ 	}
+ 
+-	read_unlock(&tasklist_lock);
++	rcu_read_unlock();
+ 	return ret;
+ }
+-- 
+1.7.3.1
+
