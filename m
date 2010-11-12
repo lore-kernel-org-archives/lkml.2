@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756350Ab0KLJ10 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 04:27:26 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40873 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755525Ab0KLJ1Y (ORCPT
+	id S1756394Ab0KLJ3D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 04:29:03 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:46136 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752444Ab0KLJ3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 04:27:24 -0500
-Date: Fri, 12 Nov 2010 09:25:04 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Shishkin <virtuoso@slind.org>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCHv6 0/7] system time changes notification
-Message-ID: <20101112092504.6b8db05b@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
-References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
-	<22542.1289507293@localhost>
-	<20101111205123.GC10585@shisha.kicks-ass.net>
-	<alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
-	<AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Nov 2010 04:29:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=aXtunkNbXbUEooiZykOR8sxZtj01tnQlbPnJjJc97+P4S+u2K+Ohpdk7y5iX/izelt
+         ocaqcJPOH8Pza/d5omwBVouUDRyEyBZJ/t35ztL5JlxmYHFF58q1CXmotaLhWvG/au5j
+         BLgcJrFzcorbEnCRcS/xh8PQSb86oV/dCcu/c=
+Date: Fri, 12 Nov 2010 17:33:45 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Cypher Wu <cypher.w@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Kernel rwlock design, Multicore and IGMP
+Message-ID: <20101112093345.GC5949@cr0.nay.redhat.com>
+References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
+ <1289489007.17691.1310.camel@edumazet-laptop>
+ <AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>
+ <20101112071323.GB5660@cr0.nay.redhat.com>
+ <1289546874.17691.1774.camel@edumazet-laptop>
+ <20101112081945.GA5949@cr0.nay.redhat.com>
+ <1289553759.3185.1.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1289553759.3185.1.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> #define CLOCK_FD 0x80000000
-> fd = open("/dev/clock/realtime", O_RDWR);
-> poll(fd);
-> clock_gettime(CLOCK_FD|fd, &ts);
-> [...]
+On Fri, Nov 12, 2010 at 10:22:39AM +0100, Eric Dumazet wrote:
+>Le vendredi 12 novembre 2010 à 16:19 +0800, Américo Wang a écrit :
+>> On Fri, Nov 12, 2010 at 08:27:54AM +0100, Eric Dumazet wrote:
+>
+>> >A RCU conversion is far more complex.
+>> >
+>> 
+>> Yup.
+>
+>
+>Well, actually this is easy in this case.
+>
+>I'll post a patch to do this RCU conversion.
+>
 
-Oh please. Can we not manage to vaguely follow the direction of other
-syscalls and instead of magic flag hacks just add
+Cool! Please keep me in Cc.
 
-	fclock_gettime
+Some conversions from rwlock to RCU are indeed complex,
+don't know about this case.
+
+Anyway, patch please. :)
