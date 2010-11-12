@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444Ab0KLPEN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 10:04:13 -0500
-Received: from kroah.org ([198.145.64.141]:41480 "EHLO coco.kroah.org"
+	id S932428Ab0KLPEM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 10:04:12 -0500
+Received: from kroah.org ([198.145.64.141]:41475 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932300Ab0KLPEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932100Ab0KLPEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Nov 2010 10:04:11 -0500
-Date: Fri, 12 Nov 2010 07:03:16 -0800
+Date: Fri, 12 Nov 2010 07:01:43 -0800
 From: Greg KH <greg@kroah.com>
-To: Hemanth V <hemanthv@ti.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-iio@vger.kernel.org,
-        linux-input@vger.kernel.org,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        Jean Delvare <khali@linux-fr.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, drivers@analog.com,
-        achew@nvidia.com, Donggeun Kim <dg77.kim@samsung.com>,
-        Dmitry Torokhov <dtor@mail.ru>
-Subject: Re: Sensor event related attribute naming.
-Message-ID: <20101112150316.GB18096@kroah.com>
-References: <7BC12C510D794F198DFA5A5C104CD7B6@wipblrx0099946>
+To: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm@lists.arm.linux.org.uk, linux-serial@vger.kernel.org
+Subject: Re: [PATCHv4 0/4] OMAP: Serial: remove magic and diplicates
+Message-ID: <20101112150143.GA18096@kroah.com>
+References: <1289567043-6213-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <7BC12C510D794F198DFA5A5C104CD7B6@wipblrx0099946>
+In-Reply-To: <1289567043-6213-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 03:34:36PM +0530, Hemanth V wrote:
-> ----- Original Message ----- From: "Hemanth V" <hemanthv@ti.com>
-> To: "Jonathan Cameron" <jic23@cam.ac.uk>; "Dmitry Torokhov" <dtor@mail.ru>
->
->
->> ----- Original Message ----- From: "Jonathan Cameron" <jic23@cam.ac.uk>
->> To: "Jonathan Cameron" <jic23@cam.ac.uk>
->> Sent: Thursday, September 30, 2010 3:36 PM
->> Subject: Re: Sensor event related attribute naming.
->>
->>
->>> Given the lack of further comment, I went ahead and implemented the above 
->>> naming
->>> scheme for IIO. As the above discussion with Hemanth shows, there are 
->>> some corner cases
->>> that will need futher thought in the future.
->>>
->>
->> Jonathan, haven't seen many comments on this. Do u think the reason
->> might be that these interfaces are hidden behind a HAL layer like in 
->> android and
->> might not be a burning issue for many people.
->>
->
-> Dmitry, could you let us know your thoughts on this too.
-> Would using a HAL layer be better compared to creating a standard
-> sysfs interface, as it seems to be the popular approach.
+On Fri, Nov 12, 2010 at 03:03:59PM +0200, Emeltchenko Andrei wrote:
+> From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+> 
+> Add MDR1 Serial register definition to serial_reg and remove duplicated
+> code, remove magic MDR1 register numbers from serial drivers.
+> 
+> *v2 add OMAP keyword to MDR1 definition
+> *v3 remove magic from serial drivers
+> *v4 taking comments from Manjunath and Govindraj: typos, CC
+> 
+> Andrei Emeltchenko (4):
+>   OMAP: Serial: Define OMAP uart MDR1 register definitions
+>   OMAP1: Serial: remove magic numbers for MDR1 reg
+>   OMAP2: Serial: remove magic numbers for MDR1 reg
+>   OMAP: Serial: remove redefined MDR1 register definitions
 
-What "HAL layer"?  HAL the userspace project is now dead, so you should
-standardize on a common sysfs or some other user/kernel api that the
-kernel exports for the same type of devices to make it so that
-everything works the same way.
+Looks good, do you want these to go through the omap tree, or the serial
+tree?
+
+If they go through the omap tree, feel free to add:
+	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 thanks,
 
