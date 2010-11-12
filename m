@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab0KLLXR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 06:23:17 -0500
-Received: from exprod5og107.obsmtp.com ([64.18.0.184]:47439 "EHLO
-	exprod5og107.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752711Ab0KLLXQ (ORCPT
+	id S1757372Ab0KLLZk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 06:25:40 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47640 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756270Ab0KLLZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 06:23:16 -0500
-Message-ID: <4CDD23A1.4000707@ge.com>
-Date: Fri, 12 Nov 2010 11:23:13 +0000
-From: Martyn Welch <martyn.welch@ge.com>
-Organization: GE Intelligent Platforms
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: devel@driverdev.osuosl.org,
-        Juan David Gonzalez Cobas <david.cobas@gmail.com>,
-        "Emilio G. Cota" <cota@braap.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/17] Series short description
-References: <20101028175615.GA2367@kroah.com> <20101112111359.11631.84086.stgit@ES-BJ21R4J>
-In-Reply-To: <20101112111359.11631.84086.stgit@ES-BJ21R4J>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Nov 2010 11:23:14.0514 (UTC) FILETIME=[FF2FAB20:01CB825B]
+	Fri, 12 Nov 2010 06:25:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=bdC6hrQLm+CW6wx2nZEECoJ9TYg5b3S/WQ5lHJKRA4/OfdPlhTcskAToQXmboTtVaM
+         YCvejseN2TKaAI3Y+H/xPRYJ0dc05VQHwzHAIrA3sq20MC3ZmNeteZ9fEJIyYyBN80cE
+         Z+P3UoH+9NDvdoz+/z6M0i1JvpTpcr048ggaE=
+Subject: Re: Kernel rwlock design, Multicore and IGMP
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Cypher Wu <cypher.w@gmail.com>
+Cc: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <AANLkTikHjGkq5FDoXHaUbRkpurmT3mSLiu8toqqRL4Gi@mail.gmail.com>
+References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
+	 <1289489007.17691.1310.camel@edumazet-laptop>
+	 <AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>
+	 <20101112071323.GB5660@cr0.nay.redhat.com>
+	 <1289546874.17691.1774.camel@edumazet-laptop>
+	 <AANLkTikHjGkq5FDoXHaUbRkpurmT3mSLiu8toqqRL4Gi@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 12 Nov 2010 12:25:33 +0100
+Message-ID: <1289561133.3185.123.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le vendredi 12 novembre 2010 à 19:10 +0800, Cypher Wu a écrit :
+
+> I used to using that way, just seperate the call internal and
+> external, with external one hold lock then call the internal one. But
+> in that case ip_check_mc() is called indirectly from igmpv3_sendpack()
+> and is not very clear how to give the different paramter?
+
+I said that I was preparing a RCU patch, dont bother with this ;)
+
+Should be ready in a couple of minutes.
+
+Thanks
 
 
-On 12/11/10 11:13, Martyn Welch wrote:
-> The following series implements...
-> 
-
-Grr. Stacked GIT decided to send the cover before I'd finished writing
-it! What I meant to say is:
-
-Hi Greg,
-
-Here's the series of patches from Emilio I have been through and Acked.
-
-Sorry for not sending this sooner, bad health kept me from work. I have
-promised to work through the remaining patches for Emilio, however the
-absence from work and work commitments means this is going to take a
-little longer than I had hoped (sorry Emilio). It is on my "todo" list.
-
-I have applied minor edits to some of the patches to remove checkpatch
-warnings, stacked git has the habit of correcting chunk offsets (which
-may occur when re-ordering patches etc.), but I believe the others are
-as sent by Emilio (with the addition of my ack).
-
-Martyn
-
--- 
-Martyn Welch (Principal Software Engineer)   |   Registered in England and
-GE Intelligent Platforms                     |   Wales (3828642) at 100
-T +44(0)127322748                            |   Barbirolli Square,
-Manchester,
-E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
