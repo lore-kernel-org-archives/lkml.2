@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932631Ab0KLUHE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 15:07:04 -0500
-Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:59530 "EHLO
-	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932392Ab0KLUHA (ORCPT
+	id S932691Ab0KLUJM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 15:09:12 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51840 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756777Ab0KLUJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 15:07:00 -0500
-From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-To: Florian Mickler <florian@mickler.org>
-Subject: Re: [bisected] i915 regression in post 2.6.36 kernels
-Date: Fri, 12 Nov 2010 21:08:34 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.3; i686; ; )
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <201011100802.20332.johannes.hirte@fem.tu-ilmenau.de> <201011102339.36590.johannes.hirte@fem.tu-ilmenau.de> <20101112192046.1c38e671@schatten.dmk.lab>
-In-Reply-To: <20101112192046.1c38e671@schatten.dmk.lab>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Fri, 12 Nov 2010 15:09:10 -0500
+Date: Fri, 12 Nov 2010 12:08:34 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vasiliy Kulikov <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: select: fix information leak to userspace
+Message-Id: <20101112120834.33062900.akpm@linux-foundation.org>
+In-Reply-To: <1289421483-23907-1-git-send-email-segooon@gmail.com>
+References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011122108.35664.johannes.hirte@fem.tu-ilmenau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 12 November 2010 19:20:46 Florian Mickler wrote:
-> On Wed, 10 Nov 2010 23:39:35 +0100
-> Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de> wrote:
-> 
-> > On Wednesday 10 November 2010 08:46:40 Chris Wilson wrote:
-> > > On Wed, 10 Nov 2010 08:02:19 +0100, Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de> wrote:
-> > > > With the latest kernel, I don't get any windows in KDE displayed. After
-> > > > starting kdm, I get the background picture and the mouse cursor but not the
-> > > > login window. I can login blindly and a ps on console shows me that the
-> > > > expected KDE processes are started but still nothing is displayed. 
-> > > > I've bisected this to:
-> > > > 
-> > > > 5c12a07e8073295ce8b57a822f811ac34e4f8420 is the first bad commit
-> > > > commit 5c12a07e8073295ce8b57a822f811ac34e4f8420
-> > > > Author: Chris Wilson <chris@chris-wilson.co.uk>
-> > > > Date:   Wed Sep 22 11:22:30 2010 +0100
-> > > > 
-> > > >     drm/i915: Drop ring->lazy_request
-> > > >     
-> > > >     We are not currently using it as intended, so remove the complication.
-> > > > 
-> > > >     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> > > 
-> > > May I ask you to recheck your bisection, since that was later reverted.
-> > > -Chris
-> > 
-> > Did so. I've started with v2.6.36 for bisect good and 
-> > f6614b7bb405a9b35dd28baea989a749492c46b2 for bisect bad (was HEAD) in this
-> > case. Again I ended in 5c12a07e8073295ce8b57a822f811ac34e4f8420 as the first
-> > bad commit. The regression was introduced there, as the commit before is fine.
-> > If it was reverted, the regression should be fixed by this. But I don't find
-> > neither the fix/revert nor the reintroduction of the regression.
-> > 
-> > regrards,
-> >   Johannes
-> 
-> The revert is a56ba56c275b1c2b982c8901ab92bf5a0fd0b757 .
+On Wed, 10 Nov 2010 23:38:02 +0300
+Vasiliy Kulikov <segooon@gmail.com> wrote:
 
-Thanks for the hint. This was the commit I was searching for. Unfortunately
-this version shows the same regression. I've checked again, that
-5c12a07e8073295ce8b57a822f811ac34e4f8420 is the first bad version.
-2.6.36-rc5-00228-g2896b53 (2896b5397570f6857fd5d0e0533f640b05b1d162) works
-2.6.36-rc5-00229-g5c12a07 (5c12a07e8073295ce8b57a822f811ac34e4f8420) doesn't.
-Someone with knowledge of the code should have a look what's different
-between 5c12a07e8073295ce8b57a822f811ac34e4f8420 and its revert.
+> On some architectures __kernel_suseconds_t is int.
 
-regards,
-  Johannes
+On sparc and parisc.  On all other architectures this patch is a waste
+of cycles.
+
+>  On these archs
+> struct timeval has padding bytes at the end.  This struct is copied to
+> userspace with these padding bytes uninitialized.  This leads to leaking
+> of contents of kernel stack memory.
+> 
+> This bug was added with v2.6.27-rc5-286-gb773ad4.
+> 
+> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> ---
+>  Compile tested.
+> 
+>  fs/select.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/select.c b/fs/select.c
+> index b7b10aa..32cf018 100644
+> --- a/fs/select.c
+> +++ b/fs/select.c
+> @@ -306,6 +306,7 @@ static int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
+>  		rts.tv_sec = rts.tv_nsec = 0;
+>  
+>  	if (timeval) {
+> +		memset(&rtv, 0, sizeof(rtv));
+>  		rtv.tv_sec = rts.tv_sec;
+>  		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
+
+How about this?
+
+--- a/fs/select.c~fs-select-fix-information-leak-to-userspace-fix
++++ a/fs/select.c
+@@ -306,7 +306,8 @@ static int poll_select_copy_remaining(st
+ 		rts.tv_sec = rts.tv_nsec = 0;
+ 
+ 	if (timeval) {
+-		memset(&rtv, 0, sizeof(rtv));
++		if (sizeof(rtv) > sizeof(rtv.tv_sec) + sizeof(rtv.tv_usec))
++			memset(&rtv, 0, sizeof(rtv));
+ 		rtv.tv_sec = rts.tv_sec;
+ 		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
+ 
+_
+
+
+The `if' gets eliminated at compile time.  With this approach we add
+four bytes of text to the sparc64 build and zero bytes of text to the
+x86_64 build.
+
+
