@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab0KLBL1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 20:11:27 -0500
-Received: from mga09.intel.com ([134.134.136.24]:13487 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755804Ab0KLBL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 20:11:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,185,1288594800"; 
-   d="scan'208";a="572740203"
-Subject: Re: [PATCH] acpi: Provide decls for standalone compilation of
- video.h without ACPI (v2)
-From: Zhang Rui <rui.zhang@intel.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, "Brown, Len" <len.brown@intel.com>
-In-Reply-To: <1283694709-8504-1-git-send-email-chris@chris-wilson.co.uk>
-References: <1283693757-8199-1-git-send-email-chris@chris-wilson.co.uk>
-	 <1283694709-8504-1-git-send-email-chris@chris-wilson.co.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 12 Nov 2010 09:12:37 +0800
-Message-ID: <1289524357.8148.1396.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757329Ab0KLBR1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 20:17:27 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6215 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab0KLBR0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 11 Nov 2010 20:17:26 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp04.nvidia.com on Thu, 11 Nov 2010 17:17:25 -0800
+From: James Jones <jajones@nvidia.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        James Jones <jajones@nvidia.com>
+Subject: [PATCH] ARM: Fix find_next_zero_bit and related assembly
+Date: Thu, 11 Nov 2010 17:16:55 -0800
+Message-Id: <1289524615-22484-1-git-send-email-jajones@nvidia.com>
+X-Mailer: git-send-email 1.7.1
+X-NVConfidentiality: public
+X-OriginalArrivalTime: 12 Nov 2010 01:17:20.0096 (UTC) FILETIME=[5A43B600:01CB8207]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-09-05 at 21:51 +0800, Chris Wilson wrote:
-> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> Cc: Matthew Garrett <mjg@redhat.com>
-> Cc: Zhang Rui <rui.zhang@intel.com>
-> Cc: Len Brown <len.brown@intel.com>
+The find_next_bit, find_first_bit, find_next_zero_bit
+and find_first_zero_bit functions were not properly
+clamping to the maxbit argument at the bit level. They
+were instead only checking maxbit at the byte level.
+To fix this, add a compare and a conditional move
+instruction to the end of the common bit-within-the-
+byte code used by all the functions and be sure not to
+clobber the maxbit argument before it is used.
 
-Acked-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: James Jones <jajones@nvidia.com>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+---
+ arch/arm/lib/findbit.S |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-> ---
->  include/acpi/video.h |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/acpi/video.h b/include/acpi/video.h
-> index 551793c..0e98e67 100644
-> --- a/include/acpi/video.h
-> +++ b/include/acpi/video.h
-> @@ -1,6 +1,10 @@
->  #ifndef __ACPI_VIDEO_H
->  #define __ACPI_VIDEO_H
->  
-> +#include <linux/errno.h> /* for ENODEV */
-> +
-> +struct acpi_device;
-> +
->  #define ACPI_VIDEO_DISPLAY_CRT  1
->  #define ACPI_VIDEO_DISPLAY_TV   2
->  #define ACPI_VIDEO_DISPLAY_DVI  3
-> @@ -26,4 +30,3 @@ static inline int acpi_video_get_edid(struct acpi_device *device, int type,
->  #endif
->  
->  #endif
-> -
-
+diff --git a/arch/arm/lib/findbit.S b/arch/arm/lib/findbit.S
+index 1e4cbd4..64f6bc1 100644
+--- a/arch/arm/lib/findbit.S
++++ b/arch/arm/lib/findbit.S
+@@ -174,8 +174,8 @@ ENDPROC(_find_next_bit_be)
+  */
+ .L_found:
+ #if __LINUX_ARM_ARCH__ >= 5
+-		rsb	r1, r3, #0
+-		and	r3, r3, r1
++		rsb	r0, r3, #0
++		and	r3, r3, r0
+ 		clz	r3, r3
+ 		rsb	r3, r3, #31
+ 		add	r0, r2, r3
+@@ -190,5 +190,7 @@ ENDPROC(_find_next_bit_be)
+ 		addeq	r2, r2, #1
+ 		mov	r0, r2
+ #endif
++		cmp	r1, r0			@ Clamp to maxbit
++		movlo	r0, r1
+ 		mov	pc, lr
+ 
+-- 
+1.7.1
 
