@@ -1,114 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab0KLDcy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 22:32:54 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:3914 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755798Ab0KLDcw (ORCPT
+	id S1756204Ab0KLDdE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 22:33:04 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45697 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755788Ab0KLDdB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 22:32:52 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:references:user-agent:date:from:to:cc:subject:content-disposition;
-	b=az5lxlz2ZjDTDLTHiMaafYrXEGqNtn2nJ4HwHnx1YpMfDtzl8qCk8n3MPZTjjOzgY
-	Nlc/oTn0DU5W5EpgS+PCg==
-Message-Id: <20101112032701.790605539@google.com>
-References: <20101112032405.657789056@google.com>
-User-Agent: quilt/0.46-1
-Date: Thu, 11 Nov 2010 19:24:11 -0800
-From: Paul Turner <pjt@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Chris Friesen <cfriesen@nortel.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Pierre Bourdon <pbourdon@excellency.fr>, Paul Turner <pjt@google.com>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>
-Subject: [tg_shares_up rewrite v3 06/11] sched: hierarchal order on shares update list
-Content-Disposition: inline; filename=sched-tg-order-ondemand-list.patch
+	Thu, 11 Nov 2010 22:33:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PQq6iCLkTKw2o4Tgr9jDUylIjAAc0x5eHSL23A3vlZIdW5jzfe86UQwTXJiuHRonPI
+         SarkNaKnwBv8ZuaQQsZCeLt0C9Doo7WuOKqpT32ws7QVuQVdbfg76RdNVwS7Lnl6DFmY
+         QabWKrMNCQ6X62D7/YnKetRWeLKNrFXMM7GLM=
+MIME-Version: 1.0
+In-Reply-To: <1289489007.17691.1310.camel@edumazet-laptop>
+References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
+	<1289489007.17691.1310.camel@edumazet-laptop>
+Date: Fri, 12 Nov 2010 11:32:59 +0800
+Message-ID: <AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>
+Subject: Re: Kernel rwlock design, Multicore and IGMP
+From: Cypher Wu <cypher.w@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid duplicate shares update calls by ensuring children always appear before
-parents in rq->leaf_cfs_rq_list.
+On Thu, Nov 11, 2010 at 11:23 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le jeudi 11 novembre 2010 à 21:49 +0800, Cypher Wu a écrit :
+>
+> Hi
+>
+> CC netdev, since you ask questions about network stuff _and_ rwlock
+>
+>
+>> I'm using TILEPro and its rwlock in kernel is a liitle different than
+>> other platforms. It have a priority for write lock that when tried it
+>> will block the following read lock even if read lock is hold by
+>> others. Its code can be read in Linux Kernel 2.6.36 in
+>> arch/tile/lib/spinlock_32.c.
+>
+> This seems a bug to me.
+>
+> read_lock() can be nested. We used such a schem in the past in iptables
+> (it can re-enter itself),
+> and we used instead a spinlock(), but with many discussions with lkml
+> and Linus himself if I remember well.
+>
+It seems not a problem that read_lock() can be nested or not since
+rwlock doesn't have 'owner', it's just that should we give
+write_lock() a priority than read_lock() since if there have a lot
+read_lock()s then they'll starve write_lock().
+We should work out a well defined behavior so all the
+platform-dependent raw_rwlock has to design under that principle.
+>
+>>
+>> That different could cause a deadlock in kernel if we join/leave
+>> Multicast Group simultaneous and frequently on mutlicores. IGMP
+>> message is sent by
+>>
+>> igmp_ifc_timer_expire() -> igmpv3_send_cr() -> igmpv3_sendpack()
+>>
+>> in timer interrupt, igmpv3_send_cr() will generate the sk_buff for
+>> IGMP message with mc_list_lock read locked and then call
+>> igmpv3_sendpack() with it unlocked.
+>> But if we have so many join/leave messages have to generate and it
+>> can't be sent in one sk_buff then igmpv3_send_cr() -> add_grec() will
+>> call igmpv3_sendpack() to send it and reallocate a new buffer. When
+>> the message is sent:
+>>
+>> __mkroute_output() -> ip_check_mc()
+>>
+>> will read lock mc_list_lock again. If there is another core is try
+>> write lock mc_list_lock between the two read lock, then deadlock
+>> ocurred.
+>>
+>> The rwlock on other platforms I've check, say, PowerPC, x86, ARM, is
+>> just read lock shared and write_lock mutex, so if we've hold read lock
+>> the write lock will just wait, and if there have a read lock again it
+>> will success.
+>>
+>> So, What's the criteria of rwlock design in the Linux kernel? Is that
+>> read lock re-hold of IGMP a design error in Linux kernel, or the read
+>> lock has to be design like that?
+>>
+>
+> Well, we try to get rid of all rwlocks in performance critical sections.
+>
+> I would say, if you believe one rwlock can justify the special TILE
+> behavior you tried to make, then we should instead migrate this rwlock
+> to a RCU + spinlock schem (so that all arches benefit from this work,
+> not only TILE)
 
-This allows us to do a single in-order traversal for update_shares().
+IGMP in not very performance critical so maybe rwlock is enough?
 
-Since we always enqueue in bottom-up order this reduces to 2 cases:
-1) Our parent is already in the list, e.g.
+>
+>> There is a other thing, that the timer interrupt will start timer on
+>> the same in_dev, should that be optimized?
+>>
+>
+> Not sure I understand what you mean.
 
-   root
-     \
-      b
-      /\
-      c d* (root->b->c already enqueued)
+Since mc_list & mc_tomb is shared list in the kernel we needn't to
+start multiple timers on different cores for them, we can synchronize
+it on one core.
 
-Since d's parent is enqueued we push it to the head of the list, implicitly ahead of b.
+>
+>> BTW: If we have so many cores, say 64, is there other things we have
+>> to think about spinlock? If there have collisions ocurred, should we
+>> just read the shared memory again and again, or just a very little
+>> 'delay' is better? I've seen relax() is called in the implementation
+>> of spinlock on TILEPro platform.
+>> --
+>
+> Is TILE using ticket spinlocks ?
+>
 
-2) Our parent does not appear in the list (or we have no parent)
-In this case we enqueue to the tail of the list, if our parent is subsequently enqueued 
-(bottom-up) it will appear to our right by the same rule.
+What ticket spinlocks means? Could you explain a little, pls:) I'm not
+familiar with Linux kernel, I'm trying to get more understanding of it
+since I'm working on Linux platform now.
 
-Signed-off-by: Paul Turner <pjt@google.com>
-
----
- kernel/sched_fair.c |   26 ++++++++++++++++----------
- 1 file changed, 16 insertions(+), 10 deletions(-)
-
-Index: kernel/sched_fair.c
-===================================================================
---- kernel/sched_fair.c.orig
-+++ kernel/sched_fair.c
-@@ -146,8 +146,20 @@ static inline struct cfs_rq *cpu_cfs_rq(
- static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
- {
- 	if (!cfs_rq->on_list) {
--		list_add_rcu(&cfs_rq->leaf_cfs_rq_list,
-+		/*
-+		 * Ensure we either appear before our parent (if already
-+		 * enqueued) or force our parent to appear after us when it is
-+		 * enqueued.  The fact that we always enqueue bottom-up
-+		 * reduces this to two cases.
-+		 */
-+		if (cfs_rq->tg->parent &&
-+		    cfs_rq->tg->parent->cfs_rq[cpu_of(rq_of(cfs_rq))]->on_list) {
-+			list_add_rcu(&cfs_rq->leaf_cfs_rq_list,
-+				&rq_of(cfs_rq)->leaf_cfs_rq_list);
-+		} else {
-+			list_add_tail_rcu(&cfs_rq->leaf_cfs_rq_list,
- 				&rq_of(cfs_rq)->leaf_cfs_rq_list);
-+		}
- 
- 		cfs_rq->on_list = 1;
- 	}
-@@ -2009,7 +2021,7 @@ out:
- /*
-  * update tg->load_weight by folding this cpu's load_avg
-  */
--static int tg_shares_up(struct task_group *tg, int cpu)
-+static int update_shares_cpu(struct task_group *tg, int cpu)
- {
- 	struct cfs_rq *cfs_rq;
- 	unsigned long flags;
-@@ -2049,14 +2061,8 @@ static void update_shares(int cpu)
- 	struct rq *rq = cpu_rq(cpu);
- 
- 	rcu_read_lock();
--	for_each_leaf_cfs_rq(rq, cfs_rq) {
--		struct task_group *tg = cfs_rq->tg;
--
--		do {
--			tg_shares_up(tg, cpu);
--			tg = tg->parent;
--		} while (tg);
--	}
-+	for_each_leaf_cfs_rq(rq, cfs_rq)
-+		update_shares_cpu(cfs_rq->tg, cpu);
- 	rcu_read_unlock();
- }
- 
-
--- 
-
+>
+>
