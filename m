@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532Ab0KLMUO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 07:20:14 -0500
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:56269 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756992Ab0KLMUJ (ORCPT
+	id S1757335Ab0KLMUE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 07:20:04 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:42300 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752464Ab0KLMUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 07:20:09 -0500
-Message-ID: <4CDD2F9A.7000702@collabora.co.uk>
-Date: Fri, 12 Nov 2010 12:14:18 +0000
-From: Ian Molton <ian.molton@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
+	Fri, 12 Nov 2010 07:20:01 -0500
+Date: Fri, 12 Nov 2010 17:49:32 +0530
+From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@suse.de>, Jan Beulich <JBeulich@novell.com>,
+        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 04/20] x86/ticketlock: make large and small ticket
+ versions of spin_lock the same
+Message-ID: <20101112121932.GA30016@linux.vnet.ibm.com>
+Reply-To: vatsa@linux.vnet.ibm.com
+References: <cover.1288794124.git.jeremy.fitzhardinge@citrix.com>
+ <5b3cbff3a6e96a085651f140a0525be80a4df8ba.1288794124.git.jeremy.fitzhardinge@citrix.com>
 MIME-Version: 1.0
-To: Anthony Liguori <anthony@codemonkey.ws>
-CC: QEMU Developers <qemu-devel@nongnu.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        virtualization@lists.osdl.org, Alon Levy <alevy@redhat.com>,
-        Avi Kivity <avi@redhat.com>
-Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
-References: <1097264455.965471288612409433.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>	<4CCEC090.3050009@codemonkey.ws>	<4CD1A406.3090909@collabora.co.uk> <4CD1A73B.2010406@codemonkey.ws> <4CD44759.5020500@collabora.co.uk> <4CDAD4D4.3070009@collabora.co.uk> <4CDADACC.4070405@codemonkey.ws>
-In-Reply-To: <4CDADACC.4070405@codemonkey.ws>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5b3cbff3a6e96a085651f140a0525be80a4df8ba.1288794124.git.jeremy.fitzhardinge@citrix.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/10 17:47, Anthony Liguori wrote:
-> On 11/10/2010 11:22 AM, Ian Molton wrote:
->> Ping ?
->
-> I think the best way forward is to post patches.
+On Wed, Nov 03, 2010 at 10:59:45AM -0400, Jeremy Fitzhardinge wrote:
+> Make the bulk of __ticket_spin_lock look identical for large and small
+> number of cpus.
 
-I posted links to the git trees. I can post patches, but they are 
-*large*. Do you really want me to post them?
+[snip]
 
-> To summarize what I was trying to express in the thread, I think this is
-> not the right long term architecture but am not opposed to it as a short
-> term solution. I think having a new virtio device is a bad design choice
-> but am not totally opposed to it.
+>  #if (NR_CPUS < 256)
+>  static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+>  {
+> -	register union {
+> -		struct __raw_tickets tickets;
+> -		unsigned short slock;
+> -	} inc = { .slock = 1 << TICKET_SHIFT };
+> +	register struct __raw_tickets inc = { .tail = 1 };
 
-Ok! (I agree (that this should be a short term solution) :) )
+[snip]
 
-> you want to go for the path of integration, you're going to have to fix
-> all of the coding style issues and make the code fit into QEMU. Dropping
-> a bunch of junk into target-i386/ is not making the code fit into QEMU.
+>  #else
+>  static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
+>  {
+> -	unsigned inc = 1 << TICKET_SHIFT;
+> -	__ticket_t tmp;
+> +	register struct __raw_tickets inc = { .tickets.tail = 1 };
 
-I agree. how about hw/gl for the renderer and hw/ for the virtio module?
+s/.tickets//?
 
-> If you post just what you have now in patch form, I can try to provide
-> more concrete advice ignoring the coding style problems.
+Otherwise I get a compile error for NR_CPUS > 256, with just 4 patches applied.
 
-I can post patches, although I dont think LKML would appreciate the 
-volume! I can post them to the qemu list if you do.
-
--Ian
+- vatsa
