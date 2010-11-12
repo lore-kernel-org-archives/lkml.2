@@ -1,190 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab0KLOod (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 09:44:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45183 "EHLO mx1.redhat.com"
+	id S932371Ab0KLOos (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 09:44:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59368 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752902Ab0KLOob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 09:44:31 -0500
+	id S932274Ab0KLOop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 09:44:45 -0500
 From: Don Zickus <dzickus@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>,
         Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
         Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 6/6] x86, NMI: Remove do_nmi_callback logic
-Date: Fri, 12 Nov 2010 09:43:53 -0500
-Message-Id: <1289573033-2889-7-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 1/6] x86, NMI: Add NMI symbol constants and rename memory parity to PCI SERR
+Date: Fri, 12 Nov 2010 09:43:48 -0500
+Message-Id: <1289573033-2889-2-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1289573033-2889-1-git-send-email-dzickus@redhat.com>
 References: <1289573033-2889-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-do_nmi_callback related logic is removed, because it is useless, just
-adds code complexity.
+From: Huang Ying <ying.huang@intel.com>
 
-unknown_nmi_panic sysctl is reserved to keep kernel ABI unchanged.
+Replace the NMI related magic numbers with symbol constants.
+
+memory parity error is only valid for IBM PC-AT, newer machine use
+bit 7 (0x80) of 0x61 port for PCI SERR. While memory error is usually
+reported via MCE. So corresponding function name and kernel log string
+is changed.
+
+But on some machines, PCI SERR line is still used to report memory
+errors. This is used by EDAC, so corresponding EDAC call is reserved.
+
+v3:
+
+- Merge adding symbol constants and renaming patches
+
+v2:
+
+- EDAC call in pci_serr_error is reserved.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
-
-Conflicts:
-
-	arch/x86/kernel/traps.c
 ---
- arch/x86/include/asm/nmi.h    |   10 +++++++++-
- arch/x86/kernel/apic/hw_nmi.c |    1 -
- arch/x86/kernel/apic/nmi.c    |   29 +----------------------------
- arch/x86/kernel/traps.c       |   17 +++++++++++------
- 4 files changed, 21 insertions(+), 36 deletions(-)
+ arch/x86/include/asm/mach_traps.h |   12 ++++++++-
+ arch/x86/kernel/traps.c           |   51 +++++++++++++++++++------------------
+ 2 files changed, 37 insertions(+), 26 deletions(-)
 
-diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
-index cfb6156..f4b6b26 100644
---- a/arch/x86/include/asm/nmi.h
-+++ b/arch/x86/include/asm/nmi.h
-@@ -30,9 +30,17 @@ extern void setup_apic_nmi_watchdog(void *);
- extern void stop_apic_nmi_watchdog(void *);
- extern void disable_timer_nmi_watchdog(void);
- extern void enable_timer_nmi_watchdog(void);
--extern int nmi_watchdog_tick(struct pt_regs *regs, unsigned reason);
- extern void cpu_nmi_set_wd_enabled(void);
+diff --git a/arch/x86/include/asm/mach_traps.h b/arch/x86/include/asm/mach_traps.h
+index f792060..72a8b52 100644
+--- a/arch/x86/include/asm/mach_traps.h
++++ b/arch/x86/include/asm/mach_traps.h
+@@ -7,9 +7,19 @@
  
-+#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
-+extern int nmi_watchdog_tick(struct pt_regs *regs);
-+#else
-+static inline int nmi_watchdog_tick(struct pt_regs *regs)
-+{
-+	return 0;
-+}
-+#endif
+ #include <asm/mc146818rtc.h>
+ 
++#define NMI_REASON_PORT		0x61
 +
- extern atomic_t nmi_active;
- extern unsigned int nmi_watchdog;
- #define NMI_NONE	0
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index fabe4fe..5c4f952 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -99,7 +99,6 @@ void acpi_nmi_disable(void) { return; }
- #endif
- atomic_t nmi_active = ATOMIC_INIT(0);           /* oprofile uses this */
- EXPORT_SYMBOL(nmi_active);
--int unknown_nmi_panic;
- void cpu_nmi_set_wd_enabled(void) { return; }
- void stop_apic_nmi_watchdog(void *unused) { return; }
- void setup_apic_nmi_watchdog(void *unused) { return; }
-diff --git a/arch/x86/kernel/apic/nmi.c b/arch/x86/kernel/apic/nmi.c
-index c90041c..27b9421 100644
---- a/arch/x86/kernel/apic/nmi.c
-+++ b/arch/x86/kernel/apic/nmi.c
-@@ -37,7 +37,6 @@
- 
- #include <asm/mach_traps.h>
- 
--int unknown_nmi_panic;
- int nmi_watchdog_enabled;
- 
- /* For reliability, we're prepared to waste bits here. */
-@@ -389,7 +388,7 @@ void touch_nmi_watchdog(void)
- EXPORT_SYMBOL(touch_nmi_watchdog);
- 
- notrace __kprobes int
--nmi_watchdog_tick(struct pt_regs *regs, unsigned reason)
-+nmi_watchdog_tick(struct pt_regs *regs)
++#define NMI_REASON_SERR		0x80
++#define NMI_REASON_IOCHK	0x40
++#define NMI_REASON_MASK		(NMI_REASON_SERR | NMI_REASON_IOCHK)
++
++#define NMI_REASON_CLEAR_SERR	0x04
++#define NMI_REASON_CLEAR_IOCHK	0x08
++#define NMI_REASON_CLEAR_MASK	0x0f
++
+ static inline unsigned char get_nmi_reason(void)
  {
- 	/*
- 	 * Since current_thread_info()-> is always on the stack, and we
-@@ -483,23 +482,6 @@ static void disable_ioapic_nmi_watchdog(void)
- 	on_each_cpu(stop_apic_nmi_watchdog, NULL, 1);
+-	return inb(0x61);
++	return inb(NMI_REASON_PORT);
  }
  
--static int __init setup_unknown_nmi_panic(char *str)
--{
--	unknown_nmi_panic = 1;
--	return 1;
--}
--__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
--
--static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
--{
--	unsigned char reason = get_nmi_reason();
--	char buf[64];
--
--	sprintf(buf, "NMI received for unknown reason %02x\n", reason);
--	die_nmi(buf, regs, 1); /* Always panic here */
--	return 0;
--}
--
- /*
-  * proc handler for /proc/sys/kernel/nmi
-  */
-@@ -540,15 +522,6 @@ int proc_nmi_enabled(struct ctl_table *table, int write,
- 
- #endif /* CONFIG_SYSCTL */
- 
--int do_nmi_callback(struct pt_regs *regs, int cpu)
--{
--#ifdef CONFIG_SYSCTL
--	if (unknown_nmi_panic)
--		return unknown_nmi_panic_callback(regs, cpu);
--#endif
--	return 0;
--}
--
- void arch_trigger_all_cpu_backtrace(void)
- {
- 	int i;
+ static inline void reassert_nmi(void)
 diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index ed40ad6..ce8b94d 100644
+index cb838ca..ecb2c97 100644
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -83,6 +83,8 @@ EXPORT_SYMBOL_GPL(used_vectors);
- 
- static int ignore_nmis;
- 
-+int unknown_nmi_panic;
-+
- /*
-  * Prevent NMI reason port (0x61) being accessed simultaneously, can
-  * only be used in NMI handler.
-@@ -306,6 +308,13 @@ gp_in_kernel:
- 	die("general protection fault", regs, error_code);
+@@ -301,15 +301,15 @@ gp_in_kernel:
  }
  
-+static int __init setup_unknown_nmi_panic(char *str)
-+{
-+	unknown_nmi_panic = 1;
-+	return 1;
-+}
-+__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
-+
  static notrace __kprobes void
- pci_serr_error(unsigned char reason, struct pt_regs *regs)
+-mem_parity_error(unsigned char reason, struct pt_regs *regs)
++pci_serr_error(unsigned char reason, struct pt_regs *regs)
  {
-@@ -380,7 +389,7 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
- 		 reason, smp_processor_id());
+-	printk(KERN_EMERG
+-		"Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
+-			reason, smp_processor_id());
+-
+-	printk(KERN_EMERG
+-		"You have some hardware problem, likely on the PCI bus.\n");
++	pr_emerg("NMI: PCI system error (SERR) for reason %02x on CPU %d.\n",
++		 reason, smp_processor_id());
  
- 	pr_emerg("Do you have a strange power saving mode enabled?\n");
--	if (panic_on_unrecovered_nmi)
-+	if (unknown_nmi_panic || panic_on_unrecovered_nmi)
++	/*
++	 * On some machines, PCI SERR line is used to report memory
++	 * errors. EDAC makes use of it.
++	 */
+ #if defined(CONFIG_EDAC)
+ 	if (edac_handler_set()) {
+ 		edac_atomic_assert_error();
+@@ -320,11 +320,11 @@ mem_parity_error(unsigned char reason, struct pt_regs *regs)
+ 	if (panic_on_unrecovered_nmi)
  		panic("NMI: Not continuing");
  
- 	pr_emerg("Dazed and confused, but trying to continue\n");
-@@ -421,12 +430,8 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 	}
- 	raw_spin_unlock(&nmi_reason_lock);
+-	printk(KERN_EMERG "Dazed and confused, but trying to continue\n");
++	pr_emerg("Dazed and confused, but trying to continue\n");
  
--#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
--	if (nmi_watchdog_tick(regs, reason))
--		return;
--	if (do_nmi_callback(regs, cpu))
-+	if (nmi_watchdog_tick(regs))
- 		return;
--#endif
- 
- 	unknown_nmi_error(reason, regs);
+-	/* Clear and disable the memory parity error line. */
+-	reason = (reason & 0xf) | 4;
+-	outb(reason, 0x61);
++	/* Clear and disable the PCI SERR error line. */
++	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_SERR;
++	outb(reason, NMI_REASON_PORT);
  }
+ 
+ static notrace __kprobes void
+@@ -332,22 +332,24 @@ io_check_error(unsigned char reason, struct pt_regs *regs)
+ {
+ 	unsigned long i;
+ 
+-	printk(KERN_EMERG "NMI: IOCK error (debug interrupt?)\n");
++	pr_emerg(
++	"NMI: IOCK error (debug interrupt?) for reason %02x on CPU %d.\n",
++		 reason, smp_processor_id());
+ 	show_registers(regs);
+ 
+ 	if (panic_on_io_nmi)
+ 		panic("NMI IOCK error: Not continuing");
+ 
+ 	/* Re-enable the IOCK line, wait for a few seconds */
+-	reason = (reason & 0xf) | 8;
+-	outb(reason, 0x61);
++	reason = (reason & NMI_REASON_CLEAR_MASK) | NMI_REASON_CLEAR_IOCHK;
++	outb(reason, NMI_REASON_PORT);
+ 
+ 	i = 2000;
+ 	while (--i)
+ 		udelay(1000);
+ 
+-	reason &= ~8;
+-	outb(reason, 0x61);
++	reason &= ~NMI_REASON_CLEAR_IOCHK;
++	outb(reason, NMI_REASON_PORT);
+ }
+ 
+ static notrace __kprobes void
+@@ -366,15 +368,14 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+ 		return;
+ 	}
+ #endif
+-	printk(KERN_EMERG
+-		"Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
+-			reason, smp_processor_id());
++	pr_emerg("Uhhuh. NMI received for unknown reason %02x on CPU %d.\n",
++		 reason, smp_processor_id());
+ 
+-	printk(KERN_EMERG "Do you have a strange power saving mode enabled?\n");
++	pr_emerg("Do you have a strange power saving mode enabled?\n");
+ 	if (panic_on_unrecovered_nmi)
+ 		panic("NMI: Not continuing");
+ 
+-	printk(KERN_EMERG "Dazed and confused, but trying to continue\n");
++	pr_emerg("Dazed and confused, but trying to continue\n");
+ }
+ 
+ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+@@ -388,7 +389,7 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 	if (!cpu)
+ 		reason = get_nmi_reason();
+ 
+-	if (!(reason & 0xc0)) {
++	if (!(reason & NMI_REASON_MASK)) {
+ 		if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, reason, 2, SIGINT)
+ 								== NOTIFY_STOP)
+ 			return;
+@@ -418,9 +419,9 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 		return;
+ 
+ 	/* AK: following checks seem to be broken on modern chipsets. FIXME */
+-	if (reason & 0x80)
+-		mem_parity_error(reason, regs);
+-	if (reason & 0x40)
++	if (reason & NMI_REASON_SERR)
++		pci_serr_error(reason, regs);
++	if (reason & NMI_REASON_IOCHK)
+ 		io_check_error(reason, regs);
+ #ifdef CONFIG_X86_32
+ 	/*
 -- 
 1.7.2.3
 
