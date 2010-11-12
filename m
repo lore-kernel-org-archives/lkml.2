@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab0KLRzh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 12:55:37 -0500
-Received: from outbound-queue-1.mail.thdo.gradwell.net ([212.11.70.34]:53369
-	"EHLO outbound-queue-1.mail.thdo.gradwell.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751288Ab0KLRzf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 12:55:35 -0500
-Subject: Re: PING: David Miller - SPARC64
-From: Alex Buell <alex.buell@munted.org.uk>
-Reply-To: alex.buell@munted.org.uk
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20101103.144945.226779604.davem@davemloft.net>
-References: <1288812739.12638.2.camel@lithium>
-	 <20101103.144945.226779604.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: One very high maintenance cat for company
-Date: Fri, 12 Nov 2010 17:53:12 +0000
-Message-ID: <1289584392.26034.11.camel@lithium>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-X-Gradwell-MongoId: 4cdd7f8c.8fb-6996-2
-X-Gradwell-Auth-Method: mailbox
-X-Gradwell-Auth-Credentials: postmaster@pop3.munted.org.uk
+	id S1755794Ab0KLR6N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 12:58:13 -0500
+Received: from mail0.unitn.it ([193.205.206.51]:42753 "EHLO mail0.unitn.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751444Ab0KLR6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 12:58:12 -0500
+Message-ID: <4CDD7F5B.7090004@unitn.it>
+Date: Fri, 12 Nov 2010 18:54:35 +0100
+From: Luca Abeni <luca.abeni@unitn.it>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Raistlin <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH 18/22] sched: add reclaiming logic to -deadline tasks
+References: <1288333128.8661.137.camel@Palantir>	 <1288334546.8661.161.camel@Palantir>  <1289513573.2084.199.camel@laptop>	 <1289576177.6525.509.camel@Palantir> <1289577841.2084.302.camel@laptop>	 <4CDD7C65.9090400@unitn.it> <1289584295.2084.343.camel@laptop>
+In-Reply-To: <1289584295.2084.343.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-03 at 14:49 -0700, David Miller wrote:
+On 12/11/10 18:51, Peter Zijlstra wrote:
+> On Fri, 2010-11-12 at 18:41 +0100, Luca Abeni wrote:
+>>> The problem the stochastic execution time model tries to address is the
+>>> WCET computation mess, WCET computation is hard and often overly
+>>> pessimistic, resulting in under-utilized systems.
+>> [...]
+>> BTW, sorry for the shameless plug, but even with the current
+>> SCHED_DEADLINE you are not forced to dimension the runtime using the
+>> WCET.
+>
+> Yes you are, it pushes the deadline back on overrun.
+I think in case of overrun it postpones the deadline (by a period P), 
+avoiding to execute the task until the end of the current period, right?
 
-> > Can you drop me an e-mail with your current e-mail address? I need to
-> > talk to you about getting the X11 fbdev driver to work on the sunxvr500
-> > console framebuffer device. 
-> 
-> First, I don't discuss things privately with anyone about
-> free software development.
+> The idea it to
+> maintain the deadline despite overrunning your budget (up to a point).
+>
+> The paper we're all talking about is:
+>
+> A. Mills and J. Anderson, " A Stochastic Framework for Multiprocessor
+> Soft Real-Time Scheduling", Proceedings of the 16th IEEE Real-Time and
+> Embedded Technology and Applications Symposium, pp. 311-320, April 2010.
+> http://www.cs.unc.edu/~anderson/papers/rtas10brevised.pdf
+I see... This is a different approach to stochastic analysis, which 
+requires modifications to the scheduler.
 
-Alright, thank you for setting me straight. 
+In the analysis I mentioned, you still enforce a maximum runtime C every 
+period P, but C can be smaller than the WCET of the task. If C is larger 
+than the average execution time, you can use queuing theory to find the 
+probability to miss a deadline (or, the probability to finish a job in a 
+time x * P).
 
-> I always tell people to ask their questions on the appropriate
-> mailing list, but feel free to CC: me.  That way if I am too
-> busy someone else has the chance to help you.
 
-OK. 
-
-I have a Sun Blade 2000 here with dual 1.2GHz processors, 2 x 73GB FC-AL
-disks, 4GB of RAM and a XVR-500 graphic adapter. I am quite happy with
-the machine, but for one very small problem. 
-
-It seems that the XVR-500 console driver has a few problems. If I use
-the X11 fbdev 0.4.2 driver with xorg-server 1.7.7, in 8 bit colour
-depth, the X11 display looks quite corrupted. I have checked and the X11
-server is definitely running in 8 bit depth, same as the console. I am
-using the machine in 1600 x 1280 @ 76 video mode, set from PROM. After
-exiting from X11, console gets restored normally, everything works, I
-just get a severely corrupted display - but I can move the mouse and use
-the keyboard to log in as normal. Any ideas why what might be wrong? 
-
-As a temporary workaround I just log onto the Blade via GDM from my
-laptop and everything looks OK in 24bit @ 1600x1200. 
-
-I cannot even get the X11 fbdev driver to start in 24 bit as the X11
-fbdev driver fails with errors. Is it even possible to force the PROM to
-start in 24 bit depth? 
-
-Perhaps I could do a nouveau and find how how the XVR-500 graphic
-adapter works? Just thinking things out here. 
--- 
-Tactical Nuclear Kittens
+				Luca
