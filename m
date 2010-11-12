@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755897Ab0KLDe3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 22:34:29 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:11402 "EHLO
+	id S1755941Ab0KLDet (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 22:34:49 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:3797 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755216Ab0KLDcj (ORCPT
+	with ESMTP id S1753064Ab0KLDca (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 22:32:39 -0500
+	Thu, 11 Nov 2010 22:32:30 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:references:user-agent:date:from:to:cc:subject:content-disposition;
-	b=qbbK1+SFSY6uuGnDe4RyWkiwjqV9joPTDPxM57sM098BDdZnD+woEGsln22ooH0Ci
-	+kD0/mkBBFm+vHXyGGS4g==
-Message-Id: <20101112032701.552656833@google.com>
+	b=DMAyO88TPxss+Ggdb4OuU0KNnKnAiPpdPcdVmOxpdPORzJTFhD2MQH165Dyb75M98
+	qOYXnuYG9ms9A9CABQx3Q==
+Message-Id: <20101112032701.475257352@google.com>
 References: <20101112032405.657789056@google.com>
 User-Agent: quilt/0.46-1
-Date: Thu, 11 Nov 2010 19:24:08 -0800
+Date: Thu, 11 Nov 2010 19:24:07 -0800
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
@@ -25,199 +25,470 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Bharata B Rao <bharata@linux.vnet.ibm.com>,
         Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
         David Miller <davem@davemloft.net>
-Subject: [tg_shares_up rewrite v3 03/11] sched: make tg_shares_up() walk on-demand
-Content-Disposition: inline; filename=sched-tg-more-ondemand.patch
+Subject: [tg_shares_up rewrite v3 02/11] sched: on-demand (active) cfs_rq list
+Content-Disposition: inline; filename=sched-tg-ondemand.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Make tg_shares_up() use the active cgroup list, this means we cannot
-do a strict bottom-up walk of the hierarchy, but assuming its a very
-wide tree with a small number of active groups it should be a win.
+Make certain load-balance actions scale per number of active cgroups
+instead of the number of existing cgroups.
+
+This makes wakeup/sleep paths more expensive, but is a win for systems
+where the vast majority of existing cgroups are idle.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Paul Turner <pjt@google.com>
 
 ---
- kernel/sched.c      |   67 ----------------------------------------------------
- kernel/sched_fair.c |   58 +++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 58 insertions(+), 67 deletions(-)
+ kernel/sched.c      |  105 +++++++++++++---------------------------------------
+ kernel/sched_fair.c |   46 +++++++++++++++++++---
+ kernel/sched_rt.c   |   24 +++++++++++
+ 3 files changed, 92 insertions(+), 83 deletions(-)
 
 Index: kernel/sched.c
 ===================================================================
 --- kernel/sched.c.orig
 +++ kernel/sched.c
-@@ -281,13 +281,6 @@ static DEFINE_SPINLOCK(task_group_lock);
+@@ -274,9 +274,7 @@ struct task_group {
  
- #ifdef CONFIG_FAIR_GROUP_SCHED
+ #define root_task_group init_task_group
  
--#ifdef CONFIG_SMP
--static int root_task_group_empty(void)
--{
--	return list_empty(&root_task_group.children);
--}
--#endif
--
- # define INIT_TASK_GROUP_LOAD	NICE_0_LOAD
- 
- /*
-@@ -1531,48 +1524,6 @@ static unsigned long cpu_avg_load_per_ta
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 
--static void update_cfs_load(struct cfs_rq *cfs_rq, int lb);
--static void update_cfs_shares(struct cfs_rq *cfs_rq);
--
--/*
-- * update tg->load_weight by folding this cpu's load_avg
+-/* task_group_lock serializes add/remove of task groups and also changes to
+- * a task group's cpu shares.
 - */
--static int tg_shares_up(struct task_group *tg, void *data)
--{
--	long load_avg;
--	struct cfs_rq *cfs_rq;
--	unsigned long flags;
--	int cpu = (long)data;
--	struct rq *rq;
--
--	if (!tg->se[cpu])
--		return 0;
--
--	rq = cpu_rq(cpu);
--	cfs_rq = tg->cfs_rq[cpu];
--
--	raw_spin_lock_irqsave(&rq->lock, flags);
--
--	update_rq_clock(rq);
--	update_cfs_load(cfs_rq, 1);
--
--	load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
--	load_avg -= cfs_rq->load_contribution;
--
--	atomic_add(load_avg, &tg->load_weight);
--	cfs_rq->load_contribution += load_avg;
--
--	/*
--	 * We need to update shares after updating tg->load_weight in
--	 * order to adjust the weight of groups with long running tasks.
--	 */
--	update_cfs_shares(cfs_rq);
--
--	raw_spin_unlock_irqrestore(&rq->lock, flags);
--
--	return 0;
--}
--
++/* task_group_lock serializes the addition/removal of task groups */
+ static DEFINE_SPINLOCK(task_group_lock);
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+@@ -344,6 +342,7 @@ struct cfs_rq {
+ 	 * leaf_cfs_rq_list ties together list of leaf cfs_rq's in a cpu. This
+ 	 * list is used during load balance.
+ 	 */
++	int on_list;
+ 	struct list_head leaf_cfs_rq_list;
+ 	struct task_group *tg;	/* group that "owns" this runqueue */
+ 
+@@ -1530,7 +1529,7 @@ static unsigned long cpu_avg_load_per_ta
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 
+-static void update_cfs_load(struct cfs_rq *cfs_rq);
++static void update_cfs_load(struct cfs_rq *cfs_rq, int lb);
+ static void update_cfs_shares(struct cfs_rq *cfs_rq);
+ 
  /*
-  * Compute the cpu's hierarchical load factor for each task group.
-  * This needs to be done in a top-down fashion because the load of a child
-@@ -1596,29 +1547,11 @@ static int tg_load_down(struct task_grou
+@@ -1553,7 +1552,7 @@ static int tg_shares_up(struct task_grou
+ 	raw_spin_lock_irqsave(&rq->lock, flags);
+ 
+ 	update_rq_clock(rq);
+-	update_cfs_load(cfs_rq);
++	update_cfs_load(cfs_rq, 1);
+ 
+ 	load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
+ 	load_avg -= cfs_rq->load_contribution;
+@@ -7622,15 +7621,13 @@ static void init_rt_rq(struct rt_rq *rt_
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ static void init_tg_cfs_entry(struct task_group *tg, struct cfs_rq *cfs_rq,
+-				struct sched_entity *se, int cpu, int add,
++				struct sched_entity *se, int cpu,
+ 				struct sched_entity *parent)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+ 	tg->cfs_rq[cpu] = cfs_rq;
+ 	init_cfs_rq(cfs_rq, rq);
+ 	cfs_rq->tg = tg;
+-	if (add)
+-		list_add(&cfs_rq->leaf_cfs_rq_list, &rq->leaf_cfs_rq_list);
+ 
+ 	tg->se[cpu] = se;
+ 	/* se could be NULL for init_task_group */
+@@ -7650,7 +7647,7 @@ static void init_tg_cfs_entry(struct tas
+ 
+ #ifdef CONFIG_RT_GROUP_SCHED
+ static void init_tg_rt_entry(struct task_group *tg, struct rt_rq *rt_rq,
+-		struct sched_rt_entity *rt_se, int cpu, int add,
++		struct sched_rt_entity *rt_se, int cpu,
+ 		struct sched_rt_entity *parent)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+@@ -7659,8 +7656,6 @@ static void init_tg_rt_entry(struct task
+ 	init_rt_rq(rt_rq, rq);
+ 	rt_rq->tg = tg;
+ 	rt_rq->rt_runtime = tg->rt_bandwidth.rt_runtime;
+-	if (add)
+-		list_add(&rt_rq->leaf_rt_rq_list, &rq->leaf_rt_rq_list);
+ 
+ 	tg->rt_se[cpu] = rt_se;
+ 	if (!rt_se)
+@@ -7769,7 +7764,7 @@ void __init sched_init(void)
+ 		 * We achieve this by letting init_task_group's tasks sit
+ 		 * directly in rq->cfs (i.e init_task_group->se[] = NULL).
+ 		 */
+-		init_tg_cfs_entry(&init_task_group, &rq->cfs, NULL, i, 1, NULL);
++		init_tg_cfs_entry(&init_task_group, &rq->cfs, NULL, i, NULL);
+ #endif
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+@@ -7777,7 +7772,7 @@ void __init sched_init(void)
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 		INIT_LIST_HEAD(&rq->leaf_rt_rq_list);
+ #ifdef CONFIG_CGROUP_SCHED
+-		init_tg_rt_entry(&init_task_group, &rq->rt, NULL, i, 1, NULL);
++		init_tg_rt_entry(&init_task_group, &rq->rt, NULL, i, NULL);
+ #endif
+ #endif
+ 
+@@ -8053,7 +8048,7 @@ int alloc_fair_sched_group(struct task_g
+ 		if (!se)
+ 			goto err_free_rq;
+ 
+-		init_tg_cfs_entry(tg, cfs_rq, se, i, 0, parent->se[i]);
++		init_tg_cfs_entry(tg, cfs_rq, se, i, parent->se[i]);
+ 	}
+ 
+ 	return 1;
+@@ -8064,15 +8059,22 @@ int alloc_fair_sched_group(struct task_g
  	return 0;
  }
  
--static void update_shares(long cpu)
+-static inline void register_fair_sched_group(struct task_group *tg, int cpu)
 -{
--	if (root_task_group_empty())
--		return;
--
--	/*
--	 * XXX: replace with an on-demand list
--	 */
--
--	walk_tg_tree(tg_nop, tg_shares_up, (void *)cpu);
+-	list_add_rcu(&tg->cfs_rq[cpu]->leaf_cfs_rq_list,
+-			&cpu_rq(cpu)->leaf_cfs_rq_list);
 -}
 -
- static void update_h_load(long cpu)
+ static inline void unregister_fair_sched_group(struct task_group *tg, int cpu)
  {
- 	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
+-	list_del_rcu(&tg->cfs_rq[cpu]->leaf_cfs_rq_list);
++	struct rq *rq = cpu_rq(cpu);
++	unsigned long flags;
++	int i;
++
++	/*
++	* Only empty task groups can be destroyed; so we can speculatively
++	* check on_list without danger of it being re-added.
++	*/
++	if (!tg->cfs_rq[cpu]->on_list)
++		return;
++
++	raw_spin_lock_irqsave(&rq->lock, flags);
++	list_del_leaf_cfs_rq(tg->cfs_rq[i]);
++	raw_spin_unlock_irqrestore(&rq->lock, flags);
+ }
+ #else /* !CONFG_FAIR_GROUP_SCHED */
+ static inline void free_fair_sched_group(struct task_group *tg)
+@@ -8085,10 +8087,6 @@ int alloc_fair_sched_group(struct task_g
+ 	return 1;
  }
  
--#else
--
--static inline void update_shares(int cpu)
+-static inline void register_fair_sched_group(struct task_group *tg, int cpu)
 -{
 -}
 -
- #endif
+ static inline void unregister_fair_sched_group(struct task_group *tg, int cpu)
+ {
+ }
+@@ -8143,7 +8141,7 @@ int alloc_rt_sched_group(struct task_gro
+ 		if (!rt_se)
+ 			goto err_free_rq;
  
- #ifdef CONFIG_PREEMPT
+-		init_tg_rt_entry(tg, rt_rq, rt_se, i, 0, parent->rt_se[i]);
++		init_tg_rt_entry(tg, rt_rq, rt_se, i, parent->rt_se[i]);
+ 	}
+ 
+ 	return 1;
+@@ -8153,17 +8151,6 @@ int alloc_rt_sched_group(struct task_gro
+  err:
+ 	return 0;
+ }
+-
+-static inline void register_rt_sched_group(struct task_group *tg, int cpu)
+-{
+-	list_add_rcu(&tg->rt_rq[cpu]->leaf_rt_rq_list,
+-			&cpu_rq(cpu)->leaf_rt_rq_list);
+-}
+-
+-static inline void unregister_rt_sched_group(struct task_group *tg, int cpu)
+-{
+-	list_del_rcu(&tg->rt_rq[cpu]->leaf_rt_rq_list);
+-}
+ #else /* !CONFIG_RT_GROUP_SCHED */
+ static inline void free_rt_sched_group(struct task_group *tg)
+ {
+@@ -8174,14 +8161,6 @@ int alloc_rt_sched_group(struct task_gro
+ {
+ 	return 1;
+ }
+-
+-static inline void register_rt_sched_group(struct task_group *tg, int cpu)
+-{
+-}
+-
+-static inline void unregister_rt_sched_group(struct task_group *tg, int cpu)
+-{
+-}
+ #endif /* CONFIG_RT_GROUP_SCHED */
+ 
+ #ifdef CONFIG_CGROUP_SCHED
+@@ -8197,7 +8176,6 @@ struct task_group *sched_create_group(st
+ {
+ 	struct task_group *tg;
+ 	unsigned long flags;
+-	int i;
+ 
+ 	tg = kzalloc(sizeof(*tg), GFP_KERNEL);
+ 	if (!tg)
+@@ -8210,10 +8188,6 @@ struct task_group *sched_create_group(st
+ 		goto err;
+ 
+ 	spin_lock_irqsave(&task_group_lock, flags);
+-	for_each_possible_cpu(i) {
+-		register_fair_sched_group(tg, i);
+-		register_rt_sched_group(tg, i);
+-	}
+ 	list_add_rcu(&tg->list, &task_groups);
+ 
+ 	WARN_ON(!parent); /* root should already exist */
+@@ -8243,11 +8217,11 @@ void sched_destroy_group(struct task_gro
+ 	unsigned long flags;
+ 	int i;
+ 
+-	spin_lock_irqsave(&task_group_lock, flags);
+-	for_each_possible_cpu(i) {
++	/* end participation in shares distribution */
++	for_each_possible_cpu(i)
+ 		unregister_fair_sched_group(tg, i);
+-		unregister_rt_sched_group(tg, i);
+-	}
++
++	spin_lock_irqsave(&task_group_lock, flags);
+ 	list_del_rcu(&tg->list);
+ 	list_del_rcu(&tg->siblings);
+ 	spin_unlock_irqrestore(&task_group_lock, flags);
+@@ -8325,7 +8299,6 @@ static DEFINE_MUTEX(shares_mutex);
+ int sched_group_set_shares(struct task_group *tg, unsigned long shares)
+ {
+ 	int i;
+-	unsigned long flags;
+ 
+ 	/*
+ 	 * We can't change the weight of the root cgroup.
+@@ -8342,19 +8315,6 @@ int sched_group_set_shares(struct task_g
+ 	if (tg->shares == shares)
+ 		goto done;
+ 
+-	spin_lock_irqsave(&task_group_lock, flags);
+-	for_each_possible_cpu(i)
+-		unregister_fair_sched_group(tg, i);
+-	list_del_rcu(&tg->siblings);
+-	spin_unlock_irqrestore(&task_group_lock, flags);
+-
+-	/* wait for any ongoing reference to this group to finish */
+-	synchronize_sched();
+-
+-	/*
+-	 * Now we are free to modify the group's share on each cpu
+-	 * w/o tripping rebalance_share or load_balance_fair.
+-	 */
+ 	tg->shares = shares;
+ 	for_each_possible_cpu(i) {
+ 		/*
+@@ -8363,15 +8323,6 @@ int sched_group_set_shares(struct task_g
+ 		set_se_shares(tg->se[i], shares);
+ 	}
+ 
+-	/*
+-	 * Enable load balance activity on this group, by inserting it back on
+-	 * each cpu's rq->leaf_cfs_rq_list.
+-	 */
+-	spin_lock_irqsave(&task_group_lock, flags);
+-	for_each_possible_cpu(i)
+-		register_fair_sched_group(tg, i);
+-	list_add_rcu(&tg->siblings, &tg->parent->children);
+-	spin_unlock_irqrestore(&task_group_lock, flags);
+ done:
+ 	mutex_unlock(&shares_mutex);
+ 	return 0;
 Index: kernel/sched_fair.c
 ===================================================================
 --- kernel/sched_fair.c.orig
 +++ kernel/sched_fair.c
-@@ -2000,6 +2000,60 @@ out:
+@@ -143,6 +143,24 @@ static inline struct cfs_rq *cpu_cfs_rq(
+ 	return cfs_rq->tg->cfs_rq[this_cpu];
  }
  
- #ifdef CONFIG_FAIR_GROUP_SCHED
-+/*
-+ * update tg->load_weight by folding this cpu's load_avg
-+ */
-+static int tg_shares_up(struct task_group *tg, int cpu)
++static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
 +{
-+	struct cfs_rq *cfs_rq;
-+	unsigned long flags;
-+	struct rq *rq;
-+	long load_avg;
++	if (!cfs_rq->on_list) {
++		list_add_rcu(&cfs_rq->leaf_cfs_rq_list,
++				&rq_of(cfs_rq)->leaf_cfs_rq_list);
 +
-+	if (!tg->se[cpu])
-+		return 0;
-+
-+	rq = cpu_rq(cpu);
-+	cfs_rq = tg->cfs_rq[cpu];
-+
-+	raw_spin_lock_irqsave(&rq->lock, flags);
-+
-+	update_rq_clock(rq);
-+	update_cfs_load(cfs_rq, 1);
-+
-+	load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
-+	load_avg -= cfs_rq->load_contribution;
-+	atomic_add(load_avg, &tg->load_weight);
-+	cfs_rq->load_contribution += load_avg;
-+
-+	/*
-+	 * We need to update shares after updating tg->load_weight in
-+	 * order to adjust the weight of groups with long running tasks.
-+	 */
-+	update_cfs_shares(cfs_rq);
-+
-+	raw_spin_unlock_irqrestore(&rq->lock, flags);
-+
-+	return 0;
-+}
-+
-+static void update_shares(int cpu)
-+{
-+	struct cfs_rq *cfs_rq;
-+	struct rq *rq = cpu_rq(cpu);
-+
-+	rcu_read_lock();
-+	for_each_leaf_cfs_rq(rq, cfs_rq) {
-+		struct task_group *tg = cfs_rq->tg;
-+
-+		do {
-+			tg_shares_up(tg, cpu);
-+			tg = tg->parent;
-+		} while (tg);
++		cfs_rq->on_list = 1;
 +	}
-+	rcu_read_unlock();
 +}
 +
- static unsigned long
- load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
- 		  unsigned long max_load_move,
-@@ -2047,6 +2101,10 @@ load_balance_fair(struct rq *this_rq, in
- 	return max_load_move - rem_load_move;
++static inline void list_del_leaf_cfs_rq(struct cfs_rq *cfs_rq)
++{
++	if (cfs_rq->on_list) {
++		list_del_rcu(&cfs_rq->leaf_cfs_rq_list);
++		cfs_rq->on_list = 0;
++	}
++}
++
+ /* Iterate thr' all leaf cfs_rq's on a runqueue */
+ #define for_each_leaf_cfs_rq(rq, cfs_rq) \
+ 	list_for_each_entry_rcu(cfs_rq, &rq->leaf_cfs_rq_list, leaf_cfs_rq_list)
+@@ -246,6 +264,14 @@ static inline struct cfs_rq *cpu_cfs_rq(
+ 	return &cpu_rq(this_cpu)->cfs;
  }
- #else
-+static inline void update_shares(int cpu)
+ 
++static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
 +{
 +}
 +
- static unsigned long
- load_balance_fair(struct rq *this_rq, int this_cpu, struct rq *busiest,
- 		  unsigned long max_load_move,
++static inline void list_del_leaf_cfs_rq(struct cfs_rq *cfs_rq)
++{
++}
++
+ #define for_each_leaf_cfs_rq(rq, cfs_rq) \
+ 		for (cfs_rq = &rq->cfs; cfs_rq; cfs_rq = NULL)
+ 
+@@ -648,7 +674,7 @@ account_entity_dequeue(struct cfs_rq *cf
+ }
+ 
+ #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
+-static void update_cfs_load(struct cfs_rq *cfs_rq)
++static void update_cfs_load(struct cfs_rq *cfs_rq, int lb)
+ {
+ 	u64 period = sched_avg_period();
+ 	u64 now, delta;
+@@ -673,6 +699,11 @@ static void update_cfs_load(struct cfs_r
+ 		cfs_rq->load_period /= 2;
+ 		cfs_rq->load_avg /= 2;
+ 	}
++
++	if (lb && !cfs_rq->nr_running) {
++		if (cfs_rq->load_avg < (period / 8))
++			list_del_leaf_cfs_rq(cfs_rq);
++	}
+ }
+ 
+ static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
+@@ -719,7 +750,7 @@ static void update_cfs_shares(struct cfs
+ 	reweight_entity(cfs_rq_of(se), se, shares);
+ }
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+-static inline void update_cfs_load(struct cfs_rq *cfs_rq)
++static inline void update_cfs_load(struct cfs_rq *cfs_rq, int lb)
+ {
+ }
+ 
+@@ -849,7 +880,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+ 	 * Update run-time statistics of the 'current'.
+ 	 */
+ 	update_curr(cfs_rq);
+-	update_cfs_load(cfs_rq);
++	update_cfs_load(cfs_rq, 0);
+ 	account_entity_enqueue(cfs_rq, se);
+ 	update_cfs_shares(cfs_rq);
+ 
+@@ -863,6 +894,9 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+ 	if (se != cfs_rq->curr)
+ 		__enqueue_entity(cfs_rq, se);
+ 	se->on_rq = 1;
++
++	if (cfs_rq->nr_running == 1)
++		list_add_leaf_cfs_rq(cfs_rq);
+ }
+ 
+ static void __clear_buddies(struct cfs_rq *cfs_rq, struct sched_entity *se)
+@@ -907,7 +941,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+ 	if (se != cfs_rq->curr)
+ 		__dequeue_entity(cfs_rq, se);
+ 	se->on_rq = 0;
+-	update_cfs_load(cfs_rq);
++	update_cfs_load(cfs_rq, 0);
+ 	account_entity_dequeue(cfs_rq, se);
+ 	update_min_vruntime(cfs_rq);
+ 	update_cfs_shares(cfs_rq);
+@@ -1142,7 +1176,7 @@ enqueue_task_fair(struct rq *rq, struct 
+ 	for_each_sched_entity(se) {
+ 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
+ 
+-		update_cfs_load(cfs_rq);
++		update_cfs_load(cfs_rq, 0);
+ 		update_cfs_shares(cfs_rq);
+ 	}
+ 
+@@ -1172,7 +1206,7 @@ static void dequeue_task_fair(struct rq 
+ 	for_each_sched_entity(se) {
+ 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
+ 
+-		update_cfs_load(cfs_rq);
++		update_cfs_load(cfs_rq, 0);
+ 		update_cfs_shares(cfs_rq);
+ 	}
+ 
+Index: kernel/sched_rt.c
+===================================================================
+--- kernel/sched_rt.c.orig
++++ kernel/sched_rt.c
+@@ -183,6 +183,17 @@ static inline u64 sched_rt_period(struct
+ 	return ktime_to_ns(rt_rq->tg->rt_bandwidth.rt_period);
+ }
+ 
++static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
++{
++	list_add_rcu(&rt_rq->leaf_rt_rq_list,
++			&rq_of_rt_rq(rt_rq)->leaf_rt_rq_list);
++}
++
++static inline void list_del_leaf_rt_rq(struct rt_rq *rt_rq)
++{
++	list_del_rcu(&rt_rq->leaf_rt_rq_list);
++}
++
+ #define for_each_leaf_rt_rq(rt_rq, rq) \
+ 	list_for_each_entry_rcu(rt_rq, &rq->leaf_rt_rq_list, leaf_rt_rq_list)
+ 
+@@ -276,6 +287,14 @@ static inline u64 sched_rt_period(struct
+ 	return ktime_to_ns(def_rt_bandwidth.rt_period);
+ }
+ 
++static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
++{
++}
++
++static inline void list_del_leaf_rt_rq(struct rt_rq *rt_rq)
++{
++}
++
+ #define for_each_leaf_rt_rq(rt_rq, rq) \
+ 	for (rt_rq = &rq->rt; rt_rq; rt_rq = NULL)
+ 
+@@ -825,6 +844,9 @@ static void __enqueue_rt_entity(struct s
+ 	if (group_rq && (rt_rq_throttled(group_rq) || !group_rq->rt_nr_running))
+ 		return;
+ 
++	if (!rt_rq->rt_nr_running)
++		list_add_leaf_rt_rq(rt_rq);
++
+ 	if (head)
+ 		list_add(&rt_se->run_list, queue);
+ 	else
+@@ -844,6 +866,8 @@ static void __dequeue_rt_entity(struct s
+ 		__clear_bit(rt_se_prio(rt_se), array->bitmap);
+ 
+ 	dec_rt_tasks(rt_se, rt_rq);
++	if (!rt_rq->rt_nr_running)
++		list_del_leaf_rt_rq(rt_rq);
+ }
+ 
+ /*
 
 -- 
 
