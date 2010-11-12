@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab0KLRcm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 12:32:42 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58907 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341Ab0KLRck (ORCPT
+	id S1754936Ab0KLRdJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 12:33:09 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:53996 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882Ab0KLRdI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 12:32:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=oe5PzTKWfjX+fE+mhOhUtxbq3TkZO+pJE9WpWmNvv9IwfWvU6xXNurv+mEc62cP6ZV
-         S9AuLjr4jCO0GQMZzvFMy7wlkLw+2l2VynCsSGu2wn2wIjIZm80uYuOK57CGpN7x1Cc8
-         kzssd4ghiYxLzh2+XTFxzhHfrMdbhY0lZNg34=
-Date: Fri, 12 Nov 2010 09:32:28 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Hemanth V <hemanthv@ti.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>, LKML <linux-kernel@vger.kernel.org>,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
-        Jean Delvare <khali@linux-fr.org>, Greg KH <greg@kroah.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, drivers@analog.com,
-        achew@nvidia.com, Donggeun Kim <dg77.kim@samsung.com>
-Subject: Re: Sensor event related attribute naming.
-Message-ID: <20101112173227.GB1224@core.coreip.homeip.net>
-References: <7BC12C510D794F198DFA5A5C104CD7B6@wipblrx0099946>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7BC12C510D794F198DFA5A5C104CD7B6@wipblrx0099946>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 12 Nov 2010 12:33:08 -0500
+Subject: Re: [PATCH 1/2] perf-events: Add support for supplementary event
+ registers v2
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu, fweisbec@gmail.com,
+        Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <AANLkTimJ3nLwmRfmf+uTuUvg6HVrHBzrjgQXuTi5dxyp@mail.gmail.com>
+References: <1289580941-29744-1-git-send-email-andi@firstfloor.org>
+	 <AANLkTimJ3nLwmRfmf+uTuUvg6HVrHBzrjgQXuTi5dxyp@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 12 Nov 2010 18:33:12 +0100
+Message-ID: <1289583192.2084.339.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 03:34:36PM +0530, Hemanth V wrote:
-> ----- Original Message ----- From: "Hemanth V" <hemanthv@ti.com>
-> To: "Jonathan Cameron" <jic23@cam.ac.uk>; "Dmitry Torokhov" <dtor@mail.ru>
+On Fri, 2010-11-12 at 18:17 +0100, Stephane Eranian wrote:
+> I looked at this patch thinking how could this be reused for LBR_SELECT.
 > 
+> I am wondering if storing the extra MSR value in attr.config is really the way
+> to go now as opposed to adding/overloading a field.
 > 
-> >----- Original Message ----- From: "Jonathan Cameron"
-> ><jic23@cam.ac.uk>
-> >To: "Jonathan Cameron" <jic23@cam.ac.uk>
-> >Sent: Thursday, September 30, 2010 3:36 PM
-> >Subject: Re: Sensor event related attribute naming.
-> >
-> >
-> >>Given the lack of further comment, I went ahead and implemented
-> >>the above naming
-> >>scheme for IIO. As the above discussion with Hemanth shows,
-> >>there are some corner cases
-> >>that will need futher thought in the future.
-> >>
-> >
-> >Jonathan, haven't seen many comments on this. Do u think the reason
-> >might be that these interfaces are hidden behind a HAL layer like
-> >in android and
-> >might not be a burning issue for many people.
-> >
-> 
-> Dmitry, could you let us know your thoughts on this too.
-> Would using a HAL layer be better compared to creating a standard
-> sysfs interface, as it seems to be the popular approach.
-> 
+> For OFFCORE_RESPONSE, it makes sense to use attr.config because this is
+> a refinement of the event (a sub-sub event if you want).
 
-Hemanth,
+Correct, it makes sense for offcore and load-latency, not so much for
+lbr_config.
 
-I do not really see the difference between sysfs interface and HAL
-interface. They both abstract hardware details and bring them to common
-denominator. If you guys can agree on HAL interface I trust sysfs should
-be possible too ;)
+> For LBR_SELECT, you also need to pass a value, but there is no specific event
+> associated with it. You can enable LBR with any event you want. Thus,
+> storing the
+> LBR_SELECT value independently would also make sense. And if we have this
+> field for LBR_SELECT then we may as well use it for OFFCORE_REPONSE.
 
-BTW, the reason I do not comment on sysfs accelerometer infrastructure
-is because it is not topic I am vested in, my time budget barely covers
-pure input matters. So as long as there is something that is common and
-shared between drivers I would be good with it; you guys need to decide
-on details, please.
+That would assume a single event doesn't contain offcore and lbr, no?
+Currently the extra_reg thing assumes there's only one extra reg encoded
+in the config word.
 
-Thanks.
+> The alternative would be to consider LBR_SELECT also as a refinement of
+> the event being measured. Though by itself, it wouldn't do anything, it would
+> have to be combine with a PERF_SAMPLE_BRANCH_STACK to attr.sample_type.
 
--- 
-Dmitry
+A separate field for the lbr_config seems to make most sense, we could
+of course use the top 16 bits for lbr, the next 16 for offcore/ll and
+the bottom 32 for eventsel, but that's mighty crowded.
+
+
