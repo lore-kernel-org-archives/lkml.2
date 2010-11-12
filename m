@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab0KLLPV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 06:15:21 -0500
-Received: from exprod5og101.obsmtp.com ([64.18.0.141]:36845 "EHLO
-	exprod5og101.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757433Ab0KLLPQ (ORCPT
+	id S932306Ab0KLLPe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 06:15:34 -0500
+Received: from exprod5og112.obsmtp.com ([64.18.0.24]:44975 "EHLO
+	exprod5og112.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932108Ab0KLLP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 06:15:16 -0500
-Subject: [PATCH 11/17] staging/vme_user: declare private variables as static
+	Fri, 12 Nov 2010 06:15:29 -0500
+Subject: [PATCH 13/17] staging/vme_user: remove __iomem marking from kern_buf
+	and derivates
 To: Greg KH <greg@kroah.com>
 From: Martyn Welch <martyn.welch@ge.com>
 Cc: devel@driverdev.osuosl.org,
         Juan David Gonzalez Cobas <david.cobas@gmail.com>,
         "Emilio G. Cota" <cota@braap.org>, LKML <linux-kernel@vger.kernel.org>,
         Bill Pemberton <wfp5p@virginia.edu>
-Date: Fri, 12 Nov 2010 11:15:14 +0000
-Message-ID: <20101112111514.11631.21637.stgit@ES-BJ21R4J>
+Date: Fri, 12 Nov 2010 11:15:27 +0000
+Message-ID: <20101112111527.11631.27483.stgit@ES-BJ21R4J>
 In-Reply-To: <20101112111359.11631.84086.stgit@ES-BJ21R4J>
 References: <20101112111359.11631.84086.stgit@ES-BJ21R4J>
 User-Agent: StGit/0.15
@@ -28,9 +29,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Emilio G. Cota <cota@braap.org>
 
+kern_buf is not iomem; it comes from kmalloc and is directly
+dereferenced.
+
 Signed-off-by: Emilio G. Cota <cota@braap.org>
-[martyn.welch@ge.com: modified to remove checkpatch warnings]
-Signed-off-by: Martyn Welch <martyn.welch@ge.com>
+Acked-by: Martyn Welch <martyn.welch@ge.com>
 ---
 
  drivers/staging/vme/devices/vme_user.c |    6 +++---
@@ -38,22 +41,36 @@ Signed-off-by: Martyn Welch <martyn.welch@ge.com>
 
 
 diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
-index bdc4e1e..f7fa02d 100644
+index 7c61adc..5d3a39b 100644
 --- a/drivers/staging/vme/devices/vme_user.c
 +++ b/drivers/staging/vme/devices/vme_user.c
-@@ -114,9 +114,9 @@ typedef struct {
- } driver_stats_t;
- static driver_stats_t statistics;
+@@ -92,7 +92,7 @@ static unsigned int bus_num;
+  * Structure to handle image related parameters.
+  */
+ typedef struct {
+-	void __iomem *kern_buf;	/* Buffer address in kernel space */
++	void *kern_buf;	/* Buffer address in kernel space */
+ 	dma_addr_t pci_buf;	/* Buffer address in PCI address space */
+ 	unsigned long long size_buf;	/* Buffer size */
+ 	struct semaphore sem;	/* Semaphore for locking image */
+@@ -277,7 +277,7 @@ static ssize_t resource_from_user(unsigned int minor, const char *buf,
+ static ssize_t buffer_to_user(unsigned int minor, char __user *buf,
+ 	size_t count, loff_t *ppos)
+ {
+-	void __iomem *image_ptr;
++	void *image_ptr;
+ 	ssize_t retval;
  
--struct cdev *vme_user_cdev;		/* Character device */
--struct class *vme_user_sysfs_class;	/* Sysfs class */
--struct device *vme_user_bridge;		/* Pointer to the bridge device */
-+static struct cdev *vme_user_cdev;		/* Character device */
-+static struct class *vme_user_sysfs_class;	/* Sysfs class */
-+static struct device *vme_user_bridge;		/* Pointer to bridge device */
+ 	image_ptr = image[minor].kern_buf + *ppos;
+@@ -296,7 +296,7 @@ static ssize_t buffer_to_user(unsigned int minor, char __user *buf,
+ static ssize_t buffer_from_user(unsigned int minor, const char *buf,
+ 	size_t count, loff_t *ppos)
+ {
+-	void __iomem *image_ptr;
++	void *image_ptr;
+ 	size_t retval;
  
- 
- static const int type[VME_DEVS] = {	MASTER_MINOR,	MASTER_MINOR,
+ 	image_ptr = image[minor].kern_buf + *ppos;
 
 
 --
