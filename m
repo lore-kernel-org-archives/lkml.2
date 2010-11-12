@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120Ab0KLVm4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 16:42:56 -0500
-Received: from kroah.org ([198.145.64.141]:41595 "EHLO coco.kroah.org"
+	id S933141Ab0KLVm7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 16:42:59 -0500
+Received: from kroah.org ([198.145.64.141]:41591 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933068Ab0KLVlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933024Ab0KLVlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 12 Nov 2010 16:41:15 -0500
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Nicolas Pitre <nicolas.pitre@canonical.com>,
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 13/19] vcs: make proper usage of the poll flags
-Date: Fri, 12 Nov 2010 13:41:00 -0800
-Message-Id: <1289598066-10112-13-git-send-email-gregkh@suse.de>
+Subject: [PATCH 12/19] amiserial: Remove unused variable icount
+Date: Fri, 12 Nov 2010 13:40:59 -0800
+Message-Id: <1289598066-10112-12-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20101112213215.GB9294@kroah.com>
 References: <20101112213215.GB9294@kroah.com>
@@ -20,39 +20,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Pitre <nicolas.pitre@canonical.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
-Kay Sievers pointed out that usage of POLLIN is well defined by POSIX,
-and the current usage here doesn't follow that definition.  So let's
-duplicate the same semantics as implemented by sysfs_poll() instead.
+drivers/char/amiserial.c: In function ?rs_ioctl?:
+drivers/char/amiserial.c:1302: warning: unused variable ?icount?
 
-Signed-off-by: Nicolas Pitre <nicolas.pitre@canonical.com>
-Acked-by: Kay Sievers <kay.sievers@vrfy.org>
+commit 0587102cf9f427c185bfdeb2cef41e13ee0264b1 ("tty: icount changeover for
+other main devices") removed the users, but not the actual variable.
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/tty/vt/vc_screen.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/char/amiserial.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/tty/vt/vc_screen.c b/drivers/tty/vt/vc_screen.c
-index 273ab44..eab3a1f 100644
---- a/drivers/tty/vt/vc_screen.c
-+++ b/drivers/tty/vt/vc_screen.c
-@@ -553,12 +553,12 @@ static unsigned int
- vcs_poll(struct file *file, poll_table *wait)
+diff --git a/drivers/char/amiserial.c b/drivers/char/amiserial.c
+index b0a7046..c0bd6f4 100644
+--- a/drivers/char/amiserial.c
++++ b/drivers/char/amiserial.c
+@@ -1299,7 +1299,6 @@ static int rs_ioctl(struct tty_struct *tty, struct file * file,
  {
- 	struct vcs_poll_data *poll = vcs_poll_data_get(file);
--	int ret = 0;
-+	int ret = DEFAULT_POLLMASK|POLLERR|POLLPRI;
+ 	struct async_struct * info = tty->driver_data;
+ 	struct async_icount cprev, cnow;	/* kernel counter temps */
+-	struct serial_icounter_struct icount;
+ 	void __user *argp = (void __user *)arg;
+ 	unsigned long flags;
  
- 	if (poll) {
- 		poll_wait(file, &poll->waitq, wait);
--		if (!poll->seen_last_update)
--			ret = POLLIN | POLLRDNORM;
-+		if (poll->seen_last_update)
-+			ret = DEFAULT_POLLMASK;
- 	}
- 	return ret;
- }
 -- 
 1.7.1
 
