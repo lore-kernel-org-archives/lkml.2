@@ -1,84 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932701Ab0KLS3C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 13:29:02 -0500
-Received: from mga11.intel.com ([192.55.52.93]:33273 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756250Ab0KLS3A convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 13:29:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,188,1288594800"; 
-   d="scan'208";a="626194917"
-From: "Hefty, Sean" <sean.hefty@intel.com>
-To: Vasiliy Kulikov <segooon@gmail.com>, Roland Dreier <rdreier@cisco.com>
-CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        Roland Dreier <rolandd@cisco.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Alex Chiang <achiang@hp.com>, Andi Kleen <ak@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Julia Lawall <julia@diku.dk>,
-        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 12 Nov 2010 10:28:55 -0800
-Subject: RE: [PATCH] infiniband: core: fix information leak to userland
-Thread-Topic: [PATCH] infiniband: core: fix information leak to userland
-Thread-Index: AcuClLekuIZFizuPTFOBwI1VpZ/URQAAO0AA
-Message-ID: <CF9C39F99A89134C9CF9C4CCB68B8DDF25B85224A6@orsmsx501.amr.corp.intel.com>
-References: <1289054481-18145-1-git-send-email-segooon@gmail.com>
- <ada39r8ohiz.fsf@cisco.com> <20101112180844.GA11533@albatros>
-In-Reply-To: <20101112180844.GA11533@albatros>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1756813Ab0KLSbR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 13:31:17 -0500
+Received: from minus.inr.ac.ru ([194.67.69.97]:44364 "HELO ms2.inr.ac.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1755265Ab0KLSbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 13:31:15 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=ms2.inr.ac.ru;
+  b=XV/GfYXwd5Mn4z72AlinXvAQwsKtWJ8xyWCj4TD7p3/UqqzGU1LByNNUruoaof+P9qBoXnIIf8vDcdjO5gFpYZmANy+36INJHvkNcw3dXbyXepV1XRuJhFeQytZpJ+GwnJFQJ9QsLtmllQjV4HeRBATxBpmJz9O3llU1ZtYI0TM=;
+Date: Fri, 12 Nov 2010 21:29:59 +0300
+From: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Patrick McHardy <kaber@trash.net>, David Lamparter <equinox@diac24.net>,
+        Eric Paris <eparis@redhat.com>, Hua Zhong <hzhong@gmail.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, paul.moore@hp.com
+Subject: Re: a problem tcp_v4_err()
+Message-ID: <20101112182959.GA20459@ms2.inr.ac.ru>
+References: <20101111210341.31350.86916.stgit@paris.rdu.redhat.com> <00c201cb81eb$84e18160$8ea48420$@com> <1289578108.3083.95.camel@localhost.localdomain> <1289578532.3185.265.camel@edumazet-laptop> <20101112163543.GB122902@jupiter.n2.diac24.net> <4CDD7145.8070606@trash.net> <20101112175715.GB16544@ms2.inr.ac.ru> <1289585578.3185.268.camel@edumazet-laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289585578.3185.268.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.6i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/drivers/infiniband/core/ucm.c
-> b/drivers/infiniband/core/ucm.c
-> index 08f948d..f7256f3 100644
-> --- a/drivers/infiniband/core/ucm.c
-> +++ b/drivers/infiniband/core/ucm.c
-> @@ -629,6 +629,7 @@ static ssize_t ib_ucm_init_qp_attr(struct ib_ucm_file
-> *file,
->         if (result)
->                 goto out;
+Hello!
+
+On Fri, Nov 12, 2010 at 07:12:58PM +0100, Eric Dumazet wrote:
+> I see socket is locked around line 368,
 > 
-> +       resp.qp_state = 0;
->         ib_copy_qp_attr_to_user(&resp, &qp_attr);
-
-I believe we want ib_copy_qp_attr_to_user() to assign	resp->qp_state = qp_attr->qp_state
-
-> diff --git a/drivers/infiniband/core/ucma.c
-> b/drivers/infiniband/core/ucma.c
-> index ca12acf..07fd247 100644
-> --- a/drivers/infiniband/core/ucma.c
-> +++ b/drivers/infiniband/core/ucma.c
-> @@ -842,6 +842,7 @@ static ssize_t ucma_init_qp_attr(struct ucma_file
-> *file,
->         if (ret)
->                 goto out;
+>         bh_lock_sock(sk);
+>         /* If too many ICMPs get dropped on busy
+>          * servers this needs to be solved differently.
+>          */
+>         if (sock_owned_by_user(sk))
+>                 NET_INC_STATS_BH(net, LINUX_MIB_LOCKDROPPEDICMPS);
 > 
-> +       resp.qp_state = 0;
->         ib_copy_qp_attr_to_user(&resp, &qp_attr);
->         if (copy_to_user((void __user *)(unsigned long)cmd.response,
->                          &resp, sizeof(resp)))
-> diff --git a/drivers/infiniband/core/uverbs_marshall.c
-> b/drivers/infiniband/core/uverbs_marshall.c
-> index 5440da0..cceaf33 100644
-> --- a/drivers/infiniband/core/uverbs_marshall.c
-> +++ b/drivers/infiniband/core/uverbs_marshall.c
-> @@ -35,6 +35,7 @@
->  void ib_copy_ah_attr_to_user(struct ib_uverbs_ah_attr *dst, struct
-> ib_ah_attr *src)
->  {
-> +       memset(&dst->grh, 0, sizeof(dst->grh));
+> 
+> Hmm, maybe some goto is missing ;)
 
-We only need to set dst->grh.reserved = 0.  The other fields are assigned. 
+It is not missing, sock_owned_by_user() is checked later when some operation which
+cannot be done without lock is required. It was done to save error in sk_err_soft even
+when socket is locked.
 
-- Sean
+This code also _understands_ this: look at
+
+                } else if (sock_owned_by_user(sk)) {
+                        /* RTO revert clocked out retransmission,
+                         * but socket is locked. Will defer. */
+                        inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
+                                                  HZ/20, TCP_RTO_MAX);
+
+but somehow it considers the manipulations with rto/backoff/write_queue as safe.
+Seems, they are not.
+
+Alexey
+
+
+
