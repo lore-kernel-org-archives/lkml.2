@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312Ab0KLKyI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 05:54:08 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34375 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757220Ab0KLKyG (ORCPT
+	id S1757073Ab0KLKxt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 05:53:49 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:59498 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755954Ab0KLKxr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 05:54:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WtLpnBr2vF3wtmbpqUdhpeLXiVx/gIBFs9mUk4GxQY2EyR/TNjVTkCQ/gLsbuT5WEb
-         5oHSHEAhjMw7HT9UIL/sznbuugw3gmRJ00+5M9+LIAih1gqti8r5raVXrkNFO+2Yf4xW
-         /Pygsf6SQ8ojAFApGdmTvQgRT/wWmcP9PMkeU=
-Date: Fri, 12 Nov 2010 11:53:58 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Kyle Moffett <kyle@moffetthome.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Alexander Shishkin <virtuoso@slind.org>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCHv6 0/7] system time changes notification
-Message-ID: <20101112105358.GA20425@riccoc20.at.omicron.at>
-References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
- <22542.1289507293@localhost>
- <20101111205123.GC10585@shisha.kicks-ass.net>
- <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
- <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
- <20101112092504.6b8db05b@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101112092504.6b8db05b@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 12 Nov 2010 05:53:47 -0500
+Subject: Re: [tg_shares_up rewrite v3 09/11] sched: demand based
+ update_cfs_load()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Chris Friesen <cfriesen@nortel.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Pierre Bourdon <pbourdon@excellency.fr>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>
+In-Reply-To: <20101112032702.028843817@google.com>
+References: <20101112032405.657789056@google.com>
+	 <20101112032702.028843817@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 12 Nov 2010 11:53:18 +0100
+Message-ID: <1289559198.2084.214.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 09:25:04AM +0000, Alan Cox wrote:
-> > #define CLOCK_FD 0x80000000
-> > fd = open("/dev/clock/realtime", O_RDWR);
-> > poll(fd);
-> > clock_gettime(CLOCK_FD|fd, &ts);
-> > [...]
-> 
-> Oh please. Can we not manage to vaguely follow the direction of other
-> syscalls and instead of magic flag hacks just add
-> 
-> 	fclock_gettime
+On Thu, 2010-11-11 at 19:24 -0800, Paul Turner wrote:
+> +#ifdef CONFIG_FAIR_GROUP_SCHED
+> +       cfs_rq->load_unacc_exec_time += delta_exec;
+> +       if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window)
+> {
+> +               update_cfs_load(cfs_rq);
+> +               update_cfs_shares(cfs_rq, 0);
 
-Did you see my recent post on dynamic clock ids, from Nov 4th?
-It implements the clock lifetime cycle, and I would like to here your
-comments on that.
+Why not:
++		cfs_rq->load_unacc_exec_time -= sysctl_sched_shares_window;
 
-I did not implement the clock_* syscalls in new forms as fclock_* but
-will do so if there is agreement about it.
+(although you probably want to read the sysctl value into a local
+variable using ACCESS_ONCE() and use that for both cases).
 
-IMHO, from the application point of view, it would be nicer to be able
-to mix and match dynamic clock ids with the CLOCK_ ids using a
-clockid_t and the existing posix clock_* calls.
+> +       }
+> +#endif
+>  }
+>  
+>  static void update_curr(struct cfs_rq *cfs_rq)
+> @@ -713,6 +724,7 @@ static void update_cfs_load(struct cfs_r
+>         }
+>  
+>         cfs_rq->load_stamp = now;
+> +       cfs_rq->load_unacc_exec_time = 0; 
 
-Thanks,
-Richard
+and drop this one?
