@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102Ab0KLNWI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 08:22:08 -0500
-Received: from casper.infradead.org ([85.118.1.10]:47276 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069Ab0KLNWF convert rfc822-to-8bit (ORCPT
+	id S1757567Ab0KLN1R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 08:27:17 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:48993 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757262Ab0KLN1P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 08:22:05 -0500
-Subject: Re: [PATCH 2/3] perf: Add support for extra parameters for raw
- events
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Stephane Eranian <eranian@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, mingo@elte.hu, acme@redhat.com,
-        paulus <paulus@samba.org>, Tony Luck <tony.luck@intel.com>
-In-Reply-To: <AANLkTinjzZnv8dzfKPzgGtRnk5C-XsAt=gyf_4G0+gf8@mail.gmail.com>
-References: <1289492117-18066-1-git-send-email-andi@firstfloor.org>
-	 <1289492117-18066-2-git-send-email-andi@firstfloor.org>
-	 <4CDC2DDD.50508@linux.vnet.ibm.com> <4CDC3845.4030104@linux.intel.com>
-	 <4CDC4628.8020109@linux.vnet.ibm.com>
-	 <20101111194936.GJ18718@basil.fritz.box> <1289505587.2084.193.camel@laptop>
-	 <20101111201259.GL18718@basil.fritz.box> <1289507858.2084.195.camel@laptop>
-	 <20101112102748.GA8020@basil.fritz.box>
-	 <AANLkTi=idvNVyccD53Xwjp5mWfJb=S8UXekhXNqhzRPC@mail.gmail.com>
-	 <1289561817.2084.240.camel@laptop>
-	 <AANLkTinjzZnv8dzfKPzgGtRnk5C-XsAt=gyf_4G0+gf8@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 12 Nov 2010 08:27:15 -0500
+From: "G, Manjunath Kondaiah" <manjugk@ti.com>
+To: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm@lists.arm.linux.org.uk" <linux-arm@lists.arm.linux.org.uk>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
+Date: Fri, 12 Nov 2010 18:57:02 +0530
+Subject: RE: [PATCHv4 0/4] OMAP: Serial: remove magic and diplicates
+Thread-Topic: [PATCHv4 0/4] OMAP: Serial: remove magic and diplicates
+Thread-Index: AcuCbFVM6rmHNK87RSeqMTFhjuMeowAADKfw
+Message-ID: <E0D41E29EB0DAC4E9F3FF173962E9E9402DC24F069@dbde02.ent.ti.com>
+References: <1289567043-6213-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+	<E0D41E29EB0DAC4E9F3FF173962E9E9402DC24F05C@dbde02.ent.ti.com>
+ <AANLkTin-j1Aww+Nu4zRdAP5TH-t+ftpW6VEWUdejb1Pn@mail.gmail.com>
+In-Reply-To: <AANLkTin-j1Aww+Nu4zRdAP5TH-t+ftpW6VEWUdejb1Pn@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
-Date: Fri, 12 Nov 2010 14:21:17 +0100
-Message-ID: <1289568077.2084.256.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-12 at 14:00 +0100, Stephane Eranian wrote:
-> I don't understand what aspect you think is messy. When you are sampling
-> cache misses, you expect to get the tuple (instr addr, data addr, latency,
-> data source). 
+ 
 
-Its the data source thing I have most trouble with -- see below. The
-latency isn't immediately clear either, I mean the larger the bubble the
-more hits the instruction will get, so there should be a correlation
-between samples and latency.
+> -----Original Message-----
+> From: Andrei Emeltchenko [mailto:andrei.emeltchenko.news@gmail.com] 
+> Sent: Friday, November 12, 2010 6:50 PM
+> To: G, Manjunath Kondaiah
+> Cc: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org; 
+> linux-arm@lists.arm.linux.org.uk; linux-serial@vger.kernel.org
+> Subject: Re: [PATCHv4 0/4] OMAP: Serial: remove magic and diplicates
+> 
+> On Fri, Nov 12, 2010 at 3:17 PM, G, Manjunath Kondaiah 
+> <manjugk@ti.com> wrote:
+> >
+> >
+> >> -----Original Message-----
+> >> From: linux-omap-owner@vger.kernel.org
+> >> [mailto:linux-omap-owner@vger.kernel.org] On Behalf Of
+> >> Emeltchenko Andrei
+> >> Sent: Friday, November 12, 2010 6:34 PM
+> >> To: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org;
+> >> linux-arm@lists.arm.linux.org.uk; linux-serial@vger.kernel.org
+> >> Subject: [PATCHv4 0/4] OMAP: Serial: remove magic and diplicates
+> >
+> > s/diplicates/duplicates
+> >
+> >>
+> >> From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+> >>
+> >> Add MDR1 Serial register definition to serial_reg and remove
+> >> duplicated
+> >> code, remove magic MDR1 register numbers from serial drivers.
+> >>
+> >> *v2 add OMAP keyword to MDR1 definition
+> >> *v3 remove magic from serial drivers
+> >> *v4 taking comments from Manjunath and Govindraj: typos, CC
+> >>
+> >> Andrei Emeltchenko (4):
+> >>   OMAP: Serial: Define OMAP uart MDR1 register definitions
+> >>   OMAP1: Serial: remove magic numbers for MDR1 reg
+> >>   OMAP2: Serial: remove magic numbers for MDR1 reg
+> >>   OMAP: Serial: remove redefined MDR1 register definitions
+> >>
+> >>  arch/arm/mach-omap1/serial.c                  |    6 ++++--
+> >>  arch/arm/mach-omap2/serial.c                  |   15 
+> +++++++++------
+> >>  arch/arm/plat-omap/include/plat/omap-serial.h |    3 ---
+> >>  drivers/serial/omap-serial.c                  |    6 +++---
+> >>  include/linux/serial_reg.h                    |   12 ++++++++++++
+> >>  5 files changed, 28 insertions(+), 14 deletions(-)
+> >
+> > Do you think patch series is required for these changes? How about
+> > merging with single patch?
+> 
+> I can merge, sometimes somebody need patches to be split, 
 
-> That is what you get with AMD IBS, Nehalem PEBS-LL and
-> also Itanium D-EAR. I am sure IBM Power has something similar as well.
-> To collect this, you can either store the info in registers (AMD, Itanium)
-> or in a buffer (PEBS). But regardless of that you will always have to expose
-> the tuple. We have a solution for two out of 4 fields that reuses the existing
-> infrastructure. We need something else for the other two.
+why? can you give example?
 
-Well, if Intel PEBS, IA64 and PPC64 all have a data source thing we can
-simply add PERF_SAMPLE_SOURCE or somesuch and use that. 
+Please read: http://lwn.net/Articles/139918/
+"if you make a single change to numerous files, group those changes into 
+a single patch.  Thus a single logical change is contained within a 
+single patch."
 
-Do IA64/PPC64 have latency fields as well? PERF_SAMPLE_LATENCY would
-seem to be the thing to use in that case.
-
-BTW, what's the status of perf on IA64? And do we really still care
-about that platform, its pretty much dead isn't it?
-
-> We should expect that in the future PMUs will collect more than code addresses. 
-
-Sure, but I hate stuff that counts multiple events on a single base like
-IBS does, and LL is similar to that, its a fetch retire counter and then
-you report where fetch was satisfied from. So in effect you're measuring
-l1/l2/l3/dram hit/miss all at the same time but on a fetch basis.
-
-Note that we need proper userspace for such crap as well, and libpfm
-doesn't count, we need a full analysis tool in perf itself.
+-Manjunath
