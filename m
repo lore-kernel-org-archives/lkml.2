@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932922Ab0KLWlo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 17:41:44 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:51088 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754623Ab0KLWll (ORCPT
+	id S1757587Ab0KLWrs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 17:47:48 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42801 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754163Ab0KLWrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 17:41:41 -0500
-Date: Fri, 12 Nov 2010 22:39:38 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: guenter.roeck@ericsson.com
-Cc: Phil Pokorny <ppokorny@penguincomputing.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] Location for thermal drivers
-Message-ID: <20101112223938.4f2675d7@lxorguk.ukuu.org.uk>
-In-Reply-To: <1289599600.22931.406.camel@groeck-laptop>
-References: <1289594026.22931.388.camel@groeck-laptop>
-	<AANLkTimERGh2yGGX_E_N4ajxg_-0QTFS54QSKj2+AAfF@mail.gmail.com>
-	<1289599600.22931.406.camel@groeck-laptop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Fri, 12 Nov 2010 17:47:46 -0500
+Date: Fri, 12 Nov 2010 14:47:02 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+        driverdevel <devel@driverdev.osuosl.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        naveen.gaddipati@stericsson.com, js.ha@stericsson.com
+Subject: [PATCH -next] staging: fix ste_rmi4 build, depends on INPUT
+Message-Id: <20101112144702.117505ee.randy.dunlap@oracle.com>
+In-Reply-To: <20101111125655.15fa7188.sfr@canb.auug.org.au>
+References: <20101111125655.15fa7188.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -28,17 +26,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Why does drivers/thermal exist if there are no drivers in it and no maintainer?
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-It has a maintainer - they are just not listed in MAINTAINERS only in the
-file itself.
+The synaptics_i2c_rmi4 driver uses input_*() interfaces,
+so it should depend on INPUT to fix its build errors:
 
-> > 
-> The framework resides there. Drivers supporting it are in various
-> platform directories.
-> 
-> As for why there are no drivers - only the framework - in
-> drivers/thermal, and why there is no maintainer - no idea.
+ERROR: "input_event" [drivers/staging/ste_rmi4/synaptics_i2c_rmi4.ko] undefined!
+ERROR: "input_free_device" [drivers/staging/ste_rmi4/synaptics_i2c_rmi4.ko] undefined!
+ERROR: "input_register_device" [drivers/staging/ste_rmi4/synaptics_i2c_rmi4.ko] undefined!
+ERROR: "input_set_abs_params" [drivers/staging/ste_rmi4/synaptics_i2c_rmi4.ko] undefined!
+ERROR: "input_allocate_device" [drivers/staging/ste_rmi4/synaptics_i2c_rmi4.ko] undefined!
+ERROR: "input_unregister_device" [drivers/staging/ste_rmi4/synaptics_i2c_rmi4.ko] undefined!
 
-Well I could put it in arch/x86/platform/mrst now we have that structure
-from 2.6.37-rc1 onwards
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: naveen.gaddipati@stericsson.com, js.ha@stericsson.com
+---
+ drivers/staging/ste_rmi4/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-next-20101111.orig/drivers/staging/ste_rmi4/Kconfig
++++ linux-next-20101111/drivers/staging/ste_rmi4/Kconfig
+@@ -1,6 +1,6 @@
+ config TOUCHSCREEN_SYNAPTICS_I2C_RMI4
+ 	tristate "Synaptics i2c rmi4 touchscreen"
+-	depends on I2C
++	depends on I2C && INPUT
+ 	help
+ 	  Say Y here if you have a Synaptics RMI4 and
+ 	  want to enable support for the built-in touchscreen.
