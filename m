@@ -1,89 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab0KLFpw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 00:45:52 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:58358 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751341Ab0KLFpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 00:45:50 -0500
-Date: Thu, 11 Nov 2010 21:45:46 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] x86: OLPC: speed up device tree creation during boot
- (v2)
-Message-ID: <20101111214546.4e573cad@queued.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751011Ab0KLGCK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 01:02:10 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:1103 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750764Ab0KLGCI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 01:02:08 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAJ9n3Ex5LcEI/2dsb2JhbACiS3K+UYVKBJBS
+Date: Fri, 12 Nov 2010 17:02:02 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nick Piggin <npiggin@gmail.com>, Nick Piggin <npiggin@kernel.dk>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [patch 1/6] fs: icache RCU free inodes
+Message-ID: <20101112060202.GB3332@amd>
+References: <20101109124610.GB11477@amd>
+ <AANLkTi=b3dEmoTgrJ2xMTUzgM-mUQNNx6J9jeLq2=mtf@mail.gmail.com>
+ <1289319698.2774.16.camel@edumazet-laptop>
+ <AANLkTimJCgsPqB9ihbScr1RdZ+XGk2tq7LZNfh109Skv@mail.gmail.com>
+ <20101109220506.GE3246@amd>
+ <AANLkTi=H5ZZ3b5F=Z-PM6FX84FJNzdSh4_HbeeU666ts@mail.gmail.com>
+ <AANLkTimn623-N1R_Bn4sF4U6OX55TQZ2w7jGOq+kB5Pz@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimn623-N1R_Bn4sF4U6OX55TQZ2w7jGOq+kB5Pz@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 11, 2010 at 08:48:38PM -0800, Linus Torvalds wrote:
+> On Thu, Nov 11, 2010 at 5:24 PM, Nick Piggin <npiggin@gmail.com> wrote:
+> >
+> > So this is really not a "oh, maybe someone will see 10-20% slowdown", or even
+> > 1-2% slowdown.
+> 
+> You ignored my bigger issue: the _normal_ way - and the better way -
+> to handle these thingsis with SLAB_DESTROY_BY_RCU.
 
-Calling alloc_bootmem() for tiny chunks of memory over and over is really
-slow; on an XO-1, it caused the time between when the kernel started
-booting and when the display came alive (post-lxfb probe) to increase
-to 44s.  This patch optimizes the prom_early_alloc function by
-calling alloc_bootmem for 4k-sized blocks of memory, and handing out
-chunks of that to callers.  With this patch, the time between kernel load
-and display initialization decreased to 23s.  If there's a better way to
-do this early in the boot process, please let me know.
+Well I tried to answer that in the other threads.
 
-(Note: increasing the chunk size to 16k didn't noticably affect boot time,
-and wasted 9k.)
+SLAB_DESTROY_BY_RCU is indeed quite natural for a lot of RCU usages,
+because even with standard RCU you almost always have the pattern like
 
-v2: reorder function as suggested by Grant.
+rcu_read_lock();
+obj = lookup_data_structure(key);
+if (obj) {
+  lock(obj);
+  verify_obj_in_structure(obj, key);
+  /* blah... (eg. take refcount) */
+}
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- arch/x86/platform/olpc/olpc_dt.c |   27 ++++++++++++++++++++++-----
- 1 files changed, 22 insertions(+), 5 deletions(-)
+And in this pattern, SLAB_DESTROY_BY_RCU takes almost zero work.
 
-diff --git a/arch/x86/platform/olpc/olpc_dt.c b/arch/x86/platform/olpc/olpc_dt.c
-index b8c8ff9..0ab824d 100644
---- a/arch/x86/platform/olpc/olpc_dt.c
-+++ b/arch/x86/platform/olpc/olpc_dt.c
-@@ -126,14 +126,31 @@ static unsigned int prom_early_allocated __initdata;
- 
- void * __init prom_early_alloc(unsigned long size)
- {
-+	static u8 *mem = NULL;
-+	static size_t free_mem = 0;
- 	void *res;
- 
--	res = alloc_bootmem(size);
--	if (res)
--		memset(res, 0, size);
--
--	prom_early_allocated += size;
-+	if (free_mem < size) {
-+		const size_t chunk_size = max(PAGE_SIZE, size);
-+
-+		/*
-+		 * To mimimize the number of allocations, grab at least 4k of
-+		 * memory (that's an arbitrary choice that matches PAGE_SIZE on
-+		 * the platforms we care about, and minimizes wasted bootmem)
-+		 * and hand off chunks of it to callers.
-+		 */
-+		res = mem = alloc_bootmem(chunk_size);
-+		if (!res)
-+			return NULL;
-+		prom_early_allocated += chunk_size;
-+		memset(res, 0, chunk_size);
-+		free_mem = chunk_size;
-+	}
- 
-+	/* allocate from the local cache */
-+	free_mem -= size;
-+	res = mem;
-+	mem += size;
- 	return res;
- }
- 
--- 
-1.7.2.3
+OK, but rcu-walk doesn't have that. In rcu-walk, we can't take a lock
+or a reference on either the dentry _or_ the inode, because the whole
+point is to reduce atomics (for single threaded performance), and
+stores into shared cachelines along the path (for scalability).
+
+It gets really interesting when you have crazy stuff going on like
+inode->i_ops changing from underneath you while you're trying to do
+permission lookups, or inode type changing from link to dir to reg
+in the middle of the traversal.
+
+
+> So what are the advantages of using the inferior approach?  I really
+> don't see why you push the whole "free the damn things individually"
+> approach.
+
+I'm not pushing _that_ aspect of it. I'm pushing the "don't go away and
+come back as something else" aspect.
+
+Yes it may be _possible_ to do store-free walking SLAB_DESTROY_BY_RCU,
+and I have some ideas. But it is hairy. More hairy than rcu-walk, by
+quite a long shot.
+
+And the complexity and issues that need to be understood are basically
+rcu-walk + *more*. So I want basic rcu-walk to be reviewed and basically
+verified first, and we could think about the +more part after that.
+
+Basically SLAB_DESTROY_BY_RCU is not exactly natural for a completely
+store-free algorithm.
 
