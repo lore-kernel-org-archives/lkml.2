@@ -1,35 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932808Ab0KLTaB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 14:30:01 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33583 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932276Ab0KLTaA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 14:30:00 -0500
-Date: Fri, 12 Nov 2010 11:29:04 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-kernel@vger.kernel.org, jdike@addtoit.com,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [PATCH] um: mark CONFIG_HIGHMEM as broken
-Message-Id: <20101112112904.4b91d140.akpm@linux-foundation.org>
-In-Reply-To: <1289517488-17628-1-git-send-email-richard@nod.at>
-References: <1289517488-17628-1-git-send-email-richard@nod.at>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932873Ab0KLTaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 14:30:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36800 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932822Ab0KLTaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 14:30:16 -0500
+Date: Fri, 12 Nov 2010 11:29:58 -0800
+From: Greg KH <gregkh@suse.de>
+To: Stefan Achatz <stefan_achatz@web.de>
+Cc: "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+        "Serge E. Hallyn" <serue@us.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Thery <benjamin.thery@bull.net>
+Subject: Re: [PATCH 1/2] sysfs: Introducing sysfs_create_bin_group()
+Message-ID: <20101112192958.GA22233@suse.de>
+References: <1289585918.2629.12.camel@neuromancer>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289585918.2629.12.camel@neuromancer>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Nov 2010 00:18:08 +0100
-Richard Weinberger <richard@nod.at> wrote:
-
-> Currently CONFIG_HIGHMEM is broken on User Mode Linux.
-> I'm not sure if it worked ever.
+On Fri, Nov 12, 2010 at 07:18:38PM +0100, Stefan Achatz wrote:
+> Implemented group functions for easier creation of multiple binary sysfs
+> attributes similar to existing attribute_group handling functions.
+> The code reuses struct attribute_group instead of inventing a new struct
+> binary_attribute_group.
 > 
+> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
 
-What is "broken" about it?
+Looks good to me, nice job.
 
+Dmitry, do you want to take this through your tree as the mouse driver
+change needs it?  If so, feel free to do so and add a:
+	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+to the patch.
+
+If not, I'll be glad to take it, and the mouse driver change through my
+tree if needed.
+
+Just let me know which is easier for you.
+
+thanks,
+
+greg k-h
