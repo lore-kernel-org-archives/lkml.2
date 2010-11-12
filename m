@@ -1,72 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757081Ab0KLMRp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 07:17:45 -0500
-Received: from static-220-247-10-204.b-man.svips.gol.ne.jp ([220.247.10.204]:52967
-	"EHLO smtp.kamineko.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753348Ab0KLMRo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 07:17:44 -0500
-Date: Fri, 12 Nov 2010 21:17:42 +0900
-From: Mattia Dongili <malattia@linux.it>
-To: Norbert Preining <preining@logic.at>
-Cc: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Subject: Re: regression since 2.6.36: backlight in sony-laptop not working
-Message-ID: <20101112121742.GA17690@kamineko.org>
-References: <20101104142915.GC7650@gamma.logic.tuwien.ac.at>
- <20101110035833.GB3029@kamineko.org>
- <20101111235000.GA6651@gamma.logic.tuwien.ac.at>
- <20101112034423.GA7407@srcf.ucam.org>
- <20101112035027.GD26742@gamma.logic.tuwien.ac.at>
- <20101112035732.GB7574@srcf.ucam.org>
- <20101112042243.GE2852@kamineko.org>
- <20101112043922.GA19889@gamma.logic.tuwien.ac.at>
+	id S1757494Ab0KLMSu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 07:18:50 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:48694 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757164Ab0KLMSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 07:18:47 -0500
+Date: Fri, 12 Nov 2010 04:18:33 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
+        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] ioprio: grab rcu_read_lock in sys_ioprio_{set,get}()
+Message-ID: <20101112121833.GB2825@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1289547167-32675-1-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101112043922.GA19889@gamma.logic.tuwien.ac.at>
-X-Message-Flag: Cranky? Try Free Software instead!
-X-Operating-System: Linux 2.6.35+ x86_64
-X-Editor: Vim http://www.vim.org/
-X-Disclaimer: Buh!
+In-Reply-To: <1289547167-32675-1-git-send-email-gthelen@google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 01:39:22PM +0900, Norbert Preining wrote:
-> On Fr, 12 Nov 2010, Mattia Dongili wrote:
-> > backlight (actually Fn+F[56]) is one of those keys the needs remapping
-> > these days, i.e. if xev doesn't get any event in X then you may need
+On Thu, Nov 11, 2010 at 11:32:47PM -0800, Greg Thelen wrote:
+> Using:
+> - CONFIG_LOCKUP_DETECTOR=y
+> - CONFIG_PREEMPT=y
+> - CONFIG_LOCKDEP=y
+> - CONFIG_PROVE_LOCKING=y
+> - CONFIG_PROVE_RCU=y
+> found a missing rcu lock during boot on a 512 MiB x86_64 ubuntu vm:
+>   ===================================================
+>   [ INFO: suspicious rcu_dereference_check() usage. ]
+>   ---------------------------------------------------
+>   kernel/pid.c:419 invoked rcu_dereference_check() without protection!
 > 
-> It doesn't.
-
-You will need an updated input-kbd to set the scancode map.
-
-> > $ diff -u <(sudo input-kbd 5) vaio-kbd
-> > /dev/input/event5
-> >    bustype : BUS_ISA
-> >    vendor  : 0x104d
-> >    product : 0x0
-> >    version : 0
-> >    name    : "Sony Vaio Keys"
-> >    bits ev : EV_SYN EV_KEY EV_MSC
+>   other info that might help us debug this:
 > 
-> Ahhhhh
-> 	root$ input-kbd 8
-> 	/dev/input/event8
-> 	protocol version mismatch (expected 65536, got 65537)
-> and the same for all event devices??
+>   rcu_scheduler_active = 1, debug_locks = 0
+>   1 lock held by ureadahead/1355:
+>    #0:  (tasklist_lock){.+.+..}, at: [<ffffffff8115bc09>] sys_ioprio_set+0x7f/0x29e
 > 
-> I have input-kbd from xserver-xorg-input-kbd in Debian/sid, which is
-> at 1:1.4.0-2 version.
+>   stack backtrace:
+>   Pid: 1355, comm: ureadahead Not tainted 2.6.37-dbg-DEV #1
+>   Call Trace:
+>    [<ffffffff8109c10c>] lockdep_rcu_dereference+0xaa/0xb3
+>    [<ffffffff81088cbf>] find_task_by_pid_ns+0x44/0x5d
+>    [<ffffffff81088cfa>] find_task_by_vpid+0x22/0x24
+>    [<ffffffff8115bc3e>] sys_ioprio_set+0xb4/0x29e
+>    [<ffffffff8147cf21>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+>    [<ffffffff8105c409>] sysenter_dispatch+0x7/0x2c
+>    [<ffffffff8147cee2>] ? trace_hardirqs_on_thunk+0x3a/0x3f
 > 
-> Does that mean that 2.6.37rc is too new for the user space?
+> The fix is to:
+> a) grab rcu lock in sys_ioprio_{set,get}() and
+> b) avoid grabbing tasklist_lock.
+> Discussion in: http://marc.info/?l=linux-kernel&m=128951324702889
 
-Maybe. Anyway if evtest reacts positively to key presses then it's a
-userspace issue and not the driver's.
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
--- 
-mattia
-:wq!
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> ---
+>  fs/ioprio.c |   13 ++++---------
+>  1 files changed, 4 insertions(+), 9 deletions(-)
+> 
+> diff --git a/fs/ioprio.c b/fs/ioprio.c
+> index 748cfb9..7da2a06 100644
+> --- a/fs/ioprio.c
+> +++ b/fs/ioprio.c
+> @@ -103,12 +103,7 @@ SYSCALL_DEFINE3(ioprio_set, int, which, int, who, int, ioprio)
+>  	}
+> 
+>  	ret = -ESRCH;
+> -	/*
+> -	 * We want IOPRIO_WHO_PGRP/IOPRIO_WHO_USER to be "atomic",
+> -	 * so we can't use rcu_read_lock(). See re-copy of ->ioprio
+> -	 * in copy_process().
+> -	 */
+> -	read_lock(&tasklist_lock);
+> +	rcu_read_lock();
+>  	switch (which) {
+>  		case IOPRIO_WHO_PROCESS:
+>  			if (!who)
+> @@ -153,7 +148,7 @@ free_uid:
+>  			ret = -EINVAL;
+>  	}
+> 
+> -	read_unlock(&tasklist_lock);
+> +	rcu_read_unlock();
+>  	return ret;
+>  }
+> 
+> @@ -197,7 +192,7 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
+>  	int ret = -ESRCH;
+>  	int tmpio;
+> 
+> -	read_lock(&tasklist_lock);
+> +	rcu_read_lock();
+>  	switch (which) {
+>  		case IOPRIO_WHO_PROCESS:
+>  			if (!who)
+> @@ -250,6 +245,6 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
+>  			ret = -EINVAL;
+>  	}
+> 
+> -	read_unlock(&tasklist_lock);
+> +	rcu_read_unlock();
+>  	return ret;
+>  }
+> -- 
+> 1.7.3.1
+> 
