@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab0KLRBO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 12:01:14 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54776 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab0KLRBL (ORCPT
+	id S1757748Ab0KLRCl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 12:02:41 -0500
+Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:43160 "EHLO
+	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757560Ab0KLRCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 12:01:11 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+M6BpdvuEpxYPrB/qDgxVF
-Date: Fri, 12 Nov 2010 09:01:01 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Greg KH <greg@kroah.com>
-Cc: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm@lists.arm.linux.org.uk, linux-serial@vger.kernel.org
-Subject: Re: [PATCHv4 0/4] OMAP: Serial: remove magic and diplicates
-Message-ID: <20101112170101.GC9264@atomide.com>
-References: <1289567043-6213-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
- <20101112150143.GA18096@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101112150143.GA18096@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 12 Nov 2010 12:02:41 -0500
+X-Greylist: delayed 2394 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Nov 2010 12:02:40 EST
+Subject: Re: [PATCH/RFC] MM slub: add a sysfs entry to show the calculated
+ number of fallback slabs
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+In-Reply-To: <alpine.DEB.2.00.1011120911310.11746@router.home>
+References: <1289561309.1972.30.camel@castor.rsk>
+	 <alpine.DEB.2.00.1011120911310.11746@router.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 12 Nov 2010 16:22:44 +0000
+Message-ID: <1289578964.1972.43.camel@castor.rsk>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg KH <greg@kroah.com> [101112 06:54]:
-> On Fri, Nov 12, 2010 at 03:03:59PM +0200, Emeltchenko Andrei wrote:
-> > From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
-> > 
-> > Add MDR1 Serial register definition to serial_reg and remove duplicated
-> > code, remove magic MDR1 register numbers from serial drivers.
-> > 
-> > *v2 add OMAP keyword to MDR1 definition
-> > *v3 remove magic from serial drivers
-> > *v4 taking comments from Manjunath and Govindraj: typos, CC
-> > 
-> > Andrei Emeltchenko (4):
-> >   OMAP: Serial: Define OMAP uart MDR1 register definitions
-> >   OMAP1: Serial: remove magic numbers for MDR1 reg
-> >   OMAP2: Serial: remove magic numbers for MDR1 reg
-> >   OMAP: Serial: remove redefined MDR1 register definitions
+On Fri, 2010-11-12 at 09:13 -0600, Christoph Lameter wrote:
+> On Fri, 12 Nov 2010, Richard Kennedy wrote:
 > 
-> Looks good, do you want these to go through the omap tree, or the serial
-> tree?
+> > On my desktop workloads (kernel compile etc) I'm seeing surprisingly
+> > little slab fragmentation. Do you have any suggestions for test cases
+> > that will fragment the memory?
 > 
-> If they go through the omap tree, feel free to add:
-> 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+> Do a massive scan through huge amounts of files that triggers inode and
+> dentry reclaim?
 
-Thanks, I can queue these. There will be some other platform level
-serial changes done for wake-up events, so it's best to keep
-them all together.
+thanks, I'll give it a try.
 
-Regards,
+> > + * Note that this can give the wrong answer if the user has changed the
+> > + * order of this slab via sysfs.
+> 
+> Not good. Maybe have an additional counter in kmem_cache_node instead?
 
-Tony
+
+I know it's not ideal. Of course there already is a counter in
+CONFIG_SLUB_STATS but it only counts the total number of fallback slabs
+issued since boot time.
+I'm not sure if I can reliably decrement a fallback counter when a slab
+get freed. If the size was changed then we could have slabs with several
+different sizes, and off the top of my head I'm not sure if I can
+identify which ones were created as fallback slabs. I don't suppose
+there's a spare flag anywhere. 
+
+I'll give this some more thought.
+
+regards
+Richard   
+
