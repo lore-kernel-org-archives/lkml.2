@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933111Ab0KLVow (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 16:44:52 -0500
+	id S1757353Ab0KLVpM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 16:45:12 -0500
 Received: from mail.perches.com ([173.55.12.10]:1028 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932627Ab0KLViN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 16:38:13 -0500
+	id S932538Ab0KLViM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 16:38:12 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 06/14] drivers/mfd: Use printf extension %pR for struct resource
-Date: Fri, 12 Nov 2010 13:37:56 -0800
-Message-Id: <c6c8909d879beb258d2de7d25e82c30673f29ffe.1289597644.git.joe@perches.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 04/14] drivers/dma/ppc4xx: Use printf extension %pR for struct resource
+Date: Fri, 12 Nov 2010 13:37:54 -0800
+Message-Id: <f66de3cc7e0964d9066d991c4b4eba981ba3d752.1289597644.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289597644.git.joe@perches.com>
 References: <cover.1289597644.git.joe@perches.com>
@@ -23,27 +23,25 @@ Using %pR standardizes the struct resource output.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/mfd/sm501.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/dma/ppc4xx/adma.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mfd/sm501.c b/drivers/mfd/sm501.c
-index bc9275c..78638cf 100644
---- a/drivers/mfd/sm501.c
-+++ b/drivers/mfd/sm501.c
-@@ -745,11 +745,8 @@ static int sm501_register_device(struct sm501_devdata *sm,
- 	int ret;
+diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
+index 0d58a4a..cef5845 100644
+--- a/drivers/dma/ppc4xx/adma.c
++++ b/drivers/dma/ppc4xx/adma.c
+@@ -4449,9 +4449,8 @@ static int __devinit ppc440spe_adma_probe(struct platform_device *ofdev,
  
- 	for (ptr = 0; ptr < pdev->num_resources; ptr++) {
--		printk(KERN_DEBUG "%s[%d] flags %08lx: %08llx..%08llx\n",
--		       pdev->name, ptr,
--		       pdev->resource[ptr].flags,
--		       (unsigned long long)pdev->resource[ptr].start,
--		       (unsigned long long)pdev->resource[ptr].end);
-+		printk(KERN_DEBUG "%s[%d] %pR\n",
-+		       pdev->name, ptr, &pdev->resource[ptr]);
- 	}
- 
- 	ret = platform_device_register(pdev);
+ 	if (!request_mem_region(res.start, resource_size(&res),
+ 				dev_driver_string(&ofdev->dev))) {
+-		dev_err(&ofdev->dev, "failed to request memory region "
+-			"(0x%016llx-0x%016llx)\n",
+-			(u64)res.start, (u64)res.end);
++		dev_err(&ofdev->dev, "failed to request memory region %pR\n",
++			&res);
+ 		initcode = PPC_ADMA_INIT_MEMREG;
+ 		ret = -EBUSY;
+ 		goto out;
 -- 
 1.7.3.1.g432b3.dirty
 
