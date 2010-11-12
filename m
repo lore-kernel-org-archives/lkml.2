@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466Ab0KLT63 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 14:58:29 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47429 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756403Ab0KLT6Z (ORCPT
+	id S932575Ab0KLUC1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 15:02:27 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:39413 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756403Ab0KLUCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 14:58:25 -0500
+	Fri, 12 Nov 2010 15:02:23 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=n3THIlTstf7ka/oLncJe9tsxJkqjOlxkzOCbOZ0Hj8KpRAbVMLYmIAZAbogJuUvzYO
-         yQkfv8HLcoqUFnbshLhJGSIS7jI+kLsTRKPHnHNkbLjht27myxvsPb9e3muzxdXtHvS4
-         RV+hRpINVccUrhDEVzm61oyEcWtPK0AqKdO48=
-Date: Fri, 12 Nov 2010 11:58:16 -0800
+        b=fE7CGUpUgI3qJS1rUQ25LE0Pr0ZWCe7/9ZlsOh5GranE5xBcrHSiqITSpt5HMLAlQA
+         FE2WPEIR72L5VTj/wySxyf4RqIsK879CEes58+/HE7FZPDUVBIjSVUIaFrgcU7jE22xK
+         +lh4c0N/nGEjzU48/a8/XXcolrFZzyKDwkDX0=
+Date: Fri, 12 Nov 2010 12:02:15 -0800
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Trilok Soni <tsoni@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        rtc-linux@googlegroups.com, linux-arm-msm@vger.kernel.org,
-        wruan@codeaurora.org
-Subject: Re: [RFC v1 PATCH 4/6] input: pmic8058_pwrkey: Add support for power
- key
-Message-ID: <20101112195816.GC1299@core.coreip.homeip.net>
-References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org>
- <1289393281-4459-5-git-send-email-tsoni@codeaurora.org>
- <20101111072107.GA24415@core.coreip.homeip.net>
- <4CDBDAD5.90406@codeaurora.org>
- <20101112005741.GC17097@core.coreip.homeip.net>
- <4CDD013C.6050709@codeaurora.org>
+To: Greg KH <gregkh@suse.de>
+Cc: Stefan Achatz <stefan_achatz@web.de>,
+        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+        "Serge E. Hallyn" <serue@us.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Benjamin Thery <benjamin.thery@bull.net>
+Subject: Re: [PATCH 1/2] sysfs: Introducing sysfs_create_bin_group()
+Message-ID: <20101112200215.GD1299@core.coreip.homeip.net>
+References: <1289585918.2629.12.camel@neuromancer>
+ <20101112192958.GA22233@suse.de>
+ <20101112193817.GA1299@core.coreip.homeip.net>
+ <20101112195010.GA23000@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CDD013C.6050709@codeaurora.org>
+In-Reply-To: <20101112195010.GA23000@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 02:26:28PM +0530, Trilok Soni wrote:
-> Hi Dmitry,
-> 
-> On 11/12/2010 6:27 AM, Dmitry Torokhov wrote:
-> > On Thu, Nov 11, 2010 at 05:30:21PM +0530, Trilok Soni wrote:
-> >> Hi Dmitry,
-> >>
-> >> On 11/11/2010 12:51 PM, Dmitry Torokhov wrote:
-> >>> Hi Trilkok,
-> >>>
-> >>> On Wed, Nov 10, 2010 at 06:17:59PM +0530, Trilok Soni wrote:
-> >>>> Add support for PMIC8058 power key driven over dedicated KYPD_PWR_N
-> >>>> pin. It allows the user to specify the amount of time by which the
-> >>>> power key reporting can be delayed.
-> >>>>
-> >>>
-> >>> Why do we need to delay KEY_POWER reporting? Do we need to use high
-> >>> resolution timers or regular timers would do as well? KEY_END
-> >>> appears to be abused (you don't want to move your cursor to the end
-> >>> of line, do you?). Also I wonder if header file should reside in
-> >>> linux/mfd with the rest of pmic8058 components.
-> >>
-> >> Most of the time Mobile devices come with single physical key for
-> >> POWER, which if pressed for less than 500ms (configurable) then it
-> >> will only report KEY_END (which say locks the screen on mobile) and if
-> >> it pressed more than 500ms then it will also report KEY_POWER event
-> >> too, which will say display menu on your mobile for asking you to
-> >> suspend/switch off/etc, operations.
-> >>
+On Fri, Nov 12, 2010 at 11:50:10AM -0800, Greg KH wrote:
+> On Fri, Nov 12, 2010 at 11:38:17AM -0800, Dmitry Torokhov wrote:
+> > On Fri, Nov 12, 2010 at 11:29:58AM -0800, Greg KH wrote:
+> > > On Fri, Nov 12, 2010 at 07:18:38PM +0100, Stefan Achatz wrote:
+> > > > Implemented group functions for easier creation of multiple binary sysfs
+> > > > attributes similar to existing attribute_group handling functions.
+> > > > The code reuses struct attribute_group instead of inventing a new struct
+> > > > binary_attribute_group.
+> > > > 
+> > > > Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+> > > 
+> > > Looks good to me, nice job.
+> > > 
+> > > Dmitry, do you want to take this through your tree as the mouse driver
+> > > change needs it?  If so, feel free to do so and add a:
+> > > 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > > 
+> > > to the patch.
+> > > 
+> > > If not, I'll be glad to take it, and the mouse driver change through my
+> > > tree if needed.
+> > > 
+> > > Just let me know which is easier for you.
+> > > 
 > > 
-> > I see,. If you would have used KEY_SCREENLOCK iinstead of KEY_END I
-> > would likely not ask this question ;)
-> > 
+> > Actually the driver lives in hid so it's up to Jiri how he wants to
+> > handle this.
 > 
-> KEY_SCRENNLOCK looks good, let me analyze the impact on userspace framework
-> which I have. I will come back on this in a day.
-> 
-> >> For the timers I can move from hrtimers to regular timers.
-> >>
-> >> For the header file, I can move them to include/linux/mfd too. No
-> >> problem on that.
-> >>
-> > 
-> > I am not even sure we need to keep them in separate header files, but it
-> > is up to you.
-> 
-> Do you suggest that all the MFD sub-devices's platform data structures should come from single
-> header file?
+> Ah.  He's on vacation for a few weeks so I guess I'll take this for now.
 > 
 
-It is an option, depends on how many external headers are needed, etc.
-
-When I looked at this particular file I got the feeling that it could be
-folded together with the rest. I expect that the board code that will
-specify platform resources will include every one of this sub-files
-anyway. But maybe if I was presented with the combined header I'd say
-"wow, thats too big"...
-
-Like I said, it is up to you.
+Those Europeans with their long vacations, geeze... Well, I hope he's
+having fun ;)
 
 -- 
 Dmitry
