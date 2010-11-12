@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205Ab0KLEjb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 23:39:31 -0500
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:46468 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968Ab0KLEja (ORCPT
+	id S1755381Ab0KLEtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 23:49:15 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40340 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755204Ab0KLEtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 23:39:30 -0500
-Date: Fri, 12 Nov 2010 13:39:22 +0900
-From: Norbert Preining <preining@logic.at>
-To: Mattia Dongili <malattia@linux.it>
-Cc: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Subject: Re: regression since 2.6.36: backlight in sony-laptop not working
-Message-ID: <20101112043922.GA19889@gamma.logic.tuwien.ac.at>
-References: <20101104142915.GC7650@gamma.logic.tuwien.ac.at> <20101110035833.GB3029@kamineko.org> <20101111235000.GA6651@gamma.logic.tuwien.ac.at> <20101112034423.GA7407@srcf.ucam.org> <20101112035027.GD26742@gamma.logic.tuwien.ac.at> <20101112035732.GB7574@srcf.ucam.org> <20101112042243.GE2852@kamineko.org>
+	Thu, 11 Nov 2010 23:49:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101112042243.GE2852@kamineko.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTi=H5ZZ3b5F=Z-PM6FX84FJNzdSh4_HbeeU666ts@mail.gmail.com>
+References: <20101109124610.GB11477@amd> <AANLkTi=b3dEmoTgrJ2xMTUzgM-mUQNNx6J9jeLq2=mtf@mail.gmail.com>
+ <1289319698.2774.16.camel@edumazet-laptop> <AANLkTimJCgsPqB9ihbScr1RdZ+XGk2tq7LZNfh109Skv@mail.gmail.com>
+ <20101109220506.GE3246@amd> <AANLkTi=H5ZZ3b5F=Z-PM6FX84FJNzdSh4_HbeeU666ts@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 11 Nov 2010 20:48:38 -0800
+Message-ID: <AANLkTimn623-N1R_Bn4sF4U6OX55TQZ2w7jGOq+kB5Pz@mail.gmail.com>
+Subject: Re: [patch 1/6] fs: icache RCU free inodes
+To: Nick Piggin <npiggin@gmail.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fr, 12 Nov 2010, Mattia Dongili wrote:
-> backlight (actually Fn+F[56]) is one of those keys the needs remapping
-> these days, i.e. if xev doesn't get any event in X then you may need
+On Thu, Nov 11, 2010 at 5:24 PM, Nick Piggin <npiggin@gmail.com> wrote:
+>
+> So this is really not a "oh, maybe someone will see 10-20% slowdown", or even
+> 1-2% slowdown.
 
-It doesn't.
+You ignored my bigger issue: the _normal_ way - and the better way -
+to handle these thingsis with SLAB_DESTROY_BY_RCU.
 
-> $ diff -u <(sudo input-kbd 5) vaio-kbd
-> /dev/input/event5
->    bustype : BUS_ISA
->    vendor  : 0x104d
->    product : 0x0
->    version : 0
->    name    : "Sony Vaio Keys"
->    bits ev : EV_SYN EV_KEY EV_MSC
+So what are the advantages of using the inferior approach?  I really
+don't see why you push the whole "free the damn things individually"
+approach. We've had experience with that, and it's resulted in long
+RCU queues with memory being held up in queuing etc (hopefully we've
+improved on the queuing issues with RCU itself, but..)
 
-Ahhhhh
-	root$ input-kbd 8
-	/dev/input/event8
-	protocol version mismatch (expected 65536, got 65537)
-and the same for all event devices??
+So the thing is, SLAB_DESTROY_BY_RCU is just the RightThing(tm). Why fight it?
 
-I have input-kbd from xserver-xorg-input-kbd in Debian/sid, which is
-at 1:1.4.0-2 version.
-
-Does that mean that 2.6.37rc is too new for the user space?
-
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-MATCHING GREEN (adj.)
-(Of neckties.) Any colour which Nigel Rees rejects as unsuitable for
-his trousers or jacket.
-			--- Douglas Adams, The Meaning of Liff
+                   Linus
