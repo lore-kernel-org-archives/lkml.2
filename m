@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755673Ab0KLRmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 12:42:14 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:42193 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755055Ab0KLRmM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754996Ab0KLRmM (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 12 Nov 2010 12:42:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=l+tfjDvi9P+8fTKJYTz8PkwEt44fce5SR/M77fUECX5z4QjkXHdCuRq6ca7hRMqGqJ
-         koaZ9tIzUq8sHqoZT2cpwGym5XPv0KyMh2f08h+9rgco5lspA+AD8BT+005U7HtP5kqx
-         3Kd47JxQW2cI72wEwDkK9ir8VnF3gRhcuiaUY=
-Date: Fri, 12 Nov 2010 20:42:03 +0300
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, kernel-janitors@vger.kernel.org,
-        =?iso-8859-1?Q?Andr=E9?= Goddard Rosa <andre.goddard@gmail.com>,
-        Joe Perches <joe@perches.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib: vsprintf: fix invalid arg check
-Message-ID: <20101112174203.GA10430@albatros>
-References: <1289421490-23950-1-git-send-email-segooon@gmail.com>
- <20101110130834.02496b48.akpm@linux-foundation.org>
- <alpine.DEB.2.00.1011101335410.7756@chino.kir.corp.google.com>
- <20101111083408.GA3471@albatros>
- <alpine.DEB.2.00.1011111224161.25829@chino.kir.corp.google.com>
- <20101111210251.GA26283@albatros>
- <alpine.DEB.2.00.1011111319110.25829@chino.kir.corp.google.com>
+Received: from ms01.sssup.it ([193.205.80.99]:51833 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751650Ab0KLRmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 12:42:10 -0500
+Message-ID: <4CDD7C6F.5000100@sssup.it>
+Date: Fri, 12 Nov 2010 18:42:07 +0100
+From: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1011111319110.25829@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Raistlin <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+Subject: Re: [RFC][PATCH 02/22] sched: add extended scheduling interface
+References: <1288333128.8661.137.camel@Palantir>	 <1288333622.8661.141.camel@Palantir> <1289579924.12418.404.camel@gandalf.stny.rr.com>
+In-Reply-To: <1289579924.12418.404.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 13:34 -0800, David Rientjes wrote:
-> On Fri, 12 Nov 2010, Vasiliy Kulikov wrote:
-> > OK, if the main reason here is return value type, then the correct
-> > handling should be:
-> > 
-> > 	/* Reject out-of-range values early.  Large positive sizes are
-> > 	   used for unknown buffer sizes. */
-> > -	if (WARN_ON_ONCE((int) size < 0))
-> > +	if (WARN_ON_ONCE(size > INT_MAX)
-> > 		return 0;
-> > 
-> > This should catch all underflows and too big integers.
-> > 
-> 
-> That is equivalent since size_t is always unsigned;
+Il 12/11/2010 17:38, Steven Rostedt ha scritto:
+> A while ago I implemented an EDF scheduler for a client (before working
+> with Red Hat), and one thing they asked about was having a "soft group",
+> which was basically: This group is guaranteed X runtime in Y period, but
+> if the system is idle, let the group run, even if it has exhausted its X
+> runtime.
+>
+> Is this supported?
+Actually, I know that Dario has an implementation of exactly this 
+feature (and it used to be implemented in our previous scheduler as 
+well, i.e., the old AQuoSA stuff):
+a per-task flag, when enabled, allows to put temporarily the task into 
+SCHED_OTHER when its budget is exhausted. Therefore, it will be allowed 
+to run for more than its budget but without breaking the temporal 
+isolation with the other SCHED_DEADLINE tasks. Furthermore, it won't 
+starve other SCHED_OTHER tasks, as it will compete with them for the CPU 
+during the budget-exhausted time windows.
 
-Not equivalent:
-
-void test_size(size_t size)
-{
-    char buffer[128];
-    sprintf(buffer, "size %lx is BAD", size);
-    snprintf(buffer, size, "size %lx is OK", size);
-    pr_info("%s\n", buffer);
-    if (size > INT_MAX)
-        pr_info("%lx is catched by (size) > INT_MAX", size);
-}
-
-static int init(void) {
-        test_size(0x7FFFFFFF);
-        test_size(0x80000000);
-        test_size(0x80000001);
-        test_size(0xFFFFFFFF);
-        test_size(0x100000000);
-        test_size(0x100000001);
-        test_size(0x17fffffff);
-        test_size(0x180000000);
-        test_size(0x180000001);
-
-        return 0;
-}
-
-
-Output on x86_64:
-
-[12486.542047] size 7fffffff is OK
-[12486.542051] size 80000000 is BAD
-[12486.542053] 80000000 is catched by (size) > INT_MAX
-[12486.542055] size 80000001 is BAD
-[12486.542057] 80000001 is catched by (size) > INT_MAX
-[12486.542059] size ffffffff is BAD
-[12486.542061] ffffffff is catched by (size) > INT_MAX
-[12486.542063] size 100000000 is OK
-[12486.542065] 100000000 is catched by (size) > INT_MAX
-[12486.542067] size 100000001 is OK
-[12486.542069] 100000001 is catched by (size) > INT_MAX
-[12486.542071] size 17fffffff is OK
-[12486.542073] 17fffffff is catched by (size) > INT_MAX
-[12486.542075] size 180000000 is BAD
-[12486.542077] 180000000 is catched by (size) > INT_MAX
-[12486.542079] size 180000001 is BAD
-[12486.542081] 180000001 is catched by (size) > INT_MAX
-
+     T.
 
 -- 
-Vasiliy
+Tommaso Cucinotta, Computer Engineering PhD, Researcher
+ReTiS Lab, Scuola Superiore Sant'Anna, Pisa, Italy
+Tel +39 050 882 024, Fax +39 050 882 003
+http://retis.sssup.it/people/tommaso
+
