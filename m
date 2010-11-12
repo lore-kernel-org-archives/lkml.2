@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab0KLJRL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 04:17:11 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61093 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755356Ab0KLJRJ convert rfc822-to-8bit (ORCPT
+	id S1756218Ab0KLJWq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 04:22:46 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63117 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755459Ab0KLJWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 04:17:09 -0500
+	Fri, 12 Nov 2010 04:22:44 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=LDeJ8j+JgBLm7mxI+KsAz9w8tqMZVePWdsgj7zm3NuXFs+KO1Iy9JOHGDkgSk9BxSH
-         +lcUqyoHRpwz6uhsQuN48jQt7Nz+bo+25QmLFiTFcfEim+ySIoZSsSM0nAr6gwAyLaA/
-         7O8KYFvhZqrE/rQZbdc6V5QqZnp1Grk9j00Hw=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=emVB3kqR322Man01sDd0DFecxzDENVCS6B1jj@mail.gmail.com>
-References: <AANLkTi=emVB3kqR322Man01sDd0DFecxzDENVCS6B1jj@mail.gmail.com>
-Date: Fri, 12 Nov 2010 10:17:07 +0100
-Message-ID: <AANLkTik4Bj2_D_oz8jWxzKSKz16S=Yv6884iHA072bJe@mail.gmail.com>
-Subject: Re: Regressions in resume on intel graphics
-From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: airlied@redhat.com, jbarnes@virtuousgeek.org,
-        intel-gfx@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=ezqkx32e/VaMCAo/OkmSbwhOIb0R0Rorz63i73wBXslULD9LOHEXLK1tJSEnCYu6eD
+         LmXNHMNf9tqOVUeUDYKNr6bKEy3HAOMhY/LKYrgaw5qf0U1EgUtIvbIBtjjaC0aHYIpB
+         HwJlBOzFa2i153n7LULcTIGGct3f9myfzDUb0=
+Subject: Re: Kernel rwlock design, Multicore and IGMP
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: Cypher Wu <cypher.w@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <20101112081945.GA5949@cr0.nay.redhat.com>
+References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
+	 <1289489007.17691.1310.camel@edumazet-laptop>
+	 <AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>
+	 <20101112071323.GB5660@cr0.nay.redhat.com>
+	 <1289546874.17691.1774.camel@edumazet-laptop>
+	 <20101112081945.GA5949@cr0.nay.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 12 Nov 2010 10:22:39 +0100
+Message-ID: <1289553759.3185.1.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/12 Zdenek Kabelac <zdenek.kabelac@gmail.com>:
-> Hi
->
-> I've noticed that after resume  with 2.6.36 kernel I need to switch
-> between console and back to Xorg to get usable Xsession again.
-> (my hw - T61, gma965, 4GB)
->
-> I've played bisect game -  and this is the first broken kernel:
->
-> ---
-> commit 8fd4bd22350784d5b2fe9274f6790ba353976415
-> Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-> Date:   Wed Jun 23 12:56:12 2010 -0700
->
->    vt/console: try harder to print output when panicing
-> ---
+Le vendredi 12 novembre 2010 Ã  16:19 +0800, AmÃ©rico Wang a Ã©crit :
+> On Fri, Nov 12, 2010 at 08:27:54AM +0100, Eric Dumazet wrote:
 
-I've been able to boot and test with 2.6.37-rc1-00170-gf6614b7
-- and this problem seems to be fixed in this version (vt.c file seems
-to be gone?).
+> >A RCU conversion is far more complex.
+> >
+> 
+> Yup.
 
->
-> Also I'd like to increase focus on another  suspend/resume killer (at
-> least on my T61)
-> https://bugzilla.kernel.org/show_bug.cgi?id=19052
-> https://bugzilla.redhat.com/show_bug.cgi?id=617809
->
 
-With kernel 2.6.37-rc1-00170-gf6614b7  message has changed (with
-enabled polling thread)
---
-[drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
-[drm:i915_reset] *ERROR* GPU hanging too fast, declaring wedged!
-[drm:i915_reset] *ERROR* Failed to reset chip.
-X[1378]: segfault at 0 ip 00007f33409c727d sp 00007fff930e7120 error 4
-in intel_drv.so[7f3340990000+4a000]
-[drm:intel_panel_get_max_backlight] *ERROR* fixme: max PWM is zero.
---
+Well, actually this is easy in this case.
 
-But I can't be sure about whether it's the same bug - as display seems
-to be enabled for a second after resume.
-and then just everything crashes.. - with original EIR bug 19052 - my
-display remains completely black
+I'll post a patch to do this RCU conversion.
 
-I'm  using Fedora Rawhide  Xorg & driver:
-xorg-x11-server-Xorg-1.9.1-3.fc15.x86_64
-xorg-x11-drv-intel-2.12.0-8.fc15.x86_64
 
-Zdenek
+
