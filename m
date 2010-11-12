@@ -1,117 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab0KLBbp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 20:31:45 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:59959 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755757Ab0KLBbo (ORCPT
+	id S1757403Ab0KLBkZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 20:40:25 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44771 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756111Ab0KLBkX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 20:31:44 -0500
-Date: Fri, 12 Nov 2010 01:31:27 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: Re: [RFC-PATCH] clocksource: update lpj if clocksource has been
- changed.
-To: john stultz <johnstul@us.ibm.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Magnus Damm <damm@opensource.se>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jon Hunter <jon-hunter@ti.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20101112012108785@myungjoo.ham
-Msgkey: 20101112012108785@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20101112012108785@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <6129485.11361289525487170.JavaMail.weblogic@epml16>
+	Thu, 11 Nov 2010 20:40:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=KOqmWGYJXiNPpyqLpaZHtrMP3CO6colFJfWfz47+zB8837BPhn3fD8Tfh5e2S+JerP
+         kM8BnBBPpQgbG/wxWcr6qudpGvN+PlJGdP+eODECSmhuuuaDqluj4pZDYR3iKNE2IeWm
+         yhj+UETMkGMssFULy2/cg+FCS53oITm6PDjcE=
+MIME-Version: 1.0
+In-Reply-To: <1289478626.2084.73.camel@laptop>
+References: <AANLkTinwAL8dFsDbd-ZTQEcEziq6jZk82KPzNqMVxnOx@mail.gmail.com>
+	<AANLkTim+BAYKWqiJzSQQLc4e_yNkMsNNnEp5u8YgC2Fk@mail.gmail.com>
+	<20101111091733.GA2929@pulham.picochip.com>
+	<1289477176.2084.64.camel@laptop>
+	<20101111122143.GF2929@pulham.picochip.com>
+	<1289478626.2084.73.camel@laptop>
+Date: Fri, 12 Nov 2010 09:40:21 +0800
+Message-ID: <AANLkTikmfNkGOunxSEkQ28ZFoCT4kMoX1sPdXkQGmpq8@mail.gmail.com>
+Subject: Re: [Questions] How to run 'perf top' on ARM to profile kernel
+ functions with modules loaded
+From: Ming Lei <tom.leiming@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Jamie Iles <jamie@jamieiles.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oAC1Vslu007612
 
-On Fri, 2010-11-12 at 09:23 AM, john stultz wrote:
-> On Fri, 2010-11-12 at 08:58 +0900, MyungJoo Ham wrote:
-> > On Fri, Nov 12, 2010 at 5:02 AM, john stultz wrote:
-> > > On Thu, 2010-11-11 at 17:36 +0900, MyungJoo Ham wrote:
-> > >> With a clocksource change, loops_per_jiffy may have been changed; thus,
-> > >> the loops_per_jiffy in each cpu should be updated. Especially after some
-> > >> of the cpus were turned off and on, their loops_per_jiffy values are
-> > >> updated while the cpus kept on are not. Therefore, in order to make them
-> > >> "normalized equally", we need to let the loops_per_jiffy values of
-> > >> different cpus be based on the same clocksource.
-> > >>
-> > >> Signed-off-by: MyungJoo Ham 
-> > >> Signed-off-by: Kyungmin Park 
-> > >
-> > > First, Thanks for reporting the issue and submitting the patch!
-> > >
-> > > So the premise is that read_current_timer -> get_cycles ->
-> > > clocksource_read on some arches. And then when we select a different
-> > > clocksource for timekeeping, this also changes the get_cycles source
-> > > breaking delay loops.
-> > >
-> > > The clocksource selected for timekeeping and the counter being used for
-> > > get_cycles really shouldn't be explicitly bound. On most systems I don't
-> > > think that is the case, so this patch would force needless recalibration
-> > > calls on clocksource changes.
-> > >
-> > > Which arch specifically are you seeing the issue on? I suspect there is
-> > > be a better way to fix this.
-> > >
-> > > thanks
-> > > -john
-> > 
-> > We are working on ARM/S5PC210 with two cores. Actually, in single core
-> > systems, clocksource changes that affect loops-per-jiffy do not matter
-> > much as in multi-core systems because we do not have something to
-> > compare with in such a system. This patch adds some overheads on
-> > changing system clocksources; however, is happens only once at boot.
-> 
-> Well, clocksource changes can happen any time a system is running.
-> 
-> Looking through the 2.6.37-rc arm code, I'm not seeing any counter based
-> delay implementation. I only see the loop based implementation in
-> arm/lib/delay.S. Additionally, I don't see ARCH_HAS_READ_CURRENT_TIMER
-> or a get_cycles implementation that uses the clocksource.
-> 
-> Have implemented a non-loop based delay for your platform? Or could you
-> more clearly explain how the clocksource being used for timekeeping
-> effects the delay function on your hardware?
-> 
+2010/11/11 Peter Zijlstra <a.p.zijlstra@chello.nl>:
+> On Thu, 2010-11-11 at 12:21 +0000, Jamie Iles wrote:
+>> On Thu, Nov 11, 2010 at 01:06:16PM +0100, Peter Zijlstra wrote:
+>> > On Thu, 2010-11-11 at 09:17 +0000, Jamie Iles wrote:
+>> > > On Thu, Nov 11, 2010 at 03:52:07PM +0800, Ming Lei wrote:
+>> > > > 2010/11/11 Ming Lei <tom.leiming@gmail.com>:
+>> > > > > Hi,
+>> > > > >
+>> > > > > 'perf top' can't display any functions when modules are loaded on ARM.
+>> > > >
+>> > > > Sorry, should be can't display any kernel functions when modules are loaded
+>> > > > on ARM.
+>> > > I've noticed this myself and I spent a bit of time looking into it last week
+>> > > but didn't get too far. I did wonder if it was something to do with the map
+>> > > fixups after loading the modules. If you look at the raw events after a perf
+>> > > record with 'perf report -D' then the last module has a size that takes it to
+>> > > 0xFFFFFFFF which overlaps with the rest of the kernel symbols.
+>> > >
+>> > > On x86 it looks like the modules are loaded after the kernel image in VM
+>> > > unlike ARM.
+>> >
+>> > Order shouldn't matter, but that overlap is very likely what kills it.
+>> > That module size is buggy.
+>> I'm guessing that its in util/symbol.c:__map_groups__fixup_end():
+>>
+>>       for (nd = rb_next(prevnd); nd; nd = rb_next(nd)) {
+>>                 prev = curr;
+>>                 curr = rb_entry(nd, struct map, rb_node);
+>>                 prev->end = curr->start - 1;
+>>         }
+>>
+>>         /*
+>>          * We still haven't the actual symbols, so guess the
+>>          * last map final address.
+>>          */
+>>         curr->end = ~0UL;
+>>
+>> I've noticed that if I change the symbol_conf.{use_modules,try_vmlinux_path}
+>> then I can get perf events for kernel symbols from /proc/kallsyms but nothing
+>> for the modules.
+>
+> Hrm,.. depending on how we load things this might be easy or hard to
+> fix. If we load the module symbols after having loaded the kernel
+> symbols we can replace ~0ULL with the address before the next symbol.
 
-Ah.. I'm not concerned with delay functions in this clocksource recalibration issue. The delay function has been working just fine. The issue affects the consistency of "BogoMIPS" values when we try "# cat /proc/cpuinfo", which is based on loops_per_jiffy stroed at cpu_data of each core. The cpu-on/off function recalibrates loops_per_jiffy for the cpu that was turned off and on. In a situation where part of cpus were turned off and on after the clocksource has been changed, the bogomips values have inconsistency between cpus. So, I'm not concerned with the delay function, which has been working fine before and after the patch, but with the consistency of loops_per_jiffy values in different cpus/cores.
+If possible, could you post a patch so that I can verify if the issue is caused
+by ~0ULL?
 
-> 
-> > Or, would it be better if we add another entry to struct clocksource;
-> > i.e., "bool recalibrate" in struct clocksource? Then, we can put
-> > recalibration routine in clocksource_select() at the end of the
-> > function deciding whether to recalibrate based on the
-> > "base->recalibrate" value. How about this?
-> 
-> No, I don't think adding more to the clocksource is the right fix here. 
-> 
-> In my view, the correct solution should be to separate the get_cycles or
-> read_current_timer implementation (if that is the culprit) so it is not
-> dependent on the clocksource that the timekeeping code is currently
-> using.
-> 
-> That way, changes to the time keeping clocksource won't affect the delay
-> function, and the re-calibration will be unnecessary.
-> 
-> thanks
-> -john
-> 
-> 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> If however we load modules first we're in a bind and should look at
+> changing the load order to make the first suggestion work.
+>
+
+
+thanks,
+-- 
+Lei Ming
