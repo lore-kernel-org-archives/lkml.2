@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932554Ab0KLQKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 11:10:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38247 "EHLO mx1.redhat.com"
+	id S932566Ab0KLQMR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 11:12:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29867 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757566Ab0KLQKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 11:10:14 -0500
-Subject: RE: [RFC PATCH] network: return errors if we know tcp_connect
- failed
-From: Eric Paris <eparis@redhat.com>
-To: Hua Zhong <hzhong@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, eric.dumazet@gmail.com,
-        paul.moore@hp.com
-In-Reply-To: <00c201cb81eb$84e18160$8ea48420$@com>
-References: <20101111210341.31350.86916.stgit@paris.rdu.redhat.com>
-	 <00c201cb81eb$84e18160$8ea48420$@com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 12 Nov 2010 11:08:28 -0500
-Message-ID: <1289578108.3083.95.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S932535Ab0KLQMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 11:12:16 -0500
+Date: Fri, 12 Nov 2010 11:11:44 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
+Message-ID: <20101112161144.GP4823@redhat.com>
+References: <1289573033-2889-1-git-send-email-dzickus@redhat.com>
+ <4CDD579F.80009@windriver.com>
+ <20101112154231.GN4823@redhat.com>
+ <4CDD6389.2080206@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CDD6389.2080206@windriver.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-11 at 13:58 -0800, Hua Zhong wrote:
-> > Yes, I realize this is little different than if the
-> > SYN was dropped in the first network device, but it is different
-> > because we know what happened!  We know that connect() call failed
-> > and that there isn't anything coming back.
+On Fri, Nov 12, 2010 at 09:55:53AM -0600, Jason Wessel wrote:
+> > To answer your question, I doubt this patch series will change that
+> > outcome if it is still broken.
+> >
+> >   
 > 
-> I would argue that -j DROP should behave exactly as the packet is dropped in the network, while -j REJECT should signal the failure to the application as soon as possible (which it doesn't seem to do).
+> It was most definitely broken in 2.6.36->2.6.37-rc1.  Randy Dunlap had
+> pointed this out in a separate exchange that was not on LKML.
+
+Can you clarify by what you mean by broken above?  Was 2.6.36 good or bad?
+
 > 
-> It does not only make sense, but also is a highly useful testing technique that we use -j DROP in OUTPUT to emulate network losses and see how the application behaves.
+> The symptom you would see looks like:
+> 
+> ...kernel boot...
+> Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+> serial8250: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
+> 00:06: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
+> brd: module loaded
+> kgdb: Registered I/O driver kgdbts.
+> kgdbts:RUN plant and detach test
+> [...HARD HANG STARTS HERE...]
+> 
+> The kernel is looping at that point waiting for the master kgdb cpu to
+> have all the slaves join the debugger but it never happens because the
+> perf callback chain which is used by the lockup detector eats the NMI
+> IPI event.  After the perf callback is processed perf returns
+> NOTIFY_STOP so the notifier which brings the slave CPU into the debugger
+> never fires.
 
-I guess I can be a bit more descriptive of my specific situation,
-although I'm not sure it matters.  I don't actually plan to drop packets
-with -j REJECT or -j DROP, that's just a simple example everyone can see
-on their own machine.  I plan to have the packets drop in the selinux
-netfilter hook.  The SELinux hook uses NF_DROP/NF_ACCEPT just like any
-other netfilter hook.  Maybe the answer is that I need to duplicate the
--j REJECT type operations in the SELinux hook.  -j REJECT doesn't do
-what I want today, but if that's the right way forward tell me and I'll
-look down that path.
+Ok.  We have code to handle extra spurious NMIs that is hard to accurately
+determine if the NMI was for perf or someone else.  This logic may still
+need tweaking.  What cpu are you running on?  AMD/Intel?  If Intel, then
+core/core2/nehalem?
 
-But the path I first started looking down rules in 2 distinct questions:
+I'll try to reproduce it.
 
-1) What should netfilter pass back up the stack.  From my looking at
-this I see that nf_hook_slow() will convert NF_DROP into -EPERM and pass
-that back up the stack.  Is this wrong?  Should it more intelligently
-pass errors back up the stack?  Maybe it needs an NF_REJECT as well as
-NF_DROP?  NF_DROP returns 0 maybe and NF_REJECT return EPERM?
-
-2) What should the generic TCP code (tcp_connect()) do if the skb failed
-to send.  Should it return error codes back up the stack somehow or
-should they continue to be ignored?  Obviously continuing to just ignore
-information we have doesn't make me happy (otherwise I wouldn't have
-started scratching this itch).  But the point about ENOBUFS is well
-taken.  Maybe I should make tcp_connect(), or the caller to
-tcp_connect() more intelligent about specific error codes?
-
-I'm looking for a path forward.  If SELinux is rejecting the SYN packets
-on connect() I want to pass that info to userspace rather than just
-hanging.  What's the best way to accomplish that?
-
--Eric
-
+Thanks,
+Don
