@@ -1,43 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab0KLRUz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 12:20:55 -0500
-Received: from mail.lixom.net ([70.86.134.90]:41721 "EHLO mail.lixom.net"
+	id S1752936Ab0KLRVf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 12:21:35 -0500
+Received: from mga02.intel.com ([134.134.136.20]:20453 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750849Ab0KLRUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 12:20:54 -0500
-X-Greylist: delayed 390 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Nov 2010 12:20:54 EST
-Date: Fri, 12 Nov 2010 11:14:23 -0600
-From: Olof Johansson <olof@lixom.net>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux@arm.linux.org.uk, kgene.kim@samsung.com, kmpark@infradead.org,
-        konkers@android.com, tony@atomide.com, adharmap@codeaurora.org,
-        avorontsov@mvista.com, linux-kernel@vger.kernel.org,
-        srinidhikasagar@gmail.com, dwalker@codeaurora.org,
-        santosh.shilimkar@ti.com, ccross@android.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 04/07] ARM: Use shared GIC entry macros on Tegra
-Message-ID: <20101112171423.GC27647@lixom.net>
-References: <20101112082059.27221.52879.sendpatchset@t400s> <20101112082141.27221.50202.sendpatchset@t400s>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101112082141.27221.50202.sendpatchset@t400s>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751341Ab0KLRVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 12:21:34 -0500
+Message-Id: <0d30dc$k5i5ji@orsmga001.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,188,1288594800"; 
+   d="scan'208";a="676927090"
+Date: Fri, 12 Nov 2010 17:21:19 +0000
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Airlie <airlied@linux.ie>
+Subject: Re: [git pull] drm fixes
+Cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+In-Reply-To: <AANLkTik8-=Ku+4k0+KVZknAgx2zJGRo-n10jaNW-fke6@mail.gmail.com>
+References: <alpine.DEB.2.00.1011110021320.12522@skynet.skynet.ie> <AANLkTik8-=Ku+4k0+KVZknAgx2zJGRo-n10jaNW-fke6@mail.gmail.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 05:21:41PM +0900, Magnus Damm wrote:
-> From: Magnus Damm <damm@opensource.se>
+
+On Fri, 12 Nov 2010 08:24:48 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> But when you cherry-pick it from some random internal tree that nobody
+> will necessarily ever see, and that you don't even describe what it
+> is, it's only pure confusion. I do
 > 
-> Use the GIC demux code in asm/hardware/entry-macro-gic.S
-> on the Tegra subarchitecture.
+>   [torvalds@i5 linux]$ git show 6aa56062eaba67adfb247cded244fd877329588d
+>   fatal: bad object 6aa56062eaba67adfb247cded244fd877329588d
 > 
-> Signed-off-by: Magnus Damm <damm@opensource.se>
+> and so will everybody else. So from a documentation standpoint, you're
+> actually adding negative information. Please don't.
 
-Acked-by: Olof Johansson <olof@lixom.net>
+My bad, I cherry-picked it from our public drm-intel-next tree and thought
+it wise to include the cross-reference to explain the duplication and
+merge conflicts and to provide some additional test history into the commit.
+Obviously not enough information.
 
+Is there a right approach here? I'm trying to be strict in that what is
+sent upstream in -fixes are purely known regression fixes, and to preserve
+test history on both -fixes and -next. That leads to situations like the
+above where we have a commit that does not appear to relevant to stable at
+first, but then is later shown to be required. How best to resolve the
+eventual conflict that will show up in your tree? Just cherry-pick and be
+dammed?
+-Chris
 
--Olof
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
