@@ -1,140 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563Ab0KLQUX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 11:20:23 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:34349 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755589Ab0KLQUW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 11:20:22 -0500
-MIME-Version: 1.0
-Date: Fri, 12 Nov 2010 17:20:21 +0100
-Message-ID: <AANLkTikg-sR97tkG=ST9kjZcHe6puYSvMGh-eA3cnH7X@mail.gmail.com>
-Subject: Sudden and massive page cache eviction
-From: =?UTF-8?Q?Peter_Sch=C3=BCller?= <scode@spotify.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mattias de Zalenski <zalenski@spotify.com>
-Content-Type: text/plain; charset=UTF-8
+	id S932599Ab0KLQUg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 11:20:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22982 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932571Ab0KLQUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 11:20:34 -0500
+Subject: Re: dlm: Use cmwq for send and receive workqueues
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: David Teigland <teigland@redhat.com>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+In-Reply-To: <20101112161220.GA11037@redhat.com>
+References: <1289563949.2419.13.camel@dolmen>
+	 <20101112161220.GA11037@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Fri, 12 Nov 2010 16:20:35 +0000
+Message-ID: <1289578835.2419.20.camel@dolmen>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-We have been seeing sudden and repeated evictions of huge amounts of
-page cache on some of our servers for reasons that we cannot explain.
-We are hoping that someone familiar with the vm subsystem may be able
-to shed some light on the issue and perhaps confirm whether it is
-plausibly a kernel bug or not. I will try to present the information
-most-important-first, but this post will unavoidable be a bit long -
-sorry.
+On Fri, 2010-11-12 at 11:12 -0500, David Teigland wrote:
+> On Fri, Nov 12, 2010 at 12:12:29PM +0000, Steven Whitehouse wrote:
+> > 
+> > So far as I can tell, there is no reason to use a single-threaded
+> > send workqueue for dlm, since it may need to send to several sockets
+> > concurrently. Both workqueues are set to WQ_MEM_RECLAIM to avoid
+> > any possible deadlocks, WQ_HIGHPRI since locking traffic is highly
+> > latency sensitive (and to avoid a priority inversion wrt GFS2's
+> > glock_workqueue) and WQ_FREEZABLE just in case someone needs to do
+> > that (even though with current cluster infrastructure, it doesn't
+> > make sense as the node will most likely land up ejected from the
+> > cluster) in the future.
+> 
+> Thanks, I'll want to do some testing with this, but my test machines do
+> not seem to create more than one dlm_recv workqueue thread (prior to this
+> patch).  Have you tested in any cases where many threads end up being
+> created?  I've noticed while debugging some many-cpu machines a huge
+> number of dlm_recv threads, which is just excessive.  Does this patch
+> address that?
+> 
+> 
+Yes, one of the features of the cmwq is that you land up with only as
+many threads as required. When threads block, new ones are created to
+avoid stalling the workqueue. Workqueues marked with WQ_MEM_RECLAIM
+create a single rescuer thread, otherwise the threads are shared with
+all other users of cmwq,
 
-First, here is a good example of the symptom (more graphs later on):
+Steve.
 
-   http://files.spotify.com/memcut/b_daily_allcut.png
+> > Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+> > Cc: Tejun Heo <tj@kernel.org>
+> > 
+> > diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
+> > index 37a34c2..0893b30 100644
+> > --- a/fs/dlm/lowcomms.c
+> > +++ b/fs/dlm/lowcomms.c
+> > @@ -1431,14 +1431,16 @@ static void work_stop(void)
+> >  static int work_start(void)
+> >  {
+> >  	int error;
+> > -	recv_workqueue = create_workqueue("dlm_recv");
+> > +	recv_workqueue = alloc_workqueue("dlm_recv", WQ_MEM_RECLAIM |
+> > +					 WQ_HIGHPRI | WQ_FREEZEABLE, 0);
+> >  	error = IS_ERR(recv_workqueue);
+> >  	if (error) {
+> >  		log_print("can't start dlm_recv %d", error);
+> >  		return error;
+> >  	}
+> >  
+> > -	send_workqueue = create_singlethread_workqueue("dlm_send");
+> > +	send_workqueue = alloc_workqueue("dlm_send", WQ_MEM_RECLAIM |
+> > +					 WQ_HIGHPRI | WQ_FREEZEABLE, 0);
+> >  	error = IS_ERR(send_workqueue);
+> >  	if (error) {
+> >  		log_print("can't start dlm_send %d", error);
+> > 
+> > 
 
-After looking into this we have seen similar incidents on servers
-running completely different software; but in this particular case
-this machine is running a service which is heavily dependent on the
-buffer cache to deal with incoming request load. The direct effects of
-these is that we end up in complete I/O saturation (average queue
-depth goes to 150-250 and stays there indefinitely or until we
-actively tweak it (warm up caches etc)). Our interpretation of that is
-that the eviction is not the result of something along the lines of a
-large file being removed; given the effects on I/O load it is clear
-that the data being evicted is in fact part of the active set used by
-the service running on the machine.
 
-The I/O load on these systems comes mainly from two things:
-
-  (1) Seek-bound I/O generated by lookups in a BDB (b-tree traversal).
-  (2) Seek-bound I/O generated by traversal of prefix directory trees
-(i.e., 00/01/0001334234...., a poor man's b-tree on top of ext3).
-  (3) Seek-bound I/O reading small segments of small-to-medium sized
-files contained in the prefix tree.
-
-The prefix tree consist of 8*2^16 directory entries in total, with
-individual files being in the tens of millions per server.
-
-We initially ran 2.6.32-bpo.5-amd64 (Debian backports kernel) and have
-subsequently upgraded some of them to 2.6.36-rc6-amd64 (Debian
-experimental repo). While it initially looked like it was behaving
-better, it slowly reverted to not making a difference (maybe as a
-function of uptime, but we have not had the opportunity to test this
-by re-booting some of them so it is an untested hypothesis).
-
-Most of the activity on this system (ignoring the usual stuff like
-ssh/cron/syslog/etc) is coming from Python processes that consume
-non-trivial amounts of heap space, plus the disk activity and some
-POSIX shared memory caching utilized by the BDB library.
-
-We have correlated the incidence of these page eviction with higher
-loads on the system; i.e., it tends to happen under high-load periods
-and in addition we tend to see additional machines having problems as
-a result of us "fixing" a machine that experienced an eviction (we
-have some limited cascading effects that causes slightly higher load
-on other servers in the cluster when we do that).
-
-We believe the most plausible way an application bug could trigger
-this behavior would require that (1) the application allocates the
-memory, and (2) actually touches the pages. We believe this to be
-unlikely in this case because:
-
-  (1) We see similar sudden evictions on various other servers, which
-we noticed when we started looking for them.
-  (2) The fact that it tends to trigger correlated with load suggests
-that it is not a functional bug in the service as such as higher load
-is in this case unlikely to trigger any paths that does anything
-unique with respect to memory allocation. In particular because the
-domain logic is all Python, and none of it really deals with data
-chunks.
-  (3) If we did manage to allocate something in the Python heap, we
-would have to be "lucky" (or unlucky) if Python were consistently able
-to munmap()/brk() down afterwards.
-
-Some additional "sample" graphs showing a few incidences of the problem:
-
-   http://files.spotify.com/memcut/a_daily.png
-   http://files.spotify.com/memcut/a_weekly.png
-   http://files.spotify.com/memcut/b_daily_allcut.png
-   http://files.spotify.com/memcut/c_monthly.png
-   http://files.spotify.com/memcut/c_yearly.png
-   http://files.spotify.com/memcut/d_monthly.png
-   http://files.spotify.com/memcut/d_yearly.png
-   http://files.spotify.com/memcut/a_monthly.png
-   http://files.spotify.com/memcut/a_yearly.png
-   http://files.spotify.com/memcut/c_daily.png
-   http://files.spotify.com/memcut/c_weekly.png
-   http://files.spotify.com/memcut/d_daily.png
-   http://files.spotify.com/memcut/d_weekly.png
-
-And here is an example from a server only running PostgreSQL (where
-the sudden drop of gigabytes of page cache is unlikely because we are
-not DROP:ing tables, nor do we have multi-gigabyte WAL archive sizes,
-nor do we have a use-case which will imply ftruncate() on table
-files):
-
-   http://files.spotify.com/memcut/postgresql_weekly.png
-
-As you can see it's not as significant there, but it seems to, at
-least visually, be the same "type" of effect. We've seen similar on
-various machines, although depending on service running it may or may
-not be explainable by regular file removal.
-
-Further, we have observed the kernel's unwillingness to retain data in
-page cache under interesting circumstances:
-
-(1) page cache eviction happens
-(2) we warm up our BDB files by cat:ing them (simple but effective)
-(3) within a matter of minutes, while there is still several GB of
-free (truly free, not page cached), these are evicted (as evidenced by
-re-cat:ing them a little while later)
-
-This latest observation we understand may be due to NUMA related
-allocation issues, and we should probably try to use numactl to ask
-for a more even allocation. We have not yet tried this. However, it is
-not clear how any issues having to do with that would cause sudden
-eviction of data already *in* the page cache (on whichever node).
-
--- 
-/ Peter Schuller aka scode
