@@ -1,109 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932649Ab0KLSBg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 13:01:36 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50939 "EHLO
+	id S932411Ab0KLSBL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 13:01:11 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50913 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932607Ab0KLSBV (ORCPT
+	by vger.kernel.org with ESMTP id S1756425Ab0KLSBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 13:01:21 -0500
+	Fri, 12 Nov 2010 13:01:08 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v2 18/20] ARM: LPAE: add support for ATAG_MEM64
-Date: Fri, 12 Nov 2010 18:00:38 +0000
-Message-Id: <1289584840-18097-19-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v2 11/20] ARM: LPAE: Add fault handling support
+Date: Fri, 12 Nov 2010 18:00:31 +0000
+Message-Id: <1289584840-18097-12-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.3.2.164.g6f10c
 In-Reply-To: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
 References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 12 Nov 2010 18:00:55.0032 (UTC) FILETIME=[8D29C780:01CB8293]
+X-OriginalArrivalTime: 12 Nov 2010 18:00:51.0750 (UTC) FILETIME=[8B34FC60:01CB8293]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Will Deacon <will.deacon@arm.com>
+The DFSR and IFSR register format is different when LPAE is enabled. In
+addition, DFSR and IFSR have the similar definitions for the fault type.
+This modifies modifies the fault code to correctly handle the new
+format.
 
-LPAE provides support for memory banks with physical addresses of up
-to 40 bits.
-
-This patch adds a new atag, ATAG_MEM64, so that the Kernel can be
-informed about memory that exists above the 4GB boundary.
-
-Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/include/asm/setup.h |   10 +++++++++-
- arch/arm/kernel/compat.c     |    4 ++--
- arch/arm/kernel/setup.c      |   12 +++++++++++-
- 3 files changed, 22 insertions(+), 4 deletions(-)
+ arch/arm/mm/alignment.c |    8 ++++-
+ arch/arm/mm/fault.c     |   80 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 87 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
-index 5092118..fab849f 100644
---- a/arch/arm/include/asm/setup.h
-+++ b/arch/arm/include/asm/setup.h
-@@ -43,6 +43,13 @@ struct tag_mem32 {
- 	__u32	start;	/* physical start address */
+diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
+index 724ba3b..bc98a6e 100644
+--- a/arch/arm/mm/alignment.c
++++ b/arch/arm/mm/alignment.c
+@@ -906,6 +906,12 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_ARM_LPAE
++#define ALIGNMENT_FAULT		33
++#else
++#define ALIGNMENT_FAULT		1
++#endif
++
+ /*
+  * This needs to be done after sysctl_init, otherwise sys/ will be
+  * overwritten.  Actually, this shouldn't be in sys/ at all since
+@@ -939,7 +945,7 @@ static int __init alignment_init(void)
+ 		ai_usermode = UM_FIXUP;
+ 	}
+ 
+-	hook_fault_code(1, do_alignment, SIGBUS, BUS_ADRALN,
++	hook_fault_code(ALIGNMENT_FAULT, do_alignment, SIGBUS, BUS_ADRALN,
+ 			"alignment exception");
+ 
+ 	/*
+diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+index 5da7b0c..2dde9cd 100644
+--- a/arch/arm/mm/fault.c
++++ b/arch/arm/mm/fault.c
+@@ -33,10 +33,15 @@
+ #define FSR_WRITE		(1 << 11)
+ #define FSR_FS4			(1 << 10)
+ #define FSR_FS3_0		(15)
++#define FSR_FS5_0		(0x3f)
+ 
+ static inline int fsr_fs(unsigned int fsr)
+ {
++#ifdef CONFIG_ARM_LPAE
++	return fsr & FSR_FS5_0;
++#else
+ 	return (fsr & FSR_FS3_0) | (fsr & FSR_FS4) >> 6;
++#endif
+ }
+ 
+ #ifdef CONFIG_MMU
+@@ -108,7 +113,9 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
+ 
+ 		pte = pte_offset_map(pmd, addr);
+ 		printk(", *pte=%08lx", pte_val(*pte));
++#ifndef CONFIG_ARM_LPAE
+ 		printk(", *ppte=%08lx", pte_val(pte[-LINUX_PTE_OFFSET]));
++#endif
+ 		pte_unmap(pte);
+ 	} while(0);
+ 
+@@ -467,6 +474,72 @@ static struct fsr_info {
+ 	int	code;
+ 	const char *name;
+ } fsr_info[] = {
++#ifdef CONFIG_ARM_LPAE
++	{ do_bad,		SIGBUS,  0,		"unknown 0"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 1"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 2"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 3"			},
++	{ do_bad,		SIGBUS,  0,		"reserved translation fault"	},
++	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 1 translation fault"	},
++	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 2 translation fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"level 3 translation fault"	},
++	{ do_bad,		SIGBUS,  0,		"reserved access flag fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 access flag fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 2 access flag fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 access flag fault"	},
++	{ do_bad,		SIGBUS,  0,		"reserved permission fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 permission fault"	},
++	{ do_sect_fault,	SIGSEGV, SEGV_ACCERR,	"level 2 permission fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 permission fault"	},
++	{ do_bad,		SIGBUS,  0,		"synchronous external abort"	},
++	{ do_bad,		SIGBUS,  0,		"asynchronous external abort"	},
++	{ do_bad,		SIGBUS,  0,		"unknown 18"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 19"			},
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error"	},
++	{ do_bad,		SIGBUS,  0,		"asynchronous parity error"	},
++	{ do_bad,		SIGBUS,  0,		"unknown 26"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 27"			},
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"unknown 32"			},
++	{ do_bad,		SIGBUS,  BUS_ADRALN,	"alignment fault"		},
++	{ do_bad,		SIGBUS,  0,		"debug event"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 35"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 36"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 37"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 38"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 39"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 40"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 41"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 42"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 43"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 44"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 45"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 46"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 47"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 48"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 49"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 50"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 51"			},
++	{ do_bad,		SIGBUS,  0,		"implementation fault (lockdown abort)" },
++	{ do_bad,		SIGBUS,  0,		"unknown 53"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 54"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 55"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 56"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 57"			},
++	{ do_bad,		SIGBUS,  0,		"implementation fault (coprocessor abort)" },
++	{ do_bad,		SIGBUS,  0,		"unknown 59"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 60"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 61"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 62"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 63"			},
++#else	/* !CONFIG_ARM_LPAE */
+ 	/*
+ 	 * The following are the standard ARMv3 and ARMv4 aborts.  ARMv5
+ 	 * defines these to be "precise" aborts.
+@@ -508,6 +581,7 @@ static struct fsr_info {
+ 	{ do_bad,		SIGBUS,  0,		"unknown 29"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 31"			   }
++#endif	/* CONFIG_ARM_LPAE */
  };
  
-+#define ATAG_MEM64	0x54420002
-+
-+struct tag_mem64 {
-+	__u64	size;
-+	__u64	start;	/* physical start address */
-+};
-+
- /* VGA text type displays */
- #define ATAG_VIDEOTEXT	0x54410003
- 
-@@ -147,7 +154,8 @@ struct tag {
- 	struct tag_header hdr;
- 	union {
- 		struct tag_core		core;
--		struct tag_mem32	mem;
-+		struct tag_mem32	mem32;
-+		struct tag_mem64	mem64;
- 		struct tag_videotext	videotext;
- 		struct tag_ramdisk	ramdisk;
- 		struct tag_initrd	initrd;
-diff --git a/arch/arm/kernel/compat.c b/arch/arm/kernel/compat.c
-index 9256523..f224d95 100644
---- a/arch/arm/kernel/compat.c
-+++ b/arch/arm/kernel/compat.c
-@@ -86,8 +86,8 @@ static struct tag * __init memtag(struct tag *tag, unsigned long start, unsigned
- 	tag = tag_next(tag);
- 	tag->hdr.tag = ATAG_MEM;
- 	tag->hdr.size = tag_size(tag_mem32);
--	tag->u.mem.size = size;
--	tag->u.mem.start = start;
-+	tag->u.mem32.size = size;
-+	tag->u.mem32.start = start;
- 
- 	return tag;
+ void __init
+@@ -546,6 +620,9 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
  }
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 751ac80..0128db2 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -591,11 +591,21 @@ __tagtable(ATAG_CORE, parse_tag_core);
  
- static int __init parse_tag_mem32(const struct tag *tag)
+ 
++#ifdef CONFIG_ARM_LPAE
++#define ifsr_info	fsr_info
++#else	/* !CONFIG_ARM_LPAE */
+ static struct fsr_info ifsr_info[] = {
+ 	{ do_bad,		SIGBUS,  0,		"unknown 0"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 1"			   },
+@@ -580,6 +657,7 @@ static struct fsr_info ifsr_info[] = {
+ 	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 31"			   },
+ };
++#endif	/* CONFIG_ARM_LPAE */
+ 
+ void __init
+ hook_ifault_code(int nr, int (*fn)(unsigned long, unsigned int, struct pt_regs *),
+@@ -615,6 +693,7 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
+ 
+ static int __init exceptions_init(void)
  {
--	return arm_add_memory(tag->u.mem.start, tag->u.mem.size);
-+	return arm_add_memory(tag->u.mem32.start, tag->u.mem32.size);
++#ifndef CONFIG_ARM_LPAE
+ 	if (cpu_architecture() >= CPU_ARCH_ARMv6) {
+ 		hook_fault_code(4, do_translation_fault, SIGSEGV, SEGV_MAPERR,
+ 				"I-cache maintenance fault");
+@@ -630,6 +709,7 @@ static int __init exceptions_init(void)
+ 		hook_fault_code(6, do_bad, SIGSEGV, SEGV_MAPERR,
+ 				"section access flag fault");
+ 	}
++#endif
+ 
+ 	return 0;
  }
- 
- __tagtable(ATAG_MEM, parse_tag_mem32);
- 
-+#ifdef CONFIG_PHYS_ADDR_T_64BIT
-+static int __init parse_tag_mem64(const struct tag *tag)
-+{
-+	/* We only use 32-bits for the size. */
-+	return arm_add_memory(tag->u.mem64.start, (unsigned long)tag->u.mem64.size);
-+}
-+
-+__tagtable(ATAG_MEM64, parse_tag_mem64);
-+#endif /* CONFIG_PHYS_ADDR_T_64BIT */
-+
- #if defined(CONFIG_VGA_CONSOLE) || defined(CONFIG_DUMMY_CONSOLE)
- struct screen_info screen_info = {
-  .orig_video_lines	= 30,
