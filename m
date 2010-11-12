@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483Ab0KLTVn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 14:21:43 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:48177 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756541Ab0KLTVm (ORCPT
+	id S1757539Ab0KLTWB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 14:22:01 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43230
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757507Ab0KLTWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 14:21:42 -0500
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=1jCsSUyidw0A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=ZZYEzd92nG1HpUK06gMA:9 a=BIMKooj8eda59Q6p68Seake9O6cA:4 a=PUjeQqilurYA:10 a=qRUA5rer598grKGD:21 a=hTKdJ93JH4BBwI3X:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 02/22] sched: add extended scheduling interface
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
-Cc: Peter Zijlstra <peterz@infradead.org>, Raistlin <raistlin@linux.it>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <4CDD7C6F.5000100@sssup.it>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333622.8661.141.camel@Palantir>
-	 <1289579924.12418.404.camel@gandalf.stny.rr.com>
-	 <4CDD7C6F.5000100@sssup.it>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 12 Nov 2010 14:21:38 -0500
-Message-ID: <1289589698.12418.443.camel@gandalf.stny.rr.com>
+	Fri, 12 Nov 2010 14:22:00 -0500
+Date: Fri, 12 Nov 2010 11:22:24 -0800 (PST)
+Message-Id: <20101112.112224.112610807.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: kuznet@ms2.inr.ac.ru, kaber@trash.net, equinox@diac24.net,
+        eparis@redhat.com, hzhong@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, paul.moore@hp.com, damian@tvk.rwth-aachen.de
+Subject: Re: a problem tcp_v4_err()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1289586803.3185.275.camel@edumazet-laptop>
+References: <1289585578.3185.268.camel@edumazet-laptop>
+	<20101112182959.GA20459@ms2.inr.ac.ru>
+	<1289586803.3185.275.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-12 at 18:42 +0100, Tommaso Cucinotta wrote:
-> Il 12/11/2010 17:38, Steven Rostedt ha scritto:
-> > A while ago I implemented an EDF scheduler for a client (before working
-> > with Red Hat), and one thing they asked about was having a "soft group",
-> > which was basically: This group is guaranteed X runtime in Y period, but
-> > if the system is idle, let the group run, even if it has exhausted its X
-> > runtime.
-> >
-> > Is this supported?
-> Actually, I know that Dario has an implementation of exactly this 
-> feature (and it used to be implemented in our previous scheduler as 
-> well, i.e., the old AQuoSA stuff):
-> a per-task flag, when enabled, allows to put temporarily the task into 
-> SCHED_OTHER when its budget is exhausted. Therefore, it will be allowed 
-> to run for more than its budget but without breaking the temporal 
-> isolation with the other SCHED_DEADLINE tasks. Furthermore, it won't 
-> starve other SCHED_OTHER tasks, as it will compete with them for the CPU 
-> during the budget-exhausted time windows.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Fri, 12 Nov 2010 19:33:23 +0100
 
-Good to know, thanks!
+> I CC Damian Lukowski in my previous answer (and this one too)
 
--- Steve
+Probably the safest fix is this:
 
-
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 8f8527d..69ccbc1 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -415,6 +415,9 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
+ 		    !icsk->icsk_backoff)
+ 			break;
+ 
++		if (sock_owned_by_user(sk))
++			break;
++
+ 		icsk->icsk_backoff--;
+ 		inet_csk(sk)->icsk_rto = __tcp_set_rto(tp) <<
+ 					 icsk->icsk_backoff;
+@@ -429,11 +432,6 @@ void tcp_v4_err(struct sk_buff *icmp_skb, u32 info)
+ 		if (remaining) {
+ 			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
+ 						  remaining, TCP_RTO_MAX);
+-		} else if (sock_owned_by_user(sk)) {
+-			/* RTO revert clocked out retransmission,
+-			 * but socket is locked. Will defer. */
+-			inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS,
+-						  HZ/20, TCP_RTO_MAX);
+ 		} else {
+ 			/* RTO revert clocked out retransmission.
+ 			 * Will retransmit now */
