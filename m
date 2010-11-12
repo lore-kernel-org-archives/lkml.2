@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab0KLVpM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 16:45:12 -0500
-Received: from mail.perches.com ([173.55.12.10]:1028 "EHLO mail.perches.com"
+	id S932653Ab0KLViO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 16:38:14 -0500
+Received: from mail.perches.com ([173.55.12.10]:4992 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932538Ab0KLViM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 16:38:12 -0500
+	id S932150Ab0KLViL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 16:38:11 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/14] drivers/dma/ppc4xx: Use printf extension %pR for struct resource
-Date: Fri, 12 Nov 2010 13:37:54 -0800
-Message-Id: <f66de3cc7e0964d9066d991c4b4eba981ba3d752.1289597644.git.joe@perches.com>
+Cc: David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/14] arch/frv: Use printf extension %pR for struct resource
+Date: Fri, 12 Nov 2010 13:37:51 -0800
+Message-Id: <e3d54579893308b67f14e063e84a7d9c86b058d9.1289597644.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289597644.git.joe@perches.com>
 References: <cover.1289597644.git.joe@perches.com>
@@ -23,25 +23,35 @@ Using %pR standardizes the struct resource output.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/dma/ppc4xx/adma.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ arch/frv/mb93090-mb00/pci-vdk.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/dma/ppc4xx/adma.c b/drivers/dma/ppc4xx/adma.c
-index 0d58a4a..cef5845 100644
---- a/drivers/dma/ppc4xx/adma.c
-+++ b/drivers/dma/ppc4xx/adma.c
-@@ -4449,9 +4449,8 @@ static int __devinit ppc440spe_adma_probe(struct platform_device *ofdev,
+diff --git a/arch/frv/mb93090-mb00/pci-vdk.c b/arch/frv/mb93090-mb00/pci-vdk.c
+index f8dd37e..4ff9e70 100644
+--- a/arch/frv/mb93090-mb00/pci-vdk.c
++++ b/arch/frv/mb93090-mb00/pci-vdk.c
+@@ -382,9 +382,7 @@ int __init pcibios_init(void)
+ 	pci_ioport_resource.end		= (__reg_MB86943_sl_pci_io_range << 9) | 0x3ff;
+ 	pci_ioport_resource.end		+= pci_ioport_resource.start;
  
- 	if (!request_mem_region(res.start, resource_size(&res),
- 				dev_driver_string(&ofdev->dev))) {
--		dev_err(&ofdev->dev, "failed to request memory region "
--			"(0x%016llx-0x%016llx)\n",
--			(u64)res.start, (u64)res.end);
-+		dev_err(&ofdev->dev, "failed to request memory region %pR\n",
-+			&res);
- 		initcode = PPC_ADMA_INIT_MEMREG;
- 		ret = -EBUSY;
- 		goto out;
+-	printk("PCI IO window:  %08llx-%08llx\n",
+-	       (unsigned long long) pci_ioport_resource.start,
+-	       (unsigned long long) pci_ioport_resource.end);
++	printk("PCI IO window:  %pR\n", &pci_ioport_resource);
+ 
+ 	pci_iomem_resource.start	= (__reg_MB86943_sl_pci_mem_base << 9) & 0xfffffc00;
+ 	pci_iomem_resource.end		= (__reg_MB86943_sl_pci_mem_range << 9) | 0x3ff;
+@@ -397,9 +395,7 @@ int __init pcibios_init(void)
+ 	 */
+ 	pci_iomem_resource.start	+= 0x400;
+ 
+-	printk("PCI MEM window: %08llx-%08llx\n",
+-	       (unsigned long long) pci_iomem_resource.start,
+-	       (unsigned long long) pci_iomem_resource.end);
++	printk("PCI MEM window: %pR\n", &pci_iomem_resource);
+ 	printk("PCI DMA memory: %08lx-%08lx\n",
+ 	       dma_coherent_mem_start, dma_coherent_mem_end);
+ 
 -- 
 1.7.3.1.g432b3.dirty
 
