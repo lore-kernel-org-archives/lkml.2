@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932983Ab0KLVjb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 16:39:31 -0500
-Received: from mail.perches.com ([173.55.12.10]:1028 "EHLO mail.perches.com"
+	id S932959Ab0KLVkP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 16:40:15 -0500
+Received: from mail.perches.com ([173.55.12.10]:1038 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932889Ab0KLViR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 16:38:17 -0500
+	id S932724Ab0KLViP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 16:38:15 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        linux-parisc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 10/14] drivers/parisc: Use printf extension %pR for struct resource
-Date: Fri, 12 Nov 2010 13:38:00 -0800
-Message-Id: <4b2cfc9a82fa77a23a76db463e100b1a7016beee.1289597644.git.joe@perches.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, Jim Cromie <jim.cromie@gmail.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 07/14] drivers/mtd/maps: Use printf extension %pR for struct resource
+Date: Fri, 12 Nov 2010 13:37:57 -0800
+Message-Id: <5f4704a88f6e5bf55f19b4e6d8c7abce6ea20f71.1289597644.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289597644.git.joe@perches.com>
 References: <cover.1289597644.git.joe@perches.com>
@@ -25,61 +24,121 @@ Using %pR standardizes the struct resource output.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/parisc/dino.c |   13 +++++--------
- drivers/parisc/hppb.c |    6 ++----
- 2 files changed, 7 insertions(+), 12 deletions(-)
+ drivers/mtd/maps/amd76xrom.c       |    7 ++-----
+ drivers/mtd/maps/ck804xrom.c       |    7 ++-----
+ drivers/mtd/maps/esb2rom.c         |    9 +++------
+ drivers/mtd/maps/ichxrom.c         |    9 +++------
+ drivers/mtd/maps/physmap_of.c      |    4 +---
+ drivers/mtd/maps/scx200_docflash.c |    5 ++---
+ 6 files changed, 13 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/parisc/dino.c b/drivers/parisc/dino.c
-index d9f5148..d30a809 100644
---- a/drivers/parisc/dino.c
-+++ b/drivers/parisc/dino.c
-@@ -599,15 +599,13 @@ dino_fixup_bus(struct pci_bus *bus)
- 				
- 			}
- 					
--			DBG("DEBUG %s assigning %d [0x%lx,0x%lx]\n",
-+			DBG("DEBUG %s assigning %d [%pR]\n",
- 			    dev_name(&bus->self->dev), i,
--			    bus->self->resource[i].start,
--			    bus->self->resource[i].end);
-+			    &bus->self->resource[i]);
- 			WARN_ON(pci_assign_resource(bus->self, i));
--			DBG("DEBUG %s after assign %d [0x%lx,0x%lx]\n",
-+			DBG("DEBUG %s after assign %d [%pR]\n",
- 			    dev_name(&bus->self->dev), i,
--			    bus->self->resource[i].start,
--			    bus->self->resource[i].end);
-+			    &bus->self->resource[i]);
+diff --git a/drivers/mtd/maps/amd76xrom.c b/drivers/mtd/maps/amd76xrom.c
+index 19fe92d..77d64ce 100644
+--- a/drivers/mtd/maps/amd76xrom.c
++++ b/drivers/mtd/maps/amd76xrom.c
+@@ -149,11 +149,8 @@ static int __devinit amd76xrom_init_one (struct pci_dev *pdev,
+ 	if (request_resource(&iomem_resource, &window->rsrc)) {
+ 		window->rsrc.parent = NULL;
+ 		printk(KERN_ERR MOD_NAME
+-			" %s(): Unable to register resource"
+-			" 0x%.16llx-0x%.16llx - kernel bug?\n",
+-			__func__,
+-			(unsigned long long)window->rsrc.start,
+-			(unsigned long long)window->rsrc.end);
++		       " %s(): Unable to register resource %pR - kernel bug?\n",
++		       __func__, &window->rsrc);
+ 	}
+ 
+ 
+diff --git a/drivers/mtd/maps/ck804xrom.c b/drivers/mtd/maps/ck804xrom.c
+index ddb462b..5fdb7b2 100644
+--- a/drivers/mtd/maps/ck804xrom.c
++++ b/drivers/mtd/maps/ck804xrom.c
+@@ -178,11 +178,8 @@ static int __devinit ck804xrom_init_one (struct pci_dev *pdev,
+ 	if (request_resource(&iomem_resource, &window->rsrc)) {
+ 		window->rsrc.parent = NULL;
+ 		printk(KERN_ERR MOD_NAME
+-			" %s(): Unable to register resource"
+-			" 0x%.016llx-0x%.016llx - kernel bug?\n",
+-			__func__,
+-			(unsigned long long)window->rsrc.start,
+-			(unsigned long long)window->rsrc.end);
++		       " %s(): Unable to register resource %pR - kernel bug?\n",
++			__func__, &window->rsrc);
+ 	}
+ 
+ 
+diff --git a/drivers/mtd/maps/esb2rom.c b/drivers/mtd/maps/esb2rom.c
+index d12c93d..4feb750 100644
+--- a/drivers/mtd/maps/esb2rom.c
++++ b/drivers/mtd/maps/esb2rom.c
+@@ -242,12 +242,9 @@ static int __devinit esb2rom_init_one(struct pci_dev *pdev,
+ 	window->rsrc.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
+ 	if (request_resource(&iomem_resource, &window->rsrc)) {
+ 		window->rsrc.parent = NULL;
+-		printk(KERN_DEBUG MOD_NAME
+-			": %s(): Unable to register resource"
+-			" 0x%.08llx-0x%.08llx - kernel bug?\n",
+-			__func__,
+-			(unsigned long long)window->rsrc.start,
+-			(unsigned long long)window->rsrc.end);
++		printk(KERN_DEBUG MOD_NAME ": "
++		       "%s(): Unable to register resource %pR - kernel bug?\n",
++			__func__, &window->rsrc);
+ 	}
+ 
+ 	/* Map the firmware hub into my address space. */
+diff --git a/drivers/mtd/maps/ichxrom.c b/drivers/mtd/maps/ichxrom.c
+index f102bf2..1337a41 100644
+--- a/drivers/mtd/maps/ichxrom.c
++++ b/drivers/mtd/maps/ichxrom.c
+@@ -175,12 +175,9 @@ static int __devinit ichxrom_init_one (struct pci_dev *pdev,
+ 	window->rsrc.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
+ 	if (request_resource(&iomem_resource, &window->rsrc)) {
+ 		window->rsrc.parent = NULL;
+-		printk(KERN_DEBUG MOD_NAME
+-			": %s(): Unable to register resource"
+-			" 0x%.16llx-0x%.16llx - kernel bug?\n",
+-			__func__,
+-			(unsigned long long)window->rsrc.start,
+-			(unsigned long long)window->rsrc.end);
++		printk(KERN_DEBUG MOD_NAME ": "
++		       "%s(): Unable to register resource %pR - kernel bug?\n",
++		       __func__, &window->rsrc);
+ 	}
+ 
+ 	/* Map the firmware hub into my address space. */
+diff --git a/drivers/mtd/maps/physmap_of.c b/drivers/mtd/maps/physmap_of.c
+index 9861814..8506578 100644
+--- a/drivers/mtd/maps/physmap_of.c
++++ b/drivers/mtd/maps/physmap_of.c
+@@ -274,9 +274,7 @@ static int __devinit of_flash_probe(struct platform_device *dev,
+ 			continue;
  		}
+ 
+-		dev_dbg(&dev->dev, "of_flash device: %.8llx-%.8llx\n",
+-			(unsigned long long)res.start,
+-			(unsigned long long)res.end);
++		dev_dbg(&dev->dev, "of_flash device: %pR\n", &res);
+ 
+ 		err = -EBUSY;
+ 		res_size = resource_size(&res);
+diff --git a/drivers/mtd/maps/scx200_docflash.c b/drivers/mtd/maps/scx200_docflash.c
+index b5391eb..027e628 100644
+--- a/drivers/mtd/maps/scx200_docflash.c
++++ b/drivers/mtd/maps/scx200_docflash.c
+@@ -166,9 +166,8 @@ static int __init init_scx200_docflash(void)
+ 		outl(pmr, scx200_cb_base + SCx200_PMR);
  	}
  
-@@ -809,8 +807,7 @@ dino_bridge_init(struct dino_device *dino_dev, const char *name)
- 		result = ccio_request_resource(dino_dev->hba.dev, &res[i]);
- 		if (result < 0) {
- 			printk(KERN_ERR "%s: failed to claim PCI Bus address "
--			       "space %d (0x%lx-0x%lx)!\n", name, i,
--			       (unsigned long)res[i].start, (unsigned long)res[i].end);
-+			       "space %d (%pR)!\n", name, i, &res[i]);
- 			return result;
- 		}
- 	}
-diff --git a/drivers/parisc/hppb.c b/drivers/parisc/hppb.c
-index 815db17..898208e 100644
---- a/drivers/parisc/hppb.c
-+++ b/drivers/parisc/hppb.c
-@@ -74,10 +74,8 @@ static int hppb_probe(struct parisc_device *dev)
+-       	printk(KERN_INFO NAME ": DOCCS mapped at 0x%llx-0x%llx, width %d\n",
+-			(unsigned long long)docmem.start,
+-			(unsigned long long)docmem.end, width);
++	printk(KERN_INFO NAME ": DOCCS mapped at %pR, width %d\n",
++	       &docmem, width);
  
- 	status = ccio_request_resource(dev, &card->mmio_region);
- 	if(status < 0) {
--		printk(KERN_ERR "%s: failed to claim HP-PB "
--			"bus space (0x%08llx, 0x%08llx)\n",
--			__FILE__, (unsigned long long) card->mmio_region.start,
--			(unsigned long long) card->mmio_region.end);
-+		printk(KERN_ERR "%s: failed to claim HP-PB bus space (%pR)\n",
-+			__FILE__, &card->mmio_region);
- 	}
- 
-         return 0;
+ 	scx200_docflash_map.size = size;
+ 	if (width == 8)
 -- 
 1.7.3.1.g432b3.dirty
 
