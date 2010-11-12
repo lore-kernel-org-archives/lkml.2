@@ -1,116 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757570Ab0KLNAc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 08:00:32 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:32951 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757104Ab0KLNAb (ORCPT
+	id S1757599Ab0KLNAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 08:00:48 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:8239 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757575Ab0KLNAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 08:00:31 -0500
+	Fri, 12 Nov 2010 08:00:47 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=PAlYzscsziENT4dBUPh3chNVfQ1/K+bpDb5Ismet47kw7MLJ9Eo6OLxCDphlifcA6L
-         FnIWVKwcINgEKjXOhHJSx3O205+L4TLRaTQCVuHlwYzqOEfEfwJRixFT9fen3VYyFhtU
-         Vy6AolzjNE5l5M4EfMi8Y98dAZgiwedd+PA9I=
-Date: Fri, 12 Nov 2010 21:00:17 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Cypher Wu <cypher.w@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Subject: Re: Kernel rwlock design, Multicore and IGMP
-Message-ID: <20101112130017.GA9752@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
- <1289489007.17691.1310.camel@edumazet-laptop>
- <AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>
- <20101112071323.GB5660@cr0.nay.redhat.com>
- <1289546874.17691.1774.camel@edumazet-laptop>
- <20101112081945.GA5949@cr0.nay.redhat.com>
- <AANLkTik-KDvc2fgH91vBHGT6vqxbZrv=9DoQknujPWy2@mail.gmail.com>
- <20101112091818.GB5949@cr0.nay.redhat.com>
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=tErYRsrg01eh/P08VNtwAI4OoLNhxxc3s2omkBksO5i7T6Dm15iR9qdTmuQO+hoPac
+         umPHK1+BN4IlIp1Ct+4Q==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101112091818.GB5949@cr0.nay.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1289561817.2084.240.camel@laptop>
+References: <1289492117-18066-1-git-send-email-andi@firstfloor.org>
+	<1289492117-18066-2-git-send-email-andi@firstfloor.org>
+	<4CDC2DDD.50508@linux.vnet.ibm.com>
+	<4CDC3845.4030104@linux.intel.com>
+	<4CDC4628.8020109@linux.vnet.ibm.com>
+	<20101111194936.GJ18718@basil.fritz.box>
+	<1289505587.2084.193.camel@laptop>
+	<20101111201259.GL18718@basil.fritz.box>
+	<1289507858.2084.195.camel@laptop>
+	<20101112102748.GA8020@basil.fritz.box>
+	<AANLkTi=idvNVyccD53Xwjp5mWfJb=S8UXekhXNqhzRPC@mail.gmail.com>
+	<1289561817.2084.240.camel@laptop>
+Date: Fri, 12 Nov 2010 14:00:43 +0100
+Message-ID: <AANLkTinjzZnv8dzfKPzgGtRnk5C-XsAt=gyf_4G0+gf8@mail.gmail.com>
+Subject: Re: [PATCH 2/3] perf: Add support for extra parameters for raw events
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, mingo@elte.hu, acme@redhat.com,
+        paulus <paulus@samba.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 05:18:18PM +0800, Américo Wang wrote:
-> On Fri, Nov 12, 2010 at 05:09:45PM +0800, Yong Zhang wrote:
-> >On Fri, Nov 12, 2010 at 4:19 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> >> On Fri, Nov 12, 2010 at 08:27:54AM +0100, Eric Dumazet wrote:
-> >>>Le vendredi 12 novembre 2010 à 15:13 +0800, Américo Wang a écrit :
-> >>>> On Fri, Nov 12, 2010 at 11:32:59AM +0800, Cypher Wu wrote:
-> >>>> >On Thu, Nov 11, 2010 at 11:23 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> >>>> >> Le jeudi 11 novembre 2010 à 21:49 +0800, Cypher Wu a écrit :
-> >>>> >>
-> >>>> >> Hi
-> >>>> >>
-> >>>> >> CC netdev, since you ask questions about network stuff _and_ rwlock
-> >>>> >>
-> >>>> >>
-> >>>> >>> I'm using TILEPro and its rwlock in kernel is a liitle different than
-> >>>> >>> other platforms. It have a priority for write lock that when tried it
-> >>>> >>> will block the following read lock even if read lock is hold by
-> >>>> >>> others. Its code can be read in Linux Kernel 2.6.36 in
-> >>>> >>> arch/tile/lib/spinlock_32.c.
-> >>>> >>
-> >>>> >> This seems a bug to me.
-> >>>> >>
-> >>>> >> read_lock() can be nested. We used such a schem in the past in iptables
-> >>>> >> (it can re-enter itself),
-> >>>> >> and we used instead a spinlock(), but with many discussions with lkml
-> >>>> >> and Linus himself if I remember well.
-> >>>> >>
-> >>>> >It seems not a problem that read_lock() can be nested or not since
-> >>>> >rwlock doesn't have 'owner', it's just that should we give
-> >>>> >write_lock() a priority than read_lock() since if there have a lot
-> >>>> >read_lock()s then they'll starve write_lock().
-> >>>> >We should work out a well defined behavior so all the
-> >>>> >platform-dependent raw_rwlock has to design under that principle.
-> >>>>
-> >>>
-> >>>AFAIK, Lockdep allows read_lock() to be nested.
-> >>>
-> >>>> It is a known weakness of rwlock, it is designed like that. :)
-> >>>>
-> >>>
-> >>>Agreed.
-> >>>
-> >>
-> >> Just for record, both Tile and X86 implement rwlock with a write-bias,
-> >> this somewhat reduces the write-starvation problem.
-> >
-> >Are you sure(on x86)?
-> >
-> >It seems that we never realize writer-bias rwlock.
-> >
-> 
-> Try
-> 
-> % grep RW_LOCK_BIAS -nr arch/x86
-> 
-> *And* read the code to see how it works. :)
+On Fri, Nov 12, 2010 at 12:36 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Fri, 2010-11-12 at 11:49 +0100, Stephane Eranian wrote:
+>> The difficulty with PEBS-LL (load latency) is not so much the encoding of the
+>> latency. It is more how to expose the data back to user. You get a full PEBS
+>> record for each miss. So you get the PEBS machine state + data addr, miss
+>> latency, and data source (where did the line come from). We have already
+>> discussed how to expose machine state in general. I'll work on a patch for this.
+>
+> Frederic was working on this PERF_SAMPLE_REGS stuff as well for his copy
+> the stack top and let dwarfs go wild at it patches.
+>
+Ok, I'll talk to him again about this then.
 
-If read_lock()/write_lock() fails, the subtracted value(1 for
-read_lock() and RW_LOCK_BIAS for write_lock()) is added back.
-So reader and writer will contend on the same lock fairly.
+>> So we can get the general PEBS machine state out. However, the question is
+>> how do we expose data addr, latency, data source? We can reuse the
+>> SAMPLE_ADDR for the data address. Sample IP would point to the load
+>> instruction (with help from LBR to correct the off by one issue). For
+>> the latency
+>
+> Right, PERF_SAMPLE_IP and PERF_SAMPLE_ADDR
+>
+>> and data source, I proposed using pseudo regs and leveraging the sampled machine
+>> state mechanism. An alternative may be to define a new record type that would b
+>> generic enough to be reusable, for instance { instr_addr, data_addr,
+>> latency, data_src, flags; }.
+>
+> I'm not sure I like the idea of pseudo regs.. I'm afraid it'll get messy
+> quite quickly. Load-latency is a bit like IBS that way, terribly messy.
+>
 
-And RW_LOCK_BIAS based rwlock is a variant of sighed-test
-rwlock, so it works in the same way to highest-bit-set mode
-rwlock.
+I don't understand what aspect you think is messy. When you are sampling
+cache misses, you expect to get the tuple (instr addr, data addr, latency,
+data source). That is what you get with AMD IBS, Nehalem PEBS-LL and
+also Itanium D-EAR. I am sure IBM Power has something similar as well.
+To collect this, you can either store the info in registers (AMD, Itanium)
+or in a buffer (PEBS). But regardless of that you will always have to expose
+the tuple. We have a solution for two out of 4 fields that reuses the existing
+infrastructure. We need something else for the other two.
 
-Seem you're cheated by it's name(RW_LOCK_BIAS). :)
-Or am I missing something?
-
-Thanks,
-Yong
-
-> 
-> Note, on Tile, it uses a little different algorithm.
+We should expect that in the future PMUs will collect more than code addresses.
