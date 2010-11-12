@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932751Ab0KLQ4o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 11:56:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44774 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932506Ab0KLQ4m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 11:56:42 -0500
-Subject: Re: [RFC PATCH] network: return errors if we know tcp_connect
- failed
-From: Eric Paris <eparis@redhat.com>
-To: David Lamparter <equinox@diac24.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Hua Zhong <hzhong@gmail.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        paul.moore@hp.com
-In-Reply-To: <20101112163543.GB122902@jupiter.n2.diac24.net>
-References: <20101111210341.31350.86916.stgit@paris.rdu.redhat.com>
-	 <00c201cb81eb$84e18160$8ea48420$@com>
-	 <1289578108.3083.95.camel@localhost.localdomain>
-	 <1289578532.3185.265.camel@edumazet-laptop>
-	 <20101112163543.GB122902@jupiter.n2.diac24.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 12 Nov 2010 11:53:56 -0500
-Message-ID: <1289580836.3083.105.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S932722Ab0KLRBO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 12:01:14 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:54776 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753396Ab0KLRBL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 12:01:11 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+M6BpdvuEpxYPrB/qDgxVF
+Date: Fri, 12 Nov 2010 09:01:01 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Greg KH <greg@kroah.com>
+Cc: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm@lists.arm.linux.org.uk, linux-serial@vger.kernel.org
+Subject: Re: [PATCHv4 0/4] OMAP: Serial: remove magic and diplicates
+Message-ID: <20101112170101.GC9264@atomide.com>
+References: <1289567043-6213-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+ <20101112150143.GA18096@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101112150143.GA18096@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-12 at 17:35 +0100, David Lamparter wrote:
-> On Fri, Nov 12, 2010 at 05:15:32PM +0100, Eric Dumazet wrote:
-> > Le vendredi 12 novembre 2010 à 11:08 -0500, Eric Paris a écrit :
+* Greg KH <greg@kroah.com> [101112 06:54]:
+> On Fri, Nov 12, 2010 at 03:03:59PM +0200, Emeltchenko Andrei wrote:
+> > From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
 > > 
-> > > 2) What should the generic TCP code (tcp_connect()) do if the skb failed
-> > > to send.  Should it return error codes back up the stack somehow or
-> > > should they continue to be ignored?  Obviously continuing to just ignore
-> > > information we have doesn't make me happy (otherwise I wouldn't have
-> > > started scratching this itch).  But the point about ENOBUFS is well
-> > > taken.  Maybe I should make tcp_connect(), or the caller to
-> > > tcp_connect() more intelligent about specific error codes?
-> > > 
-> > > I'm looking for a path forward.  If SELinux is rejecting the SYN packets
-> > > on connect() I want to pass that info to userspace rather than just
-> > > hanging.  What's the best way to accomplish that?
-> > > 
+> > Add MDR1 Serial register definition to serial_reg and remove duplicated
+> > code, remove magic MDR1 register numbers from serial drivers.
 > > 
-> > Eric, if you can differentiate a permanent reject, instead of a
-> > temporary one (congestion, or rate limiting, or ENOBUF, or ...), then
-> > yes, you could make tcp_connect() report to user the permanent error,
-> > and ignore the temporary one.
+> > *v2 add OMAP keyword to MDR1 definition
+> > *v3 remove magic from serial drivers
+> > *v4 taking comments from Manjunath and Govindraj: typos, CC
+> > 
+> > Andrei Emeltchenko (4):
+> >   OMAP: Serial: Define OMAP uart MDR1 register definitions
+> >   OMAP1: Serial: remove magic numbers for MDR1 reg
+> >   OMAP2: Serial: remove magic numbers for MDR1 reg
+> >   OMAP: Serial: remove redefined MDR1 register definitions
 > 
-> If the netfilter targets DROP/REJECT match the NF_DROP/NF_REJECT
-> counterparts, which i guess they do but i didn't read the source ;),
-> then SELinux should use NF_REJECT in my opinion.
-
-As it stands today there is no NF_REJECT.  NF_DROP is the only (related)
-permitted return value from a netfilter hook.  Maybe I need to change
-that fact though.
-
-> NF_DROP does exactly what the name says, it drops the packet aka
-> basically puts it in /dev/null. As with writing to /dev/null, you don't
-> get an error for that. Even more, if in the meantime the DROP rule does
-> not match anymore, the 2nd or 3rd SYN from the connect() can come
-> through and establish a connection (think of "-m statistic" & co.)
+> Looks good, do you want these to go through the omap tree, or the serial
+> tree?
 > 
-> This is very different from REJECT.
-> 
-> If REJECT doesn't immediately get reported to the application, that *is*
-> a bug, but last time i checked i got EPERM immediately. I would fix
-> SELinux to use the same mechanism.
+> If they go through the omap tree, feel free to add:
+> 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-I haven't looked at what -j REJECT does (or was intended to do) but it
-most certainly does not return an error to sys_connect().  Try it out.
+Thanks, I can queue these. There will be some other platform level
+serial changes done for wake-up events, so it's best to keep
+them all together.
 
-iptables -A OUTPUT -p tcp --dport 80 -j REJECT
-links www.google.com
+Regards,
 
-it just hangs on 'making connection'  (exact same for -j DROP)
-
-If everyone agrees that's the wrong behavior (for -j REJECT) I'll work
-on fixing that (however is appropriate) and will change the SELinux code
-if needed after we've fixed the -j REJECT code.  Obviously there's
-problems with my original way to fix the lack of error returns (namely
-that I would immediately EACCES for DROP as well as REJECT).
-
-I'm glad to hear that others seem to believe the current code is buggy
-and I'm not completely off my rocker to think that applications should
-be able to learn somehow that things fell down...
-
--Eric
-
+Tony
