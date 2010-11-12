@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119Ab0KLWCv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 17:02:51 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:48661 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932938Ab0KLWCr (ORCPT
+	id S1757564Ab0KLWFv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 17:05:51 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43259
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756960Ab0KLWFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 17:02:47 -0500
-Date: Fri, 12 Nov 2010 17:02:45 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/RFT] OHCI: Fix for regression in 2.6.37-rc1 since commit
- 3df7169e7
-In-Reply-To: <AANLkTikgzdggq4HdBiS7M_6qs1vKbZRkbR70Y=m2JxVu@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1011121702001.22449-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 12 Nov 2010 17:05:48 -0500
+Date: Fri, 12 Nov 2010 14:06:13 -0800 (PST)
+Message-Id: <20101112.140613.45885023.davem@davemloft.net>
+To: rjw@sisk.pl
+Cc: daniel.blueman@gmail.com, romieu@fr.zoreil.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH] gianfar: Do not call device_set_wakeup_enable() under
+ a spinlock
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201011092254.19550.rjw@sisk.pl>
+References: <AANLkTimf_mVrRPEcj8qBbYw1iYHfWdeKUNS3Kk-dfhTT@mail.gmail.com>
+	<201011090030.42693.rjw@sisk.pl>
+	<201011092254.19550.rjw@sisk.pl>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Nov 2010, [UTF-8] Pali Rohár wrote:
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+Date: Tue, 9 Nov 2010 22:54:19 +0100
 
-> Hello,
+> The gianfar driver calls device_set_wakeup_enable() under a spinlock,
+> which causes a problem to happen after the recent core power
+> management changes, because this function can sleep now.  Fix this
+> by moving the device_set_wakeup_enable() call out of the
+> spinlock-protected area.
 > 
-> sorry for late. Can I test this patch (with usb shutdown patch) or is wrong?
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-It is wrong.  You can test it if you like, but it's not going to be 
-accepted into the kernel.
-
-Alan Stern
-
+Patch applied, thank you.
