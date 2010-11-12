@@ -1,68 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab0KLRqK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 12:46:10 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64415 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab0KLRqI (ORCPT
+	id S1755953Ab0KLRtu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 12:49:50 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:39404 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab0KLRts convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 12:46:08 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19eAWagoullL3qh9qr/WS+v
-Date: Fri, 12 Nov 2010 09:45:17 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Cc: Magnus Damm <magnus.damm@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "kmpark@infradead.org" <kmpark@infradead.org>,
-        "konkers@android.com" <konkers@android.com>,
-        "adharmap@codeaurora.org" <adharmap@codeaurora.org>,
-        "avorontsov@mvista.com" <avorontsov@mvista.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "srinidhikasagar@gmail.com" <srinidhikasagar@gmail.com>,
-        "dwalker@codeaurora.org" <dwalker@codeaurora.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 07/07] ARM: Use shared GIC entry macros on OMAP
-Message-ID: <20101112174517.GE9264@atomide.com>
-References: <20101112082059.27221.52879.sendpatchset@t400s>
- <20101112082211.27221.47096.sendpatchset@t400s>
- <EAF47CD23C76F840A9E7FCE10091EFAB030D58AE84@dbde02.ent.ti.com>
+	Fri, 12 Nov 2010 12:49:48 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=MK4dTZJtoZM3wf34UC+/v8CY/nwlR04nwovML05auWV/Q6sD2lzCxdu8ZNMPZP/6t9
+         Lyn6ZEVHAw9OsFSkVFeXnE0wmBMC0zriwJhc9WP/7JMTQUPxFjqw6x/1Lr4T61SBHwAq
+         9JzOAFG1ObGk6RoZsiAwHwZshcQIFpHkGCsw4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <EAF47CD23C76F840A9E7FCE10091EFAB030D58AE84@dbde02.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTikUjYUR-WguZ999YtyWLc8+U0184y0Sb6SSSgKz@mail.gmail.com>
+References: <AANLkTinOeby9P847gJFn_t0h5nDY7cfi3cW9hEaUrS1v@mail.gmail.com>
+	<20101106050721.GA2194@kroah.com>
+	<AANLkTinQK_9qp-8jJ5j3-ChUjwhGiGzAmCu5cBtHX75g@mail.gmail.com>
+	<AANLkTikdr=nJF45QUCKAOY8NSh9GNtv8c9K_oNdJeJfc@mail.gmail.com>
+	<20101111010841.GA23127@kroah.com>
+	<AANLkTikUjYUR-WguZ999YtyWLc8+U0184y0Sb6SSSgKz@mail.gmail.com>
+Date: Fri, 12 Nov 2010 09:49:46 -0800
+Message-ID: <AANLkTi=J4Y5K8wm6PGf+B2F1-CCqX--RWHeS3YbkBP60@mail.gmail.com>
+Subject: Re: [RFC] rbd sysfs interface
+From: Yehuda Sadeh Weinraub <yehudasa@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: ceph-devel@vger.kernel.org, Sage Weil <sage@newdream.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Shilimkar, Santosh <santosh.shilimkar@ti.com> [101112 00:16]:
-> > -----Original Message-----
-> > From: Magnus Damm [mailto:magnus.damm@gmail.com]
-> > Sent: Friday, November 12, 2010 1:52 PM
-> > To: linux@arm.linux.org.uk
-> > Cc: kgene.kim@samsung.com; kmpark@infradead.org; konkers@android.com;
-> > tony@atomide.com; adharmap@codeaurora.org; avorontsov@mvista.com; linux-
-> > kernel@vger.kernel.org; srinidhikasagar@gmail.com; dwalker@codeaurora.org;
-> > Shilimkar, Santosh; ccross@android.com; olof@lixom.net; Magnus Damm;
-> > linux-arm-kernel@lists.infradead.org
-> > Subject: [PATCH 07/07] ARM: Use shared GIC entry macros on OMAP
-> > 
-> > From: Magnus Damm <damm@opensource.se>
-> > 
-> > Common GIC entry macro for omap
-> > 
-> > Signed-off-by: Tony Lindgren <tony@atomide.com>
-> > Signed-off-by: Magnus Damm <damm@opensource.se>
-> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+On Wed, Nov 10, 2010 at 9:16 PM, Yehuda Sadeh Weinraub
+<yehudasa@gmail.com> wrote:
+> On Wed, Nov 10, 2010 at 5:08 PM, Greg KH <greg@kroah.com> wrote:
+>>
+>> So, back to sysfs.  But I can't recall what your sysfs interface looked
+>> like, do you have Documentation/ABI/ files that show what it does?  If
+>> not, you are required to, so you might as well write them now :)
+>>
+>
+> The original sysfs interface is described in the rbd.c prefix
+> comments, which we can copy to Documentation/ABI without much pain.
+> However, we were just thinking of modifying it a bit, as described
+> previously in my first email. The hierarchy will look like this:
+>
+> rbd/
+>    add
+>    remove
+>    <id>/
+>      name
+>      pool
+>      size
+>      ..
+>      snap_add
+>      snap_remove
+>      snap_rollback
+>        <snap_name>/
+>          size
+>
+> The 'add' entry will be used to add a device (as before):
+>
+>  # echo "10.0.0.1 name=admin rbd myimage" > /sys/class/rbd/add
+>
+> The devices that'll be created still be enumerated, and there'll be a
+> subdirectory under rbd/ for each (actually a soft link to
+> /sys/devices/virtual/rbd/<id>). For each device we'll have multiple
+> read-only properties (name, pool, size, client_id, major, cur_snap)
+> and a few control entries (e.g., snap_add, snap_remove, etc.)
+>
+> There will be a subdirectory per snapshot under each device, and all
+> the snapshots properties will be kept there.
+>
 
-Looks like the From: field got trashed on this one assuming you're
-using the patch I posted earlier :)
+Unless I hear otherwise, I'm going to assume that this proposed
+interface is an improvement over the existing osdblk-based one and get
+this upstream asap..
 
-Tony
+Thanks,
+Yehuda
