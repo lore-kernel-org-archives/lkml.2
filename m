@@ -1,66 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab0KLBR1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 20:17:27 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:6215 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754001Ab0KLBR0 (ORCPT
+	id S1757386Ab0KLBX3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 20:23:29 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56694 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755614Ab0KLBX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 20:17:26 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp04.nvidia.com on Thu, 11 Nov 2010 17:17:25 -0800
-From: James Jones <jajones@nvidia.com>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        James Jones <jajones@nvidia.com>
-Subject: [PATCH] ARM: Fix find_next_zero_bit and related assembly
-Date: Thu, 11 Nov 2010 17:16:55 -0800
-Message-Id: <1289524615-22484-1-git-send-email-jajones@nvidia.com>
-X-Mailer: git-send-email 1.7.1
-X-NVConfidentiality: public
-X-OriginalArrivalTime: 12 Nov 2010 01:17:20.0096 (UTC) FILETIME=[5A43B600:01CB8207]
+	Thu, 11 Nov 2010 20:23:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Cd6PZ4SOYiMua49G8U8OqOe3ShYyaAyB1a6zBzKKfBUe10kjTI0mIcgw27D8VT/uqp
+         XHGhaf48l4Y4UcRvqM93/iPIs2X/ehGyfY1F2pLejFhyzuHE65xR1BUftqEhbwpwANuV
+         gjrt3rjF2+2Rp1wixHhkaMQUMTuk0bFAHZb/U=
+Date: Thu, 11 Nov 2010 17:23:15 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Greg KH <greg@kroah.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+Message-ID: <20101112012315.GE17097@core.coreip.homeip.net>
+References: <20101022175624.GA13640@kroah.com>
+ <4CC1DAA2.7030602@vlnb.net>
+ <20101022185437.GA9103@kroah.com>
+ <4CD8566D.1020202@vlnb.net>
+ <20101109002829.GA22633@kroah.com>
+ <4CD9A9B8.70708@vlnb.net>
+ <4CDA6CD4.3010308@panasas.com>
+ <4CDAFE6E.7050200@vlnb.net>
+ <4CDBBE80.40908@panasas.com>
+ <4CDC56F9.9040601@vlnb.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CDC56F9.9040601@vlnb.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The find_next_bit, find_first_bit, find_next_zero_bit
-and find_first_zero_bit functions were not properly
-clamping to the maxbit argument at the bit level. They
-were instead only checking maxbit at the byte level.
-To fix this, add a compare and a conditional move
-instruction to the end of the common bit-within-the-
-byte code used by all the functions and be sure not to
-clobber the maxbit argument before it is used.
+On Thu, Nov 11, 2010 at 11:50:01PM +0300, Vladislav Bolkhovitin wrote:
+> Boaz Harrosh, on 11/11/2010 12:59 PM wrote:
+> >> static void x_release(struct kobject *kobj)
+> 
+> Yes. Precisely speaking, of its kobj_type.
+> 
+> > This one is put on the kobj.release Right?
+> > 
+> >> {
+> >> 	struct object_x *x;
+> >> 	struct completion *c;
+> >>
+> >> 	x = container_of(kobj, struct object_x, kobj);
+> >> 	c = x->release_completion;
+> >> 	kfree(x);
+> >> 	complete_all(c);
+> >> }
+> >>
+> > 
+> > I don't see the unregister of the object_x.kobj, where do
+> > you do this one in x_release or del_object below?
+> 
+> Which unregister? Put for object_x.kobj is in del_object()
+> 
+> >> void del_object(struct object_x *x)
+> >> {
+> >> 	DECLARE_COMPLETION_ONSTACK(completion);
+> >>
+> >> 	...
+> >> 	x->release_completion = &completion;
+> >> 	kobject_put(&x->kobj);
+> > 
+> > This put might not be the last put on the object, IOs in flight
+> > and/or open files might have extra reference on the object.
+> > We release our initial ref, and below wait for all operations
+> > to complete. (Is there a matter of timeout like files not closing?)
+> 
+> This is the last internal put. All other references are from outsiders.
+> So, we are waiting for all them to put before we go on.
+> 
 
-Signed-off-by: James Jones <jajones@nvidia.com>
-Tested-by: Stephen Warren <swarren@nvidia.com>
----
- arch/arm/lib/findbit.S |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+The question is why do you need to wait here? I presume it is module
+unloading path, but then it is quite bad - you can easily wedge your
+subsystem if you make something to take a reference to your kobject
+while module is ytying to be unloaded. Back when sysfs attributes tied
+kobjects the easiest thing was to do:
 
-diff --git a/arch/arm/lib/findbit.S b/arch/arm/lib/findbit.S
-index 1e4cbd4..64f6bc1 100644
---- a/arch/arm/lib/findbit.S
-+++ b/arch/arm/lib/findbit.S
-@@ -174,8 +174,8 @@ ENDPROC(_find_next_bit_be)
-  */
- .L_found:
- #if __LINUX_ARM_ARCH__ >= 5
--		rsb	r1, r3, #0
--		and	r3, r3, r1
-+		rsb	r0, r3, #0
-+		and	r3, r3, r0
- 		clz	r3, r3
- 		rsb	r3, r3, #31
- 		add	r0, r2, r3
-@@ -190,5 +190,7 @@ ENDPROC(_find_next_bit_be)
- 		addeq	r2, r2, #1
- 		mov	r0, r2
- #endif
-+		cmp	r1, r0			@ Clamp to maxbit
-+		movlo	r0, r1
- 		mov	pc, lr
- 
+	rmmod <module> < / sys/devices/..../attribute
+
+
+If you are done with the kobject - just proceed with what you were doing
+and let it die its own peaceful death some time later. You just need to
+make sure release code sticks around to free it and your subsystem core
+can be tasked with this. Use module counter to prevent unloading of the
+subsystem core until all kobjects belonging to the subsystem are
+destroyed.
+
 -- 
-1.7.1
-
+Dmitry
