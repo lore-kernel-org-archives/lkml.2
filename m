@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524Ab0KLViX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 16:38:23 -0500
-Received: from mail.perches.com ([173.55.12.10]:4999 "EHLO mail.perches.com"
+	id S932949Ab0KLViS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 16:38:18 -0500
+Received: from mail.perches.com ([173.55.12.10]:4995 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932582Ab0KLViN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 16:38:13 -0500
+	id S932174Ab0KLViL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 16:38:11 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Ralph Campbell <infinipath@qlogic.com>, Roland Dreier <rolandd@cisco.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 05/14] drivers/infiniband: Use printf extension %pR for struct resource
-Date: Fri, 12 Nov 2010 13:37:55 -0800
-Message-Id: <d12116b0a742471f5df94bd93a946b9171cce114.1289597644.git.joe@perches.com>
+Subject: [PATCH 02/14] arch/mips: Use printf extension %pR for struct resource
+Date: Fri, 12 Nov 2010 13:37:52 -0800
+Message-Id: <a8e243510ee279b590183aa48f61d7b39cafb37d.1289597644.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289597644.git.joe@perches.com>
 References: <cover.1289597644.git.joe@perches.com>
@@ -26,25 +24,27 @@ Using %pR standardizes the struct resource output.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/infiniband/hw/ipath/ipath_driver.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ arch/mips/txx9/generic/pci.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/infiniband/hw/ipath/ipath_driver.c b/drivers/infiniband/hw/ipath/ipath_driver.c
-index 765f0fc..b33f045 100644
---- a/drivers/infiniband/hw/ipath/ipath_driver.c
-+++ b/drivers/infiniband/hw/ipath/ipath_driver.c
-@@ -530,9 +530,8 @@ static int __devinit ipath_init_one(struct pci_dev *pdev,
- 	for (j = 0; j < 6; j++) {
- 		if (!pdev->resource[j].start)
- 			continue;
--		ipath_cdbg(VERBOSE, "BAR %d start %llx, end %llx, len %llx\n",
--			   j, (unsigned long long)pdev->resource[j].start,
--			   (unsigned long long)pdev->resource[j].end,
-+		ipath_cdbg(VERBOSE, "BAR %d %pR, len %llx\n",
-+			   j, &pdev->resource[j],
- 			   (unsigned long long)pci_resource_len(pdev, j));
- 	}
+diff --git a/arch/mips/txx9/generic/pci.c b/arch/mips/txx9/generic/pci.c
+index 9a0be81..c609e7b 100644
+--- a/arch/mips/txx9/generic/pci.c
++++ b/arch/mips/txx9/generic/pci.c
+@@ -213,11 +213,8 @@ txx9_alloc_pci_controller(struct pci_controller *pcic,
  
+ 	pcic->mem_offset = 0;	/* busaddr == physaddr */
+ 
+-	printk(KERN_INFO "PCI: IO 0x%08llx-0x%08llx MEM 0x%08llx-0x%08llx\n",
+-	       (unsigned long long)pcic->mem_resource[1].start,
+-	       (unsigned long long)pcic->mem_resource[1].end,
+-	       (unsigned long long)pcic->mem_resource[0].start,
+-	       (unsigned long long)pcic->mem_resource[0].end);
++	printk(KERN_INFO "PCI: IO %pR MEM %pR\n",
++	       &pcic->mem_resource[1], &pcic->mem_resource[0]);
+ 
+ 	/* register_pci_controller() will request MEM resource */
+ 	release_resource(&pcic->mem_resource[0]);
 -- 
 1.7.3.1.g432b3.dirty
 
