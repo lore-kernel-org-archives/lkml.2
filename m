@@ -1,74 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757598Ab0KLQSU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 11:18:20 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:39792 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753390Ab0KLQST convert rfc822-to-8bit (ORCPT
+	id S932563Ab0KLQUX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 11:20:23 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:34349 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755589Ab0KLQUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 11:18:19 -0500
-Subject: Re: [RFC][PATCH 07/22] sched: SCHED_DEADLINE push and pull logic
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raistlin <raistlin@linux.it>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1288333935.8661.148.camel@Palantir>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333935.8661.148.camel@Palantir>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 12 Nov 2010 17:17:53 +0100
-Message-ID: <1289578673.2084.314.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 12 Nov 2010 11:20:22 -0500
+MIME-Version: 1.0
+Date: Fri, 12 Nov 2010 17:20:21 +0100
+Message-ID: <AANLkTikg-sR97tkG=ST9kjZcHe6puYSvMGh-eA3cnH7X@mail.gmail.com>
+Subject: Sudden and massive page cache eviction
+From: =?UTF-8?Q?Peter_Sch=C3=BCller?= <scode@spotify.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mattias de Zalenski <zalenski@spotify.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-29 at 08:32 +0200, Raistlin wrote:
-> Add dynamic migrations to SCHED_DEADLINE, so that tasks can
-> be moved among CPUs when necessary. It is also possible to bind a
-> task to a (set of) CPU(s), thus restricting its capability of
-> migrating, or forbidding migrations at all.
-> 
-> The very same approach used in sched_rt is utilised:
->  - -deadline tasks are kept into CPU-specific runqueues,
->  - -deadline tasks are migrated among runqueues to achieve the
->    following:
->     * on an M-CPU system the M earliest deadline ready tasks
->       are always running;
->     * affinity/cpusets settings of all the -deadline tasks is
->       always respected. 
+Hello,
 
-I haven't fully digested the patch, I keep getting side-tracked and its
-a large patch.. however, I thought we would only allow 2 affinities,
-strict per-cpu and full root-domain?
+We have been seeing sudden and repeated evictions of huge amounts of
+page cache on some of our servers for reasons that we cannot explain.
+We are hoping that someone familiar with the vm subsystem may be able
+to shed some light on the issue and perhaps confirm whether it is
+plausibly a kernel bug or not. I will try to present the information
+most-important-first, but this post will unavoidable be a bit long -
+sorry.
 
-Since there are no existing applications using this, this won't break
-anything except maybe some expectations :-)
+First, here is a good example of the symptom (more graphs later on):
 
-The advantage of restricting the sched_setaffinity() calls like this is
-that we can make the schedulability tests saner.
+   http://files.spotify.com/memcut/b_daily_allcut.png
 
-Keep 2 per-cpu utilization counts, a hard-rt and a soft-rt, and ensure
-the sum stays <= 1. Use the hard-rt one for the planned SF_HARD_RT flag,
-use the soft-rt one for !SF_HARD_RT with nr_cpus_allowed == 1, and use
-\Sum (1-h-s) over the root domain for nr_cpus_allowed != 1.
+After looking into this we have seen similar incidents on servers
+running completely different software; but in this particular case
+this machine is running a service which is heavily dependent on the
+buffer cache to deal with incoming request load. The direct effects of
+these is that we end up in complete I/O saturation (average queue
+depth goes to 150-250 and stays there indefinitely or until we
+actively tweak it (warm up caches etc)). Our interpretation of that is
+that the eviction is not the result of something along the lines of a
+large file being removed; given the effects on I/O load it is clear
+that the data being evicted is in fact part of the active set used by
+the service running on the machine.
 
-Once you start allowing masks in between its nearly impossible to
-guarantee anything.
+The I/O load on these systems comes mainly from two things:
 
+  (1) Seek-bound I/O generated by lookups in a BDB (b-tree traversal).
+  (2) Seek-bound I/O generated by traversal of prefix directory trees
+(i.e., 00/01/0001334234...., a poor man's b-tree on top of ext3).
+  (3) Seek-bound I/O reading small segments of small-to-medium sized
+files contained in the prefix tree.
+
+The prefix tree consist of 8*2^16 directory entries in total, with
+individual files being in the tens of millions per server.
+
+We initially ran 2.6.32-bpo.5-amd64 (Debian backports kernel) and have
+subsequently upgraded some of them to 2.6.36-rc6-amd64 (Debian
+experimental repo). While it initially looked like it was behaving
+better, it slowly reverted to not making a difference (maybe as a
+function of uptime, but we have not had the opportunity to test this
+by re-booting some of them so it is an untested hypothesis).
+
+Most of the activity on this system (ignoring the usual stuff like
+ssh/cron/syslog/etc) is coming from Python processes that consume
+non-trivial amounts of heap space, plus the disk activity and some
+POSIX shared memory caching utilized by the BDB library.
+
+We have correlated the incidence of these page eviction with higher
+loads on the system; i.e., it tends to happen under high-load periods
+and in addition we tend to see additional machines having problems as
+a result of us "fixing" a machine that experienced an eviction (we
+have some limited cascading effects that causes slightly higher load
+on other servers in the cluster when we do that).
+
+We believe the most plausible way an application bug could trigger
+this behavior would require that (1) the application allocates the
+memory, and (2) actually touches the pages. We believe this to be
+unlikely in this case because:
+
+  (1) We see similar sudden evictions on various other servers, which
+we noticed when we started looking for them.
+  (2) The fact that it tends to trigger correlated with load suggests
+that it is not a functional bug in the service as such as higher load
+is in this case unlikely to trigger any paths that does anything
+unique with respect to memory allocation. In particular because the
+domain logic is all Python, and none of it really deals with data
+chunks.
+  (3) If we did manage to allocate something in the Python heap, we
+would have to be "lucky" (or unlucky) if Python were consistently able
+to munmap()/brk() down afterwards.
+
+Some additional "sample" graphs showing a few incidences of the problem:
+
+   http://files.spotify.com/memcut/a_daily.png
+   http://files.spotify.com/memcut/a_weekly.png
+   http://files.spotify.com/memcut/b_daily_allcut.png
+   http://files.spotify.com/memcut/c_monthly.png
+   http://files.spotify.com/memcut/c_yearly.png
+   http://files.spotify.com/memcut/d_monthly.png
+   http://files.spotify.com/memcut/d_yearly.png
+   http://files.spotify.com/memcut/a_monthly.png
+   http://files.spotify.com/memcut/a_yearly.png
+   http://files.spotify.com/memcut/c_daily.png
+   http://files.spotify.com/memcut/c_weekly.png
+   http://files.spotify.com/memcut/d_daily.png
+   http://files.spotify.com/memcut/d_weekly.png
+
+And here is an example from a server only running PostgreSQL (where
+the sudden drop of gigabytes of page cache is unlikely because we are
+not DROP:ing tables, nor do we have multi-gigabyte WAL archive sizes,
+nor do we have a use-case which will imply ftruncate() on table
+files):
+
+   http://files.spotify.com/memcut/postgresql_weekly.png
+
+As you can see it's not as significant there, but it seems to, at
+least visually, be the same "type" of effect. We've seen similar on
+various machines, although depending on service running it may or may
+not be explainable by regular file removal.
+
+Further, we have observed the kernel's unwillingness to retain data in
+page cache under interesting circumstances:
+
+(1) page cache eviction happens
+(2) we warm up our BDB files by cat:ing them (simple but effective)
+(3) within a matter of minutes, while there is still several GB of
+free (truly free, not page cached), these are evicted (as evidenced by
+re-cat:ing them a little while later)
+
+This latest observation we understand may be due to NUMA related
+allocation issues, and we should probably try to use numactl to ask
+for a more even allocation. We have not yet tried this. However, it is
+not clear how any issues having to do with that would cause sudden
+eviction of data already *in* the page cache (on whichever node).
+
+-- 
+/ Peter Schuller aka scode
