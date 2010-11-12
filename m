@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932723Ab0KLUEB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 15:04:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932166Ab0KLUD7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 15:03:59 -0500
-Date: Fri, 12 Nov 2010 15:03:51 -0500
-From: David Teigland <teigland@redhat.com>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: dlm: Use cmwq for send and receive workqueues
-Message-ID: <20101112200351.GE11037@redhat.com>
-References: <1289563949.2419.13.camel@dolmen>
- <20101112161220.GA11037@redhat.com>
- <1289578835.2419.20.camel@dolmen>
+	id S932631Ab0KLUHE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 15:07:04 -0500
+Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:59530 "EHLO
+	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932392Ab0KLUHA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 15:07:00 -0500
+From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+To: Florian Mickler <florian@mickler.org>
+Subject: Re: [bisected] i915 regression in post 2.6.36 kernels
+Date: Fri, 12 Nov 2010 21:08:34 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.3; i686; ; )
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <201011100802.20332.johannes.hirte@fem.tu-ilmenau.de> <201011102339.36590.johannes.hirte@fem.tu-ilmenau.de> <20101112192046.1c38e671@schatten.dmk.lab>
+In-Reply-To: <20101112192046.1c38e671@schatten.dmk.lab>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289578835.2419.20.camel@dolmen>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011122108.35664.johannes.hirte@fem.tu-ilmenau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 04:20:35PM +0000, Steven Whitehouse wrote:
-> Hi,
+On Friday 12 November 2010 19:20:46 Florian Mickler wrote:
+> On Wed, 10 Nov 2010 23:39:35 +0100
+> Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de> wrote:
 > 
-> On Fri, 2010-11-12 at 11:12 -0500, David Teigland wrote:
-> > On Fri, Nov 12, 2010 at 12:12:29PM +0000, Steven Whitehouse wrote:
+> > On Wednesday 10 November 2010 08:46:40 Chris Wilson wrote:
+> > > On Wed, 10 Nov 2010 08:02:19 +0100, Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de> wrote:
+> > > > With the latest kernel, I don't get any windows in KDE displayed. After
+> > > > starting kdm, I get the background picture and the mouse cursor but not the
+> > > > login window. I can login blindly and a ps on console shows me that the
+> > > > expected KDE processes are started but still nothing is displayed. 
+> > > > I've bisected this to:
+> > > > 
+> > > > 5c12a07e8073295ce8b57a822f811ac34e4f8420 is the first bad commit
+> > > > commit 5c12a07e8073295ce8b57a822f811ac34e4f8420
+> > > > Author: Chris Wilson <chris@chris-wilson.co.uk>
+> > > > Date:   Wed Sep 22 11:22:30 2010 +0100
+> > > > 
+> > > >     drm/i915: Drop ring->lazy_request
+> > > >     
+> > > >     We are not currently using it as intended, so remove the complication.
+> > > > 
+> > > >     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 > > > 
-> > > So far as I can tell, there is no reason to use a single-threaded
-> > > send workqueue for dlm, since it may need to send to several sockets
-> > > concurrently. Both workqueues are set to WQ_MEM_RECLAIM to avoid
-> > > any possible deadlocks, WQ_HIGHPRI since locking traffic is highly
-> > > latency sensitive (and to avoid a priority inversion wrt GFS2's
-> > > glock_workqueue) and WQ_FREEZABLE just in case someone needs to do
-> > > that (even though with current cluster infrastructure, it doesn't
-> > > make sense as the node will most likely land up ejected from the
-> > > cluster) in the future.
+> > > May I ask you to recheck your bisection, since that was later reverted.
+> > > -Chris
 > > 
-> > Thanks, I'll want to do some testing with this, but my test machines do
-> > not seem to create more than one dlm_recv workqueue thread (prior to this
-> > patch).  Have you tested in any cases where many threads end up being
-> > created?  I've noticed while debugging some many-cpu machines a huge
-> > number of dlm_recv threads, which is just excessive.  Does this patch
-> > address that?
+> > Did so. I've started with v2.6.36 for bisect good and 
+> > f6614b7bb405a9b35dd28baea989a749492c46b2 for bisect bad (was HEAD) in this
+> > case. Again I ended in 5c12a07e8073295ce8b57a822f811ac34e4f8420 as the first
+> > bad commit. The regression was introduced there, as the commit before is fine.
+> > If it was reverted, the regression should be fixed by this. But I don't find
+> > neither the fix/revert nor the reintroduction of the regression.
 > > 
-> > 
-> Yes, one of the features of the cmwq is that you land up with only as
-> many threads as required. When threads block, new ones are created to
-> avoid stalling the workqueue. Workqueues marked with WQ_MEM_RECLAIM
-> create a single rescuer thread, otherwise the threads are shared with
-> all other users of cmwq,
+> > regrards,
+> >   Johannes
+> 
+> The revert is a56ba56c275b1c2b982c8901ab92bf5a0fd0b757 .
 
-Thanks, pushed to
-git://git.kernel.org/pub/scm/linux/kernel/git/teigland/dlm.git#next
+Thanks for the hint. This was the commit I was searching for. Unfortunately
+this version shows the same regression. I've checked again, that
+5c12a07e8073295ce8b57a822f811ac34e4f8420 is the first bad version.
+2.6.36-rc5-00228-g2896b53 (2896b5397570f6857fd5d0e0533f640b05b1d162) works
+2.6.36-rc5-00229-g5c12a07 (5c12a07e8073295ce8b57a822f811ac34e4f8420) doesn't.
+Someone with knowledge of the code should have a look what's different
+between 5c12a07e8073295ce8b57a822f811ac34e4f8420 and its revert.
 
+regards,
+  Johannes
