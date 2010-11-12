@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932654Ab0KLTT0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 14:19:26 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:35537 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932089Ab0KLTTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 14:19:25 -0500
-Subject: Re: [RFC][PATCH 02/22] sched: add extended scheduling interface
-From: Raistlin <raistlin@linux.it>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1289580772.12418.405.camel@gandalf.stny.rr.com>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333622.8661.141.camel@Palantir>
-	 <1289579924.12418.404.camel@gandalf.stny.rr.com>
-	 <1289580222.2084.318.camel@laptop>
-	 <1289580772.12418.405.camel@gandalf.stny.rr.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-EBNn8xH5RpDQf3AsO8ml"
-Date: Fri, 12 Nov 2010 20:19:09 +0100
-Message-ID: <1289589549.6525.720.camel@Palantir>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S932868Ab0KLTTj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 14:19:39 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38984 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932858Ab0KLTTg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 14:19:36 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Oritz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/3] mfd: Convert WM835x to new irq_ interrupt methods
+Date: Fri, 12 Nov 2010 19:19:31 +0000
+Message-Id: <1289589572-19261-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1289589572-19261-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1289589572-19261-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Kernel 2.6.37 adds new interrupt methods which take a struct irq_data
+rather than an irq number. Convert over to these as they will become
+mandatory in future.
 
---=-EBNn8xH5RpDQf3AsO8ml
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm8350-irq.c |   32 +++++++++++++++++---------------
+ 1 files changed, 17 insertions(+), 15 deletions(-)
 
-On Fri, 2010-11-12 at 11:52 -0500, Steven Rostedt wrote:
-> > No, some of the bits in 18/22 come near, but I'd prefer not to add such
-> > things until we've got a convincing use-case.
->=20
-> I'm fine with that, but I would like to know if the ABI would be able to
-> add such an extension in the future if we find a convincing use-case.
->=20
-Scared about ABIs' stability eh? :-PP
-
-BTW, in this case everything should be fine, since the very exact
-behaviour you described was triggered by a (couple of) flag(s), which
-can be added and dealt with during sched_setscheduler2() at any time.
-
-As Peter was saying, see patch 18 for details.
-
-Thanks,
-Dario
-
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
-
-http://blog.linux.it/raistlin / raistlin@ekiga.net /
-dario.faggioli@jabber.org
-
---=-EBNn8xH5RpDQf3AsO8ml
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkzdky0ACgkQk4XaBE3IOsQ7IQCfd3v3Avn68mqDsyJ5aIVBFyyE
-wYQAn2gy1HBT+TSREYjQQu1Wun4SPmR5
-=yutQ
------END PGP SIGNATURE-----
-
---=-EBNn8xH5RpDQf3AsO8ml--
+diff --git a/drivers/mfd/wm8350-irq.c b/drivers/mfd/wm8350-irq.c
+index f56c9ad..ba966ae 100644
+--- a/drivers/mfd/wm8350-irq.c
++++ b/drivers/mfd/wm8350-irq.c
+@@ -417,16 +417,16 @@ static irqreturn_t wm8350_irq(int irq, void *irq_data)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static void wm8350_irq_lock(unsigned int irq)
++static void wm8350_irq_lock(struct irq_data *data)
+ {
+-	struct wm8350 *wm8350 = get_irq_chip_data(irq);
++	struct wm8350 *wm8350 = data->chip_data;
+ 
+ 	mutex_lock(&wm8350->irq_lock);
+ }
+ 
+-static void wm8350_irq_sync_unlock(unsigned int irq)
++static void wm8350_irq_sync_unlock(struct irq_data *data)
+ {
+-	struct wm8350 *wm8350 = get_irq_chip_data(irq);
++	struct wm8350 *wm8350 = data->chip_data;
+ 	int i;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(wm8350->irq_masks); i++) {
+@@ -442,28 +442,30 @@ static void wm8350_irq_sync_unlock(unsigned int irq)
+ 	mutex_unlock(&wm8350->irq_lock);
+ }
+ 
+-static void wm8350_irq_enable(unsigned int irq)
++static void wm8350_irq_enable(struct irq_data *data)
+ {
+-	struct wm8350 *wm8350 = get_irq_chip_data(irq);
+-	struct wm8350_irq_data *irq_data = irq_to_wm8350_irq(wm8350, irq);
++	struct wm8350 *wm8350 = data->chip_data;
++	struct wm8350_irq_data *irq_data = irq_to_wm8350_irq(wm8350,
++							     data->irq);
+ 
+ 	wm8350->irq_masks[irq_data->reg] &= ~irq_data->mask;
+ }
+ 
+-static void wm8350_irq_disable(unsigned int irq)
++static void wm8350_irq_disable(struct irq_data *data)
+ {
+-	struct wm8350 *wm8350 = get_irq_chip_data(irq);
+-	struct wm8350_irq_data *irq_data = irq_to_wm8350_irq(wm8350, irq);
++	struct wm8350 *wm8350 = data->chip_data;
++	struct wm8350_irq_data *irq_data = irq_to_wm8350_irq(wm8350,
++							     data->irq);
+ 
+ 	wm8350->irq_masks[irq_data->reg] |= irq_data->mask;
+ }
+ 
+ static struct irq_chip wm8350_irq_chip = {
+-	.name = "wm8350",
+-	.bus_lock = wm8350_irq_lock,
+-	.bus_sync_unlock = wm8350_irq_sync_unlock,
+-	.disable = wm8350_irq_disable,
+-	.enable = wm8350_irq_enable,
++	.name			= "wm8350",
++	.irq_bus_lock		= wm8350_irq_lock,
++	.irq_bus_sync_unlock	= wm8350_irq_sync_unlock,
++	.irq_disable		= wm8350_irq_disable,
++	.irq_enable		= wm8350_irq_enable,
+ };
+ 
+ int wm8350_irq_init(struct wm8350 *wm8350, int irq,
+-- 
+1.7.1
 
