@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab0KLHsd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 02:48:33 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:23801 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754912Ab0KLHsb (ORCPT
+	id S1754744Ab0KLHvN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 02:51:13 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33799 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab0KLHvM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 02:48:31 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-To: Andres Salomon <dilinger@queued.net>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org
-From: Milton Miller <miltonm@bga.com>
-Subject: Re: [PATCH 3/3] x86: OLPC: speed up device tree creation during boot (v2)
-In-Reply-To: <20101111214546.4e573cad@queued.net>
-Message-Id: <reply-olpc-3-v2@mdm.bga.com>
-Date: Fri, 12 Nov 2010 01:48:30 -0600
-X-Originating-IP: 71.22.127.106
+	Fri, 12 Nov 2010 02:51:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=pekbt1z21MwMgwokAuNLS6SSrEqs5eYWoTN5jbukKOmilREtOJq+RurDronoYYJXt6
+         u3Ag0YuTmo5GYPAqheN3poRaXxInSlkR8DPdiTPMB3v6oKSP5tw9vVbGSTvO7Nm1fga4
+         71aKPPaR9SvyZLEwQnQyOBSHrLorV2bbLxh9M=
+MIME-Version: 1.0
+In-Reply-To: <87hbfnx2zw.fsf@deeprootsystems.com>
+References: <1289484812-17278-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+	<87hbfnx2zw.fsf@deeprootsystems.com>
+Date: Fri, 12 Nov 2010 09:51:11 +0200
+Message-ID: <AANLkTimL25m4X0Apynis-H7g7FVDLU7Cw8mV+q2fptK8@mail.gmail.com>
+Subject: Re: [PATCHv2] OMAP: Serial: Define OMAP uart MDR1 register definitions
+From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Nov 2010 around 21:45:46 -0800, Andres Salomon wrote:
-> diff --git a/arch/x86/platform/olpc/olpc_dt.c b/arch/x86/platform/olpc/olpc_dt.c
-> index b8c8ff9..0ab824d 100644
-> --- a/arch/x86/platform/olpc/olpc_dt.c
-> +++ b/arch/x86/platform/olpc/olpc_dt.c
-> @@ -126,14 +126,31 @@  static unsigned int prom_early_allocated __initdata;
->  
->  void * __init prom_early_alloc(unsigned long size)
->  {
-> +	static u8 *mem = NULL;
-> +	static size_t free_mem = 0;
+Hi,
 
-Static variables are implicitly 0 and NULL
+On Thu, Nov 11, 2010 at 6:02 PM, Kevin Hilman
+<khilman@deeprootsystems.com> wrote:
+> Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com> writes:
+>
+>> From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+>>
+>> Define MDR1 register serial definitions used in serial and
+>> bluetooth drivers. Remove magic numbers there.
+>
+> Remove magic numbers where?  This patch doesn't remove anything.
 
->  	void *res;
->  
-> -	res = alloc_bootmem(size);
-> -	if (res)
-> -		memset(res, 0, size);
-> -
-> -	prom_early_allocated += size;
-> +	if (free_mem < size) {
-> +		const size_t chunk_size = max(PAGE_SIZE, size);
-> +
-> +		/*
-> +		 * To mimimize the number of allocations, grab at least 4k of
-> +		 * memory (that's an arbitrary choice that matches PAGE_SIZE on
-> +		 * the platforms we care about, and minimizes wasted bootmem)
-> +		 * and hand off chunks of it to callers.
-> +		 */
-> +		res = mem = alloc_bootmem(chunk_size);
-> +		if (!res)
-> +			return NULL;
+We have code which is not yet upstream, it will come through Bluetooth
+subtree at some point, I am also going to remove magic in
+omapX/serial.c drivers in the next patches.
 
-Oops.  If alloc_bootmem fails, we loose mem but don't reset free_mem, so a
-later call (possibly for a smaller chunk) may return memory starting
-at NULL.
+Do you think I need to add those patches?
 
-I suggest just assinging res above and then add mem = res inside this if.
+>
+>> *v2   added OMAP keyword
+>
+> This info should go after the '---' as it is not needed in the final
+> git history.
 
-Oh, this is alloc_bootmem not alloc_bootmem_nopainc ... should it be?
+OK, will remove it.
 
-> +		prom_early_allocated += chunk_size;
-> +		memset(res, 0, chunk_size);
-> +		free_mem = chunk_size;
-> +	}
->  
-> +	/* allocate from the local cache */
-> +	free_mem -= size;
-> +	res = mem;
-> +	mem += size;
->  	return res;
->  }
->  
-
-milton
+>
+> Kevin
+>
+>> Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+>> ---
+>>  include/linux/serial_reg.h |   12 ++++++++++++
+>>  1 files changed, 12 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/serial_reg.h b/include/linux/serial_reg.h
+>> index c7a0ce1..6f38234 100644
+>> --- a/include/linux/serial_reg.h
+>> +++ b/include/linux/serial_reg.h
+>> @@ -341,5 +341,17 @@
+>>  #define UART_OMAP_SYSS               0x16    /* System status register */
+>>  #define UART_OMAP_WER                0x17    /* Wake-up enable register */
+>>
+>> +/*
+>> + * These are the definitions for the MDR1 register
+>> + */
+>> +#define UART_OMAP_MDR1_16X_MODE              0x00    /* UART 16x mode */
+>> +#define UART_OMAP_MDR1_SIR_MODE              0x01    /* SIR mode */
+>> +#define UART_OMAP_MDR1_16X_ABAUD_MODE        0x02    /* UART 16x auto-baud */
+>> +#define UART_OMAP_MDR1_13X_MODE              0x03    /* UART 13x mode */
+>> +#define UART_OMAP_MDR1_MIR_MODE              0x04    /* MIR mode */
+>> +#define UART_OMAP_MDR1_FIR_MODE              0x05    /* FIR mode */
+>> +#define UART_OMAP_MDR1_CIR_MODE              0x06    /* CIR mode */
+>> +#define UART_OMAP_MDR1_DISABLE               0x07    /* Disable (default state) */
+>> +
+>>  #endif /* _LINUX_SERIAL_REG_H */
+>
