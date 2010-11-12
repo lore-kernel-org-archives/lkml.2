@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab0KLMMa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 07:12:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52686 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754505Ab0KLMM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 07:12:29 -0500
-Subject: dlm: Use cmwq for send and receive workqueues
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
-        David Teigland <teigland@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
+	id S1757332Ab0KLMNJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 07:13:09 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55894 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756983Ab0KLMNH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 07:13:07 -0500
+Subject: Re: [tg_shares_up rewrite v3 09/11] sched: demand based
+ update_cfs_load()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Chris Friesen <cfriesen@nortel.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Pierre Bourdon <pbourdon@excellency.fr>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>
+In-Reply-To: <1289559198.2084.214.camel@laptop>
+References: <20101112032405.657789056@google.com>
+	 <20101112032702.028843817@google.com>  <1289559198.2084.214.camel@laptop>
 Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Fri, 12 Nov 2010 12:12:29 +0000
-Message-ID: <1289563949.2419.13.camel@dolmen>
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 12 Nov 2010 13:12:39 +0100
+Message-ID: <1289563959.2084.241.camel@laptop>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2010-11-12 at 11:53 +0100, Peter Zijlstra wrote:
+> On Thu, 2010-11-11 at 19:24 -0800, Paul Turner wrote:
+> > +#ifdef CONFIG_FAIR_GROUP_SCHED
+> > +       cfs_rq->load_unacc_exec_time += delta_exec;
+> > +       if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window)
+> > {
+> > +               update_cfs_load(cfs_rq);
+> > +               update_cfs_shares(cfs_rq, 0);
+> 
+> Why not:
+> +		cfs_rq->load_unacc_exec_time -= sysctl_sched_shares_window;
+> 
+> (although you probably want to read the sysctl value into a local
+> variable using ACCESS_ONCE() and use that for both cases).
 
-So far as I can tell, there is no reason to use a single-threaded
-send workqueue for dlm, since it may need to send to several sockets
-concurrently. Both workqueues are set to WQ_MEM_RECLAIM to avoid
-any possible deadlocks, WQ_HIGHPRI since locking traffic is highly
-latency sensitive (and to avoid a priority inversion wrt GFS2's
-glock_workqueue) and WQ_FREEZABLE just in case someone needs to do
-that (even though with current cluster infrastructure, it doesn't
-make sense as the node will most likely land up ejected from the
-cluster) in the future.
-
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
-
-diff --git a/fs/dlm/lowcomms.c b/fs/dlm/lowcomms.c
-index 37a34c2..0893b30 100644
---- a/fs/dlm/lowcomms.c
-+++ b/fs/dlm/lowcomms.c
-@@ -1431,14 +1431,16 @@ static void work_stop(void)
- static int work_start(void)
- {
- 	int error;
--	recv_workqueue = create_workqueue("dlm_recv");
-+	recv_workqueue = alloc_workqueue("dlm_recv", WQ_MEM_RECLAIM |
-+					 WQ_HIGHPRI | WQ_FREEZEABLE, 0);
- 	error = IS_ERR(recv_workqueue);
- 	if (error) {
- 		log_print("can't start dlm_recv %d", error);
- 		return error;
- 	}
- 
--	send_workqueue = create_singlethread_workqueue("dlm_send");
-+	send_workqueue = alloc_workqueue("dlm_send", WQ_MEM_RECLAIM |
-+					 WQ_HIGHPRI | WQ_FREEZEABLE, 0);
- 	error = IS_ERR(send_workqueue);
- 	if (error) {
- 		log_print("can't start dlm_send %d", error);
-
-
-
+Ah, I see why not, still that reset looks better here than in that other
+function.
