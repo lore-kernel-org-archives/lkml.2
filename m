@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932281Ab0KLRwC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 12:52:02 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:40120 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755794Ab0KLRwB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 12:52:01 -0500
-Subject: Re: [RFC][PATCH 18/22] sched: add reclaiming logic to -deadline
- tasks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Luca Abeni <luca.abeni@unitn.it>
-Cc: Raistlin <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <4CDD7C65.9090400@unitn.it>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288334546.8661.161.camel@Palantir>  <1289513573.2084.199.camel@laptop>
-	 <1289576177.6525.509.camel@Palantir> <1289577841.2084.302.camel@laptop>
-	 <4CDD7C65.9090400@unitn.it>
+	id S1755825Ab0KLRzh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 12:55:37 -0500
+Received: from outbound-queue-1.mail.thdo.gradwell.net ([212.11.70.34]:53369
+	"EHLO outbound-queue-1.mail.thdo.gradwell.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751288Ab0KLRzf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 12:55:35 -0500
+Subject: Re: PING: David Miller - SPARC64
+From: Alex Buell <alex.buell@munted.org.uk>
+Reply-To: alex.buell@munted.org.uk
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20101103.144945.226779604.davem@davemloft.net>
+References: <1288812739.12638.2.camel@lithium>
+	 <20101103.144945.226779604.davem@davemloft.net>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Fri, 12 Nov 2010 18:51:35 +0100
-Message-ID: <1289584295.2084.343.camel@laptop>
+Organization: One very high maintenance cat for company
+Date: Fri, 12 Nov 2010 17:53:12 +0000
+Message-ID: <1289584392.26034.11.camel@lithium>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.30.2 
+X-Gradwell-MongoId: 4cdd7f8c.8fb-6996-2
+X-Gradwell-Auth-Method: mailbox
+X-Gradwell-Auth-Credentials: postmaster@pop3.munted.org.uk
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-12 at 18:41 +0100, Luca Abeni wrote:
-> > The problem the stochastic execution time model tries to address is the
-> > WCET computation mess, WCET computation is hard and often overly
-> > pessimistic, resulting in under-utilized systems.
-> [...]
-> BTW, sorry for the shameless plug, but even with the current 
-> SCHED_DEADLINE you are not forced to dimension the runtime using the 
-> WCET. 
+On Wed, 2010-11-03 at 14:49 -0700, David Miller wrote:
 
-Yes you are, it pushes the deadline back on overrun. The idea it to
-maintain the deadline despite overrunning your budget (up to a point).
+> > Can you drop me an e-mail with your current e-mail address? I need to
+> > talk to you about getting the X11 fbdev driver to work on the sunxvr500
+> > console framebuffer device. 
+> 
+> First, I don't discuss things privately with anyone about
+> free software development.
 
-The paper we're all talking about is:
+Alright, thank you for setting me straight. 
 
-A. Mills and J. Anderson, " A Stochastic Framework for Multiprocessor
-Soft Real-Time Scheduling", Proceedings of the 16th IEEE Real-Time and
-Embedded Technology and Applications Symposium, pp. 311-320, April 2010.
-http://www.cs.unc.edu/~anderson/papers/rtas10brevised.pdf
+> I always tell people to ask their questions on the appropriate
+> mailing list, but feel free to CC: me.  That way if I am too
+> busy someone else has the chance to help you.
 
-And I see they've got a new stochastic paper out:
+OK. 
 
-A. Mills and J. Anderson, " Scheduling Stochastically-Executing Soft
-Real-Time Tasks: A Multiprocessor Approach Without Worst-Case Execution
-Times", in submission. 
-http://www.cs.unc.edu/~anderson/papers/rtas11b.pdf
+I have a Sun Blade 2000 here with dual 1.2GHz processors, 2 x 73GB FC-AL
+disks, 4GB of RAM and a XVR-500 graphic adapter. I am quite happy with
+the machine, but for one very small problem. 
 
+It seems that the XVR-500 console driver has a few problems. If I use
+the X11 fbdev 0.4.2 driver with xorg-server 1.7.7, in 8 bit colour
+depth, the X11 display looks quite corrupted. I have checked and the X11
+server is definitely running in 8 bit depth, same as the console. I am
+using the machine in 1600 x 1280 @ 76 video mode, set from PROM. After
+exiting from X11, console gets restored normally, everything works, I
+just get a severely corrupted display - but I can move the mouse and use
+the keyboard to log in as normal. Any ideas why what might be wrong? 
 
+As a temporary workaround I just log onto the Blade via GDM from my
+laptop and everything looks OK in 24bit @ 1600x1200. 
+
+I cannot even get the X11 fbdev driver to start in 24 bit as the X11
+fbdev driver fails with errors. Is it even possible to force the PROM to
+start in 24 bit depth? 
+
+Perhaps I could do a nouveau and find how how the XVR-500 graphic
+adapter works? Just thinking things out here. 
+-- 
+Tactical Nuclear Kittens
