@@ -1,94 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933083Ab0KLXRO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 18:17:14 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:35168 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933009Ab0KLXRL (ORCPT
+	id S933140Ab0KLXa1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 18:30:27 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43709 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932958Ab0KLXaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 18:17:11 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAENZ3Ux5LcEI/2dsb2JhbACiUHK+c4VKBA
-Date: Sat, 13 Nov 2010 10:17:05 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, Nick Piggin <npiggin@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Dave Chinner <dchinner@redhat.com>
-Subject: Re: [patch 1/6] fs: icache RCU free inodes
-Message-ID: <20101112231705.GB3317@amd>
-References: <20101109124610.GB11477@amd>
- <AANLkTi=b3dEmoTgrJ2xMTUzgM-mUQNNx6J9jeLq2=mtf@mail.gmail.com>
- <1289319698.2774.16.camel@edumazet-laptop>
- <AANLkTimJCgsPqB9ihbScr1RdZ+XGk2tq7LZNfh109Skv@mail.gmail.com>
- <20101109220506.GE3246@amd>
- <AANLkTi=H5ZZ3b5F=Z-PM6FX84FJNzdSh4_HbeeU666ts@mail.gmail.com>
- <AANLkTimn623-N1R_Bn4sF4U6OX55TQZ2w7jGOq+kB5Pz@mail.gmail.com>
- <20101112060202.GB3332@amd>
- <20101112064911.GA3775@amd>
- <AANLkTimJ8hgM8ASCq7tb+1kFiY_sCamm8Xmyodrm0h6w@mail.gmail.com>
+	Fri, 12 Nov 2010 18:30:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=CTvaH5KCMMyEQjsCx0y5AsynNIalDY9Rdr6dsYXKECx1LPBnYNYFFlMRnLdknClaCf
+         drJNVR8qvlTvGVHI8AXi8wgv2aWCBgxLZ5dlvz3SkVSfNMnu7xWcCoQ/Vv2jLOZcDEFu
+         bSaMmhdmmlC1+vxhoOATB21jHQfwkNHMiJPXA=
+Date: Fri, 12 Nov 2010 15:30:13 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Alexey Charkov <alchark@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Tony Lindgren <tony@atomide.com>, Feng Tang <feng.tang@intel.com>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/6 v2] input: Add support for VIA VT8500 and compatibles
+ in i8042
+Message-ID: <20101112233013.GA30946@core.coreip.homeip.net>
+References: <1289147348-31969-1-git-send-email-alchark@gmail.com>
+ <1289147348-31969-3-git-send-email-alchark@gmail.com>
+ <AANLkTi=zvGxpukjAv-XFAMLpKYiqqKD=p9S5FtGowdDu@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <AANLkTimJ8hgM8ASCq7tb+1kFiY_sCamm8Xmyodrm0h6w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=zvGxpukjAv-XFAMLpKYiqqKD=p9S5FtGowdDu@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 09:33:11AM -0800, Linus Torvalds wrote:
-> On Thu, Nov 11, 2010 at 10:49 PM, Nick Piggin <npiggin@kernel.dk> wrote:
+On Sat, Nov 13, 2010 at 01:54:14AM +0300, Alexey Charkov wrote:
+> 2010/11/7 Alexey Charkov <alchark@gmail.com>:
+> > VIA and WonderMedia Systems-on-Chip feature a standard i8042-compatible
+> > keyboard and mouse controller. This adds necessary glue to enable use
+> > of the standard driver with these systems.
 > >
-> > In reality, it's likely to be well under 0.1% in any real workload, even
-> > an inode intensive one. So I much prefer to err on the side of less
-> > complexity, to start with. There just isn't much risk of regression
-> > AFAIKS, and much more risk of becoming unmaintainable too complex.
+> > Signed-off-by: Alexey Charkov <alchark@gmail.com>
+> > ---
+> >
+> > Please review and (if appropriate) commit to a relevant git tree for
+> > further integration in 2.6.38.
+> >
+> > Previous version of this code was 'Acked-by: Dmitry Torokhov <dtor@mail.ru>'
+> > This one only differs by using runtime-selected IRQ definitions instead
+> > of static compile-time preprocessor macros.
+> >
+> > Relevant register and interrupt definitions are provided by PATCH 1/6 in
+> > this series, so one would need that to make use of this code.
+> >
+> >  drivers/input/serio/Kconfig        |    3 +-
+> >  drivers/input/serio/i8042-vt8500.h |   74 ++++++++++++++++++++++++++++++++++++
+> >  drivers/input/serio/i8042.h        |    2 +
+> >  3 files changed, 78 insertions(+), 1 deletions(-)
+> >  create mode 100644 drivers/input/serio/i8042-vt8500.h
+> >
+> > diff --git a/drivers/input/serio/Kconfig b/drivers/input/serio/Kconfig
+> > index 6256233..ff799f3 100644
+> > --- a/drivers/input/serio/Kconfig
+> > +++ b/drivers/input/serio/Kconfig
+> > @@ -21,7 +21,8 @@ if SERIO
+> >  config SERIO_I8042
+> >        tristate "i8042 PC Keyboard controller" if EMBEDDED || !X86
+> >        default y
+> > -       depends on !PARISC && (!ARM || ARCH_SHARK || FOOTBRIDGE_HOST) && \
+> > +       depends on !PARISC && \
+> > +                 (!ARM || ARCH_SHARK || ARCH_VT8500 || FOOTBRIDGE_HOST) && \
+> >                   (!SUPERH || SH_CAYMAN) && !M68K && !BLACKFIN
+> >        help
+> >          i8042 is the chip over which the standard AT keyboard and PS/2
+> > diff --git a/drivers/input/serio/i8042-vt8500.h b/drivers/input/serio/i8042-vt8500.h
+> > new file mode 100644
+> > index 0000000..4ff9e1c
+> > --- /dev/null
+> > +++ b/drivers/input/serio/i8042-vt8500.h
+> > @@ -0,0 +1,74 @@
+> > +#ifndef _I8042_VT8500_H
+> > +#define _I8042_VT8500_H
+> > +
+> > +#include <mach/mmio_regs.h>
+> > +#include <mach/irq_defs.h>
+> > +
+> > +/*
+> > + * This program is free software; you can redistribute it and/or modify it
+> > + * under the terms of the GNU General Public License version 2 as published by
+> > + * the Free Software Foundation.
+> > + */
+> > +
+> > +static void __iomem *regbase;
+> > +
+> > +/*
+> > + * Names.
+> > + */
+> > +
+> > +#define I8042_KBD_PHYS_DESC "vt8500ps2/serio0"
+> > +#define I8042_AUX_PHYS_DESC "vt8500ps2/serio1"
+> > +#define I8042_MUX_PHYS_DESC "vt8500ps2/serio%d"
+> > +
+> > +/*
+> > + * IRQs.
+> > + */
+> > +
+> > +#define I8042_KBD_IRQ  (wmt_current_irqs->ps2kbd)
+> > +#define I8042_AUX_IRQ  (wmt_current_irqs->ps2mouse)
+> > +
+> > +
+> > +/*
+> > + * Register numbers.
+> > + */
+> > +
+> > +#define I8042_COMMAND_REG      (regbase + 0x4)
+> > +#define I8042_STATUS_REG       (regbase + 0x4)
+> > +#define I8042_DATA_REG         (regbase + 0x0)
+> > +
+> > +static inline int i8042_read_data(void)
+> > +{
+> > +       return readl(I8042_DATA_REG);
+> > +}
+> > +
+> > +static inline int i8042_read_status(void)
+> > +{
+> > +       return readl(I8042_STATUS_REG);
+> > +}
+> > +
+> > +static inline void i8042_write_data(int val)
+> > +{
+> > +       writel(val, I8042_DATA_REG);
+> > +}
+> > +
+> > +static inline void i8042_write_command(int val)
+> > +{
+> > +       writel(val, I8042_COMMAND_REG);
+> > +}
+> > +
+> > +static inline int i8042_platform_init(void)
+> > +{
+> > +       i8042_reset = true;
+> > +       regbase = ioremap(wmt_current_regs->ps2, SZ_1K);
+> > +       if (!regbase)
+> > +               return -ENODEV;
+> > +
+> > +       return 0;
+> > +}
+> > +
+> > +static inline void i8042_platform_exit(void)
+> > +{
+> > +       iounmap(regbase);
+> > +}
+> > +
+> > +#endif /* _I8042_VT8500_H */
+> > diff --git a/drivers/input/serio/i8042.h b/drivers/input/serio/i8042.h
+> > index cbc1beb..bdb2aeb 100644
+> > --- a/drivers/input/serio/i8042.h
+> > +++ b/drivers/input/serio/i8042.h
+> > @@ -16,6 +16,8 @@
+> >
+> >  #if defined(CONFIG_MACH_JAZZ)
+> >  #include "i8042-jazzio.h"
+> > +#elif defined(CONFIG_ARCH_VT8500)
+> > +#include "i8042-vt8500.h"
+> >  #elif defined(CONFIG_SGI_HAS_I8042)
+> >  #include "i8042-ip22io.h"
+> >  #elif defined(CONFIG_SNI_RM)
+> > --
+> > 1.7.3.2
+> >
+> >
 > 
-> Well, I have to say that if we don't get this lockless path lookup
-> thing merged in the next merge window (ir 38-rc1), I'm going to be
-> personally very disappointed (*).
-
-I'm trying to piece things together. I'll hopefully be able to post
-patches again soon for review.
-
-
-> So yes, the "initial complexity" argument is certainly acceptable to
-> me. It does make me suspect something is wrong, though, because quite
-> frankly, the actual accesses to the inode during the lockless walk
-> should be very _very_ controlled anyway. And it's trivial to do a "is
-> this inode still the same one I started with" with zero locking, by
-> just checking that "dentry->d_inode" is the same after-the-fact and
-> checking that the dentry is still hashed. The inode type had better
-> _NOT_ change if the dentry pointer is still there.
+> Any comments about this?
 > 
-> So even if the type or i_ops changes, none of that should matter in
-> the least. Nobody should _care_. We might get two wildly different
-> results, but we have a trivial way to check whether the inode was
-> stable after-the-fact, and just punt if it wasn't. So it really smells
-> like if this is an issue, there's something wrong going on.
 
-Yes you are very right about that, it is actually possible to use
-seqlocks and re-checking things to verify it after the fact. And
-this is why I'm optimisic that we can tackle any and all regressions
-that come up.
+Looks good to me (ignoring the fact that whole i8042 initialization
+needs to be reworked and pushed into arch/board code which is out of
+scope of these series).
 
-An example of where it can get more complicated:
+I expect it will be merged with the rest of VT8500 patches through
+whatever tree takes them.
 
-A filesystem has an ->op function which gets the sb from inode->i_sb,
-and then does the container_of thing, to get the filesystem specific
-superblock so it can check flags to determine something (eg. whether
-it is case sensitive or not).
+Thanks.
 
-If the inode goes away and i_sb can change, this can oops. We basically
-just need to further tighten rules and further audit everyone. I'm not
-saying it can't be done, I'm just saying it's not _totally_ trivail like
-the usual DESTROY_BY_RCU pattern, so let's just see what incremental
-patches look like.
-
-I'm glad you agree at this point (and if it does turn out to be much
-simpler than I anticipate, then hey that's great, we can just move to
-DESTROY_BY_RCU even quicker).
-
-Thanks,
-Nick
+-- 
+Dmitry
