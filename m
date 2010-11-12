@@ -1,117 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494Ab0KLMSu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 07:18:50 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:48694 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757164Ab0KLMSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 07:18:47 -0500
-Date: Fri, 12 Nov 2010 04:18:33 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Oleg Nesterov <oleg@redhat.com>,
-        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] ioprio: grab rcu_read_lock in sys_ioprio_{set,get}()
-Message-ID: <20101112121833.GB2825@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1289547167-32675-1-git-send-email-gthelen@google.com>
+	id S1757532Ab0KLMUO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 07:20:14 -0500
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:56269 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756992Ab0KLMUJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 07:20:09 -0500
+Message-ID: <4CDD2F9A.7000702@collabora.co.uk>
+Date: Fri, 12 Nov 2010 12:14:18 +0000
+From: Ian Molton <ian.molton@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101030 Icedove/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289547167-32675-1-git-send-email-gthelen@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Anthony Liguori <anthony@codemonkey.ws>
+CC: QEMU Developers <qemu-devel@nongnu.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        virtualization@lists.osdl.org, Alon Levy <alevy@redhat.com>,
+        Avi Kivity <avi@redhat.com>
+Subject: Re: [Qemu-devel] Re: [PATCH] Implement a virtio GPU transport
+References: <1097264455.965471288612409433.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>	<4CCEC090.3050009@codemonkey.ws>	<4CD1A406.3090909@collabora.co.uk> <4CD1A73B.2010406@codemonkey.ws> <4CD44759.5020500@collabora.co.uk> <4CDAD4D4.3070009@collabora.co.uk> <4CDADACC.4070405@codemonkey.ws>
+In-Reply-To: <4CDADACC.4070405@codemonkey.ws>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 11:32:47PM -0800, Greg Thelen wrote:
-> Using:
-> - CONFIG_LOCKUP_DETECTOR=y
-> - CONFIG_PREEMPT=y
-> - CONFIG_LOCKDEP=y
-> - CONFIG_PROVE_LOCKING=y
-> - CONFIG_PROVE_RCU=y
-> found a missing rcu lock during boot on a 512 MiB x86_64 ubuntu vm:
->   ===================================================
->   [ INFO: suspicious rcu_dereference_check() usage. ]
->   ---------------------------------------------------
->   kernel/pid.c:419 invoked rcu_dereference_check() without protection!
-> 
->   other info that might help us debug this:
-> 
->   rcu_scheduler_active = 1, debug_locks = 0
->   1 lock held by ureadahead/1355:
->    #0:  (tasklist_lock){.+.+..}, at: [<ffffffff8115bc09>] sys_ioprio_set+0x7f/0x29e
-> 
->   stack backtrace:
->   Pid: 1355, comm: ureadahead Not tainted 2.6.37-dbg-DEV #1
->   Call Trace:
->    [<ffffffff8109c10c>] lockdep_rcu_dereference+0xaa/0xb3
->    [<ffffffff81088cbf>] find_task_by_pid_ns+0x44/0x5d
->    [<ffffffff81088cfa>] find_task_by_vpid+0x22/0x24
->    [<ffffffff8115bc3e>] sys_ioprio_set+0xb4/0x29e
->    [<ffffffff8147cf21>] ? trace_hardirqs_off_thunk+0x3a/0x3c
->    [<ffffffff8105c409>] sysenter_dispatch+0x7/0x2c
->    [<ffffffff8147cee2>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-> 
-> The fix is to:
-> a) grab rcu lock in sys_ioprio_{set,get}() and
-> b) avoid grabbing tasklist_lock.
-> Discussion in: http://marc.info/?l=linux-kernel&m=128951324702889
+On 10/11/10 17:47, Anthony Liguori wrote:
+> On 11/10/2010 11:22 AM, Ian Molton wrote:
+>> Ping ?
+>
+> I think the best way forward is to post patches.
 
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+I posted links to the git trees. I can post patches, but they are 
+*large*. Do you really want me to post them?
 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> ---
->  fs/ioprio.c |   13 ++++---------
->  1 files changed, 4 insertions(+), 9 deletions(-)
-> 
-> diff --git a/fs/ioprio.c b/fs/ioprio.c
-> index 748cfb9..7da2a06 100644
-> --- a/fs/ioprio.c
-> +++ b/fs/ioprio.c
-> @@ -103,12 +103,7 @@ SYSCALL_DEFINE3(ioprio_set, int, which, int, who, int, ioprio)
->  	}
-> 
->  	ret = -ESRCH;
-> -	/*
-> -	 * We want IOPRIO_WHO_PGRP/IOPRIO_WHO_USER to be "atomic",
-> -	 * so we can't use rcu_read_lock(). See re-copy of ->ioprio
-> -	 * in copy_process().
-> -	 */
-> -	read_lock(&tasklist_lock);
-> +	rcu_read_lock();
->  	switch (which) {
->  		case IOPRIO_WHO_PROCESS:
->  			if (!who)
-> @@ -153,7 +148,7 @@ free_uid:
->  			ret = -EINVAL;
->  	}
-> 
-> -	read_unlock(&tasklist_lock);
-> +	rcu_read_unlock();
->  	return ret;
->  }
-> 
-> @@ -197,7 +192,7 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
->  	int ret = -ESRCH;
->  	int tmpio;
-> 
-> -	read_lock(&tasklist_lock);
-> +	rcu_read_lock();
->  	switch (which) {
->  		case IOPRIO_WHO_PROCESS:
->  			if (!who)
-> @@ -250,6 +245,6 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
->  			ret = -EINVAL;
->  	}
-> 
-> -	read_unlock(&tasklist_lock);
-> +	rcu_read_unlock();
->  	return ret;
->  }
-> -- 
-> 1.7.3.1
-> 
+> To summarize what I was trying to express in the thread, I think this is
+> not the right long term architecture but am not opposed to it as a short
+> term solution. I think having a new virtio device is a bad design choice
+> but am not totally opposed to it.
+
+Ok! (I agree (that this should be a short term solution) :) )
+
+> you want to go for the path of integration, you're going to have to fix
+> all of the coding style issues and make the code fit into QEMU. Dropping
+> a bunch of junk into target-i386/ is not making the code fit into QEMU.
+
+I agree. how about hw/gl for the renderer and hw/ for the virtio module?
+
+> If you post just what you have now in patch form, I can try to provide
+> more concrete advice ignoring the coding style problems.
+
+I can post patches, although I dont think LKML would appreciate the 
+volume! I can post them to the qemu list if you do.
+
+-Ian
