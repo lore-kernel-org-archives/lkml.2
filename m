@@ -1,108 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab0KLO00 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 09:26:26 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:33105 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab0KLO0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 09:26:25 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Qy5QVbfonpUp8t1zCRwh+Wx0Ue/owcREI/MEhLZHF/MZjfkG06b40ISy2xzgywqRCD
-         NWgKLhk+rnO7dgqhmCF0j5m5AQJX1pP2IsR/WYDkoD2OTk6TdSiddjSHDF7tPKakp9qB
-         j6Q9dQ+kDrfNr25RB0GX0Adkj7nwEO9s4k0uU=
-Subject: Re: [PATCH net-next-2.6] igmp: RCU conversion of in_dev->mc_list
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Cypher Wu <cypher.w@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>
-In-Reply-To: <1289568858.3185.252.camel@edumazet-laptop>
-References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
-	 <1289489007.17691.1310.camel@edumazet-laptop>
-	 <AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>
-	 <20101112071323.GB5660@cr0.nay.redhat.com>
-	 <1289546874.17691.1774.camel@edumazet-laptop>
-	 <20101112081945.GA5949@cr0.nay.redhat.com>
-	 <1289553759.3185.1.camel@edumazet-laptop>
-	 <1289568858.3185.252.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 12 Nov 2010 15:26:14 +0100
-Message-ID: <1289571974.3185.254.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S932302Ab0KLOod (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 09:44:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45183 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752902Ab0KLOob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 09:44:31 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 6/6] x86, NMI: Remove do_nmi_callback logic
+Date: Fri, 12 Nov 2010 09:43:53 -0500
+Message-Id: <1289573033-2889-7-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1289573033-2889-1-git-send-email-dzickus@redhat.com>
+References: <1289573033-2889-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 12 novembre 2010 à 14:34 +0100, Eric Dumazet a écrit :
-> Le vendredi 12 novembre 2010 à 10:22 +0100, Eric Dumazet a écrit :
-> > Le vendredi 12 novembre 2010 à 16:19 +0800, Américo Wang a écrit :
-> > > On Fri, Nov 12, 2010 at 08:27:54AM +0100, Eric Dumazet wrote:
-> > 
-> > > >A RCU conversion is far more complex.
-> > > >
-> > > 
-> > > Yup.
-> > 
-> > 
-> > Well, actually this is easy in this case.
-> > 
-> > I'll post a patch to do this RCU conversion.
-> > 
-> > 
-> 
-> Note : compile tested only, I'll appreciate if someone can test it ;)
-> 
-> Note: one patch from net-2.6 is not yet included in net-next-2.6, so
-> please make sure you have it before testing ;)
-> 
-> ( http://git.kernel.org/?p=linux/kernel/git/davem/net-2.6.git;a=commitdiff;h=18943d292facbc70e6a36fc62399ae833f64671b )
-> 
-> 
-> Thanks
-> 
-> [PATCH net-next-2.6] igmp: RCU conversion of in_dev->mc_list
-> 
-> in_dev->mc_list is protected by one rwlock (in_dev->mc_list_lock).
-> 
-> This can easily be converted to a RCU protection.
-> 
-> Writers hold RTNL, so mc_list_lock is removed, not replaced by a
-> spinlock.
-> 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Cc: Cypher Wu <cypher.w@gmail.com>
-> Cc: Américo Wang <xiyou.wangcong@gmail.com>
-> ---
+do_nmi_callback related logic is removed, because it is useless, just
+adds code complexity.
 
-...
+unknown_nmi_panic sysctl is reserved to keep kernel ABI unchanged.
 
->  void ip_mc_up(struct in_device *in_dev)
->  {
-> -	struct ip_mc_list *i;
-> +	struct ip_mc_list *pmc;
->  
->  	ASSERT_RTNL();
->  
->  	ip_mc_inc_group(in_dev, IGMP_ALL_HOSTS);
->  
-> -	for (i=in_dev->mc_list; i; i=i->next)
-> -		igmp_group_added(i);
-> +	for_each_pmc_rtnl(in_dev, pmc);
-> +		igmp_group_added(pmc);
->  }
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
 
+Conflicts:
 
-Oops there is an extra ; after the for_each_pmc_rtnl(in_dev, pmc)
+	arch/x86/kernel/traps.c
+---
+ arch/x86/include/asm/nmi.h    |   10 +++++++++-
+ arch/x86/kernel/apic/hw_nmi.c |    1 -
+ arch/x86/kernel/apic/nmi.c    |   29 +----------------------------
+ arch/x86/kernel/traps.c       |   17 +++++++++++------
+ 4 files changed, 21 insertions(+), 36 deletions(-)
 
-should be
-
-	for_each_pmc_rtnl(in_dev, pmc)
-		igmp_group_added(pmc);
-
-
+diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
+index cfb6156..f4b6b26 100644
+--- a/arch/x86/include/asm/nmi.h
++++ b/arch/x86/include/asm/nmi.h
+@@ -30,9 +30,17 @@ extern void setup_apic_nmi_watchdog(void *);
+ extern void stop_apic_nmi_watchdog(void *);
+ extern void disable_timer_nmi_watchdog(void);
+ extern void enable_timer_nmi_watchdog(void);
+-extern int nmi_watchdog_tick(struct pt_regs *regs, unsigned reason);
+ extern void cpu_nmi_set_wd_enabled(void);
+ 
++#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
++extern int nmi_watchdog_tick(struct pt_regs *regs);
++#else
++static inline int nmi_watchdog_tick(struct pt_regs *regs)
++{
++	return 0;
++}
++#endif
++
+ extern atomic_t nmi_active;
+ extern unsigned int nmi_watchdog;
+ #define NMI_NONE	0
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index fabe4fe..5c4f952 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -99,7 +99,6 @@ void acpi_nmi_disable(void) { return; }
+ #endif
+ atomic_t nmi_active = ATOMIC_INIT(0);           /* oprofile uses this */
+ EXPORT_SYMBOL(nmi_active);
+-int unknown_nmi_panic;
+ void cpu_nmi_set_wd_enabled(void) { return; }
+ void stop_apic_nmi_watchdog(void *unused) { return; }
+ void setup_apic_nmi_watchdog(void *unused) { return; }
+diff --git a/arch/x86/kernel/apic/nmi.c b/arch/x86/kernel/apic/nmi.c
+index c90041c..27b9421 100644
+--- a/arch/x86/kernel/apic/nmi.c
++++ b/arch/x86/kernel/apic/nmi.c
+@@ -37,7 +37,6 @@
+ 
+ #include <asm/mach_traps.h>
+ 
+-int unknown_nmi_panic;
+ int nmi_watchdog_enabled;
+ 
+ /* For reliability, we're prepared to waste bits here. */
+@@ -389,7 +388,7 @@ void touch_nmi_watchdog(void)
+ EXPORT_SYMBOL(touch_nmi_watchdog);
+ 
+ notrace __kprobes int
+-nmi_watchdog_tick(struct pt_regs *regs, unsigned reason)
++nmi_watchdog_tick(struct pt_regs *regs)
+ {
+ 	/*
+ 	 * Since current_thread_info()-> is always on the stack, and we
+@@ -483,23 +482,6 @@ static void disable_ioapic_nmi_watchdog(void)
+ 	on_each_cpu(stop_apic_nmi_watchdog, NULL, 1);
+ }
+ 
+-static int __init setup_unknown_nmi_panic(char *str)
+-{
+-	unknown_nmi_panic = 1;
+-	return 1;
+-}
+-__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
+-
+-static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
+-{
+-	unsigned char reason = get_nmi_reason();
+-	char buf[64];
+-
+-	sprintf(buf, "NMI received for unknown reason %02x\n", reason);
+-	die_nmi(buf, regs, 1); /* Always panic here */
+-	return 0;
+-}
+-
+ /*
+  * proc handler for /proc/sys/kernel/nmi
+  */
+@@ -540,15 +522,6 @@ int proc_nmi_enabled(struct ctl_table *table, int write,
+ 
+ #endif /* CONFIG_SYSCTL */
+ 
+-int do_nmi_callback(struct pt_regs *regs, int cpu)
+-{
+-#ifdef CONFIG_SYSCTL
+-	if (unknown_nmi_panic)
+-		return unknown_nmi_panic_callback(regs, cpu);
+-#endif
+-	return 0;
+-}
+-
+ void arch_trigger_all_cpu_backtrace(void)
+ {
+ 	int i;
+diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+index ed40ad6..ce8b94d 100644
+--- a/arch/x86/kernel/traps.c
++++ b/arch/x86/kernel/traps.c
+@@ -83,6 +83,8 @@ EXPORT_SYMBOL_GPL(used_vectors);
+ 
+ static int ignore_nmis;
+ 
++int unknown_nmi_panic;
++
+ /*
+  * Prevent NMI reason port (0x61) being accessed simultaneously, can
+  * only be used in NMI handler.
+@@ -306,6 +308,13 @@ gp_in_kernel:
+ 	die("general protection fault", regs, error_code);
+ }
+ 
++static int __init setup_unknown_nmi_panic(char *str)
++{
++	unknown_nmi_panic = 1;
++	return 1;
++}
++__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
++
+ static notrace __kprobes void
+ pci_serr_error(unsigned char reason, struct pt_regs *regs)
+ {
+@@ -380,7 +389,7 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
+ 		 reason, smp_processor_id());
+ 
+ 	pr_emerg("Do you have a strange power saving mode enabled?\n");
+-	if (panic_on_unrecovered_nmi)
++	if (unknown_nmi_panic || panic_on_unrecovered_nmi)
+ 		panic("NMI: Not continuing");
+ 
+ 	pr_emerg("Dazed and confused, but trying to continue\n");
+@@ -421,12 +430,8 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
+ 	}
+ 	raw_spin_unlock(&nmi_reason_lock);
+ 
+-#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
+-	if (nmi_watchdog_tick(regs, reason))
+-		return;
+-	if (do_nmi_callback(regs, cpu))
++	if (nmi_watchdog_tick(regs))
+ 		return;
+-#endif
+ 
+ 	unknown_nmi_error(reason, regs);
+ }
+-- 
+1.7.2.3
 
