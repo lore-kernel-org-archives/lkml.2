@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab0KLMUE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 07:20:04 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:42300 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752464Ab0KLMUB (ORCPT
+	id S1757512Ab0KLMUM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 07:20:12 -0500
+Received: from smtp-out-138.synserver.de ([212.40.180.138]:1029 "HELO
+	smtp-out-138.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756612Ab0KLMUJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 07:20:01 -0500
-Date: Fri, 12 Nov 2010 17:49:32 +0530
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@suse.de>, Jan Beulich <JBeulich@novell.com>,
-        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 04/20] x86/ticketlock: make large and small ticket
- versions of spin_lock the same
-Message-ID: <20101112121932.GA30016@linux.vnet.ibm.com>
-Reply-To: vatsa@linux.vnet.ibm.com
-References: <cover.1288794124.git.jeremy.fitzhardinge@citrix.com>
- <5b3cbff3a6e96a085651f140a0525be80a4df8ba.1288794124.git.jeremy.fitzhardinge@citrix.com>
+	Fri, 12 Nov 2010 07:20:09 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 18748
+Date: Fri, 12 Nov 2010 13:20:03 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: BUG: Bad page state in process (current git)
+Message-ID: <20101112122003.GA1572@arch.trippelsdorf.de>
+References: <20101110152519.GA1626@arch.trippelsdorf.de>
+ <20101110154057.GA2191@arch.trippelsdorf.de>
+ <alpine.DEB.2.00.1011101534370.30164@router.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5b3cbff3a6e96a085651f140a0525be80a4df8ba.1288794124.git.jeremy.fitzhardinge@citrix.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.00.1011101534370.30164@router.home>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 10:59:45AM -0400, Jeremy Fitzhardinge wrote:
-> Make the bulk of __ticket_spin_lock look identical for large and small
-> number of cpus.
+On 2010.11.10 at 15:46 -0600, Christoph Lameter wrote:
+> On Wed, 10 Nov 2010, Markus Trippelsdorf wrote:
+> 
+> > I found this in my dmesg:
+> > ACPI: Local APIC address 0xfee00000
+> >  [ffffea0000000000-ffffea0003ffffff] PMD -> [ffff8800d0000000-ffff8800d39fffff] on node 0
+> 
+> That only shows you how the memmap was virtually mapped.
 
-[snip]
+Yes. Fortunately the BUG is gone since I pulled the upcoming drm fixes
+from: 
+git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
 
->  #if (NR_CPUS < 256)
->  static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
->  {
-> -	register union {
-> -		struct __raw_tickets tickets;
-> -		unsigned short slock;
-> -	} inc = { .slock = 1 << TICKET_SHIFT };
-> +	register struct __raw_tickets inc = { .tail = 1 };
+Maybe 06fba6d4168069d8 fixed it.
 
-[snip]
-
->  #else
->  static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
->  {
-> -	unsigned inc = 1 << TICKET_SHIFT;
-> -	__ticket_t tmp;
-> +	register struct __raw_tickets inc = { .tickets.tail = 1 };
-
-s/.tickets//?
-
-Otherwise I get a compile error for NR_CPUS > 256, with just 4 patches applied.
-
-- vatsa
+-- 
+Markus
