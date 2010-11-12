@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab0KLMZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 07:25:28 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43654 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505Ab0KLMZ1 convert rfc822-to-8bit (ORCPT
+	id S1757448Ab0KLMcs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 07:32:48 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:50013 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756625Ab0KLMcq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 07:25:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sb7pnBwdZYHYIPeTtY+faqgPRnqt5nqgeOhni5EF2CijjbfmOUv/Yv+kMiIDCfSd6A
-         gXrDS/XeH6GB6yJCvThc9uKPq5WNpuf7oTUhSWqIk62o4FJ0lPT2Y+7rvJ7WFFRG97lH
-         jCN5qPUI5VDTr83e59k3SvQwiLgIPCKlo2V6A=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimd4AruJa2BvqOFw-aP9VpHubsx5Xrwkma+Um5X@mail.gmail.com>
+	Fri, 12 Nov 2010 07:32:46 -0500
+From: "G, Manjunath Kondaiah" <manjugk@ti.com>
+To: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 12 Nov 2010 18:02:40 +0530
+Subject: RE: [PATCHv3 2/4] OMAP1: Serial: remobe magic from MDR1 register
+Thread-Topic: [PATCHv3 2/4] OMAP1: Serial: remobe magic from MDR1 register
+Thread-Index: AcuCUVzB2XVvaZ6qRq2Chdw+Tq2RdgAExjyQ
+Message-ID: <E0D41E29EB0DAC4E9F3FF173962E9E9402DC24F026@dbde02.ent.ti.com>
 References: <1289553702-28041-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-	<AANLkTimd4AruJa2BvqOFw-aP9VpHubsx5Xrwkma+Um5X@mail.gmail.com>
-Date: Fri, 12 Nov 2010 14:25:24 +0200
-Message-ID: <AANLkTi=6qNSOuHxzbLjUAcg=Mn-ucO8KRZreiVQ9PAkM@mail.gmail.com>
-Subject: Re: [PATCHv3 0/4] OMAP: Serial: remove magic and diplicates
-From: Andrei Emeltchenko <andrei.emeltchenko.news@gmail.com>
-To: Govindraj <govindraj.ti@gmail.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+ <1289553702-28041-3-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+In-Reply-To: <1289553702-28041-3-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 1:34 PM, Govindraj <govindraj.ti@gmail.com> wrote:
-> Looks fine to me.
->
-> I think you need to CC this patch series to
-> arm list and serial list as well.
 
-Govindraj, Do I need to resend the patch including arm and serial MLs?
 
-Regards,
-Andrei
+> -----Original Message-----
+> From: linux-omap-owner@vger.kernel.org 
+> [mailto:linux-omap-owner@vger.kernel.org] On Behalf Of 
+> Emeltchenko Andrei
+> Sent: Friday, November 12, 2010 2:52 PM
+> To: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: [PATCHv3 2/4] OMAP1: Serial: remobe magic from MDR1 register
 
->
-> Thanks,
-> Govindraj.R
->
->
-> On Fri, Nov 12, 2010 at 2:51 PM, Emeltchenko Andrei
-> <Andrei.Emeltchenko.news@gmail.com> wrote:
->> From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
->>
->> Add MDR1 Serial register definition to serial_reg and remove duplicated
->> code.
->> *v2 add OMAP keyword to MDR1 definition
->> *v3 remove magic from serial drivers
->>
->> Andrei Emeltchenko (4):
->>  OMAP: Serial: Define OMAP uart MDR1 register definitions
->>  OMAP1: Serial: remobe magic from MDR1 register
->>  OMAP2: Serial: remobe magic from MDR1 register
->>  OMAP: Serial: remove redefined MDR1 register definitions
->>
->>  arch/arm/mach-omap1/serial.c                  |    6 ++++--
->>  arch/arm/mach-omap2/serial.c                  |   15 +++++++++------
->>  arch/arm/plat-omap/include/plat/omap-serial.h |    3 ---
->>  drivers/serial/omap-serial.c                  |    6 +++---
->>  include/linux/serial_reg.h                    |   12 ++++++++++++
->>  5 files changed, 28 insertions(+), 14 deletions(-)
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
+1. s/remobe/remove 
+2. s/remove magic/remove magic number 
+
+After this also, patch title does not match with code. You are not modifying 
+anything to MDR1 register. You are replacing hardcoded values in serial
+API's with macros defined in serial header.
+
+Pls fix patch title accordingly.                                            
+
+-Manjunath
+
+[...]
