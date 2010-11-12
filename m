@@ -1,71 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071Ab0KLChi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 11 Nov 2010 21:37:38 -0500
-Received: from x35.xmailserver.org ([64.71.152.41]:59091 "EHLO
-	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064Ab0KLChh (ORCPT
+	id S1754325Ab0KLCiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 11 Nov 2010 21:38:12 -0500
+Received: from mail.windriver.com ([147.11.1.11]:39377 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188Ab0KLCiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 11 Nov 2010 21:37:37 -0500
-X-AuthUser: davidel@xmailserver.org
-Date: Thu, 11 Nov 2010 18:35:51 -0800 (PST)
-From: Davide Libenzi <davidel@xmailserver.org>
-X-X-Sender: davide@davide-lnx1
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Kyle Moffett <kyle@moffetthome.net>,
-        Alexander Shishkin <virtuoso@slind.org>, Valdis.Kletnieks@vt.edu,
-        LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCHv6 0/7] system time changes notification
-In-Reply-To: <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6>
-Message-ID: <alpine.DEB.2.00.1011111813070.32375@davide-lnx1>
-References: <1289503802-22444-1-git-send-email-virtuoso@slind.org> <22542.1289507293@localhost> <20101111205123.GC10585@shisha.kicks-ass.net> <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6> <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
- <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
-X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
+	Thu, 11 Nov 2010 21:38:10 -0500
+Message-ID: <4CDCA895.7010806@windriver.com>
+Date: Fri, 12 Nov 2010 10:38:13 +0800
+From: DDD <dongdong.deng@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: dzickus@redhat.com
+CC: Dongdong Deng <dongdong.deng@windriver.com>, mingo@elte.hu,
+        peterz@infradead.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [V3 PATCH] x86: avoid calling arch_trigger_all_cpu_backtrace()
+ at the same time on SMP
+References: <1289473307-7965-1-git-send-email-dongdong.deng@windriver.com>
+In-Reply-To: <1289473307-7965-1-git-send-email-dongdong.deng@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Nov 2010 02:37:36.0744 (UTC) FILETIME=[9135DE80:01CB8212]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Nov 2010, Thomas Gleixner wrote:
-
-> > [...]
-> > 
-> > This would also enable the folks who want to support things like PHY
-> > hardware clocks (for very-low-latency ethernet timestamping).  It
-> > would resolve the enumeration problem; instead of 0, 1, 2, ... as
-> > constants, they would show up in sysfs and be open()able.  Ideally you
-> > would be able to set up ntpd to slew the "realtime" clock by following
-> > a particular hardware clock, or vice versa.
+Dongdong Deng wrote:
+> The spin_lock_debug/rcu_cpu_stall detector uses
+> trigger_all_cpu_backtrace() to dump cpu backtrace.
+> Therefore it is possible that trigger_all_cpu_backtrace()
+> could be called at the same time on different CPUs, which
+> triggers and 'unknown reason NMI' warning. The following case
+> illustrates the problem:
 > 
-> There are other plans for the various interesting clocks floating
-> around which look pretty good.
+>       CPU1                    CPU2                     ...   CPU N
+>                        trigger_all_cpu_backtrace()
+>                        set "backtrace_mask" to cpu mask
+>                                |
+> generate NMI interrupts  generate NMI interrupts       ...
+>     \                          |                               /
+>      \                         |                              /
+>    The "backtrace_mask" will be cleaned by the first NMI interrupt
+>   at nmi_watchdog_tick(), then the following NMI interrupts generated
+> by other cpus's arch_trigger_all_cpu_backtrace() will be took as
+> unknown reason NMI interrupts.
 > 
-> But what you folks really want for this stuff is an extension to
-> timerfd as you want to be able to poll, right?
+> This patch uses a lock to avoid the problem, and stop the
+> arch_trigger_all_cpu_backtrace() calling to avoid dumping double cpu
+> backtrace info when there is already a trigger_all_cpu_backtrace()
+> in progress.
 > 
-> So what about the following:
+> Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
+> Reviewed-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Ingo Molnar <mingo@redhat.com>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: x86@kernel.org
+> CC: linux-kernel@vger.kernel.org
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> ---
+>  arch/x86/kernel/apic/hw_nmi.c |   23 +++++++++++++++++++++++
+>  arch/x86/kernel/apic/nmi.c    |   23 +++++++++++++++++++++++
+>  2 files changed, 46 insertions(+), 0 deletions(-)
 > 
-> Add a new flag TDF_NOTIFY_CLOCK_WAS_SET to the timerfd flags. Now this
-> flag adds the timer to a separate list, which gets woken up when the
-> clock is set.
+> diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+> index cefd694..bfdab3b 100644
+> --- a/arch/x86/kernel/apic/hw_nmi.c
+> +++ b/arch/x86/kernel/apic/hw_nmi.c
+> @@ -26,9 +26,27 @@ u64 hw_nmi_get_sample_period(void)
+>  }
+>  
+>  #ifdef ARCH_HAS_NMI_WATCHDOG
+> +/* "in progress" flag of arch_trigger_all_cpu_backtrace */
+> +static unsigned long backtrace_flag;
+> +
+>  void arch_trigger_all_cpu_backtrace(void)
+>  {
+>  	int i;
+> +	unsigned long flags;
+> +
+> +	/*
+> +	 * Have to disable irq here, as the
+> +	 * arch_trigger_all_cpu_backtrace() could be
+> +	 * triggered by "spin_lock()" with irqs on.
+> +	 */
+> +	local_irq_save(flags);
+> +
+> +	if (test_and_set_bit(0, &backtrace_flag))
+> +		/*
+> +		 * If there is already a trigger_all_cpu_backtrace() in progress
+> +		 * (backtrace_flag == 1), don't output double cpu dump infos.
+> +		 */
+> +		goto out_restore_irq;
+>  
+>  	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
+>  
+> @@ -41,6 +59,11 @@ void arch_trigger_all_cpu_backtrace(void)
+>  			break;
+>  		mdelay(1);
+>  	}
+> +
+> +	clear_bit(0, &backtrace_flag);
 
-What chu talkin bout Willis? :)
-This borders the interface multiplexing, if I got your idea correctly.
-Timerfd is about expiring private timers, not about getting out 
-notifications about system-wide time changes.
-I understand your concerns about that code, but please do not use timerfd 
-as a sacrificial mule to fit something which IMO does not belong there.
+Hi Don,
+
+    The clear_bit() on x86 (arch/x86/include/asm/bitops.h) does not 
+contain a memory barrier, Could you add a memory barrier ops here when 
+you pick up this patch?
+
++	clear_bit(0, &backtrace_flag);
++	smp_mb__after_clear_bit();
 
 
+Thanks,
+Dongdong
 
-- Davide
-
+> +
+> +out_restore_irq:
+> +	local_irq_restore(flags);
+>  }
+>  
+>  static int __kprobes
+> diff --git a/arch/x86/kernel/apic/nmi.c b/arch/x86/kernel/apic/nmi.c
+> index c90041c..bd9cb79 100644
+> --- a/arch/x86/kernel/apic/nmi.c
+> +++ b/arch/x86/kernel/apic/nmi.c
+> @@ -549,9 +549,27 @@ int do_nmi_callback(struct pt_regs *regs, int cpu)
+>  	return 0;
+>  }
+>  
+> +/* "in progress" flag of arch_trigger_all_cpu_backtrace */
+> +static unsigned long backtrace_flag;
+> +
+>  void arch_trigger_all_cpu_backtrace(void)
+>  {
+>  	int i;
+> +	unsigned long flags;
+> +
+> +	/*
+> +	 * Have to disable irq here, as the
+> +	 * arch_trigger_all_cpu_backtrace() could be
+> +	 * triggered by "spin_lock()" with irqs on.
+> +	 */
+> +	local_irq_save(flags);
+> +
+> +	if (test_and_set_bit(0, &backtrace_flag))
+> +		/*
+> +		 * If there is already a trigger_all_cpu_backtrace() in progress
+> +		 * (backtrace_flag == 1), don't output double cpu dump infos.
+> +		 */
+> +		goto out_restore_irq;
+>  
+>  	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
+>  
+> @@ -564,4 +582,9 @@ void arch_trigger_all_cpu_backtrace(void)
+>  			break;
+>  		mdelay(1);
+>  	}
+> +
+> +	clear_bit(0, &backtrace_flag);
+> +
+> +out_restore_irq:
+> +	local_irq_restore(flags);
+>  }
 
