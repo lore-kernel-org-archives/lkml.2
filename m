@@ -1,157 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446Ab0KLS4I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 13:56:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28016 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754998Ab0KLS4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 13:56:06 -0500
-Date: Fri, 12 Nov 2010 19:49:37 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Prasad <prasad@linux.vnet.ibm.com>, Roland McGrath <roland@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Q: perf_event && event->owner
-Message-ID: <20101112184937.GA12014@redhat.com>
-References: <20101109155714.GA1903@redhat.com> <1289321804.2191.57.camel@laptop> <20101109165805.GA6971@redhat.com> <1289322469.2191.59.camel@laptop> <20101109174219.GA8279@redhat.com> <1289325703.2191.60.camel@laptop> <20101109185748.GA12138@redhat.com> <1289402233.2084.5.camel@laptop> <20101110154430.GA1454@redhat.com> <1289576883.2084.286.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289576883.2084.286.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932221Ab0KLS4U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 13:56:20 -0500
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:45094 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932068Ab0KLS4T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 13:56:19 -0500
+Subject: (mem hotplug, pcpu_alloc) BUG: sleeping function called from
+	invalid context at kernel/mutex.c:94
+From: Alok Kataria <akataria@vmware.com>
+Reply-To: akataria@vmware.com
+To: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Petr Vandrovec <petr@vmware.com>
+Content-Type: text/plain
+Organization: VMware INC.
+Date: Fri, 12 Nov 2010 10:56:18 -0800
+Message-Id: <1289588178.7486.15.camel@ank32.eng.vmware.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12, Peter Zijlstra wrote:
->
-> Utter paranoia took over and I'm still not sure its solid...
+Hi,
 
-Thanks Peter!
+We have seen following might_sleep warning while hot adding memory...
 
-I believe this all is correct.
+[  142.339267] BUG: sleeping function called from invalid context at kernel/mutex.c:94
+[  142.339276] in_atomic(): 0, irqs_disabled(): 1, pid: 4, name: migration/0
+[  142.339283] Pid: 4, comm: migration/0 Not tainted 2.6.35.6-45.fc14.x86_64 #1
+[  142.339288] Call Trace:
+[  142.339305]  [<ffffffff8103d12b>] __might_sleep+0xeb/0xf0
+[  142.339316]  [<ffffffff81468245>] mutex_lock+0x24/0x50
+[  142.339326]  [<ffffffff8110eaa6>] pcpu_alloc+0x6d/0x7ee
+[  142.339336]  [<ffffffff81048888>] ? load_balance+0xbe/0x60e
+[  142.339343]  [<ffffffff8103a1b3>] ? rt_se_boosted+0x21/0x2f
+[  142.339349]  [<ffffffff8103e1cf>] ? dequeue_rt_stack+0x18b/0x1ed
+[  142.339356]  [<ffffffff8110f237>] __alloc_percpu+0x10/0x12
+[  142.339362]  [<ffffffff81465e22>] setup_zone_pageset+0x38/0xbe
+[  142.339373]  [<ffffffff810d6d81>] ? build_zonelists_node.clone.58+0x79/0x8c
+[  142.339384]  [<ffffffff81452539>] __build_all_zonelists+0x419/0x46c
+[  142.339395]  [<ffffffff8108ef01>] ? cpu_stopper_thread+0xb2/0x198
+[  142.339401]  [<ffffffff8108f075>] stop_machine_cpu_stop+0x8e/0xc5
+[  142.339407]  [<ffffffff8108efe7>] ? stop_machine_cpu_stop+0x0/0xc5
+[  142.339414]  [<ffffffff8108ef57>] cpu_stopper_thread+0x108/0x198
+[  142.339420]  [<ffffffff81467a37>] ? schedule+0x5b2/0x5cc
+[  142.339426]  [<ffffffff8108ee4f>] ? cpu_stopper_thread+0x0/0x198
+[  142.339434]  [<ffffffff81065f29>] kthread+0x7f/0x87
+[  142.339443]  [<ffffffff8100aae4>] kernel_thread_helper+0x4/0x10
+[  142.339449]  [<ffffffff81065eaa>] ? kthread+0x0/0x87
+[  142.339455]  [<ffffffff8100aae0>] ? kernel_thread_helper+0x0/0x10
+[  142.340099] Built 5 zonelists in Node order, mobility grouping on.  Total pages: 289456
+[  142.340108] Policy zone: Normal
 
-> Subject: perf: Fix owner-list vs exit
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date: Tue, 09 Nov 2010 19:01:43 +0100
-> 
-> Reported-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> LKML-Reference: <1289325703.2191.60.camel@laptop>
-> ---
->  kernel/perf_event.c |   63 ++++++++++++++++++++++++++++++++++++++++++----------
->  1 file changed, 51 insertions(+), 12 deletions(-)
-> 
-> Index: linux-2.6/kernel/perf_event.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/perf_event.c
-> +++ linux-2.6/kernel/perf_event.c
-> @@ -2234,11 +2234,6 @@ int perf_event_release_kernel(struct per
->  	raw_spin_unlock_irq(&ctx->lock);
->  	mutex_unlock(&ctx->mutex);
->  
-> -	mutex_lock(&event->owner->perf_event_mutex);
-> -	list_del_init(&event->owner_entry);
-> -	mutex_unlock(&event->owner->perf_event_mutex);
-> -	put_task_struct(event->owner);
-> -
->  	free_event(event);
->  
->  	return 0;
-> @@ -2251,9 +2246,43 @@ EXPORT_SYMBOL_GPL(perf_event_release_ker
->  static int perf_release(struct inode *inode, struct file *file)
->  {
->  	struct perf_event *event = file->private_data;
-> +	struct task_struct *owner;
->  
->  	file->private_data = NULL;
->  
-> +	rcu_read_lock();
-> +	owner = ACCESS_ONCE(event->owner);
-> +	/*
-> +	 * Matches the smp_wmb() in perf_event_exit_task(). If we observe
-> +	 * !owner it means the list deletion is complete and we can indeed
-> +	 * free this event, otherwise we need to serialize on
-> +	 * owner->perf_event_mutex.
-> +	 */
-> +	smp_read_barrier_depends();
-> +	if (owner) {
-> +		/*
-> +		 * Since delayed_put_task_struct() also drops the last
-> +		 * task reference we can safely take a new reference
-> +		 * while holding the rcu_read_lock().
-> +		 */
-> +		get_task_struct(owner);
-> +	}
-> +	rcu_read_unlock();
-> +
-> +	if (owner) {
-> +		mutex_lock(&owner->perf_event_mutex);
-> +		/*
-> +		 * We have to re-check the event->owner field, if it is cleared
-> +		 * we raced with perf_event_exit_task(), acquiring the mutex
-> +		 * ensured they're done, and we can proceed with freeing the
-> +		 * event.
-> +		 */
-> +		if (event->owner)
-> +			list_del_init(&event->owner_entry);
-> +		mutex_unlock(&owner->perf_event_mutex);
-> +		put_task_struct(owner);
-> +	}
-> +
->  	return perf_event_release_kernel(event);
->  }
->  
-> @@ -5677,7 +5706,7 @@ SYSCALL_DEFINE5(perf_event_open,
->  	mutex_unlock(&ctx->mutex);
->  
->  	event->owner = current;
-> -	get_task_struct(current);
-> +
->  	mutex_lock(&current->perf_event_mutex);
->  	list_add_tail(&event->owner_entry, &current->perf_event_list);
->  	mutex_unlock(&current->perf_event_mutex);
-> @@ -5745,12 +5774,6 @@ perf_event_create_kernel_counter(struct
->  	++ctx->generation;
->  	mutex_unlock(&ctx->mutex);
->  
-> -	event->owner = current;
-> -	get_task_struct(current);
-> -	mutex_lock(&current->perf_event_mutex);
-> -	list_add_tail(&event->owner_entry, &current->perf_event_list);
-> -	mutex_unlock(&current->perf_event_mutex);
-> -
->  	return event;
->  
->  err_free:
-> @@ -5901,8 +5924,24 @@ static void perf_event_exit_task_context
->   */
->  void perf_event_exit_task(struct task_struct *child)
->  {
-> +	struct perf_event *event, *tmp;
->  	int ctxn;
->  
-> +	mutex_lock(&child->perf_event_mutex);
-> +	list_for_each_entry_safe(event, tmp, &child->perf_event_list,
-> +				 owner_entry) {
-> +		list_del_init(&event->owner_entry);
-> +
-> +		/*
-> +		 * Ensure the list deletion is visible before we clear
-> +		 * the owner, closes a race against perf_release() where
-> +		 * we need to serialize on the owner->perf_event_mutex.
-> +		 */
-> +		smp_wmb();
-> +		event->owner = NULL;
-> +	}
-> +	mutex_unlock(&child->perf_event_mutex);
-> +
->  	for_each_task_context_nr(ctxn)
->  		perf_event_exit_task_context(child, ctxn);
->  }
-> 
+
+This warning was seen on the FC14 kernel, though looking at the current
+git, the problem seems to exist on mainline too.
+The problem is that pcpu_alloc expects that it is called from non-atomic
+context as a result it grabs the pcpu_alloc_mutex. 
+In the memory-hotplug case though, we do end up calling pcpu_alloc from
+atomic context, while all cpus are stopped.
+
+void build_all_zonelists(void *data)
+{
+   set_zonelist_order();
+
+   if (system_state == SYSTEM_BOOTING) {
+      __build_all_zonelists(NULL);
+      mminit_verify_zonelist();
+      cpuset_init_current_mems_allowed();
+   } else {
+      /* we have to stop all cpus to guarantee there is no user
+         of zonelist */
+      stop_machine(__build_all_zonelists, data, NULL);   <=========
+      /* cpuset refresh routine should be here */
+   }
+
+__build_all_zonelists eventually calls pcpu_alloc. 
+
+I didn't dive through the history, so am not sure when was this
+regression introduced, but could have regressed with the new pcpu memory
+allocator.
+
+--
+Alok
 
