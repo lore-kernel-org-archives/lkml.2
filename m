@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab0KLOob (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 09:44:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43123 "EHLO mx1.redhat.com"
+	id S932418Ab0KLOpJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 09:45:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8437 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752902Ab0KLOo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 09:44:29 -0500
+	id S932346Ab0KLOpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 09:45:04 -0500
 From: Don Zickus <dzickus@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>,
         Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
         Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 5/6] x86, NMI: Allow NMI reason io port (0x61) to be processed on any CPU
-Date: Fri, 12 Nov 2010 09:43:52 -0500
-Message-Id: <1289573033-2889-6-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1289573033-2889-1-git-send-email-dzickus@redhat.com>
-References: <1289573033-2889-1-git-send-email-dzickus@redhat.com>
+Subject: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
+Date: Fri, 12 Nov 2010 09:43:47 -0500
+Message-Id: <1289573033-2889-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In original NMI handler, NMI reason io port (0x61) is only processed
-on BSP. This makes it impossible to hot-remove BSP. To solve the
-issue, a raw spinlock is used to make the port can be processed on any
-CPU.
+Restructuring the nmi handler to be more readable and simpler.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
+This is just laying the ground work for future improvements in this area.
 
-Conflicts:
+I also left out one of Huang's patch until we figure out how we are going
+to proceed with a new notifier.
 
-	arch/x86/kernel/traps.c
----
- arch/x86/kernel/traps.c |   36 +++++++++++++++++++-----------------
- 1 files changed, 19 insertions(+), 17 deletions(-)
+Tested 32-bit and 64-bit on AMD and Intel machines.
 
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 79b9b2f..ed40ad6 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -83,6 +83,12 @@ EXPORT_SYMBOL_GPL(used_vectors);
- 
- static int ignore_nmis;
- 
-+/*
-+ * Prevent NMI reason port (0x61) being accessed simultaneously, can
-+ * only be used in NMI handler.
-+ */
-+static DEFINE_RAW_SPINLOCK(nmi_reason_lock);
-+
- static inline void conditional_sti(struct pt_regs *regs)
- {
- 	if (regs->flags & X86_EFLAGS_IF)
-@@ -383,7 +389,6 @@ unknown_nmi_error(unsigned char reason, struct pt_regs *regs)
- static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- {
- 	unsigned char reason = 0;
--	int cpu;
- 
- 	/*
- 	 * CPU-specific NMI must be processed before non-CPU-specific
-@@ -399,25 +404,22 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 		return;
- 
- 	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
--	cpu = smp_processor_id();
--	/* Only the BSP gets external NMIs from the system. */
--	if (!cpu) {
--		reason = get_nmi_reason();
--		if (reason & NMI_REASON_MASK) {
--			if (reason & NMI_REASON_SERR)
--				pci_serr_error(reason, regs);
--			else if (reason & NMI_REASON_IOCHK)
--				io_check_error(reason, regs);
-+	raw_spin_lock(&nmi_reason_lock);
-+	reason = get_nmi_reason();
-+	if (reason & NMI_REASON_MASK) {
-+		if (reason & NMI_REASON_SERR)
-+			pci_serr_error(reason, regs);
-+		else if (reason & NMI_REASON_IOCHK)
-+			io_check_error(reason, regs);
- #ifdef CONFIG_X86_32
--			/*
--			 * Reassert NMI in case it became active
--			 * meanwhile as it's edge-triggered:
--			 */
--			reassert_nmi();
-+		/*
-+		 * Reassert NMI in case it became active
-+		 * meanwhile as it's edge-triggered:
-+		 */
-+		reassert_nmi();
- #endif
--			return;
--		}
- 	}
-+	raw_spin_unlock(&nmi_reason_lock);
- 
- #if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
- 	if (nmi_watchdog_tick(regs, reason))
+V2:  add a patch to kill DIE_NMI_IPI and add in priorities
+
+Cheers,
+Don
+
+Don Zickus (3):
+  x86, NMI: Remove DIE_NMI_IPI and add priorties to handlers
+  x86, NMI: Allow NMI reason io port (0x61) to be processed on any CPU
+  x86, NMI: Remove do_nmi_callback logic
+
+Huang Ying (3):
+  x86, NMI: Add NMI symbol constants and rename memory parity to PCI
+    SERR
+  x86, NMI: Add touch_nmi_watchdog to io_check_error delay
+  x86, NMI: Rewrite NMI handler
+
+ arch/x86/include/asm/kdebug.h           |    1 -
+ arch/x86/include/asm/mach_traps.h       |   12 +++-
+ arch/x86/include/asm/nmi.h              |   30 +++++++-
+ arch/x86/kernel/apic/hw_nmi.c           |    4 +-
+ arch/x86/kernel/apic/nmi.c              |   29 +-------
+ arch/x86/kernel/apic/x2apic_uv_x.c      |    2 +-
+ arch/x86/kernel/cpu/mcheck/mce-inject.c |    5 +-
+ arch/x86/kernel/cpu/perf_event.c        |    3 +-
+ arch/x86/kernel/kgdb.c                  |    6 +-
+ arch/x86/kernel/reboot.c                |    5 +-
+ arch/x86/kernel/traps.c                 |  135 ++++++++++++++++---------------
+ arch/x86/oprofile/nmi_int.c             |    3 +-
+ arch/x86/oprofile/nmi_timer_int.c       |    2 +-
+ drivers/char/ipmi/ipmi_watchdog.c       |    2 +-
+ drivers/watchdog/hpwdt.c                |    2 +-
+ 15 files changed, 126 insertions(+), 115 deletions(-)
+
 -- 
 1.7.2.3
 
