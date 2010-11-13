@@ -1,54 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933274Ab0KMAnX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 19:43:23 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:42111 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291Ab0KMAnU (ORCPT
+	id S933280Ab0KMAnw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 19:43:52 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:49034 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291Ab0KMAnu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 19:43:20 -0500
-Subject: Re: [GIT PULL] SCSI queuecommand API change for 2.6.37-rc1
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1289606118.3015.539.camel@mulgrave.site>
-References: <1289606118.3015.539.camel@mulgrave.site>
-Content-Type: text/plain
-Date: Fri, 12 Nov 2010 16:38:08 -0800
-Message-Id: <1289608688.22107.9.camel@haakon2.linux-iscsi.org>
+	Fri, 12 Nov 2010 19:43:50 -0500
+Subject: Re: [RFC][PATCH 18/22] sched: add reclaiming logic to -deadline
+ tasks
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
+Cc: Luca Abeni <luca.abeni@unitn.it>, Raistlin <raistlin@linux.it>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <4CDD8279.1020803@sssup.it>
+References: <1288333128.8661.137.camel@Palantir>
+	 <1288334546.8661.161.camel@Palantir>  <1289513573.2084.199.camel@laptop>
+	 <1289576177.6525.509.camel@Palantir> <1289577841.2084.302.camel@laptop>
+	 <4CDD7C65.9090400@unitn.it>  <4CDD8279.1020803@sssup.it>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 13 Nov 2010 01:43:07 +0100
+Message-ID: <1289608988.2084.501.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-12 at 17:55 -0600, James Bottomley wrote:
-> This patch set contains a single patch modifying the SCSI queuecommand
-> host template API to go from being called with the host lock held to
-> being called locklessly.  The transformation is a directly equivalent
-> one (i.e. the locking is simply pushed into each HBA) but will form the
-> basis for optimising locking in the driver patch for the next merge
-> window.
+On Fri, 2010-11-12 at 19:07 +0100, Tommaso Cucinotta wrote:
+> Il 12/11/2010 18:41, Luca Abeni ha scritto:
+> >
+> >> algorithm with resource reservation. It explicitly allows for deadline
+> >> misses, but requires the tardiness of those misses to be bounded, ie.
+> >> the UNC soft real-time definition.
+> >>
+> >> The problem the stochastic execution time model tries to address is the
+> >> WCET computation mess, WCET computation is hard and often overly
+> >> pessimistic, resulting in under-utilized systems.
+> >
+> > [...]
+> > BTW, sorry for the shameless plug, but even with the current 
+> > SCHED_DEADLINE you are not forced to dimension the runtime using the 
+> > WCET. You can use some stochastic analysis, providing probabilistic 
+> > deadline guarantees. See (for example) "QoS Guarantee Using 
+> > Probabilistic Deadlines"
+> > http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.22.7683&rep=rep1&type=pdf 
+> >
+> > and "Stochastic analysis of a reservation based system"
+> > http://www.computer.org/portal/web/csdl/doi?doc=doi/10.1109/IPDPS.2001.925049 
+> >
+> > (sorry, this is not easy to download... But I can provide a copy if 
+> > you are interested).
+> Thanks, Luca, for supporting the viewpoint. I also repeated this 
+> multiple times, during the LPC as well.
 > 
-> The patch is available here:
+> Let me underline a few key points, also about the technique suggested by 
+> Zijlstra:
 > 
-> master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6.git
-> 
-> The short changelog is:
-> 
-> Jeff Garzik (1):
->       host lock push-down
-> 
+> -) the specification of a budget every period may be exploited for 
+> providing deterministic guarantees to applications, if the budget = 
+> WCET, as well as probabilistic guarantees, if the budget < WCET. For 
+> example, what we do in many of our papers is to set budget = to some 
+> percentile/quantile of the observed computation time distribution, 
+> especially in those cases in which there are isolated peaks of 
+> computation times which would cause an excessive under-utilization of 
+> the system (these are ruled out by the percentile-based allocation); I 
+> think this is a way of reasoning that can be easily understood and used 
+> by developers;
 
-Hi James and Co,
+Maybe, but I'm clearly not one of them because I'm not getting it.
 
-Please feel free to add my review signoff for jgarzik's work.
+> -) setting a budget equal to (or too close to) the average computation 
+> time is *bad*, because the is almost in a meta-stable condition in which 
+> its response-time may easily grow uncontrolled;
 
-Thanks!
+How so? Didn't the paper referenced just prove that the response time
+stays bounded? 
 
-Reviewed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+Setting it lower will of course wreak havoc, but that's what we have
+bandwidth control for (implementing stochastic bandwidth control is a
+whole separate fun topic though -- although I've been thinking we could
+do something by lowering the max runtime every time a job overruns the
+average, and limit it at 2*avg - max, if you take a simple parametrized
+reduction function and compute the variability of th resulting series
+you can invert that and find the reduction parameter to a given
+variability).
 
+> -) same thing applies to admitting tasks in the system: if you only 
+> ensure that the sum of average/expected bandwidths < system capacity, 
+> then the whole system is at risk of having uncontrolled and arbitrarily 
+> high peak delays, but from a theoretical viewpoint it is still a 
+> "stable" system; this is not a condition you want to have in a sane 
+> real-time scenario;
+
+I'm not seeing where the unbounded comes from. 
+
+I am seeing that if you place your budget request slightly higher than
+the actual average (say 1 stdev) your variability in the response time
+will decrease, but at a cost of lower utilization.
+
+> -) if you want to apply the Mills & Anderson's rule for controlling the 
+> bound on the tardiness percentiles, as in that paper (A Stochastic 
+> Framework for Multiprocessor
+> Soft Real-Time Scheduling), then I can see 2 major drawbacks:
+>    a) you need to compute the "\psi" in order to use the "Corollary 10" 
+> of that paper, but that quantity needs to solve a LP optimization 
+> problem (see also the example in Section 6); the \psi can be used in Eq. 
+> (36) in order to compute the *expected tardiness*;
+
+Right, but do we ever actually want to compute the bound? G-EDF also
+incurs tardiness but we don't calculate it either. Both depend on the
+full task set parameters which is not stable (nor accessible to
+user-space in a meaningful manner).
+
+> Please, understand me: I don't want to say that that particular 
+> technique is not useful, but I'd like simply to stress that such 
+> policies might just belong to the user-space. If you really want, you 
+> can disable *any* type of admission control at the kernel-level, and you 
+> can disable *any* kind of budget enforcement, and just trust the 
+> user-space to have deployed the proper/correct number & type of tasks 
+> into your embedded RT platform.
+
+I'm very much against disabling everything and letting the user sort it,
+that's basically what SCHED_FIFO does too and its a frigging nightmare.
+
+The whole admission control and schedulability test is what makes this
+thing usable. People who build closed systems can already hack their
+kernel and do as they please, but for anything other than a closed
+system this approach is useless.
