@@ -1,25 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab0KMKjP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 05:39:15 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43202 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136Ab0KMKjM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 05:39:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=pwnxgzf1mN0SaBC49Hg7CwyXkWMgDdDOmu5TJkhx9gsO61FFR3KohyYEsaHdIFNQlt
-         NJSi8820vTI3BawjoY0S6so59zZp4rRQ0ye3xGwAv+s5Fm0o9nOrr7iHdDXsb05z9zxQ
-         0j/OOQ3/nIOYB8M6sBpC0lwoooNxrDryvGGXc=
-Subject: Re: [PATCH 1/5] mtd: fix bdev exclusive open bugs in
- block2mtd::add_device()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
+	id S1755991Ab0KMKo0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 05:44:26 -0500
+Received: from hera.kernel.org ([140.211.167.34]:60204 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753136Ab0KMKoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 05:44:24 -0500
+Message-ID: <4CDE6BB2.5070806@kernel.org>
+Date: Sat, 13 Nov 2010 11:42:58 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
         petero2@telia.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
         jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
         tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com,
@@ -29,39 +22,45 @@ Cc: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
         joern@logfs.org, konishi.ryusuke@lab.ntt.co.jp,
         reiserfs-devel@vger.kernel.org, viro@zeniv.linux.org.uk,
         linux-mtd@lists.infradead.org
-In-Reply-To: <1288628129-12811-2-git-send-email-tj@kernel.org>
-References: <1288628129-12811-1-git-send-email-tj@kernel.org>
-	 <1288628129-12811-2-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 13 Nov 2010 12:38:55 +0200
-Message-ID: <1289644735.2218.8.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
-Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 1/5] mtd: fix bdev exclusive open bugs in block2mtd::add_device()
+References: <1288628129-12811-1-git-send-email-tj@kernel.org>	 <1288628129-12811-2-git-send-email-tj@kernel.org> <1289644735.2218.8.camel@localhost>
+In-Reply-To: <1289644735.2218.8.camel@localhost>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 13 Nov 2010 10:43:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-On Mon, 2010-11-01 at 17:15 +0100, Tejun Heo wrote:
-> +			if (!IS_ERR(bdev)) {
-> +				int ret;
-> +				ret = bd_claim(bdev, dev);
-> +				if (ret) {
-> +					blkdev_put(bdev,
-> +						   FMODE_READ | FMODE_WRITE);
+On 11/13/2010 11:38 AM, Artem Bityutskiy wrote:
+> On Mon, 2010-11-01 at 17:15 +0100, Tejun Heo wrote:
+>> +			if (!IS_ERR(bdev)) {
+>> +				int ret;
+>> +				ret = bd_claim(bdev, dev);
+>> +				if (ret) {
+>> +					blkdev_put(bdev,
+>> +						   FMODE_READ | FMODE_WRITE);
+> 
+> Would be a bit cleaner to define ea temporary variable:
+> 
+> fmode_t mode = FMODE_READ | FMODE_WRITE;
+> 
+> Would you to re-send with this little change please?
 
-Would be a bit cleaner to define ea temporary variable:
+Yeap, sure.
 
-fmode_t mode = FMODE_READ | FMODE_WRITE;
+> And ideally, 2 independent patches would be nicer because you fix 2
+> independent issues.
 
-Would you to re-send with this little change please?
+Hmmm... not really.  The patch is small enough and splitting it won't
+really buy as any better bisectability.  Splitting patches into
+logical changes is a good thing but it's no religious dogma.  Let's
+apply it to the point it actually helps.
 
-And ideally, 2 independent patches would be nicer because you fix 2
-independent issues.
+Thank you.
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+tejun
