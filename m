@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654Ab0KMKZX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 05:25:23 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65327 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752173Ab0KMKZV (ORCPT
+	id S1755944Ab0KMKax (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 05:30:53 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:40967 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298Ab0KMKat convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 05:25:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=I7q4BS0CjrPn1tcQqy6fAbileKdPak1kJ4y5ER7F2VT51k3YVDP5oxLTU5Jrm1szgq
-         klwJ++MTufPOol/9RqpAULkB8KdtR7Y8b0PguYq2rY4I2L8kVcMS4Km/RuIKfXpRHhqV
-         kTc6ODjD1T7qEQSIeARXNpI3NRnD196joyMQ0=
-Subject: Re: [PATCH 1/3] mtd: m25p80: Reinstate error print on unrecognized
- flash
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <fbcf2b0a4d8ebff3378b9522ce81ad82@localhost>
-References: <fbcf2b0a4d8ebff3378b9522ce81ad82@localhost>
+	Sat, 13 Nov 2010 05:30:49 -0500
+Subject: Re: [BUG 2.6.27-rc1] find_busiest_group() LOCKUP
+From: Peter Zijlstra <peterz@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        Yinghai Lu <yinghai@kernel.org>, David Rientjes <rientjes@google.com>,
+        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-hotplug@vger.kernel.org
+In-Reply-To: <20101113084018.GA23098@localhost>
+References: <20101111100628.GA24728@localhost>
+	 <1289478978.2084.74.camel@laptop> <20101111124015.GA9706@localhost>
+	 <1289480656.2084.80.camel@laptop>  <20101113084018.GA23098@localhost>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 13 Nov 2010 12:25:07 +0200
-Message-ID: <1289643907.2218.5.camel@localhost>
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 13 Nov 2010 11:30:24 +0100
+Message-ID: <1289644224.2084.521.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-10-30 at 21:11 -0700, Kevin Cernekee wrote:
-> Commit b34bc037b26e621e5fc13466767e4da110a7b3d3 removed the
-> "unrecognized JEDEC id" error message, causing the probe function to
-> silently abort if the flash ID is unrecognized.
+On Sat, 2010-11-13 at 16:40 +0800, Wu Fengguang wrote:
+> > Will try and figure out how the heck that's happening, Ingo any clue?
 > 
-> It is desirable to produce diagnostic output in this situation so that
-> the user has some idea what went wrong.
+> It's back to normal on 2.6.37-rc1 when reverting commit 50f2d7f682f9
+> ("x86, numa: Assign CPUs to nodes in round-robin manner on fake NUMA").
+> 
+> The interesting part is, the commit was introduced in 
+> 2.6.36-rc7..2.6.36, however 2.6.36 boots OK, while 2.6.37-rc1 panics.
 
-Pushed the series to l2-mtd-2.6.git, thanks!
+Argh, that commit again..
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Does this fix it: http://lkml.org/lkml/2010/11/12/8
+
 
