@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab0KMWoG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 17:44:06 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59062 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab0KMWoB (ORCPT
+	id S1754829Ab0KMWpU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 17:45:20 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:53888 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754348Ab0KMWpT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 17:44:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=IFF2z8LCi20LH1vllCIyvMkxVZmfNKr8FstUOR3YvZoI9clbE/9br/F34B7kMlZspL
-         Z7ETi7GbyBDkzmpy0gbC01/5/dyxXfaLCr4OqGvAeB4ytDDHq9xeVJDvhFJKwsfYLHYf
-         YifXxXhW0wVUfgG34TGV8xwoQQMXoXhjaqDIc=
-MIME-Version: 1.0
-In-Reply-To: <54AAF9B7-9533-45B8-9C49-A964203AF707@kernel.crashing.org>
-References: <1289477789-10651-1-git-send-email-leoli@freescale.com> <54AAF9B7-9533-45B8-9C49-A964203AF707@kernel.crashing.org>
-From: Timur Tabi <timur.tabi@gmail.com>
-Date: Sat, 13 Nov 2010 16:43:30 -0600
-Message-ID: <AANLkTi=1nutREorMFY2VJyUYQD0SHfiSeskw-u22P+R-@mail.gmail.com>
-Subject: Re: [PATCH v2] fsldma: add support to 36-bit physical address
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>, dan.j.williams@intel.com,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 13 Nov 2010 17:45:19 -0500
+Subject: Re: [tg_shares_up rewrite v3 09/11] sched: demand based
+ update_cfs_load()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Chris Friesen <cfriesen@nortel.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Pierre Bourdon <pbourdon@excellency.fr>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTintRZjoYcGvadw7CVudFxF5bzhFYbCK_VkRfpZp@mail.gmail.com>
+References: <20101112032405.657789056@google.com>
+	 <20101112032702.028843817@google.com> <1289559198.2084.214.camel@laptop>
+	 <AANLkTi=vUs7f3bYE-0OM7fARzbNTbGEU4bDd1pcDoOq-@mail.gmail.com>
+	 <AANLkTintRZjoYcGvadw7CVudFxF5bzhFYbCK_VkRfpZp@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 13 Nov 2010 23:45:06 +0100
+Message-ID: <1289688306.2109.387.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 5:56 AM, Kumar Gala <galak@kernel.crashing.org> wrote:
+On Fri, 2010-11-12 at 18:42 -0800, Paul Turner wrote:
+> 
+> Let me know if you still think this warrants any changes and I'll (fix
+> accordingly) and repost with the "-p0" stripping fixed.
+> 
+Nah, its fine I just thought the code odd, but it does make sense.
 
-> Is there any reason we shouldn't set DMA_BIT_MASK(64) since the DMA block programming model allows the address to be 64-bits?
-
-Can you explain that?  The DMA registers only have room for 36 bits
-for the physical address.
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+Please repost the patches as -p1
