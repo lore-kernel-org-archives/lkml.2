@@ -1,69 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab0KMKCb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 05:02:31 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57742 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868Ab0KMKC3 (ORCPT
+	id S1755729Ab0KMKHD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 05:07:03 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60567 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab0KMKG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 05:02:29 -0500
+	Sat, 13 Nov 2010 05:06:58 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Xdlrpn3MIB+cEJZBuc16JFcsPJZuzknmEnsqyXXvahnOOJrVCKMl0hQWeIxjPLHqZi
-         ndt1K6SJxMvQOeIURusBz8DXnm3eTddW7KDyhNbMErePNdc5FA4WhnrM9xDOry2u/gTE
-         ZSSfQn1dSrsDBHafhKrO387ws++MO7LsRa0eo=
-Date: Sat, 13 Nov 2010 18:05:27 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Nick Piggin <npiggin@suse.de>, Jan Beulich <JBeulich@novell.com>,
-        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 03/20] x86/ticketlock: Use C for __ticket_spin_unlock
-Message-ID: <20101113100527.GG3837@hack>
-References: <cover.1288794124.git.jeremy.fitzhardinge@citrix.com> <20092775a9df07a5a75820ac250194b535279d51.1288794124.git.jeremy.fitzhardinge@citrix.com>
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=boKcbVe4p5wJVJI8ek4zd/v8CXNCXegvQrSUZI4ZeHb1TwIUkfr7tpOpYGqjevvln1
+         6kl65tmbBLR+OgX3bzVT91QwMZleymKFh4d0R8oX082VHgm4YbLENA1yHaBfZUPBjPxn
+         +flLn1ZPpqrVKPePDQDqXnedeeooCwgz9JzUs=
+Date: Sat, 13 Nov 2010 13:06:38 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch 1/2] fbcmap: cleanup white space in fb_alloc_cmap()
+Message-ID: <20101113100638.GA1795@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+References: <20101027093716.GD6062@bicker>
+ <20101105134018.2c11f283.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20092775a9df07a5a75820ac250194b535279d51.1288794124.git.jeremy.fitzhardinge@citrix.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20101105134018.2c11f283.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 10:59:44AM -0400, Jeremy Fitzhardinge wrote:
->  * On PPro SMP or if we are using OOSTORE, we use a locked operation to unlock
->  * (PPro errata 66, 92)
->  */
->-# define UNLOCK_LOCK_PREFIX LOCK_PREFIX
->+static __always_inline void __ticket_unlock_release(struct arch_spinlock *lock)
->+{
->+	if (sizeof(lock->tickets.head) == sizeof(u8))
->+		asm (LOCK_PREFIX "incb %0"
->+		     : "+m" (lock->tickets.head) : : "memory");
->+	else
->+		asm (LOCK_PREFIX "incw %0"
->+		     : "+m" (lock->tickets.head) : : "memory");
+checkpatch.pl and Andrew Morton both complained about the indenting in
+fb_alloc_cmap()
 
-This 'if/else' really should be done with #ifdef, even though
-the compiler may be smart enough to remove it.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
->+
->+}
-> #else
->-# define UNLOCK_LOCK_PREFIX
->+static __always_inline void __ticket_unlock_release(struct arch_spinlock *lock)
->+{
->+	barrier();
->+	lock->tickets.head++;
->+	barrier();
-
-The second barrier() is not needed.
-
-Thanks.
+diff --git a/drivers/video/fbcmap.c b/drivers/video/fbcmap.c
+index f53b9f1..a79b976 100644
+--- a/drivers/video/fbcmap.c
++++ b/drivers/video/fbcmap.c
+@@ -90,32 +90,38 @@ static const struct fb_cmap default_16_colors = {
+ 
+ int fb_alloc_cmap(struct fb_cmap *cmap, int len, int transp)
+ {
+-    int size = len*sizeof(u16);
+-
+-    if (cmap->len != len) {
+-	fb_dealloc_cmap(cmap);
+-	if (!len)
+-	    return 0;
+-	if (!(cmap->red = kmalloc(size, GFP_ATOMIC)))
+-	    goto fail;
+-	if (!(cmap->green = kmalloc(size, GFP_ATOMIC)))
+-	    goto fail;
+-	if (!(cmap->blue = kmalloc(size, GFP_ATOMIC)))
+-	    goto fail;
+-	if (transp) {
+-	    if (!(cmap->transp = kmalloc(size, GFP_ATOMIC)))
+-		goto fail;
+-	} else
+-	    cmap->transp = NULL;
+-    }
+-    cmap->start = 0;
+-    cmap->len = len;
+-    fb_copy_cmap(fb_default_cmap(len), cmap);
+-    return 0;
++	int size = len * sizeof(u16);
++
++	if (cmap->len != len) {
++		fb_dealloc_cmap(cmap);
++		if (!len)
++			return 0;
++
++		cmap->red = kmalloc(size, GFP_ATOMIC);
++		if (!cmap->red)
++			goto fail;
++		cmap->green = kmalloc(size, GFP_ATOMIC);
++		if (!cmap->green)
++			goto fail;
++		cmap->blue = kmalloc(size, GFP_ATOMIC);
++		if (!cmap->blue)
++			goto fail;
++		if (transp) {
++			cmap->transp = kmalloc(size, GFP_ATOMIC);
++			if (!cmap->transp)
++				goto fail;
++		} else {
++			cmap->transp = NULL;
++		}
++	}
++	cmap->start = 0;
++	cmap->len = len;
++	fb_copy_cmap(fb_default_cmap(len), cmap);
++	return 0;
+ 
+ fail:
+-    fb_dealloc_cmap(cmap);
+-    return -ENOMEM;
++	fb_dealloc_cmap(cmap);
++	return -ENOMEM;
+ }
+ 
+ /**
