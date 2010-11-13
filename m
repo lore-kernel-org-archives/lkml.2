@@ -1,147 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933241Ab0KMAVt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 19:21:49 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57473 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401Ab0KMAVq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 19:21:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <1289585921.2629.13.camel@neuromancer>
-References: <1289585921.2629.13.camel@neuromancer>
-Date: Fri, 12 Nov 2010 16:21:45 -0800
-Message-ID: <AANLkTik4qPyBtKgJwHVnhkTASNORoKrWms6gk8NirYeU@mail.gmail.com>
-Subject: Re: [PATCH 2/2] HID: roccat: using new sysfs_create_bin_group() in
- kone driver
-From: Eric Biederman <ebiederm@aristanetworks.com>
-To: Stefan Achatz <stefan_achatz@web.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, "Serge E. Hallyn" <serue@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benjamin Thery <benjamin.thery@bull.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S933255Ab0KMAWU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 19:22:20 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:39386 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753401Ab0KMAWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 19:22:19 -0500
+Subject: Re: [PATCH] Improve clocksource unstable warning
+From: john stultz <johnstul@us.ibm.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        pc@us.ibm.com
+In-Reply-To: <AANLkTikd0rstGDDcNdb8u2_H09giaZVxPY1Y5qaiy6_O@mail.gmail.com>
+References: <80b5a10ac1a6ef51afca3c113b624bf1b5049452.1289427381.git.luto@mit.edu>
+	 <AANLkTi=s+0i36qd-bd3=MdeiJS-TThos9RmeUCsfHyy=@mail.gmail.com>
+	 <AANLkTimAfULHTkyLVpGv5r3DcSfVXzsgGiHgTdamNpt2@mail.gmail.com>
+	 <1289605221.3292.53.camel@localhost.localdomain>
+	 <AANLkTi=iso2+R6-5+2ipe39JLHw9o0TgMGCRSTqd5qQz@mail.gmail.com>
+	 <AANLkTikd0rstGDDcNdb8u2_H09giaZVxPY1Y5qaiy6_O@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 13 Nov 2010 00:22:02 +0000
+Message-ID: <1289607722.3292.84.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 10:18 AM, Stefan Achatz <stefan_achatz@web.de> wrote:
-> hid-roccat-kone now uses new group functions for creating binary
-> sysfs attributes.
+On Fri, 2010-11-12 at 18:51 -0500, Andrew Lutomirski wrote:
+> On Fri, Nov 12, 2010 at 6:48 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+> > On Fri, Nov 12, 2010 at 6:40 PM, john stultz <johnstul@us.ibm.com> wrote:
+> >> On Fri, 2010-11-12 at 16:52 -0500, Andrew Lutomirski wrote:
+> >>> On Fri, Nov 12, 2010 at 4:31 PM, john stultz <johnstul@us.ibm.com> wrote:
+> >>> > Ideas:
+> >>> > 1) Maybe should we check that we get two sequential failures where the
+> >>> > cpu seems fast before we throw out the TSC? This will still fall over
+> >>> > in some stall cases (ie: a poor rt task hogging the cpu  for 10
+> >>> > minutes, pausing for a 10th of a second and then continuing to hog the
+> >>> > cpu).
+> >>> >
+> >>> > 2) We could look at the TSC delta, and if it appears outside the order
+> >>> > of 2-10x faster (i don't think any cpus scale up even close to 10x in
+> >>> > freq, but please correct me if so), then assume we just have been
+> >>> > blocked from running and don't throw out the TSC.
+> >>> >
+> >>> > 3) Similar to #2 we could look at the max interval that the watchdog
+> >>> > clocksource provides, and if the TSC delta is greater then that, avoid
+> >>> > throwing things out. This combined with #2 might narrow out the false
+> >>> > positives fairly well.
+> >>> >
+> >>> > Any additional thoughts here?
+> >>>
+> >>> Yes.  As far as I know, the watchdog doesn't give arbitrary values
+> >>> when it wraps; it just wraps.  Here's a possible heuristic, in
+> >>> pseudocode:
+> >>>
+> >>> wd_now_1 = (read watchdog)
+> >>> cs_now = (read clocksource)
+> >>>
+> >>> cs_elapsed = cs_now - cs_last;
+> >>> wd_elapsed = wd_now_1 - wd_last;
+> >>>
+> >>> if ( abs(wd_elapsed - cs_elapsed) < MAX_DELTA)
+> >>>   return;  // We're OK.
+> >>>
+> >>> wd_now_2 = (read watchdog again)
+> >>> if (abs(wd_now_1 - wd_now_2) > MAX_DELTA / 2)
+> >>>   bail;  // The clocksource might be unstable, but we either just
+> >>> lagged or the watchdog is unstable, and in either case we don't gain
+> >>> anything by marking the clocksource unstable.
+> >>
+> >> This is more easily done by just bounding the clocksource read:
+> >> wd_now_1 = watchdog->read()
+> >> cs_now = clocksource->read()
+> >> wd_now_2 = watchdog->read()
+> >>
+> >> if (((wd_now_2 - wd_now_1)&watchdog->mask) > SOMETHING_SMALL)
+> >>        bail; // hit an SMI or some sort of long preemption
+> >>
+> >>> if ( wd_elapsed < cs_elapsed and ( (cs_elapsed - wd_elapsed) %
+> >>> wd_wrapping_time ) < (something fairly small) )
+> >>>   bail;  // The watchdog most likely wrapped.
+> >>
+> >> Huh. The modulo bit may need tweaking as its not immediately clear its
+> >> right. Maybe the following is clearer?:
+> >>
+> >> if ((cs_elapsed > wd_wrapping_time)
+> >>        && (abs((cs_elapsed % wd_wrapping_time)-wd_elapsed) < MAX_DELTA)
+> >>        // should be ok.
+> >
+> > I think this is wrong if wd_elapsed is large (which could happen if
+> > the real wd time is something like (2 * wd_wrapping_time -
+> > MAX_DELTA/4)).
+> 
+> Also wrong if cs_elapsed is just slightly less than wd_wrapping_time
+> but the wd clocksource runs enough faster that it wrapped.
 
-Looking at this, I have a problem with the way this works.
-You are still doing this the hard and racy way.
+Ok. Good point, that's a problem. Hrmmmm. Too much math for Friday. :)
 
-sysfs attributes that are only added when we initialize the hardware and
-are only removed when we remove the driver should use the device layer
-functions to create their attributes.
+And your implementation above hits the same issue..  hrm.
 
-This achieves two things.  The code is easier to write because there
-is less of it.
-The notification to user space happens after the attributes appear so
-that you don't
-have strange hotplug races.
+I want to say we can get away with it using the same twos-complement
+masking trick we use for subtracting around an overflow to calculate
+cycle deltas, but I'm not confident it will work when we've moved from
+clean bit field masks to nanosecond intervals.
 
-If there a chance you can look at implementing this in the simpler
-race free way?
+I think I'll have to revisit this on Monday.
 
-Eric
+Thanks again for pointing out this think-o.
+-john
 
 
->
-> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
-> ---
->  drivers/hid/hid-roccat-kone.c |   53 ++++++++++++----------------------------
->  1 files changed, 16 insertions(+), 37 deletions(-)
->
-> diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
-> index f776957..43f1693 100644
-> --- a/drivers/hid/hid-roccat-kone.c
-> +++ b/drivers/hid/hid-roccat-kone.c
-> @@ -710,6 +710,20 @@ static struct bin_attribute kone_profile5_attr = {
->        .write = kone_sysfs_write_profile5
->  };
->
-> +static struct attribute *kone_bin_attributes[] = {
-> +       &kone_settings_attr.attr,
-> +       &kone_profile1_attr.attr,
-> +       &kone_profile2_attr.attr,
-> +       &kone_profile3_attr.attr,
-> +       &kone_profile4_attr.attr,
-> +       &kone_profile5_attr.attr,
-> +       NULL
-> +};
-> +
-> +static struct attribute_group kone_bin_attribute_group = {
-> +       .attrs = kone_bin_attributes
-> +};
-> +
->  static int kone_create_sysfs_attributes(struct usb_interface *intf)
->  {
->        int retval;
-> @@ -718,42 +732,12 @@ static int kone_create_sysfs_attributes(struct usb_interface *intf)
->        if (retval)
->                goto exit_1;
->
-> -       retval = sysfs_create_bin_file(&intf->dev.kobj, &kone_settings_attr);
-> +       retval = sysfs_create_bin_group(&intf->dev.kobj, &kone_bin_attribute_group);
->        if (retval)
->                goto exit_2;
->
-> -       retval = sysfs_create_bin_file(&intf->dev.kobj, &kone_profile1_attr);
-> -       if (retval)
-> -               goto exit_3;
-> -
-> -       retval = sysfs_create_bin_file(&intf->dev.kobj, &kone_profile2_attr);
-> -       if (retval)
-> -               goto exit_4;
-> -
-> -       retval = sysfs_create_bin_file(&intf->dev.kobj, &kone_profile3_attr);
-> -       if (retval)
-> -               goto exit_5;
-> -
-> -       retval = sysfs_create_bin_file(&intf->dev.kobj, &kone_profile4_attr);
-> -       if (retval)
-> -               goto exit_6;
-> -
-> -       retval = sysfs_create_bin_file(&intf->dev.kobj, &kone_profile5_attr);
-> -       if (retval)
-> -               goto exit_7;
-> -
->        return 0;
->
-> -exit_7:
-> -       sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile4_attr);
-> -exit_6:
-> -       sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile3_attr);
-> -exit_5:
-> -       sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile2_attr);
-> -exit_4:
-> -       sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile1_attr);
-> -exit_3:
-> -       sysfs_remove_bin_file(&intf->dev.kobj, &kone_settings_attr);
->  exit_2:
->        sysfs_remove_group(&intf->dev.kobj, &kone_attribute_group);
->  exit_1:
-> @@ -762,12 +746,7 @@ exit_1:
->
->  static void kone_remove_sysfs_attributes(struct usb_interface *intf)
->  {
-> -       sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile5_attr);
-> -       sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile4_attr);
-> -       sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile3_attr);
-> -       sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile2_attr);
-> -       sysfs_remove_bin_file(&intf->dev.kobj, &kone_profile1_attr);
-> -       sysfs_remove_bin_file(&intf->dev.kobj, &kone_settings_attr);
-> +       sysfs_remove_group(&intf->dev.kobj, &kone_bin_attribute_group);
->        sysfs_remove_group(&intf->dev.kobj, &kone_attribute_group);
->  }
->
-> --
-> 1.7.2.3
->
->
->
->
+
+
+
+
+
