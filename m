@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab0KMR0T (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 12:26:19 -0500
-Received: from mail.perches.com ([173.55.12.10]:1078 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755720Ab0KMR0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 12:26:18 -0500
-Subject: [PATCH] Fix dmesg_restrict build failure with CONFIG_EMBEDDED=y
- and CONFIG_PRINTK=n
-From: Joe Perches <joe@perches.com>
-To: Dan Rosenberg <drosenberg@vsecurity.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Eugene Teo <eugeneteo@kernel.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 13 Nov 2010 09:26:16 -0800
-Message-ID: <1289669176.16461.12.camel@Joe-Laptop>
+	id S1756790Ab0KMRoA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 12:44:00 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35022 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754268Ab0KMRn6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 12:43:58 -0500
+Date: Sat, 13 Nov 2010 17:42:40 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <gregkh@suse.de>
+Cc: Alexey Zaytsev <alexey.zaytsev@gmail.com>, linux-kernel@vger.kernel.org,
+        Lawrence Rust <lvr@softsystem.co.uk>
+Subject: Re: [PATCH 11/19] 8250: Fix tcsetattr to avoid ioctl(TIOCMIWAIT)
+ hang
+Message-ID: <20101113174240.2bfb79dd@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101113144954.GA29977@suse.de>
+References: <20101112213215.GB9294@kroah.com>
+	<1289598066-10112-11-git-send-email-gregkh@suse.de>
+	<AANLkTi=OrD-icAD7Nv5oDrVBekEFMGRSoApWytWgnDbT@mail.gmail.com>
+	<20101113144954.GA29977@suse.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-dmesg_restrict is guarded by #ifdef CONFIG_PRINTK in kernel.h
-Its uses need to be guarded as well.
+> Lawrence, any ideas?  If not, I'm going to have to revert this patch
+> from the tree.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- kernel/sysctl.c      |    2 +-
- security/commoncap.c |    2 ++
- 2 files changed, 3 insertions(+), 1 deletions(-)
+Peering into the waitqueues like that isn't going to work.
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index b65bf63..5abfa15 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -702,7 +702,6 @@ static struct ctl_table kern_table[] = {
- 		.extra1		= &zero,
- 		.extra2		= &ten_thousand,
- 	},
--#endif
- 	{
- 		.procname	= "dmesg_restrict",
- 		.data		= &dmesg_restrict,
-@@ -712,6 +711,7 @@ static struct ctl_table kern_table[] = {
- 		.extra1		= &zero,
- 		.extra2		= &one,
- 	},
-+#endif
- 	{
- 		.procname	= "ngroups_max",
- 		.data		= &ngroups_max,
-diff --git a/security/commoncap.c b/security/commoncap.c
-index 04b80f9..29f2368 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -895,8 +895,10 @@ int cap_syslog(int type, bool from_file)
- {
- 	if (type != SYSLOG_ACTION_OPEN && from_file)
- 		return 0;
-+#ifdef CONFIG_PRINTK
- 	if (dmesg_restrict && !capable(CAP_SYS_ADMIN))
- 		return -EPERM;
-+#endif
- 	if ((type != SYSLOG_ACTION_READ_ALL &&
- 	     type != SYSLOG_ACTION_SIZE_BUFFER) && !capable(CAP_SYS_ADMIN))
- 		return -EPERM;
+I'd suggest simply keeping a proper count (locked) of the number of
+people sitting in TIOCMIWAIT, and probably do it in serial_core (because
+the bug doesn't look 8250 specific)
 
-
+Alan
