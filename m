@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab0KMXJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 18:09:27 -0500
-Received: from qmta06.westchester.pa.mail.comcast.net ([76.96.62.56]:49174
-	"EHLO qmta06.westchester.pa.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752368Ab0KMXJ0 (ORCPT
+	id S1755604Ab0KMXSL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 18:18:11 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42864 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab0KMXSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 18:09:26 -0500
-X-Greylist: delayed 351 seconds by postgrey-1.27 at vger.kernel.org; Sat, 13 Nov 2010 18:09:26 EST
-Message-ID: <4CDF1945.8090101@tilera.com>
-Date: Sat, 13 Nov 2010 18:03:33 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Sat, 13 Nov 2010 18:18:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=dMsJw7IFIpqWXS9ELX7yz+fxd+IEK3yMywwQd6VYivGYs9g3U4N8Ivk4DdKSbwx7Af
+         rZM0mdjQJwYnS10KrtNgUGAIYpLc5hzOO6JMybEKz2lRMn8ng260joLs5Kk398ZQ8yly
+         ENNnRmrwpLVxJNT7XDCY/Q4JLiOkZ5zmZSgJU=
 MIME-Version: 1.0
-Newsgroups: linux-kernel
-To: =?UTF-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>
-CC: Cypher Wu <cypher.w@gmail.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Subject: Re: Kernel rwlock design, Multicore and IGMP
-References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com> <1289489007.17691.1310.camel@edumazet-laptop> <AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com> <ZXmP8hjgLHA.4648@exchange1.tad.internal.tilera.com>
-In-Reply-To: <ZXmP8hjgLHA.4648@exchange1.tad.internal.tilera.com>
-X-Enigmail-Version: 1.1.1
+In-Reply-To: <4CC9E8C7.60306@suse.cz>
+References: <20100831083844.043619334@linux.vnet.ibm.com> <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com>
+ <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com>
+ <20101019110801.GA4128@linux.vnet.ibm.com> <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com>
+ <20101019213112.GA11432@merkur.ravnborg.org> <AANLkTike6UQVWKSz-Njs5Rps690EHeResH3V+aSM+qdO@mail.gmail.com>
+ <AANLkTimn8R-qde8FH_cNa4JPcR2F=mkUAQhPVT-hOBhn@mail.gmail.com>
+ <4CC8ABC7.5030003@suse.cz> <20101028203542.GA30879@merkur.ravnborg.org> <4CC9E8C7.60306@suse.cz>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Sat, 13 Nov 2010 18:17:44 -0500
+Message-ID: <AANLkTinfsjy9GzDg1eHx+mFc4VabCZ2jk85JodFqRnEE@mail.gmail.com>
+Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
+To: Michal Marek <mmarek@suse.cz>
+Cc: Sam Ravnborg <sam@ravnborg.org>,
+        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
+        vda.linux@googlemail.com, hpa@linux.intel.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2010 2:13 AM, Américo Wang wrote:
-> On Fri, Nov 12, 2010 at 11:32:59AM +0800, Cypher Wu wrote:
->> On Thu, Nov 11, 2010 at 11:23 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->>> Le jeudi 11 novembre 2010 à 21:49 +0800, Cypher Wu a écrit :
->>>> I'm using TILEPro and its rwlock in kernel is a liitle different than
->>>> other platforms. It have a priority for write lock that when tried it
->>>> will block the following read lock even if read lock is hold by
->>>> others. Its code can be read in Linux Kernel 2.6.36 in
->>>> arch/tile/lib/spinlock_32.c.
+On Thu, Oct 28, 2010 at 17:19, Michal Marek wrote:
+> On 28.10.2010 22:35, Sam Ravnborg wrote:
+>> On Thu, Oct 28, 2010 at 12:46:31AM +0200, Michal Marek wrote:
+>>> On 27.10.2010 20:23, Mike Frysinger wrote:
+>>>> can we get this change dropped from linux-next until someone gets a
+>>>> chance to fix it ?
 >>>
->>> This seems a bug to me.
->>> [...]
->>>
->> It seems not a problem that read_lock() can be nested or not since
->> rwlock doesn't have 'owner', it's just that should we give
->> write_lock() a priority than read_lock() since if there have a lot
->> read_lock()s then they'll starve write_lock().
->> We should work out a well defined behavior so all the
->> platform-dependent raw_rwlock has to design under that principle.
-> 
-> It is a known weakness of rwlock, it is designed like that. :)
+>>> Sorry I missed this thread. So your last patch
+>>> (http://lkml.org/lkml/2010/10/19/488) did fix the Blackfin build
+>>> failure? Can you submit it with a proper Signed-off-by and changelog?
+>>
+>> Did you see the patch I posted in: http://lkml.org/lkml/2010/10/19/534
+>>
+>> The one that fix up the cppflags usage.
+>>
+>> I think this will solve the issue with blackfin nicely - and
+>> make use of cppflags more as expected.
+>
+> As Mike noted - your patch does not strip the double quotes. And Mike's
+> patch is really minimal, it just adds the SYMBOL_PREFIX definition to
+> _a_flags. I'll look at your patch after this merge window.
 
-Exactly.  The tile rwlock correctly allows recursively reacquiring the read
-lock.  But it does give priority to writers, for the (unfortunately
-incorrect) reasons Cypher Wu outlined above, e.g.:
-
-- Core A takes a read lock
-- Core B tries for a write lock and blocks new read locks
-- Core A tries for a (recursive) read lock and blocks
-
-Core A and B are now deadlocked.
-
-The solution is actually to simplify the tile rwlock implementation so that
-both readers and writers contend fairly for the lock.
-
-I'll post a patch in the next day or two for tile.
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+why am i seeing __initramfs_size failures in mainline now ?
+-mike
