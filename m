@@ -1,132 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab0KMHi0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 02:38:26 -0500
-Received: from mga14.intel.com ([143.182.124.37]:54488 "EHLO mga14.intel.com"
+	id S1755366Ab0KMHpY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 02:45:24 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:33734 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753837Ab0KMHiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 02:38:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,191,1288594800"; 
-   d="scan'208";a="348236826"
-Date: Sat, 13 Nov 2010 14:17:21 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: linux-kernel@vger.kernel.org
-Subject: [v2,8/8] NUMA Hotplug emulator
-Message-ID: <20101113061721.GR32501@shaohui>
-Mail-Followup-To: linux-kernel@vger.kernel.org
+	id S1754623Ab0KMHpX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 02:45:23 -0500
+From: "Savoy, Pavan" <pavan_savoy@ti.com>
+To: Vitaly Wool <vitalywool@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 13 Nov 2010 13:12:34 +0530
+Subject: RE: shared transport: only for TI chips?
+Thread-Topic: shared transport: only for TI chips?
+Thread-Index: AcuCppN+uAWuQiuIQIascPpFiByFfQAX8KyV
+Message-ID: <19F8576C6E063C45BE387C64729E739404A9F4CF11@dbde02.ent.ti.com>
+References: <AANLkTikLJyr6PREZX-OwOBwMK8uTC2YEu-KHHy0MYFJJ@mail.gmail.com>
+In-Reply-To: <AANLkTikLJyr6PREZX-OwOBwMK8uTC2YEu-KHHy0MYFJJ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+certainly Vitaly.
+I would welcome any ideas which can make it more generic, provided there is no drastic change in the way we do stuff currently (as in say firmware download from kernel space, LL handling etc..).
 
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-Subject: Doc/x86_64: documentation of NUMA hotplug emulator
+I did see similar code for on such MFD device from ST-ericsson for a similar BT, FM GPS based device and wanted to somehow make work TI-ST work for it, unfortunately didn't hear encouraging words from developers from that driver.
 
-add a text file Documentation/x86/x86_64/numa_hotplug_emulator.txt
-to explain the usage for the hotplug emulator.
+So, yes, I welcome ideas and let's see how best we can implement them... shoot them away...
 
-Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
-Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
----
-diff --git a/Documentation/x86/x86_64/numa_hotplug_emulator.txt b/Documentation/x86/x86_64/numa_hotplug_emulator.txt
-new file mode 100644
-index 0000000..c6bdb2c
---- /dev/null
-+++ b/Documentation/x86/x86_64/numa_hotplug_emulator.txt
-@@ -0,0 +1,87 @@
-+NUMA Hotplug Emulator for x86
-+---------------------------------------------------
-+
-+NUMA hotplug emulator is able to emulate NUMA Node Hotplug
-+thru a pure software way. It intends to help people easily debug
-+and test node/cpu/memory hotplug related stuff on a
-+none-numa-hotplug-support machine, even a UMA machine and virtual
-+environment.
-+
-+1) Node hotplug emulation:
-+
-+The emulator firstly hides RAM via E820 table, and then it can
-+fake offlined nodes with the hidden RAM.
-+
-+After system bootup, user is able to hotplug-add these offlined
-+nodes, which is just similar to a real hotplug hardware behavior.
-+
-+Using boot option "numa=hide=N*size" to fake offlined nodes:
-+	- N is the number of hidden nodes
-+	- size is the memory size (in MB) per hidden node.
-+
-+There is a sysfs entry "probe" under /sys/devices/system/node/ for user
-+to hotplug the fake offlined nodes:
-+
-+ - to show all fake offlined nodes:
-+    $ cat /sys/devices/system/node/probe
-+
-+ - to hotadd a fake offlined node, e.g. nodeid is N:
-+    $ echo N > /sys/devices/system/node/probe
-+
-+2) CPU hotplug emulation:
-+
-+The emulator reserve CPUs throu grub parameter, the reserved CPUs can be
-+hot-add/hot-remove in software method, it emulates the procuess of physical
-+cpu hotplug.
-+
-+ - to hide CPUs
-+	- Using boot option "maxcpus=N" hide CPUs
-+	  N is the number of initialize CPUs
-+	- Using boot option "cpu_hpe=on" to enable cpu hotplug emulation
-+      when cpu_hpe is enabled, the rest CPUs will not be initialized
-+
-+ - to hot-add CPU to node
-+	$ echo nid > cpu/probe
-+
-+ - to hot-remove CPU
-+	$ echo nid > cpu/release
-+
-+3) Memory hotplug emulation:
-+
-+The emulator reserve memory before OS booting, the reserved memory region
-+is remove from e820 table, and they can be hot-added via the probe interface,
-+this interface was extend to support add memory to the specified node, It
-+maintains backwards compatibility.
-+
-+The difficulty of Memory Release is well-known, we have no plan for it until now.
-+
-+ - reserve memory throu grub parameter
-+ 	mem=1024m
-+
-+ - add a memory section to node 3
-+    $ echo 0x40000000,3 > memory/probe
-+	OR
-+    $ echo 1024m,3 > memory/probe
-+	OR
-+    $ echo "physical_address=0x40000000 numa_node=3" > memory/probe
-+
-+4) Script for hotplug testing
-+
-+These scripts provides convenience when we hot-add memory/cpu in batch.
-+
-+- Online all pages:
-+for m in /sys/devices/system/memory/memory*;
-+do
-+	echo online > $m/state;
-+done
-+
-+- CPU Online:
-+for c in /sys/devices/system/cpu/cpu*;
-+do
-+	echo 1 > $c/online;
-+done
-+
-+- Haicheng Li <haicheng.li@linux.intel.com>
-+- Shaohui Zheng <shaohui.zheng@intel.com>
-+  May 2010
-+
-
--- 
+----------------------
 Thanks & Regards,
-Shaohui
+Pavan Savoy | x0099669
+________________________________________
+From: Vitaly Wool [vitalywool@gmail.com]
+Sent: Saturday, November 13, 2010 1:47 AM
+To: Savoy, Pavan
+Cc: LKML
+Subject: shared transport: only for TI chips?
+
+Hi Pavan,
+
+I've been looking closely at the shared transport implementation to
+figure out how applicable it is for similar solutions from other
+vendors. My current impression is, this the applicability is very
+poor.
+For instance, you define the firmware name by querying the chip in a
+specific manner. Also, your implementation presumes the chip
+implements LL protocol for Bluetooth power saving which might not at
+all be the case for other vendors' chips. That's kind of okay as long
+as you don't care about power saving; but if you have to support some
+other power saving protocol, you're screwed -- there's no such
+opportunity in the current ST core.
+
+So the question is, are you at all interested in making the core
+generic? I'm ready to come up with some ideas on that if the answer is
+positive :)
+
+And if not, we need to consider bringing in something more generic as
+there already are several vendors that use Bluetooth for command
+encapsulation on similar multi-functional chips.
+
+Thanks,
+   Vitaly
