@@ -1,145 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab0KMKHg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 05:07:36 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:62460 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab0KMKHd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 05:07:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=MSWiaAEpL0WwWfRne3C6vQ+DntJG7RRT+fJgpDs2DYYAWlQZuM+p4/dys8zxEAKLIC
-         WuBKBKfg2m5RldhxpiTxuO+GwDcqanXkyS0ur2F2oCASajfuGsmttRHaN8+yAPLUD6G9
-         l0Mv74Ob4Tr62uDerp1PGTc2KcFeqegbfoeyw=
-Date: Sat, 13 Nov 2010 13:07:18 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch 2/2] fbcmap: integer overflow bug
-Message-ID: <20101113100718.GB1795@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-References: <20101027093716.GD6062@bicker>
- <20101105134018.2c11f283.akpm@linux-foundation.org>
+	id S1755849Ab0KMKJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 05:09:58 -0500
+Received: from hera.kernel.org ([140.211.167.34]:42722 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754191Ab0KMKJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 05:09:55 -0500
+Message-ID: <4CDE63D3.4010608@kernel.org>
+Date: Sat, 13 Nov 2010 11:09:23 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101105134018.2c11f283.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: akataria@vmware.com
+CC: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Petr Vandrovec <petr@vmware.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: (mem hotplug, pcpu_alloc) BUG: sleeping function called from
+ invalid context at kernel/mutex.c:94
+References: <1289588178.7486.15.camel@ank32.eng.vmware.com>
+In-Reply-To: <1289588178.7486.15.camel@ank32.eng.vmware.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 13 Nov 2010 10:09:28 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is an integer overflow in fb_set_user_cmap() because cmap->len * 2
-can wrap.  It's basically harmless.  Your terminal will be messed up
-until you type reset.
+Hello,
 
-This patch does three things to fix the bug.
+On 11/12/2010 07:56 PM, Alok Kataria wrote:
+> We have seen following might_sleep warning while hot adding memory...
+> 
+> [  142.339267] BUG: sleeping function called from invalid context at kernel/mutex.c:94
+> [  142.339276] in_atomic(): 0, irqs_disabled(): 1, pid: 4, name: migration/0
+> [  142.339283] Pid: 4, comm: migration/0 Not tainted 2.6.35.6-45.fc14.x86_64 #1
+> [  142.339288] Call Trace:
+> [  142.339305]  [<ffffffff8103d12b>] __might_sleep+0xeb/0xf0
+> [  142.339316]  [<ffffffff81468245>] mutex_lock+0x24/0x50
+> [  142.339326]  [<ffffffff8110eaa6>] pcpu_alloc+0x6d/0x7ee
+> [  142.339336]  [<ffffffff81048888>] ? load_balance+0xbe/0x60e
+> [  142.339343]  [<ffffffff8103a1b3>] ? rt_se_boosted+0x21/0x2f
+> [  142.339349]  [<ffffffff8103e1cf>] ? dequeue_rt_stack+0x18b/0x1ed
+> [  142.339356]  [<ffffffff8110f237>] __alloc_percpu+0x10/0x12
+> [  142.339362]  [<ffffffff81465e22>] setup_zone_pageset+0x38/0xbe
+> [  142.339373]  [<ffffffff810d6d81>] ? build_zonelists_node.clone.58+0x79/0x8c
+> [  142.339384]  [<ffffffff81452539>] __build_all_zonelists+0x419/0x46c
+> [  142.339395]  [<ffffffff8108ef01>] ? cpu_stopper_thread+0xb2/0x198
+> [  142.339401]  [<ffffffff8108f075>] stop_machine_cpu_stop+0x8e/0xc5
+> [  142.339407]  [<ffffffff8108efe7>] ? stop_machine_cpu_stop+0x0/0xc5
+> [  142.339414]  [<ffffffff8108ef57>] cpu_stopper_thread+0x108/0x198
+> [  142.339420]  [<ffffffff81467a37>] ? schedule+0x5b2/0x5cc
+> [  142.339426]  [<ffffffff8108ee4f>] ? cpu_stopper_thread+0x0/0x198
+> [  142.339434]  [<ffffffff81065f29>] kthread+0x7f/0x87
+> [  142.339443]  [<ffffffff8100aae4>] kernel_thread_helper+0x4/0x10
+> [  142.339449]  [<ffffffff81065eaa>] ? kthread+0x0/0x87
+> [  142.339455]  [<ffffffff8100aae0>] ? kernel_thread_helper+0x0/0x10
+> [  142.340099] Built 5 zonelists in Node order, mobility grouping on.  Total pages: 289456
+> [  142.340108] Policy zone: Normal
+> 
+> 
+> This warning was seen on the FC14 kernel, though looking at the current
+> git, the problem seems to exist on mainline too.
+> The problem is that pcpu_alloc expects that it is called from non-atomic
+> context as a result it grabs the pcpu_alloc_mutex. 
+> In the memory-hotplug case though, we do end up calling pcpu_alloc from
+> atomic context, while all cpus are stopped.
+> 
+> void build_all_zonelists(void *data)
+> {
+>    set_zonelist_order();
+> 
+>    if (system_state == SYSTEM_BOOTING) {
+>       __build_all_zonelists(NULL);
+>       mminit_verify_zonelist();
+>       cpuset_init_current_mems_allowed();
+>    } else {
+>       /* we have to stop all cpus to guarantee there is no user
+>          of zonelist */
+>       stop_machine(__build_all_zonelists, data, NULL);   <=========
+>       /* cpuset refresh routine should be here */
+>    }
+> 
+> __build_all_zonelists eventually calls pcpu_alloc. 
+> 
+> I didn't dive through the history, so am not sure when was this
+> regression introduced, but could have regressed with the new pcpu memory
+> allocator.
 
-First, it checks the return value of fb_copy_cmap() in fb_alloc_cmap().
-That is enough to fix address the overflow.
+Meh... the percpu allocator required user context from the beginning.
+The new allocator didn't change that.
 
-Second it checks for the integer overflow in fb_set_user_cmap().
+Wouldn't it be possible to prepare hotplug outside of cpu_stop and use
+stop_machine() only to make it available to the system.  In general,
+it's a very bad idea to allocate memory from inside stop_machine.  The
+whole machine is stopped, after all.  In general, it shouldn't be too
+difficult to add new resource without stop_machine too unlike removing
+one.  Pekka, Christoph, any ideas?
 
-Lastly I wanted to cap "cmap->len" in fb_set_user_cmap() much lower
-because it gets used to determine the size of allocation.  Unfortunately
-no one knows what the limit should be.  Instead what this patch does
-is makes the allocation happen with GFP_KERNEL instead of GFP_ATOMIC
-and lets the kmalloc() decide what values of cmap->len are reasonable.
-To do this, the patch introduces a function called fb_alloc_cmap_gfp()
-which is like fb_alloc_cmap() except that it takes a GFP flag.
+Thanks.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-
-diff --git a/include/linux/fb.h b/include/linux/fb.h
-index 7fca3dc..d1631d3 100644
---- a/include/linux/fb.h
-+++ b/include/linux/fb.h
-@@ -1122,6 +1122,7 @@ extern const struct fb_videomode *fb_find_best_display(const struct fb_monspecs
- 
- /* drivers/video/fbcmap.c */
- extern int fb_alloc_cmap(struct fb_cmap *cmap, int len, int transp);
-+extern int fb_alloc_cmap_gfp(struct fb_cmap *cmap, int len, int transp, gfp_t flags);
- extern void fb_dealloc_cmap(struct fb_cmap *cmap);
- extern int fb_copy_cmap(const struct fb_cmap *from, struct fb_cmap *to);
- extern int fb_cmap_to_user(const struct fb_cmap *from, struct fb_cmap_user *to);
-diff --git a/drivers/video/fbcmap.c b/drivers/video/fbcmap.c
-index a79b976..e6a01bf 100644
---- a/drivers/video/fbcmap.c
-+++ b/drivers/video/fbcmap.c
-@@ -88,26 +88,27 @@ static const struct fb_cmap default_16_colors = {
-  *
-  */
- 
--int fb_alloc_cmap(struct fb_cmap *cmap, int len, int transp)
-+int fb_alloc_cmap_gfp(struct fb_cmap *cmap, int len, int transp, gfp_t flags)
- {
- 	int size = len * sizeof(u16);
-+	int ret = -ENOMEM;
- 
- 	if (cmap->len != len) {
- 		fb_dealloc_cmap(cmap);
- 		if (!len)
- 			return 0;
- 
--		cmap->red = kmalloc(size, GFP_ATOMIC);
-+		cmap->red = kmalloc(size, flags);
- 		if (!cmap->red)
- 			goto fail;
--		cmap->green = kmalloc(size, GFP_ATOMIC);
-+		cmap->green = kmalloc(size, flags);
- 		if (!cmap->green)
- 			goto fail;
--		cmap->blue = kmalloc(size, GFP_ATOMIC);
-+		cmap->blue = kmalloc(size, flags);
- 		if (!cmap->blue)
- 			goto fail;
- 		if (transp) {
--			cmap->transp = kmalloc(size, GFP_ATOMIC);
-+			cmap->transp = kmalloc(size, flags);
- 			if (!cmap->transp)
- 				goto fail;
- 		} else {
-@@ -116,12 +117,19 @@ int fb_alloc_cmap(struct fb_cmap *cmap, int len, int transp)
- 	}
- 	cmap->start = 0;
- 	cmap->len = len;
--	fb_copy_cmap(fb_default_cmap(len), cmap);
-+	ret = fb_copy_cmap(fb_default_cmap(len), cmap);
-+	if (ret)
-+		goto fail;
- 	return 0;
- 
- fail:
- 	fb_dealloc_cmap(cmap);
--	return -ENOMEM;
-+	return ret;
-+}
-+
-+int fb_alloc_cmap(struct fb_cmap *cmap, int len, int transp)
-+{
-+	return fb_alloc_cmap_gfp(cmap, len, transp, GFP_ATOMIC);
- }
- 
- /**
-@@ -256,8 +264,12 @@ int fb_set_user_cmap(struct fb_cmap_user *cmap, struct fb_info *info)
- 	int rc, size = cmap->len * sizeof(u16);
- 	struct fb_cmap umap;
- 
-+	if (cmap->len * 2 > INT_MAX)
-+		return -EINVAL;
-+
- 	memset(&umap, 0, sizeof(struct fb_cmap));
--	rc = fb_alloc_cmap(&umap, cmap->len, cmap->transp != NULL);
-+	rc = fb_alloc_cmap_gfp(&umap, cmap->len, cmap->transp != NULL,
-+				GFP_KERNEL);
- 	if (rc)
- 		return rc;
- 	if (copy_from_user(umap.red, cmap->red, size) ||
+-- 
+tejun
