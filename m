@@ -1,79 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933271Ab0KMBCN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 20:02:13 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:57829 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933225Ab0KMBCM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 20:02:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=RzYapur25w9XDv6EErR5hyaYG9x3/7UaWuiGZu5ZXPWiV9plVVK4ujHuQD2fkDe/a9
-         cyGa4hPeh/Z2D72N9oIg==
+	id S1753148Ab0KMBnB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 20:43:01 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51543 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751540Ab0KMBm7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 20:42:59 -0500
 MIME-Version: 1.0
-In-Reply-To: <1289559198.2084.214.camel@laptop>
-References: <20101112032405.657789056@google.com> <20101112032702.028843817@google.com>
- <1289559198.2084.214.camel@laptop>
-From: Paul Turner <pjt@google.com>
-Date: Fri, 12 Nov 2010 17:01:37 -0800
-Message-ID: <AANLkTi=vUs7f3bYE-0OM7fARzbNTbGEU4bDd1pcDoOq-@mail.gmail.com>
-Subject: Re: [tg_shares_up rewrite v3 09/11] sched: demand based update_cfs_load()
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Chris Friesen <cfriesen@nortel.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Pierre Bourdon <pbourdon@excellency.fr>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        David Miller <davem@davemloft.net>
+In-Reply-To: <1289606118.3015.539.camel@mulgrave.site>
+References: <1289606118.3015.539.camel@mulgrave.site>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 12 Nov 2010 17:42:06 -0800
+Message-ID: <AANLkTinj2BM2eGo2yyfzs=t+nu79WLW_bGYota9sDZwH@mail.gmail.com>
+Subject: Re: [GIT PULL] SCSI queuecommand API change for 2.6.37-rc1
+To: James Bottomley <James.Bottomley@suse.de>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Jeff Garzik <jeff@garzik.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 2:53 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Thu, 2010-11-11 at 19:24 -0800, Paul Turner wrote:
->> +#ifdef CONFIG_FAIR_GROUP_SCHED
->> +       cfs_rq->load_unacc_exec_time += delta_exec;
->> +       if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window)
->> {
->> +               update_cfs_load(cfs_rq);
->> +               update_cfs_shares(cfs_rq, 0);
+On Fri, Nov 12, 2010 at 3:55 PM, James Bottomley
+<James.Bottomley@suse.de> wrote:
 >
-> Why not:
-> +               cfs_rq->load_unacc_exec_time -= sysctl_sched_shares_window;
->
-> (although you probably want to read the sysctl value into a local
-> variable using ACCESS_ONCE() and use that for both cases).
->
+> This patch set contains a single patch modifying the SCSI queuecommand
+> host template API to go from being called with the host lock held to
+> being called locklessly.  The transformation is a directly equivalent
+> one (i.e. the locking is simply pushed into each HBA) but will form the
+> basis for optimising locking in the driver patch for the next merge
+> window.
 
-I think this is hard to do in a clean fashion (without a strange arg
-to update_cfs_load).
+Ok, so we talked about this patch at the KS, but I never saw it.
 
-I'm also not sure it's worth synchronizing on a shares_window change
-since, when we trigger an update from update_curr() is independent of
-folding that time into the load average anyway.
-(Note even: using sysctl_sched_shares_window is already a larger
-window than update_cfs_load will normally fold at since we fold at
-window/2 after the initial period, it just sets a grace period on
-computation without updates in the busy case.)
+And now seeing it, I do detest it.
 
->> +       }
->> +#endif
->>  }
->>
->>  static void update_curr(struct cfs_rq *cfs_rq)
->> @@ -713,6 +724,7 @@ static void update_cfs_load(struct cfs_r
->>         }
->>
->>         cfs_rq->load_stamp = now;
->> +       cfs_rq->load_unacc_exec_time = 0;
->
-> and drop this one?
->
+Why? Because if some driver gets missed for any reason (notably if
+it's currently out of tree, and gets merged later), afaik there will
+be ABSOLUTELY ZERO compiler warnings or anything about it, because you
+kept the "queuecommand" function exactly the same. Whether it's a
+locked or non-locked one, it always is of type
+
+    int func(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *));
+
+so there is no inherent type safety. Nothing will ever notice. Not the
+compiler, and probably not the user either, since a missed lock with
+probably work in many cases.
+
+So it's a flag-day change, but it's a flag-day change which makes it
+_really_ easy to miss the fact that a big change had actually
+happened.
+
+And the sad thing is that this could _trivially_ have been fixed while
+actually making the patch no bigger. Make the new function look like
+
+   int func(struct Scsi_Host *shost, struct scsi_cmnd *cmd, void
+(*done)(struct scsi_cmnd *));
+
+instead, and that would have made the "DEF_SCSI_QCMD()" macro simpler
+and cleaner, it would likely make the code better (since the caller
+really already always has the 'shost' right there, so looking it up
+agan in cmd->device->shost is just extra work), _and_ it would mean
+that if some driver didn't get converted, the compiler would
+automatically have noticed.
+
+And the patch would look 100% the same, except for these three small
+one-liner changes:
+ - the additional one-liner change to the 'queuecommand' function
+pointer description itself
+ - the one-liner change to the actual call-site (which would now not
+just drop the lock, it would pass in the extra argument)
+ - DEF_SCSI_QCMD() would drop the "struct Scsi_Host *shost = .." line,
+and instead just take the new argument
+
+It wouldn't change the patch wrt any of the low-level drivers at all.
+But it would add so much inherent safety against mistakes.
+
+It would _also_ make it much clearer when each driver is then starting
+to remove that use of the wrapper function. When you remove the
+wrapper function, you'd probably remove the "_lck" thing at the end of
+the name, but you'd also change the prototype. It would be a very
+clear visual clue whether this was a properly converted driver, or
+whether this was a driver that had never seen the whole locking change
+at all.
+
+So please: when you change the semantics of a function, just change
+the function prototype (or function name) at the same time. Especially
+when it comes to a driver interface, so that the drivers don't get
+taken by surprise.
+
+Type safety and automatic compiler warnings really are our friends.
+Especially when the patch was presumably mostly auto-generated, and
+maybe the script missed something, and missing some conversion has
+such subtle effects.
+
+                        Linus
