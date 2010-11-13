@@ -1,146 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933280Ab0KMAnw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 19:43:52 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:49034 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291Ab0KMAnu convert rfc822-to-8bit (ORCPT
+	id S1757694Ab0KMArN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 19:47:13 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:51205 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239Ab0KMArL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 19:43:50 -0500
-Subject: Re: [RFC][PATCH 18/22] sched: add reclaiming logic to -deadline
- tasks
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
-Cc: Luca Abeni <luca.abeni@unitn.it>, Raistlin <raistlin@linux.it>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <4CDD8279.1020803@sssup.it>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288334546.8661.161.camel@Palantir>  <1289513573.2084.199.camel@laptop>
-	 <1289576177.6525.509.camel@Palantir> <1289577841.2084.302.camel@laptop>
-	 <4CDD7C65.9090400@unitn.it>  <4CDD8279.1020803@sssup.it>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 13 Nov 2010 01:43:07 +0100
-Message-ID: <1289608988.2084.501.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 12 Nov 2010 19:47:11 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-operating-system
+         :user-agent;
+        b=w8oYaKIq8vFnUnCKOQ6/vJNtTj/5+s4D9u58xMK/VOoDxjZx3LBDaccYHqU0jEzy3j
+         JxkT4/LDT6aTSWvnrjQw==
+Date: Fri, 12 Nov 2010 16:46:57 -0800
+From: Mandeep Singh Baines <msb@google.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        linux-kernel@vger.kernel.org, gspencer@chromium.org,
+        piman@chromium.org, wad@chromium.org, olofj@chromium.org,
+        Bodo Eggert <7eggert@web.de>
+Subject: [PATCH] oom: allow a non-CAP_SYS_RESOURCE proces to oom_score_adj
+ down
+Message-ID: <20101113004657.GN7363@google.com>
+References: <20101111043541.GA4588@google.com>
+ <alpine.DEB.2.00.1011102328080.7571@chino.kir.corp.google.com>
+ <20101111183050.GI7363@google.com>
+ <alpine.DEB.2.00.1011111241450.25829@chino.kir.corp.google.com>
+ <20101111222509.GJ7363@google.com>
+ <alpine.DEB.2.00.1011111511570.3775@chino.kir.corp.google.com>
+ <20101111235620.GK7363@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101111235620.GK7363@google.com>
+X-Operating-System: Linux/2.6.32-gg252-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-12 at 19:07 +0100, Tommaso Cucinotta wrote:
-> Il 12/11/2010 18:41, Luca Abeni ha scritto:
-> >
-> >> algorithm with resource reservation. It explicitly allows for deadline
-> >> misses, but requires the tardiness of those misses to be bounded, ie.
-> >> the UNC soft real-time definition.
-> >>
-> >> The problem the stochastic execution time model tries to address is the
-> >> WCET computation mess, WCET computation is hard and often overly
-> >> pessimistic, resulting in under-utilized systems.
-> >
-> > [...]
-> > BTW, sorry for the shameless plug, but even with the current 
-> > SCHED_DEADLINE you are not forced to dimension the runtime using the 
-> > WCET. You can use some stochastic analysis, providing probabilistic 
-> > deadline guarantees. See (for example) "QoS Guarantee Using 
-> > Probabilistic Deadlines"
-> > http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.22.7683&rep=rep1&type=pdf 
-> >
-> > and "Stochastic analysis of a reservation based system"
-> > http://www.computer.org/portal/web/csdl/doi?doc=doi/10.1109/IPDPS.2001.925049 
-> >
-> > (sorry, this is not easy to download... But I can provide a copy if 
-> > you are interested).
-> Thanks, Luca, for supporting the viewpoint. I also repeated this 
-> multiple times, during the LPC as well.
-> 
-> Let me underline a few key points, also about the technique suggested by 
-> Zijlstra:
-> 
-> -) the specification of a budget every period may be exploited for 
-> providing deterministic guarantees to applications, if the budget = 
-> WCET, as well as probabilistic guarantees, if the budget < WCET. For 
-> example, what we do in many of our papers is to set budget = to some 
-> percentile/quantile of the observed computation time distribution, 
-> especially in those cases in which there are isolated peaks of 
-> computation times which would cause an excessive under-utilization of 
-> the system (these are ruled out by the percentile-based allocation); I 
-> think this is a way of reasoning that can be easily understood and used 
-> by developers;
+We'd like to be able to oom_score_adj a process up/down as its
+enters/leaves the foreground. Currently, it is not possible to oom_adj
+down without CAP_SYS_RESOURCE. This patch allows a task to decrease
+its oom_score_adj back to the value that a CAP_SYS_RESOURCE thread set
+it or its inherited value at fork. Assuming the thread that has forked
+it has oom_score_adj of 0, each tab could decrease it back from 0 upon
+activation unless a CAP_SYS_RESOURCE thread elevated it to something
+higher.
 
-Maybe, but I'm clearly not one of them because I'm not getting it.
+Alternative considered:
 
-> -) setting a budget equal to (or too close to) the average computation 
-> time is *bad*, because the is almost in a meta-stable condition in which 
-> its response-time may easily grow uncontrolled;
+* a setuid binary
+* a daemon with CAP_SYS_RESOURCE
 
-How so? Didn't the paper referenced just prove that the response time
-stays bounded? 
+Since you don't wan't all processes to be able to reduce their
+oom_adj, a setuid or daemon implementation would be complex. The
+alternatives also have much higher overhead.
 
-Setting it lower will of course wreak havoc, but that's what we have
-bandwidth control for (implementing stochastic bandwidth control is a
-whole separate fun topic though -- although I've been thinking we could
-do something by lowering the max runtime every time a job overruns the
-average, and limit it at 2*avg - max, if you take a simple parametrized
-reduction function and compute the variability of th resulting series
-you can invert that and find the reduction parameter to a given
-variability).
+This patch updated based on feedback from
+David Rientjes <rientjes@google.com>.
 
-> -) same thing applies to admitting tasks in the system: if you only 
-> ensure that the sum of average/expected bandwidths < system capacity, 
-> then the whole system is at risk of having uncontrolled and arbitrarily 
-> high peak delays, but from a theoretical viewpoint it is still a 
-> "stable" system; this is not a condition you want to have in a sane 
-> real-time scenario;
+Change-Id: If8f52363fd6c156e1730f43148aee987260e9c72
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+---
+ fs/proc/base.c        |    4 +++-
+ include/linux/sched.h |    2 ++
+ 2 files changed, 5 insertions(+), 1 deletions(-)
 
-I'm not seeing where the unbounded comes from. 
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index f3d02ca..e617413 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1164,7 +1164,7 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 		goto err_task_lock;
+ 	}
+ 
+-	if (oom_score_adj < task->signal->oom_score_adj &&
++	if (oom_score_adj < task->signal->oom_score_adj_min &&
+ 			!capable(CAP_SYS_RESOURCE)) {
+ 		err = -EACCES;
+ 		goto err_sighand;
+@@ -1177,6 +1177,8 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 			atomic_dec(&task->mm->oom_disable_count);
+ 	}
+ 	task->signal->oom_score_adj = oom_score_adj;
++	if (capable(CAP_SYS_RESOURCE))
++		task->signal->oom_score_adj_min = oom_score_adj;
+ 	/*
+ 	 * Scale /proc/pid/oom_adj appropriately ensuring that OOM_DISABLE is
+ 	 * always attainable.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index f53cdf2..2a71ee0 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -626,6 +626,8 @@ struct signal_struct {
+ 
+ 	int oom_adj;		/* OOM kill score adjustment (bit shift) */
+ 	int oom_score_adj;	/* OOM kill score adjustment */
++	int oom_score_adj_min;	/* OOM kill score adjustment minimum value.
++				 * Only settable by CAP_SYS_RESOURCE. */
+ 
+ 	struct mutex cred_guard_mutex;	/* guard against foreign influences on
+ 					 * credential calculations
+-- 
+1.7.3.1
 
-I am seeing that if you place your budget request slightly higher than
-the actual average (say 1 stdev) your variability in the response time
-will decrease, but at a cost of lower utilization.
-
-> -) if you want to apply the Mills & Anderson's rule for controlling the 
-> bound on the tardiness percentiles, as in that paper (A Stochastic 
-> Framework for Multiprocessor
-> Soft Real-Time Scheduling), then I can see 2 major drawbacks:
->    a) you need to compute the "\psi" in order to use the "Corollary 10" 
-> of that paper, but that quantity needs to solve a LP optimization 
-> problem (see also the example in Section 6); the \psi can be used in Eq. 
-> (36) in order to compute the *expected tardiness*;
-
-Right, but do we ever actually want to compute the bound? G-EDF also
-incurs tardiness but we don't calculate it either. Both depend on the
-full task set parameters which is not stable (nor accessible to
-user-space in a meaningful manner).
-
-> Please, understand me: I don't want to say that that particular 
-> technique is not useful, but I'd like simply to stress that such 
-> policies might just belong to the user-space. If you really want, you 
-> can disable *any* type of admission control at the kernel-level, and you 
-> can disable *any* kind of budget enforcement, and just trust the 
-> user-space to have deployed the proper/correct number & type of tasks 
-> into your embedded RT platform.
-
-I'm very much against disabling everything and letting the user sort it,
-that's basically what SCHED_FIFO does too and its a frigging nightmare.
-
-The whole admission control and schedulability test is what makes this
-thing usable. People who build closed systems can already hack their
-kernel and do as they please, but for anything other than a closed
-system this approach is useless.
