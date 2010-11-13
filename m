@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754874Ab0KMOsL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 09:48:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59249 "EHLO mx2.suse.de"
+	id S1755199Ab0KMOsN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 09:48:13 -0500
+Received: from kroah.org ([198.145.64.141]:55869 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753976Ab0KMOsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 09:48:07 -0500
-Date: Sat, 13 Nov 2010 06:39:08 -0800
-From: Greg KH <gregkh@suse.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Eric Biederman <ebiederm@aristanetworks.com>,
-        Stefan Achatz <stefan_achatz@web.de>,
-        "Serge E. Hallyn" <serue@us.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Benjamin Thery <benjamin.thery@bull.net>
-Subject: Re: [PATCH 2/2] HID: roccat: using new sysfs_create_bin_group() in
-	kone driver
-Message-ID: <20101113143908.GA29750@suse.de>
-References: <1289585921.2629.13.camel@neuromancer> <AANLkTik4qPyBtKgJwHVnhkTASNORoKrWms6gk8NirYeU@mail.gmail.com> <20101113005232.GA20865@suse.de> <20101113060634.GB1919@core.coreip.homeip.net>
+	id S1754421Ab0KMOsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 09:48:08 -0500
+Date: Sat, 13 Nov 2010 06:45:12 -0800
+From: Greg KH <greg@kroah.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] fs, sysfs: Change sysfs_pathname function prototype.
+Message-ID: <20101113144512.GB29781@kroah.com>
+References: <AANLkTikDXtLrfjYkQrkGi44qi0cpp-C+Lxr5j1UkFd2G@mail.gmail.com> <20101109224450.GB21992@kroah.com> <AANLkTimHOAdUieTzFvNNhaPxwvas2wBDfSL8aPu764HZ@mail.gmail.com> <20101110183940.GA15089@kroah.com> <AANLkTimTy0vngwuM=jWfeU7qgqznamPgAftX7=2LShL+@mail.gmail.com> <20101111121917.GA933@kroah.com> <AANLkTi=dTW3WA-eLnnaHNcLdVKz7Bn41e8FE=67iVCyJ@mail.gmail.com> <AANLkTin1wDCKc0A0PTtMPAALpLP0E3gL3J-AvFqEEqBG@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101113060634.GB1919@core.coreip.homeip.net>
+In-Reply-To: <AANLkTin1wDCKc0A0PTtMPAALpLP0E3gL3J-AvFqEEqBG@mail.gmail.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 10:06:34PM -0800, Dmitry Torokhov wrote:
-> On Fri, Nov 12, 2010 at 04:52:32PM -0800, Greg KH wrote:
-> > On Fri, Nov 12, 2010 at 04:21:45PM -0800, Eric Biederman wrote:
-> > > On Fri, Nov 12, 2010 at 10:18 AM, Stefan Achatz <stefan_achatz@web.de> wrote:
-> > > > hid-roccat-kone now uses new group functions for creating binary
-> > > > sysfs attributes.
-> > > 
-> > > Looking at this, I have a problem with the way this works.
-> > > You are still doing this the hard and racy way.
-> > > 
-> > > sysfs attributes that are only added when we initialize the hardware and
-> > > are only removed when we remove the driver should use the device layer
-> > > functions to create their attributes.
-> > > 
-> > > This achieves two things.  The code is easier to write because there
-> > > is less of it.
-> > > The notification to user space happens after the attributes appear so
-> > > that you don't
-> > > have strange hotplug races.
-> > > 
-> > > If there a chance you can look at implementing this in the simpler
-> > > race free way?
-> > 
-> > Good point, just attach this attribute group to the device and the
-> > driver core will automatically create the files for you.
-> > 
+On Sat, Nov 13, 2010 at 07:35:10PM +0600, Rakib Mullick wrote:
+> On 11/11/10, Rakib Mullick <rakib.mullick@gmail.com> wrote:
+> > On 11/11/10, Greg KH <greg@kroah.com> wrote:
+> >>
+> >> perhaps, yes, that might be correct, but as almost no one builds with
+> >> WARN not enabled, is this a real issue?
+> >
+> > I'm trying to find out the config, which causes the warning (it gets
+> > overwritten). Not all config produces the warning. Maybe - it was a
+> > randconfig, which generates the warning. I'll again try some
+> > randconfig and will try to find the config which generates the
+> > warning. If I find something I'll notice. But, I think the issue is
+> > real.
+> >
+> CONFIG_EMBEDDED=y and CONFIG_BUG=n produces that warning, in that case
+> #ifndef WARN is defined as follows:
 > 
-> Attribute group in device structure is normally owned and managed by
-> subsystem core; without additional plumbing drivers should not be
-> touching it, at least not normally.
+> #define WARN(condition, format...) ({					\
+> 	int __ret_warn_on = !!(condition);				\
+> 	unlikely(__ret_warn_on);					\
+> })
 > 
-> Plus we do not have binary attribute group in device structure [yet].
+> from above we can see, format isn't used. sysfs_pathname is passed as
+> format when called from sysfs_add_one through WARN(). Since format
+> isn't used, that's why we're having that problem. Am I right? Should I
+> create a patch to split up WARN() and calling sysfs_pathname ? Or is
+> there any better way?
 
-In thinking about it a bit more, why do you have so many binary
-attributes for this driver?  binary sysfs files are rare, so adding a
-binary attribute group pointer to the device or driver would just waste
-a lot of space that no one else uses.
-
-What are these binary files for?  Who uses them?  I don't seem to be
-able to find them in the Documentation/ABI directory, or am I missing
-something here?
+No, you should probably just not worry about it as the number of people
+using those two configuration options are in the extreme minority so
+it's really not a big issue at all.
 
 thanks,
 
