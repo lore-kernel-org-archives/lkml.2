@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755991Ab0KMKo0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 05:44:26 -0500
-Received: from hera.kernel.org ([140.211.167.34]:60204 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753136Ab0KMKoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 05:44:24 -0500
-Message-ID: <4CDE6BB2.5070806@kernel.org>
-Date: Sat, 13 Nov 2010 11:42:58 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
-        petero2@telia.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
-        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
-        tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com,
-        aelder@sgi.com, dm-devel@redhat.com, drbd-dev@lists.linbit.com,
-        neilb@suse.de, leochen@broadcom.com, sbranden@broadcom.com,
-        chris.mason@oracle.com, swhiteho@redhat.com, shaggy@linux.vnet.ibm.com,
-        joern@logfs.org, konishi.ryusuke@lab.ntt.co.jp,
-        reiserfs-devel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-mtd@lists.infradead.org
-Subject: Re: [PATCH 1/5] mtd: fix bdev exclusive open bugs in block2mtd::add_device()
-References: <1288628129-12811-1-git-send-email-tj@kernel.org>	 <1288628129-12811-2-git-send-email-tj@kernel.org> <1289644735.2218.8.camel@localhost>
-In-Reply-To: <1289644735.2218.8.camel@localhost>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 13 Nov 2010 10:43:00 +0000 (UTC)
+	id S1753290Ab0KMKsv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 05:48:51 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51586 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab0KMKsu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 05:48:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Q7iuH7/496AnZrKFjxCxl2knYIeuC/nm1XCOR3J/Ary7MW0SuZUJcjNMnPfcEUSUkV
+         N2hpoCzfOGcYbrisbe0ffjRkV8MKqT+0bzuSvkV0XAnjPTDqC3Vltcv+MiIxFjMtuyxx
+         wl7tD9qGhPTT+rEKEj0h7fZcsBR1Iq9HxPWp8=
+Subject: Re: [PATCH 06/20] x86/ticketlock: make __ticket_spin_trylock common
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@suse.de>, Jan Beulich <JBeulich@novell.com>,
+        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <20101113101732.GH3837@hack>
+References: <cover.1288794124.git.jeremy.fitzhardinge@citrix.com>
+	 <4cea7b0804de5a2c1249034fc5c4840ade043ff4.1288794124.git.jeremy.fitzhardinge@citrix.com>
+	 <20101113101732.GH3837@hack>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 13 Nov 2010 11:48:41 +0100
+Message-ID: <1289645321.2743.21.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 11/13/2010 11:38 AM, Artem Bityutskiy wrote:
-> On Mon, 2010-11-01 at 17:15 +0100, Tejun Heo wrote:
->> +			if (!IS_ERR(bdev)) {
->> +				int ret;
->> +				ret = bd_claim(bdev, dev);
->> +				if (ret) {
->> +					blkdev_put(bdev,
->> +						   FMODE_READ | FMODE_WRITE);
+Le samedi 13 novembre 2010 à 18:17 +0800, Américo Wang a écrit :
+> On Wed, Nov 03, 2010 at 10:59:47AM -0400, Jeremy Fitzhardinge wrote:
 > 
-> Would be a bit cleaner to define ea temporary variable:
+> >+	union {
+> >+		struct __raw_tickets tickets;
+> >+		__ticketpair_t slock;
+> >+	} tmp, new;
+> >+	int ret;
+> >+
+> >+	tmp.tickets = ACCESS_ONCE(lock->tickets);
+> >+	if (tmp.tickets.head != tmp.tickets.tail)
+> >+		return 0;
+> >+
+> >+	new.slock = tmp.slock + (1 << TICKET_SHIFT);
+> >+
+> >+	ret = cmpxchg(&lock->ticketpair, tmp.slock, new.slock) == tmp.slock;
+> >+	barrier();		/* just make nothing creeps before lock is claimed */
 > 
-> fmode_t mode = FMODE_READ | FMODE_WRITE;
-> 
-> Would you to re-send with this little change please?
+> This one should be smp_wmb(), right? No CONFIG_X86_OOSTORE protected.
 
-Yeap, sure.
+cmpxchg() is a full memory barrier, no need for smp_wmb() or barrier()
 
-> And ideally, 2 independent patches would be nicer because you fix 2
-> independent issues.
 
-Hmmm... not really.  The patch is small enough and splitting it won't
-really buy as any better bisectability.  Splitting patches into
-logical changes is a good thing but it's no religious dogma.  Let's
-apply it to the point it actually helps.
 
-Thank you.
-
--- 
-tejun
