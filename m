@@ -1,96 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab0KMWcv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 17:32:51 -0500
-Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:52923 "EHLO
-	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584Ab0KMWct (ORCPT
+	id S1753757Ab0KMWeZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 17:34:25 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:43658 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab0KMWeW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 17:32:49 -0500
-From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [bisected] i915 regression in post 2.6.36 kernels
-Date: Sat, 13 Nov 2010 23:34:26 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-00542-g0143832-dirty; KDE/4.5.3; i686; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Florian Mickler <florian@mickler.org>
-References: <201011100802.20332.johannes.hirte@fem.tu-ilmenau.de> <20101112192046.1c38e671@schatten.dmk.lab> <201011122108.35664.johannes.hirte@fem.tu-ilmenau.de>
-In-Reply-To: <201011122108.35664.johannes.hirte@fem.tu-ilmenau.de>
+	Sat, 13 Nov 2010 17:34:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=p2SDfsR36ZDUae+Xp+CcObwVZ/EH4R5DlpaJf1x4g5b42CWlUIp5dYY14nXQuTEVdH
+         eBBqNYehOfwj13ZcPvjdKFauRTMasWLTfWlY+wuKT2/WnXZcokkW2YDDBpJpjAjo9wEP
+         vd26zzLHym34FHcnXw7wYBZFmOIhpkzCAtZKo=
+Message-ID: <4CDF125E.3050803@redhat.com>
+Date: Sat, 13 Nov 2010 23:34:06 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc14 Lightning/1.0b3pre Mnenhy/0.8.3 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011132334.27742.johannes.hirte@fem.tu-ilmenau.de>
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@suse.de>, Jan Beulich <JBeulich@novell.com>,
+        Avi Kivity <avi@redhat.com>, Xen-devel <xen-devel@lists.xensource.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 03/20] x86/ticketlock: Use C for __ticket_spin_unlock
+References: <cover.1288794124.git.jeremy.fitzhardinge@citrix.com> <20092775a9df07a5a75820ac250194b535279d51.1288794124.git.jeremy.fitzhardinge@citrix.com> <20101113100527.GG3837@hack>
+In-Reply-To: <20101113100527.GG3837@hack>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 12 November 2010 21:08:34 Johannes Hirte wrote:
-> On Friday 12 November 2010 19:20:46 Florian Mickler wrote:
-> > On Wed, 10 Nov 2010 23:39:35 +0100
-> > Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de> wrote:
-> > 
-> > > On Wednesday 10 November 2010 08:46:40 Chris Wilson wrote:
-> > > > On Wed, 10 Nov 2010 08:02:19 +0100, Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de> wrote:
-> > > > > With the latest kernel, I don't get any windows in KDE displayed. After
-> > > > > starting kdm, I get the background picture and the mouse cursor but not the
-> > > > > login window. I can login blindly and a ps on console shows me that the
-> > > > > expected KDE processes are started but still nothing is displayed. 
-> > > > > I've bisected this to:
-> > > > > 
-> > > > > 5c12a07e8073295ce8b57a822f811ac34e4f8420 is the first bad commit
-> > > > > commit 5c12a07e8073295ce8b57a822f811ac34e4f8420
-> > > > > Author: Chris Wilson <chris@chris-wilson.co.uk>
-> > > > > Date:   Wed Sep 22 11:22:30 2010 +0100
-> > > > > 
-> > > > >     drm/i915: Drop ring->lazy_request
-> > > > >     
-> > > > >     We are not currently using it as intended, so remove the complication.
-> > > > > 
-> > > > >     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> > > > 
-> > > > May I ask you to recheck your bisection, since that was later reverted.
-> > > > -Chris
-> > > 
-> > > Did so. I've started with v2.6.36 for bisect good and 
-> > > f6614b7bb405a9b35dd28baea989a749492c46b2 for bisect bad (was HEAD) in this
-> > > case. Again I ended in 5c12a07e8073295ce8b57a822f811ac34e4f8420 as the first
-> > > bad commit. The regression was introduced there, as the commit before is fine.
-> > > If it was reverted, the regression should be fixed by this. But I don't find
-> > > neither the fix/revert nor the reintroduction of the regression.
-> > > 
-> > > regrards,
-> > >   Johannes
-> > 
-> > The revert is a56ba56c275b1c2b982c8901ab92bf5a0fd0b757 .
-> 
-> Thanks for the hint. This was the commit I was searching for. Unfortunately
-> this version shows the same regression. I've checked again, that
-> 5c12a07e8073295ce8b57a822f811ac34e4f8420 is the first bad version.
-> 2.6.36-rc5-00228-g2896b53 (2896b5397570f6857fd5d0e0533f640b05b1d162) works
-> 2.6.36-rc5-00229-g5c12a07 (5c12a07e8073295ce8b57a822f811ac34e4f8420) doesn't.
-> Someone with knowledge of the code should have a look what's different
-> between 5c12a07e8073295ce8b57a822f811ac34e4f8420 and its revert.
-> 
-> regards,
->   Johannes
+On 11/13/2010 11:05 AM, Américo Wang wrote:
+> On Wed, Nov 03, 2010 at 10:59:44AM -0400, Jeremy Fitzhardinge wrote:
+>>   * On PPro SMP or if we are using OOSTORE, we use a locked operation to unlock
+>>   * (PPro errata 66, 92)
+>>   */
+>> -# define UNLOCK_LOCK_PREFIX LOCK_PREFIX
+>> +static __always_inline void __ticket_unlock_release(struct arch_spinlock *lock)
+>> +{
+>> +	if (sizeof(lock->tickets.head) == sizeof(u8))
+>> +		asm (LOCK_PREFIX "incb %0"
+>> +		     : "+m" (lock->tickets.head) : : "memory");
+>> +	else
+>> +		asm (LOCK_PREFIX "incw %0"
+>> +		     : "+m" (lock->tickets.head) : : "memory");
+>
+> This 'if/else' really should be done with #ifdef, even though
+> the compiler may be smart enough to remove it.
 
-I've found it. 5c12a07e8073295ce8b57a822f811ac34e4f8420 contains
+That's a sure path to bitrot.
 
- static void
-@@ -1945,11 +1933,6 @@ i915_gem_flush_ring(struct drm_device *dev,
- {
- 	ring->flush(dev, ring, invalidate_domains, flush_domains);
- 	i915_gem_process_flushing_list(dev, flush_domains, ring);
--
--	if (ring->outstanding_lazy_request) {
--		(void)i915_add_request(dev, file_priv, NULL, ring);
--		ring->outstanding_lazy_request = false;
--	}
- }
-
-which wasn't redone by a56ba56c275b1c2b982c8901ab92bf5a0fd0b757. After adding
-those five lines it works for me.
-
-regards,
-  Johannes
+Paolo
