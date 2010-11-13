@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363Ab0KMWP0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 17:15:26 -0500
-Received: from relay02.digicable.hu ([92.249.128.188]:59918 "EHLO
-	relay02.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376Ab0KMWPX (ORCPT
+	id S1753602Ab0KMWYe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 17:24:34 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:49362 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753151Ab0KMWYc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 17:15:23 -0500
-Message-ID: <4CDF0DF4.4020405@freemail.hu>
-Date: Sat, 13 Nov 2010 23:15:16 +0100
-From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+	Sat, 13 Nov 2010 17:24:32 -0500
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX182H3hxFZU2r6TkJQvxXIASqf7zKAn8ub6lpkWKml
+	gnPXvyGptuYSFl
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: Re: Oops w/ 'Terratec Cinergy T USB XXS (HD)/ T3'
+Date: Sat, 13 Nov 2010 23:24:28 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.4.5; i686; ; )
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <201011071314.41970.toralf.foerster@gmx.de>
+In-Reply-To: <201011071314.41970.toralf.foerster@gmx.de>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@suse.de>, Pete Zaitcev <zaitcev@redhat.com>
-CC: linux-usb@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH, RFC] usbmon: correct computing of the ISO packets with mmap
-References: <4CD8ECE4.1090206@freemail.hu> <20101109075056.59a2e7d8@lembas.zaitcev.lan> <4CD9A96D.1010306@freemail.hu>
-In-Reply-To: <4CD9A96D.1010306@freemail.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Original: 92.249.250.184
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201011132324.28828.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Márton Németh <nm127@freemail.hu>
 
-The length of the isochronous packets were not computed correctly in case of memory
-mapped operation because the gaps between the isodesc data were not taken into
-account. The last data byte can be found at offset+actual_length of the
-last ISO description.
+Toralf F�rster wrote at 13:14:41
+> I get with the current -git tree the attached OOps at an almost stable
+> Gentoo Linux running at a ThinkPad T400.
 
-This patch fixes the problem described at https://bugzilla.kernel.org/show_bug.cgi?id=22182 .
+FWIW solved by something between 9457b24..0143832 probably commit 2c2742d ?
 
-Signed-off-by: Márton Németh <nm127@freemail.hu>
----
---- linux-2.6.37-rc1/drivers/usb/mon/mon_bin.c.orig	2010-10-20 22:30:22.000000000 +0200
-+++ linux-2.6.37-rc1/drivers/usb/mon/mon_bin.c	2010-11-13 22:29:09.000000000 +0100
-@@ -515,6 +515,26 @@ static void mon_bin_event(struct mon_rea
- 	}
+-- 
+MfG/Kind regards
+Toralf F�rster
 
- 	if (rp->mmap_active) {
-+		if (usb_endpoint_xfer_isoc(epd) &&
-+		    ((usb_urb_dir_in(urb) && ev_type == 'C') ||
-+		     (usb_urb_dir_out(urb) && ev_type == 'S'))) {
-+			int i;
-+
-+			/* Search for the last ISO descritor with OK status
-+			 * and non-zero length
-+			 */
-+			length = 0;
-+			i = urb->number_of_packets - 1;
-+			while (0 <= i &&
-+			       (urb->iso_frame_desc[i].status != 0 ||
-+			        urb->iso_frame_desc[i].actual_length == 0)) {
-+				i--;
-+			}
-+			if (0 <= i) {
-+				length = urb->iso_frame_desc[i].offset +
-+					 urb->iso_frame_desc[i].actual_length;
-+			}
-+		}
- 		offset = mon_buff_area_alloc_contiguous(rp,
- 						 length + PKT_SIZE + lendesc);
- 	} else {
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
