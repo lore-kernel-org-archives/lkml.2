@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab0KMWa4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 17:30:56 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61599 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753301Ab0KMWaz (ORCPT
+	id S1754049Ab0KMWc3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 17:32:29 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:63310 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753689Ab0KMWc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 17:30:55 -0500
+	Sat, 13 Nov 2010 17:32:28 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=aL/zKPN1kXemLO+QjU1PAWyO0HSdOpNX7K9swWyze/fDb6yUiwrdbEPXVAHsaAlhyd
-         R0DNnp7tIXw0iW5oHd4e/nOSW0LvVrS9q6Yh9PHpe9tLwJ/GnkPf8HNO1vXtoimth0hy
-         Vdfygl313iyiFniVzcSBVbLo2eWYZi5oZxtqw=
-Date: Sat, 13 Nov 2010 23:30:49 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Joe Korty <joe.korty@ccur.com>,
-        mathieu.desnoyers@efficios.com, dhowells@redhat.com,
-        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
-        houston.jim@comcast.net
-Subject: Re: [PATCH] a local-timer-free version of RCU
-Message-ID: <20101113223046.GB5445@nowhere>
-References: <20101104232148.GA28037@linux.vnet.ibm.com> <20101105210059.GA27317@tsunami.ccur.com> <4CD912E9.1080907@cn.fujitsu.com> <20101110155419.GC5750@nowhere> <1289410271.2084.25.camel@laptop> <20101111041920.GD3134@linux.vnet.ibm.com>
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=d+bDnLMn7meLFkK7TgsLX2skbhJbMq/y7NMmYffUSNaBOfwC9k50t8w5194073pJsq
+         C7mdc05raa4IqxpNOMGH4fXkzfWrtnDo0TUOL8GVSvI03fRJ/daGbgR7TrlsvHTDXYO4
+         3WqxB9Gf1MPDommJVVSy4R6lscB7mExmq4RO0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101111041920.GD3134@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Clay Carpenter <claycarpenter@gmail.com>
+Date: Sat, 13 Nov 2010 17:31:47 -0500
+Message-ID: <AANLkTi=jqpmPqTr0EAhNNS0C0faFCEy2-x6J8OUnK48z@mail.gmail.com>
+Subject: [PATCH] acerhdf: Add support for Aspire 1410 BIOS v1.3314
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Peter Feuerer <peter@piie.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 08:19:20PM -0800, Paul E. McKenney wrote:
-> On Wed, Nov 10, 2010 at 06:31:11PM +0100, Peter Zijlstra wrote:
-> > On Wed, 2010-11-10 at 16:54 +0100, Frederic Weisbecker wrote:
-> > > run the sched tick and if there was nothing to do
-> > > for some time and we are in userspace, deactivate it. 
-> > 
-> > Not for some time, immediately, have the tick track if it was useful, if
-> > it was not, have it stop itself, like:
-> > 
-> > tick()
-> > {
-> >  int stop = 1;
-> > 
-> >  if (nr_running > 1)
-> >   stop = 0;
-> > 
-> >  if(rcu_needs_cpu())
-> >   stop = 0;
-> > 
-> >  ...
-> > 
-> > 
-> >  if (stop)
-> >   enter_nohz_mode();
-> > }
-> 
-> I am still holding out for a dyntick-hpc version of RCU that does not
-> need the tick.  ;-)
+From: Clay Carpenter <claycarpenter@gmail.com>
 
+Andrew: Peter has asked that this patch be submitted and applied to
+your mm-tree.  Thanks!
 
-So you don't think it would be an appropriate solution? Keeping the tick for short
-periods of time while we need it only, that looks quite a good way to try.
+Add support for Aspire 1410 BIOS v1.3314.  Fixes the following error:
 
-Hmm?
+acerhdf: unknown (unsupported) BIOS version Acer/Aspire 1410/v1.3314,
+please report, aborting!
 
+Signed-off-by: Clay Carpenter <claycarpenter@gmail.com>
+Signed-off-by: Peter Feuerer <peter@piie.net>
+---
+
+ drivers/platform/x86/acerhdf.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
+index 60f9cfc..73df4c5 100644
+--- a/drivers/platform/x86/acerhdf.c
++++ b/drivers/platform/x86/acerhdf.c
+@@ -163,6 +163,7 @@ static const struct bios_settings_t bios_tbl[] = {
+ 	{"Acer", "Aspire 1410", "v1.3303", 0x55, 0x58, {0x9e, 0x00} },
+ 	{"Acer", "Aspire 1410", "v1.3308", 0x55, 0x58, {0x9e, 0x00} },
+ 	{"Acer", "Aspire 1410", "v1.3310", 0x55, 0x58, {0x9e, 0x00} },
++	{"Acer", "Aspire 1410", "v1.3314", 0x55, 0x58, {0x9e, 0x00} },
+ 	/* Acer 1810xx */
+ 	{"Acer", "Aspire 1810TZ", "v0.3108", 0x55, 0x58, {0x9e, 0x00} },
+ 	{"Acer", "Aspire 1810T",  "v0.3108", 0x55, 0x58, {0x9e, 0x00} },
