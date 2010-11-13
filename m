@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630Ab0KMF04 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 00:26:56 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38217 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750904Ab0KMF0x (ORCPT
+	id S1751814Ab0KMFsd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 00:48:33 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:33039 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750904Ab0KMFsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 00:26:53 -0500
+	Sat, 13 Nov 2010 00:48:32 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=B8s34egeNmfliOP/xWRRzYdI3Bq/tR8JjqtjQuthxZy0Vf8S/H7uCt5dHRVWFuRraH
-         HGokUHqsEAODT1YArcm3DLFZfUMEkKe0+GFcL/m0V2nr7ZUkABVqP6Ov5ZKj3lPEkUJb
-         qTb2u/eesi8CU4K1qe831vXKJMGkLKlRiZd3I=
-Message-ID: <4CDE2199.7080309@garzik.org>
-Date: Sat, 13 Nov 2010 00:26:49 -0500
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Matthew Wilcox <matthew@wil.cx>, James Bottomley <James.Bottomley@suse.de>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] SCSI queuecommand API change for 2.6.37-rc1
-References: <1289606118.3015.539.camel@mulgrave.site> <AANLkTinj2BM2eGo2yyfzs=t+nu79WLW_bGYota9sDZwH@mail.gmail.com> <20101113042821.GE18258@parisc-linux.org> <AANLkTik_eXv1_ZaqD01CoT6igzjBZtmECD0e+QUkMhxP@mail.gmail.com>
-In-Reply-To: <AANLkTik_eXv1_ZaqD01CoT6igzjBZtmECD0e+QUkMhxP@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=MdFWjf+pEDIOX0YVIOc+yMo2mtFKlRMG4Rp2e7ZcAyV6Go3DAmfCnpOr+F3Z8GxjXR
+         KJMMesp0B8i5hR6M55mlRIhzMmhlHOL7BBZkLW8mUHeCpNnC4Q8gDl61adSXNrIvF11N
+         zzuiuEqOSFuqUtDS/3b8hC79opQWft3Denp4E=
+Subject: [PATCH] ARM: fix some trivial compiler warnings
+From: Jason Chagas <jason.chagas@gmail.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: eric.y.miao@gmail.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 13 Nov 2010 00:49:57 -0500
+Message-ID: <1289627397.2837.44.camel@diamond.house>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2010 11:42 PM, Linus Torvalds wrote:
-> Having to inevitably do that silly double dereference
-> ("cmd->device->host") seems bogus. Passing in the host you want to
-> queue something on seems to be natural, and avoids that nasty chain of
-> dereferences, so it really should improve the code.
 
-As noted in the patch v4, just sent, I agree.
+>From acb6004dae483e61760714286a5e544c4a1d899c Mon Sep 17 00:00:00 2001
+From: Jason Chagas <jason.chagas@marvell.com>
+Date: Sat, 13 Nov 2010 00:01:44 -0500
+Subject: [PATCH] ARM: fix some trivial compiler warnings
 
+arch/arm/kernel/ptrace.c: In function 'get_branch_address':
+arch/arm/kernel/ptrace.c:429: warning: comparison between pointer and
+integer
+arch/arm/kernel/ptrace.c:429: warning: comparison between pointer and
+integer
 
-> So the shost pointer is certainly a lot more useful than the 'done'
-> function pointer.  So yeah, I'd switch them around - pass the 'done'
-> thing indirectly, and the shost directly.
+arch/arm/mach-mmp/mmp2.c:127: warning: 'clk_rtc' defined but not used
 
-You bozos would come up with this the _minute_ I sent my patch, eh?  :)
+drivers/i2c/busses/i2c-pxa.c: In function 'i2c_pxa_probe':
+drivers/i2c/busses/i2c-pxa.c:1004: warning: initialization discards
+qualifiers from pointer target type
 
-IMO, the 'done' removal should be in a separate patch from the host lock 
-push-down.
+Signed-off-by: Jason Chagas <jason.chagas@marvell.com>
+---
+ arch/arm/kernel/ptrace.c     |    2 +-
+ arch/arm/mach-mmp/mmp2.c     |    1 -
+ drivers/i2c/busses/i2c-pxa.c |    2 +-
+ 3 files changed, 2 insertions(+), 3 deletions(-)
 
-It should be straightforward, if applied immediately following the 
-push-down patch.  bisect remains clean.
-
-	Jeff
+diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
+index cf16bca..7bb9a88 100644
+--- a/arch/arm/kernel/ptrace.c
++++ b/arch/arm/kernel/ptrace.c
+@@ -426,7 +426,7 @@ get_branch_address(struct task_struct *child,
+unsigned long pc, unsigned long in
+ 	    break;
+ 	}
+ 
+-	if (alt >= (void*)CONFIG_VECTORS_BASE && alt <
+(void*)CONFIG_VECTORS_BASE + PAGE_SIZE)
++	if (alt >= CONFIG_VECTORS_BASE && alt < CONFIG_VECTORS_BASE +
+PAGE_SIZE)
+ 		alt = get_user_reg(child, REG_LR);
+ 
+ 	return alt;
+diff --git a/arch/arm/mach-mmp/mmp2.c b/arch/arm/mach-mmp/mmp2.c
+index 7f5eb05..3028bb7 100644
+--- a/arch/arm/mach-mmp/mmp2.c
++++ b/arch/arm/mach-mmp/mmp2.c
+@@ -124,7 +124,6 @@ static APBC_CLK(twsi3, MMP2_TWSI3, 0, 26000000);
+ static APBC_CLK(twsi4, MMP2_TWSI4, 0, 26000000);
+ static APBC_CLK(twsi5, MMP2_TWSI5, 0, 26000000);
+ static APBC_CLK(twsi6, MMP2_TWSI6, 0, 26000000);
+-static APBC_CLK(rtc, MMP2_RTC, 0, 32768);
+ 
+ static APMU_CLK(nand, NAND, 0xbf, 100000000);
+ 
+diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+index 020ff23..c94e51b 100644
+--- a/drivers/i2c/busses/i2c-pxa.c
++++ b/drivers/i2c/busses/i2c-pxa.c
+@@ -1001,7 +1001,7 @@ static int i2c_pxa_probe(struct platform_device
+*dev)
+ 	struct pxa_i2c *i2c;
+ 	struct resource *res;
+ 	struct i2c_pxa_platform_data *plat = dev->dev.platform_data;
+-	struct platform_device_id *id = platform_get_device_id(dev);
++	const struct platform_device_id *id = platform_get_device_id(dev);
+ 	int ret;
+ 	int irq;
+ 
+-- 
+1.7.2.3
 
 
