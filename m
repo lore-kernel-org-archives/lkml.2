@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab0KMT1M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 14:27:12 -0500
-Received: from tango.tkos.co.il ([62.219.50.35]:60487 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755061Ab0KMT1J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 14:27:09 -0500
-Date: Sat, 13 Nov 2010 21:25:55 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: Gregory Bean <gbean@codeaurora.org>
-Cc: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] msm: gpio: Add v2 gpio support to MSM SoCs.
-Message-ID: <20101113192555.GA23794@tarshish>
-References: <1289585342-21341-1-git-send-email-gbean@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289585342-21341-1-git-send-email-gbean@codeaurora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757352Ab0KMTiq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 14:38:46 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39235 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755352Ab0KMTio convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 14:38:44 -0500
+Subject: Re: [RFC][PATCH v2 4/7] taskstats: Add per task steal time
+ accounting
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+In-Reply-To: <20101111170815.024542355@linux.vnet.ibm.com>
+References: <20101111170352.732381138@linux.vnet.ibm.com>
+	 <20101111170815.024542355@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 13 Nov 2010 20:38:02 +0100
+Message-ID: <1289677083.2109.167.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gregory,
-
-On Fri, Nov 12, 2010 at 10:09:01AM -0800, Gregory Bean wrote:
-> Beginning with the MSM8x60, the hardware block responsible for gpio
-> support changes.  Provide gpiolib support for the new v2 architecture.
+On Thu, 2010-11-11 at 18:03 +0100, Michael Holzheu wrote:
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 > 
-> Signed-off-by: Gregory Bean <gbean@codeaurora.org>
-> ---
+> Currently steal time is only accounted for the whole system. With this
+> patch we add steal time to the per task CPU time accounting.
+> The triplet "user time", "system time" and "steal time" represents
+> all consumed CPU time on hypervisor based systems. 
 
-[snip]
+Does that really make sense? Its not like the hypervisor really knows
+anything about tasks and won't steal from one? Its really a vcpu
+feature.
 
-> +static inline void clr_gpio_bits(unsigned n, void __iomem *reg)
-> +{
-> +	writel(readl(reg) & ~n, reg);
-
-IMO you should move the locking here. And since the only user of this function 
-is msm_gpio_direction_input, I'd eliminate it altogether.
-
-> +}
-
-[snip]
-
-> +static int msm_gpio_direction_input(struct gpio_chip *chip, unsigned 
-> offset)
-> +{
-> +	unsigned long irq_flags;
-> +
-> +	spin_lock_irqsave(&tlmm_lock, irq_flags);
-> +	clr_gpio_bits(BIT(GPIO_OE_BIT), GPIO_CONFIG(offset));
-> +	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-> +	return 0;
-> +}
-
-baruch
-
--- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+What added benefit will all this extra accounting give?
