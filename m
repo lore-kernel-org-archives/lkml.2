@@ -1,60 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab0KMWqS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 17:46:18 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:29051 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341Ab0KMWqR (ORCPT
+	id S1755226Ab0KMWvu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 17:51:50 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:34685 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754348Ab0KMWvt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 17:46:17 -0500
-Date: Sat, 13 Nov 2010 23:34:12 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] tools/perf/builtin-trace.c includes util/parse-options.h
- twice.
-Message-ID: <alpine.LNX.2.00.1011132331560.19666@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 13 Nov 2010 17:51:49 -0500
+Subject: Re: Kernel rwlock design, Multicore and IGMP
+From: Peter Zijlstra <peterz@infradead.org>
+To: Cypher Wu <cypher.w@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
+References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 13 Nov 2010 23:52:03 +0100
+Message-ID: <1289688723.2109.396.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2010-11-11 at 21:49 +0800, Cypher Wu wrote:
+> I'm using TILEPro and its rwlock in kernel is a liitle different than
+> other platforms. It have a priority for write lock that when tried it
+> will block the following read lock even if read lock is hold by
+> others. 
 
-This removes the duplicate inclusion of util/parse-options.h from 
-tools/perf/builtin-trace.c
-
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- builtin-trace.c |    1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 86cfe38..a4509de 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -8,11 +8,10 @@
- #include "util/parse-options.h"
- #include "util/session.h"
- #include "util/symbol.h"
- #include "util/thread.h"
- #include "util/trace-event.h"
--#include "util/parse-options.h"
- #include "util/util.h"
- 
- static char const		*script_name;
- static char const		*generate_script_lang;
- static bool			debug_mode;
-
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+That's a bug, rwlock_t must most definitely be a read preference lock,
+there's tons of code depending on that.
