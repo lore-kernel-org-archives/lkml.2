@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753347Ab0KMGlV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 01:41:21 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:44178 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588Ab0KMGlT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 01:41:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=A3g3rmf0eFNBsP1r3h1jb/gy0At4eLsvm7IWCJFpyfWG6RYqV9HphicNmCTux7zr+I
-         9Jk8E5SEixHH1Jt3dvcstR30VlEHfFIZ0iwbSJmxYCRo0h8i7k1+RYNCUKDPtseWg9Av
-         8Y5pJh+C+akq9SlubIvCivsEK+Mwv2aJd5+xM=
-Date: Sat, 13 Nov 2010 14:44:21 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Cypher Wu <cypher.w@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH net-next-2.6 V2] igmp: RCU conversion of in_dev->mc_list
-Message-ID: <20101113064421.GE3837@hack>
-References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com> <1289489007.17691.1310.camel@edumazet-laptop> <AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com> <20101112071323.GB5660@cr0.nay.redhat.com> <1289546874.17691.1774.camel@edumazet-laptop> <20101112081945.GA5949@cr0.nay.redhat.com> <1289553759.3185.1.camel@edumazet-laptop> <1289568858.3185.252.camel@edumazet-laptop> <1289571974.3185.254.camel@edumazet-laptop> <1289576810.3185.261.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1289576810.3185.261.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1753841Ab0KMHEO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 02:04:14 -0500
+Received: from smtp.gentoo.org ([140.211.166.183]:49259 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753137Ab0KMHEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 02:04:13 -0500
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-fbdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Anatolij Gustschin <agust@denx.de>
+Subject: [PATCH] fsl-diu-fb: drop dead ioctl define
+Date: Sat, 13 Nov 2010 02:06:27 -0500
+Message-Id: <1289631987-5854-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
->Here is an updated version.
->
->[PATCH net-next-2.6 V2] igmp: RCU conversion of in_dev->mc_list
->
->in_dev->mc_list is protected by one rwlock (in_dev->mc_list_lock).
->
->This can easily be converted to a RCU protection.
->
->Writers hold RTNL, so mc_list_lock is removed, not replaced by a
->spinlock.
+The fsl-diu-fb driver no longer uses this define, and we have a common one
+to cover this already (FBIO_WAITFORVSYNC).
 
-Ah, this saves much work.
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ include/linux/fsl-diu-fb.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
->
->Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
->Cc: Cypher Wu <cypher.w@gmail.com>
->Cc: Américo Wang <xiyou.wangcong@gmail.com>
+diff --git a/include/linux/fsl-diu-fb.h b/include/linux/fsl-diu-fb.h
+index fc295d7..781d467 100644
+--- a/include/linux/fsl-diu-fb.h
++++ b/include/linux/fsl-diu-fb.h
+@@ -54,7 +54,6 @@ struct aoi_display_offset {
+ };
+ 
+ #define MFB_SET_CHROMA_KEY	_IOW('M', 1, struct mfb_chroma_key)
+-#define MFB_WAIT_FOR_VSYNC	_IOW('F', 0x20, u_int32_t)
+ #define MFB_SET_BRIGHTNESS	_IOW('M', 3, __u8)
+ 
+ #define MFB_SET_ALPHA		0x80014d00
+-- 
+1.7.3.2
 
-I just did a quick look, it looks good to me.
-
-Thanks!
