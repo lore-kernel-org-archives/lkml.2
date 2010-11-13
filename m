@@ -1,151 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259Ab0KMUGf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 15:06:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13265 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756478Ab0KMUGe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 15:06:34 -0500
-Date: Sat, 13 Nov 2010 20:58:57 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Raistlin <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-Subject: Re: [RFC][PATCH 06/22] sched: SCHED_DEADLINE handles spacial
-	kthreads
-Message-ID: <20101113195857.GA11411@redhat.com>
-References: <1288333128.8661.137.camel@Palantir> <1288333876.8661.147.camel@Palantir> <1289486096.2084.123.camel@laptop> <20101111152750.GA2510@redhat.com> <1289490202.2084.140.camel@laptop> <20101111163242.GA5697@redhat.com> <1289673355.2109.79.camel@laptop>
+	id S1756613Ab0KMUWo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 15:22:44 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41700 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755331Ab0KMUWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 15:22:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289673355.2109.79.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1289672721.3090.349.camel@Dan>
+References: <1289669176.16461.12.camel@Joe-Laptop> <AANLkTi=ut2O+mCbs1jOyg-aP=E+48h1B-MH8NxK5XyVf@mail.gmail.com>
+ <1289672721.3090.349.camel@Dan>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 13 Nov 2010 12:22:15 -0800
+Message-ID: <AANLkTi=4AQst9bNXrvwN6sZc2CM9rccYbERYYQkVK99q@mail.gmail.com>
+Subject: Re: [PATCH] Fix dmesg_restrict build failure with CONFIG_EMBEDDED=y
+ and CONFIG_PRINTK=n
+To: Dan Rosenberg <drosenberg@vsecurity.com>, James Morris <jmorris@namei.org>
+Cc: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Eugene Teo <eugeneteo@kernel.org>,
+        Kees Cook <kees.cook@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: multipart/mixed; boundary=0016e64ba1b4bad73d0494f4f73c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13, Peter Zijlstra wrote:
+--0016e64ba1b4bad73d0494f4f73c
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On Sat, Nov 13, 2010 at 10:25 AM, Dan Rosenberg
+<drosenberg@vsecurity.com> wrote:
 >
-> Something like so?.. hasn't even seen a compiler yet but one's got to do
-> something to keep the worst bore of saturday night telly in check ;-)
-
-Yes, I _think_ this all can work (and imho makes a lot of sense
-if it works).
-
-quick and dirty review below ;)
-
->  struct take_cpu_down_param {
-> -	struct task_struct *caller;
->  	unsigned long mod;
->  	void *hcpu;
->  };
-> @@ -208,11 +207,6 @@ static int __ref take_cpu_down(void *_pa
+>>
+>> Anyway, suggested replacement patch attached. Comments?
+>>
 >
->  	cpu_notify(CPU_DYING | param->mod, param->hcpu);
->
-> -	if (task_cpu(param->caller) == cpu)
-> -		move_task_off_dead_cpu(cpu, param->caller);
-> -	/* Force idle task to run as soon as we yield: it should
-> -	   immediately notice cpu is offline and die quickly. */
-> -	sched_idle_next();
+> The desired behavior was to allow a reader with CAP_SYS_ADMIN to open
+> the syslog via /proc/kmsg and continue reading it even after dropping
+> capabilities, which is why it was placed where it was. =A0I see no proble=
+m
+> with moving it back out to do_syslog, but ideally the same behavior
+> should be replicated.
 
-Yes. but we should remove "while (!idle_cpu(cpu))" from _cpu_down().
+Hmm. No wonder I missed that. The security interface is totally
+idiotic. If the intention is for /proc/kmsg security checks to be done
+at open time, then dammit, that logic should _not_ be inside some
+random security policy.
 
-> @@ -2381,18 +2381,15 @@ static int select_fallback_rq(int cpu, s
->  		return dest_cpu;
->
->  	/* No more Mr. Nice Guy. */
-> -	if (unlikely(dest_cpu >= nr_cpu_ids)) {
-> -		dest_cpu = cpuset_cpus_allowed_fallback(p);
-> -		/*
-> -		 * Don't tell them about moving exiting tasks or
-> -		 * kernel threads (both mm NULL), since they never
-> -		 * leave kernel.
-> -		 */
-> -		if (p->mm && printk_ratelimit()) {
-> -			printk(KERN_INFO "process %d (%s) no "
-> -			       "longer affine to cpu%d\n",
-> -			       task_pid_nr(p), p->comm, cpu);
-> -		}
-> +	dest_cpu = cpuset_cpus_allowed_fallback(p);
-> +	/*
-> +	 * Don't tell them about moving exiting tasks or
-> +	 * kernel threads (both mm NULL), since they never
-> +	 * leave kernel.
-> +	 */
-> +	if (p->mm && printk_ratelimit()) {
-> +		printk(KERN_INFO "process %d (%s) no longer affine to cpu%d\n",
-> +				task_pid_nr(p), p->comm, cpu);
->  	}
+So I missed the intention, because the code is written in such an odd
+way. Those security hooks were obviously done as a
+"search-and-replace" kind of thing, rather than trying to make sense.
 
-Hmm. I was really puzzled until I realized this is just cleanup,
-we can't reach this point if dest_cpu < nr_cpu_ids.
+I suspect "from_file" should never be passed to the security hook,
+since the only point would be exactly that "do security checks of
+/proc/kmsg at open time" - which I think is better done totally
+independent of the security model - otherwise the security models just
+inevitably just always do fundamentally different things.
 
-> +static void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p)
->  {
->  	struct rq *rq = cpu_rq(dead_cpu);
-> +	int needs_cpu, uninitialized_var(dest_cpu);
->
-> -	/* Must be exiting, otherwise would be on tasklist. */
-> -	BUG_ON(!p->exit_state);
-> -
-> -	/* Cannot have done final schedule yet: would have vanished. */
-> -	BUG_ON(p->state == TASK_DEAD);
-> -
-> -	get_task_struct(p);
-> +	needs_cpu = (task_cpu(p) == dead_cpu) && (p->state != TASK_WAKING);
-> +	if (needs_cpu)
-> +		dest_cpu = select_fallback_rq(dead_cpu, p);
-> +	raw_spin_unlock(&rq->lock);
+Security people should be the ones to know that the way to do security
+is to make it obvious, instead of having totally crazy interfaces for
+hooks that make no sense. "Not making sense" is how obvious patches
+then miss the point of the check.
 
-Probably we do not need any checks. This task was picked by
-->pick_next_task(), it should have task_cpu(p) == dead_cpu ?
+So what happens now is that the capability-based logic thinks the
+rules are about "open time", while the _other_ security rules seem to
+think it's about read time (_and_ open time - they just ignore the
+whole from_file).
 
-But. I think there is a problem. We should not migrate current task,
-stop thread, which does the migrating. At least, sched_stoptask.c
-doesn't implement ->enqueue_task() and we can never wake it up later
-for kthread_stop().
+So which one is right? Making it a case of "random security models can
+implement totally random semantics" is just stupid.
 
-Perhaps migrate_tasks() should do for_each_class() by hand to
-ignore stop_sched_class. But then _cpu_down() should somewhow
-ensure the stop thread on the dead CPU is already parked in
-schedule().
+So my suspicion is that the intent was to just do the check at open
+time, and the confusing interface just means that selinux and others
+didn't even realize what the whole intent of that "from_file" thing
+was. Why not just fix that. How does this (UNTESTED!) patch look?
 
-> -	case CPU_DYING_FROZEN:
->  		/* Update our root-domain */
->  		raw_spin_lock_irqsave(&rq->lock, flags);
->  		if (rq->rd) {
->  			BUG_ON(!cpumask_test_cpu(cpu, rq->rd->span));
->  			set_rq_offline(rq);
->  		}
-> +		migrate_tasks(cpu);
-> +		BUG_ON(rq->nr_running != 0);
->  		raw_spin_unlock_irqrestore(&rq->lock, flags);
+I've added James Morris to the recipients list. Comments?
 
-Probably we don't really need rq->lock. All cpus run stop threads.
+(The diffstat says that this adds more lines than it removes, but that
+is misleading: it is due to actually commenting the rule that checks
+are done open-time for /proc/kmsg)
 
-I am not sure about rq->idle, perhaps it should be deactivated.
-I don't think we should migrate it.
+                         Linus
 
+--0016e64ba1b4bad73d0494f4f73c
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gggxw1fr0
 
-What I never understood is the meaning of play_dead/etc. If we
-remove sched_idle_next(), who will do that logic? And how the
-idle thread can call idle_task_exit() ?
-
-Oleg.
-
+IGluY2x1ZGUvbGludXgvc2VjdXJpdHkuaCAgIHwgICAxMSArKysrKy0tLS0tLQoga2VybmVsL3By
+aW50ay5jICAgICAgICAgICAgfCAgIDE1ICsrKysrKysrKysrKy0tLQoga2VybmVsL3N5c2N0bC5j
+ICAgICAgICAgICAgfCAgICAyICstCiBzZWN1cml0eS9jb21tb25jYXAuYyAgICAgICB8ICAgIDcg
+Ky0tLS0tLQogc2VjdXJpdHkvc2VjdXJpdHkuYyAgICAgICAgfCAgICA0ICsrLS0KIHNlY3VyaXR5
+L3NlbGludXgvaG9va3MuYyAgIHwgICAgNCArKy0tCiBzZWN1cml0eS9zbWFjay9zbWFja19sc20u
+YyB8ICAgIDQgKystLQogNyBmaWxlcyBjaGFuZ2VkLCAyNSBpbnNlcnRpb25zKCspLCAyMiBkZWxl
+dGlvbnMoLSkKCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L3NlY3VyaXR5LmggYi9pbmNsdWRl
+L2xpbnV4L3NlY3VyaXR5LmgKaW5kZXggYjgyNDZhOC4uMTBmMTBmMSAxMDA2NDQKLS0tIGEvaW5j
+bHVkZS9saW51eC9zZWN1cml0eS5oCisrKyBiL2luY2x1ZGUvbGludXgvc2VjdXJpdHkuaApAQCAt
+NzcsNyArNzcsNyBAQCBleHRlcm4gaW50IGNhcF90YXNrX3ByY3RsKGludCBvcHRpb24sIHVuc2ln
+bmVkIGxvbmcgYXJnMiwgdW5zaWduZWQgbG9uZyBhcmczLAogZXh0ZXJuIGludCBjYXBfdGFza19z
+ZXRzY2hlZHVsZXIoc3RydWN0IHRhc2tfc3RydWN0ICpwKTsKIGV4dGVybiBpbnQgY2FwX3Rhc2tf
+c2V0aW9wcmlvKHN0cnVjdCB0YXNrX3N0cnVjdCAqcCwgaW50IGlvcHJpbyk7CiBleHRlcm4gaW50
+IGNhcF90YXNrX3NldG5pY2Uoc3RydWN0IHRhc2tfc3RydWN0ICpwLCBpbnQgbmljZSk7Ci1leHRl
+cm4gaW50IGNhcF9zeXNsb2coaW50IHR5cGUsIGJvb2wgZnJvbV9maWxlKTsKK2V4dGVybiBpbnQg
+Y2FwX3N5c2xvZyhpbnQgdHlwZSk7CiBleHRlcm4gaW50IGNhcF92bV9lbm91Z2hfbWVtb3J5KHN0
+cnVjdCBtbV9zdHJ1Y3QgKm1tLCBsb25nIHBhZ2VzKTsKIAogc3RydWN0IG1zZ2hkcjsKQEAgLTEy
+NzAsNyArMTI3MCw2IEBAIHN0YXRpYyBpbmxpbmUgdm9pZCBzZWN1cml0eV9mcmVlX21udF9vcHRz
+KHN0cnVjdCBzZWN1cml0eV9tbnRfb3B0cyAqb3B0cykKICAqCWxvZ2dpbmcgdG8gdGhlIGNvbnNv
+bGUuCiAgKglTZWUgdGhlIHN5c2xvZygyKSBtYW51YWwgcGFnZSBmb3IgYW4gZXhwbGFuYXRpb24g
+b2YgdGhlIEB0eXBlIHZhbHVlcy4KICAqCUB0eXBlIGNvbnRhaW5zIHRoZSB0eXBlIG9mIGFjdGlv
+bi4KLSAqCUBmcm9tX2ZpbGUgaW5kaWNhdGVzIHRoZSBjb250ZXh0IG9mIGFjdGlvbiAoaWYgaXQg
+Y2FtZSBmcm9tIC9wcm9jKS4KICAqCVJldHVybiAwIGlmIHBlcm1pc3Npb24gaXMgZ3JhbnRlZC4K
+ICAqIEBzZXR0aW1lOgogICoJQ2hlY2sgcGVybWlzc2lvbiB0byBjaGFuZ2UgdGhlIHN5c3RlbSB0
+aW1lLgpAQCAtMTM4OCw3ICsxMzg3LDcgQEAgc3RydWN0IHNlY3VyaXR5X29wZXJhdGlvbnMgewog
+CWludCAoKnN5c2N0bCkgKHN0cnVjdCBjdGxfdGFibGUgKnRhYmxlLCBpbnQgb3ApOwogCWludCAo
+KnF1b3RhY3RsKSAoaW50IGNtZHMsIGludCB0eXBlLCBpbnQgaWQsIHN0cnVjdCBzdXBlcl9ibG9j
+ayAqc2IpOwogCWludCAoKnF1b3RhX29uKSAoc3RydWN0IGRlbnRyeSAqZGVudHJ5KTsKLQlpbnQg
+KCpzeXNsb2cpIChpbnQgdHlwZSwgYm9vbCBmcm9tX2ZpbGUpOworCWludCAoKnN5c2xvZykgKGlu
+dCB0eXBlKTsKIAlpbnQgKCpzZXR0aW1lKSAoc3RydWN0IHRpbWVzcGVjICp0cywgc3RydWN0IHRp
+bWV6b25lICp0eik7CiAJaW50ICgqdm1fZW5vdWdoX21lbW9yeSkgKHN0cnVjdCBtbV9zdHJ1Y3Qg
+Km1tLCBsb25nIHBhZ2VzKTsKIApAQCAtMTY3MSw3ICsxNjcwLDcgQEAgaW50IHNlY3VyaXR5X3Jl
+YWxfY2FwYWJsZV9ub2F1ZGl0KHN0cnVjdCB0YXNrX3N0cnVjdCAqdHNrLCBpbnQgY2FwKTsKIGlu
+dCBzZWN1cml0eV9zeXNjdGwoc3RydWN0IGN0bF90YWJsZSAqdGFibGUsIGludCBvcCk7CiBpbnQg
+c2VjdXJpdHlfcXVvdGFjdGwoaW50IGNtZHMsIGludCB0eXBlLCBpbnQgaWQsIHN0cnVjdCBzdXBl
+cl9ibG9jayAqc2IpOwogaW50IHNlY3VyaXR5X3F1b3RhX29uKHN0cnVjdCBkZW50cnkgKmRlbnRy
+eSk7Ci1pbnQgc2VjdXJpdHlfc3lzbG9nKGludCB0eXBlLCBib29sIGZyb21fZmlsZSk7CitpbnQg
+c2VjdXJpdHlfc3lzbG9nKGludCB0eXBlKTsKIGludCBzZWN1cml0eV9zZXR0aW1lKHN0cnVjdCB0
+aW1lc3BlYyAqdHMsIHN0cnVjdCB0aW1lem9uZSAqdHopOwogaW50IHNlY3VyaXR5X3ZtX2Vub3Vn
+aF9tZW1vcnkobG9uZyBwYWdlcyk7CiBpbnQgc2VjdXJpdHlfdm1fZW5vdWdoX21lbW9yeV9tbShz
+dHJ1Y3QgbW1fc3RydWN0ICptbSwgbG9uZyBwYWdlcyk7CkBAIC0xOTAxLDkgKzE5MDAsOSBAQCBz
+dGF0aWMgaW5saW5lIGludCBzZWN1cml0eV9xdW90YV9vbihzdHJ1Y3QgZGVudHJ5ICpkZW50cnkp
+CiAJcmV0dXJuIDA7CiB9CiAKLXN0YXRpYyBpbmxpbmUgaW50IHNlY3VyaXR5X3N5c2xvZyhpbnQg
+dHlwZSwgYm9vbCBmcm9tX2ZpbGUpCitzdGF0aWMgaW5saW5lIGludCBzZWN1cml0eV9zeXNsb2co
+aW50IHR5cGUpCiB7Ci0JcmV0dXJuIGNhcF9zeXNsb2codHlwZSwgZnJvbV9maWxlKTsKKwlyZXR1
+cm4gY2FwX3N5c2xvZyh0eXBlKTsKIH0KIAogc3RhdGljIGlubGluZSBpbnQgc2VjdXJpdHlfc2V0
+dGltZShzdHJ1Y3QgdGltZXNwZWMgKnRzLCBzdHJ1Y3QgdGltZXpvbmUgKnR6KQpkaWZmIC0tZ2l0
+IGEva2VybmVsL3ByaW50ay5jIGIva2VybmVsL3ByaW50ay5jCmluZGV4IDM4ZTdkNTguLmE1YmZh
+NWEgMTAwNjQ0Ci0tLSBhL2tlcm5lbC9wcmludGsuYworKysgYi9rZXJuZWwvcHJpbnRrLmMKQEAg
+LTI3NCw5ICsyNzQsMTggQEAgaW50IGRvX3N5c2xvZyhpbnQgdHlwZSwgY2hhciBfX3VzZXIgKmJ1
+ZiwgaW50IGxlbiwgYm9vbCBmcm9tX2ZpbGUpCiAJY2hhciBjOwogCWludCBlcnJvciA9IDA7CiAK
+LQllcnJvciA9IHNlY3VyaXR5X3N5c2xvZyh0eXBlLCBmcm9tX2ZpbGUpOwotCWlmIChlcnJvcikK
+LQkJcmV0dXJuIGVycm9yOworCS8qCisJICogSWYgd2UgaGF2ZSB1c2UgL3Byb2Mva21zZyBhbmQg
+dGhlIG9wZW4gc3VjY2VlZGVkLAorCSAqIHdlIGRvbid0IGRvIGFueSBleHRyYSBzZWN1cml0eSBj
+aGVja3M6IHRoZXkgd2VyZQorCSAqIGRvbmUgYXQgb3BlbiB0aW1lLgorCSAqLworCWlmICh0eXBl
+ID09IFNZU0xPR19BQ1RJT05fT1BFTiB8fCAhZnJvbV9maWxlKSB7CisJCWlmIChkbWVzZ19yZXN0
+cmljdCAmJiAhY2FwYWJsZShDQVBfU1lTX0FETUlOKSkKKwkJCXJldHVybiAtRVBFUk07CisJCWVy
+cm9yID0gc2VjdXJpdHlfc3lzbG9nKHR5cGUpOworCQlpZiAoZXJyb3IpCisJCQlyZXR1cm4gZXJy
+b3I7CisJfQogCiAJc3dpdGNoICh0eXBlKSB7CiAJY2FzZSBTWVNMT0dfQUNUSU9OX0NMT1NFOgkv
+KiBDbG9zZSBsb2cgKi8KZGlmZiAtLWdpdCBhL2tlcm5lbC9zeXNjdGwuYyBiL2tlcm5lbC9zeXNj
+dGwuYwppbmRleCBiNjViZjYzLi41YWJmYTE1IDEwMDY0NAotLS0gYS9rZXJuZWwvc3lzY3RsLmMK
+KysrIGIva2VybmVsL3N5c2N0bC5jCkBAIC03MDIsNyArNzAyLDYgQEAgc3RhdGljIHN0cnVjdCBj
+dGxfdGFibGUga2Vybl90YWJsZVtdID0gewogCQkuZXh0cmExCQk9ICZ6ZXJvLAogCQkuZXh0cmEy
+CQk9ICZ0ZW5fdGhvdXNhbmQsCiAJfSwKLSNlbmRpZgogCXsKIAkJLnByb2NuYW1lCT0gImRtZXNn
+X3Jlc3RyaWN0IiwKIAkJLmRhdGEJCT0gJmRtZXNnX3Jlc3RyaWN0LApAQCAtNzEyLDYgKzcxMSw3
+IEBAIHN0YXRpYyBzdHJ1Y3QgY3RsX3RhYmxlIGtlcm5fdGFibGVbXSA9IHsKIAkJLmV4dHJhMQkJ
+PSAmemVybywKIAkJLmV4dHJhMgkJPSAmb25lLAogCX0sCisjZW5kaWYKIAl7CiAJCS5wcm9jbmFt
+ZQk9ICJuZ3JvdXBzX21heCIsCiAJCS5kYXRhCQk9ICZuZ3JvdXBzX21heCwKZGlmZiAtLWdpdCBh
+L3NlY3VyaXR5L2NvbW1vbmNhcC5jIGIvc2VjdXJpdHkvY29tbW9uY2FwLmMKaW5kZXggMDRiODBm
+OS4uOGNlMjQwMCAxMDA2NDQKLS0tIGEvc2VjdXJpdHkvY29tbW9uY2FwLmMKKysrIGIvc2VjdXJp
+dHkvY29tbW9uY2FwLmMKQEAgLTg4NiwxNyArODg2LDEyIEBAIGVycm9yOgogLyoqCiAgKiBjYXBf
+c3lzbG9nIC0gRGV0ZXJtaW5lIHdoZXRoZXIgc3lzbG9nIGZ1bmN0aW9uIGlzIHBlcm1pdHRlZAog
+ICogQHR5cGU6IEZ1bmN0aW9uIHJlcXVlc3RlZAotICogQGZyb21fZmlsZTogV2hldGhlciB0aGlz
+IHJlcXVlc3QgY2FtZSBmcm9tIGFuIG9wZW4gZmlsZSAoaS5lLiAvcHJvYykKICAqCiAgKiBEZXRl
+cm1pbmUgd2hldGhlciB0aGUgY3VycmVudCBwcm9jZXNzIGlzIHBlcm1pdHRlZCB0byB1c2UgYSBw
+YXJ0aWN1bGFyCiAgKiBzeXNsb2cgZnVuY3Rpb24sIHJldHVybmluZyAwIGlmIHBlcm1pc3Npb24g
+aXMgZ3JhbnRlZCwgLXZlIGlmIG5vdC4KICAqLwotaW50IGNhcF9zeXNsb2coaW50IHR5cGUsIGJv
+b2wgZnJvbV9maWxlKQoraW50IGNhcF9zeXNsb2coaW50IHR5cGUpCiB7Ci0JaWYgKHR5cGUgIT0g
+U1lTTE9HX0FDVElPTl9PUEVOICYmIGZyb21fZmlsZSkKLQkJcmV0dXJuIDA7Ci0JaWYgKGRtZXNn
+X3Jlc3RyaWN0ICYmICFjYXBhYmxlKENBUF9TWVNfQURNSU4pKQotCQlyZXR1cm4gLUVQRVJNOwog
+CWlmICgodHlwZSAhPSBTWVNMT0dfQUNUSU9OX1JFQURfQUxMICYmCiAJICAgICB0eXBlICE9IFNZ
+U0xPR19BQ1RJT05fU0laRV9CVUZGRVIpICYmICFjYXBhYmxlKENBUF9TWVNfQURNSU4pKQogCQly
+ZXR1cm4gLUVQRVJNOwpkaWZmIC0tZ2l0IGEvc2VjdXJpdHkvc2VjdXJpdHkuYyBiL3NlY3VyaXR5
+L3NlY3VyaXR5LmMKaW5kZXggM2VmNWUyYS4uMWI3OThkMyAxMDA2NDQKLS0tIGEvc2VjdXJpdHkv
+c2VjdXJpdHkuYworKysgYi9zZWN1cml0eS9zZWN1cml0eS5jCkBAIC0xOTcsOSArMTk3LDkgQEAg
+aW50IHNlY3VyaXR5X3F1b3RhX29uKHN0cnVjdCBkZW50cnkgKmRlbnRyeSkKIAlyZXR1cm4gc2Vj
+dXJpdHlfb3BzLT5xdW90YV9vbihkZW50cnkpOwogfQogCi1pbnQgc2VjdXJpdHlfc3lzbG9nKGlu
+dCB0eXBlLCBib29sIGZyb21fZmlsZSkKK2ludCBzZWN1cml0eV9zeXNsb2coaW50IHR5cGUpCiB7
+Ci0JcmV0dXJuIHNlY3VyaXR5X29wcy0+c3lzbG9nKHR5cGUsIGZyb21fZmlsZSk7CisJcmV0dXJu
+IHNlY3VyaXR5X29wcy0+c3lzbG9nKHR5cGUpOwogfQogCiBpbnQgc2VjdXJpdHlfc2V0dGltZShz
+dHJ1Y3QgdGltZXNwZWMgKnRzLCBzdHJ1Y3QgdGltZXpvbmUgKnR6KQpkaWZmIC0tZ2l0IGEvc2Vj
+dXJpdHkvc2VsaW51eC9ob29rcy5jIGIvc2VjdXJpdHkvc2VsaW51eC9ob29rcy5jCmluZGV4IGQ5
+MTU0Y2YuLjEzY2Y4ZjEgMTAwNjQ0Ci0tLSBhL3NlY3VyaXR5L3NlbGludXgvaG9va3MuYworKysg
+Yi9zZWN1cml0eS9zZWxpbnV4L2hvb2tzLmMKQEAgLTE5NzMsMTEgKzE5NzMsMTEgQEAgc3RhdGlj
+IGludCBzZWxpbnV4X3F1b3RhX29uKHN0cnVjdCBkZW50cnkgKmRlbnRyeSkKIAlyZXR1cm4gZGVu
+dHJ5X2hhc19wZXJtKGNyZWQsIE5VTEwsIGRlbnRyeSwgRklMRV9fUVVPVEFPTik7CiB9CiAKLXN0
+YXRpYyBpbnQgc2VsaW51eF9zeXNsb2coaW50IHR5cGUsIGJvb2wgZnJvbV9maWxlKQorc3RhdGlj
+IGludCBzZWxpbnV4X3N5c2xvZyhpbnQgdHlwZSkKIHsKIAlpbnQgcmM7CiAKLQlyYyA9IGNhcF9z
+eXNsb2codHlwZSwgZnJvbV9maWxlKTsKKwlyYyA9IGNhcF9zeXNsb2codHlwZSk7CiAJaWYgKHJj
+KQogCQlyZXR1cm4gcmM7CiAKZGlmZiAtLWdpdCBhL3NlY3VyaXR5L3NtYWNrL3NtYWNrX2xzbS5j
+IGIvc2VjdXJpdHkvc21hY2svc21hY2tfbHNtLmMKaW5kZXggYmMzOWY0MC4uNmQ1OWI2ZCAxMDA2
+NDQKLS0tIGEvc2VjdXJpdHkvc21hY2svc21hY2tfbHNtLmMKKysrIGIvc2VjdXJpdHkvc21hY2sv
+c21hY2tfbHNtLmMKQEAgLTE1NywxMiArMTU3LDEyIEBAIHN0YXRpYyBpbnQgc21hY2tfcHRyYWNl
+X3RyYWNlbWUoc3RydWN0IHRhc2tfc3RydWN0ICpwdHApCiAgKgogICogUmV0dXJucyAwIG9uIHN1
+Y2Nlc3MsIGVycm9yIGNvZGUgb3RoZXJ3aXNlLgogICovCi1zdGF0aWMgaW50IHNtYWNrX3N5c2xv
+ZyhpbnQgdHlwZSwgYm9vbCBmcm9tX2ZpbGUpCitzdGF0aWMgaW50IHNtYWNrX3N5c2xvZyhpbnQg
+dHlwZSkKIHsKIAlpbnQgcmM7CiAJY2hhciAqc3AgPSBjdXJyZW50X3NlY3VyaXR5KCk7CiAKLQly
+YyA9IGNhcF9zeXNsb2codHlwZSwgZnJvbV9maWxlKTsKKwlyYyA9IGNhcF9zeXNsb2codHlwZSk7
+CiAJaWYgKHJjICE9IDApCiAJCXJldHVybiByYzsKIAo=
+--0016e64ba1b4bad73d0494f4f73c--
