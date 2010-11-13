@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756426Ab0KMNpl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 08:45:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7840 "EHLO mx1.redhat.com"
+	id S1754450Ab0KMOlK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 09:41:10 -0500
+Received: from imr3.ericy.com ([198.24.6.13]:50244 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754101Ab0KMNpi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 08:45:38 -0500
-Message-ID: <4CDE9677.3060506@redhat.com>
-Date: Sat, 13 Nov 2010 11:45:27 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
+	id S1752618Ab0KMOlH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 09:41:07 -0500
+Date: Sat, 13 Nov 2010 06:40:21 -0800
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Phil Pokorny <ppokorny@penguincomputing.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] Location for thermal drivers
+Message-ID: <20101113144021.GA29753@ericsson.com>
+References: <1289594026.22931.388.camel@groeck-laptop>
+ <AANLkTimERGh2yGGX_E_N4ajxg_-0QTFS54QSKj2+AAfF@mail.gmail.com>
+ <1289599600.22931.406.camel@groeck-laptop>
+ <AANLkTikPt09Xdr_wvjmXhdPD8UdA-7b=AJjC+zgn8PA4@mail.gmail.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for 2.6.36-rc2] drivers/media fixes
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikPt09Xdr_wvjmXhdPD8UdA-7b=AJjC+zgn8PA4@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sat, Nov 13, 2010 at 02:21:58AM -0500, Phil Pokorny wrote:
+> On Fri, Nov 12, 2010 at 2:06 PM, Guenter Roeck
+> <guenter.roeck@ericsson.com> wrote:
+> > On Fri, 2010-11-12 at 16:53 -0500, Phil Pokorny wrote:
+> >> On Fri, Nov 12, 2010 at 12:33 PM, Guenter Roeck
+> >> <guenter.roeck@ericsson.com> wrote:
+> >> > I think a better location for the driver would be drivers/thermal.
+> >> > drivers/hwmon is not really a good fit, since hwmon support for thermal
+> >> > drivers is optional.
+> >>
+> >> What is the difference between a "thermal" sensor and a "temperature"
+> >> sensor?  Aren't they the same thing?
+> >>
+> > The thermal framework is much more extensive than the hwmon framework.
+> > See Documentation/thermal/sysfs-api.txt for details.
+> 
+> Ahh...  Sorry for wasting your time without reading the necessary
+> background first.  I have rectified this oversight.
+> 
+> Reading the thermal sysfs-api and code, it's seems clear that it is a
+> very ACPI centric kind of thing.  It's involved in the coordination of
+> temperatures and the ways (fans, throttle algorithms, etc.) to keep
+> them in check.  It makes regular calls into the ACPI parser to
+> evaluate values.
+> 
+> But this driver that Alan has written seems to be a hwmon driver.
+> It's poking at registers, setting up A2D channels and dealing with
+> thermistors and perhaps voltages?  Those are very hwmon like things
+> for a driver to do.
+> 
+> It appears to be very similar to the coretemp and k10temp drivers that
+> read temperatures from the internals of the CPU.
+> 
+If the driver would use the hwmon framework, yes. However, it uses the thermal
+framework, in which hwmon support is optional.
 
-Please pull from:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
+The thermal framework itself is acpi independent. There is no single
+acpi call in the thermal framework code. acpi use may be true for the 
+drivers currently registering with the thermal framework, but that
+doesn't mean that the thermal framework itself in any way depends on 
+or is only supposed to be used with ACPI devices. ACPI is only referenced
+in the documentation as example.
 
-For a few bug fixes on some drivers, and for Arnd's patch to finish the BKL removal 
-from V4L/DVB, as discussed during the KS/2010.
+If the thermal framework were to be used for acpi devices only, it would
+presumably reside in drivers/acpi and not be independent.
 
-Thanks!
-Mauro
+So your reasoning isn't really correct. Putting thermal drivers into 
+the hwmon directory doesn't really make sense. hwmon functionality
+is an optional subset of thermal drivers, but that does not mean
+that thermal drivers _are_ hwmon drivers.
 
-The following changes since commit c8ddb2713c624f432fa5fe3c7ecffcdda46ea0d4:
-
-  Linux 2.6.37-rc1 (2010-11-01 07:54:12 -0400)
-
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
-
-Arnd Bergmann (1):
-      [media] v4l: kill the BKL
-
-Daniel Drake (1):
-      [media] cafe_ccic: fix subdev configuration
-
-Dmitri Belimov (1):
-      [media] saa7134: Fix autodetect for Behold A7 and H7 TV cards
-
-Janusz Krzysztofik (4):
-      [media] SoC Camera: OMAP1: update for recent framework changes
-      [media] SoC Camera: OMAP1: update for recent videobuf changes
-      [media] SOC Camera: OMAP1: typo fix
-      [media] SoC Camera: ov6650: minor cleanups
-
-Jean Delvare (1):
-      [media] BZ#22292: dibx000_common: Restore i2c algo pointer
-
-Sascha Hauer (2):
-      [media] ARM mx3_camera: check for DMA engine type
-      [media] soc-camera: Compile fixes for mx2-camera
-
-Stefan Ringel (1):
-      [media] tm6000: bugfix set tv standards
-
- drivers/media/Kconfig                        |    1 -
- drivers/media/dvb/frontends/dibx000_common.c |    1 +
- drivers/media/video/cafe_ccic.c              |    5 ++-
- drivers/media/video/cx231xx/cx231xx-417.c    |    6 +---
- drivers/media/video/cx23885/cx23885-417.c    |    9 +-------
- drivers/media/video/cx23885/cx23885-video.c  |    5 ----
- drivers/media/video/mx2_camera.c             |   13 ++++-------
- drivers/media/video/mx3_camera.c             |    4 +++
- drivers/media/video/omap1_camera.c           |   16 +++++++-------
- drivers/media/video/ov6650.c                 |    4 +--
- drivers/media/video/saa7134/saa7134-cards.c  |   24 ++++++++++----------
- drivers/media/video/se401.c                  |    7 ++---
- drivers/media/video/stk-webcam.c             |    4 ---
- drivers/media/video/tlg2300/pd-main.c        |   13 +++--------
- drivers/media/video/usbvideo/vicam.c         |   29 ++++++++++++-------------
- drivers/media/video/v4l2-dev.c               |    7 +++--
- drivers/media/video/zoran/zoran.h            |    1 +
- drivers/media/video/zoran/zoran_card.c       |    1 +
- drivers/media/video/zoran/zoran_driver.c     |   27 ++++++++++++++++++-----
- drivers/staging/tm6000/tm6000-video.c        |    1 +
- 20 files changed, 86 insertions(+), 92 deletions(-)
-
+Guenter
