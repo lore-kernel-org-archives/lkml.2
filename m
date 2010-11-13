@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab0KMQpb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 11:45:31 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33187 "EHLO
+	id S1756991Ab0KMQpj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 11:45:39 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33197 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756623Ab0KMQpV (ORCPT
+	with ESMTP id S1756654Ab0KMQp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 11:45:21 -0500
-Date: Sat, 13 Nov 2010 08:44:35 -0800
+	Sat, 13 Nov 2010 11:45:27 -0500
+Date: Sat, 13 Nov 2010 08:44:39 -0800
 From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-        driverdevel <devel@driverdev.osuosl.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>
 Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>
-Subject: [PATCH -next] staging: fix iio/gyro typos, build errors
-Message-Id: <20101113084435.3850deb6.randy.dunlap@oracle.com>
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        xen-devel@lists.xensource.com, virtualization@lists.osdl.org,
+        Tony Finch <dot@dotat.at>
+Subject: [PATCH -next] xen: fix header export to userspace
+Message-Id: <20101113084439.d21bd0f0.randy.dunlap@oracle.com>
 In-Reply-To: <20101112130547.c2a3c2c1.sfr@canb.auug.org.au>
 References: <20101112130547.c2a3c2c1.sfr@canb.auug.org.au>
 Organization: Oracle Linux Eng.
@@ -28,52 +30,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Typo causes build errors.  Did anyone even build this driver?
+scripts/headers_install.pl prevents "__user" from being exported
+to userspace headers, so just use compiler.h to make sure that
+__user is defined and avoid the error.
+
+unifdef: linux-next-20101112/xx64/usr/include/xen/privcmd.h.tmp: 79: Premature EOF (#if line 33 depth 1)
 
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc:	Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc:	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc:	xen-devel@lists.xensource.com (moderated for non-subscribers)
+Cc:	virtualization@lists.osdl.org
+Cc:	Tony Finch <dot@dotat.at>
 ---
- drivers/staging/iio/gyro/adis16251.h |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ include/xen/privcmd.h |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-Also has section mismatch warnings:
-
-WARNING: drivers/staging/built-in.o(.data+0xe9b8): Section mismatch in reference from the variable spi_adis16255_drv to the function .devinit.text:spi_adis16255_probe()
-The variable spi_adis16255_drv references
-the function __devinit spi_adis16255_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console, 
-
-WARNING: drivers/staging/built-in.o(.data+0xe9c0): Section mismatch in reference from the variable spi_adis16255_drv to the function .devexit.text:spi_adis16255_remove()
-The variable spi_adis16255_drv references
-the function __devexit spi_adis16255_remove()
-If the reference is valid then annotate the
-variable with __exit* (see linux/init.h) or name the variable:
-*driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
-
-
---- linux-next-20101112.orig/drivers/staging/iio/gyro/adis16251.h
-+++ linux-next-20101112/drivers/staging/iio/gyro/adis16251.h
-@@ -56,14 +56,14 @@
- #define ADIS16251_DIAG_STAT_POWER_HIGH	(1<<1)
- #define ADIS16251_DIAG_STAT_POWER_LOW	(1<<0)
+--- linux-next-20101112.orig/include/xen/privcmd.h
++++ linux-next-20101112/include/xen/privcmd.h
+@@ -34,13 +34,10 @@
+ #define __LINUX_PUBLIC_PRIVCMD_H__
  
--#define ADIS16251_DIAG_STAT_ERR_MASK (ADIS16261_DIAG_STAT_ALARM2 | \
--				      ADIS16261_DIAG_STAT_ALARM1 | \
--				      ADIS16261_DIAG_STAT_SELF_TEST | \
--				      ADIS16261_DIAG_STAT_OVERFLOW | \
--				      ADIS16261_DIAG_STAT_SPI_FAIL | \
--				      ADIS16261_DIAG_STAT_FLASH_UPT | \
--				      ADIS16261_DIAG_STAT_POWER_HIGH | \
--				      ADIS16261_DIAG_STAT_POWER_LOW)
-+#define ADIS16251_DIAG_STAT_ERR_MASK (ADIS16251_DIAG_STAT_ALARM2 | \
-+				      ADIS16251_DIAG_STAT_ALARM1 | \
-+				      ADIS16251_DIAG_STAT_SELF_TEST | \
-+				      ADIS16251_DIAG_STAT_OVERFLOW | \
-+				      ADIS16251_DIAG_STAT_SPI_FAIL | \
-+				      ADIS16251_DIAG_STAT_FLASH_UPT | \
-+				      ADIS16251_DIAG_STAT_POWER_HIGH | \
-+				      ADIS16251_DIAG_STAT_POWER_LOW)
+ #include <linux/types.h>
++#include <linux/compiler.h>
  
- /* GLOB_CMD */
- #define ADIS16251_GLOB_CMD_SW_RESET	(1<<7)
+ typedef unsigned long xen_pfn_t;
+ 
+-#ifndef __user
+-#define __user
+-#endif
+-
+ struct privcmd_hypercall {
+ 	__u64 op;
+ 	__u64 arg[5];
