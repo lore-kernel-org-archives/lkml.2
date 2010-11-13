@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab0KMDal (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 22:30:41 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:42011 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754032Ab0KMDaP (ORCPT
+	id S1755462Ab0KMDam (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 22:30:42 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:31686 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754019Ab0KMDaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 22:30:15 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6165"; a="61810882"
+	Fri, 12 Nov 2010 22:30:14 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6165"; a="61718511"
 From: Stepan Moskovchenko <stepanm@codeaurora.org>
 To: dwalker@codeaurora.org
 Cc: davidb@codeaurora.org, bryanh@codeaurora.org,
         linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
         Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCH 14/14] msm: iommu: Miscellaneous code cleanup
-Date: Fri, 12 Nov 2010 19:30:00 -0800
-Message-Id: <1289619000-13167-15-git-send-email-stepanm@codeaurora.org>
+Subject: [PATCH 13/14] msm: iommu: Support cache-coherent memory access
+Date: Fri, 12 Nov 2010 19:29:59 -0800
+Message-Id: <1289619000-13167-14-git-send-email-stepanm@codeaurora.org>
 X-Mailer: git-send-email 1.7.0.2
 In-Reply-To: <1289619000-13167-1-git-send-email-stepanm@codeaurora.org>
 References: <1289619000-13167-1-git-send-email-stepanm@codeaurora.org>
@@ -24,129 +24,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove some unneeded assignments and messages, restructure
-a failure path in iova_to_phys, and make __flush_iotlb
-return int in preparation for adding IOMMU clock control.
+Add support for allowing IOMMU memory transactions to be
+cache coherent, eliminating the need for software cache
+management in certain situations. This can lead to
+improvements in performance and power usage, assuming the
+multimedia core's access pattern exhibits spatial locality
+and that its working set fits into the cache.
 
 Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
 ---
- arch/arm/mach-msm/iommu.c |   29 +++++++++++++++++------------
- 1 files changed, 17 insertions(+), 12 deletions(-)
+ arch/arm/mach-msm/iommu.c |   93 +++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 82 insertions(+), 11 deletions(-)
 
 diff --git a/arch/arm/mach-msm/iommu.c b/arch/arm/mach-msm/iommu.c
-index 935025e..932728c 100644
+index 67e8f53..935025e 100644
 --- a/arch/arm/mach-msm/iommu.c
 +++ b/arch/arm/mach-msm/iommu.c
-@@ -50,12 +50,12 @@ struct msm_priv {
- 	struct list_head list_attached;
- };
+@@ -33,6 +33,16 @@
+ #include <mach/iommu_hw-8xxx.h>
+ #include <mach/iommu.h>
  
--static void __flush_iotlb(struct iommu_domain *domain)
-+static int __flush_iotlb(struct iommu_domain *domain)
- {
- 	struct msm_priv *priv = domain->priv;
- 	struct msm_iommu_drvdata *iommu_drvdata;
- 	struct msm_iommu_ctx_drvdata *ctx_drvdata;
--
-+	int ret = 0;
- #ifndef CONFIG_IOMMU_PGTABLES_L2
- 	unsigned long *fl_table = priv->pgtable;
- 	int i;
-@@ -79,6 +79,8 @@ static void __flush_iotlb(struct iommu_domain *domain)
- 		iommu_drvdata = dev_get_drvdata(ctx_drvdata->pdev->dev.parent);
- 		SET_CTX_TLBIALL(iommu_drvdata->base, ctx_drvdata->num, 0);
- 	}
++#define MRC(reg, processor, op1, crn, crm, op2)				\
++__asm__ __volatile__ (							\
++"   mrc   "   #processor "," #op1 ", %0,"  #crn "," #crm "," #op2 "\n"  \
++: "=r" (reg))
 +
-+	return ret;
- }
++#define RCP15_PRRR(reg)		MRC(reg, p15, 0, c10, c2, 0)
++#define RCP15_NMRR(reg)		MRC(reg, p15, 0, c10, c2, 1)
++
++static int msm_iommu_tex_class[4];
++
+ DEFINE_SPINLOCK(msm_iommu_lock);
  
- static void __reset_context(void __iomem *base, int ctx)
-@@ -267,7 +269,7 @@ static int msm_iommu_attach_dev(struct iommu_domain *domain, struct device *dev)
- 			  __pa(priv->pgtable));
+ struct msm_priv {
+@@ -98,6 +108,7 @@ static void __reset_context(void __iomem *base, int ctx)
  
- 	list_add(&(ctx_drvdata->attached_elm), &priv->list_attached);
--	__flush_iotlb(domain);
-+	ret = __flush_iotlb(domain);
+ static void __program_context(void __iomem *base, int ctx, phys_addr_t pgtable)
+ {
++	unsigned int prrr, nmrr;
+ 	__reset_context(base, ctx);
  
- fail:
- 	spin_unlock_irqrestore(&msm_iommu_lock, flags);
-@@ -282,6 +284,7 @@ static void msm_iommu_detach_dev(struct iommu_domain *domain,
- 	struct msm_iommu_drvdata *iommu_drvdata;
- 	struct msm_iommu_ctx_drvdata *ctx_drvdata;
- 	unsigned long flags;
-+	int ret;
+ 	/* Set up HTW mode */
+@@ -130,11 +141,11 @@ static void __program_context(void __iomem *base, int ctx, phys_addr_t pgtable)
+ 	/* Turn on TEX Remap */
+ 	SET_TRE(base, ctx, 1);
+ 
+-	/* Do not configure PRRR / NMRR on the IOMMU for now. We will assume
+-	 * TEX class 0 for everything until attributes are properly worked out
+-	 */
+-	SET_PRRR(base, ctx, 0);
+-	SET_NMRR(base, ctx, 0);
++	/* Set TEX remap attributes */
++	RCP15_PRRR(prrr);
++	RCP15_NMRR(nmrr);
++	SET_PRRR(base, ctx, prrr);
++	SET_NMRR(base, ctx, nmrr);
+ 
+ 	/* Turn on BFB prefetch */
+ 	SET_BFBDFE(base, ctx, 1);
+@@ -304,12 +315,21 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
+ 	unsigned long *sl_table;
+ 	unsigned long *sl_pte;
+ 	unsigned long sl_offset;
++	unsigned int pgprot;
+ 	size_t len = 0x1000UL << order;
+-	int ret = 0;
++	int ret = 0, tex, sh;
  
  	spin_lock_irqsave(&msm_iommu_lock, flags);
- 	priv = domain->priv;
-@@ -296,7 +299,10 @@ static void msm_iommu_detach_dev(struct iommu_domain *domain,
- 	if (!iommu_drvdata || !ctx_drvdata || !ctx_dev)
- 		goto fail;
+-	priv = domain->priv;
  
--	__flush_iotlb(domain);
-+	ret = __flush_iotlb(domain);
-+	if (ret)
++	sh = (prot & MSM_IOMMU_ATTR_SH) ? 1 : 0;
++	tex = msm_iommu_tex_class[prot & 0x03];
++
++	if (tex < 0 || tex > NUM_TEX_CLASS - 1) {
++		ret = -EINVAL;
 +		goto fail;
++	}
 +
- 	__reset_context(iommu_drvdata->base, ctx_dev->num);
- 	list_del_init(&ctx_drvdata->attached_elm);
- 
-@@ -410,7 +416,7 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
- 				SL_AP1 | SL_SHARED | SL_TYPE_LARGE | pgprot;
++	priv = domain->priv;
+ 	if (!priv) {
+ 		ret = -EINVAL;
+ 		goto fail;
+@@ -330,6 +350,18 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
+ 		goto fail;
  	}
  
--	__flush_iotlb(domain);
-+	ret = __flush_iotlb(domain);
- fail:
- 	spin_unlock_irqrestore(&msm_iommu_lock, flags);
- 	return ret;
-@@ -495,7 +501,7 @@ static int msm_iommu_unmap(struct iommu_domain *domain, unsigned long va,
- 		}
++	if (len == SZ_16M || len == SZ_1M) {
++		pgprot = sh ? FL_SHARED : 0;
++		pgprot |= tex & 0x01 ? FL_BUFFERABLE : 0;
++		pgprot |= tex & 0x02 ? FL_CACHEABLE : 0;
++		pgprot |= tex & 0x04 ? FL_TEX0 : 0;
++	} else	{
++		pgprot = sh ? SL_SHARED : 0;
++		pgprot |= tex & 0x01 ? SL_BUFFERABLE : 0;
++		pgprot |= tex & 0x02 ? SL_CACHEABLE : 0;
++		pgprot |= tex & 0x04 ? SL_TEX0 : 0;
++	}
++
+ 	fl_offset = FL_OFFSET(va);	/* Upper 12 bits */
+ 	fl_pte = fl_table + fl_offset;	/* int pointers, 4 bytes */
+ 
+@@ -338,12 +370,12 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
+ 		for (i = 0; i < 16; i++)
+ 			*(fl_pte+i) = (pa & 0xFF000000) | FL_SUPERSECTION |
+ 				  FL_AP_READ | FL_AP_WRITE | FL_TYPE_SECT |
+-				  FL_SHARED;
++				  FL_SHARED | pgprot;
  	}
  
--	__flush_iotlb(domain);
-+	ret = __flush_iotlb(domain);
- fail:
- 	spin_unlock_irqrestore(&msm_iommu_lock, flags);
- 	return ret;
-@@ -530,9 +536,6 @@ static phys_addr_t msm_iommu_iova_to_phys(struct iommu_domain *domain,
- 	SET_CTX_TLBIALL(base, ctx, 0);
- 	SET_V2PPR_VA(base, ctx, va >> V2Pxx_VA_SHIFT);
+ 	if (len == SZ_1M)
+ 		*fl_pte = (pa & 0xFFF00000) | FL_AP_READ | FL_AP_WRITE |
+-						FL_TYPE_SECT | FL_SHARED;
++					    FL_TYPE_SECT | FL_SHARED | pgprot;
  
--	if (GET_FAULT(base, ctx))
--		goto fail;
--
- 	par = GET_PAR(base, ctx);
+ 	/* Need a 2nd level table */
+ 	if ((len == SZ_4K || len == SZ_64K) && (*fl_pte) == 0) {
+@@ -368,14 +400,14 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
  
- 	/* We are dealing with a supersection */
-@@ -541,6 +544,9 @@ static phys_addr_t msm_iommu_iova_to_phys(struct iommu_domain *domain,
- 	else	/* Upper 20 bits from PAR, lower 12 from VA */
- 		ret = (par & 0xFFFFF000) | (va & 0x00000FFF);
+ 	if (len == SZ_4K)
+ 		*sl_pte = (pa & SL_BASE_MASK_SMALL) | SL_AP0 | SL_AP1 |
+-					  SL_SHARED | SL_TYPE_SMALL;
++					  SL_SHARED | SL_TYPE_SMALL | pgprot;
  
-+	if (GET_FAULT(base, ctx))
-+		ret = 0;
+ 	if (len == SZ_64K) {
+ 		int i;
+ 
+ 		for (i = 0; i < 16; i++)
+ 			*(sl_pte+i) = (pa & SL_BASE_MASK_LARGE) | SL_AP0 |
+-					    SL_AP1 | SL_SHARED | SL_TYPE_LARGE;
++				SL_AP1 | SL_SHARED | SL_TYPE_LARGE | pgprot;
+ 	}
+ 
+ 	__flush_iotlb(domain);
+@@ -593,8 +625,47 @@ static struct iommu_ops msm_iommu_ops = {
+ 	.domain_has_cap = msm_iommu_domain_has_cap
+ };
+ 
++static int __init get_tex_class(int icp, int ocp, int mt, int nos)
++{
++	int i = 0;
++	unsigned int prrr = 0;
++	unsigned int nmrr = 0;
++	int c_icp, c_ocp, c_mt, c_nos;
 +
- fail:
- 	spin_unlock_irqrestore(&msm_iommu_lock, flags);
- 	return ret;
-@@ -583,8 +589,8 @@ irqreturn_t msm_iommu_fault_handler(int irq, void *dev_id)
++	RCP15_PRRR(prrr);
++	RCP15_NMRR(nmrr);
++
++	for (i = 0; i < NUM_TEX_CLASS; i++) {
++		c_nos = PRRR_NOS(prrr, i);
++		c_mt = PRRR_MT(prrr, i);
++		c_icp = NMRR_ICP(nmrr, i);
++		c_ocp = NMRR_OCP(nmrr, i);
++
++		if (icp == c_icp && ocp == c_ocp && c_mt == mt && c_nos == nos)
++			return i;
++	}
++
++	return -ENODEV;
++}
++
++static void __init setup_iommu_tex_classes(void)
++{
++	msm_iommu_tex_class[MSM_IOMMU_ATTR_NONCACHED] =
++			get_tex_class(CP_NONCACHED, CP_NONCACHED, MT_NORMAL, 1);
++
++	msm_iommu_tex_class[MSM_IOMMU_ATTR_CACHED_WB_WA] =
++			get_tex_class(CP_WB_WA, CP_WB_WA, MT_NORMAL, 1);
++
++	msm_iommu_tex_class[MSM_IOMMU_ATTR_CACHED_WB_NWA] =
++			get_tex_class(CP_WB_NWA, CP_WB_NWA, MT_NORMAL, 1);
++
++	msm_iommu_tex_class[MSM_IOMMU_ATTR_CACHED_WT] =
++			get_tex_class(CP_WT, CP_WT, MT_NORMAL, 1);
++}
++
+ static int __init msm_iommu_init(void)
  {
- 	struct msm_iommu_drvdata *drvdata = dev_id;
- 	void __iomem *base;
--	unsigned int fsr = 0;
--	int ncb = 0, i = 0;
-+	unsigned int fsr;
-+	int ncb, i;
- 
- 	spin_lock(&msm_iommu_lock);
- 
-@@ -595,7 +601,6 @@ irqreturn_t msm_iommu_fault_handler(int irq, void *dev_id)
- 
- 	base = drvdata->base;
- 
--	pr_err("===== WOAH! =====\n");
- 	pr_err("Unexpected IOMMU page fault!\n");
- 	pr_err("base = %08x\n", (unsigned int) base);
- 
++	setup_iommu_tex_classes();
+ 	register_iommu(&msm_iommu_ops);
+ 	return 0;
+ }
 -- 
 1.7.0.2
 
