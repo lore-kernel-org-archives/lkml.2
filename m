@@ -1,135 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab0KMLmU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 06:42:20 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:50779 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753724Ab0KMLmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 06:42:18 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/TxGl1V8DTwGDMygr12qEpsp6sd6faxja9uBpjBa
-	YZ3J2zK1b4GHNv
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-In-Reply-To: <20101112181240.GB8659@redhat.com>
-References: <1287648715.9021.20.camel@marge.simson.net>
-	 <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
-	 <20101021162924.GA3225@redhat.com>
-	 <1288076838.11930.1.camel@marge.simson.net>
-	 <1288078144.7478.9.camel@marge.simson.net>
-	 <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
-	 <1289489200.11397.21.camel@maggy.simson.net>
-	 <20101111202703.GA16282@redhat.com>
-	 <1289514000.21413.204.camel@maggy.simson.net>
-	 <20101112181240.GB8659@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 13 Nov 2010 04:42:04 -0700
-Message-ID: <1289648524.22764.149.camel@maggy.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1754331Ab0KML7r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 06:59:47 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59327 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753682Ab0KML7q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 06:59:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:reply-to:organization:user-agent:mime-version
+         :to:cc:subject:references:in-reply-to:x-enigmail-version
+         :content-type:content-transfer-encoding;
+        b=a1TV6Wl1BnPIcxBy+BFf52Zq0WS1BwYKavZ1MKLb88xVx+BTp4ScDV69IPNIvuSAKR
+         4w8W4kwoP6HmgnPcEYeYT7n4FH5Wf19cegTRuAse5im8bBRE+2IXSTXOjtnAwbAklIRd
+         oDrmLDsA1dALvyyltiIzheNO4tzN8PPQZhe9I=
+Message-ID: <4CDE7D65.6060203@gmail.com>
+Date: Sat, 13 Nov 2010 17:28:29 +0530
+From: Atul Sowani <sowani@gmail.com>
+Reply-To: sowani@gmail.com
+Organization: Digital Reality Inc.
+User-Agent: Thunderbird 2.0.0.18 (X11/20081105)
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: ralf@linux-mips.org, rmk+kernel@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com
+Subject: Re: [PATCH 2.6.36 1/1] kernel SPIN_LOCK_UNLOCKED changed to __SPIN_LOCK_UNLOCKED()
+References: <4CD823DC.8030201@gmail.com>
+In-Reply-To: <4CD823DC.8030201@gmail.com>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-12 at 19:12 +0100, Oleg Nesterov wrote:
-> On 11/11, Mike Galbraith wrote:
-> >
-> > On Thu, 2010-11-11 at 21:27 +0100, Oleg Nesterov wrote:
-> >
-> > > But the real problem is that copy_process() can fail after that,
-> > > and in this case we have the unbalanced kref_get().
-> >
-> > Memory leak, will fix.
-> >
-> > > > +++ linux-2.6.36.git/kernel/exit.c
-> > > > @@ -174,6 +174,7 @@ repeat:
-> > > >  	write_lock_irq(&tasklist_lock);
-> > > >  	tracehook_finish_release_task(p);
-> > > >  	__exit_signal(p);
-> > > > +	sched_autogroup_exit(p);
-> > >
-> > > This doesn't look right. Note that "p" can run/sleep after that
-> > > (or in parallel), set_task_rq() can use the freed ->autogroup.
-> >
-> > So avoiding refcounting rcu released task_group backfired.  Crud.
+Atul Sowani wrote:
+> There are still some files containing .lock = SPIN_LOCK_UNLOCKED type
+> assignments which should be converted to __SPIN_LOCK_UNLOCKED().
 > 
-> Just in case, the lock order may be wrong. sched_autogroup_exit()
-> takes task_group_lock under write_lock(tasklist), while
-> sched_autogroup_handler() takes them in reverse order.
-
-Bug self destructs when global classifier goes away.
-
-> I am not sure, but perhaps this can be simpler?
-> wake_up_new_task() does autogroup_fork(), and do_exit() does
-> sched_autogroup_exit() before the last schedule. Possible?
-
-That's what I was going to do.  That said, I couldn't have had the
-problem if I'd tied final put directly to life of container, and am
-thinking I should do that instead when I go back to p->signal.
-
-> Very basic question. Currently sched_autogroup_create_attach()
-> has the only caller, __proc_set_tty(). It is a bit strange that
-> signal->tty change is process-wide, but sched_autogroup_create_attach()
-> move the single thread, the caller. What about other threads in
-> this thread group? The same for proc_clear_tty().
-
-Yeah, I really should (will) move all on the spot, though it doesn't
-seem to matter in general practice, forks afterward land in the right
-bucket.  With per tty or p->signal, migration will pick up stragglers
-lazily.. unless they're pinned.
-
-> > +void sched_autogroup_create_attach(struct task_struct *p)
-> > +{
-> > +       autogroup_move_task(p, autogroup_create());
-> > +
-> > +       /*
-> > +        * Correct freshly allocated group's refcount.
-> > + 	   * Move takes a reference on destination, but
-> > +        * create already initialized refcount to 1.
-> > +        */
-> > + 	if (p->autogroup != &autogroup_default)
-> > +               autogroup_kref_put(p->autogroup);
-> > +}
+> Signed-off-by: Atul Sowani <sowani@gmail.com>
+> ---
 > 
-> OK, but I don't understand "p->autogroup != &autogroup_default"
-> check. This is true if autogroup_create() succeeds. Otherwise
-> autogroup_create() does autogroup_kref_get(autogroup_default),
-> doesn't this mean we need unconditional _put ?
-
-D'oh, target fixation :)  Thanks.
-
-> And can't resist, minor cosmetic nit,
+> diff -uprN a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> --- a/arch/arm/kernel/smp.c	2010-10-21 02:00:22.000000000 +0530
+> +++ b/arch/arm/kernel/smp.c	2010-11-07 00:47:32.000000000 +0530
+> @@ -56,7 +56,7 @@ struct ipi_data {
+>  };
 > 
-> >  static inline struct task_group *task_group(struct task_struct *p)
-> >  {
-> > +       struct task_group *tg;
-> >         struct cgroup_subsys_state *css;
-> >
-> >         css = task_subsys_state_check(p, cpu_cgroup_subsys_id,
-> >                         lockdep_is_held(&task_rq(p)->lock));
-> > -       return container_of(css, struct task_group, css);
-> > +       tg = container_of(css, struct task_group, css);
-> > +
-> > +       autogroup_task_group(p, &tg);
+>  static DEFINE_PER_CPU(struct ipi_data, ipi_data) = {
+> -	.lock	= SPIN_LOCK_UNLOCKED,
+> +	.lock	= __SPIN_LOCK_UNLOCKED (ipi_data.lock),
+>  };
 > 
-> Fell free to ignore, but imho
+>  enum ipi_msg_type {
+> diff -uprN a/arch/mips/kernel/vpe.c b/arch/mips/kernel/vpe.c
+> --- a/arch/mips/kernel/vpe.c	2010-10-21 02:00:22.000000000 +0530
+> +++ b/arch/mips/kernel/vpe.c	2010-11-07 00:51:37.000000000 +0530
+> @@ -148,9 +148,9 @@ struct {
+>  	spinlock_t tc_list_lock;
+>  	struct list_head tc_list;	/* Thread contexts */
+>  } vpecontrol = {
+> -	.vpe_list_lock	= SPIN_LOCK_UNLOCKED,
+> +	.vpe_list_lock	= __SPIN_LOCK_UNLOCKED(vpecontrol.vpe_list_lock),
+>  	.vpe_list	= LIST_HEAD_INIT(vpecontrol.vpe_list),
+> -	.tc_list_lock	= SPIN_LOCK_UNLOCKED,
+> +	.tc_list_lock	= __SPIN_LOCK_UNLOCKED(vpecontrol.tc_list_lock),
+>  	.tc_list	= LIST_HEAD_INIT(vpecontrol.tc_list)
+>  };
+> diff -uprN a/kernel/cred.c b/kernel/cred.c
+> --- a/kernel/cred.c	2010-10-21 02:00:22.000000000 +0530
+> +++ b/kernel/cred.c	2010-11-07 00:52:22.000000000 +0530
+> @@ -35,7 +35,7 @@ static struct kmem_cache *cred_jar;
+>  static struct thread_group_cred init_tgcred = {
+>  	.usage	= ATOMIC_INIT(2),
+>  	.tgid	= 0,
+> -	.lock	= SPIN_LOCK_UNLOCKED,
+> +	.lock	= __SPIN_LOCK_UNLOCKED(init_tgcred.lock),
+>  };
+>  #endif
 > 
-> 	return autogroup_task_group(p, tg);
-> 
-> looks a bit better. Why autogroup_task_group() returns its
-> result via pointer?
 
-No particularly good reason, I'll do the cosmetic change.
+Hi all,
 
-	Thanks,
+I made original patch submission on 08.Nov.2010. I am wondering if
+this patch will be useful and is correct. Please comment.
 
-	-Mike
+Best regards,
+Atul.
 
+-- 
+Atul Sowani (sowani@gmail.com)
+http://savannah.gnu.org/users/atul
+------------------------------------------------------------------------
