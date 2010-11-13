@@ -1,43 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab0KMSZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 13:25:28 -0500
-Received: from mx1.vsecurity.com ([209.67.252.12]:57250 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756179Ab0KMSZ0 (ORCPT
+	id S1756650Ab0KMScP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 13:32:15 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39960 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754644Ab0KMScM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 13:25:26 -0500
-Subject: Re: [PATCH] Fix dmesg_restrict build failure with
- CONFIG_EMBEDDED=y and CONFIG_PRINTK=n
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Eugene Teo <eugeneteo@kernel.org>,
-        Kees Cook <kees.cook@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <AANLkTi=ut2O+mCbs1jOyg-aP=E+48h1B-MH8NxK5XyVf@mail.gmail.com>
-References: <1289669176.16461.12.camel@Joe-Laptop>
-	 <AANLkTi=ut2O+mCbs1jOyg-aP=E+48h1B-MH8NxK5XyVf@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 13 Nov 2010 13:25:21 -0500
-Message-ID: <1289672721.3090.349.camel@Dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sat, 13 Nov 2010 13:32:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:reply-to:organization:user-agent:mime-version
+         :to:cc:subject:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=oILpoQoPmIawob/5a8aHGsMMupwzVUQbhCjZR93imdLI2IsN7NdWTG6a/VYB5zzPQj
+         jgxw/FX6dnaMkpwvKR3P5MzgVgJgogQYW4ZGEEchaADwyNE/Vk+IwwkeMu/1DReh7AN2
+         u+xe0NCA6ol6k4UCgj2AqhNnQajvx2tv+NUp8=
+Message-ID: <4CDED96A.9080404@gmail.com>
+Date: Sun, 14 Nov 2010 00:01:06 +0530
+From: Atul Sowani <sowani@gmail.com>
+Reply-To: sowani@gmail.com
+Organization: Digital Reality Inc.
+User-Agent: Thunderbird 2.0.0.18 (X11/20081105)
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: rmk+kernel@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org,
+        alan@linux.intel.com, ralf@linux-mips.org
+Subject: [PATCH 2.6.36 1/1 RESEND] kernel SPIN_LOCK_UNLOCKED changed to __SPIN_LOCK_UNLOCKED()
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There are still some files containing .lock = SPIN_LOCK_UNLOCKED type
+assignments which should be converted to __SPIN_LOCK_UNLOCKED().
+Corrected spacing between __SPIN_LOCK_UNLOCKED and ( for ARM.
 
-> 
-> Anyway, suggested replacement patch attached. Comments?
-> 
+Signed-off-by: Atul Sowani <sowani@gmail.com>
+---
 
-The desired behavior was to allow a reader with CAP_SYS_ADMIN to open
-the syslog via /proc/kmsg and continue reading it even after dropping
-capabilities, which is why it was placed where it was.  I see no problem
-with moving it back out to do_syslog, but ideally the same behavior
-should be replicated.
+diff -uprN a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+--- a/arch/arm/kernel/smp.c	2010-10-21 02:00:22.000000000 +0530
++++ b/arch/arm/kernel/smp.c	2010-11-07 00:47:32.000000000 +0530
+@@ -56,7 +56,7 @@ struct ipi_data {
+ };
 
--Dan
+ static DEFINE_PER_CPU(struct ipi_data, ipi_data) = {
+-	.lock	= SPIN_LOCK_UNLOCKED,
++	.lock	= __SPIN_LOCK_UNLOCKED(ipi_data.lock),
+ };
 
+ enum ipi_msg_type {
+diff -uprN a/arch/mips/kernel/vpe.c b/arch/mips/kernel/vpe.c
+--- a/arch/mips/kernel/vpe.c	2010-10-21 02:00:22.000000000 +0530
++++ b/arch/mips/kernel/vpe.c	2010-11-07 00:51:37.000000000 +0530
+@@ -148,9 +148,9 @@ struct {
+ 	spinlock_t tc_list_lock;
+ 	struct list_head tc_list;	/* Thread contexts */
+ } vpecontrol = {
+-	.vpe_list_lock	= SPIN_LOCK_UNLOCKED,
++	.vpe_list_lock	= __SPIN_LOCK_UNLOCKED(vpecontrol.vpe_list_lock),
+ 	.vpe_list	= LIST_HEAD_INIT(vpecontrol.vpe_list),
+-	.tc_list_lock	= SPIN_LOCK_UNLOCKED,
++	.tc_list_lock	= __SPIN_LOCK_UNLOCKED(vpecontrol.tc_list_lock),
+ 	.tc_list	= LIST_HEAD_INIT(vpecontrol.tc_list)
+ };
+diff -uprN a/kernel/cred.c b/kernel/cred.c
+--- a/kernel/cred.c	2010-10-21 02:00:22.000000000 +0530
++++ b/kernel/cred.c	2010-11-07 00:52:22.000000000 +0530
+@@ -35,7 +35,7 @@ static struct kmem_cache *cred_jar;
+ static struct thread_group_cred init_tgcred = {
+ 	.usage	= ATOMIC_INIT(2),
+ 	.tgid	= 0,
+-	.lock	= SPIN_LOCK_UNLOCKED,
++	.lock	= __SPIN_LOCK_UNLOCKED(init_tgcred.lock),
+ };
+ #endif
+
+-- 
+Atul Sowani (sowani@gmail.com)
+http://savannah.gnu.org/users/atul
+------------------------------------------------------------------------
