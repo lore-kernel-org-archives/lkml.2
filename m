@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab0KMXSL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 18:18:11 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42864 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754053Ab0KMXSH (ORCPT
+	id S1755590Ab0KMX2r (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 18:28:47 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45376 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754875Ab0KMX2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 18:18:07 -0500
+	Sat, 13 Nov 2010 18:28:45 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=dMsJw7IFIpqWXS9ELX7yz+fxd+IEK3yMywwQd6VYivGYs9g3U4N8Ivk4DdKSbwx7Af
-         rZM0mdjQJwYnS10KrtNgUGAIYpLc5hzOO6JMybEKz2lRMn8ng260joLs5Kk398ZQ8yly
-         ENNnRmrwpLVxJNT7XDCY/Q4JLiOkZ5zmZSgJU=
-MIME-Version: 1.0
-In-Reply-To: <4CC9E8C7.60306@suse.cz>
-References: <20100831083844.043619334@linux.vnet.ibm.com> <AANLkTikCLHh5Uz-DRq9ws78We+SwCAqdurA6HfuJh-8Y@mail.gmail.com>
- <20101018103729.GA4122@linux.vnet.ibm.com> <AANLkTikKJ25L=6b2resz+0SAg7ZYL5j=rHG7Lg4kFbwd@mail.gmail.com>
- <20101019110801.GA4128@linux.vnet.ibm.com> <AANLkTimLi8BYy_u8NhD15s=+iiODzuG1H_CgZ-cd7jep@mail.gmail.com>
- <20101019213112.GA11432@merkur.ravnborg.org> <AANLkTike6UQVWKSz-Njs5Rps690EHeResH3V+aSM+qdO@mail.gmail.com>
- <AANLkTimn8R-qde8FH_cNa4JPcR2F=mkUAQhPVT-hOBhn@mail.gmail.com>
- <4CC8ABC7.5030003@suse.cz> <20101028203542.GA30879@merkur.ravnborg.org> <4CC9E8C7.60306@suse.cz>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Sat, 13 Nov 2010 18:17:44 -0500
-Message-ID: <AANLkTinfsjy9GzDg1eHx+mFc4VabCZ2jk85JodFqRnEE@mail.gmail.com>
-Subject: Re: [PATCH] initramfs: Fix build break on symbol-prefixed archs
-To: Michal Marek <mmarek@suse.cz>
-Cc: Sam Ravnborg <sam@ravnborg.org>,
-        Hendrik Brueckner <brueckner@linux.vnet.ibm.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>, tabbott@ksplice.com,
-        vda.linux@googlemail.com, hpa@linux.intel.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        heiko.carstens@de.ibm.com, schwidefsky@de.ibm.com
-Content-Type: text/plain; charset=UTF-8
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Doub5GceOCQnyk4O6xg4OX/eCgTek6TqyB/0q+JHV4Dst7M8GxH/e9IWv60X1BZfA1
+         Sb/R+J3kThlONjWt7MlpUHAmU2uHguhnX7JPpkiFsrYKW0m6Gg6E7XsmNW/846TY6vaT
+         aLpR+0mUWZ790RUoOSiX/EQZCdlE4xI9oQ7co=
+From: Tracey Dent <tdent48227@gmail.com>
+To: len.brown@intel.com
+Cc: pavel@ucw.cz, rjw@sisk.pl, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, akpm@linux-foundation.org,
+        Tracey Dent <tdent48227@gmail.com>
+Subject: [PATCH] kernel/power/: Changed Makefile to use proper ccflag flag
+Date: Sat, 13 Nov 2010 18:28:34 -0500
+Message-Id: <1289690914-3752-1-git-send-email-tdent48227@gmail.com>
+X-Mailer: git-send-email 1.7.3.2.164.g6f10c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 28, 2010 at 17:19, Michal Marek wrote:
-> On 28.10.2010 22:35, Sam Ravnborg wrote:
->> On Thu, Oct 28, 2010 at 12:46:31AM +0200, Michal Marek wrote:
->>> On 27.10.2010 20:23, Mike Frysinger wrote:
->>>> can we get this change dropped from linux-next until someone gets a
->>>> chance to fix it ?
->>>
->>> Sorry I missed this thread. So your last patch
->>> (http://lkml.org/lkml/2010/10/19/488) did fix the Blackfin build
->>> failure? Can you submit it with a proper Signed-off-by and changelog?
->>
->> Did you see the patch I posted in: http://lkml.org/lkml/2010/10/19/534
->>
->> The one that fix up the cppflags usage.
->>
->> I think this will solve the issue with blackfin nicely - and
->> make use of cppflags more as expected.
->
-> As Mike noted - your patch does not strip the double quotes. And Mike's
-> patch is really minimal, it just adds the SYMBOL_PREFIX definition to
-> _a_flags. I'll look at your patch after this merge window.
+Use the ccflags-$ flag instead of EXTRA_CFLAGS because EXTRA_CFLAGS is
+deprecated and should now be switched. According to (documentation/kbuild/makefiles.txt).
 
-why am i seeing __initramfs_size failures in mainline now ?
--mike
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+---
+ kernel/power/Makefile |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/power/Makefile b/kernel/power/Makefile
+index f9063c6..b755972 100644
+--- a/kernel/power/Makefile
++++ b/kernel/power/Makefile
+@@ -1,7 +1,4 @@
+-
+-ifeq ($(CONFIG_PM_DEBUG),y)
+-EXTRA_CFLAGS	+=	-DDEBUG
+-endif
++ccflags-$(CONFIG_PM_DEBUG)	:=	-DDEBUG
+ 
+ obj-$(CONFIG_PM)		+= main.o
+ obj-$(CONFIG_PM_SLEEP)		+= console.o
+-- 
+1.7.3.2.164.g6f10c
+
