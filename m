@@ -1,109 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757701Ab0KMA7f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 19:59:35 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:46087 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752474Ab0KMA7e (ORCPT
+	id S933271Ab0KMBCN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 20:02:13 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:57829 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933225Ab0KMBCM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 19:59:34 -0500
-Subject: Re: [PATCH] Improve clocksource unstable warning
-From: john stultz <johnstul@us.ibm.com>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        pc@us.ibm.com
-In-Reply-To: <1289607722.3292.84.camel@localhost.localdomain>
-References: <80b5a10ac1a6ef51afca3c113b624bf1b5049452.1289427381.git.luto@mit.edu>
-	 <AANLkTi=s+0i36qd-bd3=MdeiJS-TThos9RmeUCsfHyy=@mail.gmail.com>
-	 <AANLkTimAfULHTkyLVpGv5r3DcSfVXzsgGiHgTdamNpt2@mail.gmail.com>
-	 <1289605221.3292.53.camel@localhost.localdomain>
-	 <AANLkTi=iso2+R6-5+2ipe39JLHw9o0TgMGCRSTqd5qQz@mail.gmail.com>
-	 <AANLkTikd0rstGDDcNdb8u2_H09giaZVxPY1Y5qaiy6_O@mail.gmail.com>
-	 <1289607722.3292.84.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 12 Nov 2010 16:58:51 -0800
-Message-ID: <1289609931.3292.87.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 12 Nov 2010 20:02:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=RzYapur25w9XDv6EErR5hyaYG9x3/7UaWuiGZu5ZXPWiV9plVVK4ujHuQD2fkDe/a9
+         cyGa4hPeh/Z2D72N9oIg==
+MIME-Version: 1.0
+In-Reply-To: <1289559198.2084.214.camel@laptop>
+References: <20101112032405.657789056@google.com> <20101112032702.028843817@google.com>
+ <1289559198.2084.214.camel@laptop>
+From: Paul Turner <pjt@google.com>
+Date: Fri, 12 Nov 2010 17:01:37 -0800
+Message-ID: <AANLkTi=vUs7f3bYE-0OM7fARzbNTbGEU4bDd1pcDoOq-@mail.gmail.com>
+Subject: Re: [tg_shares_up rewrite v3 09/11] sched: demand based update_cfs_load()
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Chris Friesen <cfriesen@nortel.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Pierre Bourdon <pbourdon@excellency.fr>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-11-13 at 00:22 +0000, john stultz wrote:
-> On Fri, 2010-11-12 at 18:51 -0500, Andrew Lutomirski wrote:
-> > Also wrong if cs_elapsed is just slightly less than wd_wrapping_time
-> > but the wd clocksource runs enough faster that it wrapped.
-> 
-> Ok. Good point, that's a problem. Hrmmmm. Too much math for Friday. :)
+On Fri, Nov 12, 2010 at 2:53 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Thu, 2010-11-11 at 19:24 -0800, Paul Turner wrote:
+>> +#ifdef CONFIG_FAIR_GROUP_SCHED
+>> +       cfs_rq->load_unacc_exec_time += delta_exec;
+>> +       if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window)
+>> {
+>> +               update_cfs_load(cfs_rq);
+>> +               update_cfs_shares(cfs_rq, 0);
+>
+> Why not:
+> +               cfs_rq->load_unacc_exec_time -= sysctl_sched_shares_window;
+>
+> (although you probably want to read the sysctl value into a local
+> variable using ACCESS_ONCE() and use that for both cases).
+>
 
-I have a hard time leaving things alone. :)
+I think this is hard to do in a clean fashion (without a strange arg
+to update_cfs_load).
 
-So this still has the issue of the u64%u64 won't work on 32bit systems,
-but I think once I rework the modulo bit the following should be what
-you were describing.
+I'm also not sure it's worth synchronizing on a shares_window change
+since, when we trigger an update from update_curr() is independent of
+folding that time into the load average anyway.
+(Note even: using sysctl_sched_shares_window is already a larger
+window than update_cfs_load will normally fold at since we fold at
+window/2 after the initial period, it just sets a grace period on
+computation without updates in the busy case.)
 
-It is ugly, so let me know if you have a cleaner way.
-
-
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-
-diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
-index c18d7ef..0afbcb5 100644
---- a/kernel/time/clocksource.c
-+++ b/kernel/time/clocksource.c
-@@ -247,6 +247,7 @@ static void clocksource_watchdog(unsigned long data)
- 	struct clocksource *cs;
- 	cycle_t csnow, wdnow;
- 	int64_t wd_nsec, cs_nsec;
-+	int64_t wd_max_nsec;
- 	int next_cpu;
- 
- 	spin_lock(&watchdog_lock);
-@@ -257,6 +258,8 @@ static void clocksource_watchdog(unsigned long data)
- 	wd_nsec = clocksource_cyc2ns((wdnow - watchdog_last) & watchdog->mask,
- 				     watchdog->mult, watchdog->shift);
- 	watchdog_last = wdnow;
-+	wd_max_nsec = clocksource_cyc2ns(watchdog->mask, watchdog->mult,
-+						watchdog->shift);
- 
- 	list_for_each_entry(cs, &watchdog_list, wd_list) {
- 
-@@ -280,6 +283,35 @@ static void clocksource_watchdog(unsigned long data)
- 		cs_nsec = clocksource_cyc2ns((csnow - cs->wd_last) &
- 					     cs->mask, cs->mult, cs->shift);
- 		cs->wd_last = csnow;
-+
-+		/*
-+		 * If the cs interval is greater then the wd wrap interval,
-+		 * we were somehow delayed. So check that modulo the wrap
-+		 * interval, the cs interval is close to the watchdog
-+		 * interval value.
-+		 */
-+		if (cs_nsec > wd_max_nsec){
-+			int64_t cs_modulo = cs_nsec % wd_max_nsec;
-+
-+			/* first check the easy case */
-+			if(abs(cs_modulo - wd_nsec) < WATCHDOG_THRESHOLD) {
-+				 WARN_ONCE(1, "clocksource_watchdog:"
-+						"watchdog delayed?\n");
-+				continue;
-+			}
-+			/* could be split along the wd_max_nsec boundary*/
-+			if (wd_nsec < cs_modulo)
-+				wd_nsec += wd_max_nsec;
-+			else
-+				cs_modulo += wd_max_nsec;
-+			/* check again */
-+			if(abs(cs_modulo - wd_nsec) < WATCHDOG_THRESHOLD) {
-+				 WARN_ONCE(1, "clocksource_watchdog:"
-+						"watchdog delayed?\n");
-+				continue;
-+			}
-+		}
-+
- 		if (abs(cs_nsec - wd_nsec) > WATCHDOG_THRESHOLD) {
- 			clocksource_unstable(cs, cs_nsec - wd_nsec);
- 			continue;
-
-
+>> +       }
+>> +#endif
+>>  }
+>>
+>>  static void update_curr(struct cfs_rq *cfs_rq)
+>> @@ -713,6 +724,7 @@ static void update_cfs_load(struct cfs_r
+>>         }
+>>
+>>         cfs_rq->load_stamp = now;
+>> +       cfs_rq->load_unacc_exec_time = 0;
+>
+> and drop this one?
+>
