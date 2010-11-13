@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab0KMKax (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 05:30:53 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:40967 "EHLO
+	id S1755929Ab0KMKcn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 05:32:43 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:41133 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752298Ab0KMKat convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752298Ab0KMKcm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 05:30:49 -0500
-Subject: Re: [BUG 2.6.27-rc1] find_busiest_group() LOCKUP
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        Yinghai Lu <yinghai@kernel.org>, David Rientjes <rientjes@google.com>,
-        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-hotplug@vger.kernel.org
-In-Reply-To: <20101113084018.GA23098@localhost>
-References: <20101111100628.GA24728@localhost>
-	 <1289478978.2084.74.camel@laptop> <20101111124015.GA9706@localhost>
-	 <1289480656.2084.80.camel@laptop>  <20101113084018.GA23098@localhost>
+	Sat, 13 Nov 2010 05:32:42 -0500
+Subject: Re: [PATCH 1/2] perf-events: Add support for supplementary event
+ registers v2
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: eranian@google.com, linux-kernel@vger.kernel.org,
+        cjashfor@linux.vnet.ibm.com, mingo@elte.hu, fweisbec@gmail.com,
+        Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <20101113101148.GB6418@gargoyle.fritz.box>
+References: <1289580941-29744-1-git-send-email-andi@firstfloor.org>
+	 <1289582630.2084.331.camel@laptop>
+	 <20101113101148.GB6418@gargoyle.fritz.box>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Sat, 13 Nov 2010 11:30:24 +0100
-Message-ID: <1289644224.2084.521.camel@laptop>
+Date: Sat, 13 Nov 2010 11:32:47 +0100
+Message-ID: <1289644367.2084.526.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-11-13 at 16:40 +0800, Wu Fengguang wrote:
-> > Will try and figure out how the heck that's happening, Ingo any clue?
+On Sat, 2010-11-13 at 11:13 +0100, Andi Kleen wrote:
+> > Hrmm,. this doesn't really scale right wrt multiple extra_regs.
+> > 
+> > You made the extra_regs thing fairly extensible, but the above doesn't
+> > really work well if there's multiple extra regs (say OFFCORE and
+> > LBR_CONFIG -- possibly even the two OFFCORE regs present on westmere).
+> > 
+> > It basically needs a per-core state for each extra_reg possible.
 > 
-> It's back to normal on 2.6.37-rc1 when reverting commit 50f2d7f682f9
-> ("x86, numa: Assign CPUs to nodes in round-robin manner on fake NUMA").
-> 
-> The interesting part is, the commit was introduced in 
-> 2.6.36-rc7..2.6.36, however 2.6.36 boots OK, while 2.6.37-rc1 panics.
+> It shouldn't be too hard to extend it to use a table. I didn't want
+> to do that for the first iteration. I guess it could be done as followons
+> once LBR is implemented.
 
-Argh, that commit again..
-
-Does this fix it: http://lkml.org/lkml/2010/11/12/8
-
-
+Isn't it also relevant for the two offcore regs for wsm?
