@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019Ab0KMKep (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 05:34:45 -0500
-Received: from casper.infradead.org ([85.118.1.10]:49191 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755538Ab0KMKel convert rfc822-to-8bit (ORCPT
+	id S1756045Ab0KMKjP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 05:39:15 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43202 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753136Ab0KMKjM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 05:34:41 -0500
-Subject: Re: [PATCH 1/2] perf-events: Add support for supplementary event
- registers v2
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Stephane Eranian <eranian@google.com>, linux-kernel@vger.kernel.org,
-        cjashfor@linux.vnet.ibm.com, mingo@elte.hu, fweisbec@gmail.com,
-        Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <20101113101753.GE6418@gargoyle.fritz.box>
-References: <1289580941-29744-1-git-send-email-andi@firstfloor.org>
-	 <AANLkTimJ3nLwmRfmf+uTuUvg6HVrHBzrjgQXuTi5dxyp@mail.gmail.com>
-	 <1289583192.2084.339.camel@laptop>
-	 <20101113101753.GE6418@gargoyle.fritz.box>
+	Sat, 13 Nov 2010 05:39:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=pwnxgzf1mN0SaBC49Hg7CwyXkWMgDdDOmu5TJkhx9gsO61FFR3KohyYEsaHdIFNQlt
+         NJSi8820vTI3BawjoY0S6so59zZp4rRQ0ye3xGwAv+s5Fm0o9nOrr7iHdDXsb05z9zxQ
+         0j/OOQ3/nIOYB8M6sBpC0lwoooNxrDryvGGXc=
+Subject: Re: [PATCH 1/5] mtd: fix bdev exclusive open bugs in
+ block2mtd::add_device()
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, hch@infradead.org, linux-kernel@vger.kernel.org,
+        petero2@telia.com, schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com,
+        jack@suse.cz, akpm@linux-foundation.org, adilger.kernel@dilger.ca,
+        tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com,
+        aelder@sgi.com, dm-devel@redhat.com, drbd-dev@lists.linbit.com,
+        neilb@suse.de, leochen@broadcom.com, sbranden@broadcom.com,
+        chris.mason@oracle.com, swhiteho@redhat.com, shaggy@linux.vnet.ibm.com,
+        joern@logfs.org, konishi.ryusuke@lab.ntt.co.jp,
+        reiserfs-devel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-mtd@lists.infradead.org
+In-Reply-To: <1288628129-12811-2-git-send-email-tj@kernel.org>
+References: <1288628129-12811-1-git-send-email-tj@kernel.org>
+	 <1288628129-12811-2-git-send-email-tj@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 13 Nov 2010 11:34:22 +0100
-Message-ID: <1289644462.2084.528.camel@laptop>
+Date: Sat, 13 Nov 2010 12:38:55 +0200
+Message-ID: <1289644735.2218.8.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-11-13 at 11:17 +0100, Andi Kleen wrote:
-> > That would assume a single event doesn't contain offcore and lbr, no?
-> > Currently the extra_reg thing assumes there's only one extra reg encoded
-> > in the config word.
-> 
-> It would not be too hard to make it an array if that's needed.
+Hi,
 
-I don't think we want to go there anyway, one extra_reg per config value
-is fine.
+On Mon, 2010-11-01 at 17:15 +0100, Tejun Heo wrote:
+> +			if (!IS_ERR(bdev)) {
+> +				int ret;
+> +				ret = bd_claim(bdev, dev);
+> +				if (ret) {
+> +					blkdev_put(bdev,
+> +						   FMODE_READ | FMODE_WRITE);
+
+Would be a bit cleaner to define ea temporary variable:
+
+fmode_t mode = FMODE_READ | FMODE_WRITE;
+
+Would you to re-send with this little change please?
+
+And ideally, 2 independent patches would be nicer because you fix 2
+independent issues.
+
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
