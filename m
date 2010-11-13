@@ -1,139 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752423Ab0KMViT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 16:38:19 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45477 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab0KMViA (ORCPT
+	id S1752823Ab0KMVi0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 16:38:26 -0500
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:14271 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736Ab0KMViW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 16:38:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :in-reply-to:references;
-        b=JN6bkW8TJ7bChBJMx6sCB5BgfWUUwSSy7zGl5Q6VFIuYgPEdv2+yKlKwImp/RY5yyU
-         0JVH5vyWqV+p2p8jEfH0fa1cMnDSk4BTJH1zF+GJ/3WTu4LthFH5YwiqwXb0lTI3do7h
-         QEe2HW8OZk1G4vFXWxHq9uCwOpo7SHj07xY/0=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 2/2] perf,hw_breakpoint: Initialize hardware api earlier
-Date: Sat, 13 Nov 2010 22:37:53 +0100
-Message-Id: <1289684273-26770-3-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
-In-Reply-To: <1289684273-26770-1-git-send-regression-fweisbec@gmail.com>
-References: <1289684273-26770-1-git-send-regression-fweisbec@gmail.com>
+	Sat, 13 Nov 2010 16:38:22 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=37qdrPIVUooonMxFi2BWZ8DhoCRe+hJcgJuumZcJ4K8= c=1 sm=1
+ a=2t8Q6URn5c0A:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=pGLkceISAAAA:8 a=VuuSF9hqZE5nSP-GydEA:9
+ a=LiDzW7wfWwSwv8DxZT4A:7 a=A0Oa0wFDCHhNB-0PrQ_KMukKvA8A:4 a=CjuIK1q_8ugA:10
+ a=MSl-tDqOz04A:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH] fs: select: fix information leak to userspace
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger.kernel@dilger.ca>
+In-Reply-To: <20101112120834.33062900.akpm@linux-foundation.org>
+Date: Sat, 13 Nov 2010 14:38:19 -0700
+Cc: Vasiliy Kulikov <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
+References: <1289421483-23907-1-git-send-email-segooon@gmail.com> <20101112120834.33062900.akpm@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wessel <jason.wessel@windriver.com>
+On 2010-11-12, at 13:08, Andrew Morton wrote:
+> On Wed, 10 Nov 2010 23:38:02 +0300
+> Vasiliy Kulikov <segooon@gmail.com> wrote:
+>> On some architectures __kernel_suseconds_t is int.
+> 
+> On sparc and parisc.  On all other architectures this patch is a waste
+> of cycles.
+> 
+> --- a/fs/select.c~fs-select-fix-information-leak-to-userspace-fix
+> +++ a/fs/select.c
+> @@ -306,7 +306,8 @@ static int poll_select_copy_remaining(st
+> 		rts.tv_sec = rts.tv_nsec = 0;
+> 
+> 	if (timeval) {
+> -		memset(&rtv, 0, sizeof(rtv));
+> +		if (sizeof(rtv) > sizeof(rtv.tv_sec) + sizeof(rtv.tv_usec))
+> +			memset(&rtv, 0, sizeof(rtv));
+> 		rtv.tv_sec = rts.tv_sec;
+> 		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
+> 
+> _
+> 
+> 
+> The `if' gets eliminated at compile time.  With this approach we add
+> four bytes of text to the sparc64 build and zero bytes of text to the
+> x86_64 build.
 
-When using early debugging, the kernel does not initialize the
-hw_breakpoint API early enough and causes the late initialization of
-the kernel debugger to fail. The boot arguments are:
+It's nice to have comments (or at least a good commit message) for unusual code like this, so that in the future it is clear when this kind of workaround can be removed (e.g. if the time_t is changed to always be a 64-bit value for Y2038 issues, even on 32-bit arches). 
 
-    earlyprintk=vga ekgdboc=kbd kgdbwait
+Cheers, Andreas
 
-Then simply type "go" at the kdb prompt and boot. The kernel will
-later emit the message:
 
-    kgdb: Could not allocate hwbreakpoints
 
-And at that point the kernel debugger will cease to work correctly.
 
-The solution is to initialize the hw_breakpoint at the same time that
-all the other perf call backs are initialized instead of using a
-core_initcall() initialization which happens well after the kernel
-debugger can make use of hardware breakpoints.
-
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <4CD3396D.1090308@windriver.com>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- include/linux/hw_breakpoint.h |    4 ++++
- kernel/hw_breakpoint.c        |    3 +--
- kernel/perf_event.c           |    6 ++++++
- 3 files changed, 11 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/hw_breakpoint.h b/include/linux/hw_breakpoint.h
-index a2d6ea4..d1e55fe 100644
---- a/include/linux/hw_breakpoint.h
-+++ b/include/linux/hw_breakpoint.h
-@@ -33,6 +33,8 @@ enum bp_type_idx {
- 
- #ifdef CONFIG_HAVE_HW_BREAKPOINT
- 
-+extern int __init init_hw_breakpoint(void);
-+
- static inline void hw_breakpoint_init(struct perf_event_attr *attr)
- {
- 	memset(attr, 0, sizeof(*attr));
-@@ -108,6 +110,8 @@ static inline struct arch_hw_breakpoint *counter_arch_bp(struct perf_event *bp)
- 
- #else /* !CONFIG_HAVE_HW_BREAKPOINT */
- 
-+static inline int __init init_hw_breakpoint(void) { return 0; }
-+
- static inline struct perf_event *
- register_user_hw_breakpoint(struct perf_event_attr *attr,
- 			    perf_overflow_handler_t triggered,
-diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
-index 2c9120f..e532582 100644
---- a/kernel/hw_breakpoint.c
-+++ b/kernel/hw_breakpoint.c
-@@ -620,7 +620,7 @@ static struct pmu perf_breakpoint = {
- 	.read		= hw_breakpoint_pmu_read,
- };
- 
--static int __init init_hw_breakpoint(void)
-+int __init init_hw_breakpoint(void)
- {
- 	unsigned int **task_bp_pinned;
- 	int cpu, err_cpu;
-@@ -655,6 +655,5 @@ static int __init init_hw_breakpoint(void)
- 
- 	return -ENOMEM;
- }
--core_initcall(init_hw_breakpoint);
- 
- 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 517d827..05b7d8c 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -31,6 +31,7 @@
- #include <linux/kernel_stat.h>
- #include <linux/perf_event.h>
- #include <linux/ftrace_event.h>
-+#include <linux/hw_breakpoint.h>
- 
- #include <asm/irq_regs.h>
- 
-@@ -6295,6 +6296,8 @@ perf_cpu_notify(struct notifier_block *self, unsigned long action, void *hcpu)
- 
- void __init perf_event_init(void)
- {
-+	int ret;
-+
- 	perf_event_init_all_cpus();
- 	init_srcu_struct(&pmus_srcu);
- 	perf_pmu_register(&perf_swevent);
-@@ -6302,4 +6305,7 @@ void __init perf_event_init(void)
- 	perf_pmu_register(&perf_task_clock);
- 	perf_tp_register();
- 	perf_cpu_notifier(perf_cpu_notify);
-+
-+	ret = init_hw_breakpoint();
-+	WARN(ret, "hw_breakpoint initialization failed with: %d", ret);
- }
--- 
-1.6.2.3
 
