@@ -1,70 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762Ab0KMRBr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 12:01:47 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:34879 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754110Ab0KMRBp (ORCPT
+	id S1756089Ab0KMRUV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 12:20:21 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:50508 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754224Ab0KMRUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 12:01:45 -0500
-Date: Sat, 13 Nov 2010 18:01:36 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Phil Pokorny <ppokorny@penguincomputing.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] Location for thermal drivers
-Message-ID: <20101113180136.2743fb2d@endymion.delvare>
-In-Reply-To: <20101113144021.GA29753@ericsson.com>
-References: <1289594026.22931.388.camel@groeck-laptop>
-	<AANLkTimERGh2yGGX_E_N4ajxg_-0QTFS54QSKj2+AAfF@mail.gmail.com>
-	<1289599600.22931.406.camel@groeck-laptop>
-	<AANLkTikPt09Xdr_wvjmXhdPD8UdA-7b=AJjC+zgn8PA4@mail.gmail.com>
-	<20101113144021.GA29753@ericsson.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 13 Nov 2010 12:20:19 -0500
+Message-ID: <4CDEC8D2.8080101@vlnb.net>
+Date: Sat, 13 Nov 2010 20:20:18 +0300
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Boaz Harrosh <bharrosh@panasas.com>, Greg KH <greg@kroah.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+References: <20101022175624.GA13640@kroah.com> <4CC1DAA2.7030602@vlnb.net> <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net>
+In-Reply-To: <20101112012315.GE17097@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:+pWTfjjPlFZCIcVH064FiOVtgLmwjJbHkkOBleffl2r
+ r6fYF72F+myF9ywOgZuj5L+HPur5dZziJoMU7EjIbkXxHbf/dx
+ d78ZMKbOnM/q/sy/fUkXFYyNJjhbRho01V9/SjxNIoCD4vmjrE
+ fnU720iXlRLG0v6k0Se9s/e2JfHL5ClUedgG9dSt4RvBeYSIMW
+ rcmEiR7AsiJ+8pJ3GhcYQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 13 Nov 2010 06:40:21 -0800, Guenter Roeck wrote:
-> On Sat, Nov 13, 2010 at 02:21:58AM -0500, Phil Pokorny wrote:
-> > Reading the thermal sysfs-api and code, it's seems clear that it is a
-> > very ACPI centric kind of thing.  It's involved in the coordination of
-> > temperatures and the ways (fans, throttle algorithms, etc.) to keep
-> > them in check.  It makes regular calls into the ACPI parser to
-> > evaluate values.
-> > 
-> > But this driver that Alan has written seems to be a hwmon driver.
-> > It's poking at registers, setting up A2D channels and dealing with
-> > thermistors and perhaps voltages?  Those are very hwmon like things
-> > for a driver to do.
-> > 
-> > It appears to be very similar to the coretemp and k10temp drivers that
-> > read temperatures from the internals of the CPU.
->
-> If the driver would use the hwmon framework, yes. However, it uses the thermal
-> framework, in which hwmon support is optional.
+Dmitry Torokhov, on 11/12/2010 04:23 AM wrote:
+>>> This put might not be the last put on the object, IOs in flight
+>>> and/or open files might have extra reference on the object.
+>>> We release our initial ref, and below wait for all operations
+>>> to complete. (Is there a matter of timeout like files not closing?)
+>>
+>> This is the last internal put. All other references are from outsiders.
+>> So, we are waiting for all them to put before we go on.
+>>
 > 
-> The thermal framework itself is acpi independent. There is no single
-> acpi call in the thermal framework code. acpi use may be true for the 
-> drivers currently registering with the thermal framework, but that
-> doesn't mean that the thermal framework itself in any way depends on 
-> or is only supposed to be used with ACPI devices. ACPI is only referenced
-> in the documentation as example.
+> The question is why do you need to wait here? I presume it is module
+> unloading path, but then it is quite bad - you can easily wedge your
+> subsystem if you make something to take a reference to your kobject
+> while module is ytying to be unloaded. Back when sysfs attributes tied
+> kobjects the easiest thing was to do:
 > 
-> If the thermal framework were to be used for acpi devices only, it would
-> presumably reside in drivers/acpi and not be independent.
+> 	rmmod <module> < / sys/devices/..../attribute
 > 
-> So your reasoning isn't really correct. Putting thermal drivers into 
-> the hwmon directory doesn't really make sense. hwmon functionality
-> is an optional subset of thermal drivers, but that does not mean
-> that thermal drivers _are_ hwmon drivers.
+> If you are done with the kobject - just proceed with what you were doing
+> and let it die its own peaceful death some time later. You just need to
+> make sure release code sticks around to free it and your subsystem core
+> can be tasked with this. Use module counter to prevent unloading of the
+> subsystem core until all kobjects belonging to the subsystem are
+> destroyed.
 
-+1
+This is a very good question. During implementation I spent a lot of
+time working on it.
 
--- 
-Jean Delvare
+In fact, the first implementation was asynchronous similarly as you
+proposing, i.e. it just proceed with what you were doing and let it die
+its own peaceful death some time later. But soon the implementation was
+becoming so complicated, so it started getting out of control. For
+instance, some of the tasks to solve with this approach were:
+
+1. What to do if another SCST object is being created with the same name
+as supposed to be deleted, but not completely dead yet?
+
+2. What to do if a dieing object is found on some list and reference for
+is supposed to be taken? If the object deleted from the list before it
+marked dieing, i.e. the latest internal put() done, it made additional
+problems during deleting it after the latest external put done.
+
+...
+
+So, I decided to reimplement it to be completely synchronous. SYSFS
+authors did really great job and thanks to the excellent internal SYSFS
+design and implementation it is absolutely safe. See:
+
+[root@tgt ~]# modprobe scst
+[root@tgt ~]# cd /sys/kernel/scst_tgt/
+[root@tgt scst_tgt]# ls -l
+total 0
+drwxr-xr-x 4 root root    0 Nov 13 21:31 devices
+drwxr-xr-x 2 root root    0 Nov 13 21:31 handlers
+-r--r--r-- 1 root root 4096 Nov 13 21:30 last_sysfs_mgmt_res
+-rw-r--r-- 1 root root 4096 Nov 13 21:30 setup_id
+drwxr-xr-x 5 root root    0 Nov 13 21:31 sgv
+drwxr-xr-x 2 root root    0 Nov 13 21:31 targets
+-rw-r--r-- 1 root root 4096 Nov 13 21:30 threads
+-rw-r--r-- 1 root root 4096 Nov 13 21:30 trace_level
+-r--r--r-- 1 root root 4096 Nov 13 21:30 version
+[root@tgt scst_tgt]# cat version
+2.1.0-pre1
+EXTRACHECKS
+DEBUG
+[root@tgt scst_tgt]# rmmod scst </sys/kernel/scst_tgt/version
+[root@tgt scst_tgt]# ls -l
+total 0
+[root@tgt scst_tgt]# pwd
+/sys/kernel/scst_tgt
+[root@tgt scst_tgt]# lsmod
+Module                  Size  Used by
+scsi_debug             65188  0
+w83627hf               22424  0
+hwmon_vid               2207  1 w83627hf
+adm1021                 6189  0
+binfmt_misc             6229  1
+xfs                   673142  1
+exportfs                3143  1 xfs
+dm_mirror              12069  0
+dm_region_hash          8703  1 dm_mirror
+dm_log                  8345  2 dm_mirror,dm_region_hash
+dm_mod                 63511  2 dm_mirror,dm_log
+pci_slot                3378  0
+hed                     1758  0
+floppy                 52718  0
+uhci_hcd               21459  0
+sg                     25181  0
+e1000                 128475  0
+i2c_i801                8756  0
+pcspkr                  1442  0
+i2c_core               22319  2 adm1021,i2c_i801
+e7xxx_edac              3463  0
+parport_pc             25439  0
+parport                29682  1 parport_pc
+
+Everything works fine.
+
+This is because SYSFS doesn't hold references for the corresponding
+kobjects for every open file handle. It holds references only when
+show() and store() functions called. So, everything is under control and
+a malicious user can do nothing to hold a reference forever.
+
+Vlad
