@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767Ab0KMW0c (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 17:26:32 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:60301 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753209Ab0KMW03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 17:26:29 -0500
-Date: Sat, 13 Nov 2010 14:26:12 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
-Message-ID: <20101113222612.GD2825@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1288975980.2882.877.camel@edumazet-laptop>
- <20101105102038.53e36f9e.akpm@linux-foundation.org>
- <1288980046.2882.1054.camel@edumazet-laptop>
- <20101105110828.52f061b3.akpm@linux-foundation.org>
- <1288981224.2882.1105.camel@edumazet-laptop>
- <20101105112821.57f80481.akpm@linux-foundation.org>
- <1288984844.2665.52.camel@edumazet-laptop>
- <20101105195101.GC15561@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1011121313001.16754@router.home>
+	id S1753759Ab0KMWa4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 17:30:56 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61599 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753301Ab0KMWaz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 17:30:55 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=aL/zKPN1kXemLO+QjU1PAWyO0HSdOpNX7K9swWyze/fDb6yUiwrdbEPXVAHsaAlhyd
+         R0DNnp7tIXw0iW5oHd4e/nOSW0LvVrS9q6Yh9PHpe9tLwJ/GnkPf8HNO1vXtoimth0hy
+         Vdfygl313iyiFniVzcSBVbLo2eWYZi5oZxtqw=
+Date: Sat, 13 Nov 2010 23:30:49 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Joe Korty <joe.korty@ccur.com>,
+        mathieu.desnoyers@efficios.com, dhowells@redhat.com,
+        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
+        houston.jim@comcast.net
+Subject: Re: [PATCH] a local-timer-free version of RCU
+Message-ID: <20101113223046.GB5445@nowhere>
+References: <20101104232148.GA28037@linux.vnet.ibm.com> <20101105210059.GA27317@tsunami.ccur.com> <4CD912E9.1080907@cn.fujitsu.com> <20101110155419.GC5750@nowhere> <1289410271.2084.25.camel@laptop> <20101111041920.GD3134@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1011121313001.16754@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101111041920.GD3134@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 01:14:12PM -0600, Christoph Lameter wrote:
+On Wed, Nov 10, 2010 at 08:19:20PM -0800, Paul E. McKenney wrote:
+> On Wed, Nov 10, 2010 at 06:31:11PM +0100, Peter Zijlstra wrote:
+> > On Wed, 2010-11-10 at 16:54 +0100, Frederic Weisbecker wrote:
+> > > run the sched tick and if there was nothing to do
+> > > for some time and we are in userspace, deactivate it. 
+> > 
+> > Not for some time, immediately, have the tick track if it was useful, if
+> > it was not, have it stop itself, like:
+> > 
+> > tick()
+> > {
+> >  int stop = 1;
+> > 
+> >  if (nr_running > 1)
+> >   stop = 0;
+> > 
+> >  if(rcu_needs_cpu())
+> >   stop = 0;
+> > 
+> >  ...
+> > 
+> > 
+> >  if (stop)
+> >   enter_nohz_mode();
+> > }
 > 
-> prefetchw() would be too much overhead?
+> I am still holding out for a dyntick-hpc version of RCU that does not
+> need the tick.  ;-)
 
-No idea.  Where do you believe that prefetchw() should be added?
 
-							Thanx, Paul
+So you don't think it would be an appropriate solution? Keeping the tick for short
+periods of time while we need it only, that looks quite a good way to try.
+
+Hmm?
+
