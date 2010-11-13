@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933263Ab0KMAbS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 19:31:18 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:59361 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757644Ab0KMAbQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 19:31:16 -0500
-Date: Fri, 12 Nov 2010 19:31:15 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-cc: Jiri Kosina <jkosina@suse.cz>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: HID: questions about polling rates
-In-Reply-To: <1289589352.2629.95.camel@neuromancer>
-Message-ID: <Pine.LNX.4.44L0.1011121921190.25162-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933247Ab0KMAmj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 19:42:39 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:36601 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752227Ab0KMAmh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 19:42:37 -0500
+Date: Sat, 13 Nov 2010 11:42:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/14] arch/powerpc: Use printf extension %pR for struct
+ resource
+Message-Id: <20101113114228.e87c6902.sfr@canb.auug.org.au>
+In-Reply-To: <7654162f86bedd7d4cd5ccc883916157af6a2369.1289597644.git.joe@perches.com>
+References: <cover.1289597644.git.joe@perches.com>
+	<7654162f86bedd7d4cd5ccc883916157af6a2369.1289597644.git.joe@perches.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__13_Nov_2010_11_42_28_+1100_lKxOtA4JX7htl1kc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 12 Nov 2010, Stefan Achatz wrote:
+--Signature=_Sat__13_Nov_2010_11_42_28_+1100_lKxOtA4JX7htl1kc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Hello,
-> 
-> while working on my roccat device drivers I thought about the possiblity
-> of on the fly polling rate changes and tested some things.
-> 
-> First I tried different polling rates by writing values from 1 to 10
-> into /sys/bus/usb/drivers/usbhid/module/parameters/mousepoll. I
-> observed that the polling rates seem to be capped on both sides. With
-> value 1 I measure 2ms instead of 1ms with my hardware protocol
-> analyzer. With 10 I get 8ms instead of 10ms.
+Hi Joe,
 
-What type of USB host controller are you using?
+On Fri, 12 Nov 2010 13:37:53 -0800 Joe Perches <joe@perches.com> wrote:
+>
+> Using %pR standardizes the struct resource output.
+>=20
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  arch/powerpc/kernel/pci_64.c     |    3 +--
+>  arch/powerpc/sysdev/tsi108_dev.c |    8 ++++----
+>  2 files changed, 5 insertions(+), 6 deletions(-)
+>=20
+> diff --git a/arch/powerpc/kernel/pci_64.c b/arch/powerpc/kernel/pci_64.c
+> index d43fc65..2ecb1de 100644
+> --- a/arch/powerpc/kernel/pci_64.c
+> +++ b/arch/powerpc/kernel/pci_64.c
+> @@ -193,8 +193,7 @@ int __devinit pcibios_map_io_space(struct pci_bus *bu=
+s)
+>  	hose->io_resource.start +=3D io_virt_offset;
+>  	hose->io_resource.end +=3D io_virt_offset;
+> =20
+> -	pr_debug("  hose->io_resource=3D0x%016llx...0x%016llx\n",
+> -		 hose->io_resource.start, hose->io_resource.end);
+> +	pr_debug("  hose->io_resource=3D%pR\n", &hose->io_resource.start);
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^
+Shouldn't this be just &hose->io_resource?
 
-The existing drivers (at least, the ones I'm aware of) will only poll
-at intervals that are powers of 2.  They won't poll at intervals of 10
-ms, for example; the value gets rounded down to 8 ms.  But you should 
-be able to poll at intervals of 16 or 32 ms if you want.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-There's no reason I know of why you shouldn't be able to poll at 1-ms
-intervals.
+--Signature=_Sat__13_Nov_2010_11_42_28_+1100_lKxOtA4JX7htl1kc
+Content-Type: application/pgp-signature
 
->  I only use cheap onboard
-> usb controllers, but under windows they work with 1ms. A internet and
-> code search revealed nothing regarding this to me. Is someone of you
-> aware of this behaviour and could tell me more about it?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Note that according to the USB spec, low-speed devices like mice are 
-not allowed to request polling intervals shorter than 10 ms.  Of course 
-this doesn't matter to you, because you are overriding the device's 
-built-in settings.
+iQEcBAEBAgAGBQJM3d70AAoJEDMEi1NhKgbszukIAJcqLoTVwsJzzuv55pl5aGta
+bMzhbSdHTWiSj7JoziQxpb+pa+xJCTnpnTIOCBRyy0Au0pZ50m6dshS59vp/dO/h
+Pc2GVRpXDaat2aj0H6m/RWCzgI/9R7eu/bMiItyVNhkfAu4nlQPItcvFDMaMS6bB
+XITjWGTu+Otky4UhsqnUS/7bUfUVznwpJQIzr+1iil81/oQEOP8TuFky+yChSaIy
+7ANRARhItxIAy3aRqjk3VZHBi7obIlNn4EOpTtXb8bJuMsS4IzEwsTPtSYNwlYZN
+ZqebL8mPhIiQfLrGEtqiGU6tjDLWt2ORkpxO+21Pi/Gb2etgLm/5XGSwIL53lPo=
+=O6gl
+-----END PGP SIGNATURE-----
 
-> Changing the polling rate of a device on the fly would requires to
-> use usb_kill_urb() and usb_submit_urb() with new interval. To get the
-> int_urb I would need additional informations for incomplete struct
-> usbhid_device that lie in drivers/hid/usbhid/usbhid.h. My driver code
-> is at home in drivers/hid/. Is it okay to include a header further
-> down in the structure? Or does anyone have concerns about moving the
-> mentioned header to include/linux? Is this a matter to follow at all?
-
-You can include any header you like in your driver, regardless of where
-it lives.  Why do you want to change the polling rate on the fly?
-
-Alan Stern
-
+--Signature=_Sat__13_Nov_2010_11_42_28_+1100_lKxOtA4JX7htl1kc--
