@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab0KMDFM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 22:05:12 -0500
-Received: from byss.tchmachines.com ([208.76.80.75]:60702 "EHLO
-	byss.tchmachines.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab0KMDFI (ORCPT
+	id S1752952Ab0KMDGk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 22:06:40 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40652 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab0KMDGg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 22:05:08 -0500
-X-Greylist: delayed 4251 seconds by postgrey-1.27 at vger.kernel.org; Fri, 12 Nov 2010 22:05:08 EST
-Date: Fri, 12 Nov 2010 17:54:13 -0800
-From: Ravikiran G Thirumalai <kiran@scalex86.org>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: lessen the impact of a deprecated warning in hugetlbfs
-Message-ID: <20101113015413.GA2237@dogmatix.scalempus>
-References: <20101102180622.GA12620@redhat.com>
+	Fri, 12 Nov 2010 22:06:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=sEox+FEoBmbzzOddnJr9sIWzUCLqUFVtEiNJ2KS4O5uPC5oAoIIbhrdz6P00chgBlG
+         sJsPRCCxn1qMIMXf/rpauBxkSYslLA/GoY6ML2mmjsVgs6OMRCr51kpILt99KhWutLfE
+         IFnAIFOUDzxSq5SkjpbBR3hVohD6FU1VLOeiY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101102180622.GA12620@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - byss.tchmachines.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - scalex86.org
+In-Reply-To: <AANLkTik=UWwRLOaHMfVifYiQPpSwoYuA6J1EoL5BOgJY@mail.gmail.com>
+References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
+	<AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com>
+	<20101106181202.GA6927@kroah.com>
+	<39580686-A899-4689-BAAD-AF5546B34E49@mac.com>
+	<AANLkTimVsUsrmTvsHqFiqJh1hhryMBemGyW+kYLKGgEu@mail.gmail.com>
+	<20101107155757.GA13736@kroah.com>
+	<AANLkTik=UWwRLOaHMfVifYiQPpSwoYuA6J1EoL5BOgJY@mail.gmail.com>
+Date: Fri, 12 Nov 2010 22:06:34 -0500
+Message-ID: <AANLkTinhvcSU7BjKZpANL46zmrbZjVxT8CLY=9+x=6uV@mail.gmail.com>
+Subject: Re: Forked android kernel development from linux kernel mainline
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Anca Emanuel <anca.emanuel@gmail.com>, Elvis Dowson <elvis.dowson@mac.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was to be deprecated by 2.6.31. It is better to kill it I think.
+Hi all,
 
-Thanks,
-Kiran
+On Sun, Nov 7, 2010 at 4:44 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> Hi,
+>
+> On Sun, Nov 7, 2010 at 10:57 AM, Greg KH <greg@kroah.com> wrote:
+>> [...]
+>>
+> Just a small comment to say that Android is not the only one (but
+> certainly the most visible, and thus easiest to bash on) not making
+> effort to get their stuff in mainline. OpenWRT people are also
+> maintaining their fork of the kernel, without even using git, and not
+> contributing much to mainline (I'm certainly mistaken on that last
+> comment).
+>
+> I'm still stuck to use their 2.6.32 to use my AR71xx-based (MIPS)
+> boards, just this part is +15kloc.
+>
+For the record, a first patch's set for AR71XX/AR724X/AR913X support
+has been posted on linux-mips ml:
 
-On Tue, Nov 02, 2010 at 02:06:22PM -0400, Dave Jones wrote:
->WARN_ONCE is a bit strong for a deprecation warning, given that it spews a
->huge backtrace.
->
->Signed-off-by: Dave Jones <davej@redhat.com>
->
->--- linux-2.6.36.noarch/fs/hugetlbfs/inode.c~	2010-11-02 14:01:19.489289082 -0400
->+++ linux-2.6.36.noarch/fs/hugetlbfs/inode.c	2010-11-02 14:02:19.947986439 -0400
->@@ -915,8 +915,7 @@ struct file *hugetlb_file_setup(const ch
-> 	if (creat_flags == HUGETLB_SHMFS_INODE && !can_do_hugetlb_shm()) {
-> 		*user = current_user();
-> 		if (user_shm_lock(size, *user)) {
->-			WARN_ONCE(1,
->-			  "Using mlock ulimits for SHM_HUGETLB deprecated\n");
->+			printk_once("Using mlock ulimits for SHM_HUGETLB deprecated\n");
-> 		} else {
-> 			*user = NULL;
-> 			return ERR_PTR(-EPERM);
+http://www.linux-mips.org/archives/linux-mips/2010-11/msg00085.html
+
+ - Arnaud
