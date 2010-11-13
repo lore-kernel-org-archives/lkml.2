@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933244Ab0KMAAv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 19:00:51 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44436 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933218Ab0KMAAt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 19:00:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=TK1EWJ2OEjypUaK9e+1BAkNVOH8aIOLWJ4zhWLcD0WyIW5/IEweE/5w7NJuQnFRRT2
-         iwFvE+NE++5sVnbCO4gwPOArYH+5ko9FAL2Df0Qlf3bI9KgzcurfFCHSCumkdWsx3K/g
-         3fdpc9GTVDRbuEKR/bmkKbLTEBQ4TSmakd2PQ=
+	id S933251Ab0KMAGZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 19:06:25 -0500
+Received: from mout.perfora.net ([74.208.4.195]:57810 "EHLO mout.perfora.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933218Ab0KMAGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 19:06:24 -0500
+Message-ID: <4CDDD68D.4050506@nctritech.com>
+Date: Fri, 12 Nov 2010 19:06:37 -0500
+From: Jody Bruchon <jody@nctritech.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.7) Gecko/20100111 Thunderbird/3.0.1
 MIME-Version: 1.0
-In-Reply-To: <20101112233013.GA30946@core.coreip.homeip.net>
-References: <1289147348-31969-1-git-send-email-alchark@gmail.com>
-	<1289147348-31969-3-git-send-email-alchark@gmail.com>
-	<AANLkTi=zvGxpukjAv-XFAMLpKYiqqKD=p9S5FtGowdDu@mail.gmail.com>
-	<20101112233013.GA30946@core.coreip.homeip.net>
-Date: Sat, 13 Nov 2010 03:00:47 +0300
-Message-ID: <AANLkTikK5L=pEgWpsFH4GUG9dO79ZpLViHbPTc+TzA9Y@mail.gmail.com>
-Subject: Re: [PATCH 3/6 v2] input: Add support for VIA VT8500 and compatibles
- in i8042
-From: Alexey Charkov <alchark@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Tony Lindgren <tony@atomide.com>, Feng Tang <feng.tang@intel.com>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel@vger.kernel.org
+Subject: ACPI+Inspiron 1545 = crash at xrstor_state()
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:H1TzcEd0J+sJC//MZxwa5ooRAXXgz3p/yQ8o8g8Z4/V
+ rayIk4jfL/q+xdYFdUyF143B+KR8HdrXl6hL5EvvoJaeHavdl/
+ kJi1Unmgns+7ZntJ4wcVjBYv3+7Yufs/pajasE4hDVT5GXjs5n
+ I9RKtEEm1LFDuif6kcM+QByVUBJbqDhL0U4xaFzAevbvYqiXVL
+ nytj/qWL4CqPrgJlhfSAkOVqyj+iyk6jZfjnqZIlsA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/13 Dmitry Torokhov <dmitry.torokhov@gmail.com>:
-> Looks good to me (ignoring the fact that whole i8042 initialization
-> needs to be reworked and pushed into arch/board code which is out of
-> scope of these series).
->
-> I expect it will be merged with the rest of VT8500 patches through
-> whatever tree takes them.
+I previously reported a boot hang on an Inspiron 1545 laptop which is 
+cured by disabling CONFIG_ACPI.  I didn't know about the "earlyprintk" 
+boot option, and upon using it, I was able to see the actual crash.  
+Hopefully the following information will help.  Note that I have turned 
+off SMP and APIC/LAPIC support, but the bug persists even with these 
+disabled (I noticed a lot of APIC/IO-APIC code that is eliminated in 
+early boot if they're disabled.)
 
-Thanks, Dmitry!
+The crash was in function xsave_init with EIP at xstate_enable_boot_cpu 
+(the last normal message output before this was "Initializing CPU#0").  
+To narrow this down further, I edited xsave.c to be full of printk() 
+messages for each called function.  The last printk message indicates 
+that the function in xsave.c which crashes out is:
 
-Best regards,
-Alexey
+xrstor_state(init_xstate_buf, -1);
+
+The result is a general protection fault.  xrstor_state is just a tiny 
+piece of asm code, and at this point I've reached the extent of my 
+current capabilities, so I don't know where to go from here.  I can 
+manually type out chunks of the crash info on request.  I'm clueless as 
+to how the inclusion of ACPI causes this.
+
+Please CC my email if you respond since I don't subscribe to LKML.  
+Thanks in advance.
+
+Jody Bruchon
