@@ -1,50 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932166Ab0KMTlP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 14:41:15 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:50458 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755352Ab0KMTlN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 14:41:13 -0500
-Subject: Re: [BUG 2.6.27-rc1] find_busiest_group() LOCKUP
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Nikanth Karthikesan <knikanth@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-In-Reply-To: <4CDEE314.6090107@kernel.org>
-References: <20101111100628.GA24728@localhost>
-	 <1289478978.2084.74.camel@laptop> <20101111124015.GA9706@localhost>
-	 <1289480656.2084.80.camel@laptop> <20101113084018.GA23098@localhost>
-	 <1289644224.2084.521.camel@laptop> <20101113120030.GA31517@localhost>
-	 <1289653078.2084.675.camel@laptop> <20101113131042.GA5522@localhost>
-	 <4CDEE314.6090107@kernel.org>
+	id S1757271Ab0KMTvt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 14:51:49 -0500
+Received: from mail.perches.com ([173.55.12.10]:1090 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755061Ab0KMTvq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 14:51:46 -0500
+Subject: Re: [PATCH] Fix dmesg_restrict build failure with
+ CONFIG_EMBEDDED=y and CONFIG_PRINTK=n
+From: Joe Perches <joe@perches.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Eugene Teo <eugeneteo@kernel.org>, Kees Cook <kees.cook@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <AANLkTi=ut2O+mCbs1jOyg-aP=E+48h1B-MH8NxK5XyVf@mail.gmail.com>
+References: <1289669176.16461.12.camel@Joe-Laptop>
+	 <AANLkTi=ut2O+mCbs1jOyg-aP=E+48h1B-MH8NxK5XyVf@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 13 Nov 2010 20:41:17 +0100
-Message-ID: <1289677277.2109.173.camel@laptop>
+Date: Sat, 13 Nov 2010 11:51:44 -0800
+Message-ID: <1289677904.16461.82.camel@Joe-Laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-11-13 at 11:12 -0800, Yinghai Lu wrote:
-> > [    0.633006] Total of 8 processors activated (44799.46 BogoMIPS).
+On Sat, 2010-11-13 at 09:50 -0800, Linus Torvalds wrote:
+> On Sat, Nov 13, 2010 at 9:26 AM, Joe Perches <joe@perches.com> wrote:
+> > dmesg_restrict is guarded by #ifdef CONFIG_PRINTK in kernel.h
+> > Its uses need to be guarded as well.
+> Fair enough, but I think this part:
+> > diff --git a/security/commoncap.c b/security/commoncap.c
+> > index 04b80f9..29f2368 100644
+> > --- a/security/commoncap.c
+> > +++ b/security/commoncap.c
+> > @@ -895,8 +895,10 @@ int cap_syslog(int type, bool from_file)
+> >  {
+> >        if (type != SYSLOG_ACTION_OPEN && from_file)
+> >                return 0;
+> > +#ifdef CONFIG_PRINTK
+> >        if (dmesg_restrict && !capable(CAP_SYS_ADMIN))
+> >                return -EPERM;
+> > +#endif
+> >        if ((type != SYSLOG_ACTION_READ_ALL &&
+> >             type != SYSLOG_ACTION_SIZE_BUFFER) && !capable(CAP_SYS_ADMIN))
+> >                return -EPERM;
 > 
-> assume that when you have 
-> CONFIG_NR_CPUS=16
-> instead of
-> CONFIG_NR_CPUS=8
+> is incredibly ugly. If CONFIG_PRINTK isn't set, the whole function
+> just becomes pointless, so why guard just that one part of it?
 > 
-> it will boot ok? 
+> So I would suggest guarding the whole thing, and just returning 0 if
+> CONFIG_PRINTK isn't set. Or preferably just move the dmesg_restrict
+> test into do_syslog, and stop playing stupid games with
+> "security_syslog()", which actually goes away if you disable the you
+> disable CONFIG_SECURITY.
+> 
+> SECURITY_DMESG_RESTRICT is totally independent of CONFIG_SECURITY, so
+> doing it in security_syslog() was a bug to begin with.
+> 
+> Or we should make SECURITY_DMESG_RESTRICT _depend_ on CONFIG_SECURITY,
+> and move it entirely into security/commoncap.c, and not pollute
+> kernel/printk.c at all with it.
+> 
+> Anyway, suggested replacement patch attached. Comments?
+> 
+>                          Linus
 
-If it would that'd still be a bug.
+Maybe something like this?
+
+Make CONFIG_SECURITY_DMESG_RESTRICT depend on CONFIG_SECURITY
+Remove dependency on CONFIG_PRINTK
+
+Uncompiled/untested
+
+---
+ include/linux/kernel.h |    5 ++++-
+ kernel/sysctl.c        |    2 ++
+ security/Kconfig       |    1 +
+ security/commoncap.c   |    2 ++
+ 4 files changed, 9 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index fc3da9e..b9595e8 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -130,6 +130,10 @@ extern const char linux_proc_banner[];
+ 
+ extern int console_printk[];
+ 
++#ifdef CONFIG_SECURITY_DMESG_RESTRICT
++extern int dmesg_restrict;
++#endif
++
+ #define console_loglevel (console_printk[0])
+ #define default_message_loglevel (console_printk[1])
+ #define minimum_console_loglevel (console_printk[2])
+@@ -293,7 +297,6 @@ extern bool printk_timed_ratelimit(unsigned long *caller_jiffies,
+ 				   unsigned int interval_msec);
+ 
+ extern int printk_delay_msec;
+-extern int dmesg_restrict;
+ 
+ /*
+  * Print a one-time message (analogous to WARN_ONCE() et al):
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index b65bf63..5d7eaab 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -703,6 +703,7 @@ static struct ctl_table kern_table[] = {
+ 		.extra2		= &ten_thousand,
+ 	},
+ #endif
++#ifdef CONFIG_SECURITY_DMESG_RESTRICT
+ 	{
+ 		.procname	= "dmesg_restrict",
+ 		.data		= &dmesg_restrict,
+@@ -712,6 +713,7 @@ static struct ctl_table kern_table[] = {
+ 		.extra1		= &zero,
+ 		.extra2		= &one,
+ 	},
++#endif
+ 	{
+ 		.procname	= "ngroups_max",
+ 		.data		= &ngroups_max,
+diff --git a/security/Kconfig b/security/Kconfig
+index e80da95..c6583d6 100644
+--- a/security/Kconfig
++++ b/security/Kconfig
+@@ -41,6 +41,7 @@ config KEYS_DEBUG_PROC_KEYS
+ 
+ config SECURITY_DMESG_RESTRICT
+ 	bool "Restrict unprivileged access to the kernel syslog"
++	depends on SECURITY
+ 	default n
+ 	help
+ 	  This enforces restrictions on unprivileged users reading the kernel
+diff --git a/security/commoncap.c b/security/commoncap.c
+index 04b80f9..37759b2 100644
+--- a/security/commoncap.c
++++ b/security/commoncap.c
+@@ -895,8 +895,10 @@ int cap_syslog(int type, bool from_file)
+ {
+ 	if (type != SYSLOG_ACTION_OPEN && from_file)
+ 		return 0;
++#ifdef CONFIG_SECURITY_DMESG_RESTRICT
+ 	if (dmesg_restrict && !capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
++#endif
+ 	if ((type != SYSLOG_ACTION_READ_ALL &&
+ 	     type != SYSLOG_ACTION_SIZE_BUFFER) && !capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
+
+
