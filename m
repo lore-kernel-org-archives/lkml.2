@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298Ab0KMVIb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 16:08:31 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:58915 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753675Ab0KMVIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 16:08:30 -0500
-Subject: Re: [RFC][PATCH 18/22] sched: add reclaiming logic to -deadline
- tasks
-From: Raistlin <raistlin@linux.it>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Luca Abeni <luca.abeni@unitn.it>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+	id S1751527Ab0KMVh7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 16:37:59 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37241 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab0KMVh5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 16:37:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=H7dZ7Mo3ADDuxWuXghV4aO8ou8T4TxUjk81Js4VQmmuHFYH9zdmKpfqF/UhH0Maksd
+         lyaiVbv4JzArzfzzQyu3ARPDY9gBxMf0rxZiAILq0VK5AB7/0KCySpb1QWLdrbP7Axe6
+         p04klZHY/kUrNnlJ4+SQ+wx7Wlie52FVt+YHY=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1289584295.2084.343.camel@laptop>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288334546.8661.161.camel@Palantir>  <1289513573.2084.199.camel@laptop>
-	 <1289576177.6525.509.camel@Palantir> <1289577841.2084.302.camel@laptop>
-	 <4CDD7C65.9090400@unitn.it>  <1289584295.2084.343.camel@laptop>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-hygah2aJiKh1Sa/afnts"
-Date: Sat, 13 Nov 2010 22:08:16 +0100
-Message-ID: <1289682496.6491.550.camel@Palantir>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+        Jason Wessel <jason.wessel@windriver.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Michael Stefaniuc <mstefani@redhat.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Alexandre Julliard <julliard@winehq.org>
+Subject: [GIT PULL] hw-breakpoint fixes
+Date: Sat, 13 Nov 2010 22:37:51 +0100
+Message-Id: <1289684273-26770-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Ingo,
 
---=-hygah2aJiKh1Sa/afnts
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Please pull the perf/urgent branch that can be found at:
 
-On Fri, 2010-11-12 at 18:51 +0100, Peter Zijlstra wrote:
-> > BTW, sorry for the shameless plug, but even with the current=20
-> > SCHED_DEADLINE you are not forced to dimension the runtime using the=20
-> > WCET.=20
->=20
-> Yes you are, it pushes the deadline back on overrun. The idea it to
-> maintain the deadline despite overrunning your budget (up to a point).
->=20
-BTW, although I share most of Luca's and Tommaso's viewpoints,
-triggering bandwidth enforcement at runtime+something instead than just
-at runtime doesn't look all that bad, and should fit nicely in what we
-have now, without much twisting.
-
-It's just another way to interpret the runtime, and it seems feasible
-(or at least plan-able as future feature! :-P) to me... Actually this
-was exactly what I was asking and what I wanted to know. :-)
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	perf/urgent
 
 Thanks,
-Dario
+	Frederic
+---
 
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+Frederic Weisbecker (1):
+      x86: Ignore trap bits on single step exceptions
 
-http://blog.linux.it/raistlin / raistlin@ekiga.net /
-dario.faggioli@jabber.org
+Jason Wessel (1):
+      perf,hw_breakpoint: Initialize hardware api earlier
 
---=-hygah2aJiKh1Sa/afnts
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkze/jgACgkQk4XaBE3IOsTKAgCcDdngmjb282jmKbHxG8afoVu8
-mxIAnREk98lXGp2iiL4XtPaJiP2xIYcv
-=MOx5
------END PGP SIGNATURE-----
-
---=-hygah2aJiKh1Sa/afnts--
-
+ arch/x86/kernel/hw_breakpoint.c |    4 ++++
+ include/linux/hw_breakpoint.h   |    4 ++++
+ kernel/hw_breakpoint.c          |    3 +--
+ kernel/perf_event.c             |    6 ++++++
+ 4 files changed, 15 insertions(+), 2 deletions(-)
