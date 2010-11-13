@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327Ab0KMSpU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 13:45:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55221 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756107Ab0KMSpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 13:45:17 -0500
-Date: Sat, 13 Nov 2010 19:38:10 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [RFC][PATCH v2 5/7] taskstats: Improve cumulative CPU time
-	accounting
-Message-ID: <20101113183810.GA9021@redhat.com>
-References: <20101111170352.732381138@linux.vnet.ibm.com> <20101111170815.404670062@linux.vnet.ibm.com>
+	id S1757336Ab0KMSx2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 13:53:28 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33046 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755998Ab0KMSx1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 13:53:27 -0500
+Message-ID: <4CDEDE59.40603@kernel.org>
+Date: Sat, 13 Nov 2010 10:52:09 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101111170815.404670062@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>
+Subject: [PATCH] x86: Use online node real index in calulate_tbl_offset()
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-First of all, let me repeat, I am not going to discuss whether we need
-these changes or not, I do not know even if I understand your motivation.
+--- resending, hope in can make into -rc2.
 
-My only concern is correctness, but
+Found one numa system that doesn't have ram installed with first socket
+hang during executing init scripts.
 
-On 11/11, Michael Holzheu wrote:
->
-> * Add cumulative dead thread CPU times to taskstats
-> * Introduce parallel accounting process hierarchy (based on discussions
->   with Oleg Nesterov and Roland McGrath)
+bisect to:
 
-Michael, I really think this patch does too many different things.
-I forgot the details of our previous discussion, and I got lost
-trying to understand the new version.
+|commit 932967202182743c01a2eee4bdfa2c42697bc586
+|Author: Shaohua Li <shaohua.li@intel.com>
+|Date:   Wed Oct 20 11:07:03 2010 +0800
+|
+|    x86: Spread tlb flush vector between nodes
 
-I already asked you to split these changes, perhaps you can do this?
-Say, bacct_add_tsk() looks overcomplicated, the change in copy_process()
-shouldn't introduce the new CLONE_THREAD check, not sure I understand
-why release_task() was chosen for reparenting, other nits...
+It turns out when first socket is not online could have cpus on node1
+tlb_offset set to bigger than NUM_INVALIDATE_TLB_VECTORS.
 
-But it is not easy to discuss these completely different things
-looking at the single patch.
+that could affect systems like 4 sockets, but socket 2 doesn't
+have installed, sockets 3 will get too big tlb_offset.
 
-Imho, it would be much better if you make a separate patch which
-adds acct_parent/etc and implements the parallel hierarchy. This
-also makes sense because it touches the core kernel.
+Need to use real online node idx.
 
-Personally I think that even "struct cdata" + __account_ctime() helper
-needs a separate patch, and perhaps this change makes sense by itself
-as cleanup. And this way the "trivial" changes (like the changes in
-k_getrusage) won't distract from the functional changes.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Acked-by: Shaohua Li <shaohua.li@intel.com>
 
-The final change should introduce cdata_acct and actually implement
-the complete cumulative accounting.
+---
+ arch/x86/mm/tlb.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-At least, please distill parallel accounting process hierarchy.
-We do not want bugs in this area ;)
-
-What do you think?
-
-Oleg.
-
+Index: linux-2.6/arch/x86/mm/tlb.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/tlb.c
++++ linux-2.6/arch/x86/mm/tlb.c
+@@ -223,7 +223,7 @@ void native_flush_tlb_others(const struc
+ 
+ static void __cpuinit calculate_tlb_offset(void)
+ {
+-	int cpu, node, nr_node_vecs;
++	int cpu, node, nr_node_vecs, idx = 0;
+ 	/*
+ 	 * we are changing tlb_vector_offset for each CPU in runtime, but this
+ 	 * will not cause inconsistency, as the write is atomic under X86. we
+@@ -239,7 +239,7 @@ static void __cpuinit calculate_tlb_offs
+ 		nr_node_vecs = NUM_INVALIDATE_TLB_VECTORS/nr_online_nodes;
+ 
+ 	for_each_online_node(node) {
+-		int node_offset = (node % NUM_INVALIDATE_TLB_VECTORS) *
++		int node_offset = (idx % NUM_INVALIDATE_TLB_VECTORS) *
+ 			nr_node_vecs;
+ 		int cpu_offset = 0;
+ 		for_each_cpu(cpu, cpumask_of_node(node)) {
+@@ -248,6 +248,7 @@ static void __cpuinit calculate_tlb_offs
+ 			cpu_offset++;
+ 			cpu_offset = cpu_offset % nr_node_vecs;
+ 		}
++		idx++;
+ 	}
+ }
+ 
