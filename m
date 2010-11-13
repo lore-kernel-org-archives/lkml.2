@@ -1,113 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757694Ab0KMArN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 12 Nov 2010 19:47:13 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:51205 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239Ab0KMArL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 12 Nov 2010 19:47:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-operating-system
-         :user-agent;
-        b=w8oYaKIq8vFnUnCKOQ6/vJNtTj/5+s4D9u58xMK/VOoDxjZx3LBDaccYHqU0jEzy3j
-         JxkT4/LDT6aTSWvnrjQw==
-Date: Fri, 12 Nov 2010 16:46:57 -0800
-From: Mandeep Singh Baines <msb@google.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
-        linux-kernel@vger.kernel.org, gspencer@chromium.org,
-        piman@chromium.org, wad@chromium.org, olofj@chromium.org,
-        Bodo Eggert <7eggert@web.de>
-Subject: [PATCH] oom: allow a non-CAP_SYS_RESOURCE proces to oom_score_adj
- down
-Message-ID: <20101113004657.GN7363@google.com>
-References: <20101111043541.GA4588@google.com>
- <alpine.DEB.2.00.1011102328080.7571@chino.kir.corp.google.com>
- <20101111183050.GI7363@google.com>
- <alpine.DEB.2.00.1011111241450.25829@chino.kir.corp.google.com>
- <20101111222509.GJ7363@google.com>
- <alpine.DEB.2.00.1011111511570.3775@chino.kir.corp.google.com>
- <20101111235620.GK7363@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101111235620.GK7363@google.com>
-X-Operating-System: Linux/2.6.32-gg252-generic (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+	id S1757702Ab0KMAtV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 12 Nov 2010 19:49:21 -0500
+Received: from mail.perches.com ([173.55.12.10]:1071 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752603Ab0KMAtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 12 Nov 2010 19:49:20 -0500
+Subject: [PATCH 03/14 V2] arch/powerpc: Use printf extension %pR for struct
+ resource
+From: Joe Perches <joe@perches.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jiri Kosina <trivial@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101113114228.e87c6902.sfr@canb.auug.org.au>
+References: <cover.1289597644.git.joe@perches.com>
+	 <7654162f86bedd7d4cd5ccc883916157af6a2369.1289597644.git.joe@perches.com>
+	 <20101113114228.e87c6902.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 12 Nov 2010 16:49:19 -0800
+Message-ID: <1289609359.6519.160.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We'd like to be able to oom_score_adj a process up/down as its
-enters/leaves the foreground. Currently, it is not possible to oom_adj
-down without CAP_SYS_RESOURCE. This patch allows a task to decrease
-its oom_score_adj back to the value that a CAP_SYS_RESOURCE thread set
-it or its inherited value at fork. Assuming the thread that has forked
-it has oom_score_adj of 0, each tab could decrease it back from 0 upon
-activation unless a CAP_SYS_RESOURCE thread elevated it to something
-higher.
+Using %pR standardizes the struct resource output.
 
-Alternative considered:
-
-* a setuid binary
-* a daemon with CAP_SYS_RESOURCE
-
-Since you don't wan't all processes to be able to reduce their
-oom_adj, a setuid or daemon implementation would be complex. The
-alternatives also have much higher overhead.
-
-This patch updated based on feedback from
-David Rientjes <rientjes@google.com>.
-
-Change-Id: If8f52363fd6c156e1730f43148aee987260e9c72
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/proc/base.c        |    4 +++-
- include/linux/sched.h |    2 ++
- 2 files changed, 5 insertions(+), 1 deletions(-)
+On Sat, 2010-11-13 at 11:42 +1100, Stephen Rothwell wrote:
+> Shouldn't this be just &hose->io_resource?
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index f3d02ca..e617413 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -1164,7 +1164,7 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
- 		goto err_task_lock;
- 	}
+V2: Fix stupid editing mistake
+
+ arch/powerpc/kernel/pci_64.c     |    3 +--
+ arch/powerpc/sysdev/tsi108_dev.c |    8 ++++----
+ 2 files changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/arch/powerpc/kernel/pci_64.c b/arch/powerpc/kernel/pci_64.c
+index d43fc65..2ecb1de 100644
+--- a/arch/powerpc/kernel/pci_64.c
++++ b/arch/powerpc/kernel/pci_64.c
+@@ -193,8 +193,7 @@ int __devinit pcibios_map_io_space(struct pci_bus *bus)
+ 	hose->io_resource.start += io_virt_offset;
+ 	hose->io_resource.end += io_virt_offset;
  
--	if (oom_score_adj < task->signal->oom_score_adj &&
-+	if (oom_score_adj < task->signal->oom_score_adj_min &&
- 			!capable(CAP_SYS_RESOURCE)) {
- 		err = -EACCES;
- 		goto err_sighand;
-@@ -1177,6 +1177,8 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
- 			atomic_dec(&task->mm->oom_disable_count);
- 	}
- 	task->signal->oom_score_adj = oom_score_adj;
-+	if (capable(CAP_SYS_RESOURCE))
-+		task->signal->oom_score_adj_min = oom_score_adj;
- 	/*
- 	 * Scale /proc/pid/oom_adj appropriately ensuring that OOM_DISABLE is
- 	 * always attainable.
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index f53cdf2..2a71ee0 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -626,6 +626,8 @@ struct signal_struct {
+-	pr_debug("  hose->io_resource=0x%016llx...0x%016llx\n",
+-		 hose->io_resource.start, hose->io_resource.end);
++	pr_debug("  hose->io_resource=%pR\n", &hose->io_resource);
  
- 	int oom_adj;		/* OOM kill score adjustment (bit shift) */
- 	int oom_score_adj;	/* OOM kill score adjustment */
-+	int oom_score_adj_min;	/* OOM kill score adjustment minimum value.
-+				 * Only settable by CAP_SYS_RESOURCE. */
+ 	return 0;
+ }
+diff --git a/arch/powerpc/sysdev/tsi108_dev.c b/arch/powerpc/sysdev/tsi108_dev.c
+index d4d15aa..5e249a8 100644
+--- a/arch/powerpc/sysdev/tsi108_dev.c
++++ b/arch/powerpc/sysdev/tsi108_dev.c
+@@ -83,8 +83,8 @@ static int __init tsi108_eth_of_init(void)
+ 		memset(&tsi_eth_data, 0, sizeof(tsi_eth_data));
  
- 	struct mutex cred_guard_mutex;	/* guard against foreign influences on
- 					 * credential calculations
+ 		ret = of_address_to_resource(np, 0, &r[0]);
+-		DBG("%s: name:start->end = %s:0x%lx-> 0x%lx\n",
+-			__func__,r[0].name, r[0].start, r[0].end);
++		DBG("%s: name:start->end = %s:%pR\n",
++		    __func__, r[0].name, &r[0]);
+ 		if (ret)
+ 			goto err;
+ 
+@@ -92,8 +92,8 @@ static int __init tsi108_eth_of_init(void)
+ 		r[1].start = irq_of_parse_and_map(np, 0);
+ 		r[1].end = irq_of_parse_and_map(np, 0);
+ 		r[1].flags = IORESOURCE_IRQ;
+-		DBG("%s: name:start->end = %s:0x%lx-> 0x%lx\n",
+-			__func__,r[1].name, r[1].start, r[1].end);
++		DBG("%s: name:start->end = %s:%pR\n",
++			__func__, r[1].name, &r[1]);
+ 
+ 		tsi_eth_dev =
+ 		    platform_device_register_simple("tsi-ethernet", i++, &r[0],
 -- 
-1.7.3.1
+1.7.3.1.g432b3.dirty
+
+
+
 
