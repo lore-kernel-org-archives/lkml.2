@@ -1,203 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439Ab0KMUcO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 15:32:14 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:57005 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756731Ab0KMUcE convert rfc822-to-8bit (ORCPT
+	id S1756760Ab0KMUgN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 15:36:13 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:43039 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755338Ab0KMUgL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 15:32:04 -0500
-Subject: Re: [RFC][PATCH 06/22] sched: SCHED_DEADLINE handles spacial
- kthreads
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Raistlin <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20101113195857.GA11411@redhat.com>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333876.8661.147.camel@Palantir> <1289486096.2084.123.camel@laptop>
-	 <20101111152750.GA2510@redhat.com> <1289490202.2084.140.camel@laptop>
-	 <20101111163242.GA5697@redhat.com> <1289673355.2109.79.camel@laptop>
-	 <20101113195857.GA11411@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 13 Nov 2010 21:31:31 +0100
-Message-ID: <1289680291.2109.244.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Sat, 13 Nov 2010 15:36:11 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 13 Nov 2010 21:35:49 +0100 (CET)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH] firewire: ohci: fix reception of 4k sized asynchronous
+ packets
+To: linux1394-devel@lists.sourceforge.net
+cc: linux-kernel@vger.kernel.org, Maxim Levitsky <maximlevitsky@gmail.com>,
+        Clemens Ladisch <clemens@ladisch.de>
+Message-ID: <tkrat.cf3673ab5a3d1660@s5r6.in-berlin.de>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-11-13 at 20:58 +0100, Oleg Nesterov wrote:
-> On 11/13, Peter Zijlstra wrote:
-> >
-> > Something like so?.. hasn't even seen a compiler yet but one's got to do
-> > something to keep the worst bore of saturday night telly in check ;-)
-> 
-> Yes, I _think_ this all can work (and imho makes a lot of sense
-> if it works).
-> 
-> quick and dirty review below ;)
-> 
-> >  struct take_cpu_down_param {
-> > -	struct task_struct *caller;
-> >  	unsigned long mod;
-> >  	void *hcpu;
-> >  };
-> > @@ -208,11 +207,6 @@ static int __ref take_cpu_down(void *_pa
-> >
-> >  	cpu_notify(CPU_DYING | param->mod, param->hcpu);
-> >
-> > -	if (task_cpu(param->caller) == cpu)
-> > -		move_task_off_dead_cpu(cpu, param->caller);
-> > -	/* Force idle task to run as soon as we yield: it should
-> > -	   immediately notice cpu is offline and die quickly. */
-> > -	sched_idle_next();
-> 
-> Yes. but we should remove "while (!idle_cpu(cpu))" from _cpu_down().
+At S800, packets may up to 4096 bytes + headers (+ OHCI trailer) large.
+This was not handled by firewire-ohci until now.
 
-Right, I think we should replace that with something like BUG_ON(!
-idle_cpu(cpu)); Since we migrated everything away during the stop
-machine, the cpu should be idle after it.
+As Maxim Levitsky points out, 8k buffer segments instead of 4k ones let
+us easily fix the bug that async packets with 4096 bytes payload cannot
+be received.  Plus, this is a quick and easy way to reduce ack-busy-*
+events without having to change the ar_context_tasklet to deal with more
+than two segments.  (In my testing, firewire-net is still able to
+saturate some controllers even with its current low transmitter queue
+depth of <= 8 datagrams at default MTU of 1500 bytes.  FTP over fw-net
+throughput from a XIO2213A to an FW323 is only improved by about 4% by
+this change, and even less in the other direction.)
 
-> > @@ -2381,18 +2381,15 @@ static int select_fallback_rq(int cpu, s
-> >  		return dest_cpu;
-> >
-> >  	/* No more Mr. Nice Guy. */
-> > -	if (unlikely(dest_cpu >= nr_cpu_ids)) {
-> > -		dest_cpu = cpuset_cpus_allowed_fallback(p);
-> > -		/*
-> > -		 * Don't tell them about moving exiting tasks or
-> > -		 * kernel threads (both mm NULL), since they never
-> > -		 * leave kernel.
-> > -		 */
-> > -		if (p->mm && printk_ratelimit()) {
-> > -			printk(KERN_INFO "process %d (%s) no "
-> > -			       "longer affine to cpu%d\n",
-> > -			       task_pid_nr(p), p->comm, cpu);
-> > -		}
-> > +	dest_cpu = cpuset_cpus_allowed_fallback(p);
-> > +	/*
-> > +	 * Don't tell them about moving exiting tasks or
-> > +	 * kernel threads (both mm NULL), since they never
-> > +	 * leave kernel.
-> > +	 */
-> > +	if (p->mm && printk_ratelimit()) {
-> > +		printk(KERN_INFO "process %d (%s) no longer affine to cpu%d\n",
-> > +				task_pid_nr(p), p->comm, cpu);
-> >  	}
-> 
-> Hmm. I was really puzzled until I realized this is just cleanup,
-> we can't reach this point if dest_cpu < nr_cpu_ids.
+Clemens Ladisch found that rather about 20k are required to converge to
+optimum performance, but for now I do not dare to rely on slab
+allocations larger than 8k (times two per context, for two contexts).
+Better defer that to a code change for more than two RA buffer segments.
 
-Right.. Noticed that when I read that code, though I might as well fix
-it up.
+Also,
+ - since "firewire: ohci: avoid reallocation of AR buffers",
+   ar_context_add_page is only used by ar_context_init/ pci_probe and
+   therefore can allocate with GFP_KERNEL,
+ - add WARN_ON(allocation failure) as a lame way of error handling.
 
-> > +static void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p)
-> >  {
-> >  	struct rq *rq = cpu_rq(dead_cpu);
-> > +	int needs_cpu, uninitialized_var(dest_cpu);
-> >
-> > -	/* Must be exiting, otherwise would be on tasklist. */
-> > -	BUG_ON(!p->exit_state);
-> > -
-> > -	/* Cannot have done final schedule yet: would have vanished. */
-> > -	BUG_ON(p->state == TASK_DEAD);
-> > -
-> > -	get_task_struct(p);
-> > +	needs_cpu = (task_cpu(p) == dead_cpu) && (p->state != TASK_WAKING);
-> > +	if (needs_cpu)
-> > +		dest_cpu = select_fallback_rq(dead_cpu, p);
-> > +	raw_spin_unlock(&rq->lock);
-> 
-> Probably we do not need any checks. This task was picked by
-> ->pick_next_task(), it should have task_cpu(p) == dead_cpu ?
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+ drivers/firewire/ohci.c |   30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
 
-Right, we can drop those checks, its unconditionally true.
+Index: b/drivers/firewire/ohci.c
+===================================================================
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -580,6 +580,8 @@ static int ohci_update_phy_reg(struct fw
+ 	return ret;
+ }
+ 
++#define AR_PAGE_SIZE (8*1024)
++
+ static void ar_context_link_page(struct ar_context *ctx,
+ 				 struct ar_buffer *ab, dma_addr_t ab_bus)
+ {
+@@ -591,9 +593,9 @@ static void ar_context_link_page(struct 
+ 						    DESCRIPTOR_STATUS |
+ 						    DESCRIPTOR_BRANCH_ALWAYS);
+ 	offset = offsetof(struct ar_buffer, data);
+-	ab->descriptor.req_count      = cpu_to_le16(PAGE_SIZE - offset);
++	ab->descriptor.req_count      = cpu_to_le16(AR_PAGE_SIZE - offset);
+ 	ab->descriptor.data_address   = cpu_to_le32(ab_bus + offset);
+-	ab->descriptor.res_count      = cpu_to_le16(PAGE_SIZE - offset);
++	ab->descriptor.res_count      = cpu_to_le16(AR_PAGE_SIZE - offset);
+ 	ab->descriptor.branch_address = 0;
+ 
+ 	wmb(); /* finish init of new descriptors before branch_address update */
+@@ -611,7 +613,7 @@ static int ar_context_add_page(struct ar
+ 	struct ar_buffer *ab;
+ 	dma_addr_t uninitialized_var(ab_bus);
+ 
+-	ab = dma_alloc_coherent(dev, PAGE_SIZE, &ab_bus, GFP_ATOMIC);
++	ab = dma_alloc_coherent(dev, AR_PAGE_SIZE, &ab_bus, GFP_KERNEL);
+ 	if (ab == NULL)
+ 		return -ENOMEM;
+ 
+@@ -630,7 +632,7 @@ static void ar_context_release(struct ar
+ 		ab_next = ab->next;
+ 		offset = offsetof(struct ar_buffer, data);
+ 		ab_bus = le32_to_cpu(ab->descriptor.data_address) - offset;
+-		dma_free_coherent(ctx->ohci->card.device, PAGE_SIZE,
++		dma_free_coherent(ctx->ohci->card.device, AR_PAGE_SIZE,
+ 				  ab, ab_bus);
+ 	}
+ }
+@@ -767,11 +769,11 @@ static void ar_context_tasklet(unsigned 
+ 
+ 		ab = ab->next;
+ 		d = &ab->descriptor;
+-		size = start + PAGE_SIZE - ctx->pointer;
++		size = start + AR_PAGE_SIZE - ctx->pointer;
+ 		/* valid buffer data in the next page */
+ 		rest = le16_to_cpu(d->req_count) - le16_to_cpu(d->res_count);
+ 		/* what actually fits in this page */
+-		size2 = min(rest, (size_t)PAGE_SIZE - offset - size);
++		size2 = min(rest, AR_PAGE_SIZE - offset - size);
+ 		memmove(buffer, ctx->pointer, size);
+ 		memcpy(buffer + size, ab->data, size2);
+ 
+@@ -792,7 +794,7 @@ static void ar_context_tasklet(unsigned 
+ 			size -= pktsize;
+ 			/* fill up this page again */
+ 			size3 = min(rest - size2,
+-				    (size_t)PAGE_SIZE - offset - size - size2);
++				    AR_PAGE_SIZE - offset - size - size2);
+ 			memcpy(buffer + size + size2,
+ 			       (void *) ab->data + size2, size3);
+ 			size2 += size3;
+@@ -812,20 +814,20 @@ static void ar_context_tasklet(unsigned 
+ 
+ 			ar_context_link_page(ctx, start, start_bus);
+ 		} else {
+-			ctx->pointer = start + PAGE_SIZE;
++			ctx->pointer = start + AR_PAGE_SIZE;
+ 		}
+ 	} else {
+ 		buffer = ctx->pointer;
+ 		ctx->pointer = end =
+-			(void *) ab + PAGE_SIZE - le16_to_cpu(res_count);
++			(void *) ab + AR_PAGE_SIZE - le16_to_cpu(res_count);
+ 
+ 		while (buffer < end)
+ 			buffer = handle_ar_packet(ctx, buffer);
+ 	}
+ }
+ 
+-static int ar_context_init(struct ar_context *ctx,
+-			   struct fw_ohci *ohci, u32 regs)
++static void ar_context_init(struct ar_context *ctx,
++			    struct fw_ohci *ohci, u32 regs)
+ {
+ 	struct ar_buffer ab;
+ 
+@@ -834,12 +836,10 @@ static int ar_context_init(struct ar_con
+ 	ctx->last_buffer = &ab;
+ 	tasklet_init(&ctx->tasklet, ar_context_tasklet, (unsigned long)ctx);
+ 
+-	ar_context_add_page(ctx);
+-	ar_context_add_page(ctx);
++	WARN_ON(ar_context_add_page(ctx) ||
++		ar_context_add_page(ctx));
+ 	ctx->current_buffer = ab.next;
+ 	ctx->pointer = ctx->current_buffer->data;
+-
+-	return 0;
+ }
+ 
+ static void ar_context_run(struct ar_context *ctx)
 
-> But. I think there is a problem. We should not migrate current task,
-> stop thread, which does the migrating. At least, sched_stoptask.c
-> doesn't implement ->enqueue_task() and we can never wake it up later
-> for kthread_stop().
-
-Hrm, right, so while the migration thread isn't actually on any rq
-structure as such, pick_next_task() will return it.. need to come up
-with a way to skip it.
-
-As to current, take_cpu_down() is actually migrating current away before
-this patch, so I simply included current in the
-CPU_DYING->migrate_tasks() loop and removed the special case from
-take_cpu_down().
-
-> Perhaps migrate_tasks() should do for_each_class() by hand to
-> ignore stop_sched_class. But then _cpu_down() should somewhow
-> ensure the stop thread on the dead CPU is already parked in
-> schedule().
-
-Well, since we're in stop_machine all cpus but the cpu that is executing
-is stuck in the stop_machine_cpu_stop() loop, in both cases we could
-simply fudge the pick_next_task_stop() condition (eg. set rq->stop =
-NULL) while doing that loop, and restore it afterwards, nothing will hit
-schedule() while we're there.
-
-> > -	case CPU_DYING_FROZEN:
-> >  		/* Update our root-domain */
-> >  		raw_spin_lock_irqsave(&rq->lock, flags);
-> >  		if (rq->rd) {
-> >  			BUG_ON(!cpumask_test_cpu(cpu, rq->rd->span));
-> >  			set_rq_offline(rq);
-> >  		}
-> > +		migrate_tasks(cpu);
-> > +		BUG_ON(rq->nr_running != 0);
-> >  		raw_spin_unlock_irqrestore(&rq->lock, flags);
-> 
-> Probably we don't really need rq->lock. All cpus run stop threads.
-
-Right, but I was worried about stuff that relied on lockdep state like
-the rcu lockdep stuff.. and taking the lock doesn't hurt.
-
-> I am not sure about rq->idle, perhaps it should be deactivated.
-> I don't think we should migrate it.
-
-Ah, I think the !nr_running check will bail before we end up selecting
-the idle thread.
-
-> What I never understood is the meaning of play_dead/etc. If we
-> remove sched_idle_next(), who will do that logic? And how the
-> idle thread can call idle_task_exit() ?
-
-Well, since we'll have migrated every task on that runqueue (except the
-migration thread), the only runnable task left (once the migration
-thread stops running) is the idle thread, so it should be implicit.
-
-As to play_dead():
-
-  cpu_idle()
-    if (cpu_is_offline(smp_processor_id()))
-      play_dead()
-        native_play_dead() /* did I already say I detest paravirt? */
-          play_dead_common()
-            idle_task_exit();
-            local_irq_disable();
-          tboot/mwait/hlt
-
-It basically puts the cpu to sleep with IRQs disabled, needs special
-magic to wake it back up.
-          
+-- 
+Stefan Richter
+-=====-==-=- =-== -==-=
+http://arcgraph.de/sr/
 
