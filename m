@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419Ab0KMGGo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 01:06:44 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50896 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751048Ab0KMGGm (ORCPT
+	id S1752722Ab0KMGHx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 01:07:53 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42729 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751048Ab0KMGHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 01:06:42 -0500
+	Sat, 13 Nov 2010 01:07:50 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kCsxn4BpiZEtq1kI3C0dhfkTcDNh1CfWMBr3H7t6Z1/8U95JEC2wTW35Zh1NpyxntH
-         ePcb2+ihLOfkO4E7E9M+9x5VavpsvoltlEbTe/J6Uk8zjyrDqb1Hsu2q3L5g7qoJguF4
-         ZebG1JC9HGlY4Tk/Cp2YFAkhqsUOCl+7y6ZqY=
-Date: Fri, 12 Nov 2010 22:06:34 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Eric Biederman <ebiederm@aristanetworks.com>,
-        Stefan Achatz <stefan_achatz@web.de>,
-        "Serge E. Hallyn" <serue@us.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Benjamin Thery <benjamin.thery@bull.net>
-Subject: Re: [PATCH 2/2] HID: roccat: using new sysfs_create_bin_group() in
- kone driver
-Message-ID: <20101113060634.GB1919@core.coreip.homeip.net>
-References: <1289585921.2629.13.camel@neuromancer>
- <AANLkTik4qPyBtKgJwHVnhkTASNORoKrWms6gk8NirYeU@mail.gmail.com>
- <20101113005232.GA20865@suse.de>
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=WoE1vFcen+Bj0Fpxbo3Y9CwlTcYUpp5Cyave+WZWuHhcpS810vY1O1sHKF1ZqnseTV
+         w+uxo3hB92QQtmZcqwGg2aP7aJ7GJbIWFs6YAPdsTE0qTBNgz8ZErYvSyiAK8RKssKIS
+         if9pbWtx6jY+ldYcb9hSequxK4yueMK8Ejsdg=
+Message-ID: <4CDE2B33.9050404@garzik.org>
+Date: Sat, 13 Nov 2010 01:07:47 -0500
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101113005232.GA20865@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Wilcox <matthew@wil.cx>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] SCSI queuecommand API change for 2.6.37-rc1
+References: <1289606118.3015.539.camel@mulgrave.site> <AANLkTinj2BM2eGo2yyfzs=t+nu79WLW_bGYota9sDZwH@mail.gmail.com> <20101113042821.GE18258@parisc-linux.org> <AANLkTik_eXv1_ZaqD01CoT6igzjBZtmECD0e+QUkMhxP@mail.gmail.com> <1289628103.3015.608.camel@mulgrave.site>
+In-Reply-To: <1289628103.3015.608.camel@mulgrave.site>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 04:52:32PM -0800, Greg KH wrote:
-> On Fri, Nov 12, 2010 at 04:21:45PM -0800, Eric Biederman wrote:
-> > On Fri, Nov 12, 2010 at 10:18 AM, Stefan Achatz <stefan_achatz@web.de> wrote:
-> > > hid-roccat-kone now uses new group functions for creating binary
-> > > sysfs attributes.
-> > 
-> > Looking at this, I have a problem with the way this works.
-> > You are still doing this the hard and racy way.
-> > 
-> > sysfs attributes that are only added when we initialize the hardware and
-> > are only removed when we remove the driver should use the device layer
-> > functions to create their attributes.
-> > 
-> > This achieves two things.  The code is easier to write because there
-> > is less of it.
-> > The notification to user space happens after the attributes appear so
-> > that you don't
-> > have strange hotplug races.
-> > 
-> > If there a chance you can look at implementing this in the simpler
-> > race free way?
-> 
-> Good point, just attach this attribute group to the device and the
-> driver core will automatically create the files for you.
-> 
+On 11/13/2010 01:01 AM, James Bottomley wrote:
+> I'd like to get rid of done too.  I'm ambivalent on whether we pass in
+> the host or not, but I did it anyway.
+>
+> The patch is reasonably small but there are a few driver prototypes to
+> clean up as well.  How does the attached look? If OK, I'll fold it in
+> and resubmit the pull.
+>
+> I think I picked up all the non-x86 drivers that don't show up under
+> allmodconfig, but it would be nice to incubate this in next for another
+> couple of days to be sure.
 
-Attribute group in device structure is normally owned and managed by
-subsystem core; without additional plumbing drivers should not be
-touching it, at least not normally.
+Looks like you caught the megaraid deadlock, but missed a few others... 
+  I'll rediff mine as incremental as discussed on IRC.
 
-Plus we do not have binary attribute group in device structure [yet].
-
--- 
-Dmitry
