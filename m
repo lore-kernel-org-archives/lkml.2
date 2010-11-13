@@ -1,34 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab0KMQS0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 11:18:26 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:53007 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754482Ab0KMQSZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 11:18:25 -0500
-Subject: Re: Oprofile bug ?
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sylvain GENEVES <Sylvain.Geneves@inrialpes.fr>
-Cc: "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robert.richter" <robert.richter@amd.com>
-In-Reply-To: <c69374315a434a8bab96c55e4542bc81.squirrel@webmail.inrialpes.fr>
-References: <c69374315a434a8bab96c55e4542bc81.squirrel@webmail.inrialpes.fr>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 13 Nov 2010 17:18:36 +0100
-Message-ID: <1289665116.2084.887.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755151Ab0KMQ0N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 11:26:13 -0500
+Received: from isilmar-3.linta.de ([188.40.101.200]:58562 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752747Ab0KMQ0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 11:26:12 -0500
+Date: Sat, 13 Nov 2010 17:25:07 +0100
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: akpm@linux-foundation.org, torvalds@osdl.org
+Cc: linux-kernel@vger.kernel.org, linux-pcmcia@lists.infradead.org
+Subject: [git pull] PCMCIA bugfixes for 2.6.37-rc1
+Message-ID: <20101113162507.GA13542@comet.dominikbrodowski.net>
+Mail-Followup-To: akpm@linux-foundation.org, torvalds@osdl.org,
+	linux-kernel@vger.kernel.org, linux-pcmcia@lists.infradead.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-12 at 22:11 +0100, Sylvain GENEVES wrote:
-> Anyone has any idea on what is happening ?
+Linus,
 
-Yeah, the oprofile code is terminally broken, it uses
-__copy_from_user_inatomic() from NMI context.
+a few PCMCIA bugfixes and improvements are available at
+
+git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
+
+The diffstat and list of changes follows; the patches were sent out at least
+to linux-pcmcia a couple of days ago.
+
+Thanks,
+        Dominik
 
 
+Andres Salomon (1):
+      pcmcia: fix warning in synclink driver
+
+Joe Perches (1):
+      drivers/pcmcia/soc_common.c: Use printf extension %pV
+
+Komuro (1):
+      pd6729: Coding Style fixes
+
+Nicolas Kaiser (1):
+      pcmcia/cm4000: fix error code
+
+Uwe Kleine-König (1):
+      pcmcia/sa1100: don't put machine specific init functions in .init.text
+
+ drivers/char/pcmcia/cm4000_cs.c   |    3 ++-
+ drivers/char/pcmcia/synclink_cs.c |    1 +
+ drivers/pcmcia/pd6729.c           |    8 ++++----
+ drivers/pcmcia/pd6729.h           |    2 +-
+ drivers/pcmcia/pxa2xx_sharpsl.c   |    2 +-
+ drivers/pcmcia/sa1100_assabet.c   |    2 +-
+ drivers/pcmcia/sa1100_cerf.c      |    2 +-
+ drivers/pcmcia/sa1100_generic.c   |    2 +-
+ drivers/pcmcia/sa1100_h3600.c     |    2 +-
+ drivers/pcmcia/sa1100_shannon.c   |    2 +-
+ drivers/pcmcia/sa1100_simpad.c    |    2 +-
+ drivers/pcmcia/soc_common.c       |    9 +++++++--
+ 12 files changed, 22 insertions(+), 15 deletions(-)
