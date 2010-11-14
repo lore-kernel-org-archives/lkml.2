@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab0KNNdd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 08:33:33 -0500
-Received: from mail.windriver.com ([147.11.1.11]:62175 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab0KNNda (ORCPT
+	id S1755549Ab0KNNeP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 08:34:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56859 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751888Ab0KNNeN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 08:33:30 -0500
-Message-ID: <4CDFE516.3050006@windriver.com>
-Date: Sun, 14 Nov 2010 07:33:10 -0600
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+	Sun, 14 Nov 2010 08:34:13 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: Jean Pihet <jean.pihet@newoldbits.com>
+Subject: Re: [PATCH 2/3] PERF(kernel): Cleanup power events
+Date: Sun, 14 Nov 2010 07:34:07 -0600
+User-Agent: KMail/1.9.10
+Cc: mingo@elte.hu, rjw@sisk.pl, linux-kernel@vger.kernel.org,
+        arjan@linux.intel.com
+References: <1289498595-25806-1-git-send-email-trenn@suse.de> <201011121217.11339.trenn@suse.de> <AANLkTim00A5V9PLP3f_enZ05xR-3VvKOR_9vvXORVPS7@mail.gmail.com>
+In-Reply-To: <AANLkTim00A5V9PLP3f_enZ05xR-3VvKOR_9vvXORVPS7@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] perf,hw_breakpoint: Initialize hardware api earlier
-References: <1289684273-26770-1-git-send-regression-fweisbec@gmail.com> <1289684273-26770-3-git-send-regression-fweisbec@gmail.com> <1289684766.2109.326.camel@laptop>
-In-Reply-To: <1289684766.2109.326.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Nov 2010 13:33:11.0548 (UTC) FILETIME=[7B6823C0:01CB8400]
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Message-Id: <201011140734.07770.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2010 03:46 PM, Peter Zijlstra wrote:
-> On Sat, 2010-11-13 at 22:37 +0100, Frederic Weisbecker wrote:
->   
->> From: Jason Wessel <jason.wessel@windriver.com>
->>
->> When using early debugging, the kernel does not initialize the
->> hw_breakpoint API early enough and causes the late initialization of
->> the kernel debugger to fail. The boot arguments are:
->>
->>     earlyprintk=vga ekgdboc=kbd kgdbwait
->>
->> Then simply type "go" at the kdb prompt and boot. The kernel will
->> later emit the message:
->>
->>     kgdb: Could not allocate hwbreakpoints
->>
->> And at that point the kernel debugger will cease to work correctly.
->>
->> The solution is to initialize the hw_breakpoint at the same time that
->> all the other perf call backs are initialized instead of using a
->> core_initcall() initialization which happens well after the kernel
->> debugger can make use of hardware breakpoints.
->>     
->
-> How early is it needed? 
+On Friday 12 November 2010 03:50:21 pm Jean Pihet wrote:
+> On Fri, Nov 12, 2010 at 7:17 PM, Thomas Renninger <trenn@suse.de> wrote:
+...
+> >> > +
+> >> > +#ifdef CONFIG_EVENT_POWER_TRACING_DEPRECATED
+> >> > +
+> >> >  #ifndef _TRACE_POWER_ENUM_
+> >> >  #define _TRACE_POWER_ENUM_
+> >> >  enum {
+> >> > @@ -153,8 +214,32 @@ DEFINE_EVENT(power_domain, power_domain_target,
+> >> >
+> >> >        TP_ARGS(name, state, cpu_id)
+> >> >  );
+> >> > -
+> >> > +#endif /* CONFIG_EVENT_POWER_TRACING_DEPRECATED */
+> >> The clock and power_domain events have been recently introduced and so
+> >> must be part of the new API. Can this #endif be moved right after the
+> >> definition of power_end?
+> > Oops, I pulled again meanwhile and the patches still patched without fuzz,
+> > but probably with some offset.
+> > I'll look at that and resend this one.
+> Ok
+Thanks for pointing this out. Because pre-processor conditionals only have 
+been moved around it looks like my test build after pulling still succeeded,
+while the #ifdefs/#endifs were rather messed up.
 
-The HW breakpoint callback needs to be registered at the same time the
-rest of the perf callbacks are registered.  More specifically, the
-infrastructure setup needs to be completed before the debugger calls
-"register_wide_hw_breakpoint(&attr, NULL)" in arch/x86/kernel/kgdb.c.  
-After the debugger calls the registration function, from that point on
-perf owns the reservation system for all hw break point registers.
+I adjusted these parts and successfully test-built on quite a lot .config 
+flavors on i386, x86_64, different ppc, ia64 and s390.
 
-> I've got a patch converting the x86 (still need
-> to do the other hardware pmus) to early_initcall() instead of random
-> places in the arch bringup (notably before the perf core init).
->
->   
+> >> A string is needed here. Without it it is impossible to have the option
+> >> unset.
+> >> This does the trick: +bool "Deprecated power event trace API, to be
+> >> removed" 
+Adjusted, thanks.
 
-This sounds to me like it would be early enough.  I could certainly run
-the simple test case in the patch to make sure it still works, if you
-point me to your patch(es).  I imagine I should also test the hand off
-procedure where the debugger uses the registers directly up until the
-point that perf is capable of handling reservations for the hw
-breakpoint slots.
+> > I am currently rebuilding on several archs/flavors and hope to be able
+> > to re-send this one today or on Tue.
+Done.
+
+@Ingo: If this does not go into x86/tip, but perf or whatever tree, it would
+be great if you can ping me as soon as this stuff is in.
+I want to cleanup the "double cpu_idle events" issues on top and make this
+more architecture independent (throw cpu_idle events from cpuidle framework
+instead of throwing very x86 specific mwait states, etc.).
 
 Thanks,
-Jason.
+
+       Thomas
