@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab0KNURd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 15:17:33 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:63217 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab0KNURc (ORCPT
+	id S1756929Ab0KNUVA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 15:21:00 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53039 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751019Ab0KNUU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 15:17:32 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6167"; a="62832039"
-Subject: Re: [PATCH 09/14] msm: iommu: Kconfig option for cacheable page
- tables
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-Cc: davidb@codeaurora.org, bryanh@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1289619000-13167-10-git-send-email-stepanm@codeaurora.org>
-References: <1289619000-13167-1-git-send-email-stepanm@codeaurora.org>
-	 <1289619000-13167-10-git-send-email-stepanm@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 14 Nov 2010 12:17:38 -0800
-Message-ID: <1289765858.24270.240.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 14 Nov 2010 15:20:59 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimy5DdF8qwGuk09iT3wHfXMjkiwRKxo-LuvEJzW@mail.gmail.com>
+References: <20101021162924.GA3225@redhat.com> <1288076838.11930.1.camel@marge.simson.net>
+ <1288078144.7478.9.camel@marge.simson.net> <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
+ <1289489200.11397.21.camel@maggy.simson.net> <20101111202703.GA16282@redhat.com>
+ <1289514000.21413.204.camel@maggy.simson.net> <20101112181240.GB8659@redhat.com>
+ <1289648524.22764.149.camel@maggy.simson.net> <1289755150.3228.44.camel@maggy.simson.net>
+ <20101114174921.GA1569@arch.trippelsdorf.de> <1289758238.17491.12.camel@maggy.simson.net>
+ <AANLkTimy5DdF8qwGuk09iT3wHfXMjkiwRKxo-LuvEJzW@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 14 Nov 2010 12:20:35 -0800
+Message-ID: <AANLkTikjSCbcRnKOU=nd4os1sdW-GJkD6QVj=U5zPyu8@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+To: Mike Galbraith <efault@gmx.de>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-12 at 19:29 -0800, Stepan Moskovchenko wrote:
->  
-> +config IOMMU_PGTABLES_L2
-> +	depends on ARCH_MSM8X60
-> +	depends on MMU
-> +	depends on CPU_DCACHE_DISABLE=n
-> +	depends on SMP
-> +	bool "Cacheable IOMMU page tables"
-> +	default y
-> +	help
-> +	  Allows the IOMMU page tables to be brought into the L2 cache. This
-> +	  improves the TLB miss latency at the expense of potential pollution
-> +	  of the L2 cache. This option has been shown to improve multimedia
-> +	  performance in some cases.
-> +
-> +	  If unsure, say Y here.
+On Sun, Nov 14, 2010 at 11:28 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> This catless version looks very good to me
 
-Why would someone want this off?
+Oh, btw, maybe one comment: is CONFIG_SCHED_AUTOGROUP_DEBUG even worth
+having as a config option? The only thing it enables is the small
+/proc interface, and I don't see any downside to just always having
+that if you have AUTOGROUP enabled in the first place.
 
-The other thing is that you usually want this included with the code
-that uses the option.
+It isn't like it's some traditional kernel debug feature that makes
+things slower or adds tons of debug output.
 
-Daniel
-
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
-
-
+                    Linus
