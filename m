@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406Ab0KNV7m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 16:59:42 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:26846 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932385Ab0KNV7k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 16:59:40 -0500
-Date: Sun, 14 Nov 2010 22:47:28 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Netfilter Core Team <coreteam@netfilter.org>
-cc: Jan Rekorajski <baggins@pld.org.pl>,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Reduce number of pointer dereferences in IPv6 netfilter LOG
- module function dump_packet()
-Message-ID: <alpine.LNX.2.00.1011142241260.1253@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757031Ab0KNWVE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 17:21:04 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:57840 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756076Ab0KNWVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 17:21:03 -0500
+Date: Mon, 15 Nov 2010 09:20:50 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: failed to fetch the davinci tree
+Message-Id: <20101115092050.46b514fb.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__15_Nov_2010_09_20_50_+1100_+oJUz4NtVRjrvvZb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__15_Nov_2010_09_20_50_+1100_+oJUz4NtVRjrvvZb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-By adding two pointer variables to 
-net/ipv6/netfilter/ip6t_LOG.c::dump_packet() we can save 19 bytes of .text 
-and many pointer dereferences.
+Hi Kevin,
 
-before:
-   text    data     bss     dec     hex filename
-   6258     600    3088    9946    26da net/ipv6/netfilter/ip6t_LOG.o
+Trying to fetch the davinci tree this morning produced this error:
 
-after:
-   text    data     bss     dec     hex filename
-   6239     600    3088    9927    26c7 net/ipv6/netfilter/ip6t_LOG.o
+fatal: Couldn't find remote ref refs/heads/davinci-next
 
+I will use the tree from next-20101112 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Please Cc me on replies.
+--Signature=_Mon__15_Nov_2010_09_20_50_+1100_+oJUz4NtVRjrvvZb
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- ip6t_LOG.c |   16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
+iQEcBAEBAgAGBQJM4GDCAAoJEDMEi1NhKgbsRKsH/31gV2LhSBIR/JDjQqXWQrYj
+F6GCkfyKABtGtNgLE/GfbppQ0t1JvwD68nXY5ebL4Bo00ZTkGniCt1mSckuUDqyE
+h2QA/XGP5oNvAmKmaituifMy3OcvIrlbvNEI0az9TdiTCfXo0GMZkQBNNpHejSmi
+oMECPchawvvP+dtyePwxtrT5OpzdII5QL4SEQ2zsnMjR52ypp6BlFmeEWohnpovS
+YyxojpG0RIU7xCZdC76OCmQng3wdeZXWqmRLvF3tHdIGtODtpIsbB0mGJ84vwE2D
+EheVOmOzuGKG0bMtWBJwjiviiaM2ToKplTI9fSi80w7wnvoPxf0KRR5h06nlx/8=
+=yPIv
+-----END PGP SIGNATURE-----
 
-diff --git a/net/ipv6/netfilter/ip6t_LOG.c b/net/ipv6/netfilter/ip6t_LOG.c
-index 09c8889..51d10a5 100644
---- a/net/ipv6/netfilter/ip6t_LOG.c
-+++ b/net/ipv6/netfilter/ip6t_LOG.c
-@@ -46,6 +46,8 @@ static void dump_packet(struct sbuff *m,
- 	unsigned int ptr;
- 	unsigned int hdrlen = 0;
- 	unsigned int logflags;
-+	struct sock *sk;
-+	struct socket *sk_socket;
- 
- 	if (info->type == NF_LOG_TYPE_LOG)
- 		logflags = info->u.log.logflags;
-@@ -358,13 +360,15 @@ static void dump_packet(struct sbuff *m,
- 	}
- 
- 	/* Max length: 15 "UID=4294967295 " */
--	if ((logflags & IP6T_LOG_UID) && recurse && skb->sk) {
--		read_lock_bh(&skb->sk->sk_callback_lock);
--		if (skb->sk->sk_socket && skb->sk->sk_socket->file)
-+	sk = skb->sk;
-+	sk_socket = sk->sk_socket;
-+	if ((logflags & IP6T_LOG_UID) && recurse && sk) {
-+		read_lock_bh(&sk->sk_callback_lock);
-+		if (sk_socket && sk_socket->file)
- 			sb_add(m, "UID=%u GID=%u ",
--				skb->sk->sk_socket->file->f_cred->fsuid,
--				skb->sk->sk_socket->file->f_cred->fsgid);
--		read_unlock_bh(&skb->sk->sk_callback_lock);
-+				sk_socket->file->f_cred->fsuid,
-+				sk_socket->file->f_cred->fsgid);
-+		read_unlock_bh(&sk->sk_callback_lock);
- 	}
- 
- 	/* Max length: 16 "MARK=0xFFFFFFFF " */
-
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+--Signature=_Mon__15_Nov_2010_09_20_50_+1100_+oJUz4NtVRjrvvZb--
