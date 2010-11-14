@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab0KNUhf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 15:37:35 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38170 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755888Ab0KNUhe (ORCPT
+	id S1755434Ab0KNUtI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 15:49:08 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34285 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751912Ab0KNUtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 15:37:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=QiFE4my/ON6trSfxfzkCPrLrOiXHiP3CQyKdYxohtQH0DPzthoVXJyb2rhu8GMA6A5
-         w8MEI0GvoHJFFvJRigchwTqpCfSUjHI5KLC4LoYYS923FwPJ3+O9q17bv3AXrtZC76zf
-         Urczo/Ha6Pem5J+JGAIu0VbzuvuuJtfLOGr+Q=
+	Sun, 14 Nov 2010 15:49:06 -0500
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimtWoqST8ch9CyB3g-CyvfiynXRDLwmGdLDdiYk@mail.gmail.com>
-References: <AANLkTimtWoqST8ch9CyB3g-CyvfiynXRDLwmGdLDdiYk@mail.gmail.com>
-Date: Sun, 14 Nov 2010 21:37:33 +0100
-Message-ID: <AANLkTi=7TwkZOHDcswXp-SgEzs4Ms12xcQ0+Ga9t21DT@mail.gmail.com>
-Subject: Re: [PATCH v3, x86]: Use selfsnoop HW feature to manage conflicting
- memory types
-From: Uros Bizjak <ubizjak@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org
+In-Reply-To: <20101114202734.GA1627@arch.trippelsdorf.de>
+References: <1289489200.11397.21.camel@maggy.simson.net> <20101111202703.GA16282@redhat.com>
+ <1289514000.21413.204.camel@maggy.simson.net> <20101112181240.GB8659@redhat.com>
+ <1289648524.22764.149.camel@maggy.simson.net> <1289755150.3228.44.camel@maggy.simson.net>
+ <20101114174921.GA1569@arch.trippelsdorf.de> <1289758238.17491.12.camel@maggy.simson.net>
+ <AANLkTimy5DdF8qwGuk09iT3wHfXMjkiwRKxo-LuvEJzW@mail.gmail.com>
+ <AANLkTikjSCbcRnKOU=nd4os1sdW-GJkD6QVj=U5zPyu8@mail.gmail.com> <20101114202734.GA1627@arch.trippelsdorf.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 14 Nov 2010 12:48:18 -0800
+Message-ID: <AANLkTimHtjH3YvtX6i542_XjfFeuvG-AnU8i224a1R4j@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 7:33 PM, Uros Bizjak <ubizjak@gmail.com> wrote:
-> Hello!
+On Sun, Nov 14, 2010 at 12:27 PM, Markus Trippelsdorf
+<markus@trippelsdorf.de> wrote:
+> On 2010.11.14 at 12:20 -0800, Linus Torvalds wrote:
+>>
+>> It isn't like it's some traditional kernel debug feature that makes
+>> things slower or adds tons of debug output.
 >
-> Attached patch enhances v2 patch at [1] to disable selfsnoop with a
-> kernel command line parameter. The feature is also disabled on all
-> processors earlier than Core 2 due to Pentium-M errata.
->
-> I have investigated the erratas in this area and documented the one
-> found in the source.
->
-> The patch was tested on 4 core i7 (8 threads) and there were no
-> problems at all with the patched kernel.
+> It also enables the sched_autogroup_handler, that you disliked seeing in
+> the previous version.
 
-Also, I'd like to point out that similar change was introduced in
-FreeBSD as part of r195749 in July 2009, see [1].
+Yes, but that one exists only to make things "exact". I don't really
+see why it exists. What's the point of doing the task movement, if the
+group information is just going to be ignored anyway?
 
-[1] http://svn.freebsd.org/viewvc/base?view=revision&revision=195749
+IOW, my dislike of the sched_autogroup_handler is not about the debug
+option per se, it's about the same thing I said about tty hangups etc:
+why do we care so deeply?
 
-Uros.
+I think it would be perfectly acceptably to make the "enable" bit just
+decide whether or not to take that autogroup information into account
+for scheduling decision. Why do we care so deeply about having to move
+the groups around right _then_?
+
+Maybe there is some really deep reason for actually having to do the
+reclassification and the sched_move_task() thing for each thread
+synchronously when disabling/enabling that thing. If so, I'm just not
+seeing it.  Why can't we just let things be, and next time things get
+scheduled they'll move on their own?
+
+So my objection was really about the same "why do we have to try so
+hard to keep the autogroups so 1:1 with the tty's"? It's just a
+heuristic, trying to be exact about it seems to miss the point.
+
+                            Linus
