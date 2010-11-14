@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab0KNGb3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 01:31:29 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52617 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707Ab0KNGb2 (ORCPT
+	id S1753520Ab0KNGdy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 01:33:54 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:37930 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab0KNGdw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 01:31:28 -0500
+	Sun, 14 Nov 2010 01:33:52 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=jm6N81NswHZ2xvS5zhOLyNy4wvwa3Zvmhj38tRqc19E0OjCzjb9Z/x2Qx4nWr6usFX
-         g5UkOJnJZHSJXvcn66UvyVli5QmatxhE4I5R2VeY4SR4Z3M5OYh1P1HRMdj4/lIACEjM
-         8bjNVJFuXJm1Fl9Yn+31YOMNCLKNyPfl5jutE=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=SjtZd4jJSlQeG0e3HTgogBc65T8+T/GYtYl37ZQNmAF70Y2NrGpJwqQ+doHztcpNlU
+         IsxFN+4GsnyyuizMsnPqL43fu92W5NwFA95pGsEVRsvESRKPCOqbYsq5pZ5Opg3LDEpa
+         WVHIEDhJ+Efd5FEMVIbFn4M96IgxAauUzo1s4=
 MIME-Version: 1.0
-Date: Sat, 13 Nov 2010 23:31:26 -0700
-Message-ID: <AANLkTi=VgBQ5rwkjZeo2zsRx1dSBy+4PBXeLLPQ4LRES@mail.gmail.com>
-Subject: Re: a Great Idea - include Kademlia networking protocol in kernel -- REVISITED
-From: Marcos <stalkingtime@gmail.com>
-To: linux-kernel@vger.kernel.org, simon@ai.mit.edu
+In-Reply-To: <1289414154-7829-4-git-send-email-kees.cook@canonical.com>
+References: <1289414154-7829-1-git-send-email-kees.cook@canonical.com>
+	<1289414154-7829-4-git-send-email-kees.cook@canonical.com>
+Date: Sat, 13 Nov 2010 22:33:51 -0800
+X-Google-Sender-Auth: sabWBxOjHIf3ez2ocN501QPrBrU
+Message-ID: <AANLkTi=9gtB8YJX-L41-QRfe7aOvG=S=JkVgfvdEeZ6q@mail.gmail.com>
+Subject: Re: [PATCH 3/4] x86: call verify_cpu during 32bit CPU startup
+From: Yinghai Lu <yinghai@kernel.org>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Ingo Molnar <mingo@elte.hu>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After seeing some attention this idea generated in the linux press,
-I'd like to re-visit this suggestion.  I'm a nobody on this list, but
-do have some expertise in complex systems (i.e. complexity theory).
+On Wed, Nov 10, 2010 at 10:35 AM, Kees Cook <kees.cook@canonical.com> wrote:
+> The XD_DISABLE-clearing side-effect needs to happen for both 32bit
+> and 64bit, but the 32bit init routines were not calling verify_cpu()
+> yet. This adds that call to gain the side-effect.
+>
+> The longmode/SSE tests being performed in verify_cpu() need to happen very
+> early for 64bit but not for 32bit. Instead of including it in two places
+> for 32bit, we can just include it once in arch/x86/kernel/head_32.S.
+>
+> Signed-off-by: Kees Cook <kees.cook@canonical.com>
+> Acked-by: Pekka Enberg <penberg@kernel.org>
+> Acked-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> ---
+>  arch/x86/kernel/head_32.S    |    6 ++++++
+>  arch/x86/kernel/verify_cpu.S |    1 +
+>  2 files changed, 7 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+> index bcece91..fdaea52 100644
+> --- a/arch/x86/kernel/head_32.S
+> +++ b/arch/x86/kernel/head_32.S
+> @@ -314,6 +314,10 @@ ENTRY(startup_32_smp)
+>        subl $0x80000001, %eax
+>        cmpl $(0x8000ffff-0x80000001), %eax
+>        ja 6f
+> +
+> +       /* Clear bogus XD_DISABLE bits */
+> +       call verify_cpu
+> +
+>        mov $0x80000001, %eax
+>        cpuid
+>        /* Execute Disable bit supported? */
+> @@ -609,6 +613,8 @@ ignore_int:
+>  #endif
+>        iret
+>
+> +#include "verify_cpu.S"
+> +
+>        __REFDATA
+>  .align 4
+>  ENTRY(initial_code)
+> diff --git a/arch/x86/kernel/verify_cpu.S b/arch/x86/kernel/verify_cpu.S
+> index ccb4136..5644b4b 100644
+> --- a/arch/x86/kernel/verify_cpu.S
+> +++ b/arch/x86/kernel/verify_cpu.S
+> @@ -19,6 +19,7 @@
+>  *
+>  *     arch/x86_64/boot/compressed/head_64.S: Boot cpu verification
+>  *     arch/x86_64/kernel/trampoline_64.S: secondary processor verfication
+> + *     arch/x86_64/kernel/head_32.S: processor startup
 
-The Kademlia protocol is simple: it has four commands (and won't
-likely grow more): PING, STORE, FIND_NODE, FIND_VALUE.
-It is computationally effortless: it generates random node id's and
-computes distance on a distributed hash table using an simple XOR
-function.
-It is (probably optimally) efficient:  O(log(n)) for n nodes.
-Ultimately, it could increase security: by creating a system for
-tracking trusted peers, a new topology of content-sharing can be
-generated.
+should change those x86_64 to x86.
 
-[From the wikipedia article]: "The first generation peer-to-peer file
-sharing networks, such as Napster, relied on a central database to
-co-ordinate look ups on the network. Second generation peer-to-peer
-networks, such as Gnutella, used flooding to locate files, searching
-every node on the network. Third generation peer-to-peer networks use
-Distributed Hash Tables to look up files in the network. Distributed
-hash tables store resource locations throughout the network. A major
-criterion for these protocols is locating the desired nodes quickly."
-
-Putting a simple, but robust p2p network layer in the kernel offers
-several novel and very interesting possibilities.
-
-1. Cutting-edge cool factor:  It would put linux way ahead of the
-net's general evolution to an full-fledged "Internet Operating
-System".  The world needs an open source solution over Google's,
-Microsoft's (or any other's) attempt to create such a solution.
-Dismiss any attempts to see such a request as warez-d00ds looking to
-make a more efficient pirating network.
-
-2. Lower maintenance:  Though unification, it would simplify the many
-(currently disparate) linux solutions for large-scale aggregation of
-computational and storage resources that are distributed across many
-machines.  Additionally, NFS (the networking protocol that *IS* in the
-kernel) is stale, has high administrative and operational overhead,
-and is not made to scale to millions of shared nodes in a graph
-topology.
-
-3. Excite a new wave of Linux development:  90% of linux machines are
-on the net, but don't utilize the real value of peer connectivity
-(which can grow profoundly faster than Metcalf's N^2 "value of the
-network" law).  Putting p2p in kernel space communicates to every
-developer that linux is serious about creating a unified and complete
-solution for creating such a infrastructure.  Let the cloud
-applications and such be in user space, but keep the main
-connection-tracking in the kernel.   Such a move would make for many
-(unforeseeable) complex emergent behaviors and optimizations to arise
--- see Wikipedia on Reed's Law for a sense of it (to wit: "even if the
-utility of groups available to be joined is very small on a peer-group
-basis, eventually the network effect of potential group membership ...
-dominate[s] the overall economics of the system").
-
-Consider, for example, social networking: it is an inherently p2p
-structure and is lying in wait to explode the next wave of internet
-evolution and new-value generation.  There's no doubt that this is the
-trend of the future -- best that open source be there first.  Users
-are creating value on their machines *every day*, but there's little
-infrastructure to take advantage of it.  Currently, it's either lost
-or exploited.  Solution and vision trajectories:  Diaspora comes to
-mind, mash-up applications like Photosynth aggregating the millions of
-photos on people's computers (see the TED.com presentation), open
-currencies and meritocratic market systems using such a "meta-linux"
-as a backbone, etc. -- whole new governance models for sharing content
-would undoubtedly arise.  HTTP/HTML is too much of an all-or-nothing
-and coarse approach to organizing the world's content.  The net needs
-a backbone for sharing personal content and grouping it to create new
-abstractions and wealth.  See pangaia.sourceforge.net for some of
-ideas I've personally been developing.
-
-Anyway, I'm with hp_fk on this one.  Ignore at the peril and risk of
-the future...  :)
-
-marcos
+Yinghai
