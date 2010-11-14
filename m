@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757070Ab0KNVlp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 16:41:45 -0500
-Received: from smtp171.iad.emailsrvr.com ([207.97.245.171]:58347 "EHLO
-	smtp171.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757020Ab0KNVlo (ORCPT
+	id S932315Ab0KNVml (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 16:42:41 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:19159 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932178Ab0KNVmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 16:41:44 -0500
-X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Nov 2010 16:41:44 EST
-Message-ID: <4CE055A4.5010403@aljex.com>
-Date: Sun, 14 Nov 2010 16:33:24 -0500
-From: "Brian K. White" <brian@aljex.com>
-Organization: Aljex Software Inc.
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Sun, 14 Nov 2010 16:42:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=OJ1/oPSQi/5qKvEaTlCvPFMXdun4zHfehjI+6u8vREuuE4Zy36fmqxbnwyjvo0xq5W
+         hsWlQcDXe7Y0JDyxpP8g==
+Date: Sun, 14 Nov 2010 13:42:34 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: 7eggert@gmx.de, Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        linux-kernel@vger.kernel.org, gspencer@chromium.org,
+        piman@chromium.org, wad@chromium.org, olofj@chromium.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] oom: create a resource limit for oom_adj
+In-Reply-To: <20101114140237.E010.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1011141341360.22262@chino.kir.corp.google.com>
+References: <fNMps-1S1-21@gated-at.bofh.it> <E1PGgMk-0001AW-OD@be1.7eggert.dyndns.org> <20101114140237.E010.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: rsync@lists.samba.org
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: fadvise DONTNEED implementation (or lack thereof)
-References: <20101109162525.BC87.A69D9226@jp.fujitsu.com>	<877hgmr72o.fsf@gmail.com>	<20101114140920.E013.A69D9226@jp.fujitsu.com> <87y68wiipy.fsf@gmail.com>
-In-Reply-To: <87y68wiipy.fsf@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2010 12:20 AM, Ben Gamari wrote:
-> On Sun, 14 Nov 2010 14:09:29 +0900 (JST), KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>  wrote:
->> Because we have an alternative solution already. please try memcgroup :)
->>
-> Alright, fair enough. It still seems like there are many cases where
-> fadvise seems more appropriate, but memcg should at least satisfy my
-> personal needs so I'll shut up now. Thanks!
->
-> - Ben
+On Sun, 14 Nov 2010, KOSAKI Motohiro wrote:
 
-Could someone expand on this a little?
+> I've sent revert patch to linus. We DON'T want to break any userland seriously. 
+> So, we reconsider about this area. personally I hope to reintroduce oom_score_adj
+> later, but It must don't break current userland.
+> 
 
-The "there are no users of this feature" argument is indeed a silly one. 
-I've only wanted the ability to perform i/o without poisoning the cache 
-since oh, 10 or more years ago at least. It really hurts my users since 
-they are all direct login interactive db app users. No load balancing 
-web interface can hide the fact when a box goes to a crawl.
-
-How would one use memcgroup to prevent a backup or other large file 
-operation from wiping out the cache with used-once garbage?
-
-(note for rsync in particular, how does this help rsync on other platforms?)
-
--- 
-bkw
+Nobody is going to stall their development waiting for your patches to be 
+merged (especially when you've proposed them four times before and they 
+haven't been), so patches in this area should be against Linus' latest 
+tree.
