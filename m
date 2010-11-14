@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974Ab0KNU06 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 15:26:58 -0500
-Received: from mms1.broadcom.com ([216.31.210.17]:2718 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756933Ab0KNU04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 15:26:56 -0500
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Subject: Re: [PATCH] net: bnx2x: fix error value sign
-From: "Eilon Greenstein" <eilong@broadcom.com>
-Reply-to: eilong@broadcom.com
-To: "Vasiliy Kulikov" <segoon@openwall.com>
-cc: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1289765315-6028-1-git-send-email-segoon@openwall.com>
-References: <1289765315-6028-1-git-send-email-segoon@openwall.com>
-Organization: Broadcom
-Date: Sun, 14 Nov 2010 22:26:43 +0200
-Message-ID: <1289766403.29137.0.camel@lb-tlvb-eilong.il.broadcom.com>
+	id S1756988Ab0KNU1k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 15:27:40 -0500
+Received: from smtp-out-139.synserver.de ([212.40.180.139]:1055 "EHLO
+	smtp-out-139.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756836Ab0KNU1j (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 15:27:39 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 27557
+Date: Sun, 14 Nov 2010 21:27:34 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101114202734.GA1627@arch.trippelsdorf.de>
+References: <1289489200.11397.21.camel@maggy.simson.net>
+ <20101111202703.GA16282@redhat.com>
+ <1289514000.21413.204.camel@maggy.simson.net>
+ <20101112181240.GB8659@redhat.com>
+ <1289648524.22764.149.camel@maggy.simson.net>
+ <1289755150.3228.44.camel@maggy.simson.net>
+ <20101114174921.GA1569@arch.trippelsdorf.de>
+ <1289758238.17491.12.camel@maggy.simson.net>
+ <AANLkTimy5DdF8qwGuk09iT3wHfXMjkiwRKxo-LuvEJzW@mail.gmail.com>
+ <AANLkTikjSCbcRnKOU=nd4os1sdW-GJkD6QVj=U5zPyu8@mail.gmail.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3
-X-WSS-ID: 60FE99803P08010070-01-01
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikjSCbcRnKOU=nd4os1sdW-GJkD6QVj=U5zPyu8@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-14 at 12:08 -0800, Vasiliy Kulikov wrote:
-> bnx2x_init_one() should return negative value on error.
-> By mistake it returns ENODEV instead of -ENODEV.
+On 2010.11.14 at 12:20 -0800, Linus Torvalds wrote:
+> On Sun, Nov 14, 2010 at 11:28 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > This catless version looks very good to me
 > 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Thanks Vasiliy!
-
-Acked-by: Eilon Greenstein <eilong@broadcom.com>
-> ---
->  Compile tested.
+> Oh, btw, maybe one comment: is CONFIG_SCHED_AUTOGROUP_DEBUG even worth
+> having as a config option? The only thing it enables is the small
+> /proc interface, and I don't see any downside to just always having
+> that if you have AUTOGROUP enabled in the first place.
 > 
->  drivers/net/bnx2x/bnx2x_main.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/bnx2x/bnx2x_main.c b/drivers/net/bnx2x/bnx2x_main.c
-> index 4a6f0ea..be52edc 100644
-> --- a/drivers/net/bnx2x/bnx2x_main.c
-> +++ b/drivers/net/bnx2x/bnx2x_main.c
-> @@ -9064,7 +9064,7 @@ static int __devinit bnx2x_init_one(struct pci_dev *pdev,
->  	default:
->  		pr_err("Unknown board_type (%ld), aborting\n",
->  			   ent->driver_data);
-> -		return ENODEV;
-> +		return -ENODEV;
->  	}
->  
->  	cid_count += CNIC_CONTEXT_USE;
+> It isn't like it's some traditional kernel debug feature that makes
+> things slower or adds tons of debug output.
 
-
-
-
+It also enables the sched_autogroup_handler, that you disliked seeing in
+the previous version.
+-- 
+Markus
