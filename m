@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756069Ab0KNPPG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 10:15:06 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35653 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826Ab0KNPPF (ORCPT
+	id S1756097Ab0KNPQA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 10:16:00 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:52697 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755826Ab0KNPP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 10:15:05 -0500
-Date: Sun, 14 Nov 2010 15:14:45 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v2 03/20] ARM: LPAE: use u32 instead of unsigned long
-	for 32-bit ptes
-Message-ID: <20101114151445.GB10871@n2100.arm.linux.org.uk>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com> <1289584840-18097-4-git-send-email-catalin.marinas@arm.com> <20101114131941.GA10871@n2100.arm.linux.org.uk> <AANLkTimtSUNrO0wZBfyJJ+OJQCDLkXSOiUuzOD+ubv6O@mail.gmail.com> <AANLkTi=U+5uqLRSt9ObFdgTUc-v_+2Y3Qz90FG5aRTyb@mail.gmail.com>
+	Sun, 14 Nov 2010 10:15:59 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Avi Kivity <avi@redhat.com>
+Subject: Re: autofs4 hang in 2.6.37-rc1
+Date: Sun, 14 Nov 2010 16:15:32 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1+; KDE/4.5.1; x86_64; ; )
+Cc: Ian Kent <raven@themaw.net>, autofs@linux.kernel.org,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <4CDFDC2B.6040205@redhat.com> <4CDFE948.4020709@redhat.com>
+In-Reply-To: <4CDFE948.4020709@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=U+5uqLRSt9ObFdgTUc-v_+2Y3Qz90FG5aRTyb@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011141615.32166.arnd@arndb.de>
+X-Provags-ID: V02:K0:2kBXvF6kGpeYN9G6cp8+YIR9jJJ3TDpGo/tozGFY4fh
+ Rv3DOMqOXGJ+FaMdIFjSY1yHJemQnzSpYe+QTIqgJACi0gne6v
+ lZu789YZatJJxoGu40YSVRW0D3O7SiasM+Y1Swt0QVodrYa1Ca
+ t8FhHgNi4XmUyFSXPiixZ4Ycb4TkbXJppRSQdr2aH41YPw7bl6
+ p5nDPx6EcHgUNWM4i7kKA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 02:13:23PM +0000, Catalin Marinas wrote:
-> On Sunday, November 14, 2010, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> > On Sunday, November 14, 2010, Russell King - ARM Linux
-> > <linux@arm.linux.org.uk> wrote:
-> >> On Fri, Nov 12, 2010 at 06:00:23PM +0000, Catalin Marinas wrote:
-> >>> From: Will Deacon <will.deacon@arm.com>
-> >>>
-> >>> When using 2-level paging, pte_t and pmd_t are typedefs for
-> >>> unsigned long but phys_addr_t is a typedef for u32.
-> >>>
-> >>> This patch uses u32 for the page table entry types when
-> >>> phys_addr_t is not 64-bit, allowing the same conversion
-> >>> specifier to be used for physical addresses and page table
-> >>> entries regardless of LPAE.
-> >>
-> >> However, code which prints the value of page table entries assumes that
-> >> they are unsigned long, and places where we store the raw pte value also
-> >> uses 'unsigned long'.
-> >>
-> >> If we're going to make this change, we need to change more places than
-> >> this patch covers.  grep for pte_val to help find those places.
-> >
-> > Patch 19/20 introduces a common macro for formatting but we should
-> > probably order the patches a bit to avoid problems if anyone is
-> > bisecting  in the middle of the series.
+On Sunday 14 November 2010 14:51:04 Avi Kivity wrote:
+> automount     S ffff88012a28a680     0   399      1 0x00000000
+>   ffff88012a07bd08 0000000000000082 0000000000000000 0000000000000000
+>   ffff88012a07a010 ffff88012a07bfd8 0000000000011800 ffff88012693c260
+>   ffff88012693c5d0 ffff88012693c5c8 0000000000011800 0000000000011800
+> Call Trace:
+>   [<ffffffff81056197>] ? prepare_to_wait+0x67/0x74
+>   [<ffffffff811b23eb>] autofs4_wait+0x5a4/0x6d5
+>   [<ffffffff81055f25>] ? autoremove_wake_function+0x0/0x34
+>   [<ffffffff811b2ba5>] autofs4_do_expire_multi+0x5b/0xa3
+>   [<ffffffff811b2c39>] autofs4_expire_multi+0x4c/0x54
+>   [<ffffffff811b1750>] autofs4_root_ioctl_unlocked+0x23e/0x252
+>   [<ffffffff811b1808>] autofs4_root_ioctl+0x39/0x53
+>   [<ffffffff810f5e5c>] do_vfs_ioctl+0x557/0x5bb
+>   [<ffffffff810ca644>] ? remove_vma+0x6e/0x76
+>   [<ffffffff810cb6a2>] ? do_munmap+0x31c/0x33e
+>   [<ffffffff810f5f02>] sys_ioctl+0x42/0x65
+>   [<ffffffff81002b42>] system_call_fastpath+0x16/0x1b
 > 
-> Actually not a problem since LPAE is only enabled by the last patch.
-> There may be some compiler warnings without 19/20, I need to check.
+> 
+> Shouldn't we drop autofs4_ioctl_mutex while we wait?
 
-There will be compiler warnings because u32 is unsigned int, and we
-print it as %08lx.  Generic code cases pte values to (long long) and
-prints them using %08llx.  We should do the same.
+If the ioctl can sleep for multiple seconds, the mutex should
+indeed be dropped, and that would be safe because we used to
+do the same with the BKL.
 
-In any case, this patch on its own introduces new compiler warnings.
-These need to be fixed in this patch, rather than relying on one later
-in the series.
+The question is why this would sleep for more than 120 seconds.
+
+	Arnd
