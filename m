@@ -1,65 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab0KNUtI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 15:49:08 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34285 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751912Ab0KNUtG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 15:49:06 -0500
+	id S1755586Ab0KNU7y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 15:59:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44938 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754057Ab0KNU7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 15:59:52 -0500
+Date: Sun, 14 Nov 2010 15:59:26 -0500
+From: Mike Snitzer <snitzer@redhat.com>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>, Milan Broz <mbroz@redhat.com>,
+        Matt <jackdachef@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>
+Subject: dm-crypt barrier support is effective (was: Re: DM-CRYPT: Scale to
+ multiple CPUs v3 on 2.6.37-rc* ?)
+Message-ID: <20101114205925.GA20451@redhat.com>
+References: <AANLkTim6WTCChWGbTb-PUGd2AERGibeRtgan-WDznf2s@mail.gmail.com>
+ <4CD6B7FA.3050005@redhat.com>
+ <AANLkTikbsU+SGAaoq_oek=7tfDdjg+0wFoydhA+K9ZU+@mail.gmail.com>
+ <AANLkTinna7BiGHogXnn1iEG6ccUAjFM3p3S3aHpv=h-E@mail.gmail.com>
+ <20101107194547.GA12521@basil.fritz.box>
+ <4CD71C8B.1050604@redhat.com>
+ <20101107230508.GB17592@basil.fritz.box>
+ <20101108145809.GD29714@redhat.com>
+ <1289238930-sup-9765@think>
 MIME-Version: 1.0
-In-Reply-To: <20101114202734.GA1627@arch.trippelsdorf.de>
-References: <1289489200.11397.21.camel@maggy.simson.net> <20101111202703.GA16282@redhat.com>
- <1289514000.21413.204.camel@maggy.simson.net> <20101112181240.GB8659@redhat.com>
- <1289648524.22764.149.camel@maggy.simson.net> <1289755150.3228.44.camel@maggy.simson.net>
- <20101114174921.GA1569@arch.trippelsdorf.de> <1289758238.17491.12.camel@maggy.simson.net>
- <AANLkTimy5DdF8qwGuk09iT3wHfXMjkiwRKxo-LuvEJzW@mail.gmail.com>
- <AANLkTikjSCbcRnKOU=nd4os1sdW-GJkD6QVj=U5zPyu8@mail.gmail.com> <20101114202734.GA1627@arch.trippelsdorf.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 14 Nov 2010 12:48:18 -0800
-Message-ID: <AANLkTimHtjH3YvtX6i542_XjfFeuvG-AnU8i224a1R4j@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289238930-sup-9765@think>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 12:27 PM, Markus Trippelsdorf
-<markus@trippelsdorf.de> wrote:
-> On 2010.11.14 at 12:20 -0800, Linus Torvalds wrote:
->>
->> It isn't like it's some traditional kernel debug feature that makes
->> things slower or adds tons of debug output.
->
-> It also enables the sched_autogroup_handler, that you disliked seeing in
-> the previous version.
+On Mon, Nov 08 2010 at 12:59pm -0500,
+Chris Mason <chris.mason@oracle.com> wrote:
 
-Yes, but that one exists only to make things "exact". I don't really
-see why it exists. What's the point of doing the task movement, if the
-group information is just going to be ignored anyway?
+> Excerpts from Mike Snitzer's message of 2010-11-08 09:58:09 -0500:
+> > On Sun, Nov 07 2010 at  6:05pm -0500,
+> > Andi Kleen <andi@firstfloor.org> wrote:
+> > 
+> > > On Sun, Nov 07, 2010 at 10:39:23PM +0100, Milan Broz wrote:
+> > > > On 11/07/2010 08:45 PM, Andi Kleen wrote:
+> > > > >> I read about barrier-problems and data getting to the partition when
+> > > > >> using dm-crypt and several layers so I don't know if that could be
+> > > > >> related
+> > > > > 
+> > > > > Barriers seem to be totally broken on dm-crypt currently.
+> > > > 
+> > > > Can you explain it?
+> > > 
+> > > e.g. the btrfs mailing list is full of corruption reports
+> > > on dm-crypt and most of the symptoms point to broken barriers.
+> > 
+> > [cc'ing linux-btrfs, hopefully in the future dm-devel will get cc'd when
+> > concerns about DM come up on linux-btrfs (or other lists)]
+> > 
+> > I spoke with Josef Bacik and these corruption reports are apparently
+> > against older kernels (e.g. <= 2.6.33).  I say <= 2.6.33 because:
+> 
+> We've consistently seen reports about corruptions on power hits with
+> dm-crypt.  The logs didn't have any messages about barriers failing, but
+> the corruptions were still there.  The most likely cause is that
+> barriers just aren't getting through somehow.
 
-IOW, my dislike of the sched_autogroup_handler is not about the debug
-option per se, it's about the same thing I said about tty hangups etc:
-why do we care so deeply?
+Can't blame anyone for assuming as much (although it does create FUD)
+but in practice (testing dm-crypt with ext4 using your barrier-test
+script) I have not been able to see any evidence that dm-crypt's barrier
+support is ineffective.
 
-I think it would be perfectly acceptably to make the "enable" bit just
-decide whether or not to take that autogroup information into account
-for scheduling decision. Why do we care so deeply about having to move
-the groups around right _then_?
+Could be that the barrier-test script isn't able to reproduce the unique
+failure case that btrfs does (on power failure)?
 
-Maybe there is some really deep reason for actually having to do the
-reclassification and the sched_move_task() thing for each thread
-synchronously when disabling/enabling that thing. If so, I'm just not
-seeing it.  Why can't we just let things be, and next time things get
-scheduled they'll move on their own?
+> > > > Barriers/flush change should work, if it is broken, it is not only dm-crypt.
+> > > > (dm-crypt simply relies on dm-core implementation, when barrier/flush
+> > > > request come to dmcrypt, all previous IO must be already finished).
+> > > 
+> > > Possibly, at least it doesn't seem to work.
+> > 
+> > Can you please be more specific?  What test(s)?  What kernel(s)?
+> > 
+> > Any pointers to previous (and preferably: recent) reports would be
+> > appreciated.
 
-So my objection was really about the same "why do we have to try so
-hard to keep the autogroups so 1:1 with the tty's"? It's just a
-heuristic, trying to be exact about it seems to miss the point.
+I still think we need specific bug reports that detail workloads and if
+possible reproducers.
 
-                            Linus
+> > The DM barrier code has seen considerable change recently (via flush+fua
+> > changes in 2.6.37).  Those changes have been tested quite a bit
+> > (including ext4 consistency after a crash).
+> > 
+> > But even prior to those flush+fua changes DM's support for barriers
+> > (Linux >= 2.6.31) was held to be robust.  No known (at least no
+> > reported) issues with DM's barrier support.
+> 
+> I think it would be best to move forward with just hammering on the
+> dm-crypt barriers:
+> 
+> http://oss.oracle.com/~mason/barrier-test
+> 
+> This script is the best I've found so far to reliably trigger
+> corruptions with barriers off.  I'd start with ext3 + barriers off just
+> to prove it corrupts things, then move to ext3 + barriers on.
+
+I started with ext4 + barrier=0,journal_async_commit and could reliably
+cause directory corruption (~75% of the time).  I then switched to
+barrier=1 and could not cause corruption.
+
+I then added dm-crypt and got the same results: with barrier=1 I could
+not cause directory corruption.  barrier=0 resulted in directory
+corruption (again ~75% of the time), no corruption occurred with
+barrier=1.
+
+Both 2.6.36 (original barrier code) and latest 2.6.37-rc1+ (new
+flush+fua code) were tested.  6 iterations of barrier=0 and 10
+iterations of barrier=1.
+
+So my hope is we can now put this general dm-crypt barrier doubt to one
+side and work together on identifying the cause of corruption when
+dm-crypt is paired with btrfs.
+
+Thanks,
+Mike
