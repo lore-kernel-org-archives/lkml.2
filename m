@@ -1,84 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124Ab0KNFH1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 00:07:27 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49917 "EHLO
+	id S1752738Ab0KNFHc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 00:07:32 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49975 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab0KNFHL (ORCPT
+	with ESMTP id S1751561Ab0KNFHO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 00:07:11 -0500
+	Sun, 14 Nov 2010 00:07:14 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 55 of 66] select CONFIG_COMPACTION if TRANSPARENT_HUGEPAGE enabled
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
+To: David Rientjes <rientjes@google.com>
+Subject: Re: [resend][PATCH 2/4] Revert "oom: deprecate oom_adj tunable"
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-In-Reply-To: <20101109211145.GB6809@random.random>
-References: <20101109151756.BC7B.A69D9226@jp.fujitsu.com> <20101109211145.GB6809@random.random>
-Message-Id: <20101111091220.9941.A69D9226@jp.fujitsu.com>
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+In-Reply-To: <alpine.DEB.2.00.1011091523370.26837@chino.kir.corp.google.com>
+References: <20101109105801.BC30.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011091523370.26837@chino.kir.corp.google.com>
+Message-Id: <20101114135323.E00D.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Sun, 14 Nov 2010 14:07:07 +0900 (JST)
+Date: Sun, 14 Nov 2010 14:07:11 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Nov 09, 2010 at 03:20:33PM +0900, KOSAKI Motohiro wrote:
-> > > From: Andrea Arcangeli <aarcange@redhat.com>
-> > > 
-> > > With transparent hugepage support we need compaction for the "defrag" sysfs
-> > > controls to be effective.
-> > > 
-> > > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> > > ---
-> > > 
-> > > diff --git a/mm/Kconfig b/mm/Kconfig
-> > > --- a/mm/Kconfig
-> > > +++ b/mm/Kconfig
-> > > @@ -305,6 +305,7 @@ config NOMMU_INITIAL_TRIM_EXCESS
-> > >  config TRANSPARENT_HUGEPAGE
-> > >  	bool "Transparent Hugepage Support"
-> > >  	depends on X86 && MMU
-> > > +	select COMPACTION
-> > >  	help
-> > >  	  Transparent Hugepages allows the kernel to use huge pages and
-> > >  	  huge tlb transparently to the applications whenever possible.
-> > 
-> > I dislike this. THP and compaction are completely orthogonal. I think 
-> > you are talking only your performance recommendation. I mean I dislike
-> > Kconfig 'select' hell and I hope every developers try to avoid it as 
-> > far as possible.
+> On Tue, 9 Nov 2010, KOSAKI Motohiro wrote:
 > 
-> At the moment THP hangs the system if COMPACTION isn't selected
-> (please try yourself if you don't believe), as without COMPACTION
-> lumpy reclaim wouldn't be entirely disabled. So at the moment it's not
-> orthogonal. When lumpy will be removed from the VM (like I tried
-> multiple times to achieve) I can remove the select COMPACTION in
-> theory, but then 99% of THP users would be still doing a mistake in
-> disabling compaction, even if the mistake won't return in fatal
-> runtime but just slightly degraded performance.
+> > > > > The new tunable added in 2.6.36, /proc/pid/oom_score_adj, is necessary for 
+> > > > > the units that the badness score now uses.  We need a tunable with a much 
+> > > > 
+> > > > Who we?
+> > > > 
+> > > 
+> > > Linux users who care about prioritizing tasks for oom kill with a tunable 
+> > > that (1) has a unit, (2) has a higher resolution, and (3) is linear and 
+> > > not exponential.  
+> > 
+> > No. Majority user don't care. You only talk about your case. Don't ignore
+> > end user.
+> 
+> If they don't care, then they won't be using oom_adj, so you're point 
+> about it's deprecation is irrelevant.
 
-ok, I beleive you.
-but please add this reason to the description.
+No irrelevant. Your patch break their environment even though
+they don't use oom_adj explicitly. because their application are using it.
+
+
+> 
+> Other users do want a more powerful userspace interface with a unit and 
+> higher resolution (I am one of them), there's no requirement that those 
+> users need to be in the majority.
+
+But, they only live in your DREAM. you coldn't show who necessary.
+
+
+>
+> > > Memcg doesn't solve this issue without incurring a 1% 
+> > > memory cost.
+> > 
+> > Look at a real.
+> > All major distributions has already turn on memcg. End user don't need
+> > to pay additional cost.
+> 
+> Memcg also has a command-line disabling option to avoid incurring this 1% 
+> memory cost when you're not going to be using it.
+
+Look at real. who use it?
+
+
+
+> > > No, it doesn't, and you completely and utterly failed to show a single 
+> > > usecase that broke as a result of this because nobody can currently use 
+> > > oom_adj for anything other than polarization.  Thus, there's no backwards 
+> > > compatibility issue.
+> > 
+> > No. I showed. 
+> > 1) Google code search showed some application are using this feature.
+> > 	http://www.google.com/codesearch?as_q=oom_adj&btnG=Search+Code&hl=ja&as_package=&as_lang=&as_filename=&as_class=&as_function=&as_license=&as_case=
+> > 
+> 
+> oom_adj isn't removed, it's deprecated.  These users are using a 
+> deprecated interface and have a few years to convert to using the new 
+> interface (if it ever is actually removed).
+
+No. there is no reason to enforce rewrite tons applicatin.
+
+
+
+> 
+> > 2) Not body use oom_adj other than polarization even though there are a few.
+> >    example, kde are using.
+> > 	http://www.google.com/codesearch/p?hl=ja#MPJuLvSvNYM/pub/kde/unstable/snapshots/kdelibs.tar.bz2%7CWClmGVN5niU/kdelibs-1164923/kinit/start_kdeinit.c&q=oom_adj%20kde%205
+> > 
+> > When you are talking polarization issue, you blind a real. Don't talk your dream.
+> > 
+> 
+> I don't understand what you're trying to say here, but the current users 
+> of oom_adj that aren't +15 or -16 (or OOM_DISABLE) are arbitrary based 
+> relative to other tasks such as +5, +10, etc.  They don't have any 
+> semantics other than being arbitrarily relative because it doesn't work in 
+> a linear way or with a scale.
+
+Even if you don't understand, they are IN THE WORLD. you don't have to
+ignore a real.
+
+
+> > 3) udev are using this feature. It's one of major linux component and you broke.
+> > 
+> > http://www.google.com/codesearch/p?hl=ja#KVTjzuVpblQ/pub/linux/utils/kernel/hotplug/udev-072.tar.bz2%7CwUSE-Ay3lLI/udev-072/udevd.c&q=oom_adj
+> > 
+> > You don't have to break our userland. you can't rewrite or deprecate 
+> > old one. It's used! You can only add orthogonal new knob.
+> > 
+> 
+> That's incorrect, I didn't break anything by deprecating a tunable for a 
+> few years.  oom_adj gets converted roughly into an equivalent (but linear) 
+> oom_score_adj.
+> 
+> Unfortunately for your argument, you can't show a single example of a 
+> current oom_adj user that has a scientific calculation behind its value 
+> that is now broken on the linear scale.
+
+you are talking unrelated thing.
+
+> 
+> > > Yes, I've tested it, and it deprecates the tunable as expected.  A single 
+> > > warning message serves the purpose well: let users know one time without 
+> > > being overly verbose that the tunable is deprecated and give them 
+> > > sufficient time (2 years) to start using the new tunable.  That's how 
+> > > deprecation is done.
+> > 
+> > no sense.
+> > 
+> > Why do their application need to rewrite for *YOU*? Okey, you will got
+> > benefit from your new knob. But NOBDOY use the new one. and People need
+> > to rewrite their application even though no benefit. 
+> > 
+> > Don't do selfish userland breakage!
+> > 
+> 
+> It's deprecated for a few years so users can gradually convert to the new 
+> tunable, it wasn't removed when the new one was introduced.  A higher 
+> resolution tunable that scales linearly with a unit is an advantage for 
+> Linux (for the minority of users who care about oom killing priority 
+> beyond the heuristic) and I think a few years is enough time for users to 
+> do a simple conversion to the new tunable.
+
+no sense.
 
 
 
