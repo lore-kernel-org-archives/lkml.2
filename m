@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab0KNMzn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 07:55:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64297 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751888Ab0KNMzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 07:55:40 -0500
-Message-ID: <4CDFDC2B.6040205@redhat.com>
-Date: Sun, 14 Nov 2010 14:55:07 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1755456Ab0KNNUI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 08:20:08 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54098 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab0KNNUF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 08:20:05 -0500
+Date: Sun, 14 Nov 2010 13:19:41 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v2 03/20] ARM: LPAE: use u32 instead of unsigned long
+	for 32-bit ptes
+Message-ID: <20101114131941.GA10871@n2100.arm.linux.org.uk>
+References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com> <1289584840-18097-4-git-send-email-catalin.marinas@arm.com>
 MIME-Version: 1.0
-To: Ian Kent <raven@themaw.net>, autofs@linux.kernel.org
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: autofs4 hang in 2.6.37-rc1
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289584840-18097-4-git-send-email-catalin.marinas@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A 2.6.37-rc1 (f6614b7bb405a) setup hangs in autofs4:
+On Fri, Nov 12, 2010 at 06:00:23PM +0000, Catalin Marinas wrote:
+> From: Will Deacon <will.deacon@arm.com>
+> 
+> When using 2-level paging, pte_t and pmd_t are typedefs for
+> unsigned long but phys_addr_t is a typedef for u32.
+> 
+> This patch uses u32 for the page table entry types when
+> phys_addr_t is not 64-bit, allowing the same conversion
+> specifier to be used for physical addresses and page table
+> entries regardless of LPAE.
 
-INFO: task automount:10399 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-automount     D 0000000000000000     0 10399      1 0x00000000
-  ffff88012a059da8 0000000000000082 0000000000000000 0000000000000000
-  ffff88012a058010 ffff88012a059fd8 0000000000011800 ffff8801290f2c40
-  ffff8801290f2fb0 ffff8801290f2fa8 0000000000011800 0000000000011800
-Call Trace:
-  [<ffffffff813a3c3c>] __mutex_lock_common+0x126/0x18b
-  [<ffffffff813a3cb5>] __mutex_lock_slowpath+0x14/0x16
-  [<ffffffff813a3dbc>] mutex_lock+0x31/0x4b
-  [<ffffffff811b17f7>] autofs4_root_ioctl+0x28/0x53
-  [<ffffffff810f5e5c>] do_vfs_ioctl+0x557/0x5bb
-  [<ffffffff810eca65>] ? sys_newlstat+0x2d/0x38
-  [<ffffffff810f5f02>] sys_ioctl+0x42/0x65
-  [<ffffffff81002b42>] system_call_fastpath+0x16/0x1b
+However, code which prints the value of page table entries assumes that
+they are unsigned long, and places where we store the raw pte value also
+uses 'unsigned long'.
 
-This is a simple /home automount.  More info on request.
-
--- 
-error compiling committee.c: too many arguments to function
-
+If we're going to make this change, we need to change more places than
+this patch covers.  grep for pte_val to help find those places.
