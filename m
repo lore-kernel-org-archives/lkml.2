@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932262Ab0KNU3i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 15:29:38 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47687 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932178Ab0KNU3g (ORCPT
+	id S932292Ab0KNU3z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 15:29:55 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44994 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932269Ab0KNU3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 15:29:36 -0500
+	Sun, 14 Nov 2010 15:29:53 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=vDfWw8tnOEXUJSeJ/BZX84FAOC+Bd2YD9C4vIwINUrAQM/uzJfXZn4uQoqOiV2greE
-         suf6gTPpFaXrN9zEDzL6imiZuUqn5NppRmZv4XKcgC42dmwvbob7yynnABzyrwPwGfUM
-         tPJrhpzNQy5hq9WVby10+vaS+6cSOrs7B6KSY=
-Date: Sun, 14 Nov 2010 23:29:05 +0300
-From: Dan Carpenter <error27@gmail.com>
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=PJQenjQgOWAoEIzafmY7VdeQjHg3AuEcpV83s0YntZUm2OYPLx1Dgn2bl2XxfdtdoA
+         YnTVlhTzdMU/nqq/RIlAoKUqRo36Eqo92rFF8bb2nxB3pUZ8+NdVoBEAuwTUo0AGEN2J
+         yPsNY/hwi8dp57oI6FNambFB2RBwTNVSljl7Y=
+Subject: Re: [PATCH] net: bnx2x: fix error value sign
+From: Eric Dumazet <eric.dumazet@gmail.com>
 To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: kernel-janitors@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: jffs2: fix error value sign
-Message-ID: <20101114202905.GA21614@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Vasiliy Kulikov <segoon@openwall.com>,
-	kernel-janitors@vger.kernel.org,
-	David Woodhouse <dwmw2@infradead.org>,
-	linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1289765320-6071-1-git-send-email-segoon@openwall.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289765320-6071-1-git-send-email-segoon@openwall.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Cc: kernel-janitors@vger.kernel.org, Eilon Greenstein <eilong@broadcom.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1289765315-6028-1-git-send-email-segoon@openwall.com>
+References: <1289765315-6028-1-git-send-email-segoon@openwall.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 14 Nov 2010 21:29:43 +0100
+Message-ID: <1289766583.2743.144.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 11:08:39PM +0300, Vasiliy Kulikov wrote:
-> do_verify_xattr_datum(), do_load_xattr_datum(), load_xattr_datum()
-> and verify_xattr_ref() should return negative value on error.
-> Sometimes they return EIO that is positive.  Change this to -EIO.
+Le dimanche 14 novembre 2010 à 23:08 +0300, Vasiliy Kulikov a écrit :
+> bnx2x_init_one() should return negative value on error.
+> By mistake it returns ENODEV instead of -ENODEV.
 > 
 > Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 > ---
->  This driver is not compilable, so the patch is not tested.
+>  Compile tested.
 > 
+>  drivers/net/bnx2x/bnx2x_main.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/net/bnx2x/bnx2x_main.c b/drivers/net/bnx2x/bnx2x_main.c
+> index 4a6f0ea..be52edc 100644
+> --- a/drivers/net/bnx2x/bnx2x_main.c
+> +++ b/drivers/net/bnx2x/bnx2x_main.c
+> @@ -9064,7 +9064,7 @@ static int __devinit bnx2x_init_one(struct pci_dev *pdev,
+>  	default:
+>  		pr_err("Unknown board_type (%ld), aborting\n",
+>  			   ent->driver_data);
+> -		return ENODEV;
+> +		return -ENODEV;
+>  	}
+>  
+>  	cid_count += CNIC_CONTEXT_USE;
 
-It compiles.
+I remember sending same patch in the past... it was lost somehow...
 
-regards,
-dan carpenter
 
 
