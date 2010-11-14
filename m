@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab0KNHwR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 02:52:17 -0500
-Received: from pfepa.post.tele.dk ([195.41.46.235]:38512 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753692Ab0KNHwP (ORCPT
+	id S1754111Ab0KNIZL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 03:25:11 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46598 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753944Ab0KNIZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 02:52:15 -0500
-Date: Sun, 14 Nov 2010 08:52:13 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH v2] drivers/net/tile/: on-chip network drivers for the
-	tile architecture
-Message-ID: <20101114075213.GA15495@merkur.ravnborg.org>
-References: <201011012107.oA1L7TGd031588@farm-0027.internal.tilera.com> <20101103125959.3231daa1@s6510> <4CD19DCF.1040709@tilera.com> <1288806622.2511.187.camel@edumazet-laptop> <4CD1BA71.3000806@tilera.com> <1288816300.2718.5.camel@edumazet-laptop> <4CD1CE62.9010307@tilera.com> <201011140335.oAE3Zuqg032279@farm-0027.internal.tilera.com>
+	Sun, 14 Nov 2010 03:25:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=DFDCNxcWnNJOot6Q8C9j9aaNuJQDq9KAczBBrl/A3PRjuCbbZuwwA3mGj1lA0TwoOI
+         TqcoTtBEdk4LxGdQfAgZvpQEGKgeLaMlMNqnvjp5fIE/nbsUD1zfq764zmX28PLAz+XT
+         0Eo2h/NVkoZ9wKi1HchMdK93VERgSryZ1gWEU=
+Date: Sun, 14 Nov 2010 10:25:02 +0200
+From: Mika Westerberg <mika.westerberg@iki.fi>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] ARM: memblock: convert reserve_crashkernel() to
+	use memblock
+Message-ID: <20101114082502.GA19331@gw.healthdatacare.com>
+References: <cover.1289292124.git.mika.westerberg@iki.fi> <07f23b6e32b1ee64287dc53803890052df6546f3.1289292124.git.mika.westerberg@iki.fi> <20101113130700.GA26105@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201011140335.oAE3Zuqg032279@farm-0027.internal.tilera.com>
+In-Reply-To: <20101113130700.GA26105@n2100.arm.linux.org.uk>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/drivers/net/tile/Makefile b/drivers/net/tile/Makefile
-> new file mode 100644
-> index 0000000..f634f14
-> --- /dev/null
-> +++ b/drivers/net/tile/Makefile
-> @@ -0,0 +1,10 @@
-> +#
-> +# Makefile for the TILE on-chip networking support.
-> +#
-> +
-> +obj-$(CONFIG_TILE_NET) += tile_net.o
-> +ifdef CONFIG_TILEGX
-> +tile_net-objs := tilegx.o mpipe.o iorpc_mpipe.o dma_queue.o
-> +else
-> +tile_net-objs := tilepro.o
-> +endif
+On Sat, Nov 13, 2010 at 01:07:00PM +0000, Russell King - ARM Linux wrote:
+> On Tue, Nov 09, 2010 at 11:06:13AM +0200, Mika Westerberg wrote:
+> >  static void __init reserve_crashkernel(void)
+> >  {
+> >  	unsigned long long crash_size, crash_base;
+> > -	unsigned long long total_mem;
+> >  	int ret;
+> >  
+> > -	total_mem = get_total_mem();
+> > -	ret = parse_crashkernel(boot_command_line, total_mem,
+> > +	/* this is necessary because of memblock_phys_mem_size() */
+> > +	memblock_analyze();
+> 
+> I think you need to check with the memblock people whether its legal to
+> call memblock_analyze() multiple times.  What do other arches do for
+> this?
 
-The -objs syntax is deprecated these days.
-Preferred syntax for the above is:
+At least powerpc and sh do it like the above.
 
-ifdef CONFIG_TILEGX
-tile_net-y := tilegx.o mpipe.o iorpc_mpipe.o dma_queue.o
-else
-tile_net-y := tilepro.o
-endif
+> Secondly, when paging_init() returns, bootmem has been initialized, and
+> memory taken from bootmem to feed the zone allocators.  This memory is
+> not registered back into memblock.  Allocations from memblock after
+> paging_init() has returned will lead to overlaps with bootmem, and
+> therefore corruption.
 
-We could make this even shorter like this (assuming TILEGX is a bool):
-tile_net-y := tilepro.o
-tile_net-$(CONFIG_TILEGX) := tilegx.o mpipe.o iorpc_mpipe.o dma_queue.o
+Ok.
 
-But this is less readable - so the longer version is better.
+> So, this code is better off left as-is, rather than trying to convert it
+> to what mistakenly appears "the latest thing".
 
+Yeah, sounds like it wasn't such a good idea. Please ignore this
+patch then.
 
-	Sam
+Thanks,
+MW
