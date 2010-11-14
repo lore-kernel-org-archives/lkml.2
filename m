@@ -1,223 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab0KNIxL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 03:53:11 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:46780 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009Ab0KNIxH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 03:53:07 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH] set_pgdat_percpu_threshold() don't use for_each_online_cpu
-Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shaohua.li@intel.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-In-Reply-To: <20101028100920.5d4ce413.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1288169256-7174-2-git-send-email-mel@csn.ul.ie> <20101028100920.5d4ce413.kamezawa.hiroyu@jp.fujitsu.com>
-Message-Id: <20101114163727.BEE0.A69D9226@jp.fujitsu.com>
+	id S1754182Ab0KNIvI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 03:51:08 -0500
+Received: from [69.28.251.93] ([69.28.251.93]:46421 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754038Ab0KNIvC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 03:51:02 -0500
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
+        <coreteam@netfilter.org>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Subject: [PATCH/RFC] netfilter: nf_conntrack_sip: Handle quirky Cisco phones
+Date: Sun, 14 Nov 2010 00:32:21 -0800
+Message-Id: <28d666269c390965f1a4edca42f93c12@localhost>
+User-Agent: vim 7.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Sun, 14 Nov 2010 17:53:03 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > @@ -159,6 +165,44 @@ static void refresh_zone_stat_thresholds(void)
-> >  	}
-> >  }
-> >  
-> > +void reduce_pgdat_percpu_threshold(pg_data_t *pgdat)
-> > +{
-> > +	struct zone *zone;
-> > +	int cpu;
-> > +	int threshold;
-> > +	int i;
-> > +
-> 
-> get_online_cpus();
+Most SIP devices use a source port of 5060/udp on SIP requests, so the
+response automatically comes back to port 5060:
 
+phone_ip:5060 -> proxy_ip:5060   REGISTER
+proxy_ip:5060 -> phone_ip:5060   100 Trying
 
-This caused following runtime warnings. but I don't think here is
-real lock inversion. 
+The newer Cisco IP phones, however, use a randomly chosen high source
+port for the SIP request but expect the response on port 5060:
 
-=================================
-[ INFO: inconsistent lock state ]
-2.6.37-rc1-mm1+ #150
----------------------------------
-inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-kswapd0/419 [HC0[0]:SC0[0]:HE1:SE1] takes:
- (cpu_hotplug.lock){+.+.?.}, at: [<ffffffff810520d1>] get_online_cpus+0x41/0x60
-{RECLAIM_FS-ON-W} state was registered at:
-  [<ffffffff8108a1a3>] mark_held_locks+0x73/0xa0
-  [<ffffffff8108a296>] lockdep_trace_alloc+0xc6/0x100
-  [<ffffffff8113fba9>] kmem_cache_alloc+0x39/0x2b0
-  [<ffffffff812eea10>] idr_pre_get+0x60/0x90
-  [<ffffffff812ef5b7>] ida_pre_get+0x27/0xf0
-  [<ffffffff8106ebf5>] create_worker+0x55/0x190
-  [<ffffffff814fb4f4>] workqueue_cpu_callback+0xbc/0x235
-  [<ffffffff8151934c>] notifier_call_chain+0x8c/0xe0
-  [<ffffffff8107a34e>] __raw_notifier_call_chain+0xe/0x10
-  [<ffffffff81051f30>] __cpu_notify+0x20/0x40
-  [<ffffffff8150bff7>] _cpu_up+0x73/0x113
-  [<ffffffff8150c175>] cpu_up+0xde/0xf1
-  [<ffffffff81dcc81d>] kernel_init+0x21b/0x342
-  [<ffffffff81003724>] kernel_thread_helper+0x4/0x10
-irq event stamp: 27
-hardirqs last  enabled at (27): [<ffffffff815152c0>] _raw_spin_unlock_irqrestore+0x40/0x80
-hardirqs last disabled at (26): [<ffffffff81514982>] _raw_spin_lock_irqsave+0x32/0xa0
-softirqs last  enabled at (20): [<ffffffff810614c4>] del_timer_sync+0x54/0xa0
-softirqs last disabled at (18): [<ffffffff8106148c>] del_timer_sync+0x1c/0xa0
+phone_ip:49173 -> proxy_ip:5060  REGISTER
+proxy_ip:5060 -> phone_ip:5060   100 Trying
 
-other info that might help us debug this:
-no locks held by kswapd0/419.
+Standard Linux NAT, with or without nf_nat_sip, will send the reply back
+to port 49173, not 5060:
 
-stack backtrace:
-Pid: 419, comm: kswapd0 Not tainted 2.6.37-rc1-mm1+ #150
-Call Trace:
- [<ffffffff810890b1>] print_usage_bug+0x171/0x180
- [<ffffffff8108a057>] mark_lock+0x377/0x450
- [<ffffffff8108ab67>] __lock_acquire+0x267/0x15e0
- [<ffffffff8107af0f>] ? local_clock+0x6f/0x80
- [<ffffffff81086789>] ? trace_hardirqs_off_caller+0x29/0x150
- [<ffffffff8108bf94>] lock_acquire+0xb4/0x150
- [<ffffffff810520d1>] ? get_online_cpus+0x41/0x60
- [<ffffffff81512cf4>] __mutex_lock_common+0x44/0x3f0
- [<ffffffff810520d1>] ? get_online_cpus+0x41/0x60
- [<ffffffff810744f0>] ? prepare_to_wait+0x60/0x90
- [<ffffffff81086789>] ? trace_hardirqs_off_caller+0x29/0x150
- [<ffffffff810520d1>] ? get_online_cpus+0x41/0x60
- [<ffffffff810868bd>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff8107af0f>] ? local_clock+0x6f/0x80
- [<ffffffff815131a8>] mutex_lock_nested+0x48/0x60
- [<ffffffff810520d1>] get_online_cpus+0x41/0x60
- [<ffffffff811138b2>] set_pgdat_percpu_threshold+0x22/0xe0
- [<ffffffff81113970>] ? calculate_normal_threshold+0x0/0x60
- [<ffffffff8110b552>] kswapd+0x1f2/0x360
- [<ffffffff81074180>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff8110b360>] ? kswapd+0x0/0x360
- [<ffffffff81073ae6>] kthread+0xa6/0xb0
- [<ffffffff81003724>] kernel_thread_helper+0x4/0x10
- [<ffffffff81515710>] ? restore_args+0x0/0x30
- [<ffffffff81073a40>] ? kthread+0x0/0xb0
- [<ffffffff81003720>] ? kernel_thread_helper+0x0/0x10
+phone_ip:49173 -> proxy_ip:5060  REGISTER
+proxy_ip:5060 -> phone_ip:49173  100 Trying
 
+But the phone is not listening on 49173, so it will never see the reply.
 
-I think we have two option 1) call lockdep_clear_current_reclaim_state()
-every time 2) use for_each_possible_cpu instead for_each_online_cpu.
+This issue was seen on a Cisco CP-7965G, firmware 8-5(3).  It appears
+to be a well-known problem on 7941 and newer:
 
-Following patch use (2) beucase removing get_online_cpus() makes good
-side effect. It reduce potentially cpu-hotplug vs memory-shortage deadlock
-risk. 
+http://www.voip-info.org/wiki/view/Standalone+Cisco+7941%252F7961+without+a+local+PBX
 
+Search for "Connecting to the outside world"
 
--------------------------------------------------------------------------
->From 74b809353c42a440d0bac6b83ac84281299bb09e Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Fri, 3 Dec 2010 20:21:40 +0900
-Subject: [PATCH] set_pgdat_percpu_threshold() don't use for_each_online_cpu
+I contacted Cisco support and they were not amenable to changing the
+behavior.  It appears to be RFC3261-compliant, as the "Sent-by port"
+field in the request specifies 5060:
 
-This patch fixes following lockdep warning.
+18.2.2 Sending Responses
 
-=================================
-[ INFO: inconsistent lock state ]
-2.6.37-rc1-mm1+ #150
----------------------------------
-inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-kswapd0/419 [HC0[0]:SC0[0]:HE1:SE1] takes:
- (cpu_hotplug.lock){+.+.?.}, at: [<ffffffff810520d1>]
-get_online_cpus+0x41/0x60
-{RECLAIM_FS-ON-W} state was registered at:
-  [<ffffffff8108a1a3>] mark_held_locks+0x73/0xa0
-  [<ffffffff8108a296>] lockdep_trace_alloc+0xc6/0x100
-  [<ffffffff8113fba9>] kmem_cache_alloc+0x39/0x2b0
-  [<ffffffff812eea10>] idr_pre_get+0x60/0x90
-  [<ffffffff812ef5b7>] ida_pre_get+0x27/0xf0
-  [<ffffffff8106ebf5>] create_worker+0x55/0x190
-  [<ffffffff814fb4f4>] workqueue_cpu_callback+0xbc/0x235
-  [<ffffffff8151934c>] notifier_call_chain+0x8c/0xe0
-  [<ffffffff8107a34e>] __raw_notifier_call_chain+0xe/0x10
-  [<ffffffff81051f30>] __cpu_notify+0x20/0x40
-  [<ffffffff8150bff7>] _cpu_up+0x73/0x113
-  [<ffffffff8150c175>] cpu_up+0xde/0xf1
-  [<ffffffff81dcc81d>] kernel_init+0x21b/0x342
-  [<ffffffff81003724>] kernel_thread_helper+0x4/0x10
-irq event stamp: 27
-hardirqs last  enabled at (27): [<ffffffff815152c0>] _raw_spin_unlock_irqrestore+0x40/0x80
-hardirqs last disabled at (26): [<ffffffff81514982>] _raw_spin_lock_irqsave+0x32/0xa0
-softirqs last  enabled at (20): [<ffffffff810614c4>] del_timer_sync+0x54/0xa0
-softirqs last disabled at (18): [<ffffffff8106148c>] del_timer_sync+0x1c/0xa0
+   The server transport uses the value of the top Via header field in
+   order to determine where to send a response.  It MUST follow the
+   following process:
 
-other info that might help us debug this:
-no locks held by kswapd0/419.
+...
 
-stack backtrace:
-Pid: 419, comm: kswapd0 Not tainted 2.6.37-rc1-mm1+ #150
-Call Trace:
- [<ffffffff810890b1>] print_usage_bug+0x171/0x180
- [<ffffffff8108a057>] mark_lock+0x377/0x450
- [<ffffffff8108ab67>] __lock_acquire+0x267/0x15e0
- [<ffffffff8107af0f>] ? local_clock+0x6f/0x80
- [<ffffffff81086789>] ? trace_hardirqs_off_caller+0x29/0x150
- [<ffffffff8108bf94>] lock_acquire+0xb4/0x150
- [<ffffffff810520d1>] ? get_online_cpus+0x41/0x60
- [<ffffffff81512cf4>] __mutex_lock_common+0x44/0x3f0
- [<ffffffff810520d1>] ? get_online_cpus+0x41/0x60
- [<ffffffff810744f0>] ? prepare_to_wait+0x60/0x90
- [<ffffffff81086789>] ? trace_hardirqs_off_caller+0x29/0x150
- [<ffffffff810520d1>] ? get_online_cpus+0x41/0x60
- [<ffffffff810868bd>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff8107af0f>] ? local_clock+0x6f/0x80
- [<ffffffff815131a8>] mutex_lock_nested+0x48/0x60
- [<ffffffff810520d1>] get_online_cpus+0x41/0x60
- [<ffffffff811138b2>] set_pgdat_percpu_threshold+0x22/0xe0
- [<ffffffff81113970>] ? calculate_normal_threshold+0x0/0x60
- [<ffffffff8110b552>] kswapd+0x1f2/0x360
- [<ffffffff81074180>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff8110b360>] ? kswapd+0x0/0x360
- [<ffffffff81073ae6>] kthread+0xa6/0xb0
- [<ffffffff81003724>] kernel_thread_helper+0x4/0x10
- [<ffffffff81515710>] ? restore_args+0x0/0x30
- [<ffffffff81073a40>] ? kthread+0x0/0xb0
- [<ffffffff81003720>] ? kernel_thread_helper+0x0/0x10
+      o  Otherwise (for unreliable unicast transports), if the top Via
+         has a "received" parameter, the response MUST be sent to the
+         address in the "received" parameter, using the port indicated
+         in the "sent-by" value, or using port 5060 if none is specified
+         explicitly.  If this fails, for example, elicits an ICMP "port
+         unreachable" response, the procedures of Section 5 of [4]
+         SHOULD be used to determine where to send the response.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+This patch modifies nf_*_sip to work around this quirk, by rewriting
+the response port to 5060 when the following conditions are met:
+
+ - User-Agent starts with "Cisco"
+
+ - Incoming TTL was exactly 64 (meaning that our system is the phone's
+   local router, not an intermediate router)
+
+Tested on Linus' latest 2.6.37-rc tree.
+
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- mm/vmstat.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ include/linux/netfilter/nf_conntrack_sip.h |    2 ++
+ net/ipv4/netfilter/nf_nat_sip.c            |   12 ++++++++++++
+ net/netfilter/nf_conntrack_sip.c           |   25 +++++++++++++++++++++++++
+ 3 files changed, 39 insertions(+), 0 deletions(-)
 
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 2ab01f2..ca2d3be 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -193,18 +193,16 @@ void set_pgdat_percpu_threshold(pg_data_t *pgdat,
- 	int threshold;
- 	int i;
+diff --git a/include/linux/netfilter/nf_conntrack_sip.h b/include/linux/netfilter/nf_conntrack_sip.h
+index 0ce91d5..a6ea620 100644
+--- a/include/linux/netfilter/nf_conntrack_sip.h
++++ b/include/linux/netfilter/nf_conntrack_sip.h
+@@ -8,6 +8,7 @@
+ struct nf_ct_sip_master {
+ 	unsigned int	register_cseq;
+ 	unsigned int	invite_cseq;
++	unsigned int	cisco_port_mangle;
+ };
  
--	get_online_cpus();
- 	for (i = 0; i < pgdat->nr_zones; i++) {
- 		zone = &pgdat->node_zones[i];
- 		if (!zone->percpu_drift_mark)
- 			continue;
+ enum sip_expectation_classes {
+@@ -90,6 +91,7 @@ enum sip_header_types {
+ 	SIP_HDR_EXPIRES,
+ 	SIP_HDR_CONTENT_LENGTH,
+ 	SIP_HDR_CALL_ID,
++	SIP_HDR_USER_AGENT,
+ };
  
- 		threshold = (*calculate_pressure)(zone);
--		for_each_online_cpu(cpu)
-+		for_each_possible_cpu(cpu)
- 			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
- 							= threshold;
+ enum sdp_header_types {
+diff --git a/net/ipv4/netfilter/nf_nat_sip.c b/net/ipv4/netfilter/nf_nat_sip.c
+index e40cf78..4b9a46d 100644
+--- a/net/ipv4/netfilter/nf_nat_sip.c
++++ b/net/ipv4/netfilter/nf_nat_sip.c
+@@ -121,6 +121,7 @@ static unsigned int ip_nat_sip(struct sk_buff *skb, unsigned int dataoff,
+ 	enum ip_conntrack_info ctinfo;
+ 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
+ 	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
++	struct nf_conn_help *help = nfct_help(ct);
+ 	unsigned int coff, matchoff, matchlen;
+ 	enum sip_header_types hdr;
+ 	union nf_inet_addr addr;
+@@ -225,6 +226,17 @@ next:
+ 			return NF_DROP;
  	}
--	put_online_cpus();
- }
  
- /*
++	/* Mangle destination port for Cisco phones, then fix up checksums */
++	if (help->help.ct_sip_info.cisco_port_mangle) {
++		struct udphdr *uh;
++
++		uh = (struct udphdr *)(skb->data + ip_hdrlen(skb));
++		uh->dest = htons(SIP_PORT);
++
++		if (!nf_nat_mangle_udp_packet(skb, ct, ctinfo, 0, 0, NULL, 0))
++			return NF_DROP;
++	}
++
+ 	if (!map_sip_addr(skb, dataoff, dptr, datalen, SIP_HDR_FROM) ||
+ 	    !map_sip_addr(skb, dataoff, dptr, datalen, SIP_HDR_TO))
+ 		return NF_DROP;
+diff --git a/net/netfilter/nf_conntrack_sip.c b/net/netfilter/nf_conntrack_sip.c
+index bcf47eb..6042f66 100644
+--- a/net/netfilter/nf_conntrack_sip.c
++++ b/net/netfilter/nf_conntrack_sip.c
+@@ -18,6 +18,7 @@
+ #include <linux/udp.h>
+ #include <linux/tcp.h>
+ #include <linux/netfilter.h>
++#include <linux/ip.h>
+ 
+ #include <net/netfilter/nf_conntrack.h>
+ #include <net/netfilter/nf_conntrack_core.h>
+@@ -338,6 +339,7 @@ static const struct sip_header ct_sip_hdrs[] = {
+ 	[SIP_HDR_EXPIRES]		= SIP_HDR("Expires", NULL, NULL, digits_len),
+ 	[SIP_HDR_CONTENT_LENGTH]	= SIP_HDR("Content-Length", "l", NULL, digits_len),
+ 	[SIP_HDR_CALL_ID]		= SIP_HDR("Call-Id", "i", NULL, callid_len),
++	[SIP_HDR_USER_AGENT]		= SIP_HDR("User-Agent", NULL, NULL, string_len),
+ };
+ 
+ static const char *sip_follow_continuation(const char *dptr, const char *limit)
+@@ -1366,6 +1368,29 @@ static int process_sip_request(struct sk_buff *skb, unsigned int dataoff,
+ 	unsigned int matchoff, matchlen;
+ 	unsigned int cseq, i;
+ 
++	/* Many Cisco IP phones use a high source port for SIP requests, but
++	 * listen for the response on port 5060.  If we are the local
++	 * router for one of these phones, flag the connection here so that
++	 * responses will be redirected to the correct port.
++	 */
++	do {
++		static const char cisco[] = "Cisco";
++		struct iphdr *iph = ip_hdr(skb);
++		struct nf_conn_help *help = nfct_help(ct);
++
++		if (iph->ttl != 63)
++			break;
++		if (ct_sip_get_header(ct, *dptr, 0, *datalen,
++				SIP_HDR_USER_AGENT, &matchoff, &matchlen) <= 0)
++			break;
++		if (matchlen < strlen(cisco))
++			break;
++		if (strnicmp(*dptr + matchoff, cisco, strlen(cisco)) != 0)
++			break;
++
++		help->help.ct_sip_info.cisco_port_mangle = 1;
++	} while (0);
++
+ 	for (i = 0; i < ARRAY_SIZE(sip_handlers); i++) {
+ 		const struct sip_handler *handler;
+ 
 -- 
-1.6.5.2
-
-
-
+1.7.0.4
 
