@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753720Ab0KNHOJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 02:14:09 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:46027 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753598Ab0KNHOE (ORCPT
+	id S1753997Ab0KNHgf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 02:36:35 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58449 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753614Ab0KNHgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 02:14:04 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 1/1][2nd resend] sys_unshare: remove the dead CLONE_THREAD/SIGHAND/VM code
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Roland McGrath <roland@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        JANAK DESAI <janak@us.ibm.com>
-In-Reply-To: <20101109171754.GB6971@redhat.com>
-References: <20101109201742.BCA1.A69D9226@jp.fujitsu.com> <20101109171754.GB6971@redhat.com>
-Message-Id: <20101114161354.BEDB.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Sun, 14 Nov 2010 16:14:01 +0900 (JST)
+	Sun, 14 Nov 2010 02:36:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=PGzPAAagfF8Xm3+FG1apET4q53WnooZEtk4dI2p/XbBLdFKH2ABZnGPmoKy/rdjQBK
+         UEU6ACz7fzrnLRJKtNHZdtYyOssM3VXetAi0AoxGQjFQRZDN6r8rgHt3hU/fyqj7JU1q
+         PWGYR81GXwCXooVz6kdmCu4aqbzxyExrkt64k=
+From: Zhang Le <r0bertz@gentoo.org>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Zhang Le <r0bertz@gentoo.org>, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>
+Subject: [PATCH] ipv4: mitigate an integer underflow when comparing tcp timestamps
+Date: Sun, 14 Nov 2010 15:35:56 +0800
+Message-Id: <1289720156-30118-1-git-send-email-r0bertz@gentoo.org>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 11/09, KOSAKI Motohiro wrote:
-> >
-> > > -static void check_unshare_flags(unsigned long *flags_ptr)
-> > > +static int check_unshare_flags(unsigned long unshare_flags)
-> > >  {
-> > > +	if (unshare_flags & ~(CLONE_THREAD|CLONE_FS|CLONE_NEWNS|CLONE_SIGHAND|
-> > > +				CLONE_VM|CLONE_FILES|CLONE_SYSVSEM|
-> > > +				CLONE_NEWUTS|CLONE_NEWIPC|CLONE_NEWNET))
-> > > +		return -EINVAL;
-> >
-> > Please put WARN_ON_ONCE() explicitly. That's good way to find hidden
-> > user if exist and getting better bug report.
-> 
-> Perhaps... but this needs a separate change.
-> 
-> Please note that this check was simply moved from sys_unshare(), this
-> patch shouldn't have any visible effect.
-> 
-> Personally, I think it would be even better if, say, unshare(CLONE_THREAD)
-> returned -EINVAL unconditionally.
+Behind a loadbalancer which does NAT, peer->tcp_ts could be much smaller than
+req->ts_recent. In this case, theoretically the req should not be ignored.
 
-Ah, OK. you are right.
+But in fact, it could be ignored, if peer->tcp_ts is so small that the
+difference between this two number is larger than 2 to the power of 31.
 
+I understand that under this situation, timestamp does not make sense any more,
+because it actually comes from difference machines. However, if anyone
+ever need to do the same investigation which I have done, this will
+save some time for him.
 
+Signed-off-by: Zhang Le <r0bertz@gentoo.org>
+---
+ net/ipv4/tcp_ipv4.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> > And, I've reveied this patch and I've found no fault. but I will not put
-> > my ack because I think I haven't understand original intention perhaps.
-> 
-> Thanks!
-> 
-> IIRC, the main (only?) motivation for sys_unshare() was unshare_fs().
-> Most probably unshare_thread/vm were added as placeholders.
-
-
-
-
+diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
+index 8f8527d..1eb4974 100644
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1352,8 +1352,8 @@ int tcp_v4_conn_request(struct sock *sk, struct sk_buff *skb)
+ 		    peer->v4daddr == saddr) {
+ 			inet_peer_refcheck(peer);
+ 			if ((u32)get_seconds() - peer->tcp_ts_stamp < TCP_PAWS_MSL &&
+-			    (s32)(peer->tcp_ts - req->ts_recent) >
+-							TCP_PAWS_WINDOW) {
++			    ((s32)(peer->tcp_ts - req->ts_recent) > TCP_PAWS_WINDOW &&
++			     peer->tcp_ts > req->ts_recent)) {
+ 				NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_PAWSPASSIVEREJECTED);
+ 				goto drop_and_release;
+ 			}
+-- 
+1.7.3.2
 
