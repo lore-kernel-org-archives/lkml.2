@@ -1,110 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab0KNSdh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 13:33:37 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56287 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756487Ab0KNSdg (ORCPT
+	id S1756814Ab0KNSdL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 13:33:11 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59350 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756487Ab0KNSdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 13:33:36 -0500
+	Sun, 14 Nov 2010 13:33:09 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=TA3Gq+CEppecUolqF15nz3JuV6kIWMnciSEjeq9GREXpvJBfsLonUyLzfnrjbnMCxZ
-         HmXhcsouy6f6IwRg8+AcyssUG8j35xX80Aa+/pVw9W/BmEUKVq5gOfayMRiOpcs8oGQH
-         OPNj0sFkOma+4xDx2mdEw7jCzMsyyAK24tBiI=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ft85UTY7OEoYqKwP3GXokrDHOcYQ28uUnNtl6DBFWBs74lQz4aoC3YcdBphiC4tNh1
+         6MXSpEbbKkvuEm0ZISPdRyNbZJmCIzBMwkZaVGYbbiH8tKKegGTvfDm9sNk5d9SMQGJG
+         kCdrgDv4jfEFvWsCe6ThQh5W/Yseaus6WvJC0=
 MIME-Version: 1.0
-Date: Sun, 14 Nov 2010 19:33:34 +0100
-Message-ID: <AANLkTimtWoqST8ch9CyB3g-CyvfiynXRDLwmGdLDdiYk@mail.gmail.com>
-Subject: [PATCH v3, x86]: Use selfsnoop HW feature to manage conflicting
- memory types
-From: Uros Bizjak <ubizjak@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org
-Content-Type: multipart/mixed; boundary=000e0cd22ae2abc5d40495078f5c
+In-Reply-To: <1289725175.2743.65.camel@edumazet-laptop>
+References: <28d666269c390965f1a4edca42f93c12@localhost>
+	<1289725175.2743.65.camel@edumazet-laptop>
+Date: Sun, 14 Nov 2010 10:33:06 -0800
+Message-ID: <AANLkTik4PLga8mX73c8iONPeOtpDiuDhfu3xiPmF07jC@mail.gmail.com>
+Subject: Re: [PATCH/RFC] netfilter: nf_conntrack_sip: Handle quirky Cisco phones
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd22ae2abc5d40495078f5c
-Content-Type: text/plain; charset=ISO-8859-1
+On Sun, Nov 14, 2010 at 12:59 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> I would like to get an exact SIP exchange to make sure their is not
+> another way to handle this without adding a "Cisco" string somewhere...
+>
+> Please provide a pcap or tcpdump -A
 
-Hello!
+Existing nf_nat_sip: phone sends unauthenticated REGISTER requests
+over and over again, because it is not seeing the replies sent back to
+port 50070:
 
-Attached patch enhances v2 patch at [1] to disable selfsnoop with a
-kernel command line parameter. The feature is also disabled on all
-processors earlier than Core 2 due to Pentium-M errata.
+10:05:53.496479 IP 192.168.2.28.50070 > 67.215.241.250.5060: SIP, length: 723
+E`...[..@.r.....C...........REGISTER sip:losangeles.voip.ms SIP/2.0
+Via: SIP/2.0/
 
-I have investigated the erratas in this area and documented the one
-found in the source.
+10:05:53.587370 IP 67.215.241.250.5060 > 192.168.2.28.50070: SIP, length: 486
+E.......3..fC...............SIP/2.0 100 Trying
+Via: SIP/2.0/UDP 192.168.2.28:5060
 
-The patch was tested on 4 core i7 (8 threads) and there were no
-problems at all with the patched kernel.
+10:05:53.587807 IP 67.215.241.250.5060 > 192.168.2.28.50070: SIP, length: 550
+E..B....3..%C...............SIP/2.0 401 Unauthorized
+Via: SIP/2.0/UDP 192.168.2.2
 
-[1] http://lkml.org/lkml/2009/4/8/508
+10:05:57.496541 IP 192.168.2.28.50070 > 67.215.241.250.5060: SIP, length: 723
+E`...\..@.r.....C...........REGISTER sip:losangeles.voip.ms SIP/2.0
+Via: SIP/2.0/
 
-Signed-off-by: Uros Bizjak <ubizjak@gmail.com>
+10:05:57.526716 IP 67.215.241.250.5060 > 192.168.2.28.50070: SIP, length: 486
+E.......3..dC...............SIP/2.0 100 Trying
+Via: SIP/2.0/UDP 192.168.2.28:5060
 
---000e0cd22ae2abc5d40495078f5c
-Content-Type: application/octet-stream; name="selfsnoop.patch"
-Content-Disposition: attachment; filename="selfsnoop.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_ggi9jk8r0
+10:05:57.527162 IP 67.215.241.250.5060 > 192.168.2.28.50070: SIP, length: 550
+E..B....3..#C...............SIP/2.0 401 Unauthorized
+Via: SIP/2.0/UDP 192.168.2.2
 
-ZGlmZiAtLWdpdCBhL0RvY3VtZW50YXRpb24va2VybmVsLXBhcmFtZXRlcnMudHh0IGIvRG9jdW1l
-bnRhdGlvbi9rZXJuZWwtcGFyYW1ldGVycy50eHQKaW5kZXggOTJlODNlNS4uY2JjY2MwNiAxMDA2
-NDQKLS0tIGEvRG9jdW1lbnRhdGlvbi9rZXJuZWwtcGFyYW1ldGVycy50eHQKKysrIGIvRG9jdW1l
-bnRhdGlvbi9rZXJuZWwtcGFyYW1ldGVycy50eHQKQEAgLTE2NTcsNiArMTY1Nyw4IEBAIGFuZCBp
-cyBiZXR3ZWVuIDI1NiBhbmQgNDA5NiBjaGFyYWN0ZXJzLiBJdCBpcyBkZWZpbmVkIGluIHRoZSBm
-aWxlCiAJCQlyZWdpc3RlciBzYXZlIGFuZCByZXN0b3JlLiBUaGUga2VybmVsIHdpbGwgb25seSBz
-YXZlCiAJCQlsZWdhY3kgZmxvYXRpbmctcG9pbnQgcmVnaXN0ZXJzIG9uIHRhc2sgc3dpdGNoLgog
-CisJbm9zZWxmc25vb3AJW0JVR1M9WDg2XSBEaXNhYmxlcyB4ODYgU2VsZi1Tbm9vcCBmZWF0dXJl
-LgorCiAJbm94c2F2ZQkJW0JVR1M9WDg2XSBEaXNhYmxlcyB4ODYgZXh0ZW5kZWQgcmVnaXN0ZXIg
-c3RhdGUgc2F2ZQogCQkJYW5kIHJlc3RvcmUgdXNpbmcgeHNhdmUuIFRoZSBrZXJuZWwgd2lsbCBm
-YWxsYmFjayB0bwogCQkJZW5hYmxpbmcgbGVnYWN5IGZsb2F0aW5nLXBvaW50IGFuZCBzc2Ugc3Rh
-dGUuCmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9pbmNsdWRlL2FzbS9jcHVmZWF0dXJlLmggYi9hcmNo
-L3g4Ni9pbmNsdWRlL2FzbS9jcHVmZWF0dXJlLmgKaW5kZXggMjIwZTJlYS4uNjVjNjUwOCAxMDA2
-NDQKLS0tIGEvYXJjaC94ODYvaW5jbHVkZS9hc20vY3B1ZmVhdHVyZS5oCisrKyBiL2FyY2gveDg2
-L2luY2x1ZGUvYXNtL2NwdWZlYXR1cmUuaApAQCAtMjY5LDYgKzI2OSw3IEBAIGV4dGVybiBjb25z
-dCBjaGFyICogY29uc3QgeDg2X3Bvd2VyX2ZsYWdzWzMyXTsKICNkZWZpbmUgY3B1X2hhc19kcwkJ
-Ym9vdF9jcHVfaGFzKFg4Nl9GRUFUVVJFX0RTKQogI2RlZmluZSBjcHVfaGFzX3BlYnMJCWJvb3Rf
-Y3B1X2hhcyhYODZfRkVBVFVSRV9QRUJTKQogI2RlZmluZSBjcHVfaGFzX2NsZmx1c2gJCWJvb3Rf
-Y3B1X2hhcyhYODZfRkVBVFVSRV9DTEZMU0gpCisjZGVmaW5lIGNwdV9oYXNfc2VsZnNub29wCWJv
-b3RfY3B1X2hhcyhYODZfRkVBVFVSRV9TRUxGU05PT1ApCiAjZGVmaW5lIGNwdV9oYXNfYnRzCQli
-b290X2NwdV9oYXMoWDg2X0ZFQVRVUkVfQlRTKQogI2RlZmluZSBjcHVfaGFzX2dicGFnZXMJCWJv
-b3RfY3B1X2hhcyhYODZfRkVBVFVSRV9HQlBBR0VTKQogI2RlZmluZSBjcHVfaGFzX2FyY2hfcGVy
-Zm1vbglib290X2NwdV9oYXMoWDg2X0ZFQVRVUkVfQVJDSF9QRVJGTU9OKQpkaWZmIC0tZ2l0IGEv
-YXJjaC94ODYva2VybmVsL2NwdS9pbnRlbC5jIGIvYXJjaC94ODYva2VybmVsL2NwdS9pbnRlbC5j
-CmluZGV4IGQxNmMyYzUuLmZhOGY1NTcgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2tlcm5lbC9jcHUv
-aW50ZWwuYworKysgYi9hcmNoL3g4Ni9rZXJuZWwvY3B1L2ludGVsLmMKQEAgLTEwOCw2ICsxMDgs
-MjAgQEAgc3RhdGljIHZvaWQgX19jcHVpbml0IGVhcmx5X2luaXRfaW50ZWwoc3RydWN0IGNwdWlu
-Zm9feDg2ICpjKQogCWlmIChjLT54ODYgPT0gNiAmJiBjLT54ODZfbW9kZWwgPCAxNSkKIAkJY2xl
-YXJfY3B1X2NhcChjLCBYODZfRkVBVFVSRV9QQVQpOwogCisJLyoKKwkgKiBQZW50aXVtLU0gZXJy
-YXR1bSBZOToKKwkgKgorCSAqIFdyaXRlIGN5Y2xlcyBvZiBXQyBtZW1vcnkgdHlwZSBkbyBub3Qg
-c2VsZi1zbm9vcC4gVGhpcyBtYXkgcmVzdWx0CisJICogaW4gZGF0YSBpbmNvbnNpc3RlbmN5IOKA
-kyBpZiB0aGUgYWRkcmVzc2VzIG9mIHRoZSBXQyBkYXRhIGFyZQorCSAqIGFsaWFzZWQgdG8gV0Ig
-bWVtb3J5IHR5cGUgbWVtb3J5LCB3aGljaCBoYXMgYmVlbiBjYWNoZWQuCisJICogSW4gc3VjaCBh
-IGNhc2UsIHRoZSBpbnRlcm5hbCBjYWNoZXMgd2lsbCBub3QgYmUgdXBkYXRlZCB3aXRoCisJICog
-dGhlIFdDIGRhdGEgc2VudCBvbiB0aGUgc3lzdGVtIGJ1cy4KKwkgKgorCSAqIEVuYWJsZSBTZWxm
-LVNub29wIG9ubHkgb24gQ29yZSAyIG9yIGxhdGVyIENQVXMuCisJICovCisJaWYgKGMtPng4NiA9
-PSAxNSB8fCAoYy0+eDg2ID09IDYgJiYgYy0+eDg2X21vZGVsIDwgMTUpKQorCQljbGVhcl9jcHVf
-Y2FwKGMsIFg4Nl9GRUFUVVJFX1NFTEZTTk9PUCk7CisKICNpZmRlZiBDT05GSUdfS01FTUNIRUNL
-CiAJLyoKIAkgKiBQNHMgaGF2ZSBhICJmYXN0IHN0cmluZ3MiIGZlYXR1cmUgd2hpY2ggY2F1c2Vz
-IHNpbmdsZS0KZGlmZiAtLWdpdCBhL2FyY2gveDg2L21tL3BhZ2VhdHRyLmMgYi9hcmNoL3g4Ni9t
-bS9wYWdlYXR0ci5jCmluZGV4IDUzMmU3OTMuLjQyNzU5NGUgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2
-L21tL3BhZ2VhdHRyLmMKKysrIGIvYXJjaC94ODYvbW0vcGFnZWF0dHIuYwpAQCAtNTEsNiArNTEs
-MTMgQEAgc3RhdGljIERFRklORV9TUElOTE9DSyhjcGFfbG9jayk7CiAjZGVmaW5lIENQQV9BUlJB
-WSAyCiAjZGVmaW5lIENQQV9QQUdFU19BUlJBWSA0CiAKK3N0YXRpYyBpbnQgX19pbml0IHg4Nl9z
-ZWxmc25vb3Bfc2V0dXAoY2hhciAqcykKK3sKKwlzZXR1cF9jbGVhcl9jcHVfY2FwKFg4Nl9GRUFU
-VVJFX1NFTEZTTk9PUCk7CisJcmV0dXJuIDE7Cit9CitfX3NldHVwKCJub3NlbGZzbm9vcCIsIHg4
-Nl9zZWxmc25vb3Bfc2V0dXApOworCiAjaWZkZWYgQ09ORklHX1BST0NfRlMKIHN0YXRpYyB1bnNp
-Z25lZCBsb25nIGRpcmVjdF9wYWdlc19jb3VudFtQR19MRVZFTF9OVU1dOwogCkBAIC05MTEsMTAg
-KzkxOCwxMCBAQCBzdGF0aWMgaW50IGNoYW5nZV9wYWdlX2F0dHJfc2V0X2Nscih1bnNpZ25lZCBs
-b25nICphZGRyLCBpbnQgbnVtcGFnZXMsCiAJCWdvdG8gb3V0OwogCiAJLyoKLQkgKiBObyBuZWVk
-IHRvIGZsdXNoLCB3aGVuIHdlIGRpZCBub3Qgc2V0IGFueSBvZiB0aGUgY2FjaGluZwotCSAqIGF0
-dHJpYnV0ZXM6CisJICogTm8gbmVlZCB0byBmbHVzaCB3aGVuIENQVSBzdXBwb3J0cyBzZWxmIHNu
-b29wIG9yCisJICogd2hlbiB3ZSBkaWQgbm90IHNldCBhbnkgb2YgdGhlIGNhY2hpbmcgYXR0cmli
-dXRlczoKIAkgKi8KLQljYWNoZSA9IGNhY2hlX2F0dHIobWFza19zZXQpOworCWNhY2hlID0gY3B1
-X2hhc19zZWxmc25vb3AgPyAwIDogY2FjaGVfYXR0cihtYXNrX3NldCk7CiAKIAkvKgogCSAqIE9u
-IHN1Y2Nlc3Mgd2UgdXNlIGNsZmx1c2gsIHdoZW4gdGhlIENQVSBzdXBwb3J0cyBpdCB0bwo=
---000e0cd22ae2abc5d40495078f5c--
+10:06:01.486821 IP 192.168.2.28.50070 > 67.215.241.250.5060: SIP, length: 723
+E`...]..@.r.....C...........REGISTER sip:losangeles.voip.ms SIP/2.0
+Via: SIP/2.0/
+
+10:06:01.515611 IP 67.215.241.250.5060 > 192.168.2.28.50070: SIP, length: 486
+E.......3..bC...............SIP/2.0 100 Trying
+Via: SIP/2.0/UDP 192.168.2.28:5060
+
+10:06:01.516024 IP 67.215.241.250.5060 > 192.168.2.28.50070: SIP, length: 550
+E..B....3..!C...............SIP/2.0 401 Unauthorized
+Via: SIP/2.0/UDP 192.168.2.2
+
+... continues forever ...
+
+
+Patched nf_nat_sip: router sends the replies back to port 5060, so the
+phone is now able to register itself and make calls:
+
+10:09:46.221631 IP 192.168.2.28.50618 > 67.215.241.250.5060: SIP, length: 723
+E`...G..@.p.....C...........REGISTER sip:losangeles.voip.ms SIP/2.0
+Via: SIP/2.0/
+
+10:09:46.253052 IP 67.215.241.250.5060 > 192.168.2.28.5060: SIP, length: 491
+E....+..4..$C...............SIP/2.0 100 Trying
+Via: SIP/2.0/UDP 192.168.2.28:5060
+
+10:09:46.253472 IP 67.215.241.250.5060 > 192.168.2.28.5060: SIP, length: 550
+E..B.,..4...C...............SIP/2.0 401 Unauthorized
+Via: SIP/2.0/UDP 192.168.2.2
+
+10:09:46.261602 IP 192.168.2.28.50618 > 67.215.241.250.5060: SIP, length: 900
+E`...H..@.p.....C...........REGISTER sip:losangeles.voip.ms SIP/2.0
+Via: SIP/2.0/
+
+10:09:46.290211 IP 67.215.241.250.5060 > 192.168.2.28.5060: SIP, length: 491
+E....-..4.."C...............SIP/2.0 100 Trying
+Via: SIP/2.0/UDP 192.168.2.28:5060
+
+10:09:46.295041 IP 67.215.241.250.5060 > 192.168.2.28.5060: SIP, length: 579
+E.._....4...C............K..SIP/2.0 200 OK
+Via: SIP/2.0/UDP 192.168.2.28:5060;bra
+
+
+BTW, I thought of two possible issues with the original patch:
+
+1) Might need to call skb_make_writable() prior to modifying the
+packet.  Presumably the second invocation inside
+nf_nat_mangle_udp_packet() will have no effect.
+
+(Is there a cleaner way to mangle just the port number?  Most of the
+utility functions only help with modifying the data area.)
+
+2) I should probably be checking to make sure request == 0 before
+mangling the packet.  The current behavior is harmless if the SIP
+proxy is on port 5060, but that might not always be the case.
+
+I can roll these, along with any other suggestions, into v2.
