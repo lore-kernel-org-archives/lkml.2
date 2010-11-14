@@ -1,207 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932384Ab0KNWxY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 17:53:24 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:27491 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932312Ab0KNWxW (ORCPT
+	id S932368Ab0KNXYL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 18:24:11 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52567 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932312Ab0KNXYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 17:53:22 -0500
-Date: Sun, 14 Nov 2010 23:41:10 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-scsi@vger.kernel.org
-cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH][resend][SCSI] Reduce sequential pointer derefs in scsi_error.c
- and reduce size as well
-Message-ID: <alpine.LNX.2.00.1011142323230.1253@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 14 Nov 2010 18:24:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=sqxlXQahARuKxb4+sG4b8Pzf7PLDAlkYTvIvuiB3AXXORsWYkTPMjTpYgTh+ZwTKCb
+         mSry/qks2IyRKIATLwxlEMzct9InuCq2gjoPZUY+GA4J6dLNQ1ma2WtoNfEgQz1Pt7Bm
+         uurV2aLZa4X78t+MZOux2bDmplHptW3bhfh1o=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4CE05A9E.9090204@redhat.com>
+References: <AANLkTim6WTCChWGbTb-PUGd2AERGibeRtgan-WDznf2s@mail.gmail.com>
+	<4CD6B7FA.3050005@redhat.com>
+	<AANLkTikbsU+SGAaoq_oek=7tfDdjg+0wFoydhA+K9ZU+@mail.gmail.com>
+	<AANLkTinna7BiGHogXnn1iEG6ccUAjFM3p3S3aHpv=h-E@mail.gmail.com>
+	<20101107194547.GA12521@basil.fritz.box>
+	<4CD71C8B.1050604@redhat.com>
+	<20101107230508.GB17592@basil.fritz.box>
+	<20101108145809.GD29714@redhat.com>
+	<1289238930-sup-9765@think>
+	<20101114205925.GA20451@redhat.com>
+	<AANLkTi=rVyozmvqCJD1kGqnV3uEn-0ak6B12-O_9XOKJ@mail.gmail.com>
+	<4CE05A9E.9090204@redhat.com>
+Date: Mon, 15 Nov 2010 00:24:08 +0100
+Message-ID: <AANLkTimT0t3xqgKdAn7MBPD7ED-9uPS+WJE0z+K8tciu@mail.gmail.com>
+Subject: Re: dm-crypt barrier support is effective
+From: Matt <jackdachef@gmail.com>
+To: Milan Broz <mbroz@redhat.com>
+Cc: Mike Snitzer <snitzer@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, Chris Mason <chris.mason@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a resend of a (slightly updated) patch that was originally 
-submitted on
-  24 April 2008
-  27 April 2008
+On Sun, Nov 14, 2010 at 10:54 PM, Milan Broz <mbroz@redhat.com> wrote:
+> On 11/14/2010 10:49 PM, Matt wrote:
+>> only with the dm-crypt scaling patch I could observe the data-corruption
+>
+> even with v5 I sent on Friday?
+>
+> Are you sure that it is not related to some fs problem in 2.6.37-rc1?
+>
+> If it works on 2.6.36 without problems, it is probably problems somewhere
+> else (flush/fua conversion was trivial here - DM is still doing full flush
+> and there are no other changes in code IMHO.)
+>
+> Milan
+>
 
+Hi Milan,
 
-This patch reduces the number of sequential pointer derefs in drivers/scsi/scsi_error.c
+I'm aware of your new v5 patch (which should include several
+improvements (or potential fixes in my case) over the v3 patch)
 
-The bennefits are:
+as I already wrote my schedule unfortunately currently doesn't allow
+me to test it
 
- - makes the code easier to read. Lots of sequential derefs of the same 
-   pointers is not easy on the eye.
+* in the case of no corruption it would be nice to have 2.6.37-rc* running :)
 
- - theoretically at least, just dereferencing the pointers once can allow 
-   the compiler to generally slightly faster code, so in theory this could 
-   also be a micro speed optimization.
+* in the case of data corruption that would mean restoring my system -
+since it's my production box and right now I don't have a fallback at
+reach
+at earliest I could give it a shot at the beginning of December. Then
+I could also test reiserfs and ext4 as a system partition to rule out
+that it's
+a ext4-specific thing (currently I'm running reiserfs on my system-partition).
 
- - reduces size
+Thanks !
 
-   before:
-      text    data     bss     dec     hex filename
-     18829     128    4728   23685    5c85 drivers/scsi/scsi_error.o
- 
-   after:
-      text    data     bss     dec     hex filename
-     18775     128    4728   23631    5c4f drivers/scsi/scsi_error.o
-
-Please consider applying.
-
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- scsi_error.c |   61 +++++++++++++++++++++++++++++++++--------------------------
- 1 file changed, 35 insertions(+), 26 deletions(-)
-
-diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-index f3cf924..75a68a0 100644
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -129,14 +129,15 @@ enum blk_eh_timer_return scsi_times_out(struct request *req)
- {
- 	struct scsi_cmnd *scmd = req->special;
- 	enum blk_eh_timer_return rtn = BLK_EH_NOT_HANDLED;
-+	struct Scsi_Host *host = scmd->device->host;
- 
- 	trace_scsi_dispatch_cmd_timeout(scmd);
- 	scsi_log_completion(scmd, TIMEOUT_ERROR);
- 
--	if (scmd->device->host->transportt->eh_timed_out)
--		rtn = scmd->device->host->transportt->eh_timed_out(scmd);
--	else if (scmd->device->host->hostt->eh_timed_out)
--		rtn = scmd->device->host->hostt->eh_timed_out(scmd);
-+	if (host->transportt->eh_timed_out)
-+		rtn = host->transportt->eh_timed_out(scmd);
-+	else if (host->hostt->eh_timed_out)
-+		rtn = host->hostt->eh_timed_out(scmd);
- 
- 	if (unlikely(rtn == BLK_EH_NOT_HANDLED &&
- 		     !scsi_eh_scmd_add(scmd, SCSI_EH_CANCEL_CMD))) {
-@@ -507,22 +508,23 @@ static int scsi_try_host_reset(struct scsi_cmnd *scmd)
- {
- 	unsigned long flags;
- 	int rtn;
-+	struct Scsi_Host *host = scmd->device->host;
-+	struct scsi_host_template *hostt = host->hostt;
- 
- 	SCSI_LOG_ERROR_RECOVERY(3, printk("%s: Snd Host RST\n",
- 					  __func__));
- 
--	if (!scmd->device->host->hostt->eh_host_reset_handler)
-+	if (!hostt->eh_host_reset_handler)
- 		return FAILED;
- 
--	rtn = scmd->device->host->hostt->eh_host_reset_handler(scmd);
-+	rtn = hostt->eh_host_reset_handler(scmd);
- 
- 	if (rtn == SUCCESS) {
--		if (!scmd->device->host->hostt->skip_settle_delay)
-+		if (!hostt->skip_settle_delay)
- 			ssleep(HOST_RESET_SETTLE_TIME);
--		spin_lock_irqsave(scmd->device->host->host_lock, flags);
--		scsi_report_bus_reset(scmd->device->host,
--				      scmd_channel(scmd));
--		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
-+		spin_lock_irqsave(host->host_lock, flags);
-+		scsi_report_bus_reset(host, scmd_channel(scmd));
-+		spin_unlock_irqrestore(host->host_lock, flags);
- 	}
- 
- 	return rtn;
-@@ -536,22 +538,23 @@ static int scsi_try_bus_reset(struct scsi_cmnd *scmd)
- {
- 	unsigned long flags;
- 	int rtn;
-+	struct Scsi_Host *host = scmd->device->host;
-+	struct scsi_host_template *hostt = host->hostt;
- 
- 	SCSI_LOG_ERROR_RECOVERY(3, printk("%s: Snd Bus RST\n",
- 					  __func__));
- 
--	if (!scmd->device->host->hostt->eh_bus_reset_handler)
-+	if (!hostt->eh_bus_reset_handler)
- 		return FAILED;
- 
--	rtn = scmd->device->host->hostt->eh_bus_reset_handler(scmd);
-+	rtn = hostt->eh_bus_reset_handler(scmd);
- 
- 	if (rtn == SUCCESS) {
--		if (!scmd->device->host->hostt->skip_settle_delay)
-+		if (!hostt->skip_settle_delay)
- 			ssleep(BUS_RESET_SETTLE_TIME);
--		spin_lock_irqsave(scmd->device->host->host_lock, flags);
--		scsi_report_bus_reset(scmd->device->host,
--				      scmd_channel(scmd));
--		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
-+		spin_lock_irqsave(host->host_lock, flags);
-+		scsi_report_bus_reset(host, scmd_channel(scmd));
-+		spin_unlock_irqrestore(host->host_lock, flags);
- 	}
- 
- 	return rtn;
-@@ -577,16 +580,18 @@ static int scsi_try_target_reset(struct scsi_cmnd *scmd)
- {
- 	unsigned long flags;
- 	int rtn;
-+	struct Scsi_Host *host = scmd->device->host;
-+	struct scsi_host_template *hostt = host->hostt;
- 
--	if (!scmd->device->host->hostt->eh_target_reset_handler)
-+	if (!hostt->eh_target_reset_handler)
- 		return FAILED;
- 
--	rtn = scmd->device->host->hostt->eh_target_reset_handler(scmd);
-+	rtn = hostt->eh_target_reset_handler(scmd);
- 	if (rtn == SUCCESS) {
--		spin_lock_irqsave(scmd->device->host->host_lock, flags);
-+		spin_lock_irqsave(host->host_lock, flags);
- 		__starget_for_each_device(scsi_target(scmd->device), NULL,
- 					  __scsi_report_device_reset);
--		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
-+		spin_unlock_irqrestore(host->host_lock, flags);
- 	}
- 
- 	return rtn;
-@@ -605,11 +610,12 @@ static int scsi_try_target_reset(struct scsi_cmnd *scmd)
- static int scsi_try_bus_device_reset(struct scsi_cmnd *scmd)
- {
- 	int rtn;
-+	struct scsi_host_template *hostt = scmd->device->host->hostt;
- 
--	if (!scmd->device->host->hostt->eh_device_reset_handler)
-+	if (!hostt->eh_device_reset_handler)
- 		return FAILED;
- 
--	rtn = scmd->device->host->hostt->eh_device_reset_handler(scmd);
-+	rtn = hostt->eh_device_reset_handler(scmd);
- 	if (rtn == SUCCESS)
- 		__scsi_report_device_reset(scmd->device, NULL);
- 	return rtn;
-@@ -617,10 +623,13 @@ static int scsi_try_bus_device_reset(struct scsi_cmnd *scmd)
- 
- static int __scsi_try_to_abort_cmd(struct scsi_cmnd *scmd)
- {
--	if (!scmd->device->host->hostt->eh_abort_handler)
-+	int (*eh_abort_handler)(struct scsi_cmnd *) =
-+		scmd->device->host->hostt->eh_abort_handler;
-+
-+	if (!eh_abort_handler)
- 		return FAILED;
- 
--	return scmd->device->host->hostt->eh_abort_handler(scmd);
-+	return eh_abort_handler(scmd);
- }
- 
- /**
-
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Matt
