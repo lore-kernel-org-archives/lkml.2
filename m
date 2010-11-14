@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756013Ab0KNADL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 13 Nov 2010 19:03:11 -0500
-Received: from cantor.suse.de ([195.135.220.2]:44841 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754395Ab0KNADJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 13 Nov 2010 19:03:09 -0500
-Date: Sat, 13 Nov 2010 16:03:45 -0800
-From: Greg KH <gregkh@suse.de>
-To: Stefan Achatz <stefan_achatz@web.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Eric Biederman <ebiederm@aristanetworks.com>,
-        "Serge E. Hallyn" <serue@us.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Benjamin Thery <benjamin.thery@bull.net>
-Subject: Re: [PATCH 2/2] HID: roccat: using new sysfs_create_bin_group() in
-	kone driver
-Message-ID: <20101114000345.GA2040@suse.de>
-References: <1289585921.2629.13.camel@neuromancer> <AANLkTik4qPyBtKgJwHVnhkTASNORoKrWms6gk8NirYeU@mail.gmail.com> <20101113005232.GA20865@suse.de> <20101113060634.GB1919@core.coreip.homeip.net> <20101113143908.GA29750@suse.de> <1289666055.2191.1.camel@neuromancer>
+	id S1756044Ab0KNAFd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 13 Nov 2010 19:05:33 -0500
+Received: from mail-in-02.arcor-online.net ([151.189.21.42]:44740 "EHLO
+	mail-in-02.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754395Ab0KNAFb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 13 Nov 2010 19:05:31 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-13.arcor-online.net C2407212EE0
+Message-Id: <E1PHQ64-0001M1-OD@be1.7eggert.dyndns.org>
+From: Bodo Eggert <7eggert@web.de>
+Subject: Re: [PATCH] oom: allow a non-CAP_SYS_RESOURCE proces to oom_score_adj  down
+To: Mandeep Singh Baines <msb@google.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        linux-kernel@vger.kernel.org, gspencer@chromium.org,
+        piman@chromium.org, wad@chromium.org, olofj@chromium.org,
+        Bodo Eggert <7eggert@web.de>
+Reply-To: 7eggert@gmx.de
+Date: Sun, 14 Nov 2010 01:05:28 +0100
+References: <fNx73-1cI-1@gated-at.bofh.it> <fNzVf-5UY-3@gated-at.bofh.it> <fNKdY-6FU-11@gated-at.bofh.it> <fNMps-1S1-21@gated-at.bofh.it> <fNNOx-4qf-1@gated-at.bofh.it> <fNOAW-5Oi-35@gated-at.bofh.it> <fNPdF-6Hu-33@gated-at.bofh.it> <fOctz-4o0-9@gated-at.bofh.it>
+User-Agent: KNode/0.10.4
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289666055.2191.1.camel@neuromancer>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 13, 2010 at 05:34:15PM +0100, Stefan Achatz wrote:
-> Am Samstag, den 13.11.2010, 06:39 -0800 schrieb Greg KH:
-> > On Fri, Nov 12, 2010 at 10:06:34PM -0800, Dmitry Torokhov wrote:
-> > > On Fri, Nov 12, 2010 at 04:52:32PM -0800, Greg KH wrote:
-> > > > On Fri, Nov 12, 2010 at 04:21:45PM -0800, Eric Biederman wrote:
-> > > > > On Fri, Nov 12, 2010 at 10:18 AM, Stefan Achatz <stefan_achatz@web.de> wrote:
-> > > > > > hid-roccat-kone now uses new group functions for creating binary
-> > > > > > sysfs attributes.
-> > > > > 
-> > > > > Looking at this, I have a problem with the way this works.
-> > > > > You are still doing this the hard and racy way.
-> > > > > 
-> > > > > sysfs attributes that are only added when we initialize the hardware and
-> > > > > are only removed when we remove the driver should use the device layer
-> > > > > functions to create their attributes.
-> > > > > 
-> > > > > This achieves two things.  The code is easier to write because there
-> > > > > is less of it.
-> > > > > The notification to user space happens after the attributes appear so
-> > > > > that you don't
-> > > > > have strange hotplug races.
-> > > > > 
-> > > > > If there a chance you can look at implementing this in the simpler
-> > > > > race free way?
-> > > > 
-> > > > Good point, just attach this attribute group to the device and the
-> > > > driver core will automatically create the files for you.
-> > > > 
-> > > 
-> > > Attribute group in device structure is normally owned and managed by
-> > > subsystem core; without additional plumbing drivers should not be
-> > > touching it, at least not normally.
-> > > 
-> > > Plus we do not have binary attribute group in device structure [yet].
-> > 
-> > In thinking about it a bit more, why do you have so many binary
-> > attributes for this driver?  binary sysfs files are rare, so adding a
-> > binary attribute group pointer to the device or driver would just waste
-> > a lot of space that no one else uses.
-> > 
-> > What are these binary files for?  Who uses them?  I don't seem to be
-> > able to find them in the Documentation/ABI directory, or am I missing
-> > something here?
-> 
-> Documentation/ABI/testing/sysfs-driver-hid-roccat-kone
+Mandeep Singh Baines <msb@google.com> wrote:
 
-My apologies, that does look correct, thanks for doing it.
+> We'd like to be able to oom_score_adj a process up/down as its
+> enters/leaves the foreground. Currently, it is not possible to oom_adj
+> down without CAP_SYS_RESOURCE. This patch allows a task to decrease
+> its oom_score_adj back to the value that a CAP_SYS_RESOURCE thread set
+> it or its inherited value at fork. Assuming the thread that has forked
+> it has oom_score_adj of 0, each tab
 
-Yeah, odds are udev wants to see these files when the device shows up so
-we need a way to get them created before the device event is sent out to
-userspace.  So we need to get them assigned to the device or driver
-somehow like the default attribute groups we have today.  Any ideas are
-appreciated.
+process
 
-thanks,
+> could decrease it back from 0 upon 
+> activation unless a CAP_SYS_RESOURCE thread elevated it to something
+> higher.
 
-greg k-h
+
+
