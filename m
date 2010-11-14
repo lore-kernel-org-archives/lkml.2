@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab0KNK4S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 05:56:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56398 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755030Ab0KNK4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 05:56:16 -0500
-Message-ID: <4CDFC04A.8010907@redhat.com>
-Date: Sun, 14 Nov 2010 12:56:10 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1755254Ab0KNLPq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 06:15:46 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:17115 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755100Ab0KNLPp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 06:15:45 -0500
+Date: Sun, 14 Nov 2010 12:03:36 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Mel Gorman <mel@csn.ul.ie>, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] cleanup kswapd()
+In-Reply-To: <20101114180505.BEE2.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.LNX.2.00.1011141202430.3460@swampdragon.chaosbits.net>
+References: <20101114180505.BEE2.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/4] KVM: MMU: notrap it if gpte's reserved is set
-References: <4CDD173E.8010706@cn.fujitsu.com> <4CDD1841.9010300@cn.fujitsu.com>
-In-Reply-To: <4CDD1841.9010300@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/12/2010 12:34 PM, Xiao Guangrong wrote:
-> We can past the page fault to guest directly if gpte's reserved
-> is set
->
+On Sun, 14 Nov 2010, KOSAKI Motohiro wrote:
 
-How can that work? shadow_notrap_nonpresent_pte causes a fault with 
-PFEC.P=PFEC.RSVD=0, while we need PFEC.P=PFEC.RSVD=1.
-
-> Signed-off-by: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
+> 
+> Currently, kswapd() function has deeper nest and it slightly harder to
+> read. cleanup it.
+> 
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > ---
->   arch/x86/kvm/paging_tmpl.h |   10 ++++++----
->   1 files changed, 6 insertions(+), 4 deletions(-)
->
-> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> index 291342d..952357a 100644
-> --- a/arch/x86/kvm/paging_tmpl.h
-> +++ b/arch/x86/kvm/paging_tmpl.h
-> @@ -760,6 +760,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
->   		pt_element_t gpte;
->   		gpa_t pte_gpa;
->   		gfn_t gfn;
-> +		bool gpte_invalid;
->
->   		if (!is_shadow_present_pte(sp->spt[i]))
->   			continue;
-> @@ -771,12 +772,13 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
->   			return -EINVAL;
->
->   		gfn = gpte_to_gfn(gpte);
-> -		if (is_rsvd_bits_set(&vcpu->arch.mmu, gpte, PT_PAGE_TABLE_LEVEL)
-> -		      || gfn != sp->gfns[i] || !is_present_gpte(gpte)
-> -		      || !(gpte&  PT_ACCESSED_MASK)) {
-> +		gpte_invalid = is_present_gpte(gpte) ||
-> +		   is_rsvd_bits_set(&vcpu->arch.mmu, gpte, PT_PAGE_TABLE_LEVEL);
+>  mm/vmscan.c |   71 +++++++++++++++++++++++++++++++---------------------------
+>  1 files changed, 38 insertions(+), 33 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 8cc90d5..82ffe5f 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2364,6 +2364,42 @@ out:
+>  	return sc.nr_reclaimed;
+>  }
+>  
+> +void kswapd_try_to_sleep(pg_data_t *pgdat, int order)
 
-Shouldn't that be &&?
+Shouldn't this be
 
-> +		if (gpte_invalid || gfn != sp->gfns[i] ||
-> +		      !(gpte&  PT_ACCESSED_MASK)) {
->   			u64 nonpresent;
->
-> -			if (is_present_gpte(gpte) || !clear_unsync)
-> +			if (gpte_invalid || !clear_unsync)
->   				nonpresent = shadow_trap_nonpresent_pte;
->   			else
->   				nonpresent = shadow_notrap_nonpresent_pte;
+  static void kswapd_try_to_sleep(pg_data_t *pgdat, int order)
+
+??
 
 
 -- 
-error compiling committee.c: too many arguments to function
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
 
