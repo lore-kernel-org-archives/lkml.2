@@ -1,282 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755572Ab0KNNgA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 08:36:00 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:47172 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab0KNNf5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 08:35:57 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sun, 14 Nov 2010 14:35:40 +0100 (CET)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: Re: [PATCH update 2] firewire: net: throttle TX queue before running
- out of tlabels
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <1289735532.24539.12.camel@maxim-laptop>
-Message-ID: <tkrat.d31902bcd67382cd@s5r6.in-berlin.de>
-References: <tkrat.036c5d10fb83f85d@s5r6.in-berlin.de> 
- <tkrat.39c164e4c52e2fc8@s5r6.in-berlin.de> 
- <tkrat.eaac597cf54bb660@s5r6.in-berlin.de> 
- <tkrat.83117f4523f0d928@s5r6.in-berlin.de> 
- <1289710228.8581.16.camel@maxim-laptop> 
- <4CDFAB10.5050800@s5r6.in-berlin.de>
- <1289735532.24539.12.camel@maxim-laptop>
+	id S1755591Ab0KNNvM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 08:51:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11902 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752611Ab0KNNvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 08:51:12 -0500
+Message-ID: <4CDFE948.4020709@redhat.com>
+Date: Sun, 14 Nov 2010 15:51:04 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+To: Ian Kent <raven@themaw.net>, autofs@linux.kernel.org
+CC: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: autofs4 hang in 2.6.37-rc1
+References: <4CDFDC2B.6040205@redhat.com>
+In-Reply-To: <4CDFDC2B.6040205@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 Nov, Maxim Levitsky wrote:
-> On Sun, 2010-11-14 at 10:25 +0100, Stefan Richter wrote:
->> Maxim Levitsky wrote:
->> > However the 'update 2' (maybe update 1 too, didn't test), lowers
->> > desktop->laptop throughput somewhat.
->> > (250 vs 227 Mbits/s). I tested this many times.
->> > 
->> > Actuall raw troughput possible with UDP stream and ether no throttling
->> > or higher packets in flight count (I tested 50/30), it 280 Mbits/s.
->> 
->> Good, I will test deeper queues with a few different controllers here.  As
->> long as we keep a margin to 64 so that other traffic besides IPover1394 still
->> has a chance to acquire transaction labels, it's OK.
-> Just tested the 'update 2' with 8-16 margin. Gives me ~250 Mbits/s TCP
-> easily, and ~280 Mbit/s UDP. Pretty much the maximum its possible to get
-> out of this hardware.
+On 11/14/2010 02:55 PM, Avi Kivity wrote:
+> A 2.6.37-rc1 (f6614b7bb405a) setup hangs in autofs4:
+>
+> INFO: task automount:10399 blocked for more than 120 seconds.
+> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> automount     D 0000000000000000     0 10399      1 0x00000000
+>  ffff88012a059da8 0000000000000082 0000000000000000 0000000000000000
+>  ffff88012a058010 ffff88012a059fd8 0000000000011800 ffff8801290f2c40
+>  ffff8801290f2fb0 ffff8801290f2fa8 0000000000011800 0000000000011800
+> Call Trace:
+>  [<ffffffff813a3c3c>] __mutex_lock_common+0x126/0x18b
+>  [<ffffffff813a3cb5>] __mutex_lock_slowpath+0x14/0x16
+>  [<ffffffff813a3dbc>] mutex_lock+0x31/0x4b
+>  [<ffffffff811b17f7>] autofs4_root_ioctl+0x28/0x53
+>  [<ffffffff810f5e5c>] do_vfs_ioctl+0x557/0x5bb
+>  [<ffffffff810eca65>] ? sys_newlstat+0x2d/0x38
+>  [<ffffffff810f5f02>] sys_ioctl+0x42/0x65
+>  [<ffffffff81002b42>] system_call_fastpath+0x16/0x1b
+>
+> This is a simple /home automount.  More info on request.
+>
 
-Good, update below.  Tested also with an OS X peer on my side to exclude
-throughput regression.
-
->> > BTW, I still don't understand fully  why my laptop sends only at 180
->> > Mbits/s pretty much always regardless of patches or TCP/UDP.
->> 
->> If it is not CPU bound, then it is because Ricoh did not optimize the AR DMA
->> unit as well as Texas Instruments did.
-> You mean AT, because in the fast case (desktop->laptop), the TI
-> transmits and Ricoh receives. In slow case Ricoh receives and TI
-> transmits.
-
-Yes, I meant to write 'AT'.
-
-> Anyway speeds of new stack beat the old one by significant margin.
-
-Gap count optimization surely plays a big role in this.
-
----- 8< ----
-[PATCH update 3] firewire: net: throttle TX queue before running out of tlabels
-
-This prevents firewire-net from submitting write requests in fast
-succession until failure due to all 64 transaction labels were used up
-for unfinished split transactions.  The netif_stop/wake_queue API is
-used for this purpose.
-
-Without this stop/wake mechanism, datagrams were simply lost whenever
-the tlabel pool was exhausted.  Plus, tlabel exhaustion by firewire-net
-also prevented other unrelated outbound transactions to be initiated.
-
-The chosen queue depth was checked by me to hit the maximum possible
-throughput with an OS X peer whose receive DMA is good enough to never
-reject requests due to busy inbound request FIFO.  Current Linux peers
-show a mixed picture of -5%...+15% change in bandwidth; their current
-bottleneck are RCODE_BUSY situations (fewer or more, depending on TX
-queue depth) due to too small AR buffer in firewire-ohci.
-
-Maxim Levitsky tested this change with similar watermarks with a Linux
-peer and some pending firewire-ohci improvements that address the
-RCODE_BUSY problem and confirmed that these TX queue limits are good.
-
-Note:  This removes some netif_wake_queue from reception code paths.
-They were apparently copy&paste artefacts from a nonsensical
-netif_wake_queue use in the older eth1394 driver.  This belongs only
-into the transmit path.
-
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Tested-by: Maxim Levitsky <maximlevitsky@gmail.com>
----
- drivers/firewire/net.c |   59 ++++++++++++++++++++++++-----------------
- 1 file changed, 35 insertions(+), 24 deletions(-)
-
-Index: b/drivers/firewire/net.c
-===================================================================
---- a/drivers/firewire/net.c
-+++ b/drivers/firewire/net.c
-@@ -28,8 +28,14 @@
- #include <asm/unaligned.h>
- #include <net/arp.h>
- 
--#define FWNET_MAX_FRAGMENTS	25	/* arbitrary limit */
--#define FWNET_ISO_PAGE_COUNT	(PAGE_SIZE < 16 * 1024 ? 4 : 2)
-+/* rx limits */
-+#define FWNET_MAX_FRAGMENTS		30 /* arbitrary, > TX queue depth */
-+#define FWNET_ISO_PAGE_COUNT		(PAGE_SIZE < 16*1024 ? 4 : 2)
-+
-+/* tx limits */
-+#define FWNET_MAX_QUEUED_DATAGRAMS	20 /* < 64 = number of tlabels */
-+#define FWNET_MIN_QUEUED_DATAGRAMS	10 /* should keep AT DMA busy enough */
-+#define FWNET_TX_QUEUE_LEN		FWNET_MAX_QUEUED_DATAGRAMS /* ? */
- 
- #define IEEE1394_BROADCAST_CHANNEL	31
- #define IEEE1394_ALL_NODES		(0xffc0 | 0x003f)
-@@ -641,8 +647,6 @@ static int fwnet_finish_incoming_packet(
- 		net->stats.rx_packets++;
- 		net->stats.rx_bytes += skb->len;
- 	}
--	if (netif_queue_stopped(net))
--		netif_wake_queue(net);
- 
- 	return 0;
- 
-@@ -651,8 +655,6 @@ static int fwnet_finish_incoming_packet(
- 	net->stats.rx_dropped++;
- 
- 	dev_kfree_skb_any(skb);
--	if (netif_queue_stopped(net))
--		netif_wake_queue(net);
- 
- 	return -ENOENT;
- }
-@@ -784,15 +786,10 @@ static int fwnet_incoming_packet(struct 
- 	 * Datagram is not complete, we're done for the
- 	 * moment.
- 	 */
--	spin_unlock_irqrestore(&dev->lock, flags);
--
--	return 0;
-+	retval = 0;
-  fail:
- 	spin_unlock_irqrestore(&dev->lock, flags);
- 
--	if (netif_queue_stopped(net))
--		netif_wake_queue(net);
--
- 	return retval;
- }
- 
-@@ -892,6 +889,13 @@ static void fwnet_free_ptask(struct fwne
- 	kmem_cache_free(fwnet_packet_task_cache, ptask);
- }
- 
-+/* Caller must hold dev->lock. */
-+static void dec_queued_datagrams(struct fwnet_device *dev)
-+{
-+	if (--dev->queued_datagrams == FWNET_MIN_QUEUED_DATAGRAMS)
-+		netif_wake_queue(dev->netdev);
-+}
-+
- static int fwnet_send_packet(struct fwnet_packet_task *ptask);
- 
- static void fwnet_transmit_packet_done(struct fwnet_packet_task *ptask)
-@@ -908,7 +912,7 @@ static void fwnet_transmit_packet_done(s
- 	/* Check whether we or the networking TX soft-IRQ is last user. */
- 	free = (ptask->outstanding_pkts == 0 && ptask->enqueued);
- 	if (free)
--		dev->queued_datagrams--;
-+		dec_queued_datagrams(dev);
- 
- 	if (ptask->outstanding_pkts == 0) {
- 		dev->netdev->stats.tx_packets++;
-@@ -979,7 +983,7 @@ static void fwnet_transmit_packet_failed
- 	/* Check whether we or the networking TX soft-IRQ is last user. */
- 	free = ptask->enqueued;
- 	if (free)
--		dev->queued_datagrams--;
-+		dec_queued_datagrams(dev);
- 
- 	dev->netdev->stats.tx_dropped++;
- 	dev->netdev->stats.tx_errors++;
-@@ -1064,7 +1068,7 @@ static int fwnet_send_packet(struct fwne
- 		if (!free)
- 			ptask->enqueued = true;
- 		else
--			dev->queued_datagrams--;
-+			dec_queued_datagrams(dev);
- 
- 		spin_unlock_irqrestore(&dev->lock, flags);
- 
-@@ -1083,7 +1087,7 @@ static int fwnet_send_packet(struct fwne
- 	if (!free)
- 		ptask->enqueued = true;
- 	else
--		dev->queued_datagrams--;
-+		dec_queued_datagrams(dev);
- 
- 	spin_unlock_irqrestore(&dev->lock, flags);
- 
-@@ -1249,6 +1253,15 @@ static netdev_tx_t fwnet_tx(struct sk_bu
- 	struct fwnet_peer *peer;
- 	unsigned long flags;
- 
-+	spin_lock_irqsave(&dev->lock, flags);
-+
-+	/* Can this happen? */
-+	if (netif_queue_stopped(dev->netdev)) {
-+		spin_unlock_irqrestore(&dev->lock, flags);
-+
-+		return NETDEV_TX_BUSY;
-+	}
-+
- 	ptask = kmem_cache_alloc(fwnet_packet_task_cache, GFP_ATOMIC);
- 	if (ptask == NULL)
- 		goto fail;
-@@ -1267,9 +1280,6 @@ static netdev_tx_t fwnet_tx(struct sk_bu
- 	proto = hdr_buf.h_proto;
- 	dg_size = skb->len;
- 
--	/* serialize access to peer, including peer->datagram_label */
--	spin_lock_irqsave(&dev->lock, flags);
--
- 	/*
- 	 * Set the transmission type for the packet.  ARP packets and IP
- 	 * broadcast packets are sent via GASP.
-@@ -1291,7 +1301,7 @@ static netdev_tx_t fwnet_tx(struct sk_bu
- 
- 		peer = fwnet_peer_find_by_guid(dev, be64_to_cpu(guid));
- 		if (!peer || peer->fifo == FWNET_NO_FIFO_ADDR)
--			goto fail_unlock;
-+			goto fail;
- 
- 		generation         = peer->generation;
- 		dest_node          = peer->node_id;
-@@ -1345,7 +1355,8 @@ static netdev_tx_t fwnet_tx(struct sk_bu
- 		max_payload += RFC2374_FRAG_HDR_SIZE;
- 	}
- 
--	dev->queued_datagrams++;
-+	if (++dev->queued_datagrams == FWNET_MAX_QUEUED_DATAGRAMS)
-+		netif_stop_queue(dev->netdev);
- 
- 	spin_unlock_irqrestore(&dev->lock, flags);
- 
-@@ -1356,9 +1367,9 @@ static netdev_tx_t fwnet_tx(struct sk_bu
- 
- 	return NETDEV_TX_OK;
- 
-- fail_unlock:
--	spin_unlock_irqrestore(&dev->lock, flags);
-  fail:
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+
- 	if (ptask)
- 		kmem_cache_free(fwnet_packet_task_cache, ptask);
- 
-@@ -1415,7 +1426,7 @@ static void fwnet_init_dev(struct net_de
- 	net->addr_len		= FWNET_ALEN;
- 	net->hard_header_len	= FWNET_HLEN;
- 	net->type		= ARPHRD_IEEE1394;
--	net->tx_queue_len	= 10;
-+	net->tx_queue_len	= FWNET_TX_QUEUE_LEN;
- 	SET_ETHTOOL_OPS(net, &fwnet_ethtool_ops);
- }
- 
+Likely culprit:
 
 
+automount     S ffff88012a28a680     0   399      1 0x00000000
+  ffff88012a07bd08 0000000000000082 0000000000000000 0000000000000000
+  ffff88012a07a010 ffff88012a07bfd8 0000000000011800 ffff88012693c260
+  ffff88012693c5d0 ffff88012693c5c8 0000000000011800 0000000000011800
+Call Trace:
+  [<ffffffff81056197>] ? prepare_to_wait+0x67/0x74
+  [<ffffffff811b23eb>] autofs4_wait+0x5a4/0x6d5
+  [<ffffffff81055f25>] ? autoremove_wake_function+0x0/0x34
+  [<ffffffff811b2ba5>] autofs4_do_expire_multi+0x5b/0xa3
+  [<ffffffff811b2c39>] autofs4_expire_multi+0x4c/0x54
+  [<ffffffff811b1750>] autofs4_root_ioctl_unlocked+0x23e/0x252
+  [<ffffffff811b1808>] autofs4_root_ioctl+0x39/0x53
+  [<ffffffff810f5e5c>] do_vfs_ioctl+0x557/0x5bb
+  [<ffffffff810ca644>] ? remove_vma+0x6e/0x76
+  [<ffffffff810cb6a2>] ? do_munmap+0x31c/0x33e
+  [<ffffffff810f5f02>] sys_ioctl+0x42/0x65
+  [<ffffffff81002b42>] system_call_fastpath+0x16/0x1b
+
+
+Shouldn't we drop autofs4_ioctl_mutex while we wait?
 
 -- 
-Stefan Richter
--=====-==-=- =-== -===-
-http://arcgraph.de/sr/
+error compiling committee.c: too many arguments to function
 
