@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab0KNSBw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 13:01:52 -0500
-Received: from fisica.dfte.ufrn.br ([200.19.173.16]:46624 "EHLO
-	fisica.dfte.ufrn.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756434Ab0KNSBv (ORCPT
+	id S1756698Ab0KNSEk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 13:04:40 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56281 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756434Ab0KNSEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 13:01:51 -0500
-Message-ID: <4b5c66cf236c0eb351906d06d1b32bf8.squirrel@webmail.dfte.ufrn.br>
-Date: Sun, 14 Nov 2010 12:42:40 -0300 (BRT)
-Subject: Attention Please,  Investment Initiative From Jozef Ruud Roosevelt.
-From: "Jozef Ruud Roosevelt" <jozefr@live.co.uk>
-Reply-To: jozef.rosevelt@live.co.uk
-User-Agent: SquirrelMail/1.4.15
+	Sun, 14 Nov 2010 13:04:39 -0500
+Message-ID: <4CE02422.7050306@kernel.org>
+Date: Sun, 14 Nov 2010 10:02:10 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+To: Wu Fengguang <fengguang.wu@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Nikanth Karthikesan <knikanth@suse.de>,
+        David Rientjes <rientjes@google.com>,
+        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
+        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Subject: Re: [PATCH] x86, acpi: Handle all SRAT cpu entries even have cpu
+ num limitation
+References: <20101111124015.GA9706@localhost> <1289480656.2084.80.camel@laptop> <20101113084018.GA23098@localhost> <1289644224.2084.521.camel@laptop> <20101113120030.GA31517@localhost> <1289653078.2084.675.camel@laptop> <20101113131042.GA5522@localhost> <4CDEE314.6090107@kernel.org> <20101113235746.GA9458@localhost> <4CDF3DA1.2090806@kernel.org> <20101114173208.GA23017@localhost>
+In-Reply-To: <20101114173208.GA23017@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/14/2010 09:32 AM, Wu Fengguang wrote:
+> Hi,
+> 
+> I just found another problem. When passing "mem=256" to 2.6.37-rc1,
+> it dies hard early (not able to print any boot log). With this patch
+> applied, it's a bit better: it shows a kernel panic, but still dies
+> hard (not able to reboot with "panic=10").
 
+do you mean mem=256M ?
 
-
-Attention Please,
-
-I am Jozef Ruud Roosevelt, a Dutch National presently residing in
-Newcastle United Kingdom, I have a proposition Involving an investment
-initiative in your country economy  to discuss with you, It will be of
-mutual benefit to both of us, and I believe we can handle it together,
-once we have a common understanding and mutual cooperation in the
-execution of the modalities. I work with Abn Amro Bank as an auditor.
-
-Should you be interested, please e-mail back to me through this email
-address: (jozef.rosevelt@live.co.uk) or you can give me a call (+44 702
-4056 175).
-I await your earliest response.
-
-Yours Sincerely,
-Jozef Ruud Roosevel.
-
+Thanks
+	Yinghai
