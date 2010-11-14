@@ -1,56 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031Ab0KNWVE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 17:21:04 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:57840 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756076Ab0KNWVD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 17:21:03 -0500
-Date: Mon, 15 Nov 2010 09:20:50 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: failed to fetch the davinci tree
-Message-Id: <20101115092050.46b514fb.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__15_Nov_2010_09_20_50_+1100_+oJUz4NtVRjrvvZb"
+	id S932384Ab0KNWxY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 17:53:24 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:27491 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932312Ab0KNWxW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 17:53:22 -0500
+Date: Sun, 14 Nov 2010 23:41:10 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: linux-scsi@vger.kernel.org
+cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH][resend][SCSI] Reduce sequential pointer derefs in scsi_error.c
+ and reduce size as well
+Message-ID: <alpine.LNX.2.00.1011142323230.1253@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__15_Nov_2010_09_20_50_+1100_+oJUz4NtVRjrvvZb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a resend of a (slightly updated) patch that was originally 
+submitted on
+  24 April 2008
+  27 April 2008
 
-Hi Kevin,
 
-Trying to fetch the davinci tree this morning produced this error:
+This patch reduces the number of sequential pointer derefs in drivers/scsi/scsi_error.c
 
-fatal: Couldn't find remote ref refs/heads/davinci-next
+The bennefits are:
 
-I will use the tree from next-20101112 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+ - makes the code easier to read. Lots of sequential derefs of the same 
+   pointers is not easy on the eye.
 
---Signature=_Mon__15_Nov_2010_09_20_50_+1100_+oJUz4NtVRjrvvZb
-Content-Type: application/pgp-signature
+ - theoretically at least, just dereferencing the pointers once can allow 
+   the compiler to generally slightly faster code, so in theory this could 
+   also be a micro speed optimization.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+ - reduces size
 
-iQEcBAEBAgAGBQJM4GDCAAoJEDMEi1NhKgbsRKsH/31gV2LhSBIR/JDjQqXWQrYj
-F6GCkfyKABtGtNgLE/GfbppQ0t1JvwD68nXY5ebL4Bo00ZTkGniCt1mSckuUDqyE
-h2QA/XGP5oNvAmKmaituifMy3OcvIrlbvNEI0az9TdiTCfXo0GMZkQBNNpHejSmi
-oMECPchawvvP+dtyePwxtrT5OpzdII5QL4SEQ2zsnMjR52ypp6BlFmeEWohnpovS
-YyxojpG0RIU7xCZdC76OCmQng3wdeZXWqmRLvF3tHdIGtODtpIsbB0mGJ84vwE2D
-EheVOmOzuGKG0bMtWBJwjiviiaM2ToKplTI9fSi80w7wnvoPxf0KRR5h06nlx/8=
-=yPIv
------END PGP SIGNATURE-----
+   before:
+      text    data     bss     dec     hex filename
+     18829     128    4728   23685    5c85 drivers/scsi/scsi_error.o
+ 
+   after:
+      text    data     bss     dec     hex filename
+     18775     128    4728   23631    5c4f drivers/scsi/scsi_error.o
 
---Signature=_Mon__15_Nov_2010_09_20_50_+1100_+oJUz4NtVRjrvvZb--
+Please consider applying.
+
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ scsi_error.c |   61 +++++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 35 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
+index f3cf924..75a68a0 100644
+--- a/drivers/scsi/scsi_error.c
++++ b/drivers/scsi/scsi_error.c
+@@ -129,14 +129,15 @@ enum blk_eh_timer_return scsi_times_out(struct request *req)
+ {
+ 	struct scsi_cmnd *scmd = req->special;
+ 	enum blk_eh_timer_return rtn = BLK_EH_NOT_HANDLED;
++	struct Scsi_Host *host = scmd->device->host;
+ 
+ 	trace_scsi_dispatch_cmd_timeout(scmd);
+ 	scsi_log_completion(scmd, TIMEOUT_ERROR);
+ 
+-	if (scmd->device->host->transportt->eh_timed_out)
+-		rtn = scmd->device->host->transportt->eh_timed_out(scmd);
+-	else if (scmd->device->host->hostt->eh_timed_out)
+-		rtn = scmd->device->host->hostt->eh_timed_out(scmd);
++	if (host->transportt->eh_timed_out)
++		rtn = host->transportt->eh_timed_out(scmd);
++	else if (host->hostt->eh_timed_out)
++		rtn = host->hostt->eh_timed_out(scmd);
+ 
+ 	if (unlikely(rtn == BLK_EH_NOT_HANDLED &&
+ 		     !scsi_eh_scmd_add(scmd, SCSI_EH_CANCEL_CMD))) {
+@@ -507,22 +508,23 @@ static int scsi_try_host_reset(struct scsi_cmnd *scmd)
+ {
+ 	unsigned long flags;
+ 	int rtn;
++	struct Scsi_Host *host = scmd->device->host;
++	struct scsi_host_template *hostt = host->hostt;
+ 
+ 	SCSI_LOG_ERROR_RECOVERY(3, printk("%s: Snd Host RST\n",
+ 					  __func__));
+ 
+-	if (!scmd->device->host->hostt->eh_host_reset_handler)
++	if (!hostt->eh_host_reset_handler)
+ 		return FAILED;
+ 
+-	rtn = scmd->device->host->hostt->eh_host_reset_handler(scmd);
++	rtn = hostt->eh_host_reset_handler(scmd);
+ 
+ 	if (rtn == SUCCESS) {
+-		if (!scmd->device->host->hostt->skip_settle_delay)
++		if (!hostt->skip_settle_delay)
+ 			ssleep(HOST_RESET_SETTLE_TIME);
+-		spin_lock_irqsave(scmd->device->host->host_lock, flags);
+-		scsi_report_bus_reset(scmd->device->host,
+-				      scmd_channel(scmd));
+-		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
++		spin_lock_irqsave(host->host_lock, flags);
++		scsi_report_bus_reset(host, scmd_channel(scmd));
++		spin_unlock_irqrestore(host->host_lock, flags);
+ 	}
+ 
+ 	return rtn;
+@@ -536,22 +538,23 @@ static int scsi_try_bus_reset(struct scsi_cmnd *scmd)
+ {
+ 	unsigned long flags;
+ 	int rtn;
++	struct Scsi_Host *host = scmd->device->host;
++	struct scsi_host_template *hostt = host->hostt;
+ 
+ 	SCSI_LOG_ERROR_RECOVERY(3, printk("%s: Snd Bus RST\n",
+ 					  __func__));
+ 
+-	if (!scmd->device->host->hostt->eh_bus_reset_handler)
++	if (!hostt->eh_bus_reset_handler)
+ 		return FAILED;
+ 
+-	rtn = scmd->device->host->hostt->eh_bus_reset_handler(scmd);
++	rtn = hostt->eh_bus_reset_handler(scmd);
+ 
+ 	if (rtn == SUCCESS) {
+-		if (!scmd->device->host->hostt->skip_settle_delay)
++		if (!hostt->skip_settle_delay)
+ 			ssleep(BUS_RESET_SETTLE_TIME);
+-		spin_lock_irqsave(scmd->device->host->host_lock, flags);
+-		scsi_report_bus_reset(scmd->device->host,
+-				      scmd_channel(scmd));
+-		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
++		spin_lock_irqsave(host->host_lock, flags);
++		scsi_report_bus_reset(host, scmd_channel(scmd));
++		spin_unlock_irqrestore(host->host_lock, flags);
+ 	}
+ 
+ 	return rtn;
+@@ -577,16 +580,18 @@ static int scsi_try_target_reset(struct scsi_cmnd *scmd)
+ {
+ 	unsigned long flags;
+ 	int rtn;
++	struct Scsi_Host *host = scmd->device->host;
++	struct scsi_host_template *hostt = host->hostt;
+ 
+-	if (!scmd->device->host->hostt->eh_target_reset_handler)
++	if (!hostt->eh_target_reset_handler)
+ 		return FAILED;
+ 
+-	rtn = scmd->device->host->hostt->eh_target_reset_handler(scmd);
++	rtn = hostt->eh_target_reset_handler(scmd);
+ 	if (rtn == SUCCESS) {
+-		spin_lock_irqsave(scmd->device->host->host_lock, flags);
++		spin_lock_irqsave(host->host_lock, flags);
+ 		__starget_for_each_device(scsi_target(scmd->device), NULL,
+ 					  __scsi_report_device_reset);
+-		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
++		spin_unlock_irqrestore(host->host_lock, flags);
+ 	}
+ 
+ 	return rtn;
+@@ -605,11 +610,12 @@ static int scsi_try_target_reset(struct scsi_cmnd *scmd)
+ static int scsi_try_bus_device_reset(struct scsi_cmnd *scmd)
+ {
+ 	int rtn;
++	struct scsi_host_template *hostt = scmd->device->host->hostt;
+ 
+-	if (!scmd->device->host->hostt->eh_device_reset_handler)
++	if (!hostt->eh_device_reset_handler)
+ 		return FAILED;
+ 
+-	rtn = scmd->device->host->hostt->eh_device_reset_handler(scmd);
++	rtn = hostt->eh_device_reset_handler(scmd);
+ 	if (rtn == SUCCESS)
+ 		__scsi_report_device_reset(scmd->device, NULL);
+ 	return rtn;
+@@ -617,10 +623,13 @@ static int scsi_try_bus_device_reset(struct scsi_cmnd *scmd)
+ 
+ static int __scsi_try_to_abort_cmd(struct scsi_cmnd *scmd)
+ {
+-	if (!scmd->device->host->hostt->eh_abort_handler)
++	int (*eh_abort_handler)(struct scsi_cmnd *) =
++		scmd->device->host->hostt->eh_abort_handler;
++
++	if (!eh_abort_handler)
+ 		return FAILED;
+ 
+-	return scmd->device->host->hostt->eh_abort_handler(scmd);
++	return eh_abort_handler(scmd);
+ }
+ 
+ /**
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
