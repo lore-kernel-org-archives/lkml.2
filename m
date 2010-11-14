@@ -1,114 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab0KNJPS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 04:15:18 -0500
-Received: from ms01.sssup.it ([193.205.80.99]:60925 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754330Ab0KNJPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 04:15:14 -0500
-Subject: Re: [RFC][PATCH 07/22] sched: SCHED_DEADLINE push and pull logic
-From: Raistlin <raistlin@linux.it>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1289578673.2084.314.camel@laptop>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333935.8661.148.camel@Palantir>  <1289578673.2084.314.camel@laptop>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-zT/FI6JcXiYIgMtKP8Ww"
-Date: Sun, 14 Nov 2010 10:14:59 +0100
-Message-ID: <1289726099.6632.53.camel@Palantir>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754766Ab0KNJSr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 04:18:47 -0500
+Received: from fmmailgate03.web.de ([217.72.192.234]:36464 "EHLO
+	fmmailgate03.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754330Ab0KNJSp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 04:18:45 -0500
+Message-ID: <4CDFA96D.1060301@web.de>
+Date: Sun, 14 Nov 2010 10:18:37 +0100
+From: Jan Kiszka <jan.kiszka@web.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+MIME-Version: 1.0
+To: Sheng Yang <sheng@linux.intel.com>, David Woodhouse <dwmw2@infradead.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kvm <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        iommu@lists.linux-foundation.org
+Subject: Re: [PATCH] intel-iommu: Fix use after release during device attach
+References: <4CCFB84F.6050102@web.de> <201011021531.22886.sheng@linux.intel.com>
+In-Reply-To: <201011021531.22886.sheng@linux.intel.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig5B18957E2AC8B8658A10647B"
+X-Provags-ID: V01U2FsdGVkX1+nnZjB7xC+YFvAhXUzYSW1vASZzmVovUZUPv8Y
+	qJQNyJDBzH3j6GsQCZR8EAbyhlkxBQ3jEt2ZFTzSIiS1pEy0C9
+	l9u0mGUIU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-zT/FI6JcXiYIgMtKP8Ww
-Content-Type: text/plain; charset="UTF-8"
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig5B18957E2AC8B8658A10647B
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: quoted-printable
 
-On Fri, 2010-11-12 at 17:17 +0100, Peter Zijlstra wrote:
-> On Fri, 2010-10-29 at 08:32 +0200, Raistlin wrote:
-> > Add dynamic migrations to SCHED_DEADLINE, so that tasks can
-> > be moved among CPUs when necessary. It is also possible to bind a
-> > task to a (set of) CPU(s), thus restricting its capability of
-> > migrating, or forbidding migrations at all.
-> >=20
-> > The very same approach used in sched_rt is utilised:
-> >  - -deadline tasks are kept into CPU-specific runqueues,
-> >  - -deadline tasks are migrated among runqueues to achieve the
-> >    following:
-> >     * on an M-CPU system the M earliest deadline ready tasks
-> >       are always running;
-> >     * affinity/cpusets settings of all the -deadline tasks is
-> >       always respected.=20
+Am 02.11.2010 08:31, Sheng Yang wrote:
+> On Tuesday 02 November 2010 15:05:51 Jan Kiszka wrote:
+>> From: Jan Kiszka <jan.kiszka@siemens.com>
+>>
+>> Obtail the new pgd pointer before releasing the page containing this
+>> value.
+>>
+>> Signed-off-by: Jan Kiszka <jan.kiszka@siemens.com>
+>> ---
+>>
+>> Who is taking care of this? The kvm tree?
+>>
+>>  drivers/pci/intel-iommu.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
+>> index 4789f8e..35463dd 100644
+>> --- a/drivers/pci/intel-iommu.c
+>> +++ b/drivers/pci/intel-iommu.c
+>> @@ -3627,9 +3627,9 @@ static int intel_iommu_attach_device(struct
+>> iommu_domain *domain,
+>>
+>>  		pte =3D dmar_domain->pgd;
+>>  		if (dma_pte_present(pte)) {
+>> -			free_pgtable_page(dmar_domain->pgd);
+>>  			dmar_domain->pgd =3D (struct dma_pte *)
+>>  				phys_to_virt(dma_pte_addr(pte));
+>> +			free_pgtable_page(pte);
+>>  		}
+>>  		dmar_domain->agaw--;
+>>  	}
 >=20
-> I haven't fully digested the patch, I keep getting side-tracked and its
-> a large patch..=20
->
-BTW, I was thinking about your suggestion of adding a *debugging* knob
-for achieving a "lock everything while I'm migrating" behaviour... :-)
+> Reviewed-by: Sheng Yang <sheng@linux.intel.com>
+>=20
+> CC iommu mailing list and David.
 
-Something like locking the root_domain during pushes and pulls won't
-probably work, since both of them do a double_lock_balance, taking two
-rq, which might race with this new "global" lock.
-Something like we (CPU#1) hold rq1->lock, we take rd->lock, and then we
-try to take rq2->lock. CPU#2 holds rq2->lock and try to take rd->lock.
-Stuck! :-(
-This should be possible if both CPU#1 and CPU#2 are into a push or a
-pull which, on each one, involves some task on the other. Do you agree,
-or I'm missing/mistaking something? :-)
+Ping...
 
-Something we can probably do is locking the root_domain for
-_each_and_every_ scheduling decision, having all the rq->locks nesting
-inside our new root_domain->lock. This would emulate some sort of unique
-global rq implementation, since also local decisions on a CPU will
-affect all the others, as if they were sharing a single rq... But it's
-going to be very slow on large machines (but I guess we can afford
-that... It's debugging!), and will probably affect other scheduling
-class.
-I'm not sure we want the latter... But maybe it could be useful for
-debugging others too (at least for FIFO/RR, it should be!).
+I think this fix also qualifies for stable (.35 and .36).
 
-Let me know what you think...
+Jan
 
-Thanks and Regards,
-Dario
 
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
 
-http://blog.linux.it/raistlin / raistlin@ekiga.net /
-dario.faggioli@jabber.org
-
---=-zT/FI6JcXiYIgMtKP8Ww
+--------------enig5B18957E2AC8B8658A10647B
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v2.0.15 (GNU/Linux)
+Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
 
-iEYEABECAAYFAkzfqJMACgkQk4XaBE3IOsRUHACfUpeO2hGrr4/bjbgMVmsYj9V0
-IPkAoJDmLolZ4ZM7IvNMr0GR5144EJAl
-=uAqF
+iEYEARECAAYFAkzfqXQACgkQitSsb3rl5xQ0nwCgwqR+xLqadCpFKJq9IutkdEaG
+hh0AniOLfRH8w3Uy94fnT8VT+OE+Xpem
+=gI8i
 -----END PGP SIGNATURE-----
 
---=-zT/FI6JcXiYIgMtKP8Ww--
-
+--------------enig5B18957E2AC8B8658A10647B--
