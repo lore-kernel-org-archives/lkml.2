@@ -1,129 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756814Ab0KNSdL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 13:33:11 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59350 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756487Ab0KNSdJ (ORCPT
+	id S1756886Ab0KNTLJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 14:11:09 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55134 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756829Ab0KNTLI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 13:33:09 -0500
+	Sun, 14 Nov 2010 14:11:08 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ft85UTY7OEoYqKwP3GXokrDHOcYQ28uUnNtl6DBFWBs74lQz4aoC3YcdBphiC4tNh1
-         6MXSpEbbKkvuEm0ZISPdRyNbZJmCIzBMwkZaVGYbbiH8tKKegGTvfDm9sNk5d9SMQGJG
-         kCdrgDv4jfEFvWsCe6ThQh5W/Yseaus6WvJC0=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ndW0X2QXKo82CKXu004wV1gpK9dAR8p4JMmtsrkCj/cndtAt3Ks1GPUGKm43TUO5wg
+         VodOA7kHEe71XmSjn2kaWTcsba01tFIoqkzJw7Yyd9ENvKIX8Ys+WeMkDY0IpvwvqkSJ
+         o90f8OYczxSjhXsWmLf4HMtAel0Nw/phvMVPE=
 MIME-Version: 1.0
-In-Reply-To: <1289725175.2743.65.camel@edumazet-laptop>
-References: <28d666269c390965f1a4edca42f93c12@localhost>
-	<1289725175.2743.65.camel@edumazet-laptop>
-Date: Sun, 14 Nov 2010 10:33:06 -0800
-Message-ID: <AANLkTik4PLga8mX73c8iONPeOtpDiuDhfu3xiPmF07jC@mail.gmail.com>
-Subject: Re: [PATCH/RFC] netfilter: nf_conntrack_sip: Handle quirky Cisco phones
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1289756161.2814.29.camel@zim>
+References: <20101104041236.GA9389@helgaas.com>
+	<1288937844.3234.1.camel@edumazet-laptop>
+	<1289500084.2698.12.camel@zim>
+	<201011121152.30204.knikanth@suse.de>
+	<1289756161.2814.29.camel@zim>
+Date: Sun, 14 Nov 2010 11:11:05 -0800
+X-Google-Sender-Auth: 6ldcOA4Oy0CXAewy-SxPNIfxtE8
+Message-ID: <AANLkTikUnLc8L_0+CQOwPgr-oifws=sqnFPxWz46MTCi@mail.gmail.com>
+Subject: Re: divide error in select_task_rq_fair()
+From: Yinghai Lu <yinghai@kernel.org>
+To: Myron Stowe <myron.stowe@hp.com>
+Cc: Nikanth Karthikesan <knikanth@suse.de>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Bjorn Helgaas <bjorn.helgaas@hp.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
+        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+        linux-kernel@vger.kernel.org, rjenties@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 12:59 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> I would like to get an exact SIP exchange to make sure their is not
-> another way to handle this without adding a "Cisco" string somewhere...
+On Sun, Nov 14, 2010 at 9:36 AM, Myron Stowe <myron.stowe@hp.com> wrote:
 >
-> Please provide a pcap or tcpdump -A
+> I got the same divide error with this latest patch (see attachment).  If
+> I revert commit 50f2d7f682f9, the platform boots successfully.
 
-Existing nf_nat_sip: phone sends unauthenticated REGISTER requests
-over and over again, because it is not seeing the replies sent back to
-port 50070:
+please check patch in
+http://lkml.org/lkml/2010/11/13/181
 
-10:05:53.496479 IP 192.168.2.28.50070 > 67.215.241.250.5060: SIP, length: 723
-E`...[..@.r.....C...........REGISTER sip:losangeles.voip.ms SIP/2.0
-Via: SIP/2.0/
+BTW, you also need to ask your BIOS guys to fix the SRAT table.
+If you only have 128 cpu entries in MADT, SRAT table should have 128
+cpu entries instead of 256 cpu entries
+otherwise, RHEL 5.5 could have problem. it will throw away last cpu
+entry in SRAT,
+ (NR_CPUS is 255..., and last entry still could point the right cpu in MADT)
+Also BIOS should keep cpu entries in SRAT have same order to that in MADT.
 
-10:05:53.587370 IP 67.215.241.250.5060 > 192.168.2.28.50070: SIP, length: 486
-E.......3..fC...............SIP/2.0 100 Trying
-Via: SIP/2.0/UDP 192.168.2.28:5060
+Thanks
 
-10:05:53.587807 IP 67.215.241.250.5060 > 192.168.2.28.50070: SIP, length: 550
-E..B....3..%C...............SIP/2.0 401 Unauthorized
-Via: SIP/2.0/UDP 192.168.2.2
-
-10:05:57.496541 IP 192.168.2.28.50070 > 67.215.241.250.5060: SIP, length: 723
-E`...\..@.r.....C...........REGISTER sip:losangeles.voip.ms SIP/2.0
-Via: SIP/2.0/
-
-10:05:57.526716 IP 67.215.241.250.5060 > 192.168.2.28.50070: SIP, length: 486
-E.......3..dC...............SIP/2.0 100 Trying
-Via: SIP/2.0/UDP 192.168.2.28:5060
-
-10:05:57.527162 IP 67.215.241.250.5060 > 192.168.2.28.50070: SIP, length: 550
-E..B....3..#C...............SIP/2.0 401 Unauthorized
-Via: SIP/2.0/UDP 192.168.2.2
-
-10:06:01.486821 IP 192.168.2.28.50070 > 67.215.241.250.5060: SIP, length: 723
-E`...]..@.r.....C...........REGISTER sip:losangeles.voip.ms SIP/2.0
-Via: SIP/2.0/
-
-10:06:01.515611 IP 67.215.241.250.5060 > 192.168.2.28.50070: SIP, length: 486
-E.......3..bC...............SIP/2.0 100 Trying
-Via: SIP/2.0/UDP 192.168.2.28:5060
-
-10:06:01.516024 IP 67.215.241.250.5060 > 192.168.2.28.50070: SIP, length: 550
-E..B....3..!C...............SIP/2.0 401 Unauthorized
-Via: SIP/2.0/UDP 192.168.2.2
-
-... continues forever ...
-
-
-Patched nf_nat_sip: router sends the replies back to port 5060, so the
-phone is now able to register itself and make calls:
-
-10:09:46.221631 IP 192.168.2.28.50618 > 67.215.241.250.5060: SIP, length: 723
-E`...G..@.p.....C...........REGISTER sip:losangeles.voip.ms SIP/2.0
-Via: SIP/2.0/
-
-10:09:46.253052 IP 67.215.241.250.5060 > 192.168.2.28.5060: SIP, length: 491
-E....+..4..$C...............SIP/2.0 100 Trying
-Via: SIP/2.0/UDP 192.168.2.28:5060
-
-10:09:46.253472 IP 67.215.241.250.5060 > 192.168.2.28.5060: SIP, length: 550
-E..B.,..4...C...............SIP/2.0 401 Unauthorized
-Via: SIP/2.0/UDP 192.168.2.2
-
-10:09:46.261602 IP 192.168.2.28.50618 > 67.215.241.250.5060: SIP, length: 900
-E`...H..@.p.....C...........REGISTER sip:losangeles.voip.ms SIP/2.0
-Via: SIP/2.0/
-
-10:09:46.290211 IP 67.215.241.250.5060 > 192.168.2.28.5060: SIP, length: 491
-E....-..4.."C...............SIP/2.0 100 Trying
-Via: SIP/2.0/UDP 192.168.2.28:5060
-
-10:09:46.295041 IP 67.215.241.250.5060 > 192.168.2.28.5060: SIP, length: 579
-E.._....4...C............K..SIP/2.0 200 OK
-Via: SIP/2.0/UDP 192.168.2.28:5060;bra
-
-
-BTW, I thought of two possible issues with the original patch:
-
-1) Might need to call skb_make_writable() prior to modifying the
-packet.  Presumably the second invocation inside
-nf_nat_mangle_udp_packet() will have no effect.
-
-(Is there a cleaner way to mangle just the port number?  Most of the
-utility functions only help with modifying the data area.)
-
-2) I should probably be checking to make sure request == 0 before
-mangling the packet.  The current behavior is harmless if the SIP
-proxy is on port 5060, but that might not always be the case.
-
-I can roll these, along with any other suggestions, into v2.
+Yinghai
