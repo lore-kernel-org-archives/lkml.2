@@ -1,28 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839Ab0KNJue (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 04:50:34 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54738 "EHLO mx2.mail.elte.hu"
+	id S1754857Ab0KNJ4a (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 04:56:30 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:46609 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752444Ab0KNJuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 04:50:32 -0500
-Date: Sun, 14 Nov 2010 10:50:13 +0100
+	id S1754424Ab0KNJ41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 04:56:27 -0500
+Date: Sun, 14 Nov 2010 10:56:12 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Milton Miller <miltonm@bga.com>, Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] x86: OLPC: speed up device tree creation during boot
- (v2)
-Message-ID: <20101114095013.GB24206@elte.hu>
-References: <20101111214546.4e573cad@queued.net>
- <reply-olpc-3-v2@mdm.bga.com>
- <20101112002704.50c629e2@queued.net>
+To: matthieu castet <castet.matthieu@free.fr>
+Cc: Kees Cook <kees.cook@canonical.com>, Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Security] proactive defense: using read-only memory, RO/NX
+ modules
+Message-ID: <20101114095612.GA27411@elte.hu>
+References: <20101107193520.GO5327@outflux.net>
+ <20101108061324.GA30540@elte.hu>
+ <20101108214228.GQ5876@outflux.net>
+ <20101110090415.GC8370@elte.hu>
+ <4CDEEE33.3050106@free.fr>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101112002704.50c629e2@queued.net>
+In-Reply-To: <4CDEEE33.3050106@free.fr>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -36,33 +40,16 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Andres Salomon <dilinger@queued.net> wrote:
+* matthieu castet <castet.matthieu@free.fr> wrote:
 
-> On Fri, 12 Nov 2010 01:48:30 -0600
-> Milton Miller <miltonm@bga.com> wrote:
-> 
-> > On Thu, 11 Nov 2010 around 21:45:46 -0800, Andres Salomon wrote:
-> > > diff --git a/arch/x86/platform/olpc/olpc_dt.c
-> > > b/arch/x86/platform/olpc/olpc_dt.c index b8c8ff9..0ab824d 100644
-> > > --- a/arch/x86/platform/olpc/olpc_dt.c
-> > > +++ b/arch/x86/platform/olpc/olpc_dt.c
-> > > @@ -126,14 +126,31 @@  static unsigned int prom_early_allocated
-> > > __initdata; 
-> > >  void * __init prom_early_alloc(unsigned long size)
-> > >  {
-> > > +	static u8 *mem = NULL;
-> > > +	static size_t free_mem = 0;
-> > 
-> > Static variables are implicitly 0 and NULL
-> 
-> That's true for global static variables; is it also true for static
-> variables that are local to a function?
+> If you want I can repost things or port it to new kernel.
 
-It is the same allocation and initialization wise - just not visible to functions 
-outside this one.
+Yes, please post it against latest -tip:
 
-It's being frowned upon btw, because it's easy to overlook (and for other reasons) - 
-please dont use statics inside functions - please put them in front of the function 
-or further up into file scope.
+   http://people.redhat.com/mingo/tip.git/README
+
+(Please also Cc: everyone who expressed interest in the topic in this thread.)
+
+Thanks,
 
 	Ingo
