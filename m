@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755591Ab0KNNvM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 08:51:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11902 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752611Ab0KNNvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 08:51:12 -0500
-Message-ID: <4CDFE948.4020709@redhat.com>
-Date: Sun, 14 Nov 2010 15:51:04 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1755644Ab0KNOJu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 09:09:50 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:37566 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755566Ab0KNOJt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 09:09:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=fDMhZ7ThemzqFOY0II06gWwjwpn3CqD9F1pbqWFT5kR8ROSafU0WdnZ/TBjN5iLy/H
+         9K20BldqeQ/QhttGBfsW7QMSwqaDVkKyR48NOITOaw7giOgLYOj1Empzc9OSoa6DCz4S
+         TiPlLYOg1cAulOjAzH6F6xq1cTo04jyu7NbQI=
 MIME-Version: 1.0
-To: Ian Kent <raven@themaw.net>, autofs@linux.kernel.org
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: autofs4 hang in 2.6.37-rc1
-References: <4CDFDC2B.6040205@redhat.com>
-In-Reply-To: <4CDFDC2B.6040205@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101114131941.GA10871@n2100.arm.linux.org.uk>
+References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
+	<1289584840-18097-4-git-send-email-catalin.marinas@arm.com>
+	<20101114131941.GA10871@n2100.arm.linux.org.uk>
+Date: Sun, 14 Nov 2010 14:09:48 +0000
+X-Google-Sender-Auth: c9-ui_0SAsDR6j5H-ZmLbju3tWE
+Message-ID: <AANLkTimtSUNrO0wZBfyJJ+OJQCDLkXSOiUuzOD+ubv6O@mail.gmail.com>
+Subject: Re: [PATCH v2 03/20] ARM: LPAE: use u32 instead of unsigned long for
+ 32-bit ptes
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2010 02:55 PM, Avi Kivity wrote:
-> A 2.6.37-rc1 (f6614b7bb405a) setup hangs in autofs4:
+On Sunday, November 14, 2010, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Nov 12, 2010 at 06:00:23PM +0000, Catalin Marinas wrote:
+>> From: Will Deacon <will.deacon@arm.com>
+>>
+>> When using 2-level paging, pte_t and pmd_t are typedefs for
+>> unsigned long but phys_addr_t is a typedef for u32.
+>>
+>> This patch uses u32 for the page table entry types when
+>> phys_addr_t is not 64-bit, allowing the same conversion
+>> specifier to be used for physical addresses and page table
+>> entries regardless of LPAE.
 >
-> INFO: task automount:10399 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> automount     D 0000000000000000     0 10399      1 0x00000000
->  ffff88012a059da8 0000000000000082 0000000000000000 0000000000000000
->  ffff88012a058010 ffff88012a059fd8 0000000000011800 ffff8801290f2c40
->  ffff8801290f2fb0 ffff8801290f2fa8 0000000000011800 0000000000011800
-> Call Trace:
->  [<ffffffff813a3c3c>] __mutex_lock_common+0x126/0x18b
->  [<ffffffff813a3cb5>] __mutex_lock_slowpath+0x14/0x16
->  [<ffffffff813a3dbc>] mutex_lock+0x31/0x4b
->  [<ffffffff811b17f7>] autofs4_root_ioctl+0x28/0x53
->  [<ffffffff810f5e5c>] do_vfs_ioctl+0x557/0x5bb
->  [<ffffffff810eca65>] ? sys_newlstat+0x2d/0x38
->  [<ffffffff810f5f02>] sys_ioctl+0x42/0x65
->  [<ffffffff81002b42>] system_call_fastpath+0x16/0x1b
+> However, code which prints the value of page table entries assumes that
+> they are unsigned long, and places where we store the raw pte value also
+> uses 'unsigned long'.
 >
-> This is a simple /home automount.  More info on request.
->
+> If we're going to make this change, we need to change more places than
+> this patch covers.  grep for pte_val to help find those places.
 
-Likely culprit:
+Patch 19/20 introduces a common macro for formatting but we should
+probably order the patches a bit to avoid problems if anyone is
+bisecting  in the middle of the series.
 
-
-automount     S ffff88012a28a680     0   399      1 0x00000000
-  ffff88012a07bd08 0000000000000082 0000000000000000 0000000000000000
-  ffff88012a07a010 ffff88012a07bfd8 0000000000011800 ffff88012693c260
-  ffff88012693c5d0 ffff88012693c5c8 0000000000011800 0000000000011800
-Call Trace:
-  [<ffffffff81056197>] ? prepare_to_wait+0x67/0x74
-  [<ffffffff811b23eb>] autofs4_wait+0x5a4/0x6d5
-  [<ffffffff81055f25>] ? autoremove_wake_function+0x0/0x34
-  [<ffffffff811b2ba5>] autofs4_do_expire_multi+0x5b/0xa3
-  [<ffffffff811b2c39>] autofs4_expire_multi+0x4c/0x54
-  [<ffffffff811b1750>] autofs4_root_ioctl_unlocked+0x23e/0x252
-  [<ffffffff811b1808>] autofs4_root_ioctl+0x39/0x53
-  [<ffffffff810f5e5c>] do_vfs_ioctl+0x557/0x5bb
-  [<ffffffff810ca644>] ? remove_vma+0x6e/0x76
-  [<ffffffff810cb6a2>] ? do_munmap+0x31c/0x33e
-  [<ffffffff810f5f02>] sys_ioctl+0x42/0x65
-  [<ffffffff81002b42>] system_call_fastpath+0x16/0x1b
-
-
-Shouldn't we drop autofs4_ioctl_mutex while we wait?
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Catalin
