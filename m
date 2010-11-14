@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932270Ab0KNVjf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 16:39:35 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:17980 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755749Ab0KNVje (ORCPT
+	id S1757070Ab0KNVlp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 16:41:45 -0500
+Received: from smtp171.iad.emailsrvr.com ([207.97.245.171]:58347 "EHLO
+	smtp171.iad.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757020Ab0KNVlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 16:39:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=kM8AqQNa00iuHOmzbQjCI9dTy2HUv5XiwOufXeIjGhIxSDgHSXtNblV4IJOq6LGUj2
-         vV0ZFxSxLULZvWIPUlFQ==
-Date: Sun, 14 Nov 2010 13:39:28 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [resend][PATCH 2/4] Revert "oom: deprecate oom_adj tunable"
-In-Reply-To: <20101114135323.E00D.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1011141333330.22262@chino.kir.corp.google.com>
-References: <20101109105801.BC30.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011091523370.26837@chino.kir.corp.google.com> <20101114135323.E00D.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Sun, 14 Nov 2010 16:41:44 -0500
+X-Greylist: delayed 498 seconds by postgrey-1.27 at vger.kernel.org; Sun, 14 Nov 2010 16:41:44 EST
+Message-ID: <4CE055A4.5010403@aljex.com>
+Date: Sun, 14 Nov 2010 16:33:24 -0500
+From: "Brian K. White" <brian@aljex.com>
+Organization: Aljex Software Inc.
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: rsync@lists.samba.org
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: fadvise DONTNEED implementation (or lack thereof)
+References: <20101109162525.BC87.A69D9226@jp.fujitsu.com>	<877hgmr72o.fsf@gmail.com>	<20101114140920.E013.A69D9226@jp.fujitsu.com> <87y68wiipy.fsf@gmail.com>
+In-Reply-To: <87y68wiipy.fsf@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Nov 2010, KOSAKI Motohiro wrote:
+On 11/14/2010 12:20 AM, Ben Gamari wrote:
+> On Sun, 14 Nov 2010 14:09:29 +0900 (JST), KOSAKI Motohiro<kosaki.motohiro@jp.fujitsu.com>  wrote:
+>> Because we have an alternative solution already. please try memcgroup :)
+>>
+> Alright, fair enough. It still seems like there are many cases where
+> fadvise seems more appropriate, but memcg should at least satisfy my
+> personal needs so I'll shut up now. Thanks!
+>
+> - Ben
 
-> No irrelevant. Your patch break their environment even though
-> they don't use oom_adj explicitly. because their application are using it.
-> 
+Could someone expand on this a little?
 
-The _only_ difference too oom_adj since the rewrite is that it is now 
-mapped on a linear scale rather than an exponential scale.  That's because 
-the heuristic itself has a defined range [0, 1000] that characterizes the 
-memory usage of the application it is ranking.  To show any breakge, you 
-would have to show how oom_adj values being used by applications are based 
-on a calculated value that prioritizes those tasks amongst each other.  
-With the exponential scale, that's nearly impossible because of the number 
-of arbitrary heuristics that were used before oom_adj were considered 
-(runtime, nice level, CAP_SYS_RAWIO, etc).
+The "there are no users of this feature" argument is indeed a silly one. 
+I've only wanted the ability to perform i/o without poisoning the cache 
+since oh, 10 or more years ago at least. It really hurts my users since 
+they are all direct login interactive db app users. No load balancing 
+web interface can hide the fact when a box goes to a crawl.
 
-So don't talk about userspace breakage when you can't even describe it or 
-present a single usecase.
+How would one use memcgroup to prevent a backup or other large file 
+operation from wiping out the cache with used-once garbage?
+
+(note for rsync in particular, how does this help rsync on other platforms?)
+
+-- 
+bkw
