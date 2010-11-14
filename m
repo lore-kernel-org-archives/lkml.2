@@ -1,113 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754226Ab0KNIwe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 03:52:34 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56290 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753989Ab0KNIwc (ORCPT
+	id S1754437Ab0KNI5b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 03:57:31 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:45415 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754157Ab0KNI52 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 03:52:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=gqqbLPGxJ/xUsPPUp5RbtGQM6gSYn+/PJuQmj/ZemPcHePH79B6YWaP3wr7l6PTgoZ
-         1bFyxtxn1ZB1i0bmBbzDygR611ZiS6QE+l7AQdKM90n64i8a5pALH/czTzQyh44JoAAF
-         m+aXl1zrI5iH7OXvDfmsZdLIOR5BSlEym8CzA=
-Subject: Re: [PATCH] ipv4: mitigate an integer underflow when comparing tcp
- timestamps
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Zhang Le <r0bertz@gentoo.org>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-In-Reply-To: <1289720156-30118-1-git-send-email-r0bertz@gentoo.org>
-References: <1289720156-30118-1-git-send-email-r0bertz@gentoo.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 14 Nov 2010 09:52:25 +0100
-Message-ID: <1289724745.2743.61.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Sun, 14 Nov 2010 03:57:28 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4CDFA2FC.40603@s5r6.in-berlin.de>
+Date: Sun, 14 Nov 2010 09:51:08 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+MIME-Version: 1.0
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Bruno Randolf <br1@einfach.org>, Andrew Morton <akpm@linux-foundation.org>,
+        randy.dunlap@oracle.com, peterz@infradead.org, blp@cs.stanford.edu,
+        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
+        kevin.granade@gmail.com, "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [PATCH v6] Add generic exponentially weighted moving average
+ (EWMA) function
+References: <4CDC333E.4070104@s5r6.in-berlin.de> <201011121044.40274.br1@einfach.org> <20101114133029.E008.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20101114133029.E008.A69D9226@jp.fujitsu.com>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 14 novembre 2010 à 15:35 +0800, Zhang Le a écrit :
-> Behind a loadbalancer which does NAT, peer->tcp_ts could be much smaller than
-> req->ts_recent. In this case, theoretically the req should not be ignored.
+KOSAKI Motohiro wrote:
+>>> Why do ewma_init() and ewma_add() return their first argument?  They look
+>>> to me like they can be straight-forward void functions.
+>> You are right, for ewma_init() it does not make sense.
+>>
+>> For ewma_add() I think it does. This has been discussed before (e.g. 
+>> http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-10/msg09124.html).
+>> Some people might want to get the value when they add a sample by using 
+>> ewma_get(ewma_add(&ewma, val));
 > 
-> But in fact, it could be ignored, if peer->tcp_ts is so small that the
-> difference between this two number is larger than 2 to the power of 31.
+> 	ewma_add(&ewma, val);
+> 	ewma_get(&ewma);
 > 
-> I understand that under this situation, timestamp does not make sense any more,
-> because it actually comes from difference machines. However, if anyone
-> ever need to do the same investigation which I have done, this will
-> save some time for him.
-> 
-> Signed-off-by: Zhang Le <r0bertz@gentoo.org>
-> ---
->  net/ipv4/tcp_ipv4.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-> index 8f8527d..1eb4974 100644
-> --- a/net/ipv4/tcp_ipv4.c
-> +++ b/net/ipv4/tcp_ipv4.c
-> @@ -1352,8 +1352,8 @@ int tcp_v4_conn_request(struct sock *sk, struct sk_buff *skb)
->  		    peer->v4daddr == saddr) {
->  			inet_peer_refcheck(peer);
->  			if ((u32)get_seconds() - peer->tcp_ts_stamp < TCP_PAWS_MSL &&
-> -			    (s32)(peer->tcp_ts - req->ts_recent) >
-> -							TCP_PAWS_WINDOW) {
-> +			    ((s32)(peer->tcp_ts - req->ts_recent) > TCP_PAWS_WINDOW &&
-> +			     peer->tcp_ts > req->ts_recent)) {
->  				NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_PAWSPASSIVEREJECTED);
->  				goto drop_and_release;
->  			}
+> is enough simpler and cleaner. I don't oppse this :)
 
-This seems very wrong to me.
+There are more candidate colors for the bike shed: :-)
+  - an ewma_add_return could do what ewma_get(ewma_add(...)) is meant for,
+  - or ewma_add itself could return the result.
 
-Adding a : if (peer->tcp_ts > req->ts_recent) condition is _not_ going
-to help. And it might break some working setups, because of wrap around.
-
-Really, if you have multiple clients behind a common NAT, you cannot use
-this code at all, since NAT doesnt usually change TCP timestamps.
-
-What about following patch instead ?
-
-[PATCH] doc: extend tcp_tw_recycle documentation
-
-tcp_tw_recycle should not be used on a server if there is a chance
-clients are behind a same NAT. Document this fact before too many users
-discover this too late.
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- Documentation/networking/ip-sysctl.txt |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
-index c7165f4..406f0d5 100644
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -446,7 +446,12 @@ tcp_tso_win_divisor - INTEGER
- tcp_tw_recycle - BOOLEAN
- 	Enable fast recycling TIME-WAIT sockets. Default value is 0.
- 	It should not be changed without advice/request of technical
--	experts.
-+	experts. If you set it to 1, make sure you dont miss connections
-+	attempts (check LINUX_MIB_PAWSPASSIVEREJECTED netstat counter).
-+	In particular, this might break if several clients are behind
-+	a common NAT device, since their TCP timestamp wont be changed
-+	by the NAT. tcp_tw_recycle should be used with care, most
-+	probably in private networks.
- 
- tcp_tw_reuse - BOOLEAN
- 	Allow to reuse TIME-WAIT sockets for new connections when it is
-
-
+BTW, isn't "get" more usually used as a prefix for these kinds of functions in
+kernel APIs?  "get" as a suffix more often means "get a reference" alias
+increase reference count rather than "get the value".
+-- 
+Stefan Richter
+-=====-==-=- =-== -===-
+http://arcgraph.de/sr/
