@@ -1,157 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab0KNO64 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 09:58:56 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33288 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755642Ab0KNO6y (ORCPT
+	id S1756069Ab0KNPPG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 10:15:06 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35653 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755826Ab0KNPPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 09:58:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=eweReNh6q4RmJXJYgG9K9sne4CEGReBLGcR1iBEYTRQ+pLqE23NN1mPyN0RRqXNKR6
-         r3/ieCaI8vlpsoS95nnX1KbXZmJNNforaJ/1OB/PML1skuUAe5zk3y4M6+5w2dZ/etWe
-         l3X6jNSbYFqanVhUVZu3tHLJFrgpFKxniurCQ=
-Date: Sun, 14 Nov 2010 23:00:07 +0800
-From: Zhang Le <r0bertz@gentoo.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH] ipv4: mitigate an integer underflow when comparing tcp
- timestamps
-Message-ID: <20101114150006.GA23973@adriano>
-References: <1289720156-30118-1-git-send-email-r0bertz@gentoo.org>
- <1289724745.2743.61.camel@edumazet-laptop>
+	Sun, 14 Nov 2010 10:15:05 -0500
+Date: Sun, 14 Nov 2010 15:14:45 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: [PATCH v2 03/20] ARM: LPAE: use u32 instead of unsigned long
+	for 32-bit ptes
+Message-ID: <20101114151445.GB10871@n2100.arm.linux.org.uk>
+References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com> <1289584840-18097-4-git-send-email-catalin.marinas@arm.com> <20101114131941.GA10871@n2100.arm.linux.org.uk> <AANLkTimtSUNrO0wZBfyJJ+OJQCDLkXSOiUuzOD+ubv6O@mail.gmail.com> <AANLkTi=U+5uqLRSt9ObFdgTUc-v_+2Y3Qz90FG5aRTyb@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jI8keyz6grp/JLjh"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1289724745.2743.61.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=U+5uqLRSt9ObFdgTUc-v_+2Y3Qz90FG5aRTyb@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Nov 14, 2010 at 02:13:23PM +0000, Catalin Marinas wrote:
+> On Sunday, November 14, 2010, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > On Sunday, November 14, 2010, Russell King - ARM Linux
+> > <linux@arm.linux.org.uk> wrote:
+> >> On Fri, Nov 12, 2010 at 06:00:23PM +0000, Catalin Marinas wrote:
+> >>> From: Will Deacon <will.deacon@arm.com>
+> >>>
+> >>> When using 2-level paging, pte_t and pmd_t are typedefs for
+> >>> unsigned long but phys_addr_t is a typedef for u32.
+> >>>
+> >>> This patch uses u32 for the page table entry types when
+> >>> phys_addr_t is not 64-bit, allowing the same conversion
+> >>> specifier to be used for physical addresses and page table
+> >>> entries regardless of LPAE.
+> >>
+> >> However, code which prints the value of page table entries assumes that
+> >> they are unsigned long, and places where we store the raw pte value also
+> >> uses 'unsigned long'.
+> >>
+> >> If we're going to make this change, we need to change more places than
+> >> this patch covers.  grep for pte_val to help find those places.
+> >
+> > Patch 19/20 introduces a common macro for formatting but we should
+> > probably order the patches a bit to avoid problems if anyone is
+> > bisecting  in the middle of the series.
+> 
+> Actually not a problem since LPAE is only enabled by the last patch.
+> There may be some compiler warnings without 19/20, I need to check.
 
---jI8keyz6grp/JLjh
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There will be compiler warnings because u32 is unsigned int, and we
+print it as %08lx.  Generic code cases pte values to (long long) and
+prints them using %08llx.  We should do the same.
 
-On 09:52 Sun 14 Nov     , Eric Dumazet wrote:
-> Le dimanche 14 novembre 2010 =E0 15:35 +0800, Zhang Le a =E9crit :
-> > Behind a loadbalancer which does NAT, peer->tcp_ts could be much smalle=
-r than
-> > req->ts_recent. In this case, theoretically the req should not be ignor=
-ed.
-> >=20
-> > But in fact, it could be ignored, if peer->tcp_ts is so small that the
-> > difference between this two number is larger than 2 to the power of 31.
-> >=20
-> > I understand that under this situation, timestamp does not make sense a=
-ny more,
-> > because it actually comes from difference machines. However, if anyone
-> > ever need to do the same investigation which I have done, this will
-> > save some time for him.
-> >=20
-> > Signed-off-by: Zhang Le <r0bertz@gentoo.org>
-> > ---
-> >  net/ipv4/tcp_ipv4.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> >=20
-> > diff --git a/net/ipv4/tcp_ipv4.c b/net/ipv4/tcp_ipv4.c
-> > index 8f8527d..1eb4974 100644
-> > --- a/net/ipv4/tcp_ipv4.c
-> > +++ b/net/ipv4/tcp_ipv4.c
-> > @@ -1352,8 +1352,8 @@ int tcp_v4_conn_request(struct sock *sk, struct s=
-k_buff *skb)
-> >  		    peer->v4daddr =3D=3D saddr) {
-> >  			inet_peer_refcheck(peer);
-> >  			if ((u32)get_seconds() - peer->tcp_ts_stamp < TCP_PAWS_MSL &&
-> > -			    (s32)(peer->tcp_ts - req->ts_recent) >
-> > -							TCP_PAWS_WINDOW) {
-> > +			    ((s32)(peer->tcp_ts - req->ts_recent) > TCP_PAWS_WINDOW &&
-> > +			     peer->tcp_ts > req->ts_recent)) {
-> >  				NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_PAWSPASSIVEREJECTED);
-> >  				goto drop_and_release;
-> >  			}
->=20
-> This seems very wrong to me.
->=20
-> Adding a : if (peer->tcp_ts > req->ts_recent) condition is _not_ going
-> to help. And it might break some working setups, because of wrap around.
-
-Yeah, you are right. And sorry for overlooking this.
-
-I should have reviewed time_{before,after}'s implementation before posting =
-this.
-
-So it seems we can't do anything to improve this except to add some warning=
- in
-documentation. Maybe some comments in the code too.
-
->=20
-> Really, if you have multiple clients behind a common NAT, you cannot use
-> this code at all, since NAT doesnt usually change TCP timestamps.
->=20
-> What about following patch instead ?
->=20
-> [PATCH] doc: extend tcp_tw_recycle documentation
->=20
-> tcp_tw_recycle should not be used on a server if there is a chance
-> clients are behind a same NAT. Document this fact before too many users
-> discover this too late.
->=20
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
->  Documentation/networking/ip-sysctl.txt |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
->=20
-> diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/netwo=
-rking/ip-sysctl.txt
-> index c7165f4..406f0d5 100644
-> --- a/Documentation/networking/ip-sysctl.txt
-> +++ b/Documentation/networking/ip-sysctl.txt
-> @@ -446,7 +446,12 @@ tcp_tso_win_divisor - INTEGER
->  tcp_tw_recycle - BOOLEAN
->  	Enable fast recycling TIME-WAIT sockets. Default value is 0.
->  	It should not be changed without advice/request of technical
-> -	experts.
-> +	experts. If you set it to 1, make sure you dont miss connections
-> +	attempts (check LINUX_MIB_PAWSPASSIVEREJECTED netstat counter).
-> +	In particular, this might break if several clients are behind
-> +	a common NAT device, since their TCP timestamp wont be changed
-> +	by the NAT. tcp_tw_recycle should be used with care, most
-> +	probably in private networks.
-> =20
->  tcp_tw_reuse - BOOLEAN
->  	Allow to reuse TIME-WAIT sockets for new connections when it is
->=20
->=20
-
---=20
-Zhang, Le
-Gentoo/Loongson Developer
-http://zhangle.is-a-geek.org
-0260 C902 B8F8 6506 6586 2B90 BC51 C808 1E4E 2973
-
---jI8keyz6grp/JLjh
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEARECAAYFAkzf+XYACgkQvFHICB5OKXPx8QCfYlOMbTAvFvQS6r6Xpkzj2ysa
-oswAnAox5JEa+MaePY6RTg3bLZ/liVrl
-=VWBQ
------END PGP SIGNATURE-----
-
---jI8keyz6grp/JLjh--
+In any case, this patch on its own introduces new compiler warnings.
+These need to be fixed in this patch, rather than relying on one later
+in the series.
