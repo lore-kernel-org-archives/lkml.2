@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756561Ab0KNUPa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 15:15:30 -0500
-Received: from ns1.siteground211.com ([209.62.36.12]:44960 "EHLO
-	serv01.siteground211.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab0KNUP3 (ORCPT
+	id S1756882Ab0KNURd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 15:17:33 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:63217 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab0KNURc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 15:15:29 -0500
-Subject: Re: [RFC/PATCH] usb: Add streams support to epautoconf.
-From: Felipe Balbi <me@felipebalbi.com>
-To: Greg KH <greg@kroah.com>
-Cc: Maya Erez <merez@codeaurora.org>, linux-usb@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Mike Frysinger <vapier@gentoo.org>, Cliff Cai <cliff.cai@analog.com>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        Fabien Chouteau <fabien.chouteau@barco.com>, Tejun Heo <tj@kernel.org>,
+	Sun, 14 Nov 2010 15:17:32 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6167"; a="62832039"
+Subject: Re: [PATCH 09/14] msm: iommu: Kconfig option for cacheable page
+ tables
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: davidb@codeaurora.org, bryanh@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <20101114182915.GA20922@kroah.com>
-References: <1289715812-29000-1-git-send-email-merez@codeaurora.org>
-	 <20101114182915.GA20922@kroah.com>
+In-Reply-To: <1289619000-13167-10-git-send-email-stepanm@codeaurora.org>
+References: <1289619000-13167-1-git-send-email-stepanm@codeaurora.org>
+	 <1289619000-13167-10-git-send-email-stepanm@codeaurora.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 14 Nov 2010 22:15:33 +0200
-Message-ID: <1289765733.15533.4.camel@eowin>
+Date: Sun, 14 Nov 2010 12:17:38 -0800
+Message-ID: <1289765858.24270.240.camel@m0nster>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - serv01.siteground211.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - felipebalbi.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 2010-11-12 at 19:29 -0800, Stepan Moskovchenko wrote:
+>  
+> +config IOMMU_PGTABLES_L2
+> +	depends on ARCH_MSM8X60
+> +	depends on MMU
+> +	depends on CPU_DCACHE_DISABLE=n
+> +	depends on SMP
+> +	bool "Cacheable IOMMU page tables"
+> +	default y
+> +	help
+> +	  Allows the IOMMU page tables to be brought into the L2 cache. This
+> +	  improves the TLB miss latency at the expense of potential pollution
+> +	  of the L2 cache. This option has been shown to improve multimedia
+> +	  performance in some cases.
+> +
+> +	  If unsure, say Y here.
 
-On Sun, 2010-11-14 at 10:29 -0800, Greg KH wrote:
-> > +	if (USB_ENDPOINT_XFER_BULK == type) {
-> 
-> Ick, no, don't do comparisons like this.  The compiler will let you know
-> if you acidentally get it wrong with only one '=' character, don't do
-> things "backward" like this just to work around stupid compilers.
+Why would someone want this off?
 
-we actually have helpers for this and usb_endpoint_xfer_bulk(desc)
-would do it.
+The other thing is that you usually want this included with the code
+that uses the option.
+
+Daniel
 
 -- 
-balbi
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
+
 
