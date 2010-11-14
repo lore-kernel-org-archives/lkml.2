@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab0KNJZl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 04:25:41 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:33302 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab0KNJZj (ORCPT
+	id S1754861Ab0KNJZy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 04:25:54 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:45640 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754823Ab0KNJZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 04:25:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WcSRjRm/Mp+RiSAIlImivWP3tWPyTmMOJK2wFygLKHu6HW8+tReslxN3Say4JGUjVt
-         BkUV4d3OfyegXZTnzmO+UsKdzSYtSCIUePDc9pJEWQVSC/YvgnB4im1YM8NhrCqCuw1L
-         vq73gMesucVwg/FnqplhOXLtUof1kcdY2vxVg=
-Date: Sun, 14 Nov 2010 12:25:33 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: Andrew Morton <akpm@linux-foundation.org>, kernel-janitors@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] fs: select: fix information leak to userspace
-Message-ID: <20101114092533.GB5323@albatros>
-References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
- <20101112120834.33062900.akpm@linux-foundation.org>
- <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
+	Sun, 14 Nov 2010 04:25:51 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4CDFAB10.5050800@s5r6.in-berlin.de>
+Date: Sun, 14 Nov 2010 10:25:36 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH update 2] firewire: net: throttle TX queue before running
+ out of tlabels
+References: <tkrat.036c5d10fb83f85d@s5r6.in-berlin.de>	 <tkrat.39c164e4c52e2fc8@s5r6.in-berlin.de>	 <tkrat.eaac597cf54bb660@s5r6.in-berlin.de>	 <tkrat.83117f4523f0d928@s5r6.in-berlin.de> <1289710228.8581.16.camel@maxim-laptop>
+In-Reply-To: <1289710228.8581.16.camel@maxim-laptop>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some architectures __kernel_suseconds_t is int.  On these archs
-struct timeval has padding bytes at the end.  This struct is copied to
-userspace with these padding bytes uninitialized.  This leads to leaking
-of contents of kernel stack memory.
+Maxim Levitsky wrote:
+> In fact after lot of testing I see that original patch, 
+> '[PATCH 4/4] firewire: net: throttle TX queue before running out of
+> tlabels' works the best here.
+> With AR fixes, I don't see even a single fwnet_write_complete error on
+> ether side.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- Patch v1 used memset(), it was waste of cycles on almost all archs.
+Well, that version missed that the rx path opened up the tx queue again. I.e.
+it did not work as intended.
 
- Compile tested.
+> However the 'update 2' (maybe update 1 too, didn't test), lowers
+> desktop->laptop throughput somewhat.
+> (250 vs 227 Mbits/s). I tested this many times.
+> 
+> Actuall raw troughput possible with UDP stream and ether no throttling
+> or higher packets in flight count (I tested 50/30), it 280 Mbits/s.
 
- fs/select.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+Good, I will test deeper queues with a few different controllers here.  As
+long as we keep a margin to 64 so that other traffic besides IPover1394 still
+has a chance to acquire transaction labels, it's OK.
 
-diff --git a/fs/select.c b/fs/select.c
-index b7b10aa..43d4805 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -288,7 +288,6 @@ static int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
- 				      int timeval, int ret)
- {
- 	struct timespec rts;
--	struct timeval rtv;
- 
- 	if (!p)
- 		return ret;
-@@ -306,8 +305,10 @@ static int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
- 		rts.tv_sec = rts.tv_nsec = 0;
- 
- 	if (timeval) {
--		rtv.tv_sec = rts.tv_sec;
--		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
-+		struct timeval rtv = {
-+			.tv_sec = rts.tv_sec,
-+			.tv_usec = rts.tv_nsec / NSEC_PER_USEC
-+		};
- 
- 		if (!copy_to_user(p, &rtv, sizeof(rtv)))
- 			return ret;
+> BTW, I still don't understand fully  why my laptop sends only at 180
+> Mbits/s pretty much always regardless of patches or TCP/UDP.
+
+If it is not CPU bound, then it is because Ricoh did not optimize the AR DMA
+unit as well as Texas Instruments did.
 -- 
-1.7.0.4
+Stefan Richter
+-=====-==-=- =-== -===-
+http://arcgraph.de/sr/
