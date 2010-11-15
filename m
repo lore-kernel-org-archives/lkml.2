@@ -1,64 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932895Ab0KODN0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 22:13:26 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39373 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932731Ab0KODNW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 22:13:22 -0500
-MIME-Version: 1.0
-In-Reply-To: <1289783580.495.58.camel@maggy.simson.net>
-References: <1289489200.11397.21.camel@maggy.simson.net> <20101111202703.GA16282@redhat.com>
- <1289514000.21413.204.camel@maggy.simson.net> <20101112181240.GB8659@redhat.com>
- <1289648524.22764.149.camel@maggy.simson.net> <1289755150.3228.44.camel@maggy.simson.net>
- <20101114174921.GA1569@arch.trippelsdorf.de> <1289758238.17491.12.camel@maggy.simson.net>
- <AANLkTimy5DdF8qwGuk09iT3wHfXMjkiwRKxo-LuvEJzW@mail.gmail.com>
- <AANLkTikjSCbcRnKOU=nd4os1sdW-GJkD6QVj=U5zPyu8@mail.gmail.com>
- <20101114202734.GA1627@arch.trippelsdorf.de> <AANLkTimHtjH3YvtX6i542_XjfFeuvG-AnU8i224a1R4j@mail.gmail.com>
- <1289778189.5154.10.camel@maggy.simson.net> <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
- <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com> <1289783580.495.58.camel@maggy.simson.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 14 Nov 2010 19:12:27 -0800
-Message-ID: <AANLkTikp=RJSpL1NYje89URu0St0RprUwR7ad8Q7a=-=@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-To: Mike Galbraith <efault@gmx.de>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932580Ab0KODFb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 22:05:31 -0500
+Received: from mail.perches.com ([173.55.12.10]:1118 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751901Ab0KODF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 22:05:27 -0500
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
+        user-mode-linux-devel@lists.sourceforge.net,
+        user-mode-linux-user@lists.sourceforge.net, cpufreq@vger.kernel.org,
+        linux-i2c@vger.kernel.org, netdev@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-mmc@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, linux-wireless@vger.kernel.org,
+        ath9k-devel@venema.h4ckr.net, platform-driver-x86@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net, linux-s390@vger.kernel.org,
+        linux-scsi@vger.kernel.org, spi-devel-general@lists.sourceforge.net,
+        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
+        xen-devel@lists.xensource.com, virtualization@lists.osdl.org,
+        v9fs-developer@lists.sourceforge.net, ceph-devel@vger.kernel.org,
+        logfs@logfs.org, linux-nfs@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+        linux-mtd@lists.infradead.org, linux-mm@kvack.org,
+        alsa-devel@alsa-project.org
+Subject: [PATCH 00/44] remove unnecessary semicolons
+Date: Sun, 14 Nov 2010 19:04:19 -0800
+Message-Id: <cover.1289789604.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 5:13 PM, Mike Galbraith <efault@gmx.de> wrote:
->
-> Which is what I just did. If the oddball case isn't a big deal, the
-> patch shrinks, which is a good thing. I just wanted to cover all bases.
+ya trivial series...
 
-Yeah. And I have to say that I'm (very happily) surprised by just how
-small that patch really ends up being, and how it's not intrusive or
-ugly either.
+Joe Perches (44):
+  arch/arm: Remove unnecessary semicolons
+  arch/microblaze: Remove unnecessary semicolons
+  arch/um: Remove unnecessary semicolons
+  drivers/cpufreq: Remove unnecessary semicolons
+  drivers/gpio: Remove unnecessary semicolons
+  drivers/i2c: Remove unnecessary semicolons
+  drivers/isdn: Remove unnecessary semicolons
+  drivers/leds: Remove unnecessary semicolons
+  drivers/media/video: Remove unnecessary semicolons
+  drivers/misc: Remove unnecessary semicolons
+  drivers/mmc: Remove unnecessary semicolons
+  drivers/net/bnx2x: Remove unnecessary semicolons
+  drivers/net/e1000e: Remove unnecessary semicolons
+  drivers/net/ixgbe: Remove unnecessary semicolons
+  drivers/net/vxge: Remove unnecessary semicolons
+  drivers/net/wireless/ath: Remove unnecessary semicolons
+  drivers/net/wireless/iwlwifi: Remove unnecessary semicolons
+  drivers/net/cnic.c: Remove unnecessary semicolons
+  drivers/platform/x86: Remove unnecessary semicolons
+  drivers/power: Remove unnecessary semicolons
+  drivers/s390/net: Remove unnecessary semicolons
+  drivers/scsi/be2iscsi: Remove unnecessary semicolons
+  drivers/scsi/bfa: Remove unnecessary semicolons
+  drivers/scsi/lpfc: Remove unnecessary semicolons
+  drivers/scsi/pm8001: Remove unnecessary semicolons
+  drivers/scsi/qla2xxx: Remove unnecessary semicolons
+  drivers/serial: Remove unnecessary semicolons
+  drivers/spi: Remove unnecessary semicolons
+  drivers/staging: Remove unnecessary semicolons
+  drivers/usb/gadget: Remove unnecessary semicolons
+  drivers/xen: Remove unnecessary semicolons
+  fs/9p: Remove unnecessary semicolons
+  fs/ceph: Remove unnecessary semicolons
+  fs/logfs: Remove unnecessary semicolons
+  fs/nfs: Remove unnecessary semicolons
+  fs/ocfs2: Remove unnecessary semicolons
+  fs/ubifs: Remove unnecessary semicolons
+  include/linux/if_macvlan.h: Remove unnecessary semicolons
+  include/net/caif/cfctrl.h: Remove unnecessary semicolons
+  mm/hugetlb.c: Remove unnecessary semicolons
+  net/ipv6/mcast.c: Remove unnecessary semicolons
+  net/sunrpc/addr.c: Remove unnecessary semicolons
+  sound/core/pcm_lib.c: Remove unnecessary semicolons
+  sound/soc/codecs: Remove unnecessary semicolons
 
-I'm also very happy with just what it does to interactive performance.
-Admittedly, my "testcase" is really trivial (reading email in a
-web-browser, scrolling around a bit, while doing a "make -j64" on the
-kernel at the same time), but it's a test-case that is very relevant
-for me. And it is a _huge_ improvement.
+ arch/arm/mach-at91/at91cap9_devices.c              |    2 +-
+ arch/arm/mach-at91/at91sam9g45_devices.c           |    2 +-
+ arch/arm/mach-at91/at91sam9rl_devices.c            |    2 +-
+ arch/arm/mach-nuc93x/time.c                        |    2 +-
+ arch/arm/mach-tegra/tegra2_clocks.c                |    2 +-
+ arch/arm/mach-w90x900/cpu.c                        |    2 +-
+ arch/arm/plat-mxc/irq.c                            |    2 +-
+ arch/microblaze/lib/memmove.c                      |    2 +-
+ arch/um/drivers/mmapper_kern.c                     |    2 +-
+ drivers/cpufreq/cpufreq_conservative.c             |    2 +-
+ drivers/gpio/langwell_gpio.c                       |    2 +-
+ drivers/i2c/busses/i2c-designware.c                |    2 +-
+ drivers/isdn/hardware/mISDN/mISDNinfineon.c        |    4 ++--
+ drivers/isdn/hardware/mISDN/mISDNisar.c            |    2 +-
+ drivers/leds/leds-mc13783.c                        |    2 +-
+ drivers/media/video/cx88/cx88-blackbird.c          |    2 +-
+ drivers/media/video/davinci/vpfe_capture.c         |    2 +-
+ drivers/media/video/em28xx/em28xx-cards.c          |    2 +-
+ drivers/misc/bmp085.c                              |    2 +-
+ drivers/misc/isl29020.c                            |    2 +-
+ drivers/mmc/host/davinci_mmc.c                     |    2 +-
+ drivers/net/bnx2x/bnx2x_link.c                     |    4 ++--
+ drivers/net/bnx2x/bnx2x_main.c                     |    2 +-
+ drivers/net/cnic.c                                 |    2 +-
+ drivers/net/e1000e/netdev.c                        |    2 +-
+ drivers/net/ixgbe/ixgbe_sriov.c                    |    2 +-
+ drivers/net/vxge/vxge-main.c                       |    2 +-
+ drivers/net/wireless/ath/ath9k/htc.h               |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-agn.c             |    2 +-
+ drivers/platform/x86/classmate-laptop.c            |    2 +-
+ drivers/platform/x86/thinkpad_acpi.c               |    2 +-
+ drivers/power/intel_mid_battery.c                  |    2 +-
+ drivers/s390/net/qeth_core_sys.c                   |    2 +-
+ drivers/scsi/be2iscsi/be_main.c                    |    4 ++--
+ drivers/scsi/bfa/bfa_fcs_lport.c                   |    2 +-
+ drivers/scsi/lpfc/lpfc_bsg.c                       |    2 +-
+ drivers/scsi/pm8001/pm8001_init.c                  |    2 +-
+ drivers/scsi/qla2xxx/qla_isr.c                     |    4 ++--
+ drivers/scsi/qla2xxx/qla_nx.c                      |    2 +-
+ drivers/serial/mrst_max3110.c                      |    2 +-
+ drivers/spi/amba-pl022.c                           |    2 +-
+ drivers/spi/spi_nuc900.c                           |    2 +-
+ .../staging/ath6kl/hif/sdio/linux_sdio/src/hif.c   |    2 +-
+ drivers/staging/ath6kl/os/linux/ar6000_drv.c       |    2 +-
+ drivers/staging/bcm/InterfaceInit.c                |    2 +-
+ drivers/staging/bcm/InterfaceIsr.c                 |    2 +-
+ drivers/staging/bcm/Misc.c                         |    4 ++--
+ .../comedi/drivers/addi-data/APCI1710_Tor.c        |    2 +-
+ .../comedi/drivers/addi-data/hwdrv_apci1500.c      |    2 +-
+ .../comedi/drivers/addi-data/hwdrv_apci1516.c      |    2 +-
+ .../comedi/drivers/addi-data/hwdrv_apci3501.c      |    2 +-
+ drivers/staging/comedi/drivers/amplc_pci230.c      |    2 +-
+ drivers/staging/comedi/drivers/cb_das16_cs.c       |    2 +-
+ drivers/staging/comedi/drivers/comedi_bond.c       |    2 +-
+ drivers/staging/crystalhd/crystalhd_hw.c           |    2 +-
+ drivers/staging/go7007/go7007-driver.c             |    2 +-
+ drivers/staging/iio/accel/lis3l02dq_ring.c         |    2 +-
+ .../staging/intel_sst/intel_sst_drv_interface.c    |    4 ++--
+ drivers/staging/keucr/smilmain.c                   |    4 ++--
+ drivers/staging/keucr/smilsub.c                    |    4 ++--
+ drivers/staging/msm/lcdc_toshiba_wvga_pt.c         |    2 +-
+ drivers/staging/rt2860/common/cmm_data_pci.c       |    4 ++--
+ drivers/staging/rt2860/rt_linux.c                  |    2 +-
+ drivers/staging/rt2860/rtmp.h                      |    2 +-
+ drivers/staging/rtl8192e/ieee80211/ieee80211_tx.c  |    2 +-
+ drivers/staging/rtl8192e/r819xE_phy.c              |    2 +-
+ drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c  |    2 +-
+ drivers/staging/rtl8192u/r8192U_core.c             |    2 +-
+ drivers/staging/rtl8192u/r819xU_phy.c              |    2 +-
+ drivers/staging/rtl8712/rtl8712_efuse.c            |    2 +-
+ drivers/staging/rtl8712/rtl8712_xmit.c             |    2 +-
+ drivers/staging/rtl8712/rtl871x_xmit.c             |    2 +-
+ drivers/staging/tidspbridge/core/tiomap3430.c      |    4 ++--
+ drivers/staging/tidspbridge/rmgr/nldr.c            |    2 +-
+ drivers/staging/vt6655/card.c                      |    2 +-
+ drivers/staging/vt6655/iwctl.c                     |    2 +-
+ drivers/staging/vt6655/wpa2.c                      |    4 ++--
+ drivers/staging/vt6656/baseband.c                  |    2 +-
+ drivers/staging/vt6656/iwctl.c                     |    2 +-
+ drivers/staging/vt6656/power.c                     |    2 +-
+ drivers/staging/vt6656/wpa2.c                      |    4 ++--
+ drivers/usb/gadget/f_fs.c                          |    2 +-
+ drivers/xen/swiotlb-xen.c                          |    2 +-
+ fs/9p/acl.c                                        |    2 +-
+ fs/9p/xattr.c                                      |    2 +-
+ fs/ceph/mds_client.c                               |    2 +-
+ fs/logfs/readwrite.c                               |    2 +-
+ fs/nfs/getroot.c                                   |    2 +-
+ fs/ocfs2/refcounttree.c                            |    2 +-
+ fs/ubifs/scan.c                                    |    2 +-
+ include/linux/if_macvlan.h                         |    2 +-
+ include/net/caif/cfctrl.h                          |    2 +-
+ mm/hugetlb.c                                       |    2 +-
+ net/ipv6/mcast.c                                   |    2 +-
+ net/sunrpc/addr.c                                  |    2 +-
+ sound/core/pcm_lib.c                               |    2 +-
+ sound/soc/codecs/wm8904.c                          |    2 +-
+ sound/soc/codecs/wm8940.c                          |    1 -
+ sound/soc/codecs/wm8993.c                          |    2 +-
+ sound/soc/codecs/wm_hubs.c                         |    2 +-
+ 100 files changed, 111 insertions(+), 112 deletions(-)
 
-It's an improvement for things like smooth scrolling around, but what
-I found more interesting was how it seems to really make web pages
-load a lot faster. Maybe it shouldn't have been surprising, but I
-always associated that with network performance. But there's clearly
-enough of a CPU load when loading a new web page that if you have a
-load average of 50+ at the same time, you _will_ be starved for CPU in
-the loading process, and probably won't get all the http requests out
-quickly enough.
+-- 
+1.7.3.1.g432b3.dirty
 
-So I think this is firmly one of those "real improvement" patches.
-Good job. Group scheduling goes from "useful for some specific server
-loads" to "that's a killer feature".
-
-           Linus
