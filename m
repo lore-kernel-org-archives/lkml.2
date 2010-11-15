@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933501Ab0KOTLA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 14:11:00 -0500
-Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:1303 "EHLO
-	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932217Ab0KOTK6 (ORCPT
+	id S933511Ab0KOTM3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 14:12:29 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40056 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933009Ab0KOTM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 14:10:58 -0500
-Message-ID: <4CE185AE.6000805@xs4all.nl>
-Date: Mon, 15 Nov 2010 20:10:38 +0100
-From: Jim Bos <jim876@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101106 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Jakub Jelinek <jakub@redhat.com>
-CC: Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        James Cloos <cloos@jhcloos.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
-        Dave Korn <dave.korn.cygwin@gmail.com>,
-        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-References: <m31v6nmmr3.fsf@jhcloos.com> <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com> <20101115085605.GE2583@sunsite.ms.mff.cuni.cz> <20101115100331.GG2583@sunsite.ms.mff.cuni.cz> <20101115105446.GD7269@basil.fritz.box> <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com> <20101115113739.GH7269@basil.fritz.box> <4CE16F86.40808@xs4all.nl> <20101115174449.GW29412@tyan-ft48-01.lab.bos.redhat.com> <4CE1793B.2010109@xs4all.nl> <20101115182627.GH2583@sunsite.ms.mff.cuni.cz>
-In-Reply-To: <20101115182627.GH2583@sunsite.ms.mff.cuni.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Nov 2010 14:12:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=syrBjOh+5ohzVDywhuMUeQjuxYqaAIYfkL0EgrebPdNxCCbaSOY7t9ZU7fT0EKEEMy
+         ou74D2EHR2JJ5V0xjQaLCzpVOLUOELPlnDoyGjozeAEifPYsTa/ciW9zhjxJXDyNCm6v
+         O2atlaUqD5AYLv6uVcEdguQaI8uv7TMCRVoqY=
+Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        kernel-janitors@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Jelinek <jakub@redhat.com>
+In-Reply-To: <20101114180643.593d19ac.akpm@linux-foundation.org>
+References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
+	 <20101112120834.33062900.akpm@linux-foundation.org>
+	 <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
+	 <20101114092533.GB5323@albatros>
+	 <20101114180643.593d19ac.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Nov 2010 20:12:21 +0100
+Message-ID: <1289848341.2607.125.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 07:26 PM, Jakub Jelinek wrote:
-> On Mon, Nov 15, 2010 at 07:17:31PM +0100, Jim Bos wrote:
->>  # gcc -v
->> Reading specs from /usr/lib/gcc/i486-slackware-linux/4.5.1/specs
->> COLLECT_GCC=gcc
->> COLLECT_LTO_WRAPPER=/usr/libexec/gcc/i486-slackware-linux/4.5.1/lto-wrapper
->> Target: i486-slackware-linux
->> Configured with: ../gcc-4.5.1/configure --prefix=/usr --libdir=/usr/lib
->> --mandir=/usr/man --infodir=/usr/info --enable-shared --enable-bootstrap
->> --enable-languages=ada,c,c++,fortran,java,objc --enable-threads=posix
->> --enable-checking=release --with-system-zlib
->> --with-python-dir=/lib/python2.6/site-packages
->> --disable-libunwind-exceptions --enable-__cxa_atexit --enable-libssp
->> --with-gnu-ld --verbose --with-arch=i486 --target=i486-slackware-linux
->> --build=i486-slackware-linux --host=i486-slackware-linux
->> Thread model: posix
->> gcc version 4.5.1 (GCC)
+Le dimanche 14 novembre 2010 à 18:06 -0800, Andrew Morton a écrit : 
+> On Sun, 14 Nov 2010 12:25:33 +0300 Vasiliy Kulikov <segoon@openwall.com> wrote:
+> >  
+> >  	if (timeval) {
+> > -		rtv.tv_sec = rts.tv_sec;
+> > -		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
+> > +		struct timeval rtv = {
+> > +			.tv_sec = rts.tv_sec,
+> > +			.tv_usec = rts.tv_nsec / NSEC_PER_USEC
+> > +		};
+> >  
+> >  		if (!copy_to_user(p, &rtv, sizeof(rtv)))
+> >  			return ret;
 > 
-> Does it have any patches applied?  The gcc options look the same as what
-> I've been already trying earlier.
-> Thus, can you run gcc with those options on i8k.i and add -fverbose-asm
-> to make it easier to read and post i8k.s you get?
-> 
-> 	Jakub
-> 
+> Please check the assembly code - this will still leave four bytes of
+> uninitalised stack data in 'rtv', surely.
 
-Slackware is typically not patching much (and I'm just using the
-pre-compiled binary).  Here is the link to how it's built:
- http://slackware.osuosl.org/slackware-current/source/d/gcc/
-there doesn't appear to be anything relevant changed.
+Thats a good question.
 
-I already posted the .s files, plain 2.6.36 and the one with working
-patch, I =think= that's already using -fverbose-asm, at least that shows
-in the output.
+In my understanding, gcc should initialize all holes (and other not
+mentioned fields) with 0, even for automatic storage [C99 only mandates
+this on static storage]
 
-_
-Jim
+I tested on x86_64 and this is the case, but could not find a definitive
+answer in gcc documentation.
 
+This kind of construct is widely used in networking tree.
+
+Maybe we should ask to gcc experts if this behavior is guaranteed by
+gcc, or if we must review our code ;(
+
+CC Jakub
+
+Thanks !
 
 
