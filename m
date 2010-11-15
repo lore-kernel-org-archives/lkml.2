@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab0KOMlR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 07:41:17 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:44070 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756135Ab0KOMlQ (ORCPT
+	id S932194Ab0KOMlg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 07:41:36 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:38323 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756135Ab0KOMlf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 07:41:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=vxa8Par/YL1xbivb6RiwKD3Scr/Btyz21IgO9YuHlsXrrFuAOE8CZxmCt5V5O+hYNY
-         IlHJ7lpiNiIP959lnA+cuxVzXMZC3OrTFhtx3ckrpnAREpf+AkZbF3XNqm9GUU4OvPD9
-         wZcWaz/vub1F4TBVM5huwItKKNTx/ExM7FvLg=
-Date: Mon, 15 Nov 2010 15:40:56 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Mike Frysinger <vapier@gentoo.org>, Feng Tang <feng.tang@intel.com>,
-        Tobias Klauser <tklauser@distanz.ch>, linux-kernel@vger.kernel.org,
-        yong.y.wang@intel.com, qi.wang@intel.com, kok.howg.ewe@intel.com,
-        andrew.chih.howe.khor@intel.com
-Subject: Re: [PATCH v3] EG20T: Update PCH_UART driver to 2.6.36
-Message-ID: <20101115124055.GA29030@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
-	Alan Cox <alan@linux.intel.com>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-	Mike Frysinger <vapier@gentoo.org>, Feng Tang <feng.tang@intel.com>,
-	Tobias Klauser <tklauser@distanz.ch>, linux-kernel@vger.kernel.org,
-	yong.y.wang@intel.com, qi.wang@intel.com, kok.howg.ewe@intel.com,
-	andrew.chih.howe.khor@intel.com
-References: <4CE126DB.4080500@dsn.okisemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE126DB.4080500@dsn.okisemi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 15 Nov 2010 07:41:35 -0500
+Date: Mon, 15 Nov 2010 21:41:56 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: [GIT PULL] Samsung fixes for 2.6.37-rc2
+To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, ben-linux@fluff.org
+Message-id: <007901cb84c2$7f465a30$7dd30e90$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=US-ASCII
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcuEwnxpFQxPPwmfTmSjEeZ9hJ6Q0w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 09:26:03PM +0900, Tomoya MORINAGA wrote:
-> +	spin_lock_irqsave(&port->lock, flags);
-> +
-> +	uart_update_timeout(port, termios->c_cflag, baud);
-> +	rtn = pch_uart_hal_set_line(priv, baud, parity, bits, stb);
-> +	if (rtn)
+Hi Linus,
 
-	You need a spin_unlock_irqrestore(&port->lock, flags); here.
+Please pull Samsung fixes from:
 
-> +		return;
-> +
-> +	/* Don't rewrite B0 */
-> +	if (tty_termios_baud_rate(termios))
-> +		tty_termios_encode_baud_rate(termios, baud, baud);
-> +
-> +	spin_unlock_irqrestore(&port->lock, flags);
-> +}
+git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+s5p-fixes-for-linus
 
-regards,
-dan carpenter
+These things are for fix build warnings on 2.6.37-rc2.
+If any problems, please let me know.
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
+
+The following changes since commit c8ddb2713c624f432fa5fe3c7ecffcdda46ea0d4:
+
+  Linux 2.6.37-rc1 (2010-11-01 07:54:12 -0400)
+
+are available in the git repository at:
+   git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
+s5p-fixes-for-linus
+
+Kukjin Kim (2):
+      ARM: SAMSUNG: Fix HAVE_S3C2410_I2C warnings
+      ARM: SAMSUNG: Fix HAVE_S3C_RTC warnings
+
+Kyungmin Park (1):
+      ARM: SAMSUNG: Fix HAVE_S3C2410_WATCHDOG warnings
+
+ arch/arm/Kconfig              |   32 ++++++++++++++++----------------
+ arch/arm/mach-s3c64xx/Kconfig |    2 +-
+ 2 files changed, 17 insertions(+), 17 deletions(-)
+
