@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933103Ab0KODKE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 22:10:04 -0500
-Received: from mail.perches.com ([173.55.12.10]:1195 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932782Ab0KODFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932792Ab0KODFn (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 14 Nov 2010 22:05:43 -0500
+Received: from mail.perches.com ([173.55.12.10]:1183 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932690Ab0KODFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 22:05:40 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: James Smart <james.smart@emulex.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 24/44] drivers/scsi/lpfc: Remove unnecessary semicolons
-Date: Sun, 14 Nov 2010 19:04:43 -0800
-Message-Id: <1a0612305d3b141f85a6aeef6d91cd6829a80bae.1289789605.git.joe@perches.com>
+Cc: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+        Daniel Oliveira Nascimento <don@syst.com.br>,
+        Matthew Garrett <mjg@redhat.com>,
+        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ibm-acpi-devel@lists.sourceforge.net
+Subject: [PATCH 19/44] drivers/platform/x86: Remove unnecessary semicolons
+Date: Sun, 14 Nov 2010 19:04:38 -0800
+Message-Id: <eda82bcfaad265fc5cd3901bc4f41bfcfac2403b.1289789604.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289789604.git.joe@perches.com>
 References: <cover.1289789604.git.joe@perches.com>
@@ -23,22 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/scsi/lpfc/lpfc_bsg.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/platform/x86/classmate-laptop.c |    2 +-
+ drivers/platform/x86/thinkpad_acpi.c    |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/lpfc/lpfc_bsg.c b/drivers/scsi/lpfc/lpfc_bsg.c
-index 7260c3a..9e2c652 100644
---- a/drivers/scsi/lpfc/lpfc_bsg.c
-+++ b/drivers/scsi/lpfc/lpfc_bsg.c
-@@ -617,7 +617,7 @@ lpfc_bsg_rport_els(struct fc_bsg_job *job)
- 	dd_data->context_un.iocb.cmdiocbq = cmdiocbq;
- 	dd_data->context_un.iocb.rspiocbq = rspiocbq;
- 	dd_data->context_un.iocb.set_job = job;
--	dd_data->context_un.iocb.bmp = NULL;;
-+	dd_data->context_un.iocb.bmp = NULL;
- 	dd_data->context_un.iocb.ndlp = ndlp;
+diff --git a/drivers/platform/x86/classmate-laptop.c b/drivers/platform/x86/classmate-laptop.c
+index 341cbfe..d2b7720 100644
+--- a/drivers/platform/x86/classmate-laptop.c
++++ b/drivers/platform/x86/classmate-laptop.c
+@@ -653,7 +653,7 @@ static void cmpc_keys_handler(struct acpi_device *dev, u32 event)
  
- 	if (phba->cfg_poll & DISABLE_FCP_RING_INT) {
+ 	if ((event & 0x0F) < ARRAY_SIZE(cmpc_keys_codes))
+ 		code = cmpc_keys_codes[event & 0x0F];
+-	inputdev = dev_get_drvdata(&dev->dev);;
++	inputdev = dev_get_drvdata(&dev->dev);
+ 	input_report_key(inputdev, code, !(event & 0x10));
+ }
+ 
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index 2d61186..3cd7814 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -6345,7 +6345,7 @@ static int __init brightness_init(struct ibm_init_struct *iibm)
+ 			"as change notification\n");
+ 	tpacpi_hotkey_driver_mask_set(hotkey_driver_mask
+ 				| TP_ACPI_HKEY_BRGHTUP_MASK
+-				| TP_ACPI_HKEY_BRGHTDWN_MASK);;
++				| TP_ACPI_HKEY_BRGHTDWN_MASK);
+ 	return 0;
+ }
+ 
 -- 
 1.7.3.1.g432b3.dirty
 
