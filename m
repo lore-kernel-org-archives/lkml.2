@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468Ab0KOSnU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 13:43:20 -0500
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:34894 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754989Ab0KOSnT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 13:43:19 -0500
-Date: Mon, 15 Nov 2010 19:40:28 +0100
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Sekhar Nori <nsekhar@ti.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mach-davinci: signedness bug
-Message-ID: <20101115194028.30f8b7f0@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S933480Ab0KOSns (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 13:43:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34968 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756904Ab0KOSnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 13:43:47 -0500
+Message-ID: <4CE17F17.1010201@redhat.com>
+Date: Mon, 15 Nov 2010 11:42:31 -0700
+From: Jeff Law <law@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Andreas Schwab <schwab@linux-m68k.org>
+CC: Andi Kleen <andi@firstfloor.org>, Jim <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        gcc@gcc.gnu.org
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling  drivers/char/i8k.c
+ ?
+References: <4CD538CA.8010901@xs4all.nl> <87wroostw3.fsf@basil.nowhere.org> <m2hbfsu57i.fsf@igel.home>
+In-Reply-To: <m2hbfsu57i.fsf@igel.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-aemif_calc_rate() can return a negative error value, so all the
-variables that get tested for this value need to be signed.
+On 11/07/10 15:41, Andreas Schwab wrote:
+> Andi Kleen<andi@firstfloor.org>  writes:
+>
+>> Jim<jim876@xs4all.nl>  writes:
+>>
+>>> After upgrading my Dell laptop, both OS+kernel the i8k interface was giving
+>>> nonsensical output. As it turned out it's not the kernel but compiler
+>>> upgrade which broke this.
+>>>
+>>> Guys at Archlinux have found the underlying cause (but don't seem to have
+>>> submitted a patch yet):
+>>>    https://bbs.archlinux.org/viewtopic.php?pid=780692#p780692
+>>> gcc seems to optimize the assembly statements away.
+>>>
+>>> And indeed, applying this patch makes the i8k interface work again,
+>>> i.e. replacing the asm(..) construct by  asm volatile(..)
+>> The compiler really should not optimize the asm away, because
+>> it has both input and output arguments which are later used.
+>> "asm volatile" normally just means "don't move significantly"
+> The asm fails to mention that it modifies *regs.
+But there's a memory clobber, that should be sufficient to indicate 
+*regs is modified.
 
-The maximum bit width of WSETUP(WSETUP_MAX) appears to be 30 bits
-(0xf << 26). Using a signed instead of an unsigned integer
-shouldn't make a difference here.
+jeff
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- arch/arm/mach-davinci/aemif.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/mach-davinci/aemif.c b/arch/arm/mach-davinci/aemif.c
-index 9c3f500..1ce70a9 100644
---- a/arch/arm/mach-davinci/aemif.c
-+++ b/arch/arm/mach-davinci/aemif.c
-@@ -90,7 +90,7 @@ int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
- 					void __iomem *base, unsigned cs)
- {
- 	unsigned set, val;
--	unsigned ta, rhold, rstrobe, rsetup, whold, wstrobe, wsetup;
-+	int ta, rhold, rstrobe, rsetup, whold, wstrobe, wsetup;
- 	unsigned offset = A1CR_OFFSET + cs * 4;
- 	struct clk *aemif_clk;
- 	unsigned long clkrate;
--- 
-1.7.2.2
