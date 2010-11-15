@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557Ab0KODBV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 22:01:21 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51840 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932493Ab0KODBT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 22:01:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=e+c4L0VDtlikW1jxkyPhwS0K84015W3IvemYmFRugyxgxBeYydhlNjfnStaCuA79a6
-         moxZS8A7NLV/6XPFB6+P/j9aGZJ5dcv/W0kgC+L+lIGA3GA8hXuiMjbGoceQMmFFqgSt
-         CWF1wUfmG5NAsoer2E/mJw+GyByRgwA98uYr0=
-MIME-Version: 1.0
-In-Reply-To: <1289764664.2743.110.camel@edumazet-laptop>
-References: <28d666269c390965f1a4edca42f93c12@localhost>
-	<1289725175.2743.65.camel@edumazet-laptop>
-	<AANLkTik4PLga8mX73c8iONPeOtpDiuDhfu3xiPmF07jC@mail.gmail.com>
-	<1289764664.2743.110.camel@edumazet-laptop>
-Date: Sun, 14 Nov 2010 19:01:17 -0800
-Message-ID: <AANLkTi==8nwn3g5t1uw=CP1K0vegUE2hAdDxOq-fkVRW@mail.gmail.com>
-Subject: Re: [PATCH/RFC] netfilter: nf_conntrack_sip: Handle quirky Cisco phones
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S932738Ab0KODFk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 22:05:40 -0500
+Received: from mail.perches.com ([173.55.12.10]:1166 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932690Ab0KODFh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 22:05:37 -0500
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Ramkrishna Vepa <ramkrishna.vepa@exar.com>,
+        Sivakumar Subramani <sivakumar.subramani@exar.com>,
+        Sreenivasa Honnur <sreenivasa.honnur@exar.com>,
+        Jon Mason <jon.mason@exar.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 15/44] drivers/net/vxge: Remove unnecessary semicolons
+Date: Sun, 14 Nov 2010 19:04:34 -0800
+Message-Id: <e86e79a18106cc38715136bfb2e880b38f5ac764.1289789604.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
+In-Reply-To: <cover.1289789604.git.joe@perches.com>
+References: <cover.1289789604.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 11:57 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Via: SIP/2.0/UDP 192.168.2.28:5060;branch=xxxxxxxx
->
->
-> Maybe a fix would be to use this "5060" port, instead of hardcoding it
-> like you did ?
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/vxge/vxge-main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Just posted v2... appreciate the advice so far.
+diff --git a/drivers/net/vxge/vxge-main.c b/drivers/net/vxge/vxge-main.c
+index 813829f..93e80c5 100644
+--- a/drivers/net/vxge/vxge-main.c
++++ b/drivers/net/vxge/vxge-main.c
+@@ -2062,7 +2062,7 @@ static irqreturn_t vxge_isr_napi(int irq, void *dev_id)
+ 	struct __vxge_hw_device *hldev;
+ 	u64 reason;
+ 	enum vxge_hw_status status;
+-	struct vxgedev *vdev = (struct vxgedev *) dev_id;;
++	struct vxgedev *vdev = (struct vxgedev *)dev_id;
+ 
+ 	vxge_debug_intr(VXGE_TRACE, "%s:%d", __func__, __LINE__);
+ 
+-- 
+1.7.3.1.g432b3.dirty
 
-My new code in process_sip_request() looks for an address match + port
-mismatch between the IP source and the Via: header.  This is how it
-tries to detect whether we are talking directly to an afflicted Cisco
-phone.  If the address doesn't match, I assume the request is passing
-through a non-SIP-aware NAT router so there is no special handling.
-
-Assuming we can reliably detect the "quirky phone" condition, is there
-any way to just trick Netfilter into thinking the source port was 5060
-instead of 49xxx?  3/4ths of the patch could probably be eliminated if
-we could overwrite the port number inside tuplehash.
