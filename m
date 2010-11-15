@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab0KOPuM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 10:50:12 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59724 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757581Ab0KOPuJ convert rfc822-to-8bit (ORCPT
+	id S1757551Ab0KOPxK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 10:53:10 -0500
+Received: from mtagate6.uk.ibm.com ([194.196.100.166]:32952 "EHLO
+	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828Ab0KOPxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 10:50:09 -0500
-MIME-Version: 1.0
-X-Originating-IP: [81.245.189.130]
-In-Reply-To: <1289498595-25806-2-git-send-email-trenn@suse.de>
-References: <1289498595-25806-1-git-send-email-trenn@suse.de>
-	<1289498595-25806-2-git-send-email-trenn@suse.de>
-Date: Mon, 15 Nov 2010 16:50:08 +0100
-Message-ID: <AANLkTikT-a=b76dw2eP0bOOJCxk0rrCfhnerqkvVmCzt@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PERF: Do not export power_frequency, but power_start event
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: mingo@elte.hu, rjw@sisk.pl, linux-kernel@vger.kernel.org,
-        arjan@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Nov 2010 10:53:08 -0500
+Subject: Re: [RFC][PATCH v2 1/7] taskstats: Add new taskstats command
+ TASKSTATS_CMD_ATTR_PIDS
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+In-Reply-To: <1289676005.2109.148.camel@laptop>
+References: <20101111170352.732381138@linux.vnet.ibm.com>
+	 <20101111170813.527389224@linux.vnet.ibm.com>
+	 <1289676005.2109.148.camel@laptop>
+Content-Type: text/plain; charset="us-ascii"
+Organization: IBM
+Date: Mon, 15 Nov 2010 16:53:00 +0100
+Message-ID: <1289836380.1916.41.camel@holzheu-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Jean Pihet <j-pihet@ti.com>
+Hello Peter,
 
-On Thu, Nov 11, 2010 at 7:03 PM, Thomas Renninger <trenn@suse.de> wrote:
-> power_frequency moved to drivers/cpufreq/cpufreq.c which has
-> to be compiled in, no need to export it.
->
-> intel_idle can a be module though...
->
-> Signed-off-by: Thomas Renninger <trenn@suse.de>
-> CC: Jean Pihet <jean.pihet@newoldbits.com>
-> CC: Arjan van de Ven <arjan@linux.intel.com>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: linux-kernel@vger.kernel.org
-> ---
->  drivers/idle/intel_idle.c   |    2 --
->  kernel/trace/power-traces.c |    2 +-
->  2 files changed, 1 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-> index 41665d2..3c95325 100644
-> --- a/drivers/idle/intel_idle.c
-> +++ b/drivers/idle/intel_idle.c
-> @@ -220,9 +220,7 @@ static int intel_idle(struct cpuidle_device *dev, struct cpuidle_state *state)
->        kt_before = ktime_get_real();
->
->        stop_critical_timings();
-> -#ifndef MODULE
->        trace_power_start(POWER_CSTATE, (eax >> 4) + 1, cpu);
-> -#endif
->        if (!need_resched()) {
->
->                __monitor((void *)&current_thread_info()->flags, 0, 0);
-> diff --git a/kernel/trace/power-traces.c b/kernel/trace/power-traces.c
-> index a22582a..0e0497d 100644
-> --- a/kernel/trace/power-traces.c
-> +++ b/kernel/trace/power-traces.c
-> @@ -13,5 +13,5 @@
->  #define CREATE_TRACE_POINTS
->  #include <trace/events/power.h>
->
-> -EXPORT_TRACEPOINT_SYMBOL_GPL(power_frequency);
-> +EXPORT_TRACEPOINT_SYMBOL_GPL(power_start);
->
-> --
-> 1.6.3
->
->
+On Sat, 2010-11-13 at 20:20 +0100, Peter Zijlstra wrote:
+> On Thu, 2010-11-11 at 18:03 +0100, Michael Holzheu wrote:
+> > As clock for 'now' and 'time' the sched_clock() function is used and the patch
+> 
+> > +       preempt_disable();
+> > +       stats->time_ns = sched_clock();
+> > +       preempt_enable();
+> 
+> > +       task_snap_time = sched_clock();
+> 
+> That's just plain broken...
+
+What exactly do you mean? Do you mean that we should not use
+sched_clock() in general or that it is called twice?
+
+> 
+> 
+> > +       t->sched_info.last_depart = task_rq(t)->clock;
+> 
+> Are you sure you don't mean task_rq(t)->clock_task ?
+
+Maybe... I want to save in "last_depart" a sched_clock() timestamp that
+is as precise as possible.
+
+We use "last_depart" for the TASKSTATS_CMD_ATTR_PIDS command to find out
+which tasks have been running on a CPU since the last taskstats
+snapshot. We return all tasks where last_depart > MIN(stats->time_ns for
+all tasks of last snapshot).
+
+Michael
+
+
+
