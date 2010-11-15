@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab0KOGML (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 01:12:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58681 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751725Ab0KOGMK convert rfc822-to-8bit (ORCPT
+	id S1756178Ab0KOGZq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 01:25:46 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:39290 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755243Ab0KOGZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 01:12:10 -0500
-Date: Sun, 14 Nov 2010 23:12:26 -0700
-From: Pete Zaitcev <zaitcev@redhat.com>
-To: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, zaitcev@redhat.com
-Subject: Re: [PATCH, RFC] usbmon: correct computing of the ISO packets with
- mmap
-Message-ID: <20101114231226.16782336@lembas.zaitcev.lan>
-In-Reply-To: <4CE0C9B8.1010403@freemail.hu>
-References: <4CD8ECE4.1090206@freemail.hu>
-	<20101109075056.59a2e7d8@lembas.zaitcev.lan>
-	<4CD9A96D.1010306@freemail.hu>
-	<4CDF0DF4.4020405@freemail.hu>
-	<20101114124035.6a0c9b80@lembas.zaitcev.lan>
-	<4CE0458E.9070900@freemail.hu>
-	<20101114162502.6d6318e7@lembas.zaitcev.lan>
-	<4CE0C9B8.1010403@freemail.hu>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 15 Nov 2010 01:25:45 -0500
+Date: Mon, 15 Nov 2010 15:25:12 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sh updates for 2.6.37-rc2, part 2.
+Message-ID: <20101115062512.GD8489@linux-sh.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Nov 2010 06:48:40 +0100
-Németh Márton <nm127@freemail.hu> wrote:
+Nothing too interesting here, all trivial changes.
 
-> ev_type == 'S' && usb_urb_dir_out(urb)  ---> data is available, we'll need it
+Please pull from:
 
-The write submission case should be covered by the transfer_buffer_length,
-I think. Is there a driver that only sets the ISO descriptors but not
-the overall length?
+	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git sh-fixes-for-linus
 
--- Pete
+Which contains:
+
+Axel Lin (1):
+      rtc: rtc-sh - fix a memory leak
+
+Paul Mundt (4):
+      sh: intc: Fix up initializers for gcc 4.5.
+      sh: clkfwk: fix up compiler warnings.
+      MAINTAINERS: update the sh git tree entry.
+      sh: intc: Fix up build failure introduced by radix tree changes.
+
+ MAINTAINERS             |    2 +-
+ drivers/rtc/rtc-sh.c    |    4 ++--
+ drivers/sh/clk/core.c   |    4 ++--
+ drivers/sh/intc/virq.c  |    2 +-
+ include/linux/sh_intc.h |    2 +-
+ 5 files changed, 7 insertions(+), 7 deletions(-)
