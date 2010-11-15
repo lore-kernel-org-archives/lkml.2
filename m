@@ -1,131 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab0KOG5k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 01:57:40 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51712 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753452Ab0KOG5j (ORCPT
+	id S1756445Ab0KOG7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 01:59:21 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:45760 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752644Ab0KOG7U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 01:57:39 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Revert oom rewrite series
-Cc: kosaki.motohiro@jp.fujitsu.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Rientjes <rientjes@google.com>, Ying Han <yinghan@google.com>,
-        Bodo Eggert <7eggert@web.de>, Mandeep Singh Baines <msb@google.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-In-Reply-To: <20101114181905.bc5b44f9.akpm@linux-foundation.org>
-References: <20101115093410.BEFD.A69D9226@jp.fujitsu.com> <20101114181905.bc5b44f9.akpm@linux-foundation.org>
-Message-Id: <20101115113238.BF06.A69D9226@jp.fujitsu.com>
+	Mon, 15 Nov 2010 01:59:20 -0500
+Date: Mon, 15 Nov 2010 15:58:47 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [v2,5/8] NUMA Hotplug emulator
+Message-ID: <20101115065847.GH8489@linux-sh.org>
+References: <20101113061611.GO32501@shaohui>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 15 Nov 2010 15:57:36 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101113061611.GO32501@shaohui>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 15 Nov 2010 09:54:14 +0900 (JST) KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-> 
-> > > 2010/11/13 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
-> > > >
-> > > > Please apply this. this patch revert commits of oom changes since v2.6.35.
-> > > 
-> > > I'm not getting involved in this whole flame-war. You need to convince
-> > > Andrew, who has been the person everything went through.
-> > 
-> > I wonder why he deep silence.
-> 
-> Nothing to say, really.  Seems each time we're told about a bug or a
-> regression, David either fixes the bug or points out why it wasn't a
-> bug or why it wasn't a regression or how it was a deliberate behaviour
-> change for the better.
+On Sat, Nov 13, 2010 at 02:16:11PM +0800, Shaohui Zheng wrote:
+> @@ -37,6 +40,11 @@ static DEFINE_PER_CPU(struct x86_cpu, cpu_devices);
+>  /*
+>   * Add nid(NUMA node id) as parameter for cpu hotplug emulation. It supports
+>   * to register a CPU to any nodes.
+> + *
+> + * nid is a special parameter, it has 2 different branches:
+> + * 1) when nid == NUMA_NO_NODE, the CPU will be registered into the normal node
+> + * which it should be in.
+> + * 2) nid != NUMA_NO_NODE, it will be registered into the specified node.
+>   */
+>  static int __ref __arch_register_cpu(int num, int nid)
+>  {
+> @@ -52,8 +60,23 @@ static int __ref __arch_register_cpu(int num, int nid)
+>  	if (num)
+>  		per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
+>  
+> -	return register_cpu(&per_cpu(cpu_devices, num).cpu, num);
+> +	if (nid == NUMA_NO_NODE)
+> +		return register_cpu(&per_cpu(cpu_devices, num).cpu, num);
+> +	else
+> +		return register_cpu_emu(&per_cpu(cpu_devices, num).cpu, num, nid);
+> +}
+> +
+This looks like an incredibly painful interface. How about scrapping all
+of this _emu() mess and just reworking the register_cpu() interface?
+Something like:
 
-Of cource, I denied. He seems to think number of email is meaningful than
-how talk about. but it's incorrect and makes no sense. Why not? Also, He
-have to talk about logically. "Hey, I think it's not bug" makes no sense.
-Such claim don't solve anything. userland is still unhappy. Why not?
-I want to quickly action.
+---
 
-I would like to suggest they join and contribute any distro kernel 
-maintainance team. Many community based distribution welcome to developrs.
-And a bugfix work tell them a lot of thing. which usecase are freqently used,
-which bug reports are fequently raised, etc.
+ drivers/base/cpu.c  |    7 ++++---
+ include/linux/cpu.h |    8 +++++++-
+ 2 files changed, 11 insertions(+), 4 deletions(-)
 
-That said, If anyone want to change userland ABI, Be carefully. They have
-to investigate userland usecase carefully and avoid to break them carefully 
-again. If someone think "hey, It's no big matter. userland rewritten can solve
-an issue", I strongly disagree. they don't understand why all of userland 
-applications rewritten is harmful.
-
-
-
-> I just haven't seen any solid reason to be concerned about the state of
-> the current oom-killer, sorry.
-
-You can't say "I haven't seen". I always cced you. 
-
-
-> I'm concerned that you're concerned!  A lot.  When someone such as
-> yourself is unhappy with part of MM then I sit up and pay attention. 
-> But after all this time I simply don't understand the technical issues
-> which you're seeing here.
-
-You should have read my patch descriptions which I sent and my e-mail.
-
-
-1) About two month ago, Dave hansen observed strange OOM issue because he
-   has a big machine and ALL process are not so big. thus, eventually all 
-   process got oom-score=0 and oom-killer didn't work.
-
-   https://kerneltrap.org/mailarchive/linux-driver-devel/2010/9/9/6886383
-
-   DavidR changed oom-score to +1 in such situation. 
-
-   http://kerneltrap.org/mailarchive/linux-kernel/2010/9/9/4617455
-
-   But it is completely bognus. If all process have score=1, oom-killer fall
-   back to purely random killer. I expected and explained his patch has
-   its problem at half years ago. but he didn't fix yet.
-
-2) Also half years ago, I did explained oom_adj is used from multiple 
-   applications. And we can't break them. But DavidR didn't fix.
-
-3) Also about four month ago, I and kamezawa-san pointed out his patch
-   don't work on memcg. It also haven't been fixed.
-
-
-In the other hand, You can't explain what worth OOM-rewritten patch has. 
-Because there is nothing. It is only "powerful"(TM) for Google. but 
-instead It has zero worth for every other people. Here is just technical 
-issue. Bah.
-
-
-
-And, I just don't understand why some people try to remove or obsolate
-oom_adj. It's just eight lines code and It's used from multiple applications.
-There is no reason to break userland at all.
---------------------------------------------------------
- 178        /*
- 179         * Adjust the score by oom_adj.
- 180         */
- 181        if (oom_adj) {
- 182                if (oom_adj > 0) {
- 183                        if (!points)
- 184                                points = 1;
- 185                        points <<= oom_adj;
- 186                } else
- 187                        points >>= -(oom_adj);
- 188        }
---------------------------------------------------------
-
-
-If you still have a question, please ask me. maybe I can answer all of 
-your question.
-
-
-
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 251acea..039fd44 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -212,13 +212,14 @@ static SYSDEV_CLASS_ATTR(offline, 0444, print_cpus_offline, NULL);
+  * @cpu - cpu->hotpluggable field set to 1 will generate a control file in
+  *	  sysfs for this CPU.
+  * @num - CPU number to use when creating the device.
++ * @nid - Node ID to use, if any.
+  *
+  * Initialize and register the CPU device.
+  */
+-int __cpuinit register_cpu(struct cpu *cpu, int num)
++int __cpuinit register_cpu_node(struct cpu *cpu, int num, int nid)
+ {
+ 	int error;
+-	cpu->node_id = cpu_to_node(num);
++	cpu->node_id = nid;
+ 	cpu->sysdev.id = num;
+ 	cpu->sysdev.cls = &cpu_sysdev_class;
+ 
+@@ -229,7 +230,7 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
+ 	if (!error)
+ 		per_cpu(cpu_sys_devices, num) = &cpu->sysdev;
+ 	if (!error)
+-		register_cpu_under_node(num, cpu_to_node(num));
++		register_cpu_under_node(num, nid);
+ 
+ #ifdef CONFIG_KEXEC
+ 	if (!error)
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index 4823af6..d9e19c8 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -30,7 +30,13 @@ struct cpu {
+ 	struct sys_device sysdev;
+ };
+ 
+-extern int register_cpu(struct cpu *cpu, int num);
++extern int register_cpu_node(struct cpu *cpu, int num, int nid);
++
++static inline int register_cpu(struct cpu *cpu, int num)
++{
++	return register_cpu_node(cpu, num, cpu_to_node(num));
++}
++
+ extern struct sys_device *get_cpu_sysdev(unsigned cpu);
+ 
+ extern int cpu_add_sysdev_attr(struct sysdev_attribute *attr);
