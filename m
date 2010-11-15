@@ -1,20 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932894Ab0KODGe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 22:06:34 -0500
-Received: from mail.perches.com ([173.55.12.10]:1267 "EHLO mail.perches.com"
+	id S933029Ab0KODHJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 22:07:09 -0500
+Received: from mail.perches.com ([173.55.12.10]:1256 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932988Ab0KODGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 22:06:03 -0500
+	id S932690Ab0KODGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 22:06:01 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 42/44] net/sunrpc/addr.c: Remove unnecessary semicolons
-Date: Sun, 14 Nov 2010 19:05:01 -0800
-Message-Id: <aca92092a705e0d21176b5ac7d3581c4f9140dbc.1289789605.git.joe@perches.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 40/44] mm/hugetlb.c: Remove unnecessary semicolons
+Date: Sun, 14 Nov 2010 19:04:59 -0800
+Message-Id: <59705f848d35b12ace640f92afcffea02cee0976.1289789605.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289789604.git.joe@perches.com>
 References: <cover.1289789604.git.joe@perches.com>
@@ -24,22 +21,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/sunrpc/addr.c |    2 +-
+ mm/hugetlb.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/sunrpc/addr.c b/net/sunrpc/addr.c
-index 1419d0c..4195233 100644
---- a/net/sunrpc/addr.c
-+++ b/net/sunrpc/addr.c
-@@ -151,7 +151,7 @@ static size_t rpc_pton4(const char *buf, const size_t buflen,
- 		return 0;
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index c4a3558..8875242 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -540,7 +540,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
  
- 	sin->sin_family = AF_INET;
--	return sizeof(struct sockaddr_in);;
-+	return sizeof(struct sockaddr_in);
- }
+ 	/* If reserves cannot be used, ensure enough pages are in the pool */
+ 	if (avoid_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
+-		goto err;;
++		goto err;
  
- #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 						MAX_NR_ZONES - 1, nodemask) {
 -- 
 1.7.3.1.g432b3.dirty
 
