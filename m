@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932973Ab0KODGD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 22:06:03 -0500
-Received: from mail.perches.com ([173.55.12.10]:1227 "EHLO mail.perches.com"
+	id S932911Ab0KODF7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 22:05:59 -0500
+Received: from mail.perches.com ([173.55.12.10]:1216 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932846Ab0KODF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 22:05:56 -0500
+	id S932842Ab0KODFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 22:05:55 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
-        Latchesar Ionkov <lucho@ionkov.net>,
-        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH 32/44] fs/9p: Remove unnecessary semicolons
-Date: Sun, 14 Nov 2010 19:04:51 -0800
-Message-Id: <f6ae29dfdd0b9ad401f5eb77ae670212689ee921.1289789605.git.joe@perches.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 30/44] drivers/usb/gadget: Remove unnecessary semicolons
+Date: Sun, 14 Nov 2010 19:04:49 -0800
+Message-Id: <cdc48b6ab9446585f304c801cca45a2a9d1e37ec.1289789605.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289789604.git.joe@perches.com>
 References: <cover.1289789604.git.joe@perches.com>
@@ -23,36 +23,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/9p/acl.c   |    2 +-
- fs/9p/xattr.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/f_fs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/9p/acl.c b/fs/9p/acl.c
-index 12d6023..bc4da9a 100644
---- a/fs/9p/acl.c
-+++ b/fs/9p/acl.c
-@@ -28,7 +28,7 @@ static struct posix_acl *__v9fs_get_acl(struct p9_fid *fid, char *name)
- {
- 	ssize_t size;
- 	void *value = NULL;
--	struct posix_acl *acl = NULL;;
-+	struct posix_acl *acl = NULL;
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index 4a830df..38bb200 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -2096,7 +2096,7 @@ static int __ffs_func_bind_do_descs(enum ffs_entity_type type, u8 *valuep,
+ 		ep = usb_ep_autoconfig(func->gadget, ds);
+ 		if (unlikely(!ep))
+ 			return -ENOTSUPP;
+-		ep->driver_data = func->eps + idx;;
++		ep->driver_data = func->eps + idx;
  
- 	size = v9fs_fid_xattr_get(fid, name, NULL, 0);
- 	if (size > 0) {
-diff --git a/fs/9p/xattr.c b/fs/9p/xattr.c
-index 43ec7df..d288773 100644
---- a/fs/9p/xattr.c
-+++ b/fs/9p/xattr.c
-@@ -133,7 +133,7 @@ int v9fs_xattr_set(struct dentry *dentry, const char *name,
- 			"p9_client_xattrcreate failed %d\n", retval);
- 		goto error;
- 	}
--	msize = fid->clnt->msize;;
-+	msize = fid->clnt->msize;
- 	while (value_len) {
- 		if (value_len > (msize - P9_IOHDRSZ))
- 			write_count = msize - P9_IOHDRSZ;
+ 		req = usb_ep_alloc_request(ep, GFP_KERNEL);
+ 		if (unlikely(!req))
 -- 
 1.7.3.1.g432b3.dirty
 
