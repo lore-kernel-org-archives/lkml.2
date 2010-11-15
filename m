@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757300Ab0KOOjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 09:39:11 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:54222 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755874Ab0KOOjJ (ORCPT
+	id S1757410Ab0KOOlv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 09:41:51 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:45594 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756008Ab0KOOlu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 09:39:09 -0500
-Date: Mon, 15 Nov 2010 15:39:07 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
-Message-ID: <20101115143907.GN7269@basil.fritz.box>
-References: <20101105110828.52f061b3.akpm@linux-foundation.org>
- <1288981224.2882.1105.camel@edumazet-laptop>
- <20101105112821.57f80481.akpm@linux-foundation.org>
- <1288984844.2665.52.camel@edumazet-laptop>
- <20101105195101.GC15561@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1011121313001.16754@router.home>
- <20101113222612.GD2825@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1011150756130.19175@router.home>
- <1289830636.2607.70.camel@edumazet-laptop>
- <alpine.DEB.2.00.1011150821000.19175@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1011150821000.19175@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 15 Nov 2010 09:41:50 -0500
+Date: Mon, 15 Nov 2010 14:40:29 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Matthew Wilcox <matthew@wil.cx>,
+        Luben Tuikov <ltuikov@yahoo.com>, Greg KH <greg@kroah.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tj@kernel.org" <tj@kernel.org>
+Subject: Re: SCSI TMF processing; tag allocation
+Message-ID: <20101115144029.5c322b78@lxorguk.ukuu.org.uk>
+In-Reply-To: <1289831595.2233.5.camel@mulgrave.site>
+References: <380694.87733.qm@web31812.mail.mud.yahoo.com>
+	<20101113123750.GF18258@parisc-linux.org>
+	<4CE0FD24.4030000@fusionio.com>
+	<1289831595.2233.5.camel@mulgrave.site>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > atomic_read() and atomic_cmpxchg(). We tried prefetchw() and it was a
-> > performance drop. It was with only 16 cpus contending on neighbour
-> 
-> Does prefetchw work? Andi claims that prefetchw is not working on
-> x86 and I doubt that you ran tests on Itanium.
+> Realistically, tag starvation isn't really a problem.  It was a known
+> issue for 80s era hardware.  I've got some of the oldest drives on the
+> planet and I didn't see a problem when the clock algorithm was removed
+> from 53c700.
 
-AMD supports it due to their MOESI protocol, but it's not supported
-in MESIF as used by Intel QPI.  The kernel maps it on Intel to 
-ordinary prefetch.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+I'm not entirely sure that is the case at least for some early NCQ
+capable ATA drives 8(
