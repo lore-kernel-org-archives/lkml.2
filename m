@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933794Ab0KOVFC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 16:05:02 -0500
-Received: from claw.goop.org ([74.207.240.146]:56390 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933694Ab0KOVFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 16:05:00 -0500
-Message-ID: <4CE1A07B.5010202@goop.org>
-Date: Mon, 15 Nov 2010 13:04:59 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1758434Ab0KOVGW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 16:06:22 -0500
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:52877 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753862Ab0KOVGV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 16:06:21 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19LoYDLsOCFck0Ql73bRjZx
+Date: Mon, 15 Nov 2010 13:06:13 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Subject: [GIT PULL] omap fixes for 2.6.37-rc1
+Message-ID: <20101115210613.GM9264@atomide.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: linux-next: manual merge of the xen tree with Linus' tree
-References: <20101115112352.6cbf5604.sfr@canb.auug.org.au>
-In-Reply-To: <20101115112352.6cbf5604.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2010 04:23 PM, Stephen Rothwell wrote:
-> Hi all,
->
-> Today's linux-next merge of the xen tree got a conflict in
-> drivers/block/xen-blkfront.c between commit
-> 02e031cbc843b010e72fcc05c76113c688b2860f ("block: remove
-> REQ_HARDBARRIER") from Linus' tree and commits
-> c64e38ea17a81721da0393584fd807f8434050fa ("xen/blkfront: map REQ_FLUSH
-> into a full barrier") and be2f8373c188ed1f5d36003c9928e4d695213080
-> ("xen/blkfront: Implement FUA with BLKIF_OP_WRITE_BARRIER") from the xen
-> tree.
->
-> I used the xen tree version.
+Hi Linus,
 
-I'll drop that because you should be seeing those changes come via Jens.
+Please pull some trivial omap fixes from:
 
-    J
+git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
+
+Regards,
+
+Tony
+
+
+The following changes since commit c8ddb2713c624f432fa5fe3c7ecffcdda46ea0d4:
+
+  Linux 2.6.37-rc1 (2010-11-01 07:54:12 -0400)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
+
+Felipe Balbi (1):
+      arm: omap1: devices: need to return with a value
+
+Janusz Krzysztofik (1):
+      OMAP1: camera.h: add missing include
+
+Mathias Nyman (1):
+      omap: dma: Add read-back to DMA interrupt handler to avoid spuriousinterrupts
+
+Thomas Weber (1):
+      OMAP2: Devkit8000: Fix mmc regulator failure
+
+ arch/arm/mach-omap1/devices.c             |    5 ++---
+ arch/arm/mach-omap1/include/mach/camera.h |    2 ++
+ arch/arm/mach-omap2/board-devkit8000.c    |    3 ---
+ arch/arm/plat-omap/dma.c                  |    2 ++
+ 4 files changed, 6 insertions(+), 6 deletions(-)
