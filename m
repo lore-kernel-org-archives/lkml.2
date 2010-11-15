@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933624Ab0KOULJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 15:11:09 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:49235 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498Ab0KOULI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 15:11:08 -0500
-Subject: serial8250: Mark console as CON_ANYTIME
-From: Peter Zijlstra <peterz@infradead.org>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Ingo Molnar <mingo@elte.hu>, tglx <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 15 Nov 2010 21:11:12 +0100
-Message-ID: <1289851872.2109.550.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S933714Ab0KOUOO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 15:14:14 -0500
+Received: from mail.perches.com ([173.55.12.10]:1337 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932556Ab0KOUOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 15:14:10 -0500
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: Ramkrishna Vepa <ramkrishna.vepa@exar.com>,
+        Sivakumar Subramani <sivakumar.subramani@exar.com>,
+        Sreenivasa Honnur <sreenivasa.honnur@exar.com>,
+        Jon Mason <jon.mason@exar.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 06/11] drivers/net/s2io.c: Remove unnecessary casts of pci_get_drvdata
+Date: Mon, 15 Nov 2010 12:13:57 -0800
+Message-Id: <5add1304ab2cd7f730a81a85598ef7357b087a86.1289851770.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
+In-Reply-To: <cover.1289851770.git.joe@perches.com>
+References: <cover.1289851770.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-While trying to debug a cpu-hotplug issue I noticed printk() stopped
-working once the cpu got marked offline, since the 8250 serial console
-doesn't have any per-cpu resources the CON_ANYTIME bit is the safe and
-documented way to make it work again.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/serial/8250.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/s2io.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
-index 4d8e14b..09a5508 100644
---- a/drivers/serial/8250.c
-+++ b/drivers/serial/8250.c
-@@ -2872,7 +2872,7 @@ static struct console serial8250_console = {
- 	.device		= uart_console_device,
- 	.setup		= serial8250_console_setup,
- 	.early_setup	= serial8250_console_early_setup,
--	.flags		= CON_PRINTBUFFER,
-+	.flags		= CON_PRINTBUFFER | CON_ANYTIME,
- 	.index		= -1,
- 	.data		= &serial8250_reg,
- };
+diff --git a/drivers/net/s2io.c b/drivers/net/s2io.c
+index ecc25aa..0f4219c 100644
+--- a/drivers/net/s2io.c
++++ b/drivers/net/s2io.c
+@@ -8321,8 +8321,7 @@ mem_alloc_failed:
+ 
+ static void __devexit s2io_rem_nic(struct pci_dev *pdev)
+ {
+-	struct net_device *dev =
+-		(struct net_device *)pci_get_drvdata(pdev);
++	struct net_device *dev = pci_get_drvdata(pdev);
+ 	struct s2io_nic *sp;
+ 
+ 	if (dev == NULL) {
+-- 
+1.7.3.1.g432b3.dirty
 
