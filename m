@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932249Ab0KOLbS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 06:31:18 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:61184 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752723Ab0KOLbR (ORCPT
+	id S932333Ab0KOLbv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 06:31:51 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:33458 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755444Ab0KOLbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 06:31:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=EaL/JmAAmCat1QsKTucC/oBuZ9pE+GZ4h0xyf3E+CESLicLkeBhagfE0yq3G3Bd5eZ
-         31rgMNYFxttYidFEJs3iez456+IogNJMvoVM7LFdXSINjwsYEAZN55jectmIK3JkL06k
-         qpD/Adoyc8lxwLAOcxLaKxIwUh1RK6WEMRjjY=
-Subject: Re: Kernel rwlock design, Multicore and IGMP
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Cypher Wu <cypher.w@gmail.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-In-Reply-To: <AANLkTinzRm_5WW5HwxzXqZZD4255GDpR4yzELqz66Dfn@mail.gmail.com>
-References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
-	 <1289489007.17691.1310.camel@edumazet-laptop>
-	 <AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>
-	 <ZXmP8hjgLHA.4648@exchange1.tad.internal.tilera.com>
-	 <4CDF1945.8090101@tilera.com>
-	 <AANLkTind92uwcigzmDn8yn9a22exDy7zcreGQ5-6NLV-@mail.gmail.com>
-	 <AANLkTinzRm_5WW5HwxzXqZZD4255GDpR4yzELqz66Dfn@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Nov 2010 12:31:12 +0100
-Message-ID: <1289820672.2607.10.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 15 Nov 2010 06:31:50 -0500
+Date: Mon, 15 Nov 2010 12:31:48 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, cjashfor@linux.vnet.ibm.com,
+        mingo@elte.hu, fweisbec@gmail.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] perf-events: Add support for supplementary event
+ registers v2
+Message-ID: <20101115113148.GG7269@basil.fritz.box>
+References: <1289580941-29744-1-git-send-email-andi@firstfloor.org>
+ <1289582630.2084.331.camel@laptop>
+ <20101113101148.GB6418@gargoyle.fritz.box>
+ <1289644367.2084.526.camel@laptop>
+ <AANLkTin6rOx_gPkNET3arpx8LFJt_9sZUOBXna=WuFKq@mail.gmail.com>
+ <1289819201.2109.489.camel@laptop>
+ <AANLkTinjpsGyZ-j9Pw2y=2YA8++HxHymbKUNcKgwssra@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinjpsGyZ-j9Pw2y=2YA8++HxHymbKUNcKgwssra@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 15 novembre 2010 à 19:18 +0800, Cypher Wu a écrit :
-> In that post I want to confirm another thing: if we join/leave on
-> different cores that every call will start the timer for IGMP message
-> using the same in_dev->mc_list, could that be optimized?
+> Why would you want to measure both at the same time?
+> Because you can measure two distinct request/response in one run.
 > 
+> If you want to measure both you need to create two distinct perf events.
 
-Which timer exactly ? Is it a real scalability problem ?
+What I did currently was to assign some cache events to 0xb7 and
+others to bb on Westmere. That's a bit arbitrary, but allows to 
+measure some common combinations together at least.
 
-I believe RTNL would be the blocking point actually...
+In theory one could teach the scheduler that these events
+are equivalent, but that seems like too much complexity for 
+me currently.
+-Andi
 
-
-
+-- 
+ak@linux.intel.com -- Speaking for myself only.
