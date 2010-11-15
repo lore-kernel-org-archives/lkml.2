@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172Ab0KOXD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 18:03:59 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50797 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758820Ab0KOXD4 convert rfc822-to-8bit (ORCPT
+	id S1758248Ab0KOXHd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 18:07:33 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38199 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627Ab0KOXHc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 18:03:56 -0500
+	Mon, 15 Nov 2010 18:07:32 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=c5at3dyHl7IkcoUuXC0Gp7INNk3gMtWr5DZU6CDOpdyk41qWXf0OvcZnaZVMVUTH7h
-         Y9c4cOop5HCX5BGOQvdxzC68W9XyPUzgUeetsdqqw4usf1otJbZ2bGeZWtXYhCz1accB
-         544JfL0dk/qKVWHX5OF+PAwYubKAZAOTNESVo=
+        b=Ez/YMcQOyTFFd//bCvOKmjH572Mc8unXj3IBLEReUoXeoLhsiMGpqoxnKBr9myjYx4
+         9gJrt0oQ6HwJAAMUonmq3mqbHCHwSEihSHfVBh8qE1YCXsUBKeLRnV4osJmAyUVGYoOm
+         fnlFImBIO0aJ6K0XRybZZ22IvcXWnNUnsP/pk=
 MIME-Version: 1.0
-In-Reply-To: <1289861518.14282.41.camel@localhost.localdomain>
-References: <AANLkTimxbVnTVGobxhSTieJ4-PCTOZE_F6_E1-=8JcrO@mail.gmail.com>
-	<1289859078.14282.28.camel@localhost.localdomain>
-	<AANLkTim9XWU-Qn5OT1J8H2j4kajMLL_GTQQ4_N296ueJ@mail.gmail.com>
-	<1289861518.14282.41.camel@localhost.localdomain>
-Date: Tue, 16 Nov 2010 02:03:56 +0300
-Message-ID: <AANLkTikAczyi0FQaSV4eVL5prdVbyZj6QCkPbf7cMW47@mail.gmail.com>
-Subject: Re: A possible flaw in the fsnotify design.
-From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>, linux-fsdevel@vger.kernel.org,
-        "stefan@buettcher.org" <stefan@buettcher.org>,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4CE1BB10.5090501@redhat.com>
+References: <4CD538CA.8010901@xs4all.nl>
+	<87wroostw3.fsf@basil.nowhere.org>
+	<m2hbfsu57i.fsf@igel.home>
+	<87k4kospnd.fsf@basil.nowhere.org>
+	<AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com>
+	<4CE17FB6.7000800@redhat.com>
+	<AANLkTim-2XE=4MbfDLXkg+jj=P5wj2cVKBHemRHLZn2L@mail.gmail.com>
+	<4CE1BB10.5090501@redhat.com>
+Date: Tue, 16 Nov 2010 00:07:31 +0100
+Message-ID: <AANLkTi=piiT5MCWYvw+4wQPx=e8uVrQmY0Lw+=mnabK_@mail.gmail.com>
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+From: Richard Guenther <richard.guenther@gmail.com>
+To: Jeff Law <law@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Andreas Schwab <schwab@linux-m68k.org>,
+        Jim <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        gcc@gcc.gnu.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 01:51, Eric Paris <eparis@redhat.com> wrote:
-> On Tue, 2010-11-16 at 01:44 +0300, Alexey Zaytsev wrote:
->> On Tue, Nov 16, 2010 at 01:11, Eric Paris <eparis@redhat.com> wrote:
->> > On Tue, 2010-11-16 at 01:05 +0300, Alexey Zaytsev wrote:
->> >> Just some thoughts.
->> >>
->> >> Consider the situation: Files A and B both point to the same inode.
->> >> File A is being watched, but the user won't get notifications if B is
->> >> modified.
->> >
->> > That's not true. Â Users watch inodes, not files (this is true for both
->> > inotify and fanotify). Â Give it a try, it works.
->> >
+On Mon, Nov 15, 2010 at 11:58 PM, Jeff Law <law@redhat.com> wrote:
+> On 11/15/10 15:07, Richard Guenther wrote:
 >>
->> debian-i386:~/tmp# touch a
->> debian-i386:~/tmp# ../fanotify a &
->> debian-i386:~/tmp# link a b
->> debian-i386:~/tmp# ls -li
->> total 0
->> 3433 -rw-r--r-- 2 root root 0 Nov 15 22:37 a
->> 3433 -rw-r--r-- 2 root root 0 Nov 15 22:37 b
->> debian-i386:~/tmp# echo 123 > b
->> /root/tmp/b: pid=2143 mask = 20 open
->> /root/tmp/b: pid=2143 mask = a modify 0 - 4 close(writable) Â 0 - 4
+>> On Mon, Nov 15, 2010 at 7:45 PM, Jeff Law<law@redhat.com>  wrote:
+>>>
+>>> On 11/08/10 03:49, Richard Guenther wrote:
+>>>>
+>>>> On Mon, Nov 8, 2010 at 12:03 AM, Andi Kleen<andi@firstfloor.org>
+>>>>  wrote:
+>>>>>
+>>>>> Andreas Schwab<schwab@linux-m68k.org>    writes:
+>>>>>>
+>>>>>> The asm fails to mention that it modifies *regs.
+>>>>>
+>>>>> It has a memory clobber, that should be enough, no?
+>>>>
+>>>> No.  A memory clobber does not cover automatic storage.
+>>>
+>>> A memory clobber should clobber anything in memory, including autos in
+>>> memory; if it doesn't, then that seems like a major problem.  I'd like to
+>>> see the rationale behind not clobbering autos in memory.
 >>
->> Am I doing something wrong? Same thing happens if I watch the mount point.
+>> Non-address taken automatic storage.  (note that we don't excercise this
+>> in optimization yet)
 >
-> Maybe I don't understand the problem, you watched the inode behind A.
-> You made changes accessing this inode via B, you got notification about
-> those changes. Â Isn't that what you wanted?
+> If the address of the auto isn't taken, then why is the object in memory to
+> begin with (with the obvious exception for aggregates).
 
-I'd expect to get two notifications in this case. Might not be a
-problem when you are watching individual files, but there is no clear
-way to get all the modified files, if you are watching a mount point.
+Exactly sort of my point.  If people pass the address of &x to an asm
+and modify &x + 8 expecting the "adjacent" stack location to be changed
+I want to tell them that's not a supported way to get to another stack
+variable (even if they clobber "memory").  Or consider the C-decl guy
+who wants to access adjacent parameters by address arithmetic on
+the address of the first param ...
+
+Richard.
+
+> Jeff
+>
