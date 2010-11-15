@@ -1,40 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758702Ab0KOWn1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 17:43:27 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:37756 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754280Ab0KOWn0 (ORCPT
+	id S1758712Ab0KOWoU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 17:44:20 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57647 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758224Ab0KOWoT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 17:43:26 -0500
-Date: Mon, 15 Nov 2010 23:43:22 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Jakub Jelinek <jakub@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, Jim Bos <jim876@xs4all.nl>,
-        Andi Kleen <andi@firstfloor.org>, James Cloos <cloos@jhcloos.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
-        Dave Korn <dave.korn.cygwin@gmail.com>,
-        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-Message-ID: <20101115224322.GA1303@one.firstfloor.org>
-References: <20101115105446.GD7269@basil.fritz.box> <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com> <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com> <4CE17098.8090000@xs4all.nl> <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com> <4CE17C4B.1070305@xs4all.nl> <20101115185848.GI2583@sunsite.ms.mff.cuni.cz> <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com> <AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com> <20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>
-User-Agent: Mutt/1.4.2.2i
+	Mon, 15 Nov 2010 17:44:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=AAc4sU7Z8qIgCFhX4t/Pd83Cjqnp3KGi8VfiW4YcJeVkmDcSoaMUq+XsuTB+tCFJjB
+         ehgxjgtaIebX2BCFrI36Ek5S0j0INeKByRtViN0pSEgvXfFSVG3gD/9o+BiCSeOVSqRx
+         j2T4NmBbIa+PlfJoIOuIT5a4FHC4+e1JrKZ/Y=
+MIME-Version: 1.0
+In-Reply-To: <1289859078.14282.28.camel@localhost.localdomain>
+References: <AANLkTimxbVnTVGobxhSTieJ4-PCTOZE_F6_E1-=8JcrO@mail.gmail.com>
+	<1289859078.14282.28.camel@localhost.localdomain>
+Date: Tue, 16 Nov 2010 01:44:18 +0300
+Message-ID: <AANLkTim9XWU-Qn5OT1J8H2j4kajMLL_GTQQ4_N296ueJ@mail.gmail.com>
+Subject: Re: A possible flaw in the fsnotify design.
+From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>, linux-fsdevel@vger.kernel.org,
+        "stefan@buettcher.org" <stefan@buettcher.org>,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> testcase shows that in 4.1/4.2/4.3/4.4 this is miscompiled only when using
-> -fno-ipa-reference, in 4.5 it is miscompiled always when optimizing
-> unless -fno-ipa-pure-const (as 4.5 added local-pure-const pass which is run
-> before ipa-reference) and in 4.6 this has been fixed by Honza when
-> doing ipa cleanups.
+On Tue, Nov 16, 2010 at 01:11, Eric Paris <eparis@redhat.com> wrote:
+> On Tue, 2010-11-16 at 01:05 +0300, Alexey Zaytsev wrote:
+>> Just some thoughts.
+>>
+>> Consider the situation: Files A and B both point to the same inode.
+>> File A is being watched, but the user won't get notifications if B is
+>> modified.
+>
+> That's not true.  Users watch inodes, not files (this is true for both
+> inotify and fanotify).  Give it a try, it works.
+>
 
-Maybe it would be better to simply change the kernel Makefiles to pass
--fno-ipa-pure-const instead of adding volatiles everywhere.
+debian-i386:~/tmp# touch a
+debian-i386:~/tmp# ../fanotify a &
+debian-i386:~/tmp# link a b
+debian-i386:~/tmp# ls -li
+total 0
+3433 -rw-r--r-- 2 root root 0 Nov 15 22:37 a
+3433 -rw-r--r-- 2 root root 0 Nov 15 22:37 b
+debian-i386:~/tmp# echo 123 > b
+/root/tmp/b: pid=2143 mask = 20 open
+/root/tmp/b: pid=2143 mask = a modify 0 - 4 close(writable)  0 - 4
 
--Andi
+Am I doing something wrong? Same thing happens if I watch the mount point.
