@@ -1,70 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758145Ab0KOShb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 13:37:31 -0500
-Received: from smtp-vbr13.xs4all.nl ([194.109.24.33]:2515 "EHLO
-	smtp-vbr13.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757108Ab0KOSha (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 13:37:30 -0500
-Message-ID: <4CE17DDE.8050207@xs4all.nl>
-Date: Mon, 15 Nov 2010 19:37:18 +0100
-From: Jim Bos <jim876@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101106 Thunderbird/3.1.6
+	id S1758157Ab0KOSi1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 13:38:27 -0500
+Received: from mx2.fusionio.com ([64.244.102.31]:33665 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757885Ab0KOSi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 13:38:26 -0500
+X-ASG-Debug-ID: 1289846304-08b796290001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4CE17E1B.7000307@fusionio.com>
+Date: Mon, 15 Nov 2010 19:38:19 +0100
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jakub Jelinek <jakub@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        James Cloos <cloos@jhcloos.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
-        Dave Korn <dave.korn.cygwin@gmail.com>,
-        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-References: <4CD843DC.10106@gmail.com> <Pine.LNX.4.64.1011091352460.29956@wotan.suse.de> <20101109134816.GB29433@basil.fritz.box> <m3lj52txaq.fsf@redhat.com> <4CD97A3D.1040602@xs4all.nl> <m31v6nmmr3.fsf@jhcloos.com> <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com> <20101115085605.GE2583@sunsite.ms.mff.cuni.cz> <20101115100331.GG2583@sunsite.ms.mff.cuni.cz> <20101115105446.GD7269@basil.fritz.box> <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com> <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com> <4CE17098.8090000@xs4all.nl> <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com> <4CE17C4B.1070305@xs4all.nl>
-In-Reply-To: <4CE17C4B.1070305@xs4all.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Nauman Rafique <nauman@google.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>
+Subject: Re: [RFC] blk-cgroup: Allow creation of hierarchical cgroups
+References: <20101102222030.GI7198@redhat.com> <20101115152832.GH30792@redhat.com>
+X-ASG-Orig-Subj: Re: [RFC] blk-cgroup: Allow creation of hierarchical cgroups
+In-Reply-To: <20101115152832.GH30792@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1289846304
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.46721
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 07:30 PM, Jim Bos wrote:
-> On 11/15/2010 07:08 PM, Linus Torvalds wrote:
->> On Mon, Nov 15, 2010 at 9:40 AM, Jim Bos <jim876@xs4all.nl> wrote:
->>>
->>> Hmm, that doesn't work.
->>>
->>> [ Not sure if you read to whole thread but initial workaround was to
->>> change the asm(..) to asm volatile(..) which did work. ]
+On 2010-11-15 16:28, Vivek Goyal wrote:
+> On Tue, Nov 02, 2010 at 06:20:30PM -0400, Vivek Goyal wrote:
+>> o Allow hierarchical cgroup creation for blkio controller
 >>
->> Since I have a different gcc than yours (and I'm not going to compile
->> my own), have you posted your broken .s file anywhere? In fact, with
->> the noinline (and the removal of the "+m" thing - iow just the patch
->> you tried), what does just the "i8k_smm" function assembly look like
->> for you after you've done a "make drivers/char/i8k.s"?
+>> o Currently we disallow it as both the io controller policies (throttling
+>>   as well as proportion bandwidth) do not support hierarhical accounting
+>>   and control. But the flip side is that blkio controller can not be used with
+>>   libvirt as libvirt creates a cgroup hierarchy deeper than 1 level.
 >>
->> If the asm just doesn't exist AT ALL, that's just odd. Because every
->> single call-site of i8k_smm() clearly looks at the return value. So
->> the volatile really shouldn't make any difference from that
->> standpoint. Odd.
+>>   <top-level-cgroup-dir>/<controller>/libvirt/qemu/<virtual-machine-groups>
 >>
->>                        Linus
+>> o So this patch will allow creation of cgroup hierarhcy but at the backend
+>>   everything will be treated as flat. So if somebody created a an hierarchy
+>>   like as follows.
 >>
+>> 			root	
+>> 			/  \
+>> 		     test1 test2
+>> 			|
+>> 		     test3
+>>
+>>   CFQ and throttling will practically treat all groups at same level.
+>> 			
+>> 				pivot
+>> 			     /  |   \  \
+>> 			root  test1 test2  test3
+>>
+>> o Once we have actual support for hierarchical accounting and control
+>>   then we can introduce another cgroup tunable file "blkio.use_hierarchy"
+>>   which will be 0 by default but if user wants to enforce hierarhical
+>>   control then it can be set to 1. This way there should not be any
+>>   ABI problems down the line.
+>>
+>> o The only not so pretty part is introduction of extra file "use_hierarchy"
+>>   down the line. Kame-san had mentioned that hierarhical accounting is
+>>   expensive in memory controller hence they keep it off by default. I
+>>   suspect same will be the case for IO controller also as for each IO
+>>   completion we shall have to account IO through hierarchy up to the root..
+>>   if yes, then it probably is not a very bad idea to introduce this extra
+>>   file so that it will be used only when somebody needs it and some people
+>>   might enable hierarchy only in part of the hierarchy. 
+>>
+>> o This is how basically memory controller also uses "use_hierarhcy" and
+>>   they also allowed creation of hierarchies when actual backend support
+>>   was not available.
+>>
+>> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+>> ---
 > 
-> Attached version with plain 2.6.36 source and version with the committed
-> patch, i.e with the '"+m" (*regs)'
+> Hi Jens,
 > 
-> 
-> _
-> Jim
-> 
-> 
+> Do you have any concerns about this patch? If not, can you please apply
+> it.
 
-And I just tried with your noninline patch which results in exactly the
-same .s file as with plain 2.6.36 source, i.e. the noninline patch is
-not doing anything here.
+Applied to for-2.6.38/rc2-holder, it'll be merged into for-2.6.38/core
+once -rc2 has been tagged (and I can pull in the conflicting bits).
 
-_
-Jim
-
+-- 
+Jens Axboe
 
