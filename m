@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933185Ab0KODIz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 22:08:55 -0500
-Received: from mail.perches.com ([173.55.12.10]:1234 "EHLO mail.perches.com"
+	id S932874Ab0KODF6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 22:05:58 -0500
+Received: from mail.perches.com ([173.55.12.10]:1221 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932859Ab0KODF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 22:05:57 -0500
+	id S932845Ab0KODFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 22:05:55 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Joern Engel <joern@logfs.org>, logfs@logfs.org,
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        xen-devel@lists.xensource.com, virtualization@lists.osdl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 34/44] fs/logfs: Remove unnecessary semicolons
-Date: Sun, 14 Nov 2010 19:04:53 -0800
-Message-Id: <0c990bdacb2f9bf256acbb06ca59130585f600b7.1289789605.git.joe@perches.com>
+Subject: [PATCH 31/44] drivers/xen: Remove unnecessary semicolons
+Date: Sun, 14 Nov 2010 19:04:50 -0800
+Message-Id: <b3f95cd997859d5d714de322ce17810fe73460cd.1289789605.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289789604.git.joe@perches.com>
 References: <cover.1289789604.git.joe@perches.com>
@@ -22,22 +24,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/logfs/readwrite.c |    2 +-
+ drivers/xen/swiotlb-xen.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/logfs/readwrite.c b/fs/logfs/readwrite.c
-index 6127baf..b4304f2 100644
---- a/fs/logfs/readwrite.c
-+++ b/fs/logfs/readwrite.c
-@@ -481,7 +481,7 @@ static int inode_write_alias(struct super_block *sb,
- 			val = inode_val0(inode);
- 			break;
- 		case INODE_USED_OFS:
--			val = cpu_to_be64(li->li_used_bytes);;
-+			val = cpu_to_be64(li->li_used_bytes);
- 			break;
- 		case INODE_SIZE_OFS:
- 			val = cpu_to_be64(i_size_read(inode));
+diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
+index 54469c3..65ea21a 100644
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -54,7 +54,7 @@ u64 start_dma_addr;
+ 
+ static dma_addr_t xen_phys_to_bus(phys_addr_t paddr)
+ {
+-	return phys_to_machine(XPADDR(paddr)).maddr;;
++	return phys_to_machine(XPADDR(paddr)).maddr;
+ }
+ 
+ static phys_addr_t xen_bus_to_phys(dma_addr_t baddr)
 -- 
 1.7.3.1.g432b3.dirty
 
