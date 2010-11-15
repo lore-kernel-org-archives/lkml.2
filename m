@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757077Ab0KOORY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 09:17:24 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38747 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756994Ab0KOORW (ORCPT
+	id S1756970Ab0KOOTZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 09:19:25 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:59499 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755593Ab0KOOTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 09:17:22 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=maslB9Nr0KAyDvXrdeoID5nFhILPlPaJluUpR7spdyxWQGFfZjyib+h/1BmVeXrmwk
-         MR7mh1qHTnybjVLYMfus7hKiUH6eZ2Rise4zf7dsRUk5OwFq/lYAV3Xy5PJQ1j3cKDKR
-         XjxuDIcUpdmDnE3F6ZDgdWihsc1fp+Tr7Bt88=
-Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Nick Piggin <npiggin@kernel.dk>
-In-Reply-To: <alpine.DEB.2.00.1011150756130.19175@router.home>
-References: <1288975980.2882.877.camel@edumazet-laptop>
-	 <20101105102038.53e36f9e.akpm@linux-foundation.org>
-	 <1288980046.2882.1054.camel@edumazet-laptop>
-	 <20101105110828.52f061b3.akpm@linux-foundation.org>
-	 <1288981224.2882.1105.camel@edumazet-laptop>
-	 <20101105112821.57f80481.akpm@linux-foundation.org>
-	 <1288984844.2665.52.camel@edumazet-laptop>
-	 <20101105195101.GC15561@linux.vnet.ibm.com>
-	 <alpine.DEB.2.00.1011121313001.16754@router.home>
-	 <20101113222612.GD2825@linux.vnet.ibm.com>
-	 <alpine.DEB.2.00.1011150756130.19175@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Nov 2010 15:17:16 +0100
-Message-ID: <1289830636.2607.70.camel@edumazet-laptop>
+	Mon, 15 Nov 2010 09:19:24 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=5z8Dt6at09oA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=e0p6dR7DhRP2gHkMM_AA:9 a=cOjMyQCn9MaVC-njH7xpeRIKaZIA:4 a=PUjeQqilurYA:10 a=DnqNQldVG0r2cIW5:21 a=xlYMbfIQ3dOpSSTA:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCHv2 2/2] tracing,mm - add kernel pagefault tracepoint for
+ x86 & x86_64
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Olsa <jolsa@redhat.com>, mingo@elte.hu, andi@firstfloor.org,
+        lwoodman@redhat.com, hch@infradead.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20101115134325.GA5410@nowhere>
+References: <20101110164413.GA5360@nowhere>
+	 <1289466549-7602-3-git-send-email-jolsa@redhat.com>
+	 <20101115134325.GA5410@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 15 Nov 2010 09:19:20 -0500
+Message-ID: <1289830760.12418.598.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 15 novembre 2010 à 07:57 -0600, Christoph Lameter a écrit :
-> On Sat, 13 Nov 2010, Paul E. McKenney wrote:
+On Mon, 2010-11-15 at 14:43 +0100, Frederic Weisbecker wrote:
+
+
+> dotraplinkage void __kprobes
+> do_page_fault(struct pt_regs *regs, unsigned long error_code)
+> {
+> 	unsigned long address;
 > 
-> > On Fri, Nov 12, 2010 at 01:14:12PM -0600, Christoph Lameter wrote:
-> > >
-> > > prefetchw() would be too much overhead?
-> >
-> > No idea.  Where do you believe that prefetchw() should be added?
+> 	/* Get the faulting address: */
+> 	address = read_cr2();
 > 
-> It is another way to get an exclusive cache line
-> for situations like this. No need to give a hint.
+> 	trace_mm_pagefault_start(address, error_code);
+> 	__do_page_fault(regs, address, error_code);
+> 	trace_mm_pagefault_end(address);
+> }
 > 
+> 
+> Would you be ok with that?
+> 
+> Last thing I worry about is that error_code that is very arch dependent.
+> If someone writes a script that depends on the x86 code, it won't work
+> elsewhere while it's fairly possible to have a generic tracepoint there.
+> 
+> So perhaps we rather need a generic enum field instead of the error_code,
+> to express the most interesting specific fault attributes. Than can
+> probably be added later though, once someone really needs it.
+> 
+> Hm?
 
-Exclusive access ? As soon as another cpu takes it again, you lose.
+Perhaps we should have:
 
-Its not really the same thing... Maybe you miss the 'hint' intention at
-all. We know the probable value of the counter, we dont want to read it.
+	trace_arch_mm_pagefault_start(address, error_code);
+	__do_page_fault(regs, address, error_code);
+	trace_mm_pagefault_end(address);
 
-In fact, prefetchw() is useful when you can assert it many cycles before
-the memory read you are going to perform [before the write]. On
-contended cache lines, its a waste, because by the time your cpu is
-going to read memory, then perform the atomic compare_and_exchange(), an
-other cpu might have dirtied the location again. This is what we noticed
-during Netfilter Workshop 2010 : A high performance cost at both
-atomic_read() and atomic_cmpxchg(). We tried prefetchw() and it was a
-performance drop. It was with only 16 cpus contending on neighbour
-refcnt, and 5 millions frames per second (5 millions atomic increments,
-5 millions atomic decrements)
 
-prefetchw() should be used on very specific spots, when a cpu is going
-to write into a private area (not potentially accessed by other cpus).
-We use it for example in __alloc_skb(), a bit before memset().
+Then we have a arch/x86/kernel/trace.c that can map trace_arch_...
+events to generic events. This file will hold the
+trace_mm_pagefault_start(), which is called by
+trace_arch_mm_pagefault_start(). Have a hook that when the
+trace_mm_pagefault_start() is enabled, we also enable
+trace_arch_mm_pagefault_start() that calls this tracepoint. The
+trace_mm_pagefault_start() will then translate the
+trace_arch_mm_pagfault_start() into the generic trace_mm_pagefault_start
+event with the generic error_code that all archs will use.
 
-By the way, atomic_inc_not_zero_hint() is less code than 
-[prefetchw(), atomic_inc_not_zero()]. Using one instruction [cmpxchg]
-with the memory pointer is better than three.  [prefetchw(), read(),
-cmpxchg()], particularly if you have high contention on cache line.
+Reason being, we don't need to do any extra processing in the fast path
+when tracing is not enabled.
 
+Also, I'm going to start working on the stable ABI today.
+
+-- Steve
 
 
