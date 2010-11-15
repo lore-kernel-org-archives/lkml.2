@@ -1,58 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758473Ab0KOVe5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 16:34:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60196 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756504Ab0KOVe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 16:34:56 -0500
-Date: Mon, 15 Nov 2010 16:34:44 -0500
-From: Mike Snitzer <snitzer@redhat.com>
-To: jaxboe@fusionio.com
-Cc: device-mapper development <dm-devel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Alasdair G Kergon <agk@redhat.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] block: rename trace_block_remap to
- trace_block_bio_remap
-Message-ID: <20101115213444.GA25705@redhat.com>
-References: <4AB3A393.5000709@ce.jp.nec.com>
- <4AB4F908.60307@ce.jp.nec.com>
- <20101103215047.GC26473@redhat.com>
- <20101115205815.GA25567@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101115205815.GA25567@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758543Ab0KOVfH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 16:35:07 -0500
+Received: from ms01.sssup.it ([193.205.80.99]:33235 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758515Ab0KOVfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 16:35:06 -0500
+Subject: Re: [RFC][PATCH 18/22] sched: add reclaiming logic to -deadline
+ tasks
+From: Raistlin <raistlin@linux.it>
+To: "James H. Anderson" <anderson@cs.unc.edu>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>,
+        Bjoern Brandenburg <bbb@email.unc.edu>
+In-Reply-To: <4CE17DD2.3060807@cs.unc.edu>
+References: <1289588215.6525.697.camel@Palantir>
+	 <80992760-24F2-42AE-AF2D-15727F6A1C81@email.unc.edu>
+	 <4CE17DD2.3060807@cs.unc.edu>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-zlnX+UMjfhQC+ZGUrRnw"
+Date: Mon, 15 Nov 2010 22:34:48 +0100
+Message-ID: <1289856888.7033.101.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15 2010 at  3:58pm -0500,
-Mike Snitzer <snitzer@redhat.com> wrote:
 
-> Hi Jens,
-> 
-> This may have slipped through while you were traveling?
-> 
-> Patch is also available here:
-> https://patchwork.kernel.org/patch/300552/
-> 
-> Not sure if this change is concerning on a kABI level?
+--=-zlnX+UMjfhQC+ZGUrRnw
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-To be clear: that concern/question was prompted from having taken a
-quick glance at lwn's kernel summit "KS2010: ABI status for tracepoints"
-coverage: http://lwn.net/Articles/412685/
+On Mon, 2010-11-15 at 13:37 -0500, James H. Anderson wrote:
+> Sorry for the delayed response... I think I must have inadvertently=20
+> deleted this
+>
+NP. Hope it's not my fault, due to GPG and stuff... :-)
 
-But in that article it clearly states:
-"there are to be no stable tracepoints in drivers or filesystems".
+> If you're talking about our most recent "stochastic" paper, it is about=20
+> supporting
+> soft real-time task systems on a multiprocessor where resource=20
+> reservations are
+> used. =20
+>
+Actually, we were talking about the previous one, which (if I got it
+well) didn't include reservations, and that's why we were wondering how
+to integrate it in the scheduler (which _is_ reservation based).
 
-Not sure where that leaves tracepoints for the block layer.  Anyway,
-seems tracepoint kABI is likely a concern for the future (not the
-immediate future).
+Now that this one is out, going for it simply solves all our issues,
+also considering that it says something very similar to what we (Pisa
+guys :-D) are familiar with, since we investigated this stuff too
+sometime ago (actually, Luca did).
 
-So this change would be nice to get in before there is a new tracepoint
-kABI-aware sheriff in town.
+> However, such methods would be easy to incorporate. =20
+>
+I think it really should be... Actually, I'm under the impression that
+we don't even need variance/std-dev of the execution time to be part of
+the interface, do we?
 
-Mike
+> I gathered there was
+> some confusion about whether we were using resource reservations.  Such
+> reservations are actually crucial for our analysis as they allow=20
+> independence to be assumed across tasks.
+>
+Yes, as I said, this was because we were looking at first paper. Now we
+got it, thanks a lot for clarifying! :-)
+
+> I hope this helps.
+>=20
+A lot, thanks again.
+
+Dario
+
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
+
+http://blog.linux.it/raistlin / raistlin@ekiga.net /
+dario.faggioli@jabber.org
+
+--=-zlnX+UMjfhQC+ZGUrRnw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzhp3gACgkQk4XaBE3IOsT+oACgopRjLcmL7/bBe6b84rjjnJ/h
++7wAnRLeAuBDuwW3oFz1jrF85mMVVawf
+=LU9t
+-----END PGP SIGNATURE-----
+
+--=-zlnX+UMjfhQC+ZGUrRnw--
+
