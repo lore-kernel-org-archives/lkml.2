@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932518Ab0KOChx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 21:37:53 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:40599 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932257Ab0KOChw (ORCPT
+	id S932526Ab0KOCji (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 21:39:38 -0500
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:57191 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932257Ab0KOCjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 21:37:52 -0500
-Date: Mon, 15 Nov 2010 11:31:55 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: balbir@linux.vnet.ibm.com
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC PATCH] Make swap accounting default behavior configurable
- v2
-Message-Id: <20101115113155.83361d21.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20101115020330.GB9882@balbir.in.ibm.com>
-References: <20101110125154.GC5867@tiehlicka.suse.cz>
-	<20101111094613.eab2ec0b.nishimura@mxp.nes.nec.co.jp>
-	<20101111093155.GA20630@tiehlicka.suse.cz>
-	<20101112094118.b02b669f.nishimura@mxp.nes.nec.co.jp>
-	<20101112083103.GB7285@tiehlicka.suse.cz>
-	<20101115101335.8880fd87.nishimura@mxp.nes.nec.co.jp>
-	<20101115020330.GB9882@balbir.in.ibm.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 14 Nov 2010 21:39:37 -0500
+Date: Mon, 15 Nov 2010 13:39:32 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Rogier Wolff <R.E.Wolff@BitWizard.nl>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Sync semantics.
+Message-ID: <20101115023932.GD22876@dastard>
+References: <20101111125219.GA945@bitwizard.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101111125219.GA945@bitwizard.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Nov 2010 07:33:30 +0530
-Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-
-> * nishimura@mxp.nes.nec.co.jp <nishimura@mxp.nes.nec.co.jp> [2010-11-15 10:13:35]:
+On Thu, Nov 11, 2010 at 01:52:19PM +0100, Rogier Wolff wrote:
 > 
-> Thanks Nishimura-San
+> Hi, 
 > 
-> It seems like the motivation for the patch is to allow distros to
-> enable memory cgroups and swap control, but to have swap control
-> turned off by default (because we provide default on today)
->  - is my understanding correct?
+> What should I expect from a "sync" system call?
 > 
-I think you're right.
+> The manual says: 
+> 
+>    sync() first commits inodes to buffers, and then buffers to disk.
+> 
+> and then goes on to state: 
+> 
+>    ... since  version  1.3.20 Linux does actually wait.
+> 
+> [for the buffers to be handed over to the drive]
+> 
+> So how long can I expect a "sync" call to take? 
+> 
+> I would expect that all buffers that are dirty at the time of the
+> "sync" call are written by the time that sync returns. I'm currently
+> bombarding my fileserver with some 40-60Mbytes per second of data to
+> be written (*). The fileserver has 8G of memory. So max 8000 Mb of
+> dirty buffers can be stored, right? The server writes an average of
+> (at least) 40Mb/second to disk. According to my calculator, I will
+> have to wait up to 200 seconds for the sync system call to return....
+> 
+> 
+> # time sync
+> 0.000u 0.220s 2:22:23.96 0.0%   0+0k 0+0io 2pf+0w
 
-This patch make the default behavior configurable by .config and let users
-turn swap control on even if it's disabled by .config.
-It will give distros and users wider choice.
+Depending on the kernel, sync will keep writing if you keep
+dirtying. This should be mostly fixed in 2.6.36....
 
-Thanks,
-Daisuke Nishimura.
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
