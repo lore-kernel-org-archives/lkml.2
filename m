@@ -1,47 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab0KOJRo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 04:17:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17488 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754082Ab0KOJRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 04:17:34 -0500
-Message-ID: <4CE0FAA5.3040902@redhat.com>
-Date: Mon, 15 Nov 2010 11:17:25 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1753408Ab0KOJVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 04:21:09 -0500
+Received: from sunsite.ms.mff.cuni.cz ([195.113.15.26]:48181 "EHLO
+	sunsite.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751148Ab0KOJVH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 04:21:07 -0500
+Date: Mon, 15 Nov 2010 10:20:00 +0100
+From: Jakub Jelinek <jakub@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: James Cloos <cloos@jhcloos.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Schwab <schwab@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Michael Matz <matz@suse.de>, Dave Korn <dave.korn.cygwin@gmail.com>,
+        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org,
+        Jim Bos <jim876@xs4all.nl>
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+Message-ID: <20101115092000.GF2583@sunsite.ms.mff.cuni.cz>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com> <877hgorrj1.fsf@basil.nowhere.org> <4CD843DC.10106@gmail.com> <Pine.LNX.4.64.1011091352460.29956@wotan.suse.de> <20101109134816.GB29433@basil.fritz.box> <m3lj52txaq.fsf@redhat.com> <4CD97A3D.1040602@xs4all.nl> <m31v6nmmr3.fsf@jhcloos.com> <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com> <20101115085605.GE2583@sunsite.ms.mff.cuni.cz>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/4] KVM: MMU: notrap it if gpte's reserved is set
-References: <4CDD173E.8010706@cn.fujitsu.com> <4CDD1841.9010300@cn.fujitsu.com> <4CDFC04A.8010907@redhat.com> <4CE0C7F0.2040407@cn.fujitsu.com>
-In-Reply-To: <4CE0C7F0.2040407@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101115085605.GE2583@sunsite.ms.mff.cuni.cz>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 07:41 AM, Xiao Guangrong wrote:
-> On 11/14/2010 06:56 PM, Avi Kivity wrote:
-> >  On 11/12/2010 12:34 PM, Xiao Guangrong wrote:
-> >>  We can past the page fault to guest directly if gpte's reserved
-> >>  is set
-> >>
-> >
-> >  How can that work? shadow_notrap_nonpresent_pte causes a fault with
-> >  PFEC.P=PFEC.RSVD=0, while we need PFEC.P=PFEC.RSVD=1.
-> >
->
-> Ah, i missed it for a long time, thanks for you point it out.
->
-> The same mistake is in 'prefetch' path, i'll fix it in the v2 version.
+On Mon, Nov 15, 2010 at 09:56:05AM +0100, Jakub Jelinek wrote:
+> Yes, reload should figure out it has address of regs already tied to %eax,
+> unfortunately starting with IRA it doesn't (I'll file a GCC bug about that;
 
-Doesn't access.flat catch this?
+http://gcc.gnu.org/PR46479
 
-Ideally we'd have a test case to catch this, but it may be hard to write.
-
--- 
-error compiling committee.c: too many arguments to function
-
+	Jakub
