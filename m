@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758290Ab0KOUkD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 15:40:03 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:62523 "EHLO
+	id S1758274Ab0KOUkB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 15:40:01 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:53392 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758226Ab0KOUkA (ORCPT
+	with ESMTP id S1758141Ab0KOUj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 15:40:00 -0500
-Message-ID: <4CE19A75.7040600@vlnb.net>
-Date: Mon, 15 Nov 2010 23:39:17 +0300
+	Mon, 15 Nov 2010 15:39:59 -0500
+Message-ID: <4CE19A8B.5010201@vlnb.net>
+Date: Mon, 15 Nov 2010 23:39:39 +0300
 From: Vladislav Bolkhovitin <vst@vlnb.net>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Boaz Harrosh <bharrosh@panasas.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: Greg KH <greg@kroah.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
         scst-devel <scst-devel@lists.sourceforge.net>,
         James Bottomley <James.Bottomley@HansenPartnership.com>,
@@ -26,80 +25,62 @@ CC: Boaz Harrosh <bharrosh@panasas.com>,
         Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
         Hannes Reinecke <hare@suse.de>,
         Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-References: <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <4CE1017E.4090409@panasas.com> <20101115161620.GB5981@kroah.com>
-In-Reply-To: <20101115161620.GB5981@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
+References: <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <4CE1017E.4090409@panasas.com> <20101115161620.GB5981@kroah.com> <4CE16B8E.1000300@panasas.com>
+In-Reply-To: <4CE16B8E.1000300@panasas.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:tK0lGSfTzYegG9eu5m9oa3evpOwlTbuoIqVbWzN0YXb
- HjIZ+TQ9csYkmlHg8I3B85uPZNF1vtbzPWAEnwIH0LDc5+wh5j
- QwCi7uUj/jVP4guNqqcDq/1RJ4WO7la7Ui7OemwsXri4eDXApW
- M+ot9KC/c/YZBHyb9lN65CAFQk6YB3iU1XFr5UO5w/6uKWUCwt
- EKYvoaL6FR/4lG0g5BpmQ==
+X-Provags-ID: V02:K0:qmbzR6GsrgG6IhWuik1cn4iAeMhEVCGLKblOFv9/Iim
+ HeoasF+qzF9v2upvafDXN+vq82QGFBcoa1ytLxUOTVl7ql5Rz2
+ wcfA0+Q/POE2H59N1guRqqyDWPr0ibKcEY50TiWHPayhjCmuCn
+ UrR430Cl8r809+8Q63ww1NlNhL1o9R8/VMQJpKJZY0lULODRfu
+ UlhH/vkDrelEoD7v0EahQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH, on 11/15/2010 07:16 PM wrote:
-> Why, I'm not allowed to get frustrated at repeated attempts to get the
-> original poster to change their code to something that is acceptable and
-> just give up and walk away?
+Boaz Harrosh, on 11/15/2010 08:19 PM wrote:
+> On 11/15/2010 06:16 PM, Greg KH wrote:
+>> On Mon, Nov 15, 2010 at 11:46:38AM +0200, Boaz Harrosh wrote:
+>>> All these issues we were discussing are interesting and are real Kernel
+>>> problems. For instance the last comment you made was that for such a dynamic
+>>> system and life time problems, and functionality. A better and expected
+>>> solution might be the device tree and not sysfs.
+>>
+>> Yes, that is what I have been saying for a while now.
+>>
+>> Again:
+>> 	This code is using kobjects incorrectly.
+>> 	This code should not be using kobjects.
+>>
+>> this is my last response to this thread now, and I'm sure you can
+>> understand why.
+>>
+>> thanks,
+>>
+>> greg k-h
 > 
-> Why not?
-
-Hmm, frankly, I decided that you agreed with my arguments..
-
-As I wrote, I'm willing to make any changes you requests. I only asked
-why this should be done.
-
-I really don't understand why we and other similar in-kernel developers
-should treat kobjects in the different way than any other subobjects of
-our outer objects and make for them _additional code_ to specially treat
-them as life-time center (http://lkml.org/lkml/2010/11/10/421)? You have
-not explained it anywhere in any doc I can find.
-
-This is just small "why" question. Greg, don't we have a right to ask
-this before go on?
-
->> This project, even though out-of-tree, is an old and mature project that
->> has many users. These are all *Linux* users. The authors and community
->> have come to us for help, and advice on making this code acceptable for
->> mainline and hardening the code the way, only one project on the planet
->> can do, the Linux community. I think it is our courtesy and obligation
->> to the Linux users of this Project to comment where they are doing wrong
->> and where they should do better.
+> Thank you Greg for your time and most valuable input.
+> I'm sorry for not understanding your position. I needed the
+> clear cut statement:
 > 
-> It is also the job of the kernel community to say "No, what you are
-> doing is wrong, please don't do that."
+> 	This code should not be using kobjects. i.e not belong in sysfs
 > 
-> And that's what I'm doing here.
-> 
->> It is not of their choice to be out-of-tree. It is ours. The least we can
->> do. Is give then some assistance if we can, and have 5 minutes of our time.
-> 
-> I have given _way_ more than 5 minutes of my time already.
+> SCST guys. This sounds pretty clear cut to me. Sysfs was not built
+> in mind for such dynamic systems, and it will cause never ending
+> conflicts with future maintenance of sysfs vs SCST.
 
-We appreciated it very much.
+As I explained in the previous e-mail, I believe, SYSFS perfectly suits
+SCST and SCST perfectly suits SYSFS.
 
->> All these issues we were discussing are interesting and are real Kernel
->> problems. For instance the last comment you made was that for such a dynamic
->> system and life time problems, and functionality. A better and expected
->> solution might be the device tree and not sysfs.
-> 
-> Yes, that is what I have been saying for a while now.
-> 
-> Again:
-> 	This code is using kobjects incorrectly.
-> 	This code should not be using kobjects.
-> 
-> this is my last response to this thread now, and I'm sure you can
-> understand why.
+If you think it isn't so, let's discuss each showstopper for that, one
+after one.
 
-It is REALLY frustrating you are refusing to explain why. I guess, I'm
-too stupid to figure out that alone. Don't you want we rise as highly
-skilled kernel developers? I believe, not only SCST developers are very
-interested to know background behind particular moves in the kernel.
+> Lets call it Linux-Target and unify all our efforts.
+
+Looks like a great idea!
 
 Thanks,
 Vlad
