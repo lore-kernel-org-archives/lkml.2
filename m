@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932539Ab0KOH2n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 02:28:43 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53239 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757505Ab0KOH2m (ORCPT
+	id S1757637Ab0KOHjg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 02:39:36 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:43797 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757576Ab0KOHje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 02:28:42 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: fadvise DONTNEED implementation (or lack thereof)
-Cc: kosaki.motohiro@jp.fujitsu.com, Ben Gamari <bgamari.foss@gmail.com>,
-        linux-kernel@vger.kernel.org, rsync@lists.samba.org,
-        linux-mm@kvack.org, Peter Zijlstra <peterz@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-In-Reply-To: <AANLkTim0vCJkMoH5P0wCN9J6340rDsscyNBQ+R+_ph8m@mail.gmail.com>
-References: <20101115160413.BF0F.A69D9226@jp.fujitsu.com> <AANLkTim0vCJkMoH5P0wCN9J6340rDsscyNBQ+R+_ph8m@mail.gmail.com>
-Message-Id: <20101115162713.BF12.A69D9226@jp.fujitsu.com>
+	Mon, 15 Nov 2010 02:39:34 -0500
+Message-ID: <000e01cb8498$3ec2cb80$66f8800a@maildom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "Wolfgang Grandegger" <wg@grandegger.com>
+Cc: <andrew.chih.howe.khor@intel.com>,
+        "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>, <margie.foster@intel.com>,
+        <netdev@vger.kernel.org>, "LKML" <linux-kernel@vger.kernel.org>,
+        <socketcan-core@lists.berlios.de>, <yong.y.wang@intel.com>,
+        "Marc Kleine-Budde" <mkl@pengutronix.de>, <joel.clark@intel.com>,
+        <kok.howg.ewe@intel.com>, "David S. Miller" <davem@davemloft.net>,
+        "Christian Pellegrin" <chripell@fsfe.org>, <qi.wang@intel.com>
+References: <4CCAA3D4.8070408@dsn.okisemi.com>	<4CCAC4CD.7000503@pengutronix.de> <4CCAF517.2000409@pengutronix.de>	<4CCB213A.2020206@grandegger.com> <004a01cb825a$3a8bd060$66f8800a@maildom.okisemi.com> <4CDD28E6.9060006@grandegger.com>
+Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix build warnings
+Date: Mon, 15 Nov 2010 16:39:28 +0900
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain;
+	charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 15 Nov 2010 16:28:32 +0900 (JST)
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Nov 15, 2010 at 4:09 PM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
-> >> > Because we have an alternative solution already. please try memcgroup :)
+On Friday, November 12, 2010 8:45 PM, Wolfgang Grandegger wrote:
+
+> >> This is an enumeration:
 > >>
-> >> I think memcg could be a solution of them but fundamental solution is
-> >> that we have to cure it in VM itself.
-> >> I feel it's absolutely absurd to enable and use memcg for amending it.
-> >>
-> >> I wonder what's the problem in Peter's patch 'drop behind'.
-> >> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg179576.html
-> >>
-> >> Could anyone tell me why it can't accept upstream?
-> >
-> > I don't know the reason. And this one looks reasonable to me. I'm curious the above
-> > patch solve rsync issue or not.
-> > Minchan, have you tested it yourself?
+> >> enum {
+> >> PCH_STUF_ERR = 1,
+> >> PCH_FORM_ERR,
+> >> PCH_ACK_ERR,
+> >> PCH_BIT1_ERR;
+> >> PCH_BIT0_ERR,
+> >> PCH_CRC_ERR,
+> >> PCH_LEC_ALL;
+> >> }
+> > 
+> > No, 
+> > LEC is for bit assignment.
+> > Thus, "enum" can't be used.
 > 
-> Still yet. :)
-> If we all think it's reasonable, it would be valuable to adjust it
-> with current mmotm and see the effect.
+> Why? For me it's a classical enum because the value matters, and *not*
+> the individual bit. Do you agree?
 
-Who can make rsync like io pattern test suite? a code change is easy. but
-to comfirm justification is more harder work.
-
+Sorry, at last, I understand your saying.
+I agree.
 
 
+
+> >> Also, could you please add the TEC and REC:
+> >>
+> >> cf->data[6] = ioread32(&priv->regs->errc) & CAN_TEC;
+> >> cf->data[7] = (ioread32(&priv->regs->errc) & CAN_REC) >> 8;
+> > 
+> > I will add.
+> 
+> BTW: it could be done with one I/O call:
+> 
+>   errc = ioread32(&priv->regs->errc);
+>   cf->data[6] = errc & CAN_TEC;
+>   cf->data[7] = (errc & CAN_REC) >> 8;
+> 
+> > But I couldn't find 
+> 
+> Don't understand? It's also implemented for the SJA1000 driver:
+
+Sorry, the above my line is fogotten to delete.
+I can uderstand your saying.
+
+---
+Thanks,
+
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
