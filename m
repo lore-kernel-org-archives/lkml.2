@@ -1,55 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328Ab0KOJYS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 04:24:18 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58518 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752197Ab0KOJYR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 04:24:17 -0500
-Date: Mon, 15 Nov 2010 09:24:04 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Atul Sowani <sowani@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        alan@linux.intel.com, ralf@linux-mips.org
-Subject: Re: [PATCH 2.6.36 1/1 RESEND] kernel SPIN_LOCK_UNLOCKED changed to
-	__SPIN_LOCK_UNLOCKED()
-Message-ID: <20101115092404.GA24194@n2100.arm.linux.org.uk>
-References: <4CDED96A.9080404@gmail.com>
+	id S1754396Ab0KOJZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 04:25:56 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:50544 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751851Ab0KOJZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 04:25:55 -0500
+Date: Mon, 15 Nov 2010 09:25:41 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mm,vmscan: Reclaim order-0 and compact instead of
+	lumpy reclaim when under light pressure
+Message-ID: <20101115092540.GF27362@csn.ul.ie>
+References: <1289502424-12661-1-git-send-email-mel@csn.ul.ie> <1289502424-12661-4-git-send-email-mel@csn.ul.ie> <20101114145617.E025.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4CDED96A.9080404@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20101114145617.E025.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 12:01:06AM +0530, Atul Sowani wrote:
-> There are still some files containing .lock = SPIN_LOCK_UNLOCKED type
-> assignments which should be converted to __SPIN_LOCK_UNLOCKED().
-> Corrected spacing between __SPIN_LOCK_UNLOCKED and ( for ARM.
-
-Thinking about the ARM bit, I'll have to NAK this patch.
-
-> diff -uprN a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-> --- a/arch/arm/kernel/smp.c	2010-10-21 02:00:22.000000000 +0530
-> +++ b/arch/arm/kernel/smp.c	2010-11-07 00:47:32.000000000 +0530
-> @@ -56,7 +56,7 @@ struct ipi_data {
->  };
+On Sun, Nov 14, 2010 at 02:59:31PM +0900, KOSAKI Motohiro wrote:
+> > Lumpy reclaim is disruptive. It reclaims both a large number of pages
+> > and ignores the age of the majority of pages it reclaims. This can incur
+> > significant stalls and potentially increase the number of major faults.
+> > 
+> > Compaction has reached the point where it is considered reasonably stable
+> > (meaning it has passed a lot of testing) and is a potential candidate for
+> > displacing lumpy reclaim. This patch reduces the use of lumpy reclaim when
+> > the priority is high enough to indicate low pressure. The basic operation
+> > is very simple. Instead of selecting a contiguous range of pages to reclaim,
+> > lumpy compaction reclaims a number of order-0 pages and then calls compaction
+> > for the zone. If the watermarks are not met, another reclaim+compaction
+> > cycle occurs.
+> > 
+> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > ---
+> >  include/linux/compaction.h |    9 ++++++++-
+> >  mm/compaction.c            |    2 +-
+> >  mm/vmscan.c                |   38 ++++++++++++++++++++++++++------------
+> >  3 files changed, 35 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/include/linux/compaction.h b/include/linux/compaction.h
+> > index 5ac5155..2ae6613 100644
+> > --- a/include/linux/compaction.h
+> > +++ b/include/linux/compaction.h
+> > @@ -22,7 +22,8 @@ extern int sysctl_extfrag_handler(struct ctl_table *table, int write,
+> >  extern int fragmentation_index(struct zone *zone, unsigned int order);
+> >  extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> >  			int order, gfp_t gfp_mask, nodemask_t *mask);
+> > -
+> > +extern unsigned long compact_zone_order(struct zone *zone,
+> > +			int order, gfp_t gfp_mask);
+> >  /* Do not skip compaction more than 64 times */
+> >  #define COMPACT_MAX_DEFER_SHIFT 6
+> >  
+> > @@ -59,6 +60,12 @@ static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
+> >  	return COMPACT_CONTINUE;
+> >  }
+> >  
+> > +static inline unsigned long compact_zone_order(struct zone *zone,
+> > +			int order, gfp_t gfp_mask)
+> > +{
+> > +	return 0;
+> > +}
+> > +
+> >  static inline void defer_compaction(struct zone *zone)
+> >  {
+> >  }
+> > diff --git a/mm/compaction.c b/mm/compaction.c
+> > index 4d709ee..f987f47 100644
+> > --- a/mm/compaction.c
+> > +++ b/mm/compaction.c
+> > @@ -418,7 +418,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+> >  	return ret;
+> >  }
+> >  
+> > -static unsigned long compact_zone_order(struct zone *zone,
+> > +unsigned long compact_zone_order(struct zone *zone,
+> >  						int order, gfp_t gfp_mask)
+> >  {
+> >  	struct compact_control cc = {
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index ffa438e..da35cdb 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -32,6 +32,7 @@
+> >  #include <linux/topology.h>
+> >  #include <linux/cpu.h>
+> >  #include <linux/cpuset.h>
+> > +#include <linux/compaction.h>
+> >  #include <linux/notifier.h>
+> >  #include <linux/rwsem.h>
+> >  #include <linux/delay.h>
+> > @@ -56,6 +57,7 @@ typedef unsigned __bitwise__ lumpy_mode;
+> >  #define LUMPY_MODE_ASYNC		((__force lumpy_mode)0x02u)
+> >  #define LUMPY_MODE_SYNC			((__force lumpy_mode)0x04u)
+> >  #define LUMPY_MODE_CONTIGRECLAIM	((__force lumpy_mode)0x08u)
+> > +#define LUMPY_MODE_COMPACTION		((__force lumpy_mode)0x10u)
+> >  
+> >  struct scan_control {
+> >  	/* Incremented by the number of inactive pages that were scanned */
+> > @@ -274,25 +276,27 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+> >  static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc,
+> >  				   bool sync)
+> >  {
+> > -	lumpy_mode mode = sync ? LUMPY_MODE_SYNC : LUMPY_MODE_ASYNC;
+> > +	lumpy_mode syncmode = sync ? LUMPY_MODE_SYNC : LUMPY_MODE_ASYNC;
+> >  
+> >  	/*
+> > -	 * Some reclaim have alredy been failed. No worth to try synchronous
+> > -	 * lumpy reclaim.
+> > +	 * Initially assume we are entering either lumpy reclaim or lumpy
+> > +	 * compaction. Depending on the order, we will either set the sync
+> > +	 * mode or just reclaim order-0 pages later.
+> >  	 */
+> > -	if (sync && sc->lumpy_reclaim_mode & LUMPY_MODE_SINGLE)
+> > -		return;
+> > +	if (COMPACTION_BUILD)
+> > +		sc->lumpy_reclaim_mode = LUMPY_MODE_COMPACTION;
+> > +	else
+> > +		sc->lumpy_reclaim_mode = LUMPY_MODE_CONTIGRECLAIM;
+> >  
+> >  	/*
+> >  	 * If we need a large contiguous chunk of memory, or have
+> >  	 * trouble getting a small set of contiguous pages, we
+> >  	 * will reclaim both active and inactive pages.
+> >  	 */
+> > -	sc->lumpy_reclaim_mode = LUMPY_MODE_CONTIGRECLAIM;
+> >  	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+> > -		sc->lumpy_reclaim_mode |= mode;
+> > +		sc->lumpy_reclaim_mode |= syncmode;
+> >  	else if (sc->order && priority < DEF_PRIORITY - 2)
+> > -		sc->lumpy_reclaim_mode |= mode;
+> > +		sc->lumpy_reclaim_mode |= syncmode;
 > 
->  static DEFINE_PER_CPU(struct ipi_data, ipi_data) = {
-> -	.lock	= SPIN_LOCK_UNLOCKED,
-> +	.lock	= __SPIN_LOCK_UNLOCKED(ipi_data.lock),
->  };
+> Does "LUMPY_MODE_COMPACTION | LUMPY_MODE_SYNC" have any benefit?
+> I haven't understand this semantics. please elaborate?
+> 
 
-This lock is in the percpu data area.  This means that when other CPUs
-are brought online, and therefore other percpu areas are instantiated,
-this lock will be mis-initialized (the pointers et.al. will be pointing
-at the original percpu instance.)
+At the moment, it doesn't have any benefit. In the future, we might pass
+the flags down to migration which currently always behaves in a sync fashion.
+For now, I think it's better to flag what we expect the behaviour to be
+even if it's not responded to appropriately.
 
-So NAK, this will break.
+> 
+> >  	else
+> >  		sc->lumpy_reclaim_mode = LUMPY_MODE_SINGLE | LUMPY_MODE_ASYNC;
+> >  }
+> > @@ -1366,11 +1370,18 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+> >  	lru_add_drain();
+> >  	spin_lock_irq(&zone->lru_lock);
+> >  
+> > +	/*
+> > +	 * If we are lumpy compacting, we bump nr_to_scan to at least
+> > +	 * the size of the page we are trying to allocate
+> > +	 */
+> > +	if (sc->lumpy_reclaim_mode & LUMPY_MODE_COMPACTION)
+> > +		nr_to_scan = max(nr_to_scan, (1UL << sc->order));
+> > +
+> >  	if (scanning_global_lru(sc)) {
+> >  		nr_taken = isolate_pages_global(nr_to_scan,
+> >  			&page_list, &nr_scanned, sc->order,
+> > -			sc->lumpy_reclaim_mode & LUMPY_MODE_SINGLE ?
+> > -					ISOLATE_INACTIVE : ISOLATE_BOTH,
+> > +			sc->lumpy_reclaim_mode & LUMPY_MODE_CONTIGRECLAIM ?
+> > +					ISOLATE_BOTH : ISOLATE_INACTIVE,
+> >  			zone, 0, file);
+> >  		zone->pages_scanned += nr_scanned;
+> >  		if (current_is_kswapd())
+> > @@ -1382,8 +1393,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+> >  	} else {
+> >  		nr_taken = mem_cgroup_isolate_pages(nr_to_scan,
+> >  			&page_list, &nr_scanned, sc->order,
+> > -			sc->lumpy_reclaim_mode & LUMPY_MODE_SINGLE ?
+> > -					ISOLATE_INACTIVE : ISOLATE_BOTH,
+> > +			sc->lumpy_reclaim_mode & LUMPY_MODE_CONTIGRECLAIM ?
+> > +					ISOLATE_BOTH : ISOLATE_INACTIVE,
+> >  			zone, sc->mem_cgroup,
+> >  			0, file);
+> >  		/*
+> > @@ -1416,6 +1427,9 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+> >  
+> >  	putback_lru_pages(zone, sc, nr_anon, nr_file, &page_list);
+> >  
+> > +	if (sc->lumpy_reclaim_mode & LUMPY_MODE_COMPACTION)
+> > +		compact_zone_order(zone, sc->order, sc->gfp_mask);
+> > +
+> 
+> If free pages are very little, compaction may not work. don't we need to
+> check NR_FREE_PAGES?
+> 
 
-We can either go back to a static array for this, initialize the lock
-manually (though this could be problematical), or we require to go to
-per-ipi type interrupts for all SMP architectures.
+Yes, it's on my TODO list to split out the logic used in
+try_to_compact_pages to decide if compact_zone_order() should be called
+or not.
+
+Well spotted!
+
+> 
+> >  	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
+> >  		zone_idx(zone),
+> >  		nr_scanned, nr_reclaimed,
+> > -- 
+> > 1.7.1
+> > 
+> 
+> 
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
