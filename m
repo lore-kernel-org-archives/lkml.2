@@ -1,61 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756582Ab0KONSE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 08:18:04 -0500
-Received: from cantor.suse.de ([195.135.220.2]:36124 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752140Ab0KONSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 08:18:02 -0500
-Date: Mon, 15 Nov 2010 14:18:00 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Edgar (gimli) Hucek" <gimli@dark-green.com>, stable@kernel.org
-Subject: Re: [PATCH] input: bcm5974: Add support for MacBookAir3
-In-Reply-To: <20101111083941.GE24415@core.coreip.homeip.net>
-Message-ID: <alpine.LNX.2.00.1011151417290.7420@pobox.suse.cz>
-References: <1289320722-1948-1-git-send-email-rydberg@euromail.se> <20101111083941.GE24415@core.coreip.homeip.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756205Ab0KONW2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 08:22:28 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:39619 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753946Ab0KONW1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 08:22:27 -0500
+X-Sasl-enc: JH+4uD6tkIa+YdpI+C77unK7OvbutdGVqhNu908RQ6X/ 1289827346
+Subject: Re: autofs4 hang in 2.6.37-rc1
+From: Ian Kent <raven@themaw.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Avi Kivity <avi@redhat.com>, autofs@linux.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <201011150954.34289.arnd@arndb.de>
+References: <4CDFDC2B.6040205@redhat.com> <4CE00194.3070601@redhat.com>
+	 <1289785533.3248.18.camel@localhost>  <201011150954.34289.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Nov 2010 21:22:21 +0800
+Message-ID: <1289827341.3248.49.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Nov 2010, Dmitry Torokhov wrote:
-
-> On Tue, Nov 09, 2010 at 05:38:42PM +0100, Henrik Rydberg wrote:
-> > From: Edgar (gimli) Hucek <gimli@dark-green.com>
-> > 
-> > This patch adds support for the MacBookAir3,1 and MacBookAir3,2
-> > models.
-> > 
-> > [rydberg@euromail.se: touchpad range calibration]
-> > Cc: stable@kernel.org
-> > Signed-off-by: Edgar (gimli) Hucek <gimli@dark-green.com>
-> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> > ---
-> > Hi Dmitry, Jiri,
-> > 
-> > This patch was seen on lkml last week, and has now been excercised by
-> > a larger set of users. As usual, this patch should go before or
-> > together with the HID changes, so as not to break basic support from
-> > the non-MT HID driver.
-> > 
+On Mon, 2010-11-15 at 09:54 +0100, Arnd Bergmann wrote:
+> On Monday 15 November 2010 02:45:33 Ian Kent wrote:
 > 
-> Jiri,
+> > You can't hold an exclusive mutex during an autofs expire because the
+> > daemon will start by calling the ioctl to check for a dentry to expire
+> > then call back to the daemon to perform the umount and wait for a status
+> > return (also an ioctl).
 > 
-> It looks like HID changes are more than simply adding USB device IDs so
-> it woudl make sense to merge through your tree,
+> Ok, I see. So it's my fault for not realizing that there are long blocking
+> ioctls. I was under the assumption that all of these ioctl commands were
+> simple non-blocking commands.
 
-Hi guys,
+This isn't anyone's fault (except maybe mine) because I'm the one most
+likely to realize it was a problem and didn't notice it. I've even been
+caught by this deadlock (when holding a singular lock) before when I
+tried to use .. ummm .. netlink (I think, not even sure what it's called
+any more) instead of an ioctl interface for the new autofs control
+interface.
 
-makes sense. I already have the HID bits in my tree, and will apply the 
-bcm5974 part as well.
+> 
+> > >From memory the expire is the only ioctl that is sensitive to this
+> > deadlock.
+> > 
+> > So, either the mutex must be released while waiting for the status
+> > return or get rid of the autofs4_ioctl_mutex altogether.
+> 
+> Right. As I said with the original patch, I don't think the mutex
+> is really needed, but using it seemed to be the safer alternative.
+> It was in the sense that it guaranteed the breakage to be obvious
+> rather than silent...
+> 
+> Ian, if you can prove that the lock is not needed, I think we shold
+> just remove it.
 
-Thanks,
+I don't think I can prove it but I will have a long look at the code.
+I don't think it is needed and I expect I'll recommend it be removed.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Oh and btw ... please excuse this off-topic question.
+
+In your recent commit 6e9624b8caec290d28b4c6d9ec75749df6372b87 regarding
+BKL removal you implied that blkdev_{get,put} shouldn't need the BLK.
+I'm working on a btrfs problem and one of the issues is a deadlock
+caused by the out of order acquisition of the BLK and the bdev->bd_mutex
+between these two functions. Clearly this isn't a problem from 2.6.36
+but do you think it would be safe just to apply the hunks for
+blkdev_{get,put} from your commit to fix my problem for older an older
+kernel, say 2.6.35?
+
+Ian
+
+
