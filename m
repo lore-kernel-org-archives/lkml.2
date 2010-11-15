@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934Ab0KORTR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 12:19:17 -0500
-Received: from daytona.panasas.com ([67.152.220.89]:59275 "EHLO
-	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932839Ab0KORTQ (ORCPT
+	id S932960Ab0KORWD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 12:22:03 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:58476 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932303Ab0KORWB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 12:19:16 -0500
-Message-ID: <4CE16B8E.1000300@panasas.com>
-Date: Mon, 15 Nov 2010 19:19:10 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Vladislav Bolkhovitin <vst@vlnb.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
+	Mon, 15 Nov 2010 12:22:01 -0500
+Subject: Re: [RFC][PATCH v2 1/7] taskstats: Add new taskstats command
+ TASKSTATS_CMD_ATTR_PIDS
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: holzheu@linux.vnet.ibm.com
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-References: <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <4CE1017E.4090409@panasas.com> <20101115161620.GB5981@kroah.com>
-In-Reply-To: <20101115161620.GB5981@kroah.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Nov 2010 17:19:15.0057 (UTC) FILETIME=[3A4D1E10:01CB84E9]
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+In-Reply-To: <1289840968.1916.85.camel@holzheu-laptop>
+References: <20101111170352.732381138@linux.vnet.ibm.com>
+	 <20101111170813.527389224@linux.vnet.ibm.com>
+	 <1289676005.2109.148.camel@laptop>
+	 <1289836380.1916.41.camel@holzheu-laptop>
+	 <1289837178.2109.504.camel@laptop>
+	 <1289840968.1916.85.camel@holzheu-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 15 Nov 2010 18:21:45 +0100
+Message-ID: <1289841705.2109.513.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 06:16 PM, Greg KH wrote:
-> On Mon, Nov 15, 2010 at 11:46:38AM +0200, Boaz Harrosh wrote:
->> All these issues we were discussing are interesting and are real Kernel
->> problems. For instance the last comment you made was that for such a dynamic
->> system and life time problems, and functionality. A better and expected
->> solution might be the device tree and not sysfs.
+On Mon, 2010-11-15 at 18:09 +0100, Michael Holzheu wrote:
+
+> > That you should not use sched_clock(),
 > 
-> Yes, that is what I have been saying for a while now.
+> What should we use instead?
+
+Depends on what you want, look at kernel/sched_clock.c
+
+> > What does last departed mean? That is what timeline are you counting in?
+> > Do you want time as tasks see it, or time as your wallclock sees it?
 > 
-> Again:
-> 	This code is using kobjects incorrectly.
-> 	This code should not be using kobjects.
+> "last_depart" should be the time stamp, where the task has left a CPU
+> the last time.
 > 
-> this is my last response to this thread now, and I'm sure you can
-> understand why.
+> We assume that we can compare "last_depart" with "time_ns" in the
+> taskstats structure,
+
+I think you assume I actually know anything about taskstat :-), its the
+thing I always say =n to in my config file and have so far happily
+ignored all code of.
+
+>  if we use task_rq(t)->clock for last_depart and
+> sched_clock() for stats->time_ns.
+
+Then you're up shit creek because rq->clock doesn't necessarily have any
+correlation to sched_clock().
+
+>  We also assume that we get wallclock
+> intervals in nanoseconds, if we look at two sched_clock() timestamps.
+
+Invalid assumption.
+
+> "stats->time_ns" is used as timestamp for the next snapshot query and
+> for calculation of the snapshot interval time. So there are three
+> important timestamps:
+> * struct task_struct:
+>   sched_info.last_depart: Last time task has left CPU
+
+So you're essentially replicating the data in
+sched_entity::statistics::wait_start ?
+
+> * struct taskstats:
+>   time_ns: Timestamp where taskstats data is generated
+> * sturuct cmd_pids:
+>   time_ns: Timestamp for TASKSTATS_CMD_ATTR_PIDS command. 
 > 
-> thanks,
-> 
-> greg k-h
+> Example:
+> 1. Get initial snapshot with cmd_pids->time_ns=0:
+>    - All tasks are returned.
+>     snapshot_time = MIN(stats->time_ns) for all received taskstats
+> 2. Get second snapshot with cmd_pids->time_ns = snapshot_time
+>    - Only tasks that were active after "snapshot_time" are returned.
 
-Thank you Greg for your time and most valuable input.
-I'm sorry for not understanding your position. I needed the
-clear cut statement:
+/me can only hope all this will only increase overhead for those of us
+who actually use any of this..
 
-	This code should not be using kobjects. i.e not belong in sysfs
-
-SCST guys. This sounds pretty clear cut to me. Sysfs was not built
-in mind for such dynamic systems, and it will cause never ending
-conflicts with future maintenance of sysfs vs SCST.
-
-Perhaps consider a new alternative like the device tree as Greg suggested
-or maybe finally accept the harsh realities of ConfigFS, and come join us
-in the LIO project. SCST is a most valuable project and community which
-we would like to join forces with in making Linux the best.
-
-Lets call it Linux-Target and unify all our efforts.
-
-Boaz
+I'm still upset over ->[us]timescaled existing, this patch set looks to
+me like it will only upset me more.
