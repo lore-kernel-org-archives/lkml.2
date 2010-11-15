@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205Ab0KOTwG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 14:52:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64419 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757936Ab0KOTwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 14:52:04 -0500
-Date: Mon, 15 Nov 2010 20:51:15 +0100
-From: Jakub Jelinek <jakub@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jim Bos <jim876@xs4all.nl>, Andi Kleen <andi@firstfloor.org>,
-        James Cloos <cloos@jhcloos.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
-        Dave Korn <dave.korn.cygwin@gmail.com>,
-        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-Message-ID: <20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>
-Reply-To: Jakub Jelinek <jakub@redhat.com>
-References: <20101115100331.GG2583@sunsite.ms.mff.cuni.cz>
- <20101115105446.GD7269@basil.fritz.box>
- <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com>
- <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com>
- <4CE17098.8090000@xs4all.nl>
- <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com>
- <4CE17C4B.1070305@xs4all.nl>
- <20101115185848.GI2583@sunsite.ms.mff.cuni.cz>
- <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>
- <AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com>
+	id S1758217Ab0KOTws (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 14:52:48 -0500
+Received: from netnation.com ([204.174.223.2]:38652 "EHLO peace.netnation.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757936Ab0KOTwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 14:52:47 -0500
+Date: Mon, 15 Nov 2010 11:52:46 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Free memory never fully used, swapping
+Message-ID: <20101115195246.GB17387@hostway.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 11:21:30AM -0800, Linus Torvalds wrote:
-> On Mon, Nov 15, 2010 at 11:12 AM, Jakub Jelinek <jakub@redhat.com> wrote:
-> >
-> > Ah, the problem is that memory_identifier_string is only initialized in
-> > ipa-reference.c's initialization, so it can be (and is in this case) NULL in
-> > ipa-pure-const.c.
-> 
-> Ok. And I guess you can verify that all versions of gcc do this
-> correctly for "asm volatile"?
+Hi!
 
-Yes, reading 4.1/4.2/4.3/4.4/4.5/4.6 code ipa-pure-const.c handles
-asm volatile correctly, in each case the function is no longer assumed to be
-pure or const in the discovery (of course, user can still say the
-function is const or pure). 4.0 and earlier didn't have ipa-pure-const.c.
+We're seeing cases on a number of servers where cache never fully grows
+to use all available memory.  Sometimes we see servers with 4 GB of
+memory that never seem to have less than 1.5 GB free, even with a
+constantly-active VM.  In some cases, these servers also swap out while
+this happens, even though they are constantly reading the working set
+into memory.  We have been seeing this happening for a long time;
+I don't think it's anything recent, and it still happens on 2.6.36.
 
-Using the simplified
+I noticed that CONFIG_NUMA seems to enable some more complicated
+reclaiming bits and figured it might help since most stock kernels seem
+to ship with it now.  This seems to have helped, but it may just be
+wishful thinking.  We still see this happening, though maybe to a lesser
+degree.  (The following observations are with CONFIG_NUMA enabled.)
 
-extern void abort (void);
+I was eyeballing "vmstat 1" and "watch -n.2 -d cat /proc/vmstat" at the
+same time, and I can see distinctly that the page cache is growing nicely
+until a sudden event where 400 MB is freed within 1 second, leaving
+this particular box with 700 MB free again.  kswapd numbers increase in
+/proc/vmstat, which leads me to believe that __alloc_pages_slowpath() has
+been called, since it seems to be the thing that wakes up kswapd.
 
-__attribute__((noinline)) int
-foo (int *p)
-{
-  int r;
-  asm ("movl $6, (%1)\n\txorl %0, %0" : "=r" (r) : "r" (p) : "memory");
-  return r;
-}
+Previous patterns and watching of "vmstat 1" show that the swapping out
+also seems to occur during the times that memory is quickly freed.
 
-int
-main (void)
-{
-  int p = 8;
-  if ((foo (&p) ? : p) != 6)
-    abort ();
-  return 0;
-}
+These are all x86_64, and so there is no highmem garbage going on. 
+The only zones would be for DMA, right?  Is the combination of memory
+fragmentation and large-order allocations the only thing that would be
+causing this reclaim here?  Is there some easy bake knob for finding what
+is causing the free memory jumps each time this happens?
 
-testcase shows that in 4.1/4.2/4.3/4.4 this is miscompiled only when using
--fno-ipa-reference, in 4.5 it is miscompiled always when optimizing
-unless -fno-ipa-pure-const (as 4.5 added local-pure-const pass which is run
-before ipa-reference) and in 4.6 this has been fixed by Honza when
-doing ipa cleanups.
+Kernel config and munin graph of free memory here:
 
-> Because since we'll have to work around this problem in the kernel, I
-> suspect the simplest solution is to remove the "+m" that causes
-> register pressure problems, and then use "asm volatile" to work around
-> the const-function bug.
+http://0x.ca/sim/ref/2.6.36/
 
-Yes.
+I notice CONFIG_COMPACTION is still "EXPERIMENTAL".  Would it be worth
+trying here?  It seems to enable defrag before reclaim, but that sounds
+kind of ...complicated...
 
-	Jakub
+Cheers,
+
+Simon-
+
+procs -----------memory---------- ---swap-- -----io---- -system-- ----cpu----
+ r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa
+ 1  0  11496 401684  40364 2531844    0    0  4540   773 7890 16291 13  9 77  1
+ 3  0  11492 400180  40372 2534204    0    0  5572   699 8544 14856 25  9 66  1
+ 0  0  11492 394344  40372 2540796    0    0  5256   345 8239 16723 17  7 73  2
+ 0  0  11492 388524  40372 2546236    0    0  5216   393 8687 17289 14  9 76  1
+ 4  1  11684 716296  40244 2218612    0  220  6868  1837 11124 27368 28 20 51  0
+ 1  0  11732 753992  40248 2181468    0  120  5240   647 9542 15609 38 11 50  1
+ 1  0  11712 736864  40260 2197788    0    0  5872  9147 9838 16373 41 11 47  1
+ 0  0  11712 738096  40260 2196984    0    0  4628   493 7980 15536 22 10 67  1
+ 2  0  11712 733508  40260 2201756    0    0  4404   418 7265 16867 10  9 80  2
