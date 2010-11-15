@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954Ab0KOOCu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 09:02:50 -0500
-Received: from mga01.intel.com ([192.55.52.88]:59921 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756619Ab0KOOCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 09:02:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,200,1288594800"; 
-   d="scan'208";a="857688452"
-Subject: Re: [RFC 0/4]x86: allocate up to 32 tlb invalidate vectors
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        "hpa@zytor.com" <hpa@zytor.com>
-In-Reply-To: <1288766655.23014.113.camel@sli10-conroe>
-References: <1288766655.23014.113.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Nov 2010 22:02:45 +0800
-Message-ID: <1289829765.14740.2.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756989Ab0KOOE2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 09:04:28 -0500
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:30977 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755738Ab0KOOE1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 09:04:27 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 8TGnlsMVM1m9HPMLJJ3SJvblVI.U2j_MhweKY5J.OPeD4GF
+ h0rdoS5Xn.AKT.zSrECpTwXRRzrCRhhuePLeNsIkDeE.nwuK04OF8brN0Oph
+ kVAMn1TQ.QrYJyGJr72vg0PJLoYrOMIkZFzJ8UXp5DCm_qL9TPUtvvt_taaK
+ V6CzH0l82xY8MePNzOHGtdWw2bpBCsYKR0NdWcyd1bmhp_jTtmpcp7Wt.v76
+ _DMoPKKfmzqs-
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 15 Nov 2010 08:04:23 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Mel Gorman <mel@csn.ul.ie>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] set_pgdat_percpu_threshold() don't use
+ for_each_online_cpu
+In-Reply-To: <20101115102617.GK27362@csn.ul.ie>
+Message-ID: <alpine.DEB.2.00.1011150802470.19175@router.home>
+References: <1288169256-7174-2-git-send-email-mel@csn.ul.ie> <20101028100920.5d4ce413.kamezawa.hiroyu@jp.fujitsu.com> <20101114163727.BEE0.A69D9226@jp.fujitsu.com> <20101115102617.GK27362@csn.ul.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-03 at 14:44 +0800, Shaohua Li wrote:
-> Hi,
-> In workload with heavy page reclaim, flush_tlb_page() is frequently
-> used. We currently have 8 vectors for tlb flush, which is fine for small
-> machines. But for big machines with a lot of CPUs, the 8 vectors are
-> shared by all CPUs and we need lock to protect them. This will cause a
-> lot of lock contentions. please see the patch 3 for detailed number of
-> the lock contention.
-> Andi Kleen suggests we can use 32 vectors for tlb flush, which should be
-> fine for even 8 socket machines. Test shows this reduces lock contention
-> dramatically (see patch 3 for number).
-> One might argue if this will waste too many vectors and leave less
-> vectors for devices. This could be a problem. But even we use 32
-> vectors, we still leave 78 vectors for devices. And we now have per-cpu
-> vector, vector isn't scarce any more, but I'm open if anybody has
-> objections.
-> 
-Hi Ingo & hpa, any comments about this series?
+On Mon, 15 Nov 2010, Mel Gorman wrote:
 
-Thanks,
-Shaohua
+> With recent per-cpu allocator changes, are we guaranteed that the per-cpu
+> structures exist and are valid?
+
+We always guarantee that all per cpu areas for all possible cpus exist.
+That has always been the case. There was a discussion about changing
+that though. Could be difficult given the need for additional locking.
+
 
