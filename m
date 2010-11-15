@@ -1,109 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933295Ab0KORok (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 12:44:40 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49290 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933242Ab0KORkz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 12:40:55 -0500
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v3 19/20] ARM: LPAE: add support for ATAG_MEM64
-Date: Mon, 15 Nov 2010 17:40:28 +0000
-Message-Id: <1289842829-3027-20-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.3.2.164.g6f10c
-In-Reply-To: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com>
-References: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 15 Nov 2010 17:40:38.0972 (UTC) FILETIME=[3792FFC0:01CB84EC]
+	id S933359Ab0KORpY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 12:45:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37754 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933230Ab0KORpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 12:45:19 -0500
+Date: Mon, 15 Nov 2010 18:44:49 +0100
+From: Jakub Jelinek <jakub@redhat.com>
+To: Jim Bos <jim876@xs4all.nl>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        James Cloos <cloos@jhcloos.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
+        Dave Korn <dave.korn.cygwin@gmail.com>,
+        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+Message-ID: <20101115174449.GW29412@tyan-ft48-01.lab.bos.redhat.com>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <m3lj52txaq.fsf@redhat.com>
+ <4CD97A3D.1040602@xs4all.nl>
+ <m31v6nmmr3.fsf@jhcloos.com>
+ <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com>
+ <20101115085605.GE2583@sunsite.ms.mff.cuni.cz>
+ <20101115100331.GG2583@sunsite.ms.mff.cuni.cz>
+ <20101115105446.GD7269@basil.fritz.box>
+ <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com>
+ <20101115113739.GH7269@basil.fritz.box>
+ <4CE16F86.40808@xs4all.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE16F86.40808@xs4all.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Will Deacon <will.deacon@arm.com>
+On Mon, Nov 15, 2010 at 06:36:06PM +0100, Jim Bos wrote:
+> On 11/15/2010 12:37 PM, Andi Kleen wrote:
+> See attached, note this is the vanilla 2.6.36 i8k.c (without any patch).
+> And to be 100% sure, if I build this (make drivers/char/i8k.ko) it won't
+> work.
+> 
+> [ The i8k.i is rather big, even gzipped 80k, not sure if it'll bounce ]
 
-LPAE provides support for memory banks with physical addresses of up
-to 40 bits.
+Please also say which exact gcc you are using.
 
-This patch adds a new atag, ATAG_MEM64, so that the Kernel can be
-informed about memory that exists above the 4GB boundary.
+Note, I've compiled it with current 4.5 branch and made the function
+always_inline and still didn't see any issues in the *.optimized dump,
+regs.eax after the inline asm has always been compared to the constant
+that has been stored into regs.eax before the inline asm.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm/include/asm/setup.h |   10 +++++++++-
- arch/arm/kernel/compat.c     |    4 ++--
- arch/arm/kernel/setup.c      |   12 +++++++++++-
- 3 files changed, 22 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/include/asm/setup.h b/arch/arm/include/asm/setup.h
-index 5092118..fab849f 100644
---- a/arch/arm/include/asm/setup.h
-+++ b/arch/arm/include/asm/setup.h
-@@ -43,6 +43,13 @@ struct tag_mem32 {
- 	__u32	start;	/* physical start address */
- };
- 
-+#define ATAG_MEM64	0x54420002
-+
-+struct tag_mem64 {
-+	__u64	size;
-+	__u64	start;	/* physical start address */
-+};
-+
- /* VGA text type displays */
- #define ATAG_VIDEOTEXT	0x54410003
- 
-@@ -147,7 +154,8 @@ struct tag {
- 	struct tag_header hdr;
- 	union {
- 		struct tag_core		core;
--		struct tag_mem32	mem;
-+		struct tag_mem32	mem32;
-+		struct tag_mem64	mem64;
- 		struct tag_videotext	videotext;
- 		struct tag_ramdisk	ramdisk;
- 		struct tag_initrd	initrd;
-diff --git a/arch/arm/kernel/compat.c b/arch/arm/kernel/compat.c
-index 9256523..f224d95 100644
---- a/arch/arm/kernel/compat.c
-+++ b/arch/arm/kernel/compat.c
-@@ -86,8 +86,8 @@ static struct tag * __init memtag(struct tag *tag, unsigned long start, unsigned
- 	tag = tag_next(tag);
- 	tag->hdr.tag = ATAG_MEM;
- 	tag->hdr.size = tag_size(tag_mem32);
--	tag->u.mem.size = size;
--	tag->u.mem.start = start;
-+	tag->u.mem32.size = size;
-+	tag->u.mem32.start = start;
- 
- 	return tag;
- }
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index eaa87d4..c7770e8 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -591,11 +591,21 @@ __tagtable(ATAG_CORE, parse_tag_core);
- 
- static int __init parse_tag_mem32(const struct tag *tag)
- {
--	return arm_add_memory(tag->u.mem.start, tag->u.mem.size);
-+	return arm_add_memory(tag->u.mem32.start, tag->u.mem32.size);
- }
- 
- __tagtable(ATAG_MEM, parse_tag_mem32);
- 
-+#ifdef CONFIG_PHYS_ADDR_T_64BIT
-+static int __init parse_tag_mem64(const struct tag *tag)
-+{
-+	/* We only use 32-bits for the size. */
-+	return arm_add_memory(tag->u.mem64.start, (unsigned long)tag->u.mem64.size);
-+}
-+
-+__tagtable(ATAG_MEM64, parse_tag_mem64);
-+#endif /* CONFIG_PHYS_ADDR_T_64BIT */
-+
- #if defined(CONFIG_VGA_CONSOLE) || defined(CONFIG_DUMMY_CONSOLE)
- struct screen_info screen_info = {
-  .orig_video_lines	= 30,
+	Jakub
