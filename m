@@ -1,44 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933896Ab0KOW7w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 17:59:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31566 "EHLO mx1.redhat.com"
+	id S933881Ab0KOW7h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 17:59:37 -0500
+Received: from tundra.namei.org ([65.99.196.166]:57805 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933831Ab0KOW7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 17:59:51 -0500
-Message-ID: <4CE1BB10.5090501@redhat.com>
-Date: Mon, 15 Nov 2010 15:58:24 -0700
-From: Jeff Law <law@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S933655Ab0KOW7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 17:59:34 -0500
+Date: Tue, 16 Nov 2010 09:58:37 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Eric Paris <eparis@redhat.com>
+cc: Eric Paris <eparis@parisplace.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joe Perches <joe@perches.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Eugene Teo <eugeneteo@kernel.org>, Kees Cook <kees.cook@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] Fix dmesg_restrict build failure with CONFIG_EMBEDDED=y
+ and CONFIG_PRINTK=n
+In-Reply-To: <1289860987.14282.40.camel@localhost.localdomain>
+Message-ID: <alpine.LRH.2.00.1011160953170.30359@tundra.namei.org>
+References: <1289669176.16461.12.camel@Joe-Laptop>  <AANLkTi=ut2O+mCbs1jOyg-aP=E+48h1B-MH8NxK5XyVf@mail.gmail.com>  <1289677904.16461.82.camel@Joe-Laptop>  <AANLkTikWEZLwx4khj_jFOqP+uy-TxgJGwsbxdtaCfbJq@mail.gmail.com>  <AANLkTik=mnFDXAyJ53_7FPfD5ETiYY8GjkE5pm0PJSBu@mail.gmail.com>
+  <AANLkTimoFGqKDYe24uc_2EHk-MLqxc4GGCCe7hPRJqbJ@mail.gmail.com>  <AANLkTin7Sfx5rnU3u7da5bQQiLTj9geOMht-x6z6kvid@mail.gmail.com>  <AANLkTikG=brgFP3yuWqMp=4ntHV=kyuhCUODZNp4Uo6Y@mail.gmail.com>  <alpine.LRH.2.00.1011160908380.29867@tundra.namei.org>
+ <1289860987.14282.40.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Richard Guenther <richard.guenther@gmail.com>
-CC: Andi Kleen <andi@firstfloor.org>, Andreas Schwab <schwab@linux-m68k.org>,
-        Jim <jim876@xs4all.nl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        gcc@gcc.gnu.org
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-References: <4CD538CA.8010901@xs4all.nl>	<87wroostw3.fsf@basil.nowhere.org>	<m2hbfsu57i.fsf@igel.home>	<87k4kospnd.fsf@basil.nowhere.org>	<AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com>	<4CE17FB6.7000800@redhat.com> <AANLkTim-2XE=4MbfDLXkg+jj=P5wj2cVKBHemRHLZn2L@mail.gmail.com>
-In-Reply-To: <AANLkTim-2XE=4MbfDLXkg+jj=P5wj2cVKBHemRHLZn2L@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/10 15:07, Richard Guenther wrote:
-> On Mon, Nov 15, 2010 at 7:45 PM, Jeff Law<law@redhat.com>  wrote:
->> On 11/08/10 03:49, Richard Guenther wrote:
->>> On Mon, Nov 8, 2010 at 12:03 AM, Andi Kleen<andi@firstfloor.org>    wrote:
->>>> Andreas Schwab<schwab@linux-m68k.org>    writes:
->>>>> The asm fails to mention that it modifies *regs.
->>>> It has a memory clobber, that should be enough, no?
->>> No.  A memory clobber does not cover automatic storage.
->> A memory clobber should clobber anything in memory, including autos in
->> memory; if it doesn't, then that seems like a major problem.  I'd like to
->> see the rationale behind not clobbering autos in memory.
-> Non-address taken automatic storage.  (note that we don't excercise this
-> in optimization yet)
-If the address of the auto isn't taken, then why is the object in memory 
-to begin with (with the obvious exception for aggregates).
+On Mon, 15 Nov 2010, Eric Paris wrote:
 
-Jeff
+> Not sure how that's possible.  I mean, I guess it's possible if the
+> fabled LSM reimplements the cap call, but I'm not sure how you can
+> remove a restrictive only security check without 'weakening' the system
+> in some way.
+
+If generic security logic is mixed into a capability call, then not 
+implementing the cap call also loses the generic security logic.
+
+e.g. dmesg_restrict should always be verified, regardless of whether 
+cap_security() is called or not.
+
+If cap_syslog() should always be called, then it should not be possible 
+not not call it :-)
+
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
