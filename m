@@ -1,203 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab0KOQeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 11:34:09 -0500
-Received: from xenotime.net ([72.52.115.56]:41031 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754897Ab0KOQeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 11:34:07 -0500
-Date: Mon, 15 Nov 2010 08:34:04 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Nicolas Pitre <nico@fluxnic.net>, Colin Cross <ccross@google.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: Re: [PATCH] clocksource: document some basic concepts
-Message-Id: <20101115083404.40e29969.rdunlap@xenotime.net>
-In-Reply-To: <1289817228-14838-1-git-send-email-linus.walleij@stericsson.com>
-References: <1289817228-14838-1-git-send-email-linus.walleij@stericsson.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757939Ab0KOQgp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 11:36:45 -0500
+Received: from stinky.trash.net ([213.144.137.162]:35301 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757516Ab0KOQgn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 11:36:43 -0500
+Message-ID: <4CE16198.7000709@trash.net>
+Date: Mon, 15 Nov 2010 17:36:40 +0100
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+MIME-Version: 1.0
+To: Eric Paris <eparis@redhat.com>
+CC: Hua Zhong <hzhong@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org,
+        Netfilter Development Mailinglist 
+	<netfilter-devel@vger.kernel.org>
+Subject: Re: [RFC PATCH] network: return errors if we know tcp_connect failed
+References: <20101111210341.31350.86916.stgit@paris.rdu.redhat.com>	 <00c201cb81eb$84e18160$8ea48420$@com> <4CDCEE65.3060105@trash.net>	 <017301cb82bf$54540cf0$fcfc26d0$@com>  <4CE10C2A.1050801@trash.net> <1289836066.14282.7.camel@localhost.localdomain> <4CE15885.90003@trash.net>
+In-Reply-To: <4CE15885.90003@trash.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/mixed;
+ boundary="------------020804040006030609050100"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Nov 2010 11:33:48 +0100 Linus Walleij wrote:
+This is a multi-part message in MIME format.
+--------------020804040006030609050100
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 
-> This adds some documentation about clock sources and the weak
-> sched_clock() function that answers questions that repeatedly
-> arise on the mailing lists.
+On 15.11.2010 16:57, Patrick McHardy wrote:
+> On 15.11.2010 16:47, Eric Paris wrote:
+>> I notice the heavy lifting for this is done in 
+>> net/ipv4/netfilter/ipt_REJECT.c::send_rest()
+>> (and something very similar for IPv6)
+>>
+>> I really don't want to duplicate that code into SELinux (for obvious
+>> reasons) and I'm wondering if anyone has objections to me making it
+>> available outside of netlink and/or suggestions on how to make that code
+>> available outside of netfilter (aka what header to expose it, and does
+>> it still make logical sense in ipt_REJECT.c or somewhere else?)
 > 
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Nicolas Pitre <nico@fluxnic.net>
-> Cc: Colin Cross <ccross@google.com>
-> Cc: John Stultz <johnstul@us.ibm.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Rabin Vincent <rabin.vincent@stericsson.com>
-> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
-> ---
->  Documentation/timers/00-INDEX        |    2 +
->  Documentation/timers/clocksource.txt |  106 ++++++++++++++++++++++++++++++++++
->  2 files changed, 108 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/timers/clocksource.txt
+> I don't think having SELinux sending packets to handle local
+> connections is a very elegant design, its not a firewall after
+> all. What's wrong with reacting only to specific errno codes
+> in tcp_connect()? You could f.i. return -ECONNREFUSED from
+> SELinux, that one is pretty much guaranteed not to occur in
+> the network stack itself and can be returned directly.
 > 
-> diff --git a/Documentation/timers/00-INDEX b/Documentation/timers/00-INDEX
-> index a9248da..fb88065 100644
-> --- a/Documentation/timers/00-INDEX
-> +++ b/Documentation/timers/00-INDEX
-> @@ -1,5 +1,7 @@
->  00-INDEX
->  	- this file
-> +clocksource.txt
-> +	- Clock sources and sched_clock() notes
->  highres.txt
->  	- High resolution timers and dynamic ticks design notes
->  hpet.txt
-> diff --git a/Documentation/timers/clocksource.txt b/Documentation/timers/clocksource.txt
-> new file mode 100644
-> index 0000000..cf4ab9e
-> --- /dev/null
-> +++ b/Documentation/timers/clocksource.txt
-> @@ -0,0 +1,106 @@
-> +Clock sources and sched_clock()
-> +-------------------------------
-> +
-> +If you grep through the kernel source you will find a number of architecture-
-> +specific implementations of clock sources and several likewise architecture-
-> +specific overrides of the sched_clock() function.
-> +
-> +To provide timekeeping for your platform, the clock source provides
-> +the basic timeline, whereas clock events shoot interrupts on certain points
-> +on this timeline, providing facilities such as high-resolution timers.
-> +sched_clock() is used for scheduling and timestamping.
-> +
-> +
-> +Clock sources
-> +-------------
-> +
-> +The purpose of the clock source is to provide a timeline for the system that
-> +tells you where you are in time. For example issuing the command 'date' on
-> +a Linux system will eventually read the clock source to determine exactly
-> +what time it is.
-> +
-> +Typically the clock source is a monotonic, atomic counter which will provide
-> +n bits which count from 0 to (2^n-1) and then wraps around to 0 and start over.
-> +
-> +The clock source shall have as high resolution as possible, and shall be as
-> +stable and correct as possible as compared to a real-world wall clock. It
-> +should not move unpredictably back and forth in time or miss a few cycles
-> +here and there.
-> +
-> +It must be immune the kind of effects that occur in hardware where e.g. the
+> That would need minor changes to nf_hook_slow so we can
+> encode errno values in the upper 16 bits of the verdict,
+> as we already do with the queue number. The added benefit
+> is that we don't have to return EPERM anymore when f.i.
+> rerouting fails.
 
-              immune from the
+Patch for demonstration purposes attached. I've modified the
+MARK target so it returns NF_DROP with an errno code of
+-ECONNREFUSED:
 
-> +counter register is read in two phases on the bus lowest 16 bits first and
-
-                                          on the bus (lowest
-
-> +the higher 16 bits in a second bus cycle with the counter bits potentially
-
-                                  bus cycle) with
-
-> +being updated inbetween leading to the risk of very strange values from the
-> +counter.
-> +
-> +When the wall-clock accuracy of the clock source isn't satisfactory, there
-> +are various quirks and layers in the timekeeping code for e.g. synchronizing
-> +the user-visible time to RTC clocks in the system or against networked time
-> +servers using NTP, but all they do is basically to update an offset against
-> +the clock source, which provides the fundamental timeline for the system.
-> +These measures does not affect the clock source per se.
-> +
-> +The clock source struct shall provide means to translate the provided counter
-> +into a rough nanosecond value as an unsigned long long (unsigned 64 bit) number.
-
-                                                                    64-bit)
-
-> +Since this operation may be invoked very often doing this in a strict
-> +mathematical sense is not desireable: instead the number is taken as close as
-
-                             desirable:
-
-> +possible to a nanosecond value using only the arithmetic operations
-> +mult and shift, so in clocksource_cyc2ns() you find:
-> +
-> +  ns ~= (clocksource * mult) >> shift
-> +
-> +You will find a number of helper functions in the clock source code intended
-> +to aid in providing these mult and shift values, such as
-> +clocksource_khz2mult(), clocksource_hz2mult() that help determinining the
-
-                                                 that help determine
-
-> +mult factor from a fixed shift, and clocksource_calc_mult_shift() and
-> +clocksource_register_hz() which will help out assigning both shift and mult
-> +factors using the frequency of the clock source and desirable minimum idle
-> +time as the only input. In the past, the timekeeping authors would come up with
-> +these values by hand, which is why you will sometimes find hard-coded shift
-> +and mult values in the code.
-> +
-> +Since a 32 bit counter at say 100 MHz will wrap around to zero after some 43
-
-           32-bit
-
-> +seconds, the code handling the clock source will have to compensate for this.
-> +That is the reason to why the clock source struct also contains a 'mask'
-> +member telling how many bits of the source are valid. This way the timekeeping
-> +code knows when the counter will wrap around and can insert the necessary
-> +compensation code on both sides of the wrap point so that the system timeline
-> +remains monotonic. Note that the clocksource_cyc2ns() function will not
-> +compensate for wrap-arounds: it will return the rough number of nanoseconds
-> +since the last wrap-around.
-> +
-> +You will notice that the clock event device code is based on the same basic
-> +idea about translating counters to nanoseconds using mult and shift
-> +arithmetics, and you find the same family of helper functions again for
-> +assigning these values. The clock event driver does not need a 'mask'
-> +attribute however: the system will not try to plan events beyond the time
-> +horizon of the clock event.
-> +
-> +
-> +sched_clock()
-> +-------------
-> +
-> +In addition to the clock sources and clock events there is a special weak
-> +function in the kernel called sched_clock(). This function shall return the
-> +number of nanoseconds since the system was started. An architecture may or
-> +may not provide an implementation of sched_clock() on its own.
-> +
-> +As the name suggests, sched_clock() is used for scheduling the system,
-> +determining the absolute timeslice for a certain process in the CFS scheduler
-> +for example. It is also used for printk timestamps when you have selected to
-> +include time information in printk for things like bootcharts.
-> +
-> +Compared to clock sources, sched_clock() has to be very fast: it is called
-> +much more often, especially by the scheduler. If you have to do trade-offs
-> +between accuracy compared to the clock source, you may sacrifice accuracy
-> +for speed in sched_clock(). It however require the same basic characteristics
-
-                                          requires
-
-> +as the clock source, i.e. it has to be monotonic.
-> +
-> +The sched_clock() function may wrap only on unsigned long long boundaries,
-> +i.e. after 64 bits. Since this is a nanosecond value this will mean it wraps
-> +after circa 585 years. (For most practical systems this means "never".)
-> +
-> +If an architecture does not provide its own implementation of this function,
-> +it will fall back to using jiffies, making its maximum resolution 1/HZ of the
-> +jiffy frequency for the architecture. This will affect scheduling accuracy
-> +and will likely show up in system benchmarks.
-> -- 
+# iptables -A OUTPUT -d 1.2.3.4 -j MARK --set-mark 1
+# ping 1.2.3.4
+PING 1.2.3.4 (1.2.3.4) 56(84) bytes of data.
+ping: sendmsg: Connection refused
+# telnet 1.2.3.4
+Trying 1.2.3.4...
+telnet: Unable to connect to remote host: Connection refused
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+
+--------------020804040006030609050100
+Content-Type: text/plain;
+ name="x"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="x"
+
+diff --git a/include/linux/netfilter.h b/include/linux/netfilter.h
+index 89341c3..ef2af8f 100644
+--- a/include/linux/netfilter.h
++++ b/include/linux/netfilter.h
+@@ -33,6 +33,8 @@
+ 
+ #define NF_QUEUE_NR(x) ((((x) << NF_VERDICT_BITS) & NF_VERDICT_QMASK) | NF_QUEUE)
+ 
++#define NF_DROP_ERR(x) (((-x) << NF_VERDICT_BITS) | NF_DROP)
++
+ /* only for userspace compatibility */
+ #ifndef __KERNEL__
+ /* Generic cache responses from hook functions.
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 05b1ecf..bb8f547 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2592,6 +2592,7 @@ int tcp_connect(struct sock *sk)
+ {
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	struct sk_buff *buff;
++	int err;
+ 
+ 	tcp_connect_init(sk);
+ 
+@@ -2614,7 +2615,9 @@ int tcp_connect(struct sock *sk)
+ 	sk->sk_wmem_queued += buff->truesize;
+ 	sk_mem_charge(sk, buff->truesize);
+ 	tp->packets_out += tcp_skb_pcount(buff);
+-	tcp_transmit_skb(sk, buff, 1, sk->sk_allocation);
++	err = tcp_transmit_skb(sk, buff, 1, sk->sk_allocation);
++	if (err == -ECONNREFUSED)
++		return err;
+ 
+ 	/* We change tp->snd_nxt after the tcp_transmit_skb() call
+ 	 * in order to make this packet get counted in tcpOutSegs.
+diff --git a/net/netfilter/core.c b/net/netfilter/core.c
+index 85dabb8..32fcbe2 100644
+--- a/net/netfilter/core.c
++++ b/net/netfilter/core.c
+@@ -173,9 +173,11 @@ next_hook:
+ 			     outdev, &elem, okfn, hook_thresh);
+ 	if (verdict == NF_ACCEPT || verdict == NF_STOP) {
+ 		ret = 1;
+-	} else if (verdict == NF_DROP) {
++	} else if ((verdict & NF_VERDICT_MASK) == NF_DROP) {
+ 		kfree_skb(skb);
+-		ret = -EPERM;
++		ret = -(verdict >> NF_VERDICT_BITS);
++		if (ret == 0)
++			ret = -EPERM;
+ 	} else if ((verdict & NF_VERDICT_MASK) == NF_QUEUE) {
+ 		if (!nf_queue(skb, elem, pf, hook, indev, outdev, okfn,
+ 			      verdict >> NF_VERDICT_BITS))
+diff --git a/net/netfilter/xt_mark.c b/net/netfilter/xt_mark.c
+index 2334523..185330c 100644
+--- a/net/netfilter/xt_mark.c
++++ b/net/netfilter/xt_mark.c
+@@ -30,7 +30,7 @@ mark_tg(struct sk_buff *skb, const struct xt_action_param *par)
+ 	const struct xt_mark_tginfo2 *info = par->targinfo;
+ 
+ 	skb->mark = (skb->mark & ~info->mask) ^ info->mark;
+-	return XT_CONTINUE;
++	return NF_DROP_ERR(-ECONNREFUSED);
+ }
+ 
+ static bool
+
+
+--------------020804040006030609050100--
