@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933700Ab0KOUOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 15:14:12 -0500
-Received: from mail.perches.com ([173.55.12.10]:1340 "EHLO mail.perches.com"
+	id S933686Ab0KOUOL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 15:14:11 -0500
+Received: from mail.perches.com ([173.55.12.10]:1337 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933633Ab0KOUOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932974Ab0KOUOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Nov 2010 15:14:08 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 02/11] drivers/ide/pmac.c: Remove unnecessary casts of pci_get_drvdata
-Date: Mon, 15 Nov 2010 12:13:53 -0800
-Message-Id: <9a1859d08801fcd813f75b1a79dfcd68ba51b58f.1289851770.git.joe@perches.com>
+Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/11] drivers/i2c/busses/i2c-nforce2.c: Remove unnecessary casts of pci_get_drvdata
+Date: Mon, 15 Nov 2010 12:13:52 -0800
+Message-Id: <8202cea15da761f594353ae6906e1414b1f1f152.1289851770.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289851770.git.joe@perches.com>
 References: <cover.1289851770.git.joe@perches.com>
@@ -22,31 +23,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/ide/pmac.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/i2c/busses/i2c-nforce2.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/ide/pmac.c b/drivers/ide/pmac.c
-index ebcf8e4..1db7c43 100644
---- a/drivers/ide/pmac.c
-+++ b/drivers/ide/pmac.c
-@@ -1334,7 +1334,7 @@ out_free_pmif:
- static int
- pmac_ide_pci_suspend(struct pci_dev *pdev, pm_message_t mesg)
- {
--	pmac_ide_hwif_t *pmif = (pmac_ide_hwif_t *)pci_get_drvdata(pdev);
-+	pmac_ide_hwif_t *pmif = pci_get_drvdata(pdev);
- 	int rc = 0;
+diff --git a/drivers/i2c/busses/i2c-nforce2.c b/drivers/i2c/busses/i2c-nforce2.c
+index a605a50..ff1e127 100644
+--- a/drivers/i2c/busses/i2c-nforce2.c
++++ b/drivers/i2c/busses/i2c-nforce2.c
+@@ -432,7 +432,7 @@ static int __devinit nforce2_probe(struct pci_dev *dev, const struct pci_device_
  
- 	if (mesg.event != pdev->dev.power.power_state.event
-@@ -1350,7 +1350,7 @@ pmac_ide_pci_suspend(struct pci_dev *pdev, pm_message_t mesg)
- static int
- pmac_ide_pci_resume(struct pci_dev *pdev)
+ static void __devexit nforce2_remove(struct pci_dev *dev)
  {
--	pmac_ide_hwif_t *pmif = (pmac_ide_hwif_t *)pci_get_drvdata(pdev);
-+	pmac_ide_hwif_t *pmif = pci_get_drvdata(pdev);
- 	int rc = 0;
+-	struct nforce2_smbus *smbuses = (void*) pci_get_drvdata(dev);
++	struct nforce2_smbus *smbuses = pci_get_drvdata(dev);
  
- 	if (pdev->dev.power.power_state.event != PM_EVENT_ON) {
+ 	nforce2_set_reference(NULL);
+ 	if (smbuses[0].base) {
 -- 
 1.7.3.1.g432b3.dirty
 
