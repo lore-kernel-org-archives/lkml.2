@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933612Ab0KOTW2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 14:22:28 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39942 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756811Ab0KOTW1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 14:22:27 -0500
+	id S933621Ab0KOTZj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 14:25:39 -0500
+Received: from netnation.com ([204.174.223.2]:50392 "EHLO peace.netnation.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752614Ab0KOTZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 14:25:38 -0500
+X-Greylist: delayed 1045 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Nov 2010 14:25:38 EST
+Date: Mon, 15 Nov 2010 11:08:08 -0800
+From: Simon Kirby <sim@hostway.ca>
+To: "J.H." <warthog9@kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, jaxboe@fusionio.com,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: More XFS resource starvation?
+Message-ID: <20101115190808.GA17387@hostway.ca>
+References: <4CE17C4E.7010206@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>
-References: <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com>
- <20101115085605.GE2583@sunsite.ms.mff.cuni.cz> <20101115100331.GG2583@sunsite.ms.mff.cuni.cz>
- <20101115105446.GD7269@basil.fritz.box> <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com>
- <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com>
- <4CE17098.8090000@xs4all.nl> <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com>
- <4CE17C4B.1070305@xs4all.nl> <20101115185848.GI2583@sunsite.ms.mff.cuni.cz> <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 15 Nov 2010 11:21:30 -0800
-Message-ID: <AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com>
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-To: Jakub Jelinek <jakub@redhat.com>
-Cc: Jim Bos <jim876@xs4all.nl>, Andi Kleen <andi@firstfloor.org>,
-        James Cloos <cloos@jhcloos.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
-        Dave Korn <dave.korn.cygwin@gmail.com>,
-        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE17C4E.7010206@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 11:12 AM, Jakub Jelinek <jakub@redhat.com> wrote:
->
-> Ah, the problem is that memory_identifier_string is only initialized in
-> ipa-reference.c's initialization, so it can be (and is in this case) NULL in
-> ipa-pure-const.c.
+On Mon, Nov 15, 2010 at 10:30:38AM -0800, J.H. wrote:
 
-Ok. And I guess you can verify that all versions of gcc do this
-correctly for "asm volatile"?
+> So apparently I'm having fun tripping over all kinds of bugs lately.
+> I've seen this a couple of times now on the box in question.  Usually
+> happens after a few days, or after particularly heavy rsync traffic on
+> the box.
+> 
+> http://pastebin.osuosl.org/36014
+> 
+> Christoph seemed to think it's a memory exhaustion problem, so I've
+> included the /proc/meminfo and as you can see there's plenty of memory
+> around on the system.
+> 
+> Loads have, expectedly, climbed currently around 1250.05 but growing slowly.
+> 
+> Quick overview of the underlying storage:
+> 
+> xfs -> md (raid 0) -+--> P812 hardware raid6 (cciss driver)
+>                     |
+>                     +--> P812 hardware raid6 (cciss driver)
+> 
+> This is running on an HP DL380 G7.
+> 
+> I saw this both on an older 2.6.30.10-105.2.23.fc11.x86_64, and
+> currently on 2.6.34.7-61.fc13.x86_64 (both being Fedora stock kernels)
+> 
+> I have not seen this on a very similar DL380 G6, with the same storage
+> setup and it is currently running the 2.6.30 kernel from above.
+> 
+> Christoph suggest increasing the nr_request values for each of the
+> underlying devices, but this didn't seem to change anything
+> significantly on the system.
+> 
+> Anyone have any ideas on what's going on?
 
-Because since we'll have to work around this problem in the kernel, I
-suspect the simplest solution is to remove the "+m" that causes
-register pressure problems, and then use "asm volatile" to work around
-the const-function bug.
+What does this show?
 
-And add a large comment about why "asm volatile" is probably always a
-good idea when you have a memory clobber and don't have any other
-visible memory modifications.
+	iostat -x -k 1
 
-I do wonder if this explains some of the problems we had with the
-bitop asms too.
+In particular, "avgqu-sz" aka "average queue size" would be non-zero if
+there are requests pending.  If r/s and w/s are zero over a long time
+with the queue size being non-zero, the issuing of commands to the
+hardware raid controller is stuck for some reason.
 
-Hmm?
+Since your Dirty and Writeback is pretty high, it sounds like this is the
+issue.  Not sure where to go from there.
 
-                       Linus
+Simon-
