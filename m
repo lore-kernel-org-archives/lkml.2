@@ -1,432 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933639Ab0KOUHA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 15:07:00 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37700 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932143Ab0KOUG6 convert rfc822-to-8bit (ORCPT
+	id S933624Ab0KOULJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 15:11:09 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:49235 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755498Ab0KOULI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 15:06:58 -0500
-Subject: [PATCH] sched: Simplify cpu-hot-unplug task migration
+	Mon, 15 Nov 2010 15:11:08 -0500
+Subject: serial8250: Mark console as CON_ANYTIME
 From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Raistlin <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1289691081.2109.452.camel@laptop>
-References: <1288333128.8661.137.camel@Palantir>
-	 <1288333876.8661.147.camel@Palantir> <1289486096.2084.123.camel@laptop>
-	 <20101111152750.GA2510@redhat.com> <1289490202.2084.140.camel@laptop>
-	 <20101111163242.GA5697@redhat.com> <1289673355.2109.79.camel@laptop>
-	 <20101113195857.GA11411@redhat.com>  <1289680291.2109.244.camel@laptop>
-	 <1289681497.2109.270.camel@laptop>  <1289691081.2109.452.camel@laptop>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Ingo Molnar <mingo@elte.hu>, tglx <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, linux-serial@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Mon, 15 Nov 2010 21:06:37 +0100
-Message-ID: <1289851597.2109.547.camel@laptop>
+Date: Mon, 15 Nov 2010 21:11:12 +0100
+Message-ID: <1289851872.2109.550.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: sched: Simplify cpu-hot-unplug task migration
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Sat Nov 13 19:32:29 CET 2010
 
-While discussing the need for sched_idle_next(), Oleg remarked that
-since try_to_wake_up() ensures sleeping tasks will end up running on a
-sane cpu, we can do away with migrate_live_tasks().
+While trying to debug a cpu-hotplug issue I noticed printk() stopped
+working once the cpu got marked offline, since the 8250 serial console
+doesn't have any per-cpu resources the CON_ANYTIME bit is the safe and
+documented way to make it work again.
 
-If we then extend the existing hack of migrating current from
-CPU_DYING to migrating the full rq worth of tasks from CPU_DYING, the
-need for the sched_idle_next() abomination disappears as well, since
-idle will be the only possible thread left after the migration thread
-stops.
-
-This greatly simplifies the hot-unplug task migration path, as can be
-seen from the resulting code reduction (and about half the new lines
-are comments).
-
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- include/linux/sched.h |    3 
- kernel/cpu.c          |   16 +--
- kernel/sched.c        |  210 +++++++++++++++-----------------------------------
- 3 files changed, 69 insertions(+), 160 deletions(-)
+ drivers/serial/8250.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Index: linux-2.6/include/linux/sched.h
-===================================================================
---- linux-2.6.orig/include/linux/sched.h
-+++ linux-2.6/include/linux/sched.h
-@@ -1872,14 +1872,11 @@ extern void sched_clock_idle_sleep_event
- extern void sched_clock_idle_wakeup_event(u64 delta_ns);
- 
- #ifdef CONFIG_HOTPLUG_CPU
--extern void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p);
- extern void idle_task_exit(void);
- #else
- static inline void idle_task_exit(void) {}
- #endif
- 
--extern void sched_idle_next(void);
--
- #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
- extern void wake_up_idle_cpu(int cpu);
- #else
-Index: linux-2.6/kernel/cpu.c
-===================================================================
---- linux-2.6.orig/kernel/cpu.c
-+++ linux-2.6/kernel/cpu.c
-@@ -189,7 +189,6 @@ static inline void check_for_tasks(int c
- }
- 
- struct take_cpu_down_param {
--	struct task_struct *caller;
- 	unsigned long mod;
- 	void *hcpu;
+diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
+index 4d8e14b..09a5508 100644
+--- a/drivers/serial/8250.c
++++ b/drivers/serial/8250.c
+@@ -2872,7 +2872,7 @@ static struct console serial8250_console = {
+ 	.device		= uart_console_device,
+ 	.setup		= serial8250_console_setup,
+ 	.early_setup	= serial8250_console_early_setup,
+-	.flags		= CON_PRINTBUFFER,
++	.flags		= CON_PRINTBUFFER | CON_ANYTIME,
+ 	.index		= -1,
+ 	.data		= &serial8250_reg,
  };
-@@ -208,11 +207,6 @@ static int __ref take_cpu_down(void *_pa
- 
- 	cpu_notify(CPU_DYING | param->mod, param->hcpu);
- 
--	if (task_cpu(param->caller) == cpu)
--		move_task_off_dead_cpu(cpu, param->caller);
--	/* Force idle task to run as soon as we yield: it should
--	   immediately notice cpu is offline and die quickly. */
--	sched_idle_next();
- 	return 0;
- }
- 
-@@ -223,7 +217,6 @@ static int __ref _cpu_down(unsigned int 
- 	void *hcpu = (void *)(long)cpu;
- 	unsigned long mod = tasks_frozen ? CPU_TASKS_FROZEN : 0;
- 	struct take_cpu_down_param tcd_param = {
--		.caller = current,
- 		.mod = mod,
- 		.hcpu = hcpu,
- 	};
-@@ -253,9 +246,12 @@ static int __ref _cpu_down(unsigned int 
- 	}
- 	BUG_ON(cpu_online(cpu));
- 
--	/* Wait for it to sleep (leaving idle task). */
--	while (!idle_cpu(cpu))
--		yield();
-+	/*
-+	 * The migration_call() CPU_DYING callback will have removed all
-+	 * runnable tasks from the cpu, there's only the idle task left now
-+	 * that the migration thread is done doing the stop_machine thing.
-+	 */
-+	BUG_ON(!idle_cpu(cpu));
- 
- 	/* This actually kills the CPU. */
- 	__cpu_die(cpu);
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -2381,18 +2381,15 @@ static int select_fallback_rq(int cpu, s
- 		return dest_cpu;
- 
- 	/* No more Mr. Nice Guy. */
--	if (unlikely(dest_cpu >= nr_cpu_ids)) {
--		dest_cpu = cpuset_cpus_allowed_fallback(p);
--		/*
--		 * Don't tell them about moving exiting tasks or
--		 * kernel threads (both mm NULL), since they never
--		 * leave kernel.
--		 */
--		if (p->mm && printk_ratelimit()) {
--			printk(KERN_INFO "process %d (%s) no "
--			       "longer affine to cpu%d\n",
--			       task_pid_nr(p), p->comm, cpu);
--		}
-+	dest_cpu = cpuset_cpus_allowed_fallback(p);
-+	/*
-+	 * Don't tell them about moving exiting tasks or
-+	 * kernel threads (both mm NULL), since they never
-+	 * leave kernel.
-+	 */
-+	if (p->mm && printk_ratelimit()) {
-+		printk(KERN_INFO "process %d (%s) no longer affine to cpu%d\n",
-+				task_pid_nr(p), p->comm, cpu);
- 	}
- 
- 	return dest_cpu;
-@@ -5727,29 +5724,20 @@ static int migration_cpu_stop(void *data
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
-+
- /*
-- * Figure out where task on dead CPU should go, use force if necessary.
-+ * Ensures that the idle task is using init_mm right before its cpu goes
-+ * offline.
-  */
--void move_task_off_dead_cpu(int dead_cpu, struct task_struct *p)
-+void idle_task_exit(void)
- {
--	struct rq *rq = cpu_rq(dead_cpu);
--	int needs_cpu, uninitialized_var(dest_cpu);
--	unsigned long flags;
-+	struct mm_struct *mm = current->active_mm;
- 
--	local_irq_save(flags);
-+	BUG_ON(cpu_online(smp_processor_id()));
- 
--	raw_spin_lock(&rq->lock);
--	needs_cpu = (task_cpu(p) == dead_cpu) && (p->state != TASK_WAKING);
--	if (needs_cpu)
--		dest_cpu = select_fallback_rq(dead_cpu, p);
--	raw_spin_unlock(&rq->lock);
--	/*
--	 * It can only fail if we race with set_cpus_allowed(),
--	 * in the racer should migrate the task anyway.
--	 */
--	if (needs_cpu)
--		__migrate_task(p, dead_cpu, dest_cpu);
--	local_irq_restore(flags);
-+	if (mm != &init_mm)
-+		switch_mm(mm, &init_mm, current);
-+	mmdrop(mm);
- }
- 
- /*
-@@ -5762,128 +5750,69 @@ void move_task_off_dead_cpu(int dead_cpu
- static void migrate_nr_uninterruptible(struct rq *rq_src)
- {
- 	struct rq *rq_dest = cpu_rq(cpumask_any(cpu_active_mask));
--	unsigned long flags;
- 
--	local_irq_save(flags);
--	double_rq_lock(rq_src, rq_dest);
- 	rq_dest->nr_uninterruptible += rq_src->nr_uninterruptible;
- 	rq_src->nr_uninterruptible = 0;
--	double_rq_unlock(rq_src, rq_dest);
--	local_irq_restore(flags);
--}
--
--/* Run through task list and migrate tasks from the dead cpu. */
--static void migrate_live_tasks(int src_cpu)
--{
--	struct task_struct *p, *t;
--
--	read_lock(&tasklist_lock);
--
--	do_each_thread(t, p) {
--		if (p == current)
--			continue;
--
--		if (task_cpu(p) == src_cpu)
--			move_task_off_dead_cpu(src_cpu, p);
--	} while_each_thread(t, p);
--
--	read_unlock(&tasklist_lock);
- }
- 
- /*
-- * Schedules idle task to be the next runnable task on current CPU.
-- * It does so by boosting its priority to highest possible.
-- * Used by CPU offline code.
-- */
--void sched_idle_next(void)
--{
--	int this_cpu = smp_processor_id();
--	struct rq *rq = cpu_rq(this_cpu);
--	struct task_struct *p = rq->idle;
--	unsigned long flags;
--
--	/* cpu has to be offline */
--	BUG_ON(cpu_online(this_cpu));
--
--	/*
--	 * Strictly not necessary since rest of the CPUs are stopped by now
--	 * and interrupts disabled on the current cpu.
--	 */
--	raw_spin_lock_irqsave(&rq->lock, flags);
--
--	__setscheduler(rq, p, SCHED_FIFO, MAX_RT_PRIO-1);
--
--	activate_task(rq, p, 0);
--
--	raw_spin_unlock_irqrestore(&rq->lock, flags);
--}
--
--/*
-- * Ensures that the idle task is using init_mm right before its cpu goes
-- * offline.
-+ * remove the tasks which were accounted by rq from calc_load_tasks.
-  */
--void idle_task_exit(void)
-+static void calc_global_load_remove(struct rq *rq)
- {
--	struct mm_struct *mm = current->active_mm;
--
--	BUG_ON(cpu_online(smp_processor_id()));
--
--	if (mm != &init_mm)
--		switch_mm(mm, &init_mm, current);
--	mmdrop(mm);
-+	atomic_long_sub(rq->calc_load_active, &calc_load_tasks);
-+	rq->calc_load_active = 0;
- }
- 
--/* called under rq->lock with disabled interrupts */
--static void migrate_dead(unsigned int dead_cpu, struct task_struct *p)
-+/*
-+ * Migrate all tasks from the rq, sleeping tasks will be migrated by
-+ * try_to_wake_up()->select_task_rq().
-+ *
-+ * Called with rq->lock held even though we'er in stop_machine() and
-+ * there's no concurrency possible, we hold the required locks anyway
-+ * because of lock validation efforts.
-+ */
-+static void migrate_tasks(unsigned int dead_cpu)
- {
- 	struct rq *rq = cpu_rq(dead_cpu);
--
--	/* Must be exiting, otherwise would be on tasklist. */
--	BUG_ON(!p->exit_state);
--
--	/* Cannot have done final schedule yet: would have vanished. */
--	BUG_ON(p->state == TASK_DEAD);
--
--	get_task_struct(p);
-+	struct task_struct *next, *stop = rq->stop;
-+	int dest_cpu;
- 
- 	/*
--	 * Drop lock around migration; if someone else moves it,
--	 * that's OK. No task can be added to this CPU, so iteration is
--	 * fine.
-+	 * Fudge the rq selection such that the below task selection loop
-+	 * doesn't get stuck on the currently eligible stop task.
-+	 *
-+	 * We're currently inside stop_machine() and the rq is either stuck
-+	 * in the stop_machine_cpu_stop() loop, or we're executing this code,
-+	 * either way we should never end up calling schedule() until we're
-+	 * done here.
- 	 */
--	raw_spin_unlock_irq(&rq->lock);
--	move_task_off_dead_cpu(dead_cpu, p);
--	raw_spin_lock_irq(&rq->lock);
--
--	put_task_struct(p);
--}
--
--/* release_task() removes task from tasklist, so we won't find dead tasks. */
--static void migrate_dead_tasks(unsigned int dead_cpu)
--{
--	struct rq *rq = cpu_rq(dead_cpu);
--	struct task_struct *next;
-+	rq->stop = NULL;
- 
- 	for ( ; ; ) {
--		if (!rq->nr_running)
-+		/*
-+		 * There's this thread running, bail when that's the only
-+		 * remaining thread.
-+		 */
-+		if (rq->nr_running == 1)
- 			break;
-+
- 		next = pick_next_task(rq);
--		if (!next)
--			break;
-+		BUG_ON(!next);
- 		next->sched_class->put_prev_task(rq, next);
--		migrate_dead(dead_cpu, next);
- 
-+		/* Find suitable destination for @next, with force if needed. */
-+		dest_cpu = select_fallback_rq(dead_cpu, next);
-+		raw_spin_unlock(&rq->lock);
-+
-+		__migrate_task(next, dead_cpu, dest_cpu);
-+
-+		raw_spin_lock(&rq->lock);
- 	}
--}
- 
--/*
-- * remove the tasks which were accounted by rq from calc_load_tasks.
-- */
--static void calc_global_load_remove(struct rq *rq)
--{
--	atomic_long_sub(rq->calc_load_active, &calc_load_tasks);
--	rq->calc_load_active = 0;
-+	rq->stop = stop;
- }
-+
- #endif /* CONFIG_HOTPLUG_CPU */
- 
- #if defined(CONFIG_SCHED_DEBUG) && defined(CONFIG_SYSCTL)
-@@ -6093,15 +6022,13 @@ migration_call(struct notifier_block *nf
- 	unsigned long flags;
- 	struct rq *rq = cpu_rq(cpu);
- 
--	switch (action) {
-+	switch (action & ~CPU_TASKS_FROZEN) {
- 
- 	case CPU_UP_PREPARE:
--	case CPU_UP_PREPARE_FROZEN:
- 		rq->calc_load_update = calc_load_update;
- 		break;
- 
- 	case CPU_ONLINE:
--	case CPU_ONLINE_FROZEN:
- 		/* Update our root-domain */
- 		raw_spin_lock_irqsave(&rq->lock, flags);
- 		if (rq->rd) {
-@@ -6113,30 +6040,19 @@ migration_call(struct notifier_block *nf
- 		break;
- 
- #ifdef CONFIG_HOTPLUG_CPU
--	case CPU_DEAD:
--	case CPU_DEAD_FROZEN:
--		migrate_live_tasks(cpu);
--		/* Idle task back to normal (off runqueue, low prio) */
--		raw_spin_lock_irq(&rq->lock);
--		deactivate_task(rq, rq->idle, 0);
--		__setscheduler(rq, rq->idle, SCHED_NORMAL, 0);
--		rq->idle->sched_class = &idle_sched_class;
--		migrate_dead_tasks(cpu);
--		raw_spin_unlock_irq(&rq->lock);
--		migrate_nr_uninterruptible(rq);
--		BUG_ON(rq->nr_running != 0);
--		calc_global_load_remove(rq);
--		break;
--
- 	case CPU_DYING:
--	case CPU_DYING_FROZEN:
- 		/* Update our root-domain */
- 		raw_spin_lock_irqsave(&rq->lock, flags);
- 		if (rq->rd) {
- 			BUG_ON(!cpumask_test_cpu(cpu, rq->rd->span));
- 			set_rq_offline(rq);
- 		}
-+		migrate_tasks(cpu);
-+		BUG_ON(rq->nr_running != 1); /* the migration thread */
- 		raw_spin_unlock_irqrestore(&rq->lock, flags);
-+
-+		migrate_nr_uninterruptible(rq);
-+		calc_global_load_remove(rq);
- 		break;
- #endif
- 	}
 
