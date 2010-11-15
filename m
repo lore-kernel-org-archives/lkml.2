@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731Ab0KOIlu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 03:41:50 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:40028 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750932Ab0KOIlt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 03:41:49 -0500
-Message-ID: <00b801cb84a0$f0f9af00$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Marc Kleine-Budde" <mkl@pengutronix.de>,
-        "Wolfram Sang" <w.sang@pengutronix.de>
-Cc: "Wolfgang Grandegger" <wg@grandegger.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Christian Pellegrin" <chripell@fsfe.org>,
-        "Barry Song" <21cnbao@gmail.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
-        <margie.foster@intel.com>, <yong.y.wang@intel.com>,
-        "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>,
-        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>
-References: <4CCAA3D4.8070408@dsn.okisemi.com> <4CCAC4CD.7000503@pengutronix.de> <4CCAF517.2000409@pengutronix.de> <001701cb7a78$99e1fe20$66f8800a@maildom.okisemi.com> <4CCFEFE9.1020806@pengutronix.de>
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix build warnings
-Date: Mon, 15 Nov 2010 17:41:47 +0900
+	id S1752271Ab0KOImR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 03:42:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62127 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751340Ab0KOImP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 03:42:15 -0500
+Message-ID: <4CE0F24F.6070608@redhat.com>
+Date: Mon, 15 Nov 2010 09:41:51 +0100
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100918 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
+To: Heinz Diehl <htd@fritha.org>
+CC: Matt <jackdachef@gmail.com>, Mike Snitzer <snitzer@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        linux-btrfs <linux-btrfs@vger.kernel.org>,
+        dm-devel <dm-devel@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        htd <htd@fancy-poultry.org>, Chris Mason <chris.mason@oracle.com>
+Subject: Re: dm-crypt barrier support is effective
+References: <AANLkTikbsU+SGAaoq_oek=7tfDdjg+0wFoydhA+K9ZU+@mail.gmail.com> <AANLkTinna7BiGHogXnn1iEG6ccUAjFM3p3S3aHpv=h-E@mail.gmail.com> <20101107194547.GA12521@basil.fritz.box> <4CD71C8B.1050604@redhat.com> <20101107230508.GB17592@basil.fritz.box> <20101108145809.GD29714@redhat.com> <1289238930-sup-9765@think> <20101114205925.GA20451@redhat.com> <AANLkTi=rVyozmvqCJD1kGqnV3uEn-0ak6B12-O_9XOKJ@mail.gmail.com> <4CE05A9E.9090204@redhat.com> <20101115072545.GA7492@fritha.org>
+In-Reply-To: <20101115072545.GA7492@fritha.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 02, 2010 8:03 PM, Marc Kleine-Budde wrote:
+On 11/15/2010 08:25 AM, Heinz Diehl wrote:
+> On 15.11.2010, Milan Broz wrote: 
+> 
+> drivers/md/dm-crypt.c: In function crypt_ctr':
+> drivers/md/dm-crypt.c:1408: error: WQ_MEM_RECLAIM' undeclared (first use in this function)
+> drivers/md/dm-crypt.c:1408: error: (Each undeclared identifier is reported only once
+> drivers/md/dm-crypt.c:1408: error: for each function it appears in.)
 
-> BTW: Does the Intel chip support x64? If so, have you tested the driver
-> on a 64 bit kernel.
-No, x64 is not supported.
+It should be enough to just replace WQ_MEM_RECLAIM to WQ_RESCUER for 2.6.36.
+(that define is new in 2.6.37)
 
-Thanks,
-
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
-
------ Original Message ----- 
-From: "Marc Kleine-Budde" <mkl@pengutronix.de>
-To: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-Cc: "Wolfgang Grandegger" <wg@grandegger.com>; "David S. Miller" <davem@davemloft.net>; "Wolfram Sang"
-<w.sang@pengutronix.de>; "Christian Pellegrin" <chripell@fsfe.org>; "Barry Song" <21cnbao@gmail.com>; "Samuel Ortiz"
-<sameo@linux.intel.com>; <socketcan-core@lists.berlios.de>; <netdev@vger.kernel.org>; "LKML"
-<linux-kernel@vger.kernel.org>; <andrew.chih.howe.khor@intel.com>; <qi.wang@intel.com>; <margie.foster@intel.com>;
-<yong.y.wang@intel.com>; "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>; <kok.howg.ewe@intel.com>; <joel.clark@intel.com>
-Sent: Tuesday, November 02, 2010 8:03 PM
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix build warnings
-
-
+Milan
