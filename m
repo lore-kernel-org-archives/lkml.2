@@ -1,113 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757543Ab0KOEaJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 23:30:09 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47241 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757290Ab0KOEaH (ORCPT
+	id S1757553Ab0KOEdR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 23:33:17 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41487 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757342Ab0KOEdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 23:30:07 -0500
+	Sun, 14 Nov 2010 23:33:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=L6CRvclaDkQg42EMF9YSD3RkqUyjNMbzJ07r++y/LGDhtYm+3EuCyjyLLhPEllgzPa
-         ZhYe06p0ySElWmiZ1zzo4UxwvaCpfbhmUIBpd3iAh0KMgHXv2/bdh/sM8kP5dcqZ7z4B
-         wQVBrcUo5C4checr/5W5ZZQQTCfhzt5sluMYg=
-Subject: Remaining problems in firewire-net
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <tkrat.036c5d10fb83f85d@s5r6.in-berlin.de>
-References: <tkrat.036c5d10fb83f85d@s5r6.in-berlin.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Nov 2010 06:30:01 +0200
-Message-ID: <1289795401.11881.62.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=ppCDmit18jINrbk5cBCqcrFcBUNSzTHRx3g+mD1GXGD3BUiRnzugbShoQFRQpbmZPQ
+         n+YLTnwRoimd61goJf7cl5faMvQeiIJDA60AdqcvO+k40eQ3ujxL+PN0qL1kmzY26P3g
+         An7FDquSJ+U0mM5uxgdlywa+mww/+CCuwP5ac=
+MIME-Version: 1.0
+In-Reply-To: <20101113233353.GB18658@thunk.org>
+References: <201011032334.30662.thomas@m3y3r.de>
+	<201011080014.33354.thomas@m3y3r.de>
+	<alpine.LFD.2.00.1011081047500.2900@localhost6.localdomain6>
+	<1289242528.11571.8.camel@localhost.localdomain>
+	<alpine.LFD.2.00.1011082039360.2900@localhost6.localdomain6>
+	<1289418184.6530.6.camel@localhost.localdomain>
+	<20101113233353.GB18658@thunk.org>
+Date: Mon, 15 Nov 2010 10:03:14 +0530
+Message-ID: <AANLkTimM3o19L7WNRYRrBPuwMMK9187_U8nUmZ2e4=qd@mail.gmail.com>
+Subject: Re: 2.6.36: kernel panic in cascade (Fatal exception in interrupt)
+From: Ganesh Reddy K <ganeshreddyk@gmail.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-I have unexpected progress on remaining issues in firewire-net in regard
-to loss of connection after s2ram cycle, and annoying fact that after
-cable replug (intentional of course), it takes time for connection to
-reestablish. These are separate issues, and I know the exact cause of
-both (and as a side effect I now know exactly how what iso transcations
-are and how do they work.)
+I want to disable 'Large  physical address support' in 2.6.34 Linux
+kernel LTIB.     i.e 64 Bit memory addressing and Page tables.
 
-
-Problem #1: large delay after cable removal/insert cycle.
-The reason is that IP over 1394 abuses ARP packets so that they carry
-additional vital information describing the node (namely the bus address
-that is used for block address, or as they call it the fifo address).
-ARP packets also carry less vital pieces of information namely maximum
-transfer size (max_rec) and maximum supported speed of the sender node.
-
-The problem here is that bus reset makes these pieces of information
-invalid, and more that that the target node and its fw_peer information
-disappear, and reappear but without the above fields set.
-
-The network core is of course unaware of such ugly abuse, and thus it
-doesn't send an ARP packet to the destanation. In fact it won't even
-send it if destanation node is explicitly addressed. because it appears
-in the ARP cache.
-
-The solution here is somehow tell the network core to invalidate the ARP
-entry for the target node as soon as it disappears.
-Don't yet know how to do that.
-
-Actually to demonstrate this problem its enough to execute 'arpping' and
-it will instantly make connection work.
-
-And lastly of course eventually connection establishes because kernel
-sends ARP requests periodicity to validate the destination network node.
+Along with this ,am i need to any other changes to have the kernel
+without 64 Bit address completely and page table entries.
 
 
-Problem #2:
 
-As was described in problem #1, its obvious that after suspend to ram,
-to reestablish connection we need an ARP reply.
-The problem is that it is received via iso channel, and it isn't
-reinitialized after s2ram.
+===========================================
+arch/powerpc/platforms/Kconfig.cputype
 
-A quick and dirty hack  to stop/start the ISO channel from fwnet_update
-in firewire-net 'fixes' that problem.
+config PHYS_64BIT
+        bool 'Large physical address support' if E500 || PPC_86xx
+        depends on (44x || E500 || PPC_86xx) && !PPC_83xx && !PPC_82xx
+        ---help---
+          This option enables kernel support for larger than 32-bit physical
+          addresses.  This feature may not be available on all cores.
 
-A better solution seemed to make the firewire-ohci reinit all ISO
-channels after s2ram cycle. But this is actually wrong.
+          If you have more than 3.5GB of RAM or so, you also need to enable
+          SWIOTLB under Kernel Options for this to work.  The actual number
+          is platform-dependent.
 
-That is because 1394 spec specifies that first of all the ISO channel
-must be allocated from the IRM node. The firewire stack currently just
-uses hardcoded numbers in two places the ISO is used 
-(firewire-net, and firedtv)
-However it has all functions implemented for this.
+          If in doubt, say N here.
+===========================================
 
-Secondary that allocation must be redone on each bus reset.
-Even more that that, since 1394 spec doesn't define a way to address a
-channel to a specific client, that must be done in protocol specific
-way.
-
-This means that on each bus reset all drivers that use ISO channels must
-allocate them again, and inform underlying hardware they serve.
-
-Therefore the first solution is actually the correct one.
-
-In case of firewire-net, it is simpler, because it uses the broadcast
-channel, so it only has to find who is the IRM and read its
-BROADCAST_CHANNEL.
-
-However, I think I need to write a function to query the IRM its
-broadcast channel, don't think it has one.
-
-
-Speaking of IRM discovery, the spec says it should be a node with
-contender bit and largest node id. However, the code in core-topology.c,
-build_tree seems to take the node that sent the selfID packet last.
-
-Best regards,
-	Maxim Levitsky
-
+Thanks in advance,
+Ganesh
