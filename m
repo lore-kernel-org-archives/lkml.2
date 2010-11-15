@@ -1,74 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758647Ab0KOWLv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 17:11:51 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:61767 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755853Ab0KOWLu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 17:11:50 -0500
-MIME-version: 1.0
-Content-type: multipart/mixed; boundary="Boundary_(ID_AaH04fu+1Q3K/BE3awls0g)"
-Date: Mon, 15 Nov 2010 17:11:50 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v2 03/20] ARM: LPAE: use u32 instead of unsigned long for
- 32-bit ptes
-In-reply-to: <AANLkTi=FFpCwEhSgs-zOh32JQvqQWqnaQVTitwJeDyzj@mail.gmail.com>
-Message-id: <alpine.LFD.2.00.1011151707310.6448@xanadu.home>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
- <20101114151445.GB10871@n2100.arm.linux.org.uk>
- <AANLkTinuUCYMa8e7=ehhExFzBAhPZBKA16M1GVQ=RMMH@mail.gmail.com>
- <201011151047.37103.arnd@arndb.de>
- <AANLkTi=FFpCwEhSgs-zOh32JQvqQWqnaQVTitwJeDyzj@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-Content-id: <alpine.LFD.2.00.1011151710070.6448@xanadu.home>
+	id S933853Ab0KOWOE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 17:14:04 -0500
+Received: from tundra.namei.org ([65.99.196.166]:35647 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755976Ab0KOWOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 17:14:02 -0500
+Date: Tue, 16 Nov 2010 09:13:35 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Eric Paris <eparis@parisplace.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Joe Perches <joe@perches.com>,
+        Dan Rosenberg <drosenberg@vsecurity.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Eugene Teo <eugeneteo@kernel.org>, Kees Cook <kees.cook@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Subject: Re: [PATCH] Fix dmesg_restrict build failure with CONFIG_EMBEDDED=y
+ and CONFIG_PRINTK=n
+In-Reply-To: <AANLkTikG=brgFP3yuWqMp=4ntHV=kyuhCUODZNp4Uo6Y@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1011160908380.29867@tundra.namei.org>
+References: <1289669176.16461.12.camel@Joe-Laptop> <AANLkTi=ut2O+mCbs1jOyg-aP=E+48h1B-MH8NxK5XyVf@mail.gmail.com> <1289677904.16461.82.camel@Joe-Laptop> <AANLkTikWEZLwx4khj_jFOqP+uy-TxgJGwsbxdtaCfbJq@mail.gmail.com> <AANLkTik=mnFDXAyJ53_7FPfD5ETiYY8GjkE5pm0PJSBu@mail.gmail.com>
+ <AANLkTimoFGqKDYe24uc_2EHk-MLqxc4GGCCe7hPRJqbJ@mail.gmail.com> <AANLkTin7Sfx5rnU3u7da5bQQiLTj9geOMht-x6z6kvid@mail.gmail.com> <AANLkTikG=brgFP3yuWqMp=4ntHV=kyuhCUODZNp4Uo6Y@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Mon, 15 Nov 2010, Eric Paris wrote:
 
---Boundary_(ID_AaH04fu+1Q3K/BE3awls0g)
-Content-id: <alpine.LFD.2.00.1011151710071.6448@xanadu.home>
-Content-type: TEXT/PLAIN; CHARSET=ISO-8859-15
-Content-transfer-encoding: 8BIT
-
-On Mon, 15 Nov 2010, Catalin Marinas wrote:
-
-> On 15 November 2010 09:47, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Monday 15 November 2010 10:39:30 Catalin Marinas wrote:
-> >> > There will be compiler warnings because u32 is unsigned int, and we
-> >> > print it as %08lx.  Generic code cases pte values to (long long) and
-> >> > prints them using %08llx.  We should do the same.
-> >>
-> >> We still need some kind of macro because with LPAE we need %016llx
-> >> since the phys address can go to 40-bit and there are some additional
-> >> bits in the top word. Unless you'd like to always print 16 characters
-> >> even for 32-bit ptes (or if there is some other printk magic I'm not
-> >> aware of).
-> >
-> > Why not just %010llx? That would just be two extra characters.
+> On Mon, Nov 15, 2010 at 12:41 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > If the old rule should have been that you _have_
+> > to call cap_syslog(), then just eviscerating that entirely and putting
+> > it in the generic code is definitely the right thing.
 > 
-> We still have attributes (like XN, bit 54) stored in the top part of
-> the pte. This may be of interest when debugging.
+> That is the rule for ALL of the hooks in commoncap.c.  The one time I
+> tried to do something else *cough*mmap_min_addr*cough* I screwed it
+> up.  I'll put a note in my todo list about looking into lifting all of
+> commoncap.c into the callers.
 
-They will be printed if they exist. The %010 in front of llx only means 
-to have a minimum of 10 zero-paded digits if the value is smaller than 
-that.
+If it's a requirement of the API that all of the cap calls are made 
+first, then build it into the API, so developers can't make a mistake.  
+e.g. have the LSM API do the secondary stacking of caps behind the scenes.
 
-However, not having aligned values will be confusing.  A macro for the 
-format might be the best compromize.
+I had thought that the idea was that some LSM may want to not implement 
+capabilities at all, on which case, it should still not be possible for 
+the API to weaken the default security with or without caps.  In any case, 
+mixing generic logic with capabilities logic seems to be a fundamental 
+issue, and one which we should avoid, and remove where it may exist (I did 
+audit the hooks after the mmap_min_addr thing, but it's worth checking 
+again).
 
 
-Nicolas
-
---Boundary_(ID_AaH04fu+1Q3K/BE3awls0g)--
+- James
+-- 
+James Morris
+<jmorris@namei.org>
