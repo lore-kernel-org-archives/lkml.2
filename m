@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757984Ab0KOSxf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 13:53:35 -0500
-Received: from smtp.infotech.no ([82.134.31.41]:32881 "EHLO smtp.infotech.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756093Ab0KOSxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 13:53:34 -0500
-Message-ID: <4CE181A8.8050102@interlog.com>
-Date: Mon, 15 Nov 2010 13:53:28 -0500
-From: Douglas Gilbert <dgilbert@interlog.com>
-Reply-To: dgilbert@interlog.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1758059Ab0KOS4p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 13:56:45 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36178 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757067Ab0KOS4n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 13:56:43 -0500
 MIME-Version: 1.0
-To: ltuikov@yahoo.com
-CC: Greg KH <greg@kroah.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tj@kernel.org, jens.axboe@oracle.com,
-        James.Bottomley@suse.de
-Subject: Re: SCSI TMF processing; tag allocation
-References: <380694.87733.qm@web31812.mail.mud.yahoo.com>
-In-Reply-To: <380694.87733.qm@web31812.mail.mud.yahoo.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4CE17C4B.1070305@xs4all.nl>
+References: <4CD843DC.10106@gmail.com> <Pine.LNX.4.64.1011091352460.29956@wotan.suse.de>
+ <20101109134816.GB29433@basil.fritz.box> <m3lj52txaq.fsf@redhat.com>
+ <4CD97A3D.1040602@xs4all.nl> <m31v6nmmr3.fsf@jhcloos.com> <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com>
+ <20101115085605.GE2583@sunsite.ms.mff.cuni.cz> <20101115100331.GG2583@sunsite.ms.mff.cuni.cz>
+ <20101115105446.GD7269@basil.fritz.box> <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com>
+ <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com>
+ <4CE17098.8090000@xs4all.nl> <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com>
+ <4CE17C4B.1070305@xs4all.nl>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 15 Nov 2010 10:56:14 -0800
+Message-ID: <AANLkTinr8wFmXibOy8SgAsbH=u8G7QVp4UUcjTRjOOqs@mail.gmail.com>
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+To: Jim Bos <jim876@xs4all.nl>
+Cc: Jakub Jelinek <jakub@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        James Cloos <cloos@jhcloos.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
+        Dave Korn <dave.korn.cygwin@gmail.com>,
+        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-11-06 02:02 AM, Luben Tuikov wrote:
-> Here is the following scenario:
+On Mon, Nov 15, 2010 at 10:30 AM, Jim Bos <jim876@xs4all.nl> wrote:
 >
-> Tags 2, 3, ..., X are pending in the device, NOT necessarily submitted in that order (this is the "task set").
->
-> Tag 8 times out and is aborted via TMF ABORT TASK. Immediately the device returns okay and the driver says to SCSI core that all is well.
->
-> SCSI Core sends TUR immediately, reusing the tag, tag 8.
->
-> Then the rest of the commands that were pending in the task set complete with success (2, 3, ..., X, and 8), in the order they were submitted, since tasks 2 to X are I/O commands and 8 being TUR has no implicit HEAD OF QUEUE it completes last with success. Now the device task set is empty. Those commands are completed okay with the Linux device driver with SCSI Core (meaning done() were called, result is 0).
+> Attached version with plain 2.6.36 source and version with the committed
+> patch, i.e with the '"+m" (*regs)'
 
-Just checked, the SCSI commands with a "implicit head of
-queue" attribute are:
-   - INQUIRY
-   - REPORT LUNS
-   - READ CAPACITY (10+16) [SBC]
+Looks 100% identical in i8k_smm() itself, and I'm not seeing anything
+bad. The asm has certainly not been optimized away as implied in the
+archlinux thread.
 
-On the subject of UAS, due to some USB-3 streaming protocol
-requirements, three tag values cannot be used by SCSI. They
-are 0h, FFFEh and FFFFh. So those available for SCSI tag
-use are 1h to FFFDh inclusive.
+There are differences, but they are with code generation *elsewhere*.
 
-Doug Gilbert
+To me it is starting to look like the real problem is that gcc has
+decided that the "i8k_smm()" function is "__attribute__((const))".
 
+Which is clearly totally bogus. If a function has an inline asm that
+has a memory clobber, it is clearly *not* 'const'. But that does
+explain the bug, and does explain why "+m" makes a difference and why
+"noinline" does not.
 
-> SCSI Core though, continues to abort the rest of the task set, tags 2, ..., X. The device says okay, since they are not in its task set. So SCSI Core's error "handling" routine, sends ABORT TASK for TAG 3. *BUT* since tag 3 is free, immediately after the TMF, we see TUR with, guess what, tag 3, since as far as SCSI/Block layer are concerned, tag 3 is free
-> (bitmap in the block layer).
->
-> Sure enough, the device receives both, back to back: first the ABORT TASK
-> TMF with tag of task to be managed (TTBM) of 3, and then it receives TUR
-> with tag of 3. Sure enough the device aborts the TUR.
->
-> TUR times out with SCSI Core/block layer and we see SCSI Core tries to
-> abort it again, by sending another ABORT TASK TMF with TTBM of 3, that of
-> the TUR.
->
-> At the same time error handling goes on and sends ABORT TASK TMF for the rest of the commands in the task set and at the end sends LU RESET and I_T Nexus reset (well, the driver that is, but nevertheless).
->
-> There are several issues here involving people at various layers (not in any/priority order):
->
-> First, SCSI Core should probably send ABORT TASK SET. Sending ABORT TASK for each task at the device is also okay, but adds transport overhead.
->
-> Second, SCSI Core should not send ABORT TASK for a completed task. Sure, the device will reply with FUNCTION COMPLETE either way, but in the
-> aforementioned case the task server aborts a command which wasn't
-> intended to be aborted (and since the tag was reused--see below). That is,
-> if the command is in the "eh" queue, and is completed, don't send ABORT
-> TASK for it.
->
-> Third, and most importantly, tags should form an increasing sequence and should not be reused until all other tags after it and before it have been reused. This for example can be accomplished if one were to use
-> find_next_zero_bit() with non-zero "offset", it being the last allocated
-> tag in a modulo the number of tags manner. That is, find_next_zero_bit()
-> could wrap as well as starting from an offset or the caller could implement
-> that via two calls to this function, in blk_queue_start_tag().
->
-> Forth, transport protocols need tags for other purposes than just sending
-> I/O commands, for example sending task management functions. LLDDs should
-> be given callbacks to allocate a free tag, only if #3 above is implemented.
->
-> Fifth, all commands that enter queuecommand() should be tagged, regardless
-> of whether the device supports tags and how many. At the moment, this
-> isn't so, and transports are forced to reserve the first tag the
-> transport supports for non-tagged commands and the rest for tagged
-> commands. For example INQUIRY coming untagged (tag 0), and then
-> READ coming with tag 0 (tagged). This adds additional work for LLDDs to
-> check whether the "request" is tagged or not and assign it a tag if
-> it is not, or offset the tag if it is tagged with the offset reserved
-> for untagged tasks (normally just one).
->
->      Luben
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+So what I _think_ happens is that
 
+ - gcc logic for the automatic 'const' attribute for functions is
+broken, so it marks that function 'const'.
+
+ - since the rule for a const function is that it only _looks_ at its
+attributes and has no side effects, now the callers will decide that
+'i8k_smm()' cannot change the passed-in structure, so they'll happily
+optimize away all the accesses to it.
+
+                       Linus
