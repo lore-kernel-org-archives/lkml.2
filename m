@@ -1,75 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932473Ab0KOCG6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 21:06:58 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55941 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932351Ab0KOCG5 (ORCPT
+	id S932488Ab0KOCHh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 21:07:37 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50137 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932351Ab0KOCHg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 21:06:57 -0500
-Date: Sun, 14 Nov 2010 18:06:43 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, kernel-janitors@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
-Message-Id: <20101114180643.593d19ac.akpm@linux-foundation.org>
-In-Reply-To: <20101114092533.GB5323@albatros>
-References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
-	<20101112120834.33062900.akpm@linux-foundation.org>
-	<8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
-	<20101114092533.GB5323@albatros>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 14 Nov 2010 21:07:36 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=S2SaCTITiTNl9ys4HQkTEtfmVes0yi2nQrju5qK2K4MZWsfwkWLwOuLl/iDEAcft1Y
+         JP9FpS1QyBmL44MSPTXodUwTAj0hulPWVSJwLKPkO3UioGJOofdHOb74GVFunX7cm8po
+         dDXy+RE145orXhfaTyQAQKt6qQYRBBPLNb3l0=
+MIME-Version: 1.0
+In-Reply-To: <1289627397.2837.44.camel@diamond.house>
+References: <1289627397.2837.44.camel@diamond.house>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Mon, 15 Nov 2010 10:07:14 +0800
+Message-ID: <AANLkTi=j41UA5ZeO8-AVXf53+OD+P2V=mEvZESWdVqka@mail.gmail.com>
+Subject: Re: [PATCH] ARM: fix some trivial compiler warnings
+To: Jason Chagas <jason.chagas@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Nov 2010 12:25:33 +0300 Vasiliy Kulikov <segoon@openwall.com> wrote:
-
-> On some architectures __kernel_suseconds_t is int.  On these archs
-> struct timeval has padding bytes at the end.  This struct is copied to
-> userspace with these padding bytes uninitialized.  This leads to leaking
-> of contents of kernel stack memory.
-> 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+On Sat, Nov 13, 2010 at 1:49 PM, Jason Chagas <jason.chagas@gmail.com> wrote:
+>
+> From acb6004dae483e61760714286a5e544c4a1d899c Mon Sep 17 00:00:00 2001
+> From: Jason Chagas <jason.chagas@marvell.com>
+> Date: Sat, 13 Nov 2010 00:01:44 -0500
+> Subject: [PATCH] ARM: fix some trivial compiler warnings
+>
+> arch/arm/kernel/ptrace.c: In function 'get_branch_address':
+> arch/arm/kernel/ptrace.c:429: warning: comparison between pointer and
+> integer
+> arch/arm/kernel/ptrace.c:429: warning: comparison between pointer and
+> integer
+>
+> arch/arm/mach-mmp/mmp2.c:127: warning: 'clk_rtc' defined but not used
+>
+> drivers/i2c/busses/i2c-pxa.c: In function 'i2c_pxa_probe':
+> drivers/i2c/busses/i2c-pxa.c:1004: warning: initialization discards
+> qualifiers from pointer target type
+>
+> Signed-off-by: Jason Chagas <jason.chagas@marvell.com>
 > ---
->  Patch v1 used memset(), it was waste of cycles on almost all archs.
-> 
->  Compile tested.
-> 
->  fs/select.c |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/fs/select.c b/fs/select.c
-> index b7b10aa..43d4805 100644
-> --- a/fs/select.c
-> +++ b/fs/select.c
-> @@ -288,7 +288,6 @@ static int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
->  				      int timeval, int ret)
->  {
->  	struct timespec rts;
-> -	struct timeval rtv;
->  
->  	if (!p)
->  		return ret;
-> @@ -306,8 +305,10 @@ static int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
->  		rts.tv_sec = rts.tv_nsec = 0;
->  
->  	if (timeval) {
-> -		rtv.tv_sec = rts.tv_sec;
-> -		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
-> +		struct timeval rtv = {
-> +			.tv_sec = rts.tv_sec,
-> +			.tv_usec = rts.tv_nsec / NSEC_PER_USEC
-> +		};
->  
->  		if (!copy_to_user(p, &rtv, sizeof(rtv)))
->  			return ret;
+>  arch/arm/kernel/ptrace.c     |    2 +-
+>  arch/arm/mach-mmp/mmp2.c     |    1 -
+>  drivers/i2c/busses/i2c-pxa.c |    2 +-
+>  3 files changed, 2 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
+> index cf16bca..7bb9a88 100644
+> --- a/arch/arm/kernel/ptrace.c
+> +++ b/arch/arm/kernel/ptrace.c
+> @@ -426,7 +426,7 @@ get_branch_address(struct task_struct *child,
+> unsigned long pc, unsigned long in
+>            break;
+>        }
+>
+> -       if (alt >= (void*)CONFIG_VECTORS_BASE && alt <
+> (void*)CONFIG_VECTORS_BASE + PAGE_SIZE)
+> +       if (alt >= CONFIG_VECTORS_BASE && alt < CONFIG_VECTORS_BASE +
+> PAGE_SIZE)
+>                alt = get_user_reg(child, REG_LR);
+>
+>        return alt;
+> diff --git a/arch/arm/mach-mmp/mmp2.c b/arch/arm/mach-mmp/mmp2.c
+> index 7f5eb05..3028bb7 100644
+> --- a/arch/arm/mach-mmp/mmp2.c
+> +++ b/arch/arm/mach-mmp/mmp2.c
+> @@ -124,7 +124,6 @@ static APBC_CLK(twsi3, MMP2_TWSI3, 0, 26000000);
+>  static APBC_CLK(twsi4, MMP2_TWSI4, 0, 26000000);
+>  static APBC_CLK(twsi5, MMP2_TWSI5, 0, 26000000);
+>  static APBC_CLK(twsi6, MMP2_TWSI6, 0, 26000000);
+> -static APBC_CLK(rtc, MMP2_RTC, 0, 32768);
+>
+>  static APMU_CLK(nand, NAND, 0xbf, 100000000);
+>
 
-Please check the assembly code - this will still leave four bytes of
-uninitalised stack data in 'rtv', surely.
+Jason,
 
+I've separated this into an individual patch with comment as follows:
+
+commit f1064ce43b6c4e6aa4d122600db2e952c79bec91
+Author: Jason Chagas <jason.chagas@marvell.com>
+Date:   Mon Nov 15 09:50:12 2010 +0800
+
+    ARM: mmp2: remove not used clk_rtc
+
+    RTC clock will remain at 32KHz and powered on, there is no need for it
+    at this moment.
+
+    Signed-off-by: Jason Chagas <jason.chagas@marvell.com>
+
+diff --git a/arch/arm/mach-mmp/mmp2.c b/arch/arm/mach-mmp/mmp2.c
+index daf3993..2e3dd08 100644
+--- a/arch/arm/mach-mmp/mmp2.c
++++ b/arch/arm/mach-mmp/mmp2.c
+@@ -126,7 +126,6 @@ static APBC_CLK(twsi3, MMP2_TWSI3, 0, 26000000);
+ static APBC_CLK(twsi4, MMP2_TWSI4, 0, 26000000);
+ static APBC_CLK(twsi5, MMP2_TWSI5, 0, 26000000);
+ static APBC_CLK(twsi6, MMP2_TWSI6, 0, 26000000);
+-static APBC_CLK(rtc, MMP2_RTC, 0, 32768);
+
+ static APMU_CLK(nand, NAND, 0xbf, 100000000);
+
+
+> diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+> index 020ff23..c94e51b 100644
+> --- a/drivers/i2c/busses/i2c-pxa.c
+> +++ b/drivers/i2c/busses/i2c-pxa.c
+> @@ -1001,7 +1001,7 @@ static int i2c_pxa_probe(struct platform_device
+> *dev)
+>        struct pxa_i2c *i2c;
+>        struct resource *res;
+>        struct i2c_pxa_platform_data *plat = dev->dev.platform_data;
+> -       struct platform_device_id *id = platform_get_device_id(dev);
+> +       const struct platform_device_id *id = platform_get_device_id(dev);
+>        int ret;
+>        int irq;
+>
+
+This has been fixed in the latest tree by the commit below:
+
+commit 21e2ecfe19df8f28408b5a607fef8704f51fa7f8
+Author: Marc Kleine-Budde <mkl@pengutronix.de>
+Date:   Tue Jun 15 10:56:45 2010 +0200
+
+    i2c-pxa: fix compiler warning, due to missing const
+
+    This patch adds the missing const to "struct platform_device_id" to fix
+    this warning:
+
+    /home/frogger/pengutronix/linux/linux-2.6/drivers/i2c/busses/i2c-pxa.c:
+    In function 'i2c_pxa_probe':
+    /home/frogger/pengutronix/linux/linux-2.6/drivers/i2c/busses/i2c-pxa.c:1004:
+    warning: initialization discards qualifiers from pointer target type
+
+    Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+    Cc: Eric Miao <eric.y.miao@gmail.com>
+    Cc: Roel Kluin <roel.kluin@gmail.com>
+    Cc: Pavel Machek <pavel@ucw.cz>
+    Signed-off-by: Ben Dooks <ben-linux@fluff.org>
+
+diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
+index 020ff23..c94e51b 100644
+--- a/drivers/i2c/busses/i2c-pxa.c
++++ b/drivers/i2c/busses/i2c-pxa.c
+@@ -1001,7 +1001,7 @@ static int i2c_pxa_probe(struct platform_device *dev)
+        struct pxa_i2c *i2c;
+        struct resource *res;
+        struct i2c_pxa_platform_data *plat = dev->dev.platform_data;
+-       struct platform_device_id *id = platform_get_device_id(dev);
++       const struct platform_device_id *id = platform_get_device_id(dev);
+        int ret;
+        int irq;
