@@ -1,125 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755353Ab0KOK0c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 05:26:32 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:56540 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751964Ab0KOK0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 05:26:31 -0500
-Date: Mon, 15 Nov 2010 10:26:17 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shaohua.li@intel.com>, Christoph Lameter <cl@linux.com>,
-        David Rientjes <rientjes@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH] set_pgdat_percpu_threshold() don't use
-	for_each_online_cpu
-Message-ID: <20101115102617.GK27362@csn.ul.ie>
-References: <1288169256-7174-2-git-send-email-mel@csn.ul.ie> <20101028100920.5d4ce413.kamezawa.hiroyu@jp.fujitsu.com> <20101114163727.BEE0.A69D9226@jp.fujitsu.com>
+	id S1755451Ab0KOK2M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 05:28:12 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36550 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754941Ab0KOK2K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 05:28:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=h4pJN8Wo2DTaZlS996Jn+BlHlyFS4ObMRk4Bi9KyVk+f6p2RhCKRBbRELiPvjuOml8
+         Z7qnN588KKFsKNuiuBkvzAAX/YZBPCbp4HTIGxL9Y8k8HpGQI73AHYouEgrNTQtHmUiH
+         sIiuj9PjYr8lW0NfbHdY5++m+ZAt7FOROCirk=
+Message-ID: <4CE10B32.8090705@suse.cz>
+Date: Mon, 15 Nov 2010 11:28:02 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101114163727.BEE0.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Baruch Siach <baruch@tkos.co.il>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Alex Gershgorin <agersh@rambler.ru>
+Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
+References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il> <4CE0FE71.6000303@suse.cz> <20101115100838.GA3649@jasper.tkos.co.il>
+In-Reply-To: <20101115100838.GA3649@jasper.tkos.co.il>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 05:53:03PM +0900, KOSAKI Motohiro wrote:
-> > > @@ -159,6 +165,44 @@ static void refresh_zone_stat_thresholds(void)
-> > >  	}
-> > >  }
-> > >  
-> > > +void reduce_pgdat_percpu_threshold(pg_data_t *pgdat)
-> > > +{
-> > > +	struct zone *zone;
-> > > +	int cpu;
-> > > +	int threshold;
-> > > +	int i;
-> > > +
-> > 
-> > get_online_cpus();
+On 11/15/2010 11:08 AM, Baruch Siach wrote:
+> Hi Jiri,
 > 
+> Thanks for reviewing. See my response to your comments below.
 > 
-> This caused following runtime warnings. but I don't think here is
-> real lock inversion. 
+> On Mon, Nov 15, 2010 at 10:33:37AM +0100, Jiri Slaby wrote:
+>> On 11/15/2010 09:23 AM, Baruch Siach wrote:
+>>> --- /dev/null
+>>> +++ b/drivers/misc/altera_as.c
+>>> @@ -0,0 +1,349 @@
+>> ...
+>>> +struct altera_as_device {
+>>> +	unsigned id;
+>>> +	struct device *dev;
+>>> +	struct miscdevice miscdev;
+>>> +	struct mutex open_lock;
+>>> +	struct gpio gpios[AS_GPIO_NUM];
+>>> +};
+>>> +
+>>> +/*
+>>> + * The only functions updating this array are .probe/.remove, which are
+>>> + * serialized. Hence, no locking is needed here.
+>>> + */
+>>> +static struct {
+>>> +	int minor;
+>>
+>> Why you need minor here? It's in drvdata->miscdev.minor.
 > 
-> =================================
-> [ INFO: inconsistent lock state ]
-> 2.6.37-rc1-mm1+ #150
-> ---------------------------------
-> inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-> kswapd0/419 [HC0[0]:SC0[0]:HE1:SE1] takes:
->  (cpu_hotplug.lock){+.+.?.}, at: [<ffffffff810520d1>] get_online_cpus+0x41/0x60
-> {RECLAIM_FS-ON-W} state was registered at:
->   [<ffffffff8108a1a3>] mark_held_locks+0x73/0xa0
->   [<ffffffff8108a296>] lockdep_trace_alloc+0xc6/0x100
->   [<ffffffff8113fba9>] kmem_cache_alloc+0x39/0x2b0
->   [<ffffffff812eea10>] idr_pre_get+0x60/0x90
->   [<ffffffff812ef5b7>] ida_pre_get+0x27/0xf0
->   [<ffffffff8106ebf5>] create_worker+0x55/0x190
->   [<ffffffff814fb4f4>] workqueue_cpu_callback+0xbc/0x235
->   [<ffffffff8151934c>] notifier_call_chain+0x8c/0xe0
->   [<ffffffff8107a34e>] __raw_notifier_call_chain+0xe/0x10
->   [<ffffffff81051f30>] __cpu_notify+0x20/0x40
->   [<ffffffff8150bff7>] _cpu_up+0x73/0x113
->   [<ffffffff8150c175>] cpu_up+0xde/0xf1
->   [<ffffffff81dcc81d>] kernel_init+0x21b/0x342
->   [<ffffffff81003724>] kernel_thread_helper+0x4/0x10
-> irq event stamp: 27
-> hardirqs last  enabled at (27): [<ffffffff815152c0>] _raw_spin_unlock_irqrestore+0x40/0x80
-> hardirqs last disabled at (26): [<ffffffff81514982>] _raw_spin_lock_irqsave+0x32/0xa0
-> softirqs last  enabled at (20): [<ffffffff810614c4>] del_timer_sync+0x54/0xa0
-> softirqs last disabled at (18): [<ffffffff8106148c>] del_timer_sync+0x1c/0xa0
+> I use the minor field to lookup the drvdata pointer in get_as_dev(), which I 
+> use is altera_as_open().  I do this because I have no access to the 'struct 
+> device' pointer from the .open method. Do you know a better way?
 > 
-> other info that might help us debug this:
-> no locks held by kswapd0/419.
+>>> +	struct altera_as_device *drvdata;
+>>> +} altera_as_devs[AS_MAX_DEVS];
+>>
+>> You don't need the struct at all.
+>> static struct altera_as_device *drvdata[AS_MAX_DEVS];
+>> should be enough.
 > 
-> stack backtrace:
-> Pid: 419, comm: kswapd0 Not tainted 2.6.37-rc1-mm1+ #150
-> Call Trace:
->  [<ffffffff810890b1>] print_usage_bug+0x171/0x180
->  [<ffffffff8108a057>] mark_lock+0x377/0x450
->  [<ffffffff8108ab67>] __lock_acquire+0x267/0x15e0
->  [<ffffffff8107af0f>] ? local_clock+0x6f/0x80
->  [<ffffffff81086789>] ? trace_hardirqs_off_caller+0x29/0x150
->  [<ffffffff8108bf94>] lock_acquire+0xb4/0x150
->  [<ffffffff810520d1>] ? get_online_cpus+0x41/0x60
->  [<ffffffff81512cf4>] __mutex_lock_common+0x44/0x3f0
->  [<ffffffff810520d1>] ? get_online_cpus+0x41/0x60
->  [<ffffffff810744f0>] ? prepare_to_wait+0x60/0x90
->  [<ffffffff81086789>] ? trace_hardirqs_off_caller+0x29/0x150
->  [<ffffffff810520d1>] ? get_online_cpus+0x41/0x60
->  [<ffffffff810868bd>] ? trace_hardirqs_off+0xd/0x10
->  [<ffffffff8107af0f>] ? local_clock+0x6f/0x80
->  [<ffffffff815131a8>] mutex_lock_nested+0x48/0x60
->  [<ffffffff810520d1>] get_online_cpus+0x41/0x60
->  [<ffffffff811138b2>] set_pgdat_percpu_threshold+0x22/0xe0
->  [<ffffffff81113970>] ? calculate_normal_threshold+0x0/0x60
->  [<ffffffff8110b552>] kswapd+0x1f2/0x360
->  [<ffffffff81074180>] ? autoremove_wake_function+0x0/0x40
->  [<ffffffff8110b360>] ? kswapd+0x0/0x360
->  [<ffffffff81073ae6>] kthread+0xa6/0xb0
->  [<ffffffff81003724>] kernel_thread_helper+0x4/0x10
->  [<ffffffff81515710>] ? restore_args+0x0/0x30
->  [<ffffffff81073a40>] ? kthread+0x0/0xb0
->  [<ffffffff81003720>] ? kernel_thread_helper+0x0/0x10
-> 
-> 
-> I think we have two option 1) call lockdep_clear_current_reclaim_state()
-> every time 2) use for_each_possible_cpu instead for_each_online_cpu.
-> 
-> Following patch use (2) beucase removing get_online_cpus() makes good
-> side effect. It reduce potentially cpu-hotplug vs memory-shortage deadlock
-> risk. 
-> 
+> See above.
 
-With recent per-cpu allocator changes, are we guaranteed that the per-cpu
-structures exist and are valid?
+The answer to you previous question is here. You can just have a global
+array of struct altera_as_device.
 
+>>> +static int altera_as_open(struct inode *inode, struct file *file)
+>>> +{
+>>> +	int ret;
+>>> +	struct altera_as_device *drvdata = get_as_dev(iminor(inode));
+>>> +
+>>> +	if (drvdata == NULL)
+>>> +		return -ENODEV;
+>>> +	file->private_data = drvdata;
+>>> +
+>>> +	ret = mutex_trylock(&drvdata->open_lock);
+>>> +	if (ret == 0)
+>>> +		return -EBUSY;
+>>> +
+>>> +	ret = gpio_request_array(drvdata->gpios, ARRAY_SIZE(drvdata->gpios));
+>>> +	if (ret < 0) {
+>>> +		mutex_unlock(&drvdata->open_lock);
+>>> +		return ret;
+>>> +	}
+>>
+>> So leaving to userspace with mutex held. This is *wrong*. use
+>> test_and_set_bit or alike instead.
+> 
+> Can you explain why this is wrong? I don't mind doing test_and_set_bit 
+> instead, I'm just curious.
+
+The mutex has an owner which it expects to unlock it. For example if you
+fork a process which already opened the device, you have a problem. This
+is a technical point. Another point is that it's ugly to leave to
+userspace with any lock.
+
+>>> +static int __init altera_as_probe(struct platform_device *pdev)
+>>> +{
+>> ...
+>>> +	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
+>>> +	drvdata->miscdev.name = kasprintf(GFP_KERNEL, "altera_as%d",
+>>> +			pdata->id);
+>>> +	if (drvdata->miscdev.name == NULL)
+>>> +		return -ENOMEM;
+>>> +	drvdata->miscdev.fops = &altera_as_fops;
+>>> +	if (misc_register(&drvdata->miscdev) < 0) {
+>>
+>> Hmm, how many devices can be in the system?
+> 
+> Up to AS_MAX_DEVS, currently 16.
+> 
+>> This doesn't look like the right way.
+> 
+> What is the right way then?
+
+Ok, so for that count it definitely deserves its own major to not eat up
+misc device space.
+
+>>> +		kfree(drvdata->miscdev.name);
+>>> +		return -ENODEV;
+>>> +	}
+>>> +	altera_as_devs[pdata->id].minor = drvdata->miscdev.minor;
+>>> +	altera_as_devs[pdata->id].drvdata = drvdata;
+>>
+>> So now the device is usable without the mutex and gpios inited?
+> 
+> I was thinking that the device lock which is being held during the .probe run, 
+> prevents the device from being open. After all I can still return -EGOAWAY at 
+> this point. Am I wrong?
+> 
+> If so, I'll reorder this code.
+
+This cannot be done easily. You need to set drvdata prior to minor and
+after all the assignments here. The former because in get_as_dev you
+test minor and return drvdata. The latter because you use open_lock &
+gpios after playing with minor & drvdata.
+
+Technically, it can be done with a use of barriers, but I don't
+recommend it as drivers should not use barriers at all. You should
+introduce some locking here (it introduces barriers on its own).
+
+So move the assignment to altera_as_devs below the mutex_init & gpios
+setup and lock it appropriately. Then add a lock to get_as_dev.
+
+>>> +	mutex_init(&drvdata->open_lock);
+>>> +
+>>> +	drvdata->id = pdata->id;
+>>> +
+>>> +	drvdata->gpios[ASIO_DATA].gpio		= pdata->data;
+>>> +	drvdata->gpios[ASIO_DATA].flags		= GPIOF_IN;
+>>> +	drvdata->gpios[ASIO_DATA].label		= "as_data";
+>> ...
+>>> +	drvdata->gpios[ASIO_NCE].gpio		= pdata->nce;
+>>> +	drvdata->gpios[ASIO_NCE].flags		= GPIOF_OUT_INIT_HIGH;
+>>> +	drvdata->gpios[ASIO_NCE].label		= "as_nce";
+>>> +
+>>> +	dev_info(drvdata->dev, "Altera Cyclone Active Serial driver\n");
+>>> +
+>>> +	return 0;
+>>> +}
+
+regards,
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+js
+suse labs
