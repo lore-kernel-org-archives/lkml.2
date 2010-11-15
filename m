@@ -1,89 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933844Ab0KOWCe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 17:02:34 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22542 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933580Ab0KOWCc (ORCPT
+	id S1758631Ab0KOWFL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 17:05:11 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:36615 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758568Ab0KOWFK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 17:02:32 -0500
-Date: Mon, 15 Nov 2010 22:50:13 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Netfilter Core Team <coreteam@netfilter.org>,
-        Jan Rekorajski <baggins@pld.org.pl>,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Reduce number of pointer dereferences in IPv6 netfilter
- LOG module function dump_packet()
-In-Reply-To: <alpine.LNX.2.00.1011152246050.20408@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1011152249160.20408@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1011142241260.1253@swampdragon.chaosbits.net> <1289782215.2743.167.camel@edumazet-laptop> <alpine.LNX.2.00.1011152246050.20408@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 15 Nov 2010 17:05:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=RkUisR4v9/vpvXX2CtHkSl480gxKSjtMze7dsXJrvRGQ/j4H3sH/HzLm28qtYMnqai
+         1I3La59PtTcpdUsUi+YInjUu2/5LBt+GGBCahOrwaiqZqNeZb99RQXsd2WsV5KdVDf7A
+         dLXMx3snRwFrSh3NQ35RfT9/KIT2LLBu43TEo=
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2008363228-1289857813=:20408"
+Date: Tue, 16 Nov 2010 01:05:09 +0300
+Message-ID: <AANLkTimxbVnTVGobxhSTieJ4-PCTOZE_F6_E1-=8JcrO@mail.gmail.com>
+Subject: A possible flaw in the fsnotify design.
+From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>, linux-fsdevel@vger.kernel.org,
+        "stefan@buettcher.org" <stefan@buettcher.org>,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Just some thoughts.
 
---8323328-2008363228-1289857813=:20408
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+Consider the situation: Files A and B both point to the same inode.
+File A is being watched, but the user won't get notifications if B is
+modified.
+This might be a problem for indexers, or, in my case, backup programs.
+Even if the user is watching the mont point, he still needs to get all
+the possible links to the modified file, and in my understanding,
+there is no way to do this without scanning the whole filesystem.
 
-On Mon, 15 Nov 2010, Jesper Juhl wrote:
-
-> On Mon, 15 Nov 2010, Eric Dumazet wrote:
-> 
-> > Le dimanche 14 novembre 2010 à 22:47 +0100, Jesper Juhl a écrit :
-> > > By adding two pointer variables to 
-> > > net/ipv6/netfilter/ip6t_LOG.c::dump_packet() we can save 19 bytes of .text 
-> > > and many pointer dereferences.
-> > > 
-> > > before:
-> > >    text    data     bss     dec     hex filename
-> > >    6258     600    3088    9946    26da net/ipv6/netfilter/ip6t_LOG.o
-> > > 
-> > > after:
-> > >    text    data     bss     dec     hex filename
-> > >    6239     600    3088    9927    26c7 net/ipv6/netfilter/ip6t_LOG.o
-> > > 
-> > > 
-> > > Please Cc me on replies.
-> > > 
-> > > 
-> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > > ---
-> > >  ip6t_LOG.c |   16 ++++++++++------
-> > >  1 file changed, 10 insertions(+), 6 deletions(-)
-> > > 
-> > > diff --git a/net/ipv6/netfilter/ip6t_LOG.c b/net/ipv6/netfilter/ip6t_LOG.c
-> > > index 09c8889..51d10a5 100644
-> > > --- a/net/ipv6/netfilter/ip6t_LOG.c
-> > > +++ b/net/ipv6/netfilter/ip6t_LOG.c
-> [...]
-> > 
-> > Same comment than previous patch, you add a NULL dereference.
-> > 
-> Hopefully this is beter (same as change done to the other (ipv4) patch).
-> 
-> 
-> 
-> Fewer pointer derefs and smaller .text size for
-> net/ipv4/netfilter/ipt_LOG.c::dump_packet()
-> 
-I'm an idiot, that should of course read
-
-"net/ipv6/netfilter/ip6t_LOG.c::dump_packet()"
-
-That'll teach me not to cut'n'paste descriptions :-(
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
---8323328-2008363228-1289857813=:20408--
+I've got no idea how to fix the problem yet, or if it would be
+possible to fix at all.
