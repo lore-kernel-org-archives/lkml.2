@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757662Ab0KOHmu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 02:42:50 -0500
-Received: from relay.felk.cvut.cz ([147.32.80.7]:53452 "EHLO
-	relay.felk.cvut.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757619Ab0KOHmt (ORCPT
+	id S1757683Ab0KOHqB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 02:46:01 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56276 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753019Ab0KOHp5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 02:42:49 -0500
-Date: Mon, 15 Nov 2010 08:42:41 +0100
-From: Michal Svoboda <michal.svoboda@agents.felk.cvut.cz>
-To: linux-kernel@vger.kernel.org
-Subject: Re: Sync semantics.
-Message-ID: <20101115074241.GH16758@myhost.felk.cvut.cz>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-References: <20101111125219.GA945@bitwizard.nl>
- <20101115023932.GD22876@dastard>
+	Mon, 15 Nov 2010 02:45:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=gbQUv1dqlo13ZCA0W7nk/WwLu14iQ5Ac8vxxHE9X2SwBH53vwSOqzibVf98UzPFO6o
+         OdVDrFybLkEi1X8XHuTT2qACdd1EORyRXfZpvWojtgzzbs2bgJwf1+pO3yJqRr2fsIE3
+         cNuk2b9OXCIziROg96QPcdXk7q3Fv0b2SU788=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FUaywKC54iCcLzqT"
-Content-Disposition: inline
-In-Reply-To: <20101115023932.GD22876@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-FELK-MailScanner-Information: 
-X-MailScanner-ID: oAF7gfoK014071
-X-FELK-MailScanner: Found to be clean
-X-FELK-MailScanner-SpamCheck: not spam, SpamAssassin (not cached, score=-1.9,
-	required 6, autolearn=not spam, BAYES_00 -1.90)
-X-FELK-MailScanner-From: michal.svoboda@agents.felk.cvut.cz
-X-FELK-MailScanner-To: linux-kernel@vger.kernel.org
-X-FELK-MailScanner-Watermark: 1290411763.51523@/XAEegHH5yBlANnleaI/Jg
+In-Reply-To: <AANLkTiky=Vnxnav4VtX_Yd1sUtFGqHTrd=aih8qRJ7u7@mail.gmail.com>
+References: <4CDEA53E.2050602@gmail.com>
+	<AANLkTiky=Vnxnav4VtX_Yd1sUtFGqHTrd=aih8qRJ7u7@mail.gmail.com>
+Date: Mon, 15 Nov 2010 08:45:56 +0100
+Message-ID: <AANLkTimn=Yp-tzb6f-=M73+1Rjqbtp+fxWLH4bz7HEuJ@mail.gmail.com>
+Subject: Re: [PATCH 02/16 v3] pramfs: super operations
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: yidong zhang <zhangyd6@gmail.com>
+Cc: linux-embedded@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, tim.bird@am.sony.com,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2010/11/15 yidong zhang <zhangyd6@gmail.com>:
+> hi Marco
+>
+>> +       retval = 0;
+>> + out:
+>> +       if (retval && sbi->virt_addr) {
+>> +               iounmap(sbi->virt_addr);
+>> +               release_mem_region(sbi->phys_addr, initsize);
+>> +               kfree(sbi);
+>> +       }
+>> +
+>> +       return retval;
+>> +}
+>> +
+>  I think kfree(sbi) should not be put here. In case of
+> pram_parse_options failure, sbi should also be freed too.  How about
+> change it to the list below? And change some “goto out”   branches to
+> “goto out_free”.
+>
+>  //    retval = 0;
+>     return 0;
+>  out:
+>        if (retval && sbi->virt_addr) {
+>                iounmap(sbi->virt_addr);
+>                release_mem_region(sbi->phys_addr, initsize);
+>        }
+> out_free:
+>                kfree(sbi);
+>        return retval;
+> }
+>
 
---FUaywKC54iCcLzqT
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+Yeah, you're right. It's not always true that virt addr is valid,
+kfree should be used out of this if. I'll fix it.
 
-Dave Chinner wrote:
-> Depending on the kernel, sync will keep writing if you keep
-> dirtying. This should be mostly fixed in 2.6.36....
-
-Is that a "we hope that it is so but we are not sure" kind of "mostly",
-or a "there are known cases when this is not true" one?
-
-Michal Svoboda
-
---FUaywKC54iCcLzqT
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAkzg5HEACgkQg/fU9pp1uX5irACggvOc6bw8jTDSZc1AZMt0uw9A
-LgsAnAqy8ubqFo1BI8gbylTfnIMUPY59
-=nNx0
------END PGP SIGNATURE-----
-
---FUaywKC54iCcLzqT--
+Marco
