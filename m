@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755172Ab0KOJvM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 04:51:12 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:65004 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755043Ab0KOJvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 04:51:10 -0500
-Message-ID: <4CE1038D.9020403@cn.fujitsu.com>
-Date: Mon, 15 Nov 2010 17:55:25 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1755143Ab0KOJvw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 04:51:52 -0500
+Received: from stinky.trash.net ([213.144.137.162]:61105 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753516Ab0KOJvu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 04:51:50 -0500
+Message-ID: <4CE102B6.9020707@trash.net>
+Date: Mon, 15 Nov 2010 10:51:50 +0100
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 5/5] KVM: MMU: retry #PF for softmmu
-References: <4CDCE2B0.7000601@cn.fujitsu.com> <4CDCE3C2.9030107@cn.fujitsu.com> <4CDFBE00.2000802@redhat.com> <4CE0C45C.809@cn.fujitsu.com> <4CE0FDBC.20505@redhat.com>
-In-Reply-To: <4CE0FDBC.20505@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-15 17:51:31,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-15 17:51:32,
-	Serialize complete at 2010-11-15 17:51:32
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Kevin Cernekee <cernekee@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH/RFC] netfilter: nf_conntrack_sip: Handle quirky Cisco
+ phones
+References: <28d666269c390965f1a4edca42f93c12@localhost>	 <1289725175.2743.65.camel@edumazet-laptop>	 <AANLkTik4PLga8mX73c8iONPeOtpDiuDhfu3xiPmF07jC@mail.gmail.com> <1289764664.2743.110.camel@edumazet-laptop>
+In-Reply-To: <1289764664.2743.110.camel@edumazet-laptop>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 05:30 PM, Avi Kivity wrote:
-
->> Yeah, this 'retry' is unnecessary if the process is killed, but this
->> case is infrequent, the most case is the process keeps running and try
->> to access the fault address later.
-> 
-> The problem is that if we retry in this case, we install an incorrect spte?
-> 
-
-......
-
->> can avoid if the page mapping have been fixed.
-> 
-> The guest may have changed page directories or other levels.
-> 
-
-......
-
->> >  Or another thread may have mmap()ed something else over the
->> >  same address.
+On 14.11.2010 20:57, Eric Dumazet wrote:
+> Le dimanche 14 novembre 2010 à 10:33 -0800, Kevin Cernekee a écrit :
+>> On Sun, Nov 14, 2010 at 12:59 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>>> I would like to get an exact SIP exchange to make sure their is not
+>>> another way to handle this without adding a "Cisco" string somewhere...
+>>>
+>>> Please provide a pcap or tcpdump -A
 >>
->> The mmap virtual address is also visible for other threads since the
->> threads
->> have the same page table, so i think this case is the same as above?
+>> Existing nf_nat_sip: phone sends unauthenticated REGISTER requests
+>> over and over again, because it is not seeing the replies sent back to
+>> port 50070:
+>>
+>> 10:05:53.496479 IP 192.168.2.28.50070 > 67.215.241.250.5060: SIP, length: 723
+>> E`...[..@.r.....C...........REGISTER sip:losangeles.voip.ms SIP/2.0
+>> Via: SIP/2.0/
+>>
 > 
-> Again, don't we install the wrong spte in this case?
+> Hmm, partial tcpdump... you should use" tcpdump -s 1000 -A" 
 > 
+> We miss the
+> 
+> Via: SIP/2.0/UDP 192.168.2.28:5060;branch=xxxxxxxx
+> 
+> 
+> Maybe a fix would be to use this "5060" port, instead of hardcoding it
+> like you did ?
 
-I think it doesn't corrupts spte since we will walk guest page table again
-and map it to shadow pages when we retry #PF.
+I agree, using the Via header to route the response makes more sense.
+
