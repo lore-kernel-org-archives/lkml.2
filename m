@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758923Ab0KOXxt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 18:53:49 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:37256 "EHLO
+	id S1758906Ab0KOXxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 18:53:47 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:36114 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933907Ab0KOXw4 (ORCPT
+	with ESMTP id S933908Ab0KOXw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Nov 2010 18:52:56 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=i43NjE1RkSoCSqx4bwWHssclSIQgpxl4fXU4LCPEywPzwNW82SNc2kqqr2KHgJcGr
-	umiYZXYwg0l9qD1wmx6sg==
-Message-Id: <20101115234937.666535048@google.com>
+	h=message-id:user-agent:date:from:to:cc:subject;
+	b=SNvBvajyL2eqzNBYb2Jc+8DjzuAmPw2ft6ze43nRwLx5DNuP+vrJPzi4qPYz9WJ0o
+	QBu2kDPbEvBj8zreoPreQ==
+Message-Id: <20101115234659.610333554@google.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 15 Nov 2010 15:47:01 -0800
+Date: Mon, 15 Nov 2010 15:46:59 -0800
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
@@ -24,470 +24,65 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Bharata B Rao <bharata@linux.vnet.ibm.com>,
         Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
         David Miller <davem@davemloft.net>
-Subject: [tg_shares_up rewrite v4 02/11] sched: on-demand (active) cfs_rq list
-References: <20101115234659.610333554@google.com>
-Content-Disposition: inline; filename=sched-tg-ondemand.patch
+Subject: [tg_shares_up rewrite v4 00/11] reduce overhead for tg->shares distribution
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+This is v4 of the tg_shares_up re-write previously posted at:
+http://lkml.org/lkml/2010/10/16/17
 
-Make certain load-balance actions scale per number of active cgroups
-instead of the number of existing cgroups.
+Corrected versus the previous version is the quilt patch-strip level.
 
-This makes wakeup/sleep paths more expensive, but is a win for systems
-where the vast majority of existing cgroups are idle.
+The key idea behind this patchset is an idea of Peter Zijlstra'a to compute
+global loads as a function of local averages, avoiding the cpu-cpu interactions
+which previously plagued tg_shares_up.
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Paul Turner <pjt@google.com>
+Beyond bug fixes not much material has changed since v1 as results seem
+favourable/stable.
 
----
- kernel/sched.c      |  105 +++++++++++++---------------------------------------
- kernel/sched_fair.c |   46 +++++++++++++++++++---
- kernel/sched_rt.c   |   24 +++++++++++
- 3 files changed, 92 insertions(+), 83 deletions(-)
+Changes:
+v4
+all patches
+- fix "-p0" stripping
 
-Index: tip/kernel/sched.c
-===================================================================
---- tip.orig/kernel/sched.c
-+++ tip/kernel/sched.c
-@@ -274,9 +274,7 @@ struct task_group {
- 
- #define root_task_group init_task_group
- 
--/* task_group_lock serializes add/remove of task groups and also changes to
-- * a task group's cpu shares.
-- */
-+/* task_group_lock serializes the addition/removal of task groups */
- static DEFINE_SPINLOCK(task_group_lock);
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
-@@ -344,6 +342,7 @@ struct cfs_rq {
- 	 * leaf_cfs_rq_list ties together list of leaf cfs_rq's in a cpu. This
- 	 * list is used during load balance.
- 	 */
-+	int on_list;
- 	struct list_head leaf_cfs_rq_list;
- 	struct task_group *tg;	/* group that "owns" this runqueue */
- 
-@@ -1537,7 +1536,7 @@ static unsigned long cpu_avg_load_per_ta
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 
--static void update_cfs_load(struct cfs_rq *cfs_rq);
-+static void update_cfs_load(struct cfs_rq *cfs_rq, int lb);
- static void update_cfs_shares(struct cfs_rq *cfs_rq);
- 
- /*
-@@ -1560,7 +1559,7 @@ static int tg_shares_up(struct task_grou
- 	raw_spin_lock_irqsave(&rq->lock, flags);
- 
- 	update_rq_clock(rq);
--	update_cfs_load(cfs_rq);
-+	update_cfs_load(cfs_rq, 1);
- 
- 	load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
- 	load_avg -= cfs_rq->load_contribution;
-@@ -7789,15 +7788,13 @@ static void init_rt_rq(struct rt_rq *rt_
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- static void init_tg_cfs_entry(struct task_group *tg, struct cfs_rq *cfs_rq,
--				struct sched_entity *se, int cpu, int add,
-+				struct sched_entity *se, int cpu,
- 				struct sched_entity *parent)
- {
- 	struct rq *rq = cpu_rq(cpu);
- 	tg->cfs_rq[cpu] = cfs_rq;
- 	init_cfs_rq(cfs_rq, rq);
- 	cfs_rq->tg = tg;
--	if (add)
--		list_add(&cfs_rq->leaf_cfs_rq_list, &rq->leaf_cfs_rq_list);
- 
- 	tg->se[cpu] = se;
- 	/* se could be NULL for init_task_group */
-@@ -7817,7 +7814,7 @@ static void init_tg_cfs_entry(struct tas
- 
- #ifdef CONFIG_RT_GROUP_SCHED
- static void init_tg_rt_entry(struct task_group *tg, struct rt_rq *rt_rq,
--		struct sched_rt_entity *rt_se, int cpu, int add,
-+		struct sched_rt_entity *rt_se, int cpu,
- 		struct sched_rt_entity *parent)
- {
- 	struct rq *rq = cpu_rq(cpu);
-@@ -7826,8 +7823,6 @@ static void init_tg_rt_entry(struct task
- 	init_rt_rq(rt_rq, rq);
- 	rt_rq->tg = tg;
- 	rt_rq->rt_runtime = tg->rt_bandwidth.rt_runtime;
--	if (add)
--		list_add(&rt_rq->leaf_rt_rq_list, &rq->leaf_rt_rq_list);
- 
- 	tg->rt_se[cpu] = rt_se;
- 	if (!rt_se)
-@@ -7936,7 +7931,7 @@ void __init sched_init(void)
- 		 * We achieve this by letting init_task_group's tasks sit
- 		 * directly in rq->cfs (i.e init_task_group->se[] = NULL).
- 		 */
--		init_tg_cfs_entry(&init_task_group, &rq->cfs, NULL, i, 1, NULL);
-+		init_tg_cfs_entry(&init_task_group, &rq->cfs, NULL, i, NULL);
- #endif
- #endif /* CONFIG_FAIR_GROUP_SCHED */
- 
-@@ -7944,7 +7939,7 @@ void __init sched_init(void)
- #ifdef CONFIG_RT_GROUP_SCHED
- 		INIT_LIST_HEAD(&rq->leaf_rt_rq_list);
- #ifdef CONFIG_CGROUP_SCHED
--		init_tg_rt_entry(&init_task_group, &rq->rt, NULL, i, 1, NULL);
-+		init_tg_rt_entry(&init_task_group, &rq->rt, NULL, i, NULL);
- #endif
- #endif
- 
-@@ -8220,7 +8215,7 @@ int alloc_fair_sched_group(struct task_g
- 		if (!se)
- 			goto err_free_rq;
- 
--		init_tg_cfs_entry(tg, cfs_rq, se, i, 0, parent->se[i]);
-+		init_tg_cfs_entry(tg, cfs_rq, se, i, parent->se[i]);
- 	}
- 
- 	return 1;
-@@ -8231,15 +8226,22 @@ err:
- 	return 0;
- }
- 
--static inline void register_fair_sched_group(struct task_group *tg, int cpu)
--{
--	list_add_rcu(&tg->cfs_rq[cpu]->leaf_cfs_rq_list,
--			&cpu_rq(cpu)->leaf_cfs_rq_list);
--}
--
- static inline void unregister_fair_sched_group(struct task_group *tg, int cpu)
- {
--	list_del_rcu(&tg->cfs_rq[cpu]->leaf_cfs_rq_list);
-+	struct rq *rq = cpu_rq(cpu);
-+	unsigned long flags;
-+	int i;
-+
-+	/*
-+	* Only empty task groups can be destroyed; so we can speculatively
-+	* check on_list without danger of it being re-added.
-+	*/
-+	if (!tg->cfs_rq[cpu]->on_list)
-+		return;
-+
-+	raw_spin_lock_irqsave(&rq->lock, flags);
-+	list_del_leaf_cfs_rq(tg->cfs_rq[i]);
-+	raw_spin_unlock_irqrestore(&rq->lock, flags);
- }
- #else /* !CONFG_FAIR_GROUP_SCHED */
- static inline void free_fair_sched_group(struct task_group *tg)
-@@ -8252,10 +8254,6 @@ int alloc_fair_sched_group(struct task_g
- 	return 1;
- }
- 
--static inline void register_fair_sched_group(struct task_group *tg, int cpu)
--{
--}
--
- static inline void unregister_fair_sched_group(struct task_group *tg, int cpu)
- {
- }
-@@ -8310,7 +8308,7 @@ int alloc_rt_sched_group(struct task_gro
- 		if (!rt_se)
- 			goto err_free_rq;
- 
--		init_tg_rt_entry(tg, rt_rq, rt_se, i, 0, parent->rt_se[i]);
-+		init_tg_rt_entry(tg, rt_rq, rt_se, i, parent->rt_se[i]);
- 	}
- 
- 	return 1;
-@@ -8320,17 +8318,6 @@ err_free_rq:
- err:
- 	return 0;
- }
--
--static inline void register_rt_sched_group(struct task_group *tg, int cpu)
--{
--	list_add_rcu(&tg->rt_rq[cpu]->leaf_rt_rq_list,
--			&cpu_rq(cpu)->leaf_rt_rq_list);
--}
--
--static inline void unregister_rt_sched_group(struct task_group *tg, int cpu)
--{
--	list_del_rcu(&tg->rt_rq[cpu]->leaf_rt_rq_list);
--}
- #else /* !CONFIG_RT_GROUP_SCHED */
- static inline void free_rt_sched_group(struct task_group *tg)
- {
-@@ -8341,14 +8328,6 @@ int alloc_rt_sched_group(struct task_gro
- {
- 	return 1;
- }
--
--static inline void register_rt_sched_group(struct task_group *tg, int cpu)
--{
--}
--
--static inline void unregister_rt_sched_group(struct task_group *tg, int cpu)
--{
--}
- #endif /* CONFIG_RT_GROUP_SCHED */
- 
- #ifdef CONFIG_CGROUP_SCHED
-@@ -8364,7 +8343,6 @@ struct task_group *sched_create_group(st
- {
- 	struct task_group *tg;
- 	unsigned long flags;
--	int i;
- 
- 	tg = kzalloc(sizeof(*tg), GFP_KERNEL);
- 	if (!tg)
-@@ -8377,10 +8355,6 @@ struct task_group *sched_create_group(st
- 		goto err;
- 
- 	spin_lock_irqsave(&task_group_lock, flags);
--	for_each_possible_cpu(i) {
--		register_fair_sched_group(tg, i);
--		register_rt_sched_group(tg, i);
--	}
- 	list_add_rcu(&tg->list, &task_groups);
- 
- 	WARN_ON(!parent); /* root should already exist */
-@@ -8410,11 +8384,11 @@ void sched_destroy_group(struct task_gro
- 	unsigned long flags;
- 	int i;
- 
--	spin_lock_irqsave(&task_group_lock, flags);
--	for_each_possible_cpu(i) {
-+	/* end participation in shares distribution */
-+	for_each_possible_cpu(i)
- 		unregister_fair_sched_group(tg, i);
--		unregister_rt_sched_group(tg, i);
--	}
-+
-+	spin_lock_irqsave(&task_group_lock, flags);
- 	list_del_rcu(&tg->list);
- 	list_del_rcu(&tg->siblings);
- 	spin_unlock_irqrestore(&task_group_lock, flags);
-@@ -8492,7 +8466,6 @@ static DEFINE_MUTEX(shares_mutex);
- int sched_group_set_shares(struct task_group *tg, unsigned long shares)
- {
- 	int i;
--	unsigned long flags;
- 
- 	/*
- 	 * We can't change the weight of the root cgroup.
-@@ -8509,19 +8482,6 @@ int sched_group_set_shares(struct task_g
- 	if (tg->shares == shares)
- 		goto done;
- 
--	spin_lock_irqsave(&task_group_lock, flags);
--	for_each_possible_cpu(i)
--		unregister_fair_sched_group(tg, i);
--	list_del_rcu(&tg->siblings);
--	spin_unlock_irqrestore(&task_group_lock, flags);
--
--	/* wait for any ongoing reference to this group to finish */
--	synchronize_sched();
--
--	/*
--	 * Now we are free to modify the group's share on each cpu
--	 * w/o tripping rebalance_share or load_balance_fair.
--	 */
- 	tg->shares = shares;
- 	for_each_possible_cpu(i) {
- 		/*
-@@ -8530,15 +8490,6 @@ int sched_group_set_shares(struct task_g
- 		set_se_shares(tg->se[i], shares);
- 	}
- 
--	/*
--	 * Enable load balance activity on this group, by inserting it back on
--	 * each cpu's rq->leaf_cfs_rq_list.
--	 */
--	spin_lock_irqsave(&task_group_lock, flags);
--	for_each_possible_cpu(i)
--		register_fair_sched_group(tg, i);
--	list_add_rcu(&tg->siblings, &tg->parent->children);
--	spin_unlock_irqrestore(&task_group_lock, flags);
- done:
- 	mutex_unlock(&shares_mutex);
- 	return 0;
-Index: tip/kernel/sched_fair.c
-===================================================================
---- tip.orig/kernel/sched_fair.c
-+++ tip/kernel/sched_fair.c
-@@ -143,6 +143,24 @@ static inline struct cfs_rq *cpu_cfs_rq(
- 	return cfs_rq->tg->cfs_rq[this_cpu];
- }
- 
-+static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-+{
-+	if (!cfs_rq->on_list) {
-+		list_add_rcu(&cfs_rq->leaf_cfs_rq_list,
-+				&rq_of(cfs_rq)->leaf_cfs_rq_list);
-+
-+		cfs_rq->on_list = 1;
-+	}
-+}
-+
-+static inline void list_del_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-+{
-+	if (cfs_rq->on_list) {
-+		list_del_rcu(&cfs_rq->leaf_cfs_rq_list);
-+		cfs_rq->on_list = 0;
-+	}
-+}
-+
- /* Iterate thr' all leaf cfs_rq's on a runqueue */
- #define for_each_leaf_cfs_rq(rq, cfs_rq) \
- 	list_for_each_entry_rcu(cfs_rq, &rq->leaf_cfs_rq_list, leaf_cfs_rq_list)
-@@ -246,6 +264,14 @@ static inline struct cfs_rq *cpu_cfs_rq(
- 	return &cpu_rq(this_cpu)->cfs;
- }
- 
-+static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-+{
-+}
-+
-+static inline void list_del_leaf_cfs_rq(struct cfs_rq *cfs_rq)
-+{
-+}
-+
- #define for_each_leaf_cfs_rq(rq, cfs_rq) \
- 		for (cfs_rq = &rq->cfs; cfs_rq; cfs_rq = NULL)
- 
-@@ -648,7 +674,7 @@ account_entity_dequeue(struct cfs_rq *cf
- }
- 
- #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
--static void update_cfs_load(struct cfs_rq *cfs_rq)
-+static void update_cfs_load(struct cfs_rq *cfs_rq, int lb)
- {
- 	u64 period = sched_avg_period();
- 	u64 now, delta;
-@@ -673,6 +699,11 @@ static void update_cfs_load(struct cfs_r
- 		cfs_rq->load_period /= 2;
- 		cfs_rq->load_avg /= 2;
- 	}
-+
-+	if (lb && !cfs_rq->nr_running) {
-+		if (cfs_rq->load_avg < (period / 8))
-+			list_del_leaf_cfs_rq(cfs_rq);
-+	}
- }
- 
- static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
-@@ -719,7 +750,7 @@ static void update_cfs_shares(struct cfs
- 	reweight_entity(cfs_rq_of(se), se, shares);
- }
- #else /* CONFIG_FAIR_GROUP_SCHED */
--static inline void update_cfs_load(struct cfs_rq *cfs_rq)
-+static inline void update_cfs_load(struct cfs_rq *cfs_rq, int lb)
- {
- }
- 
-@@ -849,7 +880,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
- 	 * Update run-time statistics of the 'current'.
- 	 */
- 	update_curr(cfs_rq);
--	update_cfs_load(cfs_rq);
-+	update_cfs_load(cfs_rq, 0);
- 	account_entity_enqueue(cfs_rq, se);
- 	update_cfs_shares(cfs_rq);
- 
-@@ -863,6 +894,9 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
- 	if (se != cfs_rq->curr)
- 		__enqueue_entity(cfs_rq, se);
- 	se->on_rq = 1;
-+
-+	if (cfs_rq->nr_running == 1)
-+		list_add_leaf_cfs_rq(cfs_rq);
- }
- 
- static void __clear_buddies(struct cfs_rq *cfs_rq, struct sched_entity *se)
-@@ -907,7 +941,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
- 	if (se != cfs_rq->curr)
- 		__dequeue_entity(cfs_rq, se);
- 	se->on_rq = 0;
--	update_cfs_load(cfs_rq);
-+	update_cfs_load(cfs_rq, 0);
- 	account_entity_dequeue(cfs_rq, se);
- 	update_min_vruntime(cfs_rq);
- 	update_cfs_shares(cfs_rq);
-@@ -1142,7 +1176,7 @@ enqueue_task_fair(struct rq *rq, struct 
- 	for_each_sched_entity(se) {
- 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
- 
--		update_cfs_load(cfs_rq);
-+		update_cfs_load(cfs_rq, 0);
- 		update_cfs_shares(cfs_rq);
- 	}
- 
-@@ -1172,7 +1206,7 @@ static void dequeue_task_fair(struct rq 
- 	for_each_sched_entity(se) {
- 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
- 
--		update_cfs_load(cfs_rq);
-+		update_cfs_load(cfs_rq, 0);
- 		update_cfs_shares(cfs_rq);
- 	}
- 
-Index: tip/kernel/sched_rt.c
-===================================================================
---- tip.orig/kernel/sched_rt.c
-+++ tip/kernel/sched_rt.c
-@@ -183,6 +183,17 @@ static inline u64 sched_rt_period(struct
- 	return ktime_to_ns(rt_rq->tg->rt_bandwidth.rt_period);
- }
- 
-+static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
-+{
-+	list_add_rcu(&rt_rq->leaf_rt_rq_list,
-+			&rq_of_rt_rq(rt_rq)->leaf_rt_rq_list);
-+}
-+
-+static inline void list_del_leaf_rt_rq(struct rt_rq *rt_rq)
-+{
-+	list_del_rcu(&rt_rq->leaf_rt_rq_list);
-+}
-+
- #define for_each_leaf_rt_rq(rt_rq, rq) \
- 	list_for_each_entry_rcu(rt_rq, &rq->leaf_rt_rq_list, leaf_rt_rq_list)
- 
-@@ -276,6 +287,14 @@ static inline u64 sched_rt_period(struct
- 	return ktime_to_ns(def_rt_bandwidth.rt_period);
- }
- 
-+static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
-+{
-+}
-+
-+static inline void list_del_leaf_rt_rq(struct rt_rq *rt_rq)
-+{
-+}
-+
- #define for_each_leaf_rt_rq(rt_rq, rq) \
- 	for (rt_rq = &rq->rt; rt_rq; rt_rq = NULL)
- 
-@@ -825,6 +844,9 @@ static void __enqueue_rt_entity(struct s
- 	if (group_rq && (rt_rq_throttled(group_rq) || !group_rq->rt_nr_running))
- 		return;
- 
-+	if (!rt_rq->rt_nr_running)
-+		list_add_leaf_rt_rq(rt_rq);
-+
- 	if (head)
- 		list_add(&rt_se->run_list, queue);
- 	else
-@@ -844,6 +866,8 @@ static void __dequeue_rt_entity(struct s
- 		__clear_bit(rt_se_prio(rt_se), array->bitmap);
- 
- 	dec_rt_tasks(rt_se, rt_rq);
-+	if (!rt_rq->rt_nr_running)
-+		list_del_leaf_rt_rq(rt_rq);
- }
- 
- /*
+v3 (http://lkml.org/lkml/2010/11/11/526)
+sched-rework-tg_shares_up.patch
+- remove lint: {max,min}_sched_shares_ratelimit from sysctl.c 
 
+sched-tg-ondemand.patch
+- (bug fix) fix synchronization on leaf_cfs_rq_list removal during task_group reclaim.
+- fix !CONFIG_FAIR_GROUP_SCHED build 
+- fix comment on what task_group_lock protects
+
+sched-tg-global_update_load.patch
+- add missing arguments to update_cfs_load() in !CONFIG_FAIR_GROUP_SCHED case
+
+v2 (http://lkml.org/lkml/2010/11/10/618)
+sched-rework-tg_shares_up.patch
+- (bug fix) use owning tg->shares value in effective_load
+- remove redundant cfs_rq_of() in {enqueue,dequeue}_entity
+
+sched-tg-add-shares_window_sysctl.patch
+- update comment on sysctl interpretation
+
+sched-tg-fix-update_cfs_load.patch
+- update comment to reflect periods instead of foldings (more intuitive)
+
+Some motivation again:
+24 thread Intel box, 150 active cgroups, multiple threads/group, system load at ~90% (sample size=10s):
+tip:
+    2.64%  [k] tg_shares_up <!>
+    0.15%  [k] __set_se_shares
+
+patched:
+    0.02%  [k] update_cfs_load
+    0.01%  [k] update_cpu_load
+    0.00%  [k] update_cfs_shares
+
+Fairness coverage for the above at: http://rs5.risingnet.net/~pjt/patches/shares_data_v1.txt
+
+Thanks,
+
+- Paul
 
