@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283Ab0KOXwq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 18:52:46 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:37123 "EHLO
+	id S933906Ab0KOXwz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 18:52:55 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:36061 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab0KOXwp (ORCPT
+	with ESMTP id S932840Ab0KOXws (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 18:52:45 -0500
+	Mon, 15 Nov 2010 18:52:48 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=mR4hg+LyaZ0yWSEgos47Y6AK7f3lLxajSD8/SVqQSIzgTZTgBos2GlNjZCAzc9V5o
-	L3xcBRCOtk8t2YeTBfhjw==
-Message-Id: <20101115234938.291159744@google.com>
+	b=vAMAOA4N1lXy0MAtNHa0oxjWcVbKDOgMeacrDcZfyely3Vrc6xB+6zTfWzUs5Ssx4
+	xIPVSV25MfmcmqH5vhU/w==
+Message-Id: <20101115234938.204191702@google.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 15 Nov 2010 15:47:08 -0800
+Date: Mon, 15 Nov 2010 15:47:07 -0800
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
@@ -24,83 +24,34 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Bharata B Rao <bharata@linux.vnet.ibm.com>,
         Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
         David Miller <davem@davemloft.net>
-Subject: [tg_shares_up rewrite v4 09/11] sched: demand based update_cfs_load()
+Subject: [tg_shares_up rewrite v4 08/11] sched: update shares on idle_balance
 References: <20101115234659.610333554@google.com>
-Content-Disposition: inline; filename=sched-tg-demand_based_update_cfs_load.patch
+Content-Disposition: inline; filename=sched-tg-update_shares_on_idle_balance.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the system is busy, dilation of rq->next_balance makes lb->update_shares()
-insufficiently frequent for threads which don't sleep (no dequeue/enqueue
-updates).  Adjust for this by making demand based updates based on the
-accumulation of execution time sufficient to wrap our averaging window.
+Since shares updates are no longer expensive and effectively local, update them
+at idle_balance().  This allows us to more quickly redistribute shares to
+another cpu when our load becomes idle.
 
 Signed-off-by: Paul Turner <pjt@google.com>
 
 ---
- kernel/sched.c      |    9 ++++++++-
- kernel/sched_fair.c |   12 ++++++++++++
- 2 files changed, 20 insertions(+), 1 deletion(-)
+ kernel/sched_fair.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Index: tip/kernel/sched.c
-===================================================================
---- tip.orig/kernel/sched.c
-+++ tip/kernel/sched.c
-@@ -353,9 +353,16 @@ struct cfs_rq {
- 	 */
- 	unsigned long h_load;
- 
-+	/*
-+	 * Maintaining per-cpu shares distribution for group scheduling
-+	 *
-+	 * load_stamp is the last time we updated the load average
-+	 * load_last is the last time we updated the load average and saw load
-+	 * load_unacc_exec_time is currently unaccounted execution time
-+	 */
- 	u64 load_avg;
- 	u64 load_period;
--	u64 load_stamp, load_last;
-+	u64 load_stamp, load_last, load_unacc_exec_time;
- 
- 	unsigned long load_contribution;
- #endif
 Index: tip/kernel/sched_fair.c
 ===================================================================
 --- tip.orig/kernel/sched_fair.c
 +++ tip/kernel/sched_fair.c
-@@ -539,6 +539,9 @@ static u64 sched_vslice(struct cfs_rq *c
- 	return calc_delta_fair(sched_slice(cfs_rq, se), se);
- }
+@@ -3365,6 +3365,7 @@ static void idle_balance(int this_cpu, s
+ 	 */
+ 	raw_spin_unlock(&this_rq->lock);
  
-+static void update_cfs_load(struct cfs_rq *cfs_rq);
-+static void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta);
-+
- /*
-  * Update the current task's runtime statistics. Skip current tasks that
-  * are not in our scheduling class.
-@@ -558,6 +561,14 @@ __update_curr(struct cfs_rq *cfs_rq, str
- 
- 	curr->vruntime += delta_exec_weighted;
- 	update_min_vruntime(cfs_rq);
-+
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+	cfs_rq->load_unacc_exec_time += delta_exec;
-+	if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
-+		update_cfs_load(cfs_rq);
-+		update_cfs_shares(cfs_rq, 0);
-+	}
-+#endif
- }
- 
- static void update_curr(struct cfs_rq *cfs_rq)
-@@ -713,6 +724,7 @@ static void update_cfs_load(struct cfs_r
- 	}
- 
- 	cfs_rq->load_stamp = now;
-+	cfs_rq->load_unacc_exec_time = 0;
- 	cfs_rq->load_period += delta;
- 	if (load) {
- 		cfs_rq->load_last = now;
++	update_shares(this_cpu);
+ 	for_each_domain(this_cpu, sd) {
+ 		unsigned long interval;
+ 		int balance = 1;
 
 
