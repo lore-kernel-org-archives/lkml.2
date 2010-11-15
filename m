@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758010Ab0KOROy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 12:14:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28946 "EHLO mx1.redhat.com"
+	id S932889Ab0KORQF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 12:16:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50645 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757971Ab0KOROw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 12:14:52 -0500
+	id S1757941Ab0KORPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 12:15:04 -0500
 From: Josef Bacik <josef@redhat.com>
 To: david@fromorbit.com, linux-kernel@vger.kernel.org,
         linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, cmm@us.ibm.com,
         cluster-devel@redhat.com, ocfs2-devel@oss.oracle.com
-Subject: [PATCH 2/6] XFS: handle hole punching via fallocate properly
-Date: Mon, 15 Nov 2010 12:05:19 -0500
-Message-Id: <1289840723-3056-3-git-send-email-josef@redhat.com>
+Subject: [PATCH 4/6] Ext4: fail if we try to use hole punch
+Date: Mon, 15 Nov 2010 12:05:21 -0500
+Message-Id: <1289840723-3056-5-git-send-email-josef@redhat.com>
 In-Reply-To: <1289840723-3056-1-git-send-email-josef@redhat.com>
 References: <1289840723-3056-1-git-send-email-josef@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch simply allows XFS to handle the hole punching flag in fallocate
-properly.  I've tested this with a little program that does a bunch of random
-hole punching with FL_KEEP_SIZE and without it to make sure it does the right
-thing.  Thanks,
+Ext4 doesn't have the ability to punch holes yet, so make sure we return
+EOPNOTSUPP if we try to use hole punching through fallocate.  This support can
+be added later.  Thanks,
 
 Signed-off-by: Josef Bacik <josef@redhat.com>
 ---
- fs/xfs/linux-2.6/xfs_iops.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+ fs/ext4/extents.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/fs/xfs/linux-2.6/xfs_iops.c b/fs/xfs/linux-2.6/xfs_iops.c
-index 96107ef..63cc929 100644
---- a/fs/xfs/linux-2.6/xfs_iops.c
-+++ b/fs/xfs/linux-2.6/xfs_iops.c
-@@ -516,6 +516,7 @@ xfs_vn_fallocate(
- 	loff_t		new_size = 0;
- 	xfs_flock64_t	bf;
- 	xfs_inode_t	*ip = XFS_I(inode);
-+	int		cmd = XFS_IOC_RESVSP;
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 0554c48..35bca73 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -3622,6 +3622,10 @@ long ext4_fallocate(struct inode *inode, int mode, loff_t offset, loff_t len)
+ 	struct ext4_map_blocks map;
+ 	unsigned int credits, blkbits = inode->i_blkbits;
  
- 	/* preallocation on directories not yet supported */
- 	error = -ENODEV;
-@@ -528,8 +529,11 @@ xfs_vn_fallocate(
- 
- 	xfs_ilock(ip, XFS_IOLOCK_EXCL);
- 
-+	if (mode & FALLOC_FL_PUNCH_HOLE)
-+		cmd = XFS_IOC_UNRESVSP;
++	/* We only support the FALLOC_FL_KEEP_SIZE mode */
++	if (mode && (mode != FALLOC_FL_KEEP_SIZE))
++		return -EOPNOTSUPP;
 +
- 	/* check the new inode size is valid before allocating */
--	if (!(mode & FALLOC_FL_KEEP_SIZE) &&
-+	if (!(mode & (FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE)) &&
- 	    offset + len > i_size_read(inode)) {
- 		new_size = offset + len;
- 		error = inode_newsize_ok(inode, new_size);
-@@ -537,8 +541,7 @@ xfs_vn_fallocate(
- 			goto out_unlock;
- 	}
- 
--	error = -xfs_change_file_space(ip, XFS_IOC_RESVSP, &bf,
--				       0, XFS_ATTR_NOLOCK);
-+	error = -xfs_change_file_space(ip, cmd, &bf, 0, XFS_ATTR_NOLOCK);
- 	if (error)
- 		goto out_unlock;
- 
+ 	/*
+ 	 * currently supporting (pre)allocate mode for extent-based
+ 	 * files _only_
 -- 
 1.6.6.1
 
