@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758070Ab0KORy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 12:54:29 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36236 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756323Ab0KORy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 12:54:28 -0500
-Message-ID: <4CE173B3.9000603@zytor.com>
-Date: Mon, 15 Nov 2010 09:53:55 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Shaohua Li <shaohua.li@intel.com>
-CC: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC 0/4]x86: allocate up to 32 tlb invalidate vectors
-References: <1288766655.23014.113.camel@sli10-conroe> <1289829765.14740.2.camel@sli10-conroe>
-In-Reply-To: <1289829765.14740.2.camel@sli10-conroe>
-Content-Type: text/plain; charset=UTF-8
+	id S933203Ab0KOR73 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 12:59:29 -0500
+Received: from mtagate2.de.ibm.com ([195.212.17.162]:37206 "EHLO
+	mtagate2.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756551Ab0KOR72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 12:59:28 -0500
+Date: Mon, 15 Nov 2010 18:59:23 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        "jeremy.fitzhardinge" <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [RFC][PATCH v2 4/7] taskstats: Add per task steal time
+ accounting
+Message-ID: <20101115185923.1c353d07@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <1289843441.2109.520.camel@laptop>
+References: <20101111170352.732381138@linux.vnet.ibm.com>
+	<20101111170815.024542355@linux.vnet.ibm.com>
+	<1289677083.2109.167.camel@laptop>
+	<20101115155057.15f3be35@mschwide.boeblingen.de.ibm.com>
+	<1289833883.2109.494.camel@laptop>
+	<20101115184206.4463fd05@mschwide.boeblingen.de.ibm.com>
+	<1289843441.2109.520.camel@laptop>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 06:02 AM, Shaohua Li wrote:
-> On Wed, 2010-11-03 at 14:44 +0800, Shaohua Li wrote:
->> Hi,
->> In workload with heavy page reclaim, flush_tlb_page() is frequently
->> used. We currently have 8 vectors for tlb flush, which is fine for small
->> machines. But for big machines with a lot of CPUs, the 8 vectors are
->> shared by all CPUs and we need lock to protect them. This will cause a
->> lot of lock contentions. please see the patch 3 for detailed number of
->> the lock contention.
->> Andi Kleen suggests we can use 32 vectors for tlb flush, which should be
->> fine for even 8 socket machines. Test shows this reduces lock contention
->> dramatically (see patch 3 for number).
->> One might argue if this will waste too many vectors and leave less
->> vectors for devices. This could be a problem. But even we use 32
->> vectors, we still leave 78 vectors for devices. And we now have per-cpu
->> vector, vector isn't scarce any more, but I'm open if anybody has
->> objections.
->>
-> Hi Ingo & hpa, any comments about this series?
+On Mon, 15 Nov 2010 18:50:41 +0100
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+
+> On Mon, 2010-11-15 at 18:42 +0100, Martin Schwidefsky wrote:
+> > The steal time of a task tells us how much more progress a task could have
+> > done if the hypervisor would not steal cpu. Now you could argue that the
+> > steal time for a cpu is good enough for that purpose but steal time is not
+> > necessarily uniform over all tasks. And we already do calculate this number,
+> > we just do not store it right now. 
 > 
+> If you make the scheduler take steal time into account like Jeremy
+> proposed then you schedule on serviced time and the steal time gain is
+> proportional to the existing service distribution.
+> 
+> Still, then you know, then what are you going to do about it? Are you
+> going to avoid the hypervisor from scheduling when that one task is
+> running?
+> 
+> What good is knowing something you cannot do anything about.
 
-Hi Shaohua,
-
-It looks good... I need to do a more thorough review and put it in; I
-just have been consumed a bit too much by a certain internal project.
-
-	-hpa
+Steal time per task is at least good for performance problem analysis.
+Sometimes knowing what is not the cause of a performance problem can help you
+tremendously. If a task is slow and has no steal time, well then the hypervisor
+is likely not the culprit. On the other hand if you do see lots of steal time
+for a task while the rest of the system doesn't cause any steal time can tell
+you something as well. That task might hit a specific function which causes
+hypervisor overhead. The usefulness depends on the situation, it is another
+data point which may or may not help you.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
