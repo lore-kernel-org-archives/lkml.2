@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932569Ab0KODCD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 22:02:03 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:53497 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932493Ab0KODCC (ORCPT
+	id S932557Ab0KODBV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 22:01:21 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51840 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932493Ab0KODBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 22:02:02 -0500
-Date: Sun, 14 Nov 2010 22:01:58 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Pete Zaitcev <zaitcev@redhat.com>
-cc: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>,
-        Greg Kroah-Hartman <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, RFC] usbmon: correct computing of the ISO packets with
- mmap
-In-Reply-To: <20101114162502.6d6318e7@lembas.zaitcev.lan>
-Message-ID: <Pine.LNX.4.44L0.1011142159090.4076-100000@netrider.rowland.org>
+	Sun, 14 Nov 2010 22:01:19 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=e+c4L0VDtlikW1jxkyPhwS0K84015W3IvemYmFRugyxgxBeYydhlNjfnStaCuA79a6
+         moxZS8A7NLV/6XPFB6+P/j9aGZJ5dcv/W0kgC+L+lIGA3GA8hXuiMjbGoceQMmFFqgSt
+         CWF1wUfmG5NAsoer2E/mJw+GyByRgwA98uYr0=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1289764664.2743.110.camel@edumazet-laptop>
+References: <28d666269c390965f1a4edca42f93c12@localhost>
+	<1289725175.2743.65.camel@edumazet-laptop>
+	<AANLkTik4PLga8mX73c8iONPeOtpDiuDhfu3xiPmF07jC@mail.gmail.com>
+	<1289764664.2743.110.camel@edumazet-laptop>
+Date: Sun, 14 Nov 2010 19:01:17 -0800
+Message-ID: <AANLkTi==8nwn3g5t1uw=CP1K0vegUE2hAdDxOq-fkVRW@mail.gmail.com>
+Subject: Re: [PATCH/RFC] netfilter: nf_conntrack_sip: Handle quirky Cisco phones
+From: Kevin Cernekee <cernekee@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Nov 2010, Pete Zaitcev wrote:
+On Sun, Nov 14, 2010 at 11:57 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Via: SIP/2.0/UDP 192.168.2.28:5060;branch=xxxxxxxx
+>
+>
+> Maybe a fix would be to use this "5060" port, instead of hardcoding it
+> like you did ?
 
-> diff --git a/drivers/usb/mon/mon_bin.c b/drivers/usb/mon/mon_bin.c
-> index 44cb37b..15c5e46 100644
-> --- a/drivers/usb/mon/mon_bin.c
-> +++ b/drivers/usb/mon/mon_bin.c
-> @@ -437,6 +437,28 @@ static unsigned int mon_bin_get_data(const struct mon_reader_bin *rp,
->  	return length;
->  }
->  
-> +/*
-> + * This is the look-ahead pass in case of 'Ci', when actual_length cannot
-> + * be used to determine the length of the whole contiguous buffer.
-> + */
+Just posted v2... appreciate the advice so far.
 
-Shouldn't the comment say "Cz" instead of "Ci"?
+My new code in process_sip_request() looks for an address match + port
+mismatch between the IP source and the Via: header.  This is how it
+tries to detect whether we are talking directly to an afflicted Cisco
+phone.  If the address doesn't match, I assume the request is passing
+through a non-SIP-aware NAT router so there is no special handling.
 
-> +static unsigned int mon_bin_collate_isodesc(const struct mon_reader_bin *rp,
-> +    struct urb *urb, unsigned int ndesc)
-> +{
-> +	struct usb_iso_packet_descriptor *fp;
-> +	unsigned int length;
-> +
-> +	length = 0;
-> +	fp = urb->iso_frame_desc;
-> +	while (ndesc-- != 0) {
-> +		if (fp->status == 0 && fp->actual_length != 0) {
-
-I'd leave out the fp->status == 0 test.  It's not relevant; a buffer 
-can contain valid data even if the final status isn't 0.
-
-Alan Stern
-
+Assuming we can reliably detect the "quirky phone" condition, is there
+any way to just trick Netfilter into thinking the source port was 5060
+instead of 49xxx?  3/4ths of the patch could probably be eliminated if
+we could overwrite the port number inside tuplehash.
