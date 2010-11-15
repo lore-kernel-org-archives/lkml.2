@@ -1,118 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933164Ab0KORkn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 12:40:43 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49271 "EHLO
+	id S1758002Ab0KORqq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 12:46:46 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49282 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933131Ab0KORkl (ORCPT
+	by vger.kernel.org with ESMTP id S933194Ab0KORkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 12:40:41 -0500
+	Mon, 15 Nov 2010 12:40:49 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 00/20] ARM: Add support for the Large Physical Address Extensions
-Date: Mon, 15 Nov 2010 17:40:09 +0000
-Message-Id: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v3 06/20] ARM: LPAE: Introduce L_PTE_NOEXEC and L_PTE_NOWRITE
+Date: Mon, 15 Nov 2010 17:40:15 +0000
+Message-Id: <1289842829-3027-7-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.3.2.164.g6f10c
-X-OriginalArrivalTime: 15 Nov 2010 17:40:33.0269 (UTC) FILETIME=[342CCA50:01CB84EC]
+In-Reply-To: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com>
+References: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com>
+X-OriginalArrivalTime: 15 Nov 2010 17:40:35.0035 (UTC) FILETIME=[353A42B0:01CB84EC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The LPAE page table format needs to explicitly disable execution or
+write permissions on a page by setting the corresponding bits (similar
+to the classic page table format with Access Flag enabled). This patch
+introduces null definitions for the 2-level format and the actual noexec
+and nowrite bits for the LPAE format. It also changes several PTE
+maintenance macros and masks.
 
-This set of patches adds support for the Large Physical Extensions on
-the ARM architecture (available with the Cortex-A15 processor). LPAE
-comes with a 3-level page table format (compared to 2-level for the
-classic one), allowing up to 40-bit physical address space.
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+---
+ arch/arm/include/asm/pgtable-2level.h |    2 +
+ arch/arm/include/asm/pgtable.h        |   44 +++++++++++++++++++++------------
+ arch/arm/mm/mmu.c                     |    6 ++--
+ 3 files changed, 33 insertions(+), 19 deletions(-)
 
-The ARM LPAE documentation is available from (free registration needed):
-
-http://infocenter.arm.com/help/topic/com.arm.doc.ddi0406b_virtualization_extns/index.html
-
-The full set of patches (kernel fixes, LPAE and support for an emulated
-Versatile Express with Cortex-A15 tile) is available on this branch:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-2.6-cm.git arm-lpae
-
-Changelog:
-
-- Fixed printk formatting and reordered patches to avoid compiler warning when
-  only part of the series is applied.
-- Renamed PTE_WORDS to PTE_SHIFT in arch/arm/kernel/head.S.
-- Fixed typo in Kconfig.
-
-
-Catalin Marinas (13):
-  ARM: LPAE: Use PMD_(SHIFT|SIZE|MASK) instead of PGDIR_*
-  ARM: LPAE: Factor out 2-level page table definitions into separate
-    files
-  ARM: LPAE: Do not assume Linux PTEs are always at PTRS_PER_PTE offset
-  ARM: LPAE: Introduce L_PTE_NOEXEC and L_PTE_NOWRITE
-  ARM: LPAE: Introduce the 3-level page table format definitions
-  ARM: LPAE: Page table maintenance for the 3-level format
-  ARM: LPAE: MMU setup for the 3-level page table format
-  ARM: LPAE: Change setup_mm_for_reboot() to work with LPAE
-  ARM: LPAE: Remove the FIRST_USER_PGD_NR and USER_PTRS_PER_PGD
-    definitions
-  ARM: LPAE: Add fault handling support
-  ARM: LPAE: Add context switching support
-  ARM: LPAE: Add SMP support for the 3-level page table format
-  ARM: LPAE: Add the Kconfig entries
-
-Will Deacon (7):
-  ARM: LPAE: use long long format when printing physical addresses and
-    ptes
-  ARM: LPAE: use u32 instead of unsigned long for 32-bit ptes
-  ARM: LPAE: use phys_addr_t instead of unsigned long for physical
-    addresses
-  ARM: LPAE: Use generic dma_addr_t type definition
-  ARM: LPAE: mark memory banks with start > ULONG_MAX as highmem
-  ARM: LPAE: use phys_addr_t for physical start address in early_mem
-  ARM: LPAE: add support for ATAG_MEM64
-
- arch/arm/Kconfig                            |    2 +-
- arch/arm/include/asm/cpu-multi32.h          |    8 +
- arch/arm/include/asm/cpu-single.h           |    4 +
- arch/arm/include/asm/memory.h               |   17 +-
- arch/arm/include/asm/outercache.h           |   14 +-
- arch/arm/include/asm/page-nommu.h           |    8 +-
- arch/arm/include/asm/page.h                 |   42 +----
- arch/arm/include/asm/pgalloc.h              |   34 +++-
- arch/arm/include/asm/pgtable-2level-hwdef.h |   91 +++++++++
- arch/arm/include/asm/pgtable-2level-types.h |   64 +++++++
- arch/arm/include/asm/pgtable-2level.h       |  147 ++++++++++++++
- arch/arm/include/asm/pgtable-3level-hwdef.h |   78 ++++++++
- arch/arm/include/asm/pgtable-3level-types.h |   55 ++++++
- arch/arm/include/asm/pgtable-3level.h       |  110 +++++++++++
- arch/arm/include/asm/pgtable-hwdef.h        |   81 +--------
- arch/arm/include/asm/pgtable.h              |  273 +++++++++++----------------
- arch/arm/include/asm/proc-fns.h             |   13 ++
- arch/arm/include/asm/setup.h                |   12 +-
- arch/arm/include/asm/types.h                |   20 +--
- arch/arm/kernel/compat.c                    |    4 +-
- arch/arm/kernel/head.S                      |  106 +++++++---
- arch/arm/kernel/module.c                    |    2 +-
- arch/arm/kernel/setup.c                     |   19 ++-
- arch/arm/kernel/smp.c                       |   43 ++++-
- arch/arm/kernel/traps.c                     |   12 +-
- arch/arm/mm/Kconfig                         |   13 ++
- arch/arm/mm/alignment.c                     |    8 +-
- arch/arm/mm/context.c                       |   18 ++-
- arch/arm/mm/dma-mapping.c                   |    6 +-
- arch/arm/mm/fault-armv.c                    |    2 +-
- arch/arm/mm/fault.c                         |   90 +++++++++-
- arch/arm/mm/init.c                          |    6 +-
- arch/arm/mm/ioremap.c                       |    8 +-
- arch/arm/mm/mm.h                            |    8 +-
- arch/arm/mm/mmu.c                           |  111 +++++++----
- arch/arm/mm/pgd.c                           |   20 ++-
- arch/arm/mm/proc-macros.S                   |    5 +-
- arch/arm/mm/proc-v7.S                       |  115 ++++++++++-
- 38 files changed, 1226 insertions(+), 443 deletions(-)
- create mode 100644 arch/arm/include/asm/pgtable-2level-hwdef.h
- create mode 100644 arch/arm/include/asm/pgtable-2level-types.h
- create mode 100644 arch/arm/include/asm/pgtable-2level.h
- create mode 100644 arch/arm/include/asm/pgtable-3level-hwdef.h
- create mode 100644 arch/arm/include/asm/pgtable-3level-types.h
- create mode 100644 arch/arm/include/asm/pgtable-3level.h
-
+diff --git a/arch/arm/include/asm/pgtable-2level.h b/arch/arm/include/asm/pgtable-2level.h
+index 36bdef7..4e21166 100644
+--- a/arch/arm/include/asm/pgtable-2level.h
++++ b/arch/arm/include/asm/pgtable-2level.h
+@@ -128,6 +128,8 @@
+ #define L_PTE_USER		(1 << 8)
+ #define L_PTE_EXEC		(1 << 9)
+ #define L_PTE_SHARED		(1 << 10)	/* shared(v6), coherent(xsc3) */
++#define L_PTE_NOEXEC		(0)
++#define L_PTE_NOWRITE		(0)
+ 
+ /*
+  * These are the memory types, defined to be compatible with
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index 1124b98..2ff176c 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -66,23 +66,23 @@ extern pgprot_t		pgprot_kernel;
+ 
+ #define _MOD_PROT(p, b)	__pgprot(pgprot_val(p) | (b))
+ 
+-#define PAGE_NONE		pgprot_user
+-#define PAGE_SHARED		_MOD_PROT(pgprot_user, L_PTE_USER | L_PTE_WRITE)
++#define PAGE_NONE		_MOD_PROT(pgprot_user, L_PTE_NOEXEC | L_PTE_NOWRITE)
++#define PAGE_SHARED		_MOD_PROT(pgprot_user, L_PTE_USER | L_PTE_WRITE | L_PTE_NOEXEC)
+ #define PAGE_SHARED_EXEC	_MOD_PROT(pgprot_user, L_PTE_USER | L_PTE_WRITE | L_PTE_EXEC)
+-#define PAGE_COPY		_MOD_PROT(pgprot_user, L_PTE_USER)
+-#define PAGE_COPY_EXEC		_MOD_PROT(pgprot_user, L_PTE_USER | L_PTE_EXEC)
+-#define PAGE_READONLY		_MOD_PROT(pgprot_user, L_PTE_USER)
+-#define PAGE_READONLY_EXEC	_MOD_PROT(pgprot_user, L_PTE_USER | L_PTE_EXEC)
+-#define PAGE_KERNEL		pgprot_kernel
++#define PAGE_COPY		_MOD_PROT(pgprot_user, L_PTE_USER | L_PTE_NOEXEC | L_PTE_NOWRITE)
++#define PAGE_COPY_EXEC		_MOD_PROT(pgprot_user, L_PTE_USER | L_PTE_EXEC | L_PTE_NOWRITE)
++#define PAGE_READONLY		_MOD_PROT(pgprot_user, L_PTE_USER | L_PTE_NOEXEC | L_PTE_NOWRITE)
++#define PAGE_READONLY_EXEC	_MOD_PROT(pgprot_user, L_PTE_USER | L_PTE_EXEC | L_PTE_NOWRITE)
++#define PAGE_KERNEL		_MOD_PROT(pgprot_kernel, L_PTE_NOEXEC)
+ #define PAGE_KERNEL_EXEC	_MOD_PROT(pgprot_kernel, L_PTE_EXEC)
+ 
+-#define __PAGE_NONE		__pgprot(_L_PTE_DEFAULT)
+-#define __PAGE_SHARED		__pgprot(_L_PTE_DEFAULT | L_PTE_USER | L_PTE_WRITE)
++#define __PAGE_NONE		__pgprot(_L_PTE_DEFAULT | L_PTE_NOEXEC | L_PTE_NOWRITE)
++#define __PAGE_SHARED		__pgprot(_L_PTE_DEFAULT | L_PTE_USER | L_PTE_WRITE | L_PTE_NOEXEC)
+ #define __PAGE_SHARED_EXEC	__pgprot(_L_PTE_DEFAULT | L_PTE_USER | L_PTE_WRITE | L_PTE_EXEC)
+-#define __PAGE_COPY		__pgprot(_L_PTE_DEFAULT | L_PTE_USER)
+-#define __PAGE_COPY_EXEC	__pgprot(_L_PTE_DEFAULT | L_PTE_USER | L_PTE_EXEC)
+-#define __PAGE_READONLY		__pgprot(_L_PTE_DEFAULT | L_PTE_USER)
+-#define __PAGE_READONLY_EXEC	__pgprot(_L_PTE_DEFAULT | L_PTE_USER | L_PTE_EXEC)
++#define __PAGE_COPY		__pgprot(_L_PTE_DEFAULT | L_PTE_USER | L_PTE_NOEXEC | L_PTE_NOWRITE)
++#define __PAGE_COPY_EXEC	__pgprot(_L_PTE_DEFAULT | L_PTE_USER | L_PTE_EXEC | L_PTE_NOWRITE)
++#define __PAGE_READONLY		__pgprot(_L_PTE_DEFAULT | L_PTE_USER | L_PTE_NOEXEC | L_PTE_NOWRITE)
++#define __PAGE_READONLY_EXEC	__pgprot(_L_PTE_DEFAULT | L_PTE_USER | L_PTE_EXEC | L_PTE_NOWRITE)
+ 
+ #endif /* __ASSEMBLY__ */
+ 
+@@ -165,12 +165,18 @@ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
+  * Undefined behaviour if not..
+  */
+ #define pte_present(pte)	(pte_val(pte) & L_PTE_PRESENT)
+-#define pte_write(pte)		(pte_val(pte) & L_PTE_WRITE)
+ #define pte_dirty(pte)		(pte_val(pte) & L_PTE_DIRTY)
+ #define pte_young(pte)		(pte_val(pte) & L_PTE_YOUNG)
+-#define pte_exec(pte)		(pte_val(pte) & L_PTE_EXEC)
+ #define pte_special(pte)	(0)
+ 
++#ifdef CONFIG_ARM_LPAE
++#define pte_write(pte)		(!(pte_val(pte) & L_PTE_NOWRITE))
++#define pte_exec(pte)		(!(pte_val(pte) & L_PTE_NOEXEC))
++#else
++#define pte_write(pte)		(pte_val(pte) & L_PTE_WRITE)
++#define pte_exec(pte)		(pte_val(pte) & L_PTE_EXEC)
++#endif
++
+ #define pte_present_user(pte) \
+ 	((pte_val(pte) & (L_PTE_PRESENT | L_PTE_USER)) == \
+ 	 (L_PTE_PRESENT | L_PTE_USER))
+@@ -178,8 +184,13 @@ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
+ #define PTE_BIT_FUNC(fn,op) \
+ static inline pte_t pte_##fn(pte_t pte) { pte_val(pte) op; return pte; }
+ 
++#ifdef CONFIG_ARM_LPAE
++PTE_BIT_FUNC(wrprotect, |= L_PTE_NOWRITE);
++PTE_BIT_FUNC(mkwrite,   &= ~L_PTE_NOWRITE);
++#else
+ PTE_BIT_FUNC(wrprotect, &= ~L_PTE_WRITE);
+ PTE_BIT_FUNC(mkwrite,   |= L_PTE_WRITE);
++#endif
+ PTE_BIT_FUNC(mkclean,   &= ~L_PTE_DIRTY);
+ PTE_BIT_FUNC(mkdirty,   |= L_PTE_DIRTY);
+ PTE_BIT_FUNC(mkold,     &= ~L_PTE_YOUNG);
+@@ -272,7 +283,8 @@ static inline pte_t *pmd_page_vaddr(pmd_t pmd)
+ 
+ static inline pte_t pte_modify(pte_t pte, pgprot_t newprot)
+ {
+-	const unsigned long mask = L_PTE_EXEC | L_PTE_WRITE | L_PTE_USER;
++	const unsigned long mask = L_PTE_EXEC | L_PTE_WRITE | L_PTE_USER |
++		L_PTE_NOEXEC | L_PTE_NOWRITE;
+ 	pte_val(pte) = (pte_val(pte) & ~mask) | (pgprot_val(newprot) & mask);
+ 	return pte;
+ }
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index 2bcf29c..45fe44c 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -191,7 +191,7 @@ void adjust_cr(unsigned long mask, unsigned long set)
+ }
+ #endif
+ 
+-#define PROT_PTE_DEVICE		L_PTE_PRESENT|L_PTE_YOUNG|L_PTE_DIRTY|L_PTE_WRITE
++#define PROT_PTE_DEVICE		L_PTE_PRESENT|L_PTE_YOUNG|L_PTE_DIRTY|L_PTE_WRITE|L_PTE_NOEXEC
+ #define PROT_SECT_DEVICE	PMD_TYPE_SECT|PMD_SECT_AP_WRITE
+ 
+ static struct mem_type mem_types[] = {
+@@ -236,13 +236,13 @@ static struct mem_type mem_types[] = {
+ 	},
+ 	[MT_LOW_VECTORS] = {
+ 		.prot_pte  = L_PTE_PRESENT | L_PTE_YOUNG | L_PTE_DIRTY |
+-				L_PTE_EXEC,
++				L_PTE_EXEC | L_PTE_NOWRITE,
+ 		.prot_l1   = PMD_TYPE_TABLE,
+ 		.domain    = DOMAIN_USER,
+ 	},
+ 	[MT_HIGH_VECTORS] = {
+ 		.prot_pte  = L_PTE_PRESENT | L_PTE_YOUNG | L_PTE_DIRTY |
+-				L_PTE_USER | L_PTE_EXEC,
++				L_PTE_USER | L_PTE_EXEC | L_PTE_NOWRITE,
+ 		.prot_l1   = PMD_TYPE_TABLE,
+ 		.domain    = DOMAIN_USER,
+ 	},
