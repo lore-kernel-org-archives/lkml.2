@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343Ab0KOKEm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 05:04:42 -0500
-Received: from sunsite.ms.mff.cuni.cz ([195.113.15.26]:41572 "EHLO
-	sunsite.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061Ab0KOKEm (ORCPT
+	id S1753472Ab0KOKGU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 05:06:20 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47030 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751675Ab0KOKGT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 05:04:42 -0500
-Date: Mon, 15 Nov 2010 11:03:32 +0100
-From: Jakub Jelinek <jakub@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: James Cloos <cloos@jhcloos.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Michael Matz <matz@suse.de>, Dave Korn <dave.korn.cygwin@gmail.com>,
-        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org,
-        Jim Bos <jim876@xs4all.nl>
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-Message-ID: <20101115100331.GG2583@sunsite.ms.mff.cuni.cz>
-Reply-To: Jakub Jelinek <jakub@redhat.com>
-References: <AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com> <877hgorrj1.fsf@basil.nowhere.org> <4CD843DC.10106@gmail.com> <Pine.LNX.4.64.1011091352460.29956@wotan.suse.de> <20101109134816.GB29433@basil.fritz.box> <m3lj52txaq.fsf@redhat.com> <4CD97A3D.1040602@xs4all.nl> <m31v6nmmr3.fsf@jhcloos.com> <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com> <20101115085605.GE2583@sunsite.ms.mff.cuni.cz>
+	Mon, 15 Nov 2010 05:06:19 -0500
+Date: Mon, 15 Nov 2010 10:06:06 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Atul Sowani <sowani@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com,
+        ralf@linux-mips.org
+Subject: Re: [PATCH 2.6.36 1/1 RESEND] kernel SPIN_LOCK_UNLOCKED changed to
+	__SPIN_LOCK_UNLOCKED()
+Message-ID: <20101115100606.GC24194@n2100.arm.linux.org.uk>
+References: <4CDED96A.9080404@gmail.com> <20101115092404.GA24194@n2100.arm.linux.org.uk> <201011151044.36213.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101115085605.GE2583@sunsite.ms.mff.cuni.cz>
+In-Reply-To: <201011151044.36213.arnd@arndb.de>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 09:56:05AM +0100, Jakub Jelinek wrote:
-> On Sun, Nov 14, 2010 at 07:21:50PM -0800, Linus Torvalds wrote:
-> > So when Richard Gunther says "a memory clobber doesn't cover automatic
-> > storage", to me that very clearly spells "gcc is buggy as hell".
-> > Because automatic storage with its address taken _very_ much gets
-> > clobbered by things like memset etc. If the compiler doesn't
-> > understand that, the compiler is just broken.
+On Mon, Nov 15, 2010 at 10:44:36AM +0100, Arnd Bergmann wrote:
+> On Monday 15 November 2010 10:24:04 Russell King - ARM Linux wrote:
+> > This lock is in the percpu data area.  This means that when other CPUs
+> > are brought online, and therefore other percpu areas are instantiated,
+> > this lock will be mis-initialized (the pointers et.al. will be pointing
+> > at the original percpu instance.)
+> > 
+> > So NAK, this will break.
 > 
-> I'll leave the discussion about meaning of "memory" clobber aside to
-> Richard,
+> I believe right now we only use the argument of __SPIN_LOCK_UNLOCKED
+> as an identifier string for lockdep, but not for any pointers, so the
+> patch would actually do what was intended, but break if we ever start
+> relying on the pointer.
+> 
+> Maybe we can mangle the argument in some way to make sure it will break
+> at build time when that happens, e.g.
+> 
+>      .lock   = __SPIN_LOCK_UNLOCKED(ipi_data.__lock)
+> 
+> This would at least let us remove SPIN_LOCK_UNLOCKED.
 
-And for this the starting point should be what has been requested,
-i.e. preprocessed source + gcc options + gcc version and some hints what
-actually misbehaves (with the , "+m" (*regs) change reverted)
-in gcc bugzilla.  Only with that we can actually look at what has been
-happening, see whether it is the tree optimizations or RTL and which one
-makes a difference.
-If I've missed a PR about this I apologize. 
-
-	Jakub
+Or do one of the things I've suggested - one of which I've just completed
+the code changes for, and results in this lock going away completely.
+It's not a nice idea to have percpu data written to by 'foreign' CPUs.
