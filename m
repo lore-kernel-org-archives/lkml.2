@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933266Ab0KORqV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 12:46:21 -0500
-Received: from casper.infradead.org ([85.118.1.10]:52859 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755772Ab0KORqR convert rfc822-to-8bit (ORCPT
+	id S933404Ab0KORpq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 12:45:46 -0500
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:39066 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933227Ab0KORpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 12:46:17 -0500
-Subject: Re: [RFC][PATCH v2 4/7] taskstats: Add per task steal time
- accounting
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org,
-        "jeremy.fitzhardinge" <jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <20101115184206.4463fd05@mschwide.boeblingen.de.ibm.com>
-References: <20101111170352.732381138@linux.vnet.ibm.com>
-	 <20101111170815.024542355@linux.vnet.ibm.com>
-	 <1289677083.2109.167.camel@laptop>
-	 <20101115155057.15f3be35@mschwide.boeblingen.de.ibm.com>
-	 <1289833883.2109.494.camel@laptop>
-	 <20101115184206.4463fd05@mschwide.boeblingen.de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 15 Nov 2010 18:45:52 +0100
-Message-ID: <1289843152.2109.515.camel@laptop>
+	Mon, 15 Nov 2010 12:45:43 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=k+I2fARpWGNUV3QE1tQYGZsn/mT+3rhh3xvk0MjSB9UEBckikCn/sBt2MCdMnrHr8p3BW+NQ6K/WBw1PNnTIfaIgonN5rYNO/zIkjicgFjml5nYbzP7XFyacaLVH4tCq;
+Date: Mon, 15 Nov 2010 09:45:27 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] PCI fixes
+Message-ID: <20101115094527.49464ed2@jbarnes-desktop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-15 at 18:42 +0100, Martin Schwidefsky wrote:
-> I do not know if that is true for
-> ia64 as well which is the third architecture with VIRT_CPU_ACCOUNTING=y. 
+The following changes since commit
+f6614b7bb405a9b35dd28baea989a749492c46b2:
 
-IIRC ia64 uses VIRT_CPU_ACCOUNTING to get high-res task accounting, it
-was done before CFS came around and used ns based accounting for all
-tasks.
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6 (2010-11-09 10:34:48 -0800)
 
+are available in the git repository at:
 
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 for-linus
+
+There's one very recent commit in here, but it's just a warning fix
+from Randy so should be ok.
+
+This set includes a fix for a long standing mmap issue on /proc/bus/pci
+(present since we added the map range checking during that e1000 EEPROM
+fire drill) and a fix from Bjorn for a recent resource handling
+regression.  It also adds a little code to better handle device power
+states at enable time; rather than assuming device state is unknown at
+enable time (which will prevent us from configuring things like MSI),
+we read the current state out of the device if possible, fixing some
+network and gfx related bugs in the process.
+
+Bjorn Helgaas (2):
+      x86/PCI: coalesce overlapping host bridge windows
+      PCI: fix pci_bus_alloc_resource() hang, prefer positive decode
+
+Jesse Barnes (1):
+      PCI: read current power state at enable time
+
+Martin Wilck (1):
+      PCI: fix size checks for mmap() on /proc/bus/pci files
+
+Randy Dunlap (1):
+      PCI: sysfs: fix printk warnings
+
+Steven Rostedt (1):
+      PCI hotplug: ibmphp: Add check to prevent reading beyond mapped area
+
+ arch/x86/pci/acpi.c               |  103 +++++++++++++++++++++++++++++-------
+ drivers/pci/bus.c                 |   70 +++++++++++++++++--------
+ drivers/pci/hotplug/ibmphp_ebda.c |    6 ++
+ drivers/pci/pci-sysfs.c           |   23 ++++++--
+ drivers/pci/pci.c                 |   12 ++++
+ drivers/pci/pci.h                 |    7 ++-
+ drivers/pci/proc.c                |    2 +-
+ 7 files changed, 174 insertions(+), 49 deletions(-)
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
