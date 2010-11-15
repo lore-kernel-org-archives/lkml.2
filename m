@@ -1,106 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933533Ab0KOTNo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 14:13:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27647 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933505Ab0KOTNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 14:13:43 -0500
-Date: Mon, 15 Nov 2010 20:12:49 +0100
-From: Jakub Jelinek <jakub@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jim Bos <jim876@xs4all.nl>, Andi Kleen <andi@firstfloor.org>,
-        James Cloos <cloos@jhcloos.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
-        Dave Korn <dave.korn.cygwin@gmail.com>,
-        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-Message-ID: <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>
-Reply-To: Jakub Jelinek <jakub@redhat.com>
-References: <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com>
- <20101115085605.GE2583@sunsite.ms.mff.cuni.cz>
- <20101115100331.GG2583@sunsite.ms.mff.cuni.cz>
- <20101115105446.GD7269@basil.fritz.box>
- <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com>
- <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com>
- <4CE17098.8090000@xs4all.nl>
- <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com>
- <4CE17C4B.1070305@xs4all.nl>
- <20101115185848.GI2583@sunsite.ms.mff.cuni.cz>
+	id S933558Ab0KOTN5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 14:13:57 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40022 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933542Ab0KOTNz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 14:13:55 -0500
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="QNDPHrPUIc00TOLW"
-Content-Disposition: inline
-In-Reply-To: <20101115185848.GI2583@sunsite.ms.mff.cuni.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4CE17FB6.7000800@redhat.com>
+References: <4CD538CA.8010901@xs4all.nl> <87wroostw3.fsf@basil.nowhere.org>
+ <m2hbfsu57i.fsf@igel.home> <87k4kospnd.fsf@basil.nowhere.org>
+ <AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com> <4CE17FB6.7000800@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 15 Nov 2010 11:04:49 -0800
+Message-ID: <AANLkTim48YSGCdtPLqpPyELA8w-Jo=zMGkDN3omJW1ec@mail.gmail.com>
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+To: Jeff Law <law@redhat.com>
+Cc: Richard Guenther <richard.guenther@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andreas Schwab <schwab@linux-m68k.org>, Jim <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        gcc@gcc.gnu.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Nov 15, 2010 at 10:45 AM, Jeff Law <law@redhat.com> wrote:
+>
+> A memory clobber should clobber anything in memory, including autos in
+> memory; if it doesn't, then that seems like a major problem.  I'd like to
+> see the rationale behind not clobbering autos in memory.
 
---QNDPHrPUIc00TOLW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes. It turns out that the "asm optimized away" was entirely wrong (we
+never saw that, it was just a report on another mailing list).
 
-On Mon, Nov 15, 2010 at 07:58:48PM +0100, Jakub Jelinek wrote:
-> Now, not sure why this happens, as there is
->     case GIMPLE_ASM:
->       for (i = 0; i < gimple_asm_nclobbers (stmt); i++)
->         {
->           tree op = gimple_asm_clobber_op (stmt, i);
->           if (simple_cst_equal(TREE_VALUE (op), memory_identifier_string) == 1)
->             {
->               if (dump_file)
->                 fprintf (dump_file, "    memory asm clobber is not const/pure");
->               /* Abandon all hope, ye who enter here. */
->               local->pure_const_state = IPA_NEITHER;
->             }
->         }
-> Debugging...
+Looking at the asm posted, it seems to me that gcc actually compiles
+the asm itself 100% correctly, and the "memory" clobber is working
+fine inside that function. So the code generated for i8k_smm() itself
+is all good.
 
-Ah, the problem is that memory_identifier_string is only initialized in
-ipa-reference.c's initialization, so it can be (and is in this case) NULL in
-ipa-pure-const.c.
+But _while_ generating the good code, gcc doesn't seem to realize that
+it writes to anything, so it decides to mark the function
+"__attribute__((const))", which is obviously wrong (a memory clobber
+definitely implies that it's not const). And as a result, the callers
+will be mis-optimized, because they do things like
 
-Two possible fixes (the latter is apparently what is used in
-tree-ssa-operands.c, so is probably sufficient).  Guess ipa-reference.c
-should be changed to do the same and just drop memory_identifier_string.
+    static int i8k_get_bios_version(void)
+    {
+        struct smm_regs regs = { .eax = I8K_SMM_BIOS_VERSION, };
 
-	Jakub
+        return i8k_smm(&regs) ? : regs.eax;
+    }
 
---QNDPHrPUIc00TOLW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=1
+and since gcc has (incorrectly) decided that "i8k_smm()" is a const
+function, it thinks that "regs.eax" hasn't changed, so it doesn't
+bother to reload it: it "knows" that it is still I8K_SMM_BIOS_VERSION
+that it initialized it with. So it will basically have rewritten that
+final return statement as
 
---- gcc/ipa-pure-const.c.jj	2010-08-11 16:06:19.000000000 +0200
-+++ gcc/ipa-pure-const.c	2010-11-15 20:06:36.121310614 +0100
-@@ -460,7 +460,10 @@ check_stmt (gimple_stmt_iterator *gsip, 
-       for (i = 0; i < gimple_asm_nclobbers (stmt); i++)
- 	{
- 	  tree op = gimple_asm_clobber_op (stmt, i);
--	  if (simple_cst_equal(TREE_VALUE (op), memory_identifier_string) == 1)
-+	  if (TREE_CODE (TREE_VALUE (op)) == STRING_CST
-+	      && TREE_STRING_LENGTH (TREE_VALUE (op)) == sizeof ("memory")
-+	      && memcmp (TREE_STRING_POINTER (TREE_VALUE (op)), "memory",
-+			 sizeof ("memory")) == 0)
- 	    {
-               if (dump_file)
-                 fprintf (dump_file, "    memory asm clobber is not const/pure");
+        return i8k_smm(&regs) ? : I8K_SMM_BIOS_VERSION;
 
---QNDPHrPUIc00TOLW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename=2
+which obviously doesn't really work.
 
---- gcc/ipa-pure-const.c.jj	2010-08-11 16:06:19.000000000 +0200
-+++ gcc/ipa-pure-const.c	2010-11-15 20:07:51.463716989 +0100
-@@ -460,7 +460,7 @@ check_stmt (gimple_stmt_iterator *gsip, 
-       for (i = 0; i < gimple_asm_nclobbers (stmt); i++)
- 	{
- 	  tree op = gimple_asm_clobber_op (stmt, i);
--	  if (simple_cst_equal(TREE_VALUE (op), memory_identifier_string) == 1)
-+	  if (strcmp (TREE_STRING_POINTER (TREE_VALUE (link)), "memory") == 0)
- 	    {
-               if (dump_file)
-                 fprintf (dump_file, "    memory asm clobber is not const/pure");
+This also explains why adding "volatile" worked. The "asm volatile"
+triggered "this is not a const function".
 
---QNDPHrPUIc00TOLW--
+Similarly, the "+m" works, because it also makes clear that the asm is
+writing to memory, and isn't a const function.
+
+Now, the "memory" clobber should clearly also have done that, but I'd
+be willing to bet that some version of gcc (possibly extra slackware
+patches) had forgotten the trivial logic to say "a memory clobber also
+makes the user function non-const".
+
+                 Linus
