@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757608Ab0KOOvE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 09:51:04 -0500
-Received: from mtagate1.de.ibm.com ([195.212.17.161]:58153 "EHLO
-	mtagate1.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757430Ab0KOOvB (ORCPT
+	id S1757601Ab0KOOwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 09:52:14 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:54038 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754435Ab0KOOwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 09:51:01 -0500
-Date: Mon, 15 Nov 2010 15:50:57 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [RFC][PATCH v2 4/7] taskstats: Add per task steal time
- accounting
-Message-ID: <20101115155057.15f3be35@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <1289677083.2109.167.camel@laptop>
-References: <20101111170352.732381138@linux.vnet.ibm.com>
-	<20101111170815.024542355@linux.vnet.ibm.com>
-	<1289677083.2109.167.camel@laptop>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	Mon, 15 Nov 2010 09:52:12 -0500
+Subject: Re: SCSI TMF processing; tag allocation
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Luben Tuikov <ltuikov@yahoo.com>,
+        Greg KH <greg@kroah.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tj@kernel.org" <tj@kernel.org>
+In-Reply-To: <20101115144612.GA6178@parisc-linux.org>
+References: <380694.87733.qm@web31812.mail.mud.yahoo.com>
+	 <20101113123750.GF18258@parisc-linux.org> <4CE0FD24.4030000@fusionio.com>
+	 <1289831595.2233.5.camel@mulgrave.site>
+	 <20101115144612.GA6178@parisc-linux.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Nov 2010 08:52:10 -0600
+Message-ID: <1289832730.2233.7.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 13 Nov 2010 20:38:02 +0100
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> On Thu, 2010-11-11 at 18:03 +0100, Michael Holzheu wrote:
-> > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+On Mon, 2010-11-15 at 07:46 -0700, Matthew Wilcox wrote:
+> On Mon, Nov 15, 2010 at 08:33:15AM -0600, James Bottomley wrote:
+> > Right, it's the clock algorithm to prevent tag starvation.  If you have
+> > hands representing the first and last tag and they're never allowed to
+> > cross, the device can't starve any tag for too long because eventually
+> > it will be the only outstanding command.
 > > 
-> > Currently steal time is only accounted for the whole system. With this
-> > patch we add steal time to the per task CPU time accounting.
-> > The triplet "user time", "system time" and "steal time" represents
-> > all consumed CPU time on hypervisor based systems. 
+> > It's not the only algorithm however.  Banging down an ordered tag every
+> > 200 or so commands has exactly the same effect.  In fact the clock
+> > algorithm was what the 53c700 driver used (before it was converted to
+> > generic tags) and the ordered tag what aic7xxx uses.
+> > 
+> > Realistically, tag starvation isn't really a problem.  It was a known
+> > issue for 80s era hardware.  I've got some of the oldest drives on the
+> > planet and I didn't see a problem when the clock algorithm was removed
+> > from 53c700.
 > 
-> Does that really make sense? Its not like the hypervisor really knows
-> anything about tasks and won't steal from one? Its really a vcpu
-> feature.
-> 
-> What added benefit will all this extra accounting give?
+> The problem is that each driver is solving the problem in its own way
+> right now, which is clearly daft.  And no drive manufactured in the past
+> fifteen years supports ordered tags anyway, so they're only a placebo
+> at this point.
 
-Currently the linux kernel keeps track of used cpu cycles per task,
-steal time is reported only per cpu. With the patch steal cycles are
-reported per task just like used cpu cycles, giving the complete picture
-on a per task basis. Without the patch you don't know if the task has
-been waiting or got its cycles stolen. A matter of granularity.
+Actually, most drivers ignore the issue ... which is why I don't think
+there's much of a problem.  The aic7xxx is the only one I know doing
+something about this.  Like I said, I removed the clock algorithm from
+53c700 and haven't had a problem (yet, I suppose).
 
--- 
-blue skies,
-   Martin.
+James
 
-"Reality continues to ruin my life." - Calvin.
 
