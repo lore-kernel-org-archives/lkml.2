@@ -1,85 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757710Ab0KOP57 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 10:57:59 -0500
-Received: from stinky.trash.net ([213.144.137.162]:34599 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756014Ab0KOP56 (ORCPT
+	id S1757858Ab0KOP6t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 10:58:49 -0500
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:61992 "EHLO
+	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757231Ab0KOP6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 10:57:58 -0500
-Message-ID: <4CE15885.90003@trash.net>
-Date: Mon, 15 Nov 2010 16:57:57 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+	Mon, 15 Nov 2010 10:58:47 -0500
+Message-ID: <4CE158B6.4070900@dcl.info.waseda.ac.jp>
+Date: Tue, 16 Nov 2010 00:58:46 +0900
+From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100724 Lanikai/3.1.1
 MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>
-CC: Hua Zhong <hzhong@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org
-Subject: Re: [RFC PATCH] network: return errors if we know tcp_connect failed
-References: <20101111210341.31350.86916.stgit@paris.rdu.redhat.com>	 <00c201cb81eb$84e18160$8ea48420$@com> <4CDCEE65.3060105@trash.net>	 <017301cb82bf$54540cf0$fcfc26d0$@com>  <4CE10C2A.1050801@trash.net> <1289836066.14282.7.camel@localhost.localdomain>
-In-Reply-To: <1289836066.14282.7.camel@localhost.localdomain>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+To: Ingo Molnar <mingo@elte.hu>
+CC: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+        Ma Ling <ling.ma@intel.com>, Zhao Yakui <yakui.zhao@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] perf bench: add --prefault option for causing page faults
+ before benchmark
+References: <1288976785-15857-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <20101110092945.GD12238@elte.hu>
+In-Reply-To: <20101110092945.GD12238@elte.hu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.11.2010 16:47, Eric Paris wrote:
-> On Mon, 2010-11-15 at 11:32 +0100, Patrick McHardy wrote:
->> On 13.11.2010 00:14, Hua Zhong wrote:
->>>> On 11.11.2010 22:58, Hua Zhong wrote:
->>>>>> Yes, I realize this is little different than if the
->>>>>> SYN was dropped in the first network device, but it is different
->>>>>> because we know what happened!  We know that connect() call failed
->>>>>> and that there isn't anything coming back.
->>>>>
->>>>> I would argue that -j DROP should behave exactly as the packet is
->>>> dropped in the network, while -j REJECT should signal the failure to
->>>> the application as soon as possible (which it doesn't seem to do).
->>>>
->>>> It sends an ICMP error or TCP reset. Interpretation is up to TCP.
->>>
->>> Huh? It's the OUTPUT chain we are talking about. There is no ICMP error or
->>> TCP reset.
+On 2010年11月10日 18:29, Ingo Molnar wrote:
+>
+> * Hitoshi Mitake<mitake@dcl.info.waseda.ac.jp>  wrote:
+>
+>> This patch adds --prefault option to perf bench mem memcpy.
+>> If user specify this option to perf bench mem memcpy, overhead of
+>> page faults will be removed from the score of memcpy().
 >>
->> Of course there is.
->>
->> ICMP (default):
->>
->> iptables -A OUTPUT -p tcp -j REJECT
->>
->> TCP reset:
->>
->> iptables -A OUTPUT -p tcp -j REJECT --reject-with tcp-reset
->>
->> The second one will cause a hard error for the connection.
-> 
-> Well I'm (I guess?) surprised that the --reject-with icmp doesn't do
-> anything with a local outgoing connection but --reject-with tcp-reset
-> does something like what I'm looking for.
-> 
-> I notice the heavy lifting for this is done in 
-> net/ipv4/netfilter/ipt_REJECT.c::send_rest()
-> (and something very similar for IPv6)
-> 
-> I really don't want to duplicate that code into SELinux (for obvious
-> reasons) and I'm wondering if anyone has objections to me making it
-> available outside of netlink and/or suggestions on how to make that code
-> available outside of netfilter (aka what header to expose it, and does
-> it still make logical sense in ipt_REJECT.c or somewhere else?)
+>> Example of usage:
+>> | % ./perf bench mem memcpy -l 500MB
+>> | # Running mem/memcpy benchmark...
+>> | # Copying 500MB Bytes from 0x7fc036749010 to 0x7fc055b4a010 ...
+>> |
+>> |      628.526821 MB/Sec
+>> | mitake@X201i:~/linux/.../tools/perf% ./perf bench mem memcpy -l 500MB --prefault
+>> | # Running mem/memcpy benchmark...
+>> | # Copying 500MB Bytes from 0x7ff1b45e2010 to 0x7ff1d39e3010 ...
+>> |
+>> |        4.849256 GB/Sec
+>
+> Ok, looks rather useful.
+>
+> We are rather close to being able to apply these bits. We need a resolution for the
+> arch/x86/lib/memcpy_64.S details. The ugliest are these kinds of #ifdefs:
+>
+> +#ifndef PERF_BENCH
+>   .Lmemcpy_e:
+>          .previous
+> +#endif
+>
+> What happens if we keep that label in place?
 
-I don't think having SELinux sending packets to handle local
-connections is a very elegant design, its not a firewall after
-all. What's wrong with reacting only to specific errno codes
-in tcp_connect()? You could f.i. return -ECONNREFUSED from
-SELinux, that one is pretty much guaranteed not to occur in
-the network stack itself and can be returned directly.
+This is the part of objdump -D arch/x86/lib/memcpy_64.o,
 
-That would need minor changes to nf_hook_slow so we can
-encode errno values in the upper 16 bits of the verdict,
-as we already do with the queue number. The added benefit
-is that we don't have to return EPERM anymore when f.i.
-rerouting fails.
+Disassembly of section .altinstr_replacement:
+
+0000000000000000 <.altinstr_replacement>:
+    0:   48 89 f8                mov    %rdi,%rax
+    3:   89 d1                   mov    %edx,%ecx
+    5:   c1 e9 03                shr    $0x3,%ecx
+    8:   83 e2 07                and    $0x7,%edx
+    b:   f3 48 a5                rep movsq %ds:(%rsi),%es:(%rdi)
+    e:   89 d1                   mov    %edx,%ecx
+   10:   f3 a4                   rep movsb %ds:(%rsi),%es:(%rdi)
+   12:   c3                      retq
+
+I didn't know that we can use the symbol name which start with '.',
+and it seems that such a symbol is eliminated from object file.
+
+We can know the start address of .Lmemcpy_c, the rep version of memcpy()
+because the start address is stored in another section,
+.altinstructions like this.
+
+These information can be exploited for our purose, I'll try it.
+
+>
+> This:
+>
+> +#ifndef PERF_BENCH
+>   ENTRY(__memcpy)
+>   ENTRY(memcpy)
+>          CFI_STARTPROC
+> +#else
+> +	.globl  memcpy_x86_64_unrolled
+> +memcpy_x86_64_unrolled:
+> +#endif
+>
+> Could be removed if you defined an ENTRY() macro in perf, right?
+>
+> This:
+>
+> +#ifndef PERF_BENCH
+> +
+>          CFI_ENDPROC
+>   ENDPROC(memcpy)
+>   ENDPROC(__memcpy)
+>
+> Could be solved by defining ENDPROC()/etc. macros in perf, right?
+>
+> We could remove this #ifdef:
+>
+> +#ifndef PERF_BENCH
+> +
+>   #include<linux/linkage.h>
+>
+>   #include<asm/cpufeature.h>
+>   #include<asm/dwarf2.h>
+>
+> +#endif /* PERF_BENCH */
+>
+> if you added empty linkage.h, cpufeature.h and dwarf2.h files as
+> tools/perf/util/include/linux/linkage.h, tools/perf/util/include/asm/cpufeature.h.
+>
+> That linkage.h file could even contain a short perf version of the ENTRY() macro,
+> etc.
+>
+> That way we can avoid having to touch arch/x86/lib/memcpy_64.S altogether.
+
+Thanks for your advice. adding empty headers and macros
+will be the smart way to include memcpy_64.S without modification.
+
+Thanks,
+
+
