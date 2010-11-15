@@ -1,46 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758874Ab0KOXui (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 18:50:38 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58959 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753055Ab0KOXug (ORCPT
+	id S932283Ab0KOXwq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 18:52:46 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:37123 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab0KOXwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 18:50:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <1289864780.14719.172.camel@maggy.simson.net>
-References: <1287479765.9920.9.camel@marge.simson.net> <1287487757.24189.40.camel@marge.simson.net>
- <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
- <1287511983.7417.45.camel@marge.simson.net> <1287514410.7368.10.camel@marge.simson.net>
- <20101020025652.GB26822@elte.hu> <1287648715.9021.20.camel@marge.simson.net>
- <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
- <20101021162924.GA3225@redhat.com> <1288076838.11930.1.camel@marge.simson.net>
- <1288078144.7478.9.camel@marge.simson.net> <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
- <1289489200.11397.21.camel@maggy.simson.net> <30291.1289860866@localhost> <1289864780.14719.172.camel@maggy.simson.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 15 Nov 2010 15:50:09 -0800
-Message-ID: <AANLkTikztvdgFucCUjZ+A5Je-LUKLknV5+aznVvL98oQ@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-To: Mike Galbraith <efault@gmx.de>
-Cc: Valdis.Kletnieks@vt.edu, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 15 Nov 2010 18:52:45 -0500
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
+	b=mR4hg+LyaZ0yWSEgos47Y6AK7f3lLxajSD8/SVqQSIzgTZTgBos2GlNjZCAzc9V5o
+	L3xcBRCOtk8t2YeTBfhjw==
+Message-Id: <20101115234938.291159744@google.com>
+User-Agent: quilt/0.48-1
+Date: Mon, 15 Nov 2010 15:47:08 -0800
+From: Paul Turner <pjt@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Chris Friesen <cfriesen@nortel.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Pierre Bourdon <pbourdon@excellency.fr>, Paul Turner <pjt@google.com>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>
+Subject: [tg_shares_up rewrite v4 09/11] sched: demand based update_cfs_load()
+References: <20101115234659.610333554@google.com>
+Content-Disposition: inline; filename=sched-tg-demand_based_update_cfs_load.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 3:46 PM, Mike Galbraith <efault@gmx.de> wrote:
-> On Mon, 2010-11-15 at 17:41 -0500, Valdis.Kletnieks@vt.edu wrote:
->
->> > +extern void sched_autogroup_detatch(struct task_struct *p);
->>
->> sched_autogroup_detach() instead?
->
-> Hm, why?
+When the system is busy, dilation of rq->next_balance makes lb->update_shares()
+insufficiently frequent for threads which don't sleep (no dequeue/enqueue
+updates).  Adjust for this by making demand based updates based on the
+accumulation of execution time sufficient to wrap our averaging window.
 
-You really aren't a good speller of that word, are you?
+Signed-off-by: Paul Turner <pjt@google.com>
 
-      Linus
+---
+ kernel/sched.c      |    9 ++++++++-
+ kernel/sched_fair.c |   12 ++++++++++++
+ 2 files changed, 20 insertions(+), 1 deletion(-)
+
+Index: tip/kernel/sched.c
+===================================================================
+--- tip.orig/kernel/sched.c
++++ tip/kernel/sched.c
+@@ -353,9 +353,16 @@ struct cfs_rq {
+ 	 */
+ 	unsigned long h_load;
+ 
++	/*
++	 * Maintaining per-cpu shares distribution for group scheduling
++	 *
++	 * load_stamp is the last time we updated the load average
++	 * load_last is the last time we updated the load average and saw load
++	 * load_unacc_exec_time is currently unaccounted execution time
++	 */
+ 	u64 load_avg;
+ 	u64 load_period;
+-	u64 load_stamp, load_last;
++	u64 load_stamp, load_last, load_unacc_exec_time;
+ 
+ 	unsigned long load_contribution;
+ #endif
+Index: tip/kernel/sched_fair.c
+===================================================================
+--- tip.orig/kernel/sched_fair.c
++++ tip/kernel/sched_fair.c
+@@ -539,6 +539,9 @@ static u64 sched_vslice(struct cfs_rq *c
+ 	return calc_delta_fair(sched_slice(cfs_rq, se), se);
+ }
+ 
++static void update_cfs_load(struct cfs_rq *cfs_rq);
++static void update_cfs_shares(struct cfs_rq *cfs_rq, long weight_delta);
++
+ /*
+  * Update the current task's runtime statistics. Skip current tasks that
+  * are not in our scheduling class.
+@@ -558,6 +561,14 @@ __update_curr(struct cfs_rq *cfs_rq, str
+ 
+ 	curr->vruntime += delta_exec_weighted;
+ 	update_min_vruntime(cfs_rq);
++
++#ifdef CONFIG_FAIR_GROUP_SCHED
++	cfs_rq->load_unacc_exec_time += delta_exec;
++	if (cfs_rq->load_unacc_exec_time > sysctl_sched_shares_window) {
++		update_cfs_load(cfs_rq);
++		update_cfs_shares(cfs_rq, 0);
++	}
++#endif
+ }
+ 
+ static void update_curr(struct cfs_rq *cfs_rq)
+@@ -713,6 +724,7 @@ static void update_cfs_load(struct cfs_r
+ 	}
+ 
+ 	cfs_rq->load_stamp = now;
++	cfs_rq->load_unacc_exec_time = 0;
+ 	cfs_rq->load_period += delta;
+ 	if (load) {
+ 		cfs_rq->load_last = now;
+
+
