@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932197Ab0KOLJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 06:09:28 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53541 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755895Ab0KOLJ1 (ORCPT
+	id S932324Ab0KOLRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 06:17:30 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:53006 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756011Ab0KOLR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 06:09:27 -0500
-Subject: Re: [PATCH 44/44] sound/soc/codecs: Remove unnecessary semicolons
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-In-Reply-To: <97fd199b7dac50613f6843156687223928cce44a.1289789605.git.joe@perches.com>
-References: <cover.1289789604.git.joe@perches.com>
-	 <97fd199b7dac50613f6843156687223928cce44a.1289789605.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Nov 2010 11:09:20 +0000
-Message-ID: <1289819360.3377.15.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Nov 2010 06:17:29 -0500
+Date: Mon, 15 Nov 2010 12:17:27 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, cjashfor@linux.vnet.ibm.com,
+        mingo@elte.hu, fweisbec@gmail.com, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] perf-events: Add support for supplementary event
+ registers v2
+Message-ID: <20101115111727.GF7269@basil.fritz.box>
+References: <1289580941-29744-1-git-send-email-andi@firstfloor.org>
+ <1289582630.2084.331.camel@laptop>
+ <20101113101148.GB6418@gargoyle.fritz.box>
+ <1289644367.2084.526.camel@laptop>
+ <AANLkTin6rOx_gPkNET3arpx8LFJt_9sZUOBXna=WuFKq@mail.gmail.com>
+ <1289819201.2109.489.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289819201.2109.489.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-14 at 19:05 -0800, Joe Perches wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  sound/soc/codecs/wm8904.c  |    2 +-
->  sound/soc/codecs/wm8940.c  |    1 -
->  sound/soc/codecs/wm8993.c  |    2 +-
->  sound/soc/codecs/wm_hubs.c |    2 +-
->  4 files changed, 3 insertions(+), 4 deletions(-)
+> Ah, my bad, I thought there were two separate msrs, ok I'll take a last
+> look at these patches and if nothing else pops out I'll take them.
 
-Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+There are actually two separate MSRs. I'm redoing my patchkit to handle
+them. I also found another problem I'm fixing.
+
+-Andi
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
-
+ak@linux.intel.com -- Speaking for myself only.
