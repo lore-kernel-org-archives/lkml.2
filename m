@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab0KOOhp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 09:37:45 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:55826 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753446Ab0KOOho (ORCPT
+	id S1757300Ab0KOOjL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 09:39:11 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:54222 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755874Ab0KOOjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 09:37:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=Y+5WbJikkqu+cO+XUvN4dRXAzuTsn3EYQhGP/RDa2sY0ajL6OhfduosyyLlrNVUeis
-         6oD4SJZlySjGgR+ykHPM4njBLMfr0b2x4HB+kwnbAHbP3MSiwfo7W6nNAfaOR0w9+vrH
-         lGN9mkdU3xzakrEI7cap2VWVcOQOepKXmNsVo=
-Date: Mon, 15 Nov 2010 17:37:37 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Dan Carpenter <error27@gmail.com>, kernel-janitors@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: jffs2: fix error value sign
-Message-ID: <20101115143735.GA4548@albatros>
-References: <1289765320-6071-1-git-send-email-segoon@openwall.com>
- <20101114202905.GA21614@bicker>
+	Mon, 15 Nov 2010 09:39:09 -0500
+Date: Mon, 15 Nov 2010 15:39:07 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH] atomic: add atomic_inc_not_zero_hint()
+Message-ID: <20101115143907.GN7269@basil.fritz.box>
+References: <20101105110828.52f061b3.akpm@linux-foundation.org>
+ <1288981224.2882.1105.camel@edumazet-laptop>
+ <20101105112821.57f80481.akpm@linux-foundation.org>
+ <1288984844.2665.52.camel@edumazet-laptop>
+ <20101105195101.GC15561@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1011121313001.16754@router.home>
+ <20101113222612.GD2825@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1011150756130.19175@router.home>
+ <1289830636.2607.70.camel@edumazet-laptop>
+ <alpine.DEB.2.00.1011150821000.19175@router.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101114202905.GA21614@bicker>
+In-Reply-To: <alpine.DEB.2.00.1011150821000.19175@router.home>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 23:29 +0300, Dan Carpenter wrote:
-> On Sun, Nov 14, 2010 at 11:08:39PM +0300, Vasiliy Kulikov wrote:
-> > do_verify_xattr_datum(), do_load_xattr_datum(), load_xattr_datum()
-> > and verify_xattr_ref() should return negative value on error.
-> > Sometimes they return EIO that is positive.  Change this to -EIO.
-> > 
-> > Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> > ---
-> >  This driver is not compilable, so the patch is not tested.
-> > 
+> > atomic_read() and atomic_cmpxchg(). We tried prefetchw() and it was a
+> > performance drop. It was with only 16 cpus contending on neighbour
 > 
-> It compiles.
+> Does prefetchw work? Andi claims that prefetchw is not working on
+> x86 and I doubt that you ran tests on Itanium.
 
-Really?
+AMD supports it due to their MOESI protocol, but it's not supported
+in MESIF as used by Intel QPI.  The kernel maps it on Intel to 
+ordinary prefetch.
 
-x86_64, linux-next:
-
-make -C /home/vasya/linux fs/jffs2/xattr.o
-make: Вход в каталог `/home/vasya/dev/linux-next'
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh
-  CC      fs/jffs2/xattr.o
-fs/jffs2/xattr.c: In function ‘unload_xattr_datum’:
-fs/jffs2/xattr.c:87: error: ‘struct jffs2_sb_info’ has no member named ‘xdatum_mem_usage’
-fs/jffs2/xattr.c: In function ‘reclaim_xattr_datum’: fs/jffs2/xattr.c:105: error: ‘struct jffs2_sb_info’ has no member named
-‘xdatum_mem_threshold’ fs/jffs2/xattr.c:105: error: ‘struct jffs2_sb_info’ has no member named
-‘xdatum_mem_usage’ fs/jffs2/xattr.c:108: error: ‘struct jffs2_sb_info’ has no member named
-‘xdatum_mem_usage’ fs/jffs2/xattr.c:109: error: ‘struct jffs2_sb_info’ has no member named
-‘xdatum_mem_usage’ fs/jffs2/xattr.c:110: error: ‘XATTRINDEX_HASHSIZE’ undeclared (first use
-in this function) fs/jffs2/xattr.c:110: error: (Each undeclared identifier is reported
-only once
-fs/jffs2/xattr.c:110: error: for each function it appears in.)
-
-
-For both defconfig and allyesconfig.
-
-> regards,
-> dan carpenter
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-Andi
 
 -- 
-Vasiliy
+ak@linux.intel.com -- Speaking for myself only.
