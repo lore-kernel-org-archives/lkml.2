@@ -1,121 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933789Ab0KOWBW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 17:01:22 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22498 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758568Ab0KOWBV (ORCPT
+	id S933814Ab0KOWCL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 17:02:11 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:28823 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933529Ab0KOWCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 17:01:21 -0500
-Date: Mon, 15 Nov 2010 22:49:01 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Netfilter Core Team <coreteam@netfilter.org>,
-        Jan Rekorajski <baggins@pld.org.pl>,
-        "David S. Miller" <davem@davemloft.net>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Reduce number of pointer dereferences in IPv6 netfilter
- LOG module function dump_packet()
-In-Reply-To: <1289782215.2743.167.camel@edumazet-laptop>
-Message-ID: <alpine.LNX.2.00.1011152246050.20408@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1011142241260.1253@swampdragon.chaosbits.net> <1289782215.2743.167.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 15 Nov 2010 17:02:09 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-operating-system
+         :user-agent;
+        b=SI6Ek+MvtUMtgYbbP151wokuKB565nyakeoGg2iEkB/yCsGgho9Q8af1IXFN4Z78eG
+         bu1yrDmPcFQOv/BIqitg==
+Date: Mon, 15 Nov 2010 14:01:51 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        linux-kernel@vger.kernel.org, gspencer@chromium.org,
+        piman@chromium.org, wad@chromium.org, olofj@chromium.org,
+        Bodo Eggert <7eggert@web.de>
+Subject: [PATCH v2] oom: allow a non-CAP_SYS_RESOURCE proces to
+ oom_score_adj down
+Message-ID: <20101115220150.GR7363@google.com>
+References: <20101111043541.GA4588@google.com>
+ <alpine.DEB.2.00.1011102328080.7571@chino.kir.corp.google.com>
+ <20101111183050.GI7363@google.com>
+ <alpine.DEB.2.00.1011111241450.25829@chino.kir.corp.google.com>
+ <20101111222509.GJ7363@google.com>
+ <alpine.DEB.2.00.1011111511570.3775@chino.kir.corp.google.com>
+ <20101111235620.GK7363@google.com>
+ <20101113004657.GN7363@google.com>
+ <alpine.DEB.2.00.1011131735240.27212@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-292843583-1289857617=:20408"
-Content-ID: <alpine.LNX.2.00.1011152247130.20408@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1011131735240.27212@chino.kir.corp.google.com>
+X-Operating-System: Linux/2.6.32-gg252-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi,
 
---8323328-292843583-1289857617=:20408
-Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.LNX.2.00.1011152247131.20408@swampdragon.chaosbits.net>
+Attached is V2 of this patch. Since V1:
 
-On Mon, 15 Nov 2010, Eric Dumazet wrote:
+* Added documentation in Documentation/filesystems/proc.txt
+* Copy oom_score_adj_min value across a fork
 
-> Le dimanche 14 novembre 2010 à 22:47 +0100, Jesper Juhl a écrit :
-> > By adding two pointer variables to 
-> > net/ipv6/netfilter/ip6t_LOG.c::dump_packet() we can save 19 bytes of .text 
-> > and many pointer dereferences.
-> > 
-> > before:
-> >    text    data     bss     dec     hex filename
-> >    6258     600    3088    9946    26da net/ipv6/netfilter/ip6t_LOG.o
-> > 
-> > after:
-> >    text    data     bss     dec     hex filename
-> >    6239     600    3088    9927    26c7 net/ipv6/netfilter/ip6t_LOG.o
-> > 
-> > 
-> > Please Cc me on replies.
-> > 
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  ip6t_LOG.c |   16 ++++++++++------
-> >  1 file changed, 10 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/net/ipv6/netfilter/ip6t_LOG.c b/net/ipv6/netfilter/ip6t_LOG.c
-> > index 09c8889..51d10a5 100644
-> > --- a/net/ipv6/netfilter/ip6t_LOG.c
-> > +++ b/net/ipv6/netfilter/ip6t_LOG.c
-[...]
-> 
-> Same comment than previous patch, you add a NULL dereference.
-> 
-Hopefully this is beter (same as change done to the other (ipv4) patch).
+An alternative to this patch would be to expose oom_score_adj_min via
+proc (suggested by Kosaki Motohiro). You could allow non-CAP_SYS_RESOURCE
+processes to irreversibly increase the minimum. That would give you
+similar semantics to a resource limit and would give you a bit more
+control but it means adding another proc variable.
 
+Regards,
+Mandeep
 
-
-Fewer pointer derefs and smaller .text size for
-net/ipv4/netfilter/ipt_LOG.c::dump_packet()
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- ip6t_LOG.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/net/ipv6/netfilter/ip6t_LOG.c b/net/ipv6/netfilter/ip6t_LOG.c
-index 09c8889..de15b14 100644
---- a/net/ipv6/netfilter/ip6t_LOG.c
-+++ b/net/ipv6/netfilter/ip6t_LOG.c
-@@ -46,6 +46,7 @@ static void dump_packet(struct sbuff *m,
- 	unsigned int ptr;
- 	unsigned int hdrlen = 0;
- 	unsigned int logflags;
-+	struct sock *sk;
+We'd like to be able to oom_score_adj a process up/down as its
+enters/leaves the foreground. Currently, it is not possible to oom_adj
+down without CAP_SYS_RESOURCE. This patch allows a task to decrease
+its oom_score_adj back to the value that a CAP_SYS_RESOURCE thread set
+it or its inherited value at fork. Assuming the thread that has forked
+it has oom_score_adj of 0, each tab process could decrease it back from
+0 upon activation unless a CAP_SYS_RESOURCE thread elevated it to
+something higher.
+
+Alternative considered:
+
+* a setuid binary
+* a daemon with CAP_SYS_RESOURCE
+
+Since you don't wan't all processes to be able to reduce their
+oom_adj, a setuid or daemon implementation would be complex. The
+alternatives also have much higher overhead.
+
+This patch updated from original patch based on feedback from
+David Rientjes <rientjes@google.com>.
+
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+---
+ Documentation/filesystems/proc.txt |    4 ++++
+ fs/proc/base.c                     |    4 +++-
+ include/linux/sched.h              |    2 ++
+ kernel/fork.c                      |    1 +
+ 4 files changed, 10 insertions(+), 1 deletions(-)
+
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index e73df27..7139c50 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -1296,6 +1296,10 @@ scaled linearly with /proc/<pid>/oom_score_adj.
+ Writing to /proc/<pid>/oom_score_adj or /proc/<pid>/oom_adj will change the
+ other with its scaled value.
  
- 	if (info->type == NF_LOG_TYPE_LOG)
- 		logflags = info->u.log.logflags;
-@@ -359,12 +360,13 @@ static void dump_packet(struct sbuff *m,
++The value of /proc/<pid>/oom_score_adj may be reduced no lower than the last
++value set by a CAP_SYS_RESOURCE process. To reduce the value any lower
++requires CAP_SYS_RESOURCE.
++
+ NOTICE: /proc/<pid>/oom_adj is deprecated and will be removed, please see
+ Documentation/feature-removal-schedule.txt.
  
- 	/* Max length: 15 "UID=4294967295 " */
- 	if ((logflags & IP6T_LOG_UID) && recurse && skb->sk) {
--		read_lock_bh(&skb->sk->sk_callback_lock);
--		if (skb->sk->sk_socket && skb->sk->sk_socket->file)
-+		sk = skb->sk;
-+		read_lock_bh(&sk->sk_callback_lock);
-+		if (sk->sk_socket && sk->sk_socket->file)
- 			sb_add(m, "UID=%u GID=%u ",
--				skb->sk->sk_socket->file->f_cred->fsuid,
--				skb->sk->sk_socket->file->f_cred->fsgid);
--		read_unlock_bh(&skb->sk->sk_callback_lock);
-+				sk->sk_socket->file->f_cred->fsuid,
-+				sk->sk_socket->file->f_cred->fsgid);
-+		read_unlock_bh(&sk->sk_callback_lock);
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index f3d02ca..e617413 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1164,7 +1164,7 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 		goto err_task_lock;
  	}
  
- 	/* Max length: 16 "MARK=0xFFFFFFFF " */
-
-
-
+-	if (oom_score_adj < task->signal->oom_score_adj &&
++	if (oom_score_adj < task->signal->oom_score_adj_min &&
+ 			!capable(CAP_SYS_RESOURCE)) {
+ 		err = -EACCES;
+ 		goto err_sighand;
+@@ -1177,6 +1177,8 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 			atomic_dec(&task->mm->oom_disable_count);
+ 	}
+ 	task->signal->oom_score_adj = oom_score_adj;
++	if (capable(CAP_SYS_RESOURCE))
++		task->signal->oom_score_adj_min = oom_score_adj;
+ 	/*
+ 	 * Scale /proc/pid/oom_adj appropriately ensuring that OOM_DISABLE is
+ 	 * always attainable.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index f53cdf2..2a71ee0 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -626,6 +626,8 @@ struct signal_struct {
+ 
+ 	int oom_adj;		/* OOM kill score adjustment (bit shift) */
+ 	int oom_score_adj;	/* OOM kill score adjustment */
++	int oom_score_adj_min;	/* OOM kill score adjustment minimum value.
++				 * Only settable by CAP_SYS_RESOURCE. */
+ 
+ 	struct mutex cred_guard_mutex;	/* guard against foreign influences on
+ 					 * credential calculations
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 3b159c5..0979527 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -907,6 +907,7 @@ static int copy_signal(unsigned long clone_flags, struct task_struct *tsk)
+ 
+ 	sig->oom_adj = current->signal->oom_adj;
+ 	sig->oom_score_adj = current->signal->oom_score_adj;
++	sig->oom_score_adj_min = current->signal->oom_score_adj_min;
+ 
+ 	mutex_init(&sig->cred_guard_mutex);
+ 
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
---8323328-292843583-1289857617=:20408--
+1.7.3.1
+
