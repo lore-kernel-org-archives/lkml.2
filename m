@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757637Ab0KOHjg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 02:39:36 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:43797 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757576Ab0KOHje (ORCPT
+	id S932647Ab0KOHjp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 02:39:45 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:51295 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757650Ab0KOHjl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 02:39:34 -0500
-Message-ID: <000e01cb8498$3ec2cb80$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Wolfgang Grandegger" <wg@grandegger.com>
-Cc: <andrew.chih.howe.khor@intel.com>,
-        "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>, <margie.foster@intel.com>,
-        <netdev@vger.kernel.org>, "LKML" <linux-kernel@vger.kernel.org>,
-        <socketcan-core@lists.berlios.de>, <yong.y.wang@intel.com>,
-        "Marc Kleine-Budde" <mkl@pengutronix.de>, <joel.clark@intel.com>,
-        <kok.howg.ewe@intel.com>, "David S. Miller" <davem@davemloft.net>,
-        "Christian Pellegrin" <chripell@fsfe.org>, <qi.wang@intel.com>
-References: <4CCAA3D4.8070408@dsn.okisemi.com>	<4CCAC4CD.7000503@pengutronix.de> <4CCAF517.2000409@pengutronix.de>	<4CCB213A.2020206@grandegger.com> <004a01cb825a$3a8bd060$66f8800a@maildom.okisemi.com> <4CDD28E6.9060006@grandegger.com>
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Fix build warnings
-Date: Mon, 15 Nov 2010 16:39:28 +0900
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
+	Mon, 15 Nov 2010 02:39:41 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 15 Nov 2010 08:38:39 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Bruno Randolf <br1@einfach.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, randy.dunlap@oracle.com,
+        peterz@infradead.org, blp@cs.stanford.edu,
+        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
+        kevin.granade@gmail.com, "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [PATCH v6] Add generic exponentially weighted moving average
+ (EWMA) function
+Message-ID: <20101115083839.622b58af@stein>
+In-Reply-To: <201011151110.46007.br1@einfach.org>
+References: <4CDC333E.4070104@s5r6.in-berlin.de>
+	<20101114133029.E008.A69D9226@jp.fujitsu.com>
+	<4CDFA2FC.40603@s5r6.in-berlin.de>
+	<201011151110.46007.br1@einfach.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 12, 2010 8:45 PM, Wolfgang Grandegger wrote:
-
-> >> This is an enumeration:
-> >>
-> >> enum {
-> >> PCH_STUF_ERR = 1,
-> >> PCH_FORM_ERR,
-> >> PCH_ACK_ERR,
-> >> PCH_BIT1_ERR;
-> >> PCH_BIT0_ERR,
-> >> PCH_CRC_ERR,
-> >> PCH_LEC_ALL;
-> >> }
-> > 
-> > No, 
-> > LEC is for bit assignment.
-> > Thus, "enum" can't be used.
+On Nov 15 Bruno Randolf wrote:
+> On Sun November 14 2010 17:51:08 Stefan Richter wrote:
+> > BTW, isn't "get" more usually used as a prefix for these kinds of
+> > functions in kernel APIs?  "get" as a suffix more often means "get
+> > a reference" alias increase reference count rather than "get the
+> > value".
 > 
-> Why? For me it's a classical enum because the value matters, and *not*
-> the individual bit. Do you agree?
+> Umm. I don't know and honstly I don't care. I think the API ewma_* is 
+> consistent. If you have a good reason to change it please let me
+> know, otherwise i'd just leave it like it is now.
 
-Sorry, at last, I understand your saying.
-I agree.
+It is not about consistency of the API in itself but about consistency
+with the rest of the kernel.  Cf. skb_get vs. get_unaligned and many
+more.  I for one immediately think of "something is having its
+reference count incremented here" when I come across a something_get
+when reading code.
 
+I don't know of such a convention being documented anywhere.  But for an
+overkill of examples of "get" as prefix and suffix, grep for get_ and
+_get( in include/.  The same convention exists IME with "put" that
+either writes a value or drops a reference.
 
-
-> >> Also, could you please add the TEC and REC:
-> >>
-> >> cf->data[6] = ioread32(&priv->regs->errc) & CAN_TEC;
-> >> cf->data[7] = (ioread32(&priv->regs->errc) & CAN_REC) >> 8;
-> > 
-> > I will add.
-> 
-> BTW: it could be done with one I/O call:
-> 
->   errc = ioread32(&priv->regs->errc);
->   cf->data[6] = errc & CAN_TEC;
->   cf->data[7] = (errc & CAN_REC) >> 8;
-> 
-> > But I couldn't find 
-> 
-> Don't understand? It's also implemented for the SJA1000 driver:
-
-Sorry, the above my line is fogotten to delete.
-I can uderstand your saying.
-
----
-Thanks,
-
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+Sorry for bringing this up so late but it is IMO not a trivial point.
+-- 
+Stefan Richter
+-=====-==-=- =-== -====
+http://arcgraph.de/sr/
