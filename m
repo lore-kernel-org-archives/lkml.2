@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933286Ab0KORpF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 12:45:05 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49284 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933197Ab0KORku (ORCPT
+	id S933191Ab0KORtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 12:49:18 -0500
+Received: from mtagate3.de.ibm.com ([195.212.17.163]:48744 "EHLO
+	mtagate3.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756163Ab0KORtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 12:40:50 -0500
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 20/20] ARM: LPAE: Add the Kconfig entries
-Date: Mon, 15 Nov 2010 17:40:29 +0000
-Message-Id: <1289842829-3027-21-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.3.2.164.g6f10c
-In-Reply-To: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com>
-References: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 15 Nov 2010 17:40:39.0409 (UTC) FILETIME=[37D5AE10:01CB84EC]
+	Mon, 15 Nov 2010 12:49:17 -0500
+Date: Mon, 15 Nov 2010 18:49:10 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [RFC][PATCH v2 5/7] taskstats: Improve cumulative CPU time
+ accounting
+Message-ID: <20101115184910.549a828b@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <1289837036.2109.501.camel@laptop>
+References: <20101111170352.732381138@linux.vnet.ibm.com>
+	<20101111170815.404670062@linux.vnet.ibm.com>
+	<20101113183810.GA9021@redhat.com>
+	<20101115165521.21baac60@mschwide.boeblingen.de.ibm.com>
+	<1289837036.2109.501.camel@laptop>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the ARM_LPAE and ARCH_PHYS_ADDR_T_64BIT Kconfig entries
-allowing LPAE support to be compiled into the kernel.
+On Mon, 15 Nov 2010 17:03:56 +0100
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm/Kconfig    |    2 +-
- arch/arm/mm/Kconfig |   13 +++++++++++++
- 2 files changed, 14 insertions(+), 1 deletions(-)
+> On Mon, 2010-11-15 at 16:55 +0100, Martin Schwidefsky wrote:
+> >  What we want is a low-overhead tool that precisely shows
+> > where the cpu spent its time (or didn't because of steal time). The
+> > granularity target is tenths of microseconds, something that should be
+> > possible with decent hardware. 
+> 
+> To what purpose? 
+ 
+Is that a trick question? Why do we have tools like "top"? Or process
+accounting? The point is that the quality of the numbers we get right
+now is rather bad, the overhead of scanning /proc is horrendous and
+the 10ms granularity is rather coarse.
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index f35fe82..e376b7b 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1599,7 +1599,7 @@ config CMDLINE_FORCE
- 
- config XIP_KERNEL
- 	bool "Kernel Execute-In-Place from ROM"
--	depends on !ZBOOT_ROM
-+	depends on !ZBOOT_ROM && !ARM_LPAE
- 	help
- 	  Execute-In-Place allows the kernel to run from non-volatile storage
- 	  directly addressable by the CPU, such as NOR flash. This saves RAM
-diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-index 8493ed0..59539a2 100644
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -615,6 +615,19 @@ config IO_36
- 
- comment "Processor Features"
- 
-+config ARM_LPAE
-+	bool "Support for the Large Physical Address Extension"
-+	depends on MMU && CPU_V7
-+	help
-+	  Say Y if you have an ARMv7 processor supporting the LPAE page table
-+	  format and you would like to access memory beyond the 4GB limit.
-+
-+config ARCH_PHYS_ADDR_T_64BIT
-+	def_bool ARM_LPAE
-+
-+config ARCH_DMA_ADDR_T_64BIT
-+	def_bool ARM_LPAE
-+
- config ARM_THUMB
- 	bool "Support Thumb user binaries"
- 	depends on CPU_ARM720T || CPU_ARM740T || CPU_ARM920T || CPU_ARM922T || CPU_ARM925T || CPU_ARM926T || CPU_ARM940T || CPU_ARM946E || CPU_ARM1020 || CPU_ARM1020E || CPU_ARM1022 || CPU_ARM1026 || CPU_XSCALE || CPU_XSC3 || CPU_MOHAWK || CPU_V6 || CPU_V7 || CPU_FEROCEON
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
