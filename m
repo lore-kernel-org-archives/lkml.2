@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932936Ab0KORQw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 12:16:52 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50016 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932932Ab0KORQt convert rfc822-to-8bit (ORCPT
+	id S932934Ab0KORTR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 12:19:17 -0500
+Received: from daytona.panasas.com ([67.152.220.89]:59275 "EHLO
+	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932839Ab0KORTQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 12:16:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ak8SCh8EKQXh8J6Ta/oLuQs+BmkwlVARIyl+cEncueFl23u9pIfKAm662dx4eqPXMj
-         OBxVwcNSW2Azc2RBeQPFJWN+vvA2d3Gj/1jVgK7PfDRQ2h/2/sTyAek9smNYBYIjUlzG
-         oPZso0erOc+joeD5bLRCCMP3a1bCv7H+jV4O0=
+	Mon, 15 Nov 2010 12:19:16 -0500
+Message-ID: <4CE16B8E.1000300@panasas.com>
+Date: Mon, 15 Nov 2010 19:19:10 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1011151056380.2939@x980>
-References: <alpine.LFD.2.00.1010230116590.29399@localhost.localdomain>
-	<alpine.LFD.2.00.1010240004180.23060@localhost.localdomain>
-	<alpine.LFD.2.00.1010262312090.3209@localhost.localdomain>
-	<alpine.LFD.2.00.1011151056380.2939@x980>
-Date: Mon, 15 Nov 2010 15:16:47 -0200
-X-Google-Sender-Auth: dv-FaEzFe5ifJ6rw6HtQJdSfwZc
-Message-ID: <AANLkTi=FK0em5qYV0wf_SMpbC_SrOYYB0i0w1L5WS+Ec@mail.gmail.com>
-Subject: Re: [PATCH RESEND] tools: add power/x86/turbostat - v2
-From: Otavio Salvador <otavio@ossystems.com.br>
-To: Len Brown <lenb@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-pm@lists.linux-foundation.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Greg KH <greg@kroah.com>
+CC: Vladislav Bolkhovitin <vst@vlnb.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>,
+        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+References: <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <4CE1017E.4090409@panasas.com> <20101115161620.GB5981@kroah.com>
+In-Reply-To: <20101115161620.GB5981@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Nov 2010 17:19:15.0057 (UTC) FILETIME=[3A4D1E10:01CB84E9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 2:01 PM, Len Brown <lenb@kernel.org> wrote:
-> From: Len Brown <len.brown@intel.com>
->
-> turbostat displays actual processor frequency on modern
-> Intel processors.  Note that this capability depends on free-running
-> APERF and MPERF MSRs, which were cleared by the acpi_cpufreq
-> driver up through Linux-2.6.29.
->
-> On Intel Core i3/i5/i7 (Nehalem) and newer processors,
-> turbostat displays residency in idle power saving states.
->
-> See the comments in the source code for example usage.
->
-> Signed-off-by: Len Brown <len.brown@intel.com>
-> Reviewed-by: Otavio Salvador
+On 11/15/2010 06:16 PM, Greg KH wrote:
+> On Mon, Nov 15, 2010 at 11:46:38AM +0200, Boaz Harrosh wrote:
+>> All these issues we were discussing are interesting and are real Kernel
+>> problems. For instance the last comment you made was that for such a dynamic
+>> system and life time problems, and functionality. A better and expected
+>> solution might be the device tree and not sysfs.
+> 
+> Yes, that is what I have been saying for a while now.
+> 
+> Again:
+> 	This code is using kobjects incorrectly.
+> 	This code should not be using kobjects.
+> 
+> this is my last response to this thread now, and I'm sure you can
+> understand why.
+> 
+> thanks,
+> 
+> greg k-h
 
-Reviewed-by: Otavio Salvador <otavio@ossystems.com.br>
+Thank you Greg for your time and most valuable input.
+I'm sorry for not understanding your position. I needed the
+clear cut statement:
 
--- 
-Otavio Salvador                  O.S. Systems
-E-mail: otavio@ossystems.com.br  http://www.ossystems.com.br
-Mobile: +55 53 9981-7854         http://projetos.ossystems.com.br
+	This code should not be using kobjects. i.e not belong in sysfs
+
+SCST guys. This sounds pretty clear cut to me. Sysfs was not built
+in mind for such dynamic systems, and it will cause never ending
+conflicts with future maintenance of sysfs vs SCST.
+
+Perhaps consider a new alternative like the device tree as Greg suggested
+or maybe finally accept the harsh realities of ConfigFS, and come join us
+in the LIO project. SCST is a most valuable project and community which
+we would like to join forces with in making Linux the best.
+
+Lets call it Linux-Target and unify all our efforts.
+
+Boaz
