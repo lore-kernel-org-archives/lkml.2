@@ -1,58 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669Ab0KOIzB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 03:55:01 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:52178 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751438Ab0KOIy7 (ORCPT
+	id S1752887Ab0KOI5P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 03:57:15 -0500
+Received: from casper.infradead.org ([85.118.1.10]:53429 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab0KOI5O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 03:54:59 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ian Kent <raven@themaw.net>
-Subject: Re: autofs4 hang in 2.6.37-rc1
-Date: Mon, 15 Nov 2010 09:54:34 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1+; KDE/4.5.1; x86_64; ; )
-Cc: Avi Kivity <avi@redhat.com>, autofs@linux.kernel.org,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <4CDFDC2B.6040205@redhat.com> <4CE00194.3070601@redhat.com> <1289785533.3248.18.camel@localhost>
-In-Reply-To: <1289785533.3248.18.camel@localhost>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011150954.34289.arnd@arndb.de>
-X-Provags-ID: V02:K0:DcSa6JhDdNDtHkNHqxt9UOm0EIoTzKQ318n81drANrA
- 6uVIUWIkzPNjnlR2qEJPaQtX/MHZ2JXVJ2FpZZE3VEhwgmFghm
- n4z4t8FH9hFY+0cf6dDZiFqnCJdLEOkDjxqQ/6LD9sUiqFyNNC
- JoMJb3Ht0FNFpSrkZMmRwcCI+DORtUYaJIgkgqZe8TDjLWDlm4
- kIoeBuTQUN7mwFcxe15RA==
+	Mon, 15 Nov 2010 03:57:14 -0500
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1289783580.495.58.camel@maggy.simson.net>
+References: <1289489200.11397.21.camel@maggy.simson.net>
+	 <20101111202703.GA16282@redhat.com>
+	 <1289514000.21413.204.camel@maggy.simson.net>
+	 <20101112181240.GB8659@redhat.com>
+	 <1289648524.22764.149.camel@maggy.simson.net>
+	 <1289755150.3228.44.camel@maggy.simson.net>
+	 <20101114174921.GA1569@arch.trippelsdorf.de>
+	 <1289758238.17491.12.camel@maggy.simson.net>
+	 <AANLkTimy5DdF8qwGuk09iT3wHfXMjkiwRKxo-LuvEJzW@mail.gmail.com>
+	 <AANLkTikjSCbcRnKOU=nd4os1sdW-GJkD6QVj=U5zPyu8@mail.gmail.com>
+	 <20101114202734.GA1627@arch.trippelsdorf.de>
+	 <AANLkTimHtjH3YvtX6i542_XjfFeuvG-AnU8i224a1R4j@mail.gmail.com>
+	 <1289778189.5154.10.camel@maggy.simson.net>
+	 <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
+	 <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com>
+	 <1289783580.495.58.camel@maggy.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 15 Nov 2010 09:57:18 +0100
+Message-ID: <1289811438.2109.474.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 15 November 2010 02:45:33 Ian Kent wrote:
+On Sun, 2010-11-14 at 18:13 -0700, Mike Galbraith wrote:
+> +static inline struct task_group *
+> +autogroup_task_group(struct task_struct *p, struct task_group *tg)
+> +{
+> +       int enabled = ACCESS_ONCE(sysctl_sched_autogroup_enabled);
+> +
+> +       enabled &= (tg == &root_task_group);
+> +       enabled &= (p->sched_class == &fair_sched_class);
+> +       enabled &= (!(p->flags & PF_EXITING));
+> +
+> +       if (enabled)
+> +               return p->signal->autogroup->tg;
+> +
+> +       return tg;
+> +} 
 
-> You can't hold an exclusive mutex during an autofs expire because the
-> daemon will start by calling the ioctl to check for a dentry to expire
-> then call back to the daemon to perform the umount and wait for a status
-> return (also an ioctl).
 
-Ok, I see. So it's my fault for not realizing that there are long blocking
-ioctls. I was under the assumption that all of these ioctl commands were
-simple non-blocking commands.
+That made me go wtf.. curious way of writing things.
 
-> >From memory the expire is the only ioctl that is sensitive to this
-> deadlock.
-> 
-> So, either the mutex must be released while waiting for the status
-> return or get rid of the autofs4_ioctl_mutex altogether.
+I guess the usual way of writing that (which is admittedly a little more
+verbose) would be something like:
 
-Right. As I said with the original patch, I don't think the mutex
-is really needed, but using it seemed to be the safer alternative.
-It was in the sense that it guaranteed the breakage to be obvious
-rather than silent...
+static bool 
+task_wants_autogroup(struct task_struct *tsk, struct task_group *tg)
+{
+	if (tg != &root_task_group)
+		return false;
 
-Ian, if you can prove that the lock is not needed, I think we shold
-just remove it.
+	if (tsk->sched_class != &fair_sched_class)
+		return false;
 
-	Arnd
+	if (tsk->flags & PF_EXITING)
+		return false;
+
+	return true;
+}
+
+static inline struct task_group *
+autogroup_task_group(struct task_struct *tsk, struct task_group *tg)
+{
+	if (task_wants_autogroup(tsk, tg))
+		return tsk->signal->autogroup->tg;
+
+	return tg;
+}
+
+
