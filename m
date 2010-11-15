@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757683Ab0KOHqB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 02:46:01 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:56276 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019Ab0KOHp5 convert rfc822-to-8bit (ORCPT
+	id S1757713Ab0KOHqV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 02:46:21 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50884 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757660Ab0KOHqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 02:45:57 -0500
+	Mon, 15 Nov 2010 02:46:20 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=gbQUv1dqlo13ZCA0W7nk/WwLu14iQ5Ac8vxxHE9X2SwBH53vwSOqzibVf98UzPFO6o
-         OdVDrFybLkEi1X8XHuTT2qACdd1EORyRXfZpvWojtgzzbs2bgJwf1+pO3yJqRr2fsIE3
-         cNuk2b9OXCIziROg96QPcdXk7q3Fv0b2SU788=
+         :cc:content-type;
+        b=lte9k5mz46BZ8WzLOkz9IPvuMDAMvRZ9slhtOHsJ4C7NzYgRMFyGEF+hiI+Jz9bS7t
+         IWFHwUnBMs1Hc6IbsvaiwyUk4nLrOaJ6NTBQ5JRX01DDaIZUlox39Z29Rr5EBWIuit6U
+         IYsU8oDUv9IfosO8bEweULKkSc14yFd6THF1o=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTiky=Vnxnav4VtX_Yd1sUtFGqHTrd=aih8qRJ7u7@mail.gmail.com>
-References: <4CDEA53E.2050602@gmail.com>
-	<AANLkTiky=Vnxnav4VtX_Yd1sUtFGqHTrd=aih8qRJ7u7@mail.gmail.com>
-Date: Mon, 15 Nov 2010 08:45:56 +0100
-Message-ID: <AANLkTimn=Yp-tzb6f-=M73+1Rjqbtp+fxWLH4bz7HEuJ@mail.gmail.com>
-Subject: Re: [PATCH 02/16 v3] pramfs: super operations
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: yidong zhang <zhangyd6@gmail.com>
-Cc: linux-embedded@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, tim.bird@am.sony.com,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20101115162713.BF12.A69D9226@jp.fujitsu.com>
+References: <20101115160413.BF0F.A69D9226@jp.fujitsu.com>
+	<AANLkTim0vCJkMoH5P0wCN9J6340rDsscyNBQ+R+_ph8m@mail.gmail.com>
+	<20101115162713.BF12.A69D9226@jp.fujitsu.com>
+Date: Mon, 15 Nov 2010 16:46:18 +0900
+Message-ID: <AANLkTi=tZkRnbDhqx=V5TwKh9S1SouEqO5pU_9C-kope@mail.gmail.com>
+Subject: Re: fadvise DONTNEED implementation (or lack thereof)
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Ben Gamari <bgamari.foss@gmail.com>, linux-kernel@vger.kernel.org,
+        rsync@lists.samba.org, linux-mm@kvack.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/15 yidong zhang <zhangyd6@gmail.com>:
-> hi Marco
+On Mon, Nov 15, 2010 at 4:28 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> On Mon, Nov 15, 2010 at 4:09 PM, KOSAKI Motohiro
+>> <kosaki.motohiro@jp.fujitsu.com> wrote:
+>> >> > Because we have an alternative solution already. please try memcgroup :)
+>> >>
+>> >> I think memcg could be a solution of them but fundamental solution is
+>> >> that we have to cure it in VM itself.
+>> >> I feel it's absolutely absurd to enable and use memcg for amending it.
+>> >>
+>> >> I wonder what's the problem in Peter's patch 'drop behind'.
+>> >> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg179576.html
+>> >>
+>> >> Could anyone tell me why it can't accept upstream?
+>> >
+>> > I don't know the reason. And this one looks reasonable to me. I'm curious the above
+>> > patch solve rsync issue or not.
+>> > Minchan, have you tested it yourself?
+>>
+>> Still yet. :)
+>> If we all think it's reasonable, it would be valuable to adjust it
+>> with current mmotm and see the effect.
 >
->> +       retval = 0;
->> + out:
->> +       if (retval && sbi->virt_addr) {
->> +               iounmap(sbi->virt_addr);
->> +               release_mem_region(sbi->phys_addr, initsize);
->> +               kfree(sbi);
->> +       }
->> +
->> +       return retval;
->> +}
->> +
->  I think kfree(sbi) should not be put here. In case of
-> pram_parse_options failure, sbi should also be freed too.  How about
-> change it to the list below? And change some “goto out”   branches to
-> “goto out_free”.
->
->  //    retval = 0;
->     return 0;
->  out:
->        if (retval && sbi->virt_addr) {
->                iounmap(sbi->virt_addr);
->                release_mem_region(sbi->phys_addr, initsize);
->        }
-> out_free:
->                kfree(sbi);
->        return retval;
-> }
->
+> Who can make rsync like io pattern test suite? a code change is easy. but
+> to comfirm justification is more harder work.
 
-Yeah, you're right. It's not always true that virt addr is valid,
-kfree should be used out of this if. I'll fix it.
+Maybe Ben, Brian those reports the problem. :)
 
-Marco
+
+
+-- 
+Kind regards,
+Minchan Kim
