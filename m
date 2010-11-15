@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758817Ab0KOXDu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 18:03:50 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:43804 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752355Ab0KOXDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 18:03:49 -0500
-Date: Mon, 15 Nov 2010 15:03:46 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Eric Sandeen <sandeen@redhat.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        "Patrick J. LoPresti" <lopresti@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>
-Subject: [PATCH v2] ext4: ext4_fill_super shouldn't return 0 on corruption
-Message-ID: <20101115230346.GB18195@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20101115214831.GA18195@tux1.beaverton.ibm.com> <4CE1AC38.9040201@redhat.com>
+	id S932172Ab0KOXD7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 18:03:59 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:50797 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758820Ab0KOXD4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 18:03:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=c5at3dyHl7IkcoUuXC0Gp7INNk3gMtWr5DZU6CDOpdyk41qWXf0OvcZnaZVMVUTH7h
+         Y9c4cOop5HCX5BGOQvdxzC68W9XyPUzgUeetsdqqw4usf1otJbZ2bGeZWtXYhCz1accB
+         544JfL0dk/qKVWHX5OF+PAwYubKAZAOTNESVo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE1AC38.9040201@redhat.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1289861518.14282.41.camel@localhost.localdomain>
+References: <AANLkTimxbVnTVGobxhSTieJ4-PCTOZE_F6_E1-=8JcrO@mail.gmail.com>
+	<1289859078.14282.28.camel@localhost.localdomain>
+	<AANLkTim9XWU-Qn5OT1J8H2j4kajMLL_GTQQ4_N296ueJ@mail.gmail.com>
+	<1289861518.14282.41.camel@localhost.localdomain>
+Date: Tue, 16 Nov 2010 02:03:56 +0300
+Message-ID: <AANLkTikAczyi0FQaSV4eVL5prdVbyZj6QCkPbf7cMW47@mail.gmail.com>
+Subject: Re: A possible flaw in the fsnotify design.
+From: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>, linux-fsdevel@vger.kernel.org,
+        "stefan@buettcher.org" <stefan@buettcher.org>,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the start of ext4_fill_super, ret is set to -EINVAL, and any failure path
-out of that function returns ret.  However, the generic_check_addressable
-clause sets ret = 0 (if it passes), which means that a subsequent failure (e.g.
-a group checksum error) returns 0 even though the mount should fail.  This
-causes vfs_kern_mount in turn to think that the mount succeeded, leading to an
-oops.
+On Tue, Nov 16, 2010 at 01:51, Eric Paris <eparis@redhat.com> wrote:
+> On Tue, 2010-11-16 at 01:44 +0300, Alexey Zaytsev wrote:
+>> On Tue, Nov 16, 2010 at 01:11, Eric Paris <eparis@redhat.com> wrote:
+>> > On Tue, 2010-11-16 at 01:05 +0300, Alexey Zaytsev wrote:
+>> >> Just some thoughts.
+>> >>
+>> >> Consider the situation: Files A and B both point to the same inode.
+>> >> File A is being watched, but the user won't get notifications if B is
+>> >> modified.
+>> >
+>> > That's not true.  Users watch inodes, not files (this is true for both
+>> > inotify and fanotify).  Give it a try, it works.
+>> >
+>>
+>> debian-i386:~/tmp# touch a
+>> debian-i386:~/tmp# ../fanotify a &
+>> debian-i386:~/tmp# link a b
+>> debian-i386:~/tmp# ls -li
+>> total 0
+>> 3433 -rw-r--r-- 2 root root 0 Nov 15 22:37 a
+>> 3433 -rw-r--r-- 2 root root 0 Nov 15 22:37 b
+>> debian-i386:~/tmp# echo 123 > b
+>> /root/tmp/b: pid=2143 mask = 20 open
+>> /root/tmp/b: pid=2143 mask = a modify 0 - 4 close(writable)  0 - 4
+>>
+>> Am I doing something wrong? Same thing happens if I watch the mount point.
+>
+> Maybe I don't understand the problem, you watched the inode behind A.
+> You made changes accessing this inode via B, you got notification about
+> those changes.  Isn't that what you wanted?
 
-A simple fix is to avoid using ret for the generic_check_addressable check,
-which was last changed in commit 30ca22c70e3ef0a96ff84de69cd7e8561b416cb2.
-
-v2: Return -EFBIG in the error case, per Eric Sandeen's suggestion.
-
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
-
- fs/ext4/super.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 40131b7..120c034 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3257,13 +3257,13 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 	 * Test whether we have more sectors than will fit in sector_t,
- 	 * and whether the max offset is addressable by the page cache.
- 	 */
--	ret = generic_check_addressable(sb->s_blocksize_bits,
--					ext4_blocks_count(es));
--	if (ret) {
-+	if (generic_check_addressable(sb->s_blocksize_bits,
-+				      ext4_blocks_count(es))) {
- 		ext4_msg(sb, KERN_ERR, "filesystem"
- 			 " too large to mount safely on this system");
- 		if (sizeof(sector_t) < 8)
- 			ext4_msg(sb, KERN_WARNING, "CONFIG_LBDAF not enabled");
-+		ret = -EFBIG;
- 		goto failed_mount;
- 	}
- 
+I'd expect to get two notifications in this case. Might not be a
+problem when you are watching individual files, but there is no clear
+way to get all the modified files, if you are watching a mount point.
