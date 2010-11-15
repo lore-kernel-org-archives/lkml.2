@@ -1,79 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab0KOIq4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 03:46:56 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56894 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023Ab0KOIqz convert rfc822-to-8bit (ORCPT
+	id S1752512Ab0KOIy2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 03:54:28 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:54020 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751692Ab0KOIy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 03:46:55 -0500
-Subject: Re: fadvise DONTNEED implementation (or lack thereof)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ben Gamari <bgamari.foss@gmail.com>, linux-kernel@vger.kernel.org,
-        rsync@lists.samba.org, linux-mm@kvack.org,
-        Wu Fengguang <fengguang.wu@intel.com>
-In-Reply-To: <AANLkTim59Qx6TsvXnTBL5Lg6JorbGaqx3KsdBDWO04X9@mail.gmail.com>
-References: <20101109162525.BC87.A69D9226@jp.fujitsu.com>
-	 <877hgmr72o.fsf@gmail.com> <20101114140920.E013.A69D9226@jp.fujitsu.com>
-	 <AANLkTim59Qx6TsvXnTBL5Lg6JorbGaqx3KsdBDWO04X9@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 15 Nov 2010 09:47:05 +0100
-Message-ID: <1289810825.2109.469.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 15 Nov 2010 03:54:27 -0500
+Date: Mon, 15 Nov 2010 09:54:25 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Atul Sowani <sowani@gmail.com>
+Cc: linux-kernel@vger.kernel.org, rmk+kernel@arm.linux.org.uk,
+        ralf@linux-mips.org, linux-arm-kernel@lists.infradead.org,
+        alan@linux.intel.com
+Subject: Re: [PATCH 2.6.36 1/1 RESEND] kernel SPIN_LOCK_UNLOCKED changed to
+	__SPIN_LOCK_UNLOCKED()
+Message-ID: <20101115085425.GA8942@pengutronix.de>
+References: <4CDED96A.9080404@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4CDED96A.9080404@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-15 at 15:07 +0900, Minchan Kim wrote:
-> On Sun, Nov 14, 2010 at 2:09 PM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
-> >> On Tue,  9 Nov 2010 16:28:02 +0900 (JST), KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-> >> > So, I don't think application developers will use fadvise() aggressively
-> >> > because we don't have a cross platform agreement of a fadvice behavior.
-> >> >
-> >> I strongly disagree. For a long time I have been trying to resolve
-> >> interactivity issues caused by my rsync-based backup script. Many kernel
-> >> developers have said that there is nothing the kernel can do without
-> >> more information from user-space (e.g. cgroups, madvise). While cgroups
-> >> help, the fix is round-about at best and requires configuration where
-> >> really none should be necessary. The easiest solution for everyone
-> >> involved would be for rsync to use FADV_DONTNEED. The behavior doesn't
-> >> need to be perfectly consistent between platforms for the flag to be
-> >> useful so long as each implementation does something sane to help
-> >> use-once access patterns.
-> >>
-> >> People seem to mention frequently that there are no users of
-> >> FADV_DONTNEED and therefore we don't need to implement it. It seems like
-> >> this is ignoring an obvious catch-22. Currently rsync has no fadvise
-> >> support at all, since using[1] the implemented hints to get the desired
-> >> effect is far too complicated^M^M^M^Mhacky to be considered
-> >> merge-worthy. Considering the number of Google hits returned for
-> >> fadvise, I wouldn't be surprised if there were countless other projects
-> >> with this same difficulty. We want to be able to tell the kernel about
-> >> our useage patterns, but the kernel won't listen.
-> >
-> > Because we have an alternative solution already. please try memcgroup :)
+Hi Atul,
 
-Using memcgroup for this is utter crap, it just contains the trainwreck,
-it doesn't solve it in any way.
+On Sun, Nov 14, 2010 at 12:01:06AM +0530, Atul Sowani wrote:
+> There are still some files containing .lock = SPIN_LOCK_UNLOCKED type
+> assignments which should be converted to __SPIN_LOCK_UNLOCKED().
+> Corrected spacing between __SPIN_LOCK_UNLOCKED and ( for ARM.
+IMHO the last sentence shouldn't appear in the commit log.  (If you
+still want to let your readers know what you changed---generally a good
+idea---you can do so after the triple-dash below.)
 
-> I think memcg could be a solution of them but fundamental solution is
-> that we have to cure it in VM itself.
-> I feel it's absolutely absurd to enable and use memcg for amending it.
+I don't know you patch series, but I'd expect that all archs don't want
+the space between __SPIN_LOCK_UNLOCKED and (.
 
-Agreed..
+Other than that
+Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-> I wonder what's the problem in Peter's patch 'drop behind'.
-> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg179576.html
+Best regards
+Uwe
 > 
-> Could anyone tell me why it can't accept upstream?
+> Signed-off-by: Atul Sowani <sowani@gmail.com>
+> ---
+> 
+> diff -uprN a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> --- a/arch/arm/kernel/smp.c	2010-10-21 02:00:22.000000000 +0530
+> +++ b/arch/arm/kernel/smp.c	2010-11-07 00:47:32.000000000 +0530
+> @@ -56,7 +56,7 @@ struct ipi_data {
+>  };
+> 
+>  static DEFINE_PER_CPU(struct ipi_data, ipi_data) = {
+> -	.lock	= SPIN_LOCK_UNLOCKED,
+> +	.lock	= __SPIN_LOCK_UNLOCKED(ipi_data.lock),
+>  };
+> 
+>  enum ipi_msg_type {
+> diff -uprN a/arch/mips/kernel/vpe.c b/arch/mips/kernel/vpe.c
+> --- a/arch/mips/kernel/vpe.c	2010-10-21 02:00:22.000000000 +0530
+> +++ b/arch/mips/kernel/vpe.c	2010-11-07 00:51:37.000000000 +0530
+> @@ -148,9 +148,9 @@ struct {
+>  	spinlock_t tc_list_lock;
+>  	struct list_head tc_list;	/* Thread contexts */
+>  } vpecontrol = {
+> -	.vpe_list_lock	= SPIN_LOCK_UNLOCKED,
+> +	.vpe_list_lock	= __SPIN_LOCK_UNLOCKED(vpecontrol.vpe_list_lock),
+>  	.vpe_list	= LIST_HEAD_INIT(vpecontrol.vpe_list),
+> -	.tc_list_lock	= SPIN_LOCK_UNLOCKED,
+> +	.tc_list_lock	= __SPIN_LOCK_UNLOCKED(vpecontrol.tc_list_lock),
+>  	.tc_list	= LIST_HEAD_INIT(vpecontrol.tc_list)
+>  };
+> diff -uprN a/kernel/cred.c b/kernel/cred.c
+> --- a/kernel/cred.c	2010-10-21 02:00:22.000000000 +0530
+> +++ b/kernel/cred.c	2010-11-07 00:52:22.000000000 +0530
+> @@ -35,7 +35,7 @@ static struct kmem_cache *cred_jar;
+>  static struct thread_group_cred init_tgcred = {
+>  	.usage	= ATOMIC_INIT(2),
+>  	.tgid	= 0,
+> -	.lock	= SPIN_LOCK_UNLOCKED,
+> +	.lock	= __SPIN_LOCK_UNLOCKED(init_tgcred.lock),
+>  };
+>  #endif
+> 
+> -- 
+> Atul Sowani (sowani@gmail.com)
+> http://savannah.gnu.org/users/atul
+> ------------------------------------------------------------------------
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
-Read the thread, its quite clear nobody got convinced it was a good idea
-and wanted to fix the use-once policy, then Rik rewrote all of
-page-reclaim.
-
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
