@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab0KOA1M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 19:27:12 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57860 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755368Ab0KOA1L (ORCPT
+	id S1757007Ab0KOA1g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 19:27:36 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:56452 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755562Ab0KOA1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 19:27:11 -0500
+	Sun, 14 Nov 2010 19:27:35 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Subject: Re: [PATCH] cleanup kswapd()
+Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <alpine.LNX.2.00.1011141202430.3460@swampdragon.chaosbits.net>
+References: <20101114180505.BEE2.A69D9226@jp.fujitsu.com> <alpine.LNX.2.00.1011141202430.3460@swampdragon.chaosbits.net>
+Message-Id: <20101115092712.BEF4.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
-References: <1289489200.11397.21.camel@maggy.simson.net> <20101111202703.GA16282@redhat.com>
- <1289514000.21413.204.camel@maggy.simson.net> <20101112181240.GB8659@redhat.com>
- <1289648524.22764.149.camel@maggy.simson.net> <1289755150.3228.44.camel@maggy.simson.net>
- <20101114174921.GA1569@arch.trippelsdorf.de> <1289758238.17491.12.camel@maggy.simson.net>
- <AANLkTimy5DdF8qwGuk09iT3wHfXMjkiwRKxo-LuvEJzW@mail.gmail.com>
- <AANLkTikjSCbcRnKOU=nd4os1sdW-GJkD6QVj=U5zPyu8@mail.gmail.com>
- <20101114202734.GA1627@arch.trippelsdorf.de> <AANLkTimHtjH3YvtX6i542_XjfFeuvG-AnU8i224a1R4j@mail.gmail.com>
- <1289778189.5154.10.camel@maggy.simson.net> <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 14 Nov 2010 16:26:47 -0800
-Message-ID: <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-To: Mike Galbraith <efault@gmx.de>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 15 Nov 2010 09:27:32 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 4:15 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> THAT is why I think it's so silly to try to be so strict and walk over
-> all processes while holding a couple of spinlocks.
+> On Sun, 14 Nov 2010, KOSAKI Motohiro wrote:
+> 
+> > 
+> > Currently, kswapd() function has deeper nest and it slightly harder to
+> > read. cleanup it.
+> > 
+> > Cc: Mel Gorman <mel@csn.ul.ie>
+> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > ---
+> >  mm/vmscan.c |   71 +++++++++++++++++++++++++++++++---------------------------
+> >  1 files changed, 38 insertions(+), 33 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 8cc90d5..82ffe5f 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -2364,6 +2364,42 @@ out:
+> >  	return sc.nr_reclaimed;
+> >  }
+> >  
+> > +void kswapd_try_to_sleep(pg_data_t *pgdat, int order)
+> 
+> Shouldn't this be
+> 
+>   static void kswapd_try_to_sleep(pg_data_t *pgdat, int order)
+> 
+> ??
 
-Btw, let me say that I think the patch is great even with that thing
-in. It looks clean, the thing I'm complaining about is not a big deal,
-and it seems to perform very much as advertized. The difference with
-autogroup scheduling is very noticeable with a simple "make -j64"
-kernel compile.
+Right. thank you.
+I'll respin.
 
-So I really don't think it's a big deal. The sysctl handler isn't even
-complicated. But boy does it hurt my eyes to see a spinlock held
-around a "do_each_thread()". And I do get the feeling that the
-simplest way to fix it would be to just remove the code entirely, and
-just say that "enabling/disabling may be delayed for old processes
-with existing autogroups".
 
-                    Linus
+
+
