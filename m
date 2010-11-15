@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933881Ab0KOW7h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 17:59:37 -0500
-Received: from tundra.namei.org ([65.99.196.166]:57805 "EHLO tundra.namei.org"
+	id S1758817Ab0KOXDu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 18:03:50 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:43804 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933655Ab0KOW7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 17:59:34 -0500
-Date: Tue, 16 Nov 2010 09:58:37 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Eric Paris <eparis@redhat.com>
-cc: Eric Paris <eparis@parisplace.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Joe Perches <joe@perches.com>,
-        Dan Rosenberg <drosenberg@vsecurity.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Eugene Teo <eugeneteo@kernel.org>, Kees Cook <kees.cook@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LSM List <linux-security-module@vger.kernel.org>
-Subject: Re: [PATCH] Fix dmesg_restrict build failure with CONFIG_EMBEDDED=y
- and CONFIG_PRINTK=n
-In-Reply-To: <1289860987.14282.40.camel@localhost.localdomain>
-Message-ID: <alpine.LRH.2.00.1011160953170.30359@tundra.namei.org>
-References: <1289669176.16461.12.camel@Joe-Laptop>  <AANLkTi=ut2O+mCbs1jOyg-aP=E+48h1B-MH8NxK5XyVf@mail.gmail.com>  <1289677904.16461.82.camel@Joe-Laptop>  <AANLkTikWEZLwx4khj_jFOqP+uy-TxgJGwsbxdtaCfbJq@mail.gmail.com>  <AANLkTik=mnFDXAyJ53_7FPfD5ETiYY8GjkE5pm0PJSBu@mail.gmail.com>
-  <AANLkTimoFGqKDYe24uc_2EHk-MLqxc4GGCCe7hPRJqbJ@mail.gmail.com>  <AANLkTin7Sfx5rnU3u7da5bQQiLTj9geOMht-x6z6kvid@mail.gmail.com>  <AANLkTikG=brgFP3yuWqMp=4ntHV=kyuhCUODZNp4Uo6Y@mail.gmail.com>  <alpine.LRH.2.00.1011160908380.29867@tundra.namei.org>
- <1289860987.14282.40.camel@localhost.localdomain>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1752355Ab0KOXDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 18:03:49 -0500
+Date: Mon, 15 Nov 2010 15:03:46 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Eric Sandeen <sandeen@redhat.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        "Patrick J. LoPresti" <lopresti@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>
+Subject: [PATCH v2] ext4: ext4_fill_super shouldn't return 0 on corruption
+Message-ID: <20101115230346.GB18195@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20101115214831.GA18195@tux1.beaverton.ibm.com> <4CE1AC38.9040201@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE1AC38.9040201@redhat.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Nov 2010, Eric Paris wrote:
+At the start of ext4_fill_super, ret is set to -EINVAL, and any failure path
+out of that function returns ret.  However, the generic_check_addressable
+clause sets ret = 0 (if it passes), which means that a subsequent failure (e.g.
+a group checksum error) returns 0 even though the mount should fail.  This
+causes vfs_kern_mount in turn to think that the mount succeeded, leading to an
+oops.
 
-> Not sure how that's possible.  I mean, I guess it's possible if the
-> fabled LSM reimplements the cap call, but I'm not sure how you can
-> remove a restrictive only security check without 'weakening' the system
-> in some way.
+A simple fix is to avoid using ret for the generic_check_addressable check,
+which was last changed in commit 30ca22c70e3ef0a96ff84de69cd7e8561b416cb2.
 
-If generic security logic is mixed into a capability call, then not 
-implementing the cap call also loses the generic security logic.
+v2: Return -EFBIG in the error case, per Eric Sandeen's suggestion.
 
-e.g. dmesg_restrict should always be verified, regardless of whether 
-cap_security() is called or not.
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
 
-If cap_syslog() should always be called, then it should not be possible 
-not not call it :-)
+ fs/ext4/super.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-
-- James
--- 
-James Morris
-<jmorris@namei.org>
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 40131b7..120c034 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3257,13 +3257,13 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	 * Test whether we have more sectors than will fit in sector_t,
+ 	 * and whether the max offset is addressable by the page cache.
+ 	 */
+-	ret = generic_check_addressable(sb->s_blocksize_bits,
+-					ext4_blocks_count(es));
+-	if (ret) {
++	if (generic_check_addressable(sb->s_blocksize_bits,
++				      ext4_blocks_count(es))) {
+ 		ext4_msg(sb, KERN_ERR, "filesystem"
+ 			 " too large to mount safely on this system");
+ 		if (sizeof(sector_t) < 8)
+ 			ext4_msg(sb, KERN_WARNING, "CONFIG_LBDAF not enabled");
++		ret = -EFBIG;
+ 		goto failed_mount;
+ 	}
+ 
