@@ -1,48 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758678Ab0KOWbb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 17:31:31 -0500
-Received: from cantor.suse.de ([195.135.220.2]:56674 "EHLO mx1.suse.de"
+	id S1758692Ab0KOWcd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 17:32:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61678 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758650Ab0KOWba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 17:31:30 -0500
-Date: Mon, 15 Nov 2010 23:31:29 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Greg KH <gregkh@suse.de>
-Cc: Stefan Achatz <erazor_de@users.sourceforge.net>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] HID: roccat: finishing usage of
- sysfs_create_bin_group()
-In-Reply-To: <20101115220828.GA9417@suse.de>
-Message-ID: <alpine.LNX.2.00.1011152330540.7420@pobox.suse.cz>
-References: <1289853161.2188.44.camel@neuromancer> <20101115220828.GA9417@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751239Ab0KOWcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 17:32:32 -0500
+Subject: Re: A possible flaw in the fsnotify design.
+From: Eric Paris <eparis@redhat.com>
+To: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>, linux-fsdevel@vger.kernel.org,
+        "stefan@buettcher.org" <stefan@buettcher.org>,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+In-Reply-To: <AANLkTimxbVnTVGobxhSTieJ4-PCTOZE_F6_E1-=8JcrO@mail.gmail.com>
+References: <AANLkTimxbVnTVGobxhSTieJ4-PCTOZE_F6_E1-=8JcrO@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Nov 2010 17:11:18 -0500
+Message-ID: <1289859078.14282.28.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Nov 2010, Greg KH wrote:
-
-> > These patches are against the newest roccat file versions (after
-> > applying everything I released the last days).
-> > They fix some inattentive (though not critical) failures from previous
-> > patches and change hid-roccat-koneplus and hid-roccat-pyra to use the
-> > new sysfs_create_bin_group()
-> > koneplus should be finished now (until I find errors)
+On Tue, 2010-11-16 at 01:05 +0300, Alexey Zaytsev wrote:
+> Just some thoughts.
 > 
-> Wait, they still don't resolve the main problem of this api is still
-> racy and I can't accept it.
+> Consider the situation: Files A and B both point to the same inode.
+> File A is being watched, but the user won't get notifications if B is
+> modified.
 
-Yeah, I have already pointed Stefan to
+That's not true.  Users watch inodes, not files (this is true for both
+inotify and fanotify).  Give it a try, it works.
 
-	 http://lkml.org/lkml/2010/11/13/174
+-Eric
 
-which he might have missed.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
