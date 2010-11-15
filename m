@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758526Ab0KOVqQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 16:46:16 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36085 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755486Ab0KOVqP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 16:46:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=AGqg6HfpSKso0m47ICa1xqvNugz4sNMnfOHWkOYaNdPY4EOlxUKLNcdboskQf1hodR
-         jl9srbAieIs38jlSDdcdKsmphS5yycGzNcT3kuMfC1X0N5/FNH3b3ts2h0G9nEUmvKnv
-         OYzZfR0UQolzQzMok2UF+0/9zS7XuvOg2pq74=
+	id S1758554Ab0KOVsn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 16:48:43 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:37955 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754847Ab0KOVsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 16:48:42 -0500
+Date: Mon, 15 Nov 2010 13:48:31 -0800
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Theodore Ts'o" <tytso@mit.edu>,
+        "Patrick J. LoPresti" <lopresti@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        Mingming Cao <mcao@us.ibm.com>
+Subject: [PATCH] ext4: ext4_fill_super shouldn't return 0 on corruption
+Message-ID: <20101115214831.GA18195@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
 MIME-Version: 1.0
-In-Reply-To: <20101115174251.GB31421@n2100.arm.linux.org.uk>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
-	<1289584840-18097-5-git-send-email-catalin.marinas@arm.com>
-	<20101115174251.GB31421@n2100.arm.linux.org.uk>
-Date: Mon, 15 Nov 2010 21:46:14 +0000
-X-Google-Sender-Auth: BzxvP3eiPDOgQUuswPodshWncTI
-Message-ID: <AANLkTinej2U_tEWM25m7VW7=PndxVPohaKjJ=10wn+C1@mail.gmail.com>
-Subject: Re: [PATCH v2 04/20] ARM: LPAE: Do not assume Linux PTEs are always
- at PTRS_PER_PTE offset
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 November 2010 17:42, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Nov 12, 2010 at 06:00:24PM +0000, Catalin Marinas wrote:
->> Placing the Linux PTEs at a 2KB offset inside a page is a workaround for
->> the 2-level page table format where not enough spare bits are available.
->> With LPAE this is no longer required. This patch changes such assumption
->> by using a different macro, LINUX_PTE_OFFSET, which is defined to
->> PTRS_PER_PTE for the 2-level page tables.
->
-> Hmm.  I think we should be doing this a different way - in fact, I think
-> we should switch the order of the linux vs hardware page tables.  This
-> actually simplifies the code a bit too - notice that we lose the arith.
-> in __pte_map, __pte_unmap, pmd_page_vaddr, which is all page table
-> walking stuff.
+At the start of ext4_fill_super, ret is set to -EINVAL, and any failure path
+out of that function returns this ret.  However, the generic_check_addressable
+clause sets ret = 0 if it passes, which means that a subsequent failure (e.g.
+a group checksum error) returns 0 even though the mount should fail.  This
+causes vfs_kern_mount in turn to think that the mount succeeded (because
+PTR_ERR(0) is false), leading to an oops.
 
-It looks like a good clean-up to me (though I need some refactoring on
-my LPAE patches). Do you plan to push this upstream? If you add a
-comment and a signed-off line, I can carry it in my LPAE branch until
-it appears in mainline.
+A simple fix is to avoid using ret for the generic_check_addressable check,
+which was last changed in commit 30ca22c70e3ef0a96ff84de69cd7e8561b416cb2.
 
-Thanks.
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
 
--- 
-Catalin
+ fs/ext4/super.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 40131b7..a44bc59 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3257,9 +3257,8 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	 * Test whether we have more sectors than will fit in sector_t,
+ 	 * and whether the max offset is addressable by the page cache.
+ 	 */
+-	ret = generic_check_addressable(sb->s_blocksize_bits,
+-					ext4_blocks_count(es));
+-	if (ret) {
++	if (generic_check_addressable(sb->s_blocksize_bits,
++				      ext4_blocks_count(es))) {
+ 		ext4_msg(sb, KERN_ERR, "filesystem"
+ 			 " too large to mount safely on this system");
+ 		if (sizeof(sector_t) < 8)
