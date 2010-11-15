@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933597Ab0KOTS7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 14:18:59 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51765 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756273Ab0KOTS5 (ORCPT
+	id S933612Ab0KOTW2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 14:22:28 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39942 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756811Ab0KOTW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 14:18:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=wnRoRy7pmVXkSgNNGILq9hfNVFQthJrau5jdz1OePqiujeGx30ZEF3BSwAi5Gqm4Xo
-         SFHptVKDOzYWjDM45XQqSxZJQspq+cE2TM/fOQ267m+BUoIyu2fNL3qAQ5zSJ9DF/bKm
-         LfA3Y+GeezrCfVQHp4gyM2b4C3P+t/8fpeXfg=
-Date: Mon, 15 Nov 2010 22:18:51 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Dan Carpenter <error27@gmail.com>, kernel-janitors@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: jffs2: fix error value sign
-Message-ID: <20101115191851.GA6450@albatros>
-References: <1289765320-6071-1-git-send-email-segoon@openwall.com>
- <20101114202905.GA21614@bicker>
- <20101115143735.GA4548@albatros>
- <20101115184531.GA24643@bicker>
+	Mon, 15 Nov 2010 14:22:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101115184531.GA24643@bicker>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>
+References: <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com>
+ <20101115085605.GE2583@sunsite.ms.mff.cuni.cz> <20101115100331.GG2583@sunsite.ms.mff.cuni.cz>
+ <20101115105446.GD7269@basil.fritz.box> <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com>
+ <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com>
+ <4CE17098.8090000@xs4all.nl> <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com>
+ <4CE17C4B.1070305@xs4all.nl> <20101115185848.GI2583@sunsite.ms.mff.cuni.cz> <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 15 Nov 2010 11:21:30 -0800
+Message-ID: <AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com>
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+To: Jakub Jelinek <jakub@redhat.com>
+Cc: Jim Bos <jim876@xs4all.nl>, Andi Kleen <andi@firstfloor.org>,
+        James Cloos <cloos@jhcloos.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
+        Dave Korn <dave.korn.cygwin@gmail.com>,
+        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 21:45 +0300, Dan Carpenter wrote:
-> On Mon, Nov 15, 2010 at 05:37:37PM +0300, Vasiliy Kulikov wrote:
-> > 
-> > x86_64, linux-next:
-> > 
-> > make -C /home/vasya/linux fs/jffs2/xattr.o
-> > make: Вход в каталог `/home/vasya/dev/linux-next'
->         ^^^^^^^^^^^^^^
-> 
-> This means "Entering directory" right?  So /home/vasya/linux is a
-> symlink to /home/vasya/dev/linux-next.  It still compiles for me
-> when I create a symlink and use the -C option...
+On Mon, Nov 15, 2010 at 11:12 AM, Jakub Jelinek <jakub@redhat.com> wrote:
+>
+> Ah, the problem is that memory_identifier_string is only initialized in
+> ipa-reference.c's initialization, so it can be (and is in this case) NULL in
+> ipa-pure-const.c.
 
-Correct, but the same with cd ~linux/ && make fs/jffs2/xattr.o.
+Ok. And I guess you can verify that all versions of gcc do this
+correctly for "asm volatile"?
 
-I've just updated to next-2010111 and it became compilable ;)
-linux next is just very nonstable...
+Because since we'll have to work around this problem in the kernel, I
+suspect the simplest solution is to remove the "+m" that causes
+register pressure problems, and then use "asm volatile" to work around
+the const-function bug.
 
-Thanks,
+And add a large comment about why "asm volatile" is probably always a
+good idea when you have a memory clobber and don't have any other
+visible memory modifications.
 
--- 
-Vasiliy
+I do wonder if this explains some of the problems we had with the
+bitop asms too.
+
+Hmm?
+
+                       Linus
