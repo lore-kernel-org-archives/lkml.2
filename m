@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933655Ab0KOXws (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 18:52:48 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:37142 "EHLO
+	id S1758892Ab0KOXym (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 18:54:42 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:37211 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932644Ab0KOXwr (ORCPT
+	with ESMTP id S933720Ab0KOXwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 18:52:47 -0500
+	Mon, 15 Nov 2010 18:52:50 -0500
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=xZj3A/j9U05d9APk/eV1x4DqXizEymbXDKzX6f5K88MJTf2m8+9Gqm1i+2kAYScYR
-	ggvce11oBVnatbLZiHHdQ==
-Message-Id: <20101115234938.022488865@google.com>
+	b=lxMGG9q55pULAHbsVuJSsJEQucV1j/uaPBG7jbnpf2Smi8ZgjP/6gVJIsHPCi4n1Q
+	qdvZ6KSUe9SHuVvyqHVSQ==
+Message-Id: <20101115234937.933428187@google.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 15 Nov 2010 15:47:05 -0800
+Date: Mon, 15 Nov 2010 15:47:04 -0800
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
@@ -24,90 +24,148 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Bharata B Rao <bharata@linux.vnet.ibm.com>,
         Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
         David Miller <davem@davemloft.net>
-Subject: [tg_shares_up rewrite v4 06/11] sched: hierarchal order on shares update list
+Subject: [tg_shares_up rewrite v4 05/11] sched: fix update_cfs_load synchronization
 References: <20101115234659.610333554@google.com>
-Content-Disposition: inline; filename=sched-tg-order-ondemand-list.patch
+Content-Disposition: inline; filename=sched-tg-fix-update_cfs_load.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid duplicate shares update calls by ensuring children always appear before
-parents in rq->leaf_cfs_rq_list.
+Using cfs_rq->nr_running is not sufficient to synchronize update_cfs_load with
+the put path since nr_running accounting occurs at deactivation.
 
-This allows us to do a single in-order traversal for update_shares().
+It's also not safe to make the removal decision based on load_avg as this fails
+with both high periods and low shares.  Resolve this by clipping history after
+4 periods without activity.
 
-Since we always enqueue in bottom-up order this reduces to 2 cases:
-1) Our parent is already in the list, e.g.
-
-   root
-     \
-      b
-      /\
-      c d* (root->b->c already enqueued)
-
-Since d's parent is enqueued we push it to the head of the list, implicitly ahead of b.
-
-2) Our parent does not appear in the list (or we have no parent)
-In this case we enqueue to the tail of the list, if our parent is subsequently enqueued 
-(bottom-up) it will appear to our right by the same rule.
+Note: the above will always occur from update_shares() since in the
+last-task-sleep-case that task will still be cfs_rq->curr when update_cfs_load
+is called.
 
 Signed-off-by: Paul Turner <pjt@google.com>
 
 ---
- kernel/sched_fair.c |   26 ++++++++++++++++----------
- 1 file changed, 16 insertions(+), 10 deletions(-)
+ kernel/sched.c      |    2 +-
+ kernel/sched_fair.c |   33 +++++++++++++++++++++------------
+ 2 files changed, 22 insertions(+), 13 deletions(-)
 
 Index: tip/kernel/sched_fair.c
 ===================================================================
 --- tip.orig/kernel/sched_fair.c
 +++ tip/kernel/sched_fair.c
-@@ -146,8 +146,20 @@ static inline struct cfs_rq *cpu_cfs_rq(
- static inline void list_add_leaf_cfs_rq(struct cfs_rq *cfs_rq)
- {
- 	if (!cfs_rq->on_list) {
--		list_add_rcu(&cfs_rq->leaf_cfs_rq_list,
-+		/*
-+		 * Ensure we either appear before our parent (if already
-+		 * enqueued) or force our parent to appear after us when it is
-+		 * enqueued.  The fact that we always enqueue bottom-up
-+		 * reduces this to two cases.
-+		 */
-+		if (cfs_rq->tg->parent &&
-+		    cfs_rq->tg->parent->cfs_rq[cpu_of(rq_of(cfs_rq))]->on_list) {
-+			list_add_rcu(&cfs_rq->leaf_cfs_rq_list,
-+				&rq_of(cfs_rq)->leaf_cfs_rq_list);
-+		} else {
-+			list_add_tail_rcu(&cfs_rq->leaf_cfs_rq_list,
- 				&rq_of(cfs_rq)->leaf_cfs_rq_list);
-+		}
- 
- 		cfs_rq->on_list = 1;
- 	}
-@@ -2010,7 +2022,7 @@ out:
- /*
-  * update tg->load_weight by folding this cpu's load_avg
-  */
--static int tg_shares_up(struct task_group *tg, int cpu)
-+static int update_shares_cpu(struct task_group *tg, int cpu)
- {
- 	struct cfs_rq *cfs_rq;
- 	unsigned long flags;
-@@ -2050,14 +2062,8 @@ static void update_shares(int cpu)
- 	struct rq *rq = cpu_rq(cpu);
- 
- 	rcu_read_lock();
--	for_each_leaf_cfs_rq(rq, cfs_rq) {
--		struct task_group *tg = cfs_rq->tg;
--
--		do {
--			tg_shares_up(tg, cpu);
--			tg = tg->parent;
--		} while (tg);
--	}
-+	for_each_leaf_cfs_rq(rq, cfs_rq)
-+		update_shares_cpu(cfs_rq->tg, cpu);
- 	rcu_read_unlock();
+@@ -674,10 +674,11 @@ account_entity_dequeue(struct cfs_rq *cf
  }
  
+ #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
+-static void update_cfs_load(struct cfs_rq *cfs_rq, int lb)
++static void update_cfs_load(struct cfs_rq *cfs_rq)
+ {
+ 	u64 period = sched_avg_period();
+ 	u64 now, delta;
++	unsigned long load = cfs_rq->load.weight;
+ 
+ 	if (!cfs_rq)
+ 		return;
+@@ -685,9 +686,19 @@ static void update_cfs_load(struct cfs_r
+ 	now = rq_of(cfs_rq)->clock;
+ 	delta = now - cfs_rq->load_stamp;
+ 
++	/* truncate load history at 4 idle periods */
++	if (cfs_rq->load_stamp > cfs_rq->load_last &&
++	    now - cfs_rq->load_last > 4 * period) {
++		cfs_rq->load_period = 0;
++		cfs_rq->load_avg = 0;
++	}
++
+ 	cfs_rq->load_stamp = now;
+ 	cfs_rq->load_period += delta;
+-	cfs_rq->load_avg += delta * cfs_rq->load.weight;
++	if (load) {
++		cfs_rq->load_last = now;
++		cfs_rq->load_avg += delta * load;
++	}
+ 
+ 	while (cfs_rq->load_period > period) {
+ 		/*
+@@ -700,10 +711,8 @@ static void update_cfs_load(struct cfs_r
+ 		cfs_rq->load_avg /= 2;
+ 	}
+ 
+-	if (lb && !cfs_rq->nr_running) {
+-		if (cfs_rq->load_avg < (period / 8))
+-			list_del_leaf_cfs_rq(cfs_rq);
+-	}
++	if (!cfs_rq->curr && !cfs_rq->nr_running && !cfs_rq->load_avg)
++		list_del_leaf_cfs_rq(cfs_rq);
+ }
+ 
+ static void reweight_entity(struct cfs_rq *cfs_rq, struct sched_entity *se,
+@@ -750,7 +759,7 @@ static void update_cfs_shares(struct cfs
+ 	reweight_entity(cfs_rq_of(se), se, shares);
+ }
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+-static inline void update_cfs_load(struct cfs_rq *cfs_rq, int lb)
++static inline void update_cfs_load(struct cfs_rq *cfs_rq)
+ {
+ }
+ 
+@@ -880,7 +889,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+ 	 * Update run-time statistics of the 'current'.
+ 	 */
+ 	update_curr(cfs_rq);
+-	update_cfs_load(cfs_rq, 0);
++	update_cfs_load(cfs_rq);
+ 	update_cfs_shares(cfs_rq, se->load.weight);
+ 	account_entity_enqueue(cfs_rq, se);
+ 
+@@ -941,7 +950,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+ 	if (se != cfs_rq->curr)
+ 		__dequeue_entity(cfs_rq, se);
+ 	se->on_rq = 0;
+-	update_cfs_load(cfs_rq, 0);
++	update_cfs_load(cfs_rq);
+ 	account_entity_dequeue(cfs_rq, se);
+ 	update_min_vruntime(cfs_rq);
+ 	update_cfs_shares(cfs_rq, 0);
+@@ -1176,7 +1185,7 @@ enqueue_task_fair(struct rq *rq, struct 
+ 	for_each_sched_entity(se) {
+ 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
+ 
+-		update_cfs_load(cfs_rq, 0);
++		update_cfs_load(cfs_rq);
+ 		update_cfs_shares(cfs_rq, 0);
+ 	}
+ 
+@@ -1206,7 +1215,7 @@ static void dequeue_task_fair(struct rq 
+ 	for_each_sched_entity(se) {
+ 		struct cfs_rq *cfs_rq = cfs_rq_of(se);
+ 
+-		update_cfs_load(cfs_rq, 0);
++		update_cfs_load(cfs_rq);
+ 		update_cfs_shares(cfs_rq, 0);
+ 	}
+ 
+@@ -2017,7 +2026,7 @@ static int tg_shares_up(struct task_grou
+ 	raw_spin_lock_irqsave(&rq->lock, flags);
+ 
+ 	update_rq_clock(rq);
+-	update_cfs_load(cfs_rq, 1);
++	update_cfs_load(cfs_rq);
+ 
+ 	load_avg = div64_u64(cfs_rq->load_avg, cfs_rq->load_period+1);
+ 	load_avg -= cfs_rq->load_contribution;
+Index: tip/kernel/sched.c
+===================================================================
+--- tip.orig/kernel/sched.c
++++ tip/kernel/sched.c
+@@ -355,7 +355,7 @@ struct cfs_rq {
+ 
+ 	u64 load_avg;
+ 	u64 load_period;
+-	u64 load_stamp;
++	u64 load_stamp, load_last;
+ 
+ 	unsigned long load_contribution;
+ #endif
 
 
