@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255Ab0KOHJp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 02:09:45 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52286 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755276Ab0KOHJn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 02:09:43 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: fadvise DONTNEED implementation (or lack thereof)
-Cc: kosaki.motohiro@jp.fujitsu.com, Ben Gamari <bgamari.foss@gmail.com>,
-        linux-kernel@vger.kernel.org, rsync@lists.samba.org,
-        linux-mm@kvack.org, Peter Zijlstra <peterz@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-In-Reply-To: <AANLkTim59Qx6TsvXnTBL5Lg6JorbGaqx3KsdBDWO04X9@mail.gmail.com>
-References: <20101114140920.E013.A69D9226@jp.fujitsu.com> <AANLkTim59Qx6TsvXnTBL5Lg6JorbGaqx3KsdBDWO04X9@mail.gmail.com>
-Message-Id: <20101115160413.BF0F.A69D9226@jp.fujitsu.com>
+	id S1757549Ab0KOHMn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 02:12:43 -0500
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:34651 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755276Ab0KOHMk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 02:12:40 -0500
+From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
+To: Joe Perches <joe@perches.com>, Jiri Kosina <trivial@kernel.org>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 15 Nov 2010 08:12:02 +0100
+Subject: RE: [PATCH 39/44] include/net/caif/cfctrl.h: Remove unnecessary
+ semicolons
+Thread-Topic: [PATCH 39/44] include/net/caif/cfctrl.h: Remove unnecessary
+ semicolons
+Thread-Index: AcuEcgmvXg9N7FIzS1KHGoGQuVf68gAIhhTQ
+Message-ID: <81C3A93C17462B4BBD7E272753C105791945C0C9AA@EXDCVYMBSTM005.EQ1STM.local>
+References: <cover.1289789604.git.joe@perches.com>
+ <35914cfea1bd0ab3963e632d02b1fdd52a9d2bc8.1289789605.git.joe@perches.com>
+In-Reply-To: <35914cfea1bd0ab3963e632d02b1fdd52a9d2bc8.1289789605.git.joe@perches.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 15 Nov 2010 16:09:37 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Because we have an alternative solution already. please try memcgroup :)
 > 
-> I think memcg could be a solution of them but fundamental solution is
-> that we have to cure it in VM itself.
-> I feel it's absolutely absurd to enable and use memcg for amending it.
-> 
-> I wonder what's the problem in Peter's patch 'drop behind'.
-> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg179576.html
-> 
-> Could anyone tell me why it can't accept upstream?
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-I don't know the reason. And this one looks reasonable to me. I'm curious the above 
-patch solve rsync issue or not. 
-Minchan, have you tested it yourself?
 
+Looks good to me.
+Acked-by: Sjur Braendeland <sjur.brandeland@stericsson.com>
 
