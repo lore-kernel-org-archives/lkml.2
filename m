@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758105Ab0KOSad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 13:30:33 -0500
-Received: from mail.perches.com ([173.55.12.10]:1314 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756843Ab0KOSac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758116Ab0KOSae (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 13:30:34 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:54598 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758087Ab0KOSac (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 15 Nov 2010 13:30:32 -0500
-Subject: Re: [PATCH 44/44] sound/soc/codecs: Remove unnecessary semicolons
-From: Joe Perches <joe@perches.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101115182708.GJ12986@rakim.wolfsonmicro.main>
-References: <cover.1289789604.git.joe@perches.com>
-	 <97fd199b7dac50613f6843156687223928cce44a.1289789605.git.joe@perches.com>
-	 <20101115134939.GC12986@rakim.wolfsonmicro.main>
-	 <1289840957.16461.138.camel@Joe-Laptop>
-	 <20101115173031.GI12986@rakim.wolfsonmicro.main>
-	 <1289842444.16461.140.camel@Joe-Laptop>
-	 <20101115182708.GJ12986@rakim.wolfsonmicro.main>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Nov 2010 10:30:29 -0800
-Message-ID: <1289845830.16461.149.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Message-ID: <4CE17C4E.7010206@kernel.org>
+Date: Mon, 15 Nov 2010 10:30:38 -0800
+From: "J.H." <warthog9@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.7
+MIME-Version: 1.0
+To: linux-kernel <linux-kernel@vger.kernel.org>
+CC: jaxboe@fusionio.com, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: More XFS resource starvation?
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (shards.monkeyblade.net [198.137.202.13]); Mon, 15 Nov 2010 10:30:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-15 at 18:27 +0000, Mark Brown wrote:
-> On Mon, Nov 15, 2010 at 09:34:04AM -0800, Joe Perches wrote:
-> > On Mon, 2010-11-15 at 17:30 +0000, Mark Brown wrote:
-> > > Please try to use changelog formats consistent with the code you're
-> > > modifying.
-> > I think it's more important to use consistent changelogs
-> > for a patch series.
-> ...since...?
+So apparently I'm having fun tripping over all kinds of bugs lately.
+I've seen this a couple of times now on the box in question.  Usually
+happens after a few days, or after particularly heavy rsync traffic on
+the box.
 
-1995...
+http://pastebin.osuosl.org/36014
 
-Since there isn't a consistent standard for subsystems
-changelogs and automating scripts for the desires of
-individual subsystem maintainers is not feasible.
+Christoph seemed to think it's a memory exhaustion problem, so I've
+included the /proc/meminfo and as you can see there's plenty of memory
+around on the system.
 
+Loads have, expectedly, climbed currently around 1250.05 but growing slowly.
 
+Quick overview of the underlying storage:
+
+xfs -> md (raid 0) -+--> P812 hardware raid6 (cciss driver)
+                    |
+                    +--> P812 hardware raid6 (cciss driver)
+
+This is running on an HP DL380 G7.
+
+I saw this both on an older 2.6.30.10-105.2.23.fc11.x86_64, and
+currently on 2.6.34.7-61.fc13.x86_64 (both being Fedora stock kernels)
+
+I have not seen this on a very similar DL380 G6, with the same storage
+setup and it is currently running the 2.6.30 kernel from above.
+
+Christoph suggest increasing the nr_request values for each of the
+underlying devices, but this didn't seem to change anything
+significantly on the system.
+
+Anyone have any ideas on what's going on?
+
+- John 'Warthog9' Hawley
