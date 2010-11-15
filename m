@@ -1,195 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932536Ab0KOCq6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 21:46:58 -0500
-Received: from [69.28.251.93] ([69.28.251.93]:36739 "EHLO b32.net"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757272Ab0KOCq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 21:46:56 -0500
-From: Kevin Cernekee <cernekee@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
-        <coreteam@netfilter.org>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>
-Subject: [PATCH/RFC v2] netfilter: nf_conntrack_sip: Handle Cisco 7941/7945 IP phones
-Date: Sun, 14 Nov 2010 18:35:42 -0800
-Message-Id: <a8993b6634ef23f00629a669f850f212@localhost>
-User-Agent: vim 7.2
+	id S932525Ab0KOC4N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 21:56:13 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:46011 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757115Ab0KOC4M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 21:56:12 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6167"; a="62855353"
+Message-ID: <8bd62d321211c93af883cd2ad404e802.squirrel@www.codeaurora.org>
+In-Reply-To: <1289765858.24270.240.camel@m0nster>
+References: <1289619000-13167-1-git-send-email-stepanm@codeaurora.org>
+    <1289619000-13167-10-git-send-email-stepanm@codeaurora.org>
+    <1289765858.24270.240.camel@m0nster>
+Date: Sun, 14 Nov 2010 18:56:01 -0800 (PST)
+Subject: Re: [PATCH 09/14] msm: iommu: Kconfig option for cacheable page 
+     tables
+From: "Stepan Moskovchenko" <stepanm@codeaurora.org>
+To: "Daniel Walker" <dwalker@codeaurora.org>
+Cc: "Stepan Moskovchenko" <stepanm@codeaurora.org>, davidb@codeaurora.org,
+        bryanh@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[v2 changes:
-  Extract the forced port from the Via: header (don't assume 5060)
-  Test IPs against the Via: info instead of checking User-Agent
-  Call skb_make_writable() before modifying the packet
-  Ensure that only replies are mangled
-  Change map_addr() so that To: uses the right port
-  Change ip_nat_sip_expect() so that Contact: uses the right port
-  Make the formatting more consistent with existing code]
 
-Most SIP devices use a source port of 5060/udp on SIP requests, so the
-response automatically comes back to port 5060:
+> On Fri, 2010-11-12 at 19:29 -0800, Stepan Moskovchenko wrote:
+>>
+>> +config IOMMU_PGTABLES_L2
+>> +	depends on ARCH_MSM8X60
+>> +	depends on MMU
+>> +	depends on CPU_DCACHE_DISABLE=n
+>> +	depends on SMP
+>> +	bool "Cacheable IOMMU page tables"
+>> +	default y
+>> +	help
+>> +	  Allows the IOMMU page tables to be brought into the L2 cache. This
+>> +	  improves the TLB miss latency at the expense of potential pollution
+>> +	  of the L2 cache. This option has been shown to improve multimedia
+>> +	  performance in some cases.
+>> +
+>> +	  If unsure, say Y here.
+>
+> Why would someone want this off?
+>
+> The other thing is that you usually want this included with the code
+> that uses the option.
 
-phone_ip:5060 -> proxy_ip:5060   REGISTER
-proxy_ip:5060 -> phone_ip:5060   100 Trying
+The code that uses it had gone in during a previous patch series, but I
+didn't want to meddle in the Kconfig just yet, especially since the option
+only improves performance and does not add new functionality at a high
+level. This patch should be the last of what is needed for this feature.
 
-The newer Cisco IP phones, however, use a randomly chosen high source
-port for the SIP request but expect the response on port 5060:
+You would want to turn this off if you wanted more deterministic behavior
+from the multimedia subsystem, such as when trying to run benchmarks for
+the worst-case behavior in terms of memory latency and TLB misses. You
+might also want to turn it off if you are debugging memory problems that
+you suspect might be related to the cache maintenance code, in which case
+turning this off would give an idea as to whether that is the problem.
+Similarly, this needs to be off (and will be, due to the dependencies) if
+certain required things (like the Dcache, MMU, etc) have been disabled.
+Finally, if you are doing things with the MMSS that you know will not
+result in many TLB misses, (or if you know that you can tolerate high miss
+latency) you may as well turn this off to avoid the (small) bit of cache
+pollution.
 
-phone_ip:49173 -> proxy_ip:5060  REGISTER
-proxy_ip:5060 -> phone_ip:5060   100 Trying
+Steve
 
-Standard Linux NAT, with or without nf_nat_sip, will send the reply back
-to port 49173, not 5060:
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-phone_ip:49173 -> proxy_ip:5060  REGISTER
-proxy_ip:5060 -> phone_ip:49173  100 Trying
-
-But the phone is not listening on 49173, so it will never see the reply.
-
-This patch modifies nf_*_sip to work around this quirk by extracting
-the SIP response port from the Via: header, iff the source IP in the
-packet header matches the source IP in the SIP request.
-
-Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
----
- include/linux/netfilter/nf_conntrack_sip.h |    3 +++
- net/ipv4/netfilter/nf_nat_sip.c            |   26 +++++++++++++++++++++++---
- net/netfilter/nf_conntrack_sip.c           |   16 ++++++++++++++++
- 3 files changed, 42 insertions(+), 3 deletions(-)
-
-diff --git a/include/linux/netfilter/nf_conntrack_sip.h b/include/linux/netfilter/nf_conntrack_sip.h
-index 0ce91d5..feda699 100644
---- a/include/linux/netfilter/nf_conntrack_sip.h
-+++ b/include/linux/netfilter/nf_conntrack_sip.h
-@@ -2,12 +2,15 @@
- #define __NF_CONNTRACK_SIP_H__
- #ifdef __KERNEL__
- 
-+#include <linux/types.h>
-+
- #define SIP_PORT	5060
- #define SIP_TIMEOUT	3600
- 
- struct nf_ct_sip_master {
- 	unsigned int	register_cseq;
- 	unsigned int	invite_cseq;
-+	__be16		forced_dport;
- };
- 
- enum sip_expectation_classes {
-diff --git a/net/ipv4/netfilter/nf_nat_sip.c b/net/ipv4/netfilter/nf_nat_sip.c
-index e40cf78..e5856b0 100644
---- a/net/ipv4/netfilter/nf_nat_sip.c
-+++ b/net/ipv4/netfilter/nf_nat_sip.c
-@@ -73,6 +73,7 @@ static int map_addr(struct sk_buff *skb, unsigned int dataoff,
- 	enum ip_conntrack_info ctinfo;
- 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
- 	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
-+	struct nf_conn_help *help = nfct_help(ct);
- 	char buffer[sizeof("nnn.nnn.nnn.nnn:nnnnn")];
- 	unsigned int buflen;
- 	__be32 newaddr;
-@@ -85,7 +86,8 @@ static int map_addr(struct sk_buff *skb, unsigned int dataoff,
- 	} else if (ct->tuplehash[dir].tuple.dst.u3.ip == addr->ip &&
- 		   ct->tuplehash[dir].tuple.dst.u.udp.port == port) {
- 		newaddr = ct->tuplehash[!dir].tuple.src.u3.ip;
--		newport = ct->tuplehash[!dir].tuple.src.u.udp.port;
-+		newport = help->help.ct_sip_info.forced_dport ? :
-+			  ct->tuplehash[!dir].tuple.src.u.udp.port;
- 	} else
- 		return 1;
- 
-@@ -121,6 +123,7 @@ static unsigned int ip_nat_sip(struct sk_buff *skb, unsigned int dataoff,
- 	enum ip_conntrack_info ctinfo;
- 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
- 	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
-+	struct nf_conn_help *help = nfct_help(ct);
- 	unsigned int coff, matchoff, matchlen;
- 	enum sip_header_types hdr;
- 	union nf_inet_addr addr;
-@@ -229,6 +232,20 @@ next:
- 	    !map_sip_addr(skb, dataoff, dptr, datalen, SIP_HDR_TO))
- 		return NF_DROP;
- 
-+	/* Mangle destination port for Cisco phones, then fix up checksums */
-+	if (dir == IP_CT_DIR_REPLY && help->help.ct_sip_info.forced_dport) {
-+		struct udphdr *uh;
-+
-+		if (!skb_make_writable(skb, skb->len))
-+			return NF_DROP;
-+
-+		uh = (struct udphdr *)(skb->data + ip_hdrlen(skb));
-+		uh->dest = help->help.ct_sip_info.forced_dport;
-+
-+		if (!nf_nat_mangle_udp_packet(skb, ct, ctinfo, 0, 0, NULL, 0))
-+			return NF_DROP;
-+	}
-+
- 	return NF_ACCEPT;
- }
- 
-@@ -280,8 +297,10 @@ static unsigned int ip_nat_sip_expect(struct sk_buff *skb, unsigned int dataoff,
- 	enum ip_conntrack_info ctinfo;
- 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
- 	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
-+	struct nf_conn_help *help = nfct_help(ct);
- 	__be32 newip;
- 	u_int16_t port;
-+	__be16 srcport;
- 	char buffer[sizeof("nnn.nnn.nnn.nnn:nnnnn")];
- 	unsigned buflen;
- 
-@@ -294,8 +313,9 @@ static unsigned int ip_nat_sip_expect(struct sk_buff *skb, unsigned int dataoff,
- 	/* If the signalling port matches the connection's source port in the
- 	 * original direction, try to use the destination port in the opposite
- 	 * direction. */
--	if (exp->tuple.dst.u.udp.port ==
--	    ct->tuplehash[dir].tuple.src.u.udp.port)
-+	srcport = help->help.ct_sip_info.forced_dport ? :
-+		  ct->tuplehash[dir].tuple.src.u.udp.port;
-+	if (exp->tuple.dst.u.udp.port == srcport)
- 		port = ntohs(ct->tuplehash[!dir].tuple.dst.u.udp.port);
- 	else
- 		port = ntohs(exp->tuple.dst.u.udp.port);
-diff --git a/net/netfilter/nf_conntrack_sip.c b/net/netfilter/nf_conntrack_sip.c
-index bcf47eb..ee4ad59 100644
---- a/net/netfilter/nf_conntrack_sip.c
-+++ b/net/netfilter/nf_conntrack_sip.c
-@@ -1363,8 +1363,24 @@ static int process_sip_request(struct sk_buff *skb, unsigned int dataoff,
- {
- 	enum ip_conntrack_info ctinfo;
- 	struct nf_conn *ct = nf_ct_get(skb, &ctinfo);
-+	struct nf_conn_help *help = nfct_help(ct);
-+	enum ip_conntrack_dir dir = CTINFO2DIR(ctinfo);
- 	unsigned int matchoff, matchlen;
- 	unsigned int cseq, i;
-+	union nf_inet_addr addr;
-+	__be16 port;
-+
-+	/* Many Cisco IP phones use a high source port for SIP requests, but
-+	 * listen for the response on port 5060.  If we are the local
-+	 * router for one of these phones, save the port number from the
-+	 * Via: header so that nf_nat_sip can redirect the responses to
-+	 * the correct port.
-+	 */
-+	if (ct_sip_parse_header_uri(ct, *dptr, NULL, *datalen,
-+				    SIP_HDR_VIA_UDP, NULL, &matchoff,
-+				    &matchlen, &addr, &port) > 0 &&
-+	    nf_inet_addr_cmp(&addr, &ct->tuplehash[dir].tuple.src.u3))
-+		help->help.ct_sip_info.forced_dport = port;
- 
- 	for (i = 0; i < ARRAY_SIZE(sip_handlers); i++) {
- 		const struct sip_handler *handler;
--- 
-1.7.0.4
 
