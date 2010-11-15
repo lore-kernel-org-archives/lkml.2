@@ -1,38 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab0KOTxa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 14:53:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23422 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756336Ab0KOTx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 14:53:29 -0500
-Message-ID: <4CE18FA1.4000400@redhat.com>
-Date: Mon, 15 Nov 2010 11:53:05 -0800
-From: Richard Henderson <rth@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+	id S932921Ab0KOTyn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 14:54:43 -0500
+Received: from smtp-out-139.synserver.de ([212.40.180.139]:1073 "EHLO
+	smtp-out-139.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757434Ab0KOTym (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 14:54:42 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 25137
+Date: Mon, 15 Nov 2010 20:54:39 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>, linux-ext4@vger.kernel.org
+Subject: Re: BUG: Bad page state in process (current git)
+Message-ID: <20101115195439.GA1569@arch.trippelsdorf.de>
+References: <20101110152519.GA1626@arch.trippelsdorf.de>
+ <20101110154057.GA2191@arch.trippelsdorf.de>
+ <alpine.DEB.2.00.1011101534370.30164@router.home>
+ <20101112122003.GA1572@arch.trippelsdorf.de>
+ <20101115123846.GA30047@arch.trippelsdorf.de>
 MIME-Version: 1.0
-To: Jakub Jelinek <jakub@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, Jim Bos <jim876@xs4all.nl>,
-        Andi Kleen <andi@firstfloor.org>, James Cloos <cloos@jhcloos.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
-        Dave Korn <dave.korn.cygwin@gmail.com>,
-        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-References: <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com> <20101115085605.GE2583@sunsite.ms.mff.cuni.cz> <20101115100331.GG2583@sunsite.ms.mff.cuni.cz> <20101115105446.GD7269@basil.fritz.box> <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com> <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com> <4CE17098.8090000@xs4all.nl> <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com> <4CE17C4B.1070305@xs4all.nl> <20101115185848.GI2583@sunsite.ms.mff.cuni.cz> <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>
-In-Reply-To: <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101115123846.GA30047@arch.trippelsdorf.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 11:12 AM, Jakub Jelinek wrote:
-> -	  if (simple_cst_equal(TREE_VALUE (op), memory_identifier_string) == 1)
-> +	  if (strcmp (TREE_STRING_POINTER (TREE_VALUE (link)), "memory") == 0)
+On 2010.11.15 at 13:38 +0100, Markus Trippelsdorf wrote:
+> On 2010.11.12 at 13:20 +0100, Markus Trippelsdorf wrote:
+> > 
+> > Yes. Fortunately the BUG is gone since I pulled the upcoming drm fixes
+> 
+> No. I happend again today (with those fixes already applied):
+> 
+> BUG: Bad page state in process knode  pfn:7f0a8
+> page:ffffea0001bca4c0 count:0 mapcount:0 mapping:          (null) index:0x0
+> page flags: 0x4000000000000008(uptodate)
+> Pid: 18310, comm: knode Not tainted 2.6.37-rc1-00549-gae712bf-dirty #16
+> Call Trace:
+>  [<ffffffff810a9022>] ? bad_page+0x92/0xe0
+>  [<ffffffff810aa240>] ? get_page_from_freelist+0x4b0/0x570
+>  [<ffffffff8102e50e>] ? apic_timer_interrupt+0xe/0x20
+>  [<ffffffff810aa413>] ? __alloc_pages_nodemask+0x113/0x6b0
+>  [<ffffffff810a2dd4>] ? file_read_actor+0xc4/0x190
+>  [<ffffffff810a4a70>] ? generic_file_aio_read+0x560/0x6b0
+>  [<ffffffff810bdf8d>] ? handle_mm_fault+0x6bd/0x970
+>  [<ffffffff8104b1d0>] ? do_page_fault+0x120/0x410
+>  [<ffffffff810c3d85>] ? do_brk+0x275/0x360
+>  [<ffffffff81452d8f>] ? page_fault+0x1f/0x30
+> Disabling lock debugging due to kernel taint
 
-I prefer this solution.  I think memory_identifier_string is over-engineering.
-Patch to remove it entirely is pre-approved.
+And another one. But this time it seems to point to ext4:
 
+BUG: Bad page state in process rm  pfn:52e54
+page:ffffea0001222260 count:0 mapcount:0 mapping:          (null) index:0x0
+page flags: 0x4000000000000008(uptodate)
+Pid: 2084, comm: rm Not tainted 2.6.37-rc1-00549-gae712bf-dirty #23
+Call Trace:
+ [<ffffffff810a9022>] ? bad_page+0x92/0xe0
+ [<ffffffff810aa240>] ? get_page_from_freelist+0x4b0/0x570
+ [<ffffffff81142ae6>] ? ext4_ext_put_in_cache+0x46/0x90
+ [<ffffffff810aa413>] ? __alloc_pages_nodemask+0x113/0x6b0
+ [<ffffffff8118f0c7>] ? number.clone.2+0x2b7/0x2f0
+ [<ffffffff810a38d5>] ? find_get_page+0x75/0xb0
+ [<ffffffff810a4011>] ? find_or_create_page+0x51/0xb0
+ [<ffffffff810ff4d7>] ? __getblk+0xd7/0x260
+ [<ffffffff8113158f>] ? ext4_getblk+0x8f/0x1e0
+ [<ffffffff811316ed>] ? ext4_bread+0xd/0x70
+ [<ffffffff811369f4>] ? htree_dirblock_to_tree+0x34/0x190
+ [<ffffffff8113870f>] ? ext4_htree_fill_tree+0x9f/0x250
+ [<ffffffff810e109d>] ? do_filp_open+0x12d/0x5e0
+ [<ffffffff811289ed>] ? ext4_readdir+0x14d/0x5a0
+ [<ffffffff810e4e80>] ? filldir+0x0/0xd0
+ [<ffffffff810e50a8>] ? vfs_readdir+0xa8/0xd0
+ [<ffffffff810e4e80>] ? filldir+0x0/0xd0
+ [<ffffffff810e51b1>] ? sys_getdents+0x81/0xf0
+ [<ffffffff8102dc2b>] ? system_call_fastpath+0x16/0x1b
+Disabling lock debugging due to kernel taint
 
-r~
+I don't know. Could a possible bug in linux/fs/ext4/page-io.c be
+responsible for something like this?
+
+-- 
+Markus
