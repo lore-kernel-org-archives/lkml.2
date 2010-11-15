@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933444Ab0KOSVq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 13:21:46 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54906
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933309Ab0KOSVp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 13:21:45 -0500
-Date: Mon, 15 Nov 2010 10:22:10 -0800 (PST)
-Message-Id: <20101115.102210.242124777.davem@davemloft.net>
-To: sam@ravnborg.org
-Cc: cmetcalf@tilera.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        shemminger@vyatta.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH v2] drivers/net/tile/: on-chip network drivers for the
- tile architecture
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101114075213.GA15495@merkur.ravnborg.org>
-References: <4CD1CE62.9010307@tilera.com>
-	<201011140335.oAE3Zuqg032279@farm-0027.internal.tilera.com>
-	<20101114075213.GA15495@merkur.ravnborg.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S933460Ab0KOSV6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 13:21:58 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58187 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933449Ab0KOSV5 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 13:21:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikG=brgFP3yuWqMp=4ntHV=kyuhCUODZNp4Uo6Y@mail.gmail.com>
+References: <1289669176.16461.12.camel@Joe-Laptop> <AANLkTi=ut2O+mCbs1jOyg-aP=E+48h1B-MH8NxK5XyVf@mail.gmail.com>
+ <1289677904.16461.82.camel@Joe-Laptop> <AANLkTikWEZLwx4khj_jFOqP+uy-TxgJGwsbxdtaCfbJq@mail.gmail.com>
+ <AANLkTik=mnFDXAyJ53_7FPfD5ETiYY8GjkE5pm0PJSBu@mail.gmail.com>
+ <AANLkTimoFGqKDYe24uc_2EHk-MLqxc4GGCCe7hPRJqbJ@mail.gmail.com>
+ <AANLkTin7Sfx5rnU3u7da5bQQiLTj9geOMht-x6z6kvid@mail.gmail.com> <AANLkTikG=brgFP3yuWqMp=4ntHV=kyuhCUODZNp4Uo6Y@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 15 Nov 2010 10:20:56 -0800
+Message-ID: <AANLkTim5wGt5SZkOJWDMWhS7FSPyEE1xpirpb0bqN9BS@mail.gmail.com>
+Subject: Re: [PATCH] Fix dmesg_restrict build failure with CONFIG_EMBEDDED=y
+ and CONFIG_PRINTK=n
+To: Eric Paris <eparis@parisplace.org>
+Cc: Joe Perches <joe@perches.com>, Dan Rosenberg <drosenberg@vsecurity.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Eugene Teo <eugeneteo@kernel.org>, Kees Cook <kees.cook@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sam Ravnborg <sam@ravnborg.org>
-Date: Sun, 14 Nov 2010 08:52:13 +0100
+On Mon, Nov 15, 2010 at 9:45 AM, Eric Paris <eparis@parisplace.org> wrote:
+>
+> That is the rule for ALL of the hooks in commoncap.c.  The one time I
+> tried to do something else *cough*mmap_min_addr*cough* I screwed it
+> up.  I'll put a note in my todo list about looking into lifting all of
+> commoncap.c into the callers.
 
->> diff --git a/drivers/net/tile/Makefile b/drivers/net/tile/Makefile
->> new file mode 100644
->> index 0000000..f634f14
->> --- /dev/null
->> +++ b/drivers/net/tile/Makefile
->> @@ -0,0 +1,10 @@
->> +#
->> +# Makefile for the TILE on-chip networking support.
->> +#
->> +
->> +obj-$(CONFIG_TILE_NET) += tile_net.o
->> +ifdef CONFIG_TILEGX
->> +tile_net-objs := tilegx.o mpipe.o iorpc_mpipe.o dma_queue.o
->> +else
->> +tile_net-objs := tilepro.o
->> +endif
-> 
-> The -objs syntax is deprecated these days.
-> Preferred syntax for the above is:
+Into "security/security.c" itself? That would work, except it doesn't
+work exactly in a situation like this where the whole interface was
+polluted by the commoncap version simply having fundamentally
+different semantics (ie the whole "no security check at read time,
+only at open time"). Passing the whole "from_file" thing around was
+just ugly.
 
-Also please fix the date on your computer, or please change whatever
-it is that makes your patch postings use a date in the past.
+And while passing the commoncap cases down into the callers of the
+"security_xyz()" interface itself makes sense in this case, I don't
+think it makes sense in general. With 'security_syslog()' there really
+was just one very specific call-site. Other security wrappers have
+many more (eg "security_vm_enough_memory()") call sites, and moving
+the cap_xyz() code to those callsites would be totally wrong
+duplication.
 
-Thanks.
+                        Linus
