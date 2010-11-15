@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab0KOJxA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 04:53:00 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:38633 "EHLO gir.skynet.ie"
+	id S1755255Ab0KOJ45 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 04:56:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29451 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753419Ab0KOJw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 04:52:59 -0500
-Date: Mon, 15 Nov 2010 09:52:44 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 40/44] mm/hugetlb.c: Remove unnecessary semicolons
-Message-ID: <20101115095244.GI27362@csn.ul.ie>
-References: <cover.1289789604.git.joe@perches.com> <59705f848d35b12ace640f92afcffea02cee0976.1289789605.git.joe@perches.com>
+	id S1753869Ab0KOJ44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 04:56:56 -0500
+Date: Mon, 15 Nov 2010 11:56:51 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 5/5] KVM: MMU: retry #PF for softmmu
+Message-ID: <20101115095651.GI7948@redhat.com>
+References: <4CDCE2B0.7000601@cn.fujitsu.com>
+ <4CDCE3C2.9030107@cn.fujitsu.com>
+ <4CDFBE00.2000802@redhat.com>
+ <4CE0C45C.809@cn.fujitsu.com>
+ <4CE0FDBC.20505@redhat.com>
+ <4CE1038D.9020403@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <59705f848d35b12ace640f92afcffea02cee0976.1289789605.git.joe@perches.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4CE1038D.9020403@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 07:04:59PM -0800, Joe Perches wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  mm/hugetlb.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On Mon, Nov 15, 2010 at 05:55:25PM +0800, Xiao Guangrong wrote:
+> On 11/15/2010 05:30 PM, Avi Kivity wrote:
 > 
-
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-
-> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-> index c4a3558..8875242 100644
-> --- a/mm/hugetlb.c
-> +++ b/mm/hugetlb.c
-> @@ -540,7 +540,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
->  
->  	/* If reserves cannot be used, ensure enough pages are in the pool */
->  	if (avoid_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
-> -		goto err;;
-> +		goto err;
->  
->  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
->  						MAX_NR_ZONES - 1, nodemask) {
-> -- 
-> 1.7.3.1.g432b3.dirty
+> >> Yeah, this 'retry' is unnecessary if the process is killed, but this
+> >> case is infrequent, the most case is the process keeps running and try
+> >> to access the fault address later.
+> > 
+> > The problem is that if we retry in this case, we install an incorrect spte?
+> > 
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> ......
 > 
+> >> can avoid if the page mapping have been fixed.
+> > 
+> > The guest may have changed page directories or other levels.
+> > 
+> 
+> ......
+> 
+> >> >  Or another thread may have mmap()ed something else over the
+> >> >  same address.
+> >>
+> >> The mmap virtual address is also visible for other threads since the
+> >> threads
+> >> have the same page table, so i think this case is the same as above?
+> > 
+> > Again, don't we install the wrong spte in this case?
+> > 
+> 
+> I think it doesn't corrupts spte since we will walk guest page table again
+> and map it to shadow pages when we retry #PF.
+But if the page is not mapped by new process we can inject #PF into a
+guest.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+--
+			Gleb.
