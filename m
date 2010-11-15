@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758092Ab0KOSNK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 13:13:10 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:46783 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756062Ab0KOSNJ convert rfc822-to-8bit (ORCPT
+	id S1758089Ab0KOSOy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 13:14:54 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47958 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756062Ab0KOSOx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 13:13:09 -0500
-Subject: Re: [RFC][PATCH v2 5/7] taskstats: Improve cumulative CPU time
- accounting
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-In-Reply-To: <20101115190031.5a50e760@mschwide.boeblingen.de.ibm.com>
-References: <20101111170352.732381138@linux.vnet.ibm.com>
-	 <20101111170815.404670062@linux.vnet.ibm.com>
-	 <20101113183810.GA9021@redhat.com>
-	 <20101115165521.21baac60@mschwide.boeblingen.de.ibm.com>
-	 <1289837036.2109.501.camel@laptop>
-	 <20101115184910.549a828b@mschwide.boeblingen.de.ibm.com>
-	 <1289843517.2109.521.camel@laptop>
-	 <20101115190031.5a50e760@mschwide.boeblingen.de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 15 Nov 2010 19:10:06 +0100
-Message-ID: <1289844606.2109.526.camel@laptop>
+	Mon, 15 Nov 2010 13:14:53 -0500
+Date: Mon, 15 Nov 2010 10:14:06 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH] x86, mrst: The shutdown for MRST requires the SCU IPC
+ mechanism
+Message-Id: <20101115101406.77e072ef.randy.dunlap@oracle.com>
+In-Reply-To: <20101115173110.6877.83958.stgit@localhost.localdomain>
+References: <20101115173110.6877.83958.stgit@localhost.localdomain>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-15 at 19:00 +0100, Martin Schwidefsky wrote:
-> On Mon, 15 Nov 2010 18:51:57 +0100
-> Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> 
-> > On Mon, 2010-11-15 at 18:49 +0100, Martin Schwidefsky wrote:
-> > > > To what purpose? 
-> > >  
-> > > Is that a trick question? Why do we have tools like "top"? Or process
-> > > accounting? The point is that the quality of the numbers we get right
-> > > now is rather bad, the overhead of scanning /proc is horrendous and
-> > > the 10ms granularity is rather coarse. 
-> > 
-> > But you're not just replacing top, you're adding all kinds of new
-> > accounting crap all over the place.
-> 
-> We DO replace top. Patch #7 of 7.
+On Mon, 15 Nov 2010 17:31:19 +0000 Alan Cox wrote:
 
-You _also_ replace top, but its not by far the only thing you do. If you
-simply replaced top you wouldn't need to add tons of extra accounting,
-would you?
+> From: Alan Cox <alan@linux.intel.com>
+> 
+> Fix the build failure reported by Randy Dunlap
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
+> ---
+> 
+>  arch/x86/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 9e71608..afe50ec 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -387,6 +387,7 @@ config X86_MRST
+>  	select APB_TIMER
+>  	select I2C
+>  	select SPI
+> +	select INTEL_SCU_IPC
+>  	---help---
+>  	  Moorestown is Intel's Low Power Intel Architecture (LPIA) based Moblin
+>  	  Internet Device(MID) platform. Moorestown consists of two chips:
+
+Hi,
+Additionally using this line from my patch:
+
++	select X86_PLATFORM_DEVICES
+
+will avoid this warning (with your patch applied):
+
+warning: (X86_MRST && PCI && PCI_GOANY && X86_32 && X86_EXTENDED_PLATFORM && X86_IO_APIC) selects INTEL_SCU_IPC which has unmet direct dependencies 
+(X86 && X86_PLATFORM_DEVICES && X86_MRST)
+
+which is due to the hierarchical menu structure.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
