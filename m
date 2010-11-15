@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933841Ab0KOWHU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 17:07:20 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:43292 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758641Ab0KOWHS (ORCPT
+	id S933800Ab0KOWHT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 17:07:19 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57998 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758614Ab0KOWHR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 17:07:18 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Mon, 15 Nov 2010 17:07:14 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v2 03/20] ARM: LPAE: use u32 instead of unsigned long for
- 32-bit ptes
-In-reply-to: <201011151047.37103.arnd@arndb.de>
-Message-id: <alpine.LFD.2.00.1011151706300.6448@xanadu.home>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
- <20101114151445.GB10871@n2100.arm.linux.org.uk>
- <AANLkTinuUCYMa8e7=ehhExFzBAhPZBKA16M1GVQ=RMMH@mail.gmail.com>
- <201011151047.37103.arnd@arndb.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 15 Nov 2010 17:07:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=b1NpbWLlFmHYieg+HWwPzHCa5SIxYfqum/h4p04s5NtvgDhIC8VUAgbiz4qSXlj5Jw
+         D+5m6yLnV+1b9yTx4gc2q59CLEj8v25GzuaYH3l4MePh/TmnmduBLhn9yHmG4cLuAk1+
+         QZaF85nefgSyPJkChl0BNHjnGvBvKmvtJxVaw=
+MIME-Version: 1.0
+In-Reply-To: <4CE17FB6.7000800@redhat.com>
+References: <4CD538CA.8010901@xs4all.nl>
+	<87wroostw3.fsf@basil.nowhere.org>
+	<m2hbfsu57i.fsf@igel.home>
+	<87k4kospnd.fsf@basil.nowhere.org>
+	<AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com>
+	<4CE17FB6.7000800@redhat.com>
+Date: Mon, 15 Nov 2010 23:07:15 +0100
+Message-ID: <AANLkTim-2XE=4MbfDLXkg+jj=P5wj2cVKBHemRHLZn2L@mail.gmail.com>
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+From: Richard Guenther <richard.guenther@gmail.com>
+To: Jeff Law <law@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Andreas Schwab <schwab@linux-m68k.org>,
+        Jim <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        gcc@gcc.gnu.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Nov 2010, Arnd Bergmann wrote:
+On Mon, Nov 15, 2010 at 7:45 PM, Jeff Law <law@redhat.com> wrote:
+> On 11/08/10 03:49, Richard Guenther wrote:
+>>
+>> On Mon, Nov 8, 2010 at 12:03 AM, Andi Kleen<andi@firstfloor.org>  wrote:
+>>>
+>>> Andreas Schwab<schwab@linux-m68k.org>  writes:
+>>>>
+>>>> The asm fails to mention that it modifies *regs.
+>>>
+>>> It has a memory clobber, that should be enough, no?
+>>
+>> No.  A memory clobber does not cover automatic storage.
+>
+> A memory clobber should clobber anything in memory, including autos in
+> memory; if it doesn't, then that seems like a major problem.  I'd like to
+> see the rationale behind not clobbering autos in memory.
 
-> On Monday 15 November 2010 10:39:30 Catalin Marinas wrote:
-> > > There will be compiler warnings because u32 is unsigned int, and we
-> > > print it as %08lx.  Generic code cases pte values to (long long) and
-> > > prints them using %08llx.  We should do the same.
-> > 
-> > We still need some kind of macro because with LPAE we need %016llx
-> > since the phys address can go to 40-bit and there are some additional
-> > bits in the top word. Unless you'd like to always print 16 characters
-> > even for 32-bit ptes (or if there is some other printk magic I'm not
-> > aware of).
-> 
-> Why not just %010llx? That would just be two extra characters.
+Non-address taken automatic storage.  (note that we don't excercise this
+in optimization yet)
 
-Not on non-LPAE build, please.
+It's difficult to model thins kind of non-aliased memory with this kind
+of aliasing mechanism (apart from taking all asms as clobbering
+everything as we currently do).
 
+Richard.
 
-Nicolas
+> Jeff
+>
