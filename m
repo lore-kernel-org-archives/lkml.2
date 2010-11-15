@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752887Ab0KOI5P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 03:57:15 -0500
-Received: from casper.infradead.org ([85.118.1.10]:53429 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751851Ab0KOI5O convert rfc822-to-8bit (ORCPT
+	id S1753114Ab0KOI5V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 03:57:21 -0500
+Received: from sunsite.ms.mff.cuni.cz ([195.113.15.26]:39913 "EHLO
+	sunsite.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752941Ab0KOI5T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 03:57:14 -0500
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1289783580.495.58.camel@maggy.simson.net>
-References: <1289489200.11397.21.camel@maggy.simson.net>
-	 <20101111202703.GA16282@redhat.com>
-	 <1289514000.21413.204.camel@maggy.simson.net>
-	 <20101112181240.GB8659@redhat.com>
-	 <1289648524.22764.149.camel@maggy.simson.net>
-	 <1289755150.3228.44.camel@maggy.simson.net>
-	 <20101114174921.GA1569@arch.trippelsdorf.de>
-	 <1289758238.17491.12.camel@maggy.simson.net>
-	 <AANLkTimy5DdF8qwGuk09iT3wHfXMjkiwRKxo-LuvEJzW@mail.gmail.com>
-	 <AANLkTikjSCbcRnKOU=nd4os1sdW-GJkD6QVj=U5zPyu8@mail.gmail.com>
-	 <20101114202734.GA1627@arch.trippelsdorf.de>
-	 <AANLkTimHtjH3YvtX6i542_XjfFeuvG-AnU8i224a1R4j@mail.gmail.com>
-	 <1289778189.5154.10.camel@maggy.simson.net>
-	 <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
-	 <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com>
-	 <1289783580.495.58.camel@maggy.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 15 Nov 2010 09:57:18 +0100
-Message-ID: <1289811438.2109.474.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 15 Nov 2010 03:57:19 -0500
+Date: Mon, 15 Nov 2010 09:56:05 +0100
+From: Jakub Jelinek <jakub@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: James Cloos <cloos@jhcloos.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Schwab <schwab@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Michael Matz <matz@suse.de>, Dave Korn <dave.korn.cygwin@gmail.com>,
+        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org,
+        Jim Bos <jim876@xs4all.nl>
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+Message-ID: <20101115085605.GE2583@sunsite.ms.mff.cuni.cz>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <87k4kospnd.fsf@basil.nowhere.org> <AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com> <877hgorrj1.fsf@basil.nowhere.org> <4CD843DC.10106@gmail.com> <Pine.LNX.4.64.1011091352460.29956@wotan.suse.de> <20101109134816.GB29433@basil.fritz.box> <m3lj52txaq.fsf@redhat.com> <4CD97A3D.1040602@xs4all.nl> <m31v6nmmr3.fsf@jhcloos.com> <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-14 at 18:13 -0700, Mike Galbraith wrote:
-> +static inline struct task_group *
-> +autogroup_task_group(struct task_struct *p, struct task_group *tg)
-> +{
-> +       int enabled = ACCESS_ONCE(sysctl_sched_autogroup_enabled);
-> +
-> +       enabled &= (tg == &root_task_group);
-> +       enabled &= (p->sched_class == &fair_sched_class);
-> +       enabled &= (!(p->flags & PF_EXITING));
-> +
-> +       if (enabled)
-> +               return p->signal->autogroup->tg;
-> +
-> +       return tg;
-> +} 
+On Sun, Nov 14, 2010 at 07:21:50PM -0800, Linus Torvalds wrote:
+> So when Richard Gunther says "a memory clobber doesn't cover automatic
+> storage", to me that very clearly spells "gcc is buggy as hell".
+> Because automatic storage with its address taken _very_ much gets
+> clobbered by things like memset etc. If the compiler doesn't
+> understand that, the compiler is just broken.
 
+I'll leave the discussion about meaning of "memory" clobber aside to
+Richard,
 
-That made me go wtf.. curious way of writing things.
+> And now, if even the (superfluous) "+m" isn't working, it sounds like
+> we have no sane options left. Except to say that gcc-4.5.1 is totally
 
-I guess the usual way of writing that (which is admittedly a little more
-verbose) would be something like:
+just to say that of course there are sane options left.
 
-static bool 
-task_wants_autogroup(struct task_struct *tsk, struct task_group *tg)
-{
-	if (tg != &root_task_group)
-		return false;
+	    :"=a"(rc), "+m" (*regs)
+            :    "a"(regs)
+            :    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
 
-	if (tsk->sched_class != &fair_sched_class)
-		return false;
+is simply too high register pressure for i386 if you force also
+-fno-omit-frame-pointer, there is not a single register left.
 
-	if (tsk->flags & PF_EXITING)
-		return false;
+Yes, reload should figure out it has address of regs already tied to %eax,
+unfortunately starting with IRA it doesn't (I'll file a GCC bug about that;
+so that leaves 4.4/4.5/4.6 currently not being able to compile it).
 
-	return true;
-}
+That said, changing the inline asm to just clobber one less register
+would be completely sufficient to make it work well with all gccs out there,
+just push/pop one of the register around the whole body.  I doubt calling
+out SMM BIOS is actually so performance critical that one push and one pop
+would ruin it.  Of course x86_64 version can stay as is, there are enough
+registers left...
 
-static inline struct task_group *
-autogroup_task_group(struct task_struct *tsk, struct task_group *tg)
-{
-	if (task_wants_autogroup(tsk, tg))
-		return tsk->signal->autogroup->tg;
-
-	return tg;
-}
-
-
+	Jakub
