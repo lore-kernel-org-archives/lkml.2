@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933565Ab0KOUBS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 15:01:18 -0500
-Received: from minus.inr.ac.ru ([194.67.69.97]:37316 "HELO ms2.inr.ac.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1756336Ab0KOUBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 15:01:17 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=ms2.inr.ac.ru;
-  b=P1lVSdSK7Z7NE75lZCsO4enJi05f5EFTL4GNFd8hgmPT/EiIlbR9Jv+Pf3S6Cm3ZKxzYY2RDD/iLYxHT91loSN6bwVSaRAXl2U++1Wqv9l63CRKMpg31JRJXTL1dCIs5lNd6USG0TzrYypVHdle2VAfBhLCFn3cLej5yZNmdlPQ=;
-Date: Mon, 15 Nov 2010 23:00:30 +0300
-From: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-To: Eric Paris <eparis@redhat.com>
-Cc: Patrick McHardy <kaber@trash.net>, Hua Zhong <hzhong@gmail.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org
-Subject: Re: [RFC PATCH] network: return errors if we know tcp_connect failed
-Message-ID: <20101115200030.GA14551@ms2.inr.ac.ru>
-References: <20101111210341.31350.86916.stgit@paris.rdu.redhat.com> <00c201cb81eb$84e18160$8ea48420$@com> <4CDCEE65.3060105@trash.net> <017301cb82bf$54540cf0$fcfc26d0$@com> <4CE10C2A.1050801@trash.net> <1289836066.14282.7.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289836066.14282.7.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.6i
+	id S933320Ab0KOUFb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 15:05:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40182 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756552Ab0KOUFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 15:05:30 -0500
+Message-ID: <4CE1920F.5000509@zytor.com>
+Date: Mon, 15 Nov 2010 12:03:27 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@novell.com>, Avi Kivity <avi@redhat.com>,
+        Xen-devel <xen-devel@lists.xensource.com>,
+        Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Subject: Re: [PATCH 00/20] x86: ticket lock rewrite and paravirtualization
+References: <cover.1288794124.git.jeremy.fitzhardinge@citrix.com> <4CDDBBD3.5050903@zytor.com> <4CDDBCE4.80906@goop.org> <4CDDBDB5.8000800@zytor.com> <4CE1915F.60507@goop.org>
+In-Reply-To: <4CE1915F.60507@goop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On 11/15/2010 12:00 PM, Jeremy Fitzhardinge wrote:
+> 
+> Another approach I discussed with PeterZ and Mathieu is to steal the LSB
+> of the ticket counters (halving the max CPU count) to use as a "there is
+> someone in slowpath waiting on this lock".  But I haven't spent the time
+> to work out an algorithm to maintain that flag (or flags, since there
+> are bits available) in a correct and efficient way.
+> 
 
-On Mon, Nov 15, 2010 at 10:47:46AM -0500, Eric Paris wrote:
-> Well I'm (I guess?) surprised that the --reject-with icmp doesn't do
-> anything with a local outgoing connection
+Definitely worth pondering.
 
-Yeah. This was "an obvious surpise": for local socket the first icmp error always
-arrives on locked socket and gets dropped. I even forgot about this (tcp-reset
-still works ok due to backlog) This makes the idea to respect error more attractive.
+	-hpa
 
-Alexey
