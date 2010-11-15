@@ -1,101 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758178Ab0KOS7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 13:59:07 -0500
-Received: from kroah.org ([198.145.64.141]:43672 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758016Ab0KOS66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 13:58:58 -0500
-Date: Mon, 15 Nov 2010 10:49:44 -0800
-From: Greg KH <greg@kroah.com>
-To: Len Brown <lenb@kernel.org>
-Cc: stable@kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [stable] [git pull 2.6.36.stable] intel_idle patches for
- 2.6.36.stable
-Message-ID: <20101115184944.GB9597@kroah.com>
-References: <alpine.LFD.2.00.1011151227190.2939@x980>
+	id S1758103Ab0KOTAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 14:00:37 -0500
+Received: from sunsite.ms.mff.cuni.cz ([195.113.15.26]:48119 "EHLO
+	sunsite.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756630Ab0KOTAg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 14:00:36 -0500
+Date: Mon, 15 Nov 2010 19:58:48 +0100
+From: Jakub Jelinek <jakub@redhat.com>
+To: Jim Bos <jim876@xs4all.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jakub Jelinek <jakub@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        James Cloos <cloos@jhcloos.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
+        Dave Korn <dave.korn.cygwin@gmail.com>,
+        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+Message-ID: <20101115185848.GI2583@sunsite.ms.mff.cuni.cz>
+Reply-To: Jakub Jelinek <jakub@redhat.com>
+References: <m31v6nmmr3.fsf@jhcloos.com> <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com> <20101115085605.GE2583@sunsite.ms.mff.cuni.cz> <20101115100331.GG2583@sunsite.ms.mff.cuni.cz> <20101115105446.GD7269@basil.fritz.box> <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com> <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com> <4CE17098.8090000@xs4all.nl> <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com> <4CE17C4B.1070305@xs4all.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011151227190.2939@x980>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4CE17C4B.1070305@xs4all.nl>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 12:29:05PM -0500, Len Brown wrote:
-> Hi Greg,
+On Mon, Nov 15, 2010 at 07:30:35PM +0100, Jim Bos wrote:
+> On 11/15/2010 07:08 PM, Linus Torvalds wrote:
+> > On Mon, Nov 15, 2010 at 9:40 AM, Jim Bos <jim876@xs4all.nl> wrote:
+> >>
+> >> Hmm, that doesn't work.
+> >>
+> >> [ Not sure if you read to whole thread but initial workaround was to
+> >> change the asm(..) to asm volatile(..) which did work. ]
+> > 
+> > Since I have a different gcc than yours (and I'm not going to compile
+> > my own), have you posted your broken .s file anywhere? In fact, with
+> > the noinline (and the removal of the "+m" thing - iow just the patch
+> > you tried), what does just the "i8k_smm" function assembly look like
+> > for you after you've done a "make drivers/char/i8k.s"?
+> > 
+> > If the asm just doesn't exist AT ALL, that's just odd. Because every
+> > single call-site of i8k_smm() clearly looks at the return value. So
+> > the volatile really shouldn't make any difference from that
+> > standpoint. Odd.
+> > 
+> >                        Linus
+> > 
 > 
-> please pull from: 
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.36.git idle-release
-> 
-> to sync 2.6.36.y with upstream changes to the intel_idle driver.
-> 
-> After applying this series, 2.6.36.y and upstream intel_idle.c
-> are identical.
+> Attached version with plain 2.6.36 source and version with the committed
+> patch, i.e with the '"+m" (*regs)'
 
-That's nice, but why would I do this?  I need git commit ids for the
-upstream patches that went into Linus's tree, and they should only be
-bug fixes or other stuff that is applicable for -stable.
+Thanks, this actually helped to see the problem.
+The problem is not inside of i8k_smm, which is not inlined, but in the
+callers.
+ipa-pure-const.c pass thinks i8k_smm is a pure function, thus
+regs = {};
+regs.eax = 166;
+x = i8k_smm (&regs);
+if (!x) x = regs.eax;
+in the callers is optimized into
+regs = {}
+regs.eax = 166;
+x = i8k_smm (&regs);
+if (!x) x = 166;
+Now, not sure why this happens, as there is
+    case GIMPLE_ASM:
+      for (i = 0; i < gimple_asm_nclobbers (stmt); i++)
+        {
+          tree op = gimple_asm_clobber_op (stmt, i);
+          if (simple_cst_equal(TREE_VALUE (op), memory_identifier_string) == 1)
+            {
+              if (dump_file)
+                fprintf (dump_file, "    memory asm clobber is not const/pure");
+              /* Abandon all hope, ye who enter here. */
+              local->pure_const_state = IPA_NEITHER;
+            }
+        }
+Debugging...
 
-> commit 935558a7fefe0a307618857ad8a06e8a485b3b47
-> Author: Len Brown <len.brown@intel.com>
-> Date:   Wed Jul 7 00:12:03 2010 -0400
-> 
->     intel_idle: add initial Sandy Bridge support
->     
->     Signed-off-by: Len Brown <len.brown@intel.com>
-
-Is this patch really ok for -stable?  What is the git commit id of it in
-Linus's tree?
-
-> commit 1768bd405dc30d4db74af5eb693d6c2d3389c5a6
-> Author: Len Brown <len.brown@intel.com>
-> Date:   Fri Oct 15 21:23:25 2010 -0400
-> 
->     intel_idle: delete bogus data from cpuidle_state.power_usage
->     
->     The mW data in this field is a total fabrication
->     and serves no purpose other than to mislead
->     those who might see it in sysfs.  Delete it.
->     
->     Signed-off-by: Len Brown <len.brown@intel.com>
-> 
-> commit 645fd1ddc110eea7ab596b6fa27add5cff912e84
-> Author: Len Brown <len.brown@intel.com>
-> Date:   Fri Oct 15 20:43:06 2010 -0400
-> 
->     intel_idle: simplify test for leave_mm()
->     
->     A run-time test to invoke leave_mm() for the deepest
->     supported C-state is redundant, since the appropriate
->     C-states already have flags with CPUIDLE_FLAG_TLB_FLUSHED set.
->     
->     Signed-off-by: Len Brown <len.brown@intel.com>
-
-Is this patch really for -stable?
-
-> commit 27a52cf2d75b81e762c8fc41fd8fca3dac2aa8ca
-> Author: H. Peter Anvin <hpa@linux.intel.com>
-> Date:   Fri Sep 17 15:36:40 2010 -0700
-> 
->     x86, mwait: Move mwait constants to a common header file
->     
->     We have MWAIT constants spread across three different .c files, for no
->     good reason.  Move them all into a common header file.
->     
->     Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
->     Reviewed-by: Arjan van de Ven <arjan@linux.intel.com>
->     Cc: Len Brown <lenb@kernel.org>
->     LKML-Reference: <tip-*@git.kernel.org>
-
-Why would this be ok for -stable?
-
-While I understand you would like the driver to be the same in both
-kernel versions, you still have to follow the normal -stable rules.
-
-thanks,
-
-greg k-h
+	Jakub
