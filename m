@@ -1,98 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933337Ab0KORmO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 12:42:14 -0500
-Received: from mtagate6.de.ibm.com ([195.212.17.166]:34968 "EHLO
-	mtagate6.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933137Ab0KORmM (ORCPT
+	id S933361Ab0KORm5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 12:42:57 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49292 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933236Ab0KORk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 12:42:12 -0500
-Date: Mon, 15 Nov 2010 18:42:06 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org,
-        "jeremy.fitzhardinge" <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [RFC][PATCH v2 4/7] taskstats: Add per task steal time
- accounting
-Message-ID: <20101115184206.4463fd05@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <1289833883.2109.494.camel@laptop>
-References: <20101111170352.732381138@linux.vnet.ibm.com>
-	<20101111170815.024542355@linux.vnet.ibm.com>
-	<1289677083.2109.167.camel@laptop>
-	<20101115155057.15f3be35@mschwide.boeblingen.de.ibm.com>
-	<1289833883.2109.494.camel@laptop>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Nov 2010 12:40:57 -0500
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 12/20] ARM: LPAE: Add fault handling support
+Date: Mon, 15 Nov 2010 17:40:21 +0000
+Message-Id: <1289842829-3027-13-git-send-email-catalin.marinas@arm.com>
+X-Mailer: git-send-email 1.7.3.2.164.g6f10c
+In-Reply-To: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com>
+References: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com>
+X-OriginalArrivalTime: 15 Nov 2010 17:40:36.0691 (UTC) FILETIME=[3636F230:01CB84EC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Nov 2010 16:11:23 +0100
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+The DFSR and IFSR register format is different when LPAE is enabled. In
+addition, DFSR and IFSR have the similar definitions for the fault type.
+This modifies modifies the fault code to correctly handle the new
+format.
 
-> On Mon, 2010-11-15 at 15:50 +0100, Martin Schwidefsky wrote:
-> > On Sat, 13 Nov 2010 20:38:02 +0100
-> > Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > 
-> > > On Thu, 2010-11-11 at 18:03 +0100, Michael Holzheu wrote:
-> > > > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > > > 
-> > > > Currently steal time is only accounted for the whole system. With this
-> > > > patch we add steal time to the per task CPU time accounting.
-> > > > The triplet "user time", "system time" and "steal time" represents
-> > > > all consumed CPU time on hypervisor based systems. 
-> > > 
-> > > Does that really make sense? Its not like the hypervisor really knows
-> > > anything about tasks and won't steal from one? Its really a vcpu
-> > > feature.
-> > > 
-> > > What added benefit will all this extra accounting give?
-> > 
-> > Currently the linux kernel keeps track of used cpu cycles per task,
-> > steal time is reported only per cpu. With the patch steal cycles are
-> > reported per task just like used cpu cycles, giving the complete picture
-> > on a per task basis. Without the patch you don't know if the task has
-> > been waiting or got its cycles stolen. A matter of granularity. 
-> 
-> That doesn't answer my question at all. Why do you want to know? Also,
-> once we change the scheduler to not account steal time to tasks like it
-> currently does (as Jeremy has been proposing to do several times now)
-> this should become totally redundant as it will always be 0, no?
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+---
+ arch/arm/mm/alignment.c |    8 ++++-
+ arch/arm/mm/fault.c     |   80 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 87 insertions(+), 1 deletions(-)
 
-At least on s390 and powerpc we already do not account steal time to tasks,
-the user and system time is "real" cpu. I do not know if that is true for
-ia64 as well which is the third architecture with VIRT_CPU_ACCOUNTING=y.
-The steal time of a task tells us how much more progress a task could have
-done if the hypervisor would not steal cpu. Now you could argue that the
-steal time for a cpu is good enough for that purpose but steal time is not
-necessarily uniform over all tasks. And we already do calculate this number,
-we just do not store it right now.
-
-> Thing is, all I'm seeing is overhead here, the vast majority of systems
-> simply don't have any steal time at all. So again, what does this buy us
-> except a gazillion wasted bytes and cycles?
-
-There are 40 bytes more in the task structure and a few instructions more
-in account_steal_time. I would not call that gazillions wasted bytes and
-cycles. It is a minimal overhead. Would you prefer another #ifdef orgy to
-avoid the overhead for VIRT_CPU_ACCOUNTING=n? We can certainly do that.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+diff --git a/arch/arm/mm/alignment.c b/arch/arm/mm/alignment.c
+index 724ba3b..bc98a6e 100644
+--- a/arch/arm/mm/alignment.c
++++ b/arch/arm/mm/alignment.c
+@@ -906,6 +906,12 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_ARM_LPAE
++#define ALIGNMENT_FAULT		33
++#else
++#define ALIGNMENT_FAULT		1
++#endif
++
+ /*
+  * This needs to be done after sysctl_init, otherwise sys/ will be
+  * overwritten.  Actually, this shouldn't be in sys/ at all since
+@@ -939,7 +945,7 @@ static int __init alignment_init(void)
+ 		ai_usermode = UM_FIXUP;
+ 	}
+ 
+-	hook_fault_code(1, do_alignment, SIGBUS, BUS_ADRALN,
++	hook_fault_code(ALIGNMENT_FAULT, do_alignment, SIGBUS, BUS_ADRALN,
+ 			"alignment exception");
+ 
+ 	/*
+diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+index c6443eb..74f7ce2 100644
+--- a/arch/arm/mm/fault.c
++++ b/arch/arm/mm/fault.c
+@@ -33,10 +33,15 @@
+ #define FSR_WRITE		(1 << 11)
+ #define FSR_FS4			(1 << 10)
+ #define FSR_FS3_0		(15)
++#define FSR_FS5_0		(0x3f)
+ 
+ static inline int fsr_fs(unsigned int fsr)
+ {
++#ifdef CONFIG_ARM_LPAE
++	return fsr & FSR_FS5_0;
++#else
+ 	return (fsr & FSR_FS3_0) | (fsr & FSR_FS4) >> 6;
++#endif
+ }
+ 
+ #ifdef CONFIG_MMU
+@@ -109,8 +114,10 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
+ 
+ 		pte = pte_offset_map(pmd, addr);
+ 		printk(", *pte=%08llx", (long long)pte_val(*pte));
++#ifndef CONFIG_ARM_LPAE
+ 		printk(", *ppte=%08llx",
+ 			(long long)pte_val(pte[-LINUX_PTE_OFFSET]));
++#endif
+ 		pte_unmap(pte);
+ 	} while(0);
+ 
+@@ -469,6 +476,72 @@ static struct fsr_info {
+ 	int	code;
+ 	const char *name;
+ } fsr_info[] = {
++#ifdef CONFIG_ARM_LPAE
++	{ do_bad,		SIGBUS,  0,		"unknown 0"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 1"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 2"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 3"			},
++	{ do_bad,		SIGBUS,  0,		"reserved translation fault"	},
++	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 1 translation fault"	},
++	{ do_translation_fault,	SIGSEGV, SEGV_MAPERR,	"level 2 translation fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_MAPERR,	"level 3 translation fault"	},
++	{ do_bad,		SIGBUS,  0,		"reserved access flag fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 access flag fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 2 access flag fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 access flag fault"	},
++	{ do_bad,		SIGBUS,  0,		"reserved permission fault"	},
++	{ do_bad,		SIGSEGV, SEGV_ACCERR,	"level 1 permission fault"	},
++	{ do_sect_fault,	SIGSEGV, SEGV_ACCERR,	"level 2 permission fault"	},
++	{ do_page_fault,	SIGSEGV, SEGV_ACCERR,	"level 3 permission fault"	},
++	{ do_bad,		SIGBUS,  0,		"synchronous external abort"	},
++	{ do_bad,		SIGBUS,  0,		"asynchronous external abort"	},
++	{ do_bad,		SIGBUS,  0,		"unknown 18"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 19"			},
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous abort (translation table walk)" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error"	},
++	{ do_bad,		SIGBUS,  0,		"asynchronous parity error"	},
++	{ do_bad,		SIGBUS,  0,		"unknown 26"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 27"			},
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"synchronous parity error (translation table walk" },
++	{ do_bad,		SIGBUS,  0,		"unknown 32"			},
++	{ do_bad,		SIGBUS,  BUS_ADRALN,	"alignment fault"		},
++	{ do_bad,		SIGBUS,  0,		"debug event"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 35"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 36"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 37"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 38"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 39"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 40"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 41"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 42"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 43"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 44"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 45"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 46"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 47"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 48"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 49"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 50"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 51"			},
++	{ do_bad,		SIGBUS,  0,		"implementation fault (lockdown abort)" },
++	{ do_bad,		SIGBUS,  0,		"unknown 53"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 54"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 55"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 56"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 57"			},
++	{ do_bad,		SIGBUS,  0,		"implementation fault (coprocessor abort)" },
++	{ do_bad,		SIGBUS,  0,		"unknown 59"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 60"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 61"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 62"			},
++	{ do_bad,		SIGBUS,  0,		"unknown 63"			},
++#else	/* !CONFIG_ARM_LPAE */
+ 	/*
+ 	 * The following are the standard ARMv3 and ARMv4 aborts.  ARMv5
+ 	 * defines these to be "precise" aborts.
+@@ -510,6 +583,7 @@ static struct fsr_info {
+ 	{ do_bad,		SIGBUS,  0,		"unknown 29"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 31"			   }
++#endif	/* CONFIG_ARM_LPAE */
+ };
+ 
+ void __init
+@@ -548,6 +622,9 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
+ }
+ 
+ 
++#ifdef CONFIG_ARM_LPAE
++#define ifsr_info	fsr_info
++#else	/* !CONFIG_ARM_LPAE */
+ static struct fsr_info ifsr_info[] = {
+ 	{ do_bad,		SIGBUS,  0,		"unknown 0"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 1"			   },
+@@ -582,6 +659,7 @@ static struct fsr_info ifsr_info[] = {
+ 	{ do_bad,		SIGBUS,  0,		"unknown 30"			   },
+ 	{ do_bad,		SIGBUS,  0,		"unknown 31"			   },
+ };
++#endif	/* CONFIG_ARM_LPAE */
+ 
+ void __init
+ hook_ifault_code(int nr, int (*fn)(unsigned long, unsigned int, struct pt_regs *),
+@@ -617,6 +695,7 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
+ 
+ static int __init exceptions_init(void)
+ {
++#ifndef CONFIG_ARM_LPAE
+ 	if (cpu_architecture() >= CPU_ARCH_ARMv6) {
+ 		hook_fault_code(4, do_translation_fault, SIGSEGV, SEGV_MAPERR,
+ 				"I-cache maintenance fault");
+@@ -632,6 +711,7 @@ static int __init exceptions_init(void)
+ 		hook_fault_code(6, do_bad, SIGSEGV, SEGV_MAPERR,
+ 				"section access flag fault");
+ 	}
++#endif
+ 
+ 	return 0;
+ }
