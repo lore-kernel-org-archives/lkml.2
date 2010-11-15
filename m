@@ -1,57 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758608Ab0KOV6j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 16:58:39 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:30501 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758512Ab0KOV6i (ORCPT
+	id S933608Ab0KOWAb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 17:00:31 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:22473 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758512Ab0KOWAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 16:58:38 -0500
-Date: Mon, 15 Nov 2010 22:58:30 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux I2C <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] i2c fixes for 2.6.37
-Message-ID: <20101115225830.3d2b0994@endymion.delvare>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Nov 2010 17:00:30 -0500
+Date: Mon, 15 Nov 2010 22:48:10 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Netfilter Core Team <coreteam@netfilter.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
+        netfilter-devel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH] Reduce number of pointer dereferences in IPv4 netfilter
+ LOG module function dump_packet()
+In-Reply-To: <1289782180.2743.166.camel@edumazet-laptop>
+Message-ID: <alpine.LNX.2.00.1011152227310.20408@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1011142212310.1253@swampdragon.chaosbits.net> <1289782180.2743.166.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1965366321-1289857557=:20408"
+Content-ID: <alpine.LNX.2.00.1011152247010.20408@swampdragon.chaosbits.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Please pull i2c subsystem fixes for Linux 2.6.37 from:
+--8323328-1965366321-1289857557=:20408
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.LNX.2.00.1011152247011.20408@swampdragon.chaosbits.net>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git i2c-for-linus
+On Mon, 15 Nov 2010, Eric Dumazet wrote:
 
- Documentation/feature-removal-schedule.txt |   10 ++++++++++
- drivers/i2c/i2c-core.c                     |   12 ++++++++++++
- drivers/i2c/i2c-mux.c                      |    1 -
- drivers/media/common/saa7146_i2c.c         |    1 -
- drivers/media/video/imx074.c               |    2 --
- drivers/media/video/ir-kbd-i2c.c           |    1 -
- drivers/media/video/ov6650.c               |    2 --
- drivers/misc/apds9802als.c                 |    1 -
- drivers/staging/olpc_dcon/olpc_dcon.c      |    4 ----
- drivers/video/riva/rivafb-i2c.c            |    1 -
- include/linux/i2c-id.h                     |   22 ----------------------
- include/linux/i2c.h                        |    2 +-
- 12 files changed, 23 insertions(+), 36 deletions(-)
+> Le dimanche 14 novembre 2010 à 22:35 +0100, Jesper Juhl a écrit :
+> > By adding two pointer variables to 
+> > net/ipv4/netfilter/ipt_LOG.c::dump_packet() we can save 16 bytes of .text 
+> > and 9 pointer dereferences.
+> > 
+> > before this patch we did 20 pointer dereferences and had this object file 
+> > size:
+> >    text    data     bss     dec     hex filename
+> >    6233     600    3080    9913    26b9 net/ipv4/netfilter/ipt_LOG.o
+> > 
+> > after this patch we do just 11 pointer dereferences and have this object 
+> > file size:
+> >    text    data     bss     dec     hex filename
+> >    6217     600    3080    9897    26a9 net/ipv4/netfilter/ipt_LOG.o
+> > 
+> > 
+> > Please Cc me on replies.
+> > 
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > ---
+> >  ipt_LOG.c |   16 ++++++++++------
+> >  1 file changed, 10 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/net/ipv4/netfilter/ipt_LOG.c b/net/ipv4/netfilter/ipt_LOG.c
+> > index 72ffc8f..02a92de 100644
+> > --- a/net/ipv4/netfilter/ipt_LOG.c
+> > +++ b/net/ipv4/netfilter/ipt_LOG.c
+[...]
+> > -	if ((logflags & IPT_LOG_UID) && !iphoff && skb->sk) {
+> > -		read_lock_bh(&skb->sk->sk_callback_lock);
+> > -		if (skb->sk->sk_socket && skb->sk->sk_socket->file)
+> > +	sk = skb->sk;
+> > +	sk_socket = sk->sk_socket;
+> 
+> Really ? sk can be NULL, so you add a NULL dereference.
+> 
+Arrgh, yes, you are right. How could I miss that "&& skb->sk" test? I even 
+modified that bit without thinking about it (I guess that's the problem, 
+not thinking about it and it being late and me having had too much 
+coffee and then not testing enough)...
+Sorry about that.
 
----------------
+[...]
+> > -				skb->sk->sk_socket->file->f_cred->fsuid,
+> > -				skb->sk->sk_socket->file->f_cred->fsgid);
+> > -		read_unlock_bh(&skb->sk->sk_callback_lock);
+> > +				sk_socket->file->f_cred->fsuid,
+> > +				sk_socket->file->f_cred->fsgid);
+> > +		read_unlock_bh(&sk->sk_callback_lock);
+> >  	}
+> >  
+> >  	/* Max length: 16 "MARK=0xFFFFFFFF " */
+> > 
+> > 
+> > 
+> 
+> Most of these "dereferences" are compiler optimized.
+> 
+> You added a bug in your patch, and make ipt_LOG slower if rule is not
+> asking for IPT_LOG_UID
+> 
+Yes, I see that now. Thank you for pointing it out.
 
-Jean Delvare (4):
-      i2c: Delete unused adapter IDs
-      i2c: Drivers shouldn't include <linux/i2c-id.h>
-      i2c: Mark i2c_adapter.id as deprecated
-      i2c: Sanity checks on adapter registration
+How about the following instead? It still manages to save 16 bytes of 
+.text and a number of pointer derefs and it doesn't deref potentially NULL 
+pointers and it doesn't do any extra work if IPT_LOG_UID is not asked for.
+And this time I didn't just compile test it but booted and ran a kernel 
+with the patch as well.
 
-Wolfram Sang (1):
-      i2c: Remove obsolete cleanup for clientdata
 
-Thanks,
+
+Fewer pointer derefs and smaller .text size for 
+net/ipv4/netfilter/ipt_LOG.c::dump_packet()
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ ipt_LOG.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/net/ipv4/netfilter/ipt_LOG.c b/net/ipv4/netfilter/ipt_LOG.c
+index 72ffc8f..539dce3 100644
+--- a/net/ipv4/netfilter/ipt_LOG.c
++++ b/net/ipv4/netfilter/ipt_LOG.c
+@@ -39,6 +39,7 @@ static void dump_packet(struct sbuff *m,
+ 	struct iphdr _iph;
+ 	const struct iphdr *ih;
+ 	unsigned int logflags;
++	struct sock *sk;
+ 
+ 	if (info->type == NF_LOG_TYPE_LOG)
+ 		logflags = info->u.log.logflags;
+@@ -336,12 +337,13 @@ static void dump_packet(struct sbuff *m,
+ 
+ 	/* Max length: 15 "UID=4294967295 " */
+ 	if ((logflags & IPT_LOG_UID) && !iphoff && skb->sk) {
+-		read_lock_bh(&skb->sk->sk_callback_lock);
+-		if (skb->sk->sk_socket && skb->sk->sk_socket->file)
++		sk = skb->sk;
++		read_lock_bh(&sk->sk_callback_lock);
++		if (sk->sk_socket && sk->sk_socket->file)
+ 			sb_add(m, "UID=%u GID=%u ",
+-				skb->sk->sk_socket->file->f_cred->fsuid,
+-				skb->sk->sk_socket->file->f_cred->fsgid);
+-		read_unlock_bh(&skb->sk->sk_callback_lock);
++				sk->sk_socket->file->f_cred->fsuid,
++				sk->sk_socket->file->f_cred->fsgid);
++		read_unlock_bh(&sk->sk_callback_lock);
+ 	}
+ 
+ 	/* Max length: 16 "MARK=0xFFFFFFFF " */
+
+
+
 -- 
-Jean Delvare
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+--8323328-1965366321-1289857557=:20408--
