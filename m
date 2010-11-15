@@ -1,73 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924Ab0KOG4J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 01:56:09 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62001 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752644Ab0KOG4H convert rfc822-to-8bit (ORCPT
+	id S1756245Ab0KOG5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 01:57:40 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51712 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753452Ab0KOG5j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 01:56:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=DXq0+Qha5BNmmLwQxtupFVItsjyfx/3Ywi7ZvemxI63ZXYmqADTdQYoY4ReFRjGiaA
-         xrksioArWg3DIgw3Ez8CyIAUY7+0W21QuLW7rJcZ635v/UkfdbIEiIKJG0taU+MTRDBG
-         uqssUWWDun2Ir3yNvD5KuvGCikFQz4R9b0lAE=
+	Mon, 15 Nov 2010 01:57:39 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Revert oom rewrite series
+Cc: kosaki.motohiro@jp.fujitsu.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Rientjes <rientjes@google.com>, Ying Han <yinghan@google.com>,
+        Bodo Eggert <7eggert@web.de>, Mandeep Singh Baines <msb@google.com>,
+        "Figo.zhang" <figo1802@gmail.com>
+In-Reply-To: <20101114181905.bc5b44f9.akpm@linux-foundation.org>
+References: <20101115093410.BEFD.A69D9226@jp.fujitsu.com> <20101114181905.bc5b44f9.akpm@linux-foundation.org>
+Message-Id: <20101115113238.BF06.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20101115044820.GA8489@linux-sh.org>
-References: <20101027093716.GD6062@bicker>
-	<20101105134018.2c11f283.akpm@linux-foundation.org>
-	<20101113100718.GB1795@bicker>
-	<20101115044820.GA8489@linux-sh.org>
-Date: Mon, 15 Nov 2010 07:56:05 +0100
-X-Google-Sender-Auth: 8-KJXyjmnU10ydVLEKyWHkg8uCQ
-Message-ID: <AANLkTin0T5FN6WhUj0csypR=j0UPRbeHN+HC3N9xnk7E@mail.gmail.com>
-Subject: Re: [patch 2/2] fbcmap: integer overflow bug
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Dan Carpenter <error27@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 15 Nov 2010 15:57:36 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 05:48, Paul Mundt <lethal@linux-sh.org> wrote:
-> On Sat, Nov 13, 2010 at 01:07:18PM +0300, Dan Carpenter wrote:
->> @@ -256,8 +264,12 @@ int fb_set_user_cmap(struct fb_cmap_user *cmap, struct fb_info *info)
->>       int rc, size = cmap->len * sizeof(u16);
->>       struct fb_cmap umap;
->>
->> +     if (cmap->len * 2 > INT_MAX)
+> On Mon, 15 Nov 2010 09:54:14 +0900 (JST) KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> 
+> > > 2010/11/13 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
+> > > >
+> > > > Please apply this. this patch revert commits of oom changes since v2.6.35.
+> > > 
+> > > I'm not getting involved in this whole flame-war. You need to convince
+> > > Andrew, who has been the person everything went through.
+> > 
+> > I wonder why he deep silence.
+> 
+> Nothing to say, really.  Seems each time we're told about a bug or a
+> regression, David either fixes the bug or points out why it wasn't a
+> bug or why it wasn't a regression or how it was a deliberate behaviour
+> change for the better.
 
-Isn't that another integer overflow? I.e. should be "if (cmap->len >
-INT_MAX / sizeof(u16))" instead?
+Of cource, I denied. He seems to think number of email is meaningful than
+how talk about. but it's incorrect and makes no sense. Why not? Also, He
+have to talk about logically. "Hey, I think it's not bug" makes no sense.
+Such claim don't solve anything. userland is still unhappy. Why not?
+I want to quickly action.
 
->> +             return -EINVAL;
->> +
->>       memset(&umap, 0, sizeof(struct fb_cmap));
->> -     rc = fb_alloc_cmap(&umap, cmap->len, cmap->transp != NULL);
->> +     rc = fb_alloc_cmap_gfp(&umap, cmap->len, cmap->transp != NULL,
->> +                             GFP_KERNEL);
->>       if (rc)
->>               return rc;
->>       if (copy_from_user(umap.red, cmap->red, size) ||
->
-> This looks reasonable, but it probably makes more sense to use -E2BIG
-> for the overflow case (as other cases are doing already), and also just
-> to check size directly rather than open-coding the * 2.
+I would like to suggest they join and contribute any distro kernel 
+maintainance team. Many community based distribution welcome to developrs.
+And a bugfix work tell them a lot of thing. which usecase are freqently used,
+which bug reports are fequently raised, etc.
 
-Gr{oetje,eeting}s,
+That said, If anyone want to change userland ABI, Be carefully. They have
+to investigate userland usecase carefully and avoid to break them carefully 
+again. If someone think "hey, It's no big matter. userland rewritten can solve
+an issue", I strongly disagree. they don't understand why all of userland 
+applications rewritten is harmful.
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> I just haven't seen any solid reason to be concerned about the state of
+> the current oom-killer, sorry.
+
+You can't say "I haven't seen". I always cced you. 
+
+
+> I'm concerned that you're concerned!  A lot.  When someone such as
+> yourself is unhappy with part of MM then I sit up and pay attention. 
+> But after all this time I simply don't understand the technical issues
+> which you're seeing here.
+
+You should have read my patch descriptions which I sent and my e-mail.
+
+
+1) About two month ago, Dave hansen observed strange OOM issue because he
+   has a big machine and ALL process are not so big. thus, eventually all 
+   process got oom-score=0 and oom-killer didn't work.
+
+   https://kerneltrap.org/mailarchive/linux-driver-devel/2010/9/9/6886383
+
+   DavidR changed oom-score to +1 in such situation. 
+
+   http://kerneltrap.org/mailarchive/linux-kernel/2010/9/9/4617455
+
+   But it is completely bognus. If all process have score=1, oom-killer fall
+   back to purely random killer. I expected and explained his patch has
+   its problem at half years ago. but he didn't fix yet.
+
+2) Also half years ago, I did explained oom_adj is used from multiple 
+   applications. And we can't break them. But DavidR didn't fix.
+
+3) Also about four month ago, I and kamezawa-san pointed out his patch
+   don't work on memcg. It also haven't been fixed.
+
+
+In the other hand, You can't explain what worth OOM-rewritten patch has. 
+Because there is nothing. It is only "powerful"(TM) for Google. but 
+instead It has zero worth for every other people. Here is just technical 
+issue. Bah.
+
+
+
+And, I just don't understand why some people try to remove or obsolate
+oom_adj. It's just eight lines code and It's used from multiple applications.
+There is no reason to break userland at all.
+--------------------------------------------------------
+ 178        /*
+ 179         * Adjust the score by oom_adj.
+ 180         */
+ 181        if (oom_adj) {
+ 182                if (oom_adj > 0) {
+ 183                        if (!points)
+ 184                                points = 1;
+ 185                        points <<= oom_adj;
+ 186                } else
+ 187                        points >>= -(oom_adj);
+ 188        }
+--------------------------------------------------------
+
+
+If you still have a question, please ask me. maybe I can answer all of 
+your question.
+
+
+
