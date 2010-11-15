@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932616Ab0KOD1a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 22:27:30 -0500
-Received: from [120.204.251.227] ([120.204.251.227]:22889 "EHLO
-	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932514Ab0KOD13 (ORCPT
+	id S932672Ab0KOD15 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 22:27:57 -0500
+Received: from sr-smtp.usish.com ([210.5.144.203]:58240 "EHLO
+	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932514Ab0KOD14 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 22:27:29 -0500
-Message-ID: <4CE0A87E.1030304@leadcoretech.com>
-Date: Mon, 15 Nov 2010 11:26:54 +0800
-From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; zh-CN; rv:1.9.2.12) Gecko/20101028 Lightning/1.0b2 Lanikai/3.1.6
+	Sun, 14 Nov 2010 22:27:56 -0500
+From: "Jack Wang" <jack_wang@usish.com>
+To: "'Joe Perches'" <joe@perches.com>, "'Jiri Kosina'" <trivial@kernel.org>
+Cc: <lindar_liu@usish.com>, "'James E.J. Bottomley'" <James.Bottomley@suse.de>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+References: <cover.1289789604.git.joe@perches.com> <20b352f91642ca45ad730d8eeec0bbd323d26626.1289789605.git.joe@perches.com>
+Subject: RE: [PATCH 25/44] drivers/scsi/pm8001: Remove unnecessary semicolons
+Date: Mon, 15 Nov 2010 11:27:32 +0800
+Message-ID: <1671200DA80140558ED0D17FB55585AD@usish.com.cn>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Figo.zhang" <figo1802@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@osdl.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Revert oom rewrite series
-References: <1289402093.10699.25.camel@localhost.localdomain> <1289402666.10699.28.camel@localhost.localdomain> <20101114141913.E019.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011141330120.22262@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1011141330120.22262@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Nov 2010 03:27:26.0770 (UTC) FILETIME=[06A4E120:01CB8475]
+Content-Type: text/plain;
+	charset="gb2312"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 11
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5994
+Thread-Index: AcuEcgXhz8cjF31qQU6VXNE8zpGc0wAAnu4g
+In-Reply-To: <20b352f91642ca45ad730d8eeec0bbd323d26626.1289789605.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- >Nothing to say, really.  Seems each time we're told about a bug or a
- >regression, David either fixes the bug or points out why it wasn't a
- >bug or why it wasn't a regression or how it was a deliberate behaviour
- >change for the better.
-
- >I just haven't seen any solid reason to be concerned about the state of
- >the current oom-killer, sorry.
-
- >I'm concerned that you're concerned!  A lot.  When someone such as
- >yourself is unhappy with part of MM then I sit up and pay attention.
- >But after all this time I simply don't understand the technical issues
- >which you're seeing here.
-
-we just talk about oom-killer technical issues.
-
-i am doubt that a new rewrite but the athor canot provide some evidence 
-and experiment result, why did you do that? what is the prominent change 
-for your new algorithm?
-
-as KOSAKI Motohiro said, "you removed CAP_SYS_RESOURCE condition with 
-ZERO explanation".
-
-David just said that pls use userspace tunable for protection by 
-oom_score_adj. but may i ask question:
-
-1. what is your innovation for your new algorithm, the old one have the 
-same way for user tunable oom_adj.
-
-2. if server like db-server/financial-server have huge import processes 
-(such as root/hardware access processes)want to be protection, you let 
-the administrator to find out which processes should be protection. you
-will let the  financial-server administrator huge crazy!! and lose so 
-many money!! ^~^
-
-3. i see your email in LKML, you just said
-"I have repeatedly said that the oom killer no longer kills KDE when run 
-on my desktop in the presence of a memory hogging task that was written 
-specifically to oom the machine."
-http://thread.gmane.org/gmane.linux.kernel.mm/48998
-
-so you just test your new oom_killer algorithm on your desktop with KDE, 
-so have you provide the detail how you do the test? is it do the
-experiment again for anyone and got the same result as your comment ?
-
-as KOSAKI Motohiro said, in reality word, it we makes 5-6 brain 
-simulation, embedded, desktop, web server,db server, hpc, finance. 
-Different workloads certenally makes big impact. have you do those
-experiments?
-
-i think that technology should base on experiment not on imagine.
-
-
-Best,
-Figo.zhang
-
-
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/scsi/pm8001/pm8001_init.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/pm8001/pm8001_init.c
+> b/drivers/scsi/pm8001/pm8001_init.c
+> index f8c86b2..be210dd 100644
+> --- a/drivers/scsi/pm8001/pm8001_init.c
+> +++ b/drivers/scsi/pm8001/pm8001_init.c
+> @@ -160,7 +160,7 @@ static void pm8001_free(struct pm8001_hba_info
+*pm8001_ha)
+>  static void pm8001_tasklet(unsigned long opaque)
+>  {
+>  	struct pm8001_hba_info *pm8001_ha;
+> -	pm8001_ha = (struct pm8001_hba_info *)opaque;;
+> +	pm8001_ha = (struct pm8001_hba_info *)opaque;
+>  	if (unlikely(!pm8001_ha))
+>  		BUG_ON(1);
+>  	PM8001_CHIP_DISP->isr(pm8001_ha);
+> --
+> 1.7.3.1.g432b3.dirty
+[Jack Wang] Acked-by: Jack Wang <jack_wang@usish.com>
+Thanks£¡
 
 
