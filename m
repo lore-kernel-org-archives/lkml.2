@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932194Ab0KOMlg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 07:41:36 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:38323 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756135Ab0KOMlf (ORCPT
+	id S1756252Ab0KOMqe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 07:46:34 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:36338 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab0KOMqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 07:41:35 -0500
-Date: Mon, 15 Nov 2010 21:41:56 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: [GIT PULL] Samsung fixes for 2.6.37-rc2
-To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, ben-linux@fluff.org
-Message-id: <007901cb84c2$7f465a30$7dd30e90$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=US-ASCII
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: AcuEwnxpFQxPPwmfTmSjEeZ9hJ6Q0w==
+	Mon, 15 Nov 2010 07:46:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:in-reply-to:references:user-agent:date
+         :message-id:mime-version:content-type;
+        b=Sw8rMngJaBNQt0+zVWNV7dRaQjEx7sfKzMl3zBoBbwfM2x9vV8uqoQFCwZ7Ycy+RW7
+         JZkdu/wKQ1OQpnPsXobOn9zfR9yg6b+F1GJQRY3Jr7WR81RMsnyHNu56STKmtJ55rwE9
+         oUnjkqRX7QQPoyiwInkTa/oXxTlQRzw2+nxRI=
+From: Ben Gamari <bgamari.foss@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        rsync@lists.samba.org, linux-mm@kvack.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: fadvise DONTNEED implementation (or lack thereof)
+In-Reply-To: <20101115162713.BF12.A69D9226@jp.fujitsu.com>
+References: <20101115160413.BF0F.A69D9226@jp.fujitsu.com> <AANLkTim0vCJkMoH5P0wCN9J6340rDsscyNBQ+R+_ph8m@mail.gmail.com> <20101115162713.BF12.A69D9226@jp.fujitsu.com>
+User-Agent: Notmuch/0.5-3-g22aadfc (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
+Date: Mon, 15 Nov 2010 07:46:26 -0500
+Message-ID: <87tyjisqjh.fsf@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 15 Nov 2010 16:28:32 +0900 (JST), KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> Who can make rsync like io pattern test suite? a code change is easy. but
+> to comfirm justification is more harder work.
+> 
+I'm afraid I don't have time to work up any code. I would be happy to
+try the patch with my backup use-case though. I'll just have to think
+of an objective way of measuring the result.
 
-Please pull Samsung fixes from:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
-s5p-fixes-for-linus
-
-These things are for fix build warnings on 2.6.37-rc2.
-If any problems, please let me know.
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
-
-The following changes since commit c8ddb2713c624f432fa5fe3c7ecffcdda46ea0d4:
-
-  Linux 2.6.37-rc1 (2010-11-01 07:54:12 -0400)
-
-are available in the git repository at:
-   git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
-s5p-fixes-for-linus
-
-Kukjin Kim (2):
-      ARM: SAMSUNG: Fix HAVE_S3C2410_I2C warnings
-      ARM: SAMSUNG: Fix HAVE_S3C_RTC warnings
-
-Kyungmin Park (1):
-      ARM: SAMSUNG: Fix HAVE_S3C2410_WATCHDOG warnings
-
- arch/arm/Kconfig              |   32 ++++++++++++++++----------------
- arch/arm/mach-s3c64xx/Kconfig |    2 +-
- 2 files changed, 17 insertions(+), 17 deletions(-)
-
+- Ben
