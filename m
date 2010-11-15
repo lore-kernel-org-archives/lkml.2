@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757943Ab0KOS5q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 13:57:46 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:2820 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932513Ab0KOS5o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 13:57:44 -0500
-Message-ID: <4CE182A2.1020606@caviumnetworks.com>
-Date: Mon, 15 Nov 2010 10:57:38 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1758166Ab0KOS66 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 13:58:58 -0500
+Received: from kroah.org ([198.145.64.141]:43658 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756323Ab0KOS65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 13:58:57 -0500
+Date: Mon, 15 Nov 2010 10:44:22 -0800
+From: Greg KH <greg@kroah.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Vladislav Bolkhovitin <vst@vlnb.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        James Smart <James.Smart@emulex.com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+Message-ID: <20101115184422.GA9566@kroah.com>
+References: <20101109002829.GA22633@kroah.com>
+ <4CD9A9B8.70708@vlnb.net>
+ <4CDA6CD4.3010308@panasas.com>
+ <4CDAFE6E.7050200@vlnb.net>
+ <4CDBBE80.40908@panasas.com>
+ <4CDC56F9.9040601@vlnb.net>
+ <20101112012315.GE17097@core.coreip.homeip.net>
+ <4CDEC8D2.8080101@vlnb.net>
+ <20101113235938.GA1827@kroah.com>
+ <AANLkTi=PxYi8kCsAxbopUHBC+=2QPuoEcojdqugS88sH@mail.gmail.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, akpm@linux-foundation.org
-CC: linux-kernel@vger.kernel.org, arnd@arndb.de, benh@kernel.crashing.org,
-        cmetcalf@tilera.com, davem@davemloft.net, deller@gmx.de,
-        heiko.carstens@de.ibm.com, hpa@zytor.com, jejb@parisc-linux.org,
-        kyle@mcmartin.ca, mingo@elte.hu, roland@redhat.com,
-        schwidefsky@de.ibm.com, tglx@linutronix.de, tony.luck@intel.com
-Subject: Re: +	exec_domain-establish-a-linux32-domain-on-config_compat-systems.patc
- h added to -mm tree
-References: <201011122022.oACKM6HH029696@imap1.linux-foundation.org> <20101113171722.GA2956@redhat.com>
-In-Reply-To: <20101113171722.GA2956@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Nov 2010 18:58:25.0666 (UTC) FILETIME=[1523FE20:01CB84F7]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=PxYi8kCsAxbopUHBC+=2QPuoEcojdqugS88sH@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/13/2010 09:17 AM, Oleg Nesterov wrote:
-> On 11/12, Andrew Morton wrote:
->>
->> From: David Daney<ddaney@caviumnetworks.com>
->>
->> If PER_LINUX32 is set calling sys_personality, we will try to find the
->> corresponding exec_domain.  This causes us to try to load a module for
->> personality-8.  After running the userspace module loader and failing to
->> find the module, we fall back to the default.
->
-> Cough. It is not easy to me comment this patch ;)
->
-> Personally, I think this change is fine. But, despite the fact
-> the code in exec_domain.c is very trivial, I was never able to really
-> understand its rationality. And the usage of ->personality has some
-> oddities.
->
-> In particular, I can't parse default_exec_domain() at all. And,
-> what exec_domain->handler() actually does? I do not see anything
-> in arch/ which uses EXEC_DOMAIN offsets.
->
-> Perhaps someone from CC can explain this?
->
->
->> We can avoid the failed module loading overhead by building-in the
->> linux32_exec_domain for systems that have CONFIG_COMPAT.
->
-> Indeed. But at the same time this means it is not possible to use
-> personality-8.ko if the system has it.
+On Mon, Nov 15, 2010 at 06:45:24PM +0100, Bart Van Assche wrote:
+> On Sun, Nov 14, 2010 at 12:59 AM, Greg KH <greg@kroah.com> wrote:
+> >
+> > On Sat, Nov 13, 2010 at 08:20:18PM +0300, Vladislav Bolkhovitin wrote:
+> > > So, I decided to reimplement it to be completely synchronous. SYSFS
+> > > authors did really great job and thanks to the excellent internal SYSFS
+> > > design and implementation it is absolutely safe. See:
+> > >
+> > > [root@tgt ~]# modprobe scst
+> > > [root@tgt ~]# cd /sys/kernel/scst_tgt/
+> >
+> > Sorry, but no, you can't put this in /sys/kernel/ without getting the
+> > approval of the sysfs maintainer.
+> >
+> > I really don't understand why you are using kobjects in the first place,
+> > why isn't this in the main device tree in the kernel, using 'struct
+> > device'?
+> 
+> We might have missed something, but as far as we know it has not yet
+> been explained in this thread why using 'struct device' would be an
+> advantage over using 'struct kobject'.
 
-Well in the same way it is not possible to use personality-0.ko 
-(PER_LINUX) because it is just as built-in.
+It's very simple.
 
->
-> Don't get me wrong, I have no idea why anyone could want this module,
-> just I am a bit worried.
+You want your device to show up in the global device tree in the kernel,
+not off to one side, unconnected to anything else.
 
-If the personality is built-in, then I don't see how it makes any sense 
-to attempt to override it with an externally supplied version.  If you 
-want set a domain for PER_LINUX32, don't configure you system to supply 
-a default version.
+Please use 'struct device', it is what you want to do here.
 
->
->> +#ifdef CONFIG_COMPAT
->> +static struct exec_domain linux32_exec_domain = {
->> +	.name		= "Linux32",		/* name */
->> +	.handler	= default_handler,	/* lcall7 causes a seg fault. */
->> +	.pers_low	= PER_LINUX32,
->> +	.pers_high	= PER_LINUX32,
->> +	.signal_map	= ident_map,		/* Identity map signals. */
->> +	.signal_invmap	= ident_map,		/*  - both ways. */
->> +};
->> +#endif
->> +
->>   struct exec_domain default_exec_domain = {
->>   	.name		= "Linux",		/* name */
->>   	.handler	= default_handler,	/* lcall7 causes a seg fault. */
->> @@ -41,6 +52,9 @@ struct exec_domain default_exec_domain =
->>   	.pers_high	= 0,			/* PER_LINUX personality. */
->>   	.signal_map	= ident_map,		/* Identity map signals. */
->>   	.signal_invmap	= ident_map,		/*  - both ways. */
->> +#ifdef CONFIG_COMPAT
->> +	.next		=&linux32_exec_domain,
->> +#endif
->>   };
->
-> OK, but please look at arch/s390/kernel/compat_exec_domain.c and
-> arch/ia64/mm/init.c, they also register PER_LINUX32 domain, not
-> good. And note that register_exec_domain() doesn't check
-> pers_low/high, this means linux32_exec_domain can silently supress
-> s390_exec_domain/ia32_exec_domain.
->
+good luck,
 
-Ah, I had not known about this.  The comments in arch/ia64/mm/init.c 
-mirror my reason for creating the patch.
-
-I think the s390 and ia64 definitions will conflict with the #ifdef 
-CONFIG_COMPAT in my patch.  I will attempt to correct this in a new 
-version of the patch.
-
-Thanks for looking at this,
-David Daney
-
-
+greg k-h
