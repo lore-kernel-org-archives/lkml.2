@@ -1,196 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab0KONlG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 08:41:06 -0500
-Received: from tango.tkos.co.il ([62.219.50.35]:34892 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756772Ab0KONlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 08:41:03 -0500
-Date: Mon, 15 Nov 2010 15:40:26 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Alex Gershgorin <agersh@rambler.ru>
-Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
-Message-ID: <20101115134025.GB3649@jasper.tkos.co.il>
-References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
- <4CE0FE71.6000303@suse.cz>
- <20101115100838.GA3649@jasper.tkos.co.il>
- <4CE10B32.8090705@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE10B32.8090705@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756708Ab0KONmp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 08:42:45 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:47915 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755561Ab0KONmo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 08:42:44 -0500
+X-Sasl-enc: lOJTbO/r4l2N88zAL1+MqP8I/Zgw8BQH6+pcJyYlxyz3 1289828563
+Subject: Re: autofs4 hang in 2.6.37-rc1
+From: Ian Kent <raven@themaw.net>
+To: Avi Kivity <avi@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, autofs@linux.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1289828296.3248.54.camel@localhost>
+References: <4CDFDC2B.6040205@redhat.com> <4CE00194.3070601@redhat.com>
+	 <1289785533.3248.18.camel@localhost>  <201011150954.34289.arnd@arndb.de>
+	 <1289827341.3248.49.camel@localhost>  <4CE13539.1020106@redhat.com>
+	 <1289828296.3248.54.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Nov 2010 21:42:38 +0800
+Message-ID: <1289828558.3248.58.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
-
-On Mon, Nov 15, 2010 at 11:28:02AM +0100, Jiri Slaby wrote:
-> On 11/15/2010 11:08 AM, Baruch Siach wrote:
-> > Thanks for reviewing. See my response to your comments below.
+On Mon, 2010-11-15 at 21:38 +0800, Ian Kent wrote:
+> On Mon, 2010-11-15 at 15:27 +0200, Avi Kivity wrote:
+> > On 11/15/2010 03:22 PM, Ian Kent wrote:
+> > > >  Ian, if you can prove that the lock is not needed, I think we shold
+> > > >  just remove it.
+> > >
+> > > I don't think I can prove it but I will have a long look at the code.
+> > > I don't think it is needed and I expect I'll recommend it be removed.
 > > 
-> > On Mon, Nov 15, 2010 at 10:33:37AM +0100, Jiri Slaby wrote:
-> >> On 11/15/2010 09:23 AM, Baruch Siach wrote:
-> >>> --- /dev/null
-> >>> +++ b/drivers/misc/altera_as.c
-> >>> @@ -0,0 +1,349 @@
-> >> ...
-> >>> +struct altera_as_device {
-> >>> +	unsigned id;
-> >>> +	struct device *dev;
-> >>> +	struct miscdevice miscdev;
-> >>> +	struct mutex open_lock;
-> >>> +	struct gpio gpios[AS_GPIO_NUM];
-> >>> +};
-> >>> +
-> >>> +/*
-> >>> + * The only functions updating this array are .probe/.remove, which are
-> >>> + * serialized. Hence, no locking is needed here.
-> >>> + */
-> >>> +static struct {
-> >>> +	int minor;
-> >>
-> >> Why you need minor here? It's in drvdata->miscdev.minor.
-> > 
-> > I use the minor field to lookup the drvdata pointer in get_as_dev(), which I 
-> > use is altera_as_open().  I do this because I have no access to the 'struct 
-> > device' pointer from the .open method. Do you know a better way?
-> > 
-> >>> +	struct altera_as_device *drvdata;
-> >>> +} altera_as_devs[AS_MAX_DEVS];
-> >>
-> >> You don't need the struct at all.
-> >> static struct altera_as_device *drvdata[AS_MAX_DEVS];
-> >> should be enough.
-> > 
-> > See above.
+> > I've been running with the lock removed for a while with no ill effect.  
+> > Of course it doesn't prove anything but at least it's a workaround for me.
 > 
-> The answer to you previous question is here. You can just have a global
-> array of struct altera_as_device.
+> Yeah, I tried pretty hard over quite a long time, with the expectation
+> that the BKL would be removed, to try and make the code independent of
+> it. At one point patched the kernel to use the unlocked ioctl entry
+> point during some development testing and found only one fix that was
+> needed, although a lot has changed since then too.
 
-This static array would occupy sizeof(struct altera_as_device) * AS_MAX_DEVS 
-== 128 (for 32bit) * 16 == 2KB unconditionally. This seems unreasonable to me.  
-IMO struct altera_as_device should be allocated per device at run time.
+Hahaha, although as you say, I won't really know if there are races
+until I get people really hammering autofs. But, since that's were this
+is at maybe that's reason enough to remove it so we can get people to
+start applying pressure to the code so we find and fix any problems.
 
-> >>> +static int altera_as_open(struct inode *inode, struct file *file)
-> >>> +{
-> >>> +	int ret;
-> >>> +	struct altera_as_device *drvdata = get_as_dev(iminor(inode));
-> >>> +
-> >>> +	if (drvdata == NULL)
-> >>> +		return -ENODEV;
-> >>> +	file->private_data = drvdata;
-> >>> +
-> >>> +	ret = mutex_trylock(&drvdata->open_lock);
-> >>> +	if (ret == 0)
-> >>> +		return -EBUSY;
-> >>> +
-> >>> +	ret = gpio_request_array(drvdata->gpios, ARRAY_SIZE(drvdata->gpios));
-> >>> +	if (ret < 0) {
-> >>> +		mutex_unlock(&drvdata->open_lock);
-> >>> +		return ret;
-> >>> +	}
-> >>
-> >> So leaving to userspace with mutex held. This is *wrong*. use
-> >> test_and_set_bit or alike instead.
-> > 
-> > Can you explain why this is wrong? I don't mind doing test_and_set_bit 
-> > instead, I'm just curious.
 > 
-> The mutex has an owner which it expects to unlock it. For example if you
-> fork a process which already opened the device, you have a problem. This
-> is a technical point. Another point is that it's ugly to leave to
-> userspace with any lock.
+> Ian
 > 
-> >>> +static int __init altera_as_probe(struct platform_device *pdev)
-> >>> +{
-> >> ...
-> >>> +	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
-> >>> +	drvdata->miscdev.name = kasprintf(GFP_KERNEL, "altera_as%d",
-> >>> +			pdata->id);
-> >>> +	if (drvdata->miscdev.name == NULL)
-> >>> +		return -ENOMEM;
-> >>> +	drvdata->miscdev.fops = &altera_as_fops;
-> >>> +	if (misc_register(&drvdata->miscdev) < 0) {
-> >>
-> >> Hmm, how many devices can be in the system?
-> > 
-> > Up to AS_MAX_DEVS, currently 16.
-> > 
-> >> This doesn't look like the right way.
-> > 
-> > What is the right way then?
-> 
-> Ok, so for that count it definitely deserves its own major to not eat up
-> misc device space.
 
-A previous version of this driver[1] did just that. It was Greg KH who 
-suggested[2] to use the misc class.
 
-[1] http://article.gmane.org/gmane.linux.kernel/1057434
-[2] http://article.gmane.org/gmane.linux.kernel/1058627
-
-> >>> +		kfree(drvdata->miscdev.name);
-> >>> +		return -ENODEV;
-> >>> +	}
-> >>> +	altera_as_devs[pdata->id].minor = drvdata->miscdev.minor;
-> >>> +	altera_as_devs[pdata->id].drvdata = drvdata;
-> >>
-> >> So now the device is usable without the mutex and gpios inited?
-> > 
-> > I was thinking that the device lock which is being held during the .probe run, 
-> > prevents the device from being open. After all I can still return -EGOAWAY at 
-> > this point. Am I wrong?
-> > 
-> > If so, I'll reorder this code.
-> 
-> This cannot be done easily. You need to set drvdata prior to minor and
-> after all the assignments here. The former because in get_as_dev you
-> test minor and return drvdata.
-
-When drvdata is not set it contains NULL. The .open method then just returns 
--ENODEV. So moving the drvdata assignment to the end of .probe should plug all 
-race scenarios without any additional locking, isn't it?
-
-> The latter because you use open_lock &
-> gpios after playing with minor & drvdata.
-> 
-> Technically, it can be done with a use of barriers, but I don't
-> recommend it as drivers should not use barriers at all. You should
-> introduce some locking here (it introduces barriers on its own).
-> 
-> So move the assignment to altera_as_devs below the mutex_init & gpios
-> setup and lock it appropriately. Then add a lock to get_as_dev.
-> 
-> >>> +	mutex_init(&drvdata->open_lock);
-> >>> +
-> >>> +	drvdata->id = pdata->id;
-> >>> +
-> >>> +	drvdata->gpios[ASIO_DATA].gpio		= pdata->data;
-> >>> +	drvdata->gpios[ASIO_DATA].flags		= GPIOF_IN;
-> >>> +	drvdata->gpios[ASIO_DATA].label		= "as_data";
-> >> ...
-> >>> +	drvdata->gpios[ASIO_NCE].gpio		= pdata->nce;
-> >>> +	drvdata->gpios[ASIO_NCE].flags		= GPIOF_OUT_INIT_HIGH;
-> >>> +	drvdata->gpios[ASIO_NCE].label		= "as_nce";
-> >>> +
-> >>> +	dev_info(drvdata->dev, "Altera Cyclone Active Serial driver\n");
-> >>> +
-> >>> +	return 0;
-> >>> +}
-> 
-> regards,
-> -- 
-> js
-> suse labs
-
-baruch
-
--- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
