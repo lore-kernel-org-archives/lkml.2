@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932778Ab0KODNW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 22:13:22 -0500
-Received: from mail.perches.com ([173.55.12.10]:1151 "EHLO mail.perches.com"
+	id S932622Ab0KODFc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 22:05:32 -0500
+Received: from mail.perches.com ([173.55.12.10]:1127 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932629Ab0KODFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 22:05:33 -0500
+	id S1757330Ab0KODF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 22:05:29 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 10/44] drivers/misc: Remove unnecessary semicolons
-Date: Sun, 14 Nov 2010 19:04:29 -0800
-Message-Id: <f1f1ff72045c075062d3fbe8d2bfcf67bdb1571d.1289789604.git.joe@perches.com>
+Cc: Michal Simek <monstr@monstr.eu>, microblaze-uclinux@itee.uq.edu.au,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 02/44] arch/microblaze: Remove unnecessary semicolons
+Date: Sun, 14 Nov 2010 19:04:21 -0800
+Message-Id: <5d57b90b488b4338bcdc3f0fbf5f6996842bd44d.1289789604.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289789604.git.joe@perches.com>
 References: <cover.1289789604.git.joe@perches.com>
@@ -21,36 +22,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/misc/bmp085.c   |    2 +-
- drivers/misc/isl29020.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/microblaze/lib/memmove.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/misc/bmp085.c b/drivers/misc/bmp085.c
-index 63ee4c1..6b8a394 100644
---- a/drivers/misc/bmp085.c
-+++ b/drivers/misc/bmp085.c
-@@ -216,7 +216,7 @@ static s32 bmp085_get_temperature(struct bmp085_data *data, int *temperature)
- 		*temperature = (x1+x2+8) >> 4;
- 
- exit:
--	return status;;
-+	return status;
- }
- 
- /*
-diff --git a/drivers/misc/isl29020.c b/drivers/misc/isl29020.c
-index ca47e62..e6bbf13 100644
---- a/drivers/misc/isl29020.c
-+++ b/drivers/misc/isl29020.c
-@@ -158,7 +158,7 @@ static int als_set_default_config(struct i2c_client *client)
- 		dev_err(&client->dev, "default write failed.");
- 		return retval;
- 	}
--	return 0;;
-+	return 0;
- }
- 
- static int  isl29020_probe(struct i2c_client *client,
+diff --git a/arch/microblaze/lib/memmove.c b/arch/microblaze/lib/memmove.c
+index 123e361..810fd68 100644
+--- a/arch/microblaze/lib/memmove.c
++++ b/arch/microblaze/lib/memmove.c
+@@ -182,7 +182,7 @@ void *memmove(void *v_dst, const void *v_src, __kernel_size_t c)
+ 			for (; c >= 4; c -= 4) {
+ 				value = *--i_src;
+ 				*--i_dst = buf_hold | ((value & 0xFF000000)>> 24);
+-				buf_hold = (value & 0xFFFFFF) << 8;;
++				buf_hold = (value & 0xFFFFFF) << 8;
+ 			}
+ #endif
+ 			/* Realign the source */
 -- 
 1.7.3.1.g432b3.dirty
 
