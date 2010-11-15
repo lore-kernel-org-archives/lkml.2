@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932695Ab0KODOK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 22:14:10 -0500
-Received: from mail.perches.com ([173.55.12.10]:1142 "EHLO mail.perches.com"
+	id S932979Ab0KODOp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 22:14:45 -0500
+Received: from mail.perches.com ([173.55.12.10]:1136 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932587Ab0KODFb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 22:05:31 -0500
+	id S932550Ab0KODFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 22:05:30 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 07/44] drivers/isdn: Remove unnecessary semicolons
-Date: Sun, 14 Nov 2010 19:04:26 -0800
-Message-Id: <c7a38f65340aafb208d50fc3a781602c07aebb0c.1289789604.git.joe@perches.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 05/44] drivers/gpio: Remove unnecessary semicolons
+Date: Sun, 14 Nov 2010 19:04:24 -0800
+Message-Id: <a04f2c16a94e214f0a1828c4cea95f815a816853.1289789604.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289789604.git.joe@perches.com>
 References: <cover.1289789604.git.joe@perches.com>
@@ -22,45 +21,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/isdn/hardware/mISDN/mISDNinfineon.c |    4 ++--
- drivers/isdn/hardware/mISDN/mISDNisar.c     |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpio/langwell_gpio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/isdn/hardware/mISDN/mISDNinfineon.c b/drivers/isdn/hardware/mISDN/mISDNinfineon.c
-index e90db88..bc0529a 100644
---- a/drivers/isdn/hardware/mISDN/mISDNinfineon.c
-+++ b/drivers/isdn/hardware/mISDN/mISDNinfineon.c
-@@ -420,7 +420,7 @@ enable_hwirq(struct inf_hw *hw)
- 		break;
- 	case INF_NICCY:
- 		val = inl((u32)hw->cfg.start + NICCY_IRQ_CTRL_REG);
--		val |= NICCY_IRQ_ENABLE;;
-+		val |= NICCY_IRQ_ENABLE;
- 		outl(val, (u32)hw->cfg.start + NICCY_IRQ_CTRL_REG);
- 		break;
- 	case INF_SCT_1:
-@@ -924,7 +924,7 @@ setup_instance(struct inf_hw *card)
- 		mISDNipac_init(&card->ipac, card);
- 
- 	if (card->ipac.isac.dch.dev.Bprotocols == 0)
--		goto error_setup;;
-+		goto error_setup;
- 
- 	err = mISDN_register_device(&card->ipac.isac.dch.dev,
- 		&card->pdev->dev, card->name);
-diff --git a/drivers/isdn/hardware/mISDN/mISDNisar.c b/drivers/isdn/hardware/mISDN/mISDNisar.c
-index 38eb314..d13fa5b 100644
---- a/drivers/isdn/hardware/mISDN/mISDNisar.c
-+++ b/drivers/isdn/hardware/mISDN/mISDNisar.c
-@@ -264,7 +264,7 @@ load_firmware(struct isar_hw *isar, const u8 *buf, int size)
- 			while (noc) {
- 				val = le16_to_cpu(*sp++);
- 				*mp++ = val >> 8;
--				*mp++ = val & 0xFF;;
-+				*mp++ = val & 0xFF;
- 				noc--;
- 			}
- 			spin_lock_irqsave(isar->hwlock, flags);
+diff --git a/drivers/gpio/langwell_gpio.c b/drivers/gpio/langwell_gpio.c
+index 64db9dc..ed05ecb 100644
+--- a/drivers/gpio/langwell_gpio.c
++++ b/drivers/gpio/langwell_gpio.c
+@@ -122,7 +122,7 @@ static int lnw_gpio_direction_output(struct gpio_chip *chip,
+ 	lnw_gpio_set(chip, offset, value);
+ 	spin_lock_irqsave(&lnw->lock, flags);
+ 	value = readl(gpdr);
+-	value |= BIT(offset % 32);;
++	value |= BIT(offset % 32);
+ 	writel(value, gpdr);
+ 	spin_unlock_irqrestore(&lnw->lock, flags);
+ 	return 0;
 -- 
 1.7.3.1.g432b3.dirty
 
