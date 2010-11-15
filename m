@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab0KOJ7S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 04:59:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61543 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753510Ab0KOJ7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 04:59:17 -0500
-Message-ID: <4CE1046F.8060100@redhat.com>
-Date: Mon, 15 Nov 2010 11:59:11 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1755371Ab0KOJ7X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 04:59:23 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:52964 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755290Ab0KOJ7V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 04:59:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=IUc6/9qKwtOvJO/yQ3CB/96otyGVBKpCkF80nWy1MFBIn0HZvMPW3pWMOVR0gNyguV
+         mCphF94OwNXNEmbCKWYQ==
+Date: Mon, 15 Nov 2010 01:59:12 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [resend][PATCH 2/4] Revert "oom: deprecate oom_adj tunable"
+In-Reply-To: <20101115092238.BEEE.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1011150152490.2986@chino.kir.corp.google.com>
+References: <20101109105801.BC30.A69D9226@jp.fujitsu.com> <20101109122817.BC5A.A69D9226@jp.fujitsu.com> <20101115092238.BEEE.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 5/5] KVM: MMU: retry #PF for softmmu
-References: <4CDCE2B0.7000601@cn.fujitsu.com> <4CDCE3C2.9030107@cn.fujitsu.com> <4CDFBE00.2000802@redhat.com> <4CE0C45C.809@cn.fujitsu.com> <4CE0FDBC.20505@redhat.com> <4CE1038D.9020403@cn.fujitsu.com>
-In-Reply-To: <4CE1038D.9020403@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 11:55 AM, Xiao Guangrong wrote:
-> >>  >   Or another thread may have mmap()ed something else over the
-> >>  >   same address.
-> >>
-> >>  The mmap virtual address is also visible for other threads since the
-> >>  threads
-> >>  have the same page table, so i think this case is the same as above?
-> >
-> >  Again, don't we install the wrong spte in this case?
-> >
->
-> I think it doesn't corrupts spte since we will walk guest page table again
-> and map it to shadow pages when we retry #PF.
+On Mon, 15 Nov 2010, KOSAKI Motohiro wrote:
 
-Well, you're right, we don't use any gfn/pfn info from the async page fault.
+> At v2.6.36-rc1, oom-killer doesn't work at all because YOU BROKE.
+> And I was working on fixing it.
+> 
+> 2010-08-19
+> http://marc.info/?t=128223176900001&r=1&w=2
 
-However, we're still not modelling the cpu accurately.  For example we 
-will set dirty and accessed bits, or inject a page fault if the gpte 
-turns out to be not present.
+This existed before my oom killer rewrite, it was only noticed because the 
+rewrite enabled oom_dump_tasks by default.
 
--- 
-error compiling committee.c: too many arguments to function
+> http://marc.info/?t=128221532700003&r=1&w=2
 
+Yes, tasklist_lock was dropped in a mismerge of my patches when posting 
+them.  Thanks for finding it and posting a patch, I appreciate it.
+
+> http://marc.info/?t=128221532500008&r=1&w=2
+> 
+
+Yes, if a task was racing between oom_kill_process() and oom_kill_task() 
+and all threads had dropped its mm between calls then there was a NULL 
+pointer dereference, thanks for fixing that as well.
+
+> However, You submitted new crap before the fixing. 
+> 
+> 2010-08-15
+> http://marc.info/?t=128184669600001&r=1&w=2
+> 
+
+This isn't "crap", this is a necessary bit to ensure that tasks that share 
+an ->mm with a task immune from kill aren't killed themselves since we 
+can't free the memory.  We came to the consensus that it would be better 
+to count the tasks that are OOM_DISABLE in the mm_struct to avoid the 
+O(2*n) tasklist scan.
+
+> If you tested mainline a bit, you could find the problem quickly.
+> You should have fixed mainline kernel at first.
+> 
+
+Thanks for finding a couple fixes during the 2.6.36-rc1 when the rewrite 
+was first merged, it's much appreciated!
