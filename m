@@ -1,109 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932096Ab0KONm5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 08:42:57 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:46457 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756786Ab0KONmz (ORCPT
+	id S1756772Ab0KONni (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 08:43:38 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53895 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755265Ab0KONnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 08:42:55 -0500
-Date: Mon, 15 Nov 2010 08:42:44 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] New tools: lttngtrace and lttngreport
-Message-ID: <20101115134243.GA2772@Krystal>
+	Mon, 15 Nov 2010 08:43:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=k2qPuJnR/Fl9A5PX9DQOtxBB4tYjbug5J3YbU82t7krKq1890D+UmOAh3YuF//v0MJ
+         +NWXPebTCsup4lvc1TmDKeiYgsue2+EC6G+mDzyhlRKwRgEylTouyZBYfk6Au0ENkrI3
+         lOUgmeumlikYOxL0XpsX2vWQqPU0wtpiyn+Kg=
+Date: Mon, 15 Nov 2010 14:43:31 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: mingo@elte.hu, rostedt@goodmis.org, andi@firstfloor.org,
+        lwoodman@redhat.com, hch@infradead.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv2 2/2] tracing,mm - add kernel pagefault tracepoint for
+	x86 & x86_64
+Message-ID: <20101115134325.GA5410@nowhere>
+References: <20101110164413.GA5360@nowhere> <1289466549-7602-3-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 08:20:40 up 53 days, 17:22,  4 users,  load average: 1.51, 1.31,
-	1.22
+In-Reply-To: <1289466549-7602-3-git-send-email-jolsa@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Thu, Nov 11, 2010 at 10:09:09AM +0100, Jiri Olsa wrote:
+> This provides a tracepoint to trace kernel pagefault event.
+> 
+> When analyzing a vmcore resulting from a kernel failure, we
+> often hypothesize that "there should have a pagefault event
+> just before this instruction" or similar.  Sometimes it means
+> that there should have a small delay between instructions that
+> extends a critical session and exposed a missing lock.  Since
+> there have been no evidence of kernel pagefault, it is quite
+> difficult to adopt the hypothesis.
+> 
+> If we can trace the kernel pagefault event, it will help narrow
+> the possible cause of failure and will accelerate the
+> investigation a lot.
+> 
+> 
+> Signed-off-by: Larry Woodman <lwoodman@redhat.com>
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  arch/x86/mm/fault.c         |   33 ++++++++++++++++++++++-----------
+>  include/trace/events/kmem.h |   23 +++++++++++++++++++++++
+>  2 files changed, 45 insertions(+), 11 deletions(-)
+> 
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index 7d90ceb..171dcc9 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -12,6 +12,7 @@
+>  #include <linux/mmiotrace.h>		/* kmmio_handler, ...		*/
+>  #include <linux/perf_event.h>		/* perf_sw_event		*/
+>  #include <linux/hugetlb.h>		/* hstate_index_to_shift	*/
+> +#include <trace/events/kmem.h>
+>  
+>  #include <asm/traps.h>			/* dotraplinkage, ...		*/
+>  #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
+> @@ -944,17 +945,11 @@ static int fault_in_kernel_space(unsigned long address)
+>  	return address >= TASK_SIZE_MAX;
+>  }
+>  
+> -/*
+> - * This routine handles page faults.  It determines the address,
+> - * and the problem, and then passes it off to one of the appropriate
+> - * routines.
+> - */
+> -dotraplinkage void __kprobes
+> -do_page_fault(struct pt_regs *regs, unsigned long error_code)
+> +static inline void __do_page_fault(struct pt_regs *regs, unsigned long address,
+> +				   unsigned long error_code)
+>  {
+>  	struct vm_area_struct *vma;
+>  	struct task_struct *tsk;
+> -	unsigned long address;
+>  	struct mm_struct *mm;
+>  	int fault;
+>  	int write = error_code & PF_WRITE;
+> @@ -964,9 +959,6 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  	tsk = current;
+>  	mm = tsk->mm;
+>  
+> -	/* Get the faulting address: */
+> -	address = read_cr2();
+> -
+>  	/*
+>  	 * Detect and handle instructions that would cause a page fault for
+>  	 * both a tracked kernel page and a userspace page.
+> @@ -1158,3 +1150,22 @@ good_area:
+>  
+>  	up_read(&mm->mmap_sem);
+>  }
+> +
+> +/*
+> + * This routine handles page faults.  It determines the address,
+> + * and the problem, and then passes it off to one of the appropriate
+> + * routines.
+> + */
+> +dotraplinkage void __kprobes
+> +do_page_fault(struct pt_regs *regs, unsigned long error_code)
+> +{
+> +	unsigned long address;
+> +
+> +	/* Get the faulting address: */
+> +	address = read_cr2();
+> +
+> +	__do_page_fault(regs, address, error_code);
+> +
+> +	if (!user_mode(regs))
+> +		trace_mm_kernel_pagefault(current, address, error_code);
+> +}
 
-Recently, Linus came up with a request: a "super-strace" based on kernel
-tracing. So I just came up with two bash scripts that perform exactly this within
-LTTng: lttngtrace starts tracing, runs a program, stops tracing. lttngreport
-generates a wakeup dependency report. I'm appending the script below (depends on
-LTTng kernel tree, LTTng modules package, ltt-control and lttv).
-
-It will report which interrupt/softirq and wakeup dependency chain caused each
-wakeup, along with the duration within each step of the wakeup chain. This
-includes I/O activity, traps, and syscalls.
-
-Usage, e.g. to trace a git clone (must be run as root):
-
-# lttngtrace git clone git://git.lttng.org/lttv.git
-[...]
-
-% lttngreport
-[...]
-Woken up in context of 29856 [/usr/lib/git-core/git] in high-level state RUNNING
-Blocked in RUNNING, SYSCALL 7 [sys_waitpid+0x0/0x30], (times: 139642.854813709-139642.855068608, dur: 0.000255)
-Woken up in context of 29856 [/usr/lib/git-core/git] in high-level state RUNNING
-Blocked in RUNNING, SYSCALL 118 [sys_fsync+0x0/0x10], (times: 139642.855714820-139642.855795631, dur: 0.000081)
-Woken up by a SoftIRQ: SoftIRQ 4 [blk_done_softirq+0x0/0x70]
-Blocked in RUNNING, SYSCALL 118 [sys_fsync+0x0/0x10], (times: 139642.855870453-139642.858538485, dur: 0.002668)
-         Blocked in UNKNOWN, (times: 139642.855869565-139642.858434668, dur: 0.002565)
-         Woken up by a SoftIRQ: SoftIRQ 4 [blk_done_softirq+0x0/0x70]
-         Blocked in UNKNOWN, (times: 139642.858483534-139642.858528693, dur: 0.000045)
-         Woken up by a SoftIRQ: SoftIRQ 4 [blk_done_softirq+0x0/0x70]
-Woken up in context of 1140 [kjournald]UNKNOWN,  in high-level state UNKNOWN
-Blocked in RUNNING, SYSCALL 168 [sys_poll+0x0/0xc0], (times: 139642.859478216-139642.860636322, dur: 0.001158)
-Woken up by a SoftIRQ: SoftIRQ 3 [net_rx_action+0x0/0x1e0]
-Blocked in RUNNING, SYSCALL 38 [sys_rename+0x0/0x30], (times: 139642.861159211-139642.861240877, dur: 0.000082)
-Woken up by a SoftIRQ: SoftIRQ 4 [blk_done_softirq+0x0/0x70]
-
-I'll be happy to tweak the report as I receive feedback.
-
-(bash scripts below, depends on current lttv git tree)
-
-Thanks,
-
-Mathieu
-
--------
-lttngtrace:
-
-#!/bin/sh
-
-rm -fr /tmp/autotrace1
-ltt-armall
-
-lttctl -C -w /tmp/autotrace1 autotrace1
-
-${*} &
-CHILDPID=$!
-wait
-
-lttctl -D autotrace1
-ltt-disarmall
-
-echo ${CHILDPID} > /tmp/autotrace1-pid
-
-------
-lttngreport:
-
-#!/bin/sh
-
-CHILDPID=$(cat /tmp/autotrace1-pid)
-
-lttv -m depanalysis -t /tmp/autotrace1 --dep-pid ${CHILDPID}
 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+I (and others) have been testing your patch to measure the latencies of page
+faults.
+
+So I have several comments about it.
+
+First, we don't want a pointer to current, we can already retrieve the pid
+from a trace.
+
+Second, it would be definetly interesting to also have the instruction address
+that faulted (regs->ip).
+
+Three, I wonder why this tracepoint only traces kernel faults. And in fact
+kernel faults is a confusing name. Users will be confused whether this is
+about tracing only faults happening in kernel or also faults happening in
+kernel data.
+Actually I don't see any reason right now to trace only kernel faults. Do you?
+If that's needed, one can still check on post-processing that the address
+was in the kernel.
+
+And four, measuring page fault handling duration can be desired, it would be
+nice to have a page_fault_start, page_fault_end.
+
+
+So in the end we can get:
+
+
+dotraplinkage void __kprobes
+do_page_fault(struct pt_regs *regs, unsigned long error_code)
+{
+	unsigned long address;
+
+	/* Get the faulting address: */
+	address = read_cr2();
+
+	trace_mm_pagefault_start(address, error_code);
+	__do_page_fault(regs, address, error_code);
+	trace_mm_pagefault_end(address);
+}
+
+
+Would you be ok with that?
+
+Last thing I worry about is that error_code that is very arch dependent.
+If someone writes a script that depends on the x86 code, it won't work
+elsewhere while it's fairly possible to have a generic tracepoint there.
+
+So perhaps we rather need a generic enum field instead of the error_code,
+to express the most interesting specific fault attributes. Than can
+probably be added later though, once someone really needs it.
+
+Hm?
+
