@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921Ab0KOQHz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 11:07:55 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:39697 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756430Ab0KOQHy (ORCPT
+	id S1757798Ab0KOQOe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 11:14:34 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62144 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756430Ab0KOQOc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 11:07:54 -0500
-Date: Mon, 15 Nov 2010 11:07:45 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org
-Subject: Re: [ANNOUNCE] New tools: lttngtrace and lttngreport
-Message-ID: <20101115160745.GA7203@Krystal>
-References: <20101115134243.GA2772@Krystal>
+	Mon, 15 Nov 2010 11:14:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=e26ihB6ygM6TmQ7eTZARvH+50EXKdtGBqVlefJHwDolUnZ+Zs0AUDcAcl5rDlnk0OW
+         tCpNI0ayYj/52/kcGtYInHgRAYL3bWO6BCAKyFqKpt7Bl1cFVVa9gOnEv1vx57lxhKdX
+         MeuG4wu3p9kvvqNaD5nTW3uzVHhx/h6OGpReo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101115134243.GA2772@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 10:45:56 up 53 days, 19:48,  4 users,  load average: 0.10, 0.19,
-	0.14
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <3B38AD35-39A2-4A54-8109-65D6DE436227@kernel.crashing.org>
+References: <1289477789-10651-1-git-send-email-leoli@freescale.com>
+ <54AAF9B7-9533-45B8-9C49-A964203AF707@kernel.crashing.org>
+ <AANLkTi=1nutREorMFY2VJyUYQD0SHfiSeskw-u22P+R-@mail.gmail.com> <3B38AD35-39A2-4A54-8109-65D6DE436227@kernel.crashing.org>
+From: Timur Tabi <timur.tabi@gmail.com>
+Date: Mon, 15 Nov 2010 10:13:58 -0600
+Message-ID: <AANLkTin8+13mr-tV-2iCG+zGRfF6xZ23cN+=44dsaQor@mail.gmail.com>
+Subject: Re: [PATCH v2] fsldma: add support to 36-bit physical address
+To: Kumar Gala <galak@kernel.crashing.org>
+Cc: Li Yang <leoli@freescale.com>, dan.j.williams@intel.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> Hi everyone,
-> 
-> Recently, Linus came up with a request: a "super-strace" based on kernel
-> tracing. So I just came up with two bash scripts that perform exactly this within
-> LTTng: lttngtrace starts tracing, runs a program, stops tracing. lttngreport
-> generates a wakeup dependency report. I'm appending the script below (depends on
-> LTTng kernel tree, LTTng modules package, ltt-control and lttv).
-> 
-> It will report which interrupt/softirq and wakeup dependency chain caused each
-> wakeup, along with the duration within each step of the wakeup chain. This
-> includes I/O activity, traps, and syscalls.
+On Mon, Nov 15, 2010 at 9:16 AM, Kumar Gala <galak@kernel.crashing.org> wrote:
 
-Hi again,
+> The programming model (if you look at the free-space in the registers and data structures) supports a 64-bit address.  I'm trying to avoid changing the driver in the future if we have >36-bit.  However this is such a minor worry that I'll stop and just ack the patch as is.
 
-I just enhanced the wakeup dependency chain output to make it more
-understandable by humans. It's astonishing what we can do with a bit of ASCII
-art. For instance, here I am showing piece of firefox start trace:
+I must still be missing something.  I'm looking at the description of
+the SATR register in the MPC8572 RM, and it shows this:
 
-        --> Blocked in RUNNING, SYSCALL 142 [sys_select+0x0/0xc0], ([...], dur: 0.029567)
-        |    --> Blocked in RUNNING, SYSCALL 168 [sys_poll+0x0/0xc0], ([...], dur: 1.187935)
-        |    --- Woken up by an IRQ: IRQ 0 [timer]
-        --- Woken up in context of 7401 [gnome-power-man] in high-level state RUNNING
+0 - 3 |   4 - 5   |     6     |   7  |   8 - 11  |   12 - 15  | 16-21 | 22-31
+ ---  | STFLOWLVL | SPCIORDER | SSME | STRANSINT | SREADTTYPE |  ---  |  ESAD
 
-As you see, firefox blocked for 29.5 microseconds on select() waiting for a file
-descriptor, the wake up came from "gnome-power-manager" after the poll() timed
-out (1 second timeout). (This specific scenario cannot be reproduced at every
-firefox run, but it is still a good example of how these spurious delays can be
-identified with the tool.)
-
-Thanks,
-
-Mathieu
+The most that we can extend ESAD to is 16 bits, for a total of a
+48-bit physical address.  Where are the other 16 bits supposed to go?
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Timur Tabi
+Linux kernel developer at Freescale
