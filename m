@@ -1,72 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757824Ab0KOPLo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 10:11:44 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:56114 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757576Ab0KOPLn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 10:11:43 -0500
-Subject: Re: [RFC][PATCH v2 4/7] taskstats: Add per task steal time
- accounting
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
+	id S1756489Ab0KOPP4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 10:15:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9601 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754072Ab0KOPPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 10:15:55 -0500
+Date: Mon, 15 Nov 2010 16:13:50 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
         Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org,
-        "jeremy.fitzhardinge" <jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <20101115155057.15f3be35@mschwide.boeblingen.de.ibm.com>
-References: <20101111170352.732381138@linux.vnet.ibm.com>
-	 <20101111170815.024542355@linux.vnet.ibm.com>
-	 <1289677083.2109.167.camel@laptop>
-	 <20101115155057.15f3be35@mschwide.boeblingen.de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 15 Nov 2010 16:11:23 +0100
-Message-ID: <1289833883.2109.494.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 55 of 66] select CONFIG_COMPACTION if
+ TRANSPARENT_HUGEPAGE enabled
+Message-ID: <20101115151350.GF6809@random.random>
+References: <20101109151756.BC7B.A69D9226@jp.fujitsu.com>
+ <20101109211145.GB6809@random.random>
+ <20101111091220.9941.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101111091220.9941.A69D9226@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-15 at 15:50 +0100, Martin Schwidefsky wrote:
-> On Sat, 13 Nov 2010 20:38:02 +0100
-> Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> 
-> > On Thu, 2010-11-11 at 18:03 +0100, Michael Holzheu wrote:
-> > > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > > 
-> > > Currently steal time is only accounted for the whole system. With this
-> > > patch we add steal time to the per task CPU time accounting.
-> > > The triplet "user time", "system time" and "steal time" represents
-> > > all consumed CPU time on hypervisor based systems. 
-> > 
-> > Does that really make sense? Its not like the hypervisor really knows
-> > anything about tasks and won't steal from one? Its really a vcpu
-> > feature.
-> > 
-> > What added benefit will all this extra accounting give?
-> 
-> Currently the linux kernel keeps track of used cpu cycles per task,
-> steal time is reported only per cpu. With the patch steal cycles are
-> reported per task just like used cpu cycles, giving the complete picture
-> on a per task basis. Without the patch you don't know if the task has
-> been waiting or got its cycles stolen. A matter of granularity. 
+On Sun, Nov 14, 2010 at 02:07:07PM +0900, KOSAKI Motohiro wrote:
+> ok, I beleive you.
+> but please add this reason to the description.
 
-That doesn't answer my question at all. Why do you want to know? Also,
-once we change the scheduler to not account steal time to tasks like it
-currently does (as Jeremy has been proposing to do several times now)
-this should become totally redundant as it will always be 0, no?
-
-Thing is, all I'm seeing is overhead here, the vast majority of systems
-simply don't have any steal time at all. So again, what does this buy us
-except a gazillion wasted bytes and cycles?
+Good idea, I will. BTW, in general I agreed with your remark from a
+theoretical standpoint.
