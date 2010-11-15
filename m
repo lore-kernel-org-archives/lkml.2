@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757549Ab0KOHMn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 02:12:43 -0500
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:34651 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755276Ab0KOHMk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 02:12:40 -0500
-From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-To: Joe Perches <joe@perches.com>, Jiri Kosina <trivial@kernel.org>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 15 Nov 2010 08:12:02 +0100
-Subject: RE: [PATCH 39/44] include/net/caif/cfctrl.h: Remove unnecessary
- semicolons
-Thread-Topic: [PATCH 39/44] include/net/caif/cfctrl.h: Remove unnecessary
- semicolons
-Thread-Index: AcuEcgmvXg9N7FIzS1KHGoGQuVf68gAIhhTQ
-Message-ID: <81C3A93C17462B4BBD7E272753C105791945C0C9AA@EXDCVYMBSTM005.EQ1STM.local>
-References: <cover.1289789604.git.joe@perches.com>
- <35914cfea1bd0ab3963e632d02b1fdd52a9d2bc8.1289789605.git.joe@perches.com>
-In-Reply-To: <35914cfea1bd0ab3963e632d02b1fdd52a9d2bc8.1289789605.git.joe@perches.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1757579Ab0KOHTv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 02:19:51 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:55941 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755875Ab0KOHTu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 02:19:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=oomME5r6bAfw8AbPr0mCgf6I2QgLEOnv5VkgnWjFvGxbIBXT/aYd0+8isbjM6vnyVB
+         fstTvPD9tIp5/2UJQ1+lhGbcbIkcEjj8WfhL2iVAbmLk6xF4nzybFru0oroTw+SvuX25
+         teDeTUFJm5N3xzFGkdD9xh9h0DyOjepxRAEsc=
 MIME-Version: 1.0
+In-Reply-To: <20101115160413.BF0F.A69D9226@jp.fujitsu.com>
+References: <20101114140920.E013.A69D9226@jp.fujitsu.com>
+	<AANLkTim59Qx6TsvXnTBL5Lg6JorbGaqx3KsdBDWO04X9@mail.gmail.com>
+	<20101115160413.BF0F.A69D9226@jp.fujitsu.com>
+Date: Mon, 15 Nov 2010 16:19:48 +0900
+Message-ID: <AANLkTim0vCJkMoH5P0wCN9J6340rDsscyNBQ+R+_ph8m@mail.gmail.com>
+Subject: Re: fadvise DONTNEED implementation (or lack thereof)
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Ben Gamari <bgamari.foss@gmail.com>, linux-kernel@vger.kernel.org,
+        rsync@lists.samba.org, linux-mm@kvack.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Mon, Nov 15, 2010 at 4:09 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> > Because we have an alternative solution already. please try memcgroup :)
+>>
+>> I think memcg could be a solution of them but fundamental solution is
+>> that we have to cure it in VM itself.
+>> I feel it's absolutely absurd to enable and use memcg for amending it.
+>>
+>> I wonder what's the problem in Peter's patch 'drop behind'.
+>> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg179576.html
+>>
+>> Could anyone tell me why it can't accept upstream?
+>
+> I don't know the reason. And this one looks reasonable to me. I'm curious the above
+> patch solve rsync issue or not.
+> Minchan, have you tested it yourself?
+
+Still yet. :)
+If we all think it's reasonable, it would be valuable to adjust it
+with current mmotm and see the effect.
+
+>
+>
+>
 
 
-Looks good to me.
-Acked-by: Sjur Braendeland <sjur.brandeland@stericsson.com>
 
+-- 
+Kind regards,
+Minchan Kim
