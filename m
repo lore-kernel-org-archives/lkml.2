@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933671Ab0KOUOK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 15:14:10 -0500
-Received: from mail.perches.com ([173.55.12.10]:1334 "EHLO mail.perches.com"
+	id S933042Ab0KOUQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 15:16:14 -0500
+Received: from mail.perches.com ([173.55.12.10]:1337 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932556Ab0KOUOH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 15:14:07 -0500
+	id S933667Ab0KOUOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 15:14:10 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-media@vger.kernel.org,
-        netdev@vger.kernel.org, linux-scsi@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Subject: [PATCH 00/11] Remove unnecessary casts of pci_get_drvdata
-Date: Mon, 15 Nov 2010 12:13:51 -0800
-Message-Id: <cover.1289851770.git.joe@perches.com>
+Cc: Samuel Ortiz <samuel@sortiz.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 05/11] drivers/net/irda: Remove unnecessary casts of pci_get_drvdata
+Date: Mon, 15 Nov 2010 12:13:56 -0800
+Message-Id: <11b30b9512bf0438efaf70d6c0a819756dbf0e2f.1289851770.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
+In-Reply-To: <cover.1289851770.git.joe@perches.com>
+References: <cover.1289851770.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches (11):
-  drivers/i2c/busses/i2c-nforce2.c: Remove unnecessary casts of pci_get_drvdata
-  drivers/ide/pmac.c: Remove unnecessary casts of pci_get_drvdata
-  drivers/media/dvb/ngene/ngene-core.c: Remove unnecessary casts of pci_get_drvdata
-  drivers/misc/ibmasm/module.c: Remove unnecessary casts of pci_get_drvdata
-  drivers/net/irda: Remove unnecessary casts of pci_get_drvdata
-  drivers/net/s2io.c: Remove unnecessary casts of pci_get_drvdata
-  drivers/net/vxge/vxge-main.c: Remove unnecessary casts of pci_get_drvdata
-  drivers/scsi/be2iscsi/be_main.c: Remove unnecessary casts of pci_get_drvdata
-  drivers/staging: Remove unnecessary casts of pci_get_drvdata
-  drivers/usb/host/uhci-hcd.c: Remove unnecessary casts of pci_get_drvdata
-  sound/pci/asihpi/hpioctl.c: Remove unnecessary casts of pci_get_drvdata
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/irda/donauboe.c |    6 +++---
+ drivers/net/irda/vlsi_ir.c  |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
- drivers/i2c/busses/i2c-nforce2.c          |    2 +-
- drivers/ide/pmac.c                        |    4 ++--
- drivers/media/dvb/ngene/ngene-core.c      |    2 +-
- drivers/misc/ibmasm/module.c              |    2 +-
- drivers/net/irda/donauboe.c               |    6 +++---
- drivers/net/irda/vlsi_ir.c                |    2 +-
- drivers/net/s2io.c                        |    3 +--
- drivers/net/vxge/vxge-main.c              |   28 ++++++++++++----------------
- drivers/scsi/be2iscsi/be_main.c           |    2 +-
- drivers/staging/crystalhd/crystalhd_lnx.c |    6 +++---
- drivers/staging/et131x/et131x_initpci.c   |    2 +-
- drivers/staging/wlags49_h2/wl_pci.c       |    2 +-
- drivers/usb/host/uhci-hcd.c               |    2 +-
- sound/pci/asihpi/hpioctl.c                |    2 +-
- 14 files changed, 30 insertions(+), 35 deletions(-)
-
+diff --git a/drivers/net/irda/donauboe.c b/drivers/net/irda/donauboe.c
+index b626ccc..bee5ccc 100644
+--- a/drivers/net/irda/donauboe.c
++++ b/drivers/net/irda/donauboe.c
+@@ -1488,7 +1488,7 @@ static void
+ toshoboe_close (struct pci_dev *pci_dev)
+ {
+   int i;
+-  struct toshoboe_cb *self = (struct toshoboe_cb*)pci_get_drvdata(pci_dev);
++  struct toshoboe_cb *self = pci_get_drvdata(pci_dev);
+ 
+   IRDA_DEBUG (4, "%s()\n", __func__);
+ 
+@@ -1698,7 +1698,7 @@ freeself:
+ static int
+ toshoboe_gotosleep (struct pci_dev *pci_dev, pm_message_t crap)
+ {
+-  struct toshoboe_cb *self = (struct toshoboe_cb*)pci_get_drvdata(pci_dev);
++  struct toshoboe_cb *self = pci_get_drvdata(pci_dev);
+   unsigned long flags;
+   int i = 10;
+ 
+@@ -1727,7 +1727,7 @@ toshoboe_gotosleep (struct pci_dev *pci_dev, pm_message_t crap)
+ static int
+ toshoboe_wakeup (struct pci_dev *pci_dev)
+ {
+-  struct toshoboe_cb *self = (struct toshoboe_cb*)pci_get_drvdata(pci_dev);
++  struct toshoboe_cb *self = pci_get_drvdata(pci_dev);
+   unsigned long flags;
+ 
+   IRDA_DEBUG (4, "%s()\n", __func__);
+diff --git a/drivers/net/irda/vlsi_ir.c b/drivers/net/irda/vlsi_ir.c
+index c3d0738..62f2d12 100644
+--- a/drivers/net/irda/vlsi_ir.c
++++ b/drivers/net/irda/vlsi_ir.c
+@@ -542,7 +542,7 @@ static int vlsi_process_rx(struct vlsi_ring *r, struct ring_descr *rd)
+ 	int		crclen, len = 0;
+ 	struct sk_buff	*skb;
+ 	int		ret = 0;
+-	struct net_device *ndev = (struct net_device *)pci_get_drvdata(r->pdev);
++	struct net_device *ndev = pci_get_drvdata(r->pdev);
+ 	vlsi_irda_dev_t *idev = netdev_priv(ndev);
+ 
+ 	pci_dma_sync_single_for_cpu(r->pdev, rd_get_addr(rd), r->len, r->dir);
 -- 
 1.7.3.1.g432b3.dirty
 
