@@ -1,171 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab0KOKfc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 05:35:32 -0500
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:41502 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753655Ab0KOKfb (ORCPT
+	id S1755607Ab0KOKiP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 05:38:15 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:8136 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755147Ab0KOKiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 05:35:31 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Nicolas Pitre <nico@fluxnic.net>,
-        Colin Cross <ccross@google.com>, John Stultz <johnstul@us.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: [PATCH] clocksource: document some basic concepts
-Date: Mon, 15 Nov 2010 11:33:48 +0100
-Message-ID: <1289817228-14838-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
+	Mon, 15 Nov 2010 05:38:13 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=wngihGhArJfsZSWC4wi46Zh9WHtH83Qdrt2wu5lj/elgLsxEyZm/D/gxtwqW/dPWVj
+         u74lMBOCzIOLY065lRjQ==
+Date: Mon, 15 Nov 2010 02:38:07 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [patch] oom: document obsolete oom_adj tunable
+In-Reply-To: <20101115091908.BEEB.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1011150234530.2986@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1011091547030.30112@chino.kir.corp.google.com> <alpine.DEB.2.00.1011091555210.30112@chino.kir.corp.google.com> <20101115091908.BEEB.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds some documentation about clock sources and the weak
-sched_clock() function that answers questions that repeatedly
-arise on the mailing lists.
+On Mon, 15 Nov 2010, KOSAKI Motohiro wrote:
 
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Nicolas Pitre <nico@fluxnic.net>
-Cc: Colin Cross <ccross@google.com>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Rabin Vincent <rabin.vincent@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
----
- Documentation/timers/00-INDEX        |    2 +
- Documentation/timers/clocksource.txt |  106 ++++++++++++++++++++++++++++++++++
- 2 files changed, 108 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/timers/clocksource.txt
+> > /proc/pid/oom_adj was deprecated in August 2010 with the introduction of
+> > the new oom killer heuristic.
+> > 
+> > This patch copies the Documentation/feature-removal-schedule.txt entry
+> > for this tunable to the Documentation/ABI/obsolete directory so nobody
+> > misses it.
+> > 
+> > Reported-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
+> > Signed-off-by: David Rientjes <rientjes@google.com>
+> 
+> NAK. You seems to think shouting claim makes some effect. but It's incorrect.
+> Your childish shout doesn't solve any real world issue. Only code fix does.
+> 
 
-diff --git a/Documentation/timers/00-INDEX b/Documentation/timers/00-INDEX
-index a9248da..fb88065 100644
---- a/Documentation/timers/00-INDEX
-+++ b/Documentation/timers/00-INDEX
-@@ -1,5 +1,7 @@
- 00-INDEX
- 	- this file
-+clocksource.txt
-+	- Clock sources and sched_clock() notes
- highres.txt
- 	- High resolution timers and dynamic ticks design notes
- hpet.txt
-diff --git a/Documentation/timers/clocksource.txt b/Documentation/timers/clocksource.txt
-new file mode 100644
-index 0000000..cf4ab9e
---- /dev/null
-+++ b/Documentation/timers/clocksource.txt
-@@ -0,0 +1,106 @@
-+Clock sources and sched_clock()
-+-------------------------------
-+
-+If you grep through the kernel source you will find a number of architecture-
-+specific implementations of clock sources and several likewise architecture-
-+specific overrides of the sched_clock() function.
-+
-+To provide timekeeping for your platform, the clock source provides
-+the basic timeline, whereas clock events shoot interrupts on certain points
-+on this timeline, providing facilities such as high-resolution timers.
-+sched_clock() is used for scheduling and timestamping.
-+
-+
-+Clock sources
-+-------------
-+
-+The purpose of the clock source is to provide a timeline for the system that
-+tells you where you are in time. For example issuing the command 'date' on
-+a Linux system will eventually read the clock source to determine exactly
-+what time it is.
-+
-+Typically the clock source is a monotonic, atomic counter which will provide
-+n bits which count from 0 to (2^n-1) and then wraps around to 0 and start over.
-+
-+The clock source shall have as high resolution as possible, and shall be as
-+stable and correct as possible as compared to a real-world wall clock. It
-+should not move unpredictably back and forth in time or miss a few cycles
-+here and there.
-+
-+It must be immune the kind of effects that occur in hardware where e.g. the
-+counter register is read in two phases on the bus lowest 16 bits first and
-+the higher 16 bits in a second bus cycle with the counter bits potentially
-+being updated inbetween leading to the risk of very strange values from the
-+counter.
-+
-+When the wall-clock accuracy of the clock source isn't satisfactory, there
-+are various quirks and layers in the timekeeping code for e.g. synchronizing
-+the user-visible time to RTC clocks in the system or against networked time
-+servers using NTP, but all they do is basically to update an offset against
-+the clock source, which provides the fundamental timeline for the system.
-+These measures does not affect the clock source per se.
-+
-+The clock source struct shall provide means to translate the provided counter
-+into a rough nanosecond value as an unsigned long long (unsigned 64 bit) number.
-+Since this operation may be invoked very often doing this in a strict
-+mathematical sense is not desireable: instead the number is taken as close as
-+possible to a nanosecond value using only the arithmetic operations
-+mult and shift, so in clocksource_cyc2ns() you find:
-+
-+  ns ~= (clocksource * mult) >> shift
-+
-+You will find a number of helper functions in the clock source code intended
-+to aid in providing these mult and shift values, such as
-+clocksource_khz2mult(), clocksource_hz2mult() that help determinining the
-+mult factor from a fixed shift, and clocksource_calc_mult_shift() and
-+clocksource_register_hz() which will help out assigning both shift and mult
-+factors using the frequency of the clock source and desirable minimum idle
-+time as the only input. In the past, the timekeeping authors would come up with
-+these values by hand, which is why you will sometimes find hard-coded shift
-+and mult values in the code.
-+
-+Since a 32 bit counter at say 100 MHz will wrap around to zero after some 43
-+seconds, the code handling the clock source will have to compensate for this.
-+That is the reason to why the clock source struct also contains a 'mask'
-+member telling how many bits of the source are valid. This way the timekeeping
-+code knows when the counter will wrap around and can insert the necessary
-+compensation code on both sides of the wrap point so that the system timeline
-+remains monotonic. Note that the clocksource_cyc2ns() function will not
-+compensate for wrap-arounds: it will return the rough number of nanoseconds
-+since the last wrap-around.
-+
-+You will notice that the clock event device code is based on the same basic
-+idea about translating counters to nanoseconds using mult and shift
-+arithmetics, and you find the same family of helper functions again for
-+assigning these values. The clock event driver does not need a 'mask'
-+attribute however: the system will not try to plan events beyond the time
-+horizon of the clock event.
-+
-+
-+sched_clock()
-+-------------
-+
-+In addition to the clock sources and clock events there is a special weak
-+function in the kernel called sched_clock(). This function shall return the
-+number of nanoseconds since the system was started. An architecture may or
-+may not provide an implementation of sched_clock() on its own.
-+
-+As the name suggests, sched_clock() is used for scheduling the system,
-+determining the absolute timeslice for a certain process in the CFS scheduler
-+for example. It is also used for printk timestamps when you have selected to
-+include time information in printk for things like bootcharts.
-+
-+Compared to clock sources, sched_clock() has to be very fast: it is called
-+much more often, especially by the scheduler. If you have to do trade-offs
-+between accuracy compared to the clock source, you may sacrifice accuracy
-+for speed in sched_clock(). It however require the same basic characteristics
-+as the clock source, i.e. it has to be monotonic.
-+
-+The sched_clock() function may wrap only on unsigned long long boundaries,
-+i.e. after 64 bits. Since this is a nanosecond value this will mean it wraps
-+after circa 585 years. (For most practical systems this means "never".)
-+
-+If an architecture does not provide its own implementation of this function,
-+it will fall back to using jiffies, making its maximum resolution 1/HZ of the
-+jiffy frequency for the architecture. This will affect scheduling accuracy
-+and will likely show up in system benchmarks.
--- 
-1.6.3.3
+The tunable is deprecated.  If you are really that concerned about the 
+existing users who you don't think can convert in the next two years, why 
+don't you help them convert?  That fixes the issue, but you're not 
+interested in that.  I offered to convert any open-source users you can 
+list (the hardest part of the conversion is finding who to send patches to 
+:).  You're only interested in continuing to assert your position as 
+correct even when the kernel is obviously moving in a different direction.
 
+Others may have a different opinion of who is being childish in this whole 
+ordeal.
