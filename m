@@ -1,179 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab0KOK2M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 05:28:12 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36550 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754941Ab0KOK2K (ORCPT
+	id S1755463Ab0KOKaN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 05:30:13 -0500
+Received: from natasha.panasas.com ([67.152.220.90]:45289 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754798Ab0KOKaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 05:28:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=h4pJN8Wo2DTaZlS996Jn+BlHlyFS4ObMRk4Bi9KyVk+f6p2RhCKRBbRELiPvjuOml8
-         Z7qnN588KKFsKNuiuBkvzAAX/YZBPCbp4HTIGxL9Y8k8HpGQI73AHYouEgrNTQtHmUiH
-         sIiuj9PjYr8lW0NfbHdY5++m+ZAt7FOROCirk=
-Message-ID: <4CE10B32.8090705@suse.cz>
-Date: Mon, 15 Nov 2010 11:28:02 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
+	Mon, 15 Nov 2010 05:30:11 -0500
+X-Greylist: delayed 2531 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Nov 2010 05:30:11 EST
+Message-ID: <4CE1017E.4090409@panasas.com>
+Date: Mon, 15 Nov 2010 11:46:38 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-To: Baruch Siach <baruch@tkos.co.il>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Alex Gershgorin <agersh@rambler.ru>
-Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
-References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il> <4CE0FE71.6000303@suse.cz> <20101115100838.GA3649@jasper.tkos.co.il>
-In-Reply-To: <20101115100838.GA3649@jasper.tkos.co.il>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <greg@kroah.com>
+CC: Vladislav Bolkhovitin <vst@vlnb.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+References: <20101022185437.GA9103@kroah.com> <4CD8566D.1020202@vlnb.net> <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com>
+In-Reply-To: <20101113235938.GA1827@kroah.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Nov 2010 09:46:43.0697 (UTC) FILETIME=[02D45E10:01CB84AA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 11:08 AM, Baruch Siach wrote:
-> Hi Jiri,
+On 11/14/2010 01:59 AM, Greg KH wrote:
+> In the end, I guess it really doesn't matter as this code isn't getting
+> merged so I shouldn't worry about it, right?
 > 
-> Thanks for reviewing. See my response to your comments below.
+
+This is not nice and is uncharacteristic of you.
+
+This project, even though out-of-tree, is an old and mature project that
+has many users. These are all *Linux* users. The authors and community
+have come to us for help, and advice on making this code acceptable for
+mainline and hardening the code the way, only one project on the planet
+can do, the Linux community. I think it is our courtesy and obligation
+to the Linux users of this Project to comment where they are doing wrong
+and where they should do better.
+
+It is not of their choice to be out-of-tree. It is ours. The least we can
+do. Is give then some assistance if we can, and have 5 minutes of our time.
+
+All these issues we were discussing are interesting and are real Kernel
+problems. For instance the last comment you made was that for such a dynamic
+system and life time problems, and functionality. A better and expected
+solution might be the device tree and not sysfs. And for such big additions
+the sysfs maintainer must give his blessings. This is most valuable information
+regardless of if we accept their code or not at the end.
+(And we better explain ourselves well when we don't)
+
+> thanks,
 > 
-> On Mon, Nov 15, 2010 at 10:33:37AM +0100, Jiri Slaby wrote:
->> On 11/15/2010 09:23 AM, Baruch Siach wrote:
->>> --- /dev/null
->>> +++ b/drivers/misc/altera_as.c
->>> @@ -0,0 +1,349 @@
->> ...
->>> +struct altera_as_device {
->>> +	unsigned id;
->>> +	struct device *dev;
->>> +	struct miscdevice miscdev;
->>> +	struct mutex open_lock;
->>> +	struct gpio gpios[AS_GPIO_NUM];
->>> +};
->>> +
->>> +/*
->>> + * The only functions updating this array are .probe/.remove, which are
->>> + * serialized. Hence, no locking is needed here.
->>> + */
->>> +static struct {
->>> +	int minor;
->>
->> Why you need minor here? It's in drvdata->miscdev.minor.
-> 
-> I use the minor field to lookup the drvdata pointer in get_as_dev(), which I 
-> use is altera_as_open().  I do this because I have no access to the 'struct 
-> device' pointer from the .open method. Do you know a better way?
-> 
->>> +	struct altera_as_device *drvdata;
->>> +} altera_as_devs[AS_MAX_DEVS];
->>
->> You don't need the struct at all.
->> static struct altera_as_device *drvdata[AS_MAX_DEVS];
->> should be enough.
-> 
-> See above.
+> greg k-h
 
-The answer to you previous question is here. You can just have a global
-array of struct altera_as_device.
-
->>> +static int altera_as_open(struct inode *inode, struct file *file)
->>> +{
->>> +	int ret;
->>> +	struct altera_as_device *drvdata = get_as_dev(iminor(inode));
->>> +
->>> +	if (drvdata == NULL)
->>> +		return -ENODEV;
->>> +	file->private_data = drvdata;
->>> +
->>> +	ret = mutex_trylock(&drvdata->open_lock);
->>> +	if (ret == 0)
->>> +		return -EBUSY;
->>> +
->>> +	ret = gpio_request_array(drvdata->gpios, ARRAY_SIZE(drvdata->gpios));
->>> +	if (ret < 0) {
->>> +		mutex_unlock(&drvdata->open_lock);
->>> +		return ret;
->>> +	}
->>
->> So leaving to userspace with mutex held. This is *wrong*. use
->> test_and_set_bit or alike instead.
-> 
-> Can you explain why this is wrong? I don't mind doing test_and_set_bit 
-> instead, I'm just curious.
-
-The mutex has an owner which it expects to unlock it. For example if you
-fork a process which already opened the device, you have a problem. This
-is a technical point. Another point is that it's ugly to leave to
-userspace with any lock.
-
->>> +static int __init altera_as_probe(struct platform_device *pdev)
->>> +{
->> ...
->>> +	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
->>> +	drvdata->miscdev.name = kasprintf(GFP_KERNEL, "altera_as%d",
->>> +			pdata->id);
->>> +	if (drvdata->miscdev.name == NULL)
->>> +		return -ENOMEM;
->>> +	drvdata->miscdev.fops = &altera_as_fops;
->>> +	if (misc_register(&drvdata->miscdev) < 0) {
->>
->> Hmm, how many devices can be in the system?
-> 
-> Up to AS_MAX_DEVS, currently 16.
-> 
->> This doesn't look like the right way.
-> 
-> What is the right way then?
-
-Ok, so for that count it definitely deserves its own major to not eat up
-misc device space.
-
->>> +		kfree(drvdata->miscdev.name);
->>> +		return -ENODEV;
->>> +	}
->>> +	altera_as_devs[pdata->id].minor = drvdata->miscdev.minor;
->>> +	altera_as_devs[pdata->id].drvdata = drvdata;
->>
->> So now the device is usable without the mutex and gpios inited?
-> 
-> I was thinking that the device lock which is being held during the .probe run, 
-> prevents the device from being open. After all I can still return -EGOAWAY at 
-> this point. Am I wrong?
-> 
-> If so, I'll reorder this code.
-
-This cannot be done easily. You need to set drvdata prior to minor and
-after all the assignments here. The former because in get_as_dev you
-test minor and return drvdata. The latter because you use open_lock &
-gpios after playing with minor & drvdata.
-
-Technically, it can be done with a use of barriers, but I don't
-recommend it as drivers should not use barriers at all. You should
-introduce some locking here (it introduces barriers on its own).
-
-So move the assignment to altera_as_devs below the mutex_init & gpios
-setup and lock it appropriately. Then add a lock to get_as_dev.
-
->>> +	mutex_init(&drvdata->open_lock);
->>> +
->>> +	drvdata->id = pdata->id;
->>> +
->>> +	drvdata->gpios[ASIO_DATA].gpio		= pdata->data;
->>> +	drvdata->gpios[ASIO_DATA].flags		= GPIOF_IN;
->>> +	drvdata->gpios[ASIO_DATA].label		= "as_data";
->> ...
->>> +	drvdata->gpios[ASIO_NCE].gpio		= pdata->nce;
->>> +	drvdata->gpios[ASIO_NCE].flags		= GPIOF_OUT_INIT_HIGH;
->>> +	drvdata->gpios[ASIO_NCE].label		= "as_nce";
->>> +
->>> +	dev_info(drvdata->dev, "Altera Cyclone Active Serial driver\n");
->>> +
->>> +	return 0;
->>> +}
-
-regards,
--- 
-js
-suse labs
+Sincerely yours
+Boaz
