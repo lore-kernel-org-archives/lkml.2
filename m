@@ -1,75 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933621Ab0KOTZj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 14:25:39 -0500
-Received: from netnation.com ([204.174.223.2]:50392 "EHLO peace.netnation.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752614Ab0KOTZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 14:25:38 -0500
-X-Greylist: delayed 1045 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Nov 2010 14:25:38 EST
-Date: Mon, 15 Nov 2010 11:08:08 -0800
-From: Simon Kirby <sim@hostway.ca>
-To: "J.H." <warthog9@kernel.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, jaxboe@fusionio.com,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: More XFS resource starvation?
-Message-ID: <20101115190808.GA17387@hostway.ca>
-References: <4CE17C4E.7010206@kernel.org>
+	id S933628Ab0KOT0p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 14:26:45 -0500
+Received: from mail2.unitn.it ([193.205.206.54]:52734 "EHLO mail2.unitn.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933169Ab0KOT0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 14:26:44 -0500
+Message-ID: <4CE18895.8060101@unitn.it>
+Date: Mon, 15 Nov 2010 20:23:01 +0100
+From: Luca Abeni <luca.abeni@unitn.it>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE17C4E.7010206@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "James H. Anderson" <anderson@cs.unc.edu>
+CC: Raistlin <raistlin@linux.it>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>, oleg@redhat.com,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>,
+        Bjoern Brandenburg <bbb@email.unc.edu>
+Subject: Re: [RFC][PATCH 18/22] sched: add reclaiming logic to -deadline tasks
+References: <1289588215.6525.697.camel@Palantir> <80992760-24F2-42AE-AF2D-15727F6A1C81@email.unc.edu> <4CE17DD2.3060807@cs.unc.edu>
+In-Reply-To: <4CE17DD2.3060807@cs.unc.edu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 10:30:38AM -0800, J.H. wrote:
+Hi James,
 
-> So apparently I'm having fun tripping over all kinds of bugs lately.
-> I've seen this a couple of times now on the box in question.  Usually
-> happens after a few days, or after particularly heavy rsync traffic on
-> the box.
-> 
-> http://pastebin.osuosl.org/36014
-> 
-> Christoph seemed to think it's a memory exhaustion problem, so I've
-> included the /proc/meminfo and as you can see there's plenty of memory
-> around on the system.
-> 
-> Loads have, expectedly, climbed currently around 1250.05 but growing slowly.
-> 
-> Quick overview of the underlying storage:
-> 
-> xfs -> md (raid 0) -+--> P812 hardware raid6 (cciss driver)
->                     |
->                     +--> P812 hardware raid6 (cciss driver)
-> 
-> This is running on an HP DL380 G7.
-> 
-> I saw this both on an older 2.6.30.10-105.2.23.fc11.x86_64, and
-> currently on 2.6.34.7-61.fc13.x86_64 (both being Fedora stock kernels)
-> 
-> I have not seen this on a very similar DL380 G6, with the same storage
-> setup and it is currently running the 2.6.30 kernel from above.
-> 
-> Christoph suggest increasing the nr_request values for each of the
-> underlying devices, but this didn't seem to change anything
-> significantly on the system.
-> 
-> Anyone have any ideas on what's going on?
+On 15/11/10 19:37, James H. Anderson wrote:
+[...]
+>>> The problem the stochastic execution time model tries to address is the
+>>> WCET computation mess, WCET computation is hard and often overly
+>>> pessimistic, resulting in under-utilized systems.
+>>>
+>> I know, and it's very reasonable. The point I'm trying to make is that
+>> resource reservation tries to address the very same issue.
+>> I am all but against this model, just want to be sure it's not too much
+>> in conflict to the other features we have, especially with resource
+>> reservation. Especially considering that --if I got the whole thing
+>> about this scheduler right-- resource reservation is something we really
+>> want, and I think UNC people would agree here, since I heard Bjorn
+>> stating this very clear both in Dresden and in Dublin. :-)
+>>
+>> BTW, I'm adding them to the Cc, seems fair, and more useful than all
+>> this speculation! :-P
+>>
+>> Bjorn, Jim, sorry for bothering. If you're interested, this is the very
+>> beginning of the whole thread:
+>> http://lkml.org/lkml/2010/10/29/67
+[...]
+> If you're talking about our most recent "stochastic" paper, it is about
+> supporting
+> soft real-time task systems on a multiprocessor where resource
+> reservations are
+> used. The main result of the paper is that if you provision the
+> reservation for a
+> task slightly higher than it's average-case execution time, and if you
+> use a
+> scheduling algorithm (like global EDF) that ensures bounded tardiness
+> (w.r.t.
+> these reservations), then the task's expected tardiness will be bounded
+> and the
+> expected bound does not depend on worst-case execution times. I'm not
+> sure if
+> slack-reallocation methods have come up in this discussion (sorry, I'm
+> really
+> pressed for time and didn't look), but we didn't get into that in our
+> paper.
+So, if I understand well (sorry, I am just trying to make a short 
+summary to check if we are aligned) your analysis is similar to the one 
+presented in the papers I mentioned earlier in this thread (different 
+stochastic modelling, but similar approach): you analyse a reservation 
+in isolation and you provide some stochastic tardiness guarantees based 
+on an (e_i, p_i) service model.... Right?
 
-What does this show?
+If my understanding is correct (please, correct me if I am wrong), your 
+analysis can be applied even with the current version of Dario's patch 
+(I mean: no modifications to the patch are needed for removing 
+assumptions about WCET knowledge... Your paper uses a sporadic server 
+for the reservation mechanism, but I think a CBS can work too...).
 
-	iostat -x -k 1
 
-In particular, "avgqu-sz" aka "average queue size" would be non-zero if
-there are requests pending.  If r/s and w/s are zero over a long time
-with the queue size being non-zero, the issuing of commands to the
-hardware raid controller is stuck for some reason.
-
-Since your Dirty and Writeback is pretty high, it sounds like this is the
-issue.  Not sure where to go from there.
-
-Simon-
+			Thanks,
+				Luca
