@@ -1,83 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758359Ab0KOXZZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 18:25:25 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55557 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752128Ab0KOXZY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 18:25:24 -0500
+	id S1758675Ab0KOX3d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 18:29:33 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52569 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758050Ab0KOX3c convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 18:29:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZWHcukhrXiXFFUxc6L3L/cML3caYfIeVBxOPRCz78ufX5v4lQgHn+LC4ko1wLCzrJv
+         cSIAzrWs91cmIHMeqLJo0gU23yyKl67YqH+G4OJV3IrSr1qKwTipVUct39HJ/UH4uOrS
+         RpsWgjrgOGvSnOFhoZukm4eTOP3BBfcBSK4Lc=
 MIME-Version: 1.0
-In-Reply-To: <30291.1289860866@localhost>
-References: <1287479765.9920.9.camel@marge.simson.net> <1287487757.24189.40.camel@marge.simson.net>
- <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
- <1287511983.7417.45.camel@marge.simson.net> <1287514410.7368.10.camel@marge.simson.net>
- <20101020025652.GB26822@elte.hu> <1287648715.9021.20.camel@marge.simson.net>
- <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
- <20101021162924.GA3225@redhat.com> <1288076838.11930.1.camel@marge.simson.net>
- <1288078144.7478.9.camel@marge.simson.net> <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
- <1289489200.11397.21.camel@maggy.simson.net> <30291.1289860866@localhost>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 15 Nov 2010 15:25:01 -0800
-Message-ID: <AANLkTikeLeLvYcZJ4HcAUH1ax13scgnrT27CSR=YzO_C@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-To: Valdis.Kletnieks@vt.edu
-Cc: Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20101113023435.GB2713@localhost.localdomain>
+References: <20101113023435.GB2713@localhost.localdomain>
+Date: Tue, 16 Nov 2010 07:29:30 +0800
+Message-ID: <AANLkTikrdQw1h=efa7EtnXCbQ5APT0PtWdaCUA83T5pN@mail.gmail.com>
+Subject: Re: [PATCH] APPARMOR: code cleanup on context.h
+From: wzt wzt <wzt.wzt@gmail.com>
+To: john.johansen@canonical.com
+Cc: linux-kernel@vger.kernel.org, apparmor@lists.ubuntu.com,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 2:41 PM,  <Valdis.Kletnieks@vt.edu> wrote:
+hi, john, any comments?
+
+On Sat, Nov 13, 2010 at 10:34 AM,  <wzt.wzt@gmail.com> wrote:
+> Use current api to replace old codes.
 >
-> So the set of all tasks that never call proc_set_tty() ends up in the same one
-> big default group, correct?
-
-Well, yes and no.
-
-Yes, that's what the code currently does. But I did ask Mike (and he
-delivered) to try to make the code look and work in a way where the
-whole "tty thing" is just one of the heuristics.
-
-It's not clear exactly what the non-tty heuristics would be, but I do
-have a few suggestions:
-
- -  I think it might be a good idea to associate a task group with the
-current "cred" of a process, and fall back on it in the absense of a
-tty-provided one.
-
-   Now, for desktop use, that probably doesn't often matter, but even
-for just the desktop it would mean that "system daemons" would at
-least get a group of their own, rather than be grouped with
-"everything else"
-
-   (As is, I think the autogroup thing already ends up protecting
-system daemons more than _not_ having the autogroup, since it will
-basically mean that a "make -j64" won't be stealing all the CPU time
-from everybody else - even if the system daemons all end up in that
-single "default" group together with the non-tty graphical apps.)
-
- - I suspect we could make kernel daemons be a group of their own.
-
->�Do we have any provisions for making sure that if
-> a user has 8 or 10 windows open doing heavy work, the default group (with a lot
-> of important daemons/etc in it) doesn't get starved with only a 1/10th share of
-> the CPU? Or am I missing something here?
-
-I think you're missing the fact that without the autogroups, it's
-_worse_. If you do "make -j64" without autogroups, those important
-daemons get starved by all that work. With the autogroups, they end up
-being protected by being in the default group.
-
-So the fact that they are in the default group with lots of other
-users doesn't hurt, quite the reverse. User apps are likely to be in
-their own groups, so they affect system apps less than they do now.
-
-But I do agree that we might be able to make that all much more explicit.
-
-                    Linus
+> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+>
+> ---
+>  security/apparmor/include/context.h |   34 +++++++++++++++-------------------
+>  1 files changed, 15 insertions(+), 19 deletions(-)
+>
+> diff --git a/security/apparmor/include/context.h b/security/apparmor/include/context.h
+> index a9cbee4..c9112f3 100644
+> --- a/security/apparmor/include/context.h
+> +++ b/security/apparmor/include/context.h
+> @@ -82,23 +82,6 @@ int aa_set_current_hat(struct aa_profile *profile, u64 token);
+>  int aa_restore_previous_profile(u64 cookie);
+>
+>  /**
+> - * __aa_task_is_confined - determine if @task has any confinement
+> - * @task: task to check confinement of  (NOT NULL)
+> - *
+> - * If @task != current needs to be called in RCU safe critical section
+> - */
+> -static inline bool __aa_task_is_confined(struct task_struct *task)
+> -{
+> -       struct aa_task_cxt *cxt = __task_cred(task)->security;
+> -
+> -       BUG_ON(!cxt || !cxt->profile);
+> -       if (unconfined(aa_newest_version(cxt->profile)))
+> -               return 0;
+> -
+> -       return 1;
+> -}
+> -
+> -/**
+>  * aa_cred_profile - obtain cred's profiles
+>  * @cred: cred to obtain profiles from  (NOT NULL)
+>  *
+> @@ -138,9 +121,8 @@ static inline struct aa_profile *aa_current_profile(void)
+>  {
+>        const struct aa_task_cxt *cxt = current_cred()->security;
+>        struct aa_profile *profile;
+> -       BUG_ON(!cxt || !cxt->profile);
+>
+> -       profile = aa_newest_version(cxt->profile);
+> +       profile = __aa_current_profile();
+>        /*
+>         * Whether or not replacement succeeds, use newest profile so
+>         * there is no need to update it after replacement.
+> @@ -151,4 +133,18 @@ static inline struct aa_profile *aa_current_profile(void)
+>        return profile;
+>  }
+>
+> +/**
+> + * __aa_task_is_confined - determine if @task has any confinement
+> + * @task: task to check confinement of  (NOT NULL)
+> + *
+> + * If @task != current needs to be called in RCU safe critical section
+> + */
+> +static inline bool __aa_task_is_confined(struct task_struct *task)
+> +{
+> +       if (unconfined(aa_cred_profile(__task_cred(task))))
+> +               return 0;
+> +
+> +       return 1;
+> +}
+> +
+>  #endif /* __AA_CONTEXT_H */
+> --
+> 1.6.5.3
+>
+>
