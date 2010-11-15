@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab0KOEdR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 23:33:17 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41487 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757342Ab0KOEdP (ORCPT
+	id S1757534Ab0KOEmS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 23:42:18 -0500
+Received: from [120.204.251.227] ([120.204.251.227]:41884 "EHLO
+	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757396Ab0KOEmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 23:33:15 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=ppCDmit18jINrbk5cBCqcrFcBUNSzTHRx3g+mD1GXGD3BUiRnzugbShoQFRQpbmZPQ
-         n+YLTnwRoimd61goJf7cl5faMvQeiIJDA60AdqcvO+k40eQ3ujxL+PN0qL1kmzY26P3g
-         An7FDquSJ+U0mM5uxgdlywa+mww/+CCuwP5ac=
+	Sun, 14 Nov 2010 23:42:17 -0500
+Message-ID: <4CE0BA03.5080409@leadcoretech.com>
+Date: Mon, 15 Nov 2010 12:41:39 +0800
+From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; zh-CN; rv:1.9.2.12) Gecko/20101028 Lightning/1.0b2 Lanikai/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <20101113233353.GB18658@thunk.org>
-References: <201011032334.30662.thomas@m3y3r.de>
-	<201011080014.33354.thomas@m3y3r.de>
-	<alpine.LFD.2.00.1011081047500.2900@localhost6.localdomain6>
-	<1289242528.11571.8.camel@localhost.localdomain>
-	<alpine.LFD.2.00.1011082039360.2900@localhost6.localdomain6>
-	<1289418184.6530.6.camel@localhost.localdomain>
-	<20101113233353.GB18658@thunk.org>
-Date: Mon, 15 Nov 2010 10:03:14 +0530
-Message-ID: <AANLkTimM3o19L7WNRYRrBPuwMMK9187_U8nUmZ2e4=qd@mail.gmail.com>
-Subject: Re: 2.6.36: kernel panic in cascade (Fatal exception in interrupt)
-From: Ganesh Reddy K <ganeshreddyk@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>
+CC: figo zhang <figo1802@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
+        Bodo Eggert <7eggert@web.de>, Mandeep Singh Baines <msb@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] Revert oom rewrite series
+References: <20101114133543.E00A.A69D9226@jp.fujitsu.com>	<AANLkTikSq-qC28uurd17RGup92Kao7enCiGJkDnJG+94@mail.gmail.com>	<20101115093410.BEFD.A69D9226@jp.fujitsu.com>	<20101114181905.bc5b44f9.akpm@linux-foundation.org> <AANLkTik_SDaiu2eQsJ9+4ywLR5K5V1Od-hwop6gwas3F@mail.gmail.com>
+In-Reply-To: <AANLkTik_SDaiu2eQsJ9+4ywLR5K5V1Od-hwop6gwas3F@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Nov 2010 04:42:12.0512 (UTC) FILETIME=[785ACA00:01CB847F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+ >Nothing to say, really.  Seems each time we're told about a bug or a
+ >regression, David either fixes the bug or points out why it wasn't a
+ >bug or why it wasn't a regression or how it was a deliberate behaviour
+ >change for the better.
 
-I want to disable 'Large  physical address support' in 2.6.34 Linux
-kernel LTIB.     i.e 64 Bit memory addressing and Page tables.
+ >I just haven't seen any solid reason to be concerned about the state of
+ >the current oom-killer, sorry.
 
-Along with this ,am i need to any other changes to have the kernel
-without 64 Bit address completely and page table entries.
+ >I'm concerned that you're concerned!  A lot.  When someone such as
+ >yourself is unhappy with part of MM then I sit up and pay attention.
+ >But after all this time I simply don't understand the technical issues
+ >which you're seeing here.
+
+we just talk about oom-killer technical issues.
+
+i am doubt that a new rewrite but the athor canot provide some evidence
+and experiment result, why did you do that? what is the prominent change
+
+for your new algorithm?
+
+as KOSAKI Motohiro said, "you removed CAP_SYS_RESOURCE condition with
+ZERO explanation".
+
+David just said that pls use userspace tunable for protection by
+oom_score_adj. but may i ask question:
 
 
+1. what is your innovation for your new algorithm, the old one have the
+same way for user tunable oom_adj.
 
-===========================================
-arch/powerpc/platforms/Kconfig.cputype
+2. if server like db-server/financial-server have huge import processes
+(such as root/hardware access processes)want to be protection, you let
 
-config PHYS_64BIT
-        bool 'Large physical address support' if E500 || PPC_86xx
-        depends on (44x || E500 || PPC_86xx) && !PPC_83xx && !PPC_82xx
-        ---help---
-          This option enables kernel support for larger than 32-bit physical
-          addresses.  This feature may not be available on all cores.
+the administrator to find out which processes should be protection. you
+will let the  financial-server administrator huge crazy!! and lose so
+many money!! ^~^
 
-          If you have more than 3.5GB of RAM or so, you also need to enable
-          SWIOTLB under Kernel Options for this to work.  The actual number
-          is platform-dependent.
+3. i see your email in LKML, you just said
+"I have repeatedly said that the oom killer no longer kills KDE when run
 
-          If in doubt, say N here.
-===========================================
+on my desktop in the presence of a memory hogging task that was written
+specifically to oom the machine."
+http://thread.gmane.org/gmane.linux.kernel.mm/48998
 
-Thanks in advance,
-Ganesh
+
+so you just test your new oom_killer algorithm on your desktop with KDE,
+so have you provide the detail how you do the test? is it do the
+experiment again for anyone and got the same result as your comment ?
+
+
+as KOSAKI Motohiro said, in reality word, it we makes 5-6 brain
+simulation, embedded, desktop, web server,db server, hpc, finance.
+Different workloads certenally makes big impact. have you do those
+experiments?
+
+
+i think that technology should base on experiment not on imagine.
+
+
+Best,
+Figo.zhang
