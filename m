@@ -1,421 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933705Ab0KOUUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 15:20:30 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:33232 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932927Ab0KOUU2 (ORCPT
+	id S933696Ab0KOUWn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 15:22:43 -0500
+Received: from smtp-vbr6.xs4all.nl ([194.109.24.26]:2481 "EHLO
+	smtp-vbr6.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932927Ab0KOUWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 15:20:28 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6168"; a="62756587"
-From: Gregory Bean <gbean@codeaurora.org>
-To: dwalker@codeaurora.org
-Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
-Subject: [PATCH v2 2/2] msm: gpio: Add irq support to v2 gpiolib.
-Date: Mon, 15 Nov 2010 12:20:19 -0800
-Message-Id: <1289852419-7122-2-git-send-email-gbean@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1289852419-7122-1-git-send-email-gbean@codeaurora.org>
-References: <1289852419-7122-1-git-send-email-gbean@codeaurora.org>
+	Mon, 15 Nov 2010 15:22:42 -0500
+Message-ID: <4CE1968D.3050706@xs4all.nl>
+Date: Mon, 15 Nov 2010 21:22:37 +0100
+From: Jim Bos <jim876@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101106 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jakub Jelinek <jakub@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        James Cloos <cloos@jhcloos.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
+        Dave Korn <dave.korn.cygwin@gmail.com>,
+        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+References: <20101115100331.GG2583@sunsite.ms.mff.cuni.cz> <20101115105446.GD7269@basil.fritz.box> <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com> <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com> <4CE17098.8090000@xs4all.nl> <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com> <4CE17C4B.1070305@xs4all.nl> <20101115185848.GI2583@sunsite.ms.mff.cuni.cz> <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com> <AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com> <20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>
+In-Reply-To: <20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>
+Content-Type: multipart/mixed;
+ boundary="------------040901080504060204070409"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Complete the MSM v2 gpio subsystem by adding irq_chip.
+This is a multi-part message in MIME format.
+--------------040901080504060204070409
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+On 11/15/2010 08:51 PM, Jakub Jelinek wrote:
+> On Mon, Nov 15, 2010 at 11:21:30AM -0800, Linus Torvalds wrote:
+>> On Mon, Nov 15, 2010 at 11:12 AM, Jakub Jelinek <jakub@redhat.com> wrote:
+>>>
+>>> Ah, the problem is that memory_identifier_string is only initialized in
+>>> ipa-reference.c's initialization, so it can be (and is in this case) NULL in
+>>> ipa-pure-const.c.
+>>
+>> Ok. And I guess you can verify that all versions of gcc do this
+>> correctly for "asm volatile"?
+> 
+> Yes, reading 4.1/4.2/4.3/4.4/4.5/4.6 code ipa-pure-const.c handles
+> asm volatile correctly, in each case the function is no longer assumed to be
+> pure or const in the discovery (of course, user can still say the
+> function is const or pure). 4.0 and earlier didn't have ipa-pure-const.c.
+> 
+> Using the simplified
+> 
+> extern void abort (void);
+> 
+> __attribute__((noinline)) int
+> foo (int *p)
+> {
+>   int r;
+>   asm ("movl $6, (%1)\n\txorl %0, %0" : "=r" (r) : "r" (p) : "memory");
+>   return r;
+> }
+> 
+> int
+> main (void)
+> {
+>   int p = 8;
+>   if ((foo (&p) ? : p) != 6)
+>     abort ();
+>   return 0;
+> }
+> 
+> testcase shows that in 4.1/4.2/4.3/4.4 this is miscompiled only when using
+> -fno-ipa-reference, in 4.5 it is miscompiled always when optimizing
+> unless -fno-ipa-pure-const (as 4.5 added local-pure-const pass which is run
+> before ipa-reference) and in 4.6 this has been fixed by Honza when
+> doing ipa cleanups.
+> 
+>> Because since we'll have to work around this problem in the kernel, I
+>> suspect the simplest solution is to remove the "+m" that causes
+>> register pressure problems, and then use "asm volatile" to work around
+>> the const-function bug.
+> 
+> Yes.
+> 
+> 	Jakub
+> 
+
+Linus,
+
+In case you didn't already fixed this, here's the follow-up patch.
 ---
- arch/arm/mach-msm/gpio-v2.c |  301 ++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 297 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-msm/gpio-v2.c b/arch/arm/mach-msm/gpio-v2.c
-index fb64873..aa3e9ec 100644
---- a/arch/arm/mach-msm/gpio-v2.c
-+++ b/arch/arm/mach-msm/gpio-v2.c
-@@ -15,7 +15,11 @@
-  * 02110-1301, USA.
-  *
-  */
-+#include <linux/bitmap.h>
-+#include <linux/bitops.h>
- #include <linux/gpio.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
- #include <linux/io.h>
- #include <linux/irq.h>
- #include <linux/module.h>
-@@ -31,17 +35,78 @@ enum {
- 	GPIO_OUT_BIT = 1
- };
- 
-+/* Bits of interest in the GPIO_INTR_STATUS register.
-+ */
-+enum {
-+	INTR_STATUS_BIT = 0,
-+};
-+
- /* Bits of interest in the GPIO_CFG register.
-  */
- enum {
- 	GPIO_OE_BIT = 9,
- };
- 
-+/* Bits of interest in the GPIO_INTR_CFG register.
-+ */
-+enum {
-+	INTR_ENABLE_BIT        = 0,
-+	INTR_POL_CTL_BIT       = 1,
-+	INTR_DECT_CTL_BIT      = 2,
-+	INTR_RAW_STATUS_EN_BIT = 3,
-+};
-+
-+/* Codes of interest in GPIO_INTR_CFG_SU.
-+ */
-+enum {
-+	TARGET_PROC_SCORPION = 4,
-+	TARGET_PROC_NONE     = 7,
-+};
-+
-+/*
-+ * When a GPIO triggers, two separate decisions are made, controlled
-+ * by two separate flags.
-+ *
-+ * - First, INTR_RAW_STATUS_EN controls whether or not the GPIO_INTR_STATUS
-+ * register for that GPIO will be updated to reflect the triggering of that
-+ * gpio.  If this bit is 0, this register will not be updated.
-+ * - Second, INTR_ENABLE controls whether an interrupt is triggered.
-+ *
-+ * If INTR_ENABLE is set and INTR_RAW_STATUS_EN is NOT set, an interrupt
-+ * can be triggered but the status register will not reflect it.
-+ */
-+#define INTR_RAW_STATUS_EN BIT(INTR_RAW_STATUS_EN_BIT)
-+#define INTR_ENABLE        BIT(INTR_ENABLE_BIT)
-+#define INTR_DECT_CTL_EDGE BIT(INTR_DECT_CTL_BIT)
-+#define INTR_POL_CTL_HI    BIT(INTR_POL_CTL_BIT)
-+
-+#define GPIO_INTR_CFG_SU(gpio)    (MSM_TLMM_BASE + 0x0400 + (0x04 * (gpio)))
- #define GPIO_CONFIG(gpio)         (MSM_TLMM_BASE + 0x1000 + (0x10 * (gpio)))
- #define GPIO_IN_OUT(gpio)         (MSM_TLMM_BASE + 0x1004 + (0x10 * (gpio)))
-+#define GPIO_INTR_CFG(gpio)       (MSM_TLMM_BASE + 0x1008 + (0x10 * (gpio)))
-+#define GPIO_INTR_STATUS(gpio)    (MSM_TLMM_BASE + 0x100c + (0x10 * (gpio)))
- 
-+/**
-+ * struct msm_gpio_dev: the MSM8660 SoC GPIO device structure
-+ *
-+ * @enabled_irqs: a bitmap used to optimize the summary-irq handler.  By
-+ * keeping track of which gpios are unmasked as irq sources, we avoid
-+ * having to do readl calls on hundreds of iomapped registers each time
-+ * the summary interrupt fires in order to locate the active interrupts.
-+ *
-+ * @wake_irqs: a bitmap for tracking which interrupt lines are enabled
-+ * as wakeup sources.  When the device is suspended, interrupts which are
-+ * not wakeup sources are disabled.
-+ *
-+ * @dual_edge_irqs: a bitmap used to track which irqs are configured
-+ * as dual-edge, as this is not supported by the hardware and requires
-+ * some special handling in the driver.
-+ */
- struct msm_gpio_dev {
- 	struct gpio_chip gpio_chip;
-+	DECLARE_BITMAP(enabled_irqs, NR_GPIO_IRQS);
-+	DECLARE_BITMAP(wake_irqs, NR_GPIO_IRQS);
-+	DECLARE_BITMAP(dual_edge_irqs, NR_GPIO_IRQS);
- };
- 
- static DEFINE_SPINLOCK(tlmm_lock);
-@@ -56,6 +121,11 @@ static inline void set_gpio_bits(unsigned n, void __iomem *reg)
- 	writel(readl(reg) | n, reg);
- }
- 
-+static inline void clr_gpio_bits(unsigned n, void __iomem *reg)
-+{
-+	writel(readl(reg) & ~n, reg);
-+}
-+
- static int msm_gpio_get(struct gpio_chip *chip, unsigned offset)
- {
- 	return readl(GPIO_IN_OUT(offset)) & BIT(GPIO_IN_BIT);
-@@ -71,8 +141,7 @@ static int msm_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
- 	unsigned long irq_flags;
- 
- 	spin_lock_irqsave(&tlmm_lock, irq_flags);
--	writel(readl(GPIO_CONFIG(offset)) & ~BIT(GPIO_OE_BIT),
--		GPIO_CONFIG(offset));
-+	clr_gpio_bits(BIT(GPIO_OE_BIT), GPIO_CONFIG(offset));
- 	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
- 	return 0;
- }
-@@ -100,6 +169,16 @@ static void msm_gpio_free(struct gpio_chip *chip, unsigned offset)
- 	msm_gpiomux_put(chip->base + offset);
- }
- 
-+static int msm_gpio_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	return MSM_GPIO_TO_INT(offset - chip->base);
-+}
-+
-+static inline int msm_irq_to_gpio(struct gpio_chip *chip, unsigned irq)
-+{
-+	return irq - MSM_GPIO_TO_INT(chip->base);
-+}
-+
- static struct msm_gpio_dev msm_gpio = {
- 	.gpio_chip = {
- 		.base             = 0,
-@@ -108,20 +187,193 @@ static struct msm_gpio_dev msm_gpio = {
- 		.direction_output = msm_gpio_direction_output,
- 		.get              = msm_gpio_get,
- 		.set              = msm_gpio_set,
-+		.to_irq           = msm_gpio_to_irq,
- 		.request          = msm_gpio_request,
- 		.free             = msm_gpio_free,
- 	},
- };
- 
-+/* For dual-edge interrupts in software, since the hardware has no
-+ * such support:
-+ *
-+ * At appropriate moments, this function may be called to flip the polarity
-+ * settings of both-edge irq lines to try and catch the next edge.
-+ *
-+ * The attempt is considered successful if:
-+ * - the status bit goes high, indicating that an edge was caught, or
-+ * - the input value of the gpio doesn't change during the attempt.
-+ * If the value changes twice during the process, that would cause the first
-+ * test to fail but would force the second, as two opposite
-+ * transitions would cause a detection no matter the polarity setting.
-+ *
-+ * The do-loop tries to sledge-hammer closed the timing hole between
-+ * the initial value-read and the polarity-write - if the line value changes
-+ * during that window, an interrupt is lost, the new polarity setting is
-+ * incorrect, and the first success test will fail, causing a retry.
-+ *
-+ * Algorithm comes from Google's msmgpio driver, see mach-msm/gpio.c.
-+ */
-+static void msm_gpio_update_dual_edge_pos(unsigned gpio)
-+{
-+	int loop_limit = 100;
-+	unsigned val, val2, intstat;
-+
-+	do {
-+		val = readl(GPIO_IN_OUT(gpio)) & BIT(GPIO_IN_BIT);
-+		if (val)
-+			clr_gpio_bits(INTR_POL_CTL_HI, GPIO_INTR_CFG(gpio));
-+		else
-+			set_gpio_bits(INTR_POL_CTL_HI, GPIO_INTR_CFG(gpio));
-+		val2 = readl(GPIO_IN_OUT(gpio)) & BIT(GPIO_IN_BIT);
-+		intstat = readl(GPIO_INTR_STATUS(gpio)) & BIT(INTR_STATUS_BIT);
-+		if (intstat || val == val2)
-+			return;
-+	} while (loop_limit-- > 0);
-+	pr_err("%s: dual-edge irq failed to stabilize, "
-+	       "interrupts dropped. %#08x != %#08x\n",
-+	       __func__, val, val2);
-+}
-+
-+static void msm_gpio_irq_ack(unsigned int irq)
-+{
-+	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-+
-+	writel(BIT(INTR_STATUS_BIT), GPIO_INTR_STATUS(gpio));
-+	if (test_bit(gpio, msm_gpio.dual_edge_irqs))
-+		msm_gpio_update_dual_edge_pos(gpio);
-+}
-+
-+static void msm_gpio_irq_mask(unsigned int irq)
-+{
-+	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-+	unsigned long irq_flags;
-+
-+	spin_lock_irqsave(&tlmm_lock, irq_flags);
-+	writel(TARGET_PROC_NONE, GPIO_INTR_CFG_SU(gpio));
-+	clr_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
-+	__clear_bit(gpio, msm_gpio.enabled_irqs);
-+	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-+}
-+
-+static void msm_gpio_irq_unmask(unsigned int irq)
-+{
-+	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-+	unsigned long irq_flags;
-+
-+	spin_lock_irqsave(&tlmm_lock, irq_flags);
-+	__set_bit(gpio, msm_gpio.enabled_irqs);
-+	set_gpio_bits(INTR_RAW_STATUS_EN | INTR_ENABLE, GPIO_INTR_CFG(gpio));
-+	writel(TARGET_PROC_SCORPION, GPIO_INTR_CFG_SU(gpio));
-+	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-+}
-+
-+static int msm_gpio_irq_set_type(unsigned int irq, unsigned int flow_type)
-+{
-+	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-+	unsigned long irq_flags;
-+	uint32_t bits;
-+
-+	spin_lock_irqsave(&tlmm_lock, irq_flags);
-+
-+	bits = readl(GPIO_INTR_CFG(gpio));
-+
-+	if (flow_type & IRQ_TYPE_EDGE_BOTH) {
-+		bits |= INTR_DECT_CTL_EDGE;
-+		irq_desc[irq].handle_irq = handle_edge_irq;
-+		if ((flow_type & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH)
-+			__set_bit(gpio, msm_gpio.dual_edge_irqs);
-+		else
-+			__clear_bit(gpio, msm_gpio.dual_edge_irqs);
-+	} else {
-+		bits &= ~INTR_DECT_CTL_EDGE;
-+		irq_desc[irq].handle_irq = handle_level_irq;
-+		__clear_bit(gpio, msm_gpio.dual_edge_irqs);
-+	}
-+
-+	if (flow_type & (IRQ_TYPE_EDGE_RISING | IRQ_TYPE_LEVEL_HIGH))
-+		bits |= INTR_POL_CTL_HI;
-+	else
-+		bits &= ~INTR_POL_CTL_HI;
-+
-+	writel(bits, GPIO_INTR_CFG(gpio));
-+
-+	if ((flow_type & IRQ_TYPE_EDGE_BOTH) == IRQ_TYPE_EDGE_BOTH)
-+		msm_gpio_update_dual_edge_pos(gpio);
-+
-+	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-+
-+	return 0;
-+}
-+
-+/*
-+ * When the summary IRQ is raised, any number of GPIO lines may be high.
-+ * It is the job of the summary handler to find all those GPIO lines
-+ * which have been set as summary IRQ lines and which are triggered,
-+ * and to call their interrupt handlers.
-+ */
-+static void msm_summary_irq_handler(unsigned int irq, struct irq_desc *desc)
-+{
-+	unsigned long i;
-+
-+	for (i = find_first_bit(msm_gpio.enabled_irqs, NR_GPIO_IRQS);
-+	     i < NR_GPIO_IRQS;
-+	     i = find_next_bit(msm_gpio.enabled_irqs, NR_GPIO_IRQS, i + 1)) {
-+		if (readl(GPIO_INTR_STATUS(i)) & BIT(INTR_STATUS_BIT))
-+			generic_handle_irq(msm_gpio_to_irq(&msm_gpio.gpio_chip,
-+							   i));
-+	}
-+	desc->chip->ack(irq);
-+}
-+
-+static int msm_gpio_irq_set_wake(unsigned int irq, unsigned int on)
-+{
-+	int gpio = msm_irq_to_gpio(&msm_gpio.gpio_chip, irq);
-+
-+	if (on) {
-+		if (bitmap_empty(msm_gpio.wake_irqs, NR_GPIO_IRQS))
-+			set_irq_wake(TLMM_SCSS_SUMMARY_IRQ, 1);
-+		set_bit(gpio, msm_gpio.wake_irqs);
-+	} else {
-+		clear_bit(gpio, msm_gpio.wake_irqs);
-+		if (bitmap_empty(msm_gpio.wake_irqs, NR_GPIO_IRQS))
-+			set_irq_wake(TLMM_SCSS_SUMMARY_IRQ, 0);
-+	}
-+
-+	return 0;
-+}
-+
-+static struct irq_chip msm_gpio_irq_chip = {
-+	.name		= "msmgpio",
-+	.mask		= msm_gpio_irq_mask,
-+	.unmask		= msm_gpio_irq_unmask,
-+	.ack		= msm_gpio_irq_ack,
-+	.set_type	= msm_gpio_irq_set_type,
-+	.set_wake	= msm_gpio_irq_set_wake,
-+};
-+
- static int __devinit msm_gpio_probe(struct platform_device *dev)
- {
--	int ret;
-+	int i, irq, ret;
- 
- 	spin_lock_init(&tlmm_lock);
-+	bitmap_zero(msm_gpio.enabled_irqs, NR_GPIO_IRQS);
-+	bitmap_zero(msm_gpio.wake_irqs, NR_GPIO_IRQS);
-+	bitmap_zero(msm_gpio.dual_edge_irqs, NR_GPIO_IRQS);
- 	msm_gpio.gpio_chip.label = dev->name;
- 	ret = gpiochip_add(&msm_gpio.gpio_chip);
-+	if (ret < 0)
-+		return ret;
-+
-+	for (i = 0; i < msm_gpio.gpio_chip.ngpio; ++i) {
-+		irq = msm_gpio_to_irq(&msm_gpio.gpio_chip, i);
-+		set_irq_chip(irq, &msm_gpio_irq_chip);
-+		set_irq_handler(irq, handle_level_irq);
-+		set_irq_flags(irq, IRQF_VALID);
-+	}
- 
--	return ret;
-+	set_irq_chained_handler(TLMM_SCSS_SUMMARY_IRQ,
-+				msm_summary_irq_handler);
-+	return 0;
- }
- 
- static int __devexit msm_gpio_remove(struct platform_device *dev)
-@@ -136,12 +388,53 @@ static int __devexit msm_gpio_remove(struct platform_device *dev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM
-+static int msm_gpio_suspend_noirq(struct device *dev)
-+{
-+	unsigned long irq_flags;
-+	unsigned long i;
-+
-+	spin_lock_irqsave(&tlmm_lock, irq_flags);
-+	for_each_set_bit(i, msm_gpio.enabled_irqs, NR_GPIO_IRQS) {
-+		if (!test_bit(i, msm_gpio.wake_irqs))
-+			writel(TARGET_PROC_NONE, GPIO_INTR_CFG_SU(i));
-+	}
-+	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-+	return 0;
-+}
-+
-+static int msm_gpio_resume_noirq(struct device *dev)
-+{
-+	unsigned long irq_flags;
-+	unsigned long i;
-+
-+	spin_lock_irqsave(&tlmm_lock, irq_flags);
-+	for_each_set_bit(i, msm_gpio.enabled_irqs, NR_GPIO_IRQS)
-+		writel(TARGET_PROC_SCORPION, GPIO_INTR_CFG_SU(i));
-+	spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-+	return 0;
-+}
-+#else
-+#define msm_gpio_suspend_noirq NULL
-+#define msm_gpio_resume_noirq NULL
-+#endif
-+
-+static const struct dev_pm_ops msm_gpio_dev_pm_ops = {
-+	.suspend_noirq  = msm_gpio_suspend_noirq,
-+	.resume_noirq   = msm_gpio_resume_noirq,
-+	.freeze_noirq   = msm_gpio_suspend_noirq,
-+	.thaw_noirq     = msm_gpio_resume_noirq,
-+	.poweroff_noirq = msm_gpio_suspend_noirq,
-+	.restore_noirq  = msm_gpio_resume_noirq,
-+};
-+
- static struct platform_driver msm_gpio_driver = {
- 	.probe = msm_gpio_probe,
- 	.remove = __devexit_p(msm_gpio_remove),
- 	.driver = {
- 		.name = "msmgpio",
- 		.owner = THIS_MODULE,
-+		.pm = &msm_gpio_dev_pm_ops,
- 	},
- };
- 
--- 
-1.7.0.4
+The fix to work around the gcc miscompiling i8k.c to add "+m (*regs)"
+caused register pressure problems. Changing the 'asm' statement to
+'asm volatile' instead should prevent that and works around the gcc
+bug as well.
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Signed-off-by: Jim Bos <jim876@xs4all.nl>
+
+
+--------------040901080504060204070409
+Content-Type: text/plain;
+ name="PATCH2.i8k.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="PATCH2.i8k.c"
+
+--- linux/drivers/char/i8k.c.ORIG	2010-11-15 21:04:19.000000000 +0100
++++ linux/drivers/char/i8k.c	2010-11-15 21:02:32.000000000 +0100
+@@ -119,7 +119,7 @@
+ 	int eax = regs->eax;
+ 
+ #if defined(CONFIG_X86_64)
+-	asm("pushq %%rax\n\t"
++	asm volatile("pushq %%rax\n\t"
+ 		"movl 0(%%rax),%%edx\n\t"
+ 		"pushq %%rdx\n\t"
+ 		"movl 4(%%rax),%%ebx\n\t"
+@@ -141,11 +141,11 @@
+ 		"lahf\n\t"
+ 		"shrl $8,%%eax\n\t"
+ 		"andl $1,%%eax\n"
+-		:"=a"(rc), "+m" (*regs)
++		:"=a"(rc)
+ 		:    "a"(regs)
+ 		:    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
+ #else
+-	asm("pushl %%eax\n\t"
++	asm volatile("pushl %%eax\n\t"
+ 	    "movl 0(%%eax),%%edx\n\t"
+ 	    "push %%edx\n\t"
+ 	    "movl 4(%%eax),%%ebx\n\t"
+@@ -167,7 +167,7 @@
+ 	    "lahf\n\t"
+ 	    "shrl $8,%%eax\n\t"
+ 	    "andl $1,%%eax\n"
+-	    :"=a"(rc), "+m" (*regs)
++	    :"=a"(rc)
+ 	    :    "a"(regs)
+ 	    :    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
+ #endif
+
+--------------040901080504060204070409--
