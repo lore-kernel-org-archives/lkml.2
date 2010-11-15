@@ -1,73 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933275Ab0KORk4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 12:40:56 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49289 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933236Ab0KORky (ORCPT
+	id S933376Ab0KORnO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 12:43:14 -0500
+Received: from [137.121.254.63] ([137.121.254.63]:44267 "EHLO smtpext.lcpc.fr"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S933298Ab0KORnK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 12:40:54 -0500
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Will Deacon <will.deacon@arm.com>
-Subject: [PATCH v3 16/20] ARM: LPAE: Use generic dma_addr_t type definition
-Date: Mon, 15 Nov 2010 17:40:25 +0000
-Message-Id: <1289842829-3027-17-git-send-email-catalin.marinas@arm.com>
-X-Mailer: git-send-email 1.7.3.2.164.g6f10c
-In-Reply-To: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com>
-References: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 15 Nov 2010 17:40:38.0035 (UTC) FILETIME=[37040630:01CB84EC]
+	Mon, 15 Nov 2010 12:43:10 -0500
+X-Greylist: delayed 449 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Nov 2010 12:43:10 EST
+Message-ID: <20101115183254.1giyik1vs4g484sw@webmail.lcpc.fr>
+Date: Mon, 15 Nov 2010 18:32:54 +0100
+From: "Mr. Garry Moore" <westernunion@lcpc.fr>
+Reply-to: western.uniondepartment@hotmail.co.uk
+To: undisclosed-recipients:;
+Subject: MTCN Numbers: 6096147516
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII;
+	DelSp=Yes	format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Will Deacon <will.deacon@arm.com>
 
-This patch uses the types.h implementation in asm-generic to define the
-dma_addr_t type as the same width as phys_addr_t.
+My associate has helped me to send your first payment
+of $7,500 USD to you as instructed by Mr. David Cameron
+the United Kingdom prime minister after the last G20
+meeting that was held in United Kingdom, making you one
+of the beneficiaries. Here is the information below.
 
-NOTE: this is a temporary patch until the corresponding patches unifying
-the dma_addr_t and removing the dma64_addr_t are merged into mainline.
+CLICK HERE TO TRACK YOUR MONEY
+https://wumt.westernunion.com/asp/orderResults.asp?country=global
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
----
- arch/arm/include/asm/types.h |   20 +-------------------
- 1 files changed, 1 insertions(+), 19 deletions(-)
+MTCN Numbers: 6096147516
+Sender First Name Is = Emmanuel Frank
+Second Name = Ikechukwu
 
-diff --git a/arch/arm/include/asm/types.h b/arch/arm/include/asm/types.h
-index 345df01..dc1bdbb 100644
---- a/arch/arm/include/asm/types.h
-+++ b/arch/arm/include/asm/types.h
-@@ -1,30 +1,12 @@
- #ifndef __ASM_ARM_TYPES_H
- #define __ASM_ARM_TYPES_H
- 
--#include <asm-generic/int-ll64.h>
-+#include <asm-generic/types.h>
- 
--#ifndef __ASSEMBLY__
--
--typedef unsigned short umode_t;
--
--#endif /* __ASSEMBLY__ */
--
--/*
-- * These aren't exported outside the kernel to avoid name space clashes
-- */
- #ifdef __KERNEL__
- 
- #define BITS_PER_LONG 32
- 
--#ifndef __ASSEMBLY__
--
--/* Dma addresses are 32-bits wide.  */
--
--typedef u32 dma_addr_t;
--typedef u32 dma64_addr_t;
--
--#endif /* __ASSEMBLY__ */
--
- #endif /* __KERNEL__ */
- 
- #endif
+I told him to keep sending you $7,500 USD twice a week
+until the FULL payment of ($820000.00 United State Dollars)
+is completed.
+
+A certificate will be made to change the Receiver Name as
+stated by the British prime minister, send your Full Names
+and address via Email to: Mr Garry Moore
+
+you cannot pickup the money until the certificate is issued to you.
+
+Regards
+Mr. Garry Moore.
+Tel: +(44) 702 401 4955.
+
+
+
+
+My associate has helped me to send your first payment
+of $7,500 USD to you as instructed by Mr. David Cameron
+the United Kingdom prime minister after the last G20
+meeting that was held in United Kingdom, making you one
+of the beneficiaries. Here is the information below.
+
+CLICK HERE TO TRACK YOUR MONEY
+https://wumt.westernunion.com/asp/orderResults.asp?country=global
+
+MTCN Numbers: 6096147516
+Sender First Name Is = Emmanuel Frank
+Second Name = Ikechukwu
+
+I told him to keep sending you $7,500 USD twice a week
+until the FULL payment of ($820000.00 United State Dollars)
+is completed.
+
+A certificate will be made to change the Receiver Name as
+stated by the British prime minister, send your Full Names
+and address via Email to: Mr Garry Moore
+
+you cannot pickup the money until the certificate is issued to you.
+
+Regards
+Mr. Garry Moore.
+Tel: +(44) 702 401 4955.
+
+
+
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
