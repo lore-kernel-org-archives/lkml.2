@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758562Ab0KOVMr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 16:12:47 -0500
-Received: from mail.perches.com ([173.55.12.10]:1389 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758323Ab0KOVMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758534Ab0KOVMp (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 15 Nov 2010 16:12:45 -0500
+Received: from mail.perches.com ([173.55.12.10]:1379 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758323Ab0KOVMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 16:12:43 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Petko Manolov <petkan@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+Cc: Jay Vosburgh <fubar@us.ibm.com>, bonding-devel@lists.sourceforge.net,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 06/10] drivers/net/usb: Remove unnecessary casts of netdev_priv
-Date: Mon, 15 Nov 2010 13:12:29 -0800
-Message-Id: <66a3d7996e4ce8a84610237e86adf4b15a48514a.1289855436.git.joe@perches.com>
+Subject: [PATCH 02/10] drivers/net/bonding: Remove unnecessary casts of netdev_priv
+Date: Mon, 15 Nov 2010 13:12:25 -0800
+Message-Id: <6cbd8cc45eab4a2f85017c5b7ea926781d977c05.1289855436.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289855436.git.joe@perches.com>
 References: <cover.1289855436.git.joe@perches.com>
@@ -23,31 +22,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/usb/pegasus.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/bonding/bond_3ad.c |    3 +--
+ drivers/net/bonding/bonding.h  |    2 +-
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/usb/pegasus.c b/drivers/net/usb/pegasus.c
-index 6710f093..ef36676 100644
---- a/drivers/net/usb/pegasus.c
-+++ b/drivers/net/usb/pegasus.c
-@@ -359,7 +359,7 @@ fail:
+diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
+index 106718c..171782e 100644
+--- a/drivers/net/bonding/bond_3ad.c
++++ b/drivers/net/bonding/bond_3ad.c
+@@ -2474,8 +2474,7 @@ int bond_3ad_lacpdu_recv(struct sk_buff *skb, struct net_device *dev, struct pac
+ 		goto out;
  
- static int mdio_read(struct net_device *dev, int phy_id, int loc)
- {
--	pegasus_t *pegasus = (pegasus_t *) netdev_priv(dev);
-+	pegasus_t *pegasus = netdev_priv(dev);
- 	u16 res;
+ 	read_lock(&bond->lock);
+-	slave = bond_get_slave_by_dev((struct bonding *)netdev_priv(dev),
+-					orig_dev);
++	slave = bond_get_slave_by_dev(netdev_priv(dev), orig_dev);
+ 	if (!slave)
+ 		goto out_unlock;
  
- 	read_mii_word(pegasus, phy_id, loc, &res);
-@@ -397,7 +397,7 @@ fail:
+diff --git a/drivers/net/bonding/bonding.h b/drivers/net/bonding/bonding.h
+index 4eedb12..ad3ae46 100644
+--- a/drivers/net/bonding/bonding.h
++++ b/drivers/net/bonding/bonding.h
+@@ -286,7 +286,7 @@ static inline struct bonding *bond_get_bond_by_slave(struct slave *slave)
+ 		return NULL;
+ 	}
  
- static void mdio_write(struct net_device *dev, int phy_id, int loc, int val)
- {
--	pegasus_t *pegasus = (pegasus_t *) netdev_priv(dev);
-+	pegasus_t *pegasus = netdev_priv(dev);
- 
- 	write_mii_word(pegasus, phy_id, loc, val);
+-	return (struct bonding *)netdev_priv(slave->dev->master);
++	return netdev_priv(slave->dev->master);
  }
+ 
+ static inline bool bond_is_lb(const struct bonding *bond)
 -- 
 1.7.3.1.g432b3.dirty
 
