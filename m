@@ -1,46 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530Ab0KOEWd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 23:22:33 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35164 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757290Ab0KOEWc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 23:22:32 -0500
-Message-ID: <4CE0B54E.6000101@zytor.com>
-Date: Sun, 14 Nov 2010 20:21:34 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Andres Salomon <dilinger@queued.net>, Milton Miller <miltonm@bga.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] x86: OLPC: speed up device tree creation during boot
- (v2)
-References: <20101111214546.4e573cad@queued.net> <reply-olpc-3-v2@mdm.bga.com> <20101112002704.50c629e2@queued.net> <20101114095013.GB24206@elte.hu>
-In-Reply-To: <20101114095013.GB24206@elte.hu>
-Content-Type: text/plain; charset=UTF-8
+	id S1757543Ab0KOEaJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 23:30:09 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47241 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757290Ab0KOEaH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 23:30:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=L6CRvclaDkQg42EMF9YSD3RkqUyjNMbzJ07r++y/LGDhtYm+3EuCyjyLLhPEllgzPa
+         ZhYe06p0ySElWmiZ1zzo4UxwvaCpfbhmUIBpd3iAh0KMgHXv2/bdh/sM8kP5dcqZ7z4B
+         wQVBrcUo5C4checr/5W5ZZQQTCfhzt5sluMYg=
+Subject: Remaining problems in firewire-net
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+In-Reply-To: <tkrat.036c5d10fb83f85d@s5r6.in-berlin.de>
+References: <tkrat.036c5d10fb83f85d@s5r6.in-berlin.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Nov 2010 06:30:01 +0200
+Message-ID: <1289795401.11881.62.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/14/2010 01:50 AM, Ingo Molnar wrote:
-> 
-> It's being frowned upon btw, because it's easy to overlook (and for other reasons) - 
-> please dont use statics inside functions - please put them in front of the function 
-> or further up into file scope.
-> 
 
-What?  What is wrong with static variables in functions?  It really
-doesn't seem to be a good idea to make them file-scope if they don't
-need to be.
+I have unexpected progress on remaining issues in firewire-net in regard
+to loss of connection after s2ram cycle, and annoying fact that after
+cable replug (intentional of course), it takes time for connection to
+reestablish. These are separate issues, and I know the exact cause of
+both (and as a side effect I now know exactly how what iso transcations
+are and how do they work.)
 
-	-hpa
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Problem #1: large delay after cable removal/insert cycle.
+The reason is that IP over 1394 abuses ARP packets so that they carry
+additional vital information describing the node (namely the bus address
+that is used for block address, or as they call it the fifo address).
+ARP packets also carry less vital pieces of information namely maximum
+transfer size (max_rec) and maximum supported speed of the sender node.
+
+The problem here is that bus reset makes these pieces of information
+invalid, and more that that the target node and its fw_peer information
+disappear, and reappear but without the above fields set.
+
+The network core is of course unaware of such ugly abuse, and thus it
+doesn't send an ARP packet to the destanation. In fact it won't even
+send it if destanation node is explicitly addressed. because it appears
+in the ARP cache.
+
+The solution here is somehow tell the network core to invalidate the ARP
+entry for the target node as soon as it disappears.
+Don't yet know how to do that.
+
+Actually to demonstrate this problem its enough to execute 'arpping' and
+it will instantly make connection work.
+
+And lastly of course eventually connection establishes because kernel
+sends ARP requests periodicity to validate the destination network node.
+
+
+Problem #2:
+
+As was described in problem #1, its obvious that after suspend to ram,
+to reestablish connection we need an ARP reply.
+The problem is that it is received via iso channel, and it isn't
+reinitialized after s2ram.
+
+A quick and dirty hack  to stop/start the ISO channel from fwnet_update
+in firewire-net 'fixes' that problem.
+
+A better solution seemed to make the firewire-ohci reinit all ISO
+channels after s2ram cycle. But this is actually wrong.
+
+That is because 1394 spec specifies that first of all the ISO channel
+must be allocated from the IRM node. The firewire stack currently just
+uses hardcoded numbers in two places the ISO is used 
+(firewire-net, and firedtv)
+However it has all functions implemented for this.
+
+Secondary that allocation must be redone on each bus reset.
+Even more that that, since 1394 spec doesn't define a way to address a
+channel to a specific client, that must be done in protocol specific
+way.
+
+This means that on each bus reset all drivers that use ISO channels must
+allocate them again, and inform underlying hardware they serve.
+
+Therefore the first solution is actually the correct one.
+
+In case of firewire-net, it is simpler, because it uses the broadcast
+channel, so it only has to find who is the IRM and read its
+BROADCAST_CHANNEL.
+
+However, I think I need to write a function to query the IRM its
+broadcast channel, don't think it has one.
+
+
+Speaking of IRM discovery, the spec says it should be a node with
+contender bit and largest node id. However, the code in core-topology.c,
+build_tree seems to take the node that sent the selfID packet last.
+
+Best regards,
+	Maxim Levitsky
 
