@@ -1,888 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758Ab0KONkx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 08:40:53 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:33180 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756458Ab0KONkw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 08:40:52 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6167"; a="62903336"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: "'Meena Jain'" <meetubansal@gmail.com>
-Cc: <linux-usb@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        "'David Brownell'" <dbrownell@users.sourceforge.net>,
-        "'Greg Kroah-Hartman'" <gregkh@suse.de>,
-        "'Alan Stern'" <stern@rowland.harvard.edu>,
-        <linux-kernel@vger.kernel.org>
-References: <1288625887-30303-1-git-send-email-tlinder@codeaurora.org>	<1288625887-30303-2-git-send-email-tlinder@codeaurora.org>	<1288625887-30303-3-git-send-email-tlinder@codeaurora.org>	<1288625887-30303-4-git-send-email-tlinder@codeaurora.org> <AANLkTin+tZL4aoic8TQw-k+kDdh=JgyPm8N_MNs8sy8d@mail.gmail.com>
-In-Reply-To: <AANLkTin+tZL4aoic8TQw-k+kDdh=JgyPm8N_MNs8sy8d@mail.gmail.com>
-Subject: RE: [PATCH v4 3/3] usb: Adding SuperSpeed support to dummy_hcd
-Date: Mon, 15 Nov 2010 15:43:17 +0200
-Message-ID: <000301cb84cb$11a16b10$34e44130$@org>
+	id S1756833Ab0KONlG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 08:41:06 -0500
+Received: from tango.tkos.co.il ([62.219.50.35]:34892 "EHLO tango.tkos.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756772Ab0KONlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 08:41:03 -0500
+Date: Mon, 15 Nov 2010 15:40:26 +0200
+From: Baruch Siach <baruch@tkos.co.il>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Alex Gershgorin <agersh@rambler.ru>
+Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
+Message-ID: <20101115134025.GB3649@jasper.tkos.co.il>
+References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
+ <4CE0FE71.6000303@suse.cz>
+ <20101115100838.GA3649@jasper.tkos.co.il>
+ <4CE10B32.8090705@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="windows-1255"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: AcuEsytClfK/bKWNSD2LA97x55DcPgAF309w
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE10B32.8090705@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Meetu,
+Hi Jiri,
 
-Thank you for your input. You're right in your observation. 
-I'll upload a fixed patch soon.
+On Mon, Nov 15, 2010 at 11:28:02AM +0100, Jiri Slaby wrote:
+> On 11/15/2010 11:08 AM, Baruch Siach wrote:
+> > Thanks for reviewing. See my response to your comments below.
+> > 
+> > On Mon, Nov 15, 2010 at 10:33:37AM +0100, Jiri Slaby wrote:
+> >> On 11/15/2010 09:23 AM, Baruch Siach wrote:
+> >>> --- /dev/null
+> >>> +++ b/drivers/misc/altera_as.c
+> >>> @@ -0,0 +1,349 @@
+> >> ...
+> >>> +struct altera_as_device {
+> >>> +	unsigned id;
+> >>> +	struct device *dev;
+> >>> +	struct miscdevice miscdev;
+> >>> +	struct mutex open_lock;
+> >>> +	struct gpio gpios[AS_GPIO_NUM];
+> >>> +};
+> >>> +
+> >>> +/*
+> >>> + * The only functions updating this array are .probe/.remove, which are
+> >>> + * serialized. Hence, no locking is needed here.
+> >>> + */
+> >>> +static struct {
+> >>> +	int minor;
+> >>
+> >> Why you need minor here? It's in drvdata->miscdev.minor.
+> > 
+> > I use the minor field to lookup the drvdata pointer in get_as_dev(), which I 
+> > use is altera_as_open().  I do this because I have no access to the 'struct 
+> > device' pointer from the .open method. Do you know a better way?
+> > 
+> >>> +	struct altera_as_device *drvdata;
+> >>> +} altera_as_devs[AS_MAX_DEVS];
+> >>
+> >> You don't need the struct at all.
+> >> static struct altera_as_device *drvdata[AS_MAX_DEVS];
+> >> should be enough.
+> > 
+> > See above.
+> 
+> The answer to you previous question is here. You can just have a global
+> array of struct altera_as_device.
 
-Regards,
-Tanya Brokhman
-Consultant for Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+This static array would occupy sizeof(struct altera_as_device) * AS_MAX_DEVS 
+== 128 (for 32bit) * 16 == 2KB unconditionally. This seems unreasonable to me.  
+IMO struct altera_as_device should be allocated per device at run time.
 
+> >>> +static int altera_as_open(struct inode *inode, struct file *file)
+> >>> +{
+> >>> +	int ret;
+> >>> +	struct altera_as_device *drvdata = get_as_dev(iminor(inode));
+> >>> +
+> >>> +	if (drvdata == NULL)
+> >>> +		return -ENODEV;
+> >>> +	file->private_data = drvdata;
+> >>> +
+> >>> +	ret = mutex_trylock(&drvdata->open_lock);
+> >>> +	if (ret == 0)
+> >>> +		return -EBUSY;
+> >>> +
+> >>> +	ret = gpio_request_array(drvdata->gpios, ARRAY_SIZE(drvdata->gpios));
+> >>> +	if (ret < 0) {
+> >>> +		mutex_unlock(&drvdata->open_lock);
+> >>> +		return ret;
+> >>> +	}
+> >>
+> >> So leaving to userspace with mutex held. This is *wrong*. use
+> >> test_and_set_bit or alike instead.
+> > 
+> > Can you explain why this is wrong? I don't mind doing test_and_set_bit 
+> > instead, I'm just curious.
+> 
+> The mutex has an owner which it expects to unlock it. For example if you
+> fork a process which already opened the device, you have a problem. This
+> is a technical point. Another point is that it's ugly to leave to
+> userspace with any lock.
+> 
+> >>> +static int __init altera_as_probe(struct platform_device *pdev)
+> >>> +{
+> >> ...
+> >>> +	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
+> >>> +	drvdata->miscdev.name = kasprintf(GFP_KERNEL, "altera_as%d",
+> >>> +			pdata->id);
+> >>> +	if (drvdata->miscdev.name == NULL)
+> >>> +		return -ENOMEM;
+> >>> +	drvdata->miscdev.fops = &altera_as_fops;
+> >>> +	if (misc_register(&drvdata->miscdev) < 0) {
+> >>
+> >> Hmm, how many devices can be in the system?
+> > 
+> > Up to AS_MAX_DEVS, currently 16.
+> > 
+> >> This doesn't look like the right way.
+> > 
+> > What is the right way then?
+> 
+> Ok, so for that count it definitely deserves its own major to not eat up
+> misc device space.
 
+A previous version of this driver[1] did just that. It was Greg KH who 
+suggested[2] to use the misc class.
 
------Original Message-----
-From: linux-usb-owner@vger.kernel.org
-[mailto:linux-usb-owner@vger.kernel.org] On Behalf Of Meena Jain
-Sent: Monday, November 15, 2010 12:52 PM
-To: Tatyana Brokhman
-Cc: linux-usb@vger.kernel.org; linux-arm-msm@vger.kernel.org; David
-Brownell; Greg Kroah-Hartman; Alan Stern; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 3/3] usb: Adding SuperSpeed support to dummy_hcd
+[1] http://article.gmane.org/gmane.linux.kernel/1057434
+[2] http://article.gmane.org/gmane.linux.kernel/1058627
 
-Hi Tanya!
+> >>> +		kfree(drvdata->miscdev.name);
+> >>> +		return -ENODEV;
+> >>> +	}
+> >>> +	altera_as_devs[pdata->id].minor = drvdata->miscdev.minor;
+> >>> +	altera_as_devs[pdata->id].drvdata = drvdata;
+> >>
+> >> So now the device is usable without the mutex and gpios inited?
+> > 
+> > I was thinking that the device lock which is being held during the .probe run, 
+> > prevents the device from being open. After all I can still return -EGOAWAY at 
+> > this point. Am I wrong?
+> > 
+> > If so, I'll reorder this code.
+> 
+> This cannot be done easily. You need to set drvdata prior to minor and
+> after all the assignments here. The former because in get_as_dev you
+> test minor and return drvdata.
 
-I have doubt regarding the below changes done in
-usb_gadget_register_driver() w.r.t superspeed.
+When drvdata is not set it contains NULL. The .open method then just returns 
+-ENODEV. So moving the drvdata assignment to the end of .probe should plug all 
+race scenarios without any additional locking, isn't it?
 
->        dum->gadget.ep0 = &dum->ep [0].ep;
-> -       dum->ep [0].ep.maxpacket = 64;
->        list_del_init (&dum->ep [0].ep.ep_list);
->        INIT_LIST_HEAD(&dum->fifo_req.queue);
->
-> @@ -806,6 +915,11 @@ usb_gadget_register_driver (struct usb_gadget_driver
-*driver)
->        /* khubd will enumerate this in a while */
->        spin_lock_irq (&dum->lock);
->        dum->pullup = 1;
-> +       dum->gadget.speed = driver->speed;;
-> +       if (driver->speed == USB_SPEED_SUPER)
-> +               dum->ep[0].ep.maxpacket = 9;
-> +       else
-> +               dum->ep[0].ep.maxpacket = 64;
->        set_link_state (dum);
->        spin_unlock_irq (&dum->lock);
+> The latter because you use open_lock &
+> gpios after playing with minor & drvdata.
+> 
+> Technically, it can be done with a use of barriers, but I don't
+> recommend it as drivers should not use barriers at all. You should
+> introduce some locking here (it introduces barriers on its own).
+> 
+> So move the assignment to altera_as_devs below the mutex_init & gpios
+> setup and lock it appropriately. Then add a lock to get_as_dev.
+> 
+> >>> +	mutex_init(&drvdata->open_lock);
+> >>> +
+> >>> +	drvdata->id = pdata->id;
+> >>> +
+> >>> +	drvdata->gpios[ASIO_DATA].gpio		= pdata->data;
+> >>> +	drvdata->gpios[ASIO_DATA].flags		= GPIOF_IN;
+> >>> +	drvdata->gpios[ASIO_DATA].label		= "as_data";
+> >> ...
+> >>> +	drvdata->gpios[ASIO_NCE].gpio		= pdata->nce;
+> >>> +	drvdata->gpios[ASIO_NCE].flags		= GPIOF_OUT_INIT_HIGH;
+> >>> +	drvdata->gpios[ASIO_NCE].label		= "as_nce";
+> >>> +
+> >>> +	dev_info(drvdata->dev, "Altera Cyclone Active Serial driver\n");
+> >>> +
+> >>> +	return 0;
+> >>> +}
+> 
+> regards,
+> -- 
+> js
+> suse labs
 
-Here, we are setting the ep[0].ep.maxpacket size as 9 or 64 depending
-upon speed. As per the patch, ep maxpacket size information is being
-updated after the driver->bind function is called i.e. after below
-code
+baruch
 
-retval = driver->bind(&dum->gadget);
-
-Earlier this information was being updating before the bind function called.
-
-Due to this, we are getting wrong packet size as "0xffff" instead of
-64 (in case of high speed) inside the bind function which is causing
-enumeration problem while loading the existing file_storage gadget
-driver.
-
-IMO, the above code should be placed before bind function call.
-
-Please confirm.
-
-Thanks and Regards,
-
-Meetu
-
-
-
-On Mon, Nov 1, 2010 at 9:08 PM, Tatyana Brokhman <tlinder@codeaurora.org>
-wrote:
-> USB 3.0 hub includes 2 hubs - HS and SS ones.
-> Thus, when dummy_hcd enabled it will register 2 root hubs (SS and HS).
->
-> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
-> ---
->  drivers/usb/gadget/dummy_hcd.c |  501
-++++++++++++++++++++++++++++++++++++++--
->  1 files changed, 487 insertions(+), 14 deletions(-)
->
-> diff --git a/drivers/usb/gadget/dummy_hcd.c
-b/drivers/usb/gadget/dummy_hcd.c
-> index ef34c4d..71e1eaf 100644
-> --- a/drivers/usb/gadget/dummy_hcd.c
-> +++ b/drivers/usb/gadget/dummy_hcd.c
-> @@ -5,6 +5,7 @@
->  *
->  * Copyright (C) 2003 David Brownell
->  * Copyright (C) 2003-2005 Alan Stern
-> + * Copyright (C) 2010 Code Aurora Forum. All rights reserved.
->  *
->  * This program is free software; you can redistribute it and/or modify
->  * it under the terms of the GNU General Public License as published by
-> @@ -61,10 +62,13 @@
->
->  #define POWER_BUDGET   500     /* in mA; use 8 for low-power port testing
-*/
->
-> -static const char      driver_name [] = "dummy_hcd";
-> -static const char      driver_desc [] = "USB Host+Gadget Emulator";
-> +static const char      driver_name[] = "dummy_hcd";
-> +static const char      ss_driver_name[] = "ss_dummy_hcd";
-> +static const char      driver_desc[] = "USB Host+Gadget Emulator";
-> +static const char      ss_driver_desc[] = "SS USB Host+Gadget Emulator";
->
-> -static const char      gadget_name [] = "dummy_udc";
-> +static const char      gadget_name[] = "dummy_udc";
-> +static const char      ss_gadget_name[] = "ss_dummy_udc";
->
->  MODULE_DESCRIPTION (DRIVER_DESC);
->  MODULE_AUTHOR ("David Brownell");
-> @@ -220,6 +224,7 @@ static inline struct dummy *gadget_dev_to_dummy
-(struct device *dev)
->  }
->
->  static struct dummy                    *the_controller;
-> +static struct dummy                    *the_ss_controller;
->
->
- /*-------------------------------------------------------------------------
-*/
->
-> @@ -259,10 +264,97 @@ stop_activity (struct dummy *dum)
->        /* driver now does any non-usb quiescing necessary */
->  }
->
-> -/* caller must hold lock */
-> +/**
-> + * set_ss_link_state() - Sets the current state of the
-> + * SuperSpeed link
-> + * @dum: pointer to the dummy_hcd structure to update the link
-> + *     state for
-> + *
-> + * This function updates the port_status according to the link
-> + * state. The old status is saved befor updating.
-> + * Note: this function should be called only for SuperSpeed
-> + * master and the caller must hold the lock.
-> + */
-> +static void
-> +set_ss_link_state(struct dummy *dum)
-> +{
-> +       dum->active = 0;
-> +       if ((dum->port_status & USB_SS_PORT_STAT_POWER) == 0)
-> +               dum->port_status = 0;
-> +
-> +       /* UDC suspend must cause a disconnect */
-> +       else if (!dum->pullup || dum->udc_suspended) {
-> +               dum->port_status &= ~(USB_PORT_STAT_CONNECTION |
-> +                                       USB_PORT_STAT_ENABLE);
-> +               if ((dum->old_status & USB_PORT_STAT_CONNECTION) != 0)
-> +                       dum->port_status |=
-> +                                       (USB_PORT_STAT_C_CONNECTION <<
-16);
-> +       } else {
-> +               /* device is connected and not suspended */
-> +               dum->port_status |= (USB_PORT_STAT_CONNECTION |
-> +                                    USB_PORT_STAT_SUPER_SPEED);
-> +               if ((dum->old_status & USB_PORT_STAT_CONNECTION) == 0)
-> +                       dum->port_status |=
-> +                               (USB_PORT_STAT_C_CONNECTION << 16);
-> +               if ((dum->port_status & USB_PORT_STAT_ENABLE) == 1 &&
-> +                   (dum->port_status & USB_SS_PORT_LS_U0) == 1 &&
-> +                   dum->rh_state != DUMMY_RH_SUSPENDED)
-> +                       dum->active = 1;
-> +       }
-> +
-> +
-> +       if ((dum->port_status & USB_PORT_STAT_ENABLE) == 0 ||
-> +           dum->active)
-> +               dum->resuming = 0;
-> +
-> +       /* if !connected or reset */
-> +       if ((dum->port_status & USB_PORT_STAT_CONNECTION) == 0 ||
-> +                       (dum->port_status & USB_PORT_STAT_RESET) != 0) {
-> +               /*
-> +                * We're connected and not reseted (reset occured now),
-> +                * and driver attached - disconnect!
-> +                */
-> +               if ((dum->old_status & USB_PORT_STAT_CONNECTION) != 0 &&
-> +                   (dum->old_status & USB_PORT_STAT_RESET) == 0 &&
-> +                   dum->driver) {
-> +                       stop_activity(dum);
-> +                       spin_unlock(&dum->lock);
-> +                       dum->driver->disconnect(&dum->gadget);
-> +                       spin_lock(&dum->lock);
-> +               }
-> +       } else if (dum->active != dum->old_active) {
-> +               if (dum->old_active && dum->driver->suspend) {
-> +                       spin_unlock(&dum->lock);
-> +                       dum->driver->suspend(&dum->gadget);
-> +                       spin_lock(&dum->lock);
-> +               } else if (!dum->old_active &&
-> +                          dum->driver->resume) {
-> +                       spin_unlock(&dum->lock);
-> +                       dum->driver->resume(&dum->gadget);
-> +                       spin_lock(&dum->lock);
-> +               }
-> +       }
-> +
-> +       dum->old_status = dum->port_status;
-> +       dum->old_active = dum->active;
-> +}
-> +
-> +/**
-> + * set_link_state() - Sets the current state of the link
-> + * @dum: pointer to the dummy_hcd structure to update the link
-> + *     state for
-> + *
-> + * This function updates the port_status according to the link
-> + * state. The old status is saved befor updating.
-> + * Note: caller must hold the lock.
-> + */
->  static void
->  set_link_state (struct dummy *dum)
->  {
-> +       if (dum == the_ss_controller) {
-> +               set_ss_link_state(dum);
-> +               return;
-> +       }
->        dum->active = 0;
->        if ((dum->port_status & USB_PORT_STAT_POWER) == 0)
->                dum->port_status = 0;
-> @@ -343,7 +435,13 @@ dummy_enable (struct usb_ep *_ep, const struct
-usb_endpoint_descriptor *desc)
->        dum = ep_to_dummy (ep);
->        if (!dum->driver || !is_enabled (dum))
->                return -ESHUTDOWN;
-> -       max = le16_to_cpu(desc->wMaxPacketSize) & 0x3ff;
-> +       max = le16_to_cpu(desc->wMaxPacketSize) ;
-> +       /*
-> +        * For HS/FS devices only bits 0..9 of the wMaxPacketSize
-represent the
-> +        * maximum packet size
-> +        */
-> +       if (dum->gadget.speed < USB_SPEED_SUPER)
-> +               max &= 0x3ff;
->
->        /* drivers must not request bad settings, since lower levels
->         * (hardware or its drivers) may not check.  some endpoints
-> @@ -361,6 +459,10 @@ dummy_enable (struct usb_ep *_ep, const struct
-usb_endpoint_descriptor *desc)
->                        goto done;
->                }
->                switch (dum->gadget.speed) {
-> +               case USB_SPEED_SUPER:
-> +                       if (max == 1024)
-> +                               break;
-> +                       goto done;
->                case USB_SPEED_HIGH:
->                        if (max == 512)
->                                break;
-> @@ -379,6 +481,7 @@ dummy_enable (struct usb_ep *_ep, const struct
-usb_endpoint_descriptor *desc)
->                        goto done;
->                /* real hardware might not handle all packet sizes */
->                switch (dum->gadget.speed) {
-> +               case USB_SPEED_SUPER:
->                case USB_SPEED_HIGH:
->                        if (max <= 1024)
->                                break;
-> @@ -399,6 +502,7 @@ dummy_enable (struct usb_ep *_ep, const struct
-usb_endpoint_descriptor *desc)
->                        goto done;
->                /* real hardware might not handle all packet sizes */
->                switch (dum->gadget.speed) {
-> +               case USB_SPEED_SUPER:
->                case USB_SPEED_HIGH:
->                        if (max <= 1024)
->                                break;
-> @@ -750,16 +854,22 @@ static DEVICE_ATTR (function, S_IRUGO,
-show_function, NULL);
->  int
->  usb_gadget_register_driver (struct usb_gadget_driver *driver)
->  {
-> -       struct dummy    *dum = the_controller;
-> +       struct dummy    *dum;
->        int             retval, i;
->
-> +       if (!driver->bind || !driver->setup
-> +                       || driver->speed == USB_SPEED_UNKNOWN)
-> +               return -EINVAL;
-> +
-> +       if (driver->speed == USB_SPEED_SUPER)
-> +               dum = the_ss_controller;
-> +       else
-> +               dum = the_controller;
-> +
->        if (!dum)
->                return -EINVAL;
->        if (dum->driver)
->                return -EBUSY;
-> -       if (!driver->bind || !driver->setup
-> -                       || driver->speed == USB_SPEED_UNKNOWN)
-> -               return -EINVAL;
->
->        /*
->         * SLAVE side init ... the layer above hardware, which
-> @@ -787,7 +897,6 @@ usb_gadget_register_driver (struct usb_gadget_driver
-*driver)
->        }
->
->        dum->gadget.ep0 = &dum->ep [0].ep;
-> -       dum->ep [0].ep.maxpacket = 64;
->        list_del_init (&dum->ep [0].ep.ep_list);
->        INIT_LIST_HEAD(&dum->fifo_req.queue);
->
-> @@ -806,6 +915,11 @@ usb_gadget_register_driver (struct usb_gadget_driver
-*driver)
->        /* khubd will enumerate this in a while */
->        spin_lock_irq (&dum->lock);
->        dum->pullup = 1;
-> +       dum->gadget.speed = driver->speed;;
-> +       if (driver->speed == USB_SPEED_SUPER)
-> +               dum->ep[0].ep.maxpacket = 9;
-> +       else
-> +               dum->ep[0].ep.maxpacket = 64;
->        set_link_state (dum);
->        spin_unlock_irq (&dum->lock);
->
-> @@ -817,12 +931,20 @@ EXPORT_SYMBOL (usb_gadget_register_driver);
->  int
->  usb_gadget_unregister_driver (struct usb_gadget_driver *driver)
->  {
-> -       struct dummy    *dum = the_controller;
-> +       struct dummy    *dum ;
->        unsigned long   flags;
->
-> +       if (!driver || !driver->unbind)
-> +               return -EINVAL;
-> +
-> +       if (driver->speed == USB_SPEED_SUPER)
-> +               dum = the_ss_controller;
-> +       else
-> +               dum = the_controller;
-> +
->        if (!dum)
->                return -ENODEV;
-> -       if (!driver || driver != dum->driver || !driver->unbind)
-> +       if (driver != dum->driver)
->                return -EINVAL;
->
->        dev_dbg (udc_dev(dum), "unregister gadget driver '%s'\n",
-> @@ -897,6 +1019,34 @@ static int dummy_udc_probe (struct platform_device
-*pdev)
->        return rc;
->  }
->
-> +static int dummy_ss_udc_probe(struct platform_device *pdev)
-> +{
-> +       struct dummy    *dum = the_ss_controller;
-> +       int             rc;
-> +
-> +       dum->gadget.name = gadget_name;
-> +       dum->gadget.ops = &dummy_ops;
-> +       dum->gadget.is_dualspeed = 1;
-> +
-> +       /* maybe claim OTG support, though we won't complete HNP */
-> +       dum->gadget.is_otg = (dummy_to_hcd(dum)->self.otg_port != 0);
-> +
-> +       dev_set_name(&dum->gadget.dev, "ss_gadget");
-> +       dum->gadget.dev.parent = &pdev->dev;
-> +       dum->gadget.dev.release = dummy_gadget_release;
-> +       rc = device_register(&dum->gadget.dev);
-> +       if (rc < 0)
-> +               return rc;
-> +
-> +       usb_get_hcd(dummy_to_hcd(dum));
-> +
-> +       platform_set_drvdata(pdev, dum);
-> +       rc = device_create_file(&dum->gadget.dev, &dev_attr_function);
-> +       if (rc < 0)
-> +               device_unregister(&dum->gadget.dev);
-> +       return rc;
-> +}
-> +
->  static int dummy_udc_remove (struct platform_device *pdev)
->  {
->        struct dummy    *dum = platform_get_drvdata (pdev);
-> @@ -946,6 +1096,17 @@ static struct platform_driver dummy_udc_driver = {
->        },
->  };
->
-> +static struct platform_driver dummy_ss_udc_driver = {
-> +       .probe          = dummy_ss_udc_probe,
-> +       .remove         = dummy_udc_remove,
-> +       .suspend        = dummy_udc_suspend,
-> +       .resume         = dummy_udc_resume,
-> +       .driver         = {
-> +               .name   = (char *) ss_gadget_name,
-> +               .owner  = THIS_MODULE,
-> +       },
-> +};
-> +
->
- /*-------------------------------------------------------------------------
-*/
->
->  /* MASTER/HOST SIDE DRIVER
-> @@ -1244,6 +1405,24 @@ static int handle_control_request(struct dummy
-*dum, struct urb *urb,
->                        case USB_DEVICE_A_ALT_HNP_SUPPORT:
->                                dum->gadget.a_alt_hnp_support = 1;
->                                break;
-> +                       case USB_DEVICE_U1_ENABLE:
-> +                               if (dum->gadget.speed == USB_SPEED_SUPER)
-> +                                       w_value = USB_DEV_STAT_U1_ENABLED;
-> +                               else
-> +                                       ret_val = -EOPNOTSUPP;
-> +                               break;
-> +                       case USB_DEVICE_U2_ENABLE:
-> +                               if (dum->gadget.speed == USB_SPEED_SUPER)
-> +                                       w_value = USB_DEV_STAT_U2_ENABLED;
-> +                               else
-> +                                       ret_val = -EOPNOTSUPP;
-> +                               break;
-> +                       case USB_DEVICE_LTM_ENABLE:
-> +                               if (dum->gadget.speed == USB_SPEED_SUPER)
-> +                                       w_value =
-USB_DEV_STAT_LTM_ENABLED;
-> +                               else
-> +                                       ret_val = -EOPNOTSUPP;
-> +                               break;
->                        default:
->                                ret_val = -EOPNOTSUPP;
->                        }
-> @@ -1270,6 +1449,24 @@ static int handle_control_request(struct dummy
-*dum, struct urb *urb,
->                        case USB_DEVICE_REMOTE_WAKEUP:
->                                w_value = USB_DEVICE_REMOTE_WAKEUP;
->                                break;
-> +                       case USB_DEVICE_U1_ENABLE:
-> +                               if (dum->gadget.speed == USB_SPEED_SUPER)
-> +                                       w_value = USB_DEV_STAT_U1_ENABLED;
-> +                               else
-> +                                       ret_val = -EOPNOTSUPP;
-> +                               break;
-> +                       case USB_DEVICE_U2_ENABLE:
-> +                               if (dum->gadget.speed == USB_SPEED_SUPER)
-> +                                       w_value = USB_DEV_STAT_U2_ENABLED;
-> +                               else
-> +                                       ret_val = -EOPNOTSUPP;
-> +                               break;
-> +                       case USB_DEVICE_LTM_ENABLE:
-> +                               if (dum->gadget.speed == USB_SPEED_SUPER)
-> +                                       w_value =
-USB_DEV_STAT_LTM_ENABLED;
-> +                               else
-> +                                       ret_val = -EOPNOTSUPP;
-> +                               break;
->                        default:
->                                ret_val = -EOPNOTSUPP;
->                                break;
-> @@ -1350,6 +1547,9 @@ static void dummy_timer (unsigned long _dum)
->        case USB_SPEED_HIGH:
->                total = 512/*bytes*/ * 13/*packets*/ * 8/*uframes*/;
->                break;
-> +       case USB_SPEED_SUPER:
-> +               total = 400 << 20; /* 400MB = 400*(2^20) bytes */
-> +               break;
->        default:
->                dev_err (dummy_dev(dum), "bogus device speed\n");
->                return;
-> @@ -1595,7 +1795,168 @@ hub_descriptor (struct usb_hub_descriptor *desc)
->        desc->bitmap [1] = 0xff;
->  }
->
-> -static int dummy_hub_control (
-> +/**
-> + * dummy_ss_hub_control() - handles the control requests of the
-> + * dummy (ss hub) master.
-> + * @hcd: pointer to the hcd to handle
-> + * @typeReq: type of the request
-> + * @wValue: wValue of the request
-> + * @wIndex: wIndex of the request
-> + * @buf: buffer for reply in case of an IN request
-> + * @wLength: wLength of the request
-> + *
-> + * Return int - 0 on success, error code otherwise
-> + *
-> + * This function handles the control requests of the dummy (ss
-> + * hub) master. All control requests that are part of the
-> + * enumeration are handled by the dummy_timer
-> + * Note: this function is used only for the SS root hub
-> + */
-> +static int dummy_ss_hub_control(
-> +       struct usb_hcd  *hcd,
-> +       u16             typeReq,
-> +       u16             wValue,
-> +       u16             wIndex,
-> +       char            *buf,
-> +       u16             wLength
-> +) {
-> +       struct dummy            *dum;
-> +       int             retval = 0;
-> +       unsigned long   flags;
-> +
-> +       if (!HCD_HW_ACCESSIBLE(hcd))
-> +               return -ETIMEDOUT;
-> +
-> +       dum = hcd_to_dummy(hcd);
-> +       spin_lock_irqsave(&dum->lock, flags);
-> +       switch (typeReq) {
-> +       case ClearHubFeature:
-> +               break;
-> +       case ClearPortFeature:
-> +               switch (wValue) {
-> +               case USB_PORT_FEAT_POWER:
-> +                       if (dum->port_status & USB_SS_PORT_STAT_POWER)
-> +                               dev_dbg(dummy_dev(dum), "power-off\n");
-> +                       /* FALLS THROUGH */
-> +               default:
-> +                       dum->port_status &= ~(1 << wValue);
-> +                       set_link_state(dum);
-> +               }
-> +               break;
-> +       case GetHubDescriptor:
-> +               hub_descriptor((struct usb_hub_descriptor *) buf);
-> +               break;
-> +       case GetHubStatus:
-> +               /* We report that no change occured in the hub status
-> +                * (power and overcurent conditions)
-> +                */
-> +               *(__le32 *) buf = cpu_to_le32 (0);
-> +               break;
-> +       case GetPortStatus:
-> +               /* We have only one port */
-> +               if (wIndex != 1)
-> +                       retval = -EPIPE;
-> +
-> +               /* whoever resets or resumes must GetPortStatus to
-> +                * complete it!!
-> +                */
-> +               /* TODO: add support for suspend/resume */
-> +               if ((dum->port_status & USB_PORT_STAT_RESET) != 0 &&
-> +                       time_after_eq(jiffies, dum->re_timeout)) {
-> +                       dum->port_status |= (USB_PORT_STAT_C_RESET << 16);
-> +                       dum->port_status &= ~USB_PORT_STAT_RESET;
-> +               }
-> +               if (dum->pullup)
-> +                       dum->port_status |= USB_PORT_STAT_ENABLE;
-> +
-> +               set_link_state(dum);
-> +
-> +               ((__le16 *) buf)[0] = cpu_to_le16 (dum->port_status);
-> +               ((__le16 *) buf)[1] = cpu_to_le16 (dum->port_status >>
-16);
-> +               break;
-> +       case SetHubFeature:
-> +               retval = -EPIPE;
-> +               break;
-> +       case SetPortFeature:
-> +               switch (wValue) {
-> +               case USB_PORT_FEAT_LINK_STATE:
-> +                       /* Since this is dummy we don't have an actual
-link so
-> +                        * there is nothing to do for the SET_LINK_STATE
-cmd
-> +                        */
-> +                       break;
-> +               case USB_PORT_FEAT_U1_TIMEOUT:
-> +               case USB_PORT_FEAT_U2_TIMEOUT:
-> +                       /* TODO: add suspend/resume support! */
-> +                       break;
-> +               case USB_PORT_FEAT_POWER:
-> +                       dum->port_status |= USB_SS_PORT_STAT_POWER;
-> +                       set_link_state(dum);
-> +                       break;
-> +               case USB_PORT_FEAT_BH_PORT_RESET:
-> +               case USB_PORT_FEAT_RESET:
-> +                       /* if it's already enabled, disable */
-> +                       dum->port_status = 0;
-> +                       dum->port_status = (USB_SS_PORT_STAT_POWER |
-> +                                              USB_PORT_STAT_CONNECTION |
-> +                                              USB_PORT_STAT_RESET);
-> +                       /* We want to reset device status. All but the
-> +                        * Self powered feature
-> +                        */
-> +                       dum->devstatus &= 0x0000 |
-> +                               (1 << USB_DEVICE_SELF_POWERED);
-> +                       /* FIXME: what is the correct reset signaling
-interval?
-> +                        * Is it still 50msec as for HS?
-> +                        */
-> +                       dum->re_timeout = jiffies + msecs_to_jiffies(50);
-> +                       /* FALLS THROUGH */
-> +               default:
-> +                       if ((dum->port_status &
-> +                            USB_SS_PORT_STAT_POWER) != 0) {
-> +                               dum->port_status |= (1 << wValue);
-> +                               set_link_state(dum);
-> +                       }
-> +               }
-> +               break;
-> +       case GetPortErrorCount:
-> +               /* We'll always return 0 since this is a dummy hub */
-> +               *(__le32 *) buf = cpu_to_le32 (0);
-> +               break;
-> +       case SetHubDepth:
-> +               break;
-> +       default:
-> +               dev_dbg(dummy_dev(dum),
-> +                       "hub control req%04x v%04x i%04x l%d\n",
-> +                       typeReq, wValue, wIndex, wLength);
-> +
-> +               /* "protocol stall" on error */
-> +               retval = -EPIPE;
-> +       }
-> +       spin_unlock_irqrestore(&dum->lock, flags);
-> +
-> +       if ((dum->port_status & PORT_C_MASK) != 0)
-> +               usb_hcd_poll_rh_status(hcd);
-> +       return retval;
-> +}
-> +
-> +
-> +/**
-> + * dummy_hub_control() - handles the control requests of the
-> + * dummy (hs hub) master.
-> + * @hcd: pointer to the hcd to handle
-> + * @typeReq: type of the request
-> + * @wValue: wValue of the request
-> + * @wIndex: wIndex of the request
-> + * @buf: buffer for reply in case of an IN request
-> + * @wLength: wLength of the request
-> + *
-> + * Return int - 0 on success, error code otherwise
-> + *
-> + * This function handles the control requests of the dummy (hs
-> + * hub) master. All control requests that are part of the
-> + * enumeration are handled by the dummy_timer
-> + * Note: this function is used only for the HS root hub
-> + */
-> +static int dummy_hub_control(
->        struct usb_hcd  *hcd,
->        u16             typeReq,
->        u16             wValue,
-> @@ -1709,7 +2070,11 @@ static int dummy_hub_control (
->                        dum->port_status &= ~(USB_PORT_STAT_ENABLE
->                                        | USB_PORT_STAT_LOW_SPEED
->                                        | USB_PORT_STAT_HIGH_SPEED);
-> -                       dum->devstatus = 0;
-> +                       /*
-> +                        * We want to reset device status. All but the
-> +                        * Self powered feature
-> +                        */
-> +                       dum->devstatus &= (1 << USB_DEVICE_SELF_POWERED);
->                        /* 50msec reset signaling */
->                        dum->re_timeout = jiffies + msecs_to_jiffies(50);
->                        /* FALLS THROUGH */
-> @@ -1892,6 +2257,27 @@ static const struct hc_driver dummy_hcd = {
->        .bus_resume =           dummy_bus_resume,
->  };
->
-> +static const struct hc_driver dummy_ss_hcd = {
-> +       .description =          (char *) ss_driver_name,
-> +       .product_desc =         "Dummy SS host controller",
-> +       .hcd_priv_size =        sizeof(struct dummy),
-> +
-> +       .flags =                HCD_USB3,
-> +
-> +       .start =                dummy_start,
-> +       .stop =                 dummy_stop,
-> +
-> +       .urb_enqueue =          dummy_urb_enqueue,
-> +       .urb_dequeue =          dummy_urb_dequeue,
-> +
-> +       .get_frame_number =     dummy_h_get_frame,
-> +
-> +       .hub_status_data =      dummy_hub_status,
-> +       .hub_control =          dummy_ss_hub_control,
-> +       .bus_suspend =          dummy_bus_suspend,
-> +       .bus_resume =           dummy_bus_resume,
-> +};
-> +
->  static int dummy_hcd_probe(struct platform_device *pdev)
->  {
->        struct usb_hcd          *hcd;
-> @@ -1912,6 +2298,26 @@ static int dummy_hcd_probe(struct platform_device
-*pdev)
->        return retval;
->  }
->
-> +static int dummy_hcd_probe_ss(struct platform_device *pdev)
-> +{
-> +       struct usb_hcd          *hcd;
-> +       int                     retval;
-> +
-> +       dev_info(&pdev->dev, "%s, driver " DRIVER_VERSION "\n",
-ss_driver_desc);
-> +
-> +       hcd = usb_create_hcd(&dummy_ss_hcd, &pdev->dev,
-dev_name(&pdev->dev));
-> +       if (!hcd)
-> +               return -ENOMEM;
-> +       the_ss_controller = hcd_to_dummy(hcd);
-> +
-> +       retval = usb_add_hcd(hcd, 0, 0);
-> +       if (retval != 0) {
-> +               usb_put_hcd(hcd);
-> +               the_ss_controller = NULL;
-> +       }
-> +       return retval;
-> +}
-> +
->  static int dummy_hcd_remove (struct platform_device *pdev)
->  {
->        struct usb_hcd          *hcd;
-> @@ -1923,6 +2329,17 @@ static int dummy_hcd_remove (struct platform_device
-*pdev)
->        return 0;
->  }
->
-> +static int dummy_ss_hcd_remove(struct platform_device *pdev)
-> +{
-> +       struct usb_hcd          *hcd;
-> +
-> +       hcd = platform_get_drvdata(pdev);
-> +       usb_remove_hcd(hcd);
-> +       usb_put_hcd(hcd);
-> +       the_ss_controller = NULL;
-> +       return 0;
-> +}
-> +
->  static int dummy_hcd_suspend (struct platform_device *pdev, pm_message_t
-state)
->  {
->        struct usb_hcd          *hcd;
-> @@ -1964,10 +2381,23 @@ static struct platform_driver dummy_hcd_driver = {
->        },
->  };
->
-> +static struct platform_driver dummy_ss_hcd_driver = {
-> +       .probe          = dummy_hcd_probe_ss,
-> +       .remove         = dummy_ss_hcd_remove,
-> +       .suspend        = dummy_hcd_suspend,
-> +       .resume         = dummy_hcd_resume,
-> +       .driver         = {
-> +               .name   = (char *) ss_driver_name,
-> +               .owner  = THIS_MODULE,
-> +       },
-> +};
-> +
->
- /*-------------------------------------------------------------------------
-*/
->
->  static struct platform_device *the_udc_pdev;
-> +static struct platform_device *the_ss_udc_pdev;
->  static struct platform_device *the_hcd_pdev;
-> +static struct platform_device *the_ss_hcd_pdev;
->
->  static int __init init (void)
->  {
-> @@ -1979,34 +2409,73 @@ static int __init init (void)
->        the_hcd_pdev = platform_device_alloc(driver_name, -1);
->        if (!the_hcd_pdev)
->                return retval;
-> +
-> +       the_ss_hcd_pdev = platform_device_alloc(ss_driver_name, -1);
-> +       if (!the_ss_hcd_pdev)
-> +               goto err_alloc_ss_hcd;
-> +
->        the_udc_pdev = platform_device_alloc(gadget_name, -1);
->        if (!the_udc_pdev)
->                goto err_alloc_udc;
->
-> +       the_ss_udc_pdev = platform_device_alloc(ss_gadget_name, -1);
-> +       if (!the_ss_udc_pdev)
-> +               goto err_alloc_ss_udc;
-> +
->        retval = platform_driver_register(&dummy_hcd_driver);
->        if (retval < 0)
->                goto err_register_hcd_driver;
-> +
-> +       retval = platform_driver_register(&dummy_ss_hcd_driver);
-> +       if (retval < 0)
-> +               goto err_register_ss_hcd_driver;
-> +
->        retval = platform_driver_register(&dummy_udc_driver);
->        if (retval < 0)
->                goto err_register_udc_driver;
->
-> +       retval = platform_driver_register(&dummy_ss_udc_driver);
-> +       if (retval < 0)
-> +               goto err_register_ss_udc_driver;
-> +
->        retval = platform_device_add(the_hcd_pdev);
->        if (retval < 0)
->                goto err_add_hcd;
-> +
-> +       retval = platform_device_add(the_ss_hcd_pdev);
-> +       if (retval < 0)
-> +               goto err_add_ss_hcd;
-> +
->        retval = platform_device_add(the_udc_pdev);
->        if (retval < 0)
->                goto err_add_udc;
-> +
-> +       retval = platform_device_add(the_ss_udc_pdev);
-> +       if (retval < 0)
-> +               goto err_add_ss_udc;
->        return retval;
->
-> +err_add_ss_udc:
-> +       platform_device_unregister(the_udc_pdev);
->  err_add_udc:
-> +       platform_device_del(the_ss_hcd_pdev);
-> +err_add_ss_hcd:
->        platform_device_del(the_hcd_pdev);
->  err_add_hcd:
-> +       platform_driver_unregister(&dummy_ss_udc_driver);
-> +err_register_ss_udc_driver:
->        platform_driver_unregister(&dummy_udc_driver);
->  err_register_udc_driver:
-> +       platform_driver_unregister(&dummy_ss_hcd_driver);
-> +err_register_ss_hcd_driver:
->        platform_driver_unregister(&dummy_hcd_driver);
->  err_register_hcd_driver:
-> +       platform_device_put(the_ss_udc_pdev);
-> +err_alloc_ss_udc:
->        platform_device_put(the_udc_pdev);
->  err_alloc_udc:
-> +       platform_device_put(the_ss_hcd_pdev);
-> +err_alloc_ss_hcd:
->        platform_device_put(the_hcd_pdev);
->        return retval;
->  }
-> @@ -2015,8 +2484,12 @@ module_init (init);
->  static void __exit cleanup (void)
->  {
->        platform_device_unregister(the_udc_pdev);
-> +       platform_device_unregister(the_ss_udc_pdev);
->        platform_device_unregister(the_hcd_pdev);
-> +       platform_device_unregister(the_ss_hcd_pdev);
->        platform_driver_unregister(&dummy_udc_driver);
-> +       platform_driver_unregister(&dummy_ss_udc_driver);
->        platform_driver_unregister(&dummy_hcd_driver);
-> +       platform_driver_unregister(&dummy_ss_hcd_driver);
->  }
->  module_exit (cleanup);
-> --
-> 1.6.3.3
->
-> --
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
---
-To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+-- 
+                                                     ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
