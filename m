@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933636Ab0KOT1U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 14:27:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55206 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933611Ab0KOT1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 14:27:18 -0500
-Date: Mon, 15 Nov 2010 20:19:55 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        benh@kernel.crashing.org, cmetcalf@tilera.com, davem@davemloft.net,
-        deller@gmx.de, heiko.carstens@de.ibm.com, hpa@zytor.com,
-        jejb@parisc-linux.org, kyle@mcmartin.ca, mingo@elte.hu,
-        roland@redhat.com, schwidefsky@de.ibm.com, tglx@linutronix.de,
-        tony.luck@intel.com
-Subject: Re: +
-	exec_domain-establish-a-linux32-domain-on-config_compat-systems.patc
-	h added to -mm tree
-Message-ID: <20101115191955.GA17342@redhat.com>
-References: <201011122022.oACKM6HH029696@imap1.linux-foundation.org> <20101113171722.GA2956@redhat.com> <4CE182A2.1020606@caviumnetworks.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE182A2.1020606@caviumnetworks.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S933651Ab0KOT3m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 14:29:42 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60503
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933579Ab0KOT3l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 14:29:41 -0500
+Date: Mon, 15 Nov 2010 11:30:05 -0800 (PST)
+Message-Id: <20101115.113005.71581078.davem@davemloft.net>
+To: apw@canonical.com
+Cc: eric.dumazet@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tim.gardner@canonical.com
+Subject: Re: [PATCH 1/1] net: rtnetlink.h -- only include linux/netdevice.h
+ when used by the kernel
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1289836919-19153-2-git-send-email-apw@canonical.com>
+References: <1289836919-19153-1-git-send-email-apw@canonical.com>
+	<1289836919-19153-2-git-send-email-apw@canonical.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oAFJTqhu025533
 
-On 11/15, David Daney wrote:
->
-> On 11/13/2010 09:17 AM, Oleg Nesterov wrote:
->>
->>> We can avoid the failed module loading overhead by building-in the
->>> linux32_exec_domain for systems that have CONFIG_COMPAT.
->>
->> Indeed. But at the same time this means it is not possible to use
->> personality-8.ko if the system has it.
->
-> Well in the same way it is not possible to use personality-0.ko
-> (PER_LINUX) because it is just as built-in.
+From: Andy Whitcroft <apw@canonical.com>
+Date: Mon, 15 Nov 2010 16:01:59 +0000
 
-Sure, but this was never possible. But your patch adds the obvious
-user-visible change.
+> The commit below added a new helper dev_ingress_queue to cleanly obtain the
+> ingress queue pointer.  This necessitated including 'linux/netdevice.h':
+ ...
+> However this include triggers issues for applications in userspace
+> which use the rtnetlink interfaces.  Commonly this requires they include
+> 'net/if.h' and 'linux/rtnetlink.h' leading to a compiler error as below:
+> 
+>   In file included from /usr/include/linux/netdevice.h:28:0,
+>                    from /usr/include/linux/rtnetlink.h:9,
+>                    from t.c:2:
+>   /usr/include/linux/if.h:135:8: error: redefinition of ¡struct ifmap¢
+>   /usr/include/net/if.h:112:8: note: originally defined here
+>   /usr/include/linux/if.h:169:8: error: redefinition of ¡struct ifreq¢
+>   /usr/include/net/if.h:127:8: note: originally defined here
+>   /usr/include/linux/if.h:218:8: error: redefinition of ¡struct ifconf¢
+>   /usr/include/net/if.h:177:8: note: originally defined here
+> 
+> The new helper is only defined for the kernel and protected by __KERNEL__
+> therefore we can simply pull the include down into the same protected
+> section.
+> 
+> Signed-off-by: Andy Whitcroft <apw@canonical.com>
 
->> Don't get me wrong, I have no idea why anyone could want this module,
->> just I am a bit worried.
->
-> If the personality is built-in, then I don't see how it makes any sense
-> to attempt to override it with an externally supplied version.  If you
-> want set a domain for PER_LINUX32, don't configure you system to supply
-> a default version.
-
-Well, no need to convince me ;) To me, this request_module() doesn't
-make any sense at all.
-
-I won't argue against this change. Just I wanted to be sure this
-issue is not overlooked.
-
-Oleg.
-
+Applied, thanks Andy.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
