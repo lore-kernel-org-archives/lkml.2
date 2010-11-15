@@ -1,80 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445Ab0KOPHI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 10:07:08 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:54031 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757833Ab0KOPHF (ORCPT
+	id S1757055Ab0KOPK7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 10:10:59 -0500
+Received: from usmamail.tilera.com ([72.1.168.231]:26863 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755066Ab0KOPK6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 10:07:05 -0500
-From: Stefan Bader <stefan.bader@canonical.com>
-To: Dave Airlie <airlied@redhat.com>
-Cc: Stefan Bader <stefan.bader@canonical.com>, linux-kernel@vger.kernel.org
-Subject: [stable] Patch "drm/radeon: fix PCI ID 5657 to be an RV410" has been added to 2.6.32+drm33-stable
-Date: Mon, 15 Nov 2010 16:07:00 +0100
-Message-Id: <1289833620-21711-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
-To: Dave Airlie <airlied@redhat.com>
+	Mon, 15 Nov 2010 10:10:58 -0500
+Message-ID: <4CE14D7F.1010307@tilera.com>
+Date: Mon, 15 Nov 2010 10:10:55 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?QW3DqXJpY28gV2FuZw==?= <xiyou.wangcong@gmail.com>,
+        netdev <netdev@vger.kernel.org>, Cypher Wu <cypher.w@gmail.com>
+Subject: Re: [PATCH] arch/tile: fix rwlock so would-be write lockers don't
+ block new readers
+References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>	 <1289489007.17691.1310.camel@edumazet-laptop>	 <AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>	 <ZXmP8hjgLHA.4648@exchange1.tad.internal.tilera.com>	 <4CDF1945.8090101@tilera.com>	 <AANLkTind92uwcigzmDn8yn9a22exDy7zcreGQ5-6NLV-@mail.gmail.com>	 <201011151425.oAFEPU3W005682@farm-0010.internal.tilera.com> <1289832730.2607.87.camel@edumazet-laptop>
+In-Reply-To: <1289832730.2607.87.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+On 11/15/2010 9:52 AM, Eric Dumazet wrote:
+> Le lundi 15 novembre 2010 à 09:18 -0500, Chris Metcalf a écrit :
+>> This avoids a deadlock in the IGMP code where one core gets a read
+>> lock, another core starts trying to get a write lock (thus blocking
+>> new readers), and then the first core tries to recursively re-acquire
+>> the read lock.
+>>
+>> We still try to preserve some degree of balance by giving priority
+>> to additional write lockers that come along while the lock is held
+>> for write, so they can all complete quickly and return the lock to
+>> the readers.
+>>
+>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+>> ---
+>> This should apply relatively cleanly to 2.6.26.7 source code too.
+>>
+>>  arch/tile/lib/spinlock_32.c |   29 ++++++++++++++++++-----------
+>>  1 files changed, 18 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/arch/tile/lib/spinlock_32.c b/arch/tile/lib/spinlock_32.c
+>> index 485e24d..5cd1c40 100644
+>> --- a/arch/tile/lib/spinlock_32.c
+>> +++ b/arch/tile/lib/spinlock_32.c
+>> @@ -167,23 +167,30 @@ void arch_write_lock_slow(arch_rwlock_t *rwlock, u32 val)
+>>  	 * when we compare them.
+>>  	 */
+>>  	u32 my_ticket_;
+>> +	u32 iterations = 0;
+>>  
+>> -	/* Take out the next ticket; this will also stop would-be readers. */
+>> -	if (val & 1)
+>> -		val = get_rwlock(rwlock);
+>> -	rwlock->lock = __insn_addb(val, 1 << WR_NEXT_SHIFT);
+>> +	/*
+>> +	 * Wait until there are no readers, then bump up the next
+>> +	 * field and capture the ticket value.
+>> +	 */
+>> +	for (;;) {
+>> +		if (!(val & 1)) {
+>> +			if ((val >> RD_COUNT_SHIFT) == 0)
+>> +				break;
+>> +			rwlock->lock = val;
+>> +		}
+>> +		delay_backoff(iterations++);
+> Are you sure a writer should have a growing delay_backoff() ?
 
-    drm/radeon: fix PCI ID 5657 to be an RV410
+We always do this bounded exponential backoff on all locking operations
+that require memory-network traffic.  With 64 cores, it's possible
+otherwise to get into a situation where the cores are attempting to acquire
+the lock sufficiently aggressively that lock acquisition performance is
+worse than it would be with backoff.  In any case this path is unlikely to
+run many times, since it only triggers if two cores both try to pull a
+ticket at the same time; it doesn't correspond to writers actually waiting
+once they have their ticket, which is handled later in this function.
 
-to the drm-next branch of the 2.6.32+drm33-stable tree which can be found at
+> It seems to me this only allow new readers to come (so adding more
+> unfairness to the rwlock, that already favor readers against writer[s])
 
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=shortlog;h=refs/heads/drm-next
+Well, that is apparently the required semantic.  Once there is one reader,
+you must allow new readers, to handle the case of recursive
+re-acquisition.  In principle you could imagine doing something like having
+a bitmask of cores that held the readlock (instead of a count), and only
+allowing recursive re-acquisition when a write lock request is pending, but
+this would make the lock structure bigger, and I'm not sure it's worth it. 
+x86 certainly doesn't bother.
 
-If you, or anyone else, feels it should not be added to the drm33-stable tree,
-please reply to this email not later than 8 days after this email was sent.
+> Maybe allow one cpu to spin, and eventually other 'writers' be queued ?
 
-Thanks.
--Stefan
+Other than the brief spin to acquire the ticket, writers don't actually
+spin on the lock.  They just wait for their ticket to come up.  This does
+require spinning on memory reads, but those are satisfied out of the local
+core's cache, with the exception that each time a writer completes, the
+cache line is invalidated on the readers, and they have to re-fetch it from
+the home cache.
 
-------
+>> +		val = __insn_tns((int *)&rwlock->lock);
+>> +	}
+>>  
+>> -	/* Extract my ticket value from the original word. */
+>> +	/* Take out the next ticket and extract my ticket value. */
+>> +	rwlock->lock = __insn_addb(val, 1 << WR_NEXT_SHIFT);
+>>  	my_ticket_ = val >> WR_NEXT_SHIFT;
+>>  
+>> -	/*
+>> -	 * Wait until the "current" field matches our ticket, and
+>> -	 * there are no remaining readers.
+>> -	 */
+>> +	/* Wait until the "current" field matches our ticket. */
+>>  	for (;;) {
+>>  		u32 curr_ = val >> WR_CURR_SHIFT;
+>> -		u32 readers = val >> RD_COUNT_SHIFT;
+>> -		u32 delta = ((my_ticket_ - curr_) & WR_MASK) + !!readers;
+>> +		u32 delta = ((my_ticket_ - curr_) & WR_MASK);
+>>  		if (likely(delta == 0))
+>>  			break;
+>>  
+>
 
->From 35f937fa0736ffc0939d63ad4617e77f66603995 Mon Sep 17 00:00:00 2001
-From: Dave Airlie <airlied@redhat.com>
-Date: Sat, 25 Sep 2010 17:45:50 +1000
-Subject: [PATCH] drm/radeon: fix PCI ID 5657 to be an RV410
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-commit f459ffbdfd04edb4a8ce6eea33170eb057a5e695 upstream.
-
-fixes https://bugzilla.kernel.org/show_bug.cgi?id=19012
-
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
----
- include/drm/drm_pciids.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/drm/drm_pciids.h b/include/drm/drm_pciids.h
-index 0cbdccc..3d016e9 100644
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -85,7 +85,6 @@
- 	{0x1002, 0x5460, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_IS_MOBILITY}, \
- 	{0x1002, 0x5462, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_IS_MOBILITY}, \
- 	{0x1002, 0x5464, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_IS_MOBILITY}, \
--	{0x1002, 0x5657, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV380|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x5548, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R423|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x5549, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R423|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x554A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R423|RADEON_NEW_MEMMAP}, \
-@@ -103,6 +102,7 @@
- 	{0x1002, 0x564F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV410|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x5652, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV410|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x5653, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV410|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x5657, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV410|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x5834, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS300|RADEON_IS_IGP}, \
- 	{0x1002, 0x5835, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS300|RADEON_IS_IGP|RADEON_IS_MOBILITY}, \
- 	{0x1002, 0x5954, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RS480|RADEON_IS_IGP|RADEON_IS_MOBILITY|RADEON_IS_IGPGART}, \
---
-1.7.0.4
-
-
-Disclaimer: Despite what Greg says, this is a stable tree. It just 
-happens to have an unusual starting point of 2.6.33 for all the DRM 
-and 2.6.32 for all the rest.
