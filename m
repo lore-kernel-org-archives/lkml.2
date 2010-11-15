@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933029Ab0KODHJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 22:07:09 -0500
-Received: from mail.perches.com ([173.55.12.10]:1256 "EHLO mail.perches.com"
+	id S933034Ab0KODHe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 22:07:34 -0500
+Received: from mail.perches.com ([173.55.12.10]:1252 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932690Ab0KODGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932944Ab0KODGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 14 Nov 2010 22:06:01 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 40/44] mm/hugetlb.c: Remove unnecessary semicolons
-Date: Sun, 14 Nov 2010 19:04:59 -0800
-Message-Id: <59705f848d35b12ace640f92afcffea02cee0976.1289789605.git.joe@perches.com>
+Cc: Sjur Braendeland <sjur.brandeland@stericsson.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 39/44] include/net/caif/cfctrl.h: Remove unnecessary semicolons
+Date: Sun, 14 Nov 2010 19:04:58 -0800
+Message-Id: <35914cfea1bd0ab3963e632d02b1fdd52a9d2bc8.1289789605.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289789604.git.joe@perches.com>
 References: <cover.1289789604.git.joe@perches.com>
@@ -21,22 +23,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- mm/hugetlb.c |    2 +-
+ include/net/caif/cfctrl.h |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index c4a3558..8875242 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -540,7 +540,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+diff --git a/include/net/caif/cfctrl.h b/include/net/caif/cfctrl.h
+index 9402543..e54f639 100644
+--- a/include/net/caif/cfctrl.h
++++ b/include/net/caif/cfctrl.h
+@@ -51,7 +51,7 @@ struct cfctrl_rsp {
+ 	void (*restart_rsp)(void);
+ 	void (*radioset_rsp)(void);
+ 	void (*reject_rsp)(struct cflayer *layer, u8 linkid,
+-				struct cflayer *client_layer);;
++				struct cflayer *client_layer);
+ };
  
- 	/* If reserves cannot be used, ensure enough pages are in the pool */
- 	if (avoid_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
--		goto err;;
-+		goto err;
- 
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
- 						MAX_NR_ZONES - 1, nodemask) {
+ /* Link Setup Parameters for CAIF-Links. */
 -- 
 1.7.3.1.g432b3.dirty
 
