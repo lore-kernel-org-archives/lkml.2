@@ -1,107 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363Ab0KOBYo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 20:24:44 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59202 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757223Ab0KOBYn (ORCPT
+	id S1757383Ab0KOB0g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 20:26:36 -0500
+Received: from eagle.jhcloos.com ([207.210.242.212]:41630 "EHLO
+	eagle.jhcloos.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757242Ab0KOB0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 20:24:43 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH v2]mm/oom-kill: direct hardware access processes should get bonus
-Cc: kosaki.motohiro@jp.fujitsu.com, "Figo.zhang" <figo1802@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@osdl.org>,
+	Sun, 14 Nov 2010 20:26:34 -0500
+From: James Cloos <cloos@jhcloos.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Andreas Schwab <schwab@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Michael Matz <matz@suse.de>, Dave Korn <dave.korn.cygwin@gmail.com>,
+        Richard Guenther <richard.guenther@gmail.com>, Jim <jim876@xs4all.nl>,
+        gcc@gcc.gnu.org, Jim Bos <jim876@xs4all.nl>,
         Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1011141322590.22262@chino.kir.corp.google.com>
-References: <20101112104140.DFFF.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011141322590.22262@chino.kir.corp.google.com>
-Message-Id: <20101115095446.BF00.A69D9226@jp.fujitsu.com>
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+In-Reply-To: <4CD97A3D.1040602@xs4all.nl> (Jim's message of "Tue, 09 Nov 2010
+	17:43:41 +0100")
+References: <4CD538CA.8010901@xs4all.nl> <87wroostw3.fsf@basil.nowhere.org>
+	<m2hbfsu57i.fsf@igel.home> <87k4kospnd.fsf@basil.nowhere.org>
+	<AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com>
+	<877hgorrj1.fsf@basil.nowhere.org> <4CD843DC.10106@gmail.com>
+	<Pine.LNX.4.64.1011091352460.29956@wotan.suse.de>
+	<20101109134816.GB29433@basil.fritz.box> <m3lj52txaq.fsf@redhat.com>
+	<4CD97A3D.1040602@xs4all.nl>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/24.0.50 (gnu/linux)
+Face: iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAI1J
+ REFUOE+lU9ESgCAIg64P1y+ngUdxhl5H8wFbbM0OmUiEhKkCYaZThXCo6KE5sCbA1DDX3genvO4d
+ eBQgEMaM5qy6uWk4SfBYfdu9jvBN9nSVDOKRtwb+I3epboOsOX5pZbJNsBJFvmQQ05YMfieIBnYX
+ FK2N6dOawd97r/e8RjkTLzmMsiVgrAoEugtviCM3v2WzjgAAAABJRU5ErkJggg==
+Copyright: Copyright 2009 James Cloos
+OpenPGP: ED7DAEA6; url=http://jhcloos.com/public_key/0xED7DAEA6.asc
+OpenPGP-Fingerprint: E9E9 F828 61A4 6EA9 0F2B  63E7 997A 9F17 ED7D AEA6
+Date: Sun, 14 Nov 2010 19:52:08 -0500
+Message-ID: <m31v6nmmr3.fsf@jhcloos.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 15 Nov 2010 10:24:38 +0900 (JST)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Hashcash: 1:30:101115:linux-kernel@vger.kernel.org::dAAkbLCNp6+9wZds:00000000000000000000000000000000wU2JN
+X-Hashcash: 1:30:101115:schwab@redhat.com::dUZAiwXGH4Gtgccs:0000000000000000000000000000000000000000000V+Uwc
+X-Hashcash: 1:30:101115:andi@firstfloor.org::h8rf/gnEtmyjbqzD:00000000000000000000000000000000000000000KB2zr
+X-Hashcash: 1:30:101115:matz@suse.de::DJk32KM9dwUUHKcH:00003LijD
+X-Hashcash: 1:30:101115:dave.korn.cygwin@gmail.com::on+K0ABd1KEeObB7:0000000000000000000000000000000000DF3nq
+X-Hashcash: 1:30:101115:richard.guenther@gmail.com::EOrY5+fOybEpYIc0:0000000000000000000000000000000000TZysk
+X-Hashcash: 1:30:101115:jim876@xs4all.nl::rahafVOI41H7XiXi:sZjZw
+X-Hashcash: 1:30:101115:gcc@gcc.gnu.org::ShoIzfD5uo4f6Zds:0uNJlo
+X-Hashcash: 1:30:101115:jim876@xs4all.nl::DAtTR+hrbyKwKFqA:q1j2s
+X-Hashcash: 1:30:101115:torvalds@linux-foundation.org::96bMmXMZXarzejcz:0000000000000000000000000000000EL/Ot
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sun, 14 Nov 2010, KOSAKI Motohiro wrote:
-> 
-> > > So the question that needs to be answered is: why do these threads deserve 
-> > > to use 3% more memory (not >4%) than others without getting killed?  If 
-> > > there was some evidence that these threads have a certain quantity of 
-> > > memory they require as a fundamental attribute of CAP_SYS_RAWIO, then I 
-> > > have no objection, but that's going to be expressed in a memory quantity 
-> > > not a percentage as you have here.
-> > 
-> > 3% is choosed by you :-/
-> > 
-> 
-> No, 3% was chosen in __vm_enough_memory() for LSMs as the comment in the 
-> oom killer shows:
-> 
->         /*
->          * Root processes get 3% bonus, just like the __vm_enough_memory()
->          * implementation used by LSMs.
->          */
-> 
-> and is described in Documentation/filesystems/proc.txt.
-> 
-> I think in cases of heuristics like this where we obviously want to give 
-> some bonus to CAP_SYS_ADMIN that there is consistency with other bonuses 
-> given elsewhere in the kernel.
+Gcc 4.5.1 running on an amd64 box "cross"-compiling for a P3 i8k fails
+to compile the module since commit 6b4e81db2552bad04100e7d5ddeed7e848f53b48
+with:
 
-Keep comparision apple to apple. vm_enough_memory() account _virtual_ memory.
-oom-killer try to free _physical_ memory. It's unrelated.
+  CC      drivers/char/i8k.o
+drivers/char/i8k.c: In function ‘i8k_smm’:
+drivers/char/i8k.c:149:2: error: can't find a register in class ‘GENERAL_REGS’ while reloading ‘asm’
+drivers/char/i8k.c:149:2: error: ‘asm’ operand has impossible constraints
 
-
-> 
-> > Old background is very simple and cleaner. 
-> > 
-> 
-> The old heuristic divided the arbitrary badness score by 4 with 
-> CAP_SYS_RESOURCE.  The new heuristic doesn't consider it.
-> 
-> How is that more clean?
-> 
-> > CAP_SYS_RESOURCE mean the process has a privilege of using more resource.
-> > then, oom-killer gave it additonal bonus.
-> > 
-> 
-> As a side-effect of being given more resources to allocate, those 
-> applications are relatively unbounded in terms of memory consumption to 
-> other tasks.  Thus, it's possible that these applications are using a 
-> massive amount of memory (say, 75%) and now with the proposed change a 
-> task using 25% of memory would be killed instead.  This increases the 
-> liklihood that the CAP_SYS_RESOURCE thread will have to be killed 
-> eventually, anyway, and the goal is to kill as few tasks as possible to 
-> free sufficient amount of memory.
-
-You are talking two difference at once. 3% vs 4x and CAP_SYS_RESOURCE and
-CAP_SYS_ADMIN.
-
-Please keep comparing apple to apple.
-
-
-> 
-> Since threads having CAP_SYS_RESOURCE have full control over their 
-> oom_score_adj, they can take the additional precautions to protect 
-> themselves if necessary.  It doesn't need to be a part of the heuristic to 
-> bias these tasks which will lead to the undesired result described above 
-> by default rather than intentionally from userspace.
-> 
-> > CAP_SYS_RAWIO mean the process has a direct hardware access privilege
-> > (eg X.org, RDB). and then, killing it might makes system crash.
-> > 
-> 
-> Then you would want to explicitly filter these tasks from oom kill just as 
-> OOM_SCORE_ADJ_MIN works rather than giving them a memory quantity bonus.
-
-No. Why does userland recover your mistake?
-
-
-
-
+-JimC
+-- 
+James Cloos <cloos@jhcloos.com>         OpenPGP: 1024D/ED7DAEA6
