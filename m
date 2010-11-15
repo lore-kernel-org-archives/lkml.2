@@ -1,75 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933316Ab0KORlC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 12:41:02 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49297 "EHLO
+	id S933232Ab0KORkw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 12:40:52 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49280 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933283Ab0KORlA (ORCPT
+	by vger.kernel.org with ESMTP id S933192Ab0KORkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 12:41:00 -0500
+	Mon, 15 Nov 2010 12:40:49 -0500
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 11/20] ARM: LPAE: Remove the FIRST_USER_PGD_NR and USER_PTRS_PER_PGD definitions
-Date: Mon, 15 Nov 2010 17:40:20 +0000
-Message-Id: <1289842829-3027-12-git-send-email-catalin.marinas@arm.com>
+Subject: [PATCH v3 05/20] ARM: LPAE: Do not assume Linux PTEs are always at PTRS_PER_PTE offset
+Date: Mon, 15 Nov 2010 17:40:14 +0000
+Message-Id: <1289842829-3027-6-git-send-email-catalin.marinas@arm.com>
 X-Mailer: git-send-email 1.7.3.2.164.g6f10c
 In-Reply-To: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com>
 References: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com>
-X-OriginalArrivalTime: 15 Nov 2010 17:40:36.0425 (UTC) FILETIME=[360E5B90:01CB84EC]
+X-OriginalArrivalTime: 15 Nov 2010 17:40:34.0785 (UTC) FILETIME=[35141D10:01CB84EC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These macros were only used in setup_mm_for_reboot and get_pgd_slow.
-Both have been modified to no longer use these definitions. One of the
-reasons is the different meaning that PGD has with the 2-level and
-3-level page tables.
+Placing the Linux PTEs at a 2KB offset inside a page is a workaround for
+the 2-level page table format where not enough spare bits are available.
+With LPAE this is no longer required. This patch changes such assumption
+by using a different macro, LINUX_PTE_OFFSET, which is defined to
+PTRS_PER_PTE for the 2-level page tables.
 
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- arch/arm/include/asm/pgtable-2level.h |    3 ---
- arch/arm/include/asm/pgtable-3level.h |    3 ---
- arch/arm/mm/pgd.c                     |    2 +-
- 3 files changed, 1 insertions(+), 7 deletions(-)
+ arch/arm/include/asm/pgalloc.h        |    6 +++---
+ arch/arm/include/asm/pgtable-2level.h |    1 +
+ arch/arm/include/asm/pgtable.h        |    6 +++---
+ arch/arm/mm/fault.c                   |    2 +-
+ arch/arm/mm/mmu.c                     |    3 ++-
+ 5 files changed, 10 insertions(+), 8 deletions(-)
 
+diff --git a/arch/arm/include/asm/pgalloc.h b/arch/arm/include/asm/pgalloc.h
+index b12cc98..c2a1f64 100644
+--- a/arch/arm/include/asm/pgalloc.h
++++ b/arch/arm/include/asm/pgalloc.h
+@@ -62,7 +62,7 @@ pte_alloc_one_kernel(struct mm_struct *mm, unsigned long addr)
+ 	pte = (pte_t *)__get_free_page(PGALLOC_GFP);
+ 	if (pte) {
+ 		clean_dcache_area(pte, sizeof(pte_t) * PTRS_PER_PTE);
+-		pte += PTRS_PER_PTE;
++		pte += LINUX_PTE_OFFSET;
+ 	}
+ 
+ 	return pte;
+@@ -95,7 +95,7 @@ pte_alloc_one(struct mm_struct *mm, unsigned long addr)
+ static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
+ {
+ 	if (pte) {
+-		pte -= PTRS_PER_PTE;
++		pte -= LINUX_PTE_OFFSET;
+ 		free_page((unsigned long)pte);
+ 	}
+ }
+@@ -128,7 +128,7 @@ pmd_populate_kernel(struct mm_struct *mm, pmd_t *pmdp, pte_t *ptep)
+ 	 * The pmd must be loaded with the physical
+ 	 * address of the PTE table
+ 	 */
+-	pte_ptr -= PTRS_PER_PTE * sizeof(void *);
++	pte_ptr -= LINUX_PTE_OFFSET * sizeof(void *);
+ 	__pmd_populate(pmdp, __pa(pte_ptr) | _PAGE_KERNEL_TABLE);
+ }
+ 
 diff --git a/arch/arm/include/asm/pgtable-2level.h b/arch/arm/include/asm/pgtable-2level.h
-index 4e21166..a0548b6 100644
+index d60bda9..36bdef7 100644
 --- a/arch/arm/include/asm/pgtable-2level.h
 +++ b/arch/arm/include/asm/pgtable-2level.h
-@@ -92,9 +92,6 @@
-  */
- #define FIRST_USER_ADDRESS	PAGE_SIZE
+@@ -71,6 +71,7 @@
+ #define PTRS_PER_PTE		512
+ #define PTRS_PER_PMD		1
+ #define PTRS_PER_PGD		2048
++#define LINUX_PTE_OFFSET	PTRS_PER_PTE
  
--#define FIRST_USER_PGD_NR	1
--#define USER_PTRS_PER_PGD	((TASK_SIZE/PGDIR_SIZE) - FIRST_USER_PGD_NR)
--
  /*
-  * section address mask and size definitions.
-  */
-diff --git a/arch/arm/include/asm/pgtable-3level.h b/arch/arm/include/asm/pgtable-3level.h
-index 5b1482d..381b04b 100644
---- a/arch/arm/include/asm/pgtable-3level.h
-+++ b/arch/arm/include/asm/pgtable-3level.h
-@@ -58,9 +58,6 @@
-  */
- #define FIRST_USER_ADDRESS	PAGE_SIZE
- 
--#define FIRST_USER_PGD_NR	1
--#define USER_PTRS_PER_PGD	((TASK_SIZE/PGDIR_SIZE) - FIRST_USER_PGD_NR)
--
- /*
-  * section address mask and size definitions.
-  */
-diff --git a/arch/arm/mm/pgd.c b/arch/arm/mm/pgd.c
-index e7c149b..09238fa 100644
---- a/arch/arm/mm/pgd.c
-+++ b/arch/arm/mm/pgd.c
-@@ -25,7 +25,7 @@
+  * PMD_SHIFT determines the size of the area a second-level page table can map
+diff --git a/arch/arm/include/asm/pgtable.h b/arch/arm/include/asm/pgtable.h
+index e716147..1124b98 100644
+--- a/arch/arm/include/asm/pgtable.h
++++ b/arch/arm/include/asm/pgtable.h
+@@ -135,8 +135,8 @@ extern struct page *empty_zero_page;
+ #define __pte_map(dir)		pmd_page_vaddr(*(dir))
+ #define __pte_unmap(pte)	do { } while (0)
  #else
- #define alloc_pgd()	(pgd_t *)__get_free_pages(GFP_KERNEL, 2)
- #define free_pgd(pgd)	free_pages((unsigned long)pgd, 2)
--#define FIRST_KERNEL_PGD_NR	(FIRST_USER_PGD_NR + USER_PTRS_PER_PGD)
-+#define FIRST_KERNEL_PGD_NR	(TASK_SIZE >> PGDIR_SHIFT)
+-#define __pte_map(dir)		((pte_t *)kmap_atomic(pmd_page(*(dir))) + PTRS_PER_PTE)
+-#define __pte_unmap(pte)	kunmap_atomic((pte - PTRS_PER_PTE))
++#define __pte_map(dir)		((pte_t *)kmap_atomic(pmd_page(*(dir))) + LINUX_PTE_OFFSET)
++#define __pte_unmap(pte)	kunmap_atomic((pte - LINUX_PTE_OFFSET))
  #endif
  
- /*
+ #define set_pte_ext(ptep,pte,ext) cpu_set_pte_ext(ptep,pte,ext)
+@@ -232,7 +232,7 @@ static inline pte_t *pmd_page_vaddr(pmd_t pmd)
+ 	unsigned long ptr;
+ 
+ 	ptr = pmd_val(pmd) & ~(PTRS_PER_PTE * sizeof(void *) - 1);
+-	ptr += PTRS_PER_PTE * sizeof(void *);
++	ptr += LINUX_PTE_OFFSET * sizeof(void *);
+ 
+ 	return __va(ptr);
+ }
+diff --git a/arch/arm/mm/fault.c b/arch/arm/mm/fault.c
+index a6eb56b..c6443eb 100644
+--- a/arch/arm/mm/fault.c
++++ b/arch/arm/mm/fault.c
+@@ -110,7 +110,7 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
+ 		pte = pte_offset_map(pmd, addr);
+ 		printk(", *pte=%08llx", (long long)pte_val(*pte));
+ 		printk(", *ppte=%08llx",
+-			(long long)pte_val(pte[-PTRS_PER_PTE]));
++			(long long)pte_val(pte[-LINUX_PTE_OFFSET]));
+ 		pte_unmap(pte);
+ 	} while(0);
+ 
+diff --git a/arch/arm/mm/mmu.c b/arch/arm/mm/mmu.c
+index c2e74b5..2bcf29c 100644
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -535,7 +535,8 @@ static void __init *early_alloc(unsigned long sz)
+ static pte_t * __init early_pte_alloc(pmd_t *pmd, unsigned long addr, unsigned long prot)
+ {
+ 	if (pmd_none(*pmd)) {
+-		pte_t *pte = early_alloc(2 * PTRS_PER_PTE * sizeof(pte_t));
++		pte_t *pte = early_alloc((LINUX_PTE_OFFSET +
++					  PTRS_PER_PTE) * sizeof(pte_t));
+ 		__pmd_populate(pmd, __pa(pte) | prot);
+ 	}
+ 	BUG_ON(pmd_bad(*pmd));
