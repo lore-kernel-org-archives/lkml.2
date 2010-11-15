@@ -1,47 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757979Ab0KOQpB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 11:45:01 -0500
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:42071 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757452Ab0KOQpA (ORCPT
+	id S1758004Ab0KOQpq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 11:45:46 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55782
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757990Ab0KOQpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 11:45:00 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=cR/ePrehc3JwtA6zYMBESYg2YHaTcfZ6wRZmoMV6fdeAWlaraQGogGOUpDkbpNZTZHPATwD92/LFVzRorkMjmv9Y0WSi8YPyEZLI4imo7J8YOnjsQsixEGbT6sjeUKhP;
-Date: Mon, 15 Nov 2010 08:44:42 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        Richard Purdie <rpurdie@rpsys.net>, dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PATCH] Backlight: Add backlight type
-Message-ID: <20101115084442.3ad2c6f9@jbarnes-desktop>
-In-Reply-To: <20101115154820.GB21734@srcf.ucam.org>
-References: <1283963539-4039-1-git-send-email-mjg@redhat.com>
-	<20101115154820.GB21734@srcf.ucam.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Mon, 15 Nov 2010 11:45:45 -0500
+Date: Mon, 15 Nov 2010 08:46:09 -0800 (PST)
+Message-Id: <20101115.084609.71124618.davem@davemloft.net>
+To: kaber@trash.net
+Cc: eparis@redhat.com, hzhong@gmail.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        netfilter-devel@vger.kernel.org
+Subject: Re: [RFC PATCH] network: return errors if we know tcp_connect
+ failed
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4CE16198.7000709@trash.net>
+References: <1289836066.14282.7.camel@localhost.localdomain>
+	<4CE15885.90003@trash.net>
+	<4CE16198.7000709@trash.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Nov 2010 15:48:20 +0000
-Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+From: Patrick McHardy <kaber@trash.net>
+Date: Mon, 15 Nov 2010 17:36:40 +0100
 
-> Richard, any feedback on this?
-> 
+> Patch for demonstration purposes attached. I've modified the
+> MARK target so it returns NF_DROP with an errno code of
+> -ECONNREFUSED:
 
-At KS akpm said he'd likely be taking over backlight from Richard,
-since Richard is very distracted with other things atm (please correct
-me if I'm wrong).
-
-So either someone needs to volunteer to maintain this subsystem (I know
-how much you love backlights, maybe you'd like to do it?) or you need to
-get this patch over to akpm.
-
--- 
-Jesse Barnes, Intel Open Source Technology Center
+I'm fine with the tcp_output.c changes.
