@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932707Ab0KOIBW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 03:01:22 -0500
-Received: from mx01.sz.bfs.de ([194.94.69.103]:28073 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757691Ab0KOIBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 03:01:18 -0500
-Message-ID: <4CE0E8CA.9010704@bfs.de>
-Date: Mon, 15 Nov 2010 09:01:14 +0100
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
-MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch 2/2] fbcmap: integer overflow bug
-References: <20101027093716.GD6062@bicker> <20101105134018.2c11f283.akpm@linux-foundation.org> <20101113100718.GB1795@bicker> <20101115044820.GA8489@linux-sh.org> <AANLkTin0T5FN6WhUj0csypR=j0UPRbeHN+HC3N9xnk7E@mail.gmail.com> <20101115072014.GB21614@bicker>
-In-Reply-To: <20101115072014.GB21614@bicker>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757757Ab0KOIBY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 03:01:24 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:51409 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757692Ab0KOIBT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 03:01:19 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Mon, 15 Nov 2010 09:01:03 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: Remaining problems in firewire-net
+Message-ID: <20101115090103.0df0b5ef@stein>
+In-Reply-To: <1289795401.11881.62.camel@maxim-laptop>
+References: <tkrat.036c5d10fb83f85d@s5r6.in-berlin.de>
+	<1289795401.11881.62.camel@maxim-laptop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Nov 15 Maxim Levitsky wrote:
+> That is because 1394 spec specifies that first of all the ISO channel
+> must be allocated from the IRM node. The firewire stack currently just
+> uses hardcoded numbers in two places the ISO is used 
+> (firewire-net, and firedtv)
+> However it has all functions implemented for this.
 
+This is a bug (missing feature) in firedtv but not in firewire-net. The
+broadcast channel is allocated and reallocated by the bus manager, not
+by an IP-over-1394 user.  But you found that out already, below.
 
-Am 15.11.2010 08:20, schrieb Dan Carpenter:
-> On Mon, Nov 15, 2010 at 07:56:05AM +0100, Geert Uytterhoeven wrote:
->> On Mon, Nov 15, 2010 at 05:48, Paul Mundt <lethal@linux-sh.org> wrote:
->>> On Sat, Nov 13, 2010 at 01:07:18PM +0300, Dan Carpenter wrote:
->>>> @@ -256,8 +264,12 @@ int fb_set_user_cmap(struct fb_cmap_user *cmap, struct fb_info *info)
->>>>       int rc, size = cmap->len * sizeof(u16);
->>>>       struct fb_cmap umap;
->>>>
->>>> +     if (cmap->len * 2 > INT_MAX)
->>
->> Isn't that another integer overflow? I.e. should be "if (cmap->len >
->> INT_MAX / sizeof(u16))" instead?
->>
+Channel allocation and DMA context allocation and control are unrelated
+issues, on the other hand.  One is a higher-level cooperative protocol
+for bus-wide resource management (in which the nodes' roles are defined
+in various different ways by protocols such as AV/C's CMP or by IIDC).
+The other is about hardware control locally in the OHCI bus bridge
+hardware.
+
+[...]
+> In case of firewire-net, it is simpler, because it uses the broadcast
+> channel, so it only has to find who is the IRM and read its
+> BROADCAST_CHANNEL.
 > 
-> Yeah it is.  :/
-> 
-> I'll change it to:
-> 	if (size < 0 || size < cmap->len)
-> like Paul asked.
-> 
+> However, I think I need to write a function to query the IRM its
+> broadcast channel, don't think it has one.
 
-I do not see the rest of the code but it looks like
-cmap->len is size in int8_t. So the upper limit is something like
-INT_MAX/(sizeof(u16)*2). Perhaps we can call it a char ?
-is there ANY system that has a more than 256 colors in R|G|B ?
+Overkill.  Just leave it as is:
+  1.) We know which number the broadcast channel has.
+  2.) We optimistically assume that a 1394a compliant IRM or bus
+      manager exists and allocated that channel.
 
-<spying for struct fb_cmap_user  >
- __u32 len;
- __u16 __user *red;
+Why introduce entirely unnecessary fragility?
 
-So no need to check for <0.
+> Speaking of IRM discovery, the spec says it should be a node with
+> contender bit and largest node id. However, the code in
+> core-topology.c, build_tree seems to take the node that sent the
+> selfID packet last.
 
-hope that helps,
-re,
- wh
+This is because of a monotony rule of how self ID packets arrive during
+self identification phase.
+-- 
+Stefan Richter
+-=====-==-=- =-== -====
+http://arcgraph.de/sr/
