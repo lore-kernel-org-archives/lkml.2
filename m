@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933426Ab0KOSRl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 13:17:41 -0500
-Received: from smtp-vbr12.xs4all.nl ([194.109.24.32]:3255 "EHLO
-	smtp-vbr12.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932942Ab0KOSRk (ORCPT
+	id S933433Ab0KOSUx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 13:20:53 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:39503 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933033Ab0KOSUw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 13:17:40 -0500
-Message-ID: <4CE1793B.2010109@xs4all.nl>
-Date: Mon, 15 Nov 2010 19:17:31 +0100
-From: Jim Bos <jim876@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101106 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Jakub Jelinek <jakub@redhat.com>
-CC: Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        James Cloos <cloos@jhcloos.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
-        Dave Korn <dave.korn.cygwin@gmail.com>,
-        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-References: <m3lj52txaq.fsf@redhat.com> <4CD97A3D.1040602@xs4all.nl> <m31v6nmmr3.fsf@jhcloos.com> <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com> <20101115085605.GE2583@sunsite.ms.mff.cuni.cz> <20101115100331.GG2583@sunsite.ms.mff.cuni.cz> <20101115105446.GD7269@basil.fritz.box> <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com> <20101115113739.GH7269@basil.fritz.box> <4CE16F86.40808@xs4all.nl> <20101115174449.GW29412@tyan-ft48-01.lab.bos.redhat.com>
-In-Reply-To: <20101115174449.GW29412@tyan-ft48-01.lab.bos.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 15 Nov 2010 13:20:52 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6168"; a="62930436"
+Subject: Re: [PATCH 09/14] msm: iommu: Kconfig option for cacheable page 
+ tables
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: davidb@codeaurora.org, bryanh@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <8bd62d321211c93af883cd2ad404e802.squirrel@www.codeaurora.org>
+References: <1289619000-13167-1-git-send-email-stepanm@codeaurora.org>
+	 <1289619000-13167-10-git-send-email-stepanm@codeaurora.org>
+	 <1289765858.24270.240.camel@m0nster>
+	 <8bd62d321211c93af883cd2ad404e802.squirrel@www.codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Nov 2010 10:20:36 -0800
+Message-ID: <1289845236.4050.25.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 06:44 PM, Jakub Jelinek wrote:
-> On Mon, Nov 15, 2010 at 06:36:06PM +0100, Jim Bos wrote:
->> On 11/15/2010 12:37 PM, Andi Kleen wrote:
->> See attached, note this is the vanilla 2.6.36 i8k.c (without any patch).
->> And to be 100% sure, if I build this (make drivers/char/i8k.ko) it won't
->> work.
->>
->> [ The i8k.i is rather big, even gzipped 80k, not sure if it'll bounce ]
+On Sun, 2010-11-14 at 18:56 -0800, Stepan Moskovchenko wrote:
+> > On Fri, 2010-11-12 at 19:29 -0800, Stepan Moskovchenko wrote:
+> >>
+> >> +config IOMMU_PGTABLES_L2
+> >> +	depends on ARCH_MSM8X60
+> >> +	depends on MMU
+> >> +	depends on CPU_DCACHE_DISABLE=n
+> >> +	depends on SMP
+> >> +	bool "Cacheable IOMMU page tables"
+> >> +	default y
+> >> +	help
+> >> +	  Allows the IOMMU page tables to be brought into the L2 cache. This
+> >> +	  improves the TLB miss latency at the expense of potential pollution
+> >> +	  of the L2 cache. This option has been shown to improve multimedia
+> >> +	  performance in some cases.
+> >> +
+> >> +	  If unsure, say Y here.
+> >
+> > Why would someone want this off?
+> >
+> > The other thing is that you usually want this included with the code
+> > that uses the option.
 > 
-> Please also say which exact gcc you are using.
+> The code that uses it had gone in during a previous patch series, but I
+> didn't want to meddle in the Kconfig just yet, especially since the option
+> only improves performance and does not add new functionality at a high
+> level. This patch should be the last of what is needed for this feature.
 > 
-> Note, I've compiled it with current 4.5 branch and made the function
-> always_inline and still didn't see any issues in the *.optimized dump,
-> regs.eax after the inline asm has always been compared to the constant
-> that has been stored into regs.eax before the inline asm.
-> 
-> 	Jakub
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> You would want to turn this off if you wanted more deterministic behavior
+> from the multimedia subsystem, such as when trying to run benchmarks for
+> the worst-case behavior in terms of memory latency and TLB misses. You
+> might also want to turn it off if you are debugging memory problems that
+> you suspect might be related to the cache maintenance code, in which case
+> turning this off would give an idea as to whether that is the problem.
+> Similarly, this needs to be off (and will be, due to the dependencies) if
+> certain required things (like the Dcache, MMU, etc) have been disabled.
+> Finally, if you are doing things with the MMSS that you know will not
+> result in many TLB misses, (or if you know that you can tolerate high miss
+> latency) you may as well turn this off to avoid the (small) bit of cache
+> pollution.
 
- # gcc -v
-Reading specs from /usr/lib/gcc/i486-slackware-linux/4.5.1/specs
-COLLECT_GCC=gcc
-COLLECT_LTO_WRAPPER=/usr/libexec/gcc/i486-slackware-linux/4.5.1/lto-wrapper
-Target: i486-slackware-linux
-Configured with: ../gcc-4.5.1/configure --prefix=/usr --libdir=/usr/lib
---mandir=/usr/man --infodir=/usr/info --enable-shared --enable-bootstrap
---enable-languages=ada,c,c++,fortran,java,objc --enable-threads=posix
---enable-checking=release --with-system-zlib
---with-python-dir=/lib/python2.6/site-packages
---disable-libunwind-exceptions --enable-__cxa_atexit --enable-libssp
---with-gnu-ld --verbose --with-arch=i486 --target=i486-slackware-linux
---build=i486-slackware-linux --host=i486-slackware-linux
-Thread model: posix
-gcc version 4.5.1 (GCC)
+It sounds like you don't really want it off unless your a developer (or
+you turn one of the dependencies) .. I think this might be better as a
+hidden option just cause of the developer centric nature of it.
 
-I'm re-reading this thread where I found the asm-> asm volatine suggestion:
-  https://bbs.archlinux.org/viewtopic.php?pid=752099#p752099
-but nobody there reported their gcc version (but apparently first
-people started complaining May 1st).
+Daniel
 
-_
-Jim
+
+-- 
+
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
