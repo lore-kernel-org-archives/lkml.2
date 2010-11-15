@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758300Ab0KOUkw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 15:40:52 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:54961 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758263Ab0KOUkv (ORCPT
+	id S1758317Ab0KOUqJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 15:46:09 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:55849 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758303Ab0KOUqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 15:40:51 -0500
-Message-ID: <4CE19A94.8080504@vlnb.net>
-Date: Mon, 15 Nov 2010 23:39:48 +0300
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
-MIME-Version: 1.0
+	Mon, 15 Nov 2010 15:46:08 -0500
+Date: Mon, 15 Nov 2010 15:46:07 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
 To: Greg KH <greg@kroah.com>
-CC: Bart Van Assche <bvanassche@acm.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        James Smart <James.Smart@emulex.com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-References: <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <AANLkTi=PxYi8kCsAxbopUHBC+=2QPuoEcojdqugS88sH@mail.gmail.com> <20101115184422.GA9566@kroah.com>
-In-Reply-To: <20101115184422.GA9566@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:v0oVPBjm7vdOyDopTl7qZhm+A25f0CTid838sVJ+Of7
- rO6z5Uw94JPF0I8Lxpw8W18WasKtKGyH3w9rMFI4hEjGmR2Ntp
- VgZpCJBHZQOgvv7VFWdhIs1SmPrgrCg8b21rtmZr0Kp5mWx1nI
- maOtjCLz8tavvh+BV9vcnB5LZTPAKauh2/5+slBsxXcc8fegAN
- rGswHbMWdXNaZpWd3CnCg==
+cc: Dan Carpenter <error27@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] sysfs: remove useless test from sysfs_merge_group
+Message-ID: <Pine.LNX.4.44L0.1011151544470.1370-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH, on 11/15/2010 09:44 PM wrote:
-> On Mon, Nov 15, 2010 at 06:45:24PM +0100, Bart Van Assche wrote:
->> On Sun, Nov 14, 2010 at 12:59 AM, Greg KH <greg@kroah.com> wrote:
->>>
->>> On Sat, Nov 13, 2010 at 08:20:18PM +0300, Vladislav Bolkhovitin wrote:
->>>> So, I decided to reimplement it to be completely synchronous. SYSFS
->>>> authors did really great job and thanks to the excellent internal SYSFS
->>>> design and implementation it is absolutely safe. See:
->>>>
->>>> [root@tgt ~]# modprobe scst
->>>> [root@tgt ~]# cd /sys/kernel/scst_tgt/
->>>
->>> Sorry, but no, you can't put this in /sys/kernel/ without getting the
->>> approval of the sysfs maintainer.
->>>
->>> I really don't understand why you are using kobjects in the first place,
->>> why isn't this in the main device tree in the kernel, using 'struct
->>> device'?
->>
->> We might have missed something, but as far as we know it has not yet
->> been explained in this thread why using 'struct device' would be an
->> advantage over using 'struct kobject'.
-> 
-> It's very simple.
-> 
-> You want your device to show up in the global device tree in the kernel,
-> not off to one side, unconnected to anything else.
-> 
-> Please use 'struct device', it is what you want to do here.
+Dan Carpenter pointed out that the new sysfs_merge_group() and
+sysfs_unmerge_group() routines requires their grp argument to be
+non-NULL, because they dereference grp to obtain the list of
+attributes.  Hence it's pointless for the routines to include a test
+and special-case handling for when grp is NULL.  This patch (as1433)
+removes the unneeded tests.
 
-But we don't have any device to show up in the global device tree! We
-don't have any devices in the struct device's understanding at all!
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Dan Carpenter <error27@gmail.com>
 
-Vlad
+---
+
+Index: usb-2.6/fs/sysfs/group.c
+===================================================================
+--- usb-2.6.orig/fs/sysfs/group.c
++++ usb-2.6/fs/sysfs/group.c
+@@ -165,10 +165,7 @@ int sysfs_merge_group(struct kobject *ko
+ 	struct attribute *const *attr;
+ 	int i;
+ 
+-	if (grp)
+-		dir_sd = sysfs_get_dirent(kobj->sd, NULL, grp->name);
+-	else
+-		dir_sd = sysfs_get(kobj->sd);
++	dir_sd = sysfs_get_dirent(kobj->sd, NULL, grp->name);
+ 	if (!dir_sd)
+ 		return -ENOENT;
+ 
+@@ -195,10 +192,7 @@ void sysfs_unmerge_group(struct kobject 
+ 	struct sysfs_dirent *dir_sd;
+ 	struct attribute *const *attr;
+ 
+-	if (grp)
+-		dir_sd = sysfs_get_dirent(kobj->sd, NULL, grp->name);
+-	else
+-		dir_sd = sysfs_get(kobj->sd);
++	dir_sd = sysfs_get_dirent(kobj->sd, NULL, grp->name);
+ 	if (dir_sd) {
+ 		for (attr = grp->attrs; *attr; ++attr)
+ 			sysfs_hash_and_remove(dir_sd, NULL, (*attr)->name);
+
