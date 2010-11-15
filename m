@@ -1,62 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755799Ab0KOKyv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 05:54:51 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:44093 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967Ab0KOKyu (ORCPT
+	id S1755845Ab0KOK5m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 05:57:42 -0500
+Received: from mx5.sophos.com ([213.31.172.35]:55706 "EHLO mx5.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752182Ab0KOK5k convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 05:54:50 -0500
-Date: Mon, 15 Nov 2010 11:54:46 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Jakub Jelinek <jakub@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        James Cloos <cloos@jhcloos.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Michael Matz <matz@suse.de>, Dave Korn <dave.korn.cygwin@gmail.com>,
-        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org,
-        Jim Bos <jim876@xs4all.nl>
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-Message-ID: <20101115105446.GD7269@basil.fritz.box>
-References: <877hgorrj1.fsf@basil.nowhere.org>
- <4CD843DC.10106@gmail.com>
- <Pine.LNX.4.64.1011091352460.29956@wotan.suse.de>
- <20101109134816.GB29433@basil.fritz.box>
- <m3lj52txaq.fsf@redhat.com>
- <4CD97A3D.1040602@xs4all.nl>
- <m31v6nmmr3.fsf@jhcloos.com>
- <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com>
- <20101115085605.GE2583@sunsite.ms.mff.cuni.cz>
- <20101115100331.GG2583@sunsite.ms.mff.cuni.cz>
+	Mon, 15 Nov 2010 05:57:40 -0500
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Alexey Zaytsev <alexey.zaytsev@gmail.com>
+Subject: Re: [PATCH] [RFC] fsnotify: Tell the user what part of the file might have changed
+Date: Mon, 15 Nov 2010 10:57:38 +0000
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.3; x86_64; ; )
+CC: Eric Paris <eparis@redhat.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "agruen@suse.de" <agruen@suse.de>,
+        "stefan@buettcher.org" <stefan@buettcher.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <20101115004134.9618.6393.stgit@zaytsev.su>
+In-Reply-To: <20101115004134.9618.6393.stgit@zaytsev.su>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101115100331.GG2583@sunsite.ms.mff.cuni.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-ID: <201011151057.38704.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 15/11/2010 10:57:39,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 15/11/2010 10:57:39,
+	Serialize complete at 15/11/2010 10:57:39
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And for this the starting point should be what has been requested,
-> i.e. preprocessed source + gcc options + gcc version and some hints what
-> actually misbehaves (with the , "+m" (*regs) change reverted)
-> in gcc bugzilla.  Only with that we can actually look at what has been
-> happening, see whether it is the tree optimizations or RTL and which one
-> makes a difference.
-> If I've missed a PR about this I apologize. 
 
-I tried to file one, but I can't reproduce it currently
-(I don't have hardware, so have to rely on code reading and the 32bit
-code looks correct to me even without the additional +m)
+Hi Pete,
 
-The preprocessed source is at
-http://halobates.de/tmp/i8k.i
+On Monday 15 Nov 2010 00:44:08 Alexey Zaytsev wrote:
+> The patch adds fschange-like [1] modification ranges to
+> fsnotify events. Fanotify is made to pass the range
+> to the users.
+>
+> This is useful for backup programs that work on huge files,
+> so that only a part of a modified file needs to be scanned
+> for changes.
+>
+> Looking forwar for your coments on the approach.
 
-Options I used:
+Looks like a potentially useful feature. For now just some implementation
+comments below.
 
- -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -m32 -msoft-float -mregparm=3 -freg-struct-return -mpreferred-stack-boundary=2 -march=i686 -mtune=pentium3 -mtune=generic -maccumulate-outgoing-args -Wa,-mtune=generic32 -ffreestanding -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1 -pipe -Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -Wframe-larger-than=2048 -fno-stack-protector -fno-omit-frame-pointer -fno-optimize-sibling-calls -pg -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack
+>  /*
+>   * Get an fsnotify notification event if one exists and is small
+>   * enough to fit in "count". Return an error pointer if the count
+> @@ -113,12 +133,20 @@ static ssize_t fill_event_metadata(struct
+> fsnotify_group *group, pr_debug("%s: group=%p metadata=%p event=%p\n",
+> __func__,
+>                  group, metadata, event);
+>
+> -       metadata->event_len = FAN_EVENT_METADATA_LEN;
+> +       if (event->mask & (FS_MODIFY | FS_CLOSE_WRITE)) {
+> +               metadata->event_len = FAN_RANGE_EVENT_METADATA_LEN;
+> +               metadata->range.start = event->range.start;
+> +               metadata->range.end = event->range.end;
+> +       } else {
+> +               metadata->event_len = FAN_EVENT_METADATA_LEN;
+> +       }
+> +
+>         metadata->vers = FANOTIFY_METADATA_VERSION;
+>         metadata->mask = event->mask & FAN_ALL_OUTGOING_EVENTS;
+>         metadata->pid = pid_vnr(event->tgid);
+>         metadata->fd = create_fd(group, event);
+>
+> +
+>         return metadata->fd;
+>  }
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Since existence of range metadata is determined by fsnotify it would be nice
+if fanotify had no knowledge of when it will be present but could just check
+for its presence. But I do not feel that strongly about this. Especially since
+more important issue is the packet protocol. More on that later.
+
+> diff --git a/fs/open.c b/fs/open.c
+> index 4197b9e..b3c5b0a 100644
+> --- a/fs/open.c
+> +++ b/fs/open.c
+> @@ -675,6 +675,8 @@ static struct file *__dentry_open(struct dentry
+> *dentry, struct vfsmount *mnt, f->f_path.mnt = mnt;
+>         f->f_pos = 0;
+>         f->f_op = fops_get(inode->i_fop);
+> +       f->f_whatchanged.start = -1;
+> +       f->f_whatchanged.end = 0;
+>         file_sb_list_add(f, inode->i_sb);
+
+#ifdef CONFIG_FSNOTIFY?
+
+> diff --git a/include/linux/fanotify.h b/include/linux/fanotify.h
+> index 0f01214..a599517 100644
+> --- a/include/linux/fanotify.h
+> +++ b/include/linux/fanotify.h
+> @@ -91,6 +91,14 @@ struct fanotify_event_metadata {
+>         __aligned_u64 mask;
+>         __s32 fd;
+>         __s32 pid;
+> +
+> +       /* Optional. Check event_len.*/
+> +       union {
+> +               struct {
+> +                       __aligned_u64 start;
+> +                       __aligned_u64 end;
+> +               } range;
+> +       };
+>  };
+
+This does not look extensible. Imagine you add another optional data to the
+union which has the same size - how would one distinguish between the two?
+
+I think the original idea for protocol extensibility was to use the version
+field. Optional sub-packets were not considered, but if we now want to add
+them we should do it right. For example more than one optional data packet
+could also be something which appears in the future.
+
+But for this particular feature, maybe you could get away with bumping the
+protocol version and always carrying the range fields? Just as long they are
+sanely initialized if not applicable it could be fine.
+
+Also you would need to document what is end. Is it the last modified offset or
+one after? Looks to be the latter in the current implementation.
+
+> +/* fsnotify wants to know, what has been changed during the file's
+> lifetime. */ +struct fsnotify_range {
+> +       loff_t start;
+> +       loff_t end;
+> +};
+
+Again end needs to be documented.
+
+> +static inline void fsnotify_update_range(struct file *f, loff_t orig_fpos,
+> size_t len) +{
+> +       /* -1 => first modification. */
+> +       if (f->f_whatchanged.start == -1)
+
+Could you somehow get rid of this conditional?
+
+On close you can pass -1 as u64 to userspace anyway so maybe min with unsigned
+values would work?
+
+> +               f->f_whatchanged.start = orig_fpos;
+> +       else
+> +               f->f_whatchanged.start = min(orig_fpos,
+> f->f_whatchanged.start); +
+> +       f->f_whatchanged.end = max(orig_fpos + len,
+> f->f_whatchanged.start); +}
+> +
+
+Max with start or end here?
+
+Tvrtko
+
+Sophos Limited, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 991 2418 08.
