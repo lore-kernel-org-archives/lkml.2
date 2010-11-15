@@ -1,67 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933819Ab0KOVNC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 16:13:02 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:47892 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932927Ab0KOVM7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 16:12:59 -0500
-Subject: Re: [PATCH] clocksource: document some basic concepts
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Colin Cross <ccross@google.com>,
-        John Stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@redhat.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>
-In-Reply-To: <alpine.LFD.2.00.1011151453370.6448@xanadu.home>
-References: <1289817228-14838-1-git-send-email-linus.walleij@stericsson.com>
-	 <1289818094.2109.487.camel@laptop>
-	 <alpine.LFD.2.00.1011151453370.6448@xanadu.home>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 15 Nov 2010 22:13:04 +0100
-Message-ID: <1289855584.2109.559.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S933787Ab0KOVMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 16:12:52 -0500
+Received: from mail.perches.com ([173.55.12.10]:1401 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758576Ab0KOVMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 16:12:50 -0500
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 10/10] net/atm: Remove unnecessary casts of netdev_priv
+Date: Mon, 15 Nov 2010 13:12:33 -0800
+Message-Id: <0953cd1e1042f41ae839f5b9e4adaffd555c71eb.1289855436.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
+In-Reply-To: <cover.1289855436.git.joe@perches.com>
+References: <cover.1289855436.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-15 at 15:06 -0500, Nicolas Pitre wrote:
-> On Mon, 15 Nov 2010, Peter Zijlstra wrote:
-> 
-> > On Mon, 2010-11-15 at 11:33 +0100, Linus Walleij wrote:
-> > > +The sched_clock() function may wrap only on unsigned long long boundaries,
-> > > +i.e. after 64 bits. Since this is a nanosecond value this will mean it wraps
-> > > +after circa 585 years. (For most practical systems this means "never".)
-> 
-> This is not necessarily the case.  Some implementations require a 
-> scaling factor too, making the number of remaining bits smaller than 64.  
-> See arch/arm/mach-pxa/time.c:sched_clock() for example, which has a 
-> maximum range of 208 days.  Of course, in practice we don't really care 
-> if sched_clock() wraps each 208 days, unlike for clock-source.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ net/atm/br2684.c |    2 +-
+ net/atm/lec.c    |    3 +--
+ 2 files changed, 2 insertions(+), 3 deletions(-)
 
-Right, its like sched_clock() would go backwards and we loose some
-precision during that jiffy (assuming the arch uses
-HAVE_UNSTABLE_SCHED_CLOCK), nothing too horrible.
+diff --git a/net/atm/br2684.c b/net/atm/br2684.c
+index ad2b232..fce2eae 100644
+--- a/net/atm/br2684.c
++++ b/net/atm/br2684.c
+@@ -97,7 +97,7 @@ static LIST_HEAD(br2684_devs);
+ 
+ static inline struct br2684_dev *BRPRIV(const struct net_device *net_dev)
+ {
+-	return (struct br2684_dev *)netdev_priv(net_dev);
++	return netdev_priv(net_dev);
+ }
+ 
+ static inline struct net_device *list_entry_brdev(const struct list_head *le)
+diff --git a/net/atm/lec.c b/net/atm/lec.c
+index 181d70c..179e04b 100644
+--- a/net/atm/lec.c
++++ b/net/atm/lec.c
+@@ -816,8 +816,7 @@ static int lec_mcast_attach(struct atm_vcc *vcc, int arg)
+ 	if (arg < 0 || arg >= MAX_LEC_ITF || !dev_lec[arg])
+ 		return -EINVAL;
+ 	vcc->proto_data = dev_lec[arg];
+-	return lec_mcast_make((struct lec_priv *)netdev_priv(dev_lec[arg]),
+-				vcc);
++	return lec_mcast_make(netdev_priv(dev_lec[arg]), vcc);
+ }
+ 
+ /* Initialize device. */
+-- 
+1.7.3.1.g432b3.dirty
 
-> > Currently true, John Stultz was going to look into ammending this by
-> > teaching the kernel/sched_clock.c bits about early wraps (and a way for
-> > architectures to specify this)
-> > 
-> > #define SCHED_CLOCK_WRAP_BITS 48
-> > 
-> > ...
-> > 
-> > #ifdef SCHED_CLOCK_WRAP_BITS
-> >   /* handle short wraps */
-> > #endif
-> 
-> Is this worth supporting?  I'd simply use the low 32 bits and extend it 
-> to 63 bits using cnt32_to_63(). If the low 32 bits are wrapping too 
-> fast, then just shifting them down a few positions first should do the 
-> trick.  That certainly would have a much faster result.
-
-Whatever works, dealing with the wrap is only a few shifts.
