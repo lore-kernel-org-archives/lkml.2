@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab0KOOBQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 09:01:16 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:60427 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1755672Ab0KOOBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 09:01:15 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+1Y5kXJ8W1R3nMJ1BYaHQNA5MaZRkqZlfDEJF4ps
-	EX87UIeVCrvUVj
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTikp=RJSpL1NYje89URu0St0RprUwR7ad8Q7a=-=@mail.gmail.com>
-References: <1289489200.11397.21.camel@maggy.simson.net>
-	 <20101111202703.GA16282@redhat.com>
-	 <1289514000.21413.204.camel@maggy.simson.net>
-	 <20101112181240.GB8659@redhat.com>
-	 <1289648524.22764.149.camel@maggy.simson.net>
-	 <1289755150.3228.44.camel@maggy.simson.net>
-	 <20101114174921.GA1569@arch.trippelsdorf.de>
-	 <1289758238.17491.12.camel@maggy.simson.net>
-	 <AANLkTimy5DdF8qwGuk09iT3wHfXMjkiwRKxo-LuvEJzW@mail.gmail.com>
-	 <AANLkTikjSCbcRnKOU=nd4os1sdW-GJkD6QVj=U5zPyu8@mail.gmail.com>
-	 <20101114202734.GA1627@arch.trippelsdorf.de>
-	 <AANLkTimHtjH3YvtX6i542_XjfFeuvG-AnU8i224a1R4j@mail.gmail.com>
-	 <1289778189.5154.10.camel@maggy.simson.net>
-	 <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
-	 <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com>
-	 <1289783580.495.58.camel@maggy.simson.net>
-	 <AANLkTikp=RJSpL1NYje89URu0St0RprUwR7ad8Q7a=-=@mail.gmail.com>
+	id S1756954Ab0KOOCu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 09:02:50 -0500
+Received: from mga01.intel.com ([192.55.52.88]:59921 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756619Ab0KOOCt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 09:02:49 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,200,1288594800"; 
+   d="scan'208";a="857688452"
+Subject: Re: [RFC 0/4]x86: allocate up to 32 tlb invalidate vectors
+From: Shaohua Li <shaohua.li@intel.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        "hpa@zytor.com" <hpa@zytor.com>
+In-Reply-To: <1288766655.23014.113.camel@sli10-conroe>
+References: <1288766655.23014.113.camel@sli10-conroe>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Nov 2010 07:00:58 -0700
-Message-ID: <1289829658.16406.78.camel@maggy.simson.net>
+Date: Mon, 15 Nov 2010 22:02:45 +0800
+Message-ID: <1289829765.14740.2.camel@sli10-conroe>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-14 at 19:12 -0800, Linus Torvalds wrote:
+On Wed, 2010-11-03 at 14:44 +0800, Shaohua Li wrote:
+> Hi,
+> In workload with heavy page reclaim, flush_tlb_page() is frequently
+> used. We currently have 8 vectors for tlb flush, which is fine for small
+> machines. But for big machines with a lot of CPUs, the 8 vectors are
+> shared by all CPUs and we need lock to protect them. This will cause a
+> lot of lock contentions. please see the patch 3 for detailed number of
+> the lock contention.
+> Andi Kleen suggests we can use 32 vectors for tlb flush, which should be
+> fine for even 8 socket machines. Test shows this reduces lock contention
+> dramatically (see patch 3 for number).
+> One might argue if this will waste too many vectors and leave less
+> vectors for devices. This could be a problem. But even we use 32
+> vectors, we still leave 78 vectors for devices. And we now have per-cpu
+> vector, vector isn't scarce any more, but I'm open if anybody has
+> objections.
+> 
+Hi Ingo & hpa, any comments about this series?
 
-> I'm also very happy with just what it does to interactive performance.
-> Admittedly, my "testcase" is really trivial (reading email in a
-> web-browser, scrolling around a bit, while doing a "make -j64" on the
-> kernel at the same time), but it's a test-case that is very relevant
-> for me. And it is a _huge_ improvement.
-
-Next logical auto-step would be to try to subvert cfq.  At a glance,
-io_context looks highly hackable for !CONFIG_CFQ_GROUP_IOSCHED case.
-The other case may get interesting for someone not very familiar with
-cfq innards, but I see a tempting looking subversion point.
-
-	-Mike
+Thanks,
+Shaohua
 
