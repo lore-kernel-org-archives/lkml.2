@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab0KOAYZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 19:24:25 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33571 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755368Ab0KOAYX (ORCPT
+	id S1756240Ab0KOA1M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 19:27:12 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57860 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755368Ab0KOA1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 19:24:23 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [resend][PATCH 2/4] Revert "oom: deprecate oom_adj tunable"
-Cc: kosaki.motohiro@jp.fujitsu.com, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-In-Reply-To: <20101109122817.BC5A.A69D9226@jp.fujitsu.com>
-References: <20101109105801.BC30.A69D9226@jp.fujitsu.com> <20101109122817.BC5A.A69D9226@jp.fujitsu.com>
-Message-Id: <20101115092238.BEEE.A69D9226@jp.fujitsu.com>
+	Sun, 14 Nov 2010 19:27:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 15 Nov 2010 09:24:17 +0900 (JST)
+In-Reply-To: <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
+References: <1289489200.11397.21.camel@maggy.simson.net> <20101111202703.GA16282@redhat.com>
+ <1289514000.21413.204.camel@maggy.simson.net> <20101112181240.GB8659@redhat.com>
+ <1289648524.22764.149.camel@maggy.simson.net> <1289755150.3228.44.camel@maggy.simson.net>
+ <20101114174921.GA1569@arch.trippelsdorf.de> <1289758238.17491.12.camel@maggy.simson.net>
+ <AANLkTimy5DdF8qwGuk09iT3wHfXMjkiwRKxo-LuvEJzW@mail.gmail.com>
+ <AANLkTikjSCbcRnKOU=nd4os1sdW-GJkD6QVj=U5zPyu8@mail.gmail.com>
+ <20101114202734.GA1627@arch.trippelsdorf.de> <AANLkTimHtjH3YvtX6i542_XjfFeuvG-AnU8i224a1R4j@mail.gmail.com>
+ <1289778189.5154.10.camel@maggy.simson.net> <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 14 Nov 2010 16:26:47 -0800
+Message-ID: <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+To: Mike Galbraith <efault@gmx.de>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Yes, I've tested it, and it deprecates the tunable as expected.  A single 
-> > > warning message serves the purpose well: let users know one time without 
-> > > being overly verbose that the tunable is deprecated and give them 
-> > > sufficient time (2 years) to start using the new tunable.  That's how 
-> > > deprecation is done.
-> > 
-> > no sense.
-> > 
-> > Why do their application need to rewrite for *YOU*? Okey, you will got
-> > benefit from your new knob. But NOBDOY use the new one. and People need
-> > to rewrite their application even though no benefit. 
-> > 
-> > Don't do selfish userland breakage!
-> 
-> And you said you ignore bug even though you have seen it. It suck!
+On Sun, Nov 14, 2010 at 4:15 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> THAT is why I think it's so silly to try to be so strict and walk over
+> all processes while holding a couple of spinlocks.
 
+Btw, let me say that I think the patch is great even with that thing
+in. It looks clean, the thing I'm complaining about is not a big deal,
+and it seems to perform very much as advertized. The difference with
+autogroup scheduling is very noticeable with a simple "make -j64"
+kernel compile.
 
-At v2.6.36-rc1, oom-killer doesn't work at all because YOU BROKE.
-And I was working on fixing it.
+So I really don't think it's a big deal. The sysctl handler isn't even
+complicated. But boy does it hurt my eyes to see a spinlock held
+around a "do_each_thread()". And I do get the feeling that the
+simplest way to fix it would be to just remove the code entirely, and
+just say that "enabling/disabling may be delayed for old processes
+with existing autogroups".
 
-2010-08-19
-http://marc.info/?t=128223176900001&r=1&w=2
-http://marc.info/?t=128221532700003&r=1&w=2
-http://marc.info/?t=128221532500008&r=1&w=2
-
-However, You submitted new crap before the fixing. 
-
-2010-08-15
-http://marc.info/?t=128184669600001&r=1&w=2
-
-If you tested mainline a bit, you could find the problem quickly.
-You should have fixed mainline kernel at first.
-
-
-	Again, YOU HAVEN'T TESTED YOUR OWN PATCH AT ALL.
-
-
-
-
-
+                    Linus
