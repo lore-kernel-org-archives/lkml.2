@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933588Ab0KOTJB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 14:09:01 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46514 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933109Ab0KOTIE convert rfc822-to-8bit (ORCPT
+	id S933514Ab0KOTHr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 14:07:47 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:54006 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933490Ab0KOTHq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 14:08:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=Ic/yTLo03Gh/uWxtv2YdRsuceedU67Ym4evY2HyJF41HJEU6m5/SEh35sbXW5dYdfF
-         wqaHNMtE477QrYjEs2OWyY74NRmpuyyXyfhEFP0UtpPMYkFqdKbFWOonVAFBxFEYA9Ud
-         akpibECnIP8SzO0xPB1OhL1ssftH/h7Ch4i/o=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Marin Mitov <mitov@issp.bas.bg>
-Subject: Re: [BUG]: skge not working (as module) in 2.6.37-rc1
-Date: Mon, 15 Nov 2010 20:07:57 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1; KDE/4.4.5; i686; ; )
-Cc: Stephen Hemminger <shemminger@osdl.org>,
-        Stephen Hemminger <shemminger@linux-foundation.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>
-References: <201011072345.52784.mitov@issp.bas.bg> <201011142045.14627.maciej.rutecki@gmail.com> <201011150555.59407.mitov@issp.bas.bg>
-In-Reply-To: <201011150555.59407.mitov@issp.bas.bg>
+	Mon, 15 Nov 2010 14:07:46 -0500
+Date: Mon, 15 Nov 2010 19:07:38 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 44/44] sound/soc/codecs: Remove unnecessary semicolons
+Message-ID: <20101115190738.GF3338@sirena.org.uk>
+References: <cover.1289789604.git.joe@perches.com> <97fd199b7dac50613f6843156687223928cce44a.1289789605.git.joe@perches.com> <20101115134939.GC12986@rakim.wolfsonmicro.main> <1289840957.16461.138.camel@Joe-Laptop> <20101115173031.GI12986@rakim.wolfsonmicro.main> <1289842444.16461.140.camel@Joe-Laptop> <20101115182708.GJ12986@rakim.wolfsonmicro.main> <1289845830.16461.149.camel@Joe-Laptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201011152007.58264.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289845830.16461.149.camel@Joe-Laptop>
+X-Cookie: Who messed with my anti-paranoia shot?
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On poniedziałek, 15 listopada 2010 o 04:55:58 Marin Mitov wrote:
-> On Sunday, November 14, 2010 09:45:14 pm Maciej Rutecki wrote:
-> > On niedziela, 7 listopada 2010 o 22:45:52 Marin Mitov wrote:
-> > > Hi Stephen,
-> > > 
-> > > skge as in 2.6.36 (and before) is working.
-> > 
-> > > As in 2.6.37-rc1 it is not:
-> > I created a Bugzilla entry at
-> > https://bugzilla.kernel.org/show_bug.cgi?id=22892
-> > for your bug report, please add your address to the CC list in there,
-> > thanks!
-> 
-> Hi Maciej,
-> 
-> It is already corrected, as in 2.6.37-rc1-git11.
-> 
-> Thanks.
-> 
-> Marin Mitov
+On Mon, Nov 15, 2010 at 10:30:29AM -0800, Joe Perches wrote:
+> On Mon, 2010-11-15 at 18:27 +0000, Mark Brown wrote:
+> > On Mon, Nov 15, 2010 at 09:34:04AM -0800, Joe Perches wrote:
 
-Thanks for the update.
+> > > I think it's more important to use consistent changelogs
+> > > for a patch series.
 
-Regards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+> > ...since...?
+
+> 1995...
+
+That's not really a reason.  It seems that...
+
+> Since there isn't a consistent standard for subsystems
+> changelogs and automating scripts for the desires of
+> individual subsystem maintainers is not feasible.
+
+...you mean that you wish to do this since it makes your life as a
+script author easier.  I'd suggest using pattern matching to look up the
+rules for generating the prefixes (it's pretty much entirely prefixes)
+in the same way you're handling figuring out who to mail - that'd
+probably cover it in an automatable fashion.
