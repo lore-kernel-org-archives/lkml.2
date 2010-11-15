@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757677Ab0KOIAx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 03:00:53 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:44346 "EHLO mgw-da01.nokia.com"
+	id S932707Ab0KOIBW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 03:01:22 -0500
+Received: from mx01.sz.bfs.de ([194.94.69.103]:28073 "EHLO mx01.sz.bfs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752945Ab0KOIAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 03:00:51 -0500
-Date: Mon, 15 Nov 2010 09:53:48 +0200
-From: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
-To: akpm@linux-foundation.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@iki.fi>
-Subject: Re: [PATCH 1/4] proc/vmcore: allow archs to override
-	vmcore_elf_check_arch()
-Message-ID: <20101115075348.GR17801@esdhcp04058.research.nokia.com>
-References: <cover.1289292124.git.mika.westerberg@iki.fi> <df680f67f33d8b0ef815045b53f205b3ff35de63.1289292124.git.mika.westerberg@iki.fi>
+	id S1757691Ab0KOIBS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 03:01:18 -0500
+Message-ID: <4CE0E8CA.9010704@bfs.de>
+Date: Mon, 15 Nov 2010 09:01:14 +0100
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.14) Gecko/20101013 SUSE/3.0.9 Thunderbird/3.0.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <df680f67f33d8b0ef815045b53f205b3ff35de63.1289292124.git.mika.westerberg@iki.fi>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Nokia-AV: Clean
+To: Dan Carpenter <error27@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch 2/2] fbcmap: integer overflow bug
+References: <20101027093716.GD6062@bicker> <20101105134018.2c11f283.akpm@linux-foundation.org> <20101113100718.GB1795@bicker> <20101115044820.GA8489@linux-sh.org> <AANLkTin0T5FN6WhUj0csypR=j0UPRbeHN+HC3N9xnk7E@mail.gmail.com> <20101115072014.GB21614@bicker>
+In-Reply-To: <20101115072014.GB21614@bicker>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
 
-Do you have any comments on this patch? If it is ok, could you consider picking
-it up?
 
-I should've probably sent it as a separate patch since it is now burried into
-"ARM kdump fixes" -thread and thus harder to spot. Sorry about that.
+Am 15.11.2010 08:20, schrieb Dan Carpenter:
+> On Mon, Nov 15, 2010 at 07:56:05AM +0100, Geert Uytterhoeven wrote:
+>> On Mon, Nov 15, 2010 at 05:48, Paul Mundt <lethal@linux-sh.org> wrote:
+>>> On Sat, Nov 13, 2010 at 01:07:18PM +0300, Dan Carpenter wrote:
+>>>> @@ -256,8 +264,12 @@ int fb_set_user_cmap(struct fb_cmap_user *cmap, struct fb_info *info)
+>>>>       int rc, size = cmap->len * sizeof(u16);
+>>>>       struct fb_cmap umap;
+>>>>
+>>>> +     if (cmap->len * 2 > INT_MAX)
+>>
+>> Isn't that another integer overflow? I.e. should be "if (cmap->len >
+>> INT_MAX / sizeof(u16))" instead?
+>>
+> 
+> Yeah it is.  :/
+> 
+> I'll change it to:
+> 	if (size < 0 || size < cmap->len)
+> like Paul asked.
+> 
 
-Regards,
-MW
+I do not see the rest of the code but it looks like
+cmap->len is size in int8_t. So the upper limit is something like
+INT_MAX/(sizeof(u16)*2). Perhaps we can call it a char ?
+is there ANY system that has a more than 256 colors in R|G|B ?
 
-On Tue, Nov 09, 2010 at 11:06:10AM +0200, ext Mika Westerberg wrote:
-> From: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
-> 
-> Allow architectures to redefine this macro if needed. This is useful for
-> example in architectures where 64-bit ELF vmcores are not supported.
-> Specifying zero vmcore_elf64_check_arch() allows compiler to optimize
-> away unnecessary parts of parse_crash_elf64_headers().
-> 
-> We also rename the macro to vmcore_elf64_check_arch() to reflect that it
-> is used for 64-bit vmcores only.
-> 
-> Signed-off-by: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
-> ---
->  fs/proc/vmcore.c           |    2 +-
->  include/linux/crash_dump.h |    9 ++++++++-
->  2 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> index 2367fb3..74802bc5 100644
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -499,7 +499,7 @@ static int __init parse_crash_elf64_headers(void)
->  	/* Do some basic Verification. */
->  	if (memcmp(ehdr.e_ident, ELFMAG, SELFMAG) != 0 ||
->  		(ehdr.e_type != ET_CORE) ||
-> -		!vmcore_elf_check_arch(&ehdr) ||
-> +		!vmcore_elf64_check_arch(&ehdr) ||
->  		ehdr.e_ident[EI_CLASS] != ELFCLASS64 ||
->  		ehdr.e_ident[EI_VERSION] != EV_CURRENT ||
->  		ehdr.e_version != EV_CURRENT ||
-> diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
-> index 0026f26..088cd4a 100644
-> --- a/include/linux/crash_dump.h
-> +++ b/include/linux/crash_dump.h
-> @@ -20,7 +20,14 @@ extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
->  #define vmcore_elf_check_arch_cross(x) 0
->  #endif
->  
-> -#define vmcore_elf_check_arch(x) (elf_check_arch(x) || vmcore_elf_check_arch_cross(x))
-> +/*
-> + * Architecture code can redefine this if there are any special checks
-> + * needed for 64-bit ELF vmcores. In case of 32-bit only architecture,
-> + * this can be set to zero.
-> + */
-> +#ifndef vmcore_elf64_check_arch
-> +#define vmcore_elf64_check_arch(x) (elf_check_arch(x) || vmcore_elf_check_arch_cross(x))
-> +#endif
->  
->  /*
->   * is_kdump_kernel() checks whether this kernel is booting after a panic of
-> -- 
-> 1.7.2.3
+<spying for struct fb_cmap_user  >
+ __u32 len;
+ __u16 __user *red;
+
+So no need to check for <0.
+
+hope that helps,
+re,
+ wh
