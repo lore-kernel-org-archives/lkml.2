@@ -1,165 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754639Ab0KOJmy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 04:42:54 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:34055 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752235Ab0KOJmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 04:42:54 -0500
-Date: Mon, 15 Nov 2010 09:42:40 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] cleanup kswapd()
-Message-ID: <20101115094239.GH27362@csn.ul.ie>
-References: <20101114180505.BEE2.A69D9226@jp.fujitsu.com>
+	id S1754250Ab0KOJou (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 04:44:50 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:52935 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752737Ab0KOJot (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 04:44:49 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 2.6.36 1/1 RESEND] kernel SPIN_LOCK_UNLOCKED changed to __SPIN_LOCK_UNLOCKED()
+Date: Mon, 15 Nov 2010 10:44:36 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1+; KDE/4.5.1; x86_64; ; )
+Cc: Atul Sowani <sowani@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, alan@linux.intel.com,
+        ralf@linux-mips.org
+References: <4CDED96A.9080404@gmail.com> <20101115092404.GA24194@n2100.arm.linux.org.uk>
+In-Reply-To: <20101115092404.GA24194@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101114180505.BEE2.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011151044.36213.arnd@arndb.de>
+X-Provags-ID: V02:K0:P8jEJt/pUYja8eyrwKeR59hEcOOB9oeas/rPS3gisx6
+ Td2Q+WMNixW6zvpolMVemKeBP+iVq0UJfleB8mK4WfhynT1Q17
+ iv3MzpBrvH4PxQst59uP+cKblMT3cIMa9IYlmeJZSm/3ceyTrg
+ Vvzrr22sEmsMrnD0YUlq1ifnTIoMDlzrBXf2zK8BLV4F704w5k
+ tHwEOMN1n1VRux0uh23gw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 06:05:26PM +0900, KOSAKI Motohiro wrote:
+On Monday 15 November 2010 10:24:04 Russell King - ARM Linux wrote:
+> > diff -uprN a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> > --- a/arch/arm/kernel/smp.c   2010-10-21 02:00:22.000000000 +0530
+> > +++ b/arch/arm/kernel/smp.c   2010-11-07 00:47:32.000000000 +0530
+> > @@ -56,7 +56,7 @@ struct ipi_data {
+> >  };
+> > 
+> >  static DEFINE_PER_CPU(struct ipi_data, ipi_data) = {
+> > -     .lock   = SPIN_LOCK_UNLOCKED,
+> > +     .lock   = __SPIN_LOCK_UNLOCKED(ipi_data.lock),
+> >  };
 > 
-> Currently, kswapd() function has deeper nest and it slightly harder to
-> read. cleanup it.
+> This lock is in the percpu data area.  This means that when other CPUs
+> are brought online, and therefore other percpu areas are instantiated,
+> this lock will be mis-initialized (the pointers et.al. will be pointing
+> at the original percpu instance.)
 > 
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  mm/vmscan.c |   71 +++++++++++++++++++++++++++++++---------------------------
->  1 files changed, 38 insertions(+), 33 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 8cc90d5..82ffe5f 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2364,6 +2364,42 @@ out:
->  	return sc.nr_reclaimed;
->  }
->  
-> +void kswapd_try_to_sleep(pg_data_t *pgdat, int order)
-> +{
+> So NAK, this will break.
 
-As pointed out elsewhere, this should be static.
+I believe right now we only use the argument of __SPIN_LOCK_UNLOCKED
+as an identifier string for lockdep, but not for any pointers, so the
+patch would actually do what was intended, but break if we ever start
+relying on the pointer.
 
-> +	long remaining = 0;
-> +	DEFINE_WAIT(wait);
-> +
-> +	if (freezing(current) || kthread_should_stop())
-> +		return;
-> +
-> +	prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
-> +
-> +	/* Try to sleep for a short interval */
-> +	if (!sleeping_prematurely(pgdat, order, remaining)) {
-> +		remaining = schedule_timeout(HZ/10);
-> +		finish_wait(&pgdat->kswapd_wait, &wait);
-> +		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
-> +	}
-> +
-> +	/*
-> +	 * After a short sleep, check if it was a
-> +	 * premature sleep. If not, then go fully
-> +	 * to sleep until explicitly woken up
-> +	 */
+Maybe we can mangle the argument in some way to make sure it will break
+at build time when that happens, e.g.
 
-Very minor but that comment should now fit on fewer lines.
+     .lock   = __SPIN_LOCK_UNLOCKED(ipi_data.__lock)
 
-> +	if (!sleeping_prematurely(pgdat, order, remaining)) {
-> +		trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
-> +		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
-> +		schedule();
-> +		set_pgdat_percpu_threshold(pgdat, calculate_pressure_threshold);
+This would at least let us remove SPIN_LOCK_UNLOCKED.
 
-I posted a patch adding a comment on why set_pgdat_percpu_threshold() is
-called. I do not believe it has been picked up by Andrew but it if is,
-the patches will conflict. The resolution will be obvious but you may
-need to respin this patch if the comment patch gets picked up in mmotm.
-
-Otherwise, I see no problems.
-
-> +	} else {
-> +		if (remaining)
-> +			count_vm_event(KSWAPD_LOW_WMARK_HIT_QUICKLY);
-> +		else
-> +			count_vm_event(KSWAPD_HIGH_WMARK_HIT_QUICKLY);
-> +	}
-> +	finish_wait(&pgdat->kswapd_wait, &wait);
-> +}
-> +
->  /*
->   * The background pageout daemon, started as a kernel thread
->   * from the init process.
-> @@ -2382,7 +2418,7 @@ static int kswapd(void *p)
->  	unsigned long order;
->  	pg_data_t *pgdat = (pg_data_t*)p;
->  	struct task_struct *tsk = current;
-> -	DEFINE_WAIT(wait);
-> +
->  	struct reclaim_state reclaim_state = {
->  		.reclaimed_slab = 0,
->  	};
-> @@ -2414,7 +2450,6 @@ static int kswapd(void *p)
->  		unsigned long new_order;
->  		int ret;
->  
-> -		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
->  		new_order = pgdat->kswapd_max_order;
->  		pgdat->kswapd_max_order = 0;
->  		if (order < new_order) {
-> @@ -2424,39 +2459,9 @@ static int kswapd(void *p)
->  			 */
->  			order = new_order;
->  		} else {
-> -			if (!freezing(current) && !kthread_should_stop()) {
-> -				long remaining = 0;
-> -
-> -				/* Try to sleep for a short interval */
-> -				if (!sleeping_prematurely(pgdat, order, remaining)) {
-> -					remaining = schedule_timeout(HZ/10);
-> -					finish_wait(&pgdat->kswapd_wait, &wait);
-> -					prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
-> -				}
-> -
-> -				/*
-> -				 * After a short sleep, check if it was a
-> -				 * premature sleep. If not, then go fully
-> -				 * to sleep until explicitly woken up
-> -				 */
-> -				if (!sleeping_prematurely(pgdat, order, remaining)) {
-> -					trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
-> -					set_pgdat_percpu_threshold(pgdat,
-> -						calculate_normal_threshold);
-> -					schedule();
-> -					set_pgdat_percpu_threshold(pgdat,
-> -						calculate_pressure_threshold);
-> -				} else {
-> -					if (remaining)
-> -						count_vm_event(KSWAPD_LOW_WMARK_HIT_QUICKLY);
-> -					else
-> -						count_vm_event(KSWAPD_HIGH_WMARK_HIT_QUICKLY);
-> -				}
-> -			}
-> -
-> +			kswapd_try_to_sleep(pgdat, order);
->  			order = pgdat->kswapd_max_order;
->  		}
-> -		finish_wait(&pgdat->kswapd_wait, &wait);
->  
->  		ret = try_to_freeze();
->  		if (kthread_should_stop())
-> -- 
-> 1.6.5.2
-> 
-> 
-> 
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+	Arnd
