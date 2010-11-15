@@ -1,153 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939Ab0KOQgp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 11:36:45 -0500
-Received: from stinky.trash.net ([213.144.137.162]:35301 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757516Ab0KOQgn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 11:36:43 -0500
-Message-ID: <4CE16198.7000709@trash.net>
-Date: Mon, 15 Nov 2010 17:36:40 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+	id S1757961Ab0KOQkX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 11:40:23 -0500
+Received: from kroah.org ([198.145.64.141]:49039 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757935Ab0KOQkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 11:40:21 -0500
+Date: Mon, 15 Nov 2010 08:19:28 -0800
+From: Greg KH <greg@kroah.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Baruch Siach <baruch@tkos.co.il>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Indan Zupancic <indan@nul.nu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Alex Gershgorin <agersh@rambler.ru>
+Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
+Message-ID: <20101115161928.GC5981@kroah.com>
+References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
+ <4CE0FE71.6000303@suse.cz>
+ <20101115100838.GA3649@jasper.tkos.co.il>
+ <4CE10B32.8090705@suse.cz>
+ <20101115134025.GB3649@jasper.tkos.co.il>
+ <4CE142B8.4090602@suse.cz>
 MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>
-CC: Hua Zhong <hzhong@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org,
-        Netfilter Development Mailinglist 
-	<netfilter-devel@vger.kernel.org>
-Subject: Re: [RFC PATCH] network: return errors if we know tcp_connect failed
-References: <20101111210341.31350.86916.stgit@paris.rdu.redhat.com>	 <00c201cb81eb$84e18160$8ea48420$@com> <4CDCEE65.3060105@trash.net>	 <017301cb82bf$54540cf0$fcfc26d0$@com>  <4CE10C2A.1050801@trash.net> <1289836066.14282.7.camel@localhost.localdomain> <4CE15885.90003@trash.net>
-In-Reply-To: <4CE15885.90003@trash.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/mixed;
- boundary="------------020804040006030609050100"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE142B8.4090602@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020804040006030609050100
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-
-On 15.11.2010 16:57, Patrick McHardy wrote:
-> On 15.11.2010 16:47, Eric Paris wrote:
->> I notice the heavy lifting for this is done in 
->> net/ipv4/netfilter/ipt_REJECT.c::send_rest()
->> (and something very similar for IPv6)
->>
->> I really don't want to duplicate that code into SELinux (for obvious
->> reasons) and I'm wondering if anyone has objections to me making it
->> available outside of netlink and/or suggestions on how to make that code
->> available outside of netfilter (aka what header to expose it, and does
->> it still make logical sense in ipt_REJECT.c or somewhere else?)
+On Mon, Nov 15, 2010 at 03:24:56PM +0100, Jiri Slaby wrote:
+> On 11/15/2010 02:40 PM, Baruch Siach wrote:
+> > On Mon, Nov 15, 2010 at 11:28:02AM +0100, Jiri Slaby wrote:
+> >> On 11/15/2010 11:08 AM, Baruch Siach wrote:
+> >>> Thanks for reviewing. See my response to your comments below.
+> >>>
+> >>> On Mon, Nov 15, 2010 at 10:33:37AM +0100, Jiri Slaby wrote:
+> >>>> On 11/15/2010 09:23 AM, Baruch Siach wrote:
+> >>>>> --- /dev/null
+> >>>>> +++ b/drivers/misc/altera_as.c
+> >>>>> @@ -0,0 +1,349 @@
+> >>>> ...
+> >>>>> +struct altera_as_device {
+> >>>>> +	unsigned id;
+> >>>>> +	struct device *dev;
+> >>>>> +	struct miscdevice miscdev;
+> >>>>> +	struct mutex open_lock;
+> >>>>> +	struct gpio gpios[AS_GPIO_NUM];
+> >>>>> +};
+> >>>>> +
+> >>>>> +/*
+> >>>>> + * The only functions updating this array are .probe/.remove, which are
+> >>>>> + * serialized. Hence, no locking is needed here.
+> >>>>> + */
+> >>>>> +static struct {
+> >>>>> +	int minor;
+> >>>>
+> >>>> Why you need minor here? It's in drvdata->miscdev.minor.
+> >>>
+> >>> I use the minor field to lookup the drvdata pointer in get_as_dev(), which I 
+> >>> use is altera_as_open().  I do this because I have no access to the 'struct 
+> >>> device' pointer from the .open method. Do you know a better way?
+> >>>
+> >>>>> +	struct altera_as_device *drvdata;
+> >>>>> +} altera_as_devs[AS_MAX_DEVS];
+> >>>>
+> >>>> You don't need the struct at all.
+> >>>> static struct altera_as_device *drvdata[AS_MAX_DEVS];
+> >>>> should be enough.
+> >>>
+> >>> See above.
+> >>
+> >> The answer to you previous question is here. You can just have a global
+> >> array of struct altera_as_device.
+> > 
+> > This static array would occupy sizeof(struct altera_as_device) * AS_MAX_DEVS 
+> > == 128 (for 32bit) * 16 == 2KB unconditionally.
 > 
-> I don't think having SELinux sending packets to handle local
-> connections is a very elegant design, its not a firewall after
-> all. What's wrong with reacting only to specific errno codes
-> in tcp_connect()? You could f.i. return -ECONNREFUSED from
-> SELinux, that one is pretty much guaranteed not to occur in
-> the network stack itself and can be returned directly.
+> No, it is an array of pointers.
 > 
-> That would need minor changes to nf_hook_slow so we can
-> encode errno values in the upper 16 bits of the verdict,
-> as we already do with the queue number. The added benefit
-> is that we don't have to return EPERM anymore when f.i.
-> rerouting fails.
+> >>>>> +static int __init altera_as_probe(struct platform_device *pdev)
+> >>>>> +{
+> >>>> ...
+> >>>>> +	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
+> >>>>> +	drvdata->miscdev.name = kasprintf(GFP_KERNEL, "altera_as%d",
+> >>>>> +			pdata->id);
+> >>>>> +	if (drvdata->miscdev.name == NULL)
+> >>>>> +		return -ENOMEM;
+> >>>>> +	drvdata->miscdev.fops = &altera_as_fops;
+> >>>>> +	if (misc_register(&drvdata->miscdev) < 0) {
+> >>>>
+> >>>> Hmm, how many devices can be in the system?
+> >>>
+> >>> Up to AS_MAX_DEVS, currently 16.
+> >>>
+> >>>> This doesn't look like the right way.
+> >>>
+> >>> What is the right way then?
+> >>
+> >> Ok, so for that count it definitely deserves its own major to not eat up
+> >> misc device space.
+> > 
+> > A previous version of this driver[1] did just that. It was Greg KH who 
+> > suggested[2] to use the misc class.
+> > 
+> > [1] http://article.gmane.org/gmane.linux.kernel/1057434
+> > [2] http://article.gmane.org/gmane.linux.kernel/1058627
+> 
+> Ok, citing in-place:
+> <cite1>
+> Please don't create your own class just for a single driver.  Just use
+> the misc class interface instead, as all you really want/need here is a
+> character device node, right?
+> </cite1>
+> 
+> The "miscdevice" is intended for people who want only a single device
+> per system (singleton) and it is designed that way. There can be only up
+> to 64 dynamic minors. Here you allow up to 16 devices out of box...
 
-Patch for demonstration purposes attached. I've modified the
-MARK target so it returns NF_DROP with an errno code of
--ECONNREFUSED:
+I thought this driver only allocated one single minor number.  If it is
+doing this for 16 all the time, then it should get its own major, sorry
+my fault.
 
-# iptables -A OUTPUT -d 1.2.3.4 -j MARK --set-mark 1
-# ping 1.2.3.4
-PING 1.2.3.4 (1.2.3.4) 56(84) bytes of data.
-ping: sendmsg: Connection refused
-# telnet 1.2.3.4
-Trying 1.2.3.4...
-telnet: Unable to connect to remote host: Connection refused
+> <cite2>
+> And as discussed at the Plumbers conference this past week, we don't
+> want to add any new 'struct class' implementations to the kernel from
+> now on, as it's the overall wrong thing to do.
+> </cite2>
+> 
+> Well, how do people notify udev about their character devices then? Any
+> pointers to the discussion?
 
+Use a struct bus_type instead.
 
+thanks,
 
-
---------------020804040006030609050100
-Content-Type: text/plain;
- name="x"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="x"
-
-diff --git a/include/linux/netfilter.h b/include/linux/netfilter.h
-index 89341c3..ef2af8f 100644
---- a/include/linux/netfilter.h
-+++ b/include/linux/netfilter.h
-@@ -33,6 +33,8 @@
- 
- #define NF_QUEUE_NR(x) ((((x) << NF_VERDICT_BITS) & NF_VERDICT_QMASK) | NF_QUEUE)
- 
-+#define NF_DROP_ERR(x) (((-x) << NF_VERDICT_BITS) | NF_DROP)
-+
- /* only for userspace compatibility */
- #ifndef __KERNEL__
- /* Generic cache responses from hook functions.
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 05b1ecf..bb8f547 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -2592,6 +2592,7 @@ int tcp_connect(struct sock *sk)
- {
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	struct sk_buff *buff;
-+	int err;
- 
- 	tcp_connect_init(sk);
- 
-@@ -2614,7 +2615,9 @@ int tcp_connect(struct sock *sk)
- 	sk->sk_wmem_queued += buff->truesize;
- 	sk_mem_charge(sk, buff->truesize);
- 	tp->packets_out += tcp_skb_pcount(buff);
--	tcp_transmit_skb(sk, buff, 1, sk->sk_allocation);
-+	err = tcp_transmit_skb(sk, buff, 1, sk->sk_allocation);
-+	if (err == -ECONNREFUSED)
-+		return err;
- 
- 	/* We change tp->snd_nxt after the tcp_transmit_skb() call
- 	 * in order to make this packet get counted in tcpOutSegs.
-diff --git a/net/netfilter/core.c b/net/netfilter/core.c
-index 85dabb8..32fcbe2 100644
---- a/net/netfilter/core.c
-+++ b/net/netfilter/core.c
-@@ -173,9 +173,11 @@ next_hook:
- 			     outdev, &elem, okfn, hook_thresh);
- 	if (verdict == NF_ACCEPT || verdict == NF_STOP) {
- 		ret = 1;
--	} else if (verdict == NF_DROP) {
-+	} else if ((verdict & NF_VERDICT_MASK) == NF_DROP) {
- 		kfree_skb(skb);
--		ret = -EPERM;
-+		ret = -(verdict >> NF_VERDICT_BITS);
-+		if (ret == 0)
-+			ret = -EPERM;
- 	} else if ((verdict & NF_VERDICT_MASK) == NF_QUEUE) {
- 		if (!nf_queue(skb, elem, pf, hook, indev, outdev, okfn,
- 			      verdict >> NF_VERDICT_BITS))
-diff --git a/net/netfilter/xt_mark.c b/net/netfilter/xt_mark.c
-index 2334523..185330c 100644
---- a/net/netfilter/xt_mark.c
-+++ b/net/netfilter/xt_mark.c
-@@ -30,7 +30,7 @@ mark_tg(struct sk_buff *skb, const struct xt_action_param *par)
- 	const struct xt_mark_tginfo2 *info = par->targinfo;
- 
- 	skb->mark = (skb->mark & ~info->mask) ^ info->mark;
--	return XT_CONTINUE;
-+	return NF_DROP_ERR(-ECONNREFUSED);
- }
- 
- static bool
-
-
---------------020804040006030609050100--
+greg k-h
