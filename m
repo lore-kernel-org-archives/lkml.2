@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757713Ab0KOHqV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 02:46:21 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50884 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757660Ab0KOHqU (ORCPT
+	id S1757731Ab0KOHt4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 02:49:56 -0500
+Received: from mail30g.wh2.ocn.ne.jp ([220.111.41.239]:35785 "HELO
+	mail30g.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757654Ab0KOHtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 02:46:20 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=lte9k5mz46BZ8WzLOkz9IPvuMDAMvRZ9slhtOHsJ4C7NzYgRMFyGEF+hiI+Jz9bS7t
-         IWFHwUnBMs1Hc6IbsvaiwyUk4nLrOaJ6NTBQ5JRX01DDaIZUlox39Z29Rr5EBWIuit6U
-         IYsU8oDUv9IfosO8bEweULKkSc14yFd6THF1o=
+	Mon, 15 Nov 2010 02:49:55 -0500
+From: Bruno Randolf <br1@einfach.org>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: Re: [PATCH v6] Add generic exponentially weighted moving average (EWMA) function
+Date: Mon, 15 Nov 2010 16:50:12 +0900
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; x86_64; ; )
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, randy.dunlap@oracle.com,
+        peterz@infradead.org, blp@cs.stanford.edu,
+        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
+        kevin.granade@gmail.com, "John W. Linville" <linville@tuxdriver.com>
+References: <4CDC333E.4070104@s5r6.in-berlin.de> <201011151110.46007.br1@einfach.org> <20101115083839.622b58af@stein>
+In-Reply-To: <20101115083839.622b58af@stein>
 MIME-Version: 1.0
-In-Reply-To: <20101115162713.BF12.A69D9226@jp.fujitsu.com>
-References: <20101115160413.BF0F.A69D9226@jp.fujitsu.com>
-	<AANLkTim0vCJkMoH5P0wCN9J6340rDsscyNBQ+R+_ph8m@mail.gmail.com>
-	<20101115162713.BF12.A69D9226@jp.fujitsu.com>
-Date: Mon, 15 Nov 2010 16:46:18 +0900
-Message-ID: <AANLkTi=tZkRnbDhqx=V5TwKh9S1SouEqO5pU_9C-kope@mail.gmail.com>
-Subject: Re: fadvise DONTNEED implementation (or lack thereof)
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Ben Gamari <bgamari.foss@gmail.com>, linux-kernel@vger.kernel.org,
-        rsync@lists.samba.org, linux-mm@kvack.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011151650.12406.br1@einfach.org>
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 4:28 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> On Mon, Nov 15, 2010 at 4:09 PM, KOSAKI Motohiro
->> <kosaki.motohiro@jp.fujitsu.com> wrote:
->> >> > Because we have an alternative solution already. please try memcgroup :)
->> >>
->> >> I think memcg could be a solution of them but fundamental solution is
->> >> that we have to cure it in VM itself.
->> >> I feel it's absolutely absurd to enable and use memcg for amending it.
->> >>
->> >> I wonder what's the problem in Peter's patch 'drop behind'.
->> >> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg179576.html
->> >>
->> >> Could anyone tell me why it can't accept upstream?
->> >
->> > I don't know the reason. And this one looks reasonable to me. I'm curious the above
->> > patch solve rsync issue or not.
->> > Minchan, have you tested it yourself?
->>
->> Still yet. :)
->> If we all think it's reasonable, it would be valuable to adjust it
->> with current mmotm and see the effect.
->
-> Who can make rsync like io pattern test suite? a code change is easy. but
-> to comfirm justification is more harder work.
+On Mon November 15 2010 16:38:39 Stefan Richter wrote:
+> On Nov 15 Bruno Randolf wrote:
+> > On Sun November 14 2010 17:51:08 Stefan Richter wrote:
+> > > BTW, isn't "get" more usually used as a prefix for these kinds of
+> > > functions in kernel APIs?  "get" as a suffix more often means "get
+> > > a reference" alias increase reference count rather than "get the
+> > > value".
+> > 
+> > Umm. I don't know and honstly I don't care. I think the API ewma_* is
+> > consistent. If you have a good reason to change it please let me
+> > know, otherwise i'd just leave it like it is now.
+> 
+> It is not about consistency of the API in itself but about consistency
+> with the rest of the kernel.  Cf. skb_get vs. get_unaligned and many
+> more.  I for one immediately think of "something is having its
+> reference count incremented here" when I come across a something_get
+> when reading code.
+> 
+> I don't know of such a convention being documented anywhere.  But for an
+> overkill of examples of "get" as prefix and suffix, grep for get_ and
+> _get( in include/.  The same convention exists IME with "put" that
+> either writes a value or drops a reference.
+> 
+> Sorry for bringing this up so late but it is IMO not a trivial point.
 
-Maybe Ben, Brian those reports the problem. :)
+That's allright, and I have no problem changing it.
 
+So what would you prefer? And what is the opinion of other people?
 
-
--- 
-Kind regards,
-Minchan Kim
+bruno
