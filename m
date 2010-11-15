@@ -1,178 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab0KOBWV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 20:22:21 -0500
-Received: from mga14.intel.com ([143.182.124.37]:35158 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757223Ab0KOBWU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 20:22:20 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,197,1288594800"; 
-   d="scan'208";a="348638872"
-Date: Mon, 15 Nov 2010 09:22:15 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Nikanth Karthikesan <knikanth@suse.de>,
-        David Rientjes <rientjes@google.com>,
-        "Zheng, Shaohui" <shaohui.zheng@intel.com>,
-        "linux-hotplug@vger.kernel.org" <linux-hotplug@vger.kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-Subject: Re: [PATCH] x86, acpi: Handle all SRAT cpu entries even have cpu
- num limitation
-Message-ID: <20101115012215.GD5402@localhost>
-References: <20101113084018.GA23098@localhost>
- <1289644224.2084.521.camel@laptop>
- <20101113120030.GA31517@localhost>
- <1289653078.2084.675.camel@laptop>
- <20101113131042.GA5522@localhost>
- <4CDEE314.6090107@kernel.org>
- <20101113235746.GA9458@localhost>
- <4CDF3DA1.2090806@kernel.org>
- <20101114173208.GA23017@localhost>
- <4CE02832.3020402@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE02832.3020402@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932432Ab0KOBWx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 20:22:53 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:59327 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757223Ab0KOBWw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 20:22:52 -0500
+Date: Mon, 15 Nov 2010 10:13:35 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, balbir@linux.vnet.ibm.com,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [RFC PATCH] Make swap accounting default behavior configurable
+ v2
+Message-Id: <20101115101335.8880fd87.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20101112083103.GB7285@tiehlicka.suse.cz>
+References: <20101110125154.GC5867@tiehlicka.suse.cz>
+	<20101111094613.eab2ec0b.nishimura@mxp.nes.nec.co.jp>
+	<20101111093155.GA20630@tiehlicka.suse.cz>
+	<20101112094118.b02b669f.nishimura@mxp.nes.nec.co.jp>
+	<20101112083103.GB7285@tiehlicka.suse.cz>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 02:19:30AM +0800, Yinghai Lu wrote:
-> On 11/14/2010 09:32 AM, Wu Fengguang wrote:
-> > Hi,
-> > 
-> > I just found another problem. When passing "mem=256" to 2.6.37-rc1,
-> > it dies hard early (not able to print any boot log). With this patch
-> > applied, it's a bit better: it shows a kernel panic, but still dies
-> > hard (not able to reboot with "panic=10").
-> > 
-> 
-> if you did use "mem=256", you should get panic.
+On Fri, 12 Nov 2010 09:31:03 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
 
-Oops, "256" is accepted as 256 bytes..
-Sorry for the noise! It boots OK with "mem=256M".
+> On Fri 12-11-10 09:41:18, Daisuke Nishimura wrote:
+> > On Thu, 11 Nov 2010 10:31:55 +0100
+> > Michal Hocko <mhocko@suse.cz> wrote:
+> > 
+> > > On Thu 11-11-10 09:46:13, Daisuke Nishimura wrote:
+> > > > On Wed, 10 Nov 2010 13:51:54 +0100
+> > > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > > 
+> > > > > Hi,
+> > > > > could you consider the patch bellow? It basically changes the default
+> > > > > swap accounting behavior (when it is turned on in configuration) to be
+> > > > > configurable as well. 
+> > > > > 
+> > > > > The rationale is described in the patch but in short it makes it much
+> > > > > more easier to enable this feature in distribution kernels as the
+> > > > > functionality can be provided in the general purpose kernel (with the
+> > > > > option disabled) without any drawbacks and interested users can enable
+> > > > > it. This is not possible currently.
+> > > > > 
+> > > > > I am aware that boot command line parameter name change is not ideal but
+> > > > > the original semantic wasn't good enough and I don't like
+> > > > > noswapaccount=yes|no very much. 
+> > > > > 
+> > > > > If we really have to stick to it I can rework the patch to keep the name
+> > > > > and just add the yes|no logic, though. Or we can keep the original one
+> > > > > and add swapaccount paramete which would mean the oposite as the other
+> > > > > one.
+> > > > > 
+> > > > hmm, I agree that current parameter name(noswapaccount) is not desirable
+> > > > for yes|no, but IMHO changing the user interface(iow, making what worked before 
+> > > > unusable) is worse.
+> > > > 
+> > > > Although I'm not sure how many people are using this parameter, I vote for
+> > > > using "noswapaccount[=(yes|no)]".
+> > > 
+> > > Isn't a new swapaccount parameter better than that? I know we don't want
+> > > to have too many parameters but having a something with a clear meaning
+> > > is better IMO (noswapaccount=no doesn't sound very intuitive to me).
+> > > 
+> > Fair enough. It's just an trade-off between compatibility and understandability.
+> > 
+> > > > And you should update Documentation/kernel-parameters.txt too.
+> > > 
+> > > Yes, I am aware of that and will do that once there is an agreement on
+> > > the patch itself. At this stage, I just wanted to have a feadback about
+> > > the change.
+> > > 
+> > I'll ack your patch when it's been released with documentation update.
+> 
+> Changes since v1:
+> * do not remove noswapaccount parameter and add swapaccount parameter
+>   instead
+> * Documentation/kernel-parameters.txt updated
+> 
+> --- 
+> From c60e3d76702cd9b4b5b13c01be335da31d03bc1c Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Wed, 10 Nov 2010 13:30:04 +0100
+> Subject: [PATCH] Make swap accounting default behavior configurable
+> 
+> Swap accounting can be configured by CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+> configuration option and then it is turned on by default. There is
+> a boot option (noswapaccount) which can disable this feature.
+> 
+> This makes it hard for distributors to enable the configuration option
+> as this feature leads to a bigger memory consumption and this is a no-go
+> for general purpose distribution kernel. On the other hand swap
+> accounting may be very usuful for some workloads.
+> 
+> This patch adds a new configuration option which controls the default
+> behavior (CGROUP_MEM_RES_CTLR_SWAP_ENABLED). If the option is selected
+> then the feature is turned on by default.
+> 
+> It also adds a new boot parameter swapaccount which (contrary to
+> noswapaccount) enables the feature. (I would consider swapaccount=yes|no
+> semantic with removed noswapaccount parameter much better but this
+> parameter is kind of API which might be in use and unexpected breakage
+> is no-go.)
+> 
+> The default behavior is unchanged (if CONFIG_CGROUP_MEM_RES_CTLR_SWAP is
+> enabled then CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED is enabled as well)
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> ---
+>  Documentation/kernel-parameters.txt |    2 ++
+>  init/Kconfig                        |   13 +++++++++++++
+>  mm/memcontrol.c                     |   15 ++++++++++++++-
+>  3 files changed, 29 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index ed45e98..7077148 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -1752,6 +1752,8 @@ and is between 256 and 4096 characters. It is defined in the file
+>  
+>  	noswapaccount	[KNL] Disable accounting of swap in memory resource
+>  			controller. (See Documentation/cgroups/memory.txt)
+> +	swapaccount	[KNL] Enable accounting of swap in memory resource
+> +			controller. (See Documentation/cgroups/memory.txt)
+>  
+>  	nosync		[HW,M68K] Disables sync negotiation for all devices.
+>  
+(I've add Andrew and Balbir to CC-list.)
+It seems that almost all parameters are listed in alphabetic order in the document,
+so I think it would be better to obey the rule.
 
 Thanks,
-Fengguang
+Daisuke Nishimura.
 
-> early console in setup code
-> Probing EDD (edd=off to disable)... ok
-> early console in decompress_kernel
-> decompress_kernel:
->   input: [0x2431269-0x2e7fec6], output: 0x1000000, heap: [0x2e856c0-0x2e8c6bf]
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 88c1046..c972899 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -613,6 +613,19 @@ config CGROUP_MEM_RES_CTLR_SWAP
+>  	  if boot option "noswapaccount" is set, swap will not be accounted.
+>  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
+>  	  size is 4096bytes, 512k per 1Gbytes of swap.
+> +config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
+> +	bool "Memory Resource Controller Swap Extension enabled by default"
+> +	depends on CGROUP_MEM_RES_CTLR_SWAP
+> +	default y
+> +	help
+> +	  Memory Resource Controller Swap Extension comes with its price in
+> +	  a bigger memory consumption. General purpose distribution kernels
+> +	  which want to enable the feautre but keep it disabled by default
+> +	  and let the user enable it by swapaccount boot command line
+> +	  parameter should have this option unselected.
+> +	  For those who want to have the feature enabled by default should
+> +	  select this option (if, for some reason, they need to disable it
+> +	  then noswapaccount does the trick).
+>  
+>  menuconfig CGROUP_SCHED
+>  	bool "Group CPU scheduler"
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 9a99cfa..4f479fe 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -61,7 +61,14 @@ struct mem_cgroup *root_mem_cgroup __read_mostly;
+>  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+>  /* Turned on only when memory cgroup is enabled && really_do_swap_account = 1 */
+>  int do_swap_account __read_mostly;
+> -static int really_do_swap_account __initdata = 1; /* for remember boot option*/
+> +
+> +/* for remember boot option*/
+> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED
+> +static int really_do_swap_account __initdata = 1;
+> +#else
+> +static int really_do_swap_account __initdata = 0;
+> +#endif
+> +
+>  #else
+>  #define do_swap_account		(0)
+>  #endif
+> @@ -4909,6 +4916,12 @@ struct cgroup_subsys mem_cgroup_subsys = {
+>  };
+>  
+>  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+> +static int __init enable_swap_account(char *s)
+> +{
+> +	really_do_swap_account = 1;
+> +	return 1;
+> +}
+> +__setup("swapaccount", enable_swap_account);
+>  
+>  static int __init disable_swap_account(char *s)
+>  {
+> -- 
+> 1.7.2.3
 > 
-> Decompressing Linux... Parsing ELF... done.
-> Booting the kernel.
-> [    0.000000] bootconsole [uart0] enabled
-> [    0.000000] Kernel Layout:
-> [    0.000000]   .text: [0x01000000-0x01ce0e48]
-> [    0.000000] .rodata: [0x01ce6000-0x0240ffff]
-> [    0.000000]   .data: [0x02410000-0x025a50bf]
-> [    0.000000]   .init: [0x025a7000-0x0286afff]
-> [    0.000000]    .bss: [0x02875000-0x0348a6d7]
-> [    0.000000]    .brk: [0x0348b000-0x034aafff]
-> [    0.000000]     memblock_x86_reserve_range: [0x01000000-0x0348a6d7]    TEXT DATA BSS
-> [    0.000000]     memblock_x86_reserve_range: [0x7c59d000-0x7fffefff]          RAMDISK
-> [    0.000000]     memblock_x86_reserve_range: [0x0009fc00-0x000fffff]  * BIOS reserved
-> [    0.000000] Initializing cgroup subsys cpuset
-> [    0.000000] Initializing cgroup subsys cpu
-> [    0.000000] Linux version 2.6.37-rc1-tip-yh-02102-g776a022-dirty (yhlu@linux-siqj.site) (gcc version 4.5.0 20100604 [gcc-4_5-branch revision 160292] (SUSE Linux) ) #276 SMP Sat Nov 13 15:34:15 PST 2010
-> [    0.000000] Command line: BOOT_IMAGE=linux debug apic=debug ramdisk_size=262144 root=/dev/ram0 rw ip=dhcp mem=256 console=uart8250,io,0x3f8,115200 initrd=initrd.img
-> [    0.000000] KERNEL supported cpus:
-> [    0.000000]   Intel GenuineIntel
-> [    0.000000]   AMD AuthenticAMD
-> [    0.000000]   Centaur CentaurHauls
-> [    0.000000] BIOS-provided physical RAM map:
-> [    0.000000]  BIOS-e820: [0x00000000000000-0x0000000009fbff] (usable)
-> [    0.000000]  BIOS-e820: [0x0000000009fc00-0x0000000009ffff] (reserved)
-> [    0.000000]  BIOS-e820: [0x000000000f0000-0x000000000fffff] (reserved)
-> [    0.000000]  BIOS-e820: [0x00000000100000-0x0000002ffeffff] (usable)
-> [    0.000000]  BIOS-e820: [0x0000002fff0000-0x0000002fffffff] (ACPI data)
-> [    0.000000]  BIOS-e820: [0x000000fffc0000-0x000000ffffffff] (reserved)
-> [    0.000000] e820 remove range: [0x00000000000100-0xfffffffffffffffe] (usable)
-> [    0.000000] NX (Execute Disable) protection: active
-> [    0.000000] user-defined physical RAM map:
-> [    0.000000]  user: [0x00000000000000-0x000000000000ff] (usable)
-> [    0.000000]  user: [0x0000000009fc00-0x0000000009ffff] (reserved)
-> [    0.000000]  user: [0x000000000f0000-0x000000000fffff] (reserved)
-> [    0.000000]  user: [0x0000002fff0000-0x0000002fffffff] (ACPI data)
-> [    0.000000]  user: [0x000000fffc0000-0x000000ffffffff] (reserved)
-> [    0.000000] e820 update range: [0x00000000000000-0x000000000000ff] (usable) ==> (reserved)
-> [    0.000000] aligned physical RAM map:
-> [    0.000000]  aligned: [0x00000000000000-0x000000000000ff] (reserved)
-> [    0.000000]  aligned: [0x0000000009fc00-0x0000000009ffff] (reserved)
-> [    0.000000]  aligned: [0x000000000f0000-0x000000000fffff] (reserved)
-> [    0.000000]  aligned: [0x0000002fff0000-0x0000002fffffff] (ACPI data)
-> [    0.000000]  aligned: [0x000000fffc0000-0x000000ffffffff] (reserved)
-> [    0.000000] DMI 2.5 present.
-> [    0.000000] DMI: /VirtualBox, BIOS VirtualBox 12/01/2006
-> [    0.000000] e820 update range: [0x00000000000000-0x0000000000ffff] (usable) ==> (reserved)
-> [    0.000000] e820 remove range: [0x000000000a0000-0x000000000fffff] (usable)
-> [    0.000000] No AGP bridge found
-> [    0.000000] last_pfn = 0x0 max_arch_pfn = 0x400000000
-> [    0.000000] MTRR default type: uncachable
-> [    0.000000] MTRR variable ranges disabled:
-> [    0.000000] x86 PAT enabled: cpu 0, old 0x7040600070406, new 0x7010600070106
-> [    0.000000] CPU MTRRs all blank - virtualized system.
-> [    0.000000] Scan SMP from ffff880000000000 for 1024 bytes.
-> [    0.000000] Scan SMP from ffff88000009fc00 for 1024 bytes.
-> [    0.000000] found SMP MP-table at [ffff88000009fff0] 9fff0
-> [    0.000000]     memblock_x86_reserve_range: [0x0009fff0-0x0009ffff]   * MP-table mpf
-> [    0.000000]   mpc: e1160-e1254
-> [    0.000000]     memblock_x86_reserve_range: [0x000e1160-0x000e1253]   * MP-table mpc
-> [    0.000000]     memblock_x86_reserve_range: [0x0348b000-0x0348b070]              BRK
-> [    0.000000] MEMBLOCK configuration:
-> [    0.000000]  memory size = 0x0
-> [    0.000000]  memory.cnt  = 0x1
-> [    0.000000]  memory[0x0]     [0x00000000000000-0xffffffffffffffff], 0x0 bytes
-> [    0.000000]  reserved.cnt  = 0x6
-> [    0.000000]  reserved[0x0]   [0x0000000009fc00-0x000000000fffff], 0x60400 bytes
-> [    0.000000]  reserved[0x1]   [0x0000000009fff0-0x0000000009ffff], 0x10 bytes
-> [    0.000000]  reserved[0x2]   [0x000000000e1160-0x000000000e1253], 0xf4 bytes
-> [    0.000000]  reserved[0x3]   [0x00000001000000-0x0000000348a6d7], 0x248a6d8 bytes
-> [    0.000000]  reserved[0x4]   [0x0000000348b000-0x0000000348b070], 0x71 bytes
-> [    0.000000]  reserved[0x5]   [0x0000007c59d000-0x0000007fffefff], 0x3a62000 bytes
-> [    0.000000] initial memory mapped : 0 - 20000000
-> [    0.000000] Kernel panic - not syncing: Cannot allocate trampoline
-> [    0.000000] 
-> [    0.000000] Pid: 0, comm: swapper Not tainted 2.6.37-rc1-tip-yh-02102-g776a022-dirty #276
-> [    0.000000] Call Trace:
-> [    0.000000]  [<ffffffff81cd3f14>] panic+0x91/0x1a3
-> [    0.000000]  [<ffffffff82783490>] reserve_trampoline_memory+0x46/0x72
-> [    0.000000]  [<ffffffff827801fe>] setup_arch+0x5b0/0xae3
-> [    0.000000]  [<ffffffff827cb3a0>] ? boot_command_line+0x0/0x800
-> [    0.000000]  [<ffffffff81cd4067>] ? printk+0x41/0x43
-> [    0.000000]  [<ffffffff827cb3a0>] ? boot_command_line+0x0/0x800
-> [    0.000000]  [<ffffffff8277bb0d>] start_kernel+0xd7/0x3e8
-> [    0.000000]  [<ffffffff8277b2cc>] x86_64_start_reservations+0x9c/0xa0
-> [    0.000000]  [<ffffffff8277b3e4>] x86_64_start_kernel+0x114/0x11b
-> [    0.000000] ------------[ cut here ]------------
-> [    0.000000] WARNING: at kernel/lockdep.c:2322 trace_hardirqs_on_caller+0xc3/0x178()
-> [    0.000000] Hardware name: VirtualBox
-> [    0.000000] Modules linked in:
-> [    0.000000] Pid: 0, comm: swapper Not tainted 2.6.37-rc1-tip-yh-02102-g776a022-dirty #276
-> [    0.000000] Call Trace:
-> [    0.000000]  [<ffffffff8107bda0>] warn_slowpath_common+0x85/0x9d
-> [    0.000000]  [<ffffffff81cd3fe1>] ? panic+0x15e/0x1a3
-> [    0.000000]  [<ffffffff8107bdd2>] warn_slowpath_null+0x1a/0x1c
-> [    0.000000]  [<ffffffff810a8e59>] trace_hardirqs_on_caller+0xc3/0x178
-> [    0.000000]  [<ffffffff810a8f1b>] trace_hardirqs_on+0xd/0xf
-> [    0.000000]  [<ffffffff81cd3fe1>] panic+0x15e/0x1a3
-> [    0.000000]  [<ffffffff82783490>] reserve_trampoline_memory+0x46/0x72
-> [    0.000000]  [<ffffffff827801fe>] setup_arch+0x5b0/0xae3
-> [    0.000000]  [<ffffffff827cb3a0>] ? boot_command_line+0x0/0x800
-> [    0.000000]  [<ffffffff81cd4067>] ? printk+0x41/0x43
-> [    0.000000]  [<ffffffff827cb3a0>] ? boot_command_line+0x0/0x800
-> [    0.000000]  [<ffffffff8277bb0d>] start_kernel+0xd7/0x3e8
-> [    0.000000]  [<ffffffff8277b2cc>] x86_64_start_reservations+0x9c/0xa0
-> [    0.000000]  [<ffffffff8277b3e4>] x86_64_start_kernel+0x114/0x11b
-> [    0.000000] ---[ end trace a7919e7f17c0a725 ]---
