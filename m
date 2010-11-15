@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933359Ab0KORpY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 12:45:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37754 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933230Ab0KORpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 12:45:19 -0500
-Date: Mon, 15 Nov 2010 18:44:49 +0100
-From: Jakub Jelinek <jakub@redhat.com>
-To: Jim Bos <jim876@xs4all.nl>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        James Cloos <cloos@jhcloos.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
-        Dave Korn <dave.korn.cygwin@gmail.com>,
-        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-Message-ID: <20101115174449.GW29412@tyan-ft48-01.lab.bos.redhat.com>
-Reply-To: Jakub Jelinek <jakub@redhat.com>
-References: <m3lj52txaq.fsf@redhat.com>
- <4CD97A3D.1040602@xs4all.nl>
- <m31v6nmmr3.fsf@jhcloos.com>
- <AANLkTim2rCuF4p0719YQ3=0s7jhk5FOuTHHAeBWBhvR=@mail.gmail.com>
- <20101115085605.GE2583@sunsite.ms.mff.cuni.cz>
- <20101115100331.GG2583@sunsite.ms.mff.cuni.cz>
- <20101115105446.GD7269@basil.fritz.box>
- <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com>
- <20101115113739.GH7269@basil.fritz.box>
- <4CE16F86.40808@xs4all.nl>
+	id S933383Ab0KORpf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 12:45:35 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62338 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933227Ab0KORpa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 12:45:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE16F86.40808@xs4all.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <AANLkTin7Sfx5rnU3u7da5bQQiLTj9geOMht-x6z6kvid@mail.gmail.com>
+References: <1289669176.16461.12.camel@Joe-Laptop>
+	<AANLkTi=ut2O+mCbs1jOyg-aP=E+48h1B-MH8NxK5XyVf@mail.gmail.com>
+	<1289677904.16461.82.camel@Joe-Laptop>
+	<AANLkTikWEZLwx4khj_jFOqP+uy-TxgJGwsbxdtaCfbJq@mail.gmail.com>
+	<AANLkTik=mnFDXAyJ53_7FPfD5ETiYY8GjkE5pm0PJSBu@mail.gmail.com>
+	<AANLkTimoFGqKDYe24uc_2EHk-MLqxc4GGCCe7hPRJqbJ@mail.gmail.com>
+	<AANLkTin7Sfx5rnU3u7da5bQQiLTj9geOMht-x6z6kvid@mail.gmail.com>
+Date: Mon, 15 Nov 2010 12:45:28 -0500
+Message-ID: <AANLkTikG=brgFP3yuWqMp=4ntHV=kyuhCUODZNp4Uo6Y@mail.gmail.com>
+Subject: Re: [PATCH] Fix dmesg_restrict build failure with CONFIG_EMBEDDED=y
+ and CONFIG_PRINTK=n
+From: Eric Paris <eparis@parisplace.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Joe Perches <joe@perches.com>, Dan Rosenberg <drosenberg@vsecurity.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Eugene Teo <eugeneteo@kernel.org>, Kees Cook <kees.cook@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>,
+        LSM List <linux-security-module@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 06:36:06PM +0100, Jim Bos wrote:
-> On 11/15/2010 12:37 PM, Andi Kleen wrote:
-> See attached, note this is the vanilla 2.6.36 i8k.c (without any patch).
-> And to be 100% sure, if I build this (make drivers/char/i8k.ko) it won't
-> work.
-> 
-> [ The i8k.i is rather big, even gzipped 80k, not sure if it'll bounce ]
+On Mon, Nov 15, 2010 at 12:41 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> If the old rule should have been that you _have_
+> to call cap_syslog(), then just eviscerating that entirely and putting
+> it in the generic code is definitely the right thing.
 
-Please also say which exact gcc you are using.
+That is the rule for ALL of the hooks in commoncap.c.  The one time I
+tried to do something else *cough*mmap_min_addr*cough* I screwed it
+up.  I'll put a note in my todo list about looking into lifting all of
+commoncap.c into the callers.
 
-Note, I've compiled it with current 4.5 branch and made the function
-always_inline and still didn't see any issues in the *.optimized dump,
-regs.eax after the inline asm has always been compared to the constant
-that has been stored into regs.eax before the inline asm.
-
-	Jakub
+-Eric
