@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871Ab0KOQDW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 11:03:22 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:45935 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756897Ab0KOQDV (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 15 Nov 2010 11:03:21 -0500
-Date: Mon, 15 Nov 2010 11:02:45 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Xen-devel <xen-devel@lists.xensource.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: Re: [PATCH 3/3] xen/microcode: partially enable even for
- non-privileged kernels
-Message-ID: <20101115160245.GD345@dumpdata.com>
-References: <cover.1289519130.git.jeremy.fitzhardinge@citrix.com>
- <049ad0809c51dedebab0b8e4bfcf58f5f26375b7.1289519130.git.jeremy.fitzhardinge@citrix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <049ad0809c51dedebab0b8e4bfcf58f5f26375b7.1289519130.git.jeremy.fitzhardinge@citrix.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757892Ab0KOQES (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 11:04:18 -0500
+Received: from casper.infradead.org ([85.118.1.10]:34750 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754989Ab0KOQER convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 11:04:17 -0500
+Subject: Re: [RFC][PATCH v2 5/7] taskstats: Improve cumulative CPU time
+ accounting
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+In-Reply-To: <20101115165521.21baac60@mschwide.boeblingen.de.ibm.com>
+References: <20101111170352.732381138@linux.vnet.ibm.com>
+	 <20101111170815.404670062@linux.vnet.ibm.com>
+	 <20101113183810.GA9021@redhat.com>
+	 <20101115165521.21baac60@mschwide.boeblingen.de.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 15 Nov 2010 17:03:56 +0100
+Message-ID: <1289837036.2109.501.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 03:58:06PM -0800, Jeremy Fitzhardinge wrote:
-> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> 
-> Don't attempt to load microcode on non-privileged kernels.  Kernels
+On Mon, 2010-11-15 at 16:55 +0100, Martin Schwidefsky wrote:
+>  What we want is a low-overhead tool that precisely shows
+> where the cpu spent its time (or didn't because of steal time). The
+> granularity target is tenths of microseconds, something that should be
+> possible with decent hardware. 
 
-The previous patch had this:
+To what purpose? 
 
- if (!xen_initial_domain())
-+               return NULL;
-
-which pretty much made non-priviliged kernels not do any micro code loading.
-
-It sounds like this patch is just to not compile the Xen microcode code
-if CONFIG_DOM0 is not enabled?
-
-> compiled without privileged support just get vestigial Xen detection
-> to skip loading altogether; kernels with privileged support will
-> load microcode if running privileged.  In either case, the normal
-> Intel/AMD microcode loader is skipped under Xen.
