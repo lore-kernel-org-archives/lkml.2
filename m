@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933714Ab0KOUOO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 15:14:14 -0500
-Received: from mail.perches.com ([173.55.12.10]:1337 "EHLO mail.perches.com"
+	id S933726Ab0KOUOT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 15:14:19 -0500
+Received: from mail.perches.com ([173.55.12.10]:1363 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932556Ab0KOUOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 15:14:10 -0500
+	id S933708Ab0KOUON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 15:14:13 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Ramkrishna Vepa <ramkrishna.vepa@exar.com>,
-        Sivakumar Subramani <sivakumar.subramani@exar.com>,
-        Sreenivasa Honnur <sreenivasa.honnur@exar.com>,
-        Jon Mason <jon.mason@exar.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 06/11] drivers/net/s2io.c: Remove unnecessary casts of pci_get_drvdata
-Date: Mon, 15 Nov 2010 12:13:57 -0800
-Message-Id: <5add1304ab2cd7f730a81a85598ef7357b087a86.1289851770.git.joe@perches.com>
+Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 11/11] sound/pci/asihpi/hpioctl.c: Remove unnecessary casts of pci_get_drvdata
+Date: Mon, 15 Nov 2010 12:14:02 -0800
+Message-Id: <1741bc5f7050b5ebb7014b8d93fdb70490ec7f06.1289851770.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289851770.git.joe@perches.com>
 References: <cover.1289851770.git.joe@perches.com>
@@ -25,23 +22,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/s2io.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ sound/pci/asihpi/hpioctl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/s2io.c b/drivers/net/s2io.c
-index ecc25aa..0f4219c 100644
---- a/drivers/net/s2io.c
-+++ b/drivers/net/s2io.c
-@@ -8321,8 +8321,7 @@ mem_alloc_failed:
+diff --git a/sound/pci/asihpi/hpioctl.c b/sound/pci/asihpi/hpioctl.c
+index 62895a7..22dbd91 100644
+--- a/sound/pci/asihpi/hpioctl.c
++++ b/sound/pci/asihpi/hpioctl.c
+@@ -435,7 +435,7 @@ void __devexit asihpi_adapter_remove(struct pci_dev *pci_dev)
+ 	struct hpi_message hm;
+ 	struct hpi_response hr;
+ 	struct hpi_adapter *pa;
+-	pa = (struct hpi_adapter *)pci_get_drvdata(pci_dev);
++	pa = pci_get_drvdata(pci_dev);
  
- static void __devexit s2io_rem_nic(struct pci_dev *pdev)
- {
--	struct net_device *dev =
--		(struct net_device *)pci_get_drvdata(pdev);
-+	struct net_device *dev = pci_get_drvdata(pdev);
- 	struct s2io_nic *sp;
- 
- 	if (dev == NULL) {
+ 	hpi_init_message_response(&hm, &hr, HPI_OBJ_SUBSYSTEM,
+ 		HPI_SUBSYS_DELETE_ADAPTER);
 -- 
 1.7.3.1.g432b3.dirty
 
