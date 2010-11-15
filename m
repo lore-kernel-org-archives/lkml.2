@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab0KONaT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 08:30:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35038 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754535Ab0KONaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 08:30:18 -0500
-Date: Mon, 15 Nov 2010 14:30:14 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org,
-        Steve Wise <swise@chelsio.com>, Roland Dreier <rolandd@cisco.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>
-Subject: Re: [PATCH][trivial] infiniband: Only include linux/mutex.h once in
- drivers/infiniband/hw/cxgb4/iw_cxgb4.h .
-In-Reply-To: <alpine.LNX.2.00.1011072321150.26247@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1011151429480.7420@pobox.suse.cz>
-References: <alpine.LNX.2.00.1011072321150.26247@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756622Ab0KONiX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 08:38:23 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:52461 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756135Ab0KONiW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 08:38:22 -0500
+X-Sasl-enc: HOrWwqAgpHPJEouE1jmh7SR6bqds5h9BjykoikViPRr6 1289828301
+Subject: Re: autofs4 hang in 2.6.37-rc1
+From: Ian Kent <raven@themaw.net>
+To: Avi Kivity <avi@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, autofs@linux.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4CE13539.1020106@redhat.com>
+References: <4CDFDC2B.6040205@redhat.com> <4CE00194.3070601@redhat.com>
+	 <1289785533.3248.18.camel@localhost>  <201011150954.34289.arnd@arndb.de>
+	 <1289827341.3248.49.camel@localhost>  <4CE13539.1020106@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Nov 2010 21:38:16 +0800
+Message-ID: <1289828296.3248.54.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 7 Nov 2010, Jesper Juhl wrote:
-
-> Only include the header linux/mutex.h once inside 
-> drivers/infiniband/hw/cxgb4/iw_cxgb4.h
+On Mon, 2010-11-15 at 15:27 +0200, Avi Kivity wrote:
+> On 11/15/2010 03:22 PM, Ian Kent wrote:
+> > >  Ian, if you can prove that the lock is not needed, I think we shold
+> > >  just remove it.
+> >
+> > I don't think I can prove it but I will have a long look at the code.
+> > I don't think it is needed and I expect I'll recommend it be removed.
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  iw_cxgb4.h |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/infiniband/hw/cxgb4/iw_cxgb4.h b/drivers/infiniband/hw/cxgb4/iw_cxgb4.h
-> index 16032cd..42bb575 100644
-> --- a/drivers/infiniband/hw/cxgb4/iw_cxgb4.h
-> +++ b/drivers/infiniband/hw/cxgb4/iw_cxgb4.h
-> @@ -46,7 +46,6 @@
->  #include <linux/timer.h>
->  #include <linux/io.h>
->  #include <linux/kfifo.h>
-> -#include <linux/mutex.h>
+> I've been running with the lock removed for a while with no ill effect.  
+> Of course it doesn't prove anything but at least it's a workaround for me.
 
-The double include seems to be present in linux-next as of today. So I 
-have picked the patch up. Thanks,
+Yeah, I tried pretty hard over quite a long time, with the expectation
+that the BKL would be removed, to try and make the code independent of
+it. At one point patched the kernel to use the unlocked ioctl entry
+point during some development testing and found only one fix that was
+needed, although a lot has changed since then too.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Ian
+
+
