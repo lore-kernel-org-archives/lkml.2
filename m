@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856Ab0KONpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 08:45:15 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35347 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756453Ab0KONpN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 08:45:13 -0500
-Date: Mon, 15 Nov 2010 13:43:25 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, akpm <akpm@linux-foundation.org>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        x86@kernel.org
-Subject: Re: [PATCH -next] x86/mrst: force support code to be built
-Message-ID: <20101115134325.199ab1f3@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101113084437.a9707260.randy.dunlap@oracle.com>
-References: <20101112130547.c2a3c2c1.sfr@canb.auug.org.au>
-	<20101113084437.a9707260.randy.dunlap@oracle.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756807Ab0KONtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 08:49:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35851 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755612Ab0KONtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 08:49:09 -0500
+Date: Mon, 15 Nov 2010 14:49:06 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, Stefan Achatz <stefan_achatz@web.de>,
+        "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+        "Serge E. Hallyn" <serue@us.ibm.com>, Tejun Heo <tj@kernel.org>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Benjamin Thery <benjamin.thery@bull.net>
+Subject: Re: [PATCH 1/2] sysfs: Introducing sysfs_create_bin_group()
+In-Reply-To: <20101112200215.GD1299@core.coreip.homeip.net>
+Message-ID: <alpine.LNX.2.00.1011151447070.7420@pobox.suse.cz>
+References: <1289585918.2629.12.camel@neuromancer> <20101112192958.GA22233@suse.de> <20101112193817.GA1299@core.coreip.homeip.net> <20101112195010.GA23000@suse.de> <20101112200215.GD1299@core.coreip.homeip.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 13 Nov 2010 08:44:37 -0800
-Randy Dunlap <randy.dunlap@oracle.com> wrote:
+On Fri, 12 Nov 2010, Dmitry Torokhov wrote:
 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
+> > > > > Implemented group functions for easier creation of multiple binary sysfs
+> > > > > attributes similar to existing attribute_group handling functions.
+> > > > > The code reuses struct attribute_group instead of inventing a new struct
+> > > > > binary_attribute_group.
+> > > > > 
+> > > > > Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+> > > > 
+> > > > Looks good to me, nice job.
+> > > > 
+> > > > Dmitry, do you want to take this through your tree as the mouse driver
+> > > > change needs it?  If so, feel free to do so and add a:
+> > > > 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > > > 
+> > > > to the patch.
+> > > > 
+> > > > If not, I'll be glad to take it, and the mouse driver change through my
+> > > > tree if needed.
+> > > > 
+> > > > Just let me know which is easier for you.
+> > > > 
+> > > 
+> > > Actually the driver lives in hid so it's up to Jiri how he wants to
+> > > handle this.
+> > 
+> > Ah.  He's on vacation for a few weeks so I guess I'll take this for now.
+> > 
 > 
-> Fix mrst.c build: make sure that its called functions are built.
-> 
-> arch/x86/built-in.o: In function `mrst_reboot':
-> mrst.c:(.text+0x2250b): undefined reference to `intel_scu_ipc_simple_command'
-> arch/x86/built-in.o: In function `mrst_power_off':
-> mrst.c:(.text+0x2252e): undefined reference to `intel_scu_ipc_simple_command'
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> ---
->  arch/x86/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux-next-20101112.orig/arch/x86/Kconfig
-> +++ linux-next-20101112/arch/x86/Kconfig
-> @@ -387,6 +387,7 @@ config X86_MRST
->  	select APB_TIMER
->  	select I2C
->  	select SPI
-> +	select X86_PLATFORM_DEVICES
+> Those Europeans with their long vacations, geeze... Well, I hope he's
+> having fun ;)
 
-We need the SCU so in fact we really want to select that. I'll send a
-patch to Ingo.
+Oh definitely. We haven't expected snow and ice already being there in 
+White Mountain :) Quite a fun.
+
+sysfs_create_bin_group() definitely looks like an improvement. I'd like to 
+take it together with the Roccat driver patch, as it depends on it. Greg 
+-- would you mind me taking it through my tree with your signoff?
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
