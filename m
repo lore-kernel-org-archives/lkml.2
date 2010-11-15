@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755143Ab0KOJvw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 04:51:52 -0500
-Received: from stinky.trash.net ([213.144.137.162]:61105 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753516Ab0KOJvu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 04:51:50 -0500
-Message-ID: <4CE102B6.9020707@trash.net>
-Date: Mon, 15 Nov 2010 10:51:50 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+	id S1755055Ab0KOJxA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 04:53:00 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:38633 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753419Ab0KOJw7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 04:52:59 -0500
+Date: Mon, 15 Nov 2010 09:52:44 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 40/44] mm/hugetlb.c: Remove unnecessary semicolons
+Message-ID: <20101115095244.GI27362@csn.ul.ie>
+References: <cover.1289789604.git.joe@perches.com> <59705f848d35b12ace640f92afcffea02cee0976.1289789605.git.joe@perches.com>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Kevin Cernekee <cernekee@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH/RFC] netfilter: nf_conntrack_sip: Handle quirky Cisco
- phones
-References: <28d666269c390965f1a4edca42f93c12@localhost>	 <1289725175.2743.65.camel@edumazet-laptop>	 <AANLkTik4PLga8mX73c8iONPeOtpDiuDhfu3xiPmF07jC@mail.gmail.com> <1289764664.2743.110.camel@edumazet-laptop>
-In-Reply-To: <1289764664.2743.110.camel@edumazet-laptop>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <59705f848d35b12ace640f92afcffea02cee0976.1289789605.git.joe@perches.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.11.2010 20:57, Eric Dumazet wrote:
-> Le dimanche 14 novembre 2010 à 10:33 -0800, Kevin Cernekee a écrit :
->> On Sun, Nov 14, 2010 at 12:59 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->>> I would like to get an exact SIP exchange to make sure their is not
->>> another way to handle this without adding a "Cisco" string somewhere...
->>>
->>> Please provide a pcap or tcpdump -A
->>
->> Existing nf_nat_sip: phone sends unauthenticated REGISTER requests
->> over and over again, because it is not seeing the replies sent back to
->> port 50070:
->>
->> 10:05:53.496479 IP 192.168.2.28.50070 > 67.215.241.250.5060: SIP, length: 723
->> E`...[..@.r.....C...........REGISTER sip:losangeles.voip.ms SIP/2.0
->> Via: SIP/2.0/
->>
+On Sun, Nov 14, 2010 at 07:04:59PM -0800, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  mm/hugetlb.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> Hmm, partial tcpdump... you should use" tcpdump -s 1000 -A" 
-> 
-> We miss the
-> 
-> Via: SIP/2.0/UDP 192.168.2.28:5060;branch=xxxxxxxx
-> 
-> 
-> Maybe a fix would be to use this "5060" port, instead of hardcoding it
-> like you did ?
 
-I agree, using the Via header to route the response makes more sense.
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index c4a3558..8875242 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -540,7 +540,7 @@ static struct page *dequeue_huge_page_vma(struct hstate *h,
+>  
+>  	/* If reserves cannot be used, ensure enough pages are in the pool */
+>  	if (avoid_reserve && h->free_huge_pages - h->resv_huge_pages == 0)
+> -		goto err;;
+> +		goto err;
+>  
+>  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+>  						MAX_NR_ZONES - 1, nodemask) {
+> -- 
+> 1.7.3.1.g432b3.dirty
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
