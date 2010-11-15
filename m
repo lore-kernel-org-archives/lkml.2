@@ -1,197 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758627Ab0KOVPk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 16:15:40 -0500
-Received: from mail.perches.com ([173.55.12.10]:1375 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758460Ab0KOVMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 16:12:42 -0500
-From: Joe Perches <joe@perches.com>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 01/10] drivers/isdn/i4l: Remove unnecessary casts of netdev_priv
-Date: Mon, 15 Nov 2010 13:12:24 -0800
-Message-Id: <d653560dec1888cb09d6166a9be3a9b3eeb1cfc9.1289855436.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
-In-Reply-To: <cover.1289855436.git.joe@perches.com>
-References: <cover.1289855436.git.joe@perches.com>
+	id S933121Ab0KOVXq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 16:23:46 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:11184 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755003Ab0KOVXo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 16:23:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hG2L5iBX8++2Qa5SN0/0Rb0/198sR3F84USX4mLoZahtQ7/hbJT+bca2qAGcq1y3Jk
+         0C1ksX0GN6mymo+acD4Q==
+MIME-Version: 1.0
+In-Reply-To: <20101115195439.GA1569@arch.trippelsdorf.de>
+References: <20101110152519.GA1626@arch.trippelsdorf.de>
+	<20101110154057.GA2191@arch.trippelsdorf.de>
+	<alpine.DEB.2.00.1011101534370.30164@router.home>
+	<20101112122003.GA1572@arch.trippelsdorf.de>
+	<20101115123846.GA30047@arch.trippelsdorf.de>
+	<20101115195439.GA1569@arch.trippelsdorf.de>
+Date: Mon, 15 Nov 2010 13:23:41 -0800
+Message-ID: <AANLkTikWaADzUrqKhZ9gviW8sk8mPjC9kKFJyitvzQmx@mail.gmail.com>
+Subject: Re: BUG: Bad page state in process (current git)
+From: Hugh Dickins <hughd@google.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/isdn/i4l/isdn_concap.c |    2 +-
- drivers/isdn/i4l/isdn_net.c    |   20 ++++++++++----------
- drivers/isdn/i4l/isdn_ppp.c    |   12 ++++++------
- 3 files changed, 17 insertions(+), 17 deletions(-)
+On Mon, Nov 15, 2010 at 11:54 AM, Markus Trippelsdorf
+<markus@trippelsdorf.de> wrote:
+> On 2010.11.15 at 13:38 +0100, Markus Trippelsdorf wrote:
+>> On 2010.11.12 at 13:20 +0100, Markus Trippelsdorf wrote:
+>> >
+>> > Yes. Fortunately the BUG is gone since I pulled the upcoming drm fixes
+>>
+>> No. I happend again today (with those fixes already applied):
+>>
+>> BUG: Bad page state in process knode  pfn:7f0a8
+>> page:ffffea0001bca4c0 count:0 mapcount:0 mapping:          (null) index:0x0
+>> page flags: 0x4000000000000008(uptodate)
+>> Pid: 18310, comm: knode Not tainted 2.6.37-rc1-00549-gae712bf-dirty #16
+>> Call Trace:
+>>  [<ffffffff810a9022>] ? bad_page+0x92/0xe0
+>>  [<ffffffff810aa240>] ? get_page_from_freelist+0x4b0/0x570
+>>  [<ffffffff8102e50e>] ? apic_timer_interrupt+0xe/0x20
+>>  [<ffffffff810aa413>] ? __alloc_pages_nodemask+0x113/0x6b0
+>>  [<ffffffff810a2dd4>] ? file_read_actor+0xc4/0x190
+>>  [<ffffffff810a4a70>] ? generic_file_aio_read+0x560/0x6b0
+>>  [<ffffffff810bdf8d>] ? handle_mm_fault+0x6bd/0x970
+>>  [<ffffffff8104b1d0>] ? do_page_fault+0x120/0x410
+>>  [<ffffffff810c3d85>] ? do_brk+0x275/0x360
+>>  [<ffffffff81452d8f>] ? page_fault+0x1f/0x30
+>> Disabling lock debugging due to kernel taint
+>
+> And another one. But this time it seems to point to ext4:
+>
+> BUG: Bad page state in process rm  pfn:52e54
+> page:ffffea0001222260 count:0 mapcount:0 mapping:          (null) index:0x0
+> page flags: 0x4000000000000008(uptodate)
+> Pid: 2084, comm: rm Not tainted 2.6.37-rc1-00549-gae712bf-dirty #23
+> Call Trace:
+>  [<ffffffff810a9022>] ? bad_page+0x92/0xe0
+>  [<ffffffff810aa240>] ? get_page_from_freelist+0x4b0/0x570
+>  [<ffffffff81142ae6>] ? ext4_ext_put_in_cache+0x46/0x90
+>  [<ffffffff810aa413>] ? __alloc_pages_nodemask+0x113/0x6b0
+>  [<ffffffff8118f0c7>] ? number.clone.2+0x2b7/0x2f0
+>  [<ffffffff810a38d5>] ? find_get_page+0x75/0xb0
+>  [<ffffffff810a4011>] ? find_or_create_page+0x51/0xb0
+>  [<ffffffff810ff4d7>] ? __getblk+0xd7/0x260
+>  [<ffffffff8113158f>] ? ext4_getblk+0x8f/0x1e0
+>  [<ffffffff811316ed>] ? ext4_bread+0xd/0x70
+>  [<ffffffff811369f4>] ? htree_dirblock_to_tree+0x34/0x190
+>  [<ffffffff8113870f>] ? ext4_htree_fill_tree+0x9f/0x250
+>  [<ffffffff810e109d>] ? do_filp_open+0x12d/0x5e0
+>  [<ffffffff811289ed>] ? ext4_readdir+0x14d/0x5a0
+>  [<ffffffff810e4e80>] ? filldir+0x0/0xd0
+>  [<ffffffff810e50a8>] ? vfs_readdir+0xa8/0xd0
+>  [<ffffffff810e4e80>] ? filldir+0x0/0xd0
+>  [<ffffffff810e51b1>] ? sys_getdents+0x81/0xf0
+>  [<ffffffff8102dc2b>] ? system_call_fastpath+0x16/0x1b
+> Disabling lock debugging due to kernel taint
+>
+> I don't know. Could a possible bug in linux/fs/ext4/page-io.c be
+> responsible for something like this?
 
-diff --git a/drivers/isdn/i4l/isdn_concap.c b/drivers/isdn/i4l/isdn_concap.c
-index 46048e5..d568689 100644
---- a/drivers/isdn/i4l/isdn_concap.c
-+++ b/drivers/isdn/i4l/isdn_concap.c
-@@ -61,7 +61,7 @@ static int isdn_concap_dl_data_req(struct concap_proto *concap, struct sk_buff *
- static int isdn_concap_dl_connect_req(struct concap_proto *concap)
- {
- 	struct net_device *ndev = concap -> net_dev;
--	isdn_net_local *lp = (isdn_net_local *) netdev_priv(ndev);
-+	isdn_net_local *lp = netdev_priv(ndev);
- 	int ret;
- 	IX25DEBUG( "isdn_concap_dl_connect_req: %s \n", ndev -> name);
- 
-diff --git a/drivers/isdn/i4l/isdn_net.c b/drivers/isdn/i4l/isdn_net.c
-index 26d44c3..afeede7 100644
---- a/drivers/isdn/i4l/isdn_net.c
-+++ b/drivers/isdn/i4l/isdn_net.c
-@@ -827,7 +827,7 @@ isdn_net_dial(void)
- void
- isdn_net_hangup(struct net_device *d)
- {
--	isdn_net_local *lp = (isdn_net_local *) netdev_priv(d);
-+	isdn_net_local *lp = netdev_priv(d);
- 	isdn_ctrl cmd;
- #ifdef CONFIG_ISDN_X25
- 	struct concap_proto *cprot = lp->netdev->cprot;
-@@ -1052,7 +1052,7 @@ isdn_net_xmit(struct net_device *ndev, struct sk_buff *skb)
- {
- 	isdn_net_dev *nd;
- 	isdn_net_local *slp;
--	isdn_net_local *lp = (isdn_net_local *) netdev_priv(ndev);
-+	isdn_net_local *lp = netdev_priv(ndev);
- 	int retv = NETDEV_TX_OK;
- 
- 	if (((isdn_net_local *) netdev_priv(ndev))->master) {
-@@ -1116,7 +1116,7 @@ isdn_net_xmit(struct net_device *ndev, struct sk_buff *skb)
- static void
- isdn_net_adjust_hdr(struct sk_buff *skb, struct net_device *dev)
- {
--	isdn_net_local *lp = (isdn_net_local *) netdev_priv(dev);
-+	isdn_net_local *lp = netdev_priv(dev);
- 	if (!skb)
- 		return;
- 	if (lp->p_encap == ISDN_NET_ENCAP_ETHER) {
-@@ -1131,7 +1131,7 @@ isdn_net_adjust_hdr(struct sk_buff *skb, struct net_device *dev)
- 
- static void isdn_net_tx_timeout(struct net_device * ndev)
- {
--	isdn_net_local *lp = (isdn_net_local *) netdev_priv(ndev);
-+	isdn_net_local *lp = netdev_priv(ndev);
- 
- 	printk(KERN_WARNING "isdn_tx_timeout dev %s dialstate %d\n", ndev->name, lp->dialstate);
- 	if (!lp->dialstate){
-@@ -1165,7 +1165,7 @@ static void isdn_net_tx_timeout(struct net_device * ndev)
- static netdev_tx_t
- isdn_net_start_xmit(struct sk_buff *skb, struct net_device *ndev)
- {
--	isdn_net_local *lp = (isdn_net_local *) netdev_priv(ndev);
-+	isdn_net_local *lp = netdev_priv(ndev);
- #ifdef CONFIG_ISDN_X25
- 	struct concap_proto * cprot = lp -> netdev -> cprot;
- /* At this point hard_start_xmit() passes control to the encapsulation
-@@ -1347,7 +1347,7 @@ isdn_net_close(struct net_device *dev)
- static struct net_device_stats *
- isdn_net_get_stats(struct net_device *dev)
- {
--	isdn_net_local *lp = (isdn_net_local *) netdev_priv(dev);
-+	isdn_net_local *lp = netdev_priv(dev);
- 	return &lp->stats;
- }
- 
-@@ -1426,7 +1426,7 @@ isdn_net_ciscohdlck_alloc_skb(isdn_net_local *lp, int len)
- static int
- isdn_ciscohdlck_dev_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- {
--	isdn_net_local *lp = (isdn_net_local *) netdev_priv(dev);
-+	isdn_net_local *lp = netdev_priv(dev);
- 	unsigned long len = 0;
- 	unsigned long expires = 0;
- 	int tmp = 0;
-@@ -1493,7 +1493,7 @@ isdn_ciscohdlck_dev_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- static int isdn_net_ioctl(struct net_device *dev,
- 			  struct ifreq *ifr, int cmd)
- {
--	isdn_net_local *lp = (isdn_net_local *) netdev_priv(dev);
-+	isdn_net_local *lp = netdev_priv(dev);
- 
- 	switch (lp->p_encap) {
- #ifdef CONFIG_ISDN_PPP
-@@ -1786,7 +1786,7 @@ isdn_net_ciscohdlck_receive(isdn_net_local *lp, struct sk_buff *skb)
- static void
- isdn_net_receive(struct net_device *ndev, struct sk_buff *skb)
- {
--	isdn_net_local *lp = (isdn_net_local *) netdev_priv(ndev);
-+	isdn_net_local *lp = netdev_priv(ndev);
- 	isdn_net_local *olp = lp;	/* original 'lp' */
- #ifdef CONFIG_ISDN_X25
- 	struct concap_proto *cprot = lp -> netdev -> cprot;
-@@ -1800,7 +1800,7 @@ isdn_net_receive(struct net_device *ndev, struct sk_buff *skb)
- 		 * handle master's statistics and hangup-timeout
- 		 */
- 		ndev = lp->master;
--		lp = (isdn_net_local *) netdev_priv(ndev);
-+		lp = netdev_priv(ndev);
- 		lp->stats.rx_packets++;
- 		lp->stats.rx_bytes += skb->len;
- 	}
-diff --git a/drivers/isdn/i4l/isdn_ppp.c b/drivers/isdn/i4l/isdn_ppp.c
-index fe824e0..97c5cc2 100644
---- a/drivers/isdn/i4l/isdn_ppp.c
-+++ b/drivers/isdn/i4l/isdn_ppp.c
-@@ -1221,7 +1221,7 @@ isdn_ppp_xmit(struct sk_buff *skb, struct net_device *netdev)
- 	struct ippp_struct *ipt,*ipts;
- 	int slot, retval = NETDEV_TX_OK;
- 
--	mlp = (isdn_net_local *) netdev_priv(netdev);
-+	mlp = netdev_priv(netdev);
- 	nd = mlp->netdev;       /* get master lp */
- 
- 	slot = mlp->ppp_slot;
-@@ -1985,7 +1985,7 @@ isdn_ppp_dev_ioctl_stats(int slot, struct ifreq *ifr, struct net_device *dev)
- {
- 	struct ppp_stats __user *res = ifr->ifr_data;
- 	struct ppp_stats t;
--	isdn_net_local *lp = (isdn_net_local *) netdev_priv(dev);
-+	isdn_net_local *lp = netdev_priv(dev);
- 
- 	if (!access_ok(VERIFY_WRITE, res, sizeof(struct ppp_stats)))
- 		return -EFAULT;
-@@ -2024,7 +2024,7 @@ isdn_ppp_dev_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
- {
- 	int error=0;
- 	int len;
--	isdn_net_local *lp = (isdn_net_local *) netdev_priv(dev);
-+	isdn_net_local *lp = netdev_priv(dev);
- 
- 
- 	if (lp->p_encap != ISDN_NET_ENCAP_SYNCPPP)
-@@ -2091,7 +2091,7 @@ isdn_ppp_dial_slave(char *name)
- 
- 	sdev = lp->slave;
- 	while (sdev) {
--		isdn_net_local *mlp = (isdn_net_local *) netdev_priv(sdev);
-+		isdn_net_local *mlp = netdev_priv(sdev);
- 		if (!(mlp->flags & ISDN_NET_CONNECTED))
- 			break;
- 		sdev = mlp->slave;
-@@ -2099,7 +2099,7 @@ isdn_ppp_dial_slave(char *name)
- 	if (!sdev)
- 		return 2;
- 
--	isdn_net_dial_req((isdn_net_local *) netdev_priv(sdev));
-+	isdn_net_dial_req(netdev_priv(sdev));
- 	return 0;
- #else
- 	return -1;
-@@ -2122,7 +2122,7 @@ isdn_ppp_hangup_slave(char *name)
- 
- 	sdev = lp->slave;
- 	while (sdev) {
--		isdn_net_local *mlp = (isdn_net_local *) netdev_priv(sdev);
-+		isdn_net_local *mlp = netdev_priv(sdev);
- 
- 		if (mlp->slave) { /* find last connected link in chain */
- 			isdn_net_local *nlp = ISDN_SLAVE_PRIV(mlp);
--- 
-1.7.3.1.g432b3.dirty
+I do think you're right: every one of your "Bad page state" reports
+has been complaining only about the PageUptodate bit being set, and
+that SetPageUpdate() in ext4_end_bio() does look suspicious, coming
+after the put_page().
 
+The more suspicious given that other races have been noticed in
+precisely that area, and fixed with put_io_page() in the current git
+tree.
+
+Perhaps that fixes your problem, but my guess would be not: I suspect
+the "if (!partial_write) SetPageUpdate(page);" should be done before
+the block (or put_io_page) which does the put_page().
+
+Hugh
