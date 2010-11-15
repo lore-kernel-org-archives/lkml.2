@@ -1,94 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757368Ab0KOOZd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 09:25:33 -0500
-Received: from king.tilera.com ([72.1.168.226]:30224 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757075Ab0KOOZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 09:25:31 -0500
-Message-Id: <201011151425.oAFEPU3W005682@farm-0010.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Mon, 15 Nov 2010 09:18:49 -0500
-Subject: [PATCH] arch/tile: fix rwlock so would-be write lockers don't block new readers
-References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
-	<1289489007.17691.1310.camel@edumazet-laptop>
-	<AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>
-	<ZXmP8hjgLHA.4648@exchange1.tad.internal.tilera.com>
-	<4CDF1945.8090101@tilera.com>
-	<AANLkTind92uwcigzmDn8yn9a22exDy7zcreGQ5-6NLV-@mail.gmail.com>
-In-Reply-To: <AANLkTind92uwcigzmDn8yn9a22exDy7zcreGQ5-6NLV-@mail.gmail.com>
-To: <linux-kernel@vger.kernel.org>
-CC: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>,
-        Cypher Wu <cypher.w@gmail.com>
-X-OriginalArrivalTime: 15 Nov 2010 14:25:30.0514 (UTC) FILETIME=[F4CA1720:01CB84D0]
+	id S1757220Ab0KOO3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 09:29:19 -0500
+Received: from mail.digidescorp.com ([66.244.163.200]:8700 "EHLO
+	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756055Ab0KOO3S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 09:29:18 -0500
+X-Spam-Processed: digidescorp.com, Mon, 15 Nov 2010 08:29:17 -0600
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=19354ecd95=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][RESEND] nommu: yield CPU periodically while disposing
+ large VM
+From: "Steven J. Magnani" <steve@digidescorp.com>
+Reply-To: steve@digidescorp.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Greg Ungerer <gerg@snapgear.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+In-Reply-To: <20101111184059.5744a42f.akpm@linux-foundation.org>
+References: <1289507596-17613-1-git-send-email-steve@digidescorp.com>
+	 <20101111184059.5744a42f.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Digital Design Corporation
+Date: Mon, 15 Nov 2010 08:29:11 -0600
+Message-ID: <1289831351.2524.15.camel@iscandar.digidescorp.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This avoids a deadlock in the IGMP code where one core gets a read
-lock, another core starts trying to get a write lock (thus blocking
-new readers), and then the first core tries to recursively re-acquire
-the read lock.
+On Thu, 2010-11-11 at 18:40 -0800, Andrew Morton wrote:
+> On Thu, 11 Nov 2010 14:33:16 -0600 "Steven J. Magnani" <steve@digidescorp.com> wrote:
+> 
+> > --- a/mm/nommu.c	2010-10-21 07:42:23.000000000 -0500
+> > +++ b/mm/nommu.c	2010-10-21 07:46:50.000000000 -0500
+> > @@ -1656,6 +1656,7 @@ SYSCALL_DEFINE2(munmap, unsigned long, a
+> >  void exit_mmap(struct mm_struct *mm)
+> >  {
+> >  	struct vm_area_struct *vma;
+> > +	unsigned long next_yield = jiffies + HZ;
+> >  
+> >  	if (!mm)
+> >  		return;
+> > @@ -1668,6 +1669,11 @@ void exit_mmap(struct mm_struct *mm)
+> >  		mm->mmap = vma->vm_next;
+> >  		delete_vma_from_mm(vma);
+> >  		delete_vma(mm, vma);
+> > +		/* Yield periodically to prevent watchdog timeout */
+> > +		if (time_after(jiffies, next_yield)) {
+> > +			cond_resched();
+> > +			next_yield = jiffies + HZ;
+> > +		}
+> >  	}
+> >  
+> >  	kleave("");
+> 
+[snip]
+> cond_resched() is pretty efficient and one second is still
+> a very long time.  I suspect you don't need the ratelimiting at all?
 
-We still try to preserve some degree of balance by giving priority
-to additional write lockers that come along while the lock is held
-for write, so they can all complete quickly and return the lock to
-the readers.
+Probably not, but the issue was that disposal of "large" VMs can starve
+the system. Since these are not the norm (otherwise this would have been
+fixed long ago) I was attempting to limit the impact on more
+"normal"-sized VMs. Responsiveness is not great with a one-second
+ratelimit, and as KOSAKI Motohiro points out this fix won't work on
+systems with short watchdog intervals. I assumed that these were not
+common.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
-This should apply relatively cleanly to 2.6.26.7 source code too.
+As efficient as schedule() may be, it still scares me to call it on
+reclaim of every block of memory allocated by a terminating process,
+particularly on the relatively slow processors that inhabit NOMMU land.
+It wasn't obvious to me that it has a quick exit. But since we are
+talking about sharing the CPU with other processes perhaps this is only
+an issue in an OOM scenario, when fast reclaim might be more important.
 
- arch/tile/lib/spinlock_32.c |   29 ++++++++++++++++++-----------
- 1 files changed, 18 insertions(+), 11 deletions(-)
+I can certainly respin the patch to call cond_resched() unconditionally
+if that's the consensus.
 
-diff --git a/arch/tile/lib/spinlock_32.c b/arch/tile/lib/spinlock_32.c
-index 485e24d..5cd1c40 100644
---- a/arch/tile/lib/spinlock_32.c
-+++ b/arch/tile/lib/spinlock_32.c
-@@ -167,23 +167,30 @@ void arch_write_lock_slow(arch_rwlock_t *rwlock, u32 val)
- 	 * when we compare them.
- 	 */
- 	u32 my_ticket_;
-+	u32 iterations = 0;
- 
--	/* Take out the next ticket; this will also stop would-be readers. */
--	if (val & 1)
--		val = get_rwlock(rwlock);
--	rwlock->lock = __insn_addb(val, 1 << WR_NEXT_SHIFT);
-+	/*
-+	 * Wait until there are no readers, then bump up the next
-+	 * field and capture the ticket value.
-+	 */
-+	for (;;) {
-+		if (!(val & 1)) {
-+			if ((val >> RD_COUNT_SHIFT) == 0)
-+				break;
-+			rwlock->lock = val;
-+		}
-+		delay_backoff(iterations++);
-+		val = __insn_tns((int *)&rwlock->lock);
-+	}
- 
--	/* Extract my ticket value from the original word. */
-+	/* Take out the next ticket and extract my ticket value. */
-+	rwlock->lock = __insn_addb(val, 1 << WR_NEXT_SHIFT);
- 	my_ticket_ = val >> WR_NEXT_SHIFT;
- 
--	/*
--	 * Wait until the "current" field matches our ticket, and
--	 * there are no remaining readers.
--	 */
-+	/* Wait until the "current" field matches our ticket. */
- 	for (;;) {
- 		u32 curr_ = val >> WR_CURR_SHIFT;
--		u32 readers = val >> RD_COUNT_SHIFT;
--		u32 delta = ((my_ticket_ - curr_) & WR_MASK) + !!readers;
-+		u32 delta = ((my_ticket_ - curr_) & WR_MASK);
- 		if (likely(delta == 0))
- 			break;
- 
--- 
-1.6.5.2
+Regards,
+------------------------------------------------------------------------
+ Steven J. Magnani               "I claim this network for MARS!
+ www.digidescorp.com              Earthling, return my space modulator!"
+
+ #include <standard.disclaimer>
+
 
