@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab0KOFyY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 00:54:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:9848 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752669Ab0KOFyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 00:54:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,198,1288594800"; 
-   d="scan'208";a="677477334"
-Date: Mon, 15 Nov 2010 13:54:20 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: "Tang, Feng" <feng.tang@intel.com>
-Cc: linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] jbd2: avoid the concurrent data writeback
-Message-ID: <20101115055420.GA21785@localhost>
-References: <1289827533-2576-1-git-send-email-feng.tang@intel.com>
+	id S1753789Ab0KOGH7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 01:07:59 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48378 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104Ab0KOGH6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 01:07:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=lPI3QntRHObkYEhx5lpnchXhmyV5O5k40L0dNQWyao6qX5bcQpy0nl8i7JOtfWlM3+
+         3KKwp0hLNf8F2nk17bN+6CvunMPxlBFdqa1rsAy8JO0zXhwFCjGcByzo40hVbsna3lg2
+         aALz6jiEnQXPg/kjbrv7FYquwH1nw8jRkdeWw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289827533-2576-1-git-send-email-feng.tang@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101114140920.E013.A69D9226@jp.fujitsu.com>
+References: <20101109162525.BC87.A69D9226@jp.fujitsu.com>
+	<877hgmr72o.fsf@gmail.com>
+	<20101114140920.E013.A69D9226@jp.fujitsu.com>
+Date: Mon, 15 Nov 2010 15:07:57 +0900
+Message-ID: <AANLkTim59Qx6TsvXnTBL5Lg6JorbGaqx3KsdBDWO04X9@mail.gmail.com>
+Subject: Re: fadvise DONTNEED implementation (or lack thereof)
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Ben Gamari <bgamari.foss@gmail.com>, linux-kernel@vger.kernel.org,
+        rsync@lists.samba.org, linux-mm@kvack.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[add CC to mailing lists]
+On Sun, Nov 14, 2010 at 2:09 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> On Tue,  9 Nov 2010 16:28:02 +0900 (JST), KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+>> > So, I don't think application developers will use fadvise() aggressively
+>> > because we don't have a cross platform agreement of a fadvice behavior.
+>> >
+>> I strongly disagree. For a long time I have been trying to resolve
+>> interactivity issues caused by my rsync-based backup script. Many kernel
+>> developers have said that there is nothing the kernel can do without
+>> more information from user-space (e.g. cgroups, madvise). While cgroups
+>> help, the fix is round-about at best and requires configuration where
+>> really none should be necessary. The easiest solution for everyone
+>> involved would be for rsync to use FADV_DONTNEED. The behavior doesn't
+>> need to be perfectly consistent between platforms for the flag to be
+>> useful so long as each implementation does something sane to help
+>> use-once access patterns.
+>>
+>> People seem to mention frequently that there are no users of
+>> FADV_DONTNEED and therefore we don't need to implement it. It seems like
+>> this is ignoring an obvious catch-22. Currently rsync has no fadvise
+>> support at all, since using[1] the implemented hints to get the desired
+>> effect is far too complicated^M^M^M^Mhacky to be considered
+>> merge-worthy. Considering the number of Google hits returned for
+>> fadvise, I wouldn't be surprised if there were countless other projects
+>> with this same difficulty. We want to be able to tell the kernel about
+>> our useage patterns, but the kernel won't listen.
+>
+> Because we have an alternative solution already. please try memcgroup :)
 
-Tang,
+I think memcg could be a solution of them but fundamental solution is
+that we have to cure it in VM itself.
+I feel it's absolutely absurd to enable and use memcg for amending it.
 
-Good catch!
+I wonder what's the problem in Peter's patch 'drop behind'.
+http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg179576.html
 
-On Mon, Nov 15, 2010 at 09:25:33PM +0800, Tang, Feng wrote:
-> When dd a big file to an ext4 partition, it is very likely to happen
-> that both the background flush thread and kjounald try to do data
-> writeback for it, and ext4_witepage may be called 100, 000 times by
-> journal_submit_inode_data_buffers() without really writing one page
-> back (skipped), as those pages haven't had disk blocks allocated yet.
+Could anyone tell me why it can't accept upstream?
 
-The above changelog could show a bit more details (to help me
-understand it :).
-
-Does it happen frequently and hence has measurable overheads?
-
-Is it safe to skip the inode? Another alternative is to wait for it:
-with inode_wait_for_writeback(inode).
-
-> This could be find by a simple test case with ftrace:
-> $ sync;
-> $ echo 40960 > buffer_size_kb;echo 1 > events/writeback/enable;echo 1 > events/jbd2/enable;echo 1 > events/ext4/enable;
-> $ dd if=/dev/zero of=/home/test/1g.bin bs=1M count=1024;sync;
-> $ cat trace > /home/test/jbd2_ext4_1g_dd.log
-> 
-> This patch will check if the inode is under data syncing, if yes then
-> don't start the writeback from kjournald
-> 
-> Signed-off-by: Feng Tang <feng.tang@intel.com>
-> ---
->  fs/jbd2/commit.c |    8 ++++++++
->  1 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-> index f3ad159..8a1978d 100644
-> --- a/fs/jbd2/commit.c
-> +++ b/fs/jbd2/commit.c
-> @@ -181,6 +181,14 @@ static int journal_submit_inode_data_buffers(struct address_space *mapping)
->  		.range_end = i_size_read(mapping->host),
->  	};
->  
-> +	spin_lock(&inode_lock);
-> +	/* If this inode is under data syncing, then just quit */
-
-Comments should go above the whole code block. And the above comment
-does not really say anything. Say something *why* code like this
-rather than *what* the code is doing. 
-
-> +	if (mapping->host->i_state & I_SYNC) {
-> +		spin_unlock(&inode_lock);
-> +		return 0;
-> +	}
-> +	spin_unlock(&inode_lock);
-> +
->  	ret = generic_writepages(mapping, &wbc);
->  	return ret;
->  }
-
-Thanks,
-Fengguang
+-- 
+Kind regards,
+Minchan Kim
