@@ -1,144 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933696Ab0KOUWn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 15:22:43 -0500
-Received: from smtp-vbr6.xs4all.nl ([194.109.24.26]:2481 "EHLO
-	smtp-vbr6.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932927Ab0KOUWm (ORCPT
+	id S933747Ab0KOUYo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 15:24:44 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:42743 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932737Ab0KOUYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 15:22:42 -0500
-Message-ID: <4CE1968D.3050706@xs4all.nl>
-Date: Mon, 15 Nov 2010 21:22:37 +0100
-From: Jim Bos <jim876@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101106 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Jakub Jelinek <jakub@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        James Cloos <cloos@jhcloos.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andreas Schwab <schwab@redhat.com>, Michael Matz <matz@suse.de>,
-        Dave Korn <dave.korn.cygwin@gmail.com>,
-        Richard Guenther <richard.guenther@gmail.com>, gcc@gcc.gnu.org
-Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
-References: <20101115100331.GG2583@sunsite.ms.mff.cuni.cz> <20101115105446.GD7269@basil.fritz.box> <20101115111642.GU29412@tyan-ft48-01.lab.bos.redhat.com> <AANLkTi=jwrt2VE5tnL9NR2WhGDnQtv+k6rapnHfsy_aL@mail.gmail.com> <4CE17098.8090000@xs4all.nl> <AANLkTimEw0U5TqMcmoeShXQ67kqp32hp5fwd2oRQhWo2@mail.gmail.com> <4CE17C4B.1070305@xs4all.nl> <20101115185848.GI2583@sunsite.ms.mff.cuni.cz> <20101115191248.GY29412@tyan-ft48-01.lab.bos.redhat.com> <AANLkTikeYLrqXhvTP_uuKnKhy=k7pAQCbONJdKBc838O@mail.gmail.com> <20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>
-In-Reply-To: <20101115195115.GZ29412@tyan-ft48-01.lab.bos.redhat.com>
-Content-Type: multipart/mixed;
- boundary="------------040901080504060204070409"
+	Mon, 15 Nov 2010 15:24:43 -0500
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Greg KH <greg@kroah.com>,
+        Vladislav Bolkhovitin <vst@vlnb.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <AANLkTikPVXGJ5-5YDk1uqfqrqxGLpSiSdaX3h7qxo-ie@mail.gmail.com>
+References: <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net>
+	 <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net>
+	 <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net>
+	 <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net>
+	 <20101113235938.GA1827@kroah.com> <4CE1017E.4090409@panasas.com>
+	 <20101115161620.GB5981@kroah.com> <4CE16B8E.1000300@panasas.com>
+	 <AANLkTikPVXGJ5-5YDk1uqfqrqxGLpSiSdaX3h7qxo-ie@mail.gmail.com>
+Content-Type: text/plain
+Date: Mon, 15 Nov 2010 12:19:30 -0800
+Message-Id: <1289852370.22107.104.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040901080504060204070409
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+<Trimming CC list>
 
-On 11/15/2010 08:51 PM, Jakub Jelinek wrote:
-> On Mon, Nov 15, 2010 at 11:21:30AM -0800, Linus Torvalds wrote:
->> On Mon, Nov 15, 2010 at 11:12 AM, Jakub Jelinek <jakub@redhat.com> wrote:
->>>
->>> Ah, the problem is that memory_identifier_string is only initialized in
->>> ipa-reference.c's initialization, so it can be (and is in this case) NULL in
->>> ipa-pure-const.c.
->>
->> Ok. And I guess you can verify that all versions of gcc do this
->> correctly for "asm volatile"?
+On Mon, 2010-11-15 at 18:49 +0100, Bart Van Assche wrote:
+> On Mon, Nov 15, 2010 at 6:19 PM, Boaz Harrosh <bharrosh@panasas.com> wrote:
+> > [ ... ]
+> > Perhaps consider a new alternative like the device tree as Greg suggested
+> > or maybe finally accept the harsh realities of ConfigFS.
 > 
-> Yes, reading 4.1/4.2/4.3/4.4/4.5/4.6 code ipa-pure-const.c handles
-> asm volatile correctly, in each case the function is no longer assumed to be
-> pure or const in the discovery (of course, user can still say the
-> function is const or pure). 4.0 and earlier didn't have ipa-pure-const.c.
-> 
-> Using the simplified
-> 
-> extern void abort (void);
-> 
-> __attribute__((noinline)) int
-> foo (int *p)
-> {
->   int r;
->   asm ("movl $6, (%1)\n\txorl %0, %0" : "=r" (r) : "r" (p) : "memory");
->   return r;
-> }
-> 
-> int
-> main (void)
-> {
->   int p = 8;
->   if ((foo (&p) ? : p) != 6)
->     abort ();
->   return 0;
-> }
-> 
-> testcase shows that in 4.1/4.2/4.3/4.4 this is miscompiled only when using
-> -fno-ipa-reference, in 4.5 it is miscompiled always when optimizing
-> unless -fno-ipa-pure-const (as 4.5 added local-pure-const pass which is run
-> before ipa-reference) and in 4.6 this has been fixed by Honza when
-> doing ipa cleanups.
-> 
->> Because since we'll have to work around this problem in the kernel, I
->> suspect the simplest solution is to remove the "+m" that causes
->> register pressure problems, and then use "asm volatile" to work around
->> the const-function bug.
-> 
-> Yes.
-> 
-> 	Jakub
+> I think that Vlad has already explained several times why ConfigFS is
+> not suited for the needs of a storage target: a storage target must
+> not only be able to accept configuration information from userspace
+> but must also be able to create new directories and file nodes itself.
+> See e.g. this message from October 6:
+> http://kerneltrap.org/mailarchive/linux-kernel/2010/10/6/4628664.
 > 
 
-Linus,
+Sorry, but this post explains nothing but a single misguided and
+uninformed opinion, with no hard facts on the actual usage of a native
+configfs control plane within target mode infrastructure.  
 
-In case you didn't already fixed this, here's the follow-up patch.
----
+The hard facts are:
 
-The fix to work around the gcc miscompiling i8k.c to add "+m (*regs)"
-caused register pressure problems. Changing the 'asm' statement to
-'asm volatile' instead should prevent that and works around the gcc
-bug as well.
+Using configfs works to drive the generation/release, real time
+configuration, dependancy relationships because:
 
-Signed-off-by: Jim Bos <jim876@xs4all.nl>
+*) configfs represents the individual target data structures who's
+creation/deletion are driven from enterily userspace.
 
+*) The parent/child relationships of dependant data structures is
+handled transparently to the configfs consumer (eg: no hard requirement
+internal reference counting)
 
---------------040901080504060204070409
-Content-Type: text/plain;
- name="PATCH2.i8k.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="PATCH2.i8k.c"
+*) The module reference counting of target core -> fabric module is
+handled transparently to configfs consumers *and* TCM fabric modules
 
---- linux/drivers/char/i8k.c.ORIG	2010-11-15 21:04:19.000000000 +0100
-+++ linux/drivers/char/i8k.c	2010-11-15 21:02:32.000000000 +0100
-@@ -119,7 +119,7 @@
- 	int eax = regs->eax;
- 
- #if defined(CONFIG_X86_64)
--	asm("pushq %%rax\n\t"
-+	asm volatile("pushq %%rax\n\t"
- 		"movl 0(%%rax),%%edx\n\t"
- 		"pushq %%rdx\n\t"
- 		"movl 4(%%rax),%%ebx\n\t"
-@@ -141,11 +141,11 @@
- 		"lahf\n\t"
- 		"shrl $8,%%eax\n\t"
- 		"andl $1,%%eax\n"
--		:"=a"(rc), "+m" (*regs)
-+		:"=a"(rc)
- 		:    "a"(regs)
- 		:    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
- #else
--	asm("pushl %%eax\n\t"
-+	asm volatile("pushl %%eax\n\t"
- 	    "movl 0(%%eax),%%edx\n\t"
- 	    "push %%edx\n\t"
- 	    "movl 4(%%eax),%%ebx\n\t"
-@@ -167,7 +167,7 @@
- 	    "lahf\n\t"
- 	    "shrl $8,%%eax\n\t"
- 	    "andl $1,%%eax\n"
--	    :"=a"(rc), "+m" (*regs)
-+	    :"=a"(rc)
- 	    :    "a"(regs)
- 	    :    "%ebx", "%ecx", "%edx", "%esi", "%edi", "memory");
- #endif
+*) The current implementation of TCM/ConfigFS contains no global locks.
+Each /sys/kernel/config/target/$FABRIC_1 operates independently of
+/sys/kernel/config/target/$FABRIC_2
 
---------------040901080504060204070409--
+*) Expecting target fabric module developers to (by-hand) add struct
+config_groups, struct kobjects or anything else directly to their fabric
+module code is really clumsy and stupid.  This problem was solved
+earlier this year in TCM v4.0 with the advent of:
+
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=drivers/target/target_core_fabric_configfs.c;hb=refs/heads/lio-4.0
+
+What this code means is that target fabric module developers no longer
+has to duplicate complex control path code, and all of the interesting
+port attributes (like ALUA secondary access state for example) are
+transparent to new fabric modules, and 'just work'.  We can even
+generate *functional* configfs skeletons for new fabric modules using
+tcm_mod_builder.py discussed here:
+
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=Documentation/target/tcm_mod_builder.txt;hb=refs/heads/lio-4.0
+
+For the specific case of the target control path, until someone from
+SCST can present some hard facts *and* running code about the target
+mode configfs vs. sysfs debate, the discussion is like comparing oil and
+water. 
+
+Again, please do not take this as the LIO maintainer saying 'you should
+stop working on SCST code XYZ', because that is *not* what I am saying.
+We are simply stating that we already have a fully functional configfs
+backend and generic target fabric independent infrastrucutre that has
+not only been reviewed no less than five times this year on
+linux-scsi/LKML, it has actually been developed *on* linux-scsi, patch
+by patch in full view of the configfs maintainer and other interested
+parties.
+
+This is the reason why the v4.0 code has progressed as fast as it has; a
+constant feedback loop from upstream developers who have been involved
+since the start of the development process.  By virtue of this fact, we
+where able to make some early design decisions based on feedback from
+the community from the original proposed design and running prototype
+code.
+
+So, while I can very much apperciate Boaz's desire to attempt to
+reconcile the relationship between myself + other TCM/LIO developers
+with the SCST development community, but I don't think this will happen
+without a definate change to the SCST development workflow and
+interaction with 'outside of project' developers.
+
+--nab
+
