@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933034Ab0KODHe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 22:07:34 -0500
-Received: from mail.perches.com ([173.55.12.10]:1252 "EHLO mail.perches.com"
+	id S932973Ab0KODGD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 22:06:03 -0500
+Received: from mail.perches.com ([173.55.12.10]:1227 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932944Ab0KODGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 22:06:01 -0500
+	id S932846Ab0KODF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 22:05:56 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: Sjur Braendeland <sjur.brandeland@stericsson.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 39/44] include/net/caif/cfctrl.h: Remove unnecessary semicolons
-Date: Sun, 14 Nov 2010 19:04:58 -0800
-Message-Id: <35914cfea1bd0ab3963e632d02b1fdd52a9d2bc8.1289789605.git.joe@perches.com>
+Cc: Eric Van Hensbergen <ericvh@gmail.com>, Ron Minnich <rminnich@sandia.gov>,
+        Latchesar Ionkov <lucho@ionkov.net>,
+        v9fs-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH 32/44] fs/9p: Remove unnecessary semicolons
+Date: Sun, 14 Nov 2010 19:04:51 -0800
+Message-Id: <f6ae29dfdd0b9ad401f5eb77ae670212689ee921.1289789605.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289789604.git.joe@perches.com>
 References: <cover.1289789604.git.joe@perches.com>
@@ -23,22 +23,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- include/net/caif/cfctrl.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/9p/acl.c   |    2 +-
+ fs/9p/xattr.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/net/caif/cfctrl.h b/include/net/caif/cfctrl.h
-index 9402543..e54f639 100644
---- a/include/net/caif/cfctrl.h
-+++ b/include/net/caif/cfctrl.h
-@@ -51,7 +51,7 @@ struct cfctrl_rsp {
- 	void (*restart_rsp)(void);
- 	void (*radioset_rsp)(void);
- 	void (*reject_rsp)(struct cflayer *layer, u8 linkid,
--				struct cflayer *client_layer);;
-+				struct cflayer *client_layer);
- };
+diff --git a/fs/9p/acl.c b/fs/9p/acl.c
+index 12d6023..bc4da9a 100644
+--- a/fs/9p/acl.c
++++ b/fs/9p/acl.c
+@@ -28,7 +28,7 @@ static struct posix_acl *__v9fs_get_acl(struct p9_fid *fid, char *name)
+ {
+ 	ssize_t size;
+ 	void *value = NULL;
+-	struct posix_acl *acl = NULL;;
++	struct posix_acl *acl = NULL;
  
- /* Link Setup Parameters for CAIF-Links. */
+ 	size = v9fs_fid_xattr_get(fid, name, NULL, 0);
+ 	if (size > 0) {
+diff --git a/fs/9p/xattr.c b/fs/9p/xattr.c
+index 43ec7df..d288773 100644
+--- a/fs/9p/xattr.c
++++ b/fs/9p/xattr.c
+@@ -133,7 +133,7 @@ int v9fs_xattr_set(struct dentry *dentry, const char *name,
+ 			"p9_client_xattrcreate failed %d\n", retval);
+ 		goto error;
+ 	}
+-	msize = fid->clnt->msize;;
++	msize = fid->clnt->msize;
+ 	while (value_len) {
+ 		if (value_len > (msize - P9_IOHDRSZ))
+ 			write_count = msize - P9_IOHDRSZ;
 -- 
 1.7.3.1.g432b3.dirty
 
