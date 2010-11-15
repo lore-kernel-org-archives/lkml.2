@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932788Ab0KORE6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 12:04:58 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49349 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932657Ab0KORE5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 12:04:57 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikWEZLwx4khj_jFOqP+uy-TxgJGwsbxdtaCfbJq@mail.gmail.com>
-References: <1289669176.16461.12.camel@Joe-Laptop>
-	<AANLkTi=ut2O+mCbs1jOyg-aP=E+48h1B-MH8NxK5XyVf@mail.gmail.com>
-	<1289677904.16461.82.camel@Joe-Laptop>
-	<AANLkTikWEZLwx4khj_jFOqP+uy-TxgJGwsbxdtaCfbJq@mail.gmail.com>
-Date: Mon, 15 Nov 2010 12:04:39 -0500
-Message-ID: <AANLkTik=mnFDXAyJ53_7FPfD5ETiYY8GjkE5pm0PJSBu@mail.gmail.com>
-Subject: Re: [PATCH] Fix dmesg_restrict build failure with CONFIG_EMBEDDED=y
- and CONFIG_PRINTK=n
-From: Eric Paris <eparis@parisplace.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>, Dan Rosenberg <drosenberg@vsecurity.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Eugene Teo <eugeneteo@kernel.org>, Kees Cook <kees.cook@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932791Ab0KORJV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 12:09:21 -0500
+Received: from mail.perches.com ([173.55.12.10]:1293 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932132Ab0KORJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 12:09:20 -0500
+Subject: Re: [PATCH 44/44] sound/soc/codecs: Remove unnecessary semicolons
+From: Joe Perches <joe@perches.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Jiri Kosina <trivial@kernel.org>,
+        Ian Lartey <ian@opensource.wolfsonmicro.com>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101115134939.GC12986@rakim.wolfsonmicro.main>
+References: <cover.1289789604.git.joe@perches.com>
+	 <97fd199b7dac50613f6843156687223928cce44a.1289789605.git.joe@perches.com>
+	 <20101115134939.GC12986@rakim.wolfsonmicro.main>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Nov 2010 09:09:17 -0800
+Message-ID: <1289840957.16461.138.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 13, 2010 at 3:31 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> We had this exact problem with the whole "mmap_min_addr" thing. People
-> _thought_ of it as generic, but because it was actually tested by the
-> security logic, if you ended up enabling SELinux the test actually
-> went away entirely (or maybe it was the other way around). So with
-> certain security models, the whole thing was bypassed, and the
-> security module actually became an _IN_security module.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+V2: against -next
 
-Your recollection is wrong, although your conclusions of the
-ramifications are right.  Either SELinux or capabilities checked
-mmap_min_addr, depending on which was 'primary.'  Just as they are
-different modules they checked for different things.  Only doing
-SELinux checks was stronger for some situations, and only doing
-capability checks was stronger in some ways (and the reverse was
-obviously true).  Today you get the best of both worlds since we
-really have 2 different mmap_min_addr values...
+ sound/soc/codecs/wm8904.c  |    2 +-
+ sound/soc/codecs/wm8940.c  |    1 -
+ sound/soc/codecs/wm8993.c  |    2 +-
+ sound/soc/codecs/wm_hubs.c |    2 +-
+ 4 files changed, 3 insertions(+), 4 deletions(-)
 
-In any case the result of that is that LSMs (ok 'I') need to be more
-careful making sure they interact properly with the generic
-capabilities hooks.
+diff --git a/sound/soc/codecs/wm8904.c b/sound/soc/codecs/wm8904.c
+index be90399..5e57bd2 100644
+--- a/sound/soc/codecs/wm8904.c
++++ b/sound/soc/codecs/wm8904.c
+@@ -1591,7 +1591,7 @@ static int wm8904_hw_params(struct snd_pcm_substream *substream,
+ 		       - wm8904->fs);
+ 	for (i = 1; i < ARRAY_SIZE(clk_sys_rates); i++) {
+ 		cur_val = abs((wm8904->sysclk_rate /
+-			       clk_sys_rates[i].ratio) - wm8904->fs);;
++			       clk_sys_rates[i].ratio) - wm8904->fs);
+ 		if (cur_val < best_val) {
+ 			best = i;
+ 			best_val = cur_val;
+diff --git a/sound/soc/codecs/wm8940.c b/sound/soc/codecs/wm8940.c
+index c2def1b..caed084 100644
+--- a/sound/soc/codecs/wm8940.c
++++ b/sound/soc/codecs/wm8940.c
+@@ -736,7 +736,6 @@ static int wm8940_probe(struct snd_soc_codec *codec)
+ 		return ret;
+ 
+ 	return ret;
+-;
+ }
+ 
+ static int wm8940_remove(struct snd_soc_codec *codec)
+diff --git a/sound/soc/codecs/wm8993.c b/sound/soc/codecs/wm8993.c
+index bcc54be..991d90c 100644
+--- a/sound/soc/codecs/wm8993.c
++++ b/sound/soc/codecs/wm8993.c
+@@ -1227,7 +1227,7 @@ static int wm8993_hw_params(struct snd_pcm_substream *substream,
+ 		       - wm8993->fs);
+ 	for (i = 1; i < ARRAY_SIZE(clk_sys_rates); i++) {
+ 		cur_val = abs((wm8993->sysclk_rate /
+-			       clk_sys_rates[i].ratio) - wm8993->fs);;
++			       clk_sys_rates[i].ratio) - wm8993->fs);
+ 		if (cur_val < best_val) {
+ 			best = i;
+ 			best_val = cur_val;
+diff --git a/sound/soc/codecs/wm_hubs.c b/sound/soc/codecs/wm_hubs.c
+index 8aff0ef..422c7fb 100644
+--- a/sound/soc/codecs/wm_hubs.c
++++ b/sound/soc/codecs/wm_hubs.c
+@@ -119,7 +119,7 @@ static void calibrate_dc_servo(struct snd_soc_codec *codec)
+ 	switch (hubs->dcs_readback_mode) {
+ 	case 0:
+ 		reg_l = snd_soc_read(codec, WM8993_DC_SERVO_READBACK_1)
+-			& WM8993_DCS_INTEG_CHAN_0_MASK;;
++			& WM8993_DCS_INTEG_CHAN_0_MASK;
+ 		reg_r = snd_soc_read(codec, WM8993_DC_SERVO_READBACK_2)
+ 			& WM8993_DCS_INTEG_CHAN_1_MASK;
+ 		break;
 
-From: James Morris
-> I want to ensure that LSMs which implement security_syslog can't end up
-> with a less secure system than the default, regardless of whether they
-> call cap_syslog or not.
 
-Which really means that this is total crap.  If you don't call
-cap_syslog() you broke it.  That's all there is to it.  Calling the
-capability code is always required.  full stop.
-
-I think this patch is broken though.  SELinux and SMACK don't care
-about from_file and want to check every time no matter what.  Your
-patch breaks that and only will call the LSM on occasion.  It's only
-capabilities that likes those semantics.  I think the entire contents
-of the cap_syslog hook should be moved up and that hook just dropped
-entirely.
-
-I'll code up what I'm thinking in a minute.....
-
--Eric
