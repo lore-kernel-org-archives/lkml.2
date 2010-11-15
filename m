@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782Ab0KODOd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 14 Nov 2010 22:14:33 -0500
-Received: from mail.perches.com ([173.55.12.10]:1138 "EHLO mail.perches.com"
+	id S932733Ab0KODO6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 14 Nov 2010 22:14:58 -0500
+Received: from mail.perches.com ([173.55.12.10]:1127 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932562Ab0KODFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 14 Nov 2010 22:05:30 -0500
+	id S1757376Ab0KODF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 14 Nov 2010 22:05:29 -0500
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 06/44] drivers/i2c: Remove unnecessary semicolons
-Date: Sun, 14 Nov 2010 19:04:25 -0800
-Message-Id: <04cfa2beee1ed9656e550bb13076b9c57899542e.1289789604.git.joe@perches.com>
+Cc: Dave Jones <davej@redhat.com>, cpufreq@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 04/44] drivers/cpufreq: Remove unnecessary semicolons
+Date: Sun, 14 Nov 2010 19:04:23 -0800
+Message-Id: <a4bef9c18ce34e80870a07c728ee25e8efac6d9d.1289789604.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.1.g432b3.dirty
 In-Reply-To: <cover.1289789604.git.joe@perches.com>
 References: <cover.1289789604.git.joe@perches.com>
@@ -23,22 +22,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/i2c/busses/i2c-designware.c |    2 +-
+ drivers/cpufreq/cpufreq_conservative.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-designware.c b/drivers/i2c/busses/i2c-designware.c
-index b664ed8..a93922d 100644
---- a/drivers/i2c/busses/i2c-designware.c
-+++ b/drivers/i2c/busses/i2c-designware.c
-@@ -390,7 +390,7 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
- 	int tx_limit, rx_limit;
- 	u32 addr = msgs[dev->msg_write_idx].addr;
- 	u32 buf_len = dev->tx_buf_len;
--	u8 *buf = dev->tx_buf;;
-+	u8 *buf = dev->tx_buf;
+diff --git a/drivers/cpufreq/cpufreq_conservative.c b/drivers/cpufreq/cpufreq_conservative.c
+index 526bfbf..b0d8f3d 100644
+--- a/drivers/cpufreq/cpufreq_conservative.c
++++ b/drivers/cpufreq/cpufreq_conservative.c
+@@ -118,7 +118,7 @@ static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
+ 	if (wall)
+ 		*wall = (cputime64_t)jiffies_to_usecs(cur_wall_time);
  
- 	intr_mask = DW_IC_INTR_DEFAULT_MASK;
+-	return (cputime64_t)jiffies_to_usecs(idle_time);;
++	return (cputime64_t)jiffies_to_usecs(idle_time);
+ }
  
+ static inline cputime64_t get_cpu_idle_time(unsigned int cpu, cputime64_t *wall)
 -- 
 1.7.3.1.g432b3.dirty
 
