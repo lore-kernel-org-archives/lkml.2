@@ -1,138 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757961Ab0KOQkX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 11:40:23 -0500
-Received: from kroah.org ([198.145.64.141]:49039 "EHLO coco.kroah.org"
+	id S1757951Ab0KOQkW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 11:40:22 -0500
+Received: from kroah.org ([198.145.64.141]:49027 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757935Ab0KOQkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 11:40:21 -0500
-Date: Mon, 15 Nov 2010 08:19:28 -0800
+	id S1757621Ab0KOQkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 11:40:20 -0500
+Date: Mon, 15 Nov 2010 08:16:20 -0800
 From: Greg KH <greg@kroah.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Baruch Siach <baruch@tkos.co.il>, linux-kernel@vger.kernel.org,
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Vladislav Bolkhovitin <vst@vlnb.net>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Indan Zupancic <indan@nul.nu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Alex Gershgorin <agersh@rambler.ru>
-Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
-Message-ID: <20101115161928.GC5981@kroah.com>
-References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
- <4CE0FE71.6000303@suse.cz>
- <20101115100838.GA3649@jasper.tkos.co.il>
- <4CE10B32.8090705@suse.cz>
- <20101115134025.GB3649@jasper.tkos.co.il>
- <4CE142B8.4090602@suse.cz>
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+Message-ID: <20101115161620.GB5981@kroah.com>
+References: <20101109002829.GA22633@kroah.com>
+ <4CD9A9B8.70708@vlnb.net>
+ <4CDA6CD4.3010308@panasas.com>
+ <4CDAFE6E.7050200@vlnb.net>
+ <4CDBBE80.40908@panasas.com>
+ <4CDC56F9.9040601@vlnb.net>
+ <20101112012315.GE17097@core.coreip.homeip.net>
+ <4CDEC8D2.8080101@vlnb.net>
+ <20101113235938.GA1827@kroah.com>
+ <4CE1017E.4090409@panasas.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CE142B8.4090602@suse.cz>
+In-Reply-To: <4CE1017E.4090409@panasas.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 03:24:56PM +0100, Jiri Slaby wrote:
-> On 11/15/2010 02:40 PM, Baruch Siach wrote:
-> > On Mon, Nov 15, 2010 at 11:28:02AM +0100, Jiri Slaby wrote:
-> >> On 11/15/2010 11:08 AM, Baruch Siach wrote:
-> >>> Thanks for reviewing. See my response to your comments below.
-> >>>
-> >>> On Mon, Nov 15, 2010 at 10:33:37AM +0100, Jiri Slaby wrote:
-> >>>> On 11/15/2010 09:23 AM, Baruch Siach wrote:
-> >>>>> --- /dev/null
-> >>>>> +++ b/drivers/misc/altera_as.c
-> >>>>> @@ -0,0 +1,349 @@
-> >>>> ...
-> >>>>> +struct altera_as_device {
-> >>>>> +	unsigned id;
-> >>>>> +	struct device *dev;
-> >>>>> +	struct miscdevice miscdev;
-> >>>>> +	struct mutex open_lock;
-> >>>>> +	struct gpio gpios[AS_GPIO_NUM];
-> >>>>> +};
-> >>>>> +
-> >>>>> +/*
-> >>>>> + * The only functions updating this array are .probe/.remove, which are
-> >>>>> + * serialized. Hence, no locking is needed here.
-> >>>>> + */
-> >>>>> +static struct {
-> >>>>> +	int minor;
-> >>>>
-> >>>> Why you need minor here? It's in drvdata->miscdev.minor.
-> >>>
-> >>> I use the minor field to lookup the drvdata pointer in get_as_dev(), which I 
-> >>> use is altera_as_open().  I do this because I have no access to the 'struct 
-> >>> device' pointer from the .open method. Do you know a better way?
-> >>>
-> >>>>> +	struct altera_as_device *drvdata;
-> >>>>> +} altera_as_devs[AS_MAX_DEVS];
-> >>>>
-> >>>> You don't need the struct at all.
-> >>>> static struct altera_as_device *drvdata[AS_MAX_DEVS];
-> >>>> should be enough.
-> >>>
-> >>> See above.
-> >>
-> >> The answer to you previous question is here. You can just have a global
-> >> array of struct altera_as_device.
+On Mon, Nov 15, 2010 at 11:46:38AM +0200, Boaz Harrosh wrote:
+> On 11/14/2010 01:59 AM, Greg KH wrote:
+> > In the end, I guess it really doesn't matter as this code isn't getting
+> > merged so I shouldn't worry about it, right?
 > > 
-> > This static array would occupy sizeof(struct altera_as_device) * AS_MAX_DEVS 
-> > == 128 (for 32bit) * 16 == 2KB unconditionally.
 > 
-> No, it is an array of pointers.
-> 
-> >>>>> +static int __init altera_as_probe(struct platform_device *pdev)
-> >>>>> +{
-> >>>> ...
-> >>>>> +	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
-> >>>>> +	drvdata->miscdev.name = kasprintf(GFP_KERNEL, "altera_as%d",
-> >>>>> +			pdata->id);
-> >>>>> +	if (drvdata->miscdev.name == NULL)
-> >>>>> +		return -ENOMEM;
-> >>>>> +	drvdata->miscdev.fops = &altera_as_fops;
-> >>>>> +	if (misc_register(&drvdata->miscdev) < 0) {
-> >>>>
-> >>>> Hmm, how many devices can be in the system?
-> >>>
-> >>> Up to AS_MAX_DEVS, currently 16.
-> >>>
-> >>>> This doesn't look like the right way.
-> >>>
-> >>> What is the right way then?
-> >>
-> >> Ok, so for that count it definitely deserves its own major to not eat up
-> >> misc device space.
-> > 
-> > A previous version of this driver[1] did just that. It was Greg KH who 
-> > suggested[2] to use the misc class.
-> > 
-> > [1] http://article.gmane.org/gmane.linux.kernel/1057434
-> > [2] http://article.gmane.org/gmane.linux.kernel/1058627
-> 
-> Ok, citing in-place:
-> <cite1>
-> Please don't create your own class just for a single driver.  Just use
-> the misc class interface instead, as all you really want/need here is a
-> character device node, right?
-> </cite1>
-> 
-> The "miscdevice" is intended for people who want only a single device
-> per system (singleton) and it is designed that way. There can be only up
-> to 64 dynamic minors. Here you allow up to 16 devices out of box...
+> This is not nice and is uncharacteristic of you.
 
-I thought this driver only allocated one single minor number.  If it is
-doing this for 16 all the time, then it should get its own major, sorry
-my fault.
+Why, I'm not allowed to get frustrated at repeated attempts to get the
+original poster to change their code to something that is acceptable and
+just give up and walk away?
 
-> <cite2>
-> And as discussed at the Plumbers conference this past week, we don't
-> want to add any new 'struct class' implementations to the kernel from
-> now on, as it's the overall wrong thing to do.
-> </cite2>
-> 
-> Well, how do people notify udev about their character devices then? Any
-> pointers to the discussion?
+Why not?
 
-Use a struct bus_type instead.
+> This project, even though out-of-tree, is an old and mature project that
+> has many users. These are all *Linux* users. The authors and community
+> have come to us for help, and advice on making this code acceptable for
+> mainline and hardening the code the way, only one project on the planet
+> can do, the Linux community. I think it is our courtesy and obligation
+> to the Linux users of this Project to comment where they are doing wrong
+> and where they should do better.
+
+It is also the job of the kernel community to say "No, what you are
+doing is wrong, please don't do that."
+
+And that's what I'm doing here.
+
+> It is not of their choice to be out-of-tree. It is ours. The least we can
+> do. Is give then some assistance if we can, and have 5 minutes of our time.
+
+I have given _way_ more than 5 minutes of my time already.
+
+> All these issues we were discussing are interesting and are real Kernel
+> problems. For instance the last comment you made was that for such a dynamic
+> system and life time problems, and functionality. A better and expected
+> solution might be the device tree and not sysfs.
+
+Yes, that is what I have been saying for a while now.
+
+Again:
+	This code is using kobjects incorrectly.
+	This code should not be using kobjects.
+
+this is my last response to this thread now, and I'm sure you can
+understand why.
 
 thanks,
 
