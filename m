@@ -1,82 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758846Ab0KOXqi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 18:46:38 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:59997 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752793Ab0KOXqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 18:46:36 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19B8toigX1Bqhi8D6snppoKXbjl33kUgDAoST9Cie
-	56i8JWD61tuLxQ
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Valdis.Kletnieks@vt.edu
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-In-Reply-To: <30291.1289860866@localhost>
-References: <1287479765.9920.9.camel@marge.simson.net>
-	 <1287487757.24189.40.camel@marge.simson.net>
-	 <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
-	 <1287511983.7417.45.camel@marge.simson.net>
-	 <1287514410.7368.10.camel@marge.simson.net>
-	 <20101020025652.GB26822@elte.hu>
-	 <1287648715.9021.20.camel@marge.simson.net>
-	 <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
-	 <20101021162924.GA3225@redhat.com>
-	 <1288076838.11930.1.camel@marge.simson.net>
-	 <1288078144.7478.9.camel@marge.simson.net>
-	 <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
-	 <1289489200.11397.21.camel@maggy.simson.net>  <30291.1289860866@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Nov 2010 16:46:20 -0700
-Message-ID: <1289864780.14719.172.camel@maggy.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1758850Ab0KOXuR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 18:50:17 -0500
+Received: from bld-mail20.adl6.internode.on.net ([150.101.137.105]:46481 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751944Ab0KOXuQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 18:50:16 -0500
+Date: Tue, 16 Nov 2010 10:49:40 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: "J.H." <warthog9@kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, jaxboe@fusionio.com,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: More XFS resource starvation?
+Message-ID: <20101115234940.GE22876@dastard>
+References: <4CE17C4E.7010206@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE17C4E.7010206@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-15 at 17:41 -0500, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 11 Nov 2010 08:26:40 MST, Mike Galbraith said:
+On Mon, Nov 15, 2010 at 10:30:38AM -0800, J.H. wrote:
+> So apparently I'm having fun tripping over all kinds of bugs lately.
+> I've seen this a couple of times now on the box in question.  Usually
+> happens after a few days, or after particularly heavy rsync traffic on
+> the box.
 > 
-> > Implementation: each task struct contains an inherited pointer to a refcounted
-> > autogroup struct containing a task group pointer, the default for all tasks
-> > pointing to the init_task_group.  When a task calls __proc_set_tty(), the
-> > task's reference to the default group is dropped, a new task group is created,
-> > and the task is moved out of the old group and into the new.  Children thereafter
-> > inherit this task group, and increase it's refcount.  Calls to __tty_hangup()
-> > and proc_clear_tty() move the caller back to the init_task_group, and possibly
-> > destroy the task group.  On exit, reference to the current task group is dropped,
-> > and the task group is potentially destroyed.  At runqueue selection time, iff
-> > a task has no cgroup assignment, it's current autogroup is used.
+> http://pastebin.osuosl.org/36014
 > 
-> So the set of all tasks that never call proc_set_tty() ends up in the same one
-> big default group, correct?  Do we have any provisions for making sure that if
-> a user has 8 or 10 windows open doing heavy work, the default group (with a lot
-> of important daemons/etc in it) doesn't get starved with only a 1/10th share of
-> the CPU? Or am I missing something here?
+> Christoph seemed to think it's a memory exhaustion problem, so I've
+> included the /proc/meminfo and as you can see there's plenty of memory
+> around on the system.
 
-Yes, all tasks never having had a tty association are relegated to the
-root task group, and no, there is no provision for the root task group
-getting more than it's fair share of CPU.
+That looks very much like some IOs have not been completed and XFS
+is waiting around for them to complete. Both the xfsbufd and the
+flush daemons are stuck in get_request_wait(), which implies that
+the request queue is full and not being serviced. Various rsync process
+is stuck waiting for log buffer completion, waiting for buffer reads
+to complete, etc, which implies that IO is simply not being completed.
 
-The patch is only intended to (hopefully) better suit the general case
-desktop.  One size has zero chance of fitting all ;-)
+My experience with such hangs is that they are typically caused by a
+storage problem (e.g. lost interrupt, IO not completed, controller
+firmware problem, etc).
 
-> > +extern void sched_autogroup_detatch(struct task_struct *p);
+> Loads have, expectedly, climbed currently around 1250.05 but growing slowly.
 > 
-> sched_autogroup_detach() instead?
+> Quick overview of the underlying storage:
+> 
+> xfs -> md (raid 0) -+--> P812 hardware raid6 (cciss driver)
+>                     |
+>                     +--> P812 hardware raid6 (cciss driver)
+> 
+> This is running on an HP DL380 G7.
+> 
+> I saw this both on an older 2.6.30.10-105.2.23.fc11.x86_64, and
+> currently on 2.6.34.7-61.fc13.x86_64 (both being Fedora stock kernels)
+> 
+> I have not seen this on a very similar DL380 G6, with the same storage
+> setup and it is currently running the 2.6.30 kernel from above.
+> 
+> Christoph suggest increasing the nr_request values for each of the
+> underlying devices, but this didn't seem to change anything
+> significantly on the system.
+> 
+> Anyone have any ideas on what's going on?
 
-Hm, why?
+Any other information in the log (e.g. from the cciss driver)? Are
+the raid controllers all running the latest (and same) firmware? I'd
+be wanting to make sure that all the storage below the filesystem is
+working correctly before looking at anything filesystem related...
 
-	-Mike
+Cheers,
 
-	-Mike
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
