@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253Ab0KOPXr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 10:23:47 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3791 "EHLO mx1.redhat.com"
+	id S1757358Ab0KOP1f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 10:27:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61179 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755705Ab0KOPXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 10:23:46 -0500
-Date: Mon, 15 Nov 2010 16:23:10 +0100
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mm,vmscan: Reclaim order-0 and compact instead of
- lumpy reclaim when under light pressure
-Message-ID: <20101115152310.GG6809@random.random>
-References: <1289502424-12661-4-git-send-email-mel@csn.ul.ie>
- <20101112093742.GA3537@csn.ul.ie>
- <20101114150039.E028.A69D9226@jp.fujitsu.com>
- <20101115092256.GE27362@csn.ul.ie>
+	id S1754577Ab0KOP1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 10:27:33 -0500
+Date: Mon, 15 Nov 2010 10:27:09 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org, hch@lst.de
+Subject: Re: [PATCH] fix amiga and atari floppy driver compile warning
+Message-ID: <20101115152709.GF30792@redhat.com>
+References: <20101028184223.GG30148@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20101115092256.GE27362@csn.ul.ie>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101028184223.GG30148@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 09:22:56AM +0000, Mel Gorman wrote:
-> GFP_LUMPY is something else and is only partially related. Transparent Huge
-> Pages (THP) does not want to hit lumpy reclaim no matter what the circumstances
-> are - It is always better for THP to not use lumpy reclaim. It's debatable
+On Thu, Oct 28, 2010 at 02:42:23PM -0400, Vivek Goyal wrote:
+> Geert, my crosstool don't produce warning below. I guess this has to do
+> something with compiler version.
+> 
+> - Geert noticed following warning during compilation.
+> 
+>   drivers/block/amiflop.c:1344: warning: ‘rq’ may be used uninitialized in
+>   this function
+>   drivers/block/ataflop.c:1402: warning: ‘rq’ may be used uninitialized in
+>   this function
+> 
+> - Initialize rq to NULL to fix the warning. If we can't find a suitable request
+>   to dispatch, this function should return NULL instead of a possibly garbage
+>   pointer.
+> 
+> - Cross compile tested only. Don't have hardware to test it.
+> 
+> Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 
-Agreed.
+Hi Jens,
 
-> whether it should even reclaim order-0 pages for compaction so even with
-> this series, THP might still introduce GFP_LUMPY.
+Do you have any concerns about this patch? If not, can you please apply
+it.
 
-reclaim of some order 0 page shouldn't do any significant harm as long
-as the young bits are not ignored and it's just going "normal" and not
-aggressive like lumpy.
+Thanks
+Vivek
 
-Also we it's ok to do some reclaim as we can free some slab that can't
-be compacted in case there's excessive amount of slab caches to be
-shrunk to have a chance to convert unmovable pageblocks to movable
-ones. And we need at least 2M fully available as migration
-destination (but I guess that is always available :).
-
-In general interleaving compaction with regular-reclaim (no lumpy)
-before failing allocation sounds ok to me.
-
-I guess these days compaction would tend to succeed before lumpy ever
-gets invoked so the trouble with lumpy would then only trigger when
-compaction starts failing and we enter reclaim to create more movable
-pageblocks, but I don't want to risk bad behavior when the amount of
-anoymous memory goes very high and not all anonymous memory can be
-backed fully by hugepages.
+> ---
+>  drivers/block/amiflop.c |    2 +-
+>  drivers/block/ataflop.c |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6/drivers/block/amiflop.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/block/amiflop.c	2010-10-28 14:32:25.000000000 -0400
+> +++ linux-2.6/drivers/block/amiflop.c	2010-10-28 14:34:11.000000000 -0400
+> @@ -1341,7 +1341,7 @@ static struct request *set_next_request(
+>  {
+>  	struct request_queue *q;
+>  	int cnt = FD_MAX_UNITS;
+> -	struct request *rq;
+> +	struct request *rq = NULL;
+>  
+>  	/* Find next queue we can dispatch from */
+>  	fdc_queue = fdc_queue + 1;
+> Index: linux-2.6/drivers/block/ataflop.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/block/ataflop.c	2010-10-28 14:31:21.000000000 -0400
+> +++ linux-2.6/drivers/block/ataflop.c	2010-10-28 14:33:58.000000000 -0400
+> @@ -1399,7 +1399,7 @@ static struct request *set_next_request(
+>  {
+>  	struct request_queue *q;
+>  	int old_pos = fdc_queue;
+> -	struct request *rq;
+> +	struct request *rq = NULL;
+>  
+>  	do {
+>  		q = unit[fdc_queue].disk->queue;
