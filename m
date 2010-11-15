@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757728Ab0KOPB6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 10:01:58 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:44822 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756770Ab0KOPB4 (ORCPT
+	id S1757762Ab0KOPEV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 10:04:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:40965 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754435Ab0KOPEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 10:01:56 -0500
-Date: Mon, 15 Nov 2010 10:01:54 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Pete Zaitcev <zaitcev@redhat.com>
-cc: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>,
-        Greg Kroah-Hartman <gregkh@suse.de>, <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, RFC] usbmon: correct computing of the ISO packets with
- mmap
-In-Reply-To: <20101114204237.7cd9e1de@lembas.zaitcev.lan>
-Message-ID: <Pine.LNX.4.44L0.1011150958230.1606-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 15 Nov 2010 10:04:20 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=5z8Dt6at09oA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=xddf3oqfGB7WRf4jx_0A:9 a=yIBb9tV09Hcva7BPi3gA:7 a=Xu8_-e17MXfywD8l-0Hx04VBrh4A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCHv2 2/2] tracing,mm - add kernel pagefault tracepoint for
+ x86 & x86_64
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Jiri Olsa <jolsa@redhat.com>,
+        mingo@elte.hu, lwoodman@redhat.com, hch@infradead.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20101115145359.GC5410@nowhere>
+References: <20101110164413.GA5360@nowhere>
+	 <1289466549-7602-3-git-send-email-jolsa@redhat.com>
+	 <20101115134325.GA5410@nowhere> <20101115140632.GI7269@basil.fritz.box>
+	 <20101115145359.GC5410@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 15 Nov 2010 10:04:18 -0500
+Message-ID: <1289833458.12418.601.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 14 Nov 2010, Pete Zaitcev wrote:
+On Mon, 2010-11-15 at 15:54 +0100, Frederic Weisbecker wrote:
+> On Mon, Nov 15, 2010 at 03:06:33PM +0100, Andi Kleen wrote:
 
-> > > +	while (ndesc-- != 0) {
-> > > +		if (fp->status == 0 && fp->actual_length != 0) {
-> > 
-> > I'd leave out the fp->status == 0 test.  It's not relevant; a buffer 
-> > can contain valid data even if the final status isn't 0.
+> > For tracing the whole page fault me think it's better to have 
+> > a generalized exception tracer with a filter on page fault.
 > 
-> That's a good point, however is actual_length filled in such case?
-> I thought it was either one or the other.
+> 
+> You're right. A tracepoint in handle_mm_fault() would be perhaps
+> better. It should catch most tracepoints the users are interested
+> in. On the other hand we may miss part of the page fault
+> latency, like the mmap_sem contention. This can be measured using
+> lock events though.
+> 
+> But I'm probably missing other important things.
 
-No, it's possible to have both.  This is less likely with isochronous 
-than with the other transfer types, but it can happen.  For example, 
-consider a high-bandwidth high-speed transfer where 3072 bytes are 
-received in three packets during a single microframe.  You might 
-receive two of the three packets, giving actual_length = 2048, and then 
-not receive the third, giving status = -EPROTO.
+I would have the general exception handler as a tracepoint that would
+have a "stable tracepoint" hook to it. That is, when enabling it as a
+infield debugging tracepoint, we would get the "raw tracepoint", but the
+stable tracepoint would massage it into different general types of
+exceptions, and the code there would do the filtering.
 
-Alan Stern
+-- Steve
+
 
