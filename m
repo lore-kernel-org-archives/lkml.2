@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759541Ab0KPI0b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 03:26:31 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:39487 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759526Ab0KPI0a (ORCPT
+	id S934001Ab0KPIhJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 03:37:09 -0500
+Received: from static.206.114.40.188.clients.your-server.de ([188.40.114.206]:47879
+	"EHLO mail.tastatur-junkie.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756716Ab0KPIhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 03:26:30 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=c9SfIQYcgPe2G4+gY7zroE917CZ+gbT3dFAdHR3T+ZkMduzcShDSiEULKVO/7DtBuI
-         A8f/TcKMmLSY+O9PB5+EM3/ohPgYm0/A+DKg03ZnAWBrB3z9HUghezE+Zdit15G3x0h5
-         T++6D60rhCLc44qzuyWgk2otk+oAP+mhkW+5w=
+	Tue, 16 Nov 2010 03:37:07 -0500
+X-Spam-Flag: NO
+X-Spam-Score: 2.287
+From: Markus Schulz <msc@antzsystem.de>
+Organization: AntzSystem GmbH
+To: "Ed Lin - PTU" <ed.lin@promise.com>
+Subject: Re: data corruption with stex (Promise HW-Raid) driver and device-mapper
+Date: Tue, 16 Nov 2010 09:37:14 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-686-bigmem; KDE/4.4.5; i686; ; )
+Cc: "Dan Carpenter" <error27@gmail.com>, linux-kernel@vger.kernel.org
+References: <85ABFDC4641C4847BA6088F2982EFD8F049D4273@nonamew.ptu.promise.com>
+In-Reply-To: <85ABFDC4641C4847BA6088F2982EFD8F049D4273@nonamew.ptu.promise.com>
 MIME-Version: 1.0
-In-Reply-To: <4CE23F33.5060401@leadcoretech.com>
-References: <20101109123246.GA11477@amd>
-	<20101114182614.BEE5.A69D9226@jp.fujitsu.com>
-	<20101115092452.BEF1.A69D9226@jp.fujitsu.com>
-	<20101116074717.GB3460@amd>
-	<AANLkTi=BhuVn8F3ioTyR8S=J3LfJbuhYsMoHf9f=bvRn@mail.gmail.com>
-	<4CE23B3B.5050804@leadcoretech.com>
-	<AANLkTi=10NspL2fw66De8osjUC+2xnxsLpw+x=oNQQTv@mail.gmail.com>
-	<4CE23F33.5060401@leadcoretech.com>
-Date: Tue, 16 Nov 2010 10:26:27 +0200
-Message-ID: <AANLkTi=Da76M+s92ZZnfw7ySjp3WWfDjW6n5G=hHheKB@mail.gmail.com>
-Subject: Re: [patch] mm: vmscan implement per-zone shrinkers
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: Text/Plain;
+  charset="iso-2022-jp"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201011160937.15432@Mail-Followup-To>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 10:22 AM, Figo.zhang
-<zhangtianfei@leadcoretech.com> wrote:
-> 于 11/16/2010 04:20 PM, Anca Emanuel 写道:
->>
->> On Tue, Nov 16, 2010 at 10:05 AM, Figo.zhang
->> <zhangtianfei@leadcoretech.com>  wrote:
->>>
->>> 于 11/16/2010 03:53 PM, Anca Emanuel 写道:
->>>>
->>>> Nick, I want to test your tree.
->>>> This is taking too long.
->>>> Make something available now. And test it in real configs.
->>>>
->>>
->>> hi Anca,
->>>
->>> would you like to give your test method?
->>>
->>
->> Nothig special, for now I will test on my PC.
->>
->
-> hi KOSAKI Motohiro,
->
-> is it any test suite or test scripts for test page-reclaim performance?
->
-> Best,
-> Figo.zhang
->
+Am Dienstag, 16. November 2010 schrieb Ed Lin - PTU:
+> Hello,
+> 
+> We found similar problem during test.
+> 
+> The stex driver sets sg_tablesize as 32 (for st_yel it's 38) in the
+> probe entry. It seems that this value was overridden by the system
+> if using dm/lvm, for unknown reason. The driver received requests
+> with more sg items than registered. Sg item number could be as high
+> as 64. This is completely unexpected. The firmware could not handle
+> such requests, and error occurred.
+> 
+> The problem can be easily reproduced using a minimum test that only
+> requires copying files from system usr directory to stex dm volume
+> (ext2). The stex dm volume was created using the command
+> "echo 0 51200000 linear /dev/sdb1 0 | dmsetup create sdb".
+> The problem should exist on every kernel since 2.6.32. The problem
+> did not occur on 2.6.31 using similar minimum test.
 
-There is http://www.phoronix.com
+ok, but this would not explain why all my tests with ext3 are working? 
+Until now  i've found no way to generate errors on stex-disk + dm + 
+ext3.
+I will try your simple test now.
+
+regards,
+msc
