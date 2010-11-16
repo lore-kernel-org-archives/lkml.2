@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933925Ab0KPNS5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 08:18:57 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:56005 "EHLO
+	id S934004Ab0KPNTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 08:19:11 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:51584 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751836Ab0KPNS4 (ORCPT
+	with ESMTP id S933934Ab0KPNTK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 08:18:56 -0500
-Message-ID: <4CE284C7.4040209@vlnb.net>
-Date: Tue, 16 Nov 2010 16:19:03 +0300
+	Tue, 16 Nov 2010 08:19:10 -0500
+Message-ID: <4CE2849C.2060101@vlnb.net>
+Date: Tue, 16 Nov 2010 16:18:20 +0300
 From: Vladislav Bolkhovitin <vst@vlnb.net>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Bart Van Assche <bvanassche@acm.org>,
+To: Joe Eykholt <jeykholt@cisco.com>
+CC: Greg KH <greg@kroah.com>, Bart Van Assche <bvanassche@acm.org>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org,
@@ -22,57 +22,111 @@ CC: Bart Van Assche <bvanassche@acm.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
         Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        James Smart <James.Smart@emulex.com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Hannes Reinecke <hare@suse.de>,
+        James Smart <James.Smart@emulex.com>, Andy Yan <ayan@marvell.com>,
+        Chetan Loke <generationgnu@yahoo.com>, Hannes Reinecke <hare@suse.de>,
         Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-References: <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <AANLkTi=PxYi8kCsAxbopUHBC+=2QPuoEcojdqugS88sH@mail.gmail.com> <20101115184422.GA9566@kroah.com> <4CE19A94.8080504@vlnb.net> <20101115221359.GA9530@kroah.com>
-In-Reply-To: <20101115221359.GA9530@kroah.com>
+References: <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <AANLkTi=PxYi8kCsAxbopUHBC+=2QPuoEcojdqugS88sH@mail.gmail.com> <20101115184422.GA9566@kroah.com> <4CE19A94.8080504@vlnb.net> <20101115221359.GA9530@kroah.com> <4CE210D3.5060703@cisco.com>
+In-Reply-To: <4CE210D3.5060703@cisco.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:NyF5FQ/7aJDkPU+s5uHpKAQ+mkKX9OITZeI7r2gbaOP
- K9Z4n5fd1xmCDs/U7+EubOnFRxFCPY6JStR3o3FPvbdZMgjCMQ
- T9tf7LKZroAQFZeBJUyij/6TG7NdbLiiyccnRSPTg2lbNCUEm+
- XSS10WpCwWl1Zh03VzUtv1FhYoaphGldUmiKt7icfi5CbiGod/
- GGjJAdBZ8Ft4qCUFpY+Yg==
+X-Provags-ID: V02:K0:5ABwKdnV7Up8EPeR8Y0TFmvf7irjAceIUhVuOUzAENB
+ xRZRSk0BHTD1VUB16jPcANfgpzNMu37+QmlCU2yRC5dDv/GwGc
+ 3od866EYPrlJTWMLI7mYU/RP7A0NbRJYQHxZlkOcQwjoc/tY0j
+ RRk5smGVNiiBAwNzJ7SUECYeX9wY7e+PkGAt4zoInybp53Jim2
+ s5q14dZpw6n8fnIejBNzA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH, on 11/16/2010 01:13 AM wrote:
->>> Please use 'struct device', it is what you want to do here.
+Joe Eykholt, on 11/16/2010 08:04 AM wrote:
+>> On Mon, Nov 15, 2010 at 11:39:48PM +0300, Vladislav Bolkhovitin wrote:
+>>> Greg KH, on 11/15/2010 09:44 PM wrote:
+>>>> On Mon, Nov 15, 2010 at 06:45:24PM +0100, Bart Van Assche wrote:
+>>>>> On Sun, Nov 14, 2010 at 12:59 AM, Greg KH <greg@kroah.com> wrote:
+>>>>>>
+>>>>>> On Sat, Nov 13, 2010 at 08:20:18PM +0300, Vladislav Bolkhovitin wrote:
+>>>>>>> So, I decided to reimplement it to be completely synchronous. SYSFS
+>>>>>>> authors did really great job and thanks to the excellent internal SYSFS
+>>>>>>> design and implementation it is absolutely safe. See:
+>>>>>>>
+>>>>>>> [root@tgt ~]# modprobe scst
+>>>>>>> [root@tgt ~]# cd /sys/kernel/scst_tgt/
+>>>>>>
+>>>>>> Sorry, but no, you can't put this in /sys/kernel/ without getting the
+>>>>>> approval of the sysfs maintainer.
+>>>>>>
+>>>>>> I really don't understand why you are using kobjects in the first place,
+>>>>>> why isn't this in the main device tree in the kernel, using 'struct
+>>>>>> device'?
+>>>>>
+>>>>> We might have missed something, but as far as we know it has not yet
+>>>>> been explained in this thread why using 'struct device' would be an
+>>>>> advantage over using 'struct kobject'.
+>>>>
+>>>> It's very simple.
+>>>>
+>>>> You want your device to show up in the global device tree in the kernel,
+>>>> not off to one side, unconnected to anything else.
+>>>>
+>>>> Please use 'struct device', it is what you want to do here.
+>>>
+>>> But we don't have any device to show up in the global device tree!
 >>
->> But we don't have any device to show up in the global device tree!
+>> Not true at all.
+>>
+>>> We don't have any devices in the struct device's understanding at all!
+>>
+>> Then create them just like you are doing so for your kobject use.
+>>
+>> The first device would be the root one, and then everything trickles
+>> down from there.
+>>
+>> And use configfs for your configuration stuff, that's what it is there
+>> for, and if it doesn't somehow work properly for you, please work with
+>> the configfs developers to fix that up.
+>>
+>> thanks,
+>>
+>> greg k-h
 > 
-> Not true at all.
-
-Why?
-
-Greg, sorry, you keep writing as if we all are idiots, but keep refusing
-to explain us, idiots, why we can't do what we did. It isn't very
-constructive, is it?
-
->> We don't have any devices in the struct device's understanding at all!
+> I don't have any opinion on the above, but I don't see why sysfs can't be
+> used for configuration as well as its other roles. It seems to me wasteful
+> to require configfs to be used in order to change configuration when
+> sysfs works fine for this.
 > 
-> Then create them just like you are doing so for your kobject use.
+> Here are a couple of existing examples where sysfs is used in a role that
+> would seem similar to SCST's usage:
 > 
-> The first device would be the root one, and then everything trickles
-> down from there.
+> 1) scsi_transport_fc already has an sysfs file, fc_host/vport_create, which
+> can be written to create new fc_host and scsi_host instances.
+> 
+> 2) fcoe.ko uses a write to the sysfs file /sys/module/fcoe/parameters/create
+> to start the protocol on a particular ethernet interface.  There's another
+> file for destroy.
+> 
+> I'll bet there are other examples in other subsystems, and I don't think
+> there is anything wrong with the above usages of sysfs.
+> 
+> I agree with Vladislav's point that configfs doesn't work instead of sysfs
+> because configs doesn't make it easy for the kernel side to create nodes for
+> dynamic information like connected initiators and statistics.
+> So, if the above examples are considered a misuse of sysfs,
+> SCST would need to use both sysfs and configfs.  It would use configfs to
+> do configuration, and sysfs to display and access the dynamic information
+> like connected initiators. That seems a minor role for configfs,
+> which is easily handled in sysfs as SCST currently does.
+> 
+> Just my two cents.
 
-Sorry, I can't understand what you mean. What would be the purpose of
-this configuration and what benefits it would bring?
+Thank you, Joe, for those good examples. I may not know for what SYSFS
+was _originally_ designed, but the current reality is that SYSFS is
+_widely_ used to both represent the kernel internal configuration as
+well as to change it. And SCST is just following that.
 
-Anyway, let's forget about SCSI. Do you believe that struct device
-should be created for all IP addresses on which an NFS server listen and
-for all exports it exports?
+After all, if SYSFS supposed to only represent the kernel internal
+configuration, why wasn't it from the beginning made read-only?
 
-> And use configfs for your configuration stuff, that's what it is there
-> for, and if it doesn't somehow work properly for you, please work with
-> the configfs developers to fix that up.
-
-I explained why it isn't a too good option in another e-mail.
-
-Thanks,
 Vlad
