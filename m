@@ -1,44 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755282Ab0KPQ5S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 11:57:18 -0500
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:14793 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754848Ab0KPQ5R (ORCPT
+	id S1755407Ab0KPQ5Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 11:57:25 -0500
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:45925 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755363Ab0KPQ5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 11:57:17 -0500
-Message-ID: <4CE2B7C7.4080406@draigBrady.com>
-Date: Tue, 16 Nov 2010 16:56:39 +0000
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Josef Bacik <josef@redhat.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] Ext4: fail if we try to use hole punch
-References: <1289840723-3056-1-git-send-email-josef@redhat.com> <1289840723-3056-5-git-send-email-josef@redhat.com> <4CE2AF5B.7020500@draigBrady.com> <20101116163320.GB2524@localhost.localdomain>
-In-Reply-To: <20101116163320.GB2524@localhost.localdomain>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Tue, 16 Nov 2010 11:57:22 -0500
+Subject: Re: [RFC][PATCH v2 5/7] taskstats: Improve cumulative CPU time
+ accounting
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+In-Reply-To: <20101113183810.GA9021@redhat.com>
+References: <20101111170352.732381138@linux.vnet.ibm.com>
+	 <20101111170815.404670062@linux.vnet.ibm.com>
+	 <20101113183810.GA9021@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Organization: IBM
+Date: Tue, 16 Nov 2010 17:57:15 +0100
+Message-ID: <1289926635.1940.100.camel@holzheu-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/11/10 16:33, Josef Bacik wrote:
-> On Tue, Nov 16, 2010 at 04:20:43PM +0000, Pádraig Brady wrote:
->>
->> So for older versions of ext4 or other filesystems, how do we know
->> that fallocate(...,FALLOC_FL_PUNCH_HOLE) is not supported.
->> I.E. how do we detect at runtime that the call succeeded
->> and didn't just do a normal fallocate()?
->>
-> 
-> Older kernels won't accept FALLOC_FL_PUNCH_HOLE, so you'll get an error.
-> Thanks,
+Hello Oleg,
 
-Oops right.
-Older kernels filter FALLOC_FL_PUNCH_HOLE at a higher level in fs/open.c
-Whereas newer kernels will do it per file system.
+On Sat, 2010-11-13 at 19:38 +0100, Oleg Nesterov wrote:
+> First of all, let me repeat, I am not going to discuss whether we need
+> these changes or not, I do not know even if I understand your motivation.
 
-thanks,
-Pádraig.
+Sorry, if I was not clear enough with my descriptions. Let me try to
+describe my motivation again:
+
+The cumulative accounting patch implements an infrastructure that makes
+it possible to collect all CPU time usage between two task snapshots
+without using task exit events. The main idea is to show cumulative CPU
+time fields for each task in the top command that contain the CPU time
+of children that died in the last interval.
+
+Example 1 (simple case):
+A "make" process forked several gcc processes after snapshot 1 and all
+of them exited before snapshot 2. We subtract the cumulative CPU times
+of "make" of snapshot 2 from the cumulative times of "make" of snapshot
+1. The result will be the consumed CPU time of the dead gcc processes in
+the last interval. The value is that we can see in top that "make" is
+"responsible" for this CPU time.
+
+Example 2:
+We have the gcc processes in snapshot 1 but not in snapshot 2. Then the
+top command has to find the nearest relative (e.g. the parent process)
+that is still alive in snapshot 2, create the delta of the cumulative
+time for this process and subtract the CPU time of the gcc processes of
+snapshot 1. This gives you the CPU time that was consumed by the gcc
+processes between snapshot 1 and 2.
+
+With your help we identified two problems that make this approach
+impossible or at least not exact with the current Linux implementation:
+1. Cumulative CPU time counters are not complete (SA_NOCLDWAIT)
+2. Because of reparent to init, there are situations where it is
+   not clear to which tasks the CPU time of dead tasks between
+   two snapshots has been accounted. This is a problem for example 2.
+
+The patch tries to solve the problem by adding a second set of
+cumulative data that contains all CPU time of dead children and adds the
+parallel hierarchy to make it unambiguous which parent got the CPU time
+of dead tasks (needed for example 2).
+
+I hope that you understand now the value and the motivation of fixing
+the two problems.
+
+I know that new userspace APIs should be added with care and should be
+avoided when the value of a new function is not big enough. I also can
+understand the objections from Peter and your concerns. So is the value
+of the new function big enough?
+
+I will answer your other technical comments in a separate mail.
+
+Michael
+
