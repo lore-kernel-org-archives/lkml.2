@@ -1,125 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934204Ab0KPKPT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 05:15:19 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:40474 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934183Ab0KPKPQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 05:15:16 -0500
-X-Auth-Info: 4Y+gNTiQV62SAbW/PIL/0mF+AkzUZw628UefvUMirD4=
-Message-ID: <4CE259FB.5090402@grandegger.com>
-Date: Tue, 16 Nov 2010 11:16:27 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S934200Ab0KPKRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 05:17:31 -0500
+Received: from cantor.suse.de ([195.135.220.2]:46560 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932861Ab0KPKRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 05:17:30 -0500
+Date: Tue, 16 Nov 2010 11:17:26 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: [PATCH] Make swap accounting default behavior configurable
+Message-ID: <20101116101726.GA21296@tiehlicka.suse.cz>
 MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, andrew.chih.howe.khor@intel.com,
-        qi.wang@intel.com, margie.foster@intel.com, yong.y.wang@intel.com,
-        Masayuki Ohtake <masa-korg@dsn.okisemi.com>, kok.howg.ewe@intel.com,
-        joel.clark@intel.com
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Add Flow
- control,
-References: <4CE0EFA7.9020007@dsn.okisemi.com> <4CE141EA.5070702@grandegger.com> <001501cb8567$c7a38820$66f8800a@maildom.okisemi.com>
-In-Reply-To: <001501cb8567$c7a38820$66f8800a@maildom.okisemi.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomoya,
+Hi Andrew,
+could you consider the following patch for the Linus tree, please?
+The discussion took place in this email thread 
+http://lkml.org/lkml/2010/11/10/114.
+The patch is based on top of 151f52f09c572 commit in the Linus tree.
 
-On 11/16/2010 09:25 AM, Tomoya MORINAGA wrote:
-> On Monday, November 15, 2010 11:21 PM, Wolfgang Grandegger wrote:
-> 
->>
->> More comments to the lec handling below.
->>
->>> + cf->data[6] = ioread32(&priv->regs->errc) & PCH_TEC;
->>> + cf->data[7] = (ioread32(&priv->regs->errc) & PCH_REC) >> 8;
->>
->> Could be handle with just *one* register access.
-> 
-> I will modify.
-> 
->>   if (reg_stat & PCH_BUS_OFF ||
->>     (reg_stat & PCH_LEC_ALL) != PCH_LEC_ALL) {
->>
->> Your lec handling is still not correc, 
-> 
-> I will modify like above.
-> 
->> I believe. The driver needs to
->> write PCH_LEC_ALL to the "stat" register once in the initialization code
-> This is NOT true.
-> I heard even if CAN driver detects PCH_LEC_ALL, the driver doesn't have to
-> write PCH_LEC_ALL to LEC.
-> "PCH_LEC_ALL" means there is no error event.
+Please let me know if there I should route this patch through somebody
+else.
 
-OK, but...
+Thanks!
 
-> In case error is occurred, lec value is updated automatically.
+---
+>From 30238aaec758988493af793939f14b0ba83dc4b3 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Wed, 10 Nov 2010 13:30:04 +0100
+Subject: [PATCH] Make swap accounting default behavior configurable
 
-... I doubt that it's updated automatically. At least I understand
-chapter "13.4.2.2 CAN Status Register (CANSTAT)" and "Table 507. Last
-Error Code (LEC) Details of Operation" differently. Please *check* the
-real behavior by adding debugging code.
+Swap accounting can be configured by CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+configuration option and then it is turned on by default. There is
+a boot option (noswapaccount) which can disable this feature.
 
->> and then after each error observed (lec != PCH_LEC_ALL). I still do not
->> find such code. Could you show us the output of
->>
->>   "# candump any,0:0,#FFFFFFFF"
->>
->> when yo send CAN messages *without* a cable connected?.
-> 
-> 
-> [root@localhost can-utils]# ./candump any,0:0,#FFFFFFFF
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
->   can0  20000024  [8] 00 28 00 00 00 00 88 00   ERRORFRAME
+This makes it hard for distributors to enable the configuration option
+as this feature leads to a bigger memory consumption and this is a no-go
+for general purpose distribution kernel. On the other hand swap
+accounting may be very usuful for some workloads.
 
-To inteprete the error messages, please have a look to
-http://lxr.linux.no/#linux/include/linux/can/error.h
+This patch adds a new configuration option which controls the default
+behavior (CGROUP_MEM_RES_CTLR_SWAP_ENABLED). If the option is selected
+then the feature is turned on by default.
 
-The id is "CAN_EFF_FLAG | CAN_ERR_ACK | CAN_ERR_CRTL" and data[1] is
-"CAN_ERR_CRTL_TX_PASSIVE | CAN_ERR_CRTL_TX_WARNING".
+It also adds a new boot parameter swapaccount which (contrary to
+noswapaccount) enables the feature. (I would consider swapaccount=yes|no
+semantic with removed noswapaccount parameter much better but this
+parameter is kind of API which might be in use and unexpected breakage
+is no-go.)
 
-Which is *not* 100% OK.
+The default behavior is unchanged (if CONFIG_CGROUP_MEM_RES_CTLR_SWAP is
+enabled then CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED is enabled as well)
 
-> ......It seems the same line continues forever.
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+---
+ Documentation/kernel-parameters.txt |    3 +++
+ init/Kconfig                        |   13 +++++++++++++
+ mm/memcontrol.c                     |   15 ++++++++++++++-
+ 3 files changed, 30 insertions(+), 1 deletions(-)
 
-Yes, it will continue until you connect the cable, that's normal
-behavior. But that's not the full sequence. Could you please repeat the
-test as shown below:
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index ed45e98..14eafa5 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2385,6 +2385,9 @@ and is between 256 and 4096 characters. It is defined in the file
+ 			improve throughput, but will also increase the
+ 			amount of memory reserved for use by the client.
+ 
++	swapaccount	[KNL] Enable accounting of swap in memory resource
++			controller. (See Documentation/cgroups/memory.txt)
++
+ 	swiotlb=	[IA-64] Number of I/O TLB slabs
+ 
+ 	switches=	[HW,M68k]
+diff --git a/init/Kconfig b/init/Kconfig
+index 88c1046..c972899 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -613,6 +613,19 @@ config CGROUP_MEM_RES_CTLR_SWAP
+ 	  if boot option "noswapaccount" is set, swap will not be accounted.
+ 	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
+ 	  size is 4096bytes, 512k per 1Gbytes of swap.
++config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
++	bool "Memory Resource Controller Swap Extension enabled by default"
++	depends on CGROUP_MEM_RES_CTLR_SWAP
++	default y
++	help
++	  Memory Resource Controller Swap Extension comes with its price in
++	  a bigger memory consumption. General purpose distribution kernels
++	  which want to enable the feautre but keep it disabled by default
++	  and let the user enable it by swapaccount boot command line
++	  parameter should have this option unselected.
++	  For those who want to have the feature enabled by default should
++	  select this option (if, for some reason, they need to disable it
++	  then noswapaccount does the trick).
+ 
+ menuconfig CGROUP_SCHED
+ 	bool "Group CPU scheduler"
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 9a99cfa..4f479fe 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -61,7 +61,14 @@ struct mem_cgroup *root_mem_cgroup __read_mostly;
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+ /* Turned on only when memory cgroup is enabled && really_do_swap_account = 1 */
+ int do_swap_account __read_mostly;
+-static int really_do_swap_account __initdata = 1; /* for remember boot option*/
++
++/* for remember boot option*/
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED
++static int really_do_swap_account __initdata = 1;
++#else
++static int really_do_swap_account __initdata = 0;
++#endif
++
+ #else
+ #define do_swap_account		(0)
+ #endif
+@@ -4909,6 +4916,12 @@ struct cgroup_subsys mem_cgroup_subsys = {
+ };
+ 
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
++static int __init enable_swap_account(char *s)
++{
++	really_do_swap_account = 1;
++	return 1;
++}
++__setup("swapaccount", enable_swap_account);
+ 
+ static int __init disable_swap_account(char *s)
+ {
+-- 
+1.7.2.3
 
-  First start the following command in a *separate* session.
-  # candump any,0:0,#FFFFFFFF"
-
-  Then setup and start the CAN controller:
-  # ip link set can0 up type can bitrate 125000
-  # cansend can0 123#deadbeef
-
-Wolfgang.
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
