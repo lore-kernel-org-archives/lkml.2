@@ -1,55 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759545Ab0KPJKY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 04:10:24 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56747 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757270Ab0KPJKW convert rfc822-to-8bit (ORCPT
+	id S934046Ab0KPJLX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 04:11:23 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38163 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757270Ab0KPJLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 04:10:22 -0500
+	Tue, 16 Nov 2010 04:11:20 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=XYNog2+yXfhpSF2QbTaGPsC6zXtdoF3lpCGMAdu37TSiWh9Oa1Rxr8+jFZo0nUNfLf
-         ZyyNmSlcf3BCiPV1MRNCMGF8/MF/+eQh++Bm8ClYO1l6AR2gLxYjmrgc6PrJdwZE6ifX
-         eJeMMKtC42AJ4hxnze4/WBzTD/ELujACTERzM=
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=UKfygAROZrDhYBsuo1F1p8AAdoS7uYINMaVZwJQkf89N7W+m62OfdkALhA1TguhIOS
+         50Ew9T9pWPmQi/iF+IbSK7I2Dc5OnTAd3CA+Pb5cAhnS1WMCKvHquYkRnRszLgk5JXoa
+         ShLLzwaGORZQ9rIKx8J5ZysnE5aFEmA40DXj4=
+Date: Tue, 16 Nov 2010 12:11:02 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch 2/2 v2] fbcmap: integer overflow bug
+Message-ID: <20101116090119.GA31724@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Paul Mundt <lethal@linux-sh.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+References: <20101027093716.GD6062@bicker>
+ <20101105134018.2c11f283.akpm@linux-foundation.org>
+ <20101113100718.GB1795@bicker>
+ <20101115044820.GA8489@linux-sh.org>
 MIME-Version: 1.0
-In-Reply-To: <20101116090705.GA29337@pma.sysgo.com>
-References: <20101116090705.GA29337@pma.sysgo.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Tue, 16 Nov 2010 17:09:59 +0800
-Message-ID: <AANLkTin6QAr7=7-59aKzunh6nQGhCKPJ11OspBtC4NHB@mail.gmail.com>
-Subject: Re: suspicious code in linux/arch/arm/common/sa1111.c
-To: Pavel Machek <pma@sysgo.com>
-Cc: kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101115044820.GA8489@linux-sh.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 5:07 PM, Pavel Machek <pma@sysgo.com> wrote:
-> Hi!
->
-> Is this good idea?
->
-> Signed-off-by: Pavel Machek <pma@sysgo.com>
+There is an integer overflow in fb_set_user_cmap() because cmap->len * 2
+can wrap.  It's basically harmless.  Your terminal will be messed up
+until you type reset.
 
-Yep, obviously was a typo.
+This patch does three things to fix the bug.
 
->
-> diff -ur linux.ofic//arch/arm/common/sa1111.c linux/arch/arm/common/sa1111.c
-> --- linux.ofic//arch/arm/common/sa1111.c        2010-10-17 20:31:13.000000000 +0200
-> +++ linux/arch/arm/common/sa1111.c      2010-11-05 10:44:17.000000000 +0100
-> @@ -282,7 +312,7 @@
->        for (i = 0; i < 8; i++) {
->                sa1111_writel(ip0 ^ mask, mapbase + SA1111_INTPOL0);
->                sa1111_writel(ip0, mapbase + SA1111_INTPOL0);
-> -               if (sa1111_readl(mapbase + SA1111_INTSTATCLR1) & mask)
-> +               if (sa1111_readl(mapbase + SA1111_INTSTATCLR0) & mask)
->                        break;
->        }
->
->
+First, it checks the return value of fb_copy_cmap() in fb_alloc_cmap().
+That is enough to fix address the overflow.
+
+Second it checks for the integer overflow in fb_set_user_cmap().
+
+Lastly I wanted to cap "cmap->len" in fb_set_user_cmap() much lower
+because it gets used to determine the size of allocation.  Unfortunately
+no one knows what the limit should be.  Instead what this patch does
+is makes the allocation happen with GFP_KERNEL instead of GFP_ATOMIC
+and lets the kmalloc() decide what values of cmap->len are reasonable.
+To do this, the patch introduces a function called fb_alloc_cmap_gfp()
+which is like fb_alloc_cmap() except that it takes a GFP flag.
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+---
+v2:  Fix overflow check in fb_set_user_cmap().  Return -E2BIG on error.
+
+diff --git a/include/linux/fb.h b/include/linux/fb.h
+index 7fca3dc..d1631d3 100644
+--- a/include/linux/fb.h
++++ b/include/linux/fb.h
+@@ -1122,6 +1122,7 @@ extern const struct fb_videomode *fb_find_best_display(const struct fb_monspecs
+ 
+ /* drivers/video/fbcmap.c */
+ extern int fb_alloc_cmap(struct fb_cmap *cmap, int len, int transp);
++extern int fb_alloc_cmap_gfp(struct fb_cmap *cmap, int len, int transp, gfp_t flags);
+ extern void fb_dealloc_cmap(struct fb_cmap *cmap);
+ extern int fb_copy_cmap(const struct fb_cmap *from, struct fb_cmap *to);
+ extern int fb_cmap_to_user(const struct fb_cmap *from, struct fb_cmap_user *to);
+diff --git a/drivers/video/fbcmap.c b/drivers/video/fbcmap.c
+index a79b976..affdf3e 100644
+--- a/drivers/video/fbcmap.c
++++ b/drivers/video/fbcmap.c
+@@ -88,26 +88,27 @@ static const struct fb_cmap default_16_colors = {
+  *
+  */
+ 
+-int fb_alloc_cmap(struct fb_cmap *cmap, int len, int transp)
++int fb_alloc_cmap_gfp(struct fb_cmap *cmap, int len, int transp, gfp_t flags)
+ {
+ 	int size = len * sizeof(u16);
++	int ret = -ENOMEM;
+ 
+ 	if (cmap->len != len) {
+ 		fb_dealloc_cmap(cmap);
+ 		if (!len)
+ 			return 0;
+ 
+-		cmap->red = kmalloc(size, GFP_ATOMIC);
++		cmap->red = kmalloc(size, flags);
+ 		if (!cmap->red)
+ 			goto fail;
+-		cmap->green = kmalloc(size, GFP_ATOMIC);
++		cmap->green = kmalloc(size, flags);
+ 		if (!cmap->green)
+ 			goto fail;
+-		cmap->blue = kmalloc(size, GFP_ATOMIC);
++		cmap->blue = kmalloc(size, flags);
+ 		if (!cmap->blue)
+ 			goto fail;
+ 		if (transp) {
+-			cmap->transp = kmalloc(size, GFP_ATOMIC);
++			cmap->transp = kmalloc(size, flags);
+ 			if (!cmap->transp)
+ 				goto fail;
+ 		} else {
+@@ -116,12 +117,19 @@ int fb_alloc_cmap(struct fb_cmap *cmap, int len, int transp)
+ 	}
+ 	cmap->start = 0;
+ 	cmap->len = len;
+-	fb_copy_cmap(fb_default_cmap(len), cmap);
++	ret = fb_copy_cmap(fb_default_cmap(len), cmap);
++	if (ret)
++		goto fail;
+ 	return 0;
+ 
+ fail:
+ 	fb_dealloc_cmap(cmap);
+-	return -ENOMEM;
++	return ret;
++}
++
++int fb_alloc_cmap(struct fb_cmap *cmap, int len, int transp)
++{
++	return fb_alloc_cmap_gfp(cmap, len, transp, GFP_ATOMIC);
+ }
+ 
+ /**
+@@ -256,8 +264,12 @@ int fb_set_user_cmap(struct fb_cmap_user *cmap, struct fb_info *info)
+ 	int rc, size = cmap->len * sizeof(u16);
+ 	struct fb_cmap umap;
+ 
++	if (size < 0 || size < cmap->len)
++		return -E2BIG;
++
+ 	memset(&umap, 0, sizeof(struct fb_cmap));
+-	rc = fb_alloc_cmap(&umap, cmap->len, cmap->transp != NULL);
++	rc = fb_alloc_cmap_gfp(&umap, cmap->len, cmap->transp != NULL,
++				GFP_KERNEL);
+ 	if (rc)
+ 		return rc;
+ 	if (copy_from_user(umap.red, cmap->red, size) ||
