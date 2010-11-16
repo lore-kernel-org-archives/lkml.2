@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934148Ab0KPOaq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 09:30:46 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:37470 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758316Ab0KPOak (ORCPT
+	id S934215Ab0KPObo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 09:31:44 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:3958 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754837Ab0KPOXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 09:30:40 -0500
-Date: Tue, 16 Nov 2010 15:30:16 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Claudio Scordino <claudio@evidence.eu.com>
-Cc: Greg KH <gregkh@suse.de>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        linux-serial@vger.kernel.org,
-        Grant Edwards <grant.b.edwards@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] Documentation about RS485 serial communications
-Message-ID: <20101116143016.GB6527@ucw.cz>
-References: <20100408111310.524f7354@lxorguk.ukuu.org.uk>
- <4CBD8EE4.5040808@evidence.eu.com>
- <i9ka0s$4ua$1@dough.gmane.org>
- <201010191727.53314.alexander.stein@systec-electronic.com>
- <i9kk4o$svc$1@dough.gmane.org>
- <4CC418A9.6090602@evidence.eu.com>
- <4CDA630F.4060903@atmel.com>
- <20101110172842.GC12371@suse.de>
- <4CDBC3EC.6020707@evidence.eu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CDBC3EC.6020707@evidence.eu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 16 Nov 2010 09:23:45 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AogKAKMh4kx5Ldur/2dsb2JhbACUX4ECjH1yvmaFSwSFEoVG
+Message-Id: <20101116142028.458264209@kernel.dk>
+User-Agent: quilt/0.48-1
+Date: Wed, 17 Nov 2010 01:09:03 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [patch 03/28] fs: dcache documentation cleanup
+References: <20101116140900.039761100@kernel.dk>
+Content-Disposition: inline; filename=fs-dcache-lock-doc-remove.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Remove redundant (and incorrect, since dcache RCU lookup) dentry locking
+documentation and point to the canonical document.
 
-> Documentation about RS485 serial communications
+Signed-off-by: Nick Piggin <npiggin@kernel.dk>
 
-I have seen hardware (kontron pmc-6l) that was capable of switching
-between RS232, RS485 and one other standard by software.
+---
+ include/linux/dcache.h |   18 ++++++------------
+ 1 file changed, 6 insertions(+), 12 deletions(-)
 
-Is such hw common? If so, should we have standard interface?
+Index: linux-2.6/include/linux/dcache.h
+===================================================================
+--- linux-2.6.orig/include/linux/dcache.h	2010-11-17 00:50:55.000000000 +1100
++++ linux-2.6/include/linux/dcache.h	2010-11-17 01:05:51.000000000 +1100
+@@ -141,22 +141,16 @@ struct dentry_operations {
+ 	char *(*d_dname)(struct dentry *, char *, int);
+ };
+ 
+-/* the dentry parameter passed to d_hash and d_compare is the parent
++/*
++ * Locking rules for dentry_operations callbacks are to be found in
++ * Documentation/filesystems/Locking. Keep it updated!
++ *
++ * the dentry parameter passed to d_hash and d_compare is the parent
+  * directory of the entries to be compared. It is used in case these
+  * functions need any directory specific information for determining
+  * equivalency classes.  Using the dentry itself might not work, as it
+  * might be a negative dentry which has no information associated with
+- * it */
+-
+-/*
+-locking rules:
+-		big lock	dcache_lock	d_lock   may block
+-d_revalidate:	no		no		no       yes
+-d_hash		no		no		no       yes
+-d_compare:	no		yes		yes      no
+-d_delete:	no		yes		no       no
+-d_release:	no		no		no       yes
+-d_iput:		no		no		no       yes
++ * it.
+  */
+ 
+ /* d_flags entries */
 
-> +   From user-level, RS485 configuration can be get/set using the previous
-> +   ioctls. For instance, to set RS485 you can use the following code:
-> +
-> +	#include <linux/serial.h>
-> +
-> +	/* Driver-specific ioctls: */
-> +	#define TIOCGRS485      0x542E
-> +	#define TIOCSRS485      0x542F
-> +
-> +	/* Open your specific device (e.g., /dev/mydevice): */
-> +	int fd = open ("/dev/mydevice", O_RDWR);
-> +	if (fd < 0) {
-> +		/* Error handling. See errno. */
-> +	}
-> +
-> +	struct serial_rs485 rs485conf;
-> +
-> +	/* Set RS485 mode: */
-> +	rs485conf.flags |= SER_RS485_ENABLED;
 
-IOW... is this supposed to switch electrical levels?
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
