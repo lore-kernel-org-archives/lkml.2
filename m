@@ -1,40 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934402Ab0KPMZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 07:25:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11846 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933374Ab0KPMZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 07:25:55 -0500
-Message-ID: <4CE2783F.1020004@redhat.com>
-Date: Tue, 16 Nov 2010 14:25:35 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Josef Bacik <josef@redhat.com>
-CC: david@fromorbit.com, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, cmm@us.ibm.com,
-        cluster-devel@redhat.com, ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 4/6] Ext4: fail if we try to use hole punch
-References: <1289840723-3056-1-git-send-email-josef@redhat.com> <1289840723-3056-5-git-send-email-josef@redhat.com>
-In-Reply-To: <1289840723-3056-5-git-send-email-josef@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S934358Ab0KPMbY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 07:31:24 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42473 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894Ab0KPMbX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 07:31:23 -0500
+Subject: Re: [tg_shares_up rewrite v4 00/11] reduce overhead for tg->shares
+ distribution
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Chris Friesen <cfriesen@nortel.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Pierre Bourdon <pbourdon@excellency.fr>,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Karl Rister <kmr@us.ibm.com>, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        David Miller <davem@davemloft.net>
+In-Reply-To: <20101115234659.610333554@google.com>
+References: <20101115234659.610333554@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 16 Nov 2010 13:31:23 +0100
+Message-ID: <1289910683.2109.593.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 07:05 PM, Josef Bacik wrote:
-> Ext4 doesn't have the ability to punch holes yet, so make sure we return
-> EOPNOTSUPP if we try to use hole punching through fallocate.  This support can
-> be added later.  Thanks,
->
+On Mon, 2010-11-15 at 15:46 -0800, Paul Turner wrote:
+> 
+> This is v4 of the tg_shares_up re-write previously posted at:
+> http://lkml.org/lkml/2010/10/16/17
+> 
+> Corrected versus the previous version is the quilt patch-strip level.
+> 
+> The key idea behind this patchset is an idea of Peter Zijlstra'a to compute
+> global loads as a function of local averages, avoiding the cpu-cpu interactions
+> which previously plagued tg_shares_up.
+> 
+> Beyond bug fixes not much material has changed since v1 as results seem
+> favourable/stable.
 
-Instead of teaching filesystems to fail if they don't support the 
-capability, why don't supporting filesystems say so, allowing the fail 
-code to be in common code?
 
--- 
-error compiling committee.c: too many arguments to function
-
+Thanks, applied!
