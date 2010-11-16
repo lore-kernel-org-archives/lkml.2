@@ -1,299 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932363Ab0KPUuO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:50:14 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35172 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932306Ab0KPUuH (ORCPT
+	id S1758273Ab0KPUvI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:51:08 -0500
+Received: from tango.0pointer.de ([85.214.72.216]:42087 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758203Ab0KPUvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:50:07 -0500
-Subject: [PATCH 2/5] powerpc/5200: dts: rename nodes to prepare for
-	refactoring dts files
-To: linux-kernel@vger.kernel.org
-From: John Bonesio <bones@secretlab.ca>
-Cc: linuxppc-dev@lists.ozlabs.org, jdl@jdl.com, glikely@secretlab.ca,
-        devicetree-discuss@lists.ozlabs.org, david@gibson.dropbear.id.au
-Date: Tue, 16 Nov 2010 12:50:02 -0800
-Message-ID: <20101116205002.12146.57002.stgit@riker>
-In-Reply-To: <20101116204917.12146.39851.stgit@riker>
-References: <20101116204917.12146.39851.stgit@riker>
-User-Agent: StGit/0.15
+	Tue, 16 Nov 2010 15:51:04 -0500
+Date: Tue, 16 Nov 2010 21:50:43 +0100
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101116205043.GG27235@tango.0pointer.de>
+References: <20101116015648.GA11534@redhat.com>
+ <1289916171.5169.117.camel@maggy.simson.net>
+ <1289916683.2109.625.camel@laptop>
+ <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+ <20101116170312.GA19327@tango.0pointer.de>
+ <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+ <20101116181603.GC19327@tango.0pointer.de>
+ <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+ <AANLkTikjQKmo0j5xbvPiS=eriAUUZPMGKkcxt8w_z8XB@mail.gmail.com>
+ <AANLkTikKdjH-ZM0eXTQMvzJjYkpyfKZR2OK06tNtCGFs@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikKdjH-ZM0eXTQMvzJjYkpyfKZR2OK06tNtCGFs@mail.gmail.com>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch renames nodes in dts fils for MPC5200b files to prepare for
-refactoring of these files later. When refactoring it will be easier to verify
-the results if the node names aren't changing at the same time.
+On Tue, 16.11.10 11:45, Linus Torvalds (torvalds@linux-foundation.org) wrote:
 
-Signed-off-by: John Bonesio <bones@secretlab.ca>
----
+> 
+> On Tue, Nov 16, 2010 at 11:27 AM, Dhaval Giani <dhaval.giani@gmail.com> wrote:
+> >
+> > So what do you think about something like systemd handling it. systemd
+> > already does a lot of this stuff already in the form of process
+> > tracking, so it is quite trivial to do this. And more happily avoids
+> > all this complexity in the kernel.
+> 
+> What complexity? Have you looked at the patch? It has no complexity anywhere.
+> 
+> It's a _lot_ less complex than having system daemons you don't
+> control. We have not had good results with that approach in the past.
+> System daemons tend to cause nasty problems, and debugging them is a
+> nightmare.
 
- arch/powerpc/boot/dts/cm5200.dts    |    8 ++++----
- arch/powerpc/boot/dts/digsy_mtc.dts |    6 +++---
- arch/powerpc/boot/dts/lite5200b.dts |    2 +-
- arch/powerpc/boot/dts/media5200.dts |    2 +-
- arch/powerpc/boot/dts/motionpro.dts |   10 +++++-----
- arch/powerpc/boot/dts/mucmc52.dts   |    6 +++---
- arch/powerpc/boot/dts/pcm030.dts    |    6 +++---
- arch/powerpc/boot/dts/pcm032.dts    |    6 +++---
- arch/powerpc/boot/dts/uc101.dts     |    6 +++---
- 9 files changed, 26 insertions(+), 26 deletions(-)
+Well, userspace doesn't bite.
 
-diff --git a/arch/powerpc/boot/dts/cm5200.dts b/arch/powerpc/boot/dts/cm5200.dts
-index dd38608..9369dcd 100644
---- a/arch/powerpc/boot/dts/cm5200.dts
-+++ b/arch/powerpc/boot/dts/cm5200.dts
-@@ -160,25 +160,25 @@
- 			reg = <0x1f00 0x100>;
- 		};
- 
--		serial@2000 {		// PSC1
-+		psc@2000 {		// PSC1
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2000 0x100>;
- 			interrupts = <2 1 0>;
- 		};
- 
--		serial@2200 {		// PSC2
-+		psc@2200 {		// PSC2
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2200 0x100>;
- 			interrupts = <2 2 0>;
- 		};
- 
--		serial@2400 {		// PSC3
-+		psc@2400 {		// PSC3
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2400 0x100>;
- 			interrupts = <2 3 0>;
- 		};
- 
--		serial@2c00 {		// PSC6
-+		psc@2c00 {		// PSC6
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2c00 0x100>;
- 			interrupts = <2 4 0>;
-diff --git a/arch/powerpc/boot/dts/digsy_mtc.dts b/arch/powerpc/boot/dts/digsy_mtc.dts
-index 8e9be6b..f0592de 100644
---- a/arch/powerpc/boot/dts/digsy_mtc.dts
-+++ b/arch/powerpc/boot/dts/digsy_mtc.dts
-@@ -155,13 +155,13 @@
- 			reg = <0x1f00 0x100>;
- 		};
- 
--		serial@2600 {		// PSC4
-+		psc@2600 {		// PSC4
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2600 0x100>;
- 			interrupts = <2 11 0>;
- 		};
- 
--		serial@2800 {		// PSC5
-+		psc@2800 {		// PSC5
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2800 0x100>;
- 			interrupts = <2 12 0>;
-@@ -217,7 +217,7 @@
- 		};
- 	};
- 
--	lpb {
-+	localbus {
- 		compatible = "fsl,mpc5200b-lpb","simple-bus";
- 		#address-cells = <2>;
- 		#size-cells = <1>;
-diff --git a/arch/powerpc/boot/dts/lite5200b.dts b/arch/powerpc/boot/dts/lite5200b.dts
-index 59702ac..a74b790 100644
---- a/arch/powerpc/boot/dts/lite5200b.dts
-+++ b/arch/powerpc/boot/dts/lite5200b.dts
-@@ -172,7 +172,7 @@
- 			reg = <0x1f00 0x100>;
- 		};
- 
--		serial@2000 {		// PSC1
-+		psc@2000 {		// PSC1
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			cell-index = <0>;
- 			reg = <0x2000 0x100>;
-diff --git a/arch/powerpc/boot/dts/media5200.dts b/arch/powerpc/boot/dts/media5200.dts
-index 0c3902b..a70ef68 100644
---- a/arch/powerpc/boot/dts/media5200.dts
-+++ b/arch/powerpc/boot/dts/media5200.dts
-@@ -183,7 +183,7 @@
- 		};
- 
- 		// PSC6 in uart mode
--		console: serial@2c00 {		// PSC6
-+		console: psc@2c00 {		// PSC6
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			cell-index = <5>;
- 			port-number = <0>;  // Logical port assignment
-diff --git a/arch/powerpc/boot/dts/motionpro.dts b/arch/powerpc/boot/dts/motionpro.dts
-index 6ca4fc1..f6261ea 100644
---- a/arch/powerpc/boot/dts/motionpro.dts
-+++ b/arch/powerpc/boot/dts/motionpro.dts
-@@ -100,7 +100,7 @@
- 			interrupts = <1 14 0>;
- 		};
- 
--		motionpro-led@660 {	// Motion-PRO status LED
-+		timer@660 {	// Motion-PRO status LED
- 			compatible = "promess,motionpro-led";
- 			label = "motionpro-statusled";
- 			reg = <0x660 0x10>;
-@@ -108,7 +108,7 @@
- 			blink-delay = <100>; // 100 msec
- 		};
- 
--		motionpro-led@670 {	// Motion-PRO ready LED
-+		timer@670 {	// Motion-PRO ready LED
- 			compatible = "promess,motionpro-led";
- 			label = "motionpro-readyled";
- 			reg = <0x670 0x10>;
-@@ -169,14 +169,14 @@
- 			reg = <0x1f00 0x100>;
- 		};
- 
--		serial@2000 {		// PSC1
-+		psc@2000 {		// PSC1
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2000 0x100>;
- 			interrupts = <2 1 0>;
- 		};
- 
- 		// PSC2 in spi master mode 
--		spi@2200 {		// PSC2
-+		psc@2200 {		// PSC2
- 			compatible = "fsl,mpc5200b-psc-spi","fsl,mpc5200-psc-spi";
- 			cell-index = <1>;
- 			reg = <0x2200 0x100>;
-@@ -184,7 +184,7 @@
- 		};
- 
- 		// PSC5 in uart mode
--		serial@2800 {		// PSC5
-+		psc@2800 {		// PSC5
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2800 0x100>;
- 			interrupts = <2 12 0>;
-diff --git a/arch/powerpc/boot/dts/mucmc52.dts b/arch/powerpc/boot/dts/mucmc52.dts
-index b72a758..8dc212d 100644
---- a/arch/powerpc/boot/dts/mucmc52.dts
-+++ b/arch/powerpc/boot/dts/mucmc52.dts
-@@ -126,19 +126,19 @@
- 			reg = <0x1f00 0x100>;
- 		};
- 
--		serial@2000 { /* PSC1 in UART mode */
-+		psc@2000 { /* PSC1 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2000 0x100>;
- 			interrupts = <2 1 0>;
- 		};
- 
--		serial@2200 { /* PSC2 in UART mode */
-+		psc@2200 { /* PSC2 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2200 0x100>;
- 			interrupts = <2 2 0>;
- 		};
- 
--		serial@2c00 { /* PSC6 in UART mode */
-+		psc@2c00 { /* PSC6 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2c00 0x100>;
- 			interrupts = <2 4 0>;
-diff --git a/arch/powerpc/boot/dts/pcm030.dts b/arch/powerpc/boot/dts/pcm030.dts
-index 8a4ec30..3a4f554 100644
---- a/arch/powerpc/boot/dts/pcm030.dts
-+++ b/arch/powerpc/boot/dts/pcm030.dts
-@@ -185,7 +185,7 @@
- 			reg = <0x1f00 0x100>;
- 		};
- 
--		ac97@2000 { /* PSC1 in ac97 mode */
-+		psc@2000 { /* PSC1 in ac97 mode */
- 			compatible = "mpc5200b-psc-ac97","fsl,mpc5200b-psc-ac97";
- 			cell-index = <0>;
- 			reg = <0x2000 0x100>;
-@@ -194,7 +194,7 @@
- 
- 		/* PSC2 port is used by CAN1/2 */
- 
--		serial@2400 { /* PSC3 in UART mode */
-+		psc@2400 { /* PSC3 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			cell-index = <2>;
- 			reg = <0x2400 0x100>;
-@@ -205,7 +205,7 @@
- 
- 		/* PSC5 is ??? */
- 
--		serial@2c00 { /* PSC6 in UART mode */
-+		psc@2c00 { /* PSC6 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			cell-index = <5>;
- 			reg = <0x2c00 0x100>;
-diff --git a/arch/powerpc/boot/dts/pcm032.dts b/arch/powerpc/boot/dts/pcm032.dts
-index 85d857a..17596c7 100644
---- a/arch/powerpc/boot/dts/pcm032.dts
-+++ b/arch/powerpc/boot/dts/pcm032.dts
-@@ -185,7 +185,7 @@
- 			reg = <0x1f00 0x100>;
- 		};
- 
--		ac97@2000 {	/* PSC1 is ac97 */
-+		psc@2000 {	/* PSC1 is ac97 */
- 			compatible = "fsl,mpc5200b-psc-ac97","fsl,mpc5200-psc-ac97";
- 			cell-index = <0>;
- 			reg = <0x2000 0x100>;
-@@ -194,7 +194,7 @@
- 
- 		/* PSC2 port is used by CAN1/2 */
- 
--		serial@2400 { /* PSC3 in UART mode */
-+		psc@2400 { /* PSC3 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			cell-index = <2>;
- 			reg = <0x2400 0x100>;
-@@ -205,7 +205,7 @@
- 
- 		/* PSC5 is ??? */
- 
--		serial@2c00 { /* PSC6 in UART mode */
-+		psc@2c00 { /* PSC6 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			cell-index = <5>;
- 			reg = <0x2c00 0x100>;
-diff --git a/arch/powerpc/boot/dts/uc101.dts b/arch/powerpc/boot/dts/uc101.dts
-index 019264c..e00441a 100644
---- a/arch/powerpc/boot/dts/uc101.dts
-+++ b/arch/powerpc/boot/dts/uc101.dts
-@@ -158,19 +158,19 @@
- 			reg = <0x1f00 0x100>;
- 		};
- 
--		serial@2000 { /* PSC1 in UART mode */
-+		psc@2000 { /* PSC1 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2000 0x100>;
- 			interrupts = <2 1 0>;
- 		};
- 
--		serial@2200 { /* PSC2 in UART mode */
-+		psc@2200 { /* PSC2 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2200 0x100>;
- 			interrupts = <2 2 0>;
- 		};
- 
--		serial@2c00 {		/* PSC6 in UART mode */
-+		psc@2c00 {		/* PSC6 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
- 			reg = <0x2c00 0x100>;
- 			interrupts = <2 4 0>;
+> For example: how do you do reference counting for a cgroup in user
+> space, when processes fork and exit without you even knowing it? In
+> kernel space, it's _trivial_. That's what kernel/autogroup.c does, and
+> it has lots of support for it, because that kind of reference counting
+> is exactly what the kernel does.
 
+You can just do an rmdir from the cgroup release handler. Heck, "rmdir"
+is a pretty good GC in itself, since it deletes a cgroup only if it is
+empty.
+
+> In a system daemon? Good luck with that. It's a nightmare. Maybe you
+> could just poll all the cgroups, and try to remove them once a minute,
+> and if they are empty it works. Or something like that. But what a
+> hacky thing it would be.
+
+Well, that nightmare already exists. It's systemd. We use the cgroup
+release handler. If you ask me it's an aweful interface, but works
+fine.
+
+> And more importantly: I don't run systemd. Neither do a lot of other
+> people. The way the patch does things, "it just works".
+
+So this basically boils down to the fact that this is useful for your
+particular usecase. Because you don't want to update userspace. But
+don't claim this would be useful for anybody but you. It is definitely
+irrelevant for the usual desktop usecase. 
+
+> Did you go to the phoronix forum to look at how people reacted to the
+> phoronix article about the patch? There were a number of testers. It
+> was just so _easy_ to test and set up. If you want people to run some
+> specific system daemon, it immediately gets much harder to set up and
+> do.
+
+Jeez. Phoronix!
+
+If you truly believe that the Phoronix usecase of running "make -j64"
+over the kernel tree was in any way relevant in real life for anybody
+but kernel developers, then I can't help you.
+
+Lennart
+
+-- 
+Lennart Poettering - Red Hat, Inc.
