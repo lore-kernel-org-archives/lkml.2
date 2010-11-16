@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222Ab0KPS7e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 13:59:34 -0500
-Received: from casper.infradead.org ([85.118.1.10]:33774 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146Ab0KPS7d convert rfc822-to-8bit (ORCPT
+	id S1757134Ab0KPTD7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 14:03:59 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54252 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192Ab0KPTD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 13:59:33 -0500
+	Tue, 16 Nov 2010 14:03:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=JdVez2gW4ULJZRY7ifKfA82iZqVb78vyTbggyMSlxk7sipMThKspCGCf6GHz0gLtef
+         HeAEmxFHOh2mN/65CY6P2+LwvD3s3FEOlB3monxAkIddTzRTUXpO2fBIWwhwJp94RmG5
+         AUbyiWouOicAJfowkgLzEoEZfwAP2KIT6aOc8=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+References: <1289820766.16406.45.camel@maggy.simson.net>
+	<1289821590.16406.47.camel@maggy.simson.net>
+	<20101115125716.GA22422@redhat.com>
+	<1289856350.14719.135.camel@maggy.simson.net>
+	<20101116015648.GA11534@redhat.com>
+	<1289916171.5169.117.camel@maggy.simson.net>
+	<1289916683.2109.625.camel@laptop>
+	<AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+	<20101116170312.GA19327@tango.0pointer.de>
+	<AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+	<20101116181603.GC19327@tango.0pointer.de>
+	<AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+Date: Tue, 16 Nov 2010 21:03:57 +0200
+X-Google-Sender-Auth: kdOdl6WxwX-sl7tzPnTDwCs_w5M
+Message-ID: <AANLkTi=Z5CK3fOgXNs9odKnQNFHsbavpOvw8c3kh6zEG@mail.gmail.com>
 Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: david@lang.hm
-Cc: Paul Menage <menage@google.com>, Lennart Poettering <mzxreary@0pointer.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+From: Pekka Enberg <penberg@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Lennart Poettering <mzxreary@0pointer.de>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
         Markus Trippelsdorf <markus@trippelsdorf.de>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
         Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <alpine.DEB.2.00.1011161047060.3718@asgard.lang.hm>
-References: <1289820766.16406.45.camel@maggy.simson.net>
-	 <1289821590.16406.47.camel@maggy.simson.net>
-	 <20101115125716.GA22422@redhat.com>
-	 <1289856350.14719.135.camel@maggy.simson.net>
-	 <20101116015648.GA11534@redhat.com>
-	 <1289916171.5169.117.camel@maggy.simson.net>
-	 <1289916683.2109.625.camel@laptop>
-	 <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
-	 <20101116170312.GA19327@tango.0pointer.de>
-	 <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
-	 <20101116181603.GC19327@tango.0pointer.de>
-	 <1289931715.2109.648.camel@laptop>
-	 <AANLkTik7cR_5JJWfk8SEf3Dngfe7yZvuivJ66dVDOuAk@mail.gmail.com>
-	 <alpine.DEB.2.00.1011161047060.3718@asgard.lang.hm>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 16 Nov 2010 19:59:25 +0100
-Message-ID: <1289933965.2109.652.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 10:55 -0800, david@lang.hm wrote:
-> On Tue, 16 Nov 2010, Paul Menage wrote:
-> 
-> > On Tue, Nov 16, 2010 at 10:21 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> >>
-> >> Not quite the same, you're nesting one level deeper. But the reality is,
-> >> not a lot of people will change their userspace.
-> >
-> > That's a weak argument - not a lot of people will (explicitly) change
-> > their kernel either - they'll get a fresh kernel via their distro
-> > updates, as they would get userspace updates. So it's only a few
-> > people (distros) that actually need to make such a change.
-> 
-> what is the downside of this patch going to be?
-> 
-> people who currently expect all the processes to compete equally will now 
-> find that they no longer do so. If I am understanding this correctly, this 
-> could mean that a box that was dedicated to running one application will 
-> now have that application no longer dominate the system, instead it will 
-> 'share equally' with the housekeeping apps on the system.
-> 
-> what would need to be done to revert to the prior situation?
+On Tue, Nov 16, 2010 at 8:49 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> User-level configuration for something that should just work is
+> annoying. We can do better.
 
-build with: CONFIG_SCHED_AUTOGROUP=n, 
-boot with: noautogroup or 
-runtime: echo 0 > /proc/sysctl/kernel/sched_autogroup_enabled
+Completely agreed. Desktop users should not be required to fiddle with
+kernel knobs from userspace to fix interactivity problems. Having sane
+defaults applies to the kernel as much as it does to userspace.
 
-(although the latter is a lazy one, it won't force existing tasks back
-to the root group)
+                        Pekka
