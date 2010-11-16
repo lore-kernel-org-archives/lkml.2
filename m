@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934191Ab0KPKHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 05:07:43 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55799 "EHLO
+	id S934167Ab0KPKLh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 05:11:37 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:34370 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932529Ab0KPKHm convert rfc822-to-8bit (ORCPT
+	with ESMTP id S934056Ab0KPKLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 05:07:42 -0500
+	Tue, 16 Nov 2010 05:11:36 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=p591J2pV+FtYDmdLc6A3CSgLCrbaXTHQwFeaFuCtpLhUufi+esVI4fQbfri+QNnXtM
-         QA53gG7+btuX2CAkl0YzRKlUnnupUJoVPaZW7hPHwF91i7Vp4mtpRAp0B/Nuzl59pJri
-         zmsARbvBg4A75AMiwFeGBulEF760JZp7eYJno=
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=kfWAlF/KRyv92oVUg383otVs9tx20uGeb7T0zBsGSRM9ryNSBRegfszNhydYk65Tox
+         ebJDU+oz8ASfqc5MQIc8lTXx/L7l4jNX8hs4kyxAon7x2wO0rh/KIHUH87Q34pcv7hzc
+         9lj/PZjZFY6brnUuLBkGGauFSQi7YFvMktmdU=
 MIME-Version: 1.0
-In-Reply-To: <20101115183014.GD31421@n2100.arm.linux.org.uk>
+In-Reply-To: <20101116100406.GB12891@n2100.arm.linux.org.uk>
 References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
-	<1289584840-18097-6-git-send-email-catalin.marinas@arm.com>
-	<20101115183014.GD31421@n2100.arm.linux.org.uk>
-Date: Tue, 16 Nov 2010 10:07:41 +0000
-X-Google-Sender-Auth: 4KAt1LVpz-rrX5L2VCJd7E3NwZk
-Message-ID: <AANLkTi=dFXu=tGRRJt0cKbm8r528Sk9mHoLZ-Lh+oQ6y@mail.gmail.com>
-Subject: Re: [PATCH v2 05/20] ARM: LPAE: Introduce L_PTE_NOEXEC and L_PTE_NOWRITE
+	<1289584840-18097-3-git-send-email-catalin.marinas@arm.com>
+	<20101115233129.GG31421@n2100.arm.linux.org.uk>
+	<AANLkTikrz+yM6idm-aij10vsKZMVSOBfZSdeEJbDRwiC@mail.gmail.com>
+	<20101116100406.GB12891@n2100.arm.linux.org.uk>
+Date: Tue, 16 Nov 2010 10:11:35 +0000
+X-Google-Sender-Auth: Ov_ntjHjjfYcNbsZfyLwZkgav5Y
+Message-ID: <AANLkTi=AGUs0nQPK0nx52m1XA8nx2sRmQcxicuG-Kd-D@mail.gmail.com>
+Subject: Re: [PATCH v2 02/20] ARM: LPAE: Factor out 2-level page table
+ definitions into separate files
 From: Catalin Marinas <catalin.marinas@arm.com>
 To: Russell King - ARM Linux <linux@arm.linux.org.uk>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 November 2010 18:30, Russell King - ARM Linux
+On 16 November 2010 10:04, Russell King - ARM Linux
 <linux@arm.linux.org.uk> wrote:
-> On Fri, Nov 12, 2010 at 06:00:25PM +0000, Catalin Marinas wrote:
->> --- a/arch/arm/include/asm/pgtable-2level.h
->> +++ b/arch/arm/include/asm/pgtable-2level.h
->> @@ -128,6 +128,8 @@
->>  #define L_PTE_USER           (1 << 8)
->>  #define L_PTE_EXEC           (1 << 9)
->>  #define L_PTE_SHARED         (1 << 10)       /* shared(v6), coherent(xsc3) */
->> +#define L_PTE_NOEXEC         (0)
->> +#define L_PTE_NOWRITE                (0)
+> On Tue, Nov 16, 2010 at 09:14:52AM +0000, Catalin Marinas wrote:
+>> > Of couse, I now have patches for this and my other points... will sort
+>> > them out into a series in the next few days.
+>>
+>> Thanks.
 >
-> Let's not make this more complicated than it has to be.  If we need the
-> inverse of WRITE and EXEC, then that's what we should change everyone to,
-> not invent a new system to work along side the old system.
+> BTW, don't post another round of patches just because you've had _some_
+> comments back - your v2 patches are still being looked through, your v3
+> patches haven't even been looked at yet.
 
-Yes, that's fine.
+I'll wait for your patches on the PTE offset and than rebase mine on
+top. It may be sometime next week as I already have a lot to do.
 
-For PMD, we may still need a dummy PMD_SECT_AP_WRITE for the 3-level
-definitions unless we change the __pmd() accessor or __pmd_populate().
+I posted the v3 patches just to clarify the issues around the 3/20
+patch. The other patches are pretty much the same, so you can skip
+this version and wait for v4.
 
 -- 
 Catalin
