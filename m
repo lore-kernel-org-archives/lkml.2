@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759429Ab0KPHhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 02:37:55 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:42991 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756425Ab0KPHhy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 02:37:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=FSwcDWuqtL4Y8s636bjr3e6smTXloowDV6nKrnVxR/XI+3KuvFofH8rszEr+tzAshk
-         l+7rc3lLUSDEzLdM7TamODHbFL5tK9Qnxc7lTTANY+rIfOu1gpV4YO0A7ZU4vEO26YCu
-         w72DOFHi7NHHOvZ1/C2fmPV3L1VU5H1YXuuHE=
-MIME-Version: 1.0
-In-Reply-To: <1289892645.28741.8.camel@Joe-Laptop>
-References: <cover.1289855436.git.joe@perches.com>
-	<223eff1b1e8c4d1791af56113d088b379a93780b.1289855436.git.joe@perches.com>
-	<AANLkTi=1XasDJaaisZ=NnL3Yv5tx+vhuifCuq7e-0PMe@mail.gmail.com>
-	<1289892645.28741.8.camel@Joe-Laptop>
-Date: Tue, 16 Nov 2010 08:37:53 +0100
-Message-ID: <AANLkTi=qf9SNqFuomonUSWCSgYBB8kUfLdjVfZeXKhC4@mail.gmail.com>
-Subject: Re: [PATCH 09/10] drivers/staging: Remove unnecessary casts of netdev_priv
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1759437Ab0KPHjn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 02:39:43 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:41849 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756802Ab0KPHjm convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Tue, 16 Nov 2010 02:39:42 -0500
+Message-Id: <4CE2434A02000078000226C7@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Tue, 16 Nov 2010 07:39:38 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <heukelum@fastmail.fm>,
+        "Tetsuo Handa" <penguin-kernel@I-love.SAKURA.ne.jp>,
+        <hpa@linux.intel.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2.6.37-rc2] x86, asm: Add parentheses around one
+	 pushl_cfi argument
+References: <201011160445.oAG4jGif079860@www262.sakura.ne.jp>
+In-Reply-To: <201011160445.oAG4jGif079860@www262.sakura.ne.jp>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 8:30 AM, Joe Perches <joe@perches.com> wrote:
-> On Tue, 2010-11-16 at 08:20 +0100, Belisko Marek wrote:
->> On Mon, Nov 15, 2010 at 10:12 PM, Joe Perches <joe@perches.com> wrote:
->> > Signed-off-by: Joe Perches <joe@perches.com>
->> If I do: grep -r -n 'netdev_priv' drivers/staging/*/*[ch]
->
-> Try:
->
-> $ grep -rP --include=*.[ch] "=\s*\([^\*]+\*\s*\)\s*netdev_priv" drivers/staging
->
->> there is a more netdev_priv occurences ;)
->
-> I'm sure there are, but probably not assigns.
-Right. Just want to be sure ;)
-> If you find more unnecessary casts, by all means submit them.
+>>> On 16.11.10 at 05:45, Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
+> From ed935c12f0b2b09c1586d22925261378e0d7eb83 Mon Sep 17 00:00:00 2001
+> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Tue, 16 Nov 2010 13:33:07 +0900
+> Subject: [PATCH] x86, asm: Add parentheses around one pushl_cfi argument
+> 
+> Commit df5d1874 "x86: Use {push,pop}{l,q}_cfi in more places" caused GNU
+> assembler 2.15 (Debian Sarge) to fail. It is still failing as of commit
+> 07bd8516 "x86, asm: Restore parentheses around one pushl_cfi argument".
+> This patch solves build failure with GNU assembler 2.15.
+> 
+> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 
->
-> cheers, Joe
->
->
+Acked-by: Jan Beulich <jbeulich@novell.com>
 
-thanks,
+> ---
+>  arch/x86/kernel/entry_32.S |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+> index 59e175e..591e601 100644
+> --- a/arch/x86/kernel/entry_32.S
+> +++ b/arch/x86/kernel/entry_32.S
+> @@ -395,7 +395,7 @@ sysenter_past_esp:
+>  	 * A tiny bit of offset fixup is necessary - 4*4 means the 4 words
+>  	 * pushed above; +8 corresponds to copy_thread's esp0 setting.
+>  	 */
+> -	pushl_cfi (TI_sysenter_return-THREAD_SIZE_asm+8+4*4)(%esp)
+> +	pushl_cfi ((TI_sysenter_return)-THREAD_SIZE_asm+8+4*4)(%esp)
+>  	CFI_REL_OFFSET eip, 0
+>  
+>  	pushl_cfi %eax
 
-marek
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-icq: 290551086
-web: http://open-nandra.com
+
