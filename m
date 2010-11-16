@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759336Ab0KPEIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 23:08:13 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57644 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759293Ab0KPEIM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 23:08:12 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 16 Nov 2010 13:02:40 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Balbir Singh <balbir@in.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] memcg: fix unit mismatch in memcg oom limit calculation
-Message-Id: <20101116130240.92986f01.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101109110521.GS23393@cmpxchg.org>
-References: <20101109110521.GS23393@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1759341Ab0KPELa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 23:11:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19678 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756520Ab0KPEL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 23:11:29 -0500
+Message-ID: <4CE20449.4050403@redhat.com>
+Date: Mon, 15 Nov 2010 21:10:49 -0700
+From: Jeff Law <law@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Richard Guenther <richard.guenther@gmail.com>
+CC: Andi Kleen <andi@firstfloor.org>, Andreas Schwab <schwab@linux-m68k.org>,
+        Jim <jim876@xs4all.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        gcc@gcc.gnu.org
+Subject: Re: gcc 4.5.1 / as 2.20.51.0.11 miscompiling drivers/char/i8k.c ?
+References: <4CD538CA.8010901@xs4all.nl>	<87wroostw3.fsf@basil.nowhere.org>	<m2hbfsu57i.fsf@igel.home>	<87k4kospnd.fsf@basil.nowhere.org>	<AANLkTikG6kBxSrO7EZ5_nZqTKqo8Rjm2stoEGVJWxanz@mail.gmail.com>	<4CE17FB6.7000800@redhat.com>	<AANLkTim-2XE=4MbfDLXkg+jj=P5wj2cVKBHemRHLZn2L@mail.gmail.com>	<4CE1BB10.5090501@redhat.com> <AANLkTi=piiT5MCWYvw+4wQPx=e8uVrQmY0Lw+=mnabK_@mail.gmail.com>
+In-Reply-To: <AANLkTi=piiT5MCWYvw+4wQPx=e8uVrQmY0Lw+=mnabK_@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 9 Nov 2010 12:05:21 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+On 11/15/10 16:07, Richard Guenther wrote:
+>>
+>> If the address of the auto isn't taken, then why is the object in memory to
+>> begin with (with the obvious exception for aggregates).
+> Exactly sort of my point.  If people pass the address of&x to an asm
+> and modify&x + 8 expecting the "adjacent" stack location to be changed
+> I want to tell them that's not a supported way to get to another stack
+> variable (even if they clobber "memory").  Or consider the C-decl guy
+> who wants to access adjacent parameters by address arithmetic on
+> the address of the first param ...
+Well, in that case, I think we can easily say that the programmer has 
+gone off the deep end and has entered the realm of undefined behavior.
 
-> Adding the number of swap pages to the byte limit of a memory control
-> group makes no sense.  Convert the pages to bytes before adding them.
-> 
-> The only user of this code is the OOM killer, and the way it is used
-> means that the error results in a higher OOM badness value.  Since the
-> cgroup limit is the same for all tasks in the cgroup, the error should
-> have no practical impact at the moment.
-> 
-> But let's not wait for future or changing users to trip over it.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Presumably we rooted out all relevant instances of the latter over the 
+last 20 years...  It was fairly common in the past, but I doubt anyone 
+worth caring about is still writing code assuming they can take the 
+address of parameter A, offset it and get parameters B, C, D, etc.
 
-
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-
+jeff
