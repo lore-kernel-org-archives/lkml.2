@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756957Ab0KPUlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:41:37 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55813 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755199Ab0KPUlg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:41:36 -0500
-Date: Tue, 16 Nov 2010 12:41:17 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, stable@kernel.org
-Subject: Re: [BUGFIX] memcg: avoid deadlock between move charge and
- try_charge()
-Message-Id: <20101116124117.64608b66.akpm@linux-foundation.org>
-In-Reply-To: <20101116191748.d6645376.nishimura@mxp.nes.nec.co.jp>
-References: <20101116191748.d6645376.nishimura@mxp.nes.nec.co.jp>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	id S1757164Ab0KPUmj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:42:39 -0500
+Received: from mail.perches.com ([173.55.12.10]:1476 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754409Ab0KPUmi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 15:42:38 -0500
+Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
+ preference tool
+From: Joe Perches <joe@perches.com>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Florian Mickler <florian@mickler.org>,
+        Jiri Kosina <trivial@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101116122102.86e7e0b9.rdunlap@xenotime.net>
+References: <1289845830.16461.149.camel@Joe-Laptop>
+	 <20101115190738.GF3338@sirena.org.uk>
+	 <1289848458.16461.150.camel@Joe-Laptop>
+	 <20101115193407.GK12986@rakim.wolfsonmicro.main>
+	 <1289850773.16461.166.camel@Joe-Laptop>
+	 <20101116104921.GL12986@rakim.wolfsonmicro.main>
+	 <1289919077.28741.50.camel@Joe-Laptop>
+	 <20101116183707.179964dd@schatten.dmk.lab>
+	 <20101116181226.GB26239@rakim.wolfsonmicro.main>
+	 <20101116203522.65240b18@schatten.dmk.lab>
+	 <20101116195530.GA7523@rakim.wolfsonmicro.main>
+	 <20101116122102.86e7e0b9.rdunlap@xenotime.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Nov 2010 12:42:36 -0800
+Message-ID: <1289940156.28741.207.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Nov 2010 19:17:48 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+On Tue, 2010-11-16 at 12:21 -0800, Randy Dunlap wrote:
+> On Tue, 16 Nov 2010 19:55:31 +0000 Mark Brown wrote:
+> I don't know what you asked Joe to change, but asking someone to use
+> the documented canonical patch format:
+> <quote>
+> The canonical patch subject line is:
+>     Subject: [PATCH 001/123] subsystem: summary phrase
+> </quote>
+> should be fine.  And there is no need for printf-ish templates
+> for this in MAINTAINERS either.
 
-> From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> 
-> __mem_cgroup_try_charge() can be called under down_write(&mmap_sem)(e.g.
-> mlock does it). This means it can cause deadlock if it races with move charge:
-> 
-> Ex.1)
->                 move charge             |        try charge
->   --------------------------------------+------------------------------
->     mem_cgroup_can_attach()             |  down_write(&mmap_sem)
->       mc.moving_task = current          |    ..
->       mem_cgroup_precharge_mc()         |  __mem_cgroup_try_charge()
->         mem_cgroup_count_precharge()    |    prepare_to_wait()
->           down_read(&mmap_sem)          |    if (mc.moving_task)
->           -> cannot aquire the lock     |    -> true
->                                         |      schedule()
-> 
-> Ex.2)
->                 move charge             |        try charge
->   --------------------------------------+------------------------------
->     mem_cgroup_can_attach()             |
->       mc.moving_task = current          |
->       mem_cgroup_precharge_mc()         |
->         mem_cgroup_count_precharge()    |
->           down_read(&mmap_sem)          |
->           ..                            |
->           up_read(&mmap_sem)            |
->                                         |  down_write(&mmap_sem)
->     mem_cgroup_move_task()              |    ..
->       mem_cgroup_move_charge()          |  __mem_cgroup_try_charge()
->         down_read(&mmap_sem)            |    prepare_to_wait()
->         -> cannot aquire the lock       |    if (mc.moving_task)
->                                         |    -> true
->                                         |      schedule()
-> 
-> To avoid this deadlock, we do all the move charge works (both can_attach() and
-> attach()) under one mmap_sem section.
-> And after this patch, we set/clear mc.moving_task outside mc.lock, because we
-> use the lock only to check mc.from/to.
-> 
-> Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+I've never read that before.  Learn something new etc...
+It seems path prefixes aren't good nor even commonly used.
 
-I put this in the send-to-Linus-in-about-a-week queue.
+A review of kernel patch subjects:
 
-> Cc: <stable@kernel.org>
+$ git log --no-merges --pretty=oneline | \
+	cut -f2- -d" " | cut -f1 -d: | sort | uniq -c | sort -rn
 
-The patch doesn't apply well to 2.6.36 so if we do want it backported
-then please prepare a tested backport for the -stable guys?
+is interesting.  Here's the head:
+   5007 x86
+   3943 Staging
+   3220 USB
+   2790 sh
+   2707 KVM
+   2624 ARM
+   2449 ALSA
+   1571 Input
+   1549 ASoC
+   1470 iwlwifi
+   1423 ACPI
+   1397 mac80211
+   1384 V4L/DVB
+   1226 sched
+   1200 Btrfs
+   1184 powerpc
+   1106 [NETFILTER]
+   1080 MIPS
+   1049 net
+   1047 ide
+   1014 drm/i915
+    993 staging
+    921 ath9k
 
-Thanks.
+Some subsystem maintainers like upper case, some mixed, some lower.
+Some aren't consistent.  (Staging/staging)
+
+It doesn't seem a rule can be pregenerated so maybe adding these
+"C:" lines to MAINTAINERS has some value.
+
 
