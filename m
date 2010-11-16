@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934542Ab0KPNO4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 08:14:56 -0500
-Received: from cantor.suse.de ([195.135.220.2]:52363 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932673Ab0KPNOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 08:14:54 -0500
-Date: Tue, 16 Nov 2010 14:14:51 +0100
-From: Jan Kara <jack@suse.cz>
-To: Josef Bacik <josef@redhat.com>
-Cc: Jan Kara <jack@suse.cz>, david@fromorbit.com, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, cmm@us.ibm.com,
-        cluster-devel@redhat.com, ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
-Message-ID: <20101116131451.GH4757@quack.suse.cz>
-References: <1289840723-3056-1-git-send-email-josef@redhat.com>
- <1289840723-3056-2-git-send-email-josef@redhat.com>
- <20101116111611.GA4757@quack.suse.cz>
- <20101116114346.GB4757@quack.suse.cz>
- <20101116125249.GB31957@dhcp231-156.rdu.redhat.com>
-MIME-Version: 1.0
+	id S1754692Ab0KPNQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 08:16:50 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:56160 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134Ab0KPNQt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 08:16:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:mime-version:content-type:from:in-reply-to:date:cc
+         :content-transfer-encoding:message-id:references:to:x-mailer;
+        b=gYynE2zuoW5f3kEOz0RuqLv77jNlWm00MJfk1Ioq1UEFoYPtsyWqhFNyl9logwr1F7
+         i3mKu6oilNtrSPFr+1sQnK+uFAXKkg+YUbFKMio7HSspjvSfKKaT3Y1+NkTULtv+e6rE
+         L1HhkkYz7ZAoTZtdco01WEr0Wz74Xv4oPxTBg=
+Subject: Re: Corrected data type mismatch
+Mime-Version: 1.0 (Apple Message framework v1081)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101116125249.GB31957@dhcp231-156.rdu.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: bhs <haishan.bai@gmail.com>
+In-Reply-To: <4CE27404.7020307@windriver.com>
+Date: Tue, 16 Nov 2010 21:16:36 +0800
+Cc: Milton Miller <miltonm@bga.com>, Hai Shan <shan.hai@windriver.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Jason Wessel <jason.wessel@windriver.com>,
+        kgdb-bugreport@lists.sourceforge.net
+Content-Transfer-Encoding: 8BIT
+Message-Id: <029A97EE-F051-4E8A-93E9-C259D2A7622E@gmail.com>
+References: <1289700419-11072-2-git-send-email-shan.hai@windriver.com> <mdm-kgbd-badfix@mdm.bga.com> <4CE27404.7020307@windriver.com>
+To: DDD <dongdong.deng@windriver.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 16-11-10 07:52:50, Josef Bacik wrote:
-> On Tue, Nov 16, 2010 at 12:43:46PM +0100, Jan Kara wrote:
-> > On Tue 16-11-10 12:16:11, Jan Kara wrote:
-> > > On Mon 15-11-10 12:05:18, Josef Bacik wrote:
-> > > > diff --git a/fs/open.c b/fs/open.c
-> > > > index 4197b9e..ab8dedf 100644
-> > > > --- a/fs/open.c
-> > > > +++ b/fs/open.c
-> > > > @@ -223,7 +223,7 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
-> > > >  		return -EINVAL;
-> > > >  
-> > > >  	/* Return error if mode is not supported */
-> > > > -	if (mode && !(mode & FALLOC_FL_KEEP_SIZE))
-> > > > +	if (mode && (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE)))
-> > >   Why not just:
-> > > if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE)) ?
-> >   And BTW, since FALLOC_FL_PUNCH_HOLE does not change the file size, should
-> > not we enforce that FALLOC_FL_KEEP_SIZE is / is not set? I don't mind too
-> > much which way but keeping it ambiguous (ignored) in the interface usually
-> > proves as a bad idea in future when we want to further extend the interface...
-> >
-> 
-> Yeah I went back and forth on this.  KEEP_SIZE won't change the behavior of
-> PUNCH_HOLE since PUNCH_HOLE implicitly means keep the size.  I figured since its
-> "mode" and not "flags" it would be ok to make either way accepted, but if you
-> prefer PUNCH_HOLE means you have to have KEEP_SIZE set then I'm cool with that,
-> just let me know one way or the other.  Thanks,
-  I was wondering about 'mode' vs 'flags' as well. The manpage says:
-The mode argument determines the operation to be performed on the given
-range.  Currently only one flag is supported for mode...
-  So we call it "mode" but speak about "flags"? Seems a bit inconsistent.
-I'd maybe lean a bit at the "flags" side and just make sure that
-only one of FALLOC_FL_KEEP_SIZE, FALLOC_FL_PUNCH_HOLE is set (interpreting
-FALLOC_FL_KEEP_SIZE as allocate blocks beyond i_size). But I'm not sure
-what others think.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+On Nov 16, 2010, at 8:07 PM, DDD wrote:
+
+> Milton Miller wrote:
+>> [added cc's based on from ff10b88b5a05c8f1646dd15fb9f6093c1384ff6d,
+>> which added the patched line ]
+>> https://patchwork.kernel.org/patch/323022/
+>> On Sun, 14 Nov 2010 around 02:06:59 -0000, Hai Shan wrote:
+>>> Corrected data type mismatch
+>>> 
+>> This merely hides the type mismatch by force casting it.
+>> Looking at the context I believe the intent is to copy the the value to
+>> or from the register content slot, not take the previous value of the
+>> register and use that as an address to copy to or from.
+> 
+> 
+> OOPS! It is wrong here, The right one should be as following:
+> 
+> -   memcpy(mem, current->thread.evr[regno-32],
+> +   memcpy(mem, (void*)&current->thread.evr[regno-32], dbg_reg_def[regno].size);
+> 
+> Thanks milton & Shan.Hai, I will send out the fix to Jason ASAP.
+> 
+
+
+Sorry for my crude fix :)
+
+
+> Dongdong
+> 
+> 
+>> milton
+>>> Signed-off-by: Hai Shan <shan.hai@windriver.com>
+>>> 
+>>> ---
+>>> arch/powerpc/kernel/kgdb.c |    4 ++--
+>>> 1 files changed, 2 insertions(+), 2 deletions(-)
+>>> 
+>>> diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
+>>> index 7a9db64..c5ce65f 100644
+>>> --- a/arch/powerpc/kernel/kgdb.c
+>>> +++ b/arch/powerpc/kernel/kgdb.c
+>>> @@ -337,7 +337,7 @@ char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
+>>> 		/* FP registers 32 -> 63 */
+>>> #if defined(CONFIG_FSL_BOOKE) && defined(CONFIG_SPE)
+>>> 		if (current)
+>>> -			memcpy(mem, current->thread.evr[regno-32],
+>>> +			memcpy(mem, (void *)current->thread.evr[regno-32],
+>>> 					dbg_reg_def[regno].size);
+>>> #else
+>>> 		/* fp registers not used by kernel, leave zero */
+>>> @@ -362,7 +362,7 @@ int dbg_set_reg(int regno, void *mem, struct pt_regs *regs)
+>>> 	if (regno >= 32 && regno < 64) {
+>>> 		/* FP registers 32 -> 63 */
+>>> #if defined(CONFIG_FSL_BOOKE) && defined(CONFIG_SPE)
+>>> -		memcpy(current->thread.evr[regno-32], mem,
+>>> +		memcpy((void *)current->thread.evr[regno-32], mem,
+>>> 				dbg_reg_def[regno].size);
+>>> #else
+>>> 		/* fp registers not used by kernel, leave zero */
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
