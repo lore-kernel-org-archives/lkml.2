@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244Ab0KPUnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:43:03 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58571
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754409Ab0KPUnB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:43:01 -0500
-Date: Tue, 16 Nov 2010 12:43:25 -0800 (PST)
-Message-Id: <20101116.124325.116396459.davem@davemloft.net>
-To: wg@grandegger.com
-Cc: tomoya-linux@dsn.okisemi.com, andrew.chih.howe.khor@intel.com,
-        masa-korg@dsn.okisemi.com, sameo@linux.intel.com,
-        margie.foster@intel.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de,
-        kok.howg.ewe@intel.com, joel.clark@intel.com, yong.y.wang@intel.com,
-        chripell@fsfe.org, qi.wang@intel.com
-Subject: Re: [PATCH net-next-2.6 v4] can: Topcliff: PCH_CAN driver: Add
- Flow control/Fix Endianess issue/Separate IF register/Enumerate LEC
- macro/Move MSI processing/Use BIT(X)/Change Message Object index/Add
- prefix PCH_
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4CE2EC13.9090707@grandegger.com>
-References: <4CE275A4.9010400@dsn.okisemi.com>
-	<20101116.091443.226753420.davem@davemloft.net>
-	<4CE2EC13.9090707@grandegger.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1756648Ab0KPUn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:43:58 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:47051 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754578Ab0KPUn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 15:43:57 -0500
+Subject: Re: [PATCH v1.3 4/4] keys: add new key-type encrypted
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+In-Reply-To: <26645.1289929851@redhat.com>
+References: <1289918320.3188.16.camel@localhost.localdomain>
+	 <1289849751.3027.17.camel@localhost.localdomain>
+	 <1289694826.3257.82.camel@localhost.localdomain>
+	 <1289595738.2731.80.camel@localhost.localdomain>
+	 <1289404309-15955-5-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1289404309-15955-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <26689.1289591135@redhat.com> <27900.1289597013@redhat.com>
+	 <8268.1289837934@redhat.com> <23151.1289916524@redhat.com>
+	 <26645.1289929851@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Nov 2010 15:43:53 -0500
+Message-ID: <1289940233.2627.31.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wolfgang Grandegger <wg@grandegger.com>
-Date: Tue, 16 Nov 2010 21:39:47 +0100
+On Tue, 2010-11-16 at 17:50 +0000, David Howells wrote:
+> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> 
+> > I actually like keyctl requiring 'trusted:' or 'user:'.  Forcing the
+> > user to indicate which type of key they want, is actually good - no
+> > misunderstandings.
+> 
+> You still need to prefix the description of a user-defined key so that you
+> don't collide with other people who're also using user-defined keys for random things.
 
-> Please take into account that this patch got accepted by accident
-> (because the maintainer did not respond properly in time). At that time
-> the driver was incomplete, not ready for mainline and did not even work
-> properly. Therefore it makes little sense to debug or even bisec these
-> changes. Just for that reason I made an exemption and added my
-> "Acked-by". Hope you can share my arguments.
+Although I previously agreed to this change, I'm really not convinced it
+is necessary.  encrypted keys don't create new trusted or user keys,
+they only use existing keys to encrypt/decrypt encrypted
+keys(instantiate,read).  Key names, user or otherwise, should be left up
+to the person creating them.
 
-You don't put stupid on top of stupid and justify the latter using
-the former.
+thanks,
+
+Mimi
+
