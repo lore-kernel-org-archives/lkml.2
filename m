@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934226Ab0KPKeC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 05:34:02 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:54341 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932793Ab0KPKeA convert rfc822-to-8bit (ORCPT
+	id S934236Ab0KPKfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 05:35:12 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:43252 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932793Ab0KPKfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 05:34:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=i9qsSSx+9C1rregmqYr75rW+KMuQMBRs1+/3uiufwGQo1O9+zq5gUUGDifdKS81uos
-         AsQTbrlc6x/4N9KX1CVGqkBYDpQASJDZ7Tg7oMsXmINZGs4wUh6u8RMzASvQE6sOK1ib
-         Z36udZqdEf+KNYqN/NPr56zA0a7creH73v3ZM=
-MIME-Version: 1.0
-In-Reply-To: <334828.67526.qm@web113308.mail.gq1.yahoo.com>
-References: <20101115093410.BEFD.A69D9226@jp.fujitsu.com>
-	<20101114181905.bc5b44f9.akpm@linux-foundation.org>
-	<20101115113238.BF06.A69D9226@jp.fujitsu.com>
-	<alpine.DEB.2.00.1011150215460.2986@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1011151602090.29081@chino.kir.corp.google.com>
-	<334828.67526.qm@web113308.mail.gq1.yahoo.com>
-Date: Tue, 16 Nov 2010 11:33:59 +0100
-Message-ID: <AANLkTimQWXLvCQU-Ztq=6Ljv0Er6CgTROF+oiYGqzjJ7@mail.gmail.com>
-Subject: Re: [PATCH] Revert oom rewrite series
-From: Alessandro Suardi <alessandro.suardi@gmail.com>
-To: Martin Knoblauch <spamtrap@knobisoft.de>
-Cc: David Rientjes <rientjes@google.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 16 Nov 2010 05:35:10 -0500
+Date: Tue, 16 Nov 2010 11:34:18 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Wolfram Sang <w.sang@pengutronix.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-i2c@vger.kernel.org, Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Sergio Aguirre <saaguirre@ti.com>,
+        Michael Grzeschik <m.grzeschik@pengutronix.de>,
+        Philipp Wiesner <p.wiesner@phytec.de>,
+        =?ISO-8859-1?B?TeFydG9uIE7pbWV0aA==?= <nm127@freemail.hu>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] media: video: do not clear 'driver' from an i2c_client
+Message-ID: <20101116113418.5c4ee813@endymion.delvare>
+In-Reply-To: <20101115222815.GB25167@pengutronix.de>
+References: <1289398455-21949-1-git-send-email-w.sang@pengutronix.de>
+	<20101115222815.GB25167@pengutronix.de>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 11:04 AM, Martin Knoblauch
-<spamtrap@knobisoft.de> wrote:
-> CC trimmed for sanity ...
->
-> ----- Original Message ----
->
->> From: David Rientjes <rientjes@google.com>
->> To: Jesper Juhl <jj@chaosbits.net>
->> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>; Andrew Morton
->><akpm@linux-foundation.org>; Linus Torvalds <torvalds@linux-foundation.org>;
->>LKML <linux-kernel@vger.kernel.org>; Ying Han <yinghan@google.com>; Bodo Eggert
->><7eggert@web.de>; Mandeep@yahoo.com
->> Sent: Tue, November 16, 2010 1:06:21 AM
->> Subject: Re: [PATCH] Revert oom rewrite series
->>
->>
->> Thanks for the report!  I'll get  involved with kde-devel and send a patch
->> to remove this dependency on newer  kernels to expedite the process.
->>
->>  [ Others with reports of deprecated use  of oom_adj can contact me
->>    privately and I'll find the parties of  interest to avoid topics
->>    unrelated to the kernel itself on LKML.  ]
-> David,
->
->  another one for your collection. You asked for it :-) This is CentOS-5.5
-> running on top of kernel 2.6.36, likely out of initrd:
->
-> $ dmesg | grep deprecated
-> [    2.430330] nash-hotplug (67): /proc/67/oom_adj is deprecated, please use
-> /proc/67/oom_score_adj instead.
+Hi Wolfram,
 
-...and another, on Fedora 14, 2.6.37-rc1-git11:
+Sorry for the late answer.
 
-auditd (2583): /proc/2583/oom_adj is deprecated, please use
-/proc/2583/oom_score_adj instead.
+On Mon, 15 Nov 2010 23:28:15 +0100, Wolfram Sang wrote:
+> On Wed, Nov 10, 2010 at 03:14:13PM +0100, Wolfram Sang wrote:
+> > The i2c-core does this already.
+> > 
+> > Reported-by: Jean Delvare <khali@linux-fr.org>
+> > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> > ---
+> > 
+> > Not sure if this should go via i2c or media?
+> 
+> Okay, as Jean did not pick it up in his latest pull request, I guess this means
+> it shall go via the media-tree? :) Mauro, will you pick it up?
 
-Cheers,
+Yes I think it should go through Mauro's tree. I was simply waiting for
+your other patch to get merged first (which happened yesterday),
+because this patch depended on that one.
 
---alessandro
+So:
 
- "There's always a siren singing you to shipwreck"
+Acked-by: Jean Delvare <khali@linux-fr.org>
 
-   (Radiohead, "There There")
+and Mauro please pick the patch in your tree.
+
+Thanks,
+-- 
+Jean Delvare
