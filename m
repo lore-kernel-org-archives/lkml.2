@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759280Ab0KPDr2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 22:47:28 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:49697 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756134Ab0KPDr1 (ORCPT
+	id S1759287Ab0KPDtI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 22:49:08 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:44237 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756134Ab0KPDtG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 22:47:27 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 16 Nov 2010 12:41:51 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Young <hidave.darkstar@gmail.com>,
-        Andrea Righi <arighi@develer.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/4] memcg: break out event counters from other stats
-Message-Id: <20101116124151.4830f685.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101107220353.684449249@cmpxchg.org>
-References: <20101107215030.007259800@cmpxchg.org>
-	<20101107220353.684449249@cmpxchg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 15 Nov 2010 22:49:06 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6168"; a="62802123"
+Message-ID: <4CE1FF2F.6090105@codeaurora.org>
+Date: Tue, 16 Nov 2010 09:19:03 +0530
+From: Trilok Soni <tsoni@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Trilok Soni <tsoni@codeaurora.org>
+CC: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        rtc-linux@googlegroups.com, linux-arm-msm@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [RFC v1 PATCH 2/6] input: pm8058_keypad: Qualcomm PMIC8058 keypad
+ controller driver
+References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org> <1289393281-4459-3-git-send-email-tsoni@codeaurora.org>
+In-Reply-To: <1289393281-4459-3-git-send-email-tsoni@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  7 Nov 2010 23:14:38 +0100
-Johannes Weiner <hannes@cmpxchg.org> wrote:
+Hi Dmitry,
 
-> For increasing and decreasing per-cpu cgroup usage counters it makes
-> sense to use signed types, as single per-cpu values might go negative
-> during updates.  But this is not the case for only-ever-increasing
-> event counters.
+On 11/10/2010 6:17 PM, Trilok Soni wrote:
+> Add Qualcomm PMIC8058 based keypad controller driver
+> supporting upto 18x8 matrix configuration.
 > 
-> All the counters have been signed 64-bit so far, which was enough to
-> count events even with the sign bit wasted.
-> 
-> The next patch narrows the usage counters type (on 32-bit CPUs, that
-> is), though, so break out the event counters and make them unsigned
-> words as they should have been from the start.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Signed-off-by: Trilok Soni <tsoni@codeaurora.org>
+> ---
+>  drivers/input/keyboard/Kconfig           |   11 +
+>  drivers/input/keyboard/Makefile          |    1 +
+>  drivers/input/keyboard/pmic8058-keypad.c |  769 ++++++++++++++++++++++++++++++
+>  include/linux/input/pmic8058-keypad.h    |   58 +++
+>  4 files changed, 839 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/input/keyboard/pmic8058-keypad.c
+>  create mode 100644 include/linux/input/pmic8058-keypad.h
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Any comments on this patch?
 
+---Trilok Soni
+
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
