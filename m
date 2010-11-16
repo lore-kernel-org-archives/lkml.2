@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572Ab0KPFQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 00:16:50 -0500
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:57193 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770Ab0KPFQt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 00:16:49 -0500
-Date: Tue, 16 Nov 2010 14:16:42 +0900
-From: Norbert Preining <preining@logic.at>
-To: Mattia Dongili <malattia@linux.it>
-Cc: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
-Subject: Re: regression since 2.6.36: backlight in sony-laptop not working
-Message-ID: <20101116051642.GA24410@gamma.logic.tuwien.ac.at>
-References: <20101104142915.GC7650@gamma.logic.tuwien.ac.at> <20101110035833.GB3029@kamineko.org> <20101111235000.GA6651@gamma.logic.tuwien.ac.at> <20101112034423.GA7407@srcf.ucam.org> <20101112035027.GD26742@gamma.logic.tuwien.ac.at> <20101112035732.GB7574@srcf.ucam.org> <20101112042243.GE2852@kamineko.org> <20101112043922.GA19889@gamma.logic.tuwien.ac.at> <20101112121742.GA17690@kamineko.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101112121742.GA17690@kamineko.org>
-X-IMAPbase: 1289640783 1
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751863Ab0KPFRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 00:17:31 -0500
+Received: from mail.perches.com ([173.55.12.10]:1419 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750891Ab0KPFR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 00:17:29 -0500
+Subject: [PATCH] kernel/sysctl.c: Fix build failure with !CONFIG_PRINTK
+From: Joe Perches <joe@perches.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Paris <eparis@redhat.com>, James Morris <jmorris@namei.org>,
+        Dan Rosenberg <drosenberg@vsecurity.com>, Ingo Molnar <mingo@elte.hu>,
+        Eugene Teo <eugeneteo@kernel.org>, Kees Cook <kees.cook@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <201011160259.oAG2x1UX012045@hera.kernel.org>
+References: <201011160259.oAG2x1UX012045@hera.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 15 Nov 2010 21:17:27 -0800
+Message-ID: <1289884647.16461.186.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fr, 12 Nov 2010, Mattia Dongili wrote:
-> You will need an updated input-kbd to set the scancode map.
+Sigh...
 
-Ouch.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ kernel/sysctl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> > Does that mean that 2.6.37rc is too new for the user space?
-> 
-> Maybe. Anyway if evtest reacts positively to key presses then it's a
-> userspace issue and not the driver's.
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index b65bf63..5abfa15 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -702,7 +702,6 @@ static struct ctl_table kern_table[] = {
+ 		.extra1		= &zero,
+ 		.extra2		= &ten_thousand,
+ 	},
+-#endif
+ 	{
+ 		.procname	= "dmesg_restrict",
+ 		.data		= &dmesg_restrict,
+@@ -712,6 +711,7 @@ static struct ctl_table kern_table[] = {
+ 		.extra1		= &zero,
+ 		.extra2		= &one,
+ 	},
++#endif
+ 	{
+ 		.procname	= "ngroups_max",
+ 		.data		= &ngroups_max,
 
-What is strange that there *WAS* a change in the kernel that triggered
-that. Old kernels still work fine. I just tried 2.6.36 and it was working.
 
-I always thought that kernel changes should not break user space
-(well, without good reason).
-
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-Does it worry you that you don't talk any kind of sense?
-                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
