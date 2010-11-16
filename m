@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab0KPFd7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 00:33:59 -0500
-Received: from mga11.intel.com ([192.55.52.93]:46932 "EHLO mga11.intel.com"
+	id S1755776Ab0KPFgg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 00:36:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55804 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752576Ab0KPFd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 00:33:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,204,1288594800"; 
-   d="scan'208";a="627161696"
-Date: Tue, 16 Nov 2010 12:13:30 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: lethal@linux-sh.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [v2,5/8] NUMA Hotplug emulator
-Message-ID: <20101116041330.GA20694@shaohui>
-Mail-Followup-To: lethal@linux-sh.org, linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751783Ab0KPFge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 00:36:34 -0500
+Subject: Re: [PATCH] kernel/sysctl.c: Fix build failure with !CONFIG_PRINTK
+From: Eric Paris <eparis@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        James Morris <jmorris@namei.org>,
+        Dan Rosenberg <drosenberg@vsecurity.com>, Ingo Molnar <mingo@elte.hu>,
+        Eugene Teo <eugeneteo@kernel.org>, Kees Cook <kees.cook@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1289884647.16461.186.camel@Joe-Laptop>
+References: <201011160259.oAG2x1UX012045@hera.kernel.org>
+	 <1289884647.16461.186.camel@Joe-Laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Nov 2010 00:36:13 -0500
+Message-ID: <1289885773.14282.57.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->This looks like an incredibly painful interface. How about scrapping all
->of this _emu() mess and just reworking the register_cpu() interface?
-> Something like:
+On Mon, 2010-11-15 at 21:17 -0800, Joe Perches wrote:
+> Sigh...
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-hi, Paul
-	I saw your reply on patchwork.kernel.org, but I did not find your email 
-in my mailbox, you might forget to cc to me.
+eparis fails again.
 
-	I think that your register_cpu_node interface seems good, but this will 
-remove the interface register_cpu. it is not the original purpose of the 
-emulator, we want to emulate the oringal process, but we did not want to change
-the old interface, that is a rule.
+Acked-by: Eric Paris <eparis@redhat.com>
 
-	I want to share some piece of codes, and I did not want to do so much change,
-so I call register_cpu and register_cpu_emu in the same function. yes, it is a 
-painful interface, I will add a function arch_register_cpu_emu to solve it.
+> ---
+>  kernel/sysctl.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index b65bf63..5abfa15 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -702,7 +702,6 @@ static struct ctl_table kern_table[] = {
+>  		.extra1		= &zero,
+>  		.extra2		= &ten_thousand,
+>  	},
+> -#endif
+>  	{
+>  		.procname	= "dmesg_restrict",
+>  		.data		= &dmesg_restrict,
+> @@ -712,6 +711,7 @@ static struct ctl_table kern_table[] = {
+>  		.extra1		= &zero,
+>  		.extra2		= &one,
+>  	},
+> +#endif
+>  	{
+>  		.procname	= "ngroups_max",
+>  		.data		= &ngroups_max,
+> 
+> 
 
-Real hotplug process:
-arch_register_cpu
-	- call register_cpu
-
-Emulated hotplug process:
-arch_register_cpu_emu
-	- call register_cpu_emu
-
-diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
-index 7e45159..93859d5 100644
---- a/arch/x86/kernel/topology.c
-+++ b/arch/x86/kernel/topology.c
-@@ -52,6 +52,16 @@ int __ref arch_register_cpu(int num)
- }
- EXPORT_SYMBOL(arch_register_cpu);
- 
-+/* emulated version for arch_register_cpu */
-+int __ref arch_register_cpu_emu(int num, int nid)
-+{
-+	if (num)
-+		per_cpu(cpu_devices, num).cpu.hotpluggable = 1;
-+
-+	return register_cpu_emu(&per_cpu(cpu_devices, num).cpu, nid);
-+}
-+EXPORT_SYMBOL(arch_register_cpu_emu);
-+
- void arch_unregister_cpu(int num)
- {
- 	unregister_cpu(&per_cpu(cpu_devices, num).cpu);
-
--- 
-Thanks & Regards,
-Shaohui
 
