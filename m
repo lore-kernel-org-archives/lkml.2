@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759152Ab0KPW30 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 17:29:26 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:54678 "EHLO ogre.sisk.pl"
+	id S1757490Ab0KPWgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 17:36:14 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54699 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757419Ab0KPW3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 17:29:24 -0500
+	id S1753946Ab0KPWgM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 17:36:12 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: 2.6.37-rc1+: hibernate regression, claims not enough swap space
-Date: Tue, 16 Nov 2010 23:28:35 +0100
+To: maciej.rutecki@gmail.com
+Subject: Re: [REGRESSION] [2.6.37-rc1] Fan noise after suspend to ram/disk
+Date: Tue, 16 Nov 2010 23:35:26 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: kernel list <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <20101114052138.GB2189@elf.ucw.cz> <20101116052634.GA30449@elf.ucw.cz> <20101116053236.GA30605@elf.ucw.cz>
-In-Reply-To: <20101116053236.GA30605@elf.ucw.cz>
+Cc: Zhang Rui <rui.zhang@intel.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>
+References: <201011041706.59046.maciej.rutecki@gmail.com> <1289870775.8148.2020.camel@rui> <201011162028.47007.maciej.rutecki@gmail.com>
+In-Reply-To: <201011162028.47007.maciej.rutecki@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011162328.35599.rjw@sisk.pl>
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201011162335.26220.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 16, 2010, Pavel Machek wrote:
-> On Tue 2010-11-16 06:26:34, Pavel Machek wrote:
-> > Hi!
-> > 
-> > > > ...but there's enough -- or at least it was enough to fit previous
-> > > > versions. 32-bit machine, so it has highmem.
-> > > > 
-> > > > System is in console mode, very lightly loaded.
-> > > > 
-> > > > Mem:   2054716k total,   736548k used,  1318168k free,    15368k buffers
-> > > > Swap:   779148k total,     2360k used,   776788k free,   546388k cached
+On Tuesday, November 16, 2010, Maciej Rutecki wrote:
+> On wtorek, 16 listopada 2010 o 02:26:15 Zhang Rui wrote:
+> > On Tue, 2010-11-16 at 04:39 +0800, Maciej Rutecki wrote:
+> > > On poniedziałek, 15 listopada 2010 o 04:16:35 Zhang Rui wrote:
+> > > > On Tue, 2010-11-09 at 01:35 +0800, Maciej Rutecki wrote:
+> > > > > On poniedziałek, 8 listopada 2010 o 07:58:52 Zhang Rui wrote:
+> > > > > > IMO, the only one that may cause this regression is commit
+> > > > > > c57b62f5b1e6dd69ff8c96f6db7f86ea31c0e21f
+> > > > > > some app may enable polling via procfs and update the thermal zone
+> > > > > > status.
+> > > > > 
+> > > > > I revert this commit from 2.6.37-rc1. Still the same:
+> > > > could you please apply the patch attached, on top of 2.6.37-rc1, and
+> > > > then attach the dmesg output if the fan is noise after suspend/resume.
 > > > 
-> > > Well, the swap is rather in short supply.  Below the 50% of RAM recommendation.
+> > > Dmesg in attachement.
+> > > 
+> > > Starting suspend to ram from:
+> > > [  104.602674] PM: Syncing filesystems ... done.
+> > > resume OK, but next:
+> > > [  144.298104] PM: Syncing filesystems ... done.
+> > > after resume fan starts on full speed.
 > > 
-> > Well, but the biggest image we can write is not 50% of RAM, but 50% of
-> > lowmem... and swap is nearly as big as lowmem in this case -- so this
-> > machine is not misconfigured.
+> > it seems that it's not the thermal driver that changes the Fan speed.
+> > Please apply the debug patch attached, rebuild with CONFIG_ACPI_DEBUG
+> > set and reboot with "acpi.debug_level=0x004
+> > acpi.debug_layer=0x04A10000", and then attach the dmesg output after the
+> > same test.
+> > Please attach the acpidump output of this laptop as well.
+> > 
+> > thanks,
+> > rui
+> > 
+> > > Regards
 > 
-> BTW swsusp.txt may need updating, it says:
-> 
-> echo N > /sys/power/image_size
-> 
-> before suspend (it is limited to 500 MB by default).
+> Revert 3e384ee6c687cb397581ee8f9440fc8220cfac80 seems solve problem:
+> https://bugzilla.kernel.org/show_bug.cgi?id=22932#c3
 
-Yes, this needs to be updated.
+Please do the test I asked for in the bug entry.
 
 Thanks,
 Rafael
