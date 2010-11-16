@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757676Ab0KPTeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 14:34:19 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51771 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757605Ab0KPTeO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 14:34:14 -0500
-Date: Tue, 16 Nov 2010 19:33:35 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 15/20] ARM: LPAE: use phys_addr_t instead of
-	unsigned long for physical addresses
-Message-ID: <20101116193335.GD21926@n2100.arm.linux.org.uk>
-References: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com> <1289842829-3027-16-git-send-email-catalin.marinas@arm.com> <4CE2D811.50701@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE2D811.50701@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S932102Ab0KPTfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 14:35:54 -0500
+Received: from ist.d-labs.de ([213.239.218.44]:46199 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756324Ab0KPTfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 14:35:52 -0500
+Date: Tue, 16 Nov 2010 20:35:22 +0100
+From: Florian Mickler <florian@mickler.org>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Joe Perches <joe@perches.com>, Jiri Kosina <trivial@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
+ preference tool
+Message-ID: <20101116203522.65240b18@schatten.dmk.lab>
+In-Reply-To: <20101116181226.GB26239@rakim.wolfsonmicro.main>
+References: <1289842444.16461.140.camel@Joe-Laptop>
+	<20101115182708.GJ12986@rakim.wolfsonmicro.main>
+	<1289845830.16461.149.camel@Joe-Laptop>
+	<20101115190738.GF3338@sirena.org.uk>
+	<1289848458.16461.150.camel@Joe-Laptop>
+	<20101115193407.GK12986@rakim.wolfsonmicro.main>
+	<1289850773.16461.166.camel@Joe-Laptop>
+	<20101116104921.GL12986@rakim.wolfsonmicro.main>
+	<1289919077.28741.50.camel@Joe-Laptop>
+	<20101116183707.179964dd@schatten.dmk.lab>
+	<20101116181226.GB26239@rakim.wolfsonmicro.main>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 11:14:25AM -0800, Stephen Boyd wrote:
-> On 11/15/2010 09:40 AM, Catalin Marinas wrote:
-> > @@ -188,21 +189,21 @@
-> >   * translation for translating DMA addresses.  Use the driver
-> >   * DMA support - see dma-mapping.h.
-> >   */
-> > -static inline unsigned long virt_to_phys(void *x)
-> > +static inline phys_addr_t virt_to_phys(void *x)
-> >  {
-> >  	return __virt_to_phys((unsigned long)(x));
-> >  }
-> 
-> As you're already in the area can you mark the argument to
-> virt_to_phys() as const? I ran into a compiler warning due to that the
-> other day.
+On Tue, 16 Nov 2010 18:12:27 +0000
+Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
 
-It may make sense to mark it const volatile, as that's the most
-permissive set of attributes possible (iow, it'll accept any pointer
-without warning.)  However, might be an idea to check what other
-arches do.
+> On Tue, Nov 16, 2010 at 06:37:07PM +0100, Florian Mickler wrote:
+> 
+> > My first reaction to this is, it's silly. Certainly a
+> > subsystem-maintainer is capable of hacking something together that
+> > suits his needs or may just use a good editor to get the job done.
+> > After all, he might want to edit the commit message anyway. Also he has
+> > to have his act together for all non-conforming submitters anyway,
+> > because shurely, telling people to re-edit their patches subject line
+> > is not what one would consider "welcoming to newbies",  or whatever it
+> > is kernel subsystem maintainers have to be nowadays *g*... 
+> 
+> So, my general policy on this is that I tend to push back on patches
+> which don't just work with the toolset (subject lines are just one part
+> of it) to a variable extent depending on who's submitting and what
+> they're submitting.  One of the factors is that the more patches are
+> coming from someone the easier I expect their patches to be to work
+> with.
+> 
+> The reason this came up is that this is one of the issues with Joe's
+> patches (which are rather frequent) but he is only willing to do things
+> that he can automate.
+
+Hehe, I know that I wouldn't want to hand edit every autogenerated patch
+people throw at me... What about just dropping everything before the
+last "]" or ":" and putting an autogenerated prefix before it in a
+pre-commit hook on your side?  
+
+That should work most of the time... don't know... maybe other
+subsystem maintainers have some more suggestions on reducing the
+workload... this could even be an interesting topic for some summit...
+
+Regards,
+Flo
+
