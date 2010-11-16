@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934167Ab0KPKLh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 05:11:37 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34370 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934056Ab0KPKLg (ORCPT
+	id S934176Ab0KPKPK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 05:15:10 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:45254 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934056Ab0KPKPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 05:11:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=kfWAlF/KRyv92oVUg383otVs9tx20uGeb7T0zBsGSRM9ryNSBRegfszNhydYk65Tox
-         ebJDU+oz8ASfqc5MQIc8lTXx/L7l4jNX8hs4kyxAon7x2wO0rh/KIHUH87Q34pcv7hzc
-         9lj/PZjZFY6brnUuLBkGGauFSQi7YFvMktmdU=
-MIME-Version: 1.0
-In-Reply-To: <20101116100406.GB12891@n2100.arm.linux.org.uk>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
-	<1289584840-18097-3-git-send-email-catalin.marinas@arm.com>
-	<20101115233129.GG31421@n2100.arm.linux.org.uk>
-	<AANLkTikrz+yM6idm-aij10vsKZMVSOBfZSdeEJbDRwiC@mail.gmail.com>
-	<20101116100406.GB12891@n2100.arm.linux.org.uk>
-Date: Tue, 16 Nov 2010 10:11:35 +0000
-X-Google-Sender-Auth: Ov_ntjHjjfYcNbsZfyLwZkgav5Y
-Message-ID: <AANLkTi=AGUs0nQPK0nx52m1XA8nx2sRmQcxicuG-Kd-D@mail.gmail.com>
-Subject: Re: [PATCH v2 02/20] ARM: LPAE: Factor out 2-level page table
- definitions into separate files
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 16 Nov 2010 05:15:09 -0500
+From: Josh Wu <josh.wu@atmel.com>
+To: jkosina@suse.cz
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        nicolas.ferre@atmel.com, plagnioj@jcrosoft.com,
+        Josh Wu <josh.wu@atmel.com>
+Subject: [PATCH TRIVIAL] AT91: usb: fix typo in atmel_usba_udc driver
+Date: Tue, 16 Nov 2010 18:14:53 +0800
+Message-Id: <1289902493-1821-1-git-send-email-josh.wu@atmel.com>
+X-Mailer: git-send-email 1.6.3.3
+X-OriginalArrivalTime: 16 Nov 2010 10:14:54.0641 (UTC) FILETIME=[1D1FB210:01CB8577]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 November 2010 10:04, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Tue, Nov 16, 2010 at 09:14:52AM +0000, Catalin Marinas wrote:
->> > Of couse, I now have patches for this and my other points... will sort
->> > them out into a series in the next few days.
->>
->> Thanks.
->
-> BTW, don't post another round of patches just because you've had _some_
-> comments back - your v2 patches are still being looked through, your v3
-> patches haven't even been looked at yet.
+Signed-off-by: Josh Wu <josh.wu@atmel.com>
+---
+fix against 2.6.37-rc1
 
-I'll wait for your patches on the PTE offset and than rebase mine on
-top. It may be sometime next week as I already have a lot to do.
+ drivers/usb/gadget/atmel_usba_udc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I posted the v3 patches just to clarify the issues around the 3/20
-patch. The other patches are pretty much the same, so you can skip
-this version and wait for v4.
-
+diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+index b5e20e8..717ff65 100644
+--- a/drivers/usb/gadget/atmel_usba_udc.c
++++ b/drivers/usb/gadget/atmel_usba_udc.c
+@@ -2017,7 +2017,7 @@ static int __init usba_udc_probe(struct platform_device *pdev)
+ 			}
+ 		} else {
+ 			/* gpio_request fail so use -EINVAL for gpio_is_valid */
+-			ubc->vbus_pin = -EINVAL;
++			udc->vbus_pin = -EINVAL;
+ 		}
+ 	}
+ 
 -- 
-Catalin
+1.6.3.3
+
