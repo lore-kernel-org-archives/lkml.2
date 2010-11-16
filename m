@@ -1,135 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883Ab0KPNSK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 08:18:10 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:62274 "EHLO
+	id S933925Ab0KPNS5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 08:18:57 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:56005 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab0KPNSJ (ORCPT
+	with ESMTP id S1751836Ab0KPNS4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 08:18:09 -0500
-Message-ID: <4CE2846C.6070501@vlnb.net>
-Date: Tue, 16 Nov 2010 16:17:32 +0300
+	Tue, 16 Nov 2010 08:18:56 -0500
+Message-ID: <4CE284C7.4040209@vlnb.net>
+Date: Tue, 16 Nov 2010 16:19:03 +0300
 From: Vladislav Bolkhovitin <vst@vlnb.net>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Richard Williams <richard@etechsoft.com>
-CC: Bart Van Assche <bvanassche@acm.org>, Boaz Harrosh <bharrosh@panasas.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
+To: Greg KH <greg@kroah.com>
+CC: Bart Van Assche <bvanassche@acm.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
         scst-devel <scst-devel@lists.sourceforge.net>,
-        Hannes Reinecke <hare@suse.de>, Andy Yan <ayan@marvell.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Vu Pham <vuhuong@mellanox.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Joel Becker <joel.becker@oracle.com>
-Subject: Re: [Scst-devel] [PATCH 8/19]: SCST SYSFS interface implementation
-References: <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <4CE1017E.4090409@panasas.com> <20101115161620.GB5981@kroah.com> <4CE16B8E.1000300@panasas.com> <AANLkTikPVXGJ5-5YDk1uqfqrqxGLpSiSdaX3h7qxo-ie@mail.gmail.com> <8985DEAF-4227-4629-B90A-938D2BA3534E@etechsoft.com>
-In-Reply-To: <8985DEAF-4227-4629-B90A-938D2BA3534E@etechsoft.com>
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        James Smart <James.Smart@emulex.com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+References: <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <AANLkTi=PxYi8kCsAxbopUHBC+=2QPuoEcojdqugS88sH@mail.gmail.com> <20101115184422.GA9566@kroah.com> <4CE19A94.8080504@vlnb.net> <20101115221359.GA9530@kroah.com>
+In-Reply-To: <20101115221359.GA9530@kroah.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:yzplRJ1GfGoxCeBNAsqoU7kJ7BdqxmzVNCrpayWb10q
- xyCKj1KbPiV37RLavA07EpEZ3QCYSJgKo9JcifedfOy5kNux4H
- iyrZ7MFQQG9EAt3Ksh4PxxqKbihxz5oOtTA+ErA8xJ4eZ6NJKd
- QsBLF+zf+GZc1uym+E15CeIKL4j2DVy+eFlyPVMRvn2g3IvY3C
- nZLakMmFI3ObvzN+JQ7/w==
+X-Provags-ID: V02:K0:NyF5FQ/7aJDkPU+s5uHpKAQ+mkKX9OITZeI7r2gbaOP
+ K9Z4n5fd1xmCDs/U7+EubOnFRxFCPY6JStR3o3FPvbdZMgjCMQ
+ T9tf7LKZroAQFZeBJUyij/6TG7NdbLiiyccnRSPTg2lbNCUEm+
+ XSS10WpCwWl1Zh03VzUtv1FhYoaphGldUmiKt7icfi5CbiGod/
+ GGjJAdBZ8Ft4qCUFpY+Yg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Since this discussion goes to a quite fundamental scope, I let myself
-to add Joel Becker and Linus Torvalds on CC)
-
-Richard Williams, on 11/16/2010 02:59 PM wrote:
-> I'm just an outsider - but maybe my perspective has value - it seems
-> there are two sides to this debate:
+Greg KH, on 11/16/2010 01:13 AM wrote:
+>>> Please use 'struct device', it is what you want to do here.
+>>
+>> But we don't have any device to show up in the global device tree!
 > 
-> 1) sysfs is great for scst due to certain stability concerns and code
-> concerns
-> 2) sysfs is bad for scst due to the intended role of sysfs
-> and its namespace
+> Not true at all.
 
-Your questions are very good, so let's summarize what we need to serve
-the needs of a SCSI target subsystem (not necessary SCST) and see what
-can fit them.
+Why?
 
-So, the needs:
+Greg, sorry, you keep writing as if we all are idiots, but keep refusing
+to explain us, idiots, why we can't do what we did. It isn't very
+constructive, is it?
 
-1. Be capable to represent to user space internal configuration to let
-user space be able to see and analyze it, including various statistics.
-
-2. Let user space manage the internal configuration.
-
-3. Desired: possibility to send to user space events about important
-internal actions, like I/O failures, which may need user space
-intervention to recover, like switching from active to passive role in a
-cluster.
-
-So, what can we do with ConfigFS:
-
-(1): Only partially, because by design ConfigFS isn't supposed to
-represent internal configuration, it can only manage it. Extending
-ConfigFS to be capable to do that would be, in my understanding, a
-strong violation of its purpose and, hence, design and if went this way
-eventually ConfigFS would become just a duplication of the SYSFS
-functionality.
-
-(2): ConfigFS can do that. This is exactly for what it was designed and
-implemented. But in this particular application it would have some
-limitations derived from (1): to manage harware-related entries a user
-should magically know from somewhen names of those entries to create
-them by "mkdir" command.
-
-For instance, consider a user has a Fibre Channel HBA and want to use it
-in the target mode. Before he can configure it, he should somehow know
-its ports names and for each of them run:
-
-# mkdir /sys/kernel/config/.../50:50:00:00:00:00:00:11
-# mkdir /sys/kernel/config/.../50:50:00:00:00:00:00:12
-...
-
-where 50:50:00:00:00:00:00:1x are the ports' names. Only after that
-those ports appear on the ConfigFS and can be managed.
-
-(3): No events at all.
-
-Now consider SYSFS:
-
-(1): Easily. This is exactly for what it was designed and implemented.
-
-(2): Possible without any limitations and side effects.
-
-(3): Also possible.
-
-So, why not use SYSFS if it suits all the needs _without_ any additional
-effort and patches?
-
-Other alternatives? A set of custom IOCTLs? One more configuration FS? I
-believe, those would be quite disgusting for all.
-
-> Maybe I misunderstand - But if both sides have merit then wouldn't a
-> compromise be appropriate?
+>> We don't have any devices in the struct device's understanding at all!
 > 
-> Maybe the sensical compromise is to use sysfs code to create a new
-> namespace that would fit this purpose?  It seems that I am also
-> hearing that the alternatives to sysfs aren't always adequate - so
-> why not use sysfs, but have a place where it's appropriate to use it?
+> Then create them just like you are doing so for your kobject use.
+> 
+> The first device would be the root one, and then everything trickles
+> down from there.
 
-This is exactly what we are proposing: to use SYSFS in additional
-namespace /sys/kernel/scst_tgt.
+Sorry, I can't understand what you mean. What would be the purpose of
+this configuration and what benefits it would bring?
 
-As far as I can see, only Greg is against it. Greg keeps his reasons
-private, so I can only guess that Greg is against extending usage of
-SYSFS (note, _usage_, not implementation! Everything needed long ago
-implemented.) beyond the scope it was originally designed around 10
-years ago. But SYSFS is already widely used this way in the kernel, as
-Joe illustrated, hence there is demand for it. People need it. So, why
-not to just acknowledge this fact and go ahead the simplest and most
-useful for both users and developers way?
+Anyway, let's forget about SCSI. Do you believe that struct device
+should be created for all IP addresses on which an NFS server listen and
+for all exports it exports?
+
+> And use configfs for your configuration stuff, that's what it is there
+> for, and if it doesn't somehow work properly for you, please work with
+> the configfs developers to fix that up.
+
+I explained why it isn't a too good option in another e-mail.
 
 Thanks,
 Vlad
-
