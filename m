@@ -1,61 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933087Ab0KPWTx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 17:19:53 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:61575 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932822Ab0KPWTw convert rfc822-to-8bit (ORCPT
+	id S933122Ab0KPWUU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 17:20:20 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:1950 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932822Ab0KPWUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 17:19:52 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=fZrMz0pEycSYZnLaRm+oub08atZUQ2XFbVmKBHpnFlkFJGeC4x266KwnTMLIl2Ibrz
-         bDJ2+cbRmqgrdFR3Mu+OgthcmzaDMzS7srVpbgkAGqOuqwrUqwKM5mk5uzPYrjItO7rK
-         r8E031gDAuQBBkoEwXCpspYVP4X3ZJm19ayeM=
-MIME-Version: 1.0
-In-Reply-To: <cover.1289430026.git.luto@mit.edu>
-References: <cover.1289430026.git.luto@mit.edu>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Tue, 16 Nov 2010 17:19:30 -0500
-X-Google-Sender-Auth: PcF7Zs3QlCUXRfkLqT9Cp8T-2tI
-Message-ID: <AANLkTimM6EUeFiyaH=6bkes19LtYO6t1PJL_SE9Zt3-L@mail.gmail.com>
-Subject: Re: [PATCH v2 0/2] Fix nouveau-related freezes
-To: Ben Skeggs <bskeggs@redhat.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Andy Lutomirski <luto@mit.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 16 Nov 2010 17:20:18 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 16 Nov 2010 14:16:27 -0800
+From: Robert Morell <rmorell@nvidia.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Robert Morell <rmorell@nvidia.com>
+Subject: [PATCH RESEND] perf: Remove hardcoded include paths for elfutils
+Date: Tue, 16 Nov 2010 14:16:33 -0800
+Message-Id: <1289945793-31441-1-git-send-email-rmorell@nvidia.com>
+X-Mailer: git-send-email 1.7.2.2
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 6:04 PM, Andy Lutomirski <luto@mit.edu> wrote:
-> Nouveau takes down my system quite reliably when any hotplug event occurs.
-> The bug happens because the IRQ handler didn't acknowledge the hotplug
-> state until the bottom half, so the card generated a new interrupt
-> immediately, starving the bottom half and permanently starving that CPU
-> (and hence the bottom half).
->
-> Even with this fix, a lot of the IRQ code looks rather broken.
->
-> This is tested on 2.6.36 (and makes the system stable for me), but it also
-> applies cleanly to 2.6.37 (untested, but surely also necessary).  Fedora 14's
-> 2.6.35 kernels seem to have to same problem for me, so I suspect that 2.6.35
-> needs this fix as well.  (All of my tests are on an NV50 card.)
->
-> Changes from v1:
->  - Ignore unrequested hotplug bits (I accidentally removed that part).
->  - Support newer hardware (untested -- Ben, can you check this?)
+This change removes the use of hardcoded absolute
+"/usr/include/elfutils" paths from the perf build.  The problem with
+hardcoded paths is that it prevents them from being overridden by
+$prefix or by -I in CFLAGS (e.g., for cross-compiling purposes).
 
-Just a quick ping: is this making its way to Linus (and stable)?  I've
-been running it for five days through (literally, due to monitor bugs)
-thousands of plug/unplug cycles with no ill effects.
+Instead, just include the "elfutils/" subdirectory as a relative path
+when files are needed from that directory.
 
-(Can we *please* get rid of, or at least ratelimit, the
-plugged/unplugged printk?  It's taking over my logs, and I'm almost
-certain that it's not a driver bug.)
+Tested by building perf:
+- Cross-compiled for ARM on x86_64
+- Built natively on x86_64
+- Built on x86_64 with /usr/include/elfutils moved to another location
+  and manually included in CFLAGS
 
---Andy
+Signed-off-by: Robert Morell <rmorell@nvidia.com>
+---
+ tools/perf/Makefile            |    4 ++--
+ tools/perf/feature-tests.mak   |    4 ++--
+ tools/perf/util/probe-finder.h |    6 +++---
+ 3 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index d1db0f6..74b684d 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -507,7 +507,7 @@ PERFLIBS = $(LIB_FILE)
+ -include config.mak
+ 
+ ifndef NO_DWARF
+-FLAGS_DWARF=$(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
++FLAGS_DWARF=$(ALL_CFLAGS) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
+ ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
+ 	msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+ 	NO_DWARF := 1
+@@ -554,7 +554,7 @@ ifndef NO_DWARF
+ ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+ 	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
+ else
+-	BASIC_CFLAGS += -I/usr/include/elfutils -DDWARF_SUPPORT
++	BASIC_CFLAGS += -DDWARF_SUPPORT
+ 	EXTLIBS += -lelf -ldw
+ 	LIB_OBJS += $(OUTPUT)util/probe-finder.o
+ endif # PERF_HAVE_DWARF_REGS
+diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
+index b253db6..b041ca6 100644
+--- a/tools/perf/feature-tests.mak
++++ b/tools/perf/feature-tests.mak
+@@ -9,8 +9,8 @@ endef
+ ifndef NO_DWARF
+ define SOURCE_DWARF
+ #include <dwarf.h>
+-#include <libdw.h>
+-#include <version.h>
++#include <elfutils/libdw.h>
++#include <elfutils/version.h>
+ #ifndef _ELFUTILS_PREREQ
+ #error
+ #endif
+diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+index bba69d4..beaefc3 100644
+--- a/tools/perf/util/probe-finder.h
++++ b/tools/perf/util/probe-finder.h
+@@ -34,9 +34,9 @@ extern int find_available_vars_at(int fd, struct perf_probe_event *pev,
+ 				  bool externs);
+ 
+ #include <dwarf.h>
+-#include <libdw.h>
+-#include <libdwfl.h>
+-#include <version.h>
++#include <elfutils/libdw.h>
++#include <elfutils/libdwfl.h>
++#include <elfutils/version.h>
+ 
+ struct probe_finder {
+ 	struct perf_probe_event	*pev;		/* Target probe event */
+-- 
+1.7.2.2
+
