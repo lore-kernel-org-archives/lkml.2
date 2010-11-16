@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934289Ab0KPLv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 06:51:56 -0500
-Received: from mx2.fusionio.com ([64.244.102.31]:38134 "EHLO mx2.fusionio.com"
+	id S934314Ab0KPLwz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 06:52:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49142 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932981Ab0KPLvy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 06:51:54 -0500
-X-ASG-Debug-ID: 1289908312-08b79f830001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4CE27054.3000309@fusionio.com>
-Date: Tue, 16 Nov 2010 12:51:48 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S933866Ab0KPLwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 06:52:54 -0500
+Date: Tue, 16 Nov 2010 12:52:52 +0100
+From: Jan Kara <jack@suse.cz>
+To: Josef Bacik <josef@redhat.com>
+Cc: david@fromorbit.com, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, cmm@us.ibm.com,
+        cluster-devel@redhat.com, ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH 4/6] Ext4: fail if we try to use hole punch
+Message-ID: <20101116115252.GD4757@quack.suse.cz>
+References: <1289840723-3056-1-git-send-email-josef@redhat.com>
+ <1289840723-3056-5-git-send-email-josef@redhat.com>
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: device-mapper development <dm-devel@redhat.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        Alasdair G Kergon <agk@redhat.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] block: rename trace_block_remap to  trace_block_bio_remap
-References: <4AB3A393.5000709@ce.jp.nec.com> <4AB4F908.60307@ce.jp.nec.com> <20101103215047.GC26473@redhat.com> <20101115205815.GA25567@redhat.com> <20101115213444.GA25705@redhat.com>
-X-ASG-Orig-Subj: Re: [PATCH v2] block: rename trace_block_remap to  trace_block_bio_remap
-In-Reply-To: <20101115213444.GA25705@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1289908312
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.46789
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289840723-3056-5-git-send-email-josef@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-15 22:34, Mike Snitzer wrote:
-> On Mon, Nov 15 2010 at  3:58pm -0500,
-> Mike Snitzer <snitzer@redhat.com> wrote:
+On Mon 15-11-10 12:05:21, Josef Bacik wrote:
+> Ext4 doesn't have the ability to punch holes yet, so make sure we return
+> EOPNOTSUPP if we try to use hole punching through fallocate.  This support can
+> be added later.  Thanks,
 > 
->> Hi Jens,
->>
->> This may have slipped through while you were traveling?
->>
->> Patch is also available here:
->> https://patchwork.kernel.org/patch/300552/
->>
->> Not sure if this change is concerning on a kABI level?
-> 
-> To be clear: that concern/question was prompted from having taken a
-> quick glance at lwn's kernel summit "KS2010: ABI status for tracepoints"
-> coverage: http://lwn.net/Articles/412685/
-> 
-> But in that article it clearly states:
-> "there are to be no stable tracepoints in drivers or filesystems".
-> 
-> Not sure where that leaves tracepoints for the block layer.  Anyway,
-> seems tracepoint kABI is likely a concern for the future (not the
-> immediate future).
-> 
-> So this change would be nice to get in before there is a new tracepoint
-> kABI-aware sheriff in town.
+> Signed-off-by: Josef Bacik <josef@redhat.com>
+  Acked-by: Jan Kara <jack@suse.cz>
 
-As far as I'm concerned, trace point changes in the block area cannot
-break existing blktrace (as in cause malfunction). So this patch is
-fine, I'll pick it up for .38.
-
+								Honza
+> ---
+>  fs/ext4/extents.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+> index 0554c48..35bca73 100644
+> --- a/fs/ext4/extents.c
+> +++ b/fs/ext4/extents.c
+> @@ -3622,6 +3622,10 @@ long ext4_fallocate(struct inode *inode, int mode, loff_t offset, loff_t len)
+>  	struct ext4_map_blocks map;
+>  	unsigned int credits, blkbits = inode->i_blkbits;
+>  
+> +	/* We only support the FALLOC_FL_KEEP_SIZE mode */
+> +	if (mode && (mode != FALLOC_FL_KEEP_SIZE))
+> +		return -EOPNOTSUPP;
+> +
+>  	/*
+>  	 * currently supporting (pre)allocate mode for extent-based
+>  	 * files _only_
+> -- 
+> 1.6.6.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 -- 
-Jens Axboe
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
