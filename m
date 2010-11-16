@@ -1,112 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933296Ab0KPLST (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 06:18:19 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:45569 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932908Ab0KPLSS (ORCPT
+	id S933406Ab0KPLTm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 06:19:42 -0500
+Received: from daytona.panasas.com ([67.152.220.89]:27509 "EHLO
+	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932908Ab0KPLTl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 06:18:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ZvZ856kRKav2hmOKUHnaJaCxwJV91unZkET1mMn3wXOmDQCPbyXuJS65VXc+t1Av4c
-         /NnhdEziqted6P+gy3hxGwp6aZp+wr1kgppA07IeG8KXBY+xdjcKfMNc3ymc7bCpuzDx
-         OlXEz9B9RCay7ydDkkncEZNJnCd5s9xpNchkI=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] ext3: Add error check in ext3_mkdir()
-Date: Tue, 16 Nov 2010 20:18:12 +0900
-Message-Id: <1289906292-8906-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 16 Nov 2010 06:19:41 -0500
+Message-ID: <4CE268C8.5010203@panasas.com>
+Date: Tue, 16 Nov 2010 13:19:36 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        kernel-janitors@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
+References: <1289421483-23907-1-git-send-email-segooon@gmail.com>	 <20101112120834.33062900.akpm@linux-foundation.org>	 <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>	 <20101114092533.GB5323@albatros>	 <20101114180643.593d19ac.akpm@linux-foundation.org> <1289848341.2607.125.camel@edumazet-laptop>
+In-Reply-To: <1289848341.2607.125.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 16 Nov 2010 11:19:39.0794 (UTC) FILETIME=[28DAFF20:01CB8580]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check return value of ext3_journal_get_write_access, ext3_journal_dirty_metadata
-and ext3_mark_inode_dirty. Consolidate error path under new label 'out_clear_inode'
-and adjust bh releasing appropriately.
+On 11/15/2010 09:12 PM, Eric Dumazet wrote:
+> Le dimanche 14 novembre 2010 à 18:06 -0800, Andrew Morton a écrit : 
+>> On Sun, 14 Nov 2010 12:25:33 +0300 Vasiliy Kulikov <segoon@openwall.com> wrote:
+>>>  
+>>>  	if (timeval) {
+>>> -		rtv.tv_sec = rts.tv_sec;
+>>> -		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
+>>> +		struct timeval rtv = {
+>>> +			.tv_sec = rts.tv_sec,
+>>> +			.tv_usec = rts.tv_nsec / NSEC_PER_USEC
+>>> +		};
+>>>  
+>>>  		if (!copy_to_user(p, &rtv, sizeof(rtv)))
+>>>  			return ret;
+>>
+>> Please check the assembly code - this will still leave four bytes of
+>> uninitalised stack data in 'rtv', surely.
+> 
+> Thats a good question.
+> 
+> In my understanding, gcc should initialize all holes (and other not
+> mentioned fields) with 0, even for automatic storage [C99 only mandates
+> this on static storage]
+> 
+> I tested on x86_64 and this is the case, but could not find a definitive
+> answer in gcc documentation.
+> 
+> This kind of construct is widely used in networking tree.
+> 
+> Maybe we should ask to gcc experts if this behavior is guaranteed by
+> gcc, or if we must review our code ;(
+> 
+> CC Jakub
+> 
+> Thanks !
+> 
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- fs/ext3/namei.c |   36 ++++++++++++++++++++++--------------
- 1 files changed, 22 insertions(+), 14 deletions(-)
+This is what I thought too. If it is not there are tones of bugs I wrote
+of code that relays on this behaviour.
 
-diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
-index bce9dce..03fccc5 100644
---- a/fs/ext3/namei.c
-+++ b/fs/ext3/namei.c
-@@ -1762,7 +1762,7 @@ static int ext3_mkdir(struct inode * dir, struct dentry * dentry, int mode)
- {
- 	handle_t *handle;
- 	struct inode * inode;
--	struct buffer_head * dir_block;
-+	struct buffer_head * dir_block = NULL;
- 	struct ext3_dir_entry_2 * de;
- 	int err, retries = 0;
- 
-@@ -1790,15 +1790,14 @@ retry:
- 	inode->i_fop = &ext3_dir_operations;
- 	inode->i_size = EXT3_I(inode)->i_disksize = inode->i_sb->s_blocksize;
- 	dir_block = ext3_bread (handle, inode, 0, 1, &err);
--	if (!dir_block) {
--		drop_nlink(inode); /* is this nlink == 0? */
--		unlock_new_inode(inode);
--		ext3_mark_inode_dirty(handle, inode);
--		iput (inode);
--		goto out_stop;
--	}
-+	if (!dir_block)
-+		goto out_clear_inode;
-+
- 	BUFFER_TRACE(dir_block, "get_write_access");
--	ext3_journal_get_write_access(handle, dir_block);
-+	err = ext3_journal_get_write_access(handle, dir_block);
-+	if (err)
-+		goto out_clear_inode;
-+
- 	de = (struct ext3_dir_entry_2 *) dir_block->b_data;
- 	de->inode = cpu_to_le32(inode->i_ino);
- 	de->name_len = 1;
-@@ -1814,11 +1813,16 @@ retry:
- 	ext3_set_de_type(dir->i_sb, de, S_IFDIR);
- 	inode->i_nlink = 2;
- 	BUFFER_TRACE(dir_block, "call ext3_journal_dirty_metadata");
--	ext3_journal_dirty_metadata(handle, dir_block);
--	brelse (dir_block);
--	ext3_mark_inode_dirty(handle, inode);
--	err = ext3_add_entry (handle, dentry, inode);
-+	err = ext3_journal_dirty_metadata(handle, dir_block);
-+	if (err)
-+		goto out_clear_inode;
-+
-+	err = ext3_mark_inode_dirty(handle, inode);
-+	if (!err)
-+		err = ext3_add_entry (handle, dentry, inode);
-+
- 	if (err) {
-+out_clear_inode:
- 		inode->i_nlink = 0;
- 		unlock_new_inode(inode);
- 		ext3_mark_inode_dirty(handle, inode);
-@@ -1827,10 +1831,14 @@ retry:
- 	}
- 	inc_nlink(dir);
- 	ext3_update_dx_flag(dir);
--	ext3_mark_inode_dirty(handle, dir);
-+	err = ext3_mark_inode_dirty(handle, dir);
-+	if (err)
-+		goto out_clear_inode;
-+
- 	d_instantiate(dentry, inode);
- 	unlock_new_inode(inode);
- out_stop:
-+	brelse(dir_block);
- 	ext3_journal_stop(handle);
- 	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries))
- 		goto retry;
--- 
-1.7.0.4
+It would be interesting to know for sure
 
+Thanks
+Boaz
