@@ -1,79 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767Ab0KPPmM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 10:42:12 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:53311 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752349Ab0KPPmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 10:42:11 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX192+t1Qb352qmPMykrU2sfep8qhjvCLxAnvH/P5wF
-	MCr6hex/XEviEa
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101116150319.GA3475@redhat.com>
-References: <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
-	 <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com>
-	 <1289783580.495.58.camel@maggy.simson.net>
-	 <1289811438.2109.474.camel@laptop>
-	 <1289820766.16406.45.camel@maggy.simson.net>
-	 <1289821590.16406.47.camel@maggy.simson.net>
-	 <20101115125716.GA22422@redhat.com>
-	 <1289856350.14719.135.camel@maggy.simson.net>
-	 <20101116130413.GA29368@redhat.com>
-	 <1289917109.5169.131.camel@maggy.simson.net>
-	 <20101116150319.GA3475@redhat.com>
+	id S1753994Ab0KPPpk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 10:45:40 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:50388 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753819Ab0KPPpi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 10:45:38 -0500
+Subject: Re: [RFC][PATCH v2 4/7] taskstats: Add per task steal time
+ accounting
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        "jeremy.fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
+        Avi Kivity <avi@redhat.com>
+In-Reply-To: <20101116163325.755a709f@mschwide.boeblingen.de.ibm.com>
+References: <20101111170352.732381138@linux.vnet.ibm.com>
+	 <20101111170815.024542355@linux.vnet.ibm.com>
+	 <1289677083.2109.167.camel@laptop>
+	 <20101115155057.15f3be35@mschwide.boeblingen.de.ibm.com>
+	 <1289833883.2109.494.camel@laptop>
+	 <20101115184206.4463fd05@mschwide.boeblingen.de.ibm.com>
+	 <1289843441.2109.520.camel@laptop>
+	 <20101115185923.1c353d07@mschwide.boeblingen.de.ibm.com>
+	 <1289844524.2109.524.camel@laptop>
+	 <20101116095101.5d86d1e5@mschwide.boeblingen.de.ibm.com>
+	 <1289909768.2109.592.camel@laptop>
+	 <20101116163325.755a709f@mschwide.boeblingen.de.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Nov 2010 08:41:48 -0700
-Message-ID: <1289922108.5169.185.camel@maggy.simson.net>
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 16 Nov 2010 16:45:29 +0100
+Message-ID: <1289922329.2109.627.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 16:03 +0100, Oleg Nesterov wrote:
-> On 11/16, Mike Galbraith wrote:
-> >
-> > On Tue, 2010-11-16 at 14:04 +0100, Oleg Nesterov wrote:
-> > > However, I must admit I dislike this check. Because, looking at this
-> > > code, it is not clear why do we check PF_EXITING. It looks as if it
-> > > is needed for correctness.
-> >
-> > Is _not_ needed I presume.
-> >
-> > I'll remove it, I'm not overly attached (a t t a..;) to it.
+On Tue, 2010-11-16 at 16:33 +0100, Martin Schwidefsky wrote:
+> > Oh, you guys don't have a hypercall wrapper to exploit? Because from
+> > what I heard from the kvm/xen/lguest people I gathered they could in
+> > fact do something like I proposed.
 > 
-> Argh!
+> We could do something along the lines of a hypercall wrapper (we would call
+> it a diagnose wrapper, same thing). The diagnoses we have on s390 do vastly
+> different things, so it is not easy to have a common diagnose wrapper.
+> Would be easier to add a tracepoint for each diagnose inline assembly.
+
+Right, bummer that.
+
+> > In fact, kvm seems to already have these tracepoints: kvm_exit/kvm_entry
+> > and it has a separate excplicit hypercall tracepoint as well:
+> > kvm_hypercall.
 > 
-> I was wrong, it _is_ needed for correctness. Yes, it is always safe
-> to read the pointer, but
+> But the kvm tracepoints are used when Linux is the hypervisor, no? For our
+> situation that would be a tracepoint in z/VM - or the equivalent. This is
+> out of scope of this patch.
+
+Ah crud, you might be right.. Avi could a kvm guest generate events on
+vcpu enter/exit?
+
+> > Except that the per-task steal time gives you lot less detail, being
+> > able to profile on vcpu exit/enter gives you a much more powerfull
+> > performance tool. Aside from being able to measure the steal-time it
+> > allows you to instantly find hypercalls (both explicit as well as
+> > implicit), so you can also measure the hypercall induced steal-time as
+> > well.
 > 
-> > > Yes, sure, rq->lock should ensure signal->autogroup can't go away.
-> > > (even if it can be changed under us). And it does, we are moving all
-> > > threads before kref_put().
-> >
-> > (yeah)
-> 
-> Exactly. And this means we can _only_ assume it can't go away if
-> autogroup_move_group() can see us on ->thread_group list.
+> Yes and no. The tracepoint idea looks interesting in itself. But that does
+> not completely replace the per-task steal time. The hypervisor can take
+> away the cpu anytime, it is still interesting to know which task was hit
+> hardest by that. You could view the cpu time lost by a hypercall as
+> "synchronous" steal time for the task, the remaining delta to the total
+> per-task steal time as "asynchronous" steal time. 
 
-Aha!
-
-> Perhaps this deserve a commen (unless I missed something again).
-> 
-> Mike, sorry for confusion.
-
-Oh no, thank you.  I hadn't figured it out yet, was going to go back and
-poke rt kernel with sharp sticks.  (exit can be one scary beast)
-
-	-Mike
-
+Right, so there is no way the guest knows about the vcpu getting
+scheduled, it can only derive the fact from hardware clocks after the
+fact?
