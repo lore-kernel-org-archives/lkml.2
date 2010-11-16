@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759150Ab0KPB6W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 20:58:22 -0500
-Received: from mail30s.wh2.ocn.ne.jp ([125.206.180.198]:40878 "HELO
-	mail30s.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759101Ab0KPB6U (ORCPT
+	id S932644Ab0KPB61 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 20:58:27 -0500
+Received: from mail30g.wh2.ocn.ne.jp ([220.111.41.239]:42114 "HELO
+	mail30g.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759155Ab0KPB6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 20:58:20 -0500
-Subject: [PATCH v8 1/3] Add generic exponentially weighted moving average
-	(EWMA) function
+	Mon, 15 Nov 2010 20:58:25 -0500
+Subject: [PATCH v8 2/3] ath5k: Use generic EWMA library
 To: linville@tuxdriver.com
 From: Bruno Randolf <br1@einfach.org>
 Cc: randy.dunlap@oracle.com, br1@thinktube.com, peterz@infradead.org,
@@ -16,8 +15,10 @@ Cc: randy.dunlap@oracle.com, br1@thinktube.com, peterz@infradead.org,
         linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
         stefanr@s5r6.in-berlin.de, kosaki.motohiro@jp.fujitsu.com,
         akpm@linux-foundation.org, kevin.granade@gmail.com
-Date: Tue, 16 Nov 2010 10:58:37 +0900
-Message-ID: <20101116015837.21081.79264.stgit@localhost6.localdomain6>
+Date: Tue, 16 Nov 2010 10:58:43 +0900
+Message-ID: <20101116015843.21081.91503.stgit@localhost6.localdomain6>
+In-Reply-To: <20101116015837.21081.79264.stgit@localhost6.localdomain6>
+References: <20101116015837.21081.79264.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -27,171 +28,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds generic functions for calculating Exponentially Weighted Moving
-Averages (EWMA). This implementation makes use of a structure which keeps the
-EWMA parameters and a scaled up internal representation to reduce rounding
-errors.
-
-The original idea for this implementation came from the rt2x00 driver
-(rt2x00link.c). I would like to use it in several places in the mac80211 and
-ath5k code and I hope it can be useful in many other places in the kernel code.
+Remove ath5k's private moving average implementation in favour of the generic
+library version.
 
 Signed-off-by: Bruno Randolf <br1@einfach.org>
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-
---
-
-v8: Rename ewma_get() to ewma_read().
-
-v7: Include bug.h. ewma_init() returns void. Use CONFIG_AVERAGE.
-
-v6: Fixed ULONG_MAX in comment. Add reviewed by KOSAKI Motohiro.
-
-v5: Use unsigned long instead of insigned int.
-
-v4: Initialize internal variable to 0. Remove unneeded const qualifiers.
-
-v3: Addressing Andrew Mortons comments: Implement in lib/average.c and make
-    access and initalization functions. Use unsigned int for values. Rename
-    functions to ewma_* since there might be other moving average
-    implementations which are not exponentially weighted.
-
-v2: Renamed 'samples' to 'weight'. Added more documentation. Use avg_val
-    pointer. Add a WARN_ON_ONCE for invalid values of 'weight'. Divide
-    and round up/down.
 ---
- include/linux/average.h |   32 ++++++++++++++++++++++++++
- lib/Kconfig             |    3 ++
- lib/Makefile            |    2 ++
- lib/average.c           |   57 +++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 94 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/average.h
- create mode 100644 lib/average.c
+ drivers/net/wireless/ath/ath5k/Kconfig |    1 +
+ drivers/net/wireless/ath/ath5k/ani.c   |    4 ++--
+ drivers/net/wireless/ath/ath5k/ath5k.h |   26 ++------------------------
+ drivers/net/wireless/ath/ath5k/base.c  |    4 ++--
+ drivers/net/wireless/ath/ath5k/debug.c |    2 +-
+ 5 files changed, 8 insertions(+), 29 deletions(-)
 
-diff --git a/include/linux/average.h b/include/linux/average.h
-new file mode 100644
-index 0000000..7706e40
---- /dev/null
-+++ b/include/linux/average.h
-@@ -0,0 +1,32 @@
-+#ifndef _LINUX_AVERAGE_H
-+#define _LINUX_AVERAGE_H
-+
-+#include <linux/kernel.h>
-+
-+/* Exponentially weighted moving average (EWMA) */
-+
-+/* For more documentation see lib/average.c */
-+
-+struct ewma {
-+	unsigned long internal;
-+	unsigned long factor;
-+	unsigned long weight;
-+};
-+
-+extern void ewma_init(struct ewma *avg, unsigned long factor,
-+		      unsigned long weight);
-+
-+extern struct ewma *ewma_add(struct ewma *avg, unsigned long val);
-+
-+/**
-+ * ewma_read() - Get average value
-+ * @avg: Average structure
-+ *
-+ * Returns the average value held in @avg.
-+ */
-+static inline unsigned long ewma_read(const struct ewma *avg)
-+{
-+	return DIV_ROUND_CLOSEST(avg->internal, avg->factor);
-+}
-+
-+#endif /* _LINUX_AVERAGE_H */
-diff --git a/lib/Kconfig b/lib/Kconfig
-index fa9bf2c..3116aa6 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -210,4 +210,7 @@ config GENERIC_ATOMIC64
- config LRU_CACHE
- 	tristate
+diff --git a/drivers/net/wireless/ath/ath5k/Kconfig b/drivers/net/wireless/ath/ath5k/Kconfig
+index eb83b7b..4784457 100644
+--- a/drivers/net/wireless/ath/ath5k/Kconfig
++++ b/drivers/net/wireless/ath/ath5k/Kconfig
+@@ -4,6 +4,7 @@ config ATH5K
+ 	select MAC80211_LEDS
+ 	select LEDS_CLASS
+ 	select NEW_LEDS
++	select AVERAGE
+ 	---help---
+ 	  This module adds support for wireless adapters based on
+ 	  Atheros 5xxx chipset.
+diff --git a/drivers/net/wireless/ath/ath5k/ani.c b/drivers/net/wireless/ath/ath5k/ani.c
+index f141919..db98a85 100644
+--- a/drivers/net/wireless/ath/ath5k/ani.c
++++ b/drivers/net/wireless/ath/ath5k/ani.c
+@@ -216,7 +216,7 @@ static void
+ ath5k_ani_raise_immunity(struct ath5k_hw *ah, struct ath5k_ani_state *as,
+ 			 bool ofdm_trigger)
+ {
+-	int rssi = ah->ah_beacon_rssi_avg.avg;
++	int rssi = ewma_read(&ah->ah_beacon_rssi_avg);
  
-+config AVERAGE
-+	bool
-+
- endmenu
-diff --git a/lib/Makefile b/lib/Makefile
-index e6a3763..76d3b85 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -106,6 +106,8 @@ obj-$(CONFIG_GENERIC_ATOMIC64) += atomic64.o
+ 	ATH5K_DBG_UNLIMIT(ah->ah_sc, ATH5K_DEBUG_ANI, "raise immunity (%s)",
+ 		ofdm_trigger ? "ODFM" : "CCK");
+@@ -301,7 +301,7 @@ ath5k_ani_raise_immunity(struct ath5k_hw *ah, struct ath5k_ani_state *as,
+ static void
+ ath5k_ani_lower_immunity(struct ath5k_hw *ah, struct ath5k_ani_state *as)
+ {
+-	int rssi = ah->ah_beacon_rssi_avg.avg;
++	int rssi = ewma_read(&ah->ah_beacon_rssi_avg);
  
- obj-$(CONFIG_ATOMIC64_SELFTEST) += atomic64_test.o
+ 	ATH5K_DBG_UNLIMIT(ah->ah_sc, ATH5K_DEBUG_ANI, "lower immunity");
  
-+obj-$(CONFIG_AVERAGE) += average.o
-+
- hostprogs-y	:= gen_crc32table
- clean-files	:= crc32table.h
+diff --git a/drivers/net/wireless/ath/ath5k/ath5k.h b/drivers/net/wireless/ath/ath5k/ath5k.h
+index 308b79e..2718136 100644
+--- a/drivers/net/wireless/ath/ath5k/ath5k.h
++++ b/drivers/net/wireless/ath/ath5k/ath5k.h
+@@ -25,6 +25,7 @@
  
-diff --git a/lib/average.c b/lib/average.c
-new file mode 100644
-index 0000000..f1d1b46
---- /dev/null
-+++ b/lib/average.c
-@@ -0,0 +1,57 @@
-+/*
-+ * lib/average.c
-+ *
-+ * This source code is licensed under the GNU General Public License,
-+ * Version 2.  See the file COPYING for more details.
-+ */
-+
-+#include <linux/module.h>
+ #include <linux/io.h>
+ #include <linux/types.h>
 +#include <linux/average.h>
-+#include <linux/bug.h>
-+
-+/**
-+ * DOC: Exponentially Weighted Moving Average (EWMA)
-+ *
-+ * These are generic functions for calculating Exponentially Weighted Moving
-+ * Averages (EWMA). We keep a structure with the EWMA parameters and a scaled
-+ * up internal representation of the average value to prevent rounding errors.
-+ * The factor for scaling up and the exponential weight (or decay rate) have to
-+ * be specified thru the init fuction. The structure should not be accessed
-+ * directly but only thru the helper functions.
-+ */
-+
-+/**
-+ * ewma_init() - Initialize EWMA parameters
-+ * @avg: Average structure
-+ * @factor: Factor to use for the scaled up internal value. The maximum value
-+ *	of averages can be ULONG_MAX/(factor*weight).
-+ * @weight: Exponential weight, or decay rate. This defines how fast the
-+ *	influence of older values decreases. Has to be bigger than 1.
-+ *
-+ * Initialize the EWMA parameters for a given struct ewma @avg.
-+ */
-+void ewma_init(struct ewma *avg, unsigned long factor, unsigned long weight)
-+{
-+	WARN_ON(weight <= 1 || factor == 0);
-+	avg->internal = 0;
-+	avg->weight = weight;
-+	avg->factor = factor;
-+}
-+EXPORT_SYMBOL(ewma_init);
-+
-+/**
-+ * ewma_add() - Exponentially weighted moving average (EWMA)
-+ * @avg: Average structure
-+ * @val: Current value
-+ *
-+ * Add a sample to the average.
-+ */
-+struct ewma *ewma_add(struct ewma *avg, unsigned long val)
-+{
-+	avg->internal = avg->internal  ?
-+		(((avg->internal * (avg->weight - 1)) +
-+			(val * avg->factor)) / avg->weight) :
-+		(val * avg->factor);
-+	return avg;
-+}
-+EXPORT_SYMBOL(ewma_add);
+ #include <net/mac80211.h>
+ 
+ /* RX/TX descriptor hw structs
+@@ -1102,7 +1103,7 @@ struct ath5k_hw {
+ 	struct ath5k_nfcal_hist ah_nfcal_hist;
+ 
+ 	/* average beacon RSSI in our BSS (used by ANI) */
+-	struct ath5k_avg_val	ah_beacon_rssi_avg;
++	struct ewma		ah_beacon_rssi_avg;
+ 
+ 	/* noise floor from last periodic calibration */
+ 	s32			ah_noise_floor;
+@@ -1315,27 +1316,4 @@ static inline u32 ath5k_hw_bitswap(u32 val, unsigned int bits)
+ 	return retval;
+ }
+ 
+-#define AVG_SAMPLES	8
+-#define AVG_FACTOR	1000
+-
+-/**
+- * ath5k_moving_average -  Exponentially weighted moving average
+- * @avg: average structure
+- * @val: current value
+- *
+- * This implementation make use of a struct ath5k_avg_val to prevent rounding
+- * errors.
+- */
+-static inline struct ath5k_avg_val
+-ath5k_moving_average(const struct ath5k_avg_val avg, const int val)
+-{
+-	struct ath5k_avg_val new;
+-	new.avg_weight = avg.avg_weight  ?
+-		(((avg.avg_weight * ((AVG_SAMPLES) - 1)) +
+-			(val * (AVG_FACTOR))) / (AVG_SAMPLES)) :
+-		(val * (AVG_FACTOR));
+-	new.avg = new.avg_weight / (AVG_FACTOR);
+-	return new;
+-}
+-
+ #endif
+diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
+index 4d21202..ae069b7 100644
+--- a/drivers/net/wireless/ath/ath5k/base.c
++++ b/drivers/net/wireless/ath/ath5k/base.c
+@@ -1307,8 +1307,7 @@ ath5k_update_beacon_rssi(struct ath5k_softc *sc, struct sk_buff *skb, int rssi)
+ 	    memcmp(mgmt->bssid, common->curbssid, ETH_ALEN) != 0)
+ 		return;
+ 
+-	ah->ah_beacon_rssi_avg = ath5k_moving_average(ah->ah_beacon_rssi_avg,
+-						      rssi);
++	ewma_add(&ah->ah_beacon_rssi_avg, rssi);
+ 
+ 	/* in IBSS mode we should keep RSSI statistics per neighbour */
+ 	/* le16_to_cpu(mgmt->u.beacon.capab_info) & WLAN_CAPABILITY_IBSS */
+@@ -2562,6 +2561,7 @@ ath5k_reset(struct ath5k_softc *sc, struct ieee80211_channel *chan)
+ 	ah->ah_cal_next_full = jiffies;
+ 	ah->ah_cal_next_ani = jiffies;
+ 	ah->ah_cal_next_nf = jiffies;
++	ewma_init(&ah->ah_beacon_rssi_avg, 1000, 8);
+ 
+ 	/*
+ 	 * Change channels and update the h/w rate map if we're switching;
+diff --git a/drivers/net/wireless/ath/ath5k/debug.c b/drivers/net/wireless/ath/ath5k/debug.c
+index 54dcf77..7d785cb 100644
+--- a/drivers/net/wireless/ath/ath5k/debug.c
++++ b/drivers/net/wireless/ath/ath5k/debug.c
+@@ -719,7 +719,7 @@ static ssize_t read_file_ani(struct file *file, char __user *user_buf,
+ 			st->mib_intr);
+ 	len += snprintf(buf+len, sizeof(buf)-len,
+ 			"beacon RSSI average:\t%d\n",
+-			sc->ah->ah_beacon_rssi_avg.avg);
++			(int)ewma_read(&sc->ah->ah_beacon_rssi_avg));
+ 
+ #define CC_PRINT(_struct, _field) \
+ 	_struct._field, \
 
