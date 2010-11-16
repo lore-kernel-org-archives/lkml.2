@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757561Ab0KPTl6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 14:41:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43764 "EHLO mx1.redhat.com"
+	id S1757770Ab0KPTmI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 14:42:08 -0500
+Received: from kroah.org ([198.145.64.141]:51798 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756145Ab0KPTl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 14:41:57 -0500
-Date: Tue, 16 Nov 2010 14:40:36 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: david@lang.hm, Paul Menage <menage@google.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101116194036.GH13092@redhat.com>
-References: <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
- <20101116181603.GC19327@tango.0pointer.de>
- <1289931715.2109.648.camel@laptop>
- <AANLkTik7cR_5JJWfk8SEf3Dngfe7yZvuivJ66dVDOuAk@mail.gmail.com>
- <alpine.DEB.2.00.1011161047060.3718@asgard.lang.hm>
- <1289933965.2109.652.camel@laptop>
- <20101116190916.GD13092@redhat.com>
- <1289934800.2109.653.camel@laptop>
- <20101116192206.GG13092@redhat.com>
- <1289935527.2109.655.camel@laptop>
+	id S1757618Ab0KPTmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 14:42:07 -0500
+Date: Tue, 16 Nov 2010 11:33:28 -0800
+From: Greg KH <greg@kroah.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] staging: ft1000: Copy from user into correct data
+Message-ID: <20101116193328.GA12492@kroah.com>
+References: <1289492965.12418.262.camel@gandalf.stny.rr.com>
+ <AANLkTikz7nxaE=Xs=JUwoM0sXNnDcNrpsrTTBzJkysAD@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1289935527.2109.655.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikz7nxaE=Xs=JUwoM0sXNnDcNrpsrTTBzJkysAD@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 08:25:27PM +0100, Peter Zijlstra wrote:
-> On Tue, 2010-11-16 at 14:22 -0500, Vivek Goyal wrote:
-> > In this thread there are already mentions of extending it to block
-> > controller also which now supports the upper limit.
-> > 
-> > Secondly I am assuming at some point of time, cpu controller will also
-> > support throttling (including SCHED_OTHER class). 
+On Fri, Nov 12, 2010 at 11:14:26AM +0100, Belisko Marek wrote:
+> Hi Steven,
 > 
-> Possibly, but in both cases its voluntary -- that is, unless explicitly
-> configured a cgroup can use as much as possible. These auto groups will
-> use that.
-> 
-> If you want more control, create your own cgroup so you can poke at the
-> parameters at will.
+> On Thu, Nov 11, 2010 at 5:29 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > While doing a ktest.pl I used a MIN_CONFIG that had STAGING enabled, and
+> > a randconfig with CONFIG_DEBUG_STRICT_USER_COPY_CHECKS enabled caught
+> > the following bug:
+> >
+> > In file included from /home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/include/asm/uaccess.h:571:0,
+> >                 from /home/rostedt/work/autotest/nobackup/linux-test.git/include/linux/poll.h:14,
+> >                 from /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c:32:
+> > In function 'copy_from_user',
+> >    inlined from 'ft1000_ChIoctl' at /home/rostedt/work/autotest/nobackup/linux-test.git/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c:702:36:
+> > /home/rostedt/work/autotest/nobackup/linux-test.git/arch/x86/include/asm/uaccess_32.h:212:26: error: call to 'copy_from_user_overflow' declared with attribute error: copy_from_user() buffer size is not provably correct
+> >
+> >
+> > Looking at the code it was obvious what the problem was. The pointer
+> > dpram_data was being allocated but the address was being written to.
+> > Looking at the comment above the code shows that it use to write into an
+> > element of that pointer where the '&' is appropriate. But now that it
+> > writes to the pointer itself, we need to remove the '&' otherwise we
+> > write over the pointer and not into the data it points to.
+> Good catch but anyway this interface is removed. Already send patches to Greg-KH
+> but there was some patch problem so they're not applied to next yet.
 
-I can create my own cgroups and control these. But one would like to
-control these hidden groups also. For example, in a clustered environment
-one might not want allow more than certain IOPS from machine X. In such
-scenario one would like to see all the groups and possibly put the limit.
+But this patch is correct, and I don't have your other patches in my
+inbox, so I'm going to apply this one.
 
-Now one can argue that thse groups are under root and put overall limit
-on root and these groups get automatically controlled. But controllers
-like block and memory also support flat mode where all the groups are
-at same level.
+Please rebase your fixes on the next linux-next and all should be fine.
 
-		  pivot	
-	        /   |   \
-	       root  g2 g3
+thanks,
 
-Here g2 and g3 are hidden auto groups and because it is flat configuration
-putting limit on root will not help and one can not limit g2 and g3 and
-one can not control total amount of IO from the system.
-
-Now one can say use hierarchy and not flat setup. I am writting patches
-to enable hierarchy but that is disabled by default as flat setup came
-first and also there are concerns of accounting overhead etc.
-
-So point being that these autogroups being hidden is a concern. Can we
-do something so that these groups show up in cgroup hierarchy and are
-then user controllable.
-
-Thanks
-Vivek
+greg k-h
