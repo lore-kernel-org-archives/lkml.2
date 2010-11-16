@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757005Ab0KPUjO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:39:14 -0500
-Received: from THUNK.ORG ([69.25.196.29]:35917 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756648Ab0KPUjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:39:07 -0500
-Date: Tue, 16 Nov 2010 15:38:54 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@linux.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] ext4 Fix setting random pages PageUptodate
-Message-ID: <20101116203854.GA1568@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	Hugh Dickins <hughd@google.com>, Christoph Lameter <cl@linux.com>,
-	linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-	linux-ext4@vger.kernel.org
-References: <20101110152519.GA1626@arch.trippelsdorf.de>
- <20101110154057.GA2191@arch.trippelsdorf.de>
- <alpine.DEB.2.00.1011101534370.30164@router.home>
- <20101112122003.GA1572@arch.trippelsdorf.de>
- <20101115123846.GA30047@arch.trippelsdorf.de>
- <20101115195439.GA1569@arch.trippelsdorf.de>
- <AANLkTikWaADzUrqKhZ9gviW8sk8mPjC9kKFJyitvzQmx@mail.gmail.com>
- <20101116111339.GA1544@arch.trippelsdorf.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101116111339.GA1544@arch.trippelsdorf.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1756957Ab0KPUlh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:41:37 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55813 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755199Ab0KPUlg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 15:41:36 -0500
+Date: Tue, 16 Nov 2010 12:41:17 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, stable@kernel.org
+Subject: Re: [BUGFIX] memcg: avoid deadlock between move charge and
+ try_charge()
+Message-Id: <20101116124117.64608b66.akpm@linux-foundation.org>
+In-Reply-To: <20101116191748.d6645376.nishimura@mxp.nes.nec.co.jp>
+References: <20101116191748.d6645376.nishimura@mxp.nes.nec.co.jp>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 12:13:39PM +0100, Markus Trippelsdorf wrote:
-> ext4_end_bio calls put_page and kmem_cache_free before calling
-> SetPageUpdate(). This can result in setting the PageUptodate bit on
-> random pages and causes the following BUG:
+On Tue, 16 Nov 2010 19:17:48 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 
-Oops.   Thanks muchly to you and to Hugh for discovering this.
+> From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> 
+> __mem_cgroup_try_charge() can be called under down_write(&mmap_sem)(e.g.
+> mlock does it). This means it can cause deadlock if it races with move charge:
+> 
+> Ex.1)
+>                 move charge             |        try charge
+>   --------------------------------------+------------------------------
+>     mem_cgroup_can_attach()             |  down_write(&mmap_sem)
+>       mc.moving_task = current          |    ..
+>       mem_cgroup_precharge_mc()         |  __mem_cgroup_try_charge()
+>         mem_cgroup_count_precharge()    |    prepare_to_wait()
+>           down_read(&mmap_sem)          |    if (mc.moving_task)
+>           -> cannot aquire the lock     |    -> true
+>                                         |      schedule()
+> 
+> Ex.2)
+>                 move charge             |        try charge
+>   --------------------------------------+------------------------------
+>     mem_cgroup_can_attach()             |
+>       mc.moving_task = current          |
+>       mem_cgroup_precharge_mc()         |
+>         mem_cgroup_count_precharge()    |
+>           down_read(&mmap_sem)          |
+>           ..                            |
+>           up_read(&mmap_sem)            |
+>                                         |  down_write(&mmap_sem)
+>     mem_cgroup_move_task()              |    ..
+>       mem_cgroup_move_charge()          |  __mem_cgroup_try_charge()
+>         down_read(&mmap_sem)            |    prepare_to_wait()
+>         -> cannot aquire the lock       |    if (mc.moving_task)
+>                                         |    -> true
+>                                         |      schedule()
+> 
+> To avoid this deadlock, we do all the move charge works (both can_attach() and
+> attach()) under one mmap_sem section.
+> And after this patch, we set/clear mc.moving_task outside mc.lock, because we
+> use the lock only to check mc.from/to.
+> 
+> Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-I've added this to the ext4 patch queue and will be pushing to Linus
-this week, for -rc3.
+I put this in the send-to-Linus-in-about-a-week queue.
 
-					- Ted
+> Cc: <stable@kernel.org>
+
+The patch doesn't apply well to 2.6.36 so if we do want it backported
+then please prepare a tested backport for the -stable guys?
+
+Thanks.
+
