@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758729Ab0KPT4D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 14:56:03 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60973 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756670Ab0KPT4B (ORCPT
+	id S1758809Ab0KPT4w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 14:56:52 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44569 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758049Ab0KPT4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 14:56:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <20101116194036.GH13092@redhat.com>
-References: <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
- <20101116181603.GC19327@tango.0pointer.de> <1289931715.2109.648.camel@laptop>
- <AANLkTik7cR_5JJWfk8SEf3Dngfe7yZvuivJ66dVDOuAk@mail.gmail.com>
- <alpine.DEB.2.00.1011161047060.3718@asgard.lang.hm> <1289933965.2109.652.camel@laptop>
- <20101116190916.GD13092@redhat.com> <1289934800.2109.653.camel@laptop>
- <20101116192206.GG13092@redhat.com> <1289935527.2109.655.camel@laptop> <20101116194036.GH13092@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 16 Nov 2010 11:49:25 -0800
-Message-ID: <AANLkTimRo9qbbYNGP1G28cBip5VokNOyjMNe_u=fagnH@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, david@lang.hm,
-        Paul Menage <menage@google.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 16 Nov 2010 14:56:51 -0500
+Date: Tue, 16 Nov 2010 19:55:38 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Werner Fink <werner@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
+Message-ID: <20101116195538.7fa66b97@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTi=ju4fON7Hz=j_tFtqFGD0b-c=-Ou+HQwfYDgOy@mail.gmail.com>
+References: <1289922400.1253.3.camel@yio.site>
+	<20101116155717.6671e484@lxorguk.ukuu.org.uk>
+	<AANLkTimn7zyEjLhmOmUVQGnLDfM-A_uEgWETsM3nsyuY@mail.gmail.com>
+	<20101116171447.29336514@lxorguk.ukuu.org.uk>
+	<AANLkTi=ju4fON7Hz=j_tFtqFGD0b-c=-Ou+HQwfYDgOy@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 11:40 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
->
-> So point being that these autogroups being hidden is a concern. Can we
-> do something so that these groups show up in cgroup hierarchy and are
-> then user controllable.
+> we always will apply the final result just fine, when stuff stops
+> changing. It's actually a nice feature and no a problem at all, that
+> we only see the most recent state.
 
-I think that's valid, and I don't think it would be wrong to have some
-interface to show them.
+Stuff never stops changing until the machine shuts down, its undefined.
 
-Of course, then it's an interface question, and you'd want to be a bit
-careful in designing it.
+> Sure, with the ioctl() we've seen many not interesting changes, but we
+> often miss the single one that is important -- the last last one. The
+> thing is that we don't need to sleep here and miss changes.
 
-                       Linus
+So we fix the ioctl interface, it's not exactly hard to do now is it.
+
+> It's a straight-forward and simple text interface that does all we
+> need to track console and vt changes.
+
+Except that it doesn't address things like the permissions side of things.
+
+NAK again
+
+"We have an interface that doesn't quite work for our case and we think
+that is a bug" is not the reasoning behind writing a new random one with
+a totally disconnected permission model that doesn't work either.
+
+Fix the one we have.
+
+Alan
