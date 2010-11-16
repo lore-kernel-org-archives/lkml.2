@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933930Ab0KPIAD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 03:00:03 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:56567 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757118Ab0KPIAB (ORCPT
+	id S1759486Ab0KPICT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 03:02:19 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63118 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757118Ab0KPICS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 03:00:01 -0500
-Date: Mon, 15 Nov 2010 23:59:59 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Martin Wilck <martin.wilck@ts.fujitsu.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: Incorrect size checks on mmap() for sysfs PCI resource files
-	is breaking X?
-Message-ID: <20101116075959.GS14383@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20101116072247.GQ14383@tux1.beaverton.ibm.com> <AANLkTin16PNdYh61Zhy=5ttMrL-VuSYYkCRybXo6wFo=@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTin16PNdYh61Zhy=5ttMrL-VuSYYkCRybXo6wFo=@mail.gmail.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Tue, 16 Nov 2010 03:02:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=SYR6zsxeFrx7qnxqIX4EvqSw2C4JPSUYpygM5LcNrHmZvcdnRi3VNs+5aXp/Q/UhJ7
+         H5sLl7gbQbay2q5qCWW6neM91Thvu4IxmFDreAuaYpCjI7yZikzNb2HXC/w8VhAa8FKd
+         /x24DSGXLIRoiuF1aWltnQ7LyvJgff6kkEbyg=
+Subject: [PATCH 0/5] ASoC: Fix incorrect kfree in error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Barry Song <21cnbao@gmail.com>,
+        Vladimir Barinov <vbarinov@embeddedalley.com>,
+        Richard Purdie <richard@openedhand.com>
+Content-Type: text/plain
+Date: Tue, 16 Nov 2010 16:06:40 +0800
+Message-Id: <1289894800.19543.2.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 05:53:35PM +1000, Dave Airlie wrote:
-> On Tue, Nov 16, 2010 at 5:22 PM, Darrick J. Wong <djwong@us.ibm.com> wrote:
-> > Hi,
-> >
-> > I just loaded 2.6.37-rc2 on my machines, and I noticed that X no longer starts.
-> > Running an strace of the X server shows that it's doing this:
-> 
-> Can you poinpoint when it went wrong? does 2.6.36 work okay?
+This serial of patches fixes incorrect kfree in error path.
 
-Yes, 2.6.36 is ok.  2.6.37-rc1 was ok too.
+Axel Lin (5):
+  ASoC: Fix incorrect kfree in ad1836_probe error path
+  ASoC: Fix incorrect kfree in ad193x_probe error path
+  ASoC: Fix incorrect kfree in aic3x_probe error path
+  ASoC: Fix incorrect kfree in wm8731_probe error path
+  ASoC: Fix incorrect kfree in wm8962_probe error path
 
-> Just trying to figure out where the regression arrived.
+ sound/soc/codecs/ad1836.c      |    1 -
+ sound/soc/codecs/ad193x.c      |    1 -
+ sound/soc/codecs/tlv320aic3x.c |    1 -
+ sound/soc/codecs/wm8731.c      |    1 -
+ sound/soc/codecs/wm8962.c      |    1 -
+ 5 files changed, 0 insertions(+), 5 deletions(-)
 
-Looks like it's commit 3b519e4ea618b6943a82931630872907f9ac2c2b which went in
-11 Nov 2010.  I just submitted a patch that fixes it, at least for me.
+-- 
+1.7.2
 
---D
+
+
