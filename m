@@ -1,113 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759084Ab0KPB2x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 20:28:53 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:38353 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759064Ab0KPB2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 20:28:52 -0500
-Date: Mon, 15 Nov 2010 17:28:46 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Joe Korty <joe.korty@ccur.com>,
-        mathieu.desnoyers@efficios.com, dhowells@redhat.com,
-        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
-        houston.jim@comcast.net
-Subject: Re: [PATCH] a local-timer-free version of RCU
-Message-ID: <20101116012846.GV2555@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101104232148.GA28037@linux.vnet.ibm.com>
- <20101105210059.GA27317@tsunami.ccur.com>
- <4CD912E9.1080907@cn.fujitsu.com>
- <20101110155419.GC5750@nowhere>
- <1289410271.2084.25.camel@laptop>
- <20101111041920.GD3134@linux.vnet.ibm.com>
- <20101113223046.GB5445@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101113223046.GB5445@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759076Ab0KPBqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 20:46:16 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:50851 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841Ab0KPBqP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 20:46:15 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6168"; a="62976617"
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+To: dwalker@codeaurora.org
+Cc: davidb@codeaurora.org, bryanh@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: [PATCH 09/14 v2] msm: iommu: Kconfig item for cacheable page tables
+Date: Mon, 15 Nov 2010 17:46:10 -0800
+Message-Id: <1289871970-18393-1-git-send-email-stepanm@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.2
+In-Reply-To: <1289619000-13167-10-git-send-email-stepanm@codeaurora.org>
+References: <1289619000-13167-10-git-send-email-stepanm@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 13, 2010 at 11:30:49PM +0100, Frederic Weisbecker wrote:
-> On Wed, Nov 10, 2010 at 08:19:20PM -0800, Paul E. McKenney wrote:
-> > On Wed, Nov 10, 2010 at 06:31:11PM +0100, Peter Zijlstra wrote:
-> > > On Wed, 2010-11-10 at 16:54 +0100, Frederic Weisbecker wrote:
-> > > > run the sched tick and if there was nothing to do
-> > > > for some time and we are in userspace, deactivate it. 
-> > > 
-> > > Not for some time, immediately, have the tick track if it was useful, if
-> > > it was not, have it stop itself, like:
-> > > 
-> > > tick()
-> > > {
-> > >  int stop = 1;
-> > > 
-> > >  if (nr_running > 1)
-> > >   stop = 0;
-> > > 
-> > >  if(rcu_needs_cpu())
-> > >   stop = 0;
-> > > 
-> > >  ...
-> > > 
-> > > 
-> > >  if (stop)
-> > >   enter_nohz_mode();
-> > > }
-> > 
-> > I am still holding out for a dyntick-hpc version of RCU that does not
-> > need the tick.  ;-)
-> 
-> 
-> So you don't think it would be an appropriate solution? Keeping the tick for short
-> periods of time while we need it only, that looks quite a good way to try.
+Add a Kconfig item to allow the IOMMU page tables to be
+coherent in the L2 cache. This generally reduces IOTLB miss
+latencies and has been shown to improve multimedia
+performance.
 
-My concern is not the tick -- it is really easy to work around lack of a
-tick from an RCU viewpoint.  In fact, this happens automatically given the
-current implementations!  If there is a callback anywhere in the system,
-then RCU will prevent the corresponding CPU from entering dyntick-idle
-mode, and that CPU's clock will drive the rest of RCU as needed via
-force_quiescent_state().  The force_quiescent_state() workings would
-want to be slightly different for dyntick-hpc, but not significantly so
-(especially once I get TREE_RCU moved to kthreads).
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+---
+ arch/arm/mach-msm/Kconfig |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-My concern is rather all the implicit RCU-sched read-side critical
-sections, particularly those that arch-specific code is creating.
-And it recently occurred to me that there are necessarily more implicit
-irq/preempt disables than there are exception entries.
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index dbbcfeb..1c6f76b 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -122,6 +122,10 @@ config MACH_MSM8X60_FFA
 
-So would you be OK with telling RCU about kernel entries/exits, but
-simply not enabling the tick?  The irq and NMI kernel entries/exits are
-already covered, of course.
+ endmenu
 
-This seems to me to work out as follows:
++config IOMMU_PGTABLES_L2
++	def_bool y
++	depends on ARCH_MSM8X60 && MMU && SMP && CPU_DCACHE_DISABLE=n
++
+ config MSM_DEBUG_UART
+ 	int
+ 	default 1 if MSM_DEBUG_UART1
+--
+1.7.0.2
 
-1.	If there are no RCU callbacks anywhere in the system, RCU
-	is quiescent and does not cause any IPIs or interrupts of
-	any kind.  For HPC workloads, this should be the common case.
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-2.	If there is an RCU callback, then one CPU keeps a tick going
-	and drives RCU core processing on all CPUs.  (This probably
-	works with RCU as is, but somewhat painfully.)  This results
-	in some IPIs, but only to those CPUs that remain running in
-	the kernel for extended time periods.  Appropriate adjustment
-	of RCU_JIFFIES_TILL_FORCE_QS, possibly promoted to be a
-	kernel configuration parameter, should make such IPIs
-	-extremely- rare.  After all, how many kernel code paths
-	are going to consume (say) 10 jiffies of CPU time?  (Keep
-	in mind that if the system call blocks, the CPU will enter
-	dyntick-idle mode, and RCU will still recognize it as an
-	innocent bystander without needing to IPI it.)
-
-3.	The implicit RCU-sched read-side critical sections just work
-	as they do today.
-
-Or am I missing some other problems with this approach?
-
-							Thanx, Paul
