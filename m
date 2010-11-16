@@ -1,69 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933304Ab0KPLQk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 06:16:40 -0500
-Received: from mail-out.m-online.net ([212.18.0.9]:43111 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894Ab0KPLQi (ORCPT
+	id S933296Ab0KPLST (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 06:18:19 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45569 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932908Ab0KPLSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 06:16:38 -0500
-X-Auth-Info: VAvVbROXIU/K+T4V90xKxfuP60vxC8OM407Qpb7dTYA=
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] PCI fixes
-References: <20101115094527.49464ed2@jbarnes-desktop>
-X-Yow: I think my CAREER is RUINED!!
-Date: Tue, 16 Nov 2010 12:16:36 +0100
-In-Reply-To: <20101115094527.49464ed2@jbarnes-desktop> (Jesse Barnes's message
-	of "Mon, 15 Nov 2010 09:45:27 -0800")
-Message-ID: <m28w0tzffv.fsf@whitebox.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.90 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 16 Nov 2010 06:18:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ZvZ856kRKav2hmOKUHnaJaCxwJV91unZkET1mMn3wXOmDQCPbyXuJS65VXc+t1Av4c
+         /NnhdEziqted6P+gy3hxGwp6aZp+wr1kgppA07IeG8KXBY+xdjcKfMNc3ymc7bCpuzDx
+         OlXEz9B9RCay7ydDkkncEZNJnCd5s9xpNchkI=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ext3: Add error check in ext3_mkdir()
+Date: Tue, 16 Nov 2010 20:18:12 +0900
+Message-Id: <1289906292-8906-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jesse Barnes <jbarnes@virtuousgeek.org> writes:
+Check return value of ext3_journal_get_write_access, ext3_journal_dirty_metadata
+and ext3_mark_inode_dirty. Consolidate error path under new label 'out_clear_inode'
+and adjust bh releasing appropriately.
 
-> Martin Wilck (1):
->       PCI: fix size checks for mmap() on /proc/bus/pci files
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ fs/ext3/namei.c |   36 ++++++++++++++++++++++--------------
+ 1 files changed, 22 insertions(+), 14 deletions(-)
 
-That breaks X.
-
-process "X" tried to map 0x00010000 bytes at page 0x00000000 on 0000:00:10.0 BAR 2 (start 0x        90000000, size 0x           10000)
-------------[ cut here ]------------
-WARNING: at drivers/pci/pci-sysfs.c:758
-Modules linked in: usb_storage uas uinput cpufreq_conservative rfcomm cpufreq_userspace cpufreq_powersave sco bridge stp llc bnep l2cap crc16 snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device tun nf_conntrack_ipv6 nf_defrag_ipv6 ip6t_REJECT ip6t_LOG ip6table_filter ip6_tables xt_TCPMSS xt_recent ipt_MASQUERADE xt_state ipt_REJECT ipt_LOG xt_tcpudp iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter ip_tables x_tables loop dm_mod btusb bluetooth arc4 snd_aoa_codec_tas ecb snd_aoa_fabric_layout snd_aoa snd_aoa_i2sbus snd_pcm b43 joydev mac80211 snd_timer snd_page_alloc firewire_ohci appletouch snd soundcore cfg80211 sungem sungem_phy firewire_core rfkill sr_mod crc_itu_t sg snd_aoa_soundbus ssb cdrom sd_mod pata_macio libata scsi_mod
-NIP: c0177b10 LR: c0177b10 CTR: 00000001
-REGS: c2461d90 TRAP: 0700   Tainted: G        W    (2.6.37-rc2)
-MSR: 00029032 <EE,ME,CE,IR,DR>  CR: 20000824  XER: 20000000
-TASK = c2568d00[2009] 'X' THREAD: c2460000
-GPR00: c0177b10 c2461e40 c2568d00 0000008a 00006a86 ffffffff c055fb36 c055febc 
-GPR08: 000069fe c0440000 c055febc c2461e00 ffffffff 1022e9e4 10226a14 00000000 
-GPR16: 103eadc0 00000000 00000001 1022bf1c ef136688 00000000 ffffffea 00000001 
-GPR24: 00000000 00000000 00000000 00010000 ef806d68 ef136688 00000002 ef806c38 
-NIP [c0177b10] pci_mmap_resource+0xf0/0x174
-LR [c0177b10] pci_mmap_resource+0xf0/0x174
-Call Trace:
-[c2461e40] [c0177b10] pci_mmap_resource+0xf0/0x174 (unreliable)
-[c2461e80] [c00f7514] mmap+0x74/0xfc
-[c2461eb0] [c008e3e4] mmap_region+0x1e4/0x3bc
-[c2461f00] [c008e93c] sys_mmap_pgoff+0xa4/0xe0
-[c2461f30] [c00060a0] sys_mmap+0x28/0x40
-[c2461f40] [c0010bc4] ret_from_syscall+0x0/0x40
---- Exception: c01 at 0xfa95f24
-    LR = 0xfd897c8
-Instruction dump:
-3b400000 7fff0214 813f0134 38090001 7f6a0050 3c60c03d 7fc8f378 93410008 
-39200000 3863bd36 9361000c 4819c31d <0fe00000> 3800ffea 48000070 7fc4f378 
----[ end trace a096109c06ace62c ]---
-
-Andreas.
-
+diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
+index bce9dce..03fccc5 100644
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -1762,7 +1762,7 @@ static int ext3_mkdir(struct inode * dir, struct dentry * dentry, int mode)
+ {
+ 	handle_t *handle;
+ 	struct inode * inode;
+-	struct buffer_head * dir_block;
++	struct buffer_head * dir_block = NULL;
+ 	struct ext3_dir_entry_2 * de;
+ 	int err, retries = 0;
+ 
+@@ -1790,15 +1790,14 @@ retry:
+ 	inode->i_fop = &ext3_dir_operations;
+ 	inode->i_size = EXT3_I(inode)->i_disksize = inode->i_sb->s_blocksize;
+ 	dir_block = ext3_bread (handle, inode, 0, 1, &err);
+-	if (!dir_block) {
+-		drop_nlink(inode); /* is this nlink == 0? */
+-		unlock_new_inode(inode);
+-		ext3_mark_inode_dirty(handle, inode);
+-		iput (inode);
+-		goto out_stop;
+-	}
++	if (!dir_block)
++		goto out_clear_inode;
++
+ 	BUFFER_TRACE(dir_block, "get_write_access");
+-	ext3_journal_get_write_access(handle, dir_block);
++	err = ext3_journal_get_write_access(handle, dir_block);
++	if (err)
++		goto out_clear_inode;
++
+ 	de = (struct ext3_dir_entry_2 *) dir_block->b_data;
+ 	de->inode = cpu_to_le32(inode->i_ino);
+ 	de->name_len = 1;
+@@ -1814,11 +1813,16 @@ retry:
+ 	ext3_set_de_type(dir->i_sb, de, S_IFDIR);
+ 	inode->i_nlink = 2;
+ 	BUFFER_TRACE(dir_block, "call ext3_journal_dirty_metadata");
+-	ext3_journal_dirty_metadata(handle, dir_block);
+-	brelse (dir_block);
+-	ext3_mark_inode_dirty(handle, inode);
+-	err = ext3_add_entry (handle, dentry, inode);
++	err = ext3_journal_dirty_metadata(handle, dir_block);
++	if (err)
++		goto out_clear_inode;
++
++	err = ext3_mark_inode_dirty(handle, inode);
++	if (!err)
++		err = ext3_add_entry (handle, dentry, inode);
++
+ 	if (err) {
++out_clear_inode:
+ 		inode->i_nlink = 0;
+ 		unlock_new_inode(inode);
+ 		ext3_mark_inode_dirty(handle, inode);
+@@ -1827,10 +1831,14 @@ retry:
+ 	}
+ 	inc_nlink(dir);
+ 	ext3_update_dx_flag(dir);
+-	ext3_mark_inode_dirty(handle, dir);
++	err = ext3_mark_inode_dirty(handle, dir);
++	if (err)
++		goto out_clear_inode;
++
+ 	d_instantiate(dentry, inode);
+ 	unlock_new_inode(inode);
+ out_stop:
++	brelse(dir_block);
+ 	ext3_journal_stop(handle);
+ 	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries))
+ 		goto retry;
 -- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+1.7.0.4
+
