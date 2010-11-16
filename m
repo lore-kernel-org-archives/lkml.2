@@ -1,70 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484Ab0KPQ52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 11:57:28 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:43740 "EHLO bear.ext.ti.com"
+	id S1755509Ab0KPQ6M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 11:58:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47805 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755452Ab0KPQ50 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 11:57:26 -0500
-From: "Aguirre, Sergio" <saaguirre@ti.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: LKML <linux-kernel@vger.kernel.org>, Huang Ying <ying.huang@intel.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Kyle McMartin <kyle@mcmartin.ca>
-Date: Tue, 16 Nov 2010 10:57:02 -0600
-Subject: RE: [RFC][PATCH] irq_work: Don't ignore possible cmpxchg failure
-Thread-Topic: [RFC][PATCH] irq_work: Don't ignore possible cmpxchg failure
-Thread-Index: AcuFrZcjnJmpnzPWQt6Cbn8fMt8GtwAAZW+Q
-Message-ID: <A24693684029E5489D1D202277BE89447382A55A@dlee02.ent.ti.com>
-References: <1289925179-17085-1-git-send-email-saaguirre@ti.com>
- <1289925901.2109.629.camel@laptop>
-In-Reply-To: <1289925901.2109.629.camel@laptop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752734Ab0KPQ6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 11:58:10 -0500
+Message-ID: <4CE2B7CC.9010708@redhat.com>
+Date: Tue, 16 Nov 2010 18:56:44 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
 MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        "jeremy.fitzhardinge" <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [RFC][PATCH v2 4/7] taskstats: Add per task steal time accounting
+References: <20101111170352.732381138@linux.vnet.ibm.com>	 <20101111170815.024542355@linux.vnet.ibm.com>	 <1289677083.2109.167.camel@laptop>	 <20101115155057.15f3be35@mschwide.boeblingen.de.ibm.com>	 <1289833883.2109.494.camel@laptop>	 <20101115184206.4463fd05@mschwide.boeblingen.de.ibm.com>	 <1289843441.2109.520.camel@laptop>	 <20101115185923.1c353d07@mschwide.boeblingen.de.ibm.com>	 <1289844524.2109.524.camel@laptop>	 <20101116095101.5d86d1e5@mschwide.boeblingen.de.ibm.com>	 <1289909768.2109.592.camel@laptop>	 <20101116163325.755a709f@mschwide.boeblingen.de.ibm.com>	 <1289922329.2109.627.camel@laptop>  <4CE2B37F.8050808@redhat.com> <1289925806.2109.628.camel@laptop>
+In-Reply-To: <1289925806.2109.628.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On 11/16/2010 06:43 PM, Peter Zijlstra wrote:
+>
+>> No.  Hypercalls are voluntary and known, but most exits are involuntary
+>> and unknown to the guest.  Any memory access can generate a page fault,
+>> and any host interrupt will exit the guest.
+> Right, but we could not make the guest jump to a special stub on vcpu
+> enter? I guess we could simply because we have the hypervisor under
+> control.
 
-> -----Original Message-----
-> From: Peter Zijlstra [mailto:a.p.zijlstra@chello.nl]
-> Sent: Tuesday, November 16, 2010 10:45 AM
-> To: Aguirre, Sergio
-> Cc: LKML; Huang Ying; Martin Schwidefsky; Ingo Molnar; Kyle McMartin
-> Subject: Re: [RFC][PATCH] irq_work: Don't ignore possible cmpxchg failure
-> 
-> On Tue, 2010-11-16 at 10:32 -0600, Sergio Aguirre wrote:
-> > Although is very unlikely, it's better to make sure we're not
-> > letting this happen.
-> >
-> > This solves this compilation warning:
-> >
-> > kernel/irq_work.c: In function 'irq_work_run':
-> > kernel/irq_work.c:148: warning: value computed is not used
-> >
-> 
-> > @@ -145,7 +145,10 @@ void irq_work_run(void)
-> >  		 * Clear the BUSY bit and return to the free state if
-> >  		 * no-one else claimed it meanwhile.
-> >  		 */
-> > -		cmpxchg(&entry->next, next_flags(NULL, IRQ_WORK_BUSY), NULL);
-> > +		xchgres = cmpxchg(&entry->next,
-> > +				  next_flags(NULL, IRQ_WORK_BUSY),
-> > +				  NULL);
-> > +		BUG_ON(unlikely(xchgres != next_flags(NULL, IRQ_WORK_BUSY)));
-> 
-> simply adding (void) in front would be much easier.
-
-But isn't that still leaving the remote possibility of a hidden cmpxchg
-Failure open?
-
-Regards,
-Sergio
+No, some entries inject an interrupt or exception, so the next rip value 
+is unknown (without doing a lot of extra slow calculations).
