@@ -1,101 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934223Ab0KPK3X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 05:29:23 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:55088 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932773Ab0KPK3V (ORCPT
+	id S934226Ab0KPKeC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 05:34:02 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:54341 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932793Ab0KPKeA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 05:29:21 -0500
+	Tue, 16 Nov 2010 05:34:00 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=gfBw6yKkDMNnsWaZB3fvwshnk3JdoiGg4nnohp+RO7v7aBkUcySU54w9T9XCdVcj04
-         o4yZOLaXxFv+lNee8FQ+2TNmzqqgI9z2Fqc3odNHhxy2mqC9XH3kixa8K1UACXuR46u2
-         MoR3apWgcUNTr433hj38mkXwFuRFHMpzxqUqw=
-Date: Tue, 16 Nov 2010 11:29:16 +0100
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-pm@lists.linux-foundation.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] tools: add power/x86/turbostat - v2
-Message-ID: <20101116102916.GA4305@alberich.amd.com>
-References: <alpine.LFD.2.00.1010230116590.29399@localhost.localdomain>
- <alpine.LFD.2.00.1010240004180.23060@localhost.localdomain>
- <alpine.LFD.2.00.1010262312090.3209@localhost.localdomain>
- <alpine.LFD.2.00.1011151056380.2939@x980>
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=i9qsSSx+9C1rregmqYr75rW+KMuQMBRs1+/3uiufwGQo1O9+zq5gUUGDifdKS81uos
+         AsQTbrlc6x/4N9KX1CVGqkBYDpQASJDZ7Tg7oMsXmINZGs4wUh6u8RMzASvQE6sOK1ib
+         Z36udZqdEf+KNYqN/NPr56zA0a7creH73v3ZM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.00.1011151056380.2939@x980>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <334828.67526.qm@web113308.mail.gq1.yahoo.com>
+References: <20101115093410.BEFD.A69D9226@jp.fujitsu.com>
+	<20101114181905.bc5b44f9.akpm@linux-foundation.org>
+	<20101115113238.BF06.A69D9226@jp.fujitsu.com>
+	<alpine.DEB.2.00.1011150215460.2986@chino.kir.corp.google.com>
+	<alpine.DEB.2.00.1011151602090.29081@chino.kir.corp.google.com>
+	<334828.67526.qm@web113308.mail.gq1.yahoo.com>
+Date: Tue, 16 Nov 2010 11:33:59 +0100
+Message-ID: <AANLkTimQWXLvCQU-Ztq=6Ljv0Er6CgTROF+oiYGqzjJ7@mail.gmail.com>
+Subject: Re: [PATCH] Revert oom rewrite series
+From: Alessandro Suardi <alessandro.suardi@gmail.com>
+To: Martin Knoblauch <spamtrap@knobisoft.de>
+Cc: David Rientjes <rientjes@google.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 11:01:05AM -0500, Len Brown wrote:
-> From: Len Brown <len.brown@intel.com>
-> 
-> turbostat displays actual processor frequency on modern
-> Intel processors.  Note that this capability depends on free-running
-> APERF and MPERF MSRs, which were cleared by the acpi_cpufreq
-> driver up through Linux-2.6.29.
+On Tue, Nov 16, 2010 at 11:04 AM, Martin Knoblauch
+<spamtrap@knobisoft.de> wrote:
+> CC trimmed for sanity ...
+>
+> ----- Original Message ----
+>
+>> From: David Rientjes <rientjes@google.com>
+>> To: Jesper Juhl <jj@chaosbits.net>
+>> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>; Andrew Morton
+>><akpm@linux-foundation.org>; Linus Torvalds <torvalds@linux-foundation.org>;
+>>LKML <linux-kernel@vger.kernel.org>; Ying Han <yinghan@google.com>; Bodo Eggert
+>><7eggert@web.de>; Mandeep@yahoo.com
+>> Sent: Tue, November 16, 2010 1:06:21 AM
+>> Subject: Re: [PATCH] Revert oom rewrite series
+>>
+>>
+>> Thanks for the report! �I'll get �involved with kde-devel and send a patch
+>> to remove this dependency on newer �kernels to expedite the process.
+>>
+>> �[ Others with reports of deprecated use �of oom_adj can contact me
+>> � �privately and I'll find the parties of �interest to avoid topics
+>> � �unrelated to the kernel itself on LKML. �]
+> David,
+>
+> �another one for your collection. You asked for it :-) This is CentOS-5.5
+> running on top of kernel 2.6.36, likely out of initrd:
+>
+> $ dmesg | grep deprecated
+> [ � �2.430330] nash-hotplug (67): /proc/67/oom_adj is deprecated, please use
+> /proc/67/oom_score_adj instead.
 
-Why isn't cpufreq-aperf sufficient for showing the actual frequency?
-The tool can handle both AMD and Intel CPUs.
+...and another, on Fedora 14, 2.6.37-rc1-git11:
 
-There is a CPUID flag which can be checked for APERF/MPERF existence,
-no need to enforce a general vendor check like this:
+auditd (2583): /proc/2583/oom_adj is deprecated, please use
+/proc/2583/oom_score_adj instead.
 
-  $ ./turbostat
-  CPUID: AuthenticAMD != GenuineIntel
+Cheers,
 
-> On Intel Core i3/i5/i7 (Nehalem) and newer processors,
-> turbostat displays residency in idle power saving states.
+--alessandro
 
-Can't this be added to cpuidle-info (see branch cpupowerutils in
-git://git.kernel.org/pub/scm/utils/kernel/cpufreq/cpufrequtils.git)?
+�"There's always a siren singing you to shipwreck"
 
-BTW, gcc v4.4 throws several warnings when compiling your
-code:
-
-linux-2.6/tools/power/x86/turbostat $ make
-cc -Wall    turbostat.c   -o turbostat
-turbostat.c: In function ‘get_msr’:
-turbostat.c:234: warning: implicit declaration of function ‘pread’
-turbostat.c:237: warning: format ‘%x’ expects type ‘unsigned int’, but argument 4 has type ‘off_t’
-turbostat.c:237: warning: format ‘%d’ expects type ‘int’, but argument 5 has type ‘ssize_t’
-turbostat.c: In function ‘print_counters’:
-turbostat.c:368: warning: unused variable ‘i’
-turbostat.c: In function ‘compute_average’:
-turbostat.c:508: warning: unused variable ‘i’
-turbostat.c: In function ‘insert_cpu_counters’:
-turbostat.c:642: warning: unused variable ‘next’
-turbostat.c: In function ‘re_initialize’:
-turbostat.c:747: warning: implicit declaration of function ‘for_all_cpus’
-turbostat.c: In function ‘turbostat_loop’:
-turbostat.c:779: warning: unused variable ‘retval’
-turbostat.c: In function ‘check_cpuid’:
-turbostat.c:868: warning: format ‘%.4s’ expects type ‘char *’, but argument 3 has type ‘unsigned int *’
-turbostat.c:868: warning: format ‘%.4s’ expects type ‘char *’, but argument 4 has type ‘unsigned int *’
-turbostat.c:868: warning: format ‘%.4s’ expects type ‘char *’, but argument 5 has type ‘unsigned int *’
-turbostat.c:870: warning: implicit declaration of function ‘strncmp’
-turbostat.c: At top level:
-turbostat.c:912: warning: return type defaults to ‘int’
-turbostat.c: In function ‘dir_filter’:
-turbostat.c:957: warning: implicit declaration of function ‘isdigit’
-turbostat.c: In function ‘turbostat_init’:
-turbostat.c:1004: warning: unused variable ‘i’
-turbostat.c: In function ‘fork_it’:
-turbostat.c:1038: warning: implicit declaration of function ‘waitpid’
-turbostat.c: In function ‘usage’:
-turbostat.c:915: warning: control reaches end of non-void function
-turbostat.c: In function ‘compute_delta’:
-turbostat.c:401: warning: ‘i’ may be used uninitialized in this function
-
-
-Regards,
-Andreas
+�� (Radiohead, "There There")
