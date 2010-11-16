@@ -1,210 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab0KPF5E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 00:57:04 -0500
-Received: from tango.tkos.co.il ([62.219.50.35]:42982 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753777Ab0KPF5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 00:57:03 -0500
-Date: Tue, 16 Nov 2010 07:56:02 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Alex Gershgorin <agersh@rambler.ru>
-Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
-Message-ID: <20101116055602.GA18210@jasper.tkos.co.il>
-References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
- <4CE0FE71.6000303@suse.cz>
- <20101115100838.GA3649@jasper.tkos.co.il>
- <4CE10B32.8090705@suse.cz>
- <c30e46c1b5343789b6475722071c3020.squirrel@webmail.greenhost.nl>
+	id S1756906Ab0KPGBK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 01:01:10 -0500
+Received: from relay01.digicable.hu ([92.249.128.189]:39709 "EHLO
+	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622Ab0KPGBJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 01:01:09 -0500
+Message-ID: <4CE21E17.70107@freemail.hu>
+Date: Tue, 16 Nov 2010 07:00:55 +0100
+From: =?UTF-8?B?TsOpbWV0aCBNw6FydG9u?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <c30e46c1b5343789b6475722071c3020.squirrel@webmail.greenhost.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Pete Zaitcev <zaitcev@redhat.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, RFC] usbmon: correct computing of the ISO packets with
+ mmap
+References: <4CD8ECE4.1090206@freemail.hu>	<20101109075056.59a2e7d8@lembas.zaitcev.lan>	<4CD9A96D.1010306@freemail.hu>	<4CDF0DF4.4020405@freemail.hu>	<20101114124035.6a0c9b80@lembas.zaitcev.lan>	<4CE0458E.9070900@freemail.hu> <20101114162502.6d6318e7@lembas.zaitcev.lan> <4CE0C9B8.1010403@freemail.hu>
+In-Reply-To: <4CE0C9B8.1010403@freemail.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Original: 92.249.250.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Indan,
-
-On Tue, Nov 16, 2010 at 01:47:52AM +0100, Indan Zupancic wrote:
-> On Mon, November 15, 2010 11:28, Jiri Slaby wrote:
-> > On 11/15/2010 11:08 AM, Baruch Siach wrote:
-> >> Hi Jiri,
-> >>
-> >> Thanks for reviewing. See my response to your comments below.
-> >>
-> >> On Mon, Nov 15, 2010 at 10:33:37AM +0100, Jiri Slaby wrote:
-> >>> On 11/15/2010 09:23 AM, Baruch Siach wrote:
-> >>>> --- /dev/null
-> >>>> +++ b/drivers/misc/altera_as.c
-> >>>> @@ -0,0 +1,349 @@
-> >>> ...
-> >>>> +struct altera_as_device {
-> >>>> +	unsigned id;
-> >>>> +	struct device *dev;
-> >>>> +	struct miscdevice miscdev;
-> >>>> +	struct mutex open_lock;
-> >>>> +	struct gpio gpios[AS_GPIO_NUM];
-> >>>> +};
-> >>>> +
-> >>>> +/*
-> >>>> + * The only functions updating this array are .probe/.remove, which are
-> >>>> + * serialized. Hence, no locking is needed here.
-> >>>> + */
-> >>>> +static struct {
-> >>>> +	int minor;
-> >>>
-> >>> Why you need minor here? It's in drvdata->miscdev.minor.
-> >>
-> >> I use the minor field to lookup the drvdata pointer in get_as_dev(), which I
-> >> use is altera_as_open().  I do this because I have no access to the 'struct
-> >> device' pointer from the .open method. Do you know a better way?
+Németh Márton wrote:
+> Hi Pete,
+> Pete Zaitcev wrote:
+>> On Sun, 14 Nov 2010 21:24:46 +0100
+>> Németh Márton <nm127@freemail.hu> wrote:
+>>
+>>> Sure, I'm happy as long as I can capture the whole data content of the ISO
+>>> packets.
+>> Great. So, what do you think about the attached? It differs from your
+>> code in one important aspect: output buffer sizes are not adjusted.
+>> Your patch attempts that, but uses actual_length, which is not
+>> defined during submission events. So I skipped that.
 > 
-> Yes.
+> I think there are four cases for ISO communication URBs:
 > 
-> Get rid of the array and minor lookup, and instead use container_of()
-> to get struct altera_as_device directly from file->private_data, which
-> is a pointer to miscdev, set by misc_open().
-
-Thanks. This was exactly what I was looking for.
-
-> Sorry for not noticing this before.
+> ev_type == 'S' && usb_urb_dir_in(urb)  ---> we don't need the data
+> ev_type == 'C' && usb_urb_dir_in(urb)  ---> data is available, we'll need it
+> ev_type == 'S' && usb_urb_dir_out(urb)  ---> data is available, we'll need it
+> ev_type == 'C' && usb_urb_dir_out(urb)  ---> we don't need the data
 > 
-> >>
-> >>>> +	struct altera_as_device *drvdata;
-> >>>> +} altera_as_devs[AS_MAX_DEVS];
-> >>>
-> >>> You don't need the struct at all.
-> >>> static struct altera_as_device *drvdata[AS_MAX_DEVS];
-> >>> should be enough.
-> >>
-> >> See above.
-> >
-> > The answer to you previous question is here. You can just have a global
-> > array of struct altera_as_device.
-> >
-> >>>> +static int altera_as_open(struct inode *inode, struct file *file)
-> >>>> +{
-> >>>> +	int ret;
-> >>>> +	struct altera_as_device *drvdata = get_as_dev(iminor(inode));
-> >>>> +
-> >>>> +	if (drvdata == NULL)
-> >>>> +		return -ENODEV;
-> >>>> +	file->private_data = drvdata;
-> >>>> +
-> >>>> +	ret = mutex_trylock(&drvdata->open_lock);
-> >>>> +	if (ret == 0)
-> >>>> +		return -EBUSY;
-> >>>> +
-> >>>> +	ret = gpio_request_array(drvdata->gpios, ARRAY_SIZE(drvdata->gpios));
-> >>>> +	if (ret < 0) {
-> >>>> +		mutex_unlock(&drvdata->open_lock);
-> >>>> +		return ret;
-> >>>> +	}
-> >>>
-> >>> So leaving to userspace with mutex held. This is *wrong*. use
-> >>> test_and_set_bit or alike instead.
-> >>
-> >> Can you explain why this is wrong? I don't mind doing test_and_set_bit
-> >> instead, I'm just curious.
-> >
-> > The mutex has an owner which it expects to unlock it. For example if you
-> > fork a process which already opened the device, you have a problem. This
-> > is a technical point. Another point is that it's ugly to leave to
-> > userspace with any lock.
-> >
-> >>>> +static int __init altera_as_probe(struct platform_device *pdev)
-> >>>> +{
-> >>> ...
-> >>>> +	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
-> >>>> +	drvdata->miscdev.name = kasprintf(GFP_KERNEL, "altera_as%d",
-> >>>> +			pdata->id);
-> >>>> +	if (drvdata->miscdev.name == NULL)
-> >>>> +		return -ENOMEM;
-> >>>> +	drvdata->miscdev.fops = &altera_as_fops;
-> >>>> +	if (misc_register(&drvdata->miscdev) < 0) {
-> >>>
-> >>> Hmm, how many devices can be in the system?
-> >>
-> >> Up to AS_MAX_DEVS, currently 16.
-> >>
-> >>> This doesn't look like the right way.
-> >>
-> >> What is the right way then?
-> >
-> > Ok, so for that count it definitely deserves its own major to not eat up
-> > misc device space.
+> I cannot say for sure which field contains the length in case of ISO out submit
+> URBs.
 > 
-> Ther are only as many minors allocates as needed, not always 16.
-> Almost always there will be only one FPGA, maybe a couple, but
-> more is very rare. And when that's the case there are probably
-> not many other misc devices around either, or they use a more
-> scalable way to program many FPGAs.
+> I'll test the patch later in my environment.
+
+I tested this patch with ISO in traffic and it works for me.
+
+>> diff --git a/drivers/usb/mon/mon_bin.c b/drivers/usb/mon/mon_bin.c
+>> index 44cb37b..15c5e46 100644
+>> --- a/drivers/usb/mon/mon_bin.c
+>> +++ b/drivers/usb/mon/mon_bin.c
+>> @@ -437,6 +437,28 @@ static unsigned int mon_bin_get_data(const struct mon_reader_bin *rp,
+>>  	return length;
+>>  }
+>>  
+>> +/*
+>> + * This is the look-ahead pass in case of 'Ci', when actual_length cannot
+>> + * be used to determine the length of the whole contiguous buffer.
+>> + */
+>> +static unsigned int mon_bin_collate_isodesc(const struct mon_reader_bin *rp,
+>> +    struct urb *urb, unsigned int ndesc)
+>> +{
+>> +	struct usb_iso_packet_descriptor *fp;
+>> +	unsigned int length;
+>> +
+>> +	length = 0;
+>> +	fp = urb->iso_frame_desc;
+>> +	while (ndesc-- != 0) {
+>> +		if (fp->status == 0 && fp->actual_length != 0) {
+>> +			if (fp->offset + fp->actual_length > length)
+>> +				length = fp->offset + fp->actual_length;
 > 
-> This is niche enough, don't make it more complicated than needed.
-> Having its own major seems overkill.
-
-I agree.
-
-> >>>> +		kfree(drvdata->miscdev.name);
-> >>>> +		return -ENODEV;
-> >>>> +	}
-> >>>> +	altera_as_devs[pdata->id].minor = drvdata->miscdev.minor;
-> >>>> +	altera_as_devs[pdata->id].drvdata = drvdata;
-> >>>
-> >>> So now the device is usable without the mutex and gpios inited?
-> >>
-> >> I was thinking that the device lock which is being held during the .probe
-> >> run,
-> >> prevents the device from being open. After all I can still return -EGOAWAY
-> >> at
-> >> this point. Am I wrong?
-> >>
-> >> If so, I'll reorder this code.
-> >
-> > This cannot be done easily. You need to set drvdata prior to minor and
-> > after all the assignments here. The former because in get_as_dev you
-> > test minor and return drvdata. The latter because you use open_lock &
-> > gpios after playing with minor & drvdata.
-> >
-> > Technically, it can be done with a use of barriers, but I don't
-> > recommend it as drivers should not use barriers at all. You should
-> > introduce some locking here (it introduces barriers on its own).
-> >
-> > So move the assignment to altera_as_devs below the mutex_init & gpios
-> > setup and lock it appropriately. Then add a lock to get_as_dev.
+> I don't know whether the compiler will optimize the two times computing the
+> expression (fp->offset + fp->actual_length). Maybe I would use a local variable
+> to compute the sum before the "if" and then use just the local variable.
 > 
-> Just put the misc_register() call at the end and it should be fine,
-> once the array is gone.
+>> +		}
+>> +		fp++;
+>> +	}
+>> +	return length;
+>> +}
+>> +
+>>  static void mon_bin_get_isodesc(const struct mon_reader_bin *rp,
+>>      unsigned int offset, struct urb *urb, char ev_type, unsigned int ndesc)
+>>  {
+>> @@ -479,6 +501,10 @@ static void mon_bin_event(struct mon_reader_bin *rp, struct urb *urb,
+>>  	/*
+>>  	 * Find the maximum allowable length, then allocate space.
+>>  	 */
+>> +	urb_length = (ev_type == 'S') ?
+>> +	    urb->transfer_buffer_length : urb->actual_length;
+>> +	length = urb_length;
+>> +
+>>  	if (usb_endpoint_xfer_isoc(epd)) {
+>>  		if (urb->number_of_packets < 0) {
+>>  			ndesc = 0;
+>> @@ -487,14 +513,16 @@ static void mon_bin_event(struct mon_reader_bin *rp, struct urb *urb,
+>>  		} else {
+>>  			ndesc = urb->number_of_packets;
+>>  		}
+>> +		if (ev_type == 'C' && usb_urb_dir_in(urb))
+>> +			length = mon_bin_collate_isodesc(rp, urb, ndesc);
+>>  	} else {
+>>  		ndesc = 0;
+>>  	}
+>>  	lendesc = ndesc*sizeof(struct mon_bin_isodesc);
+>>  
+>> -	urb_length = (ev_type == 'S') ?
+>> -	    urb->transfer_buffer_length : urb->actual_length;
+>> -	length = urb_length;
+>> +	/* not an issue unless there's a subtle bug in a HCD somewhere */
+>> +	if (length >= urb->transfer_buffer_length)
+>> +		length = urb->transfer_buffer_length;
+>>  
+>>  	if (length >= rp->b_size/5)
+>>  		length = rp->b_size/5;
+>>
+>>
+> 
+> 
 
-Thanks again. You were immensely helpful.
-
-Going to remove some lines of code. I love the sound it makes.
-
-baruch
-
-> >>>> +	mutex_init(&drvdata->open_lock);
-> >>>> +
-> >>>> +	drvdata->id = pdata->id;
-> >>>> +
-> >>>> +	drvdata->gpios[ASIO_DATA].gpio		= pdata->data;
-> >>>> +	drvdata->gpios[ASIO_DATA].flags		= GPIOF_IN;
-> >>>> +	drvdata->gpios[ASIO_DATA].label		= "as_data";
-> >>> ...
-> >>>> +	drvdata->gpios[ASIO_NCE].gpio		= pdata->nce;
-> >>>> +	drvdata->gpios[ASIO_NCE].flags		= GPIOF_OUT_INIT_HIGH;
-> >>>> +	drvdata->gpios[ASIO_NCE].label		= "as_nce";
-> >>>> +
-> >>>> +	dev_info(drvdata->dev, "Altera Cyclone Active Serial driver\n");
-> >>>> +
-> >>>> +	return 0;
-> >>>> +}
-
--- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
