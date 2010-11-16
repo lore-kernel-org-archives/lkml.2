@@ -1,140 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab0KPSoG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 13:44:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51886 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754902Ab0KPSoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 13:44:04 -0500
-Date: Tue, 16 Nov 2010 13:43:25 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
-Message-ID: <20101116184325.GB4823@redhat.com>
-References: <1289573033-2889-1-git-send-email-dzickus@redhat.com>
- <4CDD579F.80009@windriver.com>
- <20101112154231.GN4823@redhat.com>
- <4CDD6389.2080206@windriver.com>
- <20101112161144.GP4823@redhat.com>
- <4CDD6CAD.30303@windriver.com>
- <20101112172755.GR4823@redhat.com>
+	id S1756955Ab0KPSpS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 13:45:18 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:32914 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754365Ab0KPSpQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 13:45:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=tFlGtGOp9AIOBmmA5o304Egk4kIjbvJwJDtCLc9fFOfdUyAqRTuMEJ30QbNhu3TMrf
+         sKo0Z9IiVlSOQuKiHUldCpXEUmk/nEdG0dY8MRiauHYUyDNK3rurtMA89Y6/6za08Yo5
+         CMWPLLzYUHnZMMnmJxPbu+leOi5pAMQJLf3bQ=
+Date: Tue, 16 Nov 2010 21:45:09 +0300
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, kernel-janitors@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
+Message-ID: <20101116184509.GA7336@albatros>
+References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
+ <20101112120834.33062900.akpm@linux-foundation.org>
+ <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
+ <20101114092533.GB5323@albatros>
+ <20101114180643.593d19ac.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101112172755.GR4823@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20101114180643.593d19ac.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 12:27:55PM -0500, Don Zickus wrote:
+On Sun, Nov 14, 2010 at 18:06 -0800, Andrew Morton wrote:
+> On Sun, 14 Nov 2010 12:25:33 +0300 Vasiliy Kulikov <segoon@openwall.com> wrote:
+> 
+> > On some architectures __kernel_suseconds_t is int.  On these archs
+> > struct timeval has padding bytes at the end.  This struct is copied to
+> > userspace with these padding bytes uninitialized.  This leads to leaking
+> > of contents of kernel stack memory.
+> > 
+> > Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> > ---
+> >  Patch v1 used memset(), it was waste of cycles on almost all archs.
+> > 
+> >  Compile tested.
+> > 
+> >  fs/select.c |    7 ++++---
+> >  1 files changed, 4 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/fs/select.c b/fs/select.c
+> > index b7b10aa..43d4805 100644
+> > --- a/fs/select.c
+> > +++ b/fs/select.c
+> > @@ -288,7 +288,6 @@ static int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
+> >  				      int timeval, int ret)
+> >  {
+> >  	struct timespec rts;
+> > -	struct timeval rtv;
+> >  
+> >  	if (!p)
+> >  		return ret;
+> > @@ -306,8 +305,10 @@ static int poll_select_copy_remaining(struct timespec *end_time, void __user *p,
+> >  		rts.tv_sec = rts.tv_nsec = 0;
+> >  
+> >  	if (timeval) {
+> > -		rtv.tv_sec = rts.tv_sec;
+> > -		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
+> > +		struct timeval rtv = {
+> > +			.tv_sec = rts.tv_sec,
+> > +			.tv_usec = rts.tv_nsec / NSEC_PER_USEC
+> > +		};
+> >  
+> >  		if (!copy_to_user(p, &rtv, sizeof(rtv)))
+> >  			return ret;
+> 
+> Please check the assembly code - this will still leave four bytes of
+> uninitalised stack data in 'rtv', surely.
 
-Hi Jason,
+This concrete c code generates movl + movq, movl would zero unnamed
+4 bytes.  However, I cannot find whether this behavior is guaranteed...
 
-> 
-> > 
-> > I tested 2.6.35 and it does not hard hang, but suffered from a different
-> > problem with a perf API change.   The kgdb tests appear to loop and loop
-> > emitting endless streams of output in 2.6.35 and I already have that
-> > problem patched.
-
-I keep getting the following stack trace which is different than your
-hang.  Is this looping I am seeing something with the NMI or kgdb?
-
-Cheers,
-Don
-
-> 
-> It doesn't look like this does it?  This is the streaming output I see
-> when try to reproduce this using the config suggestions you gave me.
-> 
-> [    7.778578] ------------[ cut here ]------------
-> [    7.778580] WARNING: at
-> /ssd/dzickus/git/upstream/drivers/misc/kgdbts.c:702 run_simple_test+0x18d/0x2f0()
-> [    7.778582] Hardware name: To be filled by O.E.M.
-> [    7.778583] Modules linked in: ata_generic i915 drm_kms_helper drm i2c_algo_bit i2c_core video output dm_mod
-> [    7.778589] Pid: 150, comm: udevd Tainted: G        W   2.6.36-killnmi+ #12
-> [    7.778590] Call Trace:
-> [    7.778591]  <#DB>  [<ffffffff810631cf>] warn_slowpath_common+0x7f/0xc0
-> [    7.778595]  [<ffffffff8106322a>] warn_slowpath_null+0x1a/0x20
-> [    7.778598]  [<ffffffff8132941d>] run_simple_test+0x18d/0x2f0
-> [    7.778600]  [<ffffffff81328ded>] kgdbts_put_char+0x1d/0x20
-> [    7.778603]  [<ffffffff810c6cbd>] put_packet+0x5d/0x120
-> [    7.778605]  [<ffffffff810c7f44>] gdb_serial_stub+0xa24/0xc20
-> [    7.778609]  [<ffffffff810c6558>] kgdb_cpu_enter+0x2c8/0x590
-> [    7.778612]  [<ffffffff810c6a91>] kgdb_handle_exception+0x121/0x170
-> [    7.778615]  [<ffffffff814cd7b8>] ?  hw_breakpoint_exceptions_notify+0xe8/0x1d0
-> [    7.778617]  [<ffffffff81033472>] __kgdb_notify+0x82/0x1b0
-> [    7.778620]  [<ffffffff810335c7>] kgdb_notify+0x27/0x40
-> [    7.778623]  [<ffffffff814cf8e5>] notifier_call_chain+0x55/0x80
-> [    7.778625]  [<ffffffff814cf958>] __atomic_notifier_call_chain+0x48/0x70
-> [    7.778628]  [<ffffffff814cf996>] atomic_notifier_call_chain+0x16/0x20
-> [    7.778631]  [<ffffffff814cf9ce>] notify_die+0x2e/0x30
-> [    7.778633]  [<ffffffff814cc953>] do_debug+0xa3/0x170
-> [    7.778636]  [<ffffffff814cc438>] debug+0x28/0x40
-> [    7.778639]  [<ffffffff81062310>] ? do_fork+0x0/0x450
-> [    7.778640]  <<EOE>>  [<ffffffff81014938>] ? sys_clone+0x28/0x30
-> [    7.778644]  [<ffffffff8100c4d3>] stub_clone+0x13/0x20
-> [    7.778647]  [<ffffffff8100c1b2>] ? system_call_fastpath+0x16/0x1b
-> [    7.778649] ---[ end trace ecf07e0cd1846c34 ]---
-> [    7.778650] kgdbts: ERROR: beyond end of test on 'do_fork_test' line 11
-> [    7.778651] ------------[ cut here ]------------
-> 
-> > 
-> > At this point we have to get back to a working base line.  At this point
-> > if you use 2.6.37-rc1 the last remaining problem is the perf + lockup
-> > detector callback eating the injected DIE_NMI event which is meant to
-> > enter the debugger.
-> 
-> This shouldn't be too hard to solve once we figure out which path it takes
-> in the perf nmi handler.
-> 
-> Cheers,
-> Don
-> 
-> > 
-> > 
-> > >> The symptom you would see looks like:
-> > >>
-> > >> ...kernel boot...
-> > >> Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
-> > >> serial8250: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
-> > >> 00:06: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
-> > >> brd: module loaded
-> > >> kgdb: Registered I/O driver kgdbts.
-> > >> kgdbts:RUN plant and detach test
-> > >> [...HARD HANG STARTS HERE...]
-> > >>
-> > >> The kernel is looping at that point waiting for the master kgdb cpu to
-> > >> have all the slaves join the debugger but it never happens because the
-> > >> perf callback chain which is used by the lockup detector eats the NMI
-> > >> IPI event.  After the perf callback is processed perf returns
-> > >> NOTIFY_STOP so the notifier which brings the slave CPU into the debugger
-> > >> never fires.
-> > >>     
-> > >
-> > > Ok.  We have code to handle extra spurious NMIs that is hard to accurately
-> > > determine if the NMI was for perf or someone else.  This logic may still
-> > > need tweaking.  What cpu are you running on?  AMD/Intel?  If Intel, then
-> > > core/core2/nehalem?
-> > >
-> > >   
-> > 
-> > In this case I just built a 32 bit kernel and ran it under kvm on a 64
-> > bit host.  I can send you the .config separately.
-> > 
-> > kvm  -nographic -k en-us -kernel arch/x86/boot/bzImage -net user -net
-> > nic,macaddr=52:54:00:12:34:56,model=i82557b -append
-> > "console=ttyS0,115200 ip=dhcp root=/dev/nfs
-> > nfsroot=10.0.2.2:/space/exp/x86 rw acpi=force UMA=1" -smp 2
-> 
-> Does that you hit the problem on the kvm guest or host?  I wasn't aware
-> the perf worked inside the guest (well at least the hardware pieces of
-> it, like NMI).
-> 
-> Cheers,
-> Don
+-- 
+Vasiliy Kulikov
