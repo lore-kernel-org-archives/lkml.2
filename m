@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab0KPSFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 13:05:52 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:51324 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755585Ab0KPSFu (ORCPT
+	id S1756412Ab0KPSJJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 13:09:09 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:46788 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756300Ab0KPSJH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 13:05:50 -0500
-Date: Tue, 16 Nov 2010 13:05:44 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Alessio Igor Bogani <abogani@texware.it>
-Cc: Jan Kara <jack@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Hellwig <hch@infradead.org>, Tim Bird <tim.bird@am.sony.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 1/3] udf: Replace bkl with the inode->i_alloc_sem for
- protect udf_inode_info struct
-Message-ID: <20101116180544.GA29896@infradead.org>
-References: <1289929249-4863-1-git-send-email-abogani@texware.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289929249-4863-1-git-send-email-abogani@texware.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 16 Nov 2010 13:09:07 -0500
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+In-Reply-To: <20101116170312.GA19327@tango.0pointer.de>
+References: <1289783580.495.58.camel@maggy.simson.net>
+	 <1289811438.2109.474.camel@laptop>
+	 <1289820766.16406.45.camel@maggy.simson.net>
+	 <1289821590.16406.47.camel@maggy.simson.net>
+	 <20101115125716.GA22422@redhat.com>
+	 <1289856350.14719.135.camel@maggy.simson.net>
+	 <20101116015648.GA11534@redhat.com>
+	 <1289916171.5169.117.camel@maggy.simson.net>
+	 <1289916683.2109.625.camel@laptop>
+	 <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+	 <20101116170312.GA19327@tango.0pointer.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 16 Nov 2010 19:08:54 +0100
+Message-ID: <1289930934.2109.644.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 06:40:47PM +0100, Alessio Igor Bogani wrote:
-> Replace bkl with the inode->i_alloc_sem rw semaphore in udf_release_file(),
-> udf_symlink(), udf_symlink_filler(), udf_get_block() and udf_block_map().
-> Add protection in udf_evict_inode() using the same i_alloc_sem rw semaphore.
+On Tue, 2010-11-16 at 18:03 +0100, Lennart Poettering wrote:
+> Binding something like this to TTYs is just backwards. No graphical
+> session has a TTY attached anymore. And there might be multiple TTYs
+> used in the same session. 
 
-I'd rather prefer not to introduce new users of i_alloc_sem.  It's a
-quite nasty beast: the only rw_semaphore that is not released by the
-thread acquiring it.  Thomas asked me if there's a way to get rid of it,
-and I've come up with some schemes that I need to prototype.  Adding
-more uses that are unrelated to the original direct I/O use case are
-not very helpful in doing that.
+Using a group per tty makes sense for us console jockeys..
 
+Anyway, nobody uses systemd yet and afaik not all distro's even plan on
+using it (I know I'm not waiting to learn yet another init variant).
