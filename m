@@ -1,85 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934152Ab0KPKEK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 05:04:10 -0500
-Received: from dgate20.ts.fujitsu.com ([80.70.172.51]:41166 "EHLO
-	dgate20.ts.fujitsu.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932529Ab0KPKEH (ORCPT
+	id S934164Ab0KPKEf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 05:04:35 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35594 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932529Ab0KPKEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 05:04:07 -0500
-DomainKey-Signature: s=s1536a; d=ts.fujitsu.com; c=nofws; q=dns;
-  h=X-SBRSScore:X-IronPort-AV:Received:X-IronPort-AV:
-   Received:Received:Message-ID:Date:From:Organization:
-   User-Agent:MIME-Version:To:CC:Subject:References:
-   In-Reply-To:Content-Type:Content-Transfer-Encoding;
-  b=VtBl3YZ5TbUpLI/329MFxxIc01nclvRHVFvZx8hA2bexdfuTBa5FQkES
-   IGW7okxdjwmBRbPvQjGxwU+tiZJw3pFKWo/Gcmn0ae/rah0sYhnkcW4Se
-   p315IrwPpfyu1q9op9trNfUwPabrjFfd4Rk2FTAqPevB38J/U8kKBLrq2
-   Yz1JOmKufBeKC376QNqPzi1/xNj143zct62Z4/qjieR0G9sa6tGMpFA0U
-   NpN9z5oHe31etoskx2ktP1o1jaUYm;
-X-SBRSScore: None
-X-IronPort-AV: E=Sophos;i="4.59,205,1288566000"; 
-   d="scan'208";a="51465168"
-X-IronPort-AV: E=Sophos;i="4.59,205,1288566000"; 
-   d="scan'208";a="103064115"
-Message-ID: <4CE2570E.50609@ts.fujitsu.com>
-Date: Tue, 16 Nov 2010 11:03:58 +0100
-From: Martin Wilck <martin.wilck@ts.fujitsu.com>
-Organization: Fujitsu Technology Solutions
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de-AT; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	Tue, 16 Nov 2010 05:04:33 -0500
+Date: Tue, 16 Nov 2010 10:04:06 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 02/20] ARM: LPAE: Factor out 2-level page table
+	definitions into separate files
+Message-ID: <20101116100406.GB12891@n2100.arm.linux.org.uk>
+References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com> <1289584840-18097-3-git-send-email-catalin.marinas@arm.com> <20101115233129.GG31421@n2100.arm.linux.org.uk> <AANLkTikrz+yM6idm-aij10vsKZMVSOBfZSdeEJbDRwiC@mail.gmail.com>
 MIME-Version: 1.0
-To: "djwong@us.ibm.com" <djwong@us.ibm.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [REGRESSSION 2.6.37-rc2][PATCH] pci: Fix mmap address check in
- pci_mmap_fits
-References: <20101116072247.GQ14383@tux1.beaverton.ibm.com> <20101116075814.GR14383@tux1.beaverton.ibm.com>
-In-Reply-To: <20101116075814.GR14383@tux1.beaverton.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikrz+yM6idm-aij10vsKZMVSOBfZSdeEJbDRwiC@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Darrick,
+On Tue, Nov 16, 2010 at 09:14:52AM +0000, Catalin Marinas wrote:
+> > Of couse, I now have patches for this and my other points... will sort
+> > them out into a series in the next few days.
+> 
+> Thanks.
 
-> I think what we want here is for pci_start to be 0 when mmap_api ==
-> PCI_MMAP_PROCFS.  The following patch makes that change, after which the Matrox
-> and Mach64 X drivers work again.
+BTW, don't post another round of patches just because you've had _some_
+comments back - your v2 patches are still being looked through, your v3
+patches haven't even been looked at yet.
 
-Of course. I made a stupid mistake when I introduced the enum :-( Thanks 
-for spotting and fixing it so quickly.
-
-Jesse, please apply Darrick's fix.
-
-Martin
-
-> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> index 95712a3..63d5042 100644
-> --- a/drivers/pci/pci-sysfs.c
-> +++ b/drivers/pci/pci-sysfs.c
-> @@ -715,7 +715,7 @@ int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma,
->   	nr = (vma->vm_end - vma->vm_start)>>  PAGE_SHIFT;
->   	start = vma->vm_pgoff;
->   	size = ((pci_resource_len(pdev, resno) - 1)>>  PAGE_SHIFT) + 1;
-> -	pci_start = (mmap_api == PCI_MMAP_SYSFS) ?
-> +	pci_start = (mmap_api == PCI_MMAP_PROCFS) ?
->   			pci_resource_start(pdev, resno)>>  PAGE_SHIFT : 0;
->   	if (start>= pci_start&&  start<  pci_start + size&&
->   			start + nr<= pci_start + size)
-
--- 
-Dr. Martin Wilck
-PRIMERGY System Software Engineer
-x86 Server Engineering
-
-FUJITSU
-Fujitsu Technology Solutions GmbH
-Heinz-Nixdorf-Ring 1
-33106 Paderborn, Germany
-Phone:			++49 5251 525 2796
-Fax:			++49 5251 525 2820
-Email:			martin.wilck@ts.fujitsu.com
-Internet:		http://ts.fujitsu.com
-Company Details:	http://ts.fujitsu.com/imprint
+It took some 4 hours for the mailing list to get through last nights
+posting frenzy that it really isn't worth overloading - is it really
+worth bringing the list server to its knees when the job is only half
+done?
