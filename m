@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab0KPFSd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 00:18:33 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:19161 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750891Ab0KPFSc (ORCPT
+	id S1752082Ab0KPFU3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 00:20:29 -0500
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:57577 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab0KPFU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 00:18:32 -0500
-Message-ID: <001401cb854d$b46e13c0$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Marc Kleine-Budde" <mkl@pengutronix.de>
-Cc: "Wolfgang Grandegger" <wg@grandegger.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Wolfram Sang" <w.sang@pengutronix.de>,
-        "Christian Pellegrin" <chripell@fsfe.org>,
-        "Barry Song" <21cnbao@gmail.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
-        <margie.foster@intel.com>, <yong.y.wang@intel.com>,
-        "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>,
-        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>
-References: <4CE0EFA7.9020007@dsn.okisemi.com> <4CE0F92A.40308@pengutronix.de>
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Add Flow control,
-Date: Tue, 16 Nov 2010 14:18:26 +0900
+	Tue, 16 Nov 2010 00:20:28 -0500
+Date: Tue, 16 Nov 2010 14:20:27 +0900
+From: Norbert Preining <preining@logic.at>
+To: linux-kernel@vger.kernel.org
+Subject: /dev/sda disappearing with SYFS_DEPRECATED?
+Message-ID: <20101116052027.GB24410@gamma.logic.tuwien.ac.at>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, November 15, 2010 6:11 PM, Marc Kleine-Budde wrote:
-> Please make it one patch per topic. A review of your patch will follow.
+Hi all,
 
-It's too late now.
-This is difficult to separete patch per topic from current our CAN driver.
+(please Cc)
 
-Next time posting another patch, I will do like so.
+I just changed my kernel config slightly to activate some DEPRECATED
+configs and alas, the change was interesting, suddenly there
+was no /dev/sda shown anymore.
 
----
-Thanks,
+Userspace remain completely the same (debian/sid up2date).
 
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+The only changes I made in the .config file was:
+-# CONFIG_SYSFS_DEPRECATED is not set
++CONFIG_SYSFS_DEPRECATED=y
++CONFIG_SYSFS_DEPRECATED_V2=y
+
+-CONFIG_NFSD_DEPRECATED=y
++# CONFIG_NFSD_DEPRECATED is not set
+
+and this made the /dev/sda* entries disappear.
+
+Is that to be expected?
+
+Best wishes
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+YESNABY (n.)
+A 'yes, maybe' which means 'no'.
+			--- Douglas Adams, The Meaning of Liff
