@@ -1,87 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933082Ab0KPX2W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 18:28:22 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:12802 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041Ab0KPX2V convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 18:28:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=XTNRvCiSB84BKhocUSDfhZjkSkJmWK8wabqd80J50V4pnRJgA93+/vy501/JO6tOPV
-         /hZM1ZDPVhK7Or8J9+eA==
-MIME-Version: 1.0
-In-Reply-To: <1287013830.3673.224.camel@frodo>
-References: <AANLkTikfYy-kYb1=KbsYwHd0_vcf20d2nPSfFynugz8z@mail.gmail.com>
- <AANLkTikKwx6okpX4pxVzTvrVNm=KhUvLQGs0_ziwo6fX@mail.gmail.com>
- <AANLkTimnjun98phJ_KmwFG_ce3YGpmVGf5rufqPStWR-@mail.gmail.com> <1287013830.3673.224.camel@frodo>
-From: David Sharp <dhsharp@google.com>
-Date: Tue, 16 Nov 2010 15:27:58 -0800
-Message-ID: <AANLkTi=Y2X5EuqiCncPeNefgHs6vvGmnZpsyyddRR2g_@mail.gmail.com>
-Subject: Re: Benchmarks of kernel tracing options (ftrace and ktrace)
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S933172Ab0KPX2p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 18:28:45 -0500
+Received: from xenotime.net ([72.52.115.56]:35539 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932926Ab0KPX2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 18:28:44 -0500
+Date: Tue, 16 Nov 2010 15:28:35 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Joe Perches <joe@perches.com>, Florian Mickler <florian@mickler.org>,
+        Jiri Kosina <trivial@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
+ preference tool
+Message-Id: <20101116152835.b0ab571c.rdunlap@xenotime.net>
+In-Reply-To: <20101116232258.GC24623@opensource.wolfsonmicro.com>
+References: <1289850773.16461.166.camel@Joe-Laptop>
+	<20101116104921.GL12986@rakim.wolfsonmicro.main>
+	<1289919077.28741.50.camel@Joe-Laptop>
+	<20101116183707.179964dd@schatten.dmk.lab>
+	<20101116181226.GB26239@rakim.wolfsonmicro.main>
+	<20101116203522.65240b18@schatten.dmk.lab>
+	<20101116195530.GA7523@rakim.wolfsonmicro.main>
+	<20101116122102.86e7e0b9.rdunlap@xenotime.net>
+	<1289940156.28741.207.camel@Joe-Laptop>
+	<20101116124609.382e42fb.rdunlap@xenotime.net>
+	<20101116232258.GC24623@opensource.wolfsonmicro.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 4:50 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Wed, 2010-10-13 at 16:19 -0700, David Sharp wrote:
->> Google uses kernel tracing aggressively in the its data centers. We
->
-> Thanks!
->
->> wrote our own kernel tracer, ktrace. However ftrace, perf and LTTng
->> all have a better feature set than ktrace, so we are abandoning that
->> code.
->
-> Cool!
->
->>
->> We see several implementations of tracing aimed at the mainline kernel
->> and wanted a fair comparison of each of them to make sure they will
->> not significantly impact performance. A tracing toolkit that is too
->> expensive is not usable in our environment.
->>
->
-> [ snip for now (I'm traveling) ]
->
->> This first set of benchmark results compares ftrace to ktrace. The
->> numbers below are the "on" result minus the "off" result for each
->> configuration.
->>
->> ktrace: 200ns  (tracepoint: kernel_getuid)
->> ftrace: 224ns   (tracepoint: timer:sys_getuid)
->> ftrace: 587ns   (tracepoint: syscalls:sys_enter_getuid)
->
->
->> The last result shows that the syscall tracing is about twice as
->> expensive as a normal tracepoint, which is interesting.
->
-> Argh, the syscall tracing has a lot of overhead. There is only one
-> tracepoint that is hooked into the ptrace code, and will save all
-> registers before calling the functions. It enables tracing on all
-> syscalls and there's a table that decides whether or not to trace the
-> syscall.
->
-> So I'm not surprised with the result that the syscall trace point is so
-> slow (note, perf uses the same infrastructure).
->
-> -- Steve
+On Tue, 16 Nov 2010 23:22:58 +0000 Mark Brown wrote:
 
-Steve, Mike told me that you may have some patches to improve overhead
-of syscall tracing. I'd be interested in testing them. Can you send
-them my way?
+> On Tue, Nov 16, 2010 at 12:46:09PM -0800, Randy Dunlap wrote:
+> > On Tue, 16 Nov 2010 12:42:36 -0800 Joe Perches wrote:
+> 
+> > > Some subsystem maintainers like upper case, some mixed, some lower.
+> > > Some aren't consistent.  (Staging/staging)
+> 
+> > Case usually doesn't matter to most of us.
+> 
+> Given that we're working in case sensitive languages here it's probably
+> safe to assume that a reasonable proportion of people will care; being
+> reasonably consistent with existing practice for the subsystem seems
+> sensible.
 
-Thanks,
-d#
+Greg takes patches that say STAGING or Staging or staging.
+
+DaveM takes patches that say net: or netdev: or network: or NET:
+
+The sound maintainers take patches that say sound: or alsa: or ALSA:
+
+etc.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
