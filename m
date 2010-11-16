@@ -1,73 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759339Ab0KPWma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 17:42:30 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:7352 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757009Ab0KPWm1 (ORCPT
+	id S1757374Ab0KPWmV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 17:42:21 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38110 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757009Ab0KPWmS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 17:42:27 -0500
-From: David Daney <ddaney@caviumnetworks.com>
-To: linux-mips@linux-mips.org, ralf@linux-mips.org,
-        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+	Tue, 16 Nov 2010 17:42:18 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=ZSHwhCJcJ56IVPcSI+30X/wEIc4KkAPeR7L50WILAeyYdymrHGs31zAE4X9MUWlYYU
+         gC8hjarJLduhqg5W6fASAfxZl1XgkWYVkjrIVh//BDWXmkVPMmhwxqp71DEB9McvFgQi
+         XPqOXsFHBFriYhbwVB3vLOHJdHYpTL2dzFByE=
+From: dirk.brandewie@gmail.com
+To: devicetree-discuss@lists.ozlabs.org
+Cc: sodaville@linutronix.de, arjan@linux.intel.com, dirk.brandewie@gmail.com,
+        linuxppc-dev@lists.ozlabs.org, microblaze-uclinux@itee.uq.edu.au,
+        linux-arch@vger.kernel.org, linux-kbuild@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: David Daney <ddaney@caviumnetworks.com>
-Subject: [PATCH] of: Request module by alias in of_i2c.c
-Date: Tue, 16 Nov 2010 14:42:14 -0800
-Message-Id: <1289947334-14375-1-git-send-email-ddaney@caviumnetworks.com>
+Subject: [PATCH 2/5] of/fdt: add kernel command line option for dtb_compat string
+Date: Tue, 16 Nov 2010 14:41:37 -0800
+Message-Id: <348d48851a244bbd60bbfc4d60bee330e5c91eae.1289943240.git.dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
-X-OriginalArrivalTime: 16 Nov 2010 22:43:14.0642 (UTC) FILETIME=[A79C2320:01CB85DF]
+In-Reply-To: <cover.1289943240.git.dirk.brandewie@gmail.com>
+References: <cover.1289943240.git.dirk.brandewie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we are registering an i2c device that has a device tree node like
-this real-world example:
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-      rtc@68 {
-        compatible = "dallas,ds1337";
-        reg = <0x68>;
-      };
+Adds a kernel command line option "dtb_compat=<string>" and functions
+for architecture/platform specific code to retrieve the command line
+string and locate the compatible DTB linked into the kernel
 
-of_i2c_register_devices() will try to load a module called ds1337.ko.
-There is no such module, so it will fail.  If we look in modules.alias
-we will find entries like these:
+of_flat_dt_get_dtb_compatible_string() returns a pointer string passed
+from the command line or a pointer to an empty string.
 
-.
-.
-.
-alias i2c:ds1339 rtc_ds1307
-alias i2c:ds1338 rtc_ds1307
-alias i2c:ds1337 rtc_ds1307
-alias i2c:ds1307 rtc_ds1307
-alias i2c:ds1374 rtc_ds1374
-.
-.
-.
+of_flat_dt_find_compatible_dtb() returns a pointer to a DTB that is
+compatible with the "compatible" string or a NULL pointer if no
+matching DTB is present.
 
-The module we want is really called rtc_ds1307.ko.  If we request a
-module called "i2c:ds1337", the userspace module loader will do the
-right thing (unless it is busybox) and load rtc_ds1307.ko.  So we add
-the I2C_MODULE_PREFIX to the request_module() string.
-
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 ---
- drivers/of/of_i2c.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ Documentation/kernel-parameters.txt |    7 +++++
+ drivers/of/fdt.c                    |   52 +++++++++++++++++++++++++++++++++++
+ include/linux/of_fdt.h              |    4 +++
+ 3 files changed, 63 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/of/of_i2c.c b/drivers/of/of_i2c.c
-index c85d3c7..f37fbeb 100644
---- a/drivers/of/of_i2c.c
-+++ b/drivers/of/of_i2c.c
-@@ -61,7 +61,7 @@ void of_i2c_register_devices(struct i2c_adapter *adap)
- 		info.of_node = of_node_get(node);
- 		info.archdata = &dev_ad;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index ed45e98..f9b77fa 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -655,6 +655,13 @@ and is between 256 and 4096 characters. It is defined in the file
  
--		request_module("%s", info.type);
-+		request_module("%s%s", I2C_MODULE_PREFIX, info.type);
+ 	dscc4.setup=	[NET]
  
- 		result = i2c_new_device(adap, &info);
- 		if (result == NULL) {
++	dtb_compat=	[KNL]
++			Specify the "compatible" string for the device
++			tree blob present in the kernel image.  This
++			string will be used to select the first device
++			tree blob whose compatible property matches
++			the string passed on the kernel commandline.
++
+ 	dynamic_printk	Enables pr_debug()/dev_dbg() calls if
+ 			CONFIG_DYNAMIC_PRINTK_DEBUG has been enabled.
+ 			These can also be switched on/off via
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index c1360e0..c0858ce 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -15,6 +15,8 @@
+ #include <linux/of_fdt.h>
+ #include <linux/string.h>
+ #include <linux/errno.h>
++#include <asm-generic/vmlinux.lds.h>
++
+ 
+ #ifdef CONFIG_PPC
+ #include <asm/machdep.h>
+@@ -604,3 +606,53 @@ void __init unflatten_device_tree(void)
+ 
+ 	pr_debug(" <- unflatten_device_tree()\n");
+ }
++
++#define MAX_DTB_COMPAT_STR 64
++char dtb_compat_name[MAX_DTB_COMPAT_STR] = "";
++
++char __init *of_flat_dt_get_dtb_compatible_string(void)
++{
++	return dtb_compat_name;
++}
++
++
++extern uint8_t __dtb_start[];
++extern uint8_t __dtb_end[];
++void __init *of_flat_dt_find_compatible_dtb(char *name)
++{
++	void *rc = NULL;
++	unsigned long root, size;
++	struct boot_param_header  *orig_initial_boot_params;
++	uint8_t *blob;
++
++	orig_initial_boot_params = initial_boot_params;
++	blob = __dtb_start;
++	initial_boot_params = (struct boot_param_header *)blob;
++
++	while (blob < __dtb_end &&
++		(be32_to_cpu(initial_boot_params->magic) == OF_DT_HEADER)) {
++		root = of_get_flat_dt_root();
++		if (of_flat_dt_is_compatible(root, name) > 0) {
++			rc = blob;
++			break;
++		}
++
++		size =  be32_to_cpu(initial_boot_params->totalsize);
++		blob =  PTR_ALIGN(blob + size, DTB_ALIGNMENT);
++		initial_boot_params = (struct boot_param_header *)blob;
++	}
++
++	if (rc == NULL)
++		initial_boot_params = orig_initial_boot_params;
++	return rc;
++}
++
++
++static int __init of_flat_dtb_compat_setup(char *line)
++{
++	strncpy(dtb_compat_name, line, MAX_DTB_COMPAT_STR);
++	return 1;
++}
++
++early_param("dtb_compat", of_flat_dtb_compat_setup);
++
+diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+index 7bbf5b3..29561f4 100644
+--- a/include/linux/of_fdt.h
++++ b/include/linux/of_fdt.h
+@@ -58,6 +58,7 @@ struct boot_param_header {
+ };
+ 
+ #if defined(CONFIG_OF_FLATTREE)
++
+ /* TBD: Temporary export of fdt globals - remove when code fully merged */
+ extern int __initdata dt_root_addr_cells;
+ extern int __initdata dt_root_size_cells;
+@@ -82,6 +83,9 @@ extern void early_init_dt_add_memory_arch(u64 base, u64 size);
+ extern u64 early_init_dt_alloc_memory_arch(u64 size, u64 align);
+ extern u64 dt_mem_next_cell(int s, __be32 **cellp);
+ 
++extern char *of_flat_dt_get_dtb_compatible_string(void);
++extern void *of_flat_dt_find_compatible_dtb(char *name);
++
+ /*
+  * If BLK_DEV_INITRD, the fdt early init code will call this function,
+  * to be provided by the arch code. start and end are specified as
 -- 
 1.7.2.3
 
