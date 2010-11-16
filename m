@@ -1,132 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934004Ab0KPNTL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 08:19:11 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:51584 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933934Ab0KPNTK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 08:19:10 -0500
-Message-ID: <4CE2849C.2060101@vlnb.net>
-Date: Tue, 16 Nov 2010 16:18:20 +0300
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	id S1757852Ab0KPN2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 08:28:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52717 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756520Ab0KPN2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 08:28:21 -0500
+Date: Tue, 16 Nov 2010 14:28:19 +0100
+From: Jan Kara <jack@suse.cz>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] ext3: Add error check in ext3_mkdir()
+Message-ID: <20101116132819.GB7587@quack.suse.cz>
+References: <1289906292-8906-1-git-send-email-namhyung@gmail.com>
 MIME-Version: 1.0
-To: Joe Eykholt <jeykholt@cisco.com>
-CC: Greg KH <greg@kroah.com>, Bart Van Assche <bvanassche@acm.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        James Smart <James.Smart@emulex.com>, Andy Yan <ayan@marvell.com>,
-        Chetan Loke <generationgnu@yahoo.com>, Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-References: <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <AANLkTi=PxYi8kCsAxbopUHBC+=2QPuoEcojdqugS88sH@mail.gmail.com> <20101115184422.GA9566@kroah.com> <4CE19A94.8080504@vlnb.net> <20101115221359.GA9530@kroah.com> <4CE210D3.5060703@cisco.com>
-In-Reply-To: <4CE210D3.5060703@cisco.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:5ABwKdnV7Up8EPeR8Y0TFmvf7irjAceIUhVuOUzAENB
- xRZRSk0BHTD1VUB16jPcANfgpzNMu37+QmlCU2yRC5dDv/GwGc
- 3od866EYPrlJTWMLI7mYU/RP7A0NbRJYQHxZlkOcQwjoc/tY0j
- RRk5smGVNiiBAwNzJ7SUECYeX9wY7e+PkGAt4zoInybp53Jim2
- s5q14dZpw6n8fnIejBNzA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289906292-8906-1-git-send-email-namhyung@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Eykholt, on 11/16/2010 08:04 AM wrote:
->> On Mon, Nov 15, 2010 at 11:39:48PM +0300, Vladislav Bolkhovitin wrote:
->>> Greg KH, on 11/15/2010 09:44 PM wrote:
->>>> On Mon, Nov 15, 2010 at 06:45:24PM +0100, Bart Van Assche wrote:
->>>>> On Sun, Nov 14, 2010 at 12:59 AM, Greg KH <greg@kroah.com> wrote:
->>>>>>
->>>>>> On Sat, Nov 13, 2010 at 08:20:18PM +0300, Vladislav Bolkhovitin wrote:
->>>>>>> So, I decided to reimplement it to be completely synchronous. SYSFS
->>>>>>> authors did really great job and thanks to the excellent internal SYSFS
->>>>>>> design and implementation it is absolutely safe. See:
->>>>>>>
->>>>>>> [root@tgt ~]# modprobe scst
->>>>>>> [root@tgt ~]# cd /sys/kernel/scst_tgt/
->>>>>>
->>>>>> Sorry, but no, you can't put this in /sys/kernel/ without getting the
->>>>>> approval of the sysfs maintainer.
->>>>>>
->>>>>> I really don't understand why you are using kobjects in the first place,
->>>>>> why isn't this in the main device tree in the kernel, using 'struct
->>>>>> device'?
->>>>>
->>>>> We might have missed something, but as far as we know it has not yet
->>>>> been explained in this thread why using 'struct device' would be an
->>>>> advantage over using 'struct kobject'.
->>>>
->>>> It's very simple.
->>>>
->>>> You want your device to show up in the global device tree in the kernel,
->>>> not off to one side, unconnected to anything else.
->>>>
->>>> Please use 'struct device', it is what you want to do here.
->>>
->>> But we don't have any device to show up in the global device tree!
->>
->> Not true at all.
->>
->>> We don't have any devices in the struct device's understanding at all!
->>
->> Then create them just like you are doing so for your kobject use.
->>
->> The first device would be the root one, and then everything trickles
->> down from there.
->>
->> And use configfs for your configuration stuff, that's what it is there
->> for, and if it doesn't somehow work properly for you, please work with
->> the configfs developers to fix that up.
->>
->> thanks,
->>
->> greg k-h
-> 
-> I don't have any opinion on the above, but I don't see why sysfs can't be
-> used for configuration as well as its other roles. It seems to me wasteful
-> to require configfs to be used in order to change configuration when
-> sysfs works fine for this.
-> 
-> Here are a couple of existing examples where sysfs is used in a role that
-> would seem similar to SCST's usage:
-> 
-> 1) scsi_transport_fc already has an sysfs file, fc_host/vport_create, which
-> can be written to create new fc_host and scsi_host instances.
-> 
-> 2) fcoe.ko uses a write to the sysfs file /sys/module/fcoe/parameters/create
-> to start the protocol on a particular ethernet interface.  There's another
-> file for destroy.
-> 
-> I'll bet there are other examples in other subsystems, and I don't think
-> there is anything wrong with the above usages of sysfs.
-> 
-> I agree with Vladislav's point that configfs doesn't work instead of sysfs
-> because configs doesn't make it easy for the kernel side to create nodes for
-> dynamic information like connected initiators and statistics.
-> So, if the above examples are considered a misuse of sysfs,
-> SCST would need to use both sysfs and configfs.  It would use configfs to
-> do configuration, and sysfs to display and access the dynamic information
-> like connected initiators. That seems a minor role for configfs,
-> which is easily handled in sysfs as SCST currently does.
-> 
-> Just my two cents.
+On Tue 16-11-10 20:18:12, Namhyung Kim wrote:
+> Check return value of ext3_journal_get_write_access, ext3_journal_dirty_metadata
+> and ext3_mark_inode_dirty. Consolidate error path under new label 'out_clear_inode'
+> and adjust bh releasing appropriately.
+  Thanks. Merged.
 
-Thank you, Joe, for those good examples. I may not know for what SYSFS
-was _originally_ designed, but the current reality is that SYSFS is
-_widely_ used to both represent the kernel internal configuration as
-well as to change it. And SCST is just following that.
+								Honza
 
-After all, if SYSFS supposed to only represent the kernel internal
-configuration, why wasn't it from the beginning made read-only?
-
-Vlad
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  fs/ext3/namei.c |   36 ++++++++++++++++++++++--------------
+>  1 files changed, 22 insertions(+), 14 deletions(-)
+> 
+> diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
+> index bce9dce..03fccc5 100644
+> --- a/fs/ext3/namei.c
+> +++ b/fs/ext3/namei.c
+> @@ -1762,7 +1762,7 @@ static int ext3_mkdir(struct inode * dir, struct dentry * dentry, int mode)
+>  {
+>  	handle_t *handle;
+>  	struct inode * inode;
+> -	struct buffer_head * dir_block;
+> +	struct buffer_head * dir_block = NULL;
+>  	struct ext3_dir_entry_2 * de;
+>  	int err, retries = 0;
+>  
+> @@ -1790,15 +1790,14 @@ retry:
+>  	inode->i_fop = &ext3_dir_operations;
+>  	inode->i_size = EXT3_I(inode)->i_disksize = inode->i_sb->s_blocksize;
+>  	dir_block = ext3_bread (handle, inode, 0, 1, &err);
+> -	if (!dir_block) {
+> -		drop_nlink(inode); /* is this nlink == 0? */
+> -		unlock_new_inode(inode);
+> -		ext3_mark_inode_dirty(handle, inode);
+> -		iput (inode);
+> -		goto out_stop;
+> -	}
+> +	if (!dir_block)
+> +		goto out_clear_inode;
+> +
+>  	BUFFER_TRACE(dir_block, "get_write_access");
+> -	ext3_journal_get_write_access(handle, dir_block);
+> +	err = ext3_journal_get_write_access(handle, dir_block);
+> +	if (err)
+> +		goto out_clear_inode;
+> +
+>  	de = (struct ext3_dir_entry_2 *) dir_block->b_data;
+>  	de->inode = cpu_to_le32(inode->i_ino);
+>  	de->name_len = 1;
+> @@ -1814,11 +1813,16 @@ retry:
+>  	ext3_set_de_type(dir->i_sb, de, S_IFDIR);
+>  	inode->i_nlink = 2;
+>  	BUFFER_TRACE(dir_block, "call ext3_journal_dirty_metadata");
+> -	ext3_journal_dirty_metadata(handle, dir_block);
+> -	brelse (dir_block);
+> -	ext3_mark_inode_dirty(handle, inode);
+> -	err = ext3_add_entry (handle, dentry, inode);
+> +	err = ext3_journal_dirty_metadata(handle, dir_block);
+> +	if (err)
+> +		goto out_clear_inode;
+> +
+> +	err = ext3_mark_inode_dirty(handle, inode);
+> +	if (!err)
+> +		err = ext3_add_entry (handle, dentry, inode);
+> +
+>  	if (err) {
+> +out_clear_inode:
+>  		inode->i_nlink = 0;
+>  		unlock_new_inode(inode);
+>  		ext3_mark_inode_dirty(handle, inode);
+> @@ -1827,10 +1831,14 @@ retry:
+>  	}
+>  	inc_nlink(dir);
+>  	ext3_update_dx_flag(dir);
+> -	ext3_mark_inode_dirty(handle, dir);
+> +	err = ext3_mark_inode_dirty(handle, dir);
+> +	if (err)
+> +		goto out_clear_inode;
+> +
+>  	d_instantiate(dentry, inode);
+>  	unlock_new_inode(inode);
+>  out_stop:
+> +	brelse(dir_block);
+>  	ext3_journal_stop(handle);
+>  	if (err == -ENOSPC && ext3_should_retry_alloc(dir->i_sb, &retries))
+>  		goto retry;
+> -- 
+> 1.7.0.4
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
