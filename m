@@ -1,71 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934216Ab0KPKRm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 05:17:42 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:50785 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934160Ab0KPKRl (ORCPT
+	id S934198Ab0KPKU4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 05:20:56 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:34222 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932571Ab0KPKUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 05:17:41 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-Subject: Re: Corrected data type mismatch
-From: Milton Miller <miltonm@bga.com>
-X-Patchwork-Id: 323022
-Message-Id: <mdm-kgbd-badfix@mdm.bga.com>
-In-Reply-To: <1289700419-11072-2-git-send-email-shan.hai@windriver.com>
-References: <1289700419-11072-2-git-send-email-shan.hai@windriver.com>
-To: Hai Shan <shan.hai@windriver.com>
-Cc: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        Dongdong Deng <dongdong.deng@windriver.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        <kgdb-bugreport@lists.sourceforge.net>
-Date: Tue, 16 Nov 2010 04:17:25 -0600
-X-Originating-IP: 71.22.127.106
+	Tue, 16 Nov 2010 05:20:54 -0500
+Date: Tue, 16 Nov 2010 19:17:48 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: [BUGFIX] memcg: avoid deadlock between move charge and try_charge()
+Message-Id: <20101116191748.d6645376.nishimura@mxp.nes.nec.co.jp>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[added cc's based on from ff10b88b5a05c8f1646dd15fb9f6093c1384ff6d,
-which added the patched line ]
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-https://patchwork.kernel.org/patch/323022/
+__mem_cgroup_try_charge() can be called under down_write(&mmap_sem)(e.g.
+mlock does it). This means it can cause deadlock if it races with move charge:
 
-On Sun, 14 Nov 2010 around 02:06:59 -0000, Hai Shan wrote:
-> 
-> Corrected data type mismatch
-> 
-This merely hides the type mismatch by force casting it.
+Ex.1)
+                move charge             |        try charge
+  --------------------------------------+------------------------------
+    mem_cgroup_can_attach()             |  down_write(&mmap_sem)
+      mc.moving_task = current          |    ..
+      mem_cgroup_precharge_mc()         |  __mem_cgroup_try_charge()
+        mem_cgroup_count_precharge()    |    prepare_to_wait()
+          down_read(&mmap_sem)          |    if (mc.moving_task)
+          -> cannot aquire the lock     |    -> true
+                                        |      schedule()
 
-Looking at the context I believe the intent is to copy the the value to
-or from the register content slot, not take the previous value of the
-register and use that as an address to copy to or from.
+Ex.2)
+                move charge             |        try charge
+  --------------------------------------+------------------------------
+    mem_cgroup_can_attach()             |
+      mc.moving_task = current          |
+      mem_cgroup_precharge_mc()         |
+        mem_cgroup_count_precharge()    |
+          down_read(&mmap_sem)          |
+          ..                            |
+          up_read(&mmap_sem)            |
+                                        |  down_write(&mmap_sem)
+    mem_cgroup_move_task()              |    ..
+      mem_cgroup_move_charge()          |  __mem_cgroup_try_charge()
+        down_read(&mmap_sem)            |    prepare_to_wait()
+        -> cannot aquire the lock       |    if (mc.moving_task)
+                                        |    -> true
+                                        |      schedule()
 
-milton
-> Signed-off-by: Hai Shan <shan.hai@windriver.com>
-> 
-> ---
-> arch/powerpc/kernel/kgdb.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
-> index 7a9db64..c5ce65f 100644
-> --- a/arch/powerpc/kernel/kgdb.c
-> +++ b/arch/powerpc/kernel/kgdb.c
-> @@ -337,7 +337,7 @@ char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
->  		/* FP registers 32 -> 63 */
->  #if defined(CONFIG_FSL_BOOKE) && defined(CONFIG_SPE)
->  		if (current)
-> -			memcpy(mem, current->thread.evr[regno-32],
-> +			memcpy(mem, (void *)current->thread.evr[regno-32],
->  					dbg_reg_def[regno].size);
->  #else
->  		/* fp registers not used by kernel, leave zero */
-> @@ -362,7 +362,7 @@ int dbg_set_reg(int regno, void *mem, struct pt_regs *regs)
->  	if (regno >= 32 && regno < 64) {
->  		/* FP registers 32 -> 63 */
->  #if defined(CONFIG_FSL_BOOKE) && defined(CONFIG_SPE)
-> -		memcpy(current->thread.evr[regno-32], mem,
-> +		memcpy((void *)current->thread.evr[regno-32], mem,
->  				dbg_reg_def[regno].size);
->  #else
->  		/* fp registers not used by kernel, leave zero */
+To avoid this deadlock, we do all the move charge works (both can_attach() and
+attach()) under one mmap_sem section.
+And after this patch, we set/clear mc.moving_task outside mc.lock, because we
+use the lock only to check mc.from/to.
+
+Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: <stable@kernel.org>
+---
+ mm/memcontrol.c |   43 ++++++++++++++++++++++++++-----------------
+ 1 files changed, 26 insertions(+), 17 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 2efa8ea..0255505 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -278,13 +278,14 @@ enum move_type {
+ 
+ /* "mc" and its members are protected by cgroup_mutex */
+ static struct move_charge_struct {
+-	spinlock_t	  lock; /* for from, to, moving_task */
++	spinlock_t	  lock; /* for from, to */
+ 	struct mem_cgroup *from;
+ 	struct mem_cgroup *to;
+ 	unsigned long precharge;
+ 	unsigned long moved_charge;
+ 	unsigned long moved_swap;
+ 	struct task_struct *moving_task;	/* a task moving charges */
++	struct mm_struct *mm;
+ 	wait_queue_head_t waitq;		/* a waitq for other context */
+ } mc = {
+ 	.lock = __SPIN_LOCK_UNLOCKED(mc.lock),
+@@ -4631,7 +4632,7 @@ static unsigned long mem_cgroup_count_precharge(struct mm_struct *mm)
+ 	unsigned long precharge;
+ 	struct vm_area_struct *vma;
+ 
+-	down_read(&mm->mmap_sem);
++	/* We've already held the mmap_sem */
+ 	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+ 		struct mm_walk mem_cgroup_count_precharge_walk = {
+ 			.pmd_entry = mem_cgroup_count_precharge_pte_range,
+@@ -4643,7 +4644,6 @@ static unsigned long mem_cgroup_count_precharge(struct mm_struct *mm)
+ 		walk_page_range(vma->vm_start, vma->vm_end,
+ 					&mem_cgroup_count_precharge_walk);
+ 	}
+-	up_read(&mm->mmap_sem);
+ 
+ 	precharge = mc.precharge;
+ 	mc.precharge = 0;
+@@ -4694,11 +4694,16 @@ static void mem_cgroup_clear_mc(void)
+ 
+ 		mc.moved_swap = 0;
+ 	}
++	if (mc.mm) {
++		up_read(&mc.mm->mmap_sem);
++		mmput(mc.mm);
++	}
+ 	spin_lock(&mc.lock);
+ 	mc.from = NULL;
+ 	mc.to = NULL;
+-	mc.moving_task = NULL;
+ 	spin_unlock(&mc.lock);
++	mc.moving_task = NULL;
++	mc.mm = NULL;
+ 	mem_cgroup_end_move(from);
+ 	memcg_oom_recover(from);
+ 	memcg_oom_recover(to);
+@@ -4724,12 +4729,21 @@ static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
+ 			return 0;
+ 		/* We move charges only when we move a owner of the mm */
+ 		if (mm->owner == p) {
++			/*
++			 * We do all the move charge works under one mmap_sem to
++			 * avoid deadlock with down_write(&mmap_sem)
++			 * -> try_charge() -> if (mc.moving_task) -> sleep.
++			 */
++			down_read(&mm->mmap_sem);
++
+ 			VM_BUG_ON(mc.from);
+ 			VM_BUG_ON(mc.to);
+ 			VM_BUG_ON(mc.precharge);
+ 			VM_BUG_ON(mc.moved_charge);
+ 			VM_BUG_ON(mc.moved_swap);
+ 			VM_BUG_ON(mc.moving_task);
++			VM_BUG_ON(mc.mm);
++
+ 			mem_cgroup_start_move(from);
+ 			spin_lock(&mc.lock);
+ 			mc.from = from;
+@@ -4737,14 +4751,16 @@ static int mem_cgroup_can_attach(struct cgroup_subsys *ss,
+ 			mc.precharge = 0;
+ 			mc.moved_charge = 0;
+ 			mc.moved_swap = 0;
+-			mc.moving_task = current;
+ 			spin_unlock(&mc.lock);
++			mc.moving_task = current;
++			mc.mm = mm;
+ 
+ 			ret = mem_cgroup_precharge_mc(mm);
+ 			if (ret)
+ 				mem_cgroup_clear_mc();
+-		}
+-		mmput(mm);
++			/* We call up_read() and mmput() in clear_mc(). */
++		} else
++			mmput(mm);
+ 	}
+ 	return ret;
+ }
+@@ -4832,7 +4848,7 @@ static void mem_cgroup_move_charge(struct mm_struct *mm)
+ 	struct vm_area_struct *vma;
+ 
+ 	lru_add_drain_all();
+-	down_read(&mm->mmap_sem);
++	/* We've already held the mmap_sem */
+ 	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+ 		int ret;
+ 		struct mm_walk mem_cgroup_move_charge_walk = {
+@@ -4851,7 +4867,6 @@ static void mem_cgroup_move_charge(struct mm_struct *mm)
+ 			 */
+ 			break;
+ 	}
+-	up_read(&mm->mmap_sem);
+ }
+ 
+ static void mem_cgroup_move_task(struct cgroup_subsys *ss,
+@@ -4860,17 +4875,11 @@ static void mem_cgroup_move_task(struct cgroup_subsys *ss,
+ 				struct task_struct *p,
+ 				bool threadgroup)
+ {
+-	struct mm_struct *mm;
+-
+-	if (!mc.to)
++	if (!mc.mm)
+ 		/* no need to move charge */
+ 		return;
+ 
+-	mm = get_task_mm(p);
+-	if (mm) {
+-		mem_cgroup_move_charge(mm);
+-		mmput(mm);
+-	}
++	mem_cgroup_move_charge(mc.mm);
+ 	mem_cgroup_clear_mc();
+ }
+ #else	/* !CONFIG_MMU */
+-- 
+1.7.1
+
