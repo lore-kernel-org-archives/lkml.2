@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934069Ab0KPJTZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 04:19:25 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58921 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934022Ab0KPJTX convert rfc822-to-8bit (ORCPT
+	id S934093Ab0KPJWV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 04:22:21 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:64286 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934055Ab0KPJWT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 04:19:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=gnXqE5T9SfXTplPa32NpcHp/2ufTTtX7H68Q/cLO1RJrQL3Uezavv5EUfHwRFEs9nB
-         XRQynWMUG50q246SqbOhg8Lb5kgduxCs1DZMSj0NS4JqV2ZfnDZ0TLXDSHVoQpYmukLq
-         o1SAPBZjWQHe7BZrzE87cNMHdJkaXdx/LVr/A=
+	Tue, 16 Nov 2010 04:22:19 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: build failure after merge of the bkl-config tree
+Date: Tue, 16 Nov 2010 10:21:57 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1+; KDE/4.5.1; x86_64; ; )
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20101116130853.a3c66c4b.sfr@canb.auug.org.au>
+In-Reply-To: <20101116130853.a3c66c4b.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1011151707310.6448@xanadu.home>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
-	<20101114151445.GB10871@n2100.arm.linux.org.uk>
-	<AANLkTinuUCYMa8e7=ehhExFzBAhPZBKA16M1GVQ=RMMH@mail.gmail.com>
-	<201011151047.37103.arnd@arndb.de>
-	<AANLkTi=FFpCwEhSgs-zOh32JQvqQWqnaQVTitwJeDyzj@mail.gmail.com>
-	<alpine.LFD.2.00.1011151707310.6448@xanadu.home>
-Date: Tue, 16 Nov 2010 09:19:22 +0000
-X-Google-Sender-Auth: W8ReQ1uYlXW-d52eQPXM7QvGdhk
-Message-ID: <AANLkTikJvcpECTpRU-JA2YX8QFYPHV7PMkN5w49ji2TH@mail.gmail.com>
-Subject: Re: [PATCH v2 03/20] ARM: LPAE: use u32 instead of unsigned long for
- 32-bit ptes
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <will.deacon@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011161021.57734.arnd@arndb.de>
+X-Provags-ID: V02:K0:u30yGjP5BIEdD1lf6nBVacfhWhp6mvA1m2c4Y48sSm4
+ ZlpwfZlZ3pvu0OLlkpt0R1kLk2rg3vFLoM6BTf9F+/wrev6aDZ
+ f5KbSlualb9jYfjgrNT9LUUF2jqZOC/pAiI0czx2hTpM70XERE
+ RTUmTn207z9QZ4nhlJWzKlkf05ZH6oB2D9+hCD6ZkglWPULHyy
+ BwSMVQHWGhHHMqGsVvQ7A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 November 2010 22:11, Nicolas Pitre <nico@fluxnic.net> wrote:
-> On Mon, 15 Nov 2010, Catalin Marinas wrote:
->
->> On 15 November 2010 09:47, Arnd Bergmann <arnd@arndb.de> wrote:
->> > On Monday 15 November 2010 10:39:30 Catalin Marinas wrote:
->> >> > There will be compiler warnings because u32 is unsigned int, and we
->> >> > print it as %08lx.  Generic code cases pte values to (long long) and
->> >> > prints them using %08llx.  We should do the same.
->> >>
->> >> We still need some kind of macro because with LPAE we need %016llx
->> >> since the phys address can go to 40-bit and there are some additional
->> >> bits in the top word. Unless you'd like to always print 16 characters
->> >> even for 32-bit ptes (or if there is some other printk magic I'm not
->> >> aware of).
->> >
->> > Why not just %010llx? That would just be two extra characters.
->>
->> We still have attributes (like XN, bit 54) stored in the top part of
->> the pte. This may be of interest when debugging.
->
-> They will be printed if they exist. The %010 in front of llx only means
-> to have a minimum of 10 zero-paded digits if the value is smaller than
-> that.
->
-> However, not having aligned values will be confusing.  A macro for the
-> format might be the best compromize.
+On Tuesday 16 November 2010 03:08:53 Stephen Rothwell wrote:
+> After merging the bkl-config tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> kernel/sched.c: In function 'schedule':
+> kernel/sched.c:3896: error: implicit declaration of function 'release_kernel_lock'
+> kernel/sched.c:3960: error: implicit declaration of function 'reacquire_kernel_lock'
+> 
+> Caused by commit 8bbc75c71b8a821edd8abb43452c78fbfd4789dc ("BKL: remove
+> extraneous #include <smp_lock.h>").  Not well build tested :-(
 
-We thought about using something like
+Yes, and bad timing. I noticed this in a build test after uploading it,
+and uploaded the fixed tree half an hour later, just after you pulleed it :(
+Sorry about this, next time I'll do it in the right order.
 
-printk("%0*llx", sizeof(pteval_t) * 2, (long long)pte_val(pte));
-
-but it complicates the code.
-
-Anyway, since these are printed for debugging mainline, we can
-probably cope with some lack of alignment (as Russell said, there may
-not be any where it matters).
-
--- 
-Catalin
+	Arnd
