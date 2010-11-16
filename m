@@ -1,40 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934164Ab0KPKEf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 05:04:35 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35594 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932529Ab0KPKEd (ORCPT
+	id S934180Ab0KPKEu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 05:04:50 -0500
+Received: from nm9-vm0.bullet.mail.sp2.yahoo.com ([98.139.91.196]:20492 "HELO
+	nm9-vm0.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932972Ab0KPKEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 05:04:33 -0500
-Date: Tue, 16 Nov 2010 10:04:06 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 02/20] ARM: LPAE: Factor out 2-level page table
-	definitions into separate files
-Message-ID: <20101116100406.GB12891@n2100.arm.linux.org.uk>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com> <1289584840-18097-3-git-send-email-catalin.marinas@arm.com> <20101115233129.GG31421@n2100.arm.linux.org.uk> <AANLkTikrz+yM6idm-aij10vsKZMVSOBfZSdeEJbDRwiC@mail.gmail.com>
+	Tue, 16 Nov 2010 05:04:46 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 943105.89558.bm@omp1039.mail.sp2.yahoo.com
+Message-ID: <334828.67526.qm@web113308.mail.gq1.yahoo.com>
+X-YMail-OSG: qYbRbkYVM1nZQXpQ1tY5p4eDLAnAWSW3dTfRQjfr5cHg1km
+ 6OeaLTYkh5m2g3kzP4Mbzs.J9b7j9mO5uWhJxuIvdgoFNo26IZER97WE0MPx
+ QiV7kUqU3YIHJQm63oxS_DVL4VwhJVW6mm_a.n7aaVRjCw0xc1_0ekZZgfKj
+ 77qfxzLuHZ.sPY216qOoIjcVvDPJwy2.iW2dSigAc3VxmE_NbkwWY2XGCSNJ
+ Kxi6a3lCLz_9n8ltysLSJT2s0ml7ihVZvi4NaiptFDjsDUTK2QN_OvayKILB
+ J1fAKUBEJr_ccdzZBZlofatHcMbbWpf7qolr4cd1AUIfyldBMUwbzKcrmCoE
+ .XyTF_6cIx0UGMm6UWTvCdjEYKsY-
+X-RocketYMMF: knobi.rm
+X-Mailer: YahooMailRC/504.5 YahooMailWebService/0.8.107.285259
+References: <20101115093410.BEFD.A69D9226@jp.fujitsu.com> <20101114181905.bc5b44f9.akpm@linux-foundation.org> <20101115113238.BF06.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011150215460.2986@chino.kir.corp.google.com> <alpine.LNX.2.00.1011160027180.22346@swampdrago <alpine.DEB.2.00.1011151602090.29081@chino.kir.corp.google.com>
+Date: Tue, 16 Nov 2010 02:04:44 -0800 (PST)
+From: Martin Knoblauch <spamtrap@knobisoft.de>
+Subject: Re: [PATCH] Revert oom rewrite series
+To: David Rientjes <rientjes@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.DEB.2.00.1011151602090.29081@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikrz+yM6idm-aij10vsKZMVSOBfZSdeEJbDRwiC@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 09:14:52AM +0000, Catalin Marinas wrote:
-> > Of couse, I now have patches for this and my other points... will sort
-> > them out into a series in the next few days.
+CC trimmed for sanity ...
+
+----- Original Message ----
+
+> From: David Rientjes <rientjes@google.com>
+> To: Jesper Juhl <jj@chaosbits.net>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>; Andrew Morton 
+><akpm@linux-foundation.org>; Linus Torvalds <torvalds@linux-foundation.org>; 
+>LKML <linux-kernel@vger.kernel.org>; Ying Han <yinghan@google.com>; Bodo Eggert 
+><7eggert@web.de>; Mandeep@yahoo.com
+> Sent: Tue, November 16, 2010 1:06:21 AM
+> Subject: Re: [PATCH] Revert oom rewrite series
 > 
-> Thanks.
+> 
+> Thanks for the report!  I'll get  involved with kde-devel and send a patch 
+> to remove this dependency on newer  kernels to expedite the process.
+> 
+>  [ Others with reports of deprecated use  of oom_adj can contact me 
+>    privately and I'll find the parties of  interest to avoid topics 
+>    unrelated to the kernel itself on LKML.  ]
+David,
 
-BTW, don't post another round of patches just because you've had _some_
-comments back - your v2 patches are still being looked through, your v3
-patches haven't even been looked at yet.
+ another one for your collection. You asked for it :-) This is CentOS-5.5 
+running on top of kernel 2.6.36, likely out of initrd:
 
-It took some 4 hours for the mailing list to get through last nights
-posting frenzy that it really isn't worth overloading - is it really
-worth bringing the list server to its knees when the job is only half
-done?
+$ dmesg | grep deprecated
+[    2.430330] nash-hotplug (67): /proc/67/oom_adj is deprecated, please use 
+/proc/67/oom_score_adj instead.
+
+Cheers
+Martin
