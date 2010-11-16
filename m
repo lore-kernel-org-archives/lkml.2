@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab0KPSwM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 13:52:12 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33581 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755446Ab0KPSwL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 13:52:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <20101116171447.29336514@lxorguk.ukuu.org.uk>
-References: <1289922400.1253.3.camel@yio.site> <20101116155717.6671e484@lxorguk.ukuu.org.uk>
- <AANLkTimn7zyEjLhmOmUVQGnLDfM-A_uEgWETsM3nsyuY@mail.gmail.com> <20101116171447.29336514@lxorguk.ukuu.org.uk>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Tue, 16 Nov 2010 19:51:55 +0100
-Message-ID: <AANLkTi=ju4fON7Hz=j_tFtqFGD0b-c=-Ou+HQwfYDgOy@mail.gmail.com>
-Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Werner Fink <werner@suse.de>, Jiri Slaby <jslaby@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+	id S1757059Ab0KPSy5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 13:54:57 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:39053 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756147Ab0KPSyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 13:54:54 -0500
+Subject: Re: [PATCH v1.3 4/4] keys: add new key-type encrypted
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+In-Reply-To: <26645.1289929851@redhat.com>
+References: <1289918320.3188.16.camel@localhost.localdomain>
+	 <1289849751.3027.17.camel@localhost.localdomain>
+	 <1289694826.3257.82.camel@localhost.localdomain>
+	 <1289595738.2731.80.camel@localhost.localdomain>
+	 <1289404309-15955-5-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1289404309-15955-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <26689.1289591135@redhat.com> <27900.1289597013@redhat.com>
+	 <8268.1289837934@redhat.com> <23151.1289916524@redhat.com>
+	 <26645.1289929851@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Nov 2010 13:54:50 -0500
+Message-ID: <1289933690.2627.19.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 18:14, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> > NAK this, its a nonsense interface
->> >
->> > Seriously what use is an interface that tells you "what the console might
->> > have been", this is why we have a proper event tracking interface instead.
->>
->> You mean the VT_WAITEVENT? Sleeping ioctls() can't be used. The time
->> between the check for the current, and you go to sleep in the ioctl()
->> for teh next is a window which isn't covered with such interface.
->
-> The only thing you need to add is VT_GETACTIVE, which is fine providing
-> you know how to use it, but in both cases it is basically useless because
-> by the time you've asked the question the answer is undefined. You can
-> only use an interface of this type if you lock against VT changes, which
-> is how the X interface works if you look at it.
->
-> So what are you going to do with the return value from an interface which
-> provide "what was the console, perhaps, at some point you asked but could
-> even have been deleted, assigned to a different user, hot unplugged or
-> moved to another framebuffer device by the time I answer"
->
-> What is it for ???
+On Tue, 2010-11-16 at 17:50 +0000, David Howells wrote:
+> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> 
+> > I actually like keyctl requiring 'trusted:' or 'user:'.  Forcing the
+> > user to indicate which type of key they want, is actually good - no
+> > misunderstandings.
+> 
+> You still need to prefix the description of a user-defined key so that you
+> don't collide with other people who're also using user-defined keys for random things.
 
-It's for tracking changes. Every async event interface might carry
-values which are not true anytime after the event. But, unlike with
-the ioctl(), that does not matter for us, because changes are always
-signaled with poll() and there is no window between a check and the
-next wait-for-the-next-event which can't be covered.
+ok
 
-Sleeping ioctl()s like VT_EVENT can't be used to track the current VT
-because they might go to sleep() even when stuff has changed since the
-last check. We actually need to revert its use from ConsoleKit because
-it can't be fixed properly, and actually causes problems for people.
+> > Another benefit, would be allowing 'keyctl update' to update the key
+> > description, not the key type.
+> 
+> You mean you want to change the description on a key?
+> 
+> David
 
-It does not matter if things change at high frequency underneath us,
-we always will apply the final result just fine, when stuff stops
-changing. It's actually a nice feature and no a problem at all, that
-we only see the most recent state.
+No, this just updates the name of the key used to encrypt/decrypt the
+encrypted key. For example, the encrypted key evm-key is initially
+encrypted/decrypted using 'kmk-trusted'.  After the update, it is
+encrypted/decrypted with 'kmk'.  Both now are trusted keys.
 
-Sure, with the ioctl() we've seen many not interesting changes, but we
-often miss the single one that is important -- the last last one. The
-thing is that we don't need to sleep here and miss changes.
+$ keyctl show
+Session Keyring
+       -3 --alswrv    500   500  keyring: _ses
+117908125 --alswrv    500    -1   \_ keyring: _uid.500
+501967942 --alswrv    500   500       \_ trusted: kmk-trusted
+317523177 --alswrv    500   500       \_ encrypted: evm-key
+666437381 --alswrv    500   500       \_ trusted: kmk
+$ keyctl print 317523177
+trusted:kmk-trusted 32 ca0ebb83594f14781460 ...
 
-It's a straight-forward and simple text interface that does all we
-need to track console and vt changes.
+$ keyctl update 317523177 "update trusted:kmk"
+$ keyctl print 317523177
+trusted:kmk 32 ca0ebb83594f1478146 ....
 
-Kay
+Mimi
+
