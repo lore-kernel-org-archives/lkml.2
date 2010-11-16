@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933208Ab0KPLQR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 06:16:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47948 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752128Ab0KPLQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 06:16:15 -0500
-Date: Tue, 16 Nov 2010 12:16:11 +0100
-From: Jan Kara <jack@suse.cz>
-To: Josef Bacik <josef@redhat.com>
-Cc: david@fromorbit.com, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, cmm@us.ibm.com,
-        cluster-devel@redhat.com, ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
-Message-ID: <20101116111611.GA4757@quack.suse.cz>
-References: <1289840723-3056-1-git-send-email-josef@redhat.com>
- <1289840723-3056-2-git-send-email-josef@redhat.com>
+	id S933304Ab0KPLQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 06:16:40 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:43111 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894Ab0KPLQi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 06:16:38 -0500
+X-Auth-Info: VAvVbROXIU/K+T4V90xKxfuP60vxC8OM407Qpb7dTYA=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] PCI fixes
+References: <20101115094527.49464ed2@jbarnes-desktop>
+X-Yow: I think my CAREER is RUINED!!
+Date: Tue, 16 Nov 2010 12:16:36 +0100
+In-Reply-To: <20101115094527.49464ed2@jbarnes-desktop> (Jesse Barnes's message
+	of "Mon, 15 Nov 2010 09:45:27 -0800")
+Message-ID: <m28w0tzffv.fsf@whitebox.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.90 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289840723-3056-2-git-send-email-josef@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 15-11-10 12:05:18, Josef Bacik wrote:
-> diff --git a/fs/open.c b/fs/open.c
-> index 4197b9e..ab8dedf 100644
-> --- a/fs/open.c
-> +++ b/fs/open.c
-> @@ -223,7 +223,7 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
->  		return -EINVAL;
->  
->  	/* Return error if mode is not supported */
-> -	if (mode && !(mode & FALLOC_FL_KEEP_SIZE))
-> +	if (mode && (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE)))
-  Why not just:
-if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE)) ?
+Jesse Barnes <jbarnes@virtuousgeek.org> writes:
 
-> diff --git a/include/linux/falloc.h b/include/linux/falloc.h
-> index 3c15510..851cba2 100644
-> --- a/include/linux/falloc.h
-> +++ b/include/linux/falloc.h
-> @@ -2,6 +2,7 @@
->  #define _FALLOC_H_
->  
->  #define FALLOC_FL_KEEP_SIZE	0x01 /* default is extend size */
-> +#define FALLOC_FL_PUNCH_HOLE	0X02 /* de-allocates range */
-                                 ^ use lowercase 'x' please...
+> Martin Wilck (1):
+>       PCI: fix size checks for mmap() on /proc/bus/pci files
 
+That breaks X.
 
-								Honza
+process "X" tried to map 0x00010000 bytes at page 0x00000000 on 0000:00:10.0 BAR 2 (start 0x        90000000, size 0x           10000)
+------------[ cut here ]------------
+WARNING: at drivers/pci/pci-sysfs.c:758
+Modules linked in: usb_storage uas uinput cpufreq_conservative rfcomm cpufreq_userspace cpufreq_powersave sco bridge stp llc bnep l2cap crc16 snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device tun nf_conntrack_ipv6 nf_defrag_ipv6 ip6t_REJECT ip6t_LOG ip6table_filter ip6_tables xt_TCPMSS xt_recent ipt_MASQUERADE xt_state ipt_REJECT ipt_LOG xt_tcpudp iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 iptable_filter ip_tables x_tables loop dm_mod btusb bluetooth arc4 snd_aoa_codec_tas ecb snd_aoa_fabric_layout snd_aoa snd_aoa_i2sbus snd_pcm b43 joydev mac80211 snd_timer snd_page_alloc firewire_ohci appletouch snd soundcore cfg80211 sungem sungem_phy firewire_core rfkill sr_mod crc_itu_t sg snd_aoa_soundbus ssb cdrom sd_mod pata_macio libata scsi_mod
+NIP: c0177b10 LR: c0177b10 CTR: 00000001
+REGS: c2461d90 TRAP: 0700   Tainted: G        W    (2.6.37-rc2)
+MSR: 00029032 <EE,ME,CE,IR,DR>  CR: 20000824  XER: 20000000
+TASK = c2568d00[2009] 'X' THREAD: c2460000
+GPR00: c0177b10 c2461e40 c2568d00 0000008a 00006a86 ffffffff c055fb36 c055febc 
+GPR08: 000069fe c0440000 c055febc c2461e00 ffffffff 1022e9e4 10226a14 00000000 
+GPR16: 103eadc0 00000000 00000001 1022bf1c ef136688 00000000 ffffffea 00000001 
+GPR24: 00000000 00000000 00000000 00010000 ef806d68 ef136688 00000002 ef806c38 
+NIP [c0177b10] pci_mmap_resource+0xf0/0x174
+LR [c0177b10] pci_mmap_resource+0xf0/0x174
+Call Trace:
+[c2461e40] [c0177b10] pci_mmap_resource+0xf0/0x174 (unreliable)
+[c2461e80] [c00f7514] mmap+0x74/0xfc
+[c2461eb0] [c008e3e4] mmap_region+0x1e4/0x3bc
+[c2461f00] [c008e93c] sys_mmap_pgoff+0xa4/0xe0
+[c2461f30] [c00060a0] sys_mmap+0x28/0x40
+[c2461f40] [c0010bc4] ret_from_syscall+0x0/0x40
+--- Exception: c01 at 0xfa95f24
+    LR = 0xfd897c8
+Instruction dump:
+3b400000 7fff0214 813f0134 38090001 7f6a0050 3c60c03d 7fc8f378 93410008 
+39200000 3863bd36 9361000c 4819c31d <0fe00000> 3800ffea 48000070 7fc4f378 
+---[ end trace a096109c06ace62c ]---
+
+Andreas.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
