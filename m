@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab0KPSy5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 13:54:57 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:39053 "EHLO e9.ny.us.ibm.com"
+	id S1757002Ab0KPS43 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 13:56:29 -0500
+Received: from mail.lang.hm ([64.81.33.126]:34834 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756147Ab0KPSyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 13:54:54 -0500
-Subject: Re: [PATCH v1.3 4/4] keys: add new key-type encrypted
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-In-Reply-To: <26645.1289929851@redhat.com>
-References: <1289918320.3188.16.camel@localhost.localdomain>
-	 <1289849751.3027.17.camel@localhost.localdomain>
-	 <1289694826.3257.82.camel@localhost.localdomain>
-	 <1289595738.2731.80.camel@localhost.localdomain>
-	 <1289404309-15955-5-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1289404309-15955-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <26689.1289591135@redhat.com> <27900.1289597013@redhat.com>
-	 <8268.1289837934@redhat.com> <23151.1289916524@redhat.com>
-	 <26645.1289929851@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Nov 2010 13:54:50 -0500
-Message-ID: <1289933690.2627.19.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1754269Ab0KPS42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 13:56:28 -0500
+Date: Tue, 16 Nov 2010 10:55:30 -0800 (PST)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Paul Menage <menage@google.com>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+In-Reply-To: <AANLkTik7cR_5JJWfk8SEf3Dngfe7yZvuivJ66dVDOuAk@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1011161047060.3718@asgard.lang.hm>
+References: <1289820766.16406.45.camel@maggy.simson.net> <1289821590.16406.47.camel@maggy.simson.net> <20101115125716.GA22422@redhat.com> <1289856350.14719.135.camel@maggy.simson.net> <20101116015648.GA11534@redhat.com> <1289916171.5169.117.camel@maggy.simson.net>
+ <1289916683.2109.625.camel@laptop> <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com> <20101116170312.GA19327@tango.0pointer.de> <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com> <20101116181603.GC19327@tango.0pointer.de>
+ <1289931715.2109.648.camel@laptop> <AANLkTik7cR_5JJWfk8SEf3Dngfe7yZvuivJ66dVDOuAk@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 17:50 +0000, David Howells wrote:
-> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> 
-> > I actually like keyctl requiring 'trusted:' or 'user:'.  Forcing the
-> > user to indicate which type of key they want, is actually good - no
-> > misunderstandings.
-> 
-> You still need to prefix the description of a user-defined key so that you
-> don't collide with other people who're also using user-defined keys for random things.
+On Tue, 16 Nov 2010, Paul Menage wrote:
 
-ok
+> On Tue, Nov 16, 2010 at 10:21 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>>
+>> Not quite the same, you're nesting one level deeper. But the reality is,
+>> not a lot of people will change their userspace.
+>
+> That's a weak argument - not a lot of people will (explicitly) change
+> their kernel either - they'll get a fresh kernel via their distro
+> updates, as they would get userspace updates. So it's only a few
+> people (distros) that actually need to make such a change.
 
-> > Another benefit, would be allowing 'keyctl update' to update the key
-> > description, not the key type.
-> 
-> You mean you want to change the description on a key?
-> 
-> David
+what is the downside of this patch going to be?
 
-No, this just updates the name of the key used to encrypt/decrypt the
-encrypted key. For example, the encrypted key evm-key is initially
-encrypted/decrypted using 'kmk-trusted'.  After the update, it is
-encrypted/decrypted with 'kmk'.  Both now are trusted keys.
+people who currently expect all the processes to compete equally will now 
+find that they no longer do so. If I am understanding this correctly, this 
+could mean that a box that was dedicated to running one application will 
+now have that application no longer dominate the system, instead it will 
+'share equally' with the housekeeping apps on the system.
 
-$ keyctl show
-Session Keyring
-       -3 --alswrv    500   500  keyring: _ses
-117908125 --alswrv    500    -1   \_ keyring: _uid.500
-501967942 --alswrv    500   500       \_ trusted: kmk-trusted
-317523177 --alswrv    500   500       \_ encrypted: evm-key
-666437381 --alswrv    500   500       \_ trusted: kmk
-$ keyctl print 317523177
-trusted:kmk-trusted 32 ca0ebb83594f14781460 ...
+what would need to be done to revert to the prior situation?
 
-$ keyctl update 317523177 "update trusted:kmk"
-$ keyctl print 317523177
-trusted:kmk 32 ca0ebb83594f1478146 ....
-
-Mimi
-
+David Lang
