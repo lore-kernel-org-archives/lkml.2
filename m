@@ -1,213 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759218Ab0KPCUO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 21:20:14 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:60034 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759184Ab0KPCUM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 21:20:12 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6168"; a="62794906"
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
-To: dwalker@codeaurora.org
-Cc: davidb@codeaurora.org, bryanh@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCH 13/14 v2] msm: iommu: Support cache-coherent memory access
-Date: Mon, 15 Nov 2010 18:20:08 -0800
-Message-Id: <1289874008-23911-1-git-send-email-stepanm@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.2
-In-Reply-To: <1289619000-13167-14-git-send-email-stepanm@codeaurora.org>
-References: <1289619000-13167-14-git-send-email-stepanm@codeaurora.org>
+	id S1759213Ab0KPClD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 21:41:03 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:58252 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753494Ab0KPClA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 21:41:00 -0500
+Date: Tue, 16 Nov 2010 13:40:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for November 16
+Message-Id: <20101116134053.e830b8f0.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__16_Nov_2010_13_40_53_+1100_7bXFc6tdGcZvvW4u"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for allowing IOMMU memory transactions to be
-cache coherent, eliminating the need for software cache
-management in certain situations. This can lead to
-improvements in performance and power usage, assuming the
-multimedia core's access pattern exhibits spatial locality
-and that its working set fits into the cache.
+--Signature=_Tue__16_Nov_2010_13_40_53_+1100_7bXFc6tdGcZvvW4u
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
----
- arch/arm/mach-msm/iommu.c |   93 +++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 82 insertions(+), 11 deletions(-)
+Hi all,
 
-diff --git a/arch/arm/mach-msm/iommu.c b/arch/arm/mach-msm/iommu.c
-index 67e8f53..a468ee3 100644
---- a/arch/arm/mach-msm/iommu.c
-+++ b/arch/arm/mach-msm/iommu.c
-@@ -33,6 +33,16 @@
- #include <mach/iommu_hw-8xxx.h>
- #include <mach/iommu.h>
+Changes since 20101115:
 
-+#define MRC(reg, processor, op1, crn, crm, op2)				\
-+__asm__ __volatile__ (							\
-+"   mrc   "   #processor "," #op1 ", %0,"  #crn "," #crm "," #op2 "\n"  \
-+: "=r" (reg))
-+
-+#define RCP15_PRRR(reg)		MRC(reg, p15, 0, c10, c2, 0)
-+#define RCP15_NMRR(reg)		MRC(reg, p15, 0, c10, c2, 1)
-+
-+static int msm_iommu_tex_class[4];
-+
- DEFINE_SPINLOCK(msm_iommu_lock);
+The v4l-dvb tree still has its build failure, so I used the version from
+next-20101112.
 
- struct msm_priv {
-@@ -98,6 +108,7 @@ static void __reset_context(void __iomem *base, int ctx)
+The net tree lost its build failure but gained another, so I used the
+version from next-20101115.
 
- static void __program_context(void __iomem *base, int ctx, phys_addr_t pgtable)
- {
-+	unsigned int prrr, nmrr;
- 	__reset_context(base, ctx);
+The block tree lost its conflict.
 
- 	/* Set up HTW mode */
-@@ -130,11 +141,11 @@ static void __program_context(void __iomem *base, int ctx, phys_addr_t pgtable)
- 	/* Turn on TEX Remap */
- 	SET_TRE(base, ctx, 1);
+The xen tree lost its conflict.
 
--	/* Do not configure PRRR / NMRR on the IOMMU for now. We will assume
--	 * TEX class 0 for everything until attributes are properly worked out
--	 */
--	SET_PRRR(base, ctx, 0);
--	SET_NMRR(base, ctx, 0);
-+	/* Set TEX remap attributes */
-+	RCP15_PRRR(prrr);
-+	RCP15_NMRR(nmrr);
-+	SET_PRRR(base, ctx, prrr);
-+	SET_NMRR(base, ctx, nmrr);
+The tty tree still has its build failure for which I reverted a commit.
 
- 	/* Turn on BFB prefetch */
- 	SET_BFBDFE(base, ctx, 1);
-@@ -304,12 +315,21 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
- 	unsigned long *sl_table;
- 	unsigned long *sl_pte;
- 	unsigned long sl_offset;
-+	unsigned int pgprot;
- 	size_t len = 0x1000UL << order;
--	int ret = 0;
-+	int ret = 0, tex, sh;
+The bkl-config tree gained a build failure, so I used the version from
+next-20101115.
 
- 	spin_lock_irqsave(&msm_iommu_lock, flags);
--	priv = domain->priv;
+----------------------------------------------------------------------------
 
-+	sh = (prot & MSM_IOMMU_ATTR_SH) ? 1 : 0;
-+	tex = msm_iommu_tex_class[prot & MSM_IOMMU_CP_MASK];
-+
-+	if (tex < 0 || tex > NUM_TEX_CLASS - 1) {
-+		ret = -EINVAL;
-+		goto fail;
-+	}
-+
-+	priv = domain->priv;
- 	if (!priv) {
- 		ret = -EINVAL;
- 		goto fail;
-@@ -330,6 +350,18 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
- 		goto fail;
- 	}
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
 
-+	if (len == SZ_16M || len == SZ_1M) {
-+		pgprot = sh ? FL_SHARED : 0;
-+		pgprot |= tex & 0x01 ? FL_BUFFERABLE : 0;
-+		pgprot |= tex & 0x02 ? FL_CACHEABLE : 0;
-+		pgprot |= tex & 0x04 ? FL_TEX0 : 0;
-+	} else	{
-+		pgprot = sh ? SL_SHARED : 0;
-+		pgprot |= tex & 0x01 ? SL_BUFFERABLE : 0;
-+		pgprot |= tex & 0x02 ? SL_CACHEABLE : 0;
-+		pgprot |= tex & 0x04 ? SL_TEX0 : 0;
-+	}
-+
- 	fl_offset = FL_OFFSET(va);	/* Upper 12 bits */
- 	fl_pte = fl_table + fl_offset;	/* int pointers, 4 bytes */
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
 
-@@ -338,12 +370,12 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
- 		for (i = 0; i < 16; i++)
- 			*(fl_pte+i) = (pa & 0xFF000000) | FL_SUPERSECTION |
- 				  FL_AP_READ | FL_AP_WRITE | FL_TYPE_SECT |
--				  FL_SHARED;
-+				  FL_SHARED | pgprot;
- 	}
+Below is a summary of the state of the merge.
 
- 	if (len == SZ_1M)
- 		*fl_pte = (pa & 0xFFF00000) | FL_AP_READ | FL_AP_WRITE |
--						FL_TYPE_SECT | FL_SHARED;
-+					    FL_TYPE_SECT | FL_SHARED | pgprot;
+We are up to 179 trees (counting Linus' and 26 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
 
- 	/* Need a 2nd level table */
- 	if ((len == SZ_4K || len == SZ_64K) && (*fl_pte) == 0) {
-@@ -368,14 +400,14 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
 
- 	if (len == SZ_4K)
- 		*sl_pte = (pa & SL_BASE_MASK_SMALL) | SL_AP0 | SL_AP1 |
--					  SL_SHARED | SL_TYPE_SMALL;
-+					  SL_SHARED | SL_TYPE_SMALL | pgprot;
+Thanks to Randy Dunlap for doing many randconfig builds.
 
- 	if (len == SZ_64K) {
- 		int i;
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
 
- 		for (i = 0; i < 16; i++)
- 			*(sl_pte+i) = (pa & SL_BASE_MASK_LARGE) | SL_AP0 |
--					    SL_AP1 | SL_SHARED | SL_TYPE_LARGE;
-+				SL_AP1 | SL_SHARED | SL_TYPE_LARGE | pgprot;
- 	}
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- 	__flush_iotlb(domain);
-@@ -593,8 +625,47 @@ static struct iommu_ops msm_iommu_ops = {
- 	.domain_has_cap = msm_iommu_domain_has_cap
- };
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+CONFLICT (content): Merge conflict in drivers/pci/pci-sysfs.c
+Merging hid/for-next
+CONFLICT (content): Merge conflict in drivers/hid/hid-input.c
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+$ git reset --hard HEAD^
+Merging refs/next/20101112/v4l-dvb
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+$ git reset --hard HEAD^
+Merging refs/next/20101115/net
+[master f1ebe6d] Revert "igmp: RCU conversion of in_dev->mc_list"
+Merging wireless/master
+Merging bluetooth/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/Makefile
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-1000=
+.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-3945=
+.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-4965=
+.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-5000=
+.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-6000=
+.c
+CONFLICT (add/add): Merge conflict in drivers/net/wireless/iwlwifi/iwl-agn-=
+rxon.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-agn.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-core=
+.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-core=
+.h
+CONFLICT (add/add): Merge conflict in drivers/net/wireless/iwlwifi/iwl-lega=
+cy.c
+CONFLICT (add/add): Merge conflict in drivers/net/wireless/iwlwifi/iwl-lega=
+cy.h
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+CONFLICT (content): Merge conflict in MAINTAINERS
+CONFLICT (delete/modify): arch/blackfin/mach-bf518/include/mach/defBF51x_ba=
+se.h deleted in HEAD and modified in trivial/for-next. Version trivial/for-=
+next of arch/blackfin/mach-bf518/include/mach/defBF51x_base.h left in tree.
+CONFLICT (delete/modify): arch/blackfin/mach-bf527/include/mach/defBF52x_ba=
+se.h deleted in HEAD and modified in trivial/for-next. Version trivial/for-=
+next of arch/blackfin/mach-bf527/include/mach/defBF52x_base.h left in tree.
+CONFLICT (content): Merge conflict in arch/blackfin/mach-bf538/include/mach=
+/defBF539.h
+CONFLICT (content): Merge conflict in drivers/scsi/bfa/bfa_fcpim.c
+$ git rm -f arch/blackfin/mach-bf518/include/mach/defBF51x_base.h arch/blac=
+kfin/mach-bf527/include/mach/defBF52x_base.h
+Merging audit/for-next
+Merging suspend/linux-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging oprofile/for-next
+Merging xen/upstream/xen
+Merging swiotlb-xen/master
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+[master c6ec692] Revert "ifx6x60: SPI protocol driver for Infineon 6x60 mod=
+em"
+Merging usb/usb-next
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/bcm/Bcmchar.c
+CONFLICT (content): Merge conflict in drivers/staging/intel_sst/intel_sst_a=
+pp_interface.c
+Merging slabh/slabh
+Merging bkl-trivial/trivial
+Merging bkl-llseek/llseek
+Merging bkl-vfs/vfs
+Merging bkl-config/config
+$ git reset --hard HEAD^
+Merging refs/next/20101115/bkl-config
+Merging irqflags/master
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+Merging scsi-post-merge/merge-base:master
 
-+static int __init get_tex_class(int icp, int ocp, int mt, int nos)
-+{
-+	int i = 0;
-+	unsigned int prrr = 0;
-+	unsigned int nmrr = 0;
-+	int c_icp, c_ocp, c_mt, c_nos;
-+
-+	RCP15_PRRR(prrr);
-+	RCP15_NMRR(nmrr);
-+
-+	for (i = 0; i < NUM_TEX_CLASS; i++) {
-+		c_nos = PRRR_NOS(prrr, i);
-+		c_mt = PRRR_MT(prrr, i);
-+		c_icp = NMRR_ICP(nmrr, i);
-+		c_ocp = NMRR_OCP(nmrr, i);
-+
-+		if (icp == c_icp && ocp == c_ocp && c_mt == mt && c_nos == nos)
-+			return i;
-+	}
-+
-+	return -ENODEV;
-+}
-+
-+static void __init setup_iommu_tex_classes(void)
-+{
-+	msm_iommu_tex_class[MSM_IOMMU_ATTR_NONCACHED] =
-+			get_tex_class(CP_NONCACHED, CP_NONCACHED, MT_NORMAL, 1);
-+
-+	msm_iommu_tex_class[MSM_IOMMU_ATTR_CACHED_WB_WA] =
-+			get_tex_class(CP_WB_WA, CP_WB_WA, MT_NORMAL, 1);
-+
-+	msm_iommu_tex_class[MSM_IOMMU_ATTR_CACHED_WB_NWA] =
-+			get_tex_class(CP_WB_NWA, CP_WB_NWA, MT_NORMAL, 1);
-+
-+	msm_iommu_tex_class[MSM_IOMMU_ATTR_CACHED_WT] =
-+			get_tex_class(CP_WT, CP_WT, MT_NORMAL, 1);
-+}
-+
- static int __init msm_iommu_init(void)
- {
-+	setup_iommu_tex_classes();
- 	register_iommu(&msm_iommu_ops);
- 	return 0;
- }
---
-1.7.0.2
+--Signature=_Tue__16_Nov_2010_13_40_53_+1100_7bXFc6tdGcZvvW4u
+Content-Type: application/pgp-signature
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBAgAGBQJM4e81AAoJEDMEi1NhKgbsvMcH/ReViYKSBOYZ17M/pdXELDs1
+uimpELCcE2D8yCvGIPclYaVyo8/jZm49VjFhpATUneKlcE7p0YtsElBCP13AwGvU
+VcHvIsebNZliN4JQJvwazjMyufcEB2DnAKdBYwOp3xlH2rNESUSiT4MeQikrQKlU
+adgkJleJiQUGZUjTPx4wuAYy7x0lfqdqrBdXlCxFb2xNfSxEKRK7ltXKQoAH+euV
+YB0m9Sjq1uALB6a/TuHwgtF+fN0M3EuVCwNS+5x/rH4JErXK6AbGqaJuC+/zxMFZ
+cUVdlYhQvYyHOJNlrP9LtH0/6YZzyjxGqkyBNpNzg4RvZKlsOs7pizzgkoNHDDk=
+=yn/0
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__16_Nov_2010_13_40_53_+1100_7bXFc6tdGcZvvW4u--
