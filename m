@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab0KPU2q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:28:46 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:64842 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751955Ab0KPU2p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:28:45 -0500
-Message-ID: <4CE2E985.4050102@vlnb.net>
-Date: Tue, 16 Nov 2010 23:28:53 +0300
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	id S1755560Ab0KPU2w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:28:52 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:33664 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755199Ab0KPU2t convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 15:28:49 -0500
+Date: Tue, 16 Nov 2010 15:28:44 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: David Sharp <dhsharp@google.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Michael Rubin <mrubin@google.com>
+Subject: Re: Benchmarks of kernel tracing options (ftrace, ktrace, lttng
+	and perf)
+Message-ID: <20101116202844.GA1016@Krystal>
+References: <AANLkTim8c+FLo11XJbTmTjiuucn-9UJD0Vui=fvUgCd+@mail.gmail.com> <AANLkTikd6sawwJeBm76QLeowXj0GBAf=wpRVgG8x5MOp@mail.gmail.com> <AANLkTi=Dw-dxkUgYLZYBKb5sGYcdGcpS0OH_fEHW51Jr@mail.gmail.com> <AANLkTi=6EBZeZ+56z_wbDuU1xTmC0saSTMDmqbqDS4Jr@mail.gmail.com>
 MIME-Version: 1.0
-To: Matthew Wilcox <matthew@wil.cx>
-CC: Luben Tuikov <ltuikov@yahoo.com>, Greg KH <greg@kroah.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        tj@kernel.org, James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: SCSI TMF processing; tag allocation
-References: <380694.87733.qm@web31812.mail.mud.yahoo.com> <20101113123750.GF18258@parisc-linux.org>
-In-Reply-To: <20101113123750.GF18258@parisc-linux.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:l73zcBhYrS5iGxxs+K2kz7x9fereWHYQDXRUH29hlWm
- zM+S+FcdDV00ZT6DqbCT1ONCntWe21YLmh4aOABdOpMKEyWVgK
- N5n0gYI+fSaxj2E/Rkzs2XZ7rydO6W77D72tX9MM3DirNWrI50
- Yv56ELNhBrHgNXQ5arLgnHc2lRQRP1xbXIpFPvQY1tLYR52MoX
- yQEHj698GLUdnTEG/YfHw==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <AANLkTi=6EBZeZ+56z_wbDuU1xTmC0saSTMDmqbqDS4Jr@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 15:21:22 up 55 days, 23 min,  7 users,  load average: 0.09, 0.14,
+	0.10
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Wilcox, on 11/13/2010 03:37 PM wrote:
-> SPC-4 seems to indicate (in the INQUIRY command, 6.4.2) that support
-> for queueing is now non-optional, and even support for basic queueing
-> has been removed, replaced only with the 'command management model'.
-> I must confess to being somewhat confused by the difference between the
-> 'basic queue' model and 'command management' model
+* David Sharp (dhsharp@google.com) wrote:
+[...]
+> Results for amount of time to execute a tracepoint (includes previous results):
+> ktrace: 200ns   (old)
+> ftrace: 224ns   (old, w/ handcoded tracepoint, not syscall tracing)
+> lttng: 449ns    (new)
+> perf: 1047ns    (new)
+> 
+> Also interesting:
+> ftrace: 587ns   (old, w/ syscall tracing)
+> This just shows that syscall tracing is much slower than a normal tracepoint.
 
-The 'command management model' is what was called 'full task management
-model' in SAM-3. The difference of it with 'basic task management model'
-in SAM-3 is that (basically) in the latter:
+As I pointed out in my email a few weeks ago, the LTTng comparison is simply
+bogus because the "syscall tracing" thread-flag is active, which calls into
+syscall tracing, after saving all registers, from entry_*.S, both at syscall
+entry and exit.
 
- - Support only for SIMPLE or ORDERED commands (not both)
+I did benchmarks using Steven's ring_buffer_benchmark kernel module, which calls
+tracing in a loop, for both Ftrace and the Generic Ring Buffer (which is derived
+from LTTng). The results are:
 
- - For SIMPLE commands their reorder can't be controlled
+Intel Xeon 2.0GHz
 
- - On any error all queued commands must be aborted and this behavior
-can't be controlled.
+ftrace:  103 ns/entry (no reader)
+lttng:    83 ns/entry (no reader) (with the generic ring buffer library)
 
-Vlad
+So, given that even after I pointed out that the results above were bogus,
+people took the numbers for granted, and given that David seems busy on other
+things, I thought I should set records straight.
 
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
