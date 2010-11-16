@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934185Ab0KPKG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 05:06:57 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:64158 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932529Ab0KPKGy (ORCPT
+	id S934191Ab0KPKHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 05:07:43 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55799 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932529Ab0KPKHm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 05:06:54 -0500
-Date: Tue, 16 Nov 2010 19:03:09 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, balbir@linux.vnet.ibm.com,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC PATCH] Make swap accounting default behavior configurable
- v3
-Message-Id: <20101116190309.4c767874.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20101116081544.GA19247@tiehlicka.suse.cz>
-References: <20101110125154.GC5867@tiehlicka.suse.cz>
-	<20101111094613.eab2ec0b.nishimura@mxp.nes.nec.co.jp>
-	<20101111093155.GA20630@tiehlicka.suse.cz>
-	<20101112094118.b02b669f.nishimura@mxp.nes.nec.co.jp>
-	<20101112083103.GB7285@tiehlicka.suse.cz>
-	<20101115101335.8880fd87.nishimura@mxp.nes.nec.co.jp>
-	<20101115083540.GA20156@tiehlicka.suse.cz>
-	<20101116134800.7d8b612d.nishimura@mxp.nes.nec.co.jp>
-	<20101116081544.GA19247@tiehlicka.suse.cz>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Nov 2010 05:07:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=p591J2pV+FtYDmdLc6A3CSgLCrbaXTHQwFeaFuCtpLhUufi+esVI4fQbfri+QNnXtM
+         QA53gG7+btuX2CAkl0YzRKlUnnupUJoVPaZW7hPHwF91i7Vp4mtpRAp0B/Nuzl59pJri
+         zmsARbvBg4A75AMiwFeGBulEF760JZp7eYJno=
+MIME-Version: 1.0
+In-Reply-To: <20101115183014.GD31421@n2100.arm.linux.org.uk>
+References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
+	<1289584840-18097-6-git-send-email-catalin.marinas@arm.com>
+	<20101115183014.GD31421@n2100.arm.linux.org.uk>
+Date: Tue, 16 Nov 2010 10:07:41 +0000
+X-Google-Sender-Auth: 4KAt1LVpz-rrX5L2VCJd7E3NwZk
+Message-ID: <AANLkTi=dFXu=tGRRJt0cKbm8r528Sk9mHoLZ-Lh+oQ6y@mail.gmail.com>
+Subject: Re: [PATCH v2 05/20] ARM: LPAE: Introduce L_PTE_NOEXEC and L_PTE_NOWRITE
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Nov 2010 09:15:44 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+On 15 November 2010 18:30, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Nov 12, 2010 at 06:00:25PM +0000, Catalin Marinas wrote:
+>> --- a/arch/arm/include/asm/pgtable-2level.h
+>> +++ b/arch/arm/include/asm/pgtable-2level.h
+>> @@ -128,6 +128,8 @@
+>>  #define L_PTE_USER           (1 << 8)
+>>  #define L_PTE_EXEC           (1 << 9)
+>>  #define L_PTE_SHARED         (1 << 10)       /* shared(v6), coherent(xsc3) */
+>> +#define L_PTE_NOEXEC         (0)
+>> +#define L_PTE_NOWRITE                (0)
+>
+> Let's not make this more complicated than it has to be.  If we need the
+> inverse of WRITE and EXEC, then that's what we should change everyone to,
+> not invent a new system to work along side the old system.
 
-> On Tue 16-11-10 13:48:00, Daisuke Nishimura wrote:
-> > Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> 
-> Thank you. What should be next steps? Waiting for other ACKs or push it
-> through Andrew?
-I recommend you to resend the patch removing "RFC" in a clean patch format
-(i.e. without any quotes).
+Yes, that's fine.
 
-> Btw. is this a stable tree material? I guess that distribution would
-> like to have this patch and the stable is the easiest way how to deliver
-> this.
-> 
-It's not stable material. This is not a BUG or anything that meets the conditions
-described in Documentation/stable_kernel_rules.txt.
+For PMD, we may still need a dummy PMD_SECT_AP_WRITE for the 3-level
+definitions unless we change the __pmd() accessor or __pmd_populate().
 
-
-Thanks,
-Daisuke Nishimura.
+-- 
+Catalin
