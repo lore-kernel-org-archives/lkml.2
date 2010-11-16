@@ -1,70 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759008Ab0KPBTN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 20:19:13 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41133 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754553Ab0KPBTM (ORCPT
+	id S1759046Ab0KPBVG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 20:21:06 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:17116 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754553Ab0KPBVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 20:19:12 -0500
+	Mon, 15 Nov 2010 20:21:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-operating-system
+         :user-agent;
+        b=VqIHr4dBFy83G5ASvjgtTq4gPcCNkPEHzeWIe8Vb0xTdDkEXpbtyw6C7tClkZ7/j47
+         zqkWCtOvGBBXONyNeycQ==
+Date: Mon, 15 Nov 2010 16:03:59 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Ying Han <yinghan@google.com>,
+        linux-kernel@vger.kernel.org, gspencer@chromium.org,
+        piman@chromium.org, wad@chromium.org, olofj@chromium.org,
+        Bodo Eggert <7eggert@web.de>
+Subject: [PATCH v3] oom: allow a non-CAP_SYS_RESOURCE proces to
+ oom_score_adj down
+Message-ID: <20101116000359.GS7363@google.com>
+References: <alpine.DEB.2.00.1011102328080.7571@chino.kir.corp.google.com>
+ <20101111183050.GI7363@google.com>
+ <alpine.DEB.2.00.1011111241450.25829@chino.kir.corp.google.com>
+ <20101111222509.GJ7363@google.com>
+ <alpine.DEB.2.00.1011111511570.3775@chino.kir.corp.google.com>
+ <20101111235620.GK7363@google.com>
+ <20101113004657.GN7363@google.com>
+ <alpine.DEB.2.00.1011131735240.27212@chino.kir.corp.google.com>
+ <20101115220150.GR7363@google.com>
+ <alpine.DEB.2.00.1011151404080.17082@chino.kir.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <1289865870.14719.185.camel@maggy.simson.net>
-References: <1287479765.9920.9.camel@marge.simson.net> <1287487757.24189.40.camel@marge.simson.net>
- <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
- <1287511983.7417.45.camel@marge.simson.net> <1287514410.7368.10.camel@marge.simson.net>
- <20101020025652.GB26822@elte.hu> <1287648715.9021.20.camel@marge.simson.net>
- <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
- <20101021162924.GA3225@redhat.com> <1288076838.11930.1.camel@marge.simson.net>
- <1288078144.7478.9.camel@marge.simson.net> <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
- <1289489200.11397.21.camel@maggy.simson.net> <30291.1289860866@localhost>
- <1289864780.14719.172.camel@maggy.simson.net> <AANLkTikztvdgFucCUjZ+A5Je-LUKLknV5+aznVvL98oQ@mail.gmail.com>
- <1289865870.14719.185.camel@maggy.simson.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 15 Nov 2010 17:18:50 -0800
-Message-ID: <AANLkTik53N7HMyXMOEzh2Qr_4gg9eXSmXiT6TQ9gFC+h@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-To: Mike Galbraith <efault@gmx.de>
-Cc: Valdis.Kletnieks@vt.edu, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Paul Menage <menage@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1011151404080.17082@chino.kir.corp.google.com>
+X-Operating-System: Linux/2.6.32-gg252-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm. Just found a bug. I'm not sure if it's the autogroup patches
-themselves, or whether it's just the cgroup code that the autogroup
-patch enables for me.
+We'd like to be able to oom_score_adj a process up/down as its
+enters/leaves the foreground. Currently, it is not possible to oom_adj
+down without CAP_SYS_RESOURCE. This patch allows a task to decrease
+its oom_score_adj back to the value that a CAP_SYS_RESOURCE thread set
+it or its inherited value at fork. Assuming the thread that has forked
+it has oom_score_adj of 0, each tab process could decrease it back from
+0 upon activation unless a CAP_SYS_RESOURCE thread elevated it to
+something higher.
 
-When I do
+Alternative considered:
 
-   echo t > /proc/sysrq-trigger
+* a setuid binary
+* a daemon with CAP_SYS_RESOURCE
 
-(or "w") I get a NULL pointer dereference (offset 0x38 - decimal 56)
-in "cgroup_path+0x7", with a call trace of sched_debug_show,
-show_state_filter, sysrq_handle_showstate_blocked. I don't have the
-whole oops, because the machine is really dead at that point
-(presumably died holding the runqueue lock or some other critical
-resource), but if required I could take a photo of it. However, I bet
-it is repeatable, so I doubt you need it.
+Since you don't wan't all processes to be able to reduce their
+oom_adj, a setuid or daemon implementation would be complex. The
+alternatives also have much higher overhead.
 
-Anyway, that "cgroup_path+0x7" is the very first memory dereference:
+This patch updated from original patch based on feedback from
+David Rientjes <rientjes@google.com>.
 
-    movq    56(%rdi), %rsi  # cgrp_5(D)->dentry, _________p1
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Acked-by: David Rientjes <rientjes@google.com>
+---
+ Documentation/filesystems/proc.txt |    4 ++++
+ fs/proc/base.c                     |    4 +++-
+ include/linux/sched.h              |    2 ++
+ kernel/fork.c                      |    1 +
+ 4 files changed, 10 insertions(+), 1 deletions(-)
 
-so sched_debug_show() is apparently calling cgroup_path() with a NULL
-cgroup. I think it's "print_task()" that is to blame, it does
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index e73df27..7139c50 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -1296,6 +1296,10 @@ scaled linearly with /proc/<pid>/oom_score_adj.
+ Writing to /proc/<pid>/oom_score_adj or /proc/<pid>/oom_adj will change the
+ other with its scaled value.
+ 
++The value of /proc/<pid>/oom_score_adj may be reduced no lower than the last
++value set by a CAP_SYS_RESOURCE process. To reduce the value any lower
++requires CAP_SYS_RESOURCE.
++
+ NOTICE: /proc/<pid>/oom_adj is deprecated and will be removed, please see
+ Documentation/feature-removal-schedule.txt.
+ 
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index f3d02ca..7b1a9df 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1164,7 +1164,7 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 		goto err_task_lock;
+ 	}
+ 
+-	if (oom_score_adj < task->signal->oom_score_adj &&
++	if (oom_score_adj < task->signal->oom_score_adj_min &&
+ 			!capable(CAP_SYS_RESOURCE)) {
+ 		err = -EACCES;
+ 		goto err_sighand;
+@@ -1177,6 +1177,8 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
+ 			atomic_dec(&task->mm->oom_disable_count);
+ 	}
+ 	task->signal->oom_score_adj = oom_score_adj;
++	if (has_capability_noaudit(current, CAP_SYS_RESOURCE))
++		task->signal->oom_score_adj_min = oom_score_adj;
+ 	/*
+ 	 * Scale /proc/pid/oom_adj appropriately ensuring that OOM_DISABLE is
+ 	 * always attainable.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index f53cdf2..2a71ee0 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -626,6 +626,8 @@ struct signal_struct {
+ 
+ 	int oom_adj;		/* OOM kill score adjustment (bit shift) */
+ 	int oom_score_adj;	/* OOM kill score adjustment */
++	int oom_score_adj_min;	/* OOM kill score adjustment minimum value.
++				 * Only settable by CAP_SYS_RESOURCE. */
+ 
+ 	struct mutex cred_guard_mutex;	/* guard against foreign influences on
+ 					 * credential calculations
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 3b159c5..0979527 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -907,6 +907,7 @@ static int copy_signal(unsigned long clone_flags, struct task_struct *tsk)
+ 
+ 	sig->oom_adj = current->signal->oom_adj;
+ 	sig->oom_score_adj = current->signal->oom_score_adj;
++	sig->oom_score_adj_min = current->signal->oom_score_adj_min;
+ 
+ 	mutex_init(&sig->cred_guard_mutex);
+ 
+-- 
+1.7.3.1
 
-     cgroup_path(task_group(p)->css.cgroup, ..
-
-without checking whether there _is_ any css.cgroup.
-
-Peter, that looks like your code (commit d19ca30874f2)
-
-Guys?
-
-                      Linus
