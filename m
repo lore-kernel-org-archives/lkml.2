@@ -1,106 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382Ab0KPUqR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:46:17 -0500
-Received: from xenotime.net ([72.52.115.56]:42689 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755910Ab0KPUqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:46:15 -0500
-Date: Tue, 16 Nov 2010 12:46:09 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Joe Perches <joe@perches.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Florian Mickler <florian@mickler.org>,
-        Jiri Kosina <trivial@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
- preference tool
-Message-Id: <20101116124609.382e42fb.rdunlap@xenotime.net>
-In-Reply-To: <1289940156.28741.207.camel@Joe-Laptop>
-References: <1289845830.16461.149.camel@Joe-Laptop>
-	<20101115190738.GF3338@sirena.org.uk>
-	<1289848458.16461.150.camel@Joe-Laptop>
-	<20101115193407.GK12986@rakim.wolfsonmicro.main>
-	<1289850773.16461.166.camel@Joe-Laptop>
-	<20101116104921.GL12986@rakim.wolfsonmicro.main>
-	<1289919077.28741.50.camel@Joe-Laptop>
-	<20101116183707.179964dd@schatten.dmk.lab>
-	<20101116181226.GB26239@rakim.wolfsonmicro.main>
-	<20101116203522.65240b18@schatten.dmk.lab>
-	<20101116195530.GA7523@rakim.wolfsonmicro.main>
-	<20101116122102.86e7e0b9.rdunlap@xenotime.net>
-	<1289940156.28741.207.camel@Joe-Laptop>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757558Ab0KPUqc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:46:32 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39017 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755554Ab0KPUqb convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 15:46:31 -0500
+MIME-Version: 1.0
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 16 Nov 2010 12:45:43 -0800
+Message-ID: <AANLkTi=34dJ1HJco8gw=Y+7Ear3mC+XnahqODhnn+56u@mail.gmail.com>
+Subject: nouveau build failure (was Re: Linux 2.6.37-rc2)
+To: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
+        Martin Peres <martin.peres@ensi-bourges.fr>,
+        Ben Skeggs <bskeggs@redhat.com>, Dave Airlie <airlied@linux.ie>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Nov 2010 12:42:36 -0800 Joe Perches wrote:
+Looks like commit 34e9d85a1aae ("drm/nouveau: Add temperature support
+(vbios parsing, readings, hwmon)") didn't make things properly
+dependent on CONFIG_HWMON (or do the appropriate "select HWMON" or
+whatever).
 
-> On Tue, 2010-11-16 at 12:21 -0800, Randy Dunlap wrote:
-> > On Tue, 16 Nov 2010 19:55:31 +0000 Mark Brown wrote:
-> > I don't know what you asked Joe to change, but asking someone to use
-> > the documented canonical patch format:
-> > <quote>
-> > The canonical patch subject line is:
-> >     Subject: [PATCH 001/123] subsystem: summary phrase
-> > </quote>
-> > should be fine.  And there is no need for printf-ish templates
-> > for this in MAINTAINERS either.
-> 
-> I've never read that before.  Learn something new etc...
-> It seems path prefixes aren't good nor even commonly used.
-> 
-> A review of kernel patch subjects:
-> 
-> $ git log --no-merges --pretty=oneline | \
-> 	cut -f2- -d" " | cut -f1 -d: | sort | uniq -c | sort -rn
-> 
-> is interesting.  Here's the head:
->    5007 x86
->    3943 Staging
->    3220 USB
->    2790 sh
->    2707 KVM
->    2624 ARM
->    2449 ALSA
->    1571 Input
->    1549 ASoC
->    1470 iwlwifi
->    1423 ACPI
->    1397 mac80211
->    1384 V4L/DVB
->    1226 sched
->    1200 Btrfs
->    1184 powerpc
->    1106 [NETFILTER]
->    1080 MIPS
->    1049 net
->    1047 ide
->    1014 drm/i915
->     993 staging
->     921 ath9k
+Added some collection of hopefully more relevant people to the discussion..
 
-$ARCH is a commonly accepted substitute for subsystem.
+                  Linus
 
-And yes, lots of people use <drivername> there as well.
-
-
-> Some subsystem maintainers like upper case, some mixed, some lower.
-> Some aren't consistent.  (Staging/staging)
-
-Case usually doesn't matter to most of us.
-
-> It doesn't seem a rule can be pregenerated so maybe adding these
-> "C:" lines to MAINTAINERS has some value.
-
-Hopefully it won't go that far.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+On Tue, Nov 16, 2010 at 12:35 PM, Zimny Lech
+<napohybelskurwysynom2010@gmail.com> wrote:
+>
+>  LD      vmlinux.o
+>  MODPOST vmlinux.o
+> WARNING: modpost: Found 7 section mismatch(es).
+> To see full details build your kernel with:
+> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+>  GEN     .version
+>  CHK     include/generated/compile.h
+>  UPD     include/generated/compile.h
+>  CC      init/version.o
+>  LD      init/built-in.o
+>  LD      .tmp_vmlinux1
+> drivers/built-in.o: In function `nouveau_pm_fini':
+> (.text+0xe1857): undefined reference to `hwmon_device_unregister'
+> drivers/built-in.o: In function `nouveau_pm_init':
+> (.text+0xe1b4d): undefined reference to `hwmon_device_register'
+> drivers/built-in.o: In function `nouveau_pm_init':
+> (.text+0xe1bef): undefined reference to `hwmon_device_unregister'
+> make[1]: *** [.tmp_vmlinux1] Error 1
+> make: *** [sub-make] Error 2
