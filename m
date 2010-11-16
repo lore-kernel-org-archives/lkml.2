@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab0KPRIk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 12:08:40 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56375 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934Ab0KPRIk convert rfc822-to-8bit (ORCPT
+	id S1755202Ab0KPRLJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 12:11:09 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40137
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751934Ab0KPRLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 12:08:40 -0500
-Subject: RE: [RFC][PATCH] irq_work: Don't ignore possible cmpxchg failure
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: "Aguirre, Sergio" <saaguirre@ti.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Huang Ying <ying.huang@intel.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Kyle McMartin <kyle@mcmartin.ca>
-In-Reply-To: <A24693684029E5489D1D202277BE89447382A55A@dlee02.ent.ti.com>
-References: <1289925179-17085-1-git-send-email-saaguirre@ti.com>
-	 <1289925901.2109.629.camel@laptop>
-	 <A24693684029E5489D1D202277BE89447382A55A@dlee02.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 16 Nov 2010 18:08:46 +0100
-Message-ID: <1289927326.2109.631.camel@laptop>
+	Tue, 16 Nov 2010 12:11:08 -0500
+Date: Tue, 16 Nov 2010 09:11:32 -0800 (PST)
+Message-Id: <20101116.091132.193732351.davem@davemloft.net>
+To: tomoya-linux@dsn.okisemi.com
+Cc: mkl@pengutronix.de, wg@grandegger.com, w.sang@pengutronix.de,
+        chripell@fsfe.org, 21cnbao@gmail.com, sameo@linux.intel.com,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, andrew.chih.howe.khor@intel.com,
+        qi.wang@intel.com, margie.foster@intel.com, yong.y.wang@intel.com,
+        masa-korg@dsn.okisemi.com, kok.howg.ewe@intel.com,
+        joel.clark@intel.com
+Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Add
+ Flow control,
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <001401cb854d$b46e13c0$66f8800a@maildom.okisemi.com>
+References: <4CE0EFA7.9020007@dsn.okisemi.com>
+	<4CE0F92A.40308@pengutronix.de>
+	<001401cb854d$b46e13c0$66f8800a@maildom.okisemi.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 10:57 -0600, Aguirre, Sergio wrote:
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+Date: Tue, 16 Nov 2010 14:18:26 +0900
 
-> > > @@ -145,7 +145,10 @@ void irq_work_run(void)
-> > >  		 * Clear the BUSY bit and return to the free state if
-> > >  		 * no-one else claimed it meanwhile.
-> > >  		 */
-> > > -		cmpxchg(&entry->next, next_flags(NULL, IRQ_WORK_BUSY), NULL);
-> > > +		xchgres = cmpxchg(&entry->next,
-> > > +				  next_flags(NULL, IRQ_WORK_BUSY),
-> > > +				  NULL);
-> > > +		BUG_ON(unlikely(xchgres != next_flags(NULL, IRQ_WORK_BUSY)));
-> > 
-> > simply adding (void) in front would be much easier.
+> On Monday, November 15, 2010 6:11 PM, Marc Kleine-Budde wrote:
+>> Please make it one patch per topic. A review of your patch will follow.
 > 
-> But isn't that still leaving the remote possibility of a hidden cmpxchg
-> Failure open?
+> It's too late now.
+> This is difficult to separete patch per topic from current our CAN driver.
 
-No, we don't care if it fails, read the comment. All we want to know is
-that if it still matched, we flipped the bit.
+I am not applying your patches unless you split them up properly.
+
+None of your excuses for not doing this fundamental task are
+reasonable.
+
+Thanks.
