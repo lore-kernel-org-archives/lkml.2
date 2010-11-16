@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759308Ab0KPDwj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 22:52:39 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56920 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755877Ab0KPDwi (ORCPT
+	id S1759284Ab0KPDzg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 22:55:36 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:50068 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756134Ab0KPDzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 22:52:38 -0500
+	Mon, 15 Nov 2010 22:55:35 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 16 Nov 2010 12:47:04 +0900
+Date: Tue, 16 Nov 2010 12:50:04 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Greg Thelen <gthelen@google.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -18,11 +18,12 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Wu Fengguang <fengguang.wu@intel.com>,
         Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] memcg: avoid "free" overflow in
- memcg_hierarchical_free_pages()
-Message-Id: <20101116124704.c68288b5.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1289292853-7022-1-git-send-email-gthelen@google.com>
-References: <1289292853-7022-1-git-send-email-gthelen@google.com>
+Subject: Re: [PATCH 1/6] memcg: add mem_cgroup parameter to
+ mem_cgroup_page_stat()
+Message-Id: <20101116125004.428b6eac.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1289294671-6865-2-git-send-email-gthelen@google.com>
+References: <1289294671-6865-1-git-send-email-gthelen@google.com>
+	<1289294671-6865-2-git-send-email-gthelen@google.com>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -32,16 +33,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  9 Nov 2010 00:54:13 -0800
+On Tue,  9 Nov 2010 01:24:26 -0800
 Greg Thelen <gthelen@google.com> wrote:
 
-> memcg limit and usage values are stored in res_counter, as 64-bit
-> numbers, even on 32-bit machines.  The "free" variable in
-> memcg_hierarchical_free_pages() stores the difference between two
-> 64-bit numbers (limit - current_usage), and thus should be stored
-> in a 64-bit local rather than a machine defined unsigned long.
+> This new parameter can be used to query dirty memory usage
+> from a given memcg rather than the current task's memcg.
 > 
-> Reported-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 > Signed-off-by: Greg Thelen <gthelen@google.com>
 
 Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
