@@ -1,98 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759311Ab0KPGXf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 01:23:35 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:21873 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756993Ab0KPGXd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 01:23:33 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jwJH6ZAUtj3/I9zc02Gj5Oj1sdYIvWOcs6KBDpy1G33ane/zxMH5l8Ksp72HU8wNYs
-         gVO39kkULpPFZs9F4lHA==
-MIME-Version: 1.0
-In-Reply-To: <jwvoc9qh4yp.fsf-monnier+gmane.comp.embedded.openwrt.devel@gnu.org>
-References: <01784A8B-36A0-4E8A-9729-23C2B19351F8@mac.com>
-	<AANLkTi=UxhRdcDaoKaYVWhPkp_e-uLF4=zhXs7gutkgx@mail.gmail.com>
-	<20101106181202.GA6927@kroah.com>
-	<39580686-A899-4689-BAAD-AF5546B34E49@mac.com>
-	<AANLkTimVsUsrmTvsHqFiqJh1hhryMBemGyW+kYLKGgEu@mail.gmail.com>
-	<20101107155757.GA13736@kroah.com>
-	<AANLkTik=UWwRLOaHMfVifYiQPpSwoYuA6J1EoL5BOgJY@mail.gmail.com>
-	<jwvoc9qh4yp.fsf-monnier+gmane.comp.embedded.openwrt.devel@gnu.org>
-Date: Mon, 15 Nov 2010 22:23:29 -0800
-Message-ID: <AANLkTimFkdArTMscJOiPf-YwKaEKsq59XM_u4Twes4PP@mail.gmail.com>
-Subject: Re: Forked android kernel development from linux kernel mainline
-From: Brian Swetland <swetland@google.com>
-To: Stefan Monnier <monnier@iro.umontreal.ca>
+	id S932678Ab0KPGZg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 01:25:36 -0500
+Received: from mga11.intel.com ([192.55.52.93]:24441 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932251Ab0KPGZf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 01:25:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,204,1288594800"; 
+   d="scan'208";a="858006202"
+Date: Tue, 16 Nov 2010 13:05:07 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: "shaohui.zheng@linux.intel.com" <shaohui.zheng@linux.intel.com>,
+        lethal@linux-sh.org
 Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Subject: Re: [v2,5/8] NUMA Hotplug emulator
+Message-ID: <20101116050507.GA21317@shaohui>
+Reply-To: shaohui.zheng@linux.intel.com
+Mail-Followup-To: "shaohui.zheng@linux.intel.com" <shaohui.zheng@linux.intel.com>,
+	lethal@linux-sh.org, linux-kernel@vger.kernel.org
+References: <20101116041330.GA20694@shaohui>
+ <20101116054747.GA1064@linux-sh.org>
+ <A24AE1FFE7AEC5489F83450EE98351BF27D53BCC36@shsmsx502.ccr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <A24AE1FFE7AEC5489F83450EE98351BF27D53BCC36@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 9:34 AM, Stefan Monnier
-<monnier@iro.umontreal.ca> wrote:
->> Just a small comment to say that Android is not the only one (but
->> certainly the most visible, and thus easiest to bash on) not making
->> effort to get their stuff in mainline.
->
-> It's not only that.  But Android in general is also a very poor citizen
-> w.r.t Free Software since it tends to be distributed in closed form for
-> devices that only work if you add proprietary code, and it supports
-> DRM-style nightmares.
+> 
+> On Tue, Nov 16, 2010 at 12:13:30PM +0800, Shaohui Zheng wrote:
+> > >This looks like an incredibly painful interface. How about scrapping all
+> > >of this _emu() mess and just reworking the register_cpu() interface?
+> > > Something like:
+> > 
+> > hi, Paul
+> > 	I saw your reply on patchwork.kernel.org, but I did not find your email 
+> > in my mailbox, you might forget to cc to me.
+> > 
+> Then fix your mailer. You are presently forcing Mail-Followup-To to the
+> list, which in turn is dropping you from the cc on a group reply.
 
-We release the userspace and kernel work we do under Apache2/BSD/MIT
-and GPLv2 respectively.
+My mailer is mutt, and I did not configure "Mail-Follow-To", it should use the
+default value. I add "set followup_to=no" to my ~/muttrc file now.
 
-We have always insisted on only GPLv2 code for kernel drivers, and
-have never supported binary loadable kernel drivers.
+Hope it is got fixed, thanks you for your remind.
 
-We typically have to deal with some proprietary userspace libraries
-(opengl es 2 libraries are a typical example), though we've been
-working to reduce the number from release to release.  This is an
-artifact of the current SoC offerings more than any policy we have --
-we much prefer entirely open solutions and actively pursue them
-whenever possible.
+> 
+> > 	I think that your register_cpu_node interface seems good, but this will 
+> > remove the interface register_cpu. it is not the original purpose of the 
+> > emulator, we want to emulate the oringal process, but we did not want to change
+> > the old interface, that is a rule.
+> > 
+> Wait, what? How does my patch remove register_cpu()? It does no such
+> thing, all it does is add a supplemental register_cpu_node() for you to
+> call in to, without needing to carry any of the _emu() damage around. The
+> old interface has not been modified in any way whatsoever.
 
-I'm not sure what DRM-style nightmares we're talking about -- last I
-looked, the stock Android platform doesn't have any DRM support of any
-sort built-in.
+I recheck your patch, It seems that I misunderstand it. with your function
+register_cpu_node, we can call it in arch_cpu_probe, and then we need not the _emu()
+any more. Our _emu() functions work, but it get thing complicated. :)
 
-We certainly can't demand that every OEM work this way, but so it goes.
+I will rework patch 4 and patch 5 with your suggestion, thanks.
 
-> It's not as dangerous to Free Software as the iphone, tho.
+-- 
+Thanks & Regards,
+Shaohui
 
-Whew!
-
->> OpenWRT people are also maintaining their fork of the kernel, without
->> even using git, and not contributing much to mainline (I'm certainly
->> mistaken on that last comment).
->
-> I can assure you that the contributions are as frequent, important, and
-> significant as the OpenWRT can muster: they have very limited resources,
-> which is the main limitation.  But also because of those limited
-> resources, it's in their best interest to get things upstream.
->
-> Android is different since the company behind it made a conscious
-> decision to fork even though they have/had the resources necessary to
-> push their changes upstream.
-
-I view it more as we made a decision to ship (and enable others to
-ship) successful products as priority one, while still making the
-source available (as is required, or in some cases not required).
-
-I am always intrigued that everyone is an expert in our resource
-availability.  Apparently my team has a bunch of engineers loafing
-around when they could be contributing patches upstream!  Or, maybe,
-we're also a very busy bunch of people supporting multiple SoCs,
-multiple hardware platforms, multiple releases, who also send code
-upstream from time to time, but clearly not as much or as often as
-people would like (including ourselves).
-
-Brian
