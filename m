@@ -1,99 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759068Ab0KPBYk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 20:24:40 -0500
-Received: from mga09.intel.com ([134.134.136.24]:57843 "EHLO mga09.intel.com"
+	id S1759084Ab0KPB2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 20:28:53 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:38353 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754711Ab0KPBYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 20:24:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,203,1288594800"; 
-   d="scan'208";a="677838727"
-Subject: Re: [REGRESSION] [2.6.37-rc1] Fan noise after suspend to ram/disk
-From: Zhang Rui <rui.zhang@intel.com>
-To: "maciej.rutecki@gmail.com" <maciej.rutecki@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-In-Reply-To: <201011152139.46261.maciej.rutecki@gmail.com>
-References: <201011041706.59046.maciej.rutecki@gmail.com>
-	 <201011081835.05733.maciej.rutecki@gmail.com>
-	 <1289790995.8148.1819.camel@rui>
-	 <201011152139.46261.maciej.rutecki@gmail.com>
-Content-Type: multipart/mixed; boundary="=-wqMHYkESA4X14MuEyQzB"
-Date: Tue, 16 Nov 2010 09:26:15 +0800
-Message-ID: <1289870775.8148.2020.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1759064Ab0KPB2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 20:28:52 -0500
+Date: Mon, 15 Nov 2010 17:28:46 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Joe Korty <joe.korty@ccur.com>,
+        mathieu.desnoyers@efficios.com, dhowells@redhat.com,
+        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
+        houston.jim@comcast.net
+Subject: Re: [PATCH] a local-timer-free version of RCU
+Message-ID: <20101116012846.GV2555@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101104232148.GA28037@linux.vnet.ibm.com>
+ <20101105210059.GA27317@tsunami.ccur.com>
+ <4CD912E9.1080907@cn.fujitsu.com>
+ <20101110155419.GC5750@nowhere>
+ <1289410271.2084.25.camel@laptop>
+ <20101111041920.GD3134@linux.vnet.ibm.com>
+ <20101113223046.GB5445@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101113223046.GB5445@nowhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-wqMHYkESA4X14MuEyQzB
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-
-On Tue, 2010-11-16 at 04:39 +0800, Maciej Rutecki wrote:
-> On poniedziałek, 15 listopada 2010 o 04:16:35 Zhang Rui wrote:
-> > On Tue, 2010-11-09 at 01:35 +0800, Maciej Rutecki wrote:
-> > > On poniedziałek, 8 listopada 2010 o 07:58:52 Zhang Rui wrote:
-> > > > IMO, the only one that may cause this regression is commit
-> > > > c57b62f5b1e6dd69ff8c96f6db7f86ea31c0e21f
-> > > > some app may enable polling via procfs and update the thermal zone
-> > > > status.
+On Sat, Nov 13, 2010 at 11:30:49PM +0100, Frederic Weisbecker wrote:
+> On Wed, Nov 10, 2010 at 08:19:20PM -0800, Paul E. McKenney wrote:
+> > On Wed, Nov 10, 2010 at 06:31:11PM +0100, Peter Zijlstra wrote:
+> > > On Wed, 2010-11-10 at 16:54 +0100, Frederic Weisbecker wrote:
+> > > > run the sched tick and if there was nothing to do
+> > > > for some time and we are in userspace, deactivate it. 
 > > > 
-> > > I revert this commit from 2.6.37-rc1. Still the same:
-> > could you please apply the patch attached, on top of 2.6.37-rc1, and
-> > then attach the dmesg output if the fan is noise after suspend/resume.
+> > > Not for some time, immediately, have the tick track if it was useful, if
+> > > it was not, have it stop itself, like:
+> > > 
+> > > tick()
+> > > {
+> > >  int stop = 1;
+> > > 
+> > >  if (nr_running > 1)
+> > >   stop = 0;
+> > > 
+> > >  if(rcu_needs_cpu())
+> > >   stop = 0;
+> > > 
+> > >  ...
+> > > 
+> > > 
+> > >  if (stop)
+> > >   enter_nohz_mode();
+> > > }
 > > 
+> > I am still holding out for a dyntick-hpc version of RCU that does not
+> > need the tick.  ;-)
 > 
-> Dmesg in attachement.
 > 
-> Starting suspend to ram from:
-> [  104.602674] PM: Syncing filesystems ... done.
-> resume OK, but next:
-> [  144.298104] PM: Syncing filesystems ... done.
-> after resume fan starts on full speed.
-> 
-it seems that it's not the thermal driver that changes the Fan speed.
-Please apply the debug patch attached, rebuild with CONFIG_ACPI_DEBUG
-set and reboot with "acpi.debug_level=0x004
-acpi.debug_layer=0x04A10000", and then attach the dmesg output after the
-same test.
-Please attach the acpidump output of this laptop as well.
+> So you don't think it would be an appropriate solution? Keeping the tick for short
+> periods of time while we need it only, that looks quite a good way to try.
 
-thanks,
-rui
+My concern is not the tick -- it is really easy to work around lack of a
+tick from an RCU viewpoint.  In fact, this happens automatically given the
+current implementations!  If there is a callback anywhere in the system,
+then RCU will prevent the corresponding CPU from entering dyntick-idle
+mode, and that CPU's clock will drive the rest of RCU as needed via
+force_quiescent_state().  The force_quiescent_state() workings would
+want to be slightly different for dyntick-hpc, but not significantly so
+(especially once I get TREE_RCU moved to kthreads).
 
-> Regards
+My concern is rather all the implicit RCU-sched read-side critical
+sections, particularly those that arch-specific code is creating.
+And it recently occurred to me that there are necessarily more implicit
+irq/preempt disables than there are exception entries.
 
+So would you be OK with telling RCU about kernel entries/exits, but
+simply not enabling the tick?  The irq and NMI kernel entries/exits are
+already covered, of course.
 
---=-wqMHYkESA4X14MuEyQzB
-Content-Disposition: attachment; filename="patch-thermal-debug-2"
-Content-Type: text/x-vhdl; name="patch-thermal-debug-2"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+This seems to me to work out as follows:
 
----
- drivers/acpi/bus.c |    5 +++++
- 1 file changed, 5 insertions(+)
+1.	If there are no RCU callbacks anywhere in the system, RCU
+	is quiescent and does not cause any IPIs or interrupts of
+	any kind.  For HPC workloads, this should be the common case.
 
-Index: linux-2.6/drivers/acpi/bus.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/bus.c
-+++ linux-2.6/drivers/acpi/bus.c
-@@ -256,6 +256,11 @@ int acpi_bus_set_power(acpi_handle handl
- 	if (result)
- 		return result;
- 
-+	if (!strcmp(acpi_device_hid(device), "PNP0C0B")) {
-+		printk("Rui: Change %s state from %d to %d\n", device->pnp.bus_id, device->power.state, state);
-+		dump_stack();
-+	}
-+
- 	if ((state < ACPI_STATE_D0) || (state > ACPI_STATE_D3))
- 		return -EINVAL;
- 
+2.	If there is an RCU callback, then one CPU keeps a tick going
+	and drives RCU core processing on all CPUs.  (This probably
+	works with RCU as is, but somewhat painfully.)  This results
+	in some IPIs, but only to those CPUs that remain running in
+	the kernel for extended time periods.  Appropriate adjustment
+	of RCU_JIFFIES_TILL_FORCE_QS, possibly promoted to be a
+	kernel configuration parameter, should make such IPIs
+	-extremely- rare.  After all, how many kernel code paths
+	are going to consume (say) 10 jiffies of CPU time?  (Keep
+	in mind that if the system call blocks, the CPU will enter
+	dyntick-idle mode, and RCU will still recognize it as an
+	innocent bystander without needing to IPI it.)
 
---=-wqMHYkESA4X14MuEyQzB--
+3.	The implicit RCU-sched read-side critical sections just work
+	as they do today.
 
+Or am I missing some other problems with this approach?
+
+							Thanx, Paul
