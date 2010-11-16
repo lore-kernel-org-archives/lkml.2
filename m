@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab0KPSLL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 13:11:11 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:49795 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754207Ab0KPSLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 13:11:10 -0500
-From: Kees Cook <kees.cook@canonical.com>
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: Yinghai Lu <yinghai@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] x86: fix included-by file reference comments
-Date: Tue, 16 Nov 2010 10:10:04 -0800
-Message-Id: <1289931004-16066-1-git-send-email-kees.cook@canonical.com>
-X-Mailer: git-send-email 1.7.2.3
-X-HELO: www.outflux.net
+	id S1756461Ab0KPSMa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 13:12:30 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42692 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755686Ab0KPSM3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 13:12:29 -0500
+Date: Tue, 16 Nov 2010 18:12:27 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: Joe Perches <joe@perches.com>, Jiri Kosina <trivial@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
+ preference tool
+Message-ID: <20101116181226.GB26239@rakim.wolfsonmicro.main>
+References: <1289842444.16461.140.camel@Joe-Laptop>
+ <20101115182708.GJ12986@rakim.wolfsonmicro.main>
+ <1289845830.16461.149.camel@Joe-Laptop>
+ <20101115190738.GF3338@sirena.org.uk>
+ <1289848458.16461.150.camel@Joe-Laptop>
+ <20101115193407.GK12986@rakim.wolfsonmicro.main>
+ <1289850773.16461.166.camel@Joe-Laptop>
+ <20101116104921.GL12986@rakim.wolfsonmicro.main>
+ <1289919077.28741.50.camel@Joe-Laptop>
+ <20101116183707.179964dd@schatten.dmk.lab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101116183707.179964dd@schatten.dmk.lab>
+X-Cookie: Onward through the fog.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adjust the paths for files that are including verify_cpu.S.
+On Tue, Nov 16, 2010 at 06:37:07PM +0100, Florian Mickler wrote:
 
-Reported-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
----
- arch/x86/kernel/verify_cpu.S |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+> My first reaction to this is, it's silly. Certainly a
+> subsystem-maintainer is capable of hacking something together that
+> suits his needs or may just use a good editor to get the job done.
+> After all, he might want to edit the commit message anyway. Also he has
+> to have his act together for all non-conforming submitters anyway,
+> because shurely, telling people to re-edit their patches subject line
+> is not what one would consider "welcoming to newbies",  or whatever it
+> is kernel subsystem maintainers have to be nowadays *g*... 
 
-diff --git a/arch/x86/kernel/verify_cpu.S b/arch/x86/kernel/verify_cpu.S
-index 5644b4b..0edefc1 100644
---- a/arch/x86/kernel/verify_cpu.S
-+++ b/arch/x86/kernel/verify_cpu.S
-@@ -17,9 +17,9 @@
-  *	file is included at various places and compiled in that context.
-  *	This file is expected to run in 32bit code.  Currently:
-  *
-- *	arch/x86_64/boot/compressed/head_64.S: Boot cpu verification
-- *	arch/x86_64/kernel/trampoline_64.S: secondary processor verfication
-- *	arch/x86_64/kernel/head_32.S: processor startup
-+ *	arch/x86/boot/compressed/head_64.S: Boot cpu verification
-+ *	arch/x86/kernel/trampoline_64.S: secondary processor verfication
-+ *	arch/x86/kernel/head_32.S: processor startup
-  *
-  *	verify_cpu, returns the status of longmode and SSE in register %eax.
-  *		0: Success    1: Failure
--- 
-1.7.2.3
+So, my general policy on this is that I tend to push back on patches
+which don't just work with the toolset (subject lines are just one part
+of it) to a variable extent depending on who's submitting and what
+they're submitting.  One of the factors is that the more patches are
+coming from someone the easier I expect their patches to be to work
+with.
 
+The reason this came up is that this is one of the issues with Joe's
+patches (which are rather frequent) but he is only willing to do things
+that he can automate.
+
+> (MAINTAINERS seems to be the logical place to put this
+> information.)
+
+Indeed.
