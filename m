@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756461Ab0KPSMa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 13:12:30 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42692 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755686Ab0KPSM3 (ORCPT
+	id S1756572Ab0KPSQb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 13:16:31 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44493 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755736Ab0KPSQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 13:12:29 -0500
-Date: Tue, 16 Nov 2010 18:12:27 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: Joe Perches <joe@perches.com>, Jiri Kosina <trivial@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
- preference tool
-Message-ID: <20101116181226.GB26239@rakim.wolfsonmicro.main>
-References: <1289842444.16461.140.camel@Joe-Laptop>
- <20101115182708.GJ12986@rakim.wolfsonmicro.main>
- <1289845830.16461.149.camel@Joe-Laptop>
- <20101115190738.GF3338@sirena.org.uk>
- <1289848458.16461.150.camel@Joe-Laptop>
- <20101115193407.GK12986@rakim.wolfsonmicro.main>
- <1289850773.16461.166.camel@Joe-Laptop>
- <20101116104921.GL12986@rakim.wolfsonmicro.main>
- <1289919077.28741.50.camel@Joe-Laptop>
- <20101116183707.179964dd@schatten.dmk.lab>
+	Tue, 16 Nov 2010 13:16:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=pdCDqyB4tCaPIdfW91eWkN1Asb87OIgpfZ+4fcRRA6c3ee7I/MG0F5wQAOSjdCja6S
+         YiEJRK5vf16OMxPfETUgXhUpNYyt/jXshmdWR6VEeWTtBO+pCV9G5g1dU8O4/2f/jXxq
+         p8YsMFHqIE01QwzyyK4YcxI/pV1KARBs6i6hc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101116183707.179964dd@schatten.dmk.lab>
-X-Cookie: Onward through the fog.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1289931004-16066-1-git-send-email-kees.cook@canonical.com>
+References: <1289931004-16066-1-git-send-email-kees.cook@canonical.com>
+Date: Tue, 16 Nov 2010 20:16:26 +0200
+X-Google-Sender-Auth: XGf3fCp4Vs9Q0eJT4IpYLwCMMao
+Message-ID: <AANLkTi=QrVKkTcRGqxm+UgE-XoGwZ+6SjJ8LP-=i_PWe@mail.gmail.com>
+Subject: Re: [PATCH] x86: fix included-by file reference comments
+From: Pekka Enberg <penberg@kernel.org>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 06:37:07PM +0100, Florian Mickler wrote:
+On Tue, Nov 16, 2010 at 8:10 PM, Kees Cook <kees.cook@canonical.com> wrote:
+> Adjust the paths for files that are including verify_cpu.S.
+>
+> Reported-by: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Kees Cook <kees.cook@canonical.com>
 
-> My first reaction to this is, it's silly. Certainly a
-> subsystem-maintainer is capable of hacking something together that
-> suits his needs or may just use a good editor to get the job done.
-> After all, he might want to edit the commit message anyway. Also he has
-> to have his act together for all non-conforming submitters anyway,
-> because shurely, telling people to re-edit their patches subject line
-> is not what one would consider "welcoming to newbies",  or whatever it
-> is kernel subsystem maintainers have to be nowadays *g*... 
-
-So, my general policy on this is that I tend to push back on patches
-which don't just work with the toolset (subject lines are just one part
-of it) to a variable extent depending on who's submitting and what
-they're submitting.  One of the factors is that the more patches are
-coming from someone the easier I expect their patches to be to work
-with.
-
-The reason this came up is that this is one of the issues with Joe's
-patches (which are rather frequent) but he is only willing to do things
-that he can automate.
-
-> (MAINTAINERS seems to be the logical place to put this
-> information.)
-
-Indeed.
+Acked-by: Pekka Enberg <penberg@kernel.org>
