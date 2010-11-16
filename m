@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758920Ab0KPPEz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 10:04:55 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35636 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755966Ab0KPPEy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 10:04:54 -0500
-Date: Tue, 16 Nov 2010 15:04:51 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Florian Mickler <florian@mickler.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
- preference tool
-Message-ID: <20101116150451.GA26239@rakim.wolfsonmicro.main>
-References: <20101115173031.GI12986@rakim.wolfsonmicro.main>
- <1289842444.16461.140.camel@Joe-Laptop>
- <20101115182708.GJ12986@rakim.wolfsonmicro.main>
- <1289845830.16461.149.camel@Joe-Laptop>
- <20101115190738.GF3338@sirena.org.uk>
- <1289848458.16461.150.camel@Joe-Laptop>
- <20101115193407.GK12986@rakim.wolfsonmicro.main>
- <1289850773.16461.166.camel@Joe-Laptop>
- <20101116104921.GL12986@rakim.wolfsonmicro.main>
- <1289919077.28741.50.camel@Joe-Laptop>
+	id S1758985Ab0KPPKn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 10:10:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43711 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756378Ab0KPPKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 10:10:42 -0500
+Date: Tue, 16 Nov 2010 16:03:20 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mike Galbraith <efault@gmx.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101116150319.GA3475@redhat.com>
+References: <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com> <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com> <1289783580.495.58.camel@maggy.simson.net> <1289811438.2109.474.camel@laptop> <1289820766.16406.45.camel@maggy.simson.net> <1289821590.16406.47.camel@maggy.simson.net> <20101115125716.GA22422@redhat.com> <1289856350.14719.135.camel@maggy.simson.net> <20101116130413.GA29368@redhat.com> <1289917109.5169.131.camel@maggy.simson.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289919077.28741.50.camel@Joe-Laptop>
-X-Cookie: Onward through the fog.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1289917109.5169.131.camel@maggy.simson.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 06:51:17AM -0800, Joe Perches wrote:
+On 11/16, Mike Galbraith wrote:
+>
+> On Tue, 2010-11-16 at 14:04 +0100, Oleg Nesterov wrote:
+> > However, I must admit I dislike this check. Because, looking at this
+> > code, it is not clear why do we check PF_EXITING. It looks as if it
+> > is needed for correctness.
+>
+> Is _not_ needed I presume.
+>
+> I'll remove it, I'm not overly attached (a t t a..;) to it.
 
-> Maybe add a new MAINTAINERS section line something like:
-> 	"C:	CommitSubjectGrammarStyle"
-> where CommitSubjectGrammarStyle is something more
-> information rich than "style 1", "style 2".
+Argh!
 
-Something printfish would seem reasonable?
+I was wrong, it _is_ needed for correctness. Yes, it is always safe
+to read the pointer, but
 
-> Also, what would you expect the output to be when a single
-> patch modified files from 2 subsystems that use different
-> styles?
+> > Yes, sure, rq->lock should ensure signal->autogroup can't go away.
+> > (even if it can be changed under us). And it does, we are moving all
+> > threads before kref_put().
+>
+> (yeah)
 
-The traditional thing is "ThingX/ThingY: blah" but as with anything else
-you need to be sensible.
+Exactly. And this means we can _only_ assume it can't go away if
+autogroup_move_group() can see us on ->thread_group list.
+
+Perhaps this deserve a commen (unless I missed something again).
+
+Mike, sorry for confusion.
+
+Oleg.
+
