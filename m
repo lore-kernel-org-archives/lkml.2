@@ -1,76 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756673Ab0KPSWQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 13:22:16 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42097 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354Ab0KPSWP convert rfc822-to-8bit (ORCPT
+	id S1756729Ab0KPSWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 13:22:50 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56905
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756510Ab0KPSWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 13:22:15 -0500
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <20101116181603.GC19327@tango.0pointer.de>
-References: <1289820766.16406.45.camel@maggy.simson.net>
-	 <1289821590.16406.47.camel@maggy.simson.net>
-	 <20101115125716.GA22422@redhat.com>
-	 <1289856350.14719.135.camel@maggy.simson.net>
-	 <20101116015648.GA11534@redhat.com>
-	 <1289916171.5169.117.camel@maggy.simson.net>
-	 <1289916683.2109.625.camel@laptop>
-	 <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
-	 <20101116170312.GA19327@tango.0pointer.de>
-	 <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
-	 <20101116181603.GC19327@tango.0pointer.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 16 Nov 2010 19:21:55 +0100
-Message-ID: <1289931715.2109.648.camel@laptop>
+	Tue, 16 Nov 2010 13:22:49 -0500
+Date: Tue, 16 Nov 2010 10:23:14 -0800 (PST)
+Message-Id: <20101116.102314.260073530.davem@davemloft.net>
+To: joe@perches.com
+Cc: linux-kernel@vger.kernel.org, isdn@linux-pingi.de, netdev@vger.kernel.org
+Subject: Re: [PATCH 2/9] drivers/isdn/mISDN: Use printf extension %pV
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <b7079ecc43454c8b8baaef07f8cf1c1756c2ce3e.1289348757.git.joe@perches.com>
+References: <cover.1289348757.git.joe@perches.com>
+	<b7079ecc43454c8b8baaef07f8cf1c1756c2ce3e.1289348757.git.joe@perches.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 19:16 +0100, Lennart Poettering wrote:
-> On Tue, 16.11.10 09:11, Linus Torvalds (torvalds@linux-foundation.org) wrote:
-> 
-> > 
-> > On Tue, Nov 16, 2010 at 9:03 AM, Lennart Poettering
-> > <mzxreary@0pointer.de> wrote:
-> > >
-> > > Binding something like this to TTYs is just backwards.
-> > 
-> > Numbers talk, bullshit walks.
-> > 
-> > The numbers have been quoted. The clear interactive behavior has been seen.
-> 
-> Here's my super-complex patch btw, to achieve exactly the same thing
-> from userspace without involving any kernel or systemd patching and
-> kernel-side logic. Simply edit your own ~/.bashrc and add this to the end:
-> 
->   if [ "$PS1" ] ; then  
->           mkdir -m 0700 /sys/fs/cgroup/cpu/user/$$
->           echo $$ > /sys/fs/cgroup/cpu/user/$$/tasks
->   fi
-> 
-> Then, as the superuser do this:
-> 
->   mount -t cgroup cgroup /sys/fs/cgroup/cpu -o cpu
->   mkdir -m 0777 /sys/fs/cgroup/cpu/user
-> 
-> Done. Same effect. However: not crazy.
-> 
-> I am not sure I myself will find the time to prep some 'numbers' for
-> you. They'd be the same as with the kernel patch anyway. But I am sure
-> somebody else will do it for you...
+From: Joe Perches <joe@perches.com>
+Date: Tue,  9 Nov 2010 16:35:16 -0800
 
-Not quite the same, you're nesting one level deeper. But the reality is,
-not a lot of people will change their userspace. 
+> Using %pV reduces the number of printk calls and
+> eliminates any possible message interleaving from
+> other printk calls.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Applied, thanks.
