@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab0KPST3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 13:19:29 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49626 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756444Ab0KPST2 (ORCPT
+	id S1756673Ab0KPSWQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 13:22:16 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42097 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354Ab0KPSWP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 13:19:28 -0500
-Date: Tue, 16 Nov 2010 18:19:06 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 05/20] ARM: LPAE: Introduce L_PTE_NOEXEC and
-	L_PTE_NOWRITE
-Message-ID: <20101116181906.GA21926@n2100.arm.linux.org.uk>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com> <1289584840-18097-6-git-send-email-catalin.marinas@arm.com> <20101115183014.GD31421@n2100.arm.linux.org.uk> <AANLkTikCVCuR2mxyoE7e=V_FauTxztLHUJp97+rroUe-@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikCVCuR2mxyoE7e=V_FauTxztLHUJp97+rroUe-@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 16 Nov 2010 13:22:15 -0500
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+In-Reply-To: <20101116181603.GC19327@tango.0pointer.de>
+References: <1289820766.16406.45.camel@maggy.simson.net>
+	 <1289821590.16406.47.camel@maggy.simson.net>
+	 <20101115125716.GA22422@redhat.com>
+	 <1289856350.14719.135.camel@maggy.simson.net>
+	 <20101116015648.GA11534@redhat.com>
+	 <1289916171.5169.117.camel@maggy.simson.net>
+	 <1289916683.2109.625.camel@laptop>
+	 <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+	 <20101116170312.GA19327@tango.0pointer.de>
+	 <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+	 <20101116181603.GC19327@tango.0pointer.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 16 Nov 2010 19:21:55 +0100
+Message-ID: <1289931715.2109.648.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 03:18:03PM +0000, Catalin Marinas wrote:
-> On 15 November 2010 18:30, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > Let's not make this more complicated than it has to be.  If we need the
-> > inverse of WRITE and EXEC, then that's what we should change everyone to,
-> > not invent a new system to work along side the old system.
+On Tue, 2010-11-16 at 19:16 +0100, Lennart Poettering wrote:
+> On Tue, 16.11.10 09:11, Linus Torvalds (torvalds@linux-foundation.org) wrote:
 > 
-> This adds an additional instruction in set_pte_ext, unless you can
-> write the bit checking in a better way:
+> > 
+> > On Tue, Nov 16, 2010 at 9:03 AM, Lennart Poettering
+> > <mzxreary@0pointer.de> wrote:
+> > >
+> > > Binding something like this to TTYs is just backwards.
+> > 
+> > Numbers talk, bullshit walks.
+> > 
+> > The numbers have been quoted. The clear interactive behavior has been seen.
+> 
+> Here's my super-complex patch btw, to achieve exactly the same thing
+> from userspace without involving any kernel or systemd patching and
+> kernel-side logic. Simply edit your own ~/.bashrc and add this to the end:
+> 
+>   if [ "$PS1" ] ; then  
+>           mkdir -m 0700 /sys/fs/cgroup/cpu/user/$$
+>           echo $$ > /sys/fs/cgroup/cpu/user/$$/tasks
+>   fi
+> 
+> Then, as the superuser do this:
+> 
+>   mount -t cgroup cgroup /sys/fs/cgroup/cpu -o cpu
+>   mkdir -m 0777 /sys/fs/cgroup/cpu/user
+> 
+> Done. Same effect. However: not crazy.
+> 
+> I am not sure I myself will find the time to prep some 'numbers' for
+> you. They'd be the same as with the kernel patch anyway. But I am sure
+> somebody else will do it for you...
 
-It actually results in the same number of instructions.  From memory:
-
-ARMv3-ARMv5:
--	eor	r3, r1, #L_PTE_PRESENT | L_PTE_YOUNG | L_PTE_WRITE | L_PTE_DIRTY
--	tst	r3, #L_PTE_WRITE | L_PTE_DIRTY	@ write and dirty?
--	orreq	r2, r2, #PTE_SMALL_AP_UNO_SRW
-+	eor	r3, r1, #L_PTE_PRESENT | L_PTE_YOUNG | L_PTE_DIRTY
-+	tst	r3, #L_PTE_RDONLY | L_PTE_DIRTY	@ write and dirty?
-+	orreq	r2, r2, #PTE_SMALL_AP_UNO_SRW
-
-and for ARMv6+:
-
--	tst	r1, #L_PTE_WRITE
--	tstne	r1, #L_PTE_DIRTY
--	orreq	r3, r3, #PTE_EXT_APX
-+	eor	r1, r1, #L_PTE_DIRTY
-+	tst	r1, #L_PTE_RDONLY | L_PTE_DIRTY
-+	orrne	r3, r3, #PTE_EXT_APX
+Not quite the same, you're nesting one level deeper. But the reality is,
+not a lot of people will change their userspace. 
