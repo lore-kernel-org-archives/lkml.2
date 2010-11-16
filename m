@@ -1,422 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758995Ab0KPVfa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 16:35:30 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:57385 "EHLO smtp6-g21.free.fr"
+	id S932585Ab0KPVgc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 16:36:32 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50766 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756576Ab0KPVf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 16:35:27 -0500
-Message-ID: <4CE2F914.9070106@free.fr>
-Date: Tue, 16 Nov 2010 22:35:16 +0100
-From: matthieu castet <castet.matthieu@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
+	id S932231Ab0KPVgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 16:36:31 -0500
+Date: Tue, 16 Nov 2010 22:35:51 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+Message-ID: <20101116213551.GA12612@elte.hu>
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-next@vger.kernel.org
-CC: Arjan van de Ven <arjan@infradead.org>, James Morris <jmorris@namei.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Kees Cook <kees.cook@canonical.com>
-Subject: [PATCH 3/3 V13] RO/NX protection for loadable kernel
-Content-Type: multipart/mixed;
- boundary="------------010200080900070808040809"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010200080900070808040809
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
 
-This patch is a logical extension of the protection provided by
-CONFIG_DEBUG_RODATA to LKMs. The protection is provided by splitting
-module_core and module_init into three logical parts each and setting
-appropriate page access permissions for each individual section:
+* Thomas Gleixner <tglx@linutronix.de> wrote:
 
- 1. Code: RO+X
- 2. RO data: RO+NX
- 3. RW data: RW+NX
+> Todo list:
+>
+> [...]
+> 
+>      - Implement -p NNN (trace existing pid) option
 
-In order to achieve proper protection, layout_sections() have been
-modified to align each of the three parts mentioned above onto page
-boundary. Next, the corresponding page access permissions are set
-right before successful exit from load_module(). Further, free_module()
-and sys_init_module have been modified to set module_core and
-module_init as RW+NX right before calling module_free().
+Update, 'trace -p <pid> ...' is now implemented via:
 
-By default, the original section layout and access flags are preserved.
-When compiled with CONFIG_DEBUG_SET_MODULE_RONX=y, the patch
-will page-align each group of sections to ensure that each page contains
-only one type of content and will enforce RO/NX for each group of pages.
+  da46d9f09699: trace: Add -p <pid> recording
 
-V1: Initial proof-of-concept patch.
-V2: The patch have been re-written to reduce the number of #ifdefs and
-to make it architecture-agnostic. Code formatting have been corrected also.
-V3: Opportunistic RO/NX protectiuon is now unconditional. Section
-page-alignment is enabled when CONFIG_DEBUG_RODATA=y.
-V4: Removed most macros and improved coding style.
-V5: Changed page-alignment and RO/NX section size calculation
-V6: Fixed comments. Restricted RO/NX enforcement to x86 only
-V7: Introduced CONFIG_DEBUG_SET_MODULE_RONX, added calls to
-set_all_modules_text_rw() and set_all_modules_text_ro() in ftrace
-V8: updated for compatibility with linux 2.6.33-rc5
-V9: coding style fixes
-V10: more coding style fixes
-V11: minor adjutments for -tip
-V12: minor adjutments for v2.6.35-rc2-tip
-V13: minor adjutments for v2.6.37-rc1-tip
+I have just pushed it out into -tip.
 
-Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
-Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
-Acked-by: Arjan van de Ven <arjan@linux.intel.com>
-Reviewed-by: James Morris <jmorris@namei.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Thanks,
 
-
---------------010200080900070808040809
-Content-Type: text/x-diff;
- name="x86_nx_module_data.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="x86_nx_module_data.diff"
-
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index 3be21d5..316350a 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -117,6 +117,17 @@ config DEBUG_RODATA_TEST
- 	  feature as well as for the change_page_attr() infrastructure.
- 	  If in doubt, say "N"
- 
-+config DEBUG_SET_MODULE_RONX
-+	bool "Set loadable kernel module data as NX and text as RO"
-+	default n
-+	depends on X86 && MODULES
-+	---help---
-+	  This option helps to catch unintended modifications to loadable
-+	  kernel module's text and read-only data. It also prevents execution
-+	  of LKM's data. Such protection may interfere with run-time code
-+	  patching and dynamic kernel tracing.
-+	  If in doubt, say "N".
-+
- config DEBUG_NX_TEST
- 	tristate "Testcase for the NX non-executable stack feature"
- 	depends on DEBUG_KERNEL && m
-diff --git a/arch/x86/kernel/ftrace.c b/arch/x86/kernel/ftrace.c
-index 3afb33f..2984486 100644
---- a/arch/x86/kernel/ftrace.c
-+++ b/arch/x86/kernel/ftrace.c
-@@ -19,6 +19,7 @@
- #include <linux/sched.h>
- #include <linux/init.h>
- #include <linux/list.h>
-+#include <linux/module.h>
- 
- #include <trace/syscall.h>
- 
-@@ -49,6 +50,7 @@ static DEFINE_PER_CPU(int, save_modifying_code);
- int ftrace_arch_code_modify_prepare(void)
- {
- 	set_kernel_text_rw();
-+	set_all_modules_text_rw();
- 	modifying_code = 1;
- 	return 0;
- }
-@@ -56,6 +58,7 @@ int ftrace_arch_code_modify_prepare(void)
- int ftrace_arch_code_modify_post_process(void)
- {
- 	modifying_code = 0;
-+	set_all_modules_text_ro();
- 	set_kernel_text_ro();
- 	return 0;
- }
-diff --git a/include/linux/module.h b/include/linux/module.h
-index b29e745..4d9ce95 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -308,6 +308,9 @@ struct module
- 	/* The size of the executable code in each section.  */
- 	unsigned int init_text_size, core_text_size;
- 
-+	/* Size of RO sections of the module (text+rodata) */
-+	unsigned int init_ro_size, core_ro_size;
-+
- 	/* Arch-specific module values */
- 	struct mod_arch_specific arch;
- 
-@@ -548,6 +551,9 @@ extern void print_modules(void);
- extern void module_update_tracepoints(void);
- extern int module_get_iter_tracepoints(struct tracepoint_iter *iter);
- 
-+void set_all_modules_text_rw(void);
-+void set_all_modules_text_ro(void);
-+
- #else /* !CONFIG_MODULES... */
- #define EXPORT_SYMBOL(sym)
- #define EXPORT_SYMBOL_GPL(sym)
-@@ -673,6 +679,13 @@ static inline int module_get_iter_tracepoints(struct tracepoint_iter *iter)
- 	return 0;
- }
- 
-+static inline void set_all_modules_text_rw(void)
-+{
-+}
-+
-+static inline void set_all_modules_text_ro(void)
-+{
-+}
- #endif /* CONFIG_MODULES */
- 
- #ifdef CONFIG_SYSFS
-diff --git a/kernel/module.c b/kernel/module.c
-index 437a74a..70d2d41 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -56,6 +56,7 @@
- #include <linux/percpu.h>
- #include <linux/kmemleak.h>
- #include <linux/jump_label.h>
-+#include <linux/pfn.h>
- 
- #define CREATE_TRACE_POINTS
- #include <trace/events/module.h>
-@@ -70,6 +71,26 @@
- #define ARCH_SHF_SMALL 0
- #endif
- 
-+/*
-+ * Modules' sections will be aligned on page boundaries
-+ * to ensure complete separation of code and data, but
-+ * only when CONFIG_DEBUG_SET_MODULE_RONX=y
-+ */
-+#ifdef CONFIG_DEBUG_SET_MODULE_RONX
-+#define debug_align(X) ALIGN(X, PAGE_SIZE)
-+#else
-+#define debug_align(X) (X)
-+#endif
-+
-+/*
-+ * Given BASE and SIZE this macro calculates the number of pages the
-+ * memory regions occupies
-+ */
-+#define NUMBER_OF_PAGES(BASE, SIZE) (((SIZE) > 0) ?		\
-+		(PFN_DOWN((unsigned long)(BASE) + (SIZE) - 1) -	\
-+			 PFN_DOWN((unsigned long)BASE) + 1)	\
-+		: (0UL))
-+
- /* If this is set, the section belongs in the init part of the module */
- #define INIT_OFFSET_MASK (1UL << (BITS_PER_LONG-1))
- 
-@@ -1542,6 +1563,121 @@ static int __unlink_module(void *_mod)
- 	return 0;
- }
- 
-+#ifdef CONFIG_DEBUG_SET_MODULE_RONX
-+/*
-+ * LKM RO/NX protection: protect module's text/ro-data
-+ * from modification and any data from execution.
-+ */
-+void set_page_attributes(void *start, void *end,
-+		int (*set)(unsigned long start, int num_pages))
-+{
-+	unsigned long begin_pfn = PFN_DOWN((unsigned long)start);
-+	unsigned long end_pfn = PFN_DOWN((unsigned long)end);
-+	if (end_pfn > begin_pfn)
-+		set(begin_pfn << PAGE_SHIFT, end_pfn - begin_pfn);
-+}
-+
-+static void set_section_ro_nx(void *base,
-+			unsigned long text_size,
-+			unsigned long ro_size,
-+			unsigned long total_size)
-+{
-+	/* begin and end PFNs of the current subsection */
-+	unsigned long begin_pfn;
-+	unsigned long end_pfn;
-+
-+	/*
-+	 * Set RO for module text and RO-data:
-+	 * - Always protect first page.
-+	 * - Do not protect last partial page.
-+	 */
-+	if (ro_size > 0)
-+		set_page_attributes(base, base + ro_size, set_memory_ro);
-+
-+	/*
-+	 * Set NX permissions for module data:
-+	 * - Do not protect first partial page.
-+	 * - Always protect last page.
-+	 */
-+	if (total_size > text_size) {
-+		begin_pfn = PFN_UP((unsigned long)base + text_size);
-+		end_pfn = PFN_UP((unsigned long)base + total_size);
-+		if (end_pfn > begin_pfn)
-+			set_memory_nx(begin_pfn << PAGE_SHIFT, end_pfn - begin_pfn);
-+	}
-+}
-+
-+/* Setting memory back to RW+NX before releasing it */
-+void unset_section_ro_nx(struct module *mod, void *module_region)
-+{
-+	unsigned long total_pages;
-+
-+	if (mod->module_core == module_region) {
-+		/* Set core as NX+RW */
-+		total_pages = NUMBER_OF_PAGES(mod->module_core, mod->core_size);
-+		set_memory_nx((unsigned long)mod->module_core, total_pages);
-+		set_memory_rw((unsigned long)mod->module_core, total_pages);
-+
-+	} else if (mod->module_init == module_region) {
-+		/* Set init as NX+RW */
-+		total_pages = NUMBER_OF_PAGES(mod->module_init, mod->init_size);
-+		set_memory_nx((unsigned long)mod->module_init, total_pages);
-+		set_memory_rw((unsigned long)mod->module_init, total_pages);
-+	}
-+}
-+
-+/* Iterate through all modules and set each module's text as RW */
-+void set_all_modules_text_rw()
-+{
-+	struct module *mod;
-+
-+	mutex_lock(&module_mutex);
-+	list_for_each_entry_rcu(mod, &modules, list) {
-+		if ((mod->module_core) && (mod->core_text_size)) {
-+			set_page_attributes(mod->module_core,
-+						mod->module_core + mod->core_text_size,
-+						set_memory_rw);
-+		}
-+		if ((mod->module_init) && (mod->init_text_size)) {
-+			set_page_attributes(mod->module_init,
-+						mod->module_init + mod->init_text_size,
-+						set_memory_rw);
-+		}
-+	}
-+	mutex_unlock(&module_mutex);
-+}
-+
-+/* Iterate through all modules and set each module's text as RO */
-+void set_all_modules_text_ro()
-+{
-+	struct module *mod;
-+
-+	mutex_lock(&module_mutex);
-+	list_for_each_entry_rcu(mod, &modules, list) {
-+		if ((mod->module_core) && (mod->core_text_size)) {
-+			set_page_attributes(mod->module_core,
-+						mod->module_core + mod->core_text_size,
-+						set_memory_ro);
-+		}
-+		if ((mod->module_init) && (mod->init_text_size)) {
-+			set_page_attributes(mod->module_init,
-+						mod->module_init + mod->init_text_size,
-+						set_memory_ro);
-+		}
-+	}
-+	mutex_unlock(&module_mutex);
-+}
-+#else
-+static void set_section_ro_nx(void *base,
-+			unsigned long text_size,
-+			unsigned long ro_size,
-+			unsigned long total_size) { }
-+
-+void unset_section_ro_nx(struct module *mod, void *module_region) { }
-+void set_all_modules_text_rw() { }
-+void set_all_modules_text_ro() { }
-+#endif
-+
- /* Free a module, remove from lists, etc. */
- static void free_module(struct module *mod)
- {
-@@ -1566,6 +1702,7 @@ static void free_module(struct module *mod)
- 	destroy_params(mod->kp, mod->num_kp);
- 
- 	/* This may be NULL, but that's OK */
-+	unset_section_ro_nx(mod, mod->module_init);
- 	module_free(mod, mod->module_init);
- 	kfree(mod->args);
- 	percpu_modfree(mod);
-@@ -1574,6 +1711,7 @@ static void free_module(struct module *mod)
- 	lockdep_free_key_range(mod->module_core, mod->core_size);
- 
- 	/* Finally, free the core (containing the module structure) */
-+	unset_section_ro_nx(mod, mod->module_core);
- 	module_free(mod, mod->module_core);
- 
- #ifdef CONFIG_MPU
-@@ -1777,8 +1915,19 @@ static void layout_sections(struct module *mod, struct load_info *info)
- 			s->sh_entsize = get_offset(mod, &mod->core_size, s, i);
- 			DEBUGP("\t%s\n", name);
- 		}
--		if (m == 0)
-+		switch (m) {
-+		case 0: /* executable */
-+			mod->core_size = debug_align(mod->core_size);
- 			mod->core_text_size = mod->core_size;
-+			break;
-+		case 1: /* RO: text and ro-data */
-+			mod->core_size = debug_align(mod->core_size);
-+			mod->core_ro_size = mod->core_size;
-+			break;
-+		case 3: /* whole core */
-+			mod->core_size = debug_align(mod->core_size);
-+			break;
-+		}
- 	}
- 
- 	DEBUGP("Init section allocation order:\n");
-@@ -1796,8 +1945,19 @@ static void layout_sections(struct module *mod, struct load_info *info)
- 					 | INIT_OFFSET_MASK);
- 			DEBUGP("\t%s\n", sname);
- 		}
--		if (m == 0)
-+		switch (m) {
-+		case 0: /* executable */
-+			mod->init_size = debug_align(mod->init_size);
- 			mod->init_text_size = mod->init_size;
-+			break;
-+		case 1: /* RO: text and ro-data */
-+			mod->init_size = debug_align(mod->init_size);
-+			mod->init_ro_size = mod->init_size;
-+			break;
-+		case 3: /* whole init */
-+			mod->init_size = debug_align(mod->init_size);
-+			break;
-+		}
- 	}
- }
- 
-@@ -2650,6 +2810,18 @@ static struct module *load_module(void __user *umod,
- 	kfree(info.strmap);
- 	free_copy(&info);
- 
-+	/* Set RO and NX regions for core */
-+	set_section_ro_nx(mod->module_core,
-+				mod->core_text_size,
-+				mod->core_ro_size,
-+				mod->core_size);
-+
-+	/* Set RO and NX regions for init */
-+	set_section_ro_nx(mod->module_init,
-+				mod->init_text_size,
-+				mod->init_ro_size,
-+				mod->init_size);
-+
- 	/* Done! */
- 	trace_module_load(mod);
- 	return mod;
-@@ -2753,6 +2925,7 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
- 	mod->symtab = mod->core_symtab;
- 	mod->strtab = mod->core_strtab;
- #endif
-+	unset_section_ro_nx(mod, mod->module_init);
- 	module_free(mod, mod->module_init);
- 	mod->module_init = NULL;
- 	mod->init_size = 0;
-
---------------010200080900070808040809--
+	Ingo
