@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759260Ab0KPDbi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 22:31:38 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43845 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759226Ab0KPDbX (ORCPT
+	id S1759270Ab0KPDnV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 22:43:21 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56527 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756083Ab0KPDnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 22:31:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=OlyniZ/BjRs/3c9UAYEU1+fyZXwvP85oibfvVqVgkB0yOulr8WssE/nTHmhuqSAj2E
-         6MgAU/STa8Ln0y8w6rJ6Ank1yOSMNJE/CNWwxUDMni4H4pMsJSvuQGae/TrCGS9dXid6
-         pSXbo+6w1UkJsjugbTuIcTzfcf3Kn8JV+3kUE=
-Subject: Re: Remaining problems in firewire-net
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-In-Reply-To: <20101115090103.0df0b5ef@stein>
-References: <tkrat.036c5d10fb83f85d@s5r6.in-berlin.de>
-	 <1289795401.11881.62.camel@maxim-laptop>  <20101115090103.0df0b5ef@stein>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Nov 2010 05:31:15 +0200
-Message-ID: <1289878275.16486.57.camel@maxim-laptop>
+	Mon, 15 Nov 2010 22:43:20 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 16 Nov 2010 12:37:28 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Greg Thelen <gthelen@google.com>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dave Young <hidave.darkstar@gmail.com>,
+        Andrea Righi <arighi@develer.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/4] memcg: use native word to represent dirtyable pages
+Message-Id: <20101116123728.295d3095.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101107220353.115646194@cmpxchg.org>
+References: <20101107215030.007259800@cmpxchg.org>
+	<20101107220353.115646194@cmpxchg.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-15 at 09:01 +0100, Stefan Richter wrote:
-> On Nov 15 Maxim Levitsky wrote:
-> > That is because 1394 spec specifies that first of all the ISO channel
-> > must be allocated from the IRM node. The firewire stack currently just
-> > uses hardcoded numbers in two places the ISO is used 
-> > (firewire-net, and firedtv)
-> > However it has all functions implemented for this.
-> 
-> This is a bug (missing feature) in firedtv but not in firewire-net. The
-> broadcast channel is allocated and reallocated by the bus manager, not
-> by an IP-over-1394 user.  But you found that out already, below.
-Agree fully.
+On Sun,  7 Nov 2010 23:14:36 +0100
+Johannes Weiner <hannes@cmpxchg.org> wrote:
 
+> The memory cgroup dirty info calculation currently uses a signed
+> 64-bit type to represent the amount of dirtyable memory in pages.
 > 
-> Channel allocation and DMA context allocation and control are unrelated
-> issues, on the other hand.  One is a higher-level cooperative protocol
-> for bus-wide resource management (in which the nodes' roles are defined
-> in various different ways by protocols such as AV/C's CMP or by IIDC).
-> The other is about hardware control locally in the OHCI bus bridge
-> hardware.
+> This can instead be changed to an unsigned word, which will allow the
+> formula to function correctly with up to 160G of LRU pages on a 32-bit
+> system, assuming 4k pages.  That should be plenty even when taking
+> racy folding of the per-cpu counters into account.
 > 
-> [...]
-> > In case of firewire-net, it is simpler, because it uses the broadcast
-> > channel, so it only has to find who is the IRM and read its
-> > BROADCAST_CHANNEL.
-> > 
-> > However, I think I need to write a function to query the IRM its
-> > broadcast channel, don't think it has one.
+> This fixes a compilation error on 32-bit systems as this code tries to
+> do 64-bit division.
 > 
-> Overkill.  Just leave it as is:
->   1.) We know which number the broadcast channel has.
->   2.) We optimistically assume that a 1394a compliant IRM or bus
->       manager exists and allocated that channel.
-> 
-> Why introduce entirely unnecessary fragility?
-Looking at spec again, indeed 31 the the default broadcast channel, and
-probably nobody ever changes it by writing the BROADCAST_CHANNEL.
-The BROADCAST_CHANNEL register was actually added in 1394a.
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Reported-by: Dave Young <hidave.darkstar@gmail.com>
 
 
-> 
-> > Speaking of IRM discovery, the spec says it should be a node with
-> > contender bit and largest node id. However, the code in
-> > core-topology.c, build_tree seems to take the node that sent the
-> > selfID packet last.
-> 
-> This is because of a monotony rule of how self ID packets arrive during
-> self identification phase.
-Ah, ok, found this bit in spec too.
+Thank you.
 
-Btw, according to spec the firewire appears to be half-duplex.
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-
-Also one note I wanted to say in previous mail. but forgot.
-The IP over 1394 tells that unicast can also use ISO transactions.
-However, it doesn't say how to negotiate the ISO channel number, thus a
-logical conclusion is that its not possible to use ISO transactions for
-unicast.
-Is that right?
-
-Best regards,
-	Maxim Levitsky
+I couldn't read email because of vacation.
 
