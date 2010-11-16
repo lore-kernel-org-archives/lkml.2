@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934064Ab0KPJRV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 04:17:21 -0500
-Received: from d.mail.confirmations.getresponse.COM ([209.2.34.152]:41287 "EHLO
-	d.mail.confirmations.getresponse.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757350Ab0KPJRT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 04:17:19 -0500
-X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Nov 2010 04:17:19 EST
-Domainkey-Signature: a=rsa-sha1; c=nofws; d=getresponse.com; s=k1024c; q=dns; h=from:sender:to:subject; b=V/+uBua8ix/upXUgcUu9OftNQ2mky107Akka+mV2pyCz1d0M+ZWVSmwD9aJwV5N+yBf1XI2ZdLoEz9FqypTE+9KE0hAAWsmUa/uK4xeFYetaMNY+Dhi72kVNZ1qQkXWObPDHRyYeslg+3k/SAi3rPcz7VJNnNScjLGsANwmT+KU=;
-From: "Travel Community Geeks" <contact@pingmytrip.com>
-To: "Friend" <linux-kernel@vger.kernel.org>
-Subject: Are you travel savvy?
-X-Serial: s56bjeOrIkQ/a1lF1xE7FgZ6LlrDeNauuw3Gi/6mkIM3jRtsRu8LcQ0HDhj67a26g0DEu6cksKboc2Mu5F/dBVLi8w==
+	id S934069Ab0KPJTZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 04:19:25 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58921 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934022Ab0KPJTX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 04:19:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=gnXqE5T9SfXTplPa32NpcHp/2ufTTtX7H68Q/cLO1RJrQL3Uezavv5EUfHwRFEs9nB
+         XRQynWMUG50q246SqbOhg8Lb5kgduxCs1DZMSj0NS4JqV2ZfnDZ0TLXDSHVoQpYmukLq
+         o1SAPBZjWQHe7BZrzE87cNMHdJkaXdx/LVr/A=
 MIME-Version: 1.0
-Date: Tue, 16 Nov 2010 04:11:13 -0500
-Reply-To: contact@pingmytrip.com
-X-Complaints-To: abuse@getresponse.com
-X-Mailer: getresponse.com 6.0
-Message-Id: <1289898673.941356@getresponse.com>
-Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1011151707310.6448@xanadu.home>
+References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
+	<20101114151445.GB10871@n2100.arm.linux.org.uk>
+	<AANLkTinuUCYMa8e7=ehhExFzBAhPZBKA16M1GVQ=RMMH@mail.gmail.com>
+	<201011151047.37103.arnd@arndb.de>
+	<AANLkTi=FFpCwEhSgs-zOh32JQvqQWqnaQVTitwJeDyzj@mail.gmail.com>
+	<alpine.LFD.2.00.1011151707310.6448@xanadu.home>
+Date: Tue, 16 Nov 2010 09:19:22 +0000
+X-Google-Sender-Auth: W8ReQ1uYlXW-d52eQPXM7QvGdhk
+Message-ID: <AANLkTikJvcpECTpRU-JA2YX8QFYPHV7PMkN5w49ji2TH@mail.gmail.com>
+Subject: Re: [PATCH v2 03/20] ARM: LPAE: use u32 instead of unsigned long for
+ 32-bit ptes
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You have been invited to join our mailing
-list "travelcommunitygeeks" hosted by
-GetResponse email marketing service.
+On 15 November 2010 22:11, Nicolas Pitre <nico@fluxnic.net> wrote:
+> On Mon, 15 Nov 2010, Catalin Marinas wrote:
+>
+>> On 15 November 2010 09:47, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Monday 15 November 2010 10:39:30 Catalin Marinas wrote:
+>> >> > There will be compiler warnings because u32 is unsigned int, and we
+>> >> > print it as %08lx. †Generic code cases pte values to (long long) and
+>> >> > prints them using %08llx. †We should do the same.
+>> >>
+>> >> We still need some kind of macro because with LPAE we need %016llx
+>> >> since the phys address can go to 40-bit and there are some additional
+>> >> bits in the top word. Unless you'd like to always print 16 characters
+>> >> even for 32-bit ptes (or if there is some other printk magic I'm not
+>> >> aware of).
+>> >
+>> > Why not just %010llx? That would just be two extra characters.
+>>
+>> We still have attributes (like XN, bit 54) stored in the top part of
+>> the pte. This may be of interest when debugging.
+>
+> They will be printed if they exist. The %010 in front of llx only means
+> to have a minimum of 10 zero-paded digits if the value is smaller than
+> that.
+>
+> However, not having aligned values will be confusing. †A macro for the
+> format might be the best compromize.
 
-‚ÄúThe world is a book and those who do not travel read only one page.‚Äù - St. Augustine
+We thought about using something like
 
+printk("%0*llx", sizeof(pteval_t) * 2, (long long)pte_val(pte));
 
-PingMyTrip.com is a travel community website that allows members to connect with thousands of travel enthusiasts via only one login pass. Travel savvy people are invited for the BETA testing of PingMyTrip.com.
+but it complicates the code.
 
-Join us if you...
+Anyway, since these are printed for debugging mainline, we can
+probably cope with some lack of alignment (as Russell said, there may
+not be any where it matters).
 
-1. Want to be part of a community of savvy travelers.
-2. Want to share your passion for traveling.
-3. Want more people discover your blog.
-
-
-Be part of the community of savvy travelers today!
-
-
-To confirm your subscription, please
-click the following link:
-
-EASY 1-CLICK CONFIRMATION:
-http://getresponse.com/confirm.html?x=a62b&sq=GYBiA&y=A&
-
-You will be able to unsubscribe
-or change your details at any time.
-
-If you have received this email in
-error and do not intend to join our
-list, no further action is required
-on your part.
-
-You won't be subscribed to any
-list and you won't receive further
-information until you confirm your
-subscription above.
-
----
-Jay & Harry 
-(Travel Community Geeks)
-Founders, PingMyTrip.com
-
-
-
-PingMyTrip.com, 60 Tras Street, Singapore, Singapore, 078999, Singapore
-
-
-
---
-Email address: "Friend" linux-kernel@vger.kernel.org
-Type of request: import
-Timestamp: 2010-11-16 04:10:03
-IP address: 116.87.186.62
-
+-- 
+Catalin
