@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934093Ab0KPJWV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 04:22:21 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:64286 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934055Ab0KPJWT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 04:22:19 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build failure after merge of the bkl-config tree
-Date: Tue, 16 Nov 2010 10:21:57 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1+; KDE/4.5.1; x86_64; ; )
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20101116130853.a3c66c4b.sfr@canb.auug.org.au>
-In-Reply-To: <20101116130853.a3c66c4b.sfr@canb.auug.org.au>
+	id S934097Ab0KPJXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 04:23:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35489 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934022Ab0KPJXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 04:23:39 -0500
+Date: Tue, 16 Nov 2010 10:23:06 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@elte.hu,
+        andi@firstfloor.org, lwoodman@redhat.com, hch@infradead.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv2 2/2] tracing,mm - add kernel pagefault tracepoint for
+ x86 & x86_64
+Message-ID: <20101116092306.GC1955@jolsa.brq.redhat.com>
+References: <20101110164413.GA5360@nowhere>
+ <1289466549-7602-3-git-send-email-jolsa@redhat.com>
+ <20101115134325.GA5410@nowhere>
+ <1289830760.12418.598.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011161021.57734.arnd@arndb.de>
-X-Provags-ID: V02:K0:u30yGjP5BIEdD1lf6nBVacfhWhp6mvA1m2c4Y48sSm4
- ZlpwfZlZ3pvu0OLlkpt0R1kLk2rg3vFLoM6BTf9F+/wrev6aDZ
- f5KbSlualb9jYfjgrNT9LUUF2jqZOC/pAiI0czx2hTpM70XERE
- RTUmTn207z9QZ4nhlJWzKlkf05ZH6oB2D9+hCD6ZkglWPULHyy
- BwSMVQHWGhHHMqGsVvQ7A==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289830760.12418.598.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 16 November 2010 03:08:53 Stephen Rothwell wrote:
-> After merging the bkl-config tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
+On Mon, Nov 15, 2010 at 09:19:20AM -0500, Steven Rostedt wrote:
+> On Mon, 2010-11-15 at 14:43 +0100, Frederic Weisbecker wrote:
 > 
-> kernel/sched.c: In function 'schedule':
-> kernel/sched.c:3896: error: implicit declaration of function 'release_kernel_lock'
-> kernel/sched.c:3960: error: implicit declaration of function 'reacquire_kernel_lock'
 > 
-> Caused by commit 8bbc75c71b8a821edd8abb43452c78fbfd4789dc ("BKL: remove
-> extraneous #include <smp_lock.h>").  Not well build tested :-(
+> > dotraplinkage void __kprobes
+> > do_page_fault(struct pt_regs *regs, unsigned long error_code)
+> > {
+> > 	unsigned long address;
+> > 
+> > 	/* Get the faulting address: */
+> > 	address = read_cr2();
+> > 
+> > 	trace_mm_pagefault_start(address, error_code);
+> > 	__do_page_fault(regs, address, error_code);
+> > 	trace_mm_pagefault_end(address);
+> > }
+> > 
+> > 
+> > Would you be ok with that?
+> > 
+> > Last thing I worry about is that error_code that is very arch dependent.
+> > If someone writes a script that depends on the x86 code, it won't work
+> > elsewhere while it's fairly possible to have a generic tracepoint there.
+> > 
+> > So perhaps we rather need a generic enum field instead of the error_code,
+> > to express the most interesting specific fault attributes. Than can
+> > probably be added later though, once someone really needs it.
+> > 
+> > Hm?
+> 
+> Perhaps we should have:
+> 
+> 	trace_arch_mm_pagefault_start(address, error_code);
+> 	__do_page_fault(regs, address, error_code);
+> 	trace_mm_pagefault_end(address);
+> 
+> 
+> Then we have a arch/x86/kernel/trace.c that can map trace_arch_...
+> events to generic events. This file will hold the
+> trace_mm_pagefault_start(), which is called by
+> trace_arch_mm_pagefault_start(). Have a hook that when the
+> trace_mm_pagefault_start() is enabled, we also enable
+> trace_arch_mm_pagefault_start() that calls this tracepoint. The
+> trace_mm_pagefault_start() will then translate the
+> trace_arch_mm_pagfault_start() into the generic trace_mm_pagefault_start
+> event with the generic error_code that all archs will use.
+> 
+> Reason being, we don't need to do any extra processing in the fast path
+> when tracing is not enabled.
+> 
+> Also, I'm going to start working on the stable ABI today.
+do you mean stable api for the hook you described above?
+or should I come up with smth..
 
-Yes, and bad timing. I noticed this in a build test after uploading it,
-and uploaded the fixed tree half an hour later, just after you pulleed it :(
-Sorry about this, next time I'll do it in the right order.
-
-	Arnd
+thanks,
+jirka
