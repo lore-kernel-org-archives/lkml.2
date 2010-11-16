@@ -1,49 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab0KPRhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 12:37:00 -0500
-Received: from cantor.suse.de ([195.135.220.2]:33784 "EHLO mx1.suse.de"
+	id S1756053Ab0KPRhi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 12:37:38 -0500
+Received: from ist.d-labs.de ([213.239.218.44]:44291 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755505Ab0KPRg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 12:36:59 -0500
-Subject: Re: [PATCH v5] SCSI host lock push-down
-From: James Bottomley <James.Bottomley@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jeff Garzik <jeff@garzik.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTi=GGq0tMAWtwa-yQBpmpA8JCSWu1XK1rQ2j_Cmo@mail.gmail.com>
-References: <1289606118.3015.539.camel@mulgrave.site>
-	 <AANLkTinj2BM2eGo2yyfzs=t+nu79WLW_bGYota9sDZwH@mail.gmail.com>
-	 <20101113051635.GA11613@havoc.gtf.org>
-	 <20101116071029.GA13540@havoc.gtf.org>
-	 <AANLkTi=GGq0tMAWtwa-yQBpmpA8JCSWu1XK1rQ2j_Cmo@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Nov 2010 17:36:52 +0000
-Message-ID: <1289929012.11405.12.camel@mulgrave.site>
+	id S1754101Ab0KPRhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 12:37:37 -0500
+Date: Tue, 16 Nov 2010 18:37:07 +0100
+From: Florian Mickler <florian@mickler.org>
+To: Joe Perches <joe@perches.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jiri Kosina <trivial@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
+ preference tool
+Message-ID: <20101116183707.179964dd@schatten.dmk.lab>
+In-Reply-To: <1289919077.28741.50.camel@Joe-Laptop>
+References: <20101115134939.GC12986@rakim.wolfsonmicro.main>
+	<1289840957.16461.138.camel@Joe-Laptop>
+	<20101115173031.GI12986@rakim.wolfsonmicro.main>
+	<1289842444.16461.140.camel@Joe-Laptop>
+	<20101115182708.GJ12986@rakim.wolfsonmicro.main>
+	<1289845830.16461.149.camel@Joe-Laptop>
+	<20101115190738.GF3338@sirena.org.uk>
+	<1289848458.16461.150.camel@Joe-Laptop>
+	<20101115193407.GK12986@rakim.wolfsonmicro.main>
+	<1289850773.16461.166.camel@Joe-Laptop>
+	<20101116104921.GL12986@rakim.wolfsonmicro.main>
+	<1289919077.28741.50.camel@Joe-Laptop>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 09:25 -0800, Linus Torvalds wrote:
-> On Mon, Nov 15, 2010 at 11:10 PM, Jeff Garzik <jeff@garzik.org> wrote:
-> >
-> > Move the mid-layer's ->queuecommand() invocation from being locked
-> > with the host lock to being unlocked to facilitate speeding up the
-> > critical path for drivers who don't need this lock taken anyway.
+On Tue, 16 Nov 2010 06:51:17 -0800
+Joe Perches <joe@perches.com> wrote:
+
+> On Tue, 2010-11-16 at 10:49 +0000, Mark Brown wrote:
+> > On Mon, Nov 15, 2010 at 11:52:53AM -0800, Joe Perches wrote:
+> > > On Mon, 2010-11-15 at 19:34 +0000, Mark Brown wrote:
+> > > > It appears your scripts are already hooked into get_maintainers.pl which
+> > > > would seem the obvious place to do this?  Sadly I don't do perl, though
+> > > > it looks like you're doing pretty much all the work on that anyway.
+> > > Sadly, no it's not the right place.
+> > To query MAINTAINERS?  I'd assume that's where you'd want to put that
+> > stuff?
 > 
-> Looks ok to me. How should I take this? Just as a patch? Or should it
-> go through the scsi tree?
+> I trimmed cc's and added Andrew Morton and Florian Mickler.
+> First thread link for them: http://lkml.org/lkml/2010/11/15/262
+> 
+> I use get_maintainer to find email addresses with
+> "git send-email --cc-cmd=" but sure it could be extended
+> to find some other new information in the MAINTAINERS file.
+> 
+> Anyway, I think that get_maintainers isn't the proper tool
+> to rewrite commit subject lines, though it could certainly
+> do the lookup of a key in the MAINTAINERS file.
+> 
+> Maybe add a new MAINTAINERS section line something like:
+> 	"C:	CommitSubjectGrammarStyle"
+> where CommitSubjectGrammarStyle is something more
+> information rich than "style 1", "style 2".
+> 
+> Perhaps you'll propose a grammar to convert path to header
+> and go through and add these "C:" style entries to the
+> sections you maintain.
+> 
+> Also, what would you expect the output to be when a single
+> patch modified files from 2 subsystems that use different
+> styles?
+> 
+> cheers, Joe
+> 
 
-I was thinking through next for a few days to see if anything breaks in
-the architectures with scsi drivers we can't compile on x86 ... but
-realistically that will happen in -rcX as well, so I'm happy either way.
+My first reaction to this is, it's silly. Certainly a
+subsystem-maintainer is capable of hacking something together that
+suits his needs or may just use a good editor to get the job done.
+After all, he might want to edit the commit message anyway. Also he has
+to have his act together for all non-conforming submitters anyway,
+because shurely, telling people to re-edit their patches subject line
+is not what one would consider "welcoming to newbies",  or whatever it
+is kernel subsystem maintainers have to be nowadays *g*... 
 
-James
+On second thought, if that facility existed, i think nobody would mind
+it either. So, why not. I don't see a way to specify what to do with
+cross-subsystem patches though. 
 
+(MAINTAINERS seems to be the logical place to put this
+information.)
+
+Regards,
+Flo
 
