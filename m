@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759449Ab0KPHl7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 02:41:59 -0500
-Received: from mga01.intel.com ([192.55.52.88]:41019 "EHLO mga01.intel.com"
+	id S1759435Ab0KPHnO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 02:43:14 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:50895 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756802Ab0KPHl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 02:41:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,204,1288594800"; 
-   d="scan'208";a="858022744"
-Date: Tue, 16 Nov 2010 14:21:28 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: "shaohui.zheng@linux.intel.com" <shaohui.zheng@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [v2,5/8] NUMA Hotplug emulator
-Message-ID: <20101116062128.GB21317@shaohui>
-Mail-Followup-To: Paul Mundt <lethal@linux-sh.org>,
-	"shaohui.zheng@linux.intel.com" <shaohui.zheng@linux.intel.com>,
-	linux-kernel@vger.kernel.org
-References: <20101116041330.GA20694@shaohui>
- <20101116054747.GA1064@linux-sh.org>
- <A24AE1FFE7AEC5489F83450EE98351BF27D53BCC36@shsmsx502.ccr.corp.intel.com>
- <20101116050507.GA21317@shaohui>
- <20101116070421.GB1330@linux-sh.org>
+	id S1753978Ab0KPHnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 02:43:13 -0500
+Message-ID: <4CE235EE.3040602@zytor.com>
+Date: Mon, 15 Nov 2010 23:42:38 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101116070421.GB1330@linux-sh.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Baruch Siach <baruch@tkos.co.il>
+CC: Indan Zupancic <indan@nul.nu>, Jiri Slaby <jslaby@suse.cz>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Alex Gershgorin <agersh@rambler.ru>
+Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
+References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il> <4CE0FE71.6000303@suse.cz> <20101115100838.GA3649@jasper.tkos.co.il> <4CE10B32.8090705@suse.cz> <c30e46c1b5343789b6475722071c3020.squirrel@webmail.greenhost.nl> <20101116055602.GA18210@jasper.tkos.co.il>
+In-Reply-To: <20101116055602.GA18210@jasper.tkos.co.il>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Perhaps the easiest is just to insert my patch in to your series as a
-> standalone thing and then build on top of it for your patches 4 and 5. If
-> you wish to do this, then you can of course add my Signed-off-by for
-> that.
+On 11/15/2010 09:56 PM, Baruch Siach wrote:
+>>
+>> This is niche enough, don't make it more complicated than needed.
+>> Having its own major seems overkill.
 > 
-> Also, are you doing this development in a git tree somewhere? I'd like to
-> get it going on top of SH also, so it would be nice to have a point of
-> reference for keeping things in sync (otherwise I'll just make a topic
-> branch with your newest version and send you updates incrementally). 
+> I agree.
+> 
 
-It is an internal project, so we did not have a public git tree. it is available
-in internal only.
+Numbers are cheap, especially these days when we have 12-bit dynamic
+majors.  Of course, we also have 20-bit dynamic minors.
 
-the purpose of the emulator is just for CPU/Memory hotplug debuging, there are 
-a lot of hotplug issues before linux kernel 2.6.32, it is very hard to debug.
-With the help of emuatlor, we get them fixed, so we think the emulator is a good
-tool, and we want to share it with more people.
+	-hpa
 
 -- 
-Thanks & Regards,
-Shaohui
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
