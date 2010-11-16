@@ -1,245 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759247Ab0KPD2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 22:28:48 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:57980 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755582Ab0KPD2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 22:28:47 -0500
-Date: Mon, 15 Nov 2010 21:28:41 -0600
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Dustin Kirkland <kirkland@canonical.com>,
-        ecryptfs-devel@lists.launchpad.net
-Subject: Re: [PATCH 4/6] fs/ecryptfs:  Add printf format/argument
- verification and fix fallout
-Message-ID: <20101116032840.GC21008@boyd.l.tihix.com>
-References: <cover.1289432524.git.joe@perches.com>
- <6a5c98af6411ff3e10973fde991fb42e34121e98.1289432524.git.joe@perches.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6a5c98af6411ff3e10973fde991fb42e34121e98.1289432524.git.joe@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759260Ab0KPDbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 22:31:38 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43845 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759226Ab0KPDbX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 22:31:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=OlyniZ/BjRs/3c9UAYEU1+fyZXwvP85oibfvVqVgkB0yOulr8WssE/nTHmhuqSAj2E
+         6MgAU/STa8Ln0y8w6rJ6Ank1yOSMNJE/CNWwxUDMni4H4pMsJSvuQGae/TrCGS9dXid6
+         pSXbo+6w1UkJsjugbTuIcTzfcf3Kn8JV+3kUE=
+Subject: Re: Remaining problems in firewire-net
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+In-Reply-To: <20101115090103.0df0b5ef@stein>
+References: <tkrat.036c5d10fb83f85d@s5r6.in-berlin.de>
+	 <1289795401.11881.62.camel@maxim-laptop>  <20101115090103.0df0b5ef@stein>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Nov 2010 05:31:15 +0200
+Message-ID: <1289878275.16486.57.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Nov 10, 2010 at 03:46:16PM -0800, Joe Perches <joe@perches.com> wrote:
-> Add __attribute__((format... to __ecryptfs_printk
-> Make formats and arguments match.
-> Add casts to (unsigned long long) for %llu.
+On Mon, 2010-11-15 at 09:01 +0100, Stefan Richter wrote:
+> On Nov 15 Maxim Levitsky wrote:
+> > That is because 1394 spec specifies that first of all the ISO channel
+> > must be allocated from the IRM node. The firewire stack currently just
+> > uses hardcoded numbers in two places the ISO is used 
+> > (firewire-net, and firedtv)
+> > However it has all functions implemented for this.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
+> This is a bug (missing feature) in firedtv but not in firewire-net. The
+> broadcast channel is allocated and reallocated by the bus manager, not
+> by an IP-over-1394 user.  But you found that out already, below.
+Agree fully.
 
-Thanks Joe. I changed a couple minor things, which are noted below and
-applied the fix to
-git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git#next
-
-When compiling the eCryptfs module for an x86_64 kernel, this fix
-uncovered several missing 'z' length modifiers for size_t variables. I
-fixed those, as well:
-http://git.kernel.org/?p=linux/kernel/git/ecryptfs/ecryptfs-2.6.git;a=commit;h=d1fbc23049e13980f22897b0e657345a9c7bcd50
-
-Thanks again for the patch.
-
-Tyler
-
->  fs/ecryptfs/crypto.c          |   20 ++++++++++++--------
->  fs/ecryptfs/ecryptfs_kernel.h |    1 +
->  fs/ecryptfs/file.c            |    6 +++---
->  fs/ecryptfs/keystore.c        |    7 ++++---
->  fs/ecryptfs/main.c            |    7 ++++---
->  fs/ecryptfs/mmap.c            |   13 +++++++------
->  6 files changed, 31 insertions(+), 23 deletions(-)
 > 
-> diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
-> index cbadc1b..523bcb0 100644
-> --- a/fs/ecryptfs/crypto.c
-> +++ b/fs/ecryptfs/crypto.c
-> @@ -414,8 +414,9 @@ static int ecryptfs_encrypt_extent(struct page *enc_extent_page,
->  				(extent_base + extent_offset));
->  	if (rc) {
->  		ecryptfs_printk(KERN_ERR, "Error attempting to "
-> -				"derive IV for extent [0x%.16x]; "
-> -				"rc = [%d]\n", (extent_base + extent_offset),
-> +				"derive IV for extent [0x%.16llx]; "
-> +				"rc = [%d]\n",
-> +				(unsigned long long)(extent_base + extent_offset),
->  				rc);
->  		goto out;
->  	}
-> @@ -443,8 +444,9 @@ static int ecryptfs_encrypt_extent(struct page *enc_extent_page,
->  	}
->  	rc = 0;
->  	if (unlikely(ecryptfs_verbosity > 0)) {
-> -		ecryptfs_printk(KERN_DEBUG, "Encrypt extent [0x%.16x]; "
-> -				"rc = [%d]\n", (extent_base + extent_offset),
-> +		ecryptfs_printk(KERN_DEBUG, "Encrypt extent [0x%.16llx]; "
-> +				"rc = [%d]\n",
-> +				(unsigned long long)(extent_base + extent_offset),
-
-A handful of these lines reached over 80 columns, so I touched them up
-before pushing the patch to my branch.
-
->  				rc);
->  		ecryptfs_printk(KERN_DEBUG, "First 8 bytes after "
->  				"encryption:\n");
-> @@ -541,8 +543,9 @@ static int ecryptfs_decrypt_extent(struct page *page,
->  				(extent_base + extent_offset));
->  	if (rc) {
->  		ecryptfs_printk(KERN_ERR, "Error attempting to "
-> -				"derive IV for extent [0x%.16x]; "
-> -				"rc = [%d]\n", (extent_base + extent_offset),
-> +				"derive IV for extent [0x%.16llx]; "
-> +				"rc = [%d]\n",
-> +				(unsigned long long)(extent_base + extent_offset),
->  				rc);
->  		goto out;
->  	}
-> @@ -571,8 +574,9 @@ static int ecryptfs_decrypt_extent(struct page *page,
->  	}
->  	rc = 0;
->  	if (unlikely(ecryptfs_verbosity > 0)) {
-> -		ecryptfs_printk(KERN_DEBUG, "Decrypt extent [0x%.16x]; "
-> -				"rc = [%d]\n", (extent_base + extent_offset),
-> +		ecryptfs_printk(KERN_DEBUG, "Decrypt extent [0x%.16llx]; "
-> +				"rc = [%d]\n",
-> +				(unsigned long long)(extent_base + extent_offset),
->  				rc);
->  		ecryptfs_printk(KERN_DEBUG, "First 8 bytes after "
->  				"decryption:\n");
-> diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
-> index 413a3c4..86c7101 100644
-> --- a/fs/ecryptfs/ecryptfs_kernel.h
-> +++ b/fs/ecryptfs/ecryptfs_kernel.h
-> @@ -584,6 +584,7 @@ ecryptfs_set_dentry_lower_mnt(struct dentry *dentry, struct vfsmount *lower_mnt)
+> Channel allocation and DMA context allocation and control are unrelated
+> issues, on the other hand.  One is a higher-level cooperative protocol
+> for bus-wide resource management (in which the nodes' roles are defined
+> in various different ways by protocols such as AV/C's CMP or by IIDC).
+> The other is about hardware control locally in the OHCI bus bridge
+> hardware.
 > 
->  #define ecryptfs_printk(type, fmt, arg...) \
->          __ecryptfs_printk(type "%s: " fmt, __func__, ## arg);
-> +__attribute__ ((format(printf, 1, 2)))
->  void __ecryptfs_printk(const char *fmt, ...);
+> [...]
+> > In case of firewire-net, it is simpler, because it uses the broadcast
+> > channel, so it only has to find who is the IRM and read its
+> > BROADCAST_CHANNEL.
+> > 
+> > However, I think I need to write a function to query the IRM its
+> > broadcast channel, don't think it has one.
 > 
->  extern const struct file_operations ecryptfs_main_fops;
-> diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-> index 91da029..d445672 100644
-> --- a/fs/ecryptfs/file.c
-> +++ b/fs/ecryptfs/file.c
-> @@ -243,9 +243,9 @@ static int ecryptfs_open(struct inode *inode, struct file *file)
->  		}
->  	}
->  	mutex_unlock(&crypt_stat->cs_mutex);
-> -	ecryptfs_printk(KERN_DEBUG, "inode w/ addr = [0x%p], i_ino = [0x%.16x] "
-> -			"size: [0x%.16x]\n", inode, inode->i_ino,
-> -			i_size_read(inode));
-> +	ecryptfs_printk(KERN_DEBUG, "inode w/ addr = [0x%p], i_ino = [0x%.16lx] "
-> +			"size: [0x%.16llx]\n", inode, inode->i_ino,
-> +			(unsigned long long)i_size_read(inode));
->  	goto out;
->  out_free:
->  	kmem_cache_free(ecryptfs_file_info_cache,
-> diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-> index b1f6858..e73f24c 100644
-> --- a/fs/ecryptfs/keystore.c
-> +++ b/fs/ecryptfs/keystore.c
-> @@ -59,7 +59,7 @@ static int process_request_key_err(long err_code)
->  		break;
->  	default:
->  		ecryptfs_printk(KERN_WARNING, "Unknown error code: "
-> -				"[0x%.16x]\n", err_code);
-> +				"[0x%.16lx]\n", err_code);
->  		rc = -EINVAL;
->  	}
->  	return rc;
-> @@ -1864,8 +1864,9 @@ found_matching_auth_tok:
->  				"session key for authentication token with sig "
->  				"[%.*s]; rc = [%d]. Removing auth tok "
->  				"candidate from the list and searching for "
-> -				"the next match.\n", candidate_auth_tok_sig,
-> -				ECRYPTFS_SIG_SIZE_HEX, rc);
-> +				"the next myouatch.\n",
-
-I also touched up this little typo.
-
-> +				ECRYPTFS_SIG_SIZE_HEX, candidate_auth_tok_sig,
-> +				rc);
->  		list_for_each_entry_safe(auth_tok_list_item,
->  					 auth_tok_list_item_tmp,
->  					 &auth_tok_list, list) {
-> diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
-> index a9dbd62..cfe636d 100644
-> --- a/fs/ecryptfs/main.c
-> +++ b/fs/ecryptfs/main.c
-> @@ -828,9 +828,10 @@ static int __init ecryptfs_init(void)
->  		ecryptfs_printk(KERN_ERR, "The eCryptfs extent size is "
->  				"larger than the host's page size, and so "
->  				"eCryptfs cannot run on this system. The "
-> -				"default eCryptfs extent size is [%d] bytes; "
-> -				"the page size is [%d] bytes.\n",
-> -				ECRYPTFS_DEFAULT_EXTENT_SIZE, PAGE_CACHE_SIZE);
-> +				"default eCryptfs extent size is [%u] bytes; "
-> +				"the page size is [%lu] bytes.\n",
-> +				ECRYPTFS_DEFAULT_EXTENT_SIZE,
-> +				(unsigned long)PAGE_CACHE_SIZE);
->  		goto out;
->  	}
->  	rc = ecryptfs_init_kmem_caches();
-> diff --git a/fs/ecryptfs/mmap.c b/fs/ecryptfs/mmap.c
-> index b1d8275..667fc79 100644
-> --- a/fs/ecryptfs/mmap.c
-> +++ b/fs/ecryptfs/mmap.c
-> @@ -65,7 +65,7 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
->  	rc = ecryptfs_encrypt_page(page);
->  	if (rc) {
->  		ecryptfs_printk(KERN_WARNING, "Error encrypting "
-> -				"page (upper index [0x%.16x])\n", page->index);
-> +				"page (upper index [0x%.16lx])\n", page->index);
->  		ClearPageUptodate(page);
->  		goto out;
->  	}
-> @@ -237,7 +237,7 @@ out:
->  		ClearPageUptodate(page);
->  	else
->  		SetPageUptodate(page);
-> -	ecryptfs_printk(KERN_DEBUG, "Unlocking page with index = [0x%.16x]\n",
-> +	ecryptfs_printk(KERN_DEBUG, "Unlocking page with index = [0x%.16lx]\n",
->  			page->index);
->  	unlock_page(page);
->  	return rc;
-> @@ -488,7 +488,7 @@ static int ecryptfs_write_end(struct file *file,
->  	} else
->  		ecryptfs_printk(KERN_DEBUG, "Not a new file\n");
->  	ecryptfs_printk(KERN_DEBUG, "Calling fill_zeros_to_end_of_page"
-> -			"(page w/ index = [0x%.16x], to = [%d])\n", index, to);
-> +			"(page w/ index = [0x%.16lx], to = [%d])\n", index, to);
->  	if (!(crypt_stat->flags & ECRYPTFS_ENCRYPTED)) {
->  		rc = ecryptfs_write_lower_page_segment(ecryptfs_inode, page, 0,
->  						       to);
-> @@ -503,19 +503,20 @@ static int ecryptfs_write_end(struct file *file,
->  	rc = fill_zeros_to_end_of_page(page, to);
->  	if (rc) {
->  		ecryptfs_printk(KERN_WARNING, "Error attempting to fill "
-> -			"zeros in page with index = [0x%.16x]\n", index);
-> +			"zeros in page with index = [0x%.16lx]\n", index);
->  		goto out;
->  	}
->  	rc = ecryptfs_encrypt_page(page);
->  	if (rc) {
->  		ecryptfs_printk(KERN_WARNING, "Error encrypting page (upper "
-> -				"index [0x%.16x])\n", index);
-> +				"index [0x%.16lx])\n", index);
->  		goto out;
->  	}
->  	if (pos + copied > i_size_read(ecryptfs_inode)) {
->  		i_size_write(ecryptfs_inode, pos + copied);
->  		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
-> -				"[0x%.16x]\n", i_size_read(ecryptfs_inode));
-> +				"[0x%.16llx]\n",
-> +				(unsigned long long)i_size_read(ecryptfs_inode));
->  	}
->  	rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
->  	if (rc)
-> -- 
-> 1.7.3.1.g432b3.dirty
+> Overkill.  Just leave it as is:
+>   1.) We know which number the broadcast channel has.
+>   2.) We optimistically assume that a 1394a compliant IRM or bus
+>       manager exists and allocated that channel.
 > 
+> Why introduce entirely unnecessary fragility?
+Looking at spec again, indeed 31 the the default broadcast channel, and
+probably nobody ever changes it by writing the BROADCAST_CHANNEL.
+The BROADCAST_CHANNEL register was actually added in 1394a.
+
+
+> 
+> > Speaking of IRM discovery, the spec says it should be a node with
+> > contender bit and largest node id. However, the code in
+> > core-topology.c, build_tree seems to take the node that sent the
+> > selfID packet last.
+> 
+> This is because of a monotony rule of how self ID packets arrive during
+> self identification phase.
+Ah, ok, found this bit in spec too.
+
+Btw, according to spec the firewire appears to be half-duplex.
+
+
+Also one note I wanted to say in previous mail. but forgot.
+The IP over 1394 tells that unicast can also use ISO transactions.
+However, it doesn't say how to negotiate the ISO channel number, thus a
+logical conclusion is that its not possible to use ISO transactions for
+unicast.
+Is that right?
+
+Best regards,
+	Maxim Levitsky
+
