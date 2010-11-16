@@ -1,101 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759572Ab0KPUQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:16:37 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:33002 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759390Ab0KPUQg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:16:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=oeSJezMbYHJWRW0Z9cJWmu39KOFRbdVhlZKb7uWHp8vYeGyd3p22CA603H/9VypofW
-         /cFUfRPJPRcdWRaigESa4+J1CwSG6vBDKiul2f5kMEnXUO4oXjTg3NGik3zQzrX81kSt
-         ZkeU4fp2nD8URwZ5LylkAG80FQNhtKW1RWT40=
-Date: Tue, 16 Nov 2010 23:16:20 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Joe Perches <joe@perches.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hugh Dickins <hughd@google.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: Re: [PATCH] ipc: explicitly clear stack memory for shminfo
-Message-ID: <20101116201620.GA11278@albatros>
-References: <1289937508-19458-1-git-send-email-kees.cook@canonical.com>
+	id S1755920Ab0KPUSs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:18:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58196 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753777Ab0KPUSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 15:18:46 -0500
+Date: Tue, 16 Nov 2010 15:17:57 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Paul Menage <menage@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101116201757.GI13092@redhat.com>
+References: <1289916171.5169.117.camel@maggy.simson.net>
+ <1289916683.2109.625.camel@laptop>
+ <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+ <20101116170312.GA19327@tango.0pointer.de>
+ <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+ <20101116181603.GC19327@tango.0pointer.de>
+ <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+ <AANLkTikjQKmo0j5xbvPiS=eriAUUZPMGKkcxt8w_z8XB@mail.gmail.com>
+ <AANLkTikKdjH-ZM0eXTQMvzJjYkpyfKZR2OK06tNtCGFs@mail.gmail.com>
+ <AANLkTikSrN_Ur24xd7XYJyV3H8Cv9kXyDeBUpahNJHBU@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289937508-19458-1-git-send-email-kees.cook@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTikSrN_Ur24xd7XYJyV3H8Cv9kXyDeBUpahNJHBU@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kees,
-
-On Tue, Nov 16, 2010 at 11:58 -0800, Kees Cook wrote:
-> This fixes a kernel stack memory contents leak by explicitly clearing
-> the shminfo structure on the kernel stack before it is populated and
-> copied back to userspace.
+On Tue, Nov 16, 2010 at 11:56:33AM -0800, Paul Menage wrote:
+> On Tue, Nov 16, 2010 at 11:45 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > In a system daemon? Good luck with that. It's a nightmare. Maybe you
+> > could just poll all the cgroups, and try to remove them once a minute,
+> > and if they are empty it works. Or something like that. But what a
+> > hacky thing it would be.
 > 
-> Signed-off-by: Kees Cook <kees.cook@canonical.com>
-> Acked-by: Pekka Enberg <penberg@kernel.org>
-> ---
->  ipc/shm.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/ipc/shm.c b/ipc/shm.c
-> index 7d3bb22..1d3d41f 100644
-> --- a/ipc/shm.c
-> +++ b/ipc/shm.c
-> @@ -531,6 +531,7 @@ static inline unsigned long copy_shminfo_to_user(void __user *buf, struct shminf
->  	    {
->  		struct shminfo out;
->  
-> +		memset(&out, 0, sizeof(out));
->  		if(in->shmmax > INT_MAX)
->  			out.shmmax = INT_MAX;
->  		else
-> -- 
-> 1.7.2.3
+> There's an existing cgroups API - release_agent and notify_on_release
+> - whereby the kernel will spawn a userspace command once a given
+> cgroup is completely empty. It's intended for pretty much exactly this
+> purpose.
 
-Can you please clarify what fields (padding bytes?) are uninitialized
-here?  I see this struct shminfo definition:
+Yes. And it seems to be working just fine for me. I modiefied Lennart's
+script a bit to achieve that.
 
-    /* Obsolete, used only for backwards compatibility */
-    struct	shminfo {
-        int shmmax;
-        int shmmin;
-        int shmmni;
-        int shmseg;
-        int shmall;
-    };
+Addition to my .bashrc.
 
-And this filling:
+if [ "$PS1" ] ; then
+        mkdir -m 0700 -p /cgroup/cpu/$$
+        echo 1 > /cgroup/cpu/$$/notify_on_release
+        echo $$ > /cgroup/cpu/$$/tasks
+fi
 
-		if(in->shmmax > INT_MAX)
-			out.shmmax = INT_MAX;
-		else
-			out.shmmax = (int)in->shmmax;
+I created one file /bin/rmcgroup to clean up the cgroup.
 
-		out.shmmin	= in->shmmin;
-		out.shmmni	= in->shmmni;
-		out.shmseg	= in->shmseg;
-		out.shmall	= in->shmall; 
+#!/bin/bash
+rmdir /cgroup/cpu/$1
 
-		return copy_to_user(buf, &out, sizeof(out));
+And did following to mount cgroup and setup empty group notification.
 
-As I see all five fields are set anyway, no padding bytes here, correct?
+mount -t cgroup -o cpu none /cgroup/cpu
+echo "/bin/rmcgroup" > /cgroup/cpu/release_agent
 
+And it works fine. Upon ssh to my box, a cpu cgroup is automatically
+created and upon exiting the shell, this group is automatically destroyed.
 
-Thanks,
+So API/interface for automatically reclaiming the cgroup once it is empty 
+seems to be pretty simple and works.
 
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Thanks
+Vivek
