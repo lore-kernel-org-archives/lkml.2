@@ -1,178 +1,754 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757800Ab0KPGIx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 01:08:53 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:49409 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754472Ab0KPGIv (ORCPT
+	id S1759194Ab0KPGK6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 01:10:58 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:38405 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756562Ab0KPGK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 01:08:51 -0500
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Joe Eykholt <jeykholt@cisco.com>
-Cc: Greg KH <greg@kroah.com>, Vladislav Bolkhovitin <vst@vlnb.net>,
-        Bart Van Assche <bvanassche@acm.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        James Smart <James.Smart@emulex.com>, Andy Yan <ayan@marvell.com>,
-        Chetan Loke <generationgnu@yahoo.com>, Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>,
-        Joel Becker <joel.becker@oracle.com>
-In-Reply-To: <4CE210D3.5060703@cisco.com>
-References: <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net>
-	 <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net>
-	 <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net>
-	 <20101113235938.GA1827@kroah.com>
-	 <AANLkTi=PxYi8kCsAxbopUHBC+=2QPuoEcojdqugS88sH@mail.gmail.com>
-	 <20101115184422.GA9566@kroah.com> <4CE19A94.8080504@vlnb.net>
-	 <20101115221359.GA9530@kroah.com>  <4CE210D3.5060703@cisco.com>
-Content-Type: text/plain
-Date: Mon, 15 Nov 2010 22:03:36 -0800
-Message-Id: <1289887416.22107.159.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Nov 2010 01:10:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=Z2C0la8NGVZiUjQZSmDXkJEgCFqBwgHIIq9dsSMHq+9pNe4FUGFBMnlA9JVg6ChOVx
+         9EW6/LwmWoP36fmEZ+jAiojLh8ICLioY03qh/or5OLLDYcgwajZwYF9ENuihi6Ue3EoK
+         0dBI+dMm/0v6S6WhimTsjZnR5syb9eG5yR8Xs=
+From: Al Cho <acho@novell.com>
+To: gregkh@suse.de
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        yiyingc@ene.com.tw, jlee@novell.com, acho@novell.com,
+        segooon@gmail.com
+Subject: [PATCH 1/3] staging/keucr: fix keucr init code style
+Date: Tue, 16 Nov 2010 14:10:56 +0800
+Message-Id: <1289887856-2884-1-git-send-email-acho@novell.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-15 at 21:04 -0800, Joe Eykholt wrote:
-> 
-> On 11/15/10 2:13 PM, Greg KH wrote:
-> > On Mon, Nov 15, 2010 at 11:39:48PM +0300, Vladislav Bolkhovitin wrote:
-> >> Greg KH, on 11/15/2010 09:44 PM wrote:
-> >> > On Mon, Nov 15, 2010 at 06:45:24PM +0100, Bart Van Assche wrote:
-> >> >> On Sun, Nov 14, 2010 at 12:59 AM, Greg KH <greg@kroah.com> wrote:
-> >> >>>
-> >> >>> On Sat, Nov 13, 2010 at 08:20:18PM +0300, Vladislav Bolkhovitin wrote:
-> >> >>>> So, I decided to reimplement it to be completely synchronous. SYSFS
-> >> >>>> authors did really great job and thanks to the excellent internal SYSFS
-> >> >>>> design and implementation it is absolutely safe. See:
-> >> >>>>
-> >> >>>> [root@tgt ~]# modprobe scst
-> >> >>>> [root@tgt ~]# cd /sys/kernel/scst_tgt/
-> >> >>>
-> >> >>> Sorry, but no, you can't put this in /sys/kernel/ without getting the
-> >> >>> approval of the sysfs maintainer.
-> >> >>>
-> >> >>> I really don't understand why you are using kobjects in the first place,
-> >> >>> why isn't this in the main device tree in the kernel, using 'struct
-> >> >>> device'?
-> >> >>
-> >> >> We might have missed something, but as far as we know it has not yet
-> >> >> been explained in this thread why using 'struct device' would be an
-> >> >> advantage over using 'struct kobject'.
-> >> >
-> >> > It's very simple.
-> >> >
-> >> > You want your device to show up in the global device tree in the kernel,
-> >> > not off to one side, unconnected to anything else.
-> >> >
-> >> > Please use 'struct device', it is what you want to do here.
-> >>
-> >> But we don't have any device to show up in the global device tree!
-> > 
-> > Not true at all.
-> > 
-> >> We don't have any devices in the struct device's understanding at all!
-> > 
-> > Then create them just like you are doing so for your kobject use.
-> > 
-> > The first device would be the root one, and then everything trickles
-> > down from there.
-> > 
-> > And use configfs for your configuration stuff, that's what it is there
-> > for, and if it doesn't somehow work properly for you, please work with
-> > the configfs developers to fix that up.
-> > 
-> > thanks,
-> > 
-> > greg k-h
-> 
+fix keucr init.c init.h code style
 
-Greetings Joe,
+Signed-off-by: Al Cho <acho@novell.com>
+---
+ drivers/staging/keucr/init.c |  408 +++++++++++++++++++++--------------------
+ drivers/staging/keucr/init.h |    3 +
+ 2 files changed, 212 insertions(+), 199 deletions(-)
 
-> I don't have any opinion on the above, but I don't see why sysfs can't be
-> used for configuration as well as its other roles. It seems to me wasteful
-> to require configfs to be used in order to change configuration when
-> sysfs works fine for this.
-> 
-> Here are a couple of existing examples where sysfs is used in a role that
-> would seem similar to SCST's usage:
-> 
-> 1) scsi_transport_fc already has an sysfs file, fc_host/vport_create, which
-> can be written to create new fc_host and scsi_host instances.
-> 
-> 2) fcoe.ko uses a write to the sysfs file /sys/module/fcoe/parameters/create
-> to start the protocol on a particular ethernet interface.  There's another
-> file for destroy.
-> 
-> I'll bet there are other examples in other subsystems, and I don't think
-> there is anything wrong with the above usages of sysfs.
-> 
-> I agree with Vladislav's point that configfs doesn't work instead of sysfs
-> because configs doesn't make it easy for the kernel side to create nodes for
-> dynamic information like connected initiators and statistics.
-
-I disagree that conversion of 'demo mode' struct se_node_acls to explict
-userspace syscall driven configfs registered struct
-se_node_acl->acl_group is overly complex, or otherwise difficult in
-context of a configfs consumer for a transition demo mode -> explict
-NodeACL via:
-
-mkdir -p /sys/kernel/config/target/$FABRIC/$WWN/$TPGT/acls/$INITIATOR_WWPN.
-
-Note the current v4.0 code supports this for LIO-Target and TCM/FC
-fabric module code, and will just work 'out of the box' for v4.0
-compatible fabric modules using target_core_fabric_configfs.c logic.
-
-As for statistics point, this is also currently handled by TCM in struct
-se_node_acl in target_core_mib.c:scsi_auth_intr_seq_show() for both
-explict NodeACL and TPG context 'demo-mode' generated struct se_node_acl
-attached to a struct se_portal_group fabric endpoint.
-
-> So, if the above examples are considered a misuse of sysfs,
-> SCST would need to use both sysfs and configfs.  It would use configfs to
-> do configuration, and sysfs to display and access the dynamic information
-> like connected initiators.  That seems a minor role for configfs,
-> which is easily handled in sysfs as SCST currently does.
-> 
-> Just my two cents.
-> 
-
-I think the question is more along the lines of: does sysfs have a hard
-requirement for target mode using native TCM/ConfigFS logic.?.  Early in
-the development of TCM/LIO v3.0 I thought that driving creation of
-configfs struct_groups from kernel code was in fact useful for my own
-development and for future mainline code, but with the help of foresight
-of jlbec, gregkh and others with our modern v4.0 code I am no longer
-convinced we need any direct kernel level interaction between native
-v4.0 target mode configfs code and existing sysfs code.
-
-So far using interpreted userspace python/shell code has served this
-purpose really quite well in terms of interaction between target mode
-configfs and existing sysfs design, and I do not currently see any
-inherient limitations from a userspace code driven persective for a full
-native configfs target implementation.  I would be happy to be proven
-wrong on this point, but so far the original decision to drive target
-mode completely from userspace with native configfs code has in fact
-proven to be a better decision than a hybrid kernel level configfs +
-sysfs implementation from the perspective of the userspace developer
-driving /sys/kernel/config/target/* code.
-
-So on this basis I am currently not interested in moving TCM/LIO code
-away from a native configfs control plane for the v4.0 release, but I am
-happy to discuss positive benefits that a hybrid implementation can
-potentially provide to our existing TCM/LIO userspace ecosystem.
-
-Best,
-
---nab
+diff --git a/drivers/staging/keucr/init.c b/drivers/staging/keucr/init.c
+index 1934805..a3c8114 100644
+--- a/drivers/staging/keucr/init.c
++++ b/drivers/staging/keucr/init.c
+@@ -13,41 +13,35 @@
+ 
+ BYTE		IsSSFDCCompliance;
+ BYTE		IsXDCompliance;
+-extern DWORD MediaChange;
+-extern int	Check_D_MediaFmt(struct us_data *);
+ 
+-//----- ENE_InitMedia() ----------------------------------------
++/*
++ * ENE_InitMedia():
++ */
+ int ENE_InitMedia(struct us_data *us)
+ {
+ 	int	result;
+ 	BYTE	MiscReg03 = 0;
+ 
+-	printk("--- Initial Nedia ---\n");
++	printk(KERN_INFO "--- Initial Nedia ---\n");
+ 	result = ENE_Read_BYTE(us, REG_CARD_STATUS, &MiscReg03);
+-	if (result != USB_STOR_XFER_GOOD)
+-	{
+-		printk("Read register fail !!\n");
++	if (result != USB_STOR_XFER_GOOD) {
++		printk(KERN_ERR "Read register fail !!\n");
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+-	printk("MiscReg03 = %x\n", MiscReg03);
++	printk(KERN_INFO "MiscReg03 = %x\n", MiscReg03);
+ 
+-	if (MiscReg03 & 0x01)
+-	{
+-		if (!us->SD_Status.Ready)
+-		{
++	if (MiscReg03 & 0x01) {
++		if (!us->SD_Status.Ready) {
+ 			result = ENE_SDInit(us);
+ 			if (result != USB_STOR_XFER_GOOD)
+ 				return USB_STOR_TRANSPORT_ERROR;
+ 		}
+ 	}
+ 
+-	if (MiscReg03 & 0x02)
+-	{
+-		if (!us->SM_Status.Ready && !us->MS_Status.Ready)
+-		{
++	if (MiscReg03 & 0x02) {
++		if (!us->SM_Status.Ready && !us->MS_Status.Ready) {
+ 			result = ENE_SMInit(us);
+-			if (result != USB_STOR_XFER_GOOD)
+-			{
++			if (result != USB_STOR_XFER_GOOD) {
+ 				result = ENE_MSInit(us);
+ 				if (result != USB_STOR_XFER_GOOD)
+ 					return USB_STOR_TRANSPORT_ERROR;
+@@ -58,7 +52,9 @@ int ENE_InitMedia(struct us_data *us)
+ 	return result;
+ }
+ 
+-//----- ENE_Read_BYTE() ----------------------------------------
++/*
++ * ENE_Read_BYTE() :
++ */
+ int ENE_Read_BYTE(struct us_data *us, WORD index, void *buf)
+ {
+ 	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+@@ -76,19 +72,20 @@ int ENE_Read_BYTE(struct us_data *us, WORD index, void *buf)
+ 	return result;
+ }
+ 
+-//----- ENE_SDInit() ---------------------
++/*
++ * ENE_SDInit():
++ */
+ int ENE_SDInit(struct us_data *us)
+ {
+ 	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+ 	int	result;
+ 	BYTE	buf[0x200];
+ 
+-	printk("transport --- ENE_SDInit\n");
+-	// SD Init Part-1
++	printk(KERN_INFO "transport --- ENE_SDInit\n");
++	/* SD Init Part-1 */
+ 	result = ENE_LoadBinCode(us, SD_INIT1_PATTERN);
+-	if (result != USB_STOR_XFER_GOOD)
+-	{
+-		printk("Load SD Init Code Part-1 Fail !!\n");
++	if (result != USB_STOR_XFER_GOOD) {
++		printk(KERN_ERR "Load SD Init Code Part-1 Fail !!\n");
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+ 
+@@ -98,17 +95,15 @@ int ENE_SDInit(struct us_data *us)
+ 	bcb->CDB[0] = 0xF2;
+ 
+ 	result = ENE_SendScsiCmd(us, FDIR_READ, NULL, 0);
+-	if (result != USB_STOR_XFER_GOOD)
+-	{
+-		printk("Exection SD Init Code Fail !!\n");
++	if (result != USB_STOR_XFER_GOOD) {
++		printk(KERN_ERR "Exection SD Init Code Fail !!\n");
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+ 
+-	// SD Init Part-2
++	/* SD Init Part-2 */
+ 	result = ENE_LoadBinCode(us, SD_INIT2_PATTERN);
+-	if (result != USB_STOR_XFER_GOOD)
+-	{
+-		printk("Load SD Init Code Part-2 Fail !!\n");
++	if (result != USB_STOR_XFER_GOOD) {
++		printk(KERN_ERR "Load SD Init Code Part-2 Fail !!\n");
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+ 
+@@ -119,45 +114,41 @@ int ENE_SDInit(struct us_data *us)
+ 	bcb->CDB[0]			= 0xF1;
+ 
+ 	result = ENE_SendScsiCmd(us, FDIR_READ, &buf, 0);
+-	if (result != USB_STOR_XFER_GOOD)
+-	{
+-		printk("Exection SD Init Code Fail !!\n");
++	if (result != USB_STOR_XFER_GOOD) {
++		printk(KERN_ERR "Exection SD Init Code Fail !!\n");
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+ 
+ 	us->SD_Status =  *(PSD_STATUS)&buf[0];
+-	if (us->SD_Status.Insert && us->SD_Status.Ready)
+-	{
++	if (us->SD_Status.Insert && us->SD_Status.Ready) {
+ 		ENE_ReadSDReg(us, (PBYTE)&buf);
+-		printk("Insert     = %x\n", us->SD_Status.Insert);
+-		printk("Ready      = %x\n", us->SD_Status.Ready);
+-		printk("IsMMC      = %x\n", us->SD_Status.IsMMC);
+-		printk("HiCapacity = %x\n", us->SD_Status.HiCapacity);
+-		printk("HiSpeed    = %x\n", us->SD_Status.HiSpeed);
+-		printk("WtP        = %x\n", us->SD_Status.WtP);
+-	}
+-	else
+-	{
+-		printk("SD Card Not Ready --- %x\n", buf[0]);
++		printk(KERN_INFO "Insert     = %x\n", us->SD_Status.Insert);
++		printk(KERN_INFO "Ready      = %x\n", us->SD_Status.Ready);
++		printk(KERN_INFO "IsMMC      = %x\n", us->SD_Status.IsMMC);
++		printk(KERN_INFO "HiCapacity = %x\n", us->SD_Status.HiCapacity);
++		printk(KERN_INFO "HiSpeed    = %x\n", us->SD_Status.HiSpeed);
++		printk(KERN_INFO "WtP        = %x\n", us->SD_Status.WtP);
++	} else {
++		printk(KERN_ERR "SD Card Not Ready --- %x\n", buf[0]);
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+ 	return USB_STOR_TRANSPORT_GOOD;
+ }
+ 
+-//----- ENE_MSInit() ----------------------------------------
++/*
++ * ENE_MSInit():
++ */
+ int ENE_MSInit(struct us_data *us)
+ {
+ 	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+ 	int	result;
+ 	BYTE	buf[0x200];
+ 	WORD	MSP_BlockSize, MSP_UserAreaBlocks;
+-	
+ 
+-	printk("transport --- ENE_MSInit\n");
++	printk(KERN_INFO "transport --- ENE_MSInit\n");
+ 	result = ENE_LoadBinCode(us, MS_INIT_PATTERN);
+-	if (result != USB_STOR_XFER_GOOD)
+-	{
+-		printk("Load MS Init Code Fail !!\n");
++	if (result != USB_STOR_XFER_GOOD) {
++		printk(KERN_ERR "Load MS Init Code Fail !!\n");
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+ 
+@@ -169,53 +160,49 @@ int ENE_MSInit(struct us_data *us)
+ 	bcb->CDB[1]			= 0x01;
+ 
+ 	result = ENE_SendScsiCmd(us, FDIR_READ, &buf, 0);
+-	if (result != USB_STOR_XFER_GOOD)
+-	{
+-		printk("Exection MS Init Code Fail !!\n");
++	if (result != USB_STOR_XFER_GOOD) {
++		printk(KERN_ERR "Exection MS Init Code Fail !!\n");
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+ 
+ 	us->MS_Status = *(PMS_STATUS)&buf[0];
+ 
+-	if (us->MS_Status.Insert && us->MS_Status.Ready)
+-	{
+-		printk("Insert     = %x\n", us->MS_Status.Insert);
+-		printk("Ready      = %x\n", us->MS_Status.Ready);
+-		printk("IsMSPro    = %x\n", us->MS_Status.IsMSPro);
+-		printk("IsMSPHG    = %x\n", us->MS_Status.IsMSPHG);
+-		printk("WtP        = %x\n", us->MS_Status.WtP);
+-		if (us->MS_Status.IsMSPro)
+-		{
+-			MSP_BlockSize      = (buf[6] <<8) | buf[7];
+-			MSP_UserAreaBlocks = (buf[10]<<8) | buf[11];
++	if (us->MS_Status.Insert && us->MS_Status.Ready) {
++		printk(KERN_INFO "Insert     = %x\n", us->MS_Status.Insert);
++		printk(KERN_INFO "Ready      = %x\n", us->MS_Status.Ready);
++		printk(KERN_INFO "IsMSPro    = %x\n", us->MS_Status.IsMSPro);
++		printk(KERN_INFO "IsMSPHG    = %x\n", us->MS_Status.IsMSPHG);
++		printk(KERN_INFO "WtP        = %x\n", us->MS_Status.WtP);
++		if (us->MS_Status.IsMSPro) {
++			MSP_BlockSize      = (buf[6] << 8) | buf[7];
++			MSP_UserAreaBlocks = (buf[10] << 8) | buf[11];
+ 			us->MSP_TotalBlock = MSP_BlockSize * MSP_UserAreaBlocks;
+-		}
+-		else
++		} else {
+ 			MS_CardInit(us);
+-		printk("MS Init Code OK !!\n");
+-	}
+-	else
+-	{
+-		printk("MS Card Not Ready --- %x\n", buf[0]);
++		}
++		printk(KERN_INFO "MS Init Code OK !!\n");
++	} else {
++		printk(KERN_ERR "MS Card Not Ready --- %x\n", buf[0]);
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+ 
+ 	return USB_STOR_TRANSPORT_GOOD;
+ }
+ 
+-//----- ENE_SMInit() ----------------------------------------
++/*
++ *ENE_SMInit()
++ */
+ int ENE_SMInit(struct us_data *us)
+ {
+ 	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+ 	int	result;
+ 	BYTE	buf[0x200];
+ 
+-	printk("transport --- ENE_SMInit\n");
++	printk(KERN_INFO "transport --- ENE_SMInit\n");
+ 
+ 	result = ENE_LoadBinCode(us, SM_INIT_PATTERN);
+-	if (result != USB_STOR_XFER_GOOD)
+-	{
+-		printk("Load SM Init Code Fail !!\n");
++	if (result != USB_STOR_XFER_GOOD) {
++		printk(KERN_ERR "Load SM Init Code Fail !!\n");
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+ 
+@@ -227,9 +214,9 @@ int ENE_SMInit(struct us_data *us)
+ 	bcb->CDB[1]			= 0x01;
+ 
+ 	result = ENE_SendScsiCmd(us, FDIR_READ, &buf, 0);
+-	if (result != USB_STOR_XFER_GOOD)
+-	{
+-		printk("Exection SM Init Code Fail !! result = %x\n", result);
++	if (result != USB_STOR_XFER_GOOD) {
++		printk(KERN_ERR \
++		       "Exection SM Init Code Fail !! result = %x\n", result);
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+ 
+@@ -238,32 +225,31 @@ int ENE_SMInit(struct us_data *us)
+ 	us->SM_DeviceID = buf[1];
+ 	us->SM_CardID   = buf[2];
+ 
+-	if (us->SM_Status.Insert && us->SM_Status.Ready)
+-	{
+-		printk("Insert     = %x\n", us->SM_Status.Insert);
+-		printk("Ready      = %x\n", us->SM_Status.Ready);
+-		printk("WtP        = %x\n", us->SM_Status.WtP);
+-		printk("DeviceID   = %x\n", us->SM_DeviceID);
+-		printk("CardID     = %x\n", us->SM_CardID);
++	if (us->SM_Status.Insert && us->SM_Status.Ready) {
++		printk(KERN_INFO "Insert     = %x\n", us->SM_Status.Insert);
++		printk(KERN_INFO "Ready      = %x\n", us->SM_Status.Ready);
++		printk(KERN_INFO "WtP        = %x\n", us->SM_Status.WtP);
++		printk(KERN_INFO "DeviceID   = %x\n", us->SM_DeviceID);
++		printk(KERN_INFO "CardID     = %x\n", us->SM_CardID);
+ 		MediaChange = 1;
+ 		Check_D_MediaFmt(us);
+-	}
+-	else
+-	{
+-		printk("SM Card Not Ready --- %x\n", buf[0]);
++	} else {
++		printk(KERN_ERR "SM Card Not Ready --- %x\n", buf[0]);
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+ 
+ 	return USB_STOR_TRANSPORT_GOOD;
+ }
+ 
+-//----- ENE_ReadSDReg() ----------------------------------------------
++/*
++ * ENE_ReadSDReg()
++ */
+ int ENE_ReadSDReg(struct us_data *us, u8 *RdBuf)
+ {
+ 	WORD	tmpreg;
+ 	DWORD	reg4b;
+-	
+-	//printk("transport --- ENE_ReadSDReg\n");
++
++	/* printk("transport --- ENE_ReadSDReg\n"); */
+ 	reg4b = *(PDWORD)&RdBuf[0x18];
+ 	us->SD_READ_BL_LEN = (BYTE)((reg4b >> 8) & 0x0f);
+ 
+@@ -277,74 +263,75 @@ int ENE_ReadSDReg(struct us_data *us, u8 *RdBuf)
+ 	if (us->SD_Status.HiCapacity && us->SD_Status.IsMMC)
+ 		us->HC_C_SIZE = *(PDWORD)(&RdBuf[0x100]);
+ 
+-	if (us->SD_READ_BL_LEN > SD_BLOCK_LEN)
+-	{
+-		us->SD_Block_Mult = 1 << (us->SD_READ_BL_LEN - SD_BLOCK_LEN);		us->SD_READ_BL_LEN = SD_BLOCK_LEN;
+-	}
+-	else
+-	{		us->SD_Block_Mult = 1;
++	if (us->SD_READ_BL_LEN > SD_BLOCK_LEN) {
++		us->SD_Block_Mult =
++			1 << (us->SD_READ_BL_LEN - SD_BLOCK_LEN);
++		us->SD_READ_BL_LEN = SD_BLOCK_LEN;
++	} else {
++		us->SD_Block_Mult = 1;
+ 	}
+ 	return USB_STOR_TRANSPORT_GOOD;
+ }
+ 
+-//----- ENE_LoadBinCode() ---------------------
++/*
++ * ENE_LoadBinCode()
++ */
+ int ENE_LoadBinCode(struct us_data *us, BYTE flag)
+ {
+ 	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+ 	int result;
+-	//void *buf;
++	/* void *buf; */
+ 	PBYTE buf;
+ 
+-	//printk("transport --- ENE_LoadBinCode\n");
++	/* printk("transport --- ENE_LoadBinCode\n"); */
+ 	if (us->BIN_FLAG == flag)
+ 		return USB_STOR_TRANSPORT_GOOD;
+ 
+ 	buf = kmalloc(0x800, GFP_KERNEL);
+ 	if (buf == NULL)
+ 		return USB_STOR_TRANSPORT_ERROR;
+-	switch ( flag )
+-	{
+-		// For SD
+-		case SD_INIT1_PATTERN:
+-			printk("SD_INIT1_PATTERN\n");
+-			memcpy(buf, SD_Init1, 0x800);
++	switch (flag) {
++	/* For SD */
++	case SD_INIT1_PATTERN:
++		printk(KERN_INFO "SD_INIT1_PATTERN\n");
++		memcpy(buf, SD_Init1, 0x800);
+ 		break;
+-		case SD_INIT2_PATTERN:
+-			printk("SD_INIT2_PATTERN\n");
+-			memcpy(buf, SD_Init2, 0x800);
++	case SD_INIT2_PATTERN:
++		printk(KERN_INFO "SD_INIT2_PATTERN\n");
++		memcpy(buf, SD_Init2, 0x800);
+ 		break;
+-		case SD_RW_PATTERN:
+-			printk("SD_RW_PATTERN\n");
+-			memcpy(buf, SD_Rdwr, 0x800);
++	case SD_RW_PATTERN:
++		printk(KERN_INFO "SD_RW_PATTERN\n");
++		memcpy(buf, SD_Rdwr, 0x800);
+ 		break;
+-		// For MS
+-		case MS_INIT_PATTERN:
+-			printk("MS_INIT_PATTERN\n");
+-			memcpy(buf, MS_Init, 0x800);
++	/* For MS */
++	case MS_INIT_PATTERN:
++		printk(KERN_INFO "MS_INIT_PATTERN\n");
++		memcpy(buf, MS_Init, 0x800);
+ 		break;
+-		case MSP_RW_PATTERN:
+-			printk("MSP_RW_PATTERN\n");
+-			memcpy(buf, MSP_Rdwr, 0x800);
++	case MSP_RW_PATTERN:
++		printk(KERN_INFO "MSP_RW_PATTERN\n");
++		memcpy(buf, MSP_Rdwr, 0x800);
+ 		break;
+-		case MS_RW_PATTERN:
+-			printk("MS_RW_PATTERN\n");
+-			memcpy(buf, MS_Rdwr, 0x800);
++	case MS_RW_PATTERN:
++		printk(KERN_INFO "MS_RW_PATTERN\n");
++		memcpy(buf, MS_Rdwr, 0x800);
+ 		break;
+-		// For SS
+-		case SM_INIT_PATTERN:
+-			printk("SM_INIT_PATTERN\n");
+-			memcpy(buf, SM_Init, 0x800);
++	/* For SS */
++	case SM_INIT_PATTERN:
++		printk(KERN_INFO "SM_INIT_PATTERN\n");
++		memcpy(buf, SM_Init, 0x800);
+ 		break;
+-		case SM_RW_PATTERN:
+-			printk("SM_RW_PATTERN\n");
+-			memcpy(buf, SM_Rdwr, 0x800);
++	case SM_RW_PATTERN:
++		printk(KERN_INFO "SM_RW_PATTERN\n");
++		memcpy(buf, SM_Rdwr, 0x800);
+ 		break;
+ 	}
+ 
+ 	memset(bcb, 0, sizeof(bcb));
+ 	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+ 	bcb->DataTransferLength = 0x800;
+-	bcb->Flags =0x00;
++	bcb->Flags = 0x00;
+ 	bcb->CDB[0] = 0xEF;
+ 
+ 	result = ENE_SendScsiCmd(us, FDIR_WRITE, buf, 0);
+@@ -354,54 +341,58 @@ int ENE_LoadBinCode(struct us_data *us, BYTE flag)
+ 	return result;
+ }
+ 
+-//----- ENE_SendScsiCmd() ---------------------
++/*
++ * ENE_SendScsiCmd():
++ */
+ int ENE_SendScsiCmd(struct us_data *us, BYTE fDir, void *buf, int use_sg)
+ {
+ 	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+ 	struct bulk_cs_wrap *bcs = (struct bulk_cs_wrap *) us->iobuf;
+ 
+ 	int result;
+-	unsigned int transfer_length=bcb->DataTransferLength, cswlen=0, partial=0;
++	unsigned int transfer_length = bcb->DataTransferLength,
++		     cswlen = 0, partial = 0;
+ 	unsigned int residue;
+ 
+-	//printk("transport --- ENE_SendScsiCmd\n");
+-	// send cmd to out endpoint
+-	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, bcb, US_BULK_CB_WRAP_LEN, NULL);
+-	if (result != USB_STOR_XFER_GOOD)
+-	{
+-		printk("send cmd to out endpoint fail ---\n");
++	/*printk("transport --- ENE_SendScsiCmd\n");*/
++	/* send cmd to out endpoint */
++	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe,
++					    bcb, US_BULK_CB_WRAP_LEN, NULL);
++	if (result != USB_STOR_XFER_GOOD) {
++		printk(KERN_ERR "send cmd to out endpoint fail ---\n");
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	}
+ 
+-	if (buf)
+-	{
+-		unsigned int pipe = fDir == FDIR_READ ? us->recv_bulk_pipe : us->send_bulk_pipe;
+-		// Bulk
++	if (buf) {
++		unsigned int pipe = fDir == \
++			FDIR_READ ? us->recv_bulk_pipe : us->send_bulk_pipe;
++		/* Bulk */
+ 		if (use_sg)
+ 			result = usb_stor_bulk_srb(us, pipe, us->srb);
+ 		else
+-			result = usb_stor_bulk_transfer_sg(us, pipe, buf, transfer_length, 0, &partial);
+-		if (result != USB_STOR_XFER_GOOD)
+-		{
+-			printk("data transfer fail ---\n");
++			result = usb_stor_bulk_transfer_sg(us, pipe,
++				 buf, transfer_length, 0, &partial);
++		if (result != USB_STOR_XFER_GOOD) {
++			printk(KERN_ERR "data transfer fail ---\n");
+ 			return USB_STOR_TRANSPORT_ERROR;
+ 		}
+ 	}
+ 
+-	// Get CSW for device status
+-	result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe, bcs, US_BULK_CS_WRAP_LEN, &cswlen);
++	/* Get CSW for device status */
++	result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe,
++					    bcs, US_BULK_CS_WRAP_LEN, &cswlen);
+ 
+-	if (result == USB_STOR_XFER_SHORT && cswlen == 0)
+-	{
+-		printk("Received 0-length CSW; retrying...\n");
+-		result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe, bcs, US_BULK_CS_WRAP_LEN, &cswlen);
++	if (result == USB_STOR_XFER_SHORT && cswlen == 0) {
++		printk(KERN_WARNING "Received 0-length CSW; retrying...\n");
++		result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe,
++			 bcs, US_BULK_CS_WRAP_LEN, &cswlen);
+ 	}
+ 
+-	if (result == USB_STOR_XFER_STALLED)
+-	{
++	if (result == USB_STOR_XFER_STALLED) {
+ 		/* get the status again */
+-		printk("Attempting to get CSW (2nd try)...\n");
+-		result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe, bcs, US_BULK_CS_WRAP_LEN, NULL);
++		printk(KERN_WARNING "Attempting to get CSW (2nd try)...\n");
++		result = usb_stor_bulk_transfer_buf(us,
++			 us->recv_bulk_pipe, bcs, US_BULK_CS_WRAP_LEN, NULL);
+ 	}
+ 
+ 	if (result != USB_STOR_XFER_GOOD)
+@@ -410,12 +401,14 @@ int ENE_SendScsiCmd(struct us_data *us, BYTE fDir, void *buf, int use_sg)
+ 	/* check bulk status */
+ 	residue = le32_to_cpu(bcs->Residue);
+ 
+-	/* try to compute the actual residue, based on how much data
+-	 * was really transferred and what the device tells us */
+-	if (residue && !(us->fflags & US_FL_IGNORE_RESIDUE))
+-	{
++	/*
++	 * try to compute the actual residue, based on how much data
++	 * was really transferred and what the device tells us.
++	 */
++	if (residue && !(us->fflags & US_FL_IGNORE_RESIDUE)) {
+ 		residue = min(residue, transfer_length);
+-		scsi_set_resid(us->srb, max(scsi_get_resid(us->srb), (int) residue));
++		scsi_set_resid(us->srb,
++			       max(scsi_get_resid(us->srb), (int) residue));
+ 	}
+ 
+ 	if (bcs->Status != US_BULK_STAT_OK)
+@@ -424,35 +417,40 @@ int ENE_SendScsiCmd(struct us_data *us, BYTE fDir, void *buf, int use_sg)
+ 	return USB_STOR_TRANSPORT_GOOD;
+ }
+ 
+-//----- ENE_Read_Data() ---------------------
++/*
++ * ENE_Read_Data()
++ */
+ int ENE_Read_Data(struct us_data *us, void *buf, unsigned int length)
+ {
+ 	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+ 	struct bulk_cs_wrap *bcs = (struct bulk_cs_wrap *) us->iobuf;
+ 	int result;
+ 
+-	//printk("transport --- ENE_Read_Data\n");
+-	// set up the command wrapper
++	/* printk("transport --- ENE_Read_Data\n"); */
++	/* set up the command wrapper */
+ 	memset(bcb, 0, sizeof(bcb));
+ 	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+ 	bcb->DataTransferLength = length;
+-	bcb->Flags =0x80;
++	bcb->Flags = 0x80;
+ 	bcb->CDB[0] = 0xED;
+ 	bcb->CDB[2] = 0xFF;
+ 	bcb->CDB[3] = 0x81;
+ 
+-	// send cmd to out endpoint
+-	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, bcb, US_BULK_CB_WRAP_LEN, NULL);
++	/* send cmd to out endpoint */
++	result = usb_stor_bulk_transfer_buf(us,
++			us->send_bulk_pipe, bcb, US_BULK_CB_WRAP_LEN, NULL);
+ 	if (result != USB_STOR_XFER_GOOD)
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 
+-	// R/W data
+-	result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe, buf, length, NULL);
++	/* R/W data */
++	result = usb_stor_bulk_transfer_buf(us,
++			us->recv_bulk_pipe, buf, length, NULL);
+ 	if (result != USB_STOR_XFER_GOOD)
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 
+-	// Get CSW for device status
+-	result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe, bcs, US_BULK_CS_WRAP_LEN, NULL);
++	/* Get CSW for device status */
++	result = usb_stor_bulk_transfer_buf(us,
++			us->recv_bulk_pipe, bcs, US_BULK_CS_WRAP_LEN, NULL);
+ 	if (result != USB_STOR_XFER_GOOD)
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	if (bcs->Status != US_BULK_STAT_OK)
+@@ -461,35 +459,40 @@ int ENE_Read_Data(struct us_data *us, void *buf, unsigned int length)
+ 	return USB_STOR_TRANSPORT_GOOD;
+ }
+ 
+-//----- ENE_Write_Data() ---------------------
++/*
++ * ENE_Write_Data():
++ */
+ int ENE_Write_Data(struct us_data *us, void *buf, unsigned int length)
+ {
+ 	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+ 	struct bulk_cs_wrap *bcs = (struct bulk_cs_wrap *) us->iobuf;
+ 	int result;
+ 
+-	//printk("transport --- ENE_Write_Data\n");
+-	// set up the command wrapper
++	/* printk("transport --- ENE_Write_Data\n"); */
++	/* set up the command wrapper */
+ 	memset(bcb, 0, sizeof(bcb));
+ 	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+ 	bcb->DataTransferLength = length;
+-	bcb->Flags =0x00;
++	bcb->Flags = 0x00;
+ 	bcb->CDB[0] = 0xEE;
+ 	bcb->CDB[2] = 0xFF;
+ 	bcb->CDB[3] = 0x81;
+ 
+-	// send cmd to out endpoint
+-	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, bcb, US_BULK_CB_WRAP_LEN, NULL);
++	/* send cmd to out endpoint */
++	result = usb_stor_bulk_transfer_buf(us,
++			us->send_bulk_pipe, bcb, US_BULK_CB_WRAP_LEN, NULL);
+ 	if (result != USB_STOR_XFER_GOOD)
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 
+-	// R/W data
+-	result = usb_stor_bulk_transfer_buf(us, us->send_bulk_pipe, buf, length, NULL);
++	/* R/W data */
++	result = usb_stor_bulk_transfer_buf(us,
++			us->send_bulk_pipe, buf, length, NULL);
+ 	if (result != USB_STOR_XFER_GOOD)
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 
+-	// Get CSW for device status
+-	result = usb_stor_bulk_transfer_buf(us, us->recv_bulk_pipe, bcs, US_BULK_CS_WRAP_LEN, NULL);
++	/* Get CSW for device status */
++	result = usb_stor_bulk_transfer_buf(us,
++			us->recv_bulk_pipe, bcs, US_BULK_CS_WRAP_LEN, NULL);
+ 	if (result != USB_STOR_XFER_GOOD)
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	if (bcs->Status != US_BULK_STAT_OK)
+@@ -498,42 +501,49 @@ int ENE_Write_Data(struct us_data *us, void *buf, unsigned int length)
+ 	return USB_STOR_TRANSPORT_GOOD;
+ }
+ 
+-//----- usb_stor_print_cmd() ---------------------
++/*
++ * usb_stor_print_cmd():
++ */
+ void usb_stor_print_cmd(struct scsi_cmnd *srb)
+ {
+ 	PBYTE	Cdb = srb->cmnd;
+ 	DWORD	cmd = Cdb[0];
+-	DWORD	bn  =	((Cdb[2]<<24) & 0xff000000) | ((Cdb[3]<<16) & 0x00ff0000) |
+-			((Cdb[4]<< 8) & 0x0000ff00) | ((Cdb[5]<< 0) & 0x000000ff);
+-	WORD	blen = ((Cdb[7]<< 8) & 0xff00) | ((Cdb[8]<< 0) & 0x00ff);
++	DWORD	bn = ((Cdb[2] << 24) & 0xff000000) |
++		     ((Cdb[3] << 16) & 0x00ff0000) |
++		     ((Cdb[4] << 8) & 0x0000ff00) |
++		     ((Cdb[5] << 0) & 0x000000ff);
++	WORD	blen = ((Cdb[7] << 8) & 0xff00) | ((Cdb[8] << 0) & 0x00ff);
+ 
+ 	switch (cmd) {
+ 	case TEST_UNIT_READY:
+-		//printk("scsi cmd %X --- SCSIOP_TEST_UNIT_READY\n", cmd);
++		/* printk("scsi cmd %X --- SCSIOP_TEST_UNIT_READY\n", cmd); */
+ 		break;
+ 	case INQUIRY:
+-		printk("scsi cmd %X --- SCSIOP_INQUIRY\n", cmd);
++		printk(KERN_INFO "scsi cmd %X --- SCSIOP_INQUIRY\n", cmd);
+ 		break;
+ 	case MODE_SENSE:
+-		printk("scsi cmd %X --- SCSIOP_MODE_SENSE\n", cmd);
++		printk(KERN_INFO "scsi cmd %X --- SCSIOP_MODE_SENSE\n", cmd);
+ 		break;
+ 	case START_STOP:
+-		printk("scsi cmd %X --- SCSIOP_START_STOP\n", cmd);
++		printk(KERN_INFO "scsi cmd %X --- SCSIOP_START_STOP\n", cmd);
+ 		break;
+ 	case READ_CAPACITY:
+-		printk("scsi cmd %X --- SCSIOP_READ_CAPACITY\n", cmd);
++		printk(KERN_INFO "scsi cmd %X --- SCSIOP_READ_CAPACITY\n", cmd);
+ 		break;
+ 	case READ_10:
+-		//printk("scsi cmd %X --- SCSIOP_READ, bn = %X, blen = %X\n", cmd, bn, blen);
++		/* printk(KERN_INFO "scsi cmd %X --- \
++			SCSIOP_READ, bn = %X, blen = %X\n", cmd, bn, blen); */
+ 		break;
+ 	case WRITE_10:
+-		//printk("scsi cmd %X --- SCSIOP_WRITE, bn = %X, blen = %X\n", cmd, bn, blen);
++		/* printk(KERN_INFO "scsi cmd %X --- \
++			SCSIOP_WRITE, bn = %X, blen = %X\n", cmd, bn, blen); */
+ 		break;
+ 	case ALLOW_MEDIUM_REMOVAL:
+-		printk("scsi cmd %X --- SCSIOP_ALLOW_MEDIUM_REMOVAL\n", cmd);
++		printk(KERN_INFO
++			"scsi cmd %X --- SCSIOP_ALLOW_MEDIUM_REMOVAL\n", cmd);
+ 		break;
+ 	default:
+-		printk("scsi cmd %X --- Other cmd\n", cmd);
++		printk(KERN_INFO "scsi cmd %X --- Other cmd\n", cmd);
+ 		break;
+ 	}
+ 	bn = 0;
+diff --git a/drivers/staging/keucr/init.h b/drivers/staging/keucr/init.h
+index cd199fc..5706829 100644
+--- a/drivers/staging/keucr/init.h
++++ b/drivers/staging/keucr/init.h
+@@ -1,5 +1,8 @@
+ #include "common.h"
+ 
++extern DWORD MediaChange;
++extern int      Check_D_MediaFmt(struct us_data *);
++
+ BYTE SD_Init1[] = {
+ 0x90, 0xFF, 0x09, 0xE0, 0x30, 0xE1, 0x06, 0x90,
+ 0xFF, 0x23, 0x74, 0x80, 0xF0, 0x90, 0xFF, 0x09,
+-- 
+1.7.1
 
