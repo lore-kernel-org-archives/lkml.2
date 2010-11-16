@@ -1,125 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751135Ab0KPFEW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 00:04:22 -0500
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:6642 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab0KPFEV (ORCPT
+	id S1751572Ab0KPFQu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 00:16:50 -0500
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:57193 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750770Ab0KPFQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 00:04:21 -0500
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAFSf4UyrR7Hu/2dsb2JhbACiW3GjWpsghUsEhFqFfg
-X-IronPort-AV: E=Sophos;i="4.59,204,1288569600"; 
-   d="scan'208";a="287113168"
-Message-ID: <4CE210D3.5060703@cisco.com>
-Date: Mon, 15 Nov 2010 21:04:19 -0800
-From: Joe Eykholt <jeykholt@cisco.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	Tue, 16 Nov 2010 00:16:49 -0500
+Date: Tue, 16 Nov 2010 14:16:42 +0900
+From: Norbert Preining <preining@logic.at>
+To: Mattia Dongili <malattia@linux.it>
+Cc: Matthew Garrett <mjg@redhat.com>, linux-kernel@vger.kernel.org,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>
+Subject: Re: regression since 2.6.36: backlight in sony-laptop not working
+Message-ID: <20101116051642.GA24410@gamma.logic.tuwien.ac.at>
+References: <20101104142915.GC7650@gamma.logic.tuwien.ac.at> <20101110035833.GB3029@kamineko.org> <20101111235000.GA6651@gamma.logic.tuwien.ac.at> <20101112034423.GA7407@srcf.ucam.org> <20101112035027.GD26742@gamma.logic.tuwien.ac.at> <20101112035732.GB7574@srcf.ucam.org> <20101112042243.GE2852@kamineko.org> <20101112043922.GA19889@gamma.logic.tuwien.ac.at> <20101112121742.GA17690@kamineko.org>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Vladislav Bolkhovitin <vst@vlnb.net>, Bart Van Assche <bvanassche@acm.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        James Smart <James.Smart@emulex.com>, Andy Yan <ayan@marvell.com>,
-        Chetan Loke <generationgnu@yahoo.com>, Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-References: <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <AANLkTi=PxYi8kCsAxbopUHBC+=2QPuoEcojdqugS88sH@mail.gmail.com> <20101115184422.GA9566@kroah.com> <4CE19A94.8080504@vlnb.net> <20101115221359.GA9530@kroah.com>
-In-Reply-To: <20101115221359.GA9530@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101112121742.GA17690@kamineko.org>
+X-IMAPbase: 1289640783 1
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fr, 12 Nov 2010, Mattia Dongili wrote:
+> You will need an updated input-kbd to set the scancode map.
 
+Ouch.
 
-On 11/15/10 2:13 PM, Greg KH wrote:
-> On Mon, Nov 15, 2010 at 11:39:48PM +0300, Vladislav Bolkhovitin wrote:
->> Greg KH, on 11/15/2010 09:44 PM wrote:
->> > On Mon, Nov 15, 2010 at 06:45:24PM +0100, Bart Van Assche wrote:
->> >> On Sun, Nov 14, 2010 at 12:59 AM, Greg KH <greg@kroah.com> wrote:
->> >>>
->> >>> On Sat, Nov 13, 2010 at 08:20:18PM +0300, Vladislav Bolkhovitin wrote:
->> >>>> So, I decided to reimplement it to be completely synchronous. SYSFS
->> >>>> authors did really great job and thanks to the excellent internal SYSFS
->> >>>> design and implementation it is absolutely safe. See:
->> >>>>
->> >>>> [root@tgt ~]# modprobe scst
->> >>>> [root@tgt ~]# cd /sys/kernel/scst_tgt/
->> >>>
->> >>> Sorry, but no, you can't put this in /sys/kernel/ without getting the
->> >>> approval of the sysfs maintainer.
->> >>>
->> >>> I really don't understand why you are using kobjects in the first place,
->> >>> why isn't this in the main device tree in the kernel, using 'struct
->> >>> device'?
->> >>
->> >> We might have missed something, but as far as we know it has not yet
->> >> been explained in this thread why using 'struct device' would be an
->> >> advantage over using 'struct kobject'.
->> >
->> > It's very simple.
->> >
->> > You want your device to show up in the global device tree in the kernel,
->> > not off to one side, unconnected to anything else.
->> >
->> > Please use 'struct device', it is what you want to do here.
->>
->> But we don't have any device to show up in the global device tree!
+> > Does that mean that 2.6.37rc is too new for the user space?
 > 
-> Not true at all.
-> 
->> We don't have any devices in the struct device's understanding at all!
-> 
-> Then create them just like you are doing so for your kobject use.
-> 
-> The first device would be the root one, and then everything trickles
-> down from there.
-> 
-> And use configfs for your configuration stuff, that's what it is there
-> for, and if it doesn't somehow work properly for you, please work with
-> the configfs developers to fix that up.
-> 
-> thanks,
-> 
-> greg k-h
+> Maybe. Anyway if evtest reacts positively to key presses then it's a
+> userspace issue and not the driver's.
 
-I don't have any opinion on the above, but I don't see why sysfs can't be
-used for configuration as well as its other roles. It seems to me wasteful
-to require configfs to be used in order to change configuration when
-sysfs works fine for this.
+What is strange that there *WAS* a change in the kernel that triggered
+that. Old kernels still work fine. I just tried 2.6.36 and it was working.
 
-Here are a couple of existing examples where sysfs is used in a role that
-would seem similar to SCST's usage:
+I always thought that kernel changes should not break user space
+(well, without good reason).
 
-1) scsi_transport_fc already has an sysfs file, fc_host/vport_create, which
-can be written to create new fc_host and scsi_host instances.
+Best wishes
 
-2) fcoe.ko uses a write to the sysfs file /sys/module/fcoe/parameters/create
-to start the protocol on a particular ethernet interface.  There's another
-file for destroy.
-
-I'll bet there are other examples in other subsystems, and I don't think
-there is anything wrong with the above usages of sysfs.
-
-I agree with Vladislav's point that configfs doesn't work instead of sysfs
-because configs doesn't make it easy for the kernel side to create nodes for
-dynamic information like connected initiators and statistics.
-So, if the above examples are considered a misuse of sysfs,
-SCST would need to use both sysfs and configfs.  It would use configfs to
-do configuration, and sysfs to display and access the dynamic information
-like connected initiators.  That seems a minor role for configfs,
-which is easily handled in sysfs as SCST currently does.
-
-Just my two cents.
-
-	Joe
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+Does it worry you that you don't talk any kind of sense?
+                 --- Douglas Adams, The Hitchhikers Guide to the Galaxy
