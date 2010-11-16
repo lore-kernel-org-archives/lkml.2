@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933424Ab0KPLXw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 06:23:52 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58429 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932877Ab0KPLXv (ORCPT
+	id S933486Ab0KPL2X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 06:28:23 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46345 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932917Ab0KPL2V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 06:23:51 -0500
-Date: Tue, 16 Nov 2010 12:23:36 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Andreas Schwab <schwab@linux-m68k.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [git pull] PCI fixes
-Message-ID: <20101116112336.GA3010@pengutronix.de>
-References: <20101115094527.49464ed2@jbarnes-desktop>
- <m28w0tzffv.fsf@whitebox.home>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
-Content-Disposition: inline
-In-Reply-To: <m28w0tzffv.fsf@whitebox.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 16 Nov 2010 06:28:21 -0500
+Subject: Re: [PATCH 05/11] drivers/net/irda: Remove unnecessary casts of
+ pci_get_drvdata
+From: Samuel Ortiz <samuel@sortiz.org>
+Reply-To: Samuel Ortiz <samuel@sortiz.org>
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <11b30b9512bf0438efaf70d6c0a819756dbf0e2f.1289851770.git.joe@perches.com>
+References: <cover.1289851770.git.joe@perches.com>
+	 <11b30b9512bf0438efaf70d6c0a819756dbf0e2f.1289851770.git.joe@perches.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Nov 2010 12:27:55 +0100
+Message-ID: <1289906875.7016.1.camel@sortiz-mobl>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Joe,
 
---G4iJoqBmSsgzjUCe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2010-11-15 at 12:13 -0800, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
+Thanks, I'll apply it to my irda tree.
 
-On Tue, Nov 16, 2010 at 12:16:36PM +0100, Andreas Schwab wrote:
-> Jesse Barnes <jbarnes@virtuousgeek.org> writes:
->=20
-> > Martin Wilck (1):
-> >       PCI: fix size checks for mmap() on /proc/bus/pci files
->=20
-> That breaks X.
->=20
-> process "X" tried to map 0x00010000 bytes at page 0x00000000 on 0000:00:1=
-0.0 BAR 2 (start 0x        90000000, size 0x           10000)
+Cheers,
+Samuel.
 
-Ah, thanks. Just had the same issue on one of my laptops, too...
 
-Regards,
+> ---
+>  drivers/net/irda/donauboe.c |    6 +++---
+>  drivers/net/irda/vlsi_ir.c  |    2 +-
+>  2 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/irda/donauboe.c b/drivers/net/irda/donauboe.c
+> index b626ccc..bee5ccc 100644
+> --- a/drivers/net/irda/donauboe.c
+> +++ b/drivers/net/irda/donauboe.c
+> @@ -1488,7 +1488,7 @@ static void
+>  toshoboe_close (struct pci_dev *pci_dev)
+>  {
+>    int i;
+> -  struct toshoboe_cb *self = (struct toshoboe_cb*)pci_get_drvdata(pci_dev);
+> +  struct toshoboe_cb *self = pci_get_drvdata(pci_dev);
+>  
+>    IRDA_DEBUG (4, "%s()\n", __func__);
+>  
+> @@ -1698,7 +1698,7 @@ freeself:
+>  static int
+>  toshoboe_gotosleep (struct pci_dev *pci_dev, pm_message_t crap)
+>  {
+> -  struct toshoboe_cb *self = (struct toshoboe_cb*)pci_get_drvdata(pci_dev);
+> +  struct toshoboe_cb *self = pci_get_drvdata(pci_dev);
+>    unsigned long flags;
+>    int i = 10;
+>  
+> @@ -1727,7 +1727,7 @@ toshoboe_gotosleep (struct pci_dev *pci_dev, pm_message_t crap)
+>  static int
+>  toshoboe_wakeup (struct pci_dev *pci_dev)
+>  {
+> -  struct toshoboe_cb *self = (struct toshoboe_cb*)pci_get_drvdata(pci_dev);
+> +  struct toshoboe_cb *self = pci_get_drvdata(pci_dev);
+>    unsigned long flags;
+>  
+>    IRDA_DEBUG (4, "%s()\n", __func__);
+> diff --git a/drivers/net/irda/vlsi_ir.c b/drivers/net/irda/vlsi_ir.c
+> index c3d0738..62f2d12 100644
+> --- a/drivers/net/irda/vlsi_ir.c
+> +++ b/drivers/net/irda/vlsi_ir.c
+> @@ -542,7 +542,7 @@ static int vlsi_process_rx(struct vlsi_ring *r, struct ring_descr *rd)
+>  	int		crclen, len = 0;
+>  	struct sk_buff	*skb;
+>  	int		ret = 0;
+> -	struct net_device *ndev = (struct net_device *)pci_get_drvdata(r->pdev);
+> +	struct net_device *ndev = pci_get_drvdata(r->pdev);
+>  	vlsi_irda_dev_t *idev = netdev_priv(ndev);
+>  
+>  	pci_dma_sync_single_for_cpu(r->pdev, rd_get_addr(rd), r->len, r->dir);
 
-   Wolfram
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---G4iJoqBmSsgzjUCe
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkziabgACgkQD27XaX1/VRvE7wCeOBL9C9gPt4/dTb26A8JxjB2p
-K1YAnjXz32zZbvwUlyjXI9AC6YlFtTRD
-=M+lC
------END PGP SIGNATURE-----
-
---G4iJoqBmSsgzjUCe--
