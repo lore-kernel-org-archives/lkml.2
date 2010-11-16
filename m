@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757122Ab0KPUoc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:44:32 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44452 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754578Ab0KPUob (ORCPT
+	id S1757196Ab0KPUpb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:45:31 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:44946 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755653Ab0KPUpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:44:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=KySXb5YzK4rIo7LbHGcX63cHoWtfH9PPj/leSOdor2z3SoFwMTNTQSvIg1TVlh0bWU
-         K5d0vZB1g+zaVlb8ciJqJxitXtiOgDW+OK0a4ECnPLhHEY9/CGgAOrwSgINAUIhZheea
-         GBeTM1d9w160p055cEwa2JdIfJ0zYrKpCiSd0=
-MIME-Version: 1.0
-In-Reply-To: <20101116203306.GE27235@tango.0pointer.de>
-References: <1289856350.14719.135.camel@maggy.simson.net>
-	<20101116015648.GA11534@redhat.com>
-	<1289916171.5169.117.camel@maggy.simson.net>
-	<1289916683.2109.625.camel@laptop>
-	<AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
-	<20101116170312.GA19327@tango.0pointer.de>
-	<AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
-	<20101116181603.GC19327@tango.0pointer.de>
-	<AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
-	<alpine.DEB.2.00.1011161058180.3718@asgard.lang.hm>
-	<20101116203306.GE27235@tango.0pointer.de>
-Date: Tue, 16 Nov 2010 22:44:29 +0200
-X-Google-Sender-Auth: sm-izZkoOGA4FQALmKJCLjx01QI
-Message-ID: <AANLkTinCPcc8goO_XoJ_DSwbJGOxni_8xOu8Vo+epqCN@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Pekka Enberg <penberg@kernel.org>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: david@lang.hm, Linus Torvalds <torvalds@linux-foundation.org>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 16 Nov 2010 15:45:30 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6169"; a="62904492"
+Subject: Re: [PATCH 14/14] msm: iommu: Miscellaneous code cleanup
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: davidb@codeaurora.org, bryanh@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4CE1DB7F.1020408@codeaurora.org>
+References: <1289619000-13167-1-git-send-email-stepanm@codeaurora.org>
+	 <1289619000-13167-15-git-send-email-stepanm@codeaurora.org>
+	 <1289867105.4050.29.camel@c-dwalke-linux.qualcomm.com>
+	 <4CE1DB7F.1020408@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Nov 2010 12:45:23 -0800
+Message-ID: <1289940323.9950.15.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16.11.10 11:08, david@lang.hm (david@lang.hm) wrote:
->> >If the choice is between telling everybody "you should do this", and
->> >"we should just do this for you", I'll take the second one every time.
->> >We know it should be done. Why should we then tell somebody else to do
->> >it for us?
->>
->> this is good for desktop interactivity because it no longer treats
->> all processes equally, it give more CPU to processes that are
->> running 'stand-alone' then it will to processes that are forked off
->> from one master process.
+On Mon, 2010-11-15 at 17:16 -0800, Stepan Moskovchenko wrote:
+> On 11/15/2010 4:25 PM, Daniel Walker wrote:
+> > On Fri, 2010-11-12 at 19:30 -0800, Stepan Moskovchenko wrote:
+> >> Remove some unneeded assignments and messages, restructure
+> >> a failure path in iova_to_phys, and make __flush_iotlb
+> >> return int in preparation for adding IOMMU clock control.
+> > Why restructure the failure path ?
+> >
+> > Daniel
+> 
+> It is a trivial change of replacing a goto with an assignment and moving 
+> it a few lines down. It reduces "jumpiness" within that function and is 
+> a cleaner version. On the more practical side, it was done in 
+> preparation for some other changes I have coming up, which touch that 
+> function and work a lot better with the cleaned-up failure path. The 
+> next patch was delayed (due to a dependency) but as long as I was doing 
+> code cleanup, I saw no reason not to also clean up the failure path as 
+> part of this series.
 
-On Tue, Nov 16, 2010 at 10:33 PM, Lennart Poettering
-<mzxreary@0pointer.de> wrote:
-> This isn#t good for desktop interatctivey. It is *irrelevant* for
-> desktop interactivity -- unless you define running "make -j" a typical
-> desktop usecase. Which it isn't.
->
-> Just stop bringing about the word "desktop" here. It has no point in
-> this discussion.
->
->> In the desktop case where you really want something like 'make -j64'
->
-> No you don't. Because that is not a desktop use case.
+Some of what your have said above really needs to be in your commit
+text. I've noticed that your commit text in general is not verbose
+enough. You need to explain what doing better.
 
-How about you stop bringing *your* narrow definition of "desktop" to
-the discussion? I am a kernel hacker but that doesn't mean I'm not
-also a desktop user. I shouldn't need to play with cgroups from
-userspace to keep music playing while I compile kernels. Things should
-just work.
+Also generally you want to organize similar sets of changes. So if you
+doing a cleanup in preparation for another change then the cleanup
+should go with the other change. In this case it's not clear that this
+is actually a cleanup, so it would be much nicer to get that change
+along with the one you've delayed .. Also the two Kconfig changes you've
+sent indicate that your not organizing your changes properly, so I think
+you need to take more time considering how to the organize patches.
 
-                        Pekka
+Just so we're clear on this, any changes that you send me will go into
+_permanent_ public history. This history will not disappear at some set
+date, and we will not be rebasing out changes or squashing changes.
+
+Daniel
+
+-- 
+
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
