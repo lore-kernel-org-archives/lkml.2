@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759039Ab0KPBRW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 20:17:22 -0500
-Received: from claw.goop.org ([74.207.240.146]:39374 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758942Ab0KPBRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 20:17:21 -0500
-Message-ID: <4CE1DBA0.4010302@goop.org>
-Date: Mon, 15 Nov 2010 17:17:20 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1759008Ab0KPBTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 20:19:13 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41133 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754553Ab0KPBTM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 20:19:12 -0500
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: the arch/x86 maintainers <x86@kernel.org>,
-        Xen-devel <xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [Xen-devel] Re: [PATCH 3/3] xen/microcode: partially enable even
- for non-privileged kernels
-References: <cover.1289519130.git.jeremy.fitzhardinge@citrix.com>	<049ad0809c51dedebab0b8e4bfcf58f5f26375b7.1289519130.git.jeremy.fitzhardinge@citrix.com> <20101115160245.GD345@dumpdata.com>
-In-Reply-To: <20101115160245.GD345@dumpdata.com>
+In-Reply-To: <1289865870.14719.185.camel@maggy.simson.net>
+References: <1287479765.9920.9.camel@marge.simson.net> <1287487757.24189.40.camel@marge.simson.net>
+ <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
+ <1287511983.7417.45.camel@marge.simson.net> <1287514410.7368.10.camel@marge.simson.net>
+ <20101020025652.GB26822@elte.hu> <1287648715.9021.20.camel@marge.simson.net>
+ <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
+ <20101021162924.GA3225@redhat.com> <1288076838.11930.1.camel@marge.simson.net>
+ <1288078144.7478.9.camel@marge.simson.net> <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
+ <1289489200.11397.21.camel@maggy.simson.net> <30291.1289860866@localhost>
+ <1289864780.14719.172.camel@maggy.simson.net> <AANLkTikztvdgFucCUjZ+A5Je-LUKLknV5+aznVvL98oQ@mail.gmail.com>
+ <1289865870.14719.185.camel@maggy.simson.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 15 Nov 2010 17:18:50 -0800
+Message-ID: <AANLkTik53N7HMyXMOEzh2Qr_4gg9eXSmXiT6TQ9gFC+h@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+To: Mike Galbraith <efault@gmx.de>
+Cc: Valdis.Kletnieks@vt.edu, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Paul Menage <menage@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 08:02 AM, Konrad Rzeszutek Wilk wrote:
-> On Thu, Nov 11, 2010 at 03:58:06PM -0800, Jeremy Fitzhardinge wrote:
->> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->>
->> Don't attempt to load microcode on non-privileged kernels.  Kernels
-> The previous patch had this:
->
->  if (!xen_initial_domain())
-> +               return NULL;
->
-> which pretty much made non-priviliged kernels not do any micro code loading.
->
-> It sounds like this patch is just to not compile the Xen microcode code
-> if CONFIG_DOM0 is not enabled?
+Hmm. Just found a bug. I'm not sure if it's the autogroup patches
+themselves, or whether it's just the cgroup code that the autogroup
+patch enables for me.
 
-Yeah, I think the patch is a brainfart, and the existing code already
-did the right thing.
+When I do
 
-    J
+   echo t > /proc/sysrq-trigger
+
+(or "w") I get a NULL pointer dereference (offset 0x38 - decimal 56)
+in "cgroup_path+0x7", with a call trace of sched_debug_show,
+show_state_filter, sysrq_handle_showstate_blocked. I don't have the
+whole oops, because the machine is really dead at that point
+(presumably died holding the runqueue lock or some other critical
+resource), but if required I could take a photo of it. However, I bet
+it is repeatable, so I doubt you need it.
+
+Anyway, that "cgroup_path+0x7" is the very first memory dereference:
+
+    movq    56(%rdi), %rsi  # cgrp_5(D)->dentry, _________p1
+
+so sched_debug_show() is apparently calling cgroup_path() with a NULL
+cgroup. I think it's "print_task()" that is to blame, it does
+
+     cgroup_path(task_group(p)->css.cgroup, ..
+
+without checking whether there _is_ any css.cgroup.
+
+Peter, that looks like your code (commit d19ca30874f2)
+
+Guys?
+
+                      Linus
