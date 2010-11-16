@@ -1,86 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114Ab0KPW3K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 17:29:10 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57475 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754321Ab0KPW3I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 17:29:08 -0500
-Date: Tue, 16 Nov 2010 14:28:50 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mika Westerberg <mika.westerberg@iki.fi>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mika Westerberg <ext-mika.1.westerberg@nokia.com>
-Subject: Re: [PATCH 1/4] proc/vmcore: allow archs to override
- vmcore_elf_check_arch()
-Message-Id: <20101116142850.df5e9805.akpm@linux-foundation.org>
-In-Reply-To: <df680f67f33d8b0ef815045b53f205b3ff35de63.1289292124.git.mika.westerberg@iki.fi>
-References: <cover.1289292124.git.mika.westerberg@iki.fi>
-	<df680f67f33d8b0ef815045b53f205b3ff35de63.1289292124.git.mika.westerberg@iki.fi>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1759152Ab0KPW30 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 17:29:26 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54678 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757419Ab0KPW3Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 17:29:24 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: 2.6.37-rc1+: hibernate regression, claims not enough swap space
+Date: Tue, 16 Nov 2010 23:28:35 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+References: <20101114052138.GB2189@elf.ucw.cz> <20101116052634.GA30449@elf.ucw.cz> <20101116053236.GA30605@elf.ucw.cz>
+In-Reply-To: <20101116053236.GA30605@elf.ucw.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201011162328.35599.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  9 Nov 2010 11:06:10 +0200
-Mika Westerberg <mika.westerberg@iki.fi> wrote:
-
-> From: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
+On Tuesday, November 16, 2010, Pavel Machek wrote:
+> On Tue 2010-11-16 06:26:34, Pavel Machek wrote:
+> > Hi!
+> > 
+> > > > ...but there's enough -- or at least it was enough to fit previous
+> > > > versions. 32-bit machine, so it has highmem.
+> > > > 
+> > > > System is in console mode, very lightly loaded.
+> > > > 
+> > > > Mem:   2054716k total,   736548k used,  1318168k free,    15368k buffers
+> > > > Swap:   779148k total,     2360k used,   776788k free,   546388k cached
+> > > 
+> > > Well, the swap is rather in short supply.  Below the 50% of RAM recommendation.
+> > 
+> > Well, but the biggest image we can write is not 50% of RAM, but 50% of
+> > lowmem... and swap is nearly as big as lowmem in this case -- so this
+> > machine is not misconfigured.
 > 
-> Allow architectures to redefine this macro if needed. This is useful for
-> example in architectures where 64-bit ELF vmcores are not supported.
-> Specifying zero vmcore_elf64_check_arch() allows compiler to optimize
-> away unnecessary parts of parse_crash_elf64_headers().
+> BTW swsusp.txt may need updating, it says:
 > 
-> We also rename the macro to vmcore_elf64_check_arch() to reflect that it
-> is used for 64-bit vmcores only.
+> echo N > /sys/power/image_size
 > 
-> Signed-off-by: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
-> ---
->  fs/proc/vmcore.c           |    2 +-
->  include/linux/crash_dump.h |    9 ++++++++-
->  2 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-> index 2367fb3..74802bc5 100644
-> --- a/fs/proc/vmcore.c
-> +++ b/fs/proc/vmcore.c
-> @@ -499,7 +499,7 @@ static int __init parse_crash_elf64_headers(void)
->  	/* Do some basic Verification. */
->  	if (memcmp(ehdr.e_ident, ELFMAG, SELFMAG) != 0 ||
->  		(ehdr.e_type != ET_CORE) ||
-> -		!vmcore_elf_check_arch(&ehdr) ||
-> +		!vmcore_elf64_check_arch(&ehdr) ||
->  		ehdr.e_ident[EI_CLASS] != ELFCLASS64 ||
->  		ehdr.e_ident[EI_VERSION] != EV_CURRENT ||
->  		ehdr.e_version != EV_CURRENT ||
-> diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
-> index 0026f26..088cd4a 100644
-> --- a/include/linux/crash_dump.h
-> +++ b/include/linux/crash_dump.h
-> @@ -20,7 +20,14 @@ extern ssize_t copy_oldmem_page(unsigned long, char *, size_t,
->  #define vmcore_elf_check_arch_cross(x) 0
->  #endif
->  
-> -#define vmcore_elf_check_arch(x) (elf_check_arch(x) || vmcore_elf_check_arch_cross(x))
-> +/*
-> + * Architecture code can redefine this if there are any special checks
-> + * needed for 64-bit ELF vmcores. In case of 32-bit only architecture,
-> + * this can be set to zero.
-> + */
-> +#ifndef vmcore_elf64_check_arch
-> +#define vmcore_elf64_check_arch(x) (elf_check_arch(x) || vmcore_elf_check_arch_cross(x))
-> +#endif
->  
+> before suspend (it is limited to 500 MB by default).
 
-Looks OK to me.  I'd suggest that this patch be merged along with the
-others, via whatever tree they're taken into.  Russell's ARM tree, I
-assume.
+Yes, this needs to be updated.
 
-Should elf_check_arch() be renamed to elf64_check_arch()?
-
-Ditto vmcore_elf_check_arch_cross()?
+Thanks,
+Rafael
