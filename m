@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758169Ab0KPVOJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 16:14:09 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46816
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753696Ab0KPVOI (ORCPT
+	id S932444Ab0KPVOx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 16:14:53 -0500
+Received: from tango.0pointer.de ([85.214.72.216]:53833 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932241Ab0KPVOw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 16:14:08 -0500
-Date: Tue, 16 Nov 2010 13:14:31 -0800 (PST)
-Message-Id: <20101116.131431.258095605.davem@davemloft.net>
-To: mzxreary@0pointer.de
-Cc: torvalds@linux-foundation.org, dhaval.giani@gmail.com,
-        a.p.zijlstra@chello.nl, efault@gmx.de, vgoyal@redhat.com,
-        oleg@redhat.com, markus@trippelsdorf.de,
-        mathieu.desnoyers@efficios.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com
+	Tue, 16 Nov 2010 16:14:52 -0500
+Date: Tue, 16 Nov 2010 22:14:31 +0100
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: david@lang.hm, Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
 Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101116210804.GJ27235@tango.0pointer.de>
-References: <20101116202839.GC27235@tango.0pointer.de>
-	<20101116.124617.200351382.davem@davemloft.net>
-	<20101116210804.GJ27235@tango.0pointer.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Message-ID: <20101116211431.GA15211@tango.0pointer.de>
+References: <1289916171.5169.117.camel@maggy.simson.net>
+ <1289916683.2109.625.camel@laptop>
+ <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+ <20101116170312.GA19327@tango.0pointer.de>
+ <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+ <20101116181603.GC19327@tango.0pointer.de>
+ <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+ <alpine.DEB.2.00.1011161058180.3718@asgard.lang.hm>
+ <20101116203306.GE27235@tango.0pointer.de>
+ <AANLkTimC_TWzKET-aabYK0TPG6fUUW06HDej6iOzYtKo@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimC_TWzKET-aabYK0TPG6fUUW06HDej6iOzYtKo@mail.gmail.com>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lennart Poettering <mzxreary@0pointer.de>
-Date: Tue, 16 Nov 2010 22:08:04 +0100
+On Tue, 16.11.10 12:38, Linus Torvalds (torvalds@linux-foundation.org) wrote:
 
-> On Tue, 16.11.10 12:46, David Miller (davem@davemloft.net) wrote:
 > 
->> 
->> From: Lennart Poettering <mzxreary@0pointer.de>
->> Date: Tue, 16 Nov 2010 21:28:39 +0100
->> 
->> > Heck, the patch wouldn't even have any effect on my machine (and I am
->> > hacker), because I tend to run my builds from within emacs. And since
->> > emacs has no TTY (since it is a X11/gtk build) it wouldn't be in its own
->> > scheduling group.
->> 
->> Type 'tty' in that emacs shell, what does it give you?
+> On Tue, Nov 16, 2010 at 12:33 PM, Lennart Poettering
+> <mzxreary@0pointer.de> wrote:
+> >
+> > No you don't. Because that is not a desktop use case.
 > 
-> I am running "make -j", not a shell from emacs. it doesn't have a tty.
-> 
-> I just want to build something, not have terminal emulator in emacs.
+> See my other response. You don't care AT ALL, because by your
+> judgement, all desktop is is a web browser and a word processor.
 
-It does the same exact thing.  Please actually check and verify
-your facts instead of tossing back kneejerk responses.
+Well, I do care. But I care more about *real* problems. For example the
+fact that "updatedb" makes your system sluggish while it runs. Or
+"man-db". Or anything else that runs from cron in the background.
 
-davem@sunset:~/src/GIT$ cat Makefile
-all:
-	tty
-davem@sunset:~/src/GIT$ 
+Doing this tty dance won't help you much with background tasks such as
+man-db, updatedb and cron and its jobs, will it? They don't have
+ttys. Sorry for you. meh! Meh! meh! meh! meh!
 
-"M-x compile" in that directory gives:
+(And along comes systemd, which actually handles this properly, since it
+actually has a proper notion of what a service is, and what a session
+is, and what an app is. And which hence can control all this sanely.)
 
---------------------
--*- mode: compilation; default-directory: "~/src/GIT/" -*-
-Compilation started at Tue Nov 16 13:13:01
+Binding this to a tty is just solves a tiny bit of the real problem:
+i.e. your own use of make -j. End of story.
 
-make -k 
-tty
-/dev/pts/2
+Lennart
 
-Compilation finished at Tue Nov 16 13:13:01
---------------------
-
+-- 
+Lennart Poettering - Red Hat, Inc.
