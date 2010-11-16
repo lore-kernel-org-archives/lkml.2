@@ -1,118 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934037Ab0KPIu0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 03:50:26 -0500
-Received: from lo.gmane.org ([80.91.229.12]:37072 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934027Ab0KPIuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 03:50:23 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Florian Mickler <florian@mickler.org>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-Date: Tue, 16 Nov 2010 09:49:38 +0100
-Message-ID: <20101116094938.5d55f4bf@schatten.dmk.lab>
-References: <4CDA6CD4.3010308@panasas.com>
-	<4CDAFE6E.7050200@vlnb.net>
-	<4CDBBE80.40908@panasas.com>
-	<4CDC56F9.9040601@vlnb.net>
-	<20101112012315.GE17097@core.coreip.homeip.net>
-	<4CDEC8D2.8080101@vlnb.net>
-	<20101113235938.GA1827@kroah.com>
-	<AANLkTi=PxYi8kCsAxbopUHBC+=2QPuoEcojdqugS88sH@mail.gmail.com>
-	<20101115184422.GA9566@kroah.com>
-	<4CE19A94.8080504@vlnb.net>
-	<20101115221359.GA9530@kroah.com>
-	<4CE210D3.5060703@cisco.com>
+	id S934034Ab0KPIvI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 03:51:08 -0500
+Received: from mtagate2.de.ibm.com ([195.212.17.162]:45333 "EHLO
+	mtagate2.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932425Ab0KPIvF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 03:51:05 -0500
+Date: Tue, 16 Nov 2010 09:51:01 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        "jeremy.fitzhardinge" <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [RFC][PATCH v2 4/7] taskstats: Add per task steal time
+ accounting
+Message-ID: <20101116095101.5d86d1e5@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <1289844524.2109.524.camel@laptop>
+References: <20101111170352.732381138@linux.vnet.ibm.com>
+	<20101111170815.024542355@linux.vnet.ibm.com>
+	<1289677083.2109.167.camel@laptop>
+	<20101115155057.15f3be35@mschwide.boeblingen.de.ibm.com>
+	<1289833883.2109.494.camel@laptop>
+	<20101115184206.4463fd05@mschwide.boeblingen.de.ibm.com>
+	<1289843441.2109.520.camel@laptop>
+	<20101115185923.1c353d07@mschwide.boeblingen.de.ibm.com>
+	<1289844524.2109.524.camel@laptop>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: f053214034.adsl.alicedsl.de
-In-Reply-To: <4CE210D3.5060703@cisco.com>
-X-Newsreader: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Cc: linux-scsi@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Nov 2010 21:04:19 -0800
-Joe Eykholt <jeykholt@cisco.com> wrote:
+On Mon, 15 Nov 2010 19:08:44 +0100
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
+> On Mon, 2010-11-15 at 18:59 +0100, Martin Schwidefsky wrote:
+> > Steal time per task is at least good for performance problem analysis.
+> > Sometimes knowing what is not the cause of a performance problem can help you
+> > tremendously. If a task is slow and has no steal time, well then the hypervisor
+> > is likely not the culprit. On the other hand if you do see lots of steal time
+> > for a task while the rest of the system doesn't cause any steal time can tell
+> > you something as well. That task might hit a specific function which causes
+> > hypervisor overhead. The usefulness depends on the situation, it is another
+> > data point which may or may not help you. 
 > 
+> If performance analysis is the only reason, why not add a tracepoint on
+> vcpu enter that reports the duration the vcpu was out for and use perf
+> to gather said data? It can tell you what process was running and what
+> instruction it was at when the vcpu went away.
 > 
-> On 11/15/10 2:13 PM, Greg KH wrote:
-> > On Mon, Nov 15, 2010 at 11:39:48PM +0300, Vladislav Bolkhovitin wrote:
-> >> Greg KH, on 11/15/2010 09:44 PM wrote:
-> >> > On Mon, Nov 15, 2010 at 06:45:24PM +0100, Bart Van Assche wrote:
-> >> >> On Sun, Nov 14, 2010 at 12:59 AM, Greg KH <greg@kroah.com> wrote:
-> >> >>>
-> >> >>> On Sat, Nov 13, 2010 at 08:20:18PM +0300, Vladislav Bolkhovitin wrote:
-> >> >>>> So, I decided to reimplement it to be completely synchronous. SYSFS
-> >> >>>> authors did really great job and thanks to the excellent internal SYSFS
-> >> >>>> design and implementation it is absolutely safe. See:
-> >> >>>>
-> >> >>>> [root@tgt ~]# modprobe scst
-> >> >>>> [root@tgt ~]# cd /sys/kernel/scst_tgt/
-> >> >>>
-> >> >>> Sorry, but no, you can't put this in /sys/kernel/ without getting the
-> >> >>> approval of the sysfs maintainer.
-> >> >>>
-> >> >>> I really don't understand why you are using kobjects in the first place,
-> >> >>> why isn't this in the main device tree in the kernel, using 'struct
-> >> >>> device'?
-> >> >>
-> >> >> We might have missed something, but as far as we know it has not yet
-> >> >> been explained in this thread why using 'struct device' would be an
-> >> >> advantage over using 'struct kobject'.
-> >> >
-> >> > It's very simple.
-> >> >
-> >> > You want your device to show up in the global device tree in the kernel,
-> >> > not off to one side, unconnected to anything else.
-> >> >
-> >> > Please use 'struct device', it is what you want to do here.
-> >>
-> >> But we don't have any device to show up in the global device tree!
-> > 
-> > Not true at all.
-> > 
-> >> We don't have any devices in the struct device's understanding at all!
-> > 
-> > Then create them just like you are doing so for your kobject use.
-> > 
-> > The first device would be the root one, and then everything trickles
-> > down from there.
-> > 
-> > And use configfs for your configuration stuff, that's what it is there
-> > for, and if it doesn't somehow work properly for you, please work with
-> > the configfs developers to fix that up.
-> > 
-> > thanks,
-> > 
-> > greg k-h
-> 
-> I don't have any opinion on the above, but I don't see why sysfs can't be
-> used for configuration as well as its other roles. It seems to me wasteful
-> to require configfs to be used in order to change configuration when
-> sysfs works fine for this.
+> No need to add 40 bytes per task for that.
 
-Well, I'm not involved here.. but to me it makes sense. It's just a
-useful principle in software design. You don't take something that is
-designed for one purpose and mis-use it. It will grow warts and
-mutate, stealing flexibility. 
+Which vcpu enter? We usually have z/VM as our hypervisor and want to be able
+to do performance analysis with the data we gather inside the guest. There
+is no vcpu enter we could put a tracepoint on. We would have to put tracepoints
+on every possible interaction point with z/VM to get this data. To me it seems
+a lot simpler to add the per-task steal time.
 
-it's one of the reasons many software projects become
-unmaintainable... nobody can change anything anymore because the
-once simple design has proliferated into a nine headed monster...
+And if it is really the additional 40 bytes on x86 that bother you so much,
+we could put them behind #ifdef CONFIG_VIRT_CPU_ACCOUNTING. There already
+is one in the task_struct for prev_utime and prev_stime. 
 
+-- 
+blue skies,
+   Martin.
 
-> Just my two cents.
-
-My two cents too.
-
-> 
-> 	Joe
-
-Flo
+"Reality continues to ruin my life." - Calvin.
 
