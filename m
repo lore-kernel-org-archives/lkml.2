@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863Ab0KPFRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 00:17:31 -0500
-Received: from mail.perches.com ([173.55.12.10]:1419 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750891Ab0KPFR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 00:17:29 -0500
-Subject: [PATCH] kernel/sysctl.c: Fix build failure with !CONFIG_PRINTK
-From: Joe Perches <joe@perches.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Paris <eparis@redhat.com>, James Morris <jmorris@namei.org>,
-        Dan Rosenberg <drosenberg@vsecurity.com>, Ingo Molnar <mingo@elte.hu>,
-        Eugene Teo <eugeneteo@kernel.org>, Kees Cook <kees.cook@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <201011160259.oAG2x1UX012045@hera.kernel.org>
-References: <201011160259.oAG2x1UX012045@hera.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Nov 2010 21:17:27 -0800
-Message-ID: <1289884647.16461.186.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1751999Ab0KPFSd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 00:18:33 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:19161 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750891Ab0KPFSc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 00:18:32 -0500
+Message-ID: <001401cb854d$b46e13c0$66f8800a@maildom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "Marc Kleine-Budde" <mkl@pengutronix.de>
+Cc: "Wolfgang Grandegger" <wg@grandegger.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Wolfram Sang" <w.sang@pengutronix.de>,
+        "Christian Pellegrin" <chripell@fsfe.org>,
+        "Barry Song" <21cnbao@gmail.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
+        <margie.foster@intel.com>, <yong.y.wang@intel.com>,
+        "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>,
+        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>
+References: <4CE0EFA7.9020007@dsn.okisemi.com> <4CE0F92A.40308@pengutronix.de>
+Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Add Flow control,
+Date: Tue, 16 Nov 2010 14:18:26 +0900
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sigh...
+On Monday, November 15, 2010 6:11 PM, Marc Kleine-Budde wrote:
+> Please make it one patch per topic. A review of your patch will follow.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+It's too late now.
+This is difficult to separete patch per topic from current our CAN driver.
+
+Next time posting another patch, I will do like so.
+
 ---
- kernel/sysctl.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks,
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index b65bf63..5abfa15 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -702,7 +702,6 @@ static struct ctl_table kern_table[] = {
- 		.extra1		= &zero,
- 		.extra2		= &ten_thousand,
- 	},
--#endif
- 	{
- 		.procname	= "dmesg_restrict",
- 		.data		= &dmesg_restrict,
-@@ -712,6 +711,7 @@ static struct ctl_table kern_table[] = {
- 		.extra1		= &zero,
- 		.extra2		= &one,
- 	},
-+#endif
- 	{
- 		.procname	= "ngroups_max",
- 		.data		= &ngroups_max,
-
-
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
