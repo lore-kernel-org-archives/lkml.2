@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934260Ab0KPLBF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 06:01:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47467 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932806Ab0KPLBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 06:01:02 -0500
-Date: Tue, 16 Nov 2010 12:01:00 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: gregkh@suse.de, linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Aw: Re: [PATCH 0/3] HID: roccat: finishing usage of
- sysfs_create_bin_group()
-In-Reply-To: <640538250.3216351289891020338.JavaMail.ngmail@webmail08.arcor-online.net>
-Message-ID: <alpine.LNX.2.00.1011161159590.7420@pobox.suse.cz>
-References: <alpine.LNX.2.00.1011152330540.7420@pobox.suse.cz> <1289853161.2188.44.camel@neuromancer> <20101115220828.GA9417@suse.de> <640538250.3216351289891020338.JavaMail.ngmail@webmail08.arcor-online.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S934268Ab0KPLDc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 06:03:32 -0500
+Received: from mail-out.m-online.net ([212.18.0.10]:39859 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933044Ab0KPLDa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 06:03:30 -0500
+X-Auth-Info: 1HAoPBlKn2t3rZXDBKH0s93HQjHWpOfw2qnUVmBZ45I=
+Message-ID: <4CE2654B.20004@grandegger.com>
+Date: Tue, 16 Nov 2010 12:04:43 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, andrew.chih.howe.khor@intel.com,
+        qi.wang@intel.com, margie.foster@intel.com, yong.y.wang@intel.com,
+        Masayuki Ohtake <masa-korg@dsn.okisemi.com>, kok.howg.ewe@intel.com,
+        joel.clark@intel.com
+Subject: Re: [PATCH net-next-2.6 v3] can: Topcliff: PCH_CAN driver: Add Flow
+ control,
+References: <4CE2434B.5050701@dsn.okisemi.com>
+In-Reply-To: <4CE2434B.5050701@dsn.okisemi.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Nov 2010, Stefan Achatz wrote:
+Hi Tomoya,
 
-> > > > These patches are against the newest roccat file versions (after
-> > > > applying everything I released the last days).
-> > > > They fix some inattentive (though not critical) failures from previous
-> > > > patches and change hid-roccat-koneplus and hid-roccat-pyra to use the
-> > > > new sysfs_create_bin_group()
-> > > > koneplus should be finished now (until I find errors)
-> > > 
-> > > Wait, they still don't resolve the main problem of this api is still
-> > > racy and I can't accept it.
-> > 
-> > Yeah, I have already pointed Stefan to
-> > 
-> > 	 http://lkml.org/lkml/2010/11/13/174
-> > 
-> > which he might have missed.
+On 11/16/2010 09:39 AM, Tomoya MORINAGA wrote:
+> Hi Marc and Wolf,
 > 
-> Hello again,
+> I have updated your indications.
 > 
-> I don't see why these patches can't be applied. The bin attribute group 
-> functions standing for themself seem to be useful. The kone driver is 
-> already in the stable kernel and has less code with these patches. 
-> Though this does not change its functionality its a code cleanup. Thats 
-> also true for pyra and koneplus. So for me these are clear improvements 
-> until I make progress in the race problem. I will do it, but being a 
-> newbe I don't know where to start (feel free to point me to something), 
-> so it might take quite some time and sure needs some questions asked.
+>> * Add Flow control
+>> * Fix Data copy issue (endianness)
+>> * Add Macro prefix "PCH_"
+>> * Separate interface register structure
+>> * Some functions are unified.
+>> * Change MessageObject indication(PCH_RX_OBJ_START, etc..)
+>> * Enumerate LEC macro
+>> * Move MSI processing from open/close to probe/remove processing
+>> * Use BIT(x)
+>> * and more...
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 
-Hi Stefan,
+Could you please resend the patch (as v4) with a proper subject and
+commit message. Then I will add my "Acked-by" to get that
+*not-yet-ready* driver updated quickly.
 
-the way the driver does things is racy and needs fixing. Introducing 
-interface into sysfs/driver core, which we now know is racy, is not 
-something we'd like to do.
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Wolfgang.
