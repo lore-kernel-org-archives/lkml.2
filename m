@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab0KPTjo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 14:39:44 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:56834 "HELO
+	id S932174Ab0KPTjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 14:39:46 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:56983 "HELO
 	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756304Ab0KPTjm (ORCPT
+	by vger.kernel.org with SMTP id S1756304Ab0KPTjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 14:39:42 -0500
+	Tue, 16 Nov 2010 14:39:45 -0500
 From: Ben Gardiner <bengardiner@nanometrics.ca>
 To: Kevin Hilman <khilman@deeprootsystems.com>,
         davinci-linux-open-source@linux.davincidsp.com,
@@ -15,10 +15,11 @@ To: Kevin Hilman <khilman@deeprootsystems.com>,
 Cc: linux-kernel@vger.kernel.org,
         Chris Cordahi <christophercordahi@nanometrics.ca>,
         Paul Mundt <lethal@linux-sh.org>,
-        Alexander Clouter <alex@digriz.org.uk>
-Subject: [PATCH v2 1/4] input: gpio_keys: polling mode support
-Date: Tue, 16 Nov 2010 14:39:34 -0500
-Message-Id: <5778af1b3a740718b3c8d3c727b386e5b1872d16.1289935504.git.bengardiner@nanometrics.ca>
+        Alexander Clouter <alex@digriz.org.uk>,
+        "Govindarajan, Sriramakrishnan" <srk@ti.com>
+Subject: [PATCH v2 4/4] da850-evm: add baseboard UI expander buttons, switches and LEDs
+Date: Tue, 16 Nov 2010 14:39:37 -0500
+Message-Id: <d6d59b4a3c34149008f3681e0d6106efa15f354d.1289935504.git.bengardiner@nanometrics.ca>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <cover.1289935504.git.bengardiner@nanometrics.ca>
 References: <cover.1289835508.git.bengardiner@nanometrics.ca> <cover.1289935504.git.bengardiner@nanometrics.ca>
@@ -26,319 +27,276 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Clouter <alex@digriz.org.uk>
+This patch adds a pca953x platform device for the tca6416 found on the evm
+baseboard. The tca6416 is a GPIO expander, also found on the UI board at a
+separate I2C address. The pins of the baseboard IO expander are connected to
+software reset, deep sleep enable, test points, a push button, DIP switches and
+LEDs.
 
-This implements an optional polling mode for the gpio_keys driver,
-necessary for GPIOs that are not able to generate IRQs.
+Add support for the push button, DIP switches and LEDs and test points (as
+free GPIOs). The reset and deep sleep enable connections are reserved by the
+setup routine so that userspace can't toggle those lines.
 
-gpio_keys_platform_data has been extended with poll_interval
-which specifies the polling interval in ms, this is passed onto
-input-polldev.
+The existing tca6416-keypad driver was not employed because there was no
+apararent way to register the LEDs connected to gpio's on the tca6416 while
+simultaneously registering the tca6416-keypad instance.
 
-This work is a rebase of the patch by Alex Clouter [1] which was
-based on the patch [2] originally conceived by Paul Mundt.
-
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
-Signed-off-by: Alexander Clouter <alex@digriz.org.uk>
 Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
 Reviewed-by: Chris Cordahi <christophercordahi@nanometrics.ca>
-CC: Paul Mundt <lethal@linux-sh.org>
-
-[1] http://article.gmane.org/gmane.linux.kernel.input/13919
-[2] http://article.gmane.org/gmane.linux.kernel.input/5814
+CC: Govindarajan, Sriramakrishnan <srk@ti.com>
 
 ---
 
 Changes since v1:
- * use locally defined functions that are no-ops/error checkers when
-   INPUT_POLLDEV is not defined.
- * disable polling mode support when input-polldev is a module and gpio_keys
-   is builtin
-
-Changes since [1]:
- * rebased to 0b1c3ef1072f2b97c86351d3736d2b2d00293a11 of
-   git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git
- * use _cansleep variant of gpio_get_value in the polling task
-   to avoid WARN_ON when using I2C GPIO expanders
- * prevent unitialized access to 'input' in gpio_keys_close()
-Changes since [2]:
- * absolute dependency on INPUT_POLLDEV removed
-
-Tested with CONFIG_INPUT_POLLDEV={n,m,y} (gpio_keys as module for 'm').
+ * adding note about why the tca6416-keypad driver was not used.
+ * adding Govindarajan, Sriramakrishnan, the author of the tca6416-keypad
+   driver
 ---
- drivers/input/keyboard/gpio_keys.c |  120 ++++++++++++++++++++++++++++++------
- include/linux/gpio_keys.h          |    1 +
- 2 files changed, 103 insertions(+), 18 deletions(-)
+ arch/arm/mach-davinci/board-da850-evm.c |  217 ++++++++++++++++++++++++++++++-
+ 1 files changed, 213 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-index 6069abe..d2f23d9 100644
---- a/drivers/input/keyboard/gpio_keys.c
-+++ b/drivers/input/keyboard/gpio_keys.c
-@@ -1,7 +1,9 @@
- /*
-- * Driver for keys on GPIO lines capable of generating interrupts.
-+ * Driver for keys on GPIO lines, either IRQ-driven or polled.
-  *
-  * Copyright 2005 Phil Blundell
-+ * Copyright 2008 Paul Mundt
-+ * Copyright 2010 Alexander Clouter <alex@digriz.org.uk>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -25,6 +27,7 @@
- #include <linux/gpio_keys.h>
- #include <linux/workqueue.h>
- #include <linux/gpio.h>
-+#include <linux/input-polldev.h>
- 
- struct gpio_button_data {
- 	struct gpio_keys_button *button;
-@@ -37,6 +40,7 @@ struct gpio_button_data {
- 
- struct gpio_keys_drvdata {
- 	struct input_dev *input;
-+	struct input_polled_dev *poll_dev;
- 	struct mutex disable_lock;
- 	unsigned int n_buttons;
- 	int (*enable)(struct device *dev);
-@@ -44,6 +48,30 @@ struct gpio_keys_drvdata {
- 	struct gpio_button_data data[0];
- };
- 
-+#if (!defined(CONFIG_INPUT_POLLDEV) && !defined(CONFIG_INPUT_POLLDEV_MODULE)) \
-+	|| (defined(CONFIG_INPUT_POLLDEV_MODULE) \
-+		&& !defined(CONFIG_KEYBOARD_GPIO_MODULE))
-+
-+static inline struct input_polled_dev *allocate_polled_device(
-+					const struct device *dev)
-+{
-+	dev_err(dev, "device needs polling (enable INPUT_POLLDEV)\n");
-+	return NULL;
-+}
-+
-+#define free_polled_device(x)		do { } while (0)
-+#define register_polled_device(x)	(-ENXIO)
-+#define unregister_polled_device(x)	do { } while (0)
-+
-+#else
-+
-+#define allocate_polled_device(x)	input_allocate_polled_device()
-+#define free_polled_device(x)		input_free_polled_device(x)
-+#define register_polled_device(x)	input_register_polled_device(x)
-+#define unregister_polled_device(x)	input_unregister_polled_device(x)
-+
-+#endif
-+
- /*
-  * SYSFS interface for enabling/disabling keys and switches:
-  *
-@@ -322,7 +350,8 @@ static void gpio_keys_report_event(struct gpio_button_data *bdata)
- 	struct gpio_keys_button *button = bdata->button;
- 	struct input_dev *input = bdata->input;
- 	unsigned int type = button->type ?: EV_KEY;
--	int state = (gpio_get_value(button->gpio) ? 1 : 0) ^ button->active_low;
-+	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0)
-+			^ button->active_low;
- 
- 	input_event(input, type, button->code, !!state);
- 	input_sync(input);
-@@ -343,6 +372,16 @@ static void gpio_keys_timer(unsigned long _data)
- 	schedule_work(&data->work);
- }
- 
-+static void gpio_handle_button_event(struct gpio_keys_button *button,
-+				     struct gpio_button_data *bdata)
-+{
-+	if (bdata->timer_debounce)
-+		mod_timer(&bdata->timer,
-+			jiffies + msecs_to_jiffies(bdata->timer_debounce));
-+	else
-+		gpio_keys_report_event(bdata);
-+}
-+
- static irqreturn_t gpio_keys_isr(int irq, void *dev_id)
- {
- 	struct gpio_button_data *bdata = dev_id;
-@@ -350,15 +389,24 @@ static irqreturn_t gpio_keys_isr(int irq, void *dev_id)
- 
- 	BUG_ON(irq != gpio_to_irq(button->gpio));
- 
--	if (bdata->timer_debounce)
--		mod_timer(&bdata->timer,
--			jiffies + msecs_to_jiffies(bdata->timer_debounce));
--	else
--		schedule_work(&bdata->work);
-+	gpio_handle_button_event(button, bdata);
- 
- 	return IRQ_HANDLED;
- }
- 
-+static void gpio_keys_poll(struct input_polled_dev *dev)
-+{
-+	struct gpio_keys_drvdata *ddata = dev->private;
-+	int i;
-+
-+	for (i = 0; i < ddata->n_buttons; i++) {
-+		struct gpio_button_data *bdata = &ddata->data[i];
-+		struct gpio_keys_button *button = bdata->button;
-+
-+		gpio_handle_button_event(button, bdata);
-+	}
-+}
-+
- static int __devinit gpio_keys_setup_key(struct platform_device *pdev,
- 					 struct gpio_button_data *bdata,
- 					 struct gpio_keys_button *button)
-@@ -446,20 +494,28 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
- 	struct gpio_keys_drvdata *ddata;
- 	struct device *dev = &pdev->dev;
- 	struct input_dev *input;
-+	struct input_polled_dev *poll_dev;
- 	int i, error;
- 	int wakeup = 0;
- 
- 	ddata = kzalloc(sizeof(struct gpio_keys_drvdata) +
- 			pdata->nbuttons * sizeof(struct gpio_button_data),
- 			GFP_KERNEL);
--	input = input_allocate_device();
-+	if (pdata->poll_interval) {
-+		poll_dev = allocate_polled_device(dev);
-+		input = poll_dev ? poll_dev->input : 0;
-+	} else
-+		input = input_allocate_device();
- 	if (!ddata || !input) {
- 		dev_err(dev, "failed to allocate state\n");
- 		error = -ENOMEM;
- 		goto fail1;
- 	}
- 
--	ddata->input = input;
-+	if (pdata->poll_interval)
-+		ddata->poll_dev = poll_dev;
-+	else
-+		ddata->input = input;
- 	ddata->n_buttons = pdata->nbuttons;
- 	ddata->enable = pdata->enable;
- 	ddata->disable = pdata->disable;
-@@ -468,6 +524,12 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
- 	platform_set_drvdata(pdev, ddata);
- 	input_set_drvdata(input, ddata);
- 
-+	if (pdata->poll_interval) {
-+		poll_dev->private = ddata;
-+		poll_dev->poll = gpio_keys_poll;
-+		poll_dev->poll_interval = pdata->poll_interval;
-+	}
-+
- 	input->name = pdev->name;
- 	input->phys = "gpio-keys/input0";
- 	input->dev.parent = &pdev->dev;
-@@ -491,14 +553,17 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
- 		bdata->input = input;
- 		bdata->button = button;
- 
-+		input_set_capability(input, type, button->code);
-+
-+		if (pdata->poll_interval)
-+			continue;
-+
- 		error = gpio_keys_setup_key(pdev, bdata, button);
- 		if (error)
- 			goto fail2;
- 
- 		if (button->wakeup)
- 			wakeup = 1;
--
--		input_set_capability(input, type, button->code);
- 	}
- 
- 	error = sysfs_create_group(&pdev->dev.kobj, &gpio_keys_attr_group);
-@@ -508,7 +573,10 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
- 		goto fail2;
- 	}
- 
--	error = input_register_device(input);
-+	if (pdata->poll_interval)
-+		error = register_polled_device(poll_dev);
-+	else
-+		error = input_register_device(input);
- 	if (error) {
- 		dev_err(dev, "Unable to register input device, error: %d\n",
- 			error);
-@@ -528,7 +596,9 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
- 	sysfs_remove_group(&pdev->dev.kobj, &gpio_keys_attr_group);
-  fail2:
- 	while (--i >= 0) {
--		free_irq(gpio_to_irq(pdata->buttons[i].gpio), &ddata->data[i]);
-+		if (!pdata->poll_interval)
-+			free_irq(gpio_to_irq(pdata->buttons[i].gpio),
-+				&ddata->data[i]);
- 		if (ddata->data[i].timer_debounce)
- 			del_timer_sync(&ddata->data[i].timer);
- 		cancel_work_sync(&ddata->data[i].work);
-@@ -537,7 +607,10 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, NULL);
-  fail1:
--	input_free_device(input);
-+	if (pdata->poll_interval)
-+		free_polled_device(poll_dev);
-+	else
-+		input_free_device(input);
- 	kfree(ddata);
- 
- 	return error;
-@@ -547,7 +620,8 @@ static int __devexit gpio_keys_remove(struct platform_device *pdev)
- {
- 	struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
- 	struct gpio_keys_drvdata *ddata = platform_get_drvdata(pdev);
--	struct input_dev *input = ddata->input;
-+	struct input_dev *input;
-+	struct input_polled_dev *poll_dev;
- 	int i;
- 
- 	sysfs_remove_group(&pdev->dev.kobj, &gpio_keys_attr_group);
-@@ -555,15 +629,25 @@ static int __devexit gpio_keys_remove(struct platform_device *pdev)
- 	device_init_wakeup(&pdev->dev, 0);
- 
- 	for (i = 0; i < pdata->nbuttons; i++) {
--		int irq = gpio_to_irq(pdata->buttons[i].gpio);
--		free_irq(irq, &ddata->data[i]);
-+		if (!pdata->poll_interval) {
-+			int irq = gpio_to_irq(pdata->buttons[i].gpio);
-+			free_irq(irq, &ddata->data[i]);
-+		}
- 		if (ddata->data[i].timer_debounce)
- 			del_timer_sync(&ddata->data[i].timer);
- 		cancel_work_sync(&ddata->data[i].work);
- 		gpio_free(pdata->buttons[i].gpio);
- 	}
- 
--	input_unregister_device(input);
-+	if (pdata->poll_interval) {
-+		poll_dev = ddata->poll_dev;
-+		unregister_polled_device(poll_dev);
-+		free_polled_device(poll_dev);
-+	} else {
-+		input = ddata->input;
-+		input_unregister_device(input);
-+		input_free_device(input);
-+	}
- 
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index dcf21e5..79f2c95 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -410,6 +410,208 @@ static int da850_evm_ui_expander_teardown(struct i2c_client *client,
  	return 0;
  }
-diff --git a/include/linux/gpio_keys.h b/include/linux/gpio_keys.h
-index ce73a30..5fdd495 100644
---- a/include/linux/gpio_keys.h
-+++ b/include/linux/gpio_keys.h
-@@ -19,6 +19,7 @@ struct gpio_keys_platform_data {
- 	unsigned int rep:1;		/* enable input subsystem auto repeat */
- 	int (*enable)(struct device *dev);
- 	void (*disable)(struct device *dev);
-+	unsigned int poll_interval;	/* polling interval in ms */
+ 
++/* assign the baseboard expander's GPIOs after the UI board's */
++#define DA850_UI_EXPANDER_N_GPIOS ARRAY_SIZE(ui_expander_names)
++#define DA850_BB_EXPANDER_GPIO_BASE (DAVINCI_N_GPIO + DA850_UI_EXPANDER_N_GPIOS)
++
++static const char const *baseboard_expander_names[] = {
++	"deep_sleep_en", "sw_rst", "tp_23", "tp_22", "tp_21", "user_pb1",
++	"user_led2", "user_led1", "user_sw_1", "user_sw_2", "user_sw_3",
++	"user_sw_4", "user_sw_5", "user_sw_6", "user_sw_7", "user_sw_8"
++};
++
++#define DA850_DEEP_SLEEP_EN_OFFSET		0
++#define DA850_SW_RST_OFFSET			1
++#define DA850_PB1_OFFSET			5
++#define DA850_USER_LED2_OFFSET			6
++#define DA850_USER_SW_1_OFFSET			8
++
++#define DA850_N_USER_SW				8
++#define DA850_N_USER_LED			2
++
++static struct gpio_keys_button user_pb_gpio_key = {
++	.code = KEY_PROG1,
++	.type = EV_KEY,
++	.active_low = 1,
++	.wakeup = 0,
++	.debounce_interval = DA850_PB_DEBOUNCE_MS,
++	.gpio = -1, /* assigned at runtime */
++	.desc = NULL, /* assigned at runtime */
++};
++
++static struct gpio_keys_platform_data user_pb_gpio_key_platform_data = {
++	.buttons = &user_pb_gpio_key,
++	.nbuttons = 1,
++	.rep = 0, /* disable auto-repeat */
++	.poll_interval = DA850_PB_POLL_MS,
++};
++
++static struct platform_device user_pb_gpio_key_device = {
++	.name = "gpio-keys",
++	.id = 1,
++	.dev = {
++		.platform_data = &user_pb_gpio_key_platform_data
++	}
++};
++
++static struct gpio_keys_button user_sw_gpio_keys[DA850_N_USER_SW];
++
++static struct gpio_keys_platform_data user_sw_gpio_key_platform_data = {
++	.buttons = user_sw_gpio_keys,
++	.nbuttons = ARRAY_SIZE(user_sw_gpio_keys),
++	.rep = 0, /* disable auto-repeat */
++	.poll_interval = DA850_SW_POLL_MS,
++};
++
++static struct platform_device user_sw_gpio_key_device = {
++	.name = "gpio-keys",
++	.id = 2,
++	.dev = {
++		.platform_data = &user_sw_gpio_key_platform_data
++	}
++};
++
++static void da850_user_switches_init(unsigned gpio)
++{
++	int i;
++	struct gpio_keys_button *button;
++
++	for (i = 0; i < DA850_N_USER_SW; i++) {
++		button = &user_sw_gpio_keys[i];
++
++		button->code = SW_LID + i;
++		button->type = EV_SW;
++		button->active_low = 1;
++		button->wakeup = 0;
++		button->debounce_interval = DA850_PB_DEBOUNCE_MS;
++		button->desc = (char *)
++			baseboard_expander_names[DA850_USER_SW_1_OFFSET + i];
++
++		button->gpio = gpio + DA850_USER_SW_1_OFFSET + i;
++	}
++}
++
++static struct gpio_led user_leds[DA850_N_USER_LED];
++
++static struct gpio_led_platform_data user_led_gpio_data = {
++	.leds = user_leds,
++	.num_leds = ARRAY_SIZE(user_leds),
++};
++
++static struct platform_device user_leds_gpio_device = {
++	.name		= "leds-gpio",
++	.id		= -1,
++	.dev = {
++		.platform_data = &user_led_gpio_data
++	}
++};
++
++static void da850_user_leds_init(unsigned gpio)
++{
++	int i;
++	struct gpio_led *led;
++
++	for (i = 0; i < DA850_N_USER_LED; i++) {
++		led = &user_leds[i];
++
++		led->active_low = 1;
++		led->gpio = gpio + DA850_USER_LED2_OFFSET + i;
++		led->name =
++			baseboard_expander_names[DA850_USER_LED2_OFFSET + i];
++	}
++}
++
++static int da850_evm_baseboard_expander_setup(struct i2c_client *client,
++						unsigned gpio, unsigned ngpio,
++						void *c)
++{
++	int ret;
++	int deep_sleep_en, sw_rst;
++
++	deep_sleep_en	= gpio + DA850_DEEP_SLEEP_EN_OFFSET;
++	sw_rst		= gpio + DA850_SW_RST_OFFSET;
++
++	/* Do not allow sysfs control of deep_sleep_en */
++	ret = gpio_request(deep_sleep_en,
++			baseboard_expander_names[DA850_DEEP_SLEEP_EN_OFFSET]);
++	if (ret) {
++		pr_warning("Cannot open IO expander pin %d\n", deep_sleep_en);
++		goto io_exp_setup_deep_sleep_en_fail;
++	}
++	/* do not drive a value on deep_sleep_en */
++	gpio_direction_input(deep_sleep_en);
++
++	/* Do not allow sysfs control of sw_rst */
++	ret = gpio_request(sw_rst,
++			baseboard_expander_names[DA850_SW_RST_OFFSET]);
++	if (ret) {
++		pr_warning("Cannot open IO expander pin %d\n", sw_rst);
++		goto io_exp_setup_sw_rst_fail;
++	}
++	/* do not drive a value on sw_rst */
++	gpio_direction_input(sw_rst);
++
++	/* Register user_pb1 as a gpio-keys button */
++	user_pb_gpio_key.desc = (char *)
++			baseboard_expander_names[DA850_PB1_OFFSET];
++	user_pb_gpio_key.gpio = gpio + DA850_PB1_OFFSET;
++	ret = platform_device_register(&user_pb_gpio_key_device);
++	if (ret) {
++		pr_warning("Cannot register user pb: %d\n", ret);
++		goto io_exp_setup_pb_fail;
++	}
++
++	/*
++	 * Register the switches as a separate gpio-keys device so the fast
++	 * polling interval for the pushbuttons is not wasted on switches
++	 */
++	da850_user_switches_init(gpio);
++	ret = platform_device_register(&user_sw_gpio_key_device);
++	if (ret) {
++		pr_warning("Could not register baseboard GPIO expander switches"
++						" device\n");
++		goto io_exp_setup_sw_fail;
++	}
++
++	da850_user_leds_init(gpio);
++	ret = platform_device_register(&user_leds_gpio_device);
++	if (ret) {
++		pr_warning("Could not register baseboard GPIO expander LEDS "
++				"device\n");
++		goto io_exp_setup_leds_fail;
++	}
++
++	return 0;
++
++io_exp_setup_leds_fail:
++	platform_device_unregister(&user_sw_gpio_key_device);
++io_exp_setup_sw_fail:
++	platform_device_unregister(&user_pb_gpio_key_device);
++io_exp_setup_pb_fail:
++	gpio_free(sw_rst);
++io_exp_setup_sw_rst_fail:
++	gpio_free(deep_sleep_en);
++io_exp_setup_deep_sleep_en_fail:
++	return ret;
++}
++
++static int da850_evm_baseboard_expander_teardown(struct i2c_client *client,
++					unsigned gpio, unsigned ngpio, void *c)
++{
++	int deep_sleep_en, sw_rst;
++
++	deep_sleep_en	= gpio + DA850_DEEP_SLEEP_EN_OFFSET;
++	sw_rst		= gpio + DA850_SW_RST_OFFSET;
++
++	platform_device_unregister(&user_leds_gpio_device);
++	platform_device_unregister(&user_sw_gpio_key_device);
++	platform_device_unregister(&user_pb_gpio_key_device);
++	gpio_free(sw_rst);
++	gpio_free(deep_sleep_en);
++
++	return 0;
++}
++
+ static struct pca953x_platform_data da850_evm_ui_expander_info = {
+ 	.gpio_base	= DAVINCI_N_GPIO,
+ 	.setup		= da850_evm_ui_expander_setup,
+@@ -417,6 +619,13 @@ static struct pca953x_platform_data da850_evm_ui_expander_info = {
+ 	.names		= ui_expander_names,
  };
  
- #endif
++static struct pca953x_platform_data da850_evm_baseboard_expander_info = {
++	.gpio_base	= DA850_BB_EXPANDER_GPIO_BASE,
++	.setup		= da850_evm_baseboard_expander_setup,
++	.teardown	= da850_evm_baseboard_expander_teardown,
++	.names		= baseboard_expander_names,
++};
++
+ static struct i2c_board_info __initdata da850_evm_i2c_devices[] = {
+ 	{
+ 		I2C_BOARD_INFO("tlv320aic3x", 0x18),
+@@ -424,10 +633,10 @@ static struct i2c_board_info __initdata da850_evm_i2c_devices[] = {
+ 	{
+ 		I2C_BOARD_INFO("tca6416", 0x20),
+ 		.platform_data = &da850_evm_ui_expander_info,
+-		/*
+-		 * TODO : populate at runtime using
+-		 * .irq = gpio_to_irq(GPIO_TO_PIN(2,7)),
+-		 */
++	},
++	{
++		I2C_BOARD_INFO("tca6416", 0x21),
++		.platform_data = &da850_evm_baseboard_expander_info,
+ 	},
+ };
+ 
 -- 
 1.7.0.4
 
