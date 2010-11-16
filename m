@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159Ab0KPNG6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 08:06:58 -0500
-Received: from mail.digidescorp.com ([66.244.163.200]:36925 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756264Ab0KPNG5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 08:06:57 -0500
-X-Spam-Processed: digidescorp.com, Tue, 16 Nov 2010 07:06:57 -0600
-X-Authenticated-Sender: steve@digidescorp.com
-X-Return-Path: prvs=1936c50a63=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-From: "Steven J. Magnani" <steve@digidescorp.com>
-To: linux-mm@kvack.org
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org, gerg@snapgear.com,
-        kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
-        "Steven J. Magnani" <steve@digidescorp.com>
-Subject: [PATCH][V2] nommu: yield CPU while disposing VM
-Date: Tue, 16 Nov 2010 07:06:45 -0600
-Message-Id: <1289912805-4143-1-git-send-email-steve@digidescorp.com>
-X-Mailer: git-send-email 1.6.0.6
+	id S934418Ab0KPNHs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 08:07:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50955 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756067Ab0KPNHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 08:07:46 -0500
+Message-ID: <4CE28211.6060204@redhat.com>
+Date: Tue, 16 Nov 2010 15:07:29 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Josef Bacik <josef@redhat.com>
+CC: david@fromorbit.com, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, cmm@us.ibm.com,
+        cluster-devel@redhat.com, ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH 4/6] Ext4: fail if we try to use hole punch
+References: <1289840723-3056-1-git-send-email-josef@redhat.com> <1289840723-3056-5-git-send-email-josef@redhat.com> <4CE2783F.1020004@redhat.com> <20101116125016.GA31957@dhcp231-156.rdu.redhat.com>
+In-Reply-To: <20101116125016.GA31957@dhcp231-156.rdu.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Depending on processor speed, page size, and the amount of memory a process
-is allowed to amass, cleanup of a large VM may freeze the system for many
-seconds. This can result in a watchdog timeout.
+On 11/16/2010 02:50 PM, Josef Bacik wrote:
+> On Tue, Nov 16, 2010 at 02:25:35PM +0200, Avi Kivity wrote:
+> >  On 11/15/2010 07:05 PM, Josef Bacik wrote:
+> >>  Ext4 doesn't have the ability to punch holes yet, so make sure we return
+> >>  EOPNOTSUPP if we try to use hole punching through fallocate.  This support can
+> >>  be added later.  Thanks,
+> >>
+> >
+> >  Instead of teaching filesystems to fail if they don't support the
+> >  capability, why don't supporting filesystems say so, allowing the fail
+> >  code to be in common code?
+> >
+>
+> There is no simple way to test if a filesystem supports hole punching or not so
+> the check has to be done per fs.  Thanks,
 
-Make sure other tasks receive some service when cleaning up large VMs.
+Could put a flag word in superblock_operations.  Filesystems which 
+support punching (or other features) can enable it there.
 
-Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
----
-diff -uprN a/mm/nommu.c b/mm/nommu.c
---- a/mm/nommu.c	2010-11-15 07:53:45.000000000 -0600
-+++ b/mm/nommu.c	2010-11-15 07:57:13.000000000 -0600
-@@ -1668,6 +1668,7 @@ void exit_mmap(struct mm_struct *mm)
- 		mm->mmap = vma->vm_next;
- 		delete_vma_from_mm(vma);
- 		delete_vma(mm, vma);
-+		cond_resched();
- 	}
- 
- 	kleave("");
+Or even have its own callback.
+
+-- 
+error compiling committee.c: too many arguments to function
 
