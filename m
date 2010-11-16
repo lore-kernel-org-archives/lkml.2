@@ -1,85 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933972Ab0KPIOi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 03:14:38 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39803 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757215Ab0KPIOg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 03:14:36 -0500
-Message-ID: <4CE23D5A.5080606@pengutronix.de>
-Date: Tue, 16 Nov 2010 09:14:18 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-Organization: Pengutronix
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Thunderbird/3.0.10
+	id S933988Ab0KPIPx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 03:15:53 -0500
+Received: from cantor.suse.de ([195.135.220.2]:41774 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932370Ab0KPIPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 03:15:51 -0500
+Date: Tue, 16 Nov 2010 09:15:44 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, balbir@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH] Make swap accounting default behavior configurable
+ v3
+Message-ID: <20101116081544.GA19247@tiehlicka.suse.cz>
+References: <20101110125154.GC5867@tiehlicka.suse.cz>
+ <20101111094613.eab2ec0b.nishimura@mxp.nes.nec.co.jp>
+ <20101111093155.GA20630@tiehlicka.suse.cz>
+ <20101112094118.b02b669f.nishimura@mxp.nes.nec.co.jp>
+ <20101112083103.GB7285@tiehlicka.suse.cz>
+ <20101115101335.8880fd87.nishimura@mxp.nes.nec.co.jp>
+ <20101115083540.GA20156@tiehlicka.suse.cz>
+ <20101116134800.7d8b612d.nishimura@mxp.nes.nec.co.jp>
 MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: Wolfgang Grandegger <wg@grandegger.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, andrew.chih.howe.khor@intel.com,
-        qi.wang@intel.com, margie.foster@intel.com, yong.y.wang@intel.com,
-        Masayuki Ohtake <masa-korg@dsn.okisemi.com>, kok.howg.ewe@intel.com,
-        joel.clark@intel.com
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Add Flow
- control,
-References: <4CE0EFA7.9020007@dsn.okisemi.com> <4CE0F92A.40308@pengutronix.de> <001401cb854d$b46e13c0$66f8800a@maildom.okisemi.com>
-In-Reply-To: <001401cb854d$b46e13c0$66f8800a@maildom.okisemi.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig7FF810E18DA6D1AC9D6D4A36"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101116134800.7d8b612d.nishimura@mxp.nes.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig7FF810E18DA6D1AC9D6D4A36
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Tue 16-11-10 13:48:00, Daisuke Nishimura wrote:
+> Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-On 11/16/2010 06:18 AM, Tomoya MORINAGA wrote:
-> On Monday, November 15, 2010 6:11 PM, Marc Kleine-Budde wrote:
->> Please make it one patch per topic. A review of your patch will follow=
-=2E
->=20
-> It's too late now.
-> This is difficult to separete patch per topic from current our CAN driv=
-er.
->=20
-> Next time posting another patch, I will do like so.
+Thank you. What should be next steps? Waiting for other ACKs or push it
+through Andrew?
+Btw. is this a stable tree material? I guess that distribution would
+like to have this patch and the stable is the easiest way how to deliver
+this.
 
-Sorry, but there is little chance to get a "this patch changes about 10
-things" into the kernel, please try to split up the patch.
+> 
+> Thank you for your work.
+> Daisuke Nishimura.
+> 
+> On Mon, 15 Nov 2010 09:35:40 +0100
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Mon 15-11-10 10:13:35, Daisuke Nishimura wrote:
+> > > On Fri, 12 Nov 2010 09:31:03 +0100
+> > [...]
+> > > > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > > > index ed45e98..7077148 100644
+> > > > --- a/Documentation/kernel-parameters.txt
+> > > > +++ b/Documentation/kernel-parameters.txt
+> > > > @@ -1752,6 +1752,8 @@ and is between 256 and 4096 characters. It is defined in the file
+> > > >  
+> > > >  	noswapaccount	[KNL] Disable accounting of swap in memory resource
+> > > >  			controller. (See Documentation/cgroups/memory.txt)
+> > > > +	swapaccount	[KNL] Enable accounting of swap in memory resource
+> > > > +			controller. (See Documentation/cgroups/memory.txt)
+> > > >  
+> > > >  	nosync		[HW,M68K] Disables sync negotiation for all devices.
+> > > >  
+> > > (I've add Andrew and Balbir to CC-list.)
+> > > It seems that almost all parameters are listed in alphabetic order in the document,
+> > > so I think it would be better to obey the rule.
+> > 
+> > You are right. The header of the file says:
+> > 
+> > " The following is a consolidated list of the kernel parameters as
+> > implemented (mostly) by the __setup() macro and sorted into English
+> > Dictionary order (defined as ignoring all punctuation and sorting digits
+> > before letters in a case insensitive manner), and with descriptions
+> > where known."
+> > 
+> > Updated patch follows bellow.
+> > 
+> > > 
+> > > Thanks,
+> > > Daisuke Nishimura.
+> > 
+> > Changes since v2:
+> > * put the new parameter description to the proper (alphabetically sorted)
+> >   place in Documentation/kernel-parameters.txt
+> > 
+> > Changes since v1:
+> > * do not remove noswapaccount parameter and add swapaccount parameter instead
+> > * Documentation/kernel-parameters.txt updated
+> > ---
+> > 
+> > From 21df3801e2b65f47a2807534487ebb353dad6340 Mon Sep 17 00:00:00 2001
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Date: Wed, 10 Nov 2010 13:30:04 +0100
+> > Subject: [PATCH] Make swap accounting default behavior configurable
+> > 
+> > Swap accounting can be configured by CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+> > configuration option and then it is turned on by default. There is
+> > a boot option (noswapaccount) which can disable this feature.
+> > 
+> > This makes it hard for distributors to enable the configuration option
+> > as this feature leads to a bigger memory consumption and this is a no-go
+> > for general purpose distribution kernel. On the other hand swap
+> > accounting may be very usuful for some workloads.
+> > 
+> > This patch adds a new configuration option which controls the default
+> > behavior (CGROUP_MEM_RES_CTLR_SWAP_ENABLED). If the option is selected
+> > then the feature is turned on by default.
+> > 
+> > It also adds a new boot parameter swapaccount which (contrary to
+> > noswapaccount) enables the feature. (I would consider swapaccount=yes|no
+> > semantic with removed noswapaccount parameter much better but this
+> > parameter is kind of API which might be in use and unexpected breakage
+> > is no-go.)
+> > 
+> > The default behavior is unchanged (if CONFIG_CGROUP_MEM_RES_CTLR_SWAP is
+> > enabled then CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED is enabled as well)
+> > 
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > ---
+> >  Documentation/kernel-parameters.txt |    3 +++
+> >  init/Kconfig                        |   13 +++++++++++++
+> >  mm/memcontrol.c                     |   15 ++++++++++++++-
+> >  3 files changed, 30 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > index ed45e98..14eafa5 100644
+> > --- a/Documentation/kernel-parameters.txt
+> > +++ b/Documentation/kernel-parameters.txt
+> > @@ -2385,6 +2385,9 @@ and is between 256 and 4096 characters. It is defined in the file
+> >  			improve throughput, but will also increase the
+> >  			amount of memory reserved for use by the client.
+> >  
+> > +	swapaccount	[KNL] Enable accounting of swap in memory resource
+> > +			controller. (See Documentation/cgroups/memory.txt)
+> > +
+> >  	swiotlb=	[IA-64] Number of I/O TLB slabs
+> >  
+> >  	switches=	[HW,M68k]
+> > diff --git a/init/Kconfig b/init/Kconfig
+> > index 88c1046..c972899 100644
+> > --- a/init/Kconfig
+> > +++ b/init/Kconfig
+> > @@ -613,6 +613,19 @@ config CGROUP_MEM_RES_CTLR_SWAP
+> >  	  if boot option "noswapaccount" is set, swap will not be accounted.
+> >  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
+> >  	  size is 4096bytes, 512k per 1Gbytes of swap.
+> > +config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
+> > +	bool "Memory Resource Controller Swap Extension enabled by default"
+> > +	depends on CGROUP_MEM_RES_CTLR_SWAP
+> > +	default y
+> > +	help
+> > +	  Memory Resource Controller Swap Extension comes with its price in
+> > +	  a bigger memory consumption. General purpose distribution kernels
+> > +	  which want to enable the feautre but keep it disabled by default
+> > +	  and let the user enable it by swapaccount boot command line
+> > +	  parameter should have this option unselected.
+> > +	  For those who want to have the feature enabled by default should
+> > +	  select this option (if, for some reason, they need to disable it
+> > +	  then noswapaccount does the trick).
+> >  
+> >  menuconfig CGROUP_SCHED
+> >  	bool "Group CPU scheduler"
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 9a99cfa..4f479fe 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -61,7 +61,14 @@ struct mem_cgroup *root_mem_cgroup __read_mostly;
+> >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+> >  /* Turned on only when memory cgroup is enabled && really_do_swap_account = 1 */
+> >  int do_swap_account __read_mostly;
+> > -static int really_do_swap_account __initdata = 1; /* for remember boot option*/
+> > +
+> > +/* for remember boot option*/
+> > +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED
+> > +static int really_do_swap_account __initdata = 1;
+> > +#else
+> > +static int really_do_swap_account __initdata = 0;
+> > +#endif
+> > +
+> >  #else
+> >  #define do_swap_account		(0)
+> >  #endif
+> > @@ -4909,6 +4916,12 @@ struct cgroup_subsys mem_cgroup_subsys = {
+> >  };
+> >  
+> >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+> > +static int __init enable_swap_account(char *s)
+> > +{
+> > +	really_do_swap_account = 1;
+> > +	return 1;
+> > +}
+> > +__setup("swapaccount", enable_swap_account);
+> >  
+> >  static int __init disable_swap_account(char *s)
+> >  {
+> > -- 
+> > 1.7.2.3
+> > 
+> > -- 
+> > Michal Hocko
+> > L3 team 
+> > SUSE LINUX s.r.o.
+> > Lihovarska 1060/12
+> > 190 00 Praha 9    
+> > Czech Republic
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-regards Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---------------enig7FF810E18DA6D1AC9D6D4A36
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkziPWAACgkQjTAFq1RaXHP8dgCfbDbriNp1NHjBsjsVQ/6B4cSt
-T8MAn05EZ0MDiSUI81Fqg36vH26ooAfd
-=znnS
------END PGP SIGNATURE-----
-
---------------enig7FF810E18DA6D1AC9D6D4A36--
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
