@@ -1,122 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758592Ab0KPWzl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 17:55:41 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55417 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755444Ab0KPWzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 17:55:40 -0500
-Date: Tue, 16 Nov 2010 14:55:38 -0800
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: Eric Sandeen <sandeen@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        "Patrick J. LoPresti" <lopresti@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [PATCH v2] ext4: ext4_fill_super shouldn't return 0 on
-	corruption
-Message-ID: <20101116225538.GC18195@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20101115214831.GA18195@tux1.beaverton.ibm.com> <4CE1AC38.9040201@redhat.com> <20101115230346.GB18195@tux1.beaverton.ibm.com> <alpine.LFD.2.00.1011161351230.5515@dhcp-lab-213.englab.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011161351230.5515@dhcp-lab-213.englab.brq.redhat.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1758821Ab0KPW5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 17:57:32 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52798 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755444Ab0KPW5b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 17:57:31 -0500
+Date: Tue, 16 Nov 2010 22:56:19 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Kay Sievers <kay.sievers@vrfy.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Werner Fink <werner@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
+Message-ID: <20101116225619.5fa7ef8b@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101116213622.GA17824@tango.0pointer.de>
+References: <1289922400.1253.3.camel@yio.site>
+	<20101116155717.6671e484@lxorguk.ukuu.org.uk>
+	<AANLkTimn7zyEjLhmOmUVQGnLDfM-A_uEgWETsM3nsyuY@mail.gmail.com>
+	<20101116171447.29336514@lxorguk.ukuu.org.uk>
+	<AANLkTi=ju4fON7Hz=j_tFtqFGD0b-c=-Ou+HQwfYDgOy@mail.gmail.com>
+	<20101116195538.7fa66b97@lxorguk.ukuu.org.uk>
+	<20101116213622.GA17824@tango.0pointer.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 01:56:31PM +0100, Lukas Czerner wrote:
-> On Mon, 15 Nov 2010, Darrick J. Wong wrote:
-> 
-> > At the start of ext4_fill_super, ret is set to -EINVAL, and any failure path
-> > out of that function returns ret.  However, the generic_check_addressable
-> > clause sets ret = 0 (if it passes), which means that a subsequent failure (e.g.
-> > a group checksum error) returns 0 even though the mount should fail.  This
-> > causes vfs_kern_mount in turn to think that the mount succeeded, leading to an
-> > oops.
-> > 
-> > A simple fix is to avoid using ret for the generic_check_addressable check,
-> > which was last changed in commit 30ca22c70e3ef0a96ff84de69cd7e8561b416cb2.
-> > 
-> > v2: Return -EFBIG in the error case, per Eric Sandeen's suggestion.
-> > 
-> > Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-> > ---
-> > 
-> >  fs/ext4/super.c |    6 +++---
-> >  1 files changed, 3 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-> > index 40131b7..120c034 100644
-> > --- a/fs/ext4/super.c
-> > +++ b/fs/ext4/super.c
-> > @@ -3257,13 +3257,13 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
-> >  	 * Test whether we have more sectors than will fit in sector_t,
-> >  	 * and whether the max offset is addressable by the page cache.
-> >  	 */
-> > -	ret = generic_check_addressable(sb->s_blocksize_bits,
-> > -					ext4_blocks_count(es));
-> > -	if (ret) {
-> > +	if (generic_check_addressable(sb->s_blocksize_bits,
-> > +				      ext4_blocks_count(es))) {
-> >  		ext4_msg(sb, KERN_ERR, "filesystem"
-> >  			 " too large to mount safely on this system");
-> >  		if (sizeof(sector_t) < 8)
-> >  			ext4_msg(sb, KERN_WARNING, "CONFIG_LBDAF not enabled");
-> > +		ret = -EFBIG;
-> >  		goto failed_mount;
-> >  	}
-> >  
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> 
-> Hi,
-> 
-> the untested diff below seems like a more general solution to me,
-> since it allows to return the actual error from
-> generic_check_addressable().
 
-It seems to work ok for me, so:
+> > So we fix the ioctl interface, it's not exactly hard to do now is it.
+> 
+> Sorry, the WAITEVENT stuff interface you created is unusably broken:
+> 
+>   a) it's a sleeping ioctl which makes it unusable in anything but the
+>   most trivial applications, because most programs need to respond to
+>   more than once wakeup event. Of course, you can then introduce threads
+>   but that's horrible.
+> 
+>   b) It loses events, because events that happen after you woke up and
+>   before you go back into WAITEVENT are completely lost. And those
+>   events might actually be relevant, since they might be the most recent events
+>   that happened. And those tend to be ones that matter.
 
-Acked-by: Darrick J. Wong <djwong@us.ibm.com>
+So those are both trivial enough to fix as far as I can see but by the
+sound of it neither actually solve what you want to do.
 
-I will make the same change to ext3.
+> Kay's interface also drops events, but only historic events that happened
+> but aren't current anymore. And that's a good thing, because when you
+> track which VT is in the foreground for presentation, or for permission
+> management purposes then you care little of who else should have had
+> access in the past but didn't get it. You are only interested in the most
+> recent update, which is what Kay's interface gives you.
 
---D
-> 
-> Thanks.
-> 
-> -Lukas
-> 
-> 
-> diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-> index 61182fe..3d89b72 100644
-> --- a/fs/ext4/super.c
-> +++ b/fs/ext4/super.c
-> @@ -3268,13 +3268,14 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
->  	 * Test whether we have more sectors than will fit in sector_t,
->  	 * and whether the max offset is addressable by the page cache.
->  	 */
-> -	ret = generic_check_addressable(sb->s_blocksize_bits,
-> +	err = generic_check_addressable(sb->s_blocksize_bits,
->  					ext4_blocks_count(es));
-> -	if (ret) {
-> +	if (err) {
->  		ext4_msg(sb, KERN_ERR, "filesystem"
->  			 " too large to mount safely on this system");
->  		if (sizeof(sector_t) < 8)
->  			ext4_msg(sb, KERN_WARNING, "CONFIG_LBDAF not enabled");
-> +		ret = err;
->  		goto failed_mount;
->  	}
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+No Kay's interface gives you some random reasonably recent answer that
+could well be wrong.
+ 
+> Kay's interface is not intended to be useful for logging purposes. It is
+> useful to track VT changes for service activation, for permission
+> management.
+
+You wish to do permission management based upon stale unlocked data,
+yeah that sounds about the standard of some of the current shipping
+desktops.
+
+> Well, the suff it provides is purely informational. You cannot actually
+> influence the TTY in anyway, you can just watch which VT is currently
+> active.
+
+Try that with "keystrokes" for example. its a bogus argument.
+
+> I am sorry, but WAITEVENT doesn't work for *any* case. It is completely
+> broken. Have you actually ever tried to use it yourself? Do it. Write me
+> a race-free program with it that tracks VT switches and i'd be amazed!
+
+You have to hold the vt switch locks, but that is unavoidable.
+
+> events. And voila, you'll have created Kay's interface.
+
+Which also doesn't work reliably and you want to use it for permissions
+management !
+
+Describe this permission management you are doing please.
+
+Alan
