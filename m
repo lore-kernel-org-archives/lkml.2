@@ -1,102 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab0KPNQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 08:16:50 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:56160 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751134Ab0KPNQt convert rfc822-to-8bit (ORCPT
+	id S1756883Ab0KPNSK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 08:18:10 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:62274 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706Ab0KPNSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 08:16:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:mime-version:content-type:from:in-reply-to:date:cc
-         :content-transfer-encoding:message-id:references:to:x-mailer;
-        b=gYynE2zuoW5f3kEOz0RuqLv77jNlWm00MJfk1Ioq1UEFoYPtsyWqhFNyl9logwr1F7
-         i3mKu6oilNtrSPFr+1sQnK+uFAXKkg+YUbFKMio7HSspjvSfKKaT3Y1+NkTULtv+e6rE
-         L1HhkkYz7ZAoTZtdco01WEr0Wz74Xv4oPxTBg=
-Subject: Re: Corrected data type mismatch
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: bhs <haishan.bai@gmail.com>
-In-Reply-To: <4CE27404.7020307@windriver.com>
-Date: Tue, 16 Nov 2010 21:16:36 +0800
-Cc: Milton Miller <miltonm@bga.com>, Hai Shan <shan.hai@windriver.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net
-Content-Transfer-Encoding: 8BIT
-Message-Id: <029A97EE-F051-4E8A-93E9-C259D2A7622E@gmail.com>
-References: <1289700419-11072-2-git-send-email-shan.hai@windriver.com> <mdm-kgbd-badfix@mdm.bga.com> <4CE27404.7020307@windriver.com>
-To: DDD <dongdong.deng@windriver.com>
-X-Mailer: Apple Mail (2.1081)
+	Tue, 16 Nov 2010 08:18:09 -0500
+Message-ID: <4CE2846C.6070501@vlnb.net>
+Date: Tue, 16 Nov 2010 16:17:32 +0300
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Richard Williams <richard@etechsoft.com>
+CC: Bart Van Assche <bvanassche@acm.org>, Boaz Harrosh <bharrosh@panasas.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Greg KH <greg@kroah.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        Hannes Reinecke <hare@suse.de>, Andy Yan <ayan@marvell.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vu Pham <vuhuong@mellanox.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joel Becker <joel.becker@oracle.com>
+Subject: Re: [Scst-devel] [PATCH 8/19]: SCST SYSFS interface implementation
+References: <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <4CE1017E.4090409@panasas.com> <20101115161620.GB5981@kroah.com> <4CE16B8E.1000300@panasas.com> <AANLkTikPVXGJ5-5YDk1uqfqrqxGLpSiSdaX3h7qxo-ie@mail.gmail.com> <8985DEAF-4227-4629-B90A-938D2BA3534E@etechsoft.com>
+In-Reply-To: <8985DEAF-4227-4629-B90A-938D2BA3534E@etechsoft.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:yzplRJ1GfGoxCeBNAsqoU7kJ7BdqxmzVNCrpayWb10q
+ xyCKj1KbPiV37RLavA07EpEZ3QCYSJgKo9JcifedfOy5kNux4H
+ iyrZ7MFQQG9EAt3Ksh4PxxqKbihxz5oOtTA+ErA8xJ4eZ6NJKd
+ QsBLF+zf+GZc1uym+E15CeIKL4j2DVy+eFlyPVMRvn2g3IvY3C
+ nZLakMmFI3ObvzN+JQ7/w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(Since this discussion goes to a quite fundamental scope, I let myself
+to add Joel Becker and Linus Torvalds on CC)
 
-On Nov 16, 2010, at 8:07 PM, DDD wrote:
+Richard Williams, on 11/16/2010 02:59 PM wrote:
+> I'm just an outsider - but maybe my perspective has value - it seems
+> there are two sides to this debate:
+> 
+> 1) sysfs is great for scst due to certain stability concerns and code
+> concerns
+> 2) sysfs is bad for scst due to the intended role of sysfs
+> and its namespace
 
-> Milton Miller wrote:
->> [added cc's based on from ff10b88b5a05c8f1646dd15fb9f6093c1384ff6d,
->> which added the patched line ]
->> https://patchwork.kernel.org/patch/323022/
->> On Sun, 14 Nov 2010 around 02:06:59 -0000, Hai Shan wrote:
->>> Corrected data type mismatch
->>> 
->> This merely hides the type mismatch by force casting it.
->> Looking at the context I believe the intent is to copy the the value to
->> or from the register content slot, not take the previous value of the
->> register and use that as an address to copy to or from.
-> 
-> 
-> OOPS! It is wrong here, The right one should be as following:
-> 
-> -   memcpy(mem, current->thread.evr[regno-32],
-> +   memcpy(mem, (void*)&current->thread.evr[regno-32], dbg_reg_def[regno].size);
-> 
-> Thanks milton & Shan.Hai, I will send out the fix to Jason ASAP.
-> 
+Your questions are very good, so let's summarize what we need to serve
+the needs of a SCSI target subsystem (not necessary SCST) and see what
+can fit them.
 
+So, the needs:
 
-Sorry for my crude fix :)
+1. Be capable to represent to user space internal configuration to let
+user space be able to see and analyze it, including various statistics.
 
+2. Let user space manage the internal configuration.
 
-> Dongdong
+3. Desired: possibility to send to user space events about important
+internal actions, like I/O failures, which may need user space
+intervention to recover, like switching from active to passive role in a
+cluster.
+
+So, what can we do with ConfigFS:
+
+(1): Only partially, because by design ConfigFS isn't supposed to
+represent internal configuration, it can only manage it. Extending
+ConfigFS to be capable to do that would be, in my understanding, a
+strong violation of its purpose and, hence, design and if went this way
+eventually ConfigFS would become just a duplication of the SYSFS
+functionality.
+
+(2): ConfigFS can do that. This is exactly for what it was designed and
+implemented. But in this particular application it would have some
+limitations derived from (1): to manage harware-related entries a user
+should magically know from somewhen names of those entries to create
+them by "mkdir" command.
+
+For instance, consider a user has a Fibre Channel HBA and want to use it
+in the target mode. Before he can configure it, he should somehow know
+its ports names and for each of them run:
+
+# mkdir /sys/kernel/config/.../50:50:00:00:00:00:00:11
+# mkdir /sys/kernel/config/.../50:50:00:00:00:00:00:12
+...
+
+where 50:50:00:00:00:00:00:1x are the ports' names. Only after that
+those ports appear on the ConfigFS and can be managed.
+
+(3): No events at all.
+
+Now consider SYSFS:
+
+(1): Easily. This is exactly for what it was designed and implemented.
+
+(2): Possible without any limitations and side effects.
+
+(3): Also possible.
+
+So, why not use SYSFS if it suits all the needs _without_ any additional
+effort and patches?
+
+Other alternatives? A set of custom IOCTLs? One more configuration FS? I
+believe, those would be quite disgusting for all.
+
+> Maybe I misunderstand - But if both sides have merit then wouldn't a
+> compromise be appropriate?
 > 
-> 
->> milton
->>> Signed-off-by: Hai Shan <shan.hai@windriver.com>
->>> 
->>> ---
->>> arch/powerpc/kernel/kgdb.c |    4 ++--
->>> 1 files changed, 2 insertions(+), 2 deletions(-)
->>> 
->>> diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
->>> index 7a9db64..c5ce65f 100644
->>> --- a/arch/powerpc/kernel/kgdb.c
->>> +++ b/arch/powerpc/kernel/kgdb.c
->>> @@ -337,7 +337,7 @@ char *dbg_get_reg(int regno, void *mem, struct pt_regs *regs)
->>> 		/* FP registers 32 -> 63 */
->>> #if defined(CONFIG_FSL_BOOKE) && defined(CONFIG_SPE)
->>> 		if (current)
->>> -			memcpy(mem, current->thread.evr[regno-32],
->>> +			memcpy(mem, (void *)current->thread.evr[regno-32],
->>> 					dbg_reg_def[regno].size);
->>> #else
->>> 		/* fp registers not used by kernel, leave zero */
->>> @@ -362,7 +362,7 @@ int dbg_set_reg(int regno, void *mem, struct pt_regs *regs)
->>> 	if (regno >= 32 && regno < 64) {
->>> 		/* FP registers 32 -> 63 */
->>> #if defined(CONFIG_FSL_BOOKE) && defined(CONFIG_SPE)
->>> -		memcpy(current->thread.evr[regno-32], mem,
->>> +		memcpy((void *)current->thread.evr[regno-32], mem,
->>> 				dbg_reg_def[regno].size);
->>> #else
->>> 		/* fp registers not used by kernel, leave zero */
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Maybe the sensical compromise is to use sysfs code to create a new
+> namespace that would fit this purpose?  It seems that I am also
+> hearing that the alternatives to sysfs aren't always adequate - so
+> why not use sysfs, but have a place where it's appropriate to use it?
+
+This is exactly what we are proposing: to use SYSFS in additional
+namespace /sys/kernel/scst_tgt.
+
+As far as I can see, only Greg is against it. Greg keeps his reasons
+private, so I can only guess that Greg is against extending usage of
+SYSFS (note, _usage_, not implementation! Everything needed long ago
+implemented.) beyond the scope it was originally designed around 10
+years ago. But SYSFS is already widely used this way in the kernel, as
+Joe illustrated, hence there is demand for it. People need it. So, why
+not to just acknowledge this fact and go ahead the simplest and most
+useful for both users and developers way?
+
+Thanks,
+Vlad
 
