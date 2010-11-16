@@ -1,92 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990Ab0KPW2l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 17:28:41 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:54669 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751579Ab0KPW2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 17:28:40 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: 2.6.37-rc1+: hibernate regression, claims not enough swap space
-Date: Tue, 16 Nov 2010 23:27:27 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: kernel list <linux-kernel@vger.kernel.org>,
-        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
-References: <20101114052138.GB2189@elf.ucw.cz> <201011152326.44357.rjw@sisk.pl> <20101116052634.GA30449@elf.ucw.cz>
-In-Reply-To: <20101116052634.GA30449@elf.ucw.cz>
+	id S932941Ab0KPW2u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 17:28:50 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32788 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756056Ab0KPW2t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 17:28:49 -0500
+Message-ID: <4CE30524.5080802@kernel.org>
+Date: Tue, 16 Nov 2010 14:26:44 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Jan Beulich <JBeulich@novell.com>
+CC: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH, v2] x86-64: fix and clean up AMD Fam10 MMCONF enabling
+References: <4CE24DF40200007800022737@vpn.id2.novell.com>
+In-Reply-To: <4CE24DF40200007800022737@vpn.id2.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011162327.27454.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 16, 2010, Pavel Machek wrote:
-> Hi!
+On 11/16/2010 12:25 AM, Jan Beulich wrote:
+> Candidate memory ranges were not calculated properly (start addresses
+> got needlessly rounded down, and end addresses didn't get rounded up
+> at all), address comparison for secondary CPUs was done on only part
+> of the address, and disabled status wasn't tracked properly.
 > 
-> > > ...but there's enough -- or at least it was enough to fit previous
-> > > versions. 32-bit machine, so it has highmem.
-> > > 
-> > > System is in console mode, very lightly loaded.
-> > > 
-> > > Mem:   2054716k total,   736548k used,  1318168k free,    15368k buffers
-> > > Swap:   779148k total,     2360k used,   776788k free,   546388k cached
-> > 
-> > Well, the swap is rather in short supply.  Below the 50% of RAM recommendation.
+> Signed-off-by: Jan Beulich <jbeulich@novell.com>
+> Cc: Yinghai Lu <yinghai@kernel.org>
 > 
-> Well, but the biggest image we can write is not 50% of RAM, but 50% of
-> lowmem... 
+> ---
+>  arch/x86/include/asm/msr-index.h   |    2 -
+>  arch/x86/kernel/mmconf-fam10h_64.c |   64 +++++++++++++++++--------------------
+>  2 files changed, 31 insertions(+), 35 deletions(-)
+> 
+> --- linux-2.6.37-rc2/arch/x86/include/asm/msr-index.h
+> +++ 2.6.37-rc2-x86_64-mmconf-fam10h/arch/x86/include/asm/msr-index.h
+> @@ -128,7 +128,7 @@
+>  #define FAM10H_MMIO_CONF_ENABLE		(1<<0)
+>  #define FAM10H_MMIO_CONF_BUSRANGE_MASK	0xf
+>  #define FAM10H_MMIO_CONF_BUSRANGE_SHIFT 2
+> -#define FAM10H_MMIO_CONF_BASE_MASK	0xfffffff
+> +#define FAM10H_MMIO_CONF_BASE_MASK	0xfffffffULL
+>  #define FAM10H_MMIO_CONF_BASE_SHIFT	20
+>  #define MSR_FAM10H_NODE_ID		0xc001100c
+>  
+> --- linux-2.6.37-rc2/arch/x86/kernel/mmconf-fam10h_64.c
+> +++ 2.6.37-rc2-x86_64-mmconf-fam10h/arch/x86/kernel/mmconf-fam10h_64.c
+> @@ -25,7 +25,6 @@ struct pci_hostbridge_probe {
+>  };
+>  
+>  static u64 __cpuinitdata fam10h_pci_mmconf_base;
+> -static int __cpuinitdata fam10h_pci_mmconf_base_status;
+>  
+>  static struct pci_hostbridge_probe pci_probes[] __cpuinitdata = {
+>  	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1200 },
+> @@ -44,10 +43,12 @@ static int __cpuinit cmp_range(const voi
+>  	return start1 - start2;
+>  }
+>  
+> -/*[47:0] */
+> -/* need to avoid (0xfd<<32) and (0xfe<<32), ht used space */
+> +#define MMCONF_UNIT (1ULL << FAM10H_MMIO_CONF_BASE_SHIFT)
+> +#define MMCONF_MASK (~(MMCONF_UNIT - 1))
+> +#define MMCONF_SIZE (MMCONF_UNIT << 8)
+> +/* need to avoid (0xfd<<32), (0xfe<<32), and (0xff<<32), ht used space */
+>  #define FAM10H_PCI_MMCONF_BASE (0xfcULL<<32)
+> -#define BASE_VALID(b) ((b != (0xfdULL << 32)) && (b != (0xfeULL << 32)))
+> +#define BASE_VALID(b) ((b) + MMCONF_SIZE <= (0xfdULL<<32) || (b) >= (1ULL<<40))
+>  static void __cpuinit get_fam10h_pci_mmconf_base(void)
+>  {
+>  	int i;
+> @@ -64,12 +65,11 @@ static void __cpuinit get_fam10h_pci_mmc
+>  	struct range range[8];
+>  
+>  	/* only try to get setting from BSP */
+> -	/* -1 or 1 */
+> -	if (fam10h_pci_mmconf_base_status)
+> +	if (fam10h_pci_mmconf_base)
+>  		return;
+>  
+>  	if (!early_pci_allowed())
+> -		goto fail;
+> +		return;
+>  
+>  	found = 0;
+>  	for (i = 0; i < ARRAY_SIZE(pci_probes); i++) {
+> @@ -91,7 +91,7 @@ static void __cpuinit get_fam10h_pci_mmc
+>  	}
+>  
+>  	if (!found)
+> -		goto fail;
+> +		return;
+>  
+>  	/* SYS_CFG */
+>  	address = MSR_K8_SYSCFG;
+> @@ -99,16 +99,16 @@ static void __cpuinit get_fam10h_pci_mmc
+>  
+>  	/* TOP_MEM2 is not enabled? */
+>  	if (!(val & (1<<21))) {
+> -		tom2 = 0;
+> +		tom2 = 1ULL << 32;
+>  	} else {
+>  		/* TOP_MEM2 */
+>  		address = MSR_K8_TOP_MEM2;
+>  		rdmsrl(address, val);
+> -		tom2 = val & (0xffffULL<<32);
+> +		tom2 = max(val & 0xffffff800000ULL, 1ULL << 32);
+>  	}
+>  
+>  	if (base <= tom2)
+> -		base = tom2 + (1ULL<<32);
+> +		base = (tom2 + 2 * MMCONF_UNIT - 1) & MMCONF_MASK;
+>  
+>  	/*
+>  	 * need to check if the range is in the high mmio range that is
+> @@ -123,11 +123,11 @@ static void __cpuinit get_fam10h_pci_mmc
+>  		if (!(reg & 3))
+>  			continue;
+>  
+> -		start = (((u64)reg) << 8) & (0xffULL << 32); /* 39:16 on 31:8*/
+> +		start = (u64)(reg & 0xffffff00) << 8; /* 39:16 on 31:8*/
+>  		reg = read_pci_config(bus, slot, 1, 0x84 + (i << 3));
+> -		end = (((u64)reg) << 8) & (0xffULL << 32); /* 39:16 on 31:8*/
+> +		end = ((u64)(reg & 0xffffff00) << 8) | 0xffff; /* 39:16 on 31:8*/
+>  
+> -		if (!end)
+> +		if (end < tom2)
+>  			continue;
+>  
+>  		range[hi_mmio_num].start = start;
+> @@ -143,32 +143,27 @@ static void __cpuinit get_fam10h_pci_mmc
+>  
+>  	if (range[hi_mmio_num - 1].end < base)
+>  		goto out;
+> -	if (range[0].start > base)
+> +	if (range[0].start > base + MMCONF_SIZE)
+>  		goto out;
+>  
+>  	/* need to find one window */
+> -	base = range[0].start - (1ULL << 32);
+> +	base = (range[0].start & MMCONF_MASK) - MMCONF_UNIT;
+>  	if ((base > tom2) && BASE_VALID(base))
+>  		goto out;
+> -	base = range[hi_mmio_num - 1].end + (1ULL << 32);
+> -	if ((base > tom2) && BASE_VALID(base))
+> +	base = (range[hi_mmio_num - 1].end + MMCONF_UNIT) & MMCONF_MASK;
+> +	if (BASE_VALID(base))
+>  		goto out;
+>  	/* need to find window between ranges */
+> -	if (hi_mmio_num > 1)
+> -	for (i = 0; i < hi_mmio_num - 1; i++) {
+> -		if (range[i + 1].start > (range[i].end + (1ULL << 32))) {
+> -			base = range[i].end + (1ULL << 32);
+> -			if ((base > tom2) && BASE_VALID(base))
+> -				goto out;
+> -		}
+> +	for (i = 1; i < hi_mmio_num; i++) {
+> +		base = (range[i - 1].end + MMCONF_UNIT) & MMCONF_MASK;
+> +		val = range[i].start & MMCONF_MASK;
+> +		if (val >= base + MMCONF_SIZE && BASE_VALID(base))
+> +			goto out;
+>  	}
+> -
+> -fail:
+> -	fam10h_pci_mmconf_base_status = -1;
+>  	return;
+> +
+>  out:
+>  	fam10h_pci_mmconf_base = base;
+> -	fam10h_pci_mmconf_base_status = 1;
+>  }
+>  
+>  void __cpuinit fam10h_check_enable_mmcfg(void)
+> @@ -190,11 +185,10 @@ void __cpuinit fam10h_check_enable_mmcfg
+>  
+>  		/* only trust the one handle 256 buses, if acpi=off */
+>  		if (!acpi_pci_disabled || busnbits >= 8) {
+> -			u64 base;
+> -			base = val & (0xffffULL << 32);
+> -			if (fam10h_pci_mmconf_base_status <= 0) {
+> +			u64 base = val & MMCONF_MASK;
+> +
+> +			if (!fam10h_pci_mmconf_base) {
+>  				fam10h_pci_mmconf_base = base;
+> -				fam10h_pci_mmconf_base_status = 1;
+>  				return;
+>  			} else if (fam10h_pci_mmconf_base ==  base)
+>  				return;
+> @@ -206,8 +200,10 @@ void __cpuinit fam10h_check_enable_mmcfg
+>  	 * with 256 buses
+>  	 */
+>  	get_fam10h_pci_mmconf_base();
+> -	if (fam10h_pci_mmconf_base_status <= 0)
+> +	if (!fam10h_pci_mmconf_base) {
+> +		pci_probe &= ~PCI_CHECK_ENABLE_AMD_MMCONF;
 
-No, it is not.  It's been 50% of RAM for a couple of years now. :-)
+case: if no cpu mmconf reg are set by BIOS and later if BSP can not get new base,
 
-> and swap is nearly as big as lowmem in this case -- so this
-> machine is not misconfigured.
-> 
-> root@amd:/# cat /proc/meminfo 
-> MemTotal:        2054716 kB
-> MemFree:          192048 kB
-> Buffers:           97628 kB
-> Cached:          1427088 kB
-> SwapCached:            0 kB
-> Active:           547580 kB
-> Inactive:        1091744 kB
-> Active(anon):      57060 kB
-> Inactive(anon):    58908 kB
-> Active(file):     490520 kB
-> Inactive(file):  1032836 kB
-> Unevictable:           0 kB
-> Mlocked:               0 kB
-> HighTotal:       1178440 kB
-> HighFree:         128092 kB
-> LowTotal:         876276 kB
-> LowFree:           63956 kB
-> SwapTotal:        779148 kB
-> SwapFree:         779148 kB
-> 
-> > > thinkpad_acpi: ACPI backlight control delay disabled
-> > > PM: thaw of devices complete after 539.577 msecs
-> > > PM: writing image.
-> > > PM: Free swap pages: 194166
-> > > PM: Not enough free swap
-> > > Restarting tasks ...
-> > > 
-> > > Aha, and it is the new default /sys/power/image_size .. setting it to
-> > > 0 lets machine hibernate. I guess the new default is very wrong for
-> > > highmem machine...
-> > 
-> > The old default did the wrong thing for everyone with sufficient swap (it made
-> > the OOM code trigger every time while preparing to create an image), so I think
-> > the new one it's better overall.
-> 
-> OOM? No... image_size of 0 should have written "as small image as
-> possible"; slow, but should not OOM.
+this pci_probe &= line will be called for every AP...
 
-This is not how it works now.  We preallocate memory to create memory pressure,
-so if image_size is 0, we need to preallocate until we run out of pages that
-can be freed, which means OOM.
+>  		return;
+> +	}
+>  
+>  	printk(KERN_INFO "Enable MMCONFIG on AMD Family 10h\n");
+>  	val &= ~((FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT) |
+> 
+> 
 
-Thanks,
-Rafael
