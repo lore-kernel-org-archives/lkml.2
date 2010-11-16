@@ -1,131 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757925Ab0KPNwm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 08:52:42 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51591 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756474Ab0KPNwl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 08:52:41 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ailjJrFbQa9xczq9p2+eAMB5XJZgwHqyYCNxqI2P8suMfXCedZ7PCNBNAb8D4voL8A
-         DQKPKtIgkyxra2lNXyUmri40WNh+S19t+dY9I05qwEE9teQoggwhJsEPVJMJ/NMO3/Iy
-         fUUCfXwNNagwQX5AeEt7zv1Mj/dg9BaSuuPNk=
-Date: Tue, 16 Nov 2010 14:52:34 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Joe Korty <joe.korty@ccur.com>,
-        mathieu.desnoyers@efficios.com, dhowells@redhat.com,
-        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
-        houston.jim@comcast.net
-Subject: Re: [PATCH] a local-timer-free version of RCU
-Message-ID: <20101116135230.GA5362@nowhere>
-References: <20101104232148.GA28037@linux.vnet.ibm.com> <20101105210059.GA27317@tsunami.ccur.com> <4CD912E9.1080907@cn.fujitsu.com> <20101110155419.GC5750@nowhere> <1289410271.2084.25.camel@laptop> <20101111041920.GD3134@linux.vnet.ibm.com> <20101113223046.GB5445@nowhere> <20101116012846.GV2555@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101116012846.GV2555@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932667Ab0KPNyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 08:54:03 -0500
+Received: from mga09.intel.com ([134.134.136.24]:52328 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756474Ab0KPNyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 08:54:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,206,1288594800"; 
+   d="scan'208";a="574293752"
+Date: Tue, 16 Nov 2010 13:34:00 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Mike Frysinger <vapier@gentoo.org>,
+        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
+        linux-kernel@vger.kernel.org, yong.y.wang@intel.com, qi.wang@intel.com,
+        kok.howg.ewe@intel.com, andrew.chih.howe.khor@intel.com
+Subject: Re: [PATCH v3] EG20T: Update PCH_UART driver to 2.6.36
+Message-ID: <20101116133400.11020a70@linux.intel.com>
+In-Reply-To: <4CE126DB.4080500@dsn.okisemi.com>
+References: <4CE126DB.4080500@dsn.okisemi.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 05:28:46PM -0800, Paul E. McKenney wrote:
-> My concern is not the tick -- it is really easy to work around lack of a
-> tick from an RCU viewpoint.  In fact, this happens automatically given the
-> current implementations!  If there is a callback anywhere in the system,
-> then RCU will prevent the corresponding CPU from entering dyntick-idle
-> mode, and that CPU's clock will drive the rest of RCU as needed via
-> force_quiescent_state().
+On Mon, 15 Nov 2010 21:26:03 +0900
+Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com> wrote:
 
-
-
-Now, I'm confused, I thought a CPU entering idle nohz had nothing to do
-if it has no local callbacks, and rcu_enter_nohz already deals with
-everything.
-
-There is certainly tons of subtle things in RCU anyway :)
-
-
-
-> The force_quiescent_state() workings would
-> want to be slightly different for dyntick-hpc, but not significantly so
-> (especially once I get TREE_RCU moved to kthreads).
+> Hi Alan,
 > 
-> My concern is rather all the implicit RCU-sched read-side critical
-> sections, particularly those that arch-specific code is creating.
-> And it recently occurred to me that there are necessarily more implicit
-> irq/preempt disables than there are exception entries.
-
-
-
-Doh! You're right, I don't know why I thought that adaptive tick would
-solve the implicit rcu sched/bh cases, my vision took a shortcut.
-
-
-
-> So would you be OK with telling RCU about kernel entries/exits, but
-> simply not enabling the tick?
-
-
-
-Let's try that.
-
-
-
-> The irq and NMI kernel entries/exits are
-> already covered, of course.
-
-
-Yep.
-
-
-> This seems to me to work out as follows:
+> I have modified for your all indications.
 > 
-> 1.	If there are no RCU callbacks anywhere in the system, RCU
-> 	is quiescent and does not cause any IPIs or interrupts of
-> 	any kind.  For HPC workloads, this should be the common case.
+> Please check below.
 
++static int push_rx(struct eg20t_port *priv, const unsigned char *buf,
++		   int size)
++{
++	struct uart_port *port;
++	struct tty_struct *tty;
++	int sz, i, j;
++	int loop;
++	int pushed;
++
++	port = &priv->port;
++	tty = tty_port_tty_get(&port->state->port);
++	if (!tty) {
++		pr_debug("%s:tty is busy now", __func__);
++		return -EBUSY;
++	}
++
++	for (pushed = 0, i = 0, loop = 1; (pushed < size) && loop;
++	     pushed += sz, i++) {
++		sz = tty_insert_flip_string(tty, &buf[pushed], size - pushed);
++		for (j = 0; (j < 100000) && (sz == 0); j++) {
++			tty_flip_buffer_push(tty);
++			sz = tty_insert_flip_string(tty, &buf[pushed],
++						    size - pushed);
++		}
++	}
 
-Right.
+tty_insert_flip_string will deal with retries itself for the cases you have
+here. So you shouldn't need the loop
 
++static int dma_push_rx(struct eg20t_port *priv, int size)
++{
++	struct tty_struct *tty;
++	int room;
++	struct uart_port *port = &priv->port;
++
++	port = &priv->port;
++	tty = tty_port_tty_get(&port->state->port);
++	if (!tty) {
++		pr_info("%s:tty is busy now", __func__);
 
+As I said last time- this isn't an error or unusual so it shouldn't be
+logged
 
-> 2.	If there is an RCU callback, then one CPU keeps a tick going
-> 	and drives RCU core processing on all CPUs.  (This probably
-> 	works with RCU as is, but somewhat painfully.)  This results
-> 	in some IPIs, but only to those CPUs that remain running in
-> 	the kernel for extended time periods.  Appropriate adjustment
-> 	of RCU_JIFFIES_TILL_FORCE_QS, possibly promoted to be a
-> 	kernel configuration parameter, should make such IPIs
-> 	-extremely- rare.  After all, how many kernel code paths
-> 	are going to consume (say) 10 jiffies of CPU time?  (Keep
-> 	in mind that if the system call blocks, the CPU will enter
-> 	dyntick-idle mode, and RCU will still recognize it as an
-> 	innocent bystander without needing to IPI it.)
++static void pch_dma_rx_complete(void *arg)
++{
++	struct eg20t_port *priv = arg;
++	struct uart_port *port = &priv->port;
++	struct tty_struct *tty = tty_port_tty_get(&port->state->port);
++	if (!tty) {
++		pr_info("%s:tty is busy now", __func__);
 
+Same comment
 
+Otherwise looks great.
 
-Makes all sense. Also there may be periods when these "isolated" CPUs
-will restart the tick, like when there is more than one task running
-on that CPU, in which case we can of course fall back to usual
-grace periods processing.
-
-
-
-> 
-> 3.	The implicit RCU-sched read-side critical sections just work
-> 	as they do today.
-> 
-> Or am I missing some other problems with this approach?
-
-
-No, looks good, now I'm going to implement/test a draft of these ideas.
-
-Thanks a lot!
-
+Alan
