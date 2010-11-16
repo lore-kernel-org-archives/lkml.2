@@ -1,49 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758418Ab0KPOV2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 09:21:28 -0500
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:56121 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758346Ab0KPOV0 (ORCPT
+	id S1758132Ab0KPOXq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 09:23:46 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:2280 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752221Ab0KPOXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 09:21:26 -0500
-From: Thomas Hellstrom <thellstrom@vmware.com>
-To: airlied@redhat.com
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Thomas Hellstrom <thellstrom@vmware.com>
-Subject: [PATCH 2/2] drm/ttm: Use kref_sub instead of repeatedly calling kref_put
-Date: Tue, 16 Nov 2010 15:21:08 +0100
-Message-Id: <1289917268-4922-3-git-send-email-thellstrom@vmware.com>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1289917268-4922-2-git-send-email-thellstrom@vmware.com>
-References: <1289917268-4922-1-git-send-email-thellstrom@vmware.com>
- <1289917268-4922-2-git-send-email-thellstrom@vmware.com>
+	Tue, 16 Nov 2010 09:23:44 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AogKAKMh4kx5Ldur/2dsb2JhbACUX4ECjH1yvmaFSwSKWA
+Message-Id: <20101116140900.039761100@kernel.dk>
+User-Agent: quilt/0.48-1
+Date: Wed, 17 Nov 2010 01:09:00 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [patch 00/28] [rfc] dcache scaling part 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Thomas Hellstrom <thellstrom@vmware.com>
----
- drivers/gpu/drm/ttm/ttm_bo.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+There are 3 main parts to dcache scaling. This one primarily adds new locks
+to take over dcache_lock, and some pre/post prep and streamlining patches.
 
-diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
-index a586378..9ef893d 100644
---- a/drivers/gpu/drm/ttm/ttm_bo.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo.c
-@@ -266,10 +266,8 @@ static void ttm_bo_ref_bug(struct kref *list_kref)
- void ttm_bo_list_ref_sub(struct ttm_buffer_object *bo, int count,
- 			 bool never_free)
- {
--	while (count--)
--		kref_put(&bo->list_kref,
--			 (never_free || (count >= 0)) ? ttm_bo_ref_bug :
--			 ttm_bo_release_list);
-+	kref_sub(&bo->list_kref, count,
-+		 (never_free) ? ttm_bo_ref_bug : ttm_bo_release_list);
- }
- 
- int ttm_bo_reserve(struct ttm_buffer_object *bo,
--- 
-1.6.2.5
+The second implements fine grained locking, and is rather trivial after
+part 1.
+
+The third implements rcu-walk. rcu-walk depends on the first part, because it
+relies on using d_lock to protect the state of the dentry (when converting from
+rcu-walk to refcounted walk). Without the fine grained locing, we'd need to use
+dcache_lock for that, which would be a step backwards to put into path walking
+again.
+
+Comments?
+
 
