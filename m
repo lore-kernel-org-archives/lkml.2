@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934268Ab0KPLDc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 06:03:32 -0500
-Received: from mail-out.m-online.net ([212.18.0.10]:39859 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933044Ab0KPLDa (ORCPT
+	id S934271Ab0KPLEh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 06:04:37 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:32926 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934030Ab0KPLEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 06:03:30 -0500
-X-Auth-Info: 1HAoPBlKn2t3rZXDBKH0s93HQjHWpOfw2qnUVmBZ45I=
-Message-ID: <4CE2654B.20004@grandegger.com>
-Date: Tue, 16 Nov 2010 12:04:43 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, andrew.chih.howe.khor@intel.com,
-        qi.wang@intel.com, margie.foster@intel.com, yong.y.wang@intel.com,
-        Masayuki Ohtake <masa-korg@dsn.okisemi.com>, kok.howg.ewe@intel.com,
-        joel.clark@intel.com
-Subject: Re: [PATCH net-next-2.6 v3] can: Topcliff: PCH_CAN driver: Add Flow
- control,
-References: <4CE2434B.5050701@dsn.okisemi.com>
-In-Reply-To: <4CE2434B.5050701@dsn.okisemi.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 16 Nov 2010 06:04:36 -0500
+Date: Tue, 16 Nov 2010 11:03:10 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Valdis.Kletnieks@vt.edu
+Cc: Jesper Juhl <jj@chaosbits.net>, David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
+        Bodo Eggert <7eggert@web.de>, Mandeep Singh Baines <msb@google.com>,
+        "Figo.zhang" <figo1802@gmail.com>
+Subject: Re: [PATCH] Revert oom rewrite series
+Message-ID: <20101116110310.1502de2a@lxorguk.ukuu.org.uk>
+In-Reply-To: <34565.1289866395@localhost>
+References: <20101115093410.BEFD.A69D9226@jp.fujitsu.com>
+	<20101114181905.bc5b44f9.akpm@linux-foundation.org>
+	<20101115113238.BF06.A69D9226@jp.fujitsu.com>
+	<alpine.DEB.2.00.1011150215460.2986@chino.kir.corp.google.com>
+	<alpine.LNX.2.00.1011160027180.22346@swampdragon.chaosbits.net>
+	<34565.1289866395@localhost>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomoya,
+> 5.6p1 is the latest-n-greatest released version on www.openssh.org, so somebody
+> probably needs to rattle their chain...
 
-On 11/16/2010 09:39 AM, Tomoya MORINAGA wrote:
-> Hi Marc and Wolf,
-> 
-> I have updated your indications.
-> 
->> * Add Flow control
->> * Fix Data copy issue (endianness)
->> * Add Macro prefix "PCH_"
->> * Separate interface register structure
->> * Some functions are unified.
->> * Change MessageObject indication(PCH_RX_OBJ_START, etc..)
->> * Enumerate LEC macro
->> * Move MSI processing from open/close to probe/remove processing
->> * Use BIT(x)
->> * and more...
-> 
-> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+But current openssh needs to support old kernels.
 
-Could you please resend the patch (as v4) with a proper subject and
-commit message. Then I will add my "Acked-by" to get that
-*not-yet-ready* driver updated quickly.
+This is why this kind of obsoleting doesn't work well. It's not "update
+your app" so much as "drop support for older stuff or start doing
+complicated crap dependant on version"
 
-Wolfgang.
+and it's why for tiny amounts of code it is the *wrong* thing to force
+obsolete stuff especially when it still doesn't seem to have been
+properly marked for deprecation in the first place.
+
