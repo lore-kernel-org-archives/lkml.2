@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab0KPFU3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 00:20:29 -0500
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:57577 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab0KPFU2 (ORCPT
+	id S1752483Ab0KPF1D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 00:27:03 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:52817 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751706Ab0KPF1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 00:20:28 -0500
-Date: Tue, 16 Nov 2010 14:20:27 +0900
-From: Norbert Preining <preining@logic.at>
-To: linux-kernel@vger.kernel.org
-Subject: /dev/sda disappearing with SYFS_DEPRECATED?
-Message-ID: <20101116052027.GB24410@gamma.logic.tuwien.ac.at>
+	Tue, 16 Nov 2010 00:27:01 -0500
+Date: Tue, 16 Nov 2010 06:26:34 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: 2.6.37-rc1+: hibernate regression, claims not enough swap space
+Message-ID: <20101116052634.GA30449@elf.ucw.cz>
+References: <20101114052138.GB2189@elf.ucw.cz>
+ <201011152326.44357.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201011152326.44357.rjw@sisk.pl>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Hi!
 
-(please Cc)
+> > ...but there's enough -- or at least it was enough to fit previous
+> > versions. 32-bit machine, so it has highmem.
+> > 
+> > System is in console mode, very lightly loaded.
+> > 
+> > Mem:   2054716k total,   736548k used,  1318168k free,    15368k buffers
+> > Swap:   779148k total,     2360k used,   776788k free,   546388k cached
+> 
+> Well, the swap is rather in short supply.  Below the 50% of RAM recommendation.
 
-I just changed my kernel config slightly to activate some DEPRECATED
-configs and alas, the change was interesting, suddenly there
-was no /dev/sda shown anymore.
+Well, but the biggest image we can write is not 50% of RAM, but 50% of
+lowmem... and swap is nearly as big as lowmem in this case -- so this
+machine is not misconfigured.
 
-Userspace remain completely the same (debian/sid up2date).
+root@amd:/# cat /proc/meminfo 
+MemTotal:        2054716 kB
+MemFree:          192048 kB
+Buffers:           97628 kB
+Cached:          1427088 kB
+SwapCached:            0 kB
+Active:           547580 kB
+Inactive:        1091744 kB
+Active(anon):      57060 kB
+Inactive(anon):    58908 kB
+Active(file):     490520 kB
+Inactive(file):  1032836 kB
+Unevictable:           0 kB
+Mlocked:               0 kB
+HighTotal:       1178440 kB
+HighFree:         128092 kB
+LowTotal:         876276 kB
+LowFree:           63956 kB
+SwapTotal:        779148 kB
+SwapFree:         779148 kB
 
-The only changes I made in the .config file was:
--# CONFIG_SYSFS_DEPRECATED is not set
-+CONFIG_SYSFS_DEPRECATED=y
-+CONFIG_SYSFS_DEPRECATED_V2=y
+> > thinkpad_acpi: ACPI backlight control delay disabled
+> > PM: thaw of devices complete after 539.577 msecs
+> > PM: writing image.
+> > PM: Free swap pages: 194166
+> > PM: Not enough free swap
+> > Restarting tasks ...
+> > 
+> > Aha, and it is the new default /sys/power/image_size .. setting it to
+> > 0 lets machine hibernate. I guess the new default is very wrong for
+> > highmem machine...
+> 
+> The old default did the wrong thing for everyone with sufficient swap (it made
+> the OOM code trigger every time while preparing to create an image), so I think
+> the new one it's better overall.
 
--CONFIG_NFSD_DEPRECATED=y
-+# CONFIG_NFSD_DEPRECATED is not set
-
-and this made the /dev/sda* entries disappear.
-
-Is that to be expected?
-
-Best wishes
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-YESNABY (n.)
-A 'yes, maybe' which means 'no'.
-			--- Douglas Adams, The Meaning of Liff
+OOM? No... image_size of 0 should have written "as small image as
+possible"; slow, but should not OOM.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
