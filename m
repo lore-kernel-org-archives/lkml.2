@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757109Ab0KPS4i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 13:56:38 -0500
-Received: from elasmtp-spurfowl.atl.sa.earthlink.net ([209.86.89.66]:37091
-	"EHLO elasmtp-spurfowl.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757049Ab0KPS4g (ORCPT
+	id S1757121Ab0KPS5M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 13:57:12 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44871 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756005Ab0KPS5L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 13:56:36 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=pAzXgU2w+grihExfFz0NRaWNC0Vldsrb5NCtsjUgO3LCrnN+v73MGaitWsUpLk/w;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4CE2D3C6.20905@earthlink.net>
-Date: Tue, 16 Nov 2010 13:56:06 -0500
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Tue, 16 Nov 2010 13:57:11 -0500
 MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Lennart Poettering <mzxreary@0pointer.de>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+In-Reply-To: <20101116181603.GC19327@tango.0pointer.de>
+References: <1289820766.16406.45.camel@maggy.simson.net> <1289821590.16406.47.camel@maggy.simson.net>
+ <20101115125716.GA22422@redhat.com> <1289856350.14719.135.camel@maggy.simson.net>
+ <20101116015648.GA11534@redhat.com> <1289916171.5169.117.camel@maggy.simson.net>
+ <1289916683.2109.625.camel@laptop> <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+ <20101116170312.GA19327@tango.0pointer.de> <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+ <20101116181603.GC19327@tango.0pointer.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 16 Nov 2010 10:49:22 -0800
+Message-ID: <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
         Markus Trippelsdorf <markus@trippelsdorf.de>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
         Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-References: <1289783580.495.58.camel@maggy.simson.net>	 <1289811438.2109.474.camel@laptop>	 <1289820766.16406.45.camel@maggy.simson.net>	 <1289821590.16406.47.camel@maggy.simson.net>	 <20101115125716.GA22422@redhat.com>	 <1289856350.14719.135.camel@maggy.simson.net>	 <20101116015648.GA11534@redhat.com>	 <1289916171.5169.117.camel@maggy.simson.net>	 <1289916683.2109.625.camel@laptop>	 <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>	 <20101116170312.GA19327@tango.0pointer.de> <1289930934.2109.644.camel@laptop>
-In-Reply-To: <1289930934.2109.644.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79a15b89a0f8904f75945576aac70fe316350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.66
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2010 01:08 PM, Peter Zijlstra wrote:
-> On Tue, 2010-11-16 at 18:03 +0100, Lennart Poettering wrote:
->    
->> Binding something like this to TTYs is just backwards. No graphical
->> session has a TTY attached anymore. And there might be multiple TTYs
->> used in the same session.
->>      
-> Using a group per tty makes sense for us console jockeys..
+On Tue, Nov 16, 2010 at 10:16 AM, Lennart Poettering
+<mzxreary@0pointer.de> wrote:
 >
-> Anyway, nobody uses systemd yet and afaik not all distro's even plan on
-> using it (I know I'm not waiting to learn yet another init variant).
->    
-Right on!
+> Here's my super-complex patch btw, to achieve exactly the same thing
+> from userspace without involving any kernel or systemd patching and
+> kernel-side logic. Simply edit your own ~/.bashrc and add this to the end:
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->    
+Right. And that's basically how this "patch" was actually tested
+originally - by doing this by hand, without actually having a patch in
+hand. I told people: this seems to work really well. Mike made it work
+automatically.
 
+Because it's something we want to do it for all users, and for all
+shells, and make sure it gets done automatically. Including for users
+that have old distributions etc, and make it easy to do in one place.
+And then you do it for all the other heuristics we can see easily in
+the kernel. And then you do it magically without users even having to
+_notice_.
 
--- 
+Suddenly it doesn't seem that wonderful any more to play with bashrc, does it?
 
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
+That's the point. We can push out the kernel change, and everything
+will "just work". We can make that feature we already have in the
+kernel actually be _useful_.
 
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
+User-level configuration for something that should just work is
+annoying. We can do better.
 
+Put another way: if we find a better way to do something, we should
+_not_ say "well, if users want it, they can do this <technical thing
+here>". If it really is a better way to do something, we should just
+do it. Requiring user setup is _not_ a feature.
 
+Now, I'm not saying that we shouldn't allow users to use cgroups. Of
+course they can do things manually too. But we shouldn't require users
+to do silly things that we can more easily do ourselves.
 
+If the choice is between telling everybody "you should do this", and
+"we should just do this for you", I'll take the second one every time.
+We know it should be done. Why should we then tell somebody else to do
+it for us?
+
+                         Linus
