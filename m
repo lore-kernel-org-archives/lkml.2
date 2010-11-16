@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab0KPQF4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 11:05:56 -0500
-Received: from mtagate3.de.ibm.com ([195.212.17.163]:43123 "EHLO
-	mtagate3.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752374Ab0KPQFz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 11:05:55 -0500
-Date: Tue, 16 Nov 2010 17:05:49 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org,
-        "jeremy.fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
-        Avi Kivity <avi@redhat.com>
-Subject: Re: [RFC][PATCH v2 4/7] taskstats: Add per task steal time
- accounting
-Message-ID: <20101116170549.05d9e5c6@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <1289922329.2109.627.camel@laptop>
-References: <20101111170352.732381138@linux.vnet.ibm.com>
-	<20101111170815.024542355@linux.vnet.ibm.com>
-	<1289677083.2109.167.camel@laptop>
-	<20101115155057.15f3be35@mschwide.boeblingen.de.ibm.com>
-	<1289833883.2109.494.camel@laptop>
-	<20101115184206.4463fd05@mschwide.boeblingen.de.ibm.com>
-	<1289843441.2109.520.camel@laptop>
-	<20101115185923.1c353d07@mschwide.boeblingen.de.ibm.com>
-	<1289844524.2109.524.camel@laptop>
-	<20101116095101.5d86d1e5@mschwide.boeblingen.de.ibm.com>
-	<1289909768.2109.592.camel@laptop>
-	<20101116163325.755a709f@mschwide.boeblingen.de.ibm.com>
-	<1289922329.2109.627.camel@laptop>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754306Ab0KPQGO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 11:06:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31695 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753493Ab0KPQGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 11:06:12 -0500
+Date: Tue, 16 Nov 2010 11:05:46 -0500
+From: Josef Bacik <josef@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Josef Bacik <josef@redhat.com>, david@fromorbit.com,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com, cmm@us.ibm.com, cluster-devel@redhat.com,
+        ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH 4/6] Ext4: fail if we try to use hole punch
+Message-ID: <20101116160545.GA2524@localhost.localdomain>
+References: <1289840723-3056-1-git-send-email-josef@redhat.com> <1289840723-3056-5-git-send-email-josef@redhat.com> <4CE2783F.1020004@redhat.com> <20101116125016.GA31957@dhcp231-156.rdu.redhat.com> <4CE28211.6060204@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE28211.6060204@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Nov 2010 16:45:29 +0100
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+On Tue, Nov 16, 2010 at 03:07:29PM +0200, Avi Kivity wrote:
+> On 11/16/2010 02:50 PM, Josef Bacik wrote:
+>> On Tue, Nov 16, 2010 at 02:25:35PM +0200, Avi Kivity wrote:
+>> >  On 11/15/2010 07:05 PM, Josef Bacik wrote:
+>> >>  Ext4 doesn't have the ability to punch holes yet, so make sure we return
+>> >>  EOPNOTSUPP if we try to use hole punching through fallocate.  This support can
+>> >>  be added later.  Thanks,
+>> >>
+>> >
+>> >  Instead of teaching filesystems to fail if they don't support the
+>> >  capability, why don't supporting filesystems say so, allowing the fail
+>> >  code to be in common code?
+>> >
+>>
+>> There is no simple way to test if a filesystem supports hole punching or not so
+>> the check has to be done per fs.  Thanks,
+>
+> Could put a flag word in superblock_operations.  Filesystems which  
+> support punching (or other features) can enable it there.
+>
+> Or even have its own callback.
+>
 
-> > > Except that the per-task steal time gives you lot less detail, being
-> > > able to profile on vcpu exit/enter gives you a much more powerfull
-> > > performance tool. Aside from being able to measure the steal-time it
-> > > allows you to instantly find hypercalls (both explicit as well as
-> > > implicit), so you can also measure the hypercall induced steal-time as
-> > > well.
-> > 
-> > Yes and no. The tracepoint idea looks interesting in itself. But that does
-> > not completely replace the per-task steal time. The hypervisor can take
-> > away the cpu anytime, it is still interesting to know which task was hit
-> > hardest by that. You could view the cpu time lost by a hypercall as
-> > "synchronous" steal time for the task, the remaining delta to the total
-> > per-task steal time as "asynchronous" steal time. 
-> 
-> Right, so there is no way the guest knows about the vcpu getting
-> scheduled, it can only derive the fact from hardware clocks after the
-> fact?
+Sure but then you have to do the same thing for every other flag you add to
+fallocate and then you have this huge mess of random flags just so you don't
+call into the filesystem.  This way is a lesser of two evils I think.  Thanks,
 
-Correct.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Josef
