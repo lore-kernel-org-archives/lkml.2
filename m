@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202Ab0KPRLJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 12:11:09 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40137
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751934Ab0KPRLI (ORCPT
+	id S1755480Ab0KPRMH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 12:12:07 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37082 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754990Ab0KPRMF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 12:11:08 -0500
-Date: Tue, 16 Nov 2010 09:11:32 -0800 (PST)
-Message-Id: <20101116.091132.193732351.davem@davemloft.net>
-To: tomoya-linux@dsn.okisemi.com
-Cc: mkl@pengutronix.de, wg@grandegger.com, w.sang@pengutronix.de,
-        chripell@fsfe.org, 21cnbao@gmail.com, sameo@linux.intel.com,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, andrew.chih.howe.khor@intel.com,
-        qi.wang@intel.com, margie.foster@intel.com, yong.y.wang@intel.com,
-        masa-korg@dsn.okisemi.com, kok.howg.ewe@intel.com,
-        joel.clark@intel.com
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Add
- Flow control,
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <001401cb854d$b46e13c0$66f8800a@maildom.okisemi.com>
-References: <4CE0EFA7.9020007@dsn.okisemi.com>
-	<4CE0F92A.40308@pengutronix.de>
-	<001401cb854d$b46e13c0$66f8800a@maildom.okisemi.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Nov 2010 12:12:05 -0500
+From: "Aguirre, Sergio" <saaguirre@ti.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: LKML <linux-kernel@vger.kernel.org>, Huang Ying <ying.huang@intel.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Kyle McMartin <kyle@mcmartin.ca>
+Date: Tue, 16 Nov 2010 11:11:42 -0600
+Subject: RE: [RFC][PATCH] irq_work: Don't ignore possible cmpxchg failure
+Thread-Topic: [RFC][PATCH] irq_work: Don't ignore possible cmpxchg failure
+Thread-Index: AcuFsOovlprdL/mZRs2ox1rlh+cs8AAAE1+A
+Message-ID: <A24693684029E5489D1D202277BE89447382A591@dlee02.ent.ti.com>
+References: <1289925179-17085-1-git-send-email-saaguirre@ti.com>
+	 <1289925901.2109.629.camel@laptop>
+	 <A24693684029E5489D1D202277BE89447382A55A@dlee02.ent.ti.com>
+ <1289927326.2109.631.camel@laptop>
+In-Reply-To: <1289927326.2109.631.camel@laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-Date: Tue, 16 Nov 2010 14:18:26 +0900
 
-> On Monday, November 15, 2010 6:11 PM, Marc Kleine-Budde wrote:
->> Please make it one patch per topic. A review of your patch will follow.
+
+> -----Original Message-----
+> From: Peter Zijlstra [mailto:a.p.zijlstra@chello.nl]
+> Sent: Tuesday, November 16, 2010 11:09 AM
+> To: Aguirre, Sergio
+> Cc: LKML; Huang Ying; Martin Schwidefsky; Ingo Molnar; Kyle McMartin
+> Subject: RE: [RFC][PATCH] irq_work: Don't ignore possible cmpxchg failure
 > 
-> It's too late now.
-> This is difficult to separete patch per topic from current our CAN driver.
+> On Tue, 2010-11-16 at 10:57 -0600, Aguirre, Sergio wrote:
+> 
+> > > > @@ -145,7 +145,10 @@ void irq_work_run(void)
+> > > >  		 * Clear the BUSY bit and return to the free state if
+> > > >  		 * no-one else claimed it meanwhile.
+> > > >  		 */
+> > > > -		cmpxchg(&entry->next, next_flags(NULL, IRQ_WORK_BUSY),
+> NULL);
+> > > > +		xchgres = cmpxchg(&entry->next,
+> > > > +				  next_flags(NULL, IRQ_WORK_BUSY),
+> > > > +				  NULL);
+> > > > +		BUG_ON(unlikely(xchgres != next_flags(NULL,
+> IRQ_WORK_BUSY)));
+> > >
+> > > simply adding (void) in front would be much easier.
+> >
+> > But isn't that still leaving the remote possibility of a hidden cmpxchg
+> > Failure open?
+> 
+> No, we don't care if it fails, read the comment. All we want to know is
+> that if it still matched, we flipped the bit.
 
-I am not applying your patches unless you split them up properly.
+I understand. Will add just a (void) typecast, and resend then.
 
-None of your excuses for not doing this fundamental task are
-reasonable.
-
-Thanks.
+Regards,
+Sergio
