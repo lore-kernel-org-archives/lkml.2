@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758684Ab0KPOvV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 09:51:21 -0500
-Received: from mail.perches.com ([173.55.12.10]:1433 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755918Ab0KPOvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 09:51:20 -0500
-Subject: rfc: rewrite commit subject line for subsystem maintainer
- preference tool
-From: Joe Perches <joe@perches.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jiri Kosina <trivial@kernel.org>,
+	id S1758653Ab0KPO5U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 09:57:20 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57670 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755751Ab0KPO5T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 09:57:19 -0500
+Date: Tue, 16 Nov 2010 14:55:51 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Florian Mickler <florian@mickler.org>
+Cc: Valdis.Kletnieks@vt.edu, Jesper Juhl <jj@chaosbits.net>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Florian Mickler <florian@mickler.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101116104921.GL12986@rakim.wolfsonmicro.main>
-References: <20101115134939.GC12986@rakim.wolfsonmicro.main>
-	 <1289840957.16461.138.camel@Joe-Laptop>
-	 <20101115173031.GI12986@rakim.wolfsonmicro.main>
-	 <1289842444.16461.140.camel@Joe-Laptop>
-	 <20101115182708.GJ12986@rakim.wolfsonmicro.main>
-	 <1289845830.16461.149.camel@Joe-Laptop>
-	 <20101115190738.GF3338@sirena.org.uk>
-	 <1289848458.16461.150.camel@Joe-Laptop>
-	 <20101115193407.GK12986@rakim.wolfsonmicro.main>
-	 <1289850773.16461.166.camel@Joe-Laptop>
-	 <20101116104921.GL12986@rakim.wolfsonmicro.main>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Nov 2010 06:51:17 -0800
-Message-ID: <1289919077.28741.50.camel@Joe-Laptop>
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
+        Bodo Eggert <7eggert@web.de>, Mandeep Singh Baines <msb@google.com>,
+        "Figo.zhang" <figo1802@gmail.com>
+Subject: Re: [PATCH] Revert oom rewrite series
+Message-ID: <20101116145551.49c47df5@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101116140341.42561c84@schatten.dmk.lab>
+References: <20101115093410.BEFD.A69D9226@jp.fujitsu.com>
+	<20101114181905.bc5b44f9.akpm@linux-foundation.org>
+	<20101115113238.BF06.A69D9226@jp.fujitsu.com>
+	<alpine.DEB.2.00.1011150215460.2986@chino.kir.corp.google.com>
+	<alpine.LNX.2.00.1011160027180.22346@swampdragon.chaosbits.net>
+	<34565.1289866395@localhost>
+	<20101116110310.1502de2a@lxorguk.ukuu.org.uk>
+	<20101116140341.42561c84@schatten.dmk.lab>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 10:49 +0000, Mark Brown wrote:
-> On Mon, Nov 15, 2010 at 11:52:53AM -0800, Joe Perches wrote:
-> > On Mon, 2010-11-15 at 19:34 +0000, Mark Brown wrote:
-> > > It appears your scripts are already hooked into get_maintainers.pl which
-> > > would seem the obvious place to do this?  Sadly I don't do perl, though
-> > > it looks like you're doing pretty much all the work on that anyway.
-> > Sadly, no it's not the right place.
-> To query MAINTAINERS?  I'd assume that's where you'd want to put that
-> stuff?
+> How does one mark it apropriately?
+> The commit 51b1bd2 (oom: deprecate oom_adj tunable, see below) 
+> added it to feature-removal-schedule.txt, a patch for
+> Documentation/ABI has also been provided in the meantime, if i'm not
+> mistaken. 
 
-I trimmed cc's and added Andrew Morton and Florian Mickler.
-First thread link for them: http://lkml.org/lkml/2010/11/15/262
-
-I use get_maintainer to find email addresses with
-"git send-email --cc-cmd=" but sure it could be extended
-to find some other new information in the MAINTAINERS file.
-
-Anyway, I think that get_maintainers isn't the proper tool
-to rewrite commit subject lines, though it could certainly
-do the lookup of a key in the MAINTAINERS file.
-
-Maybe add a new MAINTAINERS section line something like:
-	"C:	CommitSubjectGrammarStyle"
-where CommitSubjectGrammarStyle is something more
-information rich than "style 1", "style 2".
-
-Perhaps you'll propose a grammar to convert path to header
-and go through and add these "C:" style entries to the
-sections you maintain.
-
-Also, what would you expect the output to be when a single
-patch modified files from 2 subsystems that use different
-styles?
-
-cheers, Joe
+Yes - so why is it spewing crap, annoying users and trying to irritate
+application authors. It's not 2012 yet.
 
