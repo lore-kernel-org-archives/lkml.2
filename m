@@ -1,28 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab0KPUgH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:36:07 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43931 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755180Ab0KPUgG (ORCPT
+	id S1756387Ab0KPUhF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:37:05 -0500
+Received: from tango.0pointer.de ([85.214.72.216]:52050 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799Ab0KPUhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:36:06 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikJoeOOAJco_y8pF0Qa9K239oEWh_p8q1605chx@mail.gmail.com>
-References: <1289820766.16406.45.camel@maggy.simson.net> <1289821590.16406.47.camel@maggy.simson.net>
- <20101115125716.GA22422@redhat.com> <1289856350.14719.135.camel@maggy.simson.net>
- <20101116015648.GA11534@redhat.com> <1289916171.5169.117.camel@maggy.simson.net>
- <1289916683.2109.625.camel@laptop> <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
- <20101116170312.GA19327@tango.0pointer.de> <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
- <20101116181603.GC19327@tango.0pointer.de> <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
- <AANLkTi=Z5CK3fOgXNs9odKnQNFHsbavpOvw8c3kh6zEG@mail.gmail.com> <AANLkTikJoeOOAJco_y8pF0Qa9K239oEWh_p8q1605chx@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 16 Nov 2010 12:35:13 -0800
-Message-ID: <AANLkTikW==rTHa5DPABfJ6m_-68cQBNV3m6BayJqvd0=@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Lennart Poettering <mzxreary@0pointer.de>,
+	Tue, 16 Nov 2010 15:37:03 -0500
+Date: Tue, 16 Nov 2010 21:36:42 +0100
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Stephen Clark <sclark46@earthlink.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Dhaval Giani <dhaval.giani@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
@@ -31,43 +19,42 @@ Cc: Pekka Enberg <penberg@kernel.org>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
         Balbir Singh <balbir@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101116203642.GF27235@tango.0pointer.de>
+References: <20101115125716.GA22422@redhat.com>
+ <1289856350.14719.135.camel@maggy.simson.net>
+ <20101116015648.GA11534@redhat.com>
+ <1289916171.5169.117.camel@maggy.simson.net>
+ <1289916683.2109.625.camel@laptop>
+ <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+ <20101116170312.GA19327@tango.0pointer.de>
+ <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+ <20101116181603.GC19327@tango.0pointer.de>
+ <4CE2D41D.3070609@earthlink.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE2D41D.3070609@earthlink.net>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 12:21 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
+On Tue, 16.11.10 13:57, Stephen Clark (sclark46@earthlink.net) wrote:
+
+> >I am not sure I myself will find the time to prep some 'numbers' for
+> >you. They'd be the same as with the kernel patch anyway. But I am sure
+> >somebody else will do it for you...
 >
-> The only problem is that *desktop* users use *desktop* apps, which
-> never have a controlling tty.
+> So you have tested this and have a nice demo and numbers to back it up?
 
-Yes. And have you noticed people complaining about stuttering while
-they run just their desktop app? No.
+Yes, I tested this. And I thought the paragraph was explicit enough
+about the numbers.
 
-That's the thing. If you run a web browser and you use a flash player
-to view youtube or whatever in it, and only use other interactive
-desktop apps anyway, you won't see any problems _regardless_. It's not
-like the other desktop app you have open (and is idle, because you're
-not touching it) will matter.
+Lennart
 
-Ask yourself who is complaining? _I_ have been complaining for years
-about desktop latency. I usually do it in private to developers, but
-trust me, I do it. Much of it has been about IO (the whole fsync
-fiasco), but some of it has been about the scheduler.
-
-Look at who were trying out Con's patches. They were compiling things
-and running games at the same time. That's literally the kind of loads
-that people were looking at. Partly because that's the kinds of loads
-we haven't been good at. And it's the kind of load that this helps
-with.
-
-Anyway, I find it depressing that now that this is solved, people come
-out of the woodwork and say "hey you could do this". Where were you
-guys a year ago or more?
-
-Tough. I found out that I can solve it using cgroups, I asked people
-to comment and help, and I think the kernel approach is wonderful and
-_way_ simpler than the scripts I've seen. Yes, I'm biased ("kernels
-are easy - user space maintenance is a big pain").
-
-                   Linus
+-- 
+Lennart Poettering - Red Hat, Inc.
