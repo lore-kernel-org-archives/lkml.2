@@ -1,174 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934339Ab0KPMKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 07:10:06 -0500
-Received: from syscomptechweb.com ([72.55.168.116]:55571 "EHLO
-	cl-t085-170cl.privatedns.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S932721Ab0KPMKE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 07:10:04 -0500
-Message-ID: <7c50b46c9b1b549fb7a5d17d5c9b5232.squirrel@72.55.168.116>
-Date: Tue, 16 Nov 2010 15:57:28 +0400
-Subject: Interesting deal
-From: "Mr. Jamil Ibrahim ElHalabi" <jamilibrahimi@g.pl>
-Reply-To: jamilibrahim@g.pl
-User-Agent: SquirrelMail/1.4.21
+	id S934347Ab0KPMN1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 07:13:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49973 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932786Ab0KPMNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 07:13:25 -0500
+Date: Tue, 16 Nov 2010 13:13:23 +0100
+From: Jan Kara <jack@suse.cz>
+To: Feng Tang <feng.tang@intel.com>
+Cc: no To-header on input <""@suse.de>,
+        "Wu, Fengguang" <fengguang.wu@intel.com>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] jbd2: avoid the concurrent data writeback
+Message-ID: <20101116121323.GE4757@quack.suse.cz>
+References: <1289827533-2576-1-git-send-email-feng.tang@intel.com>
+ <20101115055420.GA21785@localhost>
+ <20101115175943.490d3469@feng-i7>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;boundary="----=_20101116155728_95673"
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cl-t085-170cl.privatedns.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - g.pl
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101115175943.490d3469@feng-i7>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-------=_20101116155728_95673
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
+  Hi,
 
+  sorry for chiming in a bit late...
+On Mon 15-11-10 17:59:43, Feng Tang wrote:
+> From b16cfc5a560f2549ac69dbb235a550500ea1719f Mon Sep 17 00:00:00 2001
+> From: Feng Tang <feng.tang@intel.com>
+> Date: Mon, 15 Nov 2010 21:06:44 +0800
+> Subject: [PATCH] jbd2: avoid the concurrent data writeback
+> 
+> When dd a big file to an ext4 partition, it is very likely to happen
+> that both the background flush thread and kjounald try to do data
+> writeback for it, that the flush thread is doing the writeback for
+> this file and jbd2 thread are also waken up to commit the transaction.
+> Because kjounald only calls the generic_writepages() whose path
+> doesn't really allocate disk blocks, the ext4_witepage() may be called
+> lots of times (100000+ for a 1g file dd) without really writing one page
+> back (skipped), which will consume lots of unnecessary CPU time
+> 
+> This could be found by a simple test case with ftrace:
+> $ sync;
+> $ echo 40960 > buffer_size_kb;echo 1 > events/writeback/enable;echo 1 > events/jbd2/enable;echo 1 > events/ext4/enable;
+> $ dd if=/dev/zero of=/home/test/1g.bin bs=1M count=1024;sync;
+> $ cat trace > /home/test/jbd2_ext4_1g_dd.log
+> $ grep -c wcb_writepage /home/test/jbd2_ext4_1g_dd.log
+> 
+> This patch will check if the inode is under data syncing, if yes then
+> don't start the writeback from kjournald
+> 
+> The Perf statics (On my Core Duo 2 + 4G RAM + SATA disk + Ext4 in all default modes):
+> before the patch >  112191  writeback:wbc_writepage  #      0.005 M/sec
+> after the patch  >  54  writeback:wbc_writepage  #      0.000 M/sec
+> 
+> Signed-off-by: Feng Tang <feng.tang@intel.com>
+> ---
+>  fs/jbd2/commit.c |   11 +++++++++++
+>  1 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
+> index f3ad159..0f3e356 100644
+> --- a/fs/jbd2/commit.c
+> +++ b/fs/jbd2/commit.c
+> @@ -170,6 +170,10 @@ static int journal_wait_on_commit_record(journal_t *journal,
+>   * We don't do block allocation here even for delalloc. We don't
+>   * use writepages() because with dealyed allocation we may be doing
+>   * block allocation in writepages().
+> + *
+> + * Sometimes when this get called, the host inode may be under data
+> + * syncing initiated by flush thread(especially for a large file), and 
+> + * in such situation, we should skip this path of writeback
+>   */
+>  static int journal_submit_inode_data_buffers(struct address_space *mapping)
+>  {
+> @@ -181,6 +185,13 @@ static int journal_submit_inode_data_buffers(struct address_space *mapping)
+>  		.range_end = i_size_read(mapping->host),
+>  	};
+>  
+> +	spin_lock(&inode_lock);
+> +	if (mapping->host->i_state & I_SYNC) {
+> +		spin_unlock(&inode_lock);
+> +		return 0;
+> +	}
+> +	spin_unlock(&inode_lock);
+> +
+  Sorry, but this is just wrong. Not only because of inode_lock as
+Christoph pointed out but mainly principially. ext4 and ocfs2 in
+data=ordered mode rely on data pages (with underlying blocks already
+allocated) being written out before transaction commit proceeds for data
+integrity. So you cannot just go and remove the writeback saying it
+improves performance.
 
+I'm not saying that ext4 handling of ordered mode does not need a revision
+(we actually talked with Ted about it at Kernel Summit). But the solution
+for it is to use IO completion callback to do extent tree manipulations
+and stop using JBD2 for data syncing. We already do that for direct IO and
+conversion of preallocated space so doing it in all cases should be
+reasonably easy. Until that happens, you can run ext4 in data=writeback
+mode which will also stop JBD2 from doing the writeback (and effectively is
+rather similar to your patch).
 
-Greeting,
-
-My name is Mr. Jamil Ibrahim ElHalabi, I live and work in
-Abu Dhabi UAE. I have an urgent business which I believe will
-interest you. Find the enclose for details.
-
-For any reason you cannot open that attachment, please let me
-know so that I can resend it in the body of the mail, thank you.
-
-I wait for your response, Thank you.
-
-Regards
-
-Jamil Ibrahim ElHalabi
-------=_20101116155728_95673
-Content-Type: application/pdf; name="Interesting deal.pdf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="Interesting deal.pdf"
-
-JVBERi0xLjUNCiW1tbW1DQoxIDAgb2JqDQo8PC9UeXBlL0NhdGFsb2cvUGFnZXMgMiAwIFIvTGFu
-Zyhlbi1VUykgPj4NCmVuZG9iag0KMiAwIG9iag0KPDwvVHlwZS9QYWdlcy9Db3VudCAxL0tpZHNb
-IDMgMCBSXSA+Pg0KZW5kb2JqDQozIDAgb2JqDQo8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL1Jl
-c291cmNlczw8L0ZvbnQ8PC9GMSA1IDAgUi9GMiA3IDAgUj4+L1Byb2NTZXRbL1BERi9UZXh0L0lt
-YWdlQi9JbWFnZUMvSW1hZ2VJXSA+Pi9NZWRpYUJveFsgMCAwIDYxMiA3OTJdIC9Db250ZW50cyA0
-IDAgUi9Hcm91cDw8L1R5cGUvR3JvdXAvUy9UcmFuc3BhcmVuY3kvQ1MvRGV2aWNlUkdCPj4vVGFi
-cy9TPj4NCmVuZG9iag0KNCAwIG9iag0KPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0xlbmd0aCAzODMy
-Pj4NCnN0cmVhbQ0KeJy1W1lv3EYSfjfg/9APu9gZYETz5hD7ZG8Ux0mcBLEWi0WyD5whpRl4TI5F
-0bL//dbR1QelFgUsFkF0jLq7uuv46qvq9purly9efZ+oJIniXF1dv3yRqBj+S1SVRnGaqypLo3yr
-rj69fBGrG/zy9uWLP1Zv18Xqdn2RrbpufZGu7tbl6ri+yFf9zTpJVuNm/R919ePLF5ew/Jsru2iS
-VFHhrvnHSgWGivykjrblM8fGVZTK2Pff1vVK/QL7bD6tk2LVKdhgsRrVe9wn7T0KrZfk2yjxl/ux
-wRmwUsUHPeEX9W6dbFc7Wqw50Po0Ql2efmhO9OkOdnEMiEmLJMoLX85GNepNs07SVf8RVal+hRNc
-41L0hWTvYc3uFqWpQwc/syEUSUIbqNcwZzep7+DboYGPd/T5JnTcPEmjzN/GAWWDDNRbaFaWRdXW
-n6bl/xPm9UfwiTv8vWthQ4nWebNbMGJZ51GR6/UuQZ36VDz7Dk/djWw90r5i86p78UgaTYIdj1R6
-Z7fraoUqow8b0mE7KhhdrgZFn/VqOJ8H0So69mSP8s1dC3/+BH/hD4e5kSgwaBBNJUPQT7RVXPJk
-HQmH7TrV4BxemRYhb6IvXT+ylXe0bt9d0yJyVCtnUDv8eWChasBfaFdLet8mUS16n0bSLjpY8wW9
-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
-xpL5ihTrq+eNzQEyZCwlsTvNBYiu7Tp5JybhJZTisXsd6Uu5L2w8EOGyAD4YuHm2keuhngHuJMlm
-MI4+a9nBJCZTVEwEaZRtXDkJl3Mas4OjIMaGw59clVMXX56oW1l7T89RqOvpGJEbfEKSF5ScVlEp
-bFs/YxKS1Kgb0xPv7MJKpyk8AzLTkfBFP4RyUuo40S83N/ZWx9bjWndsGvobh54+4YwcE/IDSlCi
-UGR4fetJFuX0aKF23KgCVogpgRUx/vGvDlHd2eA9qLNpfhvwoPvPjZsJFnSYFFEsOhwPDUMNXh/M
-wZ5Ik/tiKZ8/F6LP7Enmbx2Z9+0Hq+azjuLQ+6F0m2GZ6O3xIM5zoFSjQwnom3Pk1nEoEgQFNd6D
-2gdOH4EzIeTlhhlZGg8AKOTFuzV9Wo9xis9ybUvsjI7NWyBKi6Wol46osX43C3xXntC4xYs+fcOy
-1i948H3Ib+rDOltd/oOeMeSryyvu4+Ai/2KGQu0ke+PLhfeg3Os7Fx3a7o774vL2Du02SHueA0jQ
-At98yu51Fc9PxZ6TJNNtbZ4o8QSOQZ3pyDcp5s7cQWKyEWp+J3mObTp30SX5VRU9s0+elrl9WoFU
-0y3KVD9/0ds2hsO/HVrsKjMo68v+SL3usR6xOGPuuM5eRf0Yr//fNaVvrrwzLZ2/SOxjiKWxWY0X
-+DwWU40Dqg6PRNCWF9bBfw8A1XHhL7gkPC3xgdXzxiaZ/bcD7wNjtwmMmY19+l8HQO1Qb2cz/h//
-PCABjpYmvpxgcHDD2Bu70DAOjv0vmdwg9g0KZW5kc3RyZWFtDQplbmRvYmoNCjUgMCBvYmoNCjw8
-L1R5cGUvRm9udC9TdWJ0eXBlL1RydWVUeXBlL05hbWUvRjEvQmFzZUZvbnQvVGltZXMjMjBOZXcj
-MjBSb21hbi9FbmNvZGluZy9XaW5BbnNpRW5jb2RpbmcvRm9udERlc2NyaXB0b3IgNiAwIFIvRmly
-c3RDaGFyIDMyL0xhc3RDaGFyIDEyMS9XaWR0aHMgMTAgMCBSPj4NCmVuZG9iag0KNiAwIG9iag0K
-PDwvVHlwZS9Gb250RGVzY3JpcHRvci9Gb250TmFtZS9UaW1lcyMyME5ldyMyMFJvbWFuL0ZsYWdz
-IDMyL0l0YWxpY0FuZ2xlIDAvQXNjZW50IDg5MS9EZXNjZW50IC0yMTYvQ2FwSGVpZ2h0IDY5My9B
-dmdXaWR0aCA0MDEvTWF4V2lkdGggMjU2OC9Gb250V2VpZ2h0IDQwMC9YSGVpZ2h0IDI1MC9MZWFk
-aW5nIDQyL1N0ZW1WIDQwL0ZvbnRCQm94WyAtNTY4IC0yMTYgMjAwMCA2OTNdID4+DQplbmRvYmoN
-CjcgMCBvYmoNCjw8L1R5cGUvRm9udC9TdWJ0eXBlL1RydWVUeXBlL05hbWUvRjIvQmFzZUZvbnQv
-VGltZXMjMjBOZXcjMjBSb21hbixCb2xkL0VuY29kaW5nL1dpbkFuc2lFbmNvZGluZy9Gb250RGVz
-Y3JpcHRvciA4IDAgUi9GaXJzdENoYXIgMzIvTGFzdENoYXIgODkvV2lkdGhzIDExIDAgUj4+DQpl
-bmRvYmoNCjggMCBvYmoNCjw8L1R5cGUvRm9udERlc2NyaXB0b3IvRm9udE5hbWUvVGltZXMjMjBO
-ZXcjMjBSb21hbixCb2xkL0ZsYWdzIDMyL0l0YWxpY0FuZ2xlIDAvQXNjZW50IDg5MS9EZXNjZW50
-IC0yMTYvQ2FwSGVpZ2h0IDY3Ny9BdmdXaWR0aCA0MjcvTWF4V2lkdGggMjU1OC9Gb250V2VpZ2h0
-IDcwMC9YSGVpZ2h0IDI1MC9MZWFkaW5nIDQyL1N0ZW1WIDQyL0ZvbnRCQm94WyAtNTU4IC0yMTYg
-MjAwMCA2NzddID4+DQplbmRvYmoNCjkgMCBvYmoNCjw8L0F1dGhvcihQZXRlcikvQ3JlYXRvcij+
-/wBNAGkAYwByAG8AcwBvAGYAdACuACAATwBmAGYAaQBjAGUAIABXAG8AcgBkACAAMgAwADAANykv
-Q3JlYXRpb25EYXRlKEQ6MjAxMDExMTYxNDQ4MDgpIC9Nb2REYXRlKEQ6MjAxMDExMTYxNDQ4MDgp
-IC9Qcm9kdWNlcij+/wBNAGkAYwByAG8AcwBvAGYAdACuACAATwBmAGYAaQBjAGUAIABXAG8AcgBk
-ACAAMgAwADAANyk+Pg0KZW5kb2JqDQoxMCAwIG9iag0KWyAyNTAgMCAwIDAgNTAwIDgzMyAwIDE4
-MCAzMzMgMzMzIDAgMCAyNTAgMzMzIDI1MCAyNzggNTAwIDAgNTAwIDAgNTAwIDUwMCA1MDAgNTAw
-IDAgMCAwIDI3OCAwIDAgMCAwIDAgNzIyIDY2NyA2NjcgNzIyIDYxMSA1NTYgNzIyIDcyMiAzMzMg
-Mzg5IDcyMiA2MTEgODg5IDcyMiA3MjIgNTU2IDAgNjY3IDU1NiA2MTEgNzIyIDAgOTQ0IDAgMCAw
-IDAgMCAwIDAgMCAwIDQ0NCA1MDAgNDQ0IDUwMCA0NDQgMzMzIDUwMCA1MDAgMjc4IDAgNTAwIDI3
-OCA3NzggNTAwIDUwMCA1MDAgNTAwIDMzMyAzODkgMjc4IDUwMCA1MDAgNzIyIDUwMCA1MDBdIA0K
-ZW5kb2JqDQoxMSAwIG9iag0KWyAyNTAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDI1MCAwIDAgMCAw
-IDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgNzIyIDAgMCA3MjIgMCAwIDc3OCAwIDM4
-OSAwIDAgNjY3IDAgNzIyIDc3OCAwIDAgNzIyIDU1NiA2NjcgNzIyIDAgMCAwIDcyMl0gDQplbmRv
-YmoNCjEyIDAgb2JqDQo8PC9UeXBlL1hSZWYvU2l6ZSAxMi9XWyAxIDQgMl0gL1Jvb3QgMSAwIFIv
-SW5mbyA5IDAgUi9JRFs8QUE2M0NCQ0Q5QkVFRTA0OUFDNTRCNDU2QTVDNzY0N0U+PEFBNjNDQkNE
-OUJFRUUwNDlBQzU0QjQ1NkE1Qzc2NDdFPl0gL0ZpbHRlci9GbGF0ZURlY29kZS9MZW5ndGggNTU+
-Pg0Kc3RyZWFtDQp4nGNgAIL//xmBpCADA4jyg1BtYIoxFUwJrABTgqFgSsgZQn0BU8LPwZTIGTAl
-JszAAABX0gfRDQplbmRzdHJlYW0NCmVuZG9iag0KeHJlZg0KMCAxMw0KMDAwMDAwMDAwMCA2NTUz
-NSBmDQowMDAwMDAwMDE3IDAwMDAwIG4NCjAwMDAwMDAwNzggMDAwMDAgbg0KMDAwMDAwMDEzNCAw
-MDAwMCBuDQowMDAwMDAwMzU3IDAwMDAwIG4NCjAwMDAwMDQyNjQgMDAwMDAgbg0KMDAwMDAwNDQz
-NyAwMDAwMCBuDQowMDAwMDA0Njc1IDAwMDAwIG4NCjAwMDAwMDQ4NTIgMDAwMDAgbg0KMDAwMDAw
-NTA5NSAwMDAwMCBuDQowMDAwMDA1MzI0IDAwMDAwIG4NCjAwMDAwMDU2NTEgMDAwMDAgbg0KMDAw
-MDAwNTgxOCAwMDAwMCBuDQp0cmFpbGVyDQo8PC9TaXplIDEzL1Jvb3QgMSAwIFIvSW5mbyA5IDAg
-Ui9JRFs8QUE2M0NCQ0Q5QkVFRTA0OUFDNTRCNDU2QTVDNzY0N0U+PEFBNjNDQkNEOUJFRUUwNDlB
-QzU0QjQ1NkE1Qzc2NDdFPl0gPj4NCnN0YXJ0eHJlZg0KNjA3Mg0KJSVFT0YNCnhyZWYNCjAgMA0K
-dHJhaWxlcg0KPDwvU2l6ZSAxMy9Sb290IDEgMCBSL0luZm8gOSAwIFIvSURbPEFBNjNDQkNEOUJF
-RUUwNDlBQzU0QjQ1NkE1Qzc2NDdFPjxBQTYzQ0JDRDlCRUVFMDQ5QUM1NEI0NTZBNUM3NjQ3RT5d
-IC9QcmV2IDYwNzIvWFJlZlN0bSA1ODE4Pj4NCnN0YXJ0eHJlZg0KNjQ4Nw0KJSVFT0Y=
-------=_20101116155728_95673--
-
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
