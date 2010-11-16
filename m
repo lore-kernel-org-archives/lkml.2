@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab0KPROU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 12:14:20 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40151
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753036Ab0KPROT (ORCPT
+	id S1755711Ab0KPROi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 12:14:38 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:44049 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755667Ab0KPROg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 12:14:19 -0500
-Date: Tue, 16 Nov 2010 09:14:43 -0800 (PST)
-Message-Id: <20101116.091443.226753420.davem@davemloft.net>
-To: tomoya-linux@dsn.okisemi.com
-Cc: wg@grandegger.com, w.sang@pengutronix.de, chripell@fsfe.org,
-        21cnbao@gmail.com, sameo@linux.intel.com,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
-        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, masa-korg@dsn.okisemi.com,
-        margie.foster@intel.com
-Subject: Re: [PATCH net-next-2.6 v4] can: Topcliff: PCH_CAN driver: Add
- Flow control/Fix Endianess issue/Separate IF register/Enumerate LEC
- macro/Move MSI processing/Use BIT(X)/Change Message Object index/Add
- prefix PCH_
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4CE275A4.9010400@dsn.okisemi.com>
-References: <4CE275A4.9010400@dsn.okisemi.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 16 Nov 2010 12:14:36 -0500
+Date: Tue, 16 Nov 2010 09:14:08 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Steffen Klassert <klassert@mathematik.tu-chemnitz.de>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] 3c59x: fix build failure on !CONFIG_PCI
+Message-Id: <20101116091408.abd36ec8.randy.dunlap@oracle.com>
+In-Reply-To: <1289921271-15295-1-git-send-email-namhyung@gmail.com>
+References: <1289921271-15295-1-git-send-email-namhyung@gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 17 Nov 2010 00:27:51 +0900 Namhyung Kim wrote:
 
-Way too many changes in one patch.
+> VORTEX_PCI() could return NULL so it needs to be casted before
+> accessing any member of struct pci_dev. This fixes following
+> build failure. Likewise VORTEX_EISA() was changed also.
+> 
+>   CC [M]  drivers/net/3c59x.o
+> drivers/net/3c59x.c: In function 'acpi_set_WOL':
+> drivers/net/3c59x.c:3211:39: warning: dereferencing 'void *' pointer
+> drivers/net/3c59x.c:3211:39: error: request for member 'current_state' in something not a structure or union
+> make[3]: *** [drivers/net/3c59x.o] Error 1
+> make[2]: *** [drivers/net/3c59x.o] Error 2
+> make[1]: *** [sub-make] Error 2
+> make: *** [all] Error 2
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  drivers/net/3c59x.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/net/3c59x.c b/drivers/net/3c59x.c
+> index e1da258..0a92436 100644
+> --- a/drivers/net/3c59x.c
+> +++ b/drivers/net/3c59x.c
+> @@ -699,7 +699,8 @@ DEFINE_WINDOW_IO(32)
+>  #define DEVICE_PCI(dev) NULL
+>  #endif
+>  
+> -#define VORTEX_PCI(vp) (((vp)->gendev) ? DEVICE_PCI((vp)->gendev) : NULL)
+> +#define VORTEX_PCI(vp)							\
+> +	((struct pci_dev *) (((vp)->gendev) ? DEVICE_PCI((vp)->gendev) : NULL))
+>  
+>  #ifdef CONFIG_EISA
+>  #define DEVICE_EISA(dev) (((dev)->bus == &eisa_bus_type) ? to_eisa_device((dev)) : NULL)
+> @@ -707,7 +708,8 @@ DEFINE_WINDOW_IO(32)
+>  #define DEVICE_EISA(dev) NULL
+>  #endif
+>  
+> -#define VORTEX_EISA(vp) (((vp)->gendev) ? DEVICE_EISA((vp)->gendev) : NULL)
+> +#define VORTEX_EISA(vp)							\
+> +	((struct eisa_device *) (((vp)->gendev) ? DEVICE_EISA((vp)->gendev) : NULL))
+>  
+>  /* The action to take with a media selection timer tick.
+>     Note that we deviate from the 3Com order by checking 10base2 before AUI.
+> -- 
 
-Please post one that fixes the endianness issues.
+Hi,
 
-One that fixes the register interface seperation.
+Interesting patch.  I have reported this build error and looked
+into fixing it, but did not come up with this solution.
 
-One that adds flow control processing.
+Looking at it more:  if CONFIG_PCI is not enabled, DEVICE_PCI() is NULL.
+That makes VORTEX_PCI() (with or without your patch) have a value of NULL.
 
-etc.
+Is the line with the reported syntax error (3211) executed in
+function acpi_set_WOL() ?  If so, let's assume that vp->enable_wol is true.
+Then what happens on line 3211 (or 3213 after your patch)?
 
-When you combine many tasks into one patch it's impossible
-to bisect through your changes to debug problems in order
-to figure out which changed introduced a bug.
+		if (VORTEX_PCI(vp)->current_state < PCI_D3hot)
+			return;
 
-I am not applying this, and I will not apply your patches
-until you split them up properly.
+or if I am really confuzed this morning, please tell me how it works.
 
-You may think that there is zero value in this, but there
-is huge value in it for anyone who tries to debug your
-changes in the future.  Right now you are making that a
-nearly impossible task.
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
