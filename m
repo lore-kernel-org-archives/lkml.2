@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758338Ab0KPV70 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 16:59:26 -0500
-Received: from kroah.org ([198.145.64.141]:59741 "EHLO coco.kroah.org"
+	id S932866Ab0KPWAT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 17:00:19 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:44163 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932659Ab0KPV7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 16:59:24 -0500
-Date: Tue, 16 Nov 2010 13:46:52 -0800
-From: Greg KH <greg@kroah.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: Re: [PATCH 6/6] ce4100: Add support for CE4100 EHCI IP block to
- EHCI driver
-Message-ID: <20101116214652.GB18387@kroah.com>
-References: <Pine.LNX.4.44L0.1011092134180.14099-100000@netrider.rowland.org>
- <4CDA7925.10707@ru.mvista.com>
+	id S932710Ab0KPWAS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 17:00:18 -0500
+Date: Tue, 16 Nov 2010 22:59:40 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+Message-ID: <20101116215940.GA13912@elte.hu>
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
+ <4CE2F747.4060406@linux.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CDA7925.10707@ru.mvista.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4CE2F747.4060406@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 01:51:17PM +0300, Sergei Shtylyov wrote:
-> Hello.
-> 
-> On 10-11-2010 5:36, Alan Stern wrote:
-> 
-> >>In a previous patch in this series GregKH asked that the PCI ID not be added
-> >>to pci_ids.h for ID's that are only used by a single file.
-> >>Here is an updated version of the EHCI controller patch.
-> 
-> >>Subject: [PATCH] ce4100: Add support for CE4100 EHCI IP block to EHCI driver
-> 
-> >>This patch adds support for the EHCI IP block present on the Intel
-> >>CE4100.
-> 
-> >>Signed-off-by: Dirk Brandewie<dirk.brandewie@gmail.com>
-> >>CC: linux-usb@vger.kernel.org
-> >>CC: David Brownell<dbrownell@users.sourceforge.net>
-> >>---
-> >>  drivers/usb/host/ehci-pci.c |    4 ++++
-> >>  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> >>diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
-> >>index a1e8d27..da2b196 100644
-> >>--- a/drivers/usb/host/ehci-pci.c
-> >>+++ b/drivers/usb/host/ehci-pci.c
-> >>@@ -124,6 +124,10 @@ static int ehci_pci_setup(struct usb_hcd *hcd)
-> >>  			ehci_info(ehci, "disable lpm for langwell/penwell\n");
-> >>  			ehci->has_lpm = 0;
-> >>  		}
-> >>+		if (pdev->device == 0x2e70) {
-> >>+			hcd->has_tt = 1;
-> >>+			tdi_reset(ehci);
-> >>+		}
-> 
-> >I think Greg meant that it's okay to use a symbolic constant for the
-> >PCI ID (it helps tell people what hardware is being handled).  Just
-> >don't add that constant to the pci_ids.h file.
-> 
->    Or at least you need a comment naming the hardware that this ID belongs to.
 
-I agree, something a bit better than just the device id might be nice
-here.
+* Darren Hart <dvhart@linux.intel.com> wrote:
 
-Dirk, care to redo this one and your serial one, with that idea?
+> On 11/16/2010 01:04 PM, Thomas Gleixner wrote:
+> >We are pleased to announce a new tracing tool called 'trace'.
+> >
+> 
+> Hi Thomas, Ingo - Congrats and Thanks!
 
-thanks,
+You are welcome :)
 
-greg k-h
+> > At this point we'd like to ask for feedback from other users of tracing tools, 
+> > which workflow components would you like to see in addition to what the 'trace' 
+> > tool is offering?
+> >
+> > Comments, bug reports, suggestions welcome,
+> 
+> The first thing that comes to mind is trace_marker:
+> 
+>   echo "Test point A" > /sys/kernel/debug/tracing/trace_marker
+> 
+> I've found this sort of markup to be useful using ftrace (with C equivalents 
+> embedded in the test case). Is this supported?
+
+Yes, LatencyTop uses something similar IIRC, via a prctl() hack: it uses 
+prctl(PR_SET_NAME) to inject up to 16 characters into the comm - and then every perf 
+event gets that comm. You can utilize that straight away if you need a marker 
+solution right now.
+
+A cleaner, more generic approach would be a more free-form ASCII event facility for 
+this: a generic 'user-space triggered event' with injection capabilities.
+
+To inject it, we could put that into a prctl() as well, for easy, single-syscall 
+access from C. We already have two perf prctls: PR_TASK_PERF_EVENTS_DISABLE, 
+PR_TASK_PERF_EVENTS_ENABLE - and this would be a third one: PR_TASK_PERF_USER_EVENT.
+
+This would, like the existing perf_event_task_enable()/disable() methods, loop 
+through current events and inject a string into matching user events.
+
+Ideally i'd like to see basically user-space access to trace_printk(), and proper 
+integration into /debug/tracing/events/ enumeration and availability - not a 
+ftrace-specific and admin-only hack like /sys/kernel/debug/tracing/trace_marker is 
+today.
+
+Would you be interested in helping out with (and testing) such a more generic 
+approach?
+
+Thanks,
+
+	Ingo
