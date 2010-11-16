@@ -1,132 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab0KPWmS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 17:42:18 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38110 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755803Ab0KPWmQ (ORCPT
+	id S1759339Ab0KPWma (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 17:42:30 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:7352 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757009Ab0KPWm1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 17:42:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=eIlTh6yoKkBOzADtY74GmS+mT2qju+CmhdugmYCulBgeYrGOrtgo9fSkKZ75stvBKL
-         4QIeEETRBzAFQDGkj/YFXqbnk00z4WVI0Wnq4t5eu4taUADL8mHmRfWF3GtWub5FfAIn
-         9N4mao8EinDpscw9DA6bFA6kLN9IMUymi/pqk=
-From: dirk.brandewie@gmail.com
-To: devicetree-discuss@lists.ozlabs.org
-Cc: sodaville@linutronix.de, arjan@linux.intel.com, dirk.brandewie@gmail.com,
-        linuxppc-dev@lists.ozlabs.org, microblaze-uclinux@itee.uq.edu.au,
-        linux-arch@vger.kernel.org, linux-kbuild@vger.kernel.org,
+	Tue, 16 Nov 2010 17:42:27 -0500
+From: David Daney <ddaney@caviumnetworks.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] of: Add support for linking device tree blobs into vmlinux
-Date: Tue, 16 Nov 2010 14:41:36 -0800
-Message-Id: <9129f0a21ea48fb2dcb89cea290e88f3e8c0d8a2.1289943240.git.dirk.brandewie@gmail.com>
+Cc: David Daney <ddaney@caviumnetworks.com>
+Subject: [PATCH] of: Request module by alias in of_i2c.c
+Date: Tue, 16 Nov 2010 14:42:14 -0800
+Message-Id: <1289947334-14375-1-git-send-email-ddaney@caviumnetworks.com>
 X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <cover.1289943240.git.dirk.brandewie@gmail.com>
-References: <cover.1289943240.git.dirk.brandewie@gmail.com>
+X-OriginalArrivalTime: 16 Nov 2010 22:43:14.0642 (UTC) FILETIME=[A79C2320:01CB85DF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
+If we are registering an i2c device that has a device tree node like
+this real-world example:
 
-This patch adds support for linking device tree blobs into
-vmlinux. Modifies asm-generic/vmlinux.lds.h to add linking
-.dtb.init.rodata sections into the .init.data section of the vmlinux
-image. Modifies scripts/Makefile.lib to add a kbuild command to
-compile DTS files to device tree blobs and a rule to create objects to
-wrap the blobs for linking.
+      rtc@68 {
+        compatible = "dallas,ds1337";
+        reg = <0x68>;
+      };
 
-The DTB's are placed on 32 byte boundries to allow parsing the blob
-with driver/of/fdt.c during early boot without having to copy the blob
-to get the structure alignment GCC expects.
+of_i2c_register_devices() will try to load a module called ds1337.ko.
+There is no such module, so it will fail.  If we look in modules.alias
+we will find entries like these:
 
-A DTB is linked in by adding the DTB object to the list of objects to
-be linked into vmlinux in the archtecture specific Makefile using
-   obj-y += foo.dtb.o
+.
+.
+.
+alias i2c:ds1339 rtc_ds1307
+alias i2c:ds1338 rtc_ds1307
+alias i2c:ds1337 rtc_ds1307
+alias i2c:ds1307 rtc_ds1307
+alias i2c:ds1374 rtc_ds1374
+.
+.
+.
 
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+The module we want is really called rtc_ds1307.ko.  If we request a
+module called "i2c:ds1337", the userspace module loader will do the
+right thing (unless it is busybox) and load rtc_ds1307.ko.  So we add
+the I2C_MODULE_PREFIX to the request_module() string.
+
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
 ---
- include/asm-generic/vmlinux.lds.h |   19 +++++++++++++++++--
- scripts/Makefile.lib              |   20 ++++++++++++++++++++
- 2 files changed, 37 insertions(+), 2 deletions(-)
+ drivers/of/of_i2c.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index bd69d79..ea671e7 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -67,7 +67,14 @@
-  * Align to a 32 byte boundary equal to the
-  * alignment gcc 4.5 uses for a struct
-  */
--#define STRUCT_ALIGN() . = ALIGN(32)
-+#define STRUCT_ALIGNMENT 32
-+#define STRUCT_ALIGN() . = ALIGN(STRUCT_ALIGNMENT)
-+
-+/* Device tree blobs linked into the kernel need to have proper
-+ * structure alignment to be parsed by the flat device tree library
-+ * used in early boot
-+*/
-+#define DTB_ALIGNMENT STRUCT_ALIGNMENT
+diff --git a/drivers/of/of_i2c.c b/drivers/of/of_i2c.c
+index c85d3c7..f37fbeb 100644
+--- a/drivers/of/of_i2c.c
++++ b/drivers/of/of_i2c.c
+@@ -61,7 +61,7 @@ void of_i2c_register_devices(struct i2c_adapter *adap)
+ 		info.of_node = of_node_get(node);
+ 		info.archdata = &dev_ad;
  
- /* The actual configuration determine if the init/exit sections
-  * are handled as text/data or they can be discarded (which
-@@ -146,6 +153,13 @@
- #define TRACE_SYSCALLS()
- #endif
+-		request_module("%s", info.type);
++		request_module("%s%s", I2C_MODULE_PREFIX, info.type);
  
-+
-+#define KERNEL_DTB()							\
-+	. = ALIGN(DTB_ALIGNMENT);					\
-+	VMLINUX_SYMBOL(__dtb_start) = .;				\
-+	*(.dtb.init.rodata)						\
-+	VMLINUX_SYMBOL(__dtb_end) = .;
-+
- /* .data section */
- #define DATA_DATA							\
- 	*(.data)							\
-@@ -468,7 +482,8 @@
- 	MCOUNT_REC()							\
- 	DEV_DISCARD(init.rodata)					\
- 	CPU_DISCARD(init.rodata)					\
--	MEM_DISCARD(init.rodata)
-+	MEM_DISCARD(init.rodata)					\
-+	KERNEL_DTB()
- 
- #define INIT_TEXT							\
- 	*(.init.text)							\
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 4c72c11..29db062 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -200,6 +200,26 @@ quiet_cmd_gzip = GZIP    $@
- cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -f -9 > $@) || \
- 	(rm -f $@ ; false)
- 
-+# DTC
-+#  ---------------------------------------------------------------------------
-+$(obj)/%.dtb.S: $(obj)/%.dtb FORCE
-+	@echo '#include <asm-generic/vmlinux.lds.h>' > $@
-+	@echo '.section .dtb.init.rodata,"a"' >> $@
-+	@echo '.balign DTB_ALIGNMENT' >> $@
-+	@echo '.global __dtb_$(*F)_begin' >> $@
-+	@echo '__dtb_$(*F)_begin:' >> $@
-+	@echo '.incbin "$<" ' >> $@
-+	@echo '__dtb_$(*F)_end:' >> $@
-+	@echo '.global __dtb_$(*F)_end' >> $@
-+	@echo '.balign DTB_ALIGNMENT' >> $@
-+
-+DTC = $(objtree)/scripts/dtc/dtc
-+
-+quiet_cmd_dtc = DTC	$@
-+      cmd_dtc = $(DTC) -O dtb -o $(obj)/$*.dtb -b 0 $(DTS_FLAGS) $(src)/dts/$*.dts
-+
-+$(obj)/%.dtb: $(src)/dts/%.dts
-+	$(call if_changed,dtc)
- 
- # Bzip2
- # ---------------------------------------------------------------------------
+ 		result = i2c_new_device(adap, &info);
+ 		if (result == NULL) {
 -- 
 1.7.2.3
 
