@@ -1,111 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758927Ab0KPAZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 19:25:52 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:58556 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab0KPAZu (ORCPT
+	id S1757010Ab0KPA1t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 19:27:49 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:37649 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752433Ab0KPA1r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 19:25:50 -0500
-Message-ID: <4CE1CF88.2090702@canonical.com>
-Date: Mon, 15 Nov 2010 16:25:44 -0800
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: wzt wzt <wzt.wzt@gmail.com>
-CC: linux-kernel@vger.kernel.org, apparmor@lists.ubuntu.com,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] APPARMOR: code cleanup on context.h
-References: <20101113023435.GB2713@localhost.localdomain> <AANLkTikrdQw1h=efa7EtnXCbQ5APT0PtWdaCUA83T5pN@mail.gmail.com>
-In-Reply-To: <AANLkTikrdQw1h=efa7EtnXCbQ5APT0PtWdaCUA83T5pN@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Nov 2010 19:27:47 -0500
+Date: Tue, 16 Nov 2010 09:28:01 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: [GIT PULL] Samsung fixes for 2.6.37-rc2
+In-reply-to: <4CE152A5.9050408@gmail.com>
+To: "'Darius Augulis'" <augulis.darius@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, ben-linux@fluff.org
+Message-id: <00c201cb8525$27801260$76803720$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=US-ASCII
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: AcuE2mHg/n5I9m50R1OlMoTdNRxfvwASMoqQ
+References: <007901cb84c2$7f465a30$7dd30e90$%kim@samsung.com>
+ <4CE152A5.9050408@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 03:29 PM, wzt wzt wrote:
-> hi, john, any comments?
+Darius Augulis wrote:
 > 
-Hi, yes sorry I am just trying to dig my self out from under a 4 day weekend :)
+> Hi Kukjin,
+> 
+Hi :-)
 
-ACK, I am going to add it to the apparmor tree tonight once I finish cleaning the
-tree up and push, and it will be included in the next pull request to security.
+> you have missed "serial: samsung: fix device name" which is hanging here
+> for a long time and was decided to merge in 2.6.37-rc1.
+> Please, pick it up.
+> 
+Hmm...I thought it should be handled by Ben Dooks at that time.
 
-thanks
-john
+Anyway, as Ben said, I'm thinking it should be sent upstream when merge
+window
+even though have missed it in the last merge window.
 
-> On Sat, Nov 13, 2010 at 10:34 AM,  <wzt.wzt@gmail.com> wrote:
->> Use current api to replace old codes.
->>
->> Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
->>
->> ---
->>  security/apparmor/include/context.h |   34 +++++++++++++++-------------------
->>  1 files changed, 15 insertions(+), 19 deletions(-)
->>
->> diff --git a/security/apparmor/include/context.h b/security/apparmor/include/context.h
->> index a9cbee4..c9112f3 100644
->> --- a/security/apparmor/include/context.h
->> +++ b/security/apparmor/include/context.h
->> @@ -82,23 +82,6 @@ int aa_set_current_hat(struct aa_profile *profile, u64 token);
->>  int aa_restore_previous_profile(u64 cookie);
->>
->>  /**
->> - * __aa_task_is_confined - determine if @task has any confinement
->> - * @task: task to check confinement of  (NOT NULL)
->> - *
->> - * If @task != current needs to be called in RCU safe critical section
->> - */
->> -static inline bool __aa_task_is_confined(struct task_struct *task)
->> -{
->> -       struct aa_task_cxt *cxt = __task_cred(task)->security;
->> -
->> -       BUG_ON(!cxt || !cxt->profile);
->> -       if (unconfined(aa_newest_version(cxt->profile)))
->> -               return 0;
->> -
->> -       return 1;
->> -}
->> -
->> -/**
->>  * aa_cred_profile - obtain cred's profiles
->>  * @cred: cred to obtain profiles from  (NOT NULL)
->>  *
->> @@ -138,9 +121,8 @@ static inline struct aa_profile *aa_current_profile(void)
->>  {
->>        const struct aa_task_cxt *cxt = current_cred()->security;
->>        struct aa_profile *profile;
->> -       BUG_ON(!cxt || !cxt->profile);
->>
->> -       profile = aa_newest_version(cxt->profile);
->> +       profile = __aa_current_profile();
->>        /*
->>         * Whether or not replacement succeeds, use newest profile so
->>         * there is no need to update it after replacement.
->> @@ -151,4 +133,18 @@ static inline struct aa_profile *aa_current_profile(void)
->>        return profile;
->>  }
->>
->> +/**
->> + * __aa_task_is_confined - determine if @task has any confinement
->> + * @task: task to check confinement of  (NOT NULL)
->> + *
->> + * If @task != current needs to be called in RCU safe critical section
->> + */
->> +static inline bool __aa_task_is_confined(struct task_struct *task)
->> +{
->> +       if (unconfined(aa_cred_profile(__task_cred(task))))
->> +               return 0;
->> +
->> +       return 1;
->> +}
->> +
->>  #endif /* __AA_CONTEXT_H */
->> --
->> 1.6.5.3
->>
->>
+However, if Ben is ok to merge this during 37-rc, will merge it into
+s5p-fixes-
+for-linus for 37-rc.
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
