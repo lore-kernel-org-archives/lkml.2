@@ -1,96 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299Ab0KPUrK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:47:10 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35302 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755199Ab0KPUrH (ORCPT
+	id S1757372Ab0KPUro (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:47:44 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36308 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754503Ab0KPUrm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:47:07 -0500
-Date: Tue, 16 Nov 2010 12:46:15 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, stable@kernel.org
-Subject: Re: [PATCH] Make swap accounting default behavior configurable
-Message-Id: <20101116124615.978ed940.akpm@linux-foundation.org>
-In-Reply-To: <20101116101726.GA21296@tiehlicka.suse.cz>
-References: <20101116101726.GA21296@tiehlicka.suse.cz>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Nov 2010 15:47:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=mcL3pzGxVx48Wf/ToqzUslmc7y7W4yD9O+zaWqGy8ALzvy+FwT0LGIPYnzvMzsXvhy
+         uh/2PkX/XTP4gIHc1mpudpMlfe1g/bh88rRUOtvSHs6jTTEKC6Zr3bE1uCQe7rCjRGWH
+         FHLzTcQJquGHdLF4cFEO0V7eokrcJD1G54uEI=
+MIME-Version: 1.0
+In-Reply-To: <20101116160545.GA2524@localhost.localdomain>
+References: <1289840723-3056-1-git-send-email-josef@redhat.com>
+ <1289840723-3056-5-git-send-email-josef@redhat.com> <4CE2783F.1020004@redhat.com>
+ <20101116125016.GA31957@dhcp231-156.rdu.redhat.com> <4CE28211.6060204@redhat.com>
+ <20101116160545.GA2524@localhost.localdomain>
+From: Greg Freemyer <greg.freemyer@gmail.com>
+Date: Tue, 16 Nov 2010 12:47:20 -0800
+Message-ID: <AANLkTikz07C_=aZudup7xSpLnrEYi5No4QhL5WD9xxTx@mail.gmail.com>
+Subject: Re: [PATCH 4/6] Ext4: fail if we try to use hole punch
+To: Josef Bacik <josef@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, david@fromorbit.com,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com, cmm@us.ibm.com, cluster-devel@redhat.com,
+        ocfs2-devel@oss.oracle.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Nov 2010 11:17:26 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+On Tue, Nov 16, 2010 at 8:05 AM, Josef Bacik <josef@redhat.com> wrote:
+> On Tue, Nov 16, 2010 at 03:07:29PM +0200, Avi Kivity wrote:
+>> On 11/16/2010 02:50 PM, Josef Bacik wrote:
+>>> On Tue, Nov 16, 2010 at 02:25:35PM +0200, Avi Kivity wrote:
+>>> >  On 11/15/2010 07:05 PM, Josef Bacik wrote:
+>>> >>  Ext4 doesn't have the ability to punch holes yet, so make sure we return
+>>> >>  EOPNOTSUPP if we try to use hole punching through fallocate.  This support can
+>>> >>  be added later.  Thanks,
+>>> >>
+>>> >
+>>> >  Instead of teaching filesystems to fail if they don't support the
+>>> >  capability, why don't supporting filesystems say so, allowing the fail
+>>> >  code to be in common code?
+>>> >
+>>>
+>>> There is no simple way to test if a filesystem supports hole punching or not so
+>>> the check has to be done per fs.  Thanks,
+>>
+>> Could put a flag word in superblock_operations.  Filesystems which
+>> support punching (or other features) can enable it there.
+>>
+>> Or even have its own callback.
+>>
+>
+> Sure but then you have to do the same thing for every other flag you add to
+> fallocate and then you have this huge mess of random flags just so you don't
+> call into the filesystem.  This way is a lesser of two evils I think.  Thanks,
+>
+> Josef
 
-> Hi Andrew,
-> could you consider the following patch for the Linus tree, please?
-> The discussion took place in this email thread 
-> http://lkml.org/lkml/2010/11/10/114.
-> The patch is based on top of 151f52f09c572 commit in the Linus tree.
-> 
-> Please let me know if there I should route this patch through somebody
-> else.
-> 
-> Thanks!
-> 
-> ---
-> >From 30238aaec758988493af793939f14b0ba83dc4b3 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Wed, 10 Nov 2010 13:30:04 +0100
-> Subject: [PATCH] Make swap accounting default behavior configurable
-> 
-> Swap accounting can be configured by CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-> configuration option and then it is turned on by default. There is
-> a boot option (noswapaccount) which can disable this feature.
-> 
-> This makes it hard for distributors to enable the configuration option
-> as this feature leads to a bigger memory consumption and this is a no-go
-> for general purpose distribution kernel. On the other hand swap
-> accounting may be very usuful for some workloads.
+I'm not a true kernel hacker, so my opinion is not critical but I find
+it hard to read / expand as
 
-This patch is needed by distros, and distros use the -stable tree, I
-assume.  Do you see reasons why this patch should be backported into
--stable, so distros don't need to patch it themselves?  If so, any
-particular kernel versions?  2.6.37?
+> +     /* We only support the FALLOC_FL_KEEP_SIZE mode */
+> +     if (mode && (mode != FALLOC_FL_KEEP_SIZE))
+> +             return -EOPNOTSUPP;
 
-> This patch adds a new configuration option which controls the default
-> behavior (CGROUP_MEM_RES_CTLR_SWAP_ENABLED). If the option is selected
-> then the feature is turned on by default.
-> 
-> It also adds a new boot parameter swapaccount which (contrary to
-> noswapaccount) enables the feature. (I would consider swapaccount=yes|no
-> semantic with removed noswapaccount parameter much better but this
-> parameter is kind of API which might be in use and unexpected breakage
-> is no-go.)
-> 
-> The default behavior is unchanged (if CONFIG_CGROUP_MEM_RES_CTLR_SWAP is
-> enabled then CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED is enabled as well)
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> ---
->  Documentation/kernel-parameters.txt |    3 +++
->  init/Kconfig                        |   13 +++++++++++++
->  mm/memcontrol.c                     |   15 ++++++++++++++-
->  3 files changed, 30 insertions(+), 1 deletions(-)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index ed45e98..14eafa5 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -2385,6 +2385,9 @@ and is between 256 and 4096 characters. It is defined in the file
->  			improve throughput, but will also increase the
->  			amount of memory reserved for use by the client.
->  
-> +	swapaccount	[KNL] Enable accounting of swap in memory resource
-> +			controller. (See Documentation/cgroups/memory.txt)
+How about:
 
-So we have swapaccount and noswapaccount.  Ho hum, "swapaccount=[1|0]"
-would have been better.
+#define EXT4_FALLOC_MODES_SUPPORTED (FALLOC_FL_KEEP_SIZE)
 
+if (modes & ~EXT4_FALLOC_MODES_SUPPORTED)
+             return -EOPNOTSUPP;
+
+
+Greg
