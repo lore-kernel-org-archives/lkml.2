@@ -1,110 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934372Ab0KPMQZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 07:16:25 -0500
-Received: from casper.infradead.org ([85.118.1.10]:57497 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934325Ab0KPMQY convert rfc822-to-8bit (ORCPT
+	id S934366Ab0KPMVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 07:21:12 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:34332 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756811Ab0KPMVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 07:16:24 -0500
-Subject: Re: [RFC][PATCH v2 4/7] taskstats: Add per task steal time
- accounting
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org,
-        "jeremy.fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
-        Avi Kivity <avi@redhat.com>
-In-Reply-To: <20101116095101.5d86d1e5@mschwide.boeblingen.de.ibm.com>
-References: <20101111170352.732381138@linux.vnet.ibm.com>
-	 <20101111170815.024542355@linux.vnet.ibm.com>
-	 <1289677083.2109.167.camel@laptop>
-	 <20101115155057.15f3be35@mschwide.boeblingen.de.ibm.com>
-	 <1289833883.2109.494.camel@laptop>
-	 <20101115184206.4463fd05@mschwide.boeblingen.de.ibm.com>
-	 <1289843441.2109.520.camel@laptop>
-	 <20101115185923.1c353d07@mschwide.boeblingen.de.ibm.com>
-	 <1289844524.2109.524.camel@laptop>
-	 <20101116095101.5d86d1e5@mschwide.boeblingen.de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 16 Nov 2010 13:16:08 +0100
-Message-ID: <1289909768.2109.592.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 16 Nov 2010 07:21:10 -0500
+X-Auth-Info: 0cPL9DEFqwb+te48BC/JXNBjZ4n7z3unazhCEsHJnjE=
+Message-ID: <4CE2777E.30501@grandegger.com>
+Date: Tue, 16 Nov 2010 13:22:22 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+MIME-Version: 1.0
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, andrew.chih.howe.khor@intel.com,
+        qi.wang@intel.com, margie.foster@intel.com, yong.y.wang@intel.com,
+        Masayuki Ohtake <masa-korg@dsn.okisemi.com>, kok.howg.ewe@intel.com,
+        joel.clark@intel.com
+Subject: Re: [PATCH net-next-2.6 v4] can: Topcliff: PCH_CAN driver: Add Flow
+ control/Fix	Endianess issue/Separate IF register/Enumerate LEC macro/Move
+ MSI	processing/Use BIT(X)/Change Message Object index/Add prefix PCH_
+References: <4CE275A4.9010400@dsn.okisemi.com>
+In-Reply-To: <4CE275A4.9010400@dsn.okisemi.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 09:51 +0100, Martin Schwidefsky wrote:
-> On Mon, 15 Nov 2010 19:08:44 +0100
-> Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+On 11/16/2010 01:14 PM, Tomoya MORINAGA wrote:
+> Add flow control processing.
+> Currently, there is no flow control processing.
+> Thus, Add flow control processing as
+> when there is no empty of tx buffer,
+> netif_stop_queue is called.
+> When there is empty buffer, netif_wake_queue is called.
 > 
-> > On Mon, 2010-11-15 at 18:59 +0100, Martin Schwidefsky wrote:
-> > > Steal time per task is at least good for performance problem analysis.
-> > > Sometimes knowing what is not the cause of a performance problem can help you
-> > > tremendously. If a task is slow and has no steal time, well then the hypervisor
-> > > is likely not the culprit. On the other hand if you do see lots of steal time
-> > > for a task while the rest of the system doesn't cause any steal time can tell
-> > > you something as well. That task might hit a specific function which causes
-> > > hypervisor overhead. The usefulness depends on the situation, it is another
-> > > data point which may or may not help you. 
-> > 
-> > If performance analysis is the only reason, why not add a tracepoint on
-> > vcpu enter that reports the duration the vcpu was out for and use perf
-> > to gather said data? It can tell you what process was running and what
-> > instruction it was at when the vcpu went away.
-> > 
-> > No need to add 40 bytes per task for that.
 > 
-> Which vcpu enter? We usually have z/VM as our hypervisor and want to be able
-> to do performance analysis with the data we gather inside the guest. There
-> is no vcpu enter we could put a tracepoint on. We would have to put tracepoints
-> on every possible interaction point with z/VM to get this data. To me it seems
-> a lot simpler to add the per-task steal time.
+> Fix endianness issue.
+> there is endianness issue both Tx and Rx.
+> Currently, data is set like below.
+> Register:
+>  MSB---LSB
+>  x x D0 D1
+>  x x D2 D3
+>  x x D4 D5
+>  x x D6 D7
+> 
+> But Data to be sent must be set like below.
+> Register:
+>  MSB---LSB
+>  x x D1 D0
+>  x x D3 D2
+>  x x D5 D4
+>  x x D7 D6  (x means reserved area.)
+> 
+> 
+> Separate interface register from whole of register structure.
+> CAN register of Intel PCH EG20T has 2 sets of interface register.
+> To reduce whole of code size, separate interface register.
+> As a result, the number of function also can be reduced. 
+> 
+> 
+> Enumerate LEC macro from #define macro.
+> For easy to readable, all LEC #define macros are replease to enums like below.
+> enum pch_can_err {
+> 	PCH_STUF_ERR = 1,
+> 	PCH_FORM_ERR,
+> 	PCH_ACK_ERR,
+> 	PCH_BIT1_ERR,
+> 	PCH_BIT0_ERR,
+> 	PCH_CRC_ERR,
+> 	PCH_LEC_ALL,
+> };
+> 
+> 
+> Move MSI processing to probe/remove processing.
+> Currently, in case this driver is integrated as module, and 
+> when this module is re-installed, no interrupts is to be occurred.
+> For the above issue, move MSI processing to open/release processing.
+> 
+> 
+> Replace bit assignment value to BIT(X).
+> For easy to readable, replace all bit assigned macros to BIT(X)
+> 
+> 
+> Change Message Object index macro name.
+> For easy to readable, add Message Object index like below.
+> PCH_RX_OBJ_START
+> PCH_RX_OBJ_END
+> PCH_TX_OBJ_START
+> PCH_TX_OBJ_END
+> 
+> 
+> Add prefix PCH_ to all of #define macros.
+> For easy to readable, add prefix "PCH_" to all of #define macros.
+> 
+> 
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 
-Oh, you guys don't have a hypercall wrapper to exploit? Because from
-what I heard from the kvm/xen/lguest people I gathered they could in
-fact do something like I proposed.
+Acked-by: Wolfgang Grandegger <wg@grandegger.com>
 
-In fact, kvm seems to already have these tracepoints: kvm_exit/kvm_entry
-and it has a separate excplicit hypercall tracepoint as well:
-kvm_hypercall.
+Thanks for your contribution.
 
-Except that the per-task steal time gives you lot less detail, being
-able to profile on vcpu exit/enter gives you a much more powerfull
-performance tool. Aside from being able to measure the steal-time it
-allows you to instantly find hypercalls (both explicit as well as
-implicit), so you can also measure the hypercall induced steal-time as
-well.
-
-> And if it is really the additional 40 bytes on x86 that bother you so much,
-> we could put them behind #ifdef CONFIG_VIRT_CPU_ACCOUNTING. There already
-> is one in the task_struct for prev_utime and prev_stime. 
-
-Making it configurable would definitely help the embedded people, not
-sure about VIRT_CPU_ACCOUNTING though, I bet the x86 virt weird^Wpeople
-would like it too -- if only to strive for feature parity if nothing
-else :/
-
-Its just that I'm not at all convinced its the best approach to solve
-the problem posed, and once its committed we're stuck with it due to
-ABI.
-
-We should be very careful not to die a death of thousand cuts with all
-this accounting madness, there's way too many weird-ass process
-accounting junk that adds ABI constraints as it is.
-
-I think its definitely worth investing extra time to implement these
-tracepoints if at all possible on your architecture before committing
-yourself to something like this.
-
+Wolfgang.
