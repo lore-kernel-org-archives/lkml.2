@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab0KPWmQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 17:42:16 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38110 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab0KPWmN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 17:42:13 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=mZFArZaAecD/EZhr2T3VN99X2PYsxHys+/ckmUsq3fLr2eY9AI7C2ZBb2K+rxmP9kd
-         18iOQmBTZB0tU5vZ+/v3rbH41XPBhH4H0e/qpiW+/3kRo2vsreCyyTXXX5x2HQRsaR5J
-         pvnCBw0hddOXRHVuje5fsDxg09VnMmOwClg/g=
-From: dirk.brandewie@gmail.com
-To: devicetree-discuss@lists.ozlabs.org
-Cc: sodaville@linutronix.de, arjan@linux.intel.com, dirk.brandewie@gmail.com,
-        linuxppc-dev@lists.ozlabs.org, microblaze-uclinux@itee.uq.edu.au,
-        linux-arch@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/5] Add the ability to link device blobs into vmlinux
-Date: Tue, 16 Nov 2010 14:41:35 -0800
-Message-Id: <cover.1289943240.git.dirk.brandewie@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1757256Ab0KPWsN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 17:48:13 -0500
+Received: from mga11.intel.com ([192.55.52.93]:50311 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756610Ab0KPWsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 17:48:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,207,1288594800"; 
+   d="scan'208";a="627479626"
+Message-ID: <4CE30A2C.9010308@linux.intel.com>
+Date: Tue, 16 Nov 2010 14:48:12 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>	 <4CE2F747.4060406@linux.intel.com>  <20101116215940.GA13912@elte.hu> <1289945023.2109.672.camel@laptop> <4CE30108.7010207@linux.intel.com>
+In-Reply-To: <4CE30108.7010207@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
+On 11/16/2010 02:09 PM, Darren Hart wrote:
+> On 11/16/2010 02:03 PM, Peter Zijlstra wrote:
+>> On Tue, 2010-11-16 at 22:59 +0100, Ingo Molnar wrote:
+>>>
+>>>
+>>> Would you be interested in helping out with (and testing) such a more
+>>> generic
+>>> approach?
+>>
+>> how about having perf-record open a named pipe and rewriting everything
+>> that comes in through that as an event and storing it in the buffer?
+>
+> When I'm tracing an app or test-case, I want to be able to quickly add
+> and change strings. I like the trace_printk sort of access as it avoids
+> having to do a bunch of string formatting (sprintf()) calls in the test
+> app.
 
-This patch set adds the ability to link device tree blob(s)
-directly into the vmlinux image and specify the blob to be used via a
-kernel command line option.
-
-Patch 1 implements the changes to include/asm-generic/vmlinux.lds.h,
-add generic rules for building and linking the DTB's into vmlinux.
-
-Patch 2 adds the command line option, the functions for the
-platform code to retrieve the value passed in and locate the matching
-blob in the image.  This patch has been tested on x86.
-
-Patch 3-5 show using the generic dts->dtb rule in x86, microblaze and
-powerpc. The microblaze and powerpc patches have only been compile
-tested.
-
-Dirk Brandewie (5):
-  of: Add support for linking device tree blobs into vmlinux
-  of/fdt: add kernel command line option for dtb_compat string
-  x86/of:  Add building device tree blob(s) into image.
-  of/powerpc: Move build to use generic dts->dtb rule
-  of/microblaze: Move build to use generic dts->dtb rule
-
- Documentation/kernel-parameters.txt |    7 +++++
- arch/microblaze/boot/Makefile       |   13 +--------
- arch/powerpc/boot/Makefile          |    7 -----
- arch/x86/Kconfig                    |    6 +++-
- arch/x86/kernel/Makefile            |    6 ++++
- arch/x86/kernel/dts/Kconfig         |    7 +++++
- drivers/of/fdt.c                    |   52 +++++++++++++++++++++++++++++++++++
- include/asm-generic/vmlinux.lds.h   |   19 +++++++++++-
- include/linux/of_fdt.h              |    4 +++
- scripts/Makefile.lib                |   20 +++++++++++++
- 10 files changed, 119 insertions(+), 22 deletions(-)
- create mode 100644 arch/x86/kernel/dts/Kconfig
+Sorry - fprintf would work for Peter's suggestion. I had the PR_SET_NAME 
+with a short string or another call with jsut a plain C string - those 
+would require the user doing the string formatting first.
 
 -- 
-1.7.2.3
-
+Darren Hart
+Yocto Linux Kernel
