@@ -1,84 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759357Ab0KPXkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 18:40:07 -0500
-Received: from THUNK.ORG ([69.25.196.29]:41609 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756492Ab0KPXkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 18:40:05 -0500
-Date: Tue, 16 Nov 2010 18:39:34 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101116233934.GC1568@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Lennart Poettering <mzxreary@0pointer.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	Dhaval Giani <dhaval.giani@gmail.com>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
-	Oleg Nesterov <oleg@redhat.com>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-	Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-	Balbir Singh <balbir@linux.vnet.ibm.com>
-References: <1289916683.2109.625.camel@laptop>
- <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
- <20101116170312.GA19327@tango.0pointer.de>
- <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
- <20101116181603.GC19327@tango.0pointer.de>
- <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
- <20101116202839.GC27235@tango.0pointer.de>
- <20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
- <AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
- <20101116211909.GB16589@tango.0pointer.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101116211909.GB16589@tango.0pointer.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1756299Ab0KPXlH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 18:41:07 -0500
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:44404 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751011Ab0KPXlG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 18:41:06 -0500
+X-AuditID: 12074423-b7bd0ae000000a00-45-4ce31690ff5f
+From: Andy Lutomirski <luto@MIT.EDU>
+To: Ben Skeggs <bskeggs@redhat.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@MIT.EDU>
+Subject: [PATCH v3] nouveau: Acknowledge HPD irq in handler, not bottom half
+Date: Tue, 16 Nov 2010 18:40:52 -0500
+Message-Id: <89e14deaee9399c1c526a77627630b6daf56a690.1289950823.git.luto@mit.edu>
+X-Mailer: git-send-email 1.7.3.2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 10:19:09PM +0100, Lennart Poettering wrote:
-> Well, my plan was actually to by default put everything into its own
-> group, and then let users opt-out of that for specific processes, if the
-> want to.
+The old code generated an interrupt storm bad enough to completely
+take down my system.
 
-How many users are likely to do this, though?
+Signed-off-by: Andy Lutomirski <luto@mit.edu>
+Cc: stable@kernel.org
+---
 
-I think you really want to make this be something which the
-application can specify by default that they should start in their own
-cgroup.  One idea might be to it to the applications menu entry:
+Changes from v2: Don't use (wrong) #define'd register names.
 
-http://standards.freedesktop.org/desktop-entry-spec/latest/
+ drivers/gpu/drm/nouveau/nouveau_drv.h  |    6 +++++
+ drivers/gpu/drm/nouveau/nouveau_irq.c  |    1 +
+ drivers/gpu/drm/nouveau/nv50_display.c |   35 +++++++++++++++++++++++--------
+ 3 files changed, 33 insertions(+), 9 deletions(-)
 
-... so there would be a new key value pair, "start_in_cgroup", that
-would allow the user to start an application in their own cgroup.  It
-would be up to the desktop launcher to honor that if it was present.
+diff --git a/drivers/gpu/drm/nouveau/nouveau_drv.h b/drivers/gpu/drm/nouveau/nouveau_drv.h
+index b1be617..c926d88 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_drv.h
++++ b/drivers/gpu/drm/nouveau/nouveau_drv.h
+@@ -531,6 +531,12 @@ struct drm_nouveau_private {
+ 	struct work_struct irq_work;
+ 	struct work_struct hpd_work;
+ 
++	struct {
++		spinlock_t lock;
++		uint32_t hpd0_bits;
++		uint32_t hpd1_bits;
++	} hpd_state;
++
+ 	struct list_head vbl_waiting;
+ 
+ 	struct {
+diff --git a/drivers/gpu/drm/nouveau/nouveau_irq.c b/drivers/gpu/drm/nouveau/nouveau_irq.c
+index 794b0ee..b62a601 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_irq.c
++++ b/drivers/gpu/drm/nouveau/nouveau_irq.c
+@@ -52,6 +52,7 @@ nouveau_irq_preinstall(struct drm_device *dev)
+ 	if (dev_priv->card_type >= NV_50) {
+ 		INIT_WORK(&dev_priv->irq_work, nv50_display_irq_handler_bh);
+ 		INIT_WORK(&dev_priv->hpd_work, nv50_display_irq_hotplug_bh);
++		spin_lock_init(&dev_priv->hpd_state.lock);
+ 		INIT_LIST_HEAD(&dev_priv->vbl_waiting);
+ 	}
+ }
+diff --git a/drivers/gpu/drm/nouveau/nv50_display.c b/drivers/gpu/drm/nouveau/nv50_display.c
+index 612fa6d..d967cb6 100644
+--- a/drivers/gpu/drm/nouveau/nv50_display.c
++++ b/drivers/gpu/drm/nouveau/nv50_display.c
+@@ -1012,11 +1012,18 @@ nv50_display_irq_hotplug_bh(struct work_struct *work)
+ 	struct drm_connector *connector;
+ 	const uint32_t gpio_reg[4] = { 0xe104, 0xe108, 0xe280, 0xe284 };
+ 	uint32_t unplug_mask, plug_mask, change_mask;
+-	uint32_t hpd0, hpd1 = 0;
++	uint32_t hpd0, hpd1;
+ 
+-	hpd0 = nv_rd32(dev, 0xe054) & nv_rd32(dev, 0xe050);
++	spin_lock_irq(&dev_priv->hpd_state.lock);
++	hpd0 = dev_priv->hpd_state.hpd0_bits;
++	dev_priv->hpd_state.hpd0_bits = 0;
++	hpd1 = dev_priv->hpd_state.hpd1_bits;
++	dev_priv->hpd_state.hpd1_bits = 0;
++	spin_unlock_irq(&dev_priv->hpd_state.lock);
++
++	hpd0 &= nv_rd32(dev, 0xe050);
+ 	if (dev_priv->chipset >= 0x90)
+-		hpd1 = nv_rd32(dev, 0xe074) & nv_rd32(dev, 0xe070);
++		hpd1 &= nv_rd32(dev, 0xe070);
+ 
+ 	plug_mask   = (hpd0 & 0x0000ffff) | (hpd1 << 16);
+ 	unplug_mask = (hpd0 >> 16) | (hpd1 & 0xffff0000);
+@@ -1058,10 +1065,6 @@ nv50_display_irq_hotplug_bh(struct work_struct *work)
+ 			helper->dpms(connector->encoder, DRM_MODE_DPMS_OFF);
+ 	}
+ 
+-	nv_wr32(dev, 0xe054, nv_rd32(dev, 0xe054));
+-	if (dev_priv->chipset >= 0x90)
+-		nv_wr32(dev, 0xe074, nv_rd32(dev, 0xe074));
+-
+ 	drm_helper_hpd_irq_event(dev);
+ }
+ 
+@@ -1072,8 +1075,22 @@ nv50_display_irq_handler(struct drm_device *dev)
+ 	uint32_t delayed = 0;
+ 
+ 	if (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_HOTPLUG) {
+-		if (!work_pending(&dev_priv->hpd_work))
+-			queue_work(dev_priv->wq, &dev_priv->hpd_work);
++		uint32_t hpd0_bits, hpd1_bits = 0;
++
++		hpd0_bits = nv_rd32(dev, 0xe054);
++		nv_wr32(dev, 0xe054, hpd0_bits);
++
++		if (dev_priv->chipset >= 0x90) {
++			hpd1_bits = nv_rd32(dev, 0xe074);
++			nv_wr32(dev, 0xe074, hpd1_bits);
++		}
++
++		spin_lock(&dev_priv->hpd_state.lock);
++		dev_priv->hpd_state.hpd0_bits |= hpd0_bits;
++		dev_priv->hpd_state.hpd1_bits |= hpd1_bits;
++		spin_unlock(&dev_priv->hpd_state.lock);
++
++		queue_work(dev_priv->wq, &dev_priv->hpd_work);
+ 	}
+ 
+ 	while (nv_rd32(dev, NV50_PMC_INTR_0) & NV50_PMC_INTR_0_DISPLAY) {
+-- 
+1.7.3.2
 
-One nice thing about having the desktop launch each application in its
-own cgroup is that it becomes easier for an desktop task manager to
-have a UI listing that lists things in a format which will be somewhat
-easier to understand than process listing.  The cgroup would be a
-useful way to organize what is going on for each launched application,
-and it would allow people to see how much memory some application like
-evolution really requires.  (On the other hand, maybe they would be
-happier not knowing.  :-)
-
-						- Ted
