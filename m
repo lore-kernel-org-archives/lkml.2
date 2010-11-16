@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934061Ab0KPJOz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 04:14:55 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:33707 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757270Ab0KPJOx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 04:14:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=cbzJjpMukUw968HaxT2ZLmQkO8nLvLTIU+l94H6vLrUs8o6Nihn0GVseR9fkOfgnkK
-         SfK3FQXohYsLa4W2vSy1HeYi0R/cbO0Ju+g6y60FutriYYngls0f/Mh8nPRZBAGzG5JA
-         19bfxkelVALs1oKQ5is83F0dkHD5pcUfkoiDE=
+	id S934064Ab0KPJRV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 04:17:21 -0500
+Received: from d.mail.confirmations.getresponse.COM ([209.2.34.152]:41287 "EHLO
+	d.mail.confirmations.getresponse.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757350Ab0KPJRT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 04:17:19 -0500
+X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Nov 2010 04:17:19 EST
+Domainkey-Signature: a=rsa-sha1; c=nofws; d=getresponse.com; s=k1024c; q=dns; h=from:sender:to:subject; b=V/+uBua8ix/upXUgcUu9OftNQ2mky107Akka+mV2pyCz1d0M+ZWVSmwD9aJwV5N+yBf1XI2ZdLoEz9FqypTE+9KE0hAAWsmUa/uK4xeFYetaMNY+Dhi72kVNZ1qQkXWObPDHRyYeslg+3k/SAi3rPcz7VJNnNScjLGsANwmT+KU=;
+From: "Travel Community Geeks" <contact@pingmytrip.com>
+To: "Friend" <linux-kernel@vger.kernel.org>
+Subject: Are you travel savvy?
+X-Serial: s56bjeOrIkQ/a1lF1xE7FgZ6LlrDeNauuw3Gi/6mkIM3jRtsRu8LcQ0HDhj67a26g0DEu6cksKboc2Mu5F/dBVLi8w==
 MIME-Version: 1.0
-In-Reply-To: <20101115233129.GG31421@n2100.arm.linux.org.uk>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
-	<1289584840-18097-3-git-send-email-catalin.marinas@arm.com>
-	<20101115233129.GG31421@n2100.arm.linux.org.uk>
-Date: Tue, 16 Nov 2010 09:14:52 +0000
-X-Google-Sender-Auth: sAzOsx_RcinH3VfWX5CEMwY1VC4
-Message-ID: <AANLkTikrz+yM6idm-aij10vsKZMVSOBfZSdeEJbDRwiC@mail.gmail.com>
-Subject: Re: [PATCH v2 02/20] ARM: LPAE: Factor out 2-level page table
- definitions into separate files
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Date: Tue, 16 Nov 2010 04:11:13 -0500
+Reply-To: contact@pingmytrip.com
+X-Complaints-To: abuse@getresponse.com
+X-Mailer: getresponse.com 6.0
+Message-Id: <1289898673.941356@getresponse.com>
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 November 2010 23:31, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Nov 12, 2010 at 06:00:22PM +0000, Catalin Marinas wrote:
->> This patch moves page table definitions from asm/page.h, asm/pgtable.h
->> and asm/ptgable-hwdef.h into corresponding *-2level* files.
->
-> This also introduces pteval_t. �It would be useful to have the
-> introduction of pteval_t as a separate patch, which not only
-> introduces the typedef, but also makes use of it.
+You have been invited to join our mailing
+list "travelcommunitygeeks" hosted by
+GetResponse email marketing service.
 
-I can do this. I missed this while splitting my initial big diff.
+“The world is a book and those who do not travel read only one page.” - St. Augustine
 
->> +#ifndef _ASM_PGTABLE_2LEVEL_TYPES_H
->> +#define _ASM_PGTABLE_2LEVEL_TYPES_H
->> +
->> +#undef STRICT_MM_TYPECHECKS
->> +
->> +typedef unsigned long pteval_t;
->> +
->> +#ifdef STRICT_MM_TYPECHECKS
->> +/*
->> + * These are used to make use of C type-checking..
->> + */
->> +typedef struct { unsigned long pte; } pte_t;
->
-> This should become:
->
-> typedef struct { pteval_t pte; } pte_t;
->
-> L_PTE_* can then be declared using linux/const.h stuff to typedef them
-> to pteval_t.
 
-I already do this for LPAE but can be done for the 2-level definitions
-for consistency.
+PingMyTrip.com is a travel community website that allows members to connect with thousands of travel enthusiasts via only one login pass. Travel savvy people are invited for the BETA testing of PingMyTrip.com.
 
-BTW, do you think it's worth adding STRICT_MM_TYPECHECKS for LPAE as
-well? It would probably spot some issues.
+Join us if you...
 
-> shared_pte_mask also needs to be pteval_t.
+1. Want to be part of a community of savvy travelers.
+2. Want to share your passion for traveling.
+3. Want more people discover your blog.
 
-That's done in the 3rd version of the series.
 
-> As far as the __p*_error() functions, these should probably be passed
-> the pte/pmd/pgd value itself, rather than first passing them through
-> __pte_val() et.al.
->
-> Of couse, I now have patches for this and my other points... will sort
-> them out into a series in the next few days.
+Be part of the community of savvy travelers today!
 
-Thanks.
 
--- 
-Catalin
+To confirm your subscription, please
+click the following link:
+
+EASY 1-CLICK CONFIRMATION:
+http://getresponse.com/confirm.html?x=a62b&sq=GYBiA&y=A&
+
+You will be able to unsubscribe
+or change your details at any time.
+
+If you have received this email in
+error and do not intend to join our
+list, no further action is required
+on your part.
+
+You won't be subscribed to any
+list and you won't receive further
+information until you confirm your
+subscription above.
+
+---
+Jay & Harry 
+(Travel Community Geeks)
+Founders, PingMyTrip.com
+
+
+
+PingMyTrip.com, 60 Tras Street, Singapore, Singapore, 078999, Singapore
+
+
+
+--
+Email address: "Friend" linux-kernel@vger.kernel.org
+Type of request: import
+Timestamp: 2010-11-16 04:10:03
+IP address: 116.87.186.62
+
