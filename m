@@ -1,106 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab0KPTr7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 14:47:59 -0500
-Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:37129 "HELO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932166Ab0KPTr5 (ORCPT
+	id S932273Ab0KPTsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 14:48:08 -0500
+Received: from smtp-out-174.synserver.de ([212.40.180.174]:1623 "HELO
+	smtp-out-165.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1756670Ab0KPTsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 14:47:57 -0500
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: Kevin Hilman <khilman@deeprootsystems.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-input@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Chris Cordahi <christophercordahi@nanometrics.ca>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Alexander Clouter <alex@digriz.org.uk>
-Subject: [PATCH v2 0/4] da850-evm: add gpio-{keys,leds} for UI and BB expanders
-Date: Tue, 16 Nov 2010 14:39:33 -0500
-Message-Id: <cover.1289935504.git.bengardiner@nanometrics.ca>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1289835508.git.bengardiner@nanometrics.ca>
-References: <cover.1289835508.git.bengardiner@nanometrics.ca>
+	Tue, 16 Nov 2010 14:48:04 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 23003
+Date: Tue, 16 Nov 2010 20:42:32 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101116194232.GA1607@arch.trippelsdorf.de>
+References: <1289821590.16406.47.camel@maggy.simson.net>
+ <20101115125716.GA22422@redhat.com>
+ <1289856350.14719.135.camel@maggy.simson.net>
+ <20101116015648.GA11534@redhat.com>
+ <1289916171.5169.117.camel@maggy.simson.net>
+ <1289916683.2109.625.camel@laptop>
+ <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+ <20101116170312.GA19327@tango.0pointer.de>
+ <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+ <20101116181603.GC19327@tango.0pointer.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101116181603.GC19327@tango.0pointer.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The da850-evm baseboard (BB) and its UI board both have tca6416 IO expanders.
-They are bootstrapped to different I2C addresses so they can be used
-concurrently.
+On 2010.11.16 at 19:16 +0100, Lennart Poettering wrote:
+> On Tue, 16.11.10 09:11, Linus Torvalds (torvalds@linux-foundation.org) wrote:
+> 
+> > 
+> > On Tue, Nov 16, 2010 at 9:03 AM, Lennart Poettering
+> > <mzxreary@0pointer.de> wrote:
+> > >
+> > > Binding something like this to TTYs is just backwards.
+> > 
+> > Numbers talk, bullshit walks.
+> > 
+> > The numbers have been quoted. The clear interactive behavior has been seen.
+> 
+> Here's my super-complex patch btw, to achieve exactly the same thing
+> from userspace without involving any kernel or systemd patching and
+> kernel-side logic. Simply edit your own ~/.bashrc and add this to the end:
+> 
+>   if [ "$PS1" ] ; then  
+>           mkdir -m 0700 /sys/fs/cgroup/cpu/user/$$
+>           echo $$ > /sys/fs/cgroup/cpu/user/$$/tasks
+>   fi
+> 
+> Then, as the superuser do this:
+> 
+>   mount -t cgroup cgroup /sys/fs/cgroup/cpu -o cpu
+>   mkdir -m 0777 /sys/fs/cgroup/cpu/user
+> 
+> Done. Same effect. However: not crazy.
+> 
+> I am not sure I myself will find the time to prep some 'numbers' for
+> you. They'd be the same as with the kernel patch anyway. But I am sure
+> somebody else will do it for you...
 
-The expander on the UI board is currently used to enable/disable the
-peripherals that are available on the UI board. In addition to this
-functionality the expander is also connected to 8 pushbuttons. The expander
-on the baseboard is not currently used; it is connected to deep sleep enable,
-sw reset, a push button, some switches and LEDs.
+OK, I've done some tests and the result is that Lennart's approach seems
+to work best. It also _feels_ better interactively compared to the
+vanilla kernel and in-kernel cgrougs on my machine. Also it's really
+nice to have an interface to actually see what is going on. With the
+kernel patch you're totally in the dark about what is going on right
+now.
 
-This proposed patch series enables the push buttons and switches on the UI and
-BB expanders using the gpio-keys polling mode patch by Alexander Clouter. Some
-work was performed to test irq-based gpio-keys support on the expanders (a WIP
-patch can be posted on request) but I believe that it is not possible to use 
-irq-based gpio-keys on IO expanders for arm systems at this time. 
+Here are some numbers all recorded while running a make -j4 job in one
+shell.
 
-The attempt started when I noticed the patch of Alek Du and Alan Cox [1] which 
-was recently committed [2]; a stab at integrating irq-based gpio-keys support
-based on that patch was attempted. I found that I either got a warning that the
-irq could not be mapped for the given gpio ; or, when N_IRQ was increased, a
-system freeze.
+perf sched record sleep 30
+perf trace -s /usr/libexec/perf-core/scripts/perl/wakeup-latency.pl :
 
->From what I have read (particularly the message by Grant Likely [3]) IRQs on
-IO expanders are not ready in ARM yet. I _think_ that the sparse IRQ rework by
-Thomas Gleixner [4] will resolve the blocker to irq-based gpio-keys support. 
+vanilla kernel without cgroups:
+total_wakeups: 44306
+avg_wakeup_latency (ns): 36784
+min_wakeup_latency (ns): 0
+max_wakeup_latency (ns): 9378852
 
-In the meantime we have buttons and switches that we would like to excersise
-in our prototyping development. The patch to convert this series to irq-based
-gpio-keys will be straighforward once the support in arch/arm is there.
+with in-kernel patch:
+total_wakeups: 43836
+avg_wakeup_latency (ns): 67607
+min_wakeup_latency (ns): 0
+max_wakeup_latency (ns): 8983036
 
-There is an existing tca6416-keypad driver with polling support which I did not
-employ because it isn't possible to keep the gpio's used for peripheral
-enable/disable on the UI board or the LEDs on the baseboard registered while
-simultaneously registering the pushbuttons or switches as a tca6416-keypad 
-instance.
+with Lennart's approach:
+total_wakeups: 51070
+avg_wakeup_latency (ns): 29047
+min_wakeup_latency (ns): 0
+max_wakeup_latency (ns): 10008237
+ 
+perf record -a -e sched:sched_switch -e sched:sched_wakeup sleep 10
+perf trace -s /usr/libexec/perf-core/scripts/perl/wakeup-latency.pl :
 
-I tested this patch series using evtest on the resulting /dev/input/eventN 
-devices and also on the event node of a non-polling gpio-keys instance to 
-ensure that irq-based input handling is not broken by the introduction of the
-polling-mode gpio-keys patch. The non-polling instance creation and
-registration is not included in this series since it uses one of the boot-mode
-DIP switches and woult not (I think) be suitable for mainline.
+without cgroups:
+total_wakeups: 13195
+avg_wakeup_latency (ns): 48484
+min_wakeup_latency (ns): 0
+max_wakeup_latency (ns): 8722497
 
-Disclaimer: 
-I'm not an expert in irq's or gpio-keys; this is, in fact, my first proposed
-feature. Please feel free to correct me -- I welcome the chance to learn from
-your expertise.
+with in-kernel approach:
+total_wakeups: 14106
+avg_wakeup_latency (ns): 92532
+min_wakeup_latency (ns): 20
+max_wakeup_latency (ns): 5642393
 
-[1] http://article.gmane.org/gmane.linux.kernel/1052551
-[2] http://article.gmane.org/gmane.linux.kernel.commits.head/260919
-[3] http://www.mail-archive.com/devicetree-discuss@lists.ozlabs.org/msg01974.html
-[4] http://article.gmane.org/gmane.linux.kernel.cross-arch/7786
-
-Alexander Clouter (1):
-  input: gpio_keys: polling mode support
-
-Ben Gardiner (3):
-  da850-evm: add UI Expander pushbuttons
-  da850-evm: extract defines for SEL{A,B,C} pins in UI expander
-  da850-evm: add baseboard UI expander buttons, switches and LEDs
-
- arch/arm/mach-davinci/Kconfig           |    3 +
- arch/arm/mach-davinci/board-da850-evm.c |  312 +++++++++++++++++++++++++++++--
- drivers/input/keyboard/gpio_keys.c      |  120 ++++++++++--
- include/linux/gpio_keys.h               |    1 +
- 4 files changed, 406 insertions(+), 30 deletions(-)
-
----
-
-Changes since v1:
- * use locally defined functions that are no-ops/error checkers when
-   INPUT_POLLDEV is not defined.
- * disable polling mode support when input-polldev is a module and gpio_keys
-   is builtin
- * set INPUT_POLLDEV default for DA850_EVM machine, but don't select it
-   unconditionally
- * adding note to description about why tca6416-keypad was not used
-
+Lennart's approach:
+total_wakeups: 22215
+avg_wakeup_latency (ns): 24118
+min_wakeup_latency (ns): 0
+max_wakeup_latency (ns): 8001142
+-- 
+Markus
