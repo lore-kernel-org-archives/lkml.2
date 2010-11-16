@@ -1,74 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934208Ab0KPKYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 05:24:53 -0500
-Received: from 128-177-27-249.ip.openhosting.com ([128.177.27.249]:53812 "EHLO
-	jmalinen.user.openhosting.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932571Ab0KPKYw (ORCPT
+	id S934223Ab0KPK3X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 05:29:23 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:55088 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932773Ab0KPK3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 05:24:52 -0500
-X-Greylist: delayed 2783 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Nov 2010 05:24:52 EST
-Date: Tue, 16 Nov 2010 11:37:43 +0200
-From: Jouni Malinen <j@w1.fi>
-To: Bruno Randolf <br1@einfach.org>
-Cc: linville@tuxdriver.com, randy.dunlap@oracle.com, br1@thinktube.com,
-        peterz@infradead.org, blp@cs.stanford.edu,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars_Ericsson@telia.com, stefanr@s5r6.in-berlin.de,
-        kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
-        kevin.granade@gmail.com
-Subject: Re: [PATCH v7 3/3] nl80211/mac80211: Report signal average
-Message-ID: <20101116093743.GA21872@jm.kir.nu>
-References: <20101112024901.28522.21895.stgit@localhost6.localdomain6>
- <20101112030035.28522.75318.stgit@localhost6.localdomain6>
+	Tue, 16 Nov 2010 05:29:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=gfBw6yKkDMNnsWaZB3fvwshnk3JdoiGg4nnohp+RO7v7aBkUcySU54w9T9XCdVcj04
+         o4yZOLaXxFv+lNee8FQ+2TNmzqqgI9z2Fqc3odNHhxy2mqC9XH3kixa8K1UACXuR46u2
+         MoR3apWgcUNTr433hj38mkXwFuRFHMpzxqUqw=
+Date: Tue, 16 Nov 2010 11:29:16 +0100
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-pm@lists.linux-foundation.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] tools: add power/x86/turbostat - v2
+Message-ID: <20101116102916.GA4305@alberich.amd.com>
+References: <alpine.LFD.2.00.1010230116590.29399@localhost.localdomain>
+ <alpine.LFD.2.00.1010240004180.23060@localhost.localdomain>
+ <alpine.LFD.2.00.1010262312090.3209@localhost.localdomain>
+ <alpine.LFD.2.00.1011151056380.2939@x980>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20101112030035.28522.75318.stgit@localhost6.localdomain6>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LFD.2.00.1011151056380.2939@x980>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 12:00:35PM +0900, Bruno Randolf wrote:
-> Extend nl80211 to report an exponential weighted moving average (EWMA) of the
-> signal value. Since the signal value usually fluctuates between different
-> packets, an average can be more useful than the value of the last packet.
+On Mon, Nov 15, 2010 at 11:01:05AM -0500, Len Brown wrote:
+> From: Len Brown <len.brown@intel.com>
 > 
-> This uses the recently added generic EWMA library function.
+> turbostat displays actual processor frequency on modern
+> Intel processors.  Note that this capability depends on free-running
+> APERF and MPERF MSRs, which were cleared by the acpi_cpufreq
+> driver up through Linux-2.6.29.
 
-Isn't that generic EWMA library function making this much more CPU
-intensive than necessary? I would assume the compiler is not able to
-optimize the unsigned long division in ewma_add() when the weight value
-is "hidden" in this way through ewma_init() call. While generic library
-functions can be nice, it could be useful to have an option for using an
-inline version of ewma_add that takes in avg->weight as one of the
-arguments to allow cases like weight=8 here to be implemented using
-shift right instead of unsigned long division especially when done on
-hot path..
+Why isn't cpufreq-aperf sufficient for showing the actual frequency?
+The tool can handle both AMD and Intel CPUs.
 
-> @@ -1158,6 +1158,7 @@ ieee80211_rx_h_sta_process(struct ieee80211_rx_data *rx)
->  	sta->last_signal = status->signal;
-> +	ewma_add(&sta->avg_signal, -status->signal);
+There is a CPUID flag which can be checked for APERF/MPERF existence,
+no need to enforce a general vendor check like this:
 
-This one here would be done for every frame received and by using a
-function call that ends up doing a potentially expensive division.
+  $ ./turbostat
+  CPUID: AuthenticAMD != GenuineIntel
 
-> @@ -241,6 +241,8 @@ struct sta_info *sta_info_alloc(struct ieee80211_sub_if_data *sdata,
-> +	ewma_init(&sta->avg_signal, 1000, 8);
+> On Intel Core i3/i5/i7 (Nehalem) and newer processors,
+> turbostat displays residency in idle power saving states.
 
-The divisor (weight) is set to 8 here which should allow for quite a bit
-more efficient ewma_add implementation if it were to be done in a way
-that makes it easier for the compiler to see what value is being used
-(e.g., passing this 8 to ewma_add_inline()) to allow shift right to be
-used..
+Can't this be added to cpuidle-info (see branch cpupowerutils in
+git://git.kernel.org/pub/scm/utils/kernel/cpufreq/cpufrequtils.git)?
+
+BTW, gcc v4.4 throws several warnings when compiling your
+code:
+
+linux-2.6/tools/power/x86/turbostat $ make
+cc -Wall    turbostat.c   -o turbostat
+turbostat.c: In function ‘get_msr’:
+turbostat.c:234: warning: implicit declaration of function ‘pread’
+turbostat.c:237: warning: format ‘%x’ expects type ‘unsigned int’, but argument 4 has type ‘off_t’
+turbostat.c:237: warning: format ‘%d’ expects type ‘int’, but argument 5 has type ‘ssize_t’
+turbostat.c: In function ‘print_counters’:
+turbostat.c:368: warning: unused variable ‘i’
+turbostat.c: In function ‘compute_average’:
+turbostat.c:508: warning: unused variable ‘i’
+turbostat.c: In function ‘insert_cpu_counters’:
+turbostat.c:642: warning: unused variable ‘next’
+turbostat.c: In function ‘re_initialize’:
+turbostat.c:747: warning: implicit declaration of function ‘for_all_cpus’
+turbostat.c: In function ‘turbostat_loop’:
+turbostat.c:779: warning: unused variable ‘retval’
+turbostat.c: In function ‘check_cpuid’:
+turbostat.c:868: warning: format ‘%.4s’ expects type ‘char *’, but argument 3 has type ‘unsigned int *’
+turbostat.c:868: warning: format ‘%.4s’ expects type ‘char *’, but argument 4 has type ‘unsigned int *’
+turbostat.c:868: warning: format ‘%.4s’ expects type ‘char *’, but argument 5 has type ‘unsigned int *’
+turbostat.c:870: warning: implicit declaration of function ‘strncmp’
+turbostat.c: At top level:
+turbostat.c:912: warning: return type defaults to ‘int’
+turbostat.c: In function ‘dir_filter’:
+turbostat.c:957: warning: implicit declaration of function ‘isdigit’
+turbostat.c: In function ‘turbostat_init’:
+turbostat.c:1004: warning: unused variable ‘i’
+turbostat.c: In function ‘fork_it’:
+turbostat.c:1038: warning: implicit declaration of function ‘waitpid’
+turbostat.c: In function ‘usage’:
+turbostat.c:915: warning: control reaches end of non-void function
+turbostat.c: In function ‘compute_delta’:
+turbostat.c:401: warning: ‘i’ may be used uninitialized in this function
 
 
-Or am I missing something here and we have a compiler that is actually
-able to take care of this kind of optimizations by itself in the current
-ewma library design? Or is the unsigned long division with the expected
-weight values going to be fast enough to not justify caring about it
-even on any of the embedded boards anyway?
-
--- 
-Jouni Malinen                                            PGP id EFC895FA
+Regards,
+Andreas
