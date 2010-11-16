@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab0KPSEO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 13:04:14 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:55594 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755585Ab0KPSEM convert rfc822-to-8bit (ORCPT
+	id S1756343Ab0KPSFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 13:05:52 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:51324 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585Ab0KPSFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 13:04:12 -0500
-Subject: Re: [PATCH -v4 0/2] Lockless memory allocator and list
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>, Jens Axboe <jaxboe@fusionio.com>
-In-Reply-To: <AANLkTime3Sh2TbgCGKir=t_TBNsd5fHipEqQwa4bVJuY@mail.gmail.com>
-References: <1289868791-16658-1-git-send-email-ying.huang@intel.com>
-	 <1289908158.2109.568.camel@laptop>
-	 <AANLkTime3Sh2TbgCGKir=t_TBNsd5fHipEqQwa4bVJuY@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 16 Nov 2010 19:04:09 +0100
-Message-ID: <1289930649.2109.640.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 16 Nov 2010 13:05:50 -0500
+Date: Tue, 16 Nov 2010 13:05:44 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Alessio Igor Bogani <abogani@texware.it>
+Cc: Jan Kara <jack@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Hellwig <hch@infradead.org>, Tim Bird <tim.bird@am.sony.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 1/3] udf: Replace bkl with the inode->i_alloc_sem for
+ protect udf_inode_info struct
+Message-ID: <20101116180544.GA29896@infradead.org>
+References: <1289929249-4863-1-git-send-email-abogani@texware.it>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289929249-4863-1-git-send-email-abogani@texware.it>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 08:38 -0800, Linus Torvalds wrote:
-> 
-> I kind of like the lock-less list implementation (it could easily be
-> useful for random things, and it's very simple).
+On Tue, Nov 16, 2010 at 06:40:47PM +0100, Alessio Igor Bogani wrote:
+> Replace bkl with the inode->i_alloc_sem rw semaphore in udf_release_file(),
+> udf_symlink(), udf_symlink_filler(), udf_get_block() and udf_block_map().
+> Add protection in udf_evict_inode() using the same i_alloc_sem rw semaphore.
 
-Yes, there's various implementations floating around, and we already
-have one in-kernel ( net/rds/xlist.h ), mason and axboe and me have been
-kicking around various patches using that thing in other circumstances
-as well.
-
-[ At some point we had perf -- what now is kernel/irq_work.c --  using
-  it as well, but the new code grew too complex due to requirements
-  from Huang ]
-
->  And I don't think the
-> notion of a lockless memory allocator is wrong either, although it
-> looks a lot more specialized than the list thing (the solution to
-> lockless allocations is generally simply to do them ahead of time).
-> 
-Right, I don't generally object to lockless things, but they either need
-to be 1) faster than the existing code, and/or 2) have a very convincing
-use-case (other than performance) for their added complexity.
-
-Afaict the proposed patch adds lots more LOCK'ed instructions into that
-allocator path than it removes, ie its a slow down for existing users.
-
+I'd rather prefer not to introduce new users of i_alloc_sem.  It's a
+quite nasty beast: the only rw_semaphore that is not released by the
+thread acquiring it.  Thomas asked me if there's a way to get rid of it,
+and I've come up with some schemes that I need to prototype.  Adding
+more uses that are unrelated to the original direct I/O use case are
+not very helpful in doing that.
 
