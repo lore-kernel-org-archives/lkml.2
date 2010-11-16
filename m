@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934448Ab0KPNDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 08:03:22 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:64750 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933283Ab0KPNDV convert rfc822-to-8bit (ORCPT
+	id S934471Ab0KPNEE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 08:04:04 -0500
+Received: from mail.digidescorp.com ([66.244.163.200]:36835 "EHLO
+	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933283Ab0KPNEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 08:03:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=AY/ObpORiVtq3rjCC3WPlat7P0uh5Z0TWeC/dSK4PIPi01Ac9h/KYlz/VnPZ15Zfhq
-         3N/n6PCrhalOes9jJpU0pKe+Vq5sbej+tO8JJU2bcIzsRGdt2mOQIAxPYCF5ATlX4S/G
-         GchTCfDrq3OF6MPcgkEUnjaiS+5uKFyV6UXFM=
-MIME-Version: 1.0
-In-Reply-To: <20101116004304.GA31308@quack.suse.cz>
-References: <1289065631-2256-1-git-send-email-abogani@texware.it>
-	<201011152346.41458.arnd@arndb.de>
-	<20101116004304.GA31308@quack.suse.cz>
-Date: Tue, 16 Nov 2010 14:03:20 +0100
-X-Google-Sender-Auth: e7yExvFDQcbJYBf_xr2vkwKK8dk
-Message-ID: <AANLkTim8BvuSUzzZf0uN9ux2rzQavosvo+bT2PuWzSVf@mail.gmail.com>
-Subject: Re: [PATCH 1/4] udf: Add missed protection for s_lvid_dirty
-From: Alessio Igor Bogani <abogani@texware.it>
-To: Jan Kara <jack@suse.cz>
-Cc: Arnd Bergmann <arnd@arndb.de>, Christoph Hellwig <hch@infradead.org>,
-        Tim Bird <tim.bird@am.sony.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 16 Nov 2010 08:04:02 -0500
+X-Spam-Processed: digidescorp.com, Tue, 16 Nov 2010 07:04:01 -0600
+X-Authenticated-Sender: steve@digidescorp.com
+X-Return-Path: prvs=1936c50a63=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][RESEND] nommu: yield CPU periodically while disposing
+ large VM
+From: "Steven J. Magnani" <steve@digidescorp.com>
+Reply-To: steve@digidescorp.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Greg Ungerer <gerg@snapgear.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+In-Reply-To: <20101115204703.fc774a17.akpm@linux-foundation.org>
+References: <1289507596-17613-1-git-send-email-steve@digidescorp.com>
+	 <20101111184059.5744a42f.akpm@linux-foundation.org>
+	 <1289831351.2524.15.camel@iscandar.digidescorp.com>
+	 <20101115204703.fc774a17.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Digital Design Corporation
+Date: Tue, 16 Nov 2010 07:03:57 -0600
+Message-ID: <1289912637.3449.3.camel@iscandar.digidescorp.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Gentlemen,
+On Mon, 2010-11-15 at 20:47 -0800, Andrew Morton wrote:
+> On Mon, 15 Nov 2010 08:29:11 -0600 "Steven J. Magnani" <steve@digidescorp.com> wrote:
+> 
+> > As efficient as schedule() may be, it still scares me to call it on
+> > reclaim of every block of memory allocated by a terminating process,
+> > particularly on the relatively slow processors that inhabit NOMMU land.
+> 
+> This is cond_resched(), not schedule()!  cond_resched() is just a few
+> instructions, except for the super-rare case where it calls schedule().
 
-2010/11/16 Jan Kara <jack@suse.cz>:
-[...]
->> Any update on this?
->>
->> I'd really like to see the BKL disabled by default in 2.6.37, and UDF
->> is the final blocker for this now.
+The light comes on..._cond_resched() is overloaded. I was looking at the
+static version, which calls schedule(). The extern version is much more
+lightweight.
 
->  Allesio sent me another version of patches last week and I sent him today
-> some comments (also told him to CC the list next time). I think the next
-> iteration should be fine as far as code review is concerned so after some
-> testing we can merge it...
+I'll respin the patch.
 
-I'll provide the updated patches in few hours.
+Thanks,
+------------------------------------------------------------------------
+ Steven J. Magnani               "I claim this network for MARS!
+ www.digidescorp.com              Earthling, return my space modulator!"
 
-Ciao,
-Alessio
+ #include <standard.disclaimer>
+
+
+
