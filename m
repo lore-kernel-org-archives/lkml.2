@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757448Ab0KPTYR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 14:24:17 -0500
-Received: from mga02.intel.com ([134.134.136.20]:59772 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753636Ab0KPTYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 14:24:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,207,1288594800"; 
-   d="scan'208";a="574406179"
-Subject: Re: [REGRESSION] [BISECT] ACPI+Inspiron 1545 = crash at
- xrstor_state()
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Jody Bruchon <jody@nctritech.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-In-Reply-To: <20101116144213.GA3715@a1.tnic>
-References: <20101116144213.GA3715@a1.tnic>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Tue, 16 Nov 2010 11:24:18 -0800
-Message-Id: <1289935458.2683.28.camel@sbsiddha-MOBL3.sc.intel.com>
+	id S1757470Ab0KPTZw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 14:25:52 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:54647 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755360Ab0KPTZv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 14:25:51 -0500
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: david@lang.hm, Paul Menage <menage@google.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+In-Reply-To: <20101116192206.GG13092@redhat.com>
+References: <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+	 <20101116170312.GA19327@tango.0pointer.de>
+	 <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+	 <20101116181603.GC19327@tango.0pointer.de>
+	 <1289931715.2109.648.camel@laptop>
+	 <AANLkTik7cR_5JJWfk8SEf3Dngfe7yZvuivJ66dVDOuAk@mail.gmail.com>
+	 <alpine.DEB.2.00.1011161047060.3718@asgard.lang.hm>
+	 <1289933965.2109.652.camel@laptop> <20101116190916.GD13092@redhat.com>
+	 <1289934800.2109.653.camel@laptop>  <20101116192206.GG13092@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 16 Nov 2010 20:25:27 +0100
+Message-ID: <1289935527.2109.655.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 06:42 -0800, Borislav Petkov wrote:
-> On Tue, Nov 16, 2010 at 04:56:06AM -0500, Jody Bruchon wrote:
-> >  I previously reported an early boot crash on an Inspiron 1545 laptop;
-> > see previous posts for more details.  I used the parameters "debug
-> > vga=6 earlyprintk=vga" to catch these errors since they happen so
-> > early in boot that the normal console has not yet initialized.
-> > 
-> > A picture of the crash dump from 2.6.37-rc2 is available here (2.6.36
-> > crash is identical except for the reported kernel version):
-> > http://c02ware.com/bugs/dump_c7ff0d9c92435e836e13aaa8d0e56d4000424bcc.jpg
-> > 
-> > I have experienced similar problems on a small number of other systems
-> > also.  After confirming that the problem was introduced going from
-> > 2.6.35 to 2.6.36, I have successfully bisected the kernel, and
-> > narrowed down and tested to verify the commit which introduced the
-> > problem.  Reverting this commit fixes 2.6.36 but 2.6.37-rc2 has the
-> > exact same crash even if I revert it.  I don't know what to do from
-> > here, but someone with more knowledge can surely guide me.  I will
-> > only have the unit to test with for another day or two.  I have
-> > attached a suitable .config for reference as well.  The commit info is
-> > below.
+On Tue, 2010-11-16 at 14:22 -0500, Vivek Goyal wrote:
+> In this thread there are already mentions of extending it to block
+> controller also which now supports the upper limit.
 > 
-> I don't think this patch is at fault. Your oops photo above shows that
-> the machine oopses at the first xrstor call in xstate_enable_boot_cpu():
-> 
->  1c3:   0f 06                   clts
->  1c5:   83 c8 ff                or     $0xffffffff,%eax
->  1c8:   89 c2                   mov    %eax,%edx
->  1ca:   0f ae 2f                xrstor (%edi)			<---------
->  1cd:   8b 3d 54 00 00 00       mov    0x54,%edi
->  1d3:   0f ae 27                xsave  (%edi)
-> 
-> Adding more people to Cc.
+> Secondly I am assuming at some point of time, cpu controller will also
+> support throttling (including SCHED_OTHER class). 
 
-hmm, that kernel .config has CONFIG_X86_L1_CACHE_SHIFT=5 and hence
-xrstor faulted as it didn't find a 64byte aligned buffer.
+Possibly, but in both cases its voluntary -- that is, unless explicitly
+configured a cgroup can use as much as possible. These auto groups will
+use that.
 
-Can you set the cpu type to GENERIC_CPU instead of MPENTIUMII? That
-should avoid this issue.
+If you want more control, create your own cgroup so you can poke at the
+parameters at will.
 
-I will see how can I fix this issue.
-
-thanks,
-suresh
 
