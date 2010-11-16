@@ -1,98 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab0KPRhi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 12:37:38 -0500
-Received: from ist.d-labs.de ([213.239.218.44]:44291 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754101Ab0KPRhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 12:37:37 -0500
-Date: Tue, 16 Nov 2010 18:37:07 +0100
-From: Florian Mickler <florian@mickler.org>
-To: Joe Perches <joe@perches.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jiri Kosina <trivial@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
- preference tool
-Message-ID: <20101116183707.179964dd@schatten.dmk.lab>
-In-Reply-To: <1289919077.28741.50.camel@Joe-Laptop>
-References: <20101115134939.GC12986@rakim.wolfsonmicro.main>
-	<1289840957.16461.138.camel@Joe-Laptop>
-	<20101115173031.GI12986@rakim.wolfsonmicro.main>
-	<1289842444.16461.140.camel@Joe-Laptop>
-	<20101115182708.GJ12986@rakim.wolfsonmicro.main>
-	<1289845830.16461.149.camel@Joe-Laptop>
-	<20101115190738.GF3338@sirena.org.uk>
-	<1289848458.16461.150.camel@Joe-Laptop>
-	<20101115193407.GK12986@rakim.wolfsonmicro.main>
-	<1289850773.16461.166.camel@Joe-Laptop>
-	<20101116104921.GL12986@rakim.wolfsonmicro.main>
-	<1289919077.28741.50.camel@Joe-Laptop>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756089Ab0KPRlS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 12:41:18 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:33695 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755897Ab0KPRlP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 12:41:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=WHVgAciLJp15aBCfcFqVVTBrCQQc0GCv0OSH4avVRus35Ebg8UKn78w/IPLJxx3Fsg
+         4gkelecW9ROTDIG+grUg09lHtYWa1Me0Mnf1leIgKFxwLe8s6Lxgov7S1TYOh3p1hWdk
+         xKOk2exgrbh2v78OQx02bZtjn0eHHMaMBtOkk=
+From: Alessio Igor Bogani <abogani@texware.it>
+To: Jan Kara <jack@suse.cz>, Arnd Bergmann <arnd@arndb.de>
+Cc: Christoph Hellwig <hch@infradead.org>, Tim Bird <tim.bird@am.sony.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        Alessio Igor Bogani <abogani@texware.it>
+Subject: [PATCH 2/3] udf: Use of s_alloc_mutex to serialize udf_relocate_blocks() execution
+Date: Tue, 16 Nov 2010 18:40:48 +0100
+Message-Id: <1289929249-4863-2-git-send-email-abogani@texware.it>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1289929249-4863-1-git-send-email-abogani@texware.it>
+References: <1289929249-4863-1-git-send-email-abogani@texware.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Nov 2010 06:51:17 -0800
-Joe Perches <joe@perches.com> wrote:
+This work was supported by a hardware donation from the CE Linux Forum.
 
-> On Tue, 2010-11-16 at 10:49 +0000, Mark Brown wrote:
-> > On Mon, Nov 15, 2010 at 11:52:53AM -0800, Joe Perches wrote:
-> > > On Mon, 2010-11-15 at 19:34 +0000, Mark Brown wrote:
-> > > > It appears your scripts are already hooked into get_maintainers.pl which
-> > > > would seem the obvious place to do this?  Sadly I don't do perl, though
-> > > > it looks like you're doing pretty much all the work on that anyway.
-> > > Sadly, no it's not the right place.
-> > To query MAINTAINERS?  I'd assume that's where you'd want to put that
-> > stuff?
-> 
-> I trimmed cc's and added Andrew Morton and Florian Mickler.
-> First thread link for them: http://lkml.org/lkml/2010/11/15/262
-> 
-> I use get_maintainer to find email addresses with
-> "git send-email --cc-cmd=" but sure it could be extended
-> to find some other new information in the MAINTAINERS file.
-> 
-> Anyway, I think that get_maintainers isn't the proper tool
-> to rewrite commit subject lines, though it could certainly
-> do the lookup of a key in the MAINTAINERS file.
-> 
-> Maybe add a new MAINTAINERS section line something like:
-> 	"C:	CommitSubjectGrammarStyle"
-> where CommitSubjectGrammarStyle is something more
-> information rich than "style 1", "style 2".
-> 
-> Perhaps you'll propose a grammar to convert path to header
-> and go through and add these "C:" style entries to the
-> sections you maintain.
-> 
-> Also, what would you expect the output to be when a single
-> patch modified files from 2 subsystems that use different
-> styles?
-> 
-> cheers, Joe
-> 
+Signed-off-by: Alessio Igor Bogani <abogani@texware.it>
+---
+ fs/udf/partition.c |   27 +++++++++++++++++++--------
+ 1 files changed, 19 insertions(+), 8 deletions(-)
 
-My first reaction to this is, it's silly. Certainly a
-subsystem-maintainer is capable of hacking something together that
-suits his needs or may just use a good editor to get the job done.
-After all, he might want to edit the commit message anyway. Also he has
-to have his act together for all non-conforming submitters anyway,
-because shurely, telling people to re-edit their patches subject line
-is not what one would consider "welcoming to newbies",  or whatever it
-is kernel subsystem maintainers have to be nowadays *g*... 
-
-On second thought, if that facility existed, i think nobody would mind
-it either. So, why not. I don't see a way to specify what to do with
-cross-subsystem patches though. 
-
-(MAINTAINERS seems to be the logical place to put this
-information.)
-
-Regards,
-Flo
+diff --git a/fs/udf/partition.c b/fs/udf/partition.c
+index 745eb20..a71090e 100644
+--- a/fs/udf/partition.c
++++ b/fs/udf/partition.c
+@@ -25,6 +25,7 @@
+ #include <linux/fs.h>
+ #include <linux/string.h>
+ #include <linux/buffer_head.h>
++#include <linux/mutex.h>
+ 
+ uint32_t udf_get_pblock(struct super_block *sb, uint32_t block,
+ 			uint16_t partition, uint32_t offset)
+@@ -159,7 +160,9 @@ int udf_relocate_blocks(struct super_block *sb, long old_block, long *new_block)
+ 	struct udf_sb_info *sbi = UDF_SB(sb);
+ 	u16 reallocationTableLen;
+ 	struct buffer_head *bh;
++	int ret = 0;
+ 
++	mutex_lock(&sbi->s_alloc_mutex);
+ 	for (i = 0; i < sbi->s_partitions; i++) {
+ 		struct udf_part_map *map = &sbi->s_partmaps[i];
+ 		if (old_block > map->s_partition_root &&
+@@ -175,8 +178,10 @@ int udf_relocate_blocks(struct super_block *sb, long old_block, long *new_block)
+ 					break;
+ 				}
+ 
+-			if (!st)
+-				return 1;
++			if (!st) {
++				ret = 1;
++				goto out;
++			}
+ 
+ 			reallocationTableLen =
+ 					le16_to_cpu(st->reallocationTableLen);
+@@ -207,14 +212,16 @@ int udf_relocate_blocks(struct super_block *sb, long old_block, long *new_block)
+ 						     ((old_block -
+ 							map->s_partition_root) &
+ 						     (sdata->s_packet_len - 1));
+-					return 0;
++					ret = 0;
++					goto out;
+ 				} else if (origLoc == packet) {
+ 					*new_block = le32_to_cpu(
+ 							entry->mappedLocation) +
+ 						     ((old_block -
+ 							map->s_partition_root) &
+ 						     (sdata->s_packet_len - 1));
+-					return 0;
++					ret = 0;
++					goto out;
+ 				} else if (origLoc > packet)
+ 					break;
+ 			}
+@@ -251,20 +258,24 @@ int udf_relocate_blocks(struct super_block *sb, long old_block, long *new_block)
+ 					      st->mapEntry[k].mappedLocation) +
+ 					((old_block - map->s_partition_root) &
+ 					 (sdata->s_packet_len - 1));
+-				return 0;
++				ret = 0;
++				goto out;
+ 			}
+ 
+-			return 1;
++			ret = 1;
++			goto out;
+ 		} /* if old_block */
+ 	}
+ 
+ 	if (i == sbi->s_partitions) {
+ 		/* outside of partitions */
+ 		/* for now, fail =) */
+-		return 1;
++		ret = 1;
+ 	}
+ 
+-	return 0;
++out:
++	mutex_unlock(&sbi->s_alloc_mutex);
++	return ret;
+ }
+ 
+ static uint32_t udf_try_read_meta(struct inode *inode, uint32_t block,
+-- 
+1.7.0.4
 
