@@ -1,71 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab0KPTXa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 14:23:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9223 "EHLO mx1.redhat.com"
+	id S1757448Ab0KPTYR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 14:24:17 -0500
+Received: from mga02.intel.com ([134.134.136.20]:59772 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753636Ab0KPTX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 14:23:29 -0500
-Date: Tue, 16 Nov 2010 14:22:06 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: david@lang.hm, Paul Menage <menage@google.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101116192206.GG13092@redhat.com>
-References: <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
- <20101116170312.GA19327@tango.0pointer.de>
- <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
- <20101116181603.GC19327@tango.0pointer.de>
- <1289931715.2109.648.camel@laptop>
- <AANLkTik7cR_5JJWfk8SEf3Dngfe7yZvuivJ66dVDOuAk@mail.gmail.com>
- <alpine.DEB.2.00.1011161047060.3718@asgard.lang.hm>
- <1289933965.2109.652.camel@laptop>
- <20101116190916.GD13092@redhat.com>
- <1289934800.2109.653.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289934800.2109.653.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753636Ab0KPTYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 14:24:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,207,1288594800"; 
+   d="scan'208";a="574406179"
+Subject: Re: [REGRESSION] [BISECT] ACPI+Inspiron 1545 = crash at
+ xrstor_state()
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Jody Bruchon <jody@nctritech.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+In-Reply-To: <20101116144213.GA3715@a1.tnic>
+References: <20101116144213.GA3715@a1.tnic>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Tue, 16 Nov 2010 11:24:18 -0800
+Message-Id: <1289935458.2683.28.camel@sbsiddha-MOBL3.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 08:13:20PM +0100, Peter Zijlstra wrote:
-> On Tue, 2010-11-16 at 14:09 -0500, Vivek Goyal wrote:
-> 
-> > I think this might create some issues with controllers which support some
-> > kind of upper limit on resource usage. These hidden group can practically
-> > consume any amount of resource and because use space tools can't see these,
-> > they will not be able to place a limit or control it.
+On Tue, 2010-11-16 at 06:42 -0800, Borislav Petkov wrote:
+> On Tue, Nov 16, 2010 at 04:56:06AM -0500, Jody Bruchon wrote:
+> >  I previously reported an early boot crash on an Inspiron 1545 laptop;
+> > see previous posts for more details.  I used the parameters "debug
+> > vga=6 earlyprintk=vga" to catch these errors since they happen so
+> > early in boot that the normal console has not yet initialized.
 > > 
-> > If it is done from user space and cgroups are visible, then user can 
-> > atleast monitor the resource usage and do something about it.
+> > A picture of the crash dump from 2.6.37-rc2 is available here (2.6.36
+> > crash is identical except for the reported kernel version):
+> > http://c02ware.com/bugs/dump_c7ff0d9c92435e836e13aaa8d0e56d4000424bcc.jpg
+> > 
+> > I have experienced similar problems on a small number of other systems
+> > also.  After confirming that the problem was introduced going from
+> > 2.6.35 to 2.6.36, I have successfully bisected the kernel, and
+> > narrowed down and tested to verify the commit which introduced the
+> > problem.  Reverting this commit fixes 2.6.36 but 2.6.37-rc2 has the
+> > exact same crash even if I revert it.  I don't know what to do from
+> > here, but someone with more knowledge can surely guide me.  I will
+> > only have the unit to test with for another day or two.  I have
+> > attached a suitable .config for reference as well.  The commit info is
+> > below.
 > 
-> Its cpu-controller only, and then only for SCHED_OTHER tasks which are
-> proportionally fair.
+> I don't think this patch is at fault. Your oops photo above shows that
+> the machine oopses at the first xrstor call in xstate_enable_boot_cpu():
+> 
+>  1c3:   0f 06                   clts
+>  1c5:   83 c8 ff                or     $0xffffffff,%eax
+>  1c8:   89 c2                   mov    %eax,%edx
+>  1ca:   0f ae 2f                xrstor (%edi)			<---------
+>  1cd:   8b 3d 54 00 00 00       mov    0x54,%edi
+>  1d3:   0f ae 27                xsave  (%edi)
+> 
+> Adding more people to Cc.
 
-In this thread there are already mentions of extending it to block
-controller also which now supports the upper limit.
+hmm, that kernel .config has CONFIG_X86_L1_CACHE_SHIFT=5 and hence
+xrstor faulted as it didn't find a 64byte aligned buffer.
 
-Secondly I am assuming at some point of time, cpu controller will also
-support throttling (including SCHED_OTHER class).
+Can you set the cpu type to GENERIC_CPU instead of MPENTIUMII? That
+should avoid this issue.
 
-So as it is not a problem but the moment we start extending this logic
-to other controllers supporting upper limits it does pose the question
-that how do we handle it.
+I will see how can I fix this issue.
 
-Even if we automatically create groups inside the kernel (because for all the
-reasons that why user space can't do it), it probably should create cgroups
-also so that these are visible to user space and not hidden.
+thanks,
+suresh
 
-Thanks
-Vivek
