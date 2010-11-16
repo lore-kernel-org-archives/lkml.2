@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933406Ab0KPLTm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 06:19:42 -0500
-Received: from daytona.panasas.com ([67.152.220.89]:27509 "EHLO
-	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932908Ab0KPLTl (ORCPT
+	id S933477Ab0KPLT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 06:19:56 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52838 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933007Ab0KPLTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 06:19:41 -0500
-Message-ID: <4CE268C8.5010203@panasas.com>
-Date: Tue, 16 Nov 2010 13:19:36 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        kernel-janitors@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jakub Jelinek <jakub@redhat.com>
-Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
-References: <1289421483-23907-1-git-send-email-segooon@gmail.com>	 <20101112120834.33062900.akpm@linux-foundation.org>	 <8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>	 <20101114092533.GB5323@albatros>	 <20101114180643.593d19ac.akpm@linux-foundation.org> <1289848341.2607.125.camel@edumazet-laptop>
-In-Reply-To: <1289848341.2607.125.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 16 Nov 2010 11:19:39.0794 (UTC) FILETIME=[28DAFF20:01CB8580]
+	Tue, 16 Nov 2010 06:19:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=aU71l4knGJGgHZ8l2bYiDt72cfbk+u6i0in2CyFIMu80vfx5PhlKPVjzOj4WnfGKLb
+         oslV3YLCp9m4dhN+e1Brn+zxfViENmUXvjxnOZzsGhuHSnPpCKmCragw0WYHPqUmOrAL
+         0RANs4/0LIT6ag63MHISgiwLkiGOz7sXtA45Y=
+From: Namhyung Kim <namhyung@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] ext4: Add error check in ext4_mkdir()
+Date: Tue, 16 Nov 2010 20:19:52 +0900
+Message-Id: <1289906392-8964-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1289906292-8906-1-git-send-email-namhyung@gmail.com>
+References: <1289906292-8906-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 09:12 PM, Eric Dumazet wrote:
-> Le dimanche 14 novembre 2010 à 18:06 -0800, Andrew Morton a écrit : 
->> On Sun, 14 Nov 2010 12:25:33 +0300 Vasiliy Kulikov <segoon@openwall.com> wrote:
->>>  
->>>  	if (timeval) {
->>> -		rtv.tv_sec = rts.tv_sec;
->>> -		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
->>> +		struct timeval rtv = {
->>> +			.tv_sec = rts.tv_sec,
->>> +			.tv_usec = rts.tv_nsec / NSEC_PER_USEC
->>> +		};
->>>  
->>>  		if (!copy_to_user(p, &rtv, sizeof(rtv)))
->>>  			return ret;
->>
->> Please check the assembly code - this will still leave four bytes of
->> uninitalised stack data in 'rtv', surely.
-> 
-> Thats a good question.
-> 
-> In my understanding, gcc should initialize all holes (and other not
-> mentioned fields) with 0, even for automatic storage [C99 only mandates
-> this on static storage]
-> 
-> I tested on x86_64 and this is the case, but could not find a definitive
-> answer in gcc documentation.
-> 
-> This kind of construct is widely used in networking tree.
-> 
-> Maybe we should ask to gcc experts if this behavior is guaranteed by
-> gcc, or if we must review our code ;(
-> 
-> CC Jakub
-> 
-> Thanks !
-> 
+Check return value of ext4_journal_get_write_access, ext4_journal_dirty_metadata
+and ext4_mark_inode_dirty. Move brelse() under 'out_stop' to release bh properly
+in case of journal error.
 
-This is what I thought too. If it is not there are tones of bugs I wrote
-of code that relays on this behaviour.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ fs/ext4/namei.c |   21 ++++++++++++++-------
+ 1 files changed, 14 insertions(+), 7 deletions(-)
 
-It would be interesting to know for sure
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index 92203b8..a09fbbd 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -1789,7 +1789,7 @@ static int ext4_mkdir(struct inode *dir, struct dentry *dentry, int mode)
+ {
+ 	handle_t *handle;
+ 	struct inode *inode;
+-	struct buffer_head *dir_block;
++	struct buffer_head *dir_block = NULL;
+ 	struct ext4_dir_entry_2 *de;
+ 	unsigned int blocksize = dir->i_sb->s_blocksize;
+ 	int err, retries = 0;
+@@ -1822,7 +1822,9 @@ retry:
+ 	if (!dir_block)
+ 		goto out_clear_inode;
+ 	BUFFER_TRACE(dir_block, "get_write_access");
+-	ext4_journal_get_write_access(handle, dir_block);
++	err = ext4_journal_get_write_access(handle, dir_block);
++	if (err)
++		goto out_clear_inode;
+ 	de = (struct ext4_dir_entry_2 *) dir_block->b_data;
+ 	de->inode = cpu_to_le32(inode->i_ino);
+ 	de->name_len = 1;
+@@ -1839,10 +1841,12 @@ retry:
+ 	ext4_set_de_type(dir->i_sb, de, S_IFDIR);
+ 	inode->i_nlink = 2;
+ 	BUFFER_TRACE(dir_block, "call ext4_handle_dirty_metadata");
+-	ext4_handle_dirty_metadata(handle, dir, dir_block);
+-	brelse(dir_block);
+-	ext4_mark_inode_dirty(handle, inode);
+-	err = ext4_add_entry(handle, dentry, inode);
++	err = ext4_handle_dirty_metadata(handle, dir, dir_block);
++	if (err)
++		goto out_clear_inode;
++	err = ext4_mark_inode_dirty(handle, inode);
++	if (!err)
++		err = ext4_add_entry(handle, dentry, inode);
+ 	if (err) {
+ out_clear_inode:
+ 		clear_nlink(inode);
+@@ -1853,10 +1857,13 @@ out_clear_inode:
+ 	}
+ 	ext4_inc_count(handle, dir);
+ 	ext4_update_dx_flag(dir);
+-	ext4_mark_inode_dirty(handle, dir);
++	err = ext4_mark_inode_dirty(handle, dir);
++	if (err)
++		goto out_clear_inode;
+ 	d_instantiate(dentry, inode);
+ 	unlock_new_inode(inode);
+ out_stop:
++	brelse(dir_block);
+ 	ext4_journal_stop(handle);
+ 	if (err == -ENOSPC && ext4_should_retry_alloc(dir->i_sb, &retries))
+ 		goto retry;
+-- 
+1.7.0.4
 
-Thanks
-Boaz
