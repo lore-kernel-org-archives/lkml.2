@@ -1,77 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071Ab0KPT1a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 14:27:30 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:49534 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757494Ab0KPT12 (ORCPT
+	id S932129Ab0KPT1o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 14:27:44 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:3954 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab0KPT1n convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 14:27:28 -0500
+	Tue, 16 Nov 2010 14:27:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=WM5e8Yn570yBs/dsqL5EcHOP+eTvUNRnXXnaIsQHYcKGM6+3R+1imMSHGAScZOFlUc
-         bOOB0n3bz9Iyz6m9bW9Keulu9Y0ClWbTUgyRUGLekVKAdDTR3FOLDnjlaVoqF/rRkQAo
-         yb+wBFhiKVbjgjfCAcvDisRtvmWrg38U/3HyU=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=nRmzx81PKgSuQnkmtNRnphPewN/nLcXBWTNEpjpTlMMQd8T+D+uBnr0L7VQ78qq+HS
+         QJVFb6DvFdvwaL9ym61g==
 MIME-Version: 1.0
-In-Reply-To: <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
-References: <1289820766.16406.45.camel@maggy.simson.net>
-	<1289821590.16406.47.camel@maggy.simson.net>
-	<20101115125716.GA22422@redhat.com>
-	<1289856350.14719.135.camel@maggy.simson.net>
-	<20101116015648.GA11534@redhat.com>
-	<1289916171.5169.117.camel@maggy.simson.net>
-	<1289916683.2109.625.camel@laptop>
-	<AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
-	<20101116170312.GA19327@tango.0pointer.de>
-	<AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
-	<20101116181603.GC19327@tango.0pointer.de>
-	<AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
-Date: Tue, 16 Nov 2010 20:27:27 +0100
-Message-ID: <AANLkTikjQKmo0j5xbvPiS=eriAUUZPMGKkcxt8w_z8XB@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Dhaval Giani <dhaval.giani@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Lennart Poettering <mzxreary@0pointer.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1289928732.5169.211.camel@maggy.simson.net>
+References: <1289900042.27424.253.camel@debian> <AANLkTi=OK+B537S5D8H4=yV5zC8+RksnfYgoKsqEyk5+@mail.gmail.com>
+ <1289921196.5169.176.camel@maggy.simson.net> <AANLkTinrtz36tDZT2C39aVRsws-wmRraLGsMZ8_zxFA+@mail.gmail.com>
+ <1289928732.5169.211.camel@maggy.simson.net>
+From: Nikhil Rao <ncrao@google.com>
+Date: Tue, 16 Nov 2010 11:27:18 -0800
+Message-ID: <AANLkTinah0wj56cG9sjTu9W0nAQ3hU=h85d7MZLfj9X4@mail.gmail.com>
+Subject: Re: [performance bug] volanomark regression on 37-rc1
+To: Mike Galbraith <efault@gmx.de>
+Cc: Rakib Mullick <rakib.mullick@gmail.com>, "Alex,Shi" <alex.shi@intel.com>,
+        a.p.zijlstra@chello.nl, mingo@elte.hu, linux-kernel@vger.kernel.org,
+        "Chen, Tim C" <tim.c.chen@intel.com>, zheng.z.yan@intel.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 7:49 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Nov 16, 2010 at 10:16 AM, Lennart Poettering
-> <mzxreary@0pointer.de> wrote:
+On Tue, Nov 16, 2010 at 9:32 AM, Mike Galbraith <efault@gmx.de> wrote:
+> On Tue, 2010-11-16 at 08:31 -0800, Nikhil Rao wrote:
+>> On Tue, Nov 16, 2010 at 7:26 AM, Mike Galbraith <efault@gmx.de> wrote:
+>> > On Tue, 2010-11-16 at 20:38 +0600, Rakib Mullick wrote:
+>> >
+>> >> Does VolanoMark is used for scheduler benchmarking? If I'm not wrong,
+>> >> I don't think it directly relates to scheduler benchmarking.
+>> >
+>> > It's not generally considered to be a wonderful benchmark, but it is a
+>> > good indicator, and worth keeping an eye on IMHO.
+>> >
+>> > I don't recall whether that patch works with the idle testcase without
+>> > resetting the throttle, or if it's only a bit less effective.  If it's
+>> > only a little less effective, I'd be inclined to just whack the reset as
+>> > Alex did.  Whatever is done has to prevent high frequency balancing.
+>> >
 >>
->> Here's my super-complex patch btw, to achieve exactly the same thing
->> from userspace without involving any kernel or systemd patching and
->> kernel-side logic. Simply edit your own ~/.bashrc and add this to the end:
+>> >From what I recall, I think removing the reset makes the original
+>> patch a little less effective. I agree that we can remove the reset if
+>> it hurts high frequency balancing.
 >
-> Right. And that's basically how this "patch" was actually tested
-> originally - by doing this by hand, without actually having a patch in
-> hand. I told people: this seems to work really well. Mike made it work
-> automatically.
->
-> Because it's something we want to do it for all users, and for all
-> shells, and make sure it gets done automatically. Including for users
-> that have old distributions etc, and make it easy to do in one place.
-> And then you do it for all the other heuristics we can see easily in
-> the kernel. And then you do it magically without users even having to
-> _notice_.
+> Ok, let's do that.  I added your ack, OK?
 >
 
-So what do you think about something like systemd handling it. systemd
-already does a lot of this stuff already in the form of process
-tracking, so it is quite trivial to do this. And more happily avoids
-all this complexity in the kernel.
+Yes, thanks for the patch.
 
-Thanks,
-Dhaval
+> From: Alex Shi <alex.shi@intel.com>
+> Date: Tue, 16 Nov 2010 17:34:02 +0800
+>
+>    sched: volanomark regression fix
+>
+>    Commit fab4762 triggers excessive idle balancing, causing a ~30% loss in
+>    volanomark throughput.  Remove idle balancing throttle reset.
+>
+>    Signed-off-by: Mike Galbraith <efault@gmx.de>
+>    Acked-by: Nikhil Rao <ncrao@google.com>
+>    Reported-by: Alex Shi <alex.shi@intel.com>
+>    Cc: Ingo Molnar <mingo@elte.hu>
+>    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>    LKML-Reference: <new-submission>
+>
+> ---
+>  kernel/sched_fair.c |    4 ----
+>  1 file changed, 4 deletions(-)
+>
+> Index: linux-2.6/kernel/sched_fair.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/sched_fair.c
+> +++ linux-2.6/kernel/sched_fair.c
+> @@ -1758,10 +1758,6 @@ static void pull_task(struct rq *src_rq,
+>        set_task_cpu(p, this_cpu);
+>        activate_task(this_rq, p, 0);
+>        check_preempt_curr(this_rq, p, 0);
+> -
+> -       /* re-arm NEWIDLE balancing when moving tasks */
+> -       src_rq->avg_idle = this_rq->avg_idle = 2*sysctl_sched_migration_cost;
+> -       this_rq->idle_stamp = 0;
+>  }
+>
+>  /*
+>
+>
+>
