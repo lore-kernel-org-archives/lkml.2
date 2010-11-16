@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932297Ab0KPUFh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:05:37 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:42514 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932166Ab0KPUFg (ORCPT
+	id S1759112Ab0KPUFU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:05:20 -0500
+Received: from mail.windriver.com ([147.11.1.11]:49938 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758681Ab0KPUFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:05:36 -0500
-Date: Tue, 16 Nov 2010 20:04:26 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Grant Edwards <grant.b.edwards@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] Documentation about RS485 serial communications
-Message-ID: <20101116200426.75085b68@lxorguk.ukuu.org.uk>
-In-Reply-To: <ibuh1v$uh6$1@dough.gmane.org>
-References: <20100408111310.524f7354@lxorguk.ukuu.org.uk>
-	<4CBD8EE4.5040808@evidence.eu.com>
-	<i9ka0s$4ua$1@dough.gmane.org>
-	<201010191727.53314.alexander.stein@systec-electronic.com>
-	<i9kk4o$svc$1@dough.gmane.org>
-	<4CC418A9.6090602@evidence.eu.com>
-	<4CDA630F.4060903@atmel.com>
-	<20101110172842.GC12371@suse.de>
-	<4CDBC3EC.6020707@evidence.eu.com>
-	<20101116143016.GB6527@ucw.cz>
-	<AANLkTi=grehSnfWzCDtSXXmNb=-NAwbHHJ_P1XPyOuw8@mail.gmail.com>
-	<20101116172013.102e06a6@lxorguk.ukuu.org.uk>
-	<ibuh1v$uh6$1@dough.gmane.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 16 Nov 2010 15:05:16 -0500
+Message-ID: <4CE2E3C3.6060800@windriver.com>
+Date: Tue, 16 Nov 2010 14:04:19 -0600
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+MIME-Version: 1.0
+To: Don Zickus <dzickus@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
+References: <1289573033-2889-1-git-send-email-dzickus@redhat.com> <4CDD579F.80009@windriver.com> <20101112154231.GN4823@redhat.com> <4CDD6389.2080206@windriver.com> <20101112161144.GP4823@redhat.com> <4CDD6CAD.30303@windriver.com> <20101112172755.GR4823@redhat.com> <20101116184325.GB4823@redhat.com>
+In-Reply-To: <20101116184325.GB4823@redhat.com>
+Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Nov 2010 20:04:20.0589 (UTC) FILETIME=[74DF19D0:01CB85C9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Comtrol, Moxa, B&B, Sealevel, and others all sell PCI cards and
-> Ethernet attached serial ports that have selectable interfaces
-> (typically RS-232/422/485).  Comtrol and Moxa have had drivers in the
-> kernel tree for ages, but they've always had to use custom ioctl calls
-> for things like configuring 232/485/422 mode and half/full-duplex
-> mode.
+On 11/16/2010 12:43 PM, Don Zickus wrote:
+> On Fri, Nov 12, 2010 at 12:27:55PM -0500, Don Zickus wrote:
+>
+> Hi Jason,
+>
+>   
+>>> I tested 2.6.35 and it does not hard hang, but suffered from a different
+>>> problem with a perf API change.   The kgdb tests appear to loop and loop
+>>> emitting endless streams of output in 2.6.35 and I already have that
+>>> problem patched.
+>>>       
+>
+> I keep getting the following stack trace which is different than your
+> hang.  Is this looping I am seeing something with the NMI or kgdb?
+>
+>   
 
-Ok so what is needed that isn't covered by the current termiox and
-TIOCG/SRS485 ioctls ?
+That was also a regression due to changes in the perf API for which I
+have a patch pending.
 
-> Having a standard API for things like interface mode, half-full
-> duplex, inter-character timeout, 9-bit mode, and so on would be life a
-> lot easier for those of us who maintain Linux serial drivers...
+I can send you the patch which Frederic has already tested OR you can
+turn off CONFIG_DEBUG_RODATA in the kernel config, which is the source
+of that particular problem.  
 
-9bit mode is a real problem with the tty layer defined in terms of 8bit
-streams but yes.
+Thanks,
+Jason.
