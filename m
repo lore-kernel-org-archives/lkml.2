@@ -1,115 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755911Ab0KPRb0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 12:31:26 -0500
-Received: from mga14.intel.com ([143.182.124.37]:23220 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753372Ab0KPRbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 12:31:25 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,206,1288594800"; 
-   d="scan'208";a="349490968"
-Message-ID: <4CE2BFBF.3010900@linux.intel.com>
-Date: Tue, 16 Nov 2010 09:30:39 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: "Aguirre, Sergio" <saaguirre@ti.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [RFC][PATCH] futex: Hide false positive about uninit var usage
-References: <1289925157-17054-1-git-send-email-saaguirre@ti.com> <4CE2B4AC.5080606@linux.intel.com> <A24693684029E5489D1D202277BE89447382A563@dlee02.ent.ti.com>
-In-Reply-To: <A24693684029E5489D1D202277BE89447382A563@dlee02.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755957Ab0KPRcb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 12:32:31 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:37766 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753372Ab0KPRca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 12:32:30 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX190sbZ1Rpp03cfp/2gXpvNLhXkkROt8PfNaBhfbKo
+	gfPfb96RBhyk6S
+Subject: Re: [performance bug] volanomark regression on 37-rc1
+From: Mike Galbraith <efault@gmx.de>
+To: Nikhil Rao <ncrao@google.com>
+Cc: Rakib Mullick <rakib.mullick@gmail.com>, "Alex,Shi" <alex.shi@intel.com>,
+        a.p.zijlstra@chello.nl, mingo@elte.hu, linux-kernel@vger.kernel.org,
+        "Chen, Tim C" <tim.c.chen@intel.com>, zheng.z.yan@intel.com
+In-Reply-To: <AANLkTinrtz36tDZT2C39aVRsws-wmRraLGsMZ8_zxFA+@mail.gmail.com>
+References: <1289900042.27424.253.camel@debian>
+	 <AANLkTi=OK+B537S5D8H4=yV5zC8+RksnfYgoKsqEyk5+@mail.gmail.com>
+	 <1289921196.5169.176.camel@maggy.simson.net>
+	 <AANLkTinrtz36tDZT2C39aVRsws-wmRraLGsMZ8_zxFA+@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Nov 2010 10:32:12 -0700
+Message-ID: <1289928732.5169.211.camel@maggy.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2010 08:59 AM, Aguirre, Sergio wrote:
-> Hi Darren,
->
->> -----Original Message-----
->> From: Darren Hart [mailto:dvhart@linux.intel.com]
->> Sent: Tuesday, November 16, 2010 10:43 AM
->> To: Aguirre, Sergio
->> Cc: LKML; Thomas Gleixner; Peter Zijlstra; Ingo Molnar; Namhyung Kim
->> Subject: Re: [RFC][PATCH] futex: Hide false positive about uninit var
->> usage
->>
->> On 11/16/2010 08:32 AM, Sergio Aguirre wrote:
->>> In exit_robust_list, there was this warning shown:
->>>
->>> kernel/futex.c: In function 'exit_robust_list':
->>> kernel/futex.c:2492: warning: 'next_pi' may be used uninitialized in
->> this function
->>>
->>> Which is a false positive, since in the function, the only scenario
->>> possible in which the var is read, is after a successful excecution of
->>> fetch_robust_entry, which populates the variable.
->>>
->>> So there's no real possibility of it being used uninitialized.
->>
->> Hi Sergio,
->>
->> You are correct. Thomas has recently pulled my fix for this into tip, it
->> should be queued for mainline already.
->
-> Oh ok. Sorry, I didn't know that. Please ignore this patch then.
+On Tue, 2010-11-16 at 08:31 -0800, Nikhil Rao wrote:
+> On Tue, Nov 16, 2010 at 7:26 AM, Mike Galbraith <efault@gmx.de> wrote:
+> > On Tue, 2010-11-16 at 20:38 +0600, Rakib Mullick wrote:
+> >
+> >> Does VolanoMark is used for scheduler benchmarking? If I'm not wrong,
+> >> I don't think it directly relates to scheduler benchmarking.
+> >
+> > It's not generally considered to be a wonderful benchmark, but it is a
+> > good indicator, and worth keeping an eye on IMHO.
+> >
+> > I don't recall whether that patch works with the idle testcase without
+> > resetting the throttle, or if it's only a bit less effective.  If it's
+> > only a little less effective, I'd be inclined to just whack the reset as
+> > Alex did.  Whatever is done has to prevent high frequency balancing.
+> >
+> 
+> >From what I recall, I think removing the reset makes the original
+> patch a little less effective. I agree that we can remove the reset if
+> it hurts high frequency balancing.
 
-No problem. In the future, if you run into problems with futexes, check 
-the linux-2.6-tip repository for fixes as that is where they are queued 
-up before going into mainline.
+Ok, let's do that.  I added your ack, OK?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git
-branch: core/futexes
+From: Alex Shi <alex.shi@intel.com>
+Date: Tue, 16 Nov 2010 17:34:02 +0800
 
-Thanks,
+    sched: volanomark regression fix
 
-Darren
+    Commit fab4762 triggers excessive idle balancing, causing a ~30% loss in
+    volanomark throughput.  Remove idle balancing throttle reset.
 
->
-> Regards,
-> Sergio
->
->>
->> Thanks,
->>
->> Darren Hart
->>
->>>
->>> Signed-off-by: Sergio Aguirre<saaguirre@ti.com>
->>> Cc: Thomas Gleixner<tglx@linutronix.de>
->>> Cc: Peter Zijlstra<a.p.zijlstra@chello.nl>
->>> Cc: Darren Hart<dvhart@linux.intel.com>
->>> Cc: Ingo Molnar<mingo@elte.hu>
->>> Cc: Namhyung Kim<namhyung@gmail.com>
->>> ---
->>>    kernel/futex.c |    3 ++-
->>>    1 files changed, 2 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/kernel/futex.c b/kernel/futex.c
->>> index 6c683b3..3646157 100644
->>> --- a/kernel/futex.c
->>> +++ b/kernel/futex.c
->>> @@ -2489,7 +2489,8 @@ void exit_robust_list(struct task_struct *curr)
->>>    {
->>>    	struct robust_list_head __user *head = curr->robust_list;
->>>    	struct robust_list __user *entry, *next_entry, *pending;
->>> -	unsigned int limit = ROBUST_LIST_LIMIT, pi, next_pi, pip;
->>> +	unsigned int limit = ROBUST_LIST_LIMIT, pi;
->>> +	unsigned int uninitialized_var(next_pi), pip;
->>>    	unsigned long futex_offset;
->>>    	int rc;
->>>
->>
->>
->> --
->> Darren Hart
->> Yocto Linux Kernel
+    Signed-off-by: Mike Galbraith <efault@gmx.de>
+    Acked-by: Nikhil Rao <ncrao@google.com>
+    Reported-by: Alex Shi <alex.shi@intel.com>
+    Cc: Ingo Molnar <mingo@elte.hu>
+    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    LKML-Reference: <new-submission>
+
+---
+ kernel/sched_fair.c |    4 ----
+ 1 file changed, 4 deletions(-)
+
+Index: linux-2.6/kernel/sched_fair.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_fair.c
++++ linux-2.6/kernel/sched_fair.c
+@@ -1758,10 +1758,6 @@ static void pull_task(struct rq *src_rq,
+ 	set_task_cpu(p, this_cpu);
+ 	activate_task(this_rq, p, 0);
+ 	check_preempt_curr(this_rq, p, 0);
+-
+-	/* re-arm NEWIDLE balancing when moving tasks */
+-	src_rq->avg_idle = this_rq->avg_idle = 2*sysctl_sched_migration_cost;
+-	this_rq->idle_stamp = 0;
+ }
+ 
+ /*
 
 
--- 
-Darren Hart
-Yocto Linux Kernel
