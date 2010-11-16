@@ -1,210 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab0KPTkJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 14:40:09 -0500
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:42922 "HELO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756309Ab0KPTjn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 14:39:43 -0500
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: Kevin Hilman <khilman@deeprootsystems.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-input@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Chris Cordahi <christophercordahi@nanometrics.ca>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Alexander Clouter <alex@digriz.org.uk>,
-        "Govindarajan, Sriramakrishnan" <srk@ti.com>
-Subject: [PATCH v2 2/4] da850-evm: add UI Expander pushbuttons
-Date: Tue, 16 Nov 2010 14:39:35 -0500
-Message-Id: <95f48a32a0256ecdb7148aa08d16f64928a7e5d8.1289935504.git.bengardiner@nanometrics.ca>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1289935504.git.bengardiner@nanometrics.ca>
-References: <cover.1289835508.git.bengardiner@nanometrics.ca> <cover.1289935504.git.bengardiner@nanometrics.ca>
+	id S1757561Ab0KPTl6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 14:41:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756145Ab0KPTl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 14:41:57 -0500
+Date: Tue, 16 Nov 2010 14:40:36 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: david@lang.hm, Paul Menage <menage@google.com>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101116194036.GH13092@redhat.com>
+References: <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+ <20101116181603.GC19327@tango.0pointer.de>
+ <1289931715.2109.648.camel@laptop>
+ <AANLkTik7cR_5JJWfk8SEf3Dngfe7yZvuivJ66dVDOuAk@mail.gmail.com>
+ <alpine.DEB.2.00.1011161047060.3718@asgard.lang.hm>
+ <1289933965.2109.652.camel@laptop>
+ <20101116190916.GD13092@redhat.com>
+ <1289934800.2109.653.camel@laptop>
+ <20101116192206.GG13092@redhat.com>
+ <1289935527.2109.655.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289935527.2109.655.camel@laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds EV_KEYs for each of the 8 pushbuttons on the UI board via a
-gpio-key device.
+On Tue, Nov 16, 2010 at 08:25:27PM +0100, Peter Zijlstra wrote:
+> On Tue, 2010-11-16 at 14:22 -0500, Vivek Goyal wrote:
+> > In this thread there are already mentions of extending it to block
+> > controller also which now supports the upper limit.
+> > 
+> > Secondly I am assuming at some point of time, cpu controller will also
+> > support throttling (including SCHED_OTHER class). 
+> 
+> Possibly, but in both cases its voluntary -- that is, unless explicitly
+> configured a cgroup can use as much as possible. These auto groups will
+> use that.
+> 
+> If you want more control, create your own cgroup so you can poke at the
+> parameters at will.
 
-The expander is a tca6416; it controls the SEL_{A,B,C} lines which enable and
-disable the peripherals found on the UI board in addition to the 8 pushbuttons
-mentioned above. The reason the existing tca6416-keypad driver is not employed
-is because there was no aparent way to keep the gpio lines used as
-SEL_{A,B,C} registered while simultaneously registering the pushbuttons as a
-tca6416-keypad instance.
+I can create my own cgroups and control these. But one would like to
+control these hidden groups also. For example, in a clustered environment
+one might not want allow more than certain IOPS from machine X. In such
+scenario one would like to see all the groups and possibly put the limit.
 
-Some experimentation with the polling interval was performed; we were searching
-for the largest polling interval that did not affect the feel of the
-responsiveness of the buttons. It is very subjective but 200ms seems to be a
-good value that accepts firm pushes but rejects very light ones. The key values
-assigned to the buttons were arbitrarily chosen to be F1-F8.
+Now one can argue that thse groups are under root and put overall limit
+on root and these groups get automatically controlled. But controllers
+like block and memory also support flat mode where all the groups are
+at same level.
 
-Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
-Reviewed-by: Chris Cordahi <christophercordahi@nanometrics.ca>
-CC: Govindarajan, Sriramakrishnan <srk@ti.com>
+		  pivot	
+	        /   |   \
+	       root  g2 g3
 
----
+Here g2 and g3 are hidden auto groups and because it is flat configuration
+putting limit on root will not help and one can not limit g2 and g3 and
+one can not control total amount of IO from the system.
 
-Changes since v1:
- * set INPUT_POLLDEV default for DA850_EVM machine, but don't select it
-   unconditionally
- * adding note to description about why tca6416-keypad was not used
- * adding Govindarajan, Sriramakrishnan, the author of the tca6416-keypad
-   driver
----
- arch/arm/mach-davinci/Kconfig           |    3 +
- arch/arm/mach-davinci/board-da850-evm.c |   76 +++++++++++++++++++++++++++++++
- 2 files changed, 79 insertions(+), 0 deletions(-)
+Now one can say use hierarchy and not flat setup. I am writting patches
+to enable hierarchy but that is disabled by default as flat setup came
+first and also there are concerns of accounting overhead etc.
 
-diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
-index b77b860..5163a1c 100644
---- a/arch/arm/mach-davinci/Kconfig
-+++ b/arch/arm/mach-davinci/Kconfig
-@@ -178,6 +178,9 @@ config DA850_UI_RMII
- 
- endchoice
- 
-+config INPUT_POLLDEV
-+	default MACH_DAVINCI_DA850_EVM
-+
- config MACH_TNETV107X
- 	bool "TI TNETV107X Reference Platform"
- 	default ARCH_DAVINCI_TNETV107X
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
-index c6e11c6..ff71ffd 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -17,8 +17,10 @@
- #include <linux/i2c.h>
- #include <linux/i2c/at24.h>
- #include <linux/i2c/pca953x.h>
-+#include <linux/input.h>
- #include <linux/mfd/tps6507x.h>
- #include <linux/gpio.h>
-+#include <linux/gpio_keys.h>
- #include <linux/platform_device.h>
- #include <linux/mtd/mtd.h>
- #include <linux/mtd/nand.h>
-@@ -272,6 +274,63 @@ static inline void da850_evm_setup_emac_rmii(int rmii_sel)
- static inline void da850_evm_setup_emac_rmii(int rmii_sel) { }
- #endif
- 
-+
-+#define DA850_PB_DEBOUNCE_MS	10
-+/*
-+ * At 200ms polling interval it is possible to miss an
-+ * event by tapping very lightly on the push button but most
-+ * pushes do result in an event; longer intervals require the
-+ * user to hold the button whereas shorter intervals require
-+ * more CPU time for polling.
-+ */
-+#define DA850_PB_POLL_MS	200
-+/* No need to poll switches anywhere near as fast */
-+#define DA850_SW_POLL_MS	700
-+
-+static const char const *ui_expander_names[] = {
-+	"dgnd", "dgnd", "dgnd", "dgnd", "nc", "sel_c", "sel_b", "sel_a", "pb8",
-+	"pb7", "pb6", "pb5", "pb4", "pb3", "pb2", "pb1"
-+};
-+
-+#define DA850_UI_PB8_OFFSET	8
-+#define DA850_N_UI_PB		8
-+
-+static struct gpio_keys_button user_ui_pbs_gpio_keys[DA850_N_UI_PB];
-+
-+static struct gpio_keys_platform_data user_ui_pbs_gpio_key_platform_data = {
-+	.buttons = user_ui_pbs_gpio_keys,
-+	.nbuttons = ARRAY_SIZE(user_ui_pbs_gpio_keys),
-+	.rep = 0, /* disable auto-repeat */
-+	.poll_interval = DA850_PB_POLL_MS,
-+};
-+
-+static struct platform_device user_ui_pb_gpio_key_device = {
-+	.name = "gpio-keys",
-+	.id = 0,
-+	.dev = {
-+		.platform_data = &user_ui_pbs_gpio_key_platform_data
-+	}
-+};
-+
-+static void da850_ui_pushbuttons_init(unsigned gpio)
-+{
-+	int i;
-+	struct gpio_keys_button *button;
-+
-+	for (i = 0; i < DA850_N_UI_PB; i++) {
-+		button = &user_ui_pbs_gpio_keys[i];
-+
-+		button->code = KEY_F8 - i;
-+		button->type = EV_KEY;
-+		button->active_low = 1;
-+		button->wakeup = 0;
-+		button->debounce_interval = DA850_PB_DEBOUNCE_MS;
-+		button->desc = (char *)
-+				ui_expander_names[DA850_UI_PB8_OFFSET + i];
-+		button->gpio = gpio + DA850_UI_PB8_OFFSET + i;
-+	}
-+}
-+
- static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
- 						unsigned ngpio, void *c)
- {
-@@ -304,6 +363,14 @@ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
- 	gpio_direction_output(sel_b, 1);
- 	gpio_direction_output(sel_c, 1);
- 
-+	da850_ui_pushbuttons_init(gpio);
-+	ret = platform_device_register(&user_ui_pb_gpio_key_device);
-+	if (ret) {
-+		pr_warning("Could not register UI GPIO expander push-buttons"
-+				" device\n");
-+		goto exp_setup_keys_fail;
-+	}
-+
- 	ui_card_detected = 1;
- 	pr_info("DA850/OMAP-L138 EVM UI card detected\n");
- 
-@@ -313,6 +380,8 @@ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
- 
- 	return 0;
- 
-+exp_setup_keys_fail:
-+	gpio_free(sel_c);
- exp_setup_selc_fail:
- 	gpio_free(sel_b);
- exp_setup_selb_fail:
-@@ -324,6 +393,8 @@ exp_setup_sela_fail:
- static int da850_evm_ui_expander_teardown(struct i2c_client *client,
- 					unsigned gpio, unsigned ngpio, void *c)
- {
-+	platform_device_unregister(&user_ui_pb_gpio_key_device);
-+
- 	/* deselect all functionalities */
- 	gpio_set_value(gpio + 5, 1);
- 	gpio_set_value(gpio + 6, 1);
-@@ -340,6 +411,7 @@ static struct pca953x_platform_data da850_evm_ui_expander_info = {
- 	.gpio_base	= DAVINCI_N_GPIO,
- 	.setup		= da850_evm_ui_expander_setup,
- 	.teardown	= da850_evm_ui_expander_teardown,
-+	.names		= ui_expander_names,
- };
- 
- static struct i2c_board_info __initdata da850_evm_i2c_devices[] = {
-@@ -349,6 +421,10 @@ static struct i2c_board_info __initdata da850_evm_i2c_devices[] = {
- 	{
- 		I2C_BOARD_INFO("tca6416", 0x20),
- 		.platform_data = &da850_evm_ui_expander_info,
-+		/*
-+		 * TODO : populate at runtime using
-+		 * .irq = gpio_to_irq(GPIO_TO_PIN(2,7)),
-+		 */
- 	},
- };
- 
--- 
-1.7.0.4
+So point being that these autogroups being hidden is a concern. Can we
+do something so that these groups show up in cgroup hierarchy and are
+then user controllable.
 
+Thanks
+Vivek
