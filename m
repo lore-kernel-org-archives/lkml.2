@@ -1,127 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985Ab0KPWRf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 17:17:35 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:40436 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757009Ab0KPWRd (ORCPT
+	id S933087Ab0KPWTx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 17:19:53 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61575 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932822Ab0KPWTw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 17:17:33 -0500
+	Tue, 16 Nov 2010 17:19:52 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jrpeQwmqTPFHHCJS8bTikRJUjBGNitnQ03gQHD7+guRd2Lw9ePRktuy5UpZPtH/1qK
-         6bARzT+8/7VOv1PKh9ZRxqGErWctjfw+AwwkEwmpPdnBPYhkRMLC2zkCtU3n8C1n9DOa
-         oMrcowDGhKmL5soaTZjLVOO7UmkrmVPRu771I=
-Date: Tue, 16 Nov 2010 23:17:28 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [ANNOUNCE] New utility: 'trace'
-Message-ID: <20101116221726.GB26243@nowhere>
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6> <4CE2F747.4060406@linux.intel.com>
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=fZrMz0pEycSYZnLaRm+oub08atZUQ2XFbVmKBHpnFlkFJGeC4x266KwnTMLIl2Ibrz
+         bDJ2+cbRmqgrdFR3Mu+OgthcmzaDMzS7srVpbgkAGqOuqwrUqwKM5mk5uzPYrjItO7rK
+         r8E031gDAuQBBkoEwXCpspYVP4X3ZJm19ayeM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE2F747.4060406@linux.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <cover.1289430026.git.luto@mit.edu>
+References: <cover.1289430026.git.luto@mit.edu>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Tue, 16 Nov 2010 17:19:30 -0500
+X-Google-Sender-Auth: PcF7Zs3QlCUXRfkLqT9Cp8T-2tI
+Message-ID: <AANLkTimM6EUeFiyaH=6bkes19LtYO6t1PJL_SE9Zt3-L@mail.gmail.com>
+Subject: Re: [PATCH v2 0/2] Fix nouveau-related freezes
+To: Ben Skeggs <bskeggs@redhat.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Andy Lutomirski <luto@mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 01:27:35PM -0800, Darren Hart wrote:
-> On 11/16/2010 01:04 PM, Thomas Gleixner wrote:
->> We are pleased to announce a new tracing tool called 'trace'.
->>
+On Wed, Nov 10, 2010 at 6:04 PM, Andy Lutomirski <luto@mit.edu> wrote:
+> Nouveau takes down my system quite reliably when any hotplug event occurs.
+> The bug happens because the IRQ handler didn't acknowledge the hotplug
+> state until the bottom half, so the card generated a new interrupt
+> immediately, starving the bottom half and permanently starving that CPU
+> (and hence the bottom half).
 >
-> Hi Thomas, Ingo - Congrats and Thanks!
+> Even with this fix, a lot of the IRQ code looks rather broken.
 >
->> At this point we'd like to ask for feedback from other users of tracing tools,
->> which workflow components would you like to see in addition to what the 'trace'
->> tool is offering?
->>
->> Comments, bug reports, suggestions welcome,
+> This is tested on 2.6.36 (and makes the system stable for me), but it also
+> applies cleanly to 2.6.37 (untested, but surely also necessary).  Fedora 14's
+> 2.6.35 kernels seem to have to same problem for me, so I suspect that 2.6.35
+> needs this fix as well.  (All of my tests are on an NV50 card.)
 >
-> The first thing that comes to mind is trace_marker:
->
-> echo "Test point A" > /sys/kernel/debug/tracing/trace_marker
->
-> I've found this sort of markup to be useful using ftrace (with C  
-> equivalents embedded in the test case). Is this supported?
+> Changes from v1:
+>  - Ignore unrequested hotplug bits (I accidentally removed that part).
+>  - Support newer hardware (untested -- Ben, can you check this?)
 
+Just a quick ping: is this making its way to Linus (and stable)?  I've
+been running it for five days through (literally, due to monitor bugs)
+thousands of plug/unplug cycles with no ill effects.
 
-No, the trace_marker file sends trace_printk events. And trace_printk
-events needs to be converted to use the unified trace event interface
-(ie: implement a struct ftrace_event_call).
+(Can we *please* get rid of, or at least ratelimit, the
+plugged/unplugged printk?  It's taking over my logs, and I'm almost
+certain that it's not a driver bug.)
 
-This shouldn't be so hard, and there are several ways we could do this.
-
-An idea is to reproduce the kernel file hierarchy in a "printk" event
-subsystem, but this implies to allow subsystems nesting.
-
-Imagine you have two trace_printk(), one in kernel/sched.c:117
-and one in kernel/time/tick-sched.c:228
-The result would be:
-
-$ ls /sys/kernel/debug/tracing/events/printk
-
-/sys/kernel/debug/tracing/events/printk:
-enable  filter  kernel/
-
-/sys/kernel/debug/tracing/events/printk/kernel:
-enable  filter sched.c/ time/
-
-/sys/kernel/debug/tracing/events/printk/kernel/sched.c:
-enable  filter  117/
-
-/sys/kernel/debug/tracing/events/printk/kernel/sched.c/117:
-enable filter format id
-
-/sys/kernel/debug/tracing/events/printk/kernel/time:
-enable  filter tick-sched.c/
-
-/sys/kernel/debug/tracing/events/printk/kernel/time/tick-sched.c:
-enable  filter  228/
-
-/sys/kernel/debug/tracing/events/printk/kernel/time/tick-sched.c/228:
-enable filter format id
-
-
-The format would be quite easy, and only one field for the whole string (strloc).
-
-Not sure what to do with trace_marker. I just think we can add it as:
-/sys/kernel/debug/tracing/events/printk/sys/kernel/debug/tracing/trace_marker
-
-<:o)
-
-
-But may be the whole idea is just fancy and nobody will care, and would just
-a simple single event in a printk subsystem, on which you can use a kind of
-virtual filter:
-
-	echo "path != kernel/whatever.c:226" > /sys/kernel/debug/tracing/events/printk/filter
-
-would turn on every trace_printk() but the one in the given path.
-
-Dunno, I like both ideas. I prefer the first one which looks to me more flexible: could be
-useful to list the user his trace_printks for example and implement an interface for him
-to quickly select the trace_printk he wants.
-
-For example I'm currently working with dozens of trace_printk() and I would be very happy
-to turn some of them off half of the time.
-
+--Andy
