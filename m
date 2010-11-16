@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757738Ab0KPX6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 18:58:00 -0500
-Received: from mail.perches.com ([173.55.12.10]:1493 "EHLO mail.perches.com"
+	id S1757085Ab0KPX56 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 18:57:58 -0500
+Received: from mail.perches.com ([173.55.12.10]:1485 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757143Ab0KPX57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 18:57:59 -0500
+	id S1751238Ab0KPX55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 18:57:57 -0500
 Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
  preference tool
 From: Joe Perches <joe@perches.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Florian Mickler <florian@mickler.org>,
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Florian Mickler <florian@mickler.org>,
         Jiri Kosina <trivial@kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <20101116232258.GC24623@opensource.wolfsonmicro.com>
+In-Reply-To: <20101116152835.b0ab571c.rdunlap@xenotime.net>
 References: <1289850773.16461.166.camel@Joe-Laptop>
 	 <20101116104921.GL12986@rakim.wolfsonmicro.main>
 	 <1289919077.28741.50.camel@Joe-Laptop>
@@ -26,9 +27,10 @@ References: <1289850773.16461.166.camel@Joe-Laptop>
 	 <1289940156.28741.207.camel@Joe-Laptop>
 	 <20101116124609.382e42fb.rdunlap@xenotime.net>
 	 <20101116232258.GC24623@opensource.wolfsonmicro.com>
+	 <20101116152835.b0ab571c.rdunlap@xenotime.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Nov 2010 15:57:57 -0800
-Message-ID: <1289951877.28741.262.camel@Joe-Laptop>
+Date: Tue, 16 Nov 2010 15:57:55 -0800
+Message-ID: <1289951875.28741.261.camel@Joe-Laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -36,28 +38,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 23:22 +0000, Mark Brown wrote:
-> On Tue, Nov 16, 2010 at 12:46:09PM -0800, Randy Dunlap wrote:
-> > On Tue, 16 Nov 2010 12:42:36 -0800 Joe Perches wrote:
-> > > Some subsystem maintainers like upper case, some mixed, some lower.
-> > > Some aren't consistent.  (Staging/staging)
-> > Case usually doesn't matter to most of us.
-> Given that we're working in case sensitive languages here it's probably
-> safe to assume that a reasonable proportion of people will care; being
-> reasonably consistent with existing practice for the subsystem seems
-> sensible.
+On Tue, 2010-11-16 at 15:28 -0800, Randy Dunlap wrote:
+> On Tue, 16 Nov 2010 23:22:58 +0000 Mark Brown wrote:
+> > On Tue, Nov 16, 2010 at 12:46:09PM -0800, Randy Dunlap wrote:
+> > > On Tue, 16 Nov 2010 12:42:36 -0800 Joe Perches wrote:
+> > > > Some subsystem maintainers like upper case, some mixed, some lower.
+> > > > Some aren't consistent.  (Staging/staging)
+> > > Case usually doesn't matter to most of us.
+> > Given that we're working in case sensitive languages here it's probably
+> > safe to assume that a reasonable proportion of people will care; being
+> > reasonably consistent with existing practice for the subsystem seems
+> > sensible.
+> Greg takes patches that say STAGING or Staging or staging.
 
-Presumably the tool would also have to traverse up the tree
-to find the appropriate style so every MAINTAINERS section
-would not need a C entry.
+Greg seems to rewrite patch subjects and is inconsistent
+about case, so he might be doing that by hand.
 
-ie: sound/soc/codecs/foo could use the C: entry for sound/soc/
+> DaveM takes patches that say net: or netdev: or network: or NET:
 
-Perhaps something like:
-	C:	ASoC basename:
+DaveM doesn't appear to be choosy about patch subject lines.
+He seems to take any sensible patch and as far as I know he
+doesn't edit the subject lines.  He does reject inferior
+patches outright.
 
-and for arch/x86/:
-	C:	x86, dirname:
+> The sound maintainers take patches that say sound: or alsa: or ALSA:
 
-etc.
+The sound maintainers seem to rewrite patch subjects on an
+ad-hoc basis.
+
 
