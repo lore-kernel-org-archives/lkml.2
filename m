@@ -1,132 +1,758 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932790Ab0KPODN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 09:03:13 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:52611 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S932311Ab0KPODL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 09:03:11 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1961D9f9il6xI2FM5L0XcJKUJ6UvbZGXjn4gFgg39
-	kGfn/GnjnXlip6
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <20101116015648.GA11534@redhat.com>
-References: <AANLkTimHtjH3YvtX6i542_XjfFeuvG-AnU8i224a1R4j@mail.gmail.com>
-	 <1289778189.5154.10.camel@maggy.simson.net>
-	 <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
-	 <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com>
-	 <1289783580.495.58.camel@maggy.simson.net>
-	 <1289811438.2109.474.camel@laptop>
-	 <1289820766.16406.45.camel@maggy.simson.net>
-	 <1289821590.16406.47.camel@maggy.simson.net>
-	 <20101115125716.GA22422@redhat.com>
-	 <1289856350.14719.135.camel@maggy.simson.net>
-	 <20101116015648.GA11534@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Nov 2010 07:02:51 -0700
-Message-ID: <1289916171.5169.117.camel@maggy.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1756474Ab0KPOI2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 09:08:28 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:35280 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab0KPOI0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 09:08:26 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6168"; a="62856235"
+From: Tatyana Brokhman <tlinder@codeaurora.org>
+To: gregkh@suse.de
+Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Tatyana Brokhman <tlinder@codeaurora.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5 1/1] usb: Adding SuperSpeed support to dummy_hcd
+Date: Tue, 16 Nov 2010 16:08:12 +0200
+Message-Id: <1289916492-28402-1-git-send-email-tlinder@codeaurora.org>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-15 at 20:56 -0500, Vivek Goyal wrote:
+USB 3.0 hub includes 2 hubs - HS and SS ones.
+Thus, when dummy_hcd enabled it will register 2 root hubs (SS and HS).
 
-> Mike,
-> 
-> IIUC, this automatically created task group is invisible to user space? I
-> mean generally there is a task group associated with a cgroup and user space
-> tools can walk through cgroup hierarchy to figure out how system is
-> configured. Will that be possible with this patch.
+Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
+---
+ drivers/usb/gadget/dummy_hcd.c |  500 ++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 487 insertions(+), 13 deletions(-)
 
-No, it's dirt simple automation only at this point.
+diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
+index 13b9f47..ec6adf6 100644
+--- a/drivers/usb/gadget/dummy_hcd.c
++++ b/drivers/usb/gadget/dummy_hcd.c
+@@ -5,6 +5,7 @@
+  *
+  * Copyright (C) 2003 David Brownell
+  * Copyright (C) 2003-2005 Alan Stern
++ * Copyright (C) 2010 Code Aurora Forum. All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -61,10 +62,13 @@
+ 
+ #define POWER_BUDGET	500	/* in mA; use 8 for low-power port testing */
+ 
+-static const char	driver_name [] = "dummy_hcd";
+-static const char	driver_desc [] = "USB Host+Gadget Emulator";
++static const char	driver_name[] = "dummy_hcd";
++static const char	ss_driver_name[] = "ss_dummy_hcd";
++static const char	driver_desc[] = "USB Host+Gadget Emulator";
++static const char	ss_driver_desc[] = "SS USB Host+Gadget Emulator";
+ 
+-static const char	gadget_name [] = "dummy_udc";
++static const char	gadget_name[] = "dummy_udc";
++static const char	ss_gadget_name[] = "ss_dummy_udc";
+ 
+ MODULE_DESCRIPTION (DRIVER_DESC);
+ MODULE_AUTHOR ("David Brownell");
+@@ -220,6 +224,7 @@ static inline struct dummy *gadget_dev_to_dummy (struct device *dev)
+ }
+ 
+ static struct dummy			*the_controller;
++static struct dummy			*the_ss_controller;
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -259,10 +264,94 @@ stop_activity (struct dummy *dum)
+ 	/* driver now does any non-usb quiescing necessary */
+ }
+ 
+-/* caller must hold lock */
++/**
++ * set_ss_link_state() - Sets the current state of the SuperSpeed link
++ * @dum: pointer to the dummy_hcd structure to update the link
++ *     state for
++ *
++ * This function updates the port_status according to the link
++ * state. The old status is saved befor updating.
++ * Note: this function should be called only for SuperSpeed
++ * master and the caller must hold the lock.
++ */
++static void
++set_ss_link_state(struct dummy *dum)
++{
++	dum->active = 0;
++	if ((dum->port_status & USB_SS_PORT_STAT_POWER) == 0)
++		dum->port_status = 0;
++
++	/* UDC suspend must cause a disconnect */
++	else if (!dum->pullup || dum->udc_suspended) {
++		dum->port_status &= ~(USB_PORT_STAT_CONNECTION |
++					USB_PORT_STAT_ENABLE);
++		if ((dum->old_status & USB_PORT_STAT_CONNECTION) != 0)
++			dum->port_status |=
++					(USB_PORT_STAT_C_CONNECTION << 16);
++	} else {
++		/* device is connected and not suspended */
++		dum->port_status |= (USB_PORT_STAT_CONNECTION |
++				     USB_PORT_STAT_SUPER_SPEED);
++		if ((dum->old_status & USB_PORT_STAT_CONNECTION) == 0)
++			dum->port_status |=
++				(USB_PORT_STAT_C_CONNECTION << 16);
++		if ((dum->port_status & USB_PORT_STAT_ENABLE) == 1 &&
++		    (dum->port_status & USB_SS_PORT_LS_U0) == 1 &&
++		    dum->rh_state != DUMMY_RH_SUSPENDED)
++			dum->active = 1;
++	}
++
++
++	if ((dum->port_status & USB_PORT_STAT_ENABLE) == 0 || dum->active)
++		dum->resuming = 0;
++
++	/* if !connected or reset */
++	if ((dum->port_status & USB_PORT_STAT_CONNECTION) == 0 ||
++			(dum->port_status & USB_PORT_STAT_RESET) != 0) {
++		/*
++		 * We're connected and not reseted (reset occured now),
++		 * and driver attached - disconnect!
++		 */
++		if ((dum->old_status & USB_PORT_STAT_CONNECTION) != 0 &&
++		    (dum->old_status & USB_PORT_STAT_RESET) == 0 &&
++		    dum->driver) {
++			stop_activity(dum);
++			spin_unlock(&dum->lock);
++			dum->driver->disconnect(&dum->gadget);
++			spin_lock(&dum->lock);
++		}
++	} else if (dum->active != dum->old_active) {
++		if (dum->old_active && dum->driver->suspend) {
++			spin_unlock(&dum->lock);
++			dum->driver->suspend(&dum->gadget);
++			spin_lock(&dum->lock);
++		} else if (!dum->old_active &&  dum->driver->resume) {
++			spin_unlock(&dum->lock);
++			dum->driver->resume(&dum->gadget);
++			spin_lock(&dum->lock);
++		}
++	}
++
++	dum->old_status = dum->port_status;
++	dum->old_active = dum->active;
++}
++
++/**
++ * set_link_state() - Sets the current state of the link
++ * @dum: pointer to the dummy_hcd structure to update the link
++ *     state for
++ *
++ * This function updates the port_status according to the link
++ * state. The old status is saved befor updating.
++ * Note: caller must hold the lock.
++ */
+ static void
+ set_link_state (struct dummy *dum)
+ {
++	if (dum == the_ss_controller) {
++		set_ss_link_state(dum);
++		return;
++	}
+ 	dum->active = 0;
+ 	if ((dum->port_status & USB_PORT_STAT_POWER) == 0)
+ 		dum->port_status = 0;
+@@ -343,7 +432,13 @@ dummy_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
+ 	dum = ep_to_dummy (ep);
+ 	if (!dum->driver || !is_enabled (dum))
+ 		return -ESHUTDOWN;
+-	max = le16_to_cpu(desc->wMaxPacketSize) & 0x3ff;
++	max = le16_to_cpu(desc->wMaxPacketSize) ;
++	/*
++	 * For HS/FS devices only bits 0..9 of the wMaxPacketSize represent the
++	 * maximum packet size
++	 */
++	if (dum->gadget.speed < USB_SPEED_SUPER)
++		max &= 0x3ff;
+ 
+ 	/* drivers must not request bad settings, since lower levels
+ 	 * (hardware or its drivers) may not check.  some endpoints
+@@ -361,6 +456,10 @@ dummy_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
+ 			goto done;
+ 		}
+ 		switch (dum->gadget.speed) {
++		case USB_SPEED_SUPER:
++			if (max == 1024)
++				break;
++			goto done;
+ 		case USB_SPEED_HIGH:
+ 			if (max == 512)
+ 				break;
+@@ -379,6 +478,7 @@ dummy_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
+ 			goto done;
+ 		/* real hardware might not handle all packet sizes */
+ 		switch (dum->gadget.speed) {
++		case USB_SPEED_SUPER:
+ 		case USB_SPEED_HIGH:
+ 			if (max <= 1024)
+ 				break;
+@@ -399,6 +499,7 @@ dummy_enable (struct usb_ep *_ep, const struct usb_endpoint_descriptor *desc)
+ 			goto done;
+ 		/* real hardware might not handle all packet sizes */
+ 		switch (dum->gadget.speed) {
++		case USB_SPEED_SUPER:
+ 		case USB_SPEED_HIGH:
+ 			if (max <= 1024)
+ 				break;
+@@ -751,15 +852,21 @@ int
+ usb_gadget_probe_driver(struct usb_gadget_driver *driver,
+ 		int (*bind)(struct usb_gadget *))
+ {
+-	struct dummy	*dum = the_controller;
++	struct dummy	*dum;
+ 	int		retval, i;
+ 
++	if (!bind || !driver->setup || driver->speed == USB_SPEED_UNKNOWN)
++		return -EINVAL;
++
++	if (driver->speed == USB_SPEED_SUPER)
++		dum = the_ss_controller;
++	else
++		dum = the_controller;
++
+ 	if (!dum)
+ 		return -EINVAL;
+ 	if (dum->driver)
+ 		return -EBUSY;
+-	if (!bind || !driver->setup || driver->speed == USB_SPEED_UNKNOWN)
+-		return -EINVAL;
+ 
+ 	/*
+ 	 * SLAVE side init ... the layer above hardware, which
+@@ -787,7 +894,11 @@ usb_gadget_probe_driver(struct usb_gadget_driver *driver,
+ 	}
+ 
+ 	dum->gadget.ep0 = &dum->ep [0].ep;
+-	dum->ep [0].ep.maxpacket = 64;
++	dum->gadget.speed = driver->speed;
++	if (driver->speed == USB_SPEED_SUPER)
++		dum->ep[0].ep.maxpacket = 9;
++	else
++		dum->ep[0].ep.maxpacket = 64;
+ 	list_del_init (&dum->ep [0].ep.ep_list);
+ 	INIT_LIST_HEAD(&dum->fifo_req.queue);
+ 
+@@ -817,12 +928,20 @@ EXPORT_SYMBOL(usb_gadget_probe_driver);
+ int
+ usb_gadget_unregister_driver (struct usb_gadget_driver *driver)
+ {
+-	struct dummy	*dum = the_controller;
++	struct dummy	*dum ;
+ 	unsigned long	flags;
+ 
++	if (!driver || !driver->unbind)
++		return -EINVAL;
++
++	if (driver->speed == USB_SPEED_SUPER)
++		dum = the_ss_controller;
++	else
++		dum = the_controller;
++
+ 	if (!dum)
+ 		return -ENODEV;
+-	if (!driver || driver != dum->driver || !driver->unbind)
++	if (driver != dum->driver)
+ 		return -EINVAL;
+ 
+ 	dev_dbg (udc_dev(dum), "unregister gadget driver '%s'\n",
+@@ -899,6 +1018,34 @@ static int dummy_udc_probe (struct platform_device *pdev)
+ 	return rc;
+ }
+ 
++static int dummy_ss_udc_probe(struct platform_device *pdev)
++{
++	struct dummy	*dum = the_ss_controller;
++	int		rc;
++
++	dum->gadget.name = gadget_name;
++	dum->gadget.ops = &dummy_ops;
++	dum->gadget.is_dualspeed = 1;
++
++	/* maybe claim OTG support, though we won't complete HNP */
++	dum->gadget.is_otg = (dummy_to_hcd(dum)->self.otg_port != 0);
++
++	dev_set_name(&dum->gadget.dev, "ss_gadget");
++	dum->gadget.dev.parent = &pdev->dev;
++	dum->gadget.dev.release = dummy_gadget_release;
++	rc = device_register(&dum->gadget.dev);
++	if (rc < 0)
++		return rc;
++
++	usb_get_hcd(dummy_to_hcd(dum));
++
++	platform_set_drvdata(pdev, dum);
++	rc = device_create_file(&dum->gadget.dev, &dev_attr_function);
++	if (rc < 0)
++		device_unregister(&dum->gadget.dev);
++	return rc;
++}
++
+ static int dummy_udc_remove (struct platform_device *pdev)
+ {
+ 	struct dummy	*dum = platform_get_drvdata (pdev);
+@@ -948,6 +1095,17 @@ static struct platform_driver dummy_udc_driver = {
+ 	},
+ };
+ 
++static struct platform_driver dummy_ss_udc_driver = {
++	.probe		= dummy_ss_udc_probe,
++	.remove		= dummy_udc_remove,
++	.suspend	= dummy_udc_suspend,
++	.resume		= dummy_udc_resume,
++	.driver		= {
++		.name	= (char *) ss_gadget_name,
++		.owner	= THIS_MODULE,
++	},
++};
++
+ /*-------------------------------------------------------------------------*/
+ 
+ /* MASTER/HOST SIDE DRIVER
+@@ -1246,6 +1404,24 @@ static int handle_control_request(struct dummy *dum, struct urb *urb,
+ 			case USB_DEVICE_A_ALT_HNP_SUPPORT:
+ 				dum->gadget.a_alt_hnp_support = 1;
+ 				break;
++			case USB_DEVICE_U1_ENABLE:
++				if (dum->gadget.speed == USB_SPEED_SUPER)
++					w_value = USB_DEV_STAT_U1_ENABLED;
++				else
++					ret_val = -EOPNOTSUPP;
++				break;
++			case USB_DEVICE_U2_ENABLE:
++				if (dum->gadget.speed == USB_SPEED_SUPER)
++					w_value = USB_DEV_STAT_U2_ENABLED;
++				else
++					ret_val = -EOPNOTSUPP;
++				break;
++			case USB_DEVICE_LTM_ENABLE:
++				if (dum->gadget.speed == USB_SPEED_SUPER)
++					w_value = USB_DEV_STAT_LTM_ENABLED;
++				else
++					ret_val = -EOPNOTSUPP;
++				break;
+ 			default:
+ 				ret_val = -EOPNOTSUPP;
+ 			}
+@@ -1272,6 +1448,24 @@ static int handle_control_request(struct dummy *dum, struct urb *urb,
+ 			case USB_DEVICE_REMOTE_WAKEUP:
+ 				w_value = USB_DEVICE_REMOTE_WAKEUP;
+ 				break;
++			case USB_DEVICE_U1_ENABLE:
++				if (dum->gadget.speed == USB_SPEED_SUPER)
++					w_value = USB_DEV_STAT_U1_ENABLED;
++				else
++					ret_val = -EOPNOTSUPP;
++				break;
++			case USB_DEVICE_U2_ENABLE:
++				if (dum->gadget.speed == USB_SPEED_SUPER)
++					w_value = USB_DEV_STAT_U2_ENABLED;
++				else
++					ret_val = -EOPNOTSUPP;
++				break;
++			case USB_DEVICE_LTM_ENABLE:
++				if (dum->gadget.speed == USB_SPEED_SUPER)
++					w_value = USB_DEV_STAT_LTM_ENABLED;
++				else
++					ret_val = -EOPNOTSUPP;
++				break;
+ 			default:
+ 				ret_val = -EOPNOTSUPP;
+ 				break;
+@@ -1352,6 +1546,9 @@ static void dummy_timer (unsigned long _dum)
+ 	case USB_SPEED_HIGH:
+ 		total = 512/*bytes*/ * 13/*packets*/ * 8/*uframes*/;
+ 		break;
++	case USB_SPEED_SUPER:
++		total = 400 << 20; /* 400MB = 400*(2^20) bytes */
++		break;
+ 	default:
+ 		dev_err (dummy_dev(dum), "bogus device speed\n");
+ 		return;
+@@ -1597,7 +1794,172 @@ hub_descriptor (struct usb_hub_descriptor *desc)
+ 	desc->bitmap [1] = 0xff;
+ }
+ 
+-static int dummy_hub_control (
++/**
++ * dummy_ss_hub_control() - handles the control requests of the dummy (ss hub)
++ * master.
++ * @hcd: pointer to the hcd to handle
++ * @typeReq: type of the request
++ * @wValue: wValue of the request
++ * @wIndex: wIndex of the request
++ * @buf: buffer for reply in case of an IN request
++ * @wLength: wLength of the request
++ *
++ * Return int - 0 on success, error code otherwise
++ *
++ * This function handles the control requests of the dummy (ss
++ * hub) master. All control requests that are part of the
++ * enumeration are handled by the dummy_timer
++ * Note: this function is used only for the SS root hub
++ */
++static int dummy_ss_hub_control(
++	struct usb_hcd	*hcd,
++	u16		typeReq,
++	u16		wValue,
++	u16		wIndex,
++	char		*buf,
++	u16		wLength)
++{
++	struct dummy		*dum;
++	int		retval = 0;
++	unsigned long	flags;
++
++	if (!HCD_HW_ACCESSIBLE(hcd))
++		return -ETIMEDOUT;
++
++	dum = hcd_to_dummy(hcd);
++	spin_lock_irqsave(&dum->lock, flags);
++	switch (typeReq) {
++	case ClearHubFeature:
++		break;
++	case ClearPortFeature:
++		switch (wValue) {
++		case USB_PORT_FEAT_POWER:
++			if (dum->port_status & USB_SS_PORT_STAT_POWER)
++				dev_dbg(dummy_dev(dum), "power-off\n");
++			/* FALLS THROUGH */
++		default:
++			dum->port_status &= ~(1 << wValue);
++			set_link_state(dum);
++		}
++		break;
++	case GetHubDescriptor:
++		hub_descriptor((struct usb_hub_descriptor *) buf);
++		break;
++	case GetHubStatus:
++		/*
++		 * We report that no change occured in the hub status
++		 * (power and overcurent conditions)
++		 */
++		*(__le32 *) buf = cpu_to_le32 (0);
++		break;
++	case GetPortStatus:
++		/* We have only one port */
++		if (wIndex != 1)
++			retval = -EPIPE;
++
++		/*
++		 * whoever resets or resumes must GetPortStatus to
++		 * complete it!!
++		 */
++		/* TODO: add support for suspend/resume */
++		if ((dum->port_status & USB_PORT_STAT_RESET) != 0 &&
++			time_after_eq(jiffies, dum->re_timeout)) {
++			dum->port_status |= (USB_PORT_STAT_C_RESET << 16);
++			dum->port_status &= ~USB_PORT_STAT_RESET;
++		}
++		if (dum->pullup)
++			dum->port_status |= USB_PORT_STAT_ENABLE;
++
++		set_link_state(dum);
++
++		((__le16 *) buf)[0] = cpu_to_le16 (dum->port_status);
++		((__le16 *) buf)[1] = cpu_to_le16 (dum->port_status >> 16);
++		break;
++	case SetHubFeature:
++		retval = -EPIPE;
++		break;
++	case SetPortFeature:
++		switch (wValue) {
++		case USB_PORT_FEAT_LINK_STATE:
++			/*
++			 * Since this is dummy we don't have an actual link so
++			 * there is nothing to do for the SET_LINK_STATE cmd
++			 */
++			break;
++		case USB_PORT_FEAT_U1_TIMEOUT:
++		case USB_PORT_FEAT_U2_TIMEOUT:
++			/* TODO: add suspend/resume support! */
++			break;
++		case USB_PORT_FEAT_POWER:
++			dum->port_status |= USB_SS_PORT_STAT_POWER;
++			set_link_state(dum);
++			break;
++		case USB_PORT_FEAT_BH_PORT_RESET:
++		case USB_PORT_FEAT_RESET:
++			/* if it's already enabled, disable */
++			dum->port_status = 0;
++			dum->port_status = (USB_SS_PORT_STAT_POWER |
++					       USB_PORT_STAT_CONNECTION |
++					       USB_PORT_STAT_RESET);
++			/*
++			 * We want to reset device status. All but the
++			 * Self powered feature
++			 */
++			dum->devstatus &= 0x0000 |
++				(1 << USB_DEVICE_SELF_POWERED);
++			/*
++			 * FIXME: what is the correct reset signaling interval?
++			 * Is it still 50msec as for HS?
++			 */
++			dum->re_timeout = jiffies + msecs_to_jiffies(50);
++			/* FALLS THROUGH */
++		default:
++			if ((dum->port_status &
++			     USB_SS_PORT_STAT_POWER) != 0) {
++				dum->port_status |= (1 << wValue);
++				set_link_state(dum);
++			}
++		}
++		break;
++	case GetPortErrorCount:
++		/* We'll always return 0 since this is a dummy hub */
++		*(__le32 *) buf = cpu_to_le32 (0);
++		break;
++	case SetHubDepth:
++		break;
++	default:
++		dev_dbg(dummy_dev(dum),
++			"hub control req%04x v%04x i%04x l%d\n",
++			typeReq, wValue, wIndex, wLength);
++		/* "protocol stall" on error */
++		retval = -EPIPE;
++	}
++	spin_unlock_irqrestore(&dum->lock, flags);
++
++	if ((dum->port_status & PORT_C_MASK) != 0)
++		usb_hcd_poll_rh_status(hcd);
++	return retval;
++}
++
++
++/**
++ * dummy_hub_control() - handles the control requests of the dummy (hs hub)
++ * master.
++ * @hcd: pointer to the hcd to handle
++ * @typeReq: type of the request
++ * @wValue: wValue of the request
++ * @wIndex: wIndex of the request
++ * @buf: buffer for reply in case of an IN request
++ * @wLength: wLength of the request
++ *
++ * Return int - 0 on success, error code otherwise
++ *
++ * This function handles the control requests of the dummy (hs
++ * hub) master. All control requests that are part of the
++ * enumeration are handled by the dummy_timer
++ * Note: this function is used only for the HS root hub
++ */
++static int dummy_hub_control(
+ 	struct usb_hcd	*hcd,
+ 	u16		typeReq,
+ 	u16		wValue,
+@@ -1711,7 +2073,11 @@ static int dummy_hub_control (
+ 			dum->port_status &= ~(USB_PORT_STAT_ENABLE
+ 					| USB_PORT_STAT_LOW_SPEED
+ 					| USB_PORT_STAT_HIGH_SPEED);
+-			dum->devstatus = 0;
++			/*
++			 * We want to reset device status. All but the
++			 * Self powered feature
++			 */
++			dum->devstatus &= (1 << USB_DEVICE_SELF_POWERED);
+ 			/* 50msec reset signaling */
+ 			dum->re_timeout = jiffies + msecs_to_jiffies(50);
+ 			/* FALLS THROUGH */
+@@ -1894,6 +2260,27 @@ static const struct hc_driver dummy_hcd = {
+ 	.bus_resume =		dummy_bus_resume,
+ };
+ 
++static const struct hc_driver dummy_ss_hcd = {
++	.description =		(char *) ss_driver_name,
++	.product_desc =		"Dummy SS host controller",
++	.hcd_priv_size =	sizeof(struct dummy),
++
++	.flags =		HCD_USB3,
++
++	.start =		dummy_start,
++	.stop =			dummy_stop,
++
++	.urb_enqueue =		dummy_urb_enqueue,
++	.urb_dequeue =		dummy_urb_dequeue,
++
++	.get_frame_number =	dummy_h_get_frame,
++
++	.hub_status_data =	dummy_hub_status,
++	.hub_control =		dummy_ss_hub_control,
++	.bus_suspend =		dummy_bus_suspend,
++	.bus_resume =		dummy_bus_resume,
++};
++
+ static int dummy_hcd_probe(struct platform_device *pdev)
+ {
+ 	struct usb_hcd		*hcd;
+@@ -1914,6 +2301,26 @@ static int dummy_hcd_probe(struct platform_device *pdev)
+ 	return retval;
+ }
+ 
++static int dummy_hcd_probe_ss(struct platform_device *pdev)
++{
++	struct usb_hcd		*hcd;
++	int			retval;
++
++	dev_info(&pdev->dev, "%s, driver " DRIVER_VERSION "\n", ss_driver_desc);
++
++	hcd = usb_create_hcd(&dummy_ss_hcd, &pdev->dev, dev_name(&pdev->dev));
++	if (!hcd)
++		return -ENOMEM;
++	the_ss_controller = hcd_to_dummy(hcd);
++
++	retval = usb_add_hcd(hcd, 0, 0);
++	if (retval != 0) {
++		usb_put_hcd(hcd);
++		the_ss_controller = NULL;
++	}
++	return retval;
++}
++
+ static int dummy_hcd_remove (struct platform_device *pdev)
+ {
+ 	struct usb_hcd		*hcd;
+@@ -1925,6 +2332,17 @@ static int dummy_hcd_remove (struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static int dummy_ss_hcd_remove(struct platform_device *pdev)
++{
++	struct usb_hcd		*hcd;
++
++	hcd = platform_get_drvdata(pdev);
++	usb_remove_hcd(hcd);
++	usb_put_hcd(hcd);
++	the_ss_controller = NULL;
++	return 0;
++}
++
+ static int dummy_hcd_suspend (struct platform_device *pdev, pm_message_t state)
+ {
+ 	struct usb_hcd		*hcd;
+@@ -1966,10 +2384,23 @@ static struct platform_driver dummy_hcd_driver = {
+ 	},
+ };
+ 
++static struct platform_driver dummy_ss_hcd_driver = {
++	.probe		= dummy_hcd_probe_ss,
++	.remove		= dummy_ss_hcd_remove,
++	.suspend	= dummy_hcd_suspend,
++	.resume		= dummy_hcd_resume,
++	.driver		= {
++		.name	= (char *) ss_driver_name,
++		.owner	= THIS_MODULE,
++	},
++};
++
+ /*-------------------------------------------------------------------------*/
+ 
+ static struct platform_device *the_udc_pdev;
++static struct platform_device *the_ss_udc_pdev;
+ static struct platform_device *the_hcd_pdev;
++static struct platform_device *the_ss_hcd_pdev;
+ 
+ static int __init init (void)
+ {
+@@ -1981,34 +2412,73 @@ static int __init init (void)
+ 	the_hcd_pdev = platform_device_alloc(driver_name, -1);
+ 	if (!the_hcd_pdev)
+ 		return retval;
++
++	the_ss_hcd_pdev = platform_device_alloc(ss_driver_name, -1);
++	if (!the_ss_hcd_pdev)
++		goto err_alloc_ss_hcd;
++
+ 	the_udc_pdev = platform_device_alloc(gadget_name, -1);
+ 	if (!the_udc_pdev)
+ 		goto err_alloc_udc;
+ 
++	the_ss_udc_pdev = platform_device_alloc(ss_gadget_name, -1);
++	if (!the_ss_udc_pdev)
++		goto err_alloc_ss_udc;
++
+ 	retval = platform_driver_register(&dummy_hcd_driver);
+ 	if (retval < 0)
+ 		goto err_register_hcd_driver;
++
++	retval = platform_driver_register(&dummy_ss_hcd_driver);
++	if (retval < 0)
++		goto err_register_ss_hcd_driver;
++
+ 	retval = platform_driver_register(&dummy_udc_driver);
+ 	if (retval < 0)
+ 		goto err_register_udc_driver;
+ 
++	retval = platform_driver_register(&dummy_ss_udc_driver);
++	if (retval < 0)
++		goto err_register_ss_udc_driver;
++
+ 	retval = platform_device_add(the_hcd_pdev);
+ 	if (retval < 0)
+ 		goto err_add_hcd;
++
++	retval = platform_device_add(the_ss_hcd_pdev);
++	if (retval < 0)
++		goto err_add_ss_hcd;
++
+ 	retval = platform_device_add(the_udc_pdev);
+ 	if (retval < 0)
+ 		goto err_add_udc;
++
++	retval = platform_device_add(the_ss_udc_pdev);
++	if (retval < 0)
++		goto err_add_ss_udc;
+ 	return retval;
+ 
++err_add_ss_udc:
++	platform_device_unregister(the_udc_pdev);
+ err_add_udc:
++	platform_device_del(the_ss_hcd_pdev);
++err_add_ss_hcd:
+ 	platform_device_del(the_hcd_pdev);
+ err_add_hcd:
++	platform_driver_unregister(&dummy_ss_udc_driver);
++err_register_ss_udc_driver:
+ 	platform_driver_unregister(&dummy_udc_driver);
+ err_register_udc_driver:
++	platform_driver_unregister(&dummy_ss_hcd_driver);
++err_register_ss_hcd_driver:
+ 	platform_driver_unregister(&dummy_hcd_driver);
+ err_register_hcd_driver:
++	platform_device_put(the_ss_udc_pdev);
++err_alloc_ss_udc:
+ 	platform_device_put(the_udc_pdev);
+ err_alloc_udc:
++	platform_device_put(the_ss_hcd_pdev);
++err_alloc_ss_hcd:
+ 	platform_device_put(the_hcd_pdev);
+ 	return retval;
+ }
+@@ -2017,8 +2487,12 @@ module_init (init);
+ static void __exit cleanup (void)
+ {
+ 	platform_device_unregister(the_udc_pdev);
++	platform_device_unregister(the_ss_udc_pdev);
+ 	platform_device_unregister(the_hcd_pdev);
++	platform_device_unregister(the_ss_hcd_pdev);
+ 	platform_driver_unregister(&dummy_udc_driver);
++	platform_driver_unregister(&dummy_ss_udc_driver);
+ 	platform_driver_unregister(&dummy_hcd_driver);
++	platform_driver_unregister(&dummy_ss_hcd_driver);
+ }
+ module_exit (cleanup);
+-- 
+1.6.3.3
 
-> I am wondering what will happen to things like some kind of per cgroup
-> stats. For example block controller keeps track of number of sectors
-> transferred per cgroup. Hence this information will not be available for
-> these internal task groups?
-
-No, it won't.  The target audience is those folks who don't _do_ the
-configuration they _could_ do, folks who don't use SCHED_IDLE or nice,
-or the power available through userspace cgroup tools.. folks who expect
-their box to "just work", out of the box.
-
-> Looks like everybody likes the idea but let me still ask the following
-> question.
-> 
-> Should this kind of thing be done in user space? I mean what we are 
-> essentially doing providing isolation between two groups. That's why
-> this cgroup infrastructure is in place. Just that currently how cgroups
-> are created is fully depends on user space and kernel does not create
-> cgroups of its own by default (ecept root cgroup).
-
-I was of the same mind when Linus first broached the subject, but Ingo
-convinced me it was worth exploring because of the simple fact that
-people are not using the available tools.
-
-Sadly, this includes distros.
-
-AFAIK, no distro has cgroups configured and ready for aunt tilly, no
-distro has taught the GUI to use cgroups _at all_, even though it's
-trivial to launch self-reaping task groups from userspace.
-  
-> I think systemd does something similar in the sense every system service
-> it puts in a cgroup of its own on system startup.
-> 
-> libcgroup daemon has the facility to listen for kernel events (through
-> netlink socket), and then put newly created tasks in cgroups as per
-> the user spcefied rules in a config file. For example, if one wants 
-> isolation between tasks of two user ids, one can just write a rule and
-> once the user logs in, its login session will be automatically placed
-> in right cgroup. Hence one will be able to achieve isolation between
-> two users. I think now it also has rules for classifying executables
-> based on names/paths. So one can put "firefox" in one cgroup and say
-> "make -j64" in a separate cgroup and provide isolation between two
-> applications. It is just a matter of putting right rule in the config file.
-
-I fiddled with configuring my system, but found options lacking.  For
-instance, I found no way to automate per tty (or pgid in my case).  I
-had to cobble scripts together to get the job done.  Nothing that my
-distro delivered could just make it just happen for me.
-
-When the tool mature, and distros use them, in kernel automation may
-well become more or less moot, but in the here and now, there is a
-target audience with a need that is not being serviced.
-
-> This patch sounds like an extension to user id problem where we want
-> isolation between the processes of same user (process groups using
-> different terminals). Would it make sense to generate some kind of kernel
-> event for this and let user space execute the rules instead of creating
-> this functionality in kernel.
-
-Per user isn't very useful.  The typical workstation has one user
-whacking away on the kbd/mouse.  While you can identify firefox etc,
-it's not being done, and requires identifying every application.  Heck,
-cgroups is built in, but userspace doesn't even mount.  Nothing but
-nothing uses cgroups.
-
-> This way once we extend this functionality to other subsystems, we can
-> make it more flexible in user space. For example, create these groups
-> for cpu controller but lets say not for block controller. Otherwise
-> we will end up creating more kernel tunables for achieving same effect.
-
-I see your arguments, and agree to a large extent.  As Linus noted,
-there are other advantages to in kernel automation, but for me, it all
-boils down to the fact that userspace is doing nothing with the tools.
-
-ATM, cgroups is an enterprise or power user tool.  The out of the box
-distro kernel user sees zero benefit for the overhead investment.
-
-	-Mike
-
+--
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
