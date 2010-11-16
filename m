@@ -1,147 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759228Ab0KPCzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 21:55:48 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54885 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755415Ab0KPCzr (ORCPT
+	id S1759232Ab0KPDDA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 22:03:00 -0500
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:37672 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754636Ab0KPDC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 21:55:47 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 16 Nov 2010 11:50:13 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <jaxboe@fusionio.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Nauman Rafique <nauman@google.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>
-Subject: Re: [RFC] blk-cgroup: Allow creation of hierarchical cgroups
-Message-Id: <20101116115013.5ec4e452.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101102222030.GI7198@redhat.com>
-References: <20101102222030.GI7198@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 15 Nov 2010 22:02:59 -0500
+Date: Tue, 16 Nov 2010 14:02:43 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Nick Piggin <npiggin@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [patch 1/6] fs: icache RCU free inodes
+Message-ID: <20101116030242.GI22876@dastard>
+References: <20101109124610.GB11477@amd>
+ <AANLkTi=b3dEmoTgrJ2xMTUzgM-mUQNNx6J9jeLq2=mtf@mail.gmail.com>
+ <1289319698.2774.16.camel@edumazet-laptop>
+ <AANLkTimJCgsPqB9ihbScr1RdZ+XGk2tq7LZNfh109Skv@mail.gmail.com>
+ <20101109220506.GE3246@amd>
+ <AANLkTi=H5ZZ3b5F=Z-PM6FX84FJNzdSh4_HbeeU666ts@mail.gmail.com>
+ <20101115010027.GC22876@dastard>
+ <20101115042059.GB3320@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101115042059.GB3320@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2 Nov 2010 18:20:30 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
+On Mon, Nov 15, 2010 at 03:21:00PM +1100, Nick Piggin wrote:
+> On Mon, Nov 15, 2010 at 12:00:27PM +1100, Dave Chinner wrote:
+> > On Fri, Nov 12, 2010 at 12:24:21PM +1100, Nick Piggin wrote:
+> > > On Wed, Nov 10, 2010 at 9:05 AM, Nick Piggin <npiggin@kernel.dk> wrote:
+> > > > On Tue, Nov 09, 2010 at 09:08:17AM -0800, Linus Torvalds wrote:
+> > > >> On Tue, Nov 9, 2010 at 8:21 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > > >> >
+> > > >> > You can see problems using this fancy thing :
+> > > >> >
+> > > >> > - Need to use slab ctor() to not overwrite some sensitive fields of
+> > > >> > reused inodes.
+> > > >> >  (spinlock, next pointer)
+> > > >>
+> > > >> Yes, the downside of using SLAB_DESTROY_BY_RCU is that you really
+> > > >> cannot initialize some fields in the allocation path, because they may
+> > > >> end up being still used while allocating a new (well, re-used) entry.
+> > > >>
+> > > >> However, I think that in the long run we pretty much _have_ to do that
+> > > >> anyway, because the "free each inode separately with RCU" is a real
+> > > >> overhead (Nick reports 10-20% cost). So it just makes my skin crawl to
+> > > >> go that way.
+> > > >
+> > > > This is a creat/unlink loop on a tmpfs filesystem. Any real filesystem
+> > > > is going to be *much* heavier in creat/unlink (so that 10-20% cost would
+> > > > look more like a few %), and any real workload is going to have much
+> > > > less intensive pattern.
+> > > 
+> > > So to get some more precise numbers, on a new kernel, and on a nehalem
+> > > class CPU, creat/unlink busy loop on ramfs (worst possible case for inode
+> > > RCU), then inode RCU costs 12% more time.
+> > > 
+> > > If we go to ext4 over ramdisk, it's 4.2% slower. Btrfs is 4.3% slower, XFS
+> > > is about 4.9% slower.
+> > 
+> > That is actually significant because in the current XFS performance
+> > using delayed logging for pure metadata operations is not that far
+> > off ramdisk results.  Indeed, the simple test:
+> > 
+> >         while (i++ < 1000 * 1000) {
+> >                 int fd = open("foo", O_CREAT|O_RDWR, 777);
+> >                 unlink("foo");
+> >                 close(fd);
+> >         }
+> > 
+> > Running 8 instances of the above on XFS, each in their own
+> > directory, on a single sata drive with delayed logging enabled with
+> > my current working XFS tree (includes SLAB_DESTROY_BY_RCU inode
+> > cache and XFS inode cache, and numerous other XFS scalability
+> > enhancements) currently runs at ~250k files/s. It took ~33s for 8 of
+> > those loops above to complete in parallel, and was 100% CPU bound...
+> 
+> David,
+> 
+> This is 30K inodes per second per CPU, versus nearly 800K per second
+> number that I measured the 12% slowdown with. About 25x slower.
 
-> o Allow hierarchical cgroup creation for blkio controller
-> 
-> o Currently we disallow it as both the io controller policies (throttling
->   as well as proportion bandwidth) do not support hierarhical accounting
->   and control. But the flip side is that blkio controller can not be used with
->   libvirt as libvirt creates a cgroup hierarchy deeper than 1 level.
-> 
->   <top-level-cgroup-dir>/<controller>/libvirt/qemu/<virtual-machine-groups>
-> 
-> o So this patch will allow creation of cgroup hierarhcy but at the backend
->   everything will be treated as flat. So if somebody created a an hierarchy
->   like as follows.
-> 
-> 			root	
-> 			/  \
-> 		     test1 test2
-> 			|
-> 		     test3
-> 
->   CFQ and throttling will practically treat all groups at same level.
-> 			
-> 				pivot
-> 			     /  |   \  \
-> 			root  test1 test2  test3
-> 
-> o Once we have actual support for hierarchical accounting and control
->   then we can introduce another cgroup tunable file "blkio.use_hierarchy"
->   which will be 0 by default but if user wants to enforce hierarhical
->   control then it can be set to 1. This way there should not be any
->   ABI problems down the line.
-> 
-> o The only not so pretty part is introduction of extra file "use_hierarchy"
->   down the line. Kame-san had mentioned that hierarhical accounting is
->   expensive in memory controller hence they keep it off by default. I
->   suspect same will be the case for IO controller also as for each IO
->   completion we shall have to account IO through hierarchy up to the root.
->   if yes, then it probably is not a very bad idea to introduce this extra
->   file so that it will be used only when somebody needs it and some people
->   might enable hierarchy only in part of the hierarchy. 
-> 
-> o This is how basically memory controller also uses "use_hierarhcy" and
->   they also allowed creation of hierarchies when actual backend support
->   was not available.
-> 
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+Hi Nick, the ramfs (800k/12%) numbers are not the context I was
+responding to - you're comparing apples to oranges. I was responding to
+the "XFS [on a ramdisk] is about 4.9% slower" result.
 
-Thank you!
+> How you
+> are trying to FUD this as doing anything but confirming my hypothesis, I
+> don't know and honestly I don't want to know so don't try to tell me.
 
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Hardly FUD. I thought it important to point out that your
+filesystem-on-ramdisk numbers are not theoretical at all - we can
+acheive the same level of performance on a single SATA drive for
+this workload on XFS. Therefore, the 5% difference in performance
+you've measured on a ramdisk will definitely be visible in the real
+world and we need to consider it in that context, not as a
+"theoretical concern".
 
+Cheers,
 
-
-> ---
->  Documentation/cgroups/blkio-controller.txt |   27 +++++++++++++++++++++++++++
->  block/blk-cgroup.c                         |    4 ----
->  2 files changed, 27 insertions(+), 4 deletions(-)
-> 
-> Index: linux-2.6/block/blk-cgroup.c
-> ===================================================================
-> --- linux-2.6.orig/block/blk-cgroup.c	2010-10-28 14:19:02.000000000 -0400
-> +++ linux-2.6/block/blk-cgroup.c	2010-11-02 13:10:13.000000000 -0400
-> @@ -1452,10 +1452,6 @@ blkiocg_create(struct cgroup_subsys *sub
->  		goto done;
->  	}
->  
-> -	/* Currently we do not support hierarchy deeper than two level (0,1) */
-> -	if (parent != cgroup->top_cgroup)
-> -		return ERR_PTR(-EPERM);
-> -
->  	blkcg = kzalloc(sizeof(*blkcg), GFP_KERNEL);
->  	if (!blkcg)
->  		return ERR_PTR(-ENOMEM);
-> Index: linux-2.6/Documentation/cgroups/blkio-controller.txt
-> ===================================================================
-> --- linux-2.6.orig/Documentation/cgroups/blkio-controller.txt	2010-10-28 14:19:01.000000000 -0400
-> +++ linux-2.6/Documentation/cgroups/blkio-controller.txt	2010-11-02 17:51:52.000000000 -0400
-> @@ -89,6 +89,33 @@ Throttling/Upper Limit policy
->  
->   Limits for writes can be put using blkio.write_bps_device file.
->  
-> +Hierarchical Cgroups
-> +====================
-> +- Currently none of the IO control policy supports hierarhical groups. But
-> +  cgroup interface does allow creation of hierarhical cgroups and internally
-> +  IO policies treat them as flat hierarchy.
-> +
-> +  So this patch will allow creation of cgroup hierarhcy but at the backend
-> +  everything will be treated as flat. So if somebody created a hierarchy like
-> +  as follows.
-> +
-> +			root
-> +			/  \
-> +		     test1 test2
-> +			|
-> +		     test3
-> +
-> +  CFQ and throttling will practically treat all groups at same level.
-> +
-> +				pivot
-> +			     /  |   \  \
-> +			root  test1 test2  test3
-> +
-> +  Down the line we can implement hierarchical accounting/control support
-> +  and also introduce a new cgroup file "use_hierarchy" which will control
-> +  whether cgroup hierarchy is viewed as flat or hierarchical by the policy.
-> +  This is how memory controller also has implemented the things.
-> +
->  Various user visible config options
->  ===================================
->  CONFIG_BLK_CGROUP
-> 
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
