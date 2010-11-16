@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759112Ab0KPUFU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:05:20 -0500
-Received: from mail.windriver.com ([147.11.1.11]:49938 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758681Ab0KPUFQ (ORCPT
+	id S1759275Ab0KPUGI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:06:08 -0500
+Received: from tango.0pointer.de ([85.214.72.216]:40503 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755547Ab0KPUGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:05:16 -0500
-Message-ID: <4CE2E3C3.6060800@windriver.com>
-Date: Tue, 16 Nov 2010 14:04:19 -0600
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+	Tue, 16 Nov 2010 15:06:06 -0500
+Date: Tue, 16 Nov 2010 21:05:46 +0100
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101116200546.GB27235@tango.0pointer.de>
+References: <1289820766.16406.45.camel@maggy.simson.net>
+ <1289821590.16406.47.camel@maggy.simson.net>
+ <20101115125716.GA22422@redhat.com>
+ <1289856350.14719.135.camel@maggy.simson.net>
+ <20101116015648.GA11534@redhat.com>
+ <1289916171.5169.117.camel@maggy.simson.net>
+ <1289916683.2109.625.camel@laptop>
+ <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+ <20101116170312.GA19327@tango.0pointer.de>
+ <1289930934.2109.644.camel@laptop>
 MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
-References: <1289573033-2889-1-git-send-email-dzickus@redhat.com> <4CDD579F.80009@windriver.com> <20101112154231.GN4823@redhat.com> <4CDD6389.2080206@windriver.com> <20101112161144.GP4823@redhat.com> <4CDD6CAD.30303@windriver.com> <20101112172755.GR4823@redhat.com> <20101116184325.GB4823@redhat.com>
-In-Reply-To: <20101116184325.GB4823@redhat.com>
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Nov 2010 20:04:20.0589 (UTC) FILETIME=[74DF19D0:01CB85C9]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289930934.2109.644.camel@laptop>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2010 12:43 PM, Don Zickus wrote:
-> On Fri, Nov 12, 2010 at 12:27:55PM -0500, Don Zickus wrote:
->
-> Hi Jason,
->
->   
->>> I tested 2.6.35 and it does not hard hang, but suffered from a different
->>> problem with a perf API change.   The kgdb tests appear to loop and loop
->>> emitting endless streams of output in 2.6.35 and I already have that
->>> problem patched.
->>>       
->
-> I keep getting the following stack trace which is different than your
-> hang.  Is this looping I am seeing something with the NMI or kgdb?
->
->   
+On Tue, 16.11.10 19:08, Peter Zijlstra (a.p.zijlstra@chello.nl) wrote:
 
-That was also a regression due to changes in the perf API for which I
-have a patch pending.
+> 
+> On Tue, 2010-11-16 at 18:03 +0100, Lennart Poettering wrote:
+> > Binding something like this to TTYs is just backwards. No graphical
+> > session has a TTY attached anymore. And there might be multiple TTYs
+> > used in the same session. 
+> 
+> Using a group per tty makes sense for us console jockeys..
 
-I can send you the patch which Frederic has already tested OR you can
-turn off CONFIG_DEBUG_RODATA in the kernel config, which is the source
-of that particular problem.  
+Well, then maybe you shouldn't claim this was relevant for anybody but
+yourself. Because it is irrelevant for most users if it is bound to the TTY.
 
-Thanks,
-Jason.
+> Anyway, nobody uses systemd yet and afaik not all distro's even plan on
+> using it (I know I'm not waiting to learn yet another init variant).
+
+Well, the way it looks right now we have convinced all big distros.
+
+Lennart
+
+-- 
+Lennart Poettering - Red Hat, Inc.
