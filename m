@@ -1,85 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab0KPPcd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 10:32:33 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35614 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752670Ab0KPPcc convert rfc822-to-8bit (ORCPT
+	id S1753601Ab0KPPdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 10:33:33 -0500
+Received: from mtagate7.de.ibm.com ([195.212.17.167]:47149 "EHLO
+	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753164Ab0KPPdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 10:32:32 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=gMDViC3yfx5oRVPndggUv1vAWa9AhVB7UWwTWfbIvthhVYn5gs9Ygof4sDXWMg0XfZ
-         tXh7pnZ9MQmwW8OTnFkF4/QLg5EDFJ6HZpKN83jaLcMK2gh51Vsr0dfxOEZcvxnDQT2X
-         cLEywcxaHOE7noQh0s/12AKXIWNR+Ot55Mn9o=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikCVCuR2mxyoE7e=V_FauTxztLHUJp97+rroUe-@mail.gmail.com>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
-	<1289584840-18097-6-git-send-email-catalin.marinas@arm.com>
-	<20101115183014.GD31421@n2100.arm.linux.org.uk>
-	<AANLkTikCVCuR2mxyoE7e=V_FauTxztLHUJp97+rroUe-@mail.gmail.com>
-Date: Tue, 16 Nov 2010 15:32:30 +0000
-X-Google-Sender-Auth: n1W8nhvi64hO90bqJiG0ARwy2Cg
-Message-ID: <AANLkTimNiU_d+WEiWCXyMF_cgohCwuyJzqxog+Y+nTmZ@mail.gmail.com>
-Subject: Re: [PATCH v2 05/20] ARM: LPAE: Introduce L_PTE_NOEXEC and L_PTE_NOWRITE
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 16 Nov 2010 10:33:31 -0500
+Date: Tue, 16 Nov 2010 16:33:25 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Michael Holzheu <holzheu@linux.vnet.ibm.com>,
+        Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Oleg Nesterov <oleg@redhat.com>, John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        "jeremy.fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
+        Avi Kivity <avi@redhat.com>
+Subject: Re: [RFC][PATCH v2 4/7] taskstats: Add per task steal time
+ accounting
+Message-ID: <20101116163325.755a709f@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <1289909768.2109.592.camel@laptop>
+References: <20101111170352.732381138@linux.vnet.ibm.com>
+	<20101111170815.024542355@linux.vnet.ibm.com>
+	<1289677083.2109.167.camel@laptop>
+	<20101115155057.15f3be35@mschwide.boeblingen.de.ibm.com>
+	<1289833883.2109.494.camel@laptop>
+	<20101115184206.4463fd05@mschwide.boeblingen.de.ibm.com>
+	<1289843441.2109.520.camel@laptop>
+	<20101115185923.1c353d07@mschwide.boeblingen.de.ibm.com>
+	<1289844524.2109.524.camel@laptop>
+	<20101116095101.5d86d1e5@mschwide.boeblingen.de.ibm.com>
+	<1289909768.2109.592.camel@laptop>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 November 2010 15:18, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> On 15 November 2010 18:30, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Fri, Nov 12, 2010 at 06:00:25PM +0000, Catalin Marinas wrote:
->>> The LPAE page table format needs to explicitly disable execution or
->>> write permissions on a page by setting the corresponding bits (similar
->>> to the classic page table format with Access Flag enabled). This patch
->>> introduces null definitions for the 2-level format and the actual noexec
->>> and nowrite bits for the LPAE format. It also changes several PTE
->>> maintenance macros and masks.
->>>
->>> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
->>> ---
->>>  arch/arm/include/asm/pgtable-2level.h |    2 +
->>>  arch/arm/include/asm/pgtable.h        |   44 +++++++++++++++++++++------------
->>>  arch/arm/mm/mmu.c                     |    6 ++--
->>>  3 files changed, 33 insertions(+), 19 deletions(-)
->>>
->>> diff --git a/arch/arm/include/asm/pgtable-2level.h b/arch/arm/include/asm/pgtable-2level.h
->>> index 36bdef7..4e21166 100644
->>> --- a/arch/arm/include/asm/pgtable-2level.h
->>> +++ b/arch/arm/include/asm/pgtable-2level.h
->>> @@ -128,6 +128,8 @@
->>>  #define L_PTE_USER           (1 << 8)
->>>  #define L_PTE_EXEC           (1 << 9)
->>>  #define L_PTE_SHARED         (1 << 10)       /* shared(v6), coherent(xsc3) */
->>> +#define L_PTE_NOEXEC         (0)
->>> +#define L_PTE_NOWRITE                (0)
->>
->> Let's not make this more complicated than it has to be.  If we need the
->> inverse of WRITE and EXEC, then that's what we should change everyone to,
->> not invent a new system to work along side the old system.
->
-> This adds an additional instruction in set_pte_ext, unless you can
-> write the bit checking in a better way:
->
->        tst     r1, #L_PTE_NOWRITE
->        orrne   r3, r3, #PTE_EXT_APX
->        tsteq   r1, #L_PTE_DIRTY
->        orreq   r3, r3, #PTE_EXT_APX
+On Tue, 16 Nov 2010 13:16:08 +0100
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-I think that would work with 3 instructions:
+> On Tue, 2010-11-16 at 09:51 +0100, Martin Schwidefsky wrote:
+> > On Mon, 15 Nov 2010 19:08:44 +0100
+> > Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > 
+> > > On Mon, 2010-11-15 at 18:59 +0100, Martin Schwidefsky wrote:
+> > > > Steal time per task is at least good for performance problem analysis.
+> > > > Sometimes knowing what is not the cause of a performance problem can help you
+> > > > tremendously. If a task is slow and has no steal time, well then the hypervisor
+> > > > is likely not the culprit. On the other hand if you do see lots of steal time
+> > > > for a task while the rest of the system doesn't cause any steal time can tell
+> > > > you something as well. That task might hit a specific function which causes
+> > > > hypervisor overhead. The usefulness depends on the situation, it is another
+> > > > data point which may or may not help you. 
+> > > 
+> > > If performance analysis is the only reason, why not add a tracepoint on
+> > > vcpu enter that reports the duration the vcpu was out for and use perf
+> > > to gather said data? It can tell you what process was running and what
+> > > instruction it was at when the vcpu went away.
+> > > 
+> > > No need to add 40 bytes per task for that.
+> > 
+> > Which vcpu enter? We usually have z/VM as our hypervisor and want to be able
+> > to do performance analysis with the data we gather inside the guest. There
+> > is no vcpu enter we could put a tracepoint on. We would have to put tracepoints
+> > on every possible interaction point with z/VM to get this data. To me it seems
+> > a lot simpler to add the per-task steal time.
+> 
+> Oh, you guys don't have a hypercall wrapper to exploit? Because from
+> what I heard from the kvm/xen/lguest people I gathered they could in
+> fact do something like I proposed.
 
-	eor	r1, r1, L_PTE_DIRTY
-	tst	r1, #L_PTE_NOWRITE | L_PTE_DIRTY
-	orrne	r3, r3, #PTE_EXT_APX
+We could do something along the lines of a hypercall wrapper (we would call
+it a diagnose wrapper, same thing). The diagnoses we have on s390 do vastly
+different things, so it is not easy to have a common diagnose wrapper.
+Would be easier to add a tracepoint for each diagnose inline assembly.
+
+> In fact, kvm seems to already have these tracepoints: kvm_exit/kvm_entry
+> and it has a separate excplicit hypercall tracepoint as well:
+> kvm_hypercall.
+
+But the kvm tracepoints are used when Linux is the hypervisor, no? For our
+situation that would be a tracepoint in z/VM - or the equivalent. This is
+out of scope of this patch.
+
+> Except that the per-task steal time gives you lot less detail, being
+> able to profile on vcpu exit/enter gives you a much more powerfull
+> performance tool. Aside from being able to measure the steal-time it
+> allows you to instantly find hypercalls (both explicit as well as
+> implicit), so you can also measure the hypercall induced steal-time as
+> well.
+
+Yes and no. The tracepoint idea looks interesting in itself. But that does
+not completely replace the per-task steal time. The hypervisor can take
+away the cpu anytime, it is still interesting to know which task was hit
+hardest by that. You could view the cpu time lost by a hypercall as
+"synchronous" steal time for the task, the remaining delta to the total
+per-task steal time as "asynchronous" steal time.
+
+> > And if it is really the additional 40 bytes on x86 that bother you so much,
+> > we could put them behind #ifdef CONFIG_VIRT_CPU_ACCOUNTING. There already
+> > is one in the task_struct for prev_utime and prev_stime. 
+> 
+> Making it configurable would definitely help the embedded people, not
+> sure about VIRT_CPU_ACCOUNTING though, I bet the x86 virt weird^Wpeople
+> would like it too -- if only to strive for feature parity if nothing
+> else :/
+> 
+> Its just that I'm not at all convinced its the best approach to solve
+> the problem posed, and once its committed we're stuck with it due to
+> ABI.
+> 
+> We should be very careful not to die a death of thousand cuts with all
+> this accounting madness, there's way too many weird-ass process
+> accounting junk that adds ABI constraints as it is.
+> 
+> I think its definitely worth investing extra time to implement these
+> tracepoints if at all possible on your architecture before committing
+> yourself to something like this.
+
+I don't think it is either per-task steal time or tracepoints. Ideally 
+we'd have both. But I understand that you want to be careful about
+committing an ABI. From my viewpoint per-task steal is a logical
+extension, the data it is based on is already there.
 
 -- 
-Catalin
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
