@@ -1,100 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758243Ab0KPToU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 14:44:20 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53821 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756145Ab0KPToS (ORCPT
+	id S1758188Ab0KPTqS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 14:46:18 -0500
+Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:41884 "HELO
+	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756766Ab0KPTqQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 14:44:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <1289934800.2109.653.camel@laptop>
-References: <1289916171.5169.117.camel@maggy.simson.net> <1289916683.2109.625.camel@laptop>
- <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
- <20101116170312.GA19327@tango.0pointer.de> <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
- <20101116181603.GC19327@tango.0pointer.de> <1289931715.2109.648.camel@laptop>
- <AANLkTik7cR_5JJWfk8SEf3Dngfe7yZvuivJ66dVDOuAk@mail.gmail.com>
- <alpine.DEB.2.00.1011161047060.3718@asgard.lang.hm> <1289933965.2109.652.camel@laptop>
- <20101116190916.GD13092@redhat.com> <1289934800.2109.653.camel@laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 16 Nov 2010 11:35:42 -0800
-Message-ID: <AANLkTinp45D+1XM4vc961RRHWK3WV_N7REY2=34X3ir8@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Vivek Goyal <vgoyal@redhat.com>, david@lang.hm,
-        Paul Menage <menage@google.com>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 16 Nov 2010 14:46:16 -0500
+X-Greylist: delayed 394 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Nov 2010 14:46:15 EST
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: Kevin Hilman <khilman@deeprootsystems.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-input@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Chris Cordahi <christophercordahi@nanometrics.ca>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Alexander Clouter <alex@digriz.org.uk>
+Subject: [PATCH v2 3/4] da850-evm: extract defines for SEL{A,B,C} pins in UI expander
+Date: Tue, 16 Nov 2010 14:39:36 -0500
+Message-Id: <aa85c5d83111add3a2ed3495ac13bffe5e6b885d.1289935504.git.bengardiner@nanometrics.ca>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <cover.1289935504.git.bengardiner@nanometrics.ca>
+References: <cover.1289835508.git.bengardiner@nanometrics.ca> <cover.1289935504.git.bengardiner@nanometrics.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 11:13 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->
-> Its cpu-controller only, and then only for SCHED_OTHER tasks which are
-> proportionally fair.
+The setup and teardown methods of the UI expander reference the SEL_{A,B,C}
+pins by 'magic number' in each function. This patch extracts common #defines
+for their offsets in the expander and uses them.
 
-Well, it's _currently_ CPU controller only. People have already
-wondered if we should try to do something similar for IO scheduling
-too.
+Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+Reviewed-by: Chris Cordahi <christophercordahi@nanometrics.ca>
 
-So the thing I think is worth keeping in mind is that the "per-tty
-scheduling group" is really just an implementation issue. There is
-absolutely no question that it can't be about more than just
-scheduling, and that it can't be about more than just tty's also.
+---
 
-And an important thing to keep in mind is that "user interfaces are
-bad". The thinner the interface, the better. One of the reasons I
-really like autogroup is that it has _no_ interface at all. It's very
-much a heuristic, and it has zero user interface (apart from the knob
-that turns it on and off, of course). That is a great feature, because
-it means that you cannot break the interface. You will never need to
-have applications that have special linux-specific hooks in them, or
-system daemons who have to touch magical /proc files etc.
+No changes since v1
+---
+ arch/arm/mach-davinci/board-da850-evm.c |   27 +++++++++++++++------------
+ 1 files changed, 15 insertions(+), 12 deletions(-)
 
-One of the problems I found annoying when just testing it using the
-plain cgroup interface (before the patch) was the resource management.
-You needed root, and they actually made sense requiring root, because
-I don't think we _want_ to allow people creating infinite numbers of
-cgroups. Vivek's "trivial patch" (shell script) is a major DoS thing,
-for example. Letting normal users create cgroups willy-nilly is not a
-good idea (and as Vivek already found out, his trivial script leaks
-cgroups in a pretty fundamental way).
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index ff71ffd..dcf21e5 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -292,6 +292,9 @@ static const char const *ui_expander_names[] = {
+ 	"pb7", "pb6", "pb5", "pb4", "pb3", "pb2", "pb1"
+ };
+ 
++#define DA850_SEL_A_OFFSET	7
++#define DA850_SEL_B_OFFSET	6
++#define DA850_SEL_C_OFFSET	5
+ #define DA850_UI_PB8_OFFSET	8
+ #define DA850_N_UI_PB		8
+ 
+@@ -336,23 +339,23 @@ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
+ {
+ 	int sel_a, sel_b, sel_c, ret;
+ 
+-	sel_a = gpio + 7;
+-	sel_b = gpio + 6;
+-	sel_c = gpio + 5;
++	sel_a = gpio + DA850_SEL_A_OFFSET;
++	sel_b = gpio + DA850_SEL_B_OFFSET;
++	sel_c = gpio + DA850_SEL_C_OFFSET;
+ 
+-	ret = gpio_request(sel_a, "sel_a");
++	ret = gpio_request(sel_a, ui_expander_names[DA850_SEL_A_OFFSET]);
+ 	if (ret) {
+ 		pr_warning("Cannot open UI expander pin %d\n", sel_a);
+ 		goto exp_setup_sela_fail;
+ 	}
+ 
+-	ret = gpio_request(sel_b, "sel_b");
++	ret = gpio_request(sel_b, ui_expander_names[DA850_SEL_B_OFFSET]);
+ 	if (ret) {
+ 		pr_warning("Cannot open UI expander pin %d\n", sel_b);
+ 		goto exp_setup_selb_fail;
+ 	}
+ 
+-	ret = gpio_request(sel_c, "sel_c");
++	ret = gpio_request(sel_c, ui_expander_names[DA850_SEL_C_OFFSET]);
+ 	if (ret) {
+ 		pr_warning("Cannot open UI expander pin %d\n", sel_c);
+ 		goto exp_setup_selc_fail;
+@@ -396,13 +399,13 @@ static int da850_evm_ui_expander_teardown(struct i2c_client *client,
+ 	platform_device_unregister(&user_ui_pb_gpio_key_device);
+ 
+ 	/* deselect all functionalities */
+-	gpio_set_value(gpio + 5, 1);
+-	gpio_set_value(gpio + 6, 1);
+-	gpio_set_value(gpio + 7, 1);
++	gpio_set_value(gpio + DA850_SEL_C_OFFSET, 1);
++	gpio_set_value(gpio + DA850_SEL_B_OFFSET, 1);
++	gpio_set_value(gpio + DA850_SEL_A_OFFSET, 1);
+ 
+-	gpio_free(gpio + 5);
+-	gpio_free(gpio + 6);
+-	gpio_free(gpio + 7);
++	gpio_free(gpio + DA850_SEL_C_OFFSET);
++	gpio_free(gpio + DA850_SEL_B_OFFSET);
++	gpio_free(gpio + DA850_SEL_A_OFFSET);
+ 
+ 	return 0;
+ }
+-- 
+1.7.0.4
 
-The tty approach is somewhat self-limiting in that it requires you to
-get the tty to get an autogroup. But also, because it's very much a
-heuristic and doesn't have any user-visible interfaces, from a kernel
-perspective it's wonderful. There are no "semantics" to break. If it
-turns out that there is some way to create excessive cgroups, we can
-introduce per-user limits etc to say "the heuristic works up to X
-cgroups and then you'll just get your own user group". And nobody
-would ever notice.
-
-So doing things automatically and without any user interface is about
-_more_ than just convenience. If it can be done that way, it is
-fundamentally better way to do things. Because it hides the
-implementation details, and leaves us open to do totally different
-things in the end.
-
-For example, 'cgroups' itself is pretty heavy-weight, and is really
-quite smart. Those things nest, etc etc. But with the "it's just a
-heuristic", maybe somebody ends up doing a "simplified non-nesting
-grouping thing", and if you don't want the whole cgroup thing (I have
-always answered no to CONFIG_CGROUPS myself, for example), you could
-still do the autogrouping. But you could _not_ cleanly do the
-/proc/sys/cgroup/user scripting, because your implementation is no
-longer based on the whole cgroups thing.
-
-Now, will any of this ever happen? I dunno. I doubt it will matter.
-But it's an example of why I think it's such a great approach, and why
-"it just works" is such an important feature.
-
-                       Linus
-
-                       Linus
