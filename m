@@ -1,67 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758635Ab0KPEPX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 23:15:23 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36455
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752650Ab0KPEPW (ORCPT
+	id S1759348Ab0KPEYA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 23:24:00 -0500
+Received: from edison.jonmasters.org ([173.255.233.168]:41357 "EHLO
+	edison.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757299Ab0KPEX7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 23:15:22 -0500
-Date: Mon, 15 Nov 2010 20:15:47 -0800 (PST)
-Message-Id: <20101115.201547.193717949.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, jesse@nicira.com
-Subject: Re: linux-next: build failure after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101116113437.4f536d16.sfr@canb.auug.org.au>
-References: <20101116113437.4f536d16.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 15 Nov 2010 23:23:59 -0500
+X-Greylist: delayed 1119 seconds by postgrey-1.27 at vger.kernel.org; Mon, 15 Nov 2010 23:23:59 EST
+From: Jon Masters <jonathan@jonmasters.org>
+To: Brett Rudley <brudley@broadcom.com>
+Cc: devel <devel@linuxdriverproject.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <7A94256FD72B884D9E7C55586C3CBCEE13840C62AA@SJEXCHCCR01.corp.ad.broadcom.com>
+References: <1289272437.3916.440.camel@constitution.bos.jonmasters.org>
+	 <7A94256FD72B884D9E7C55586C3CBCEE13840C62AA@SJEXCHCCR01.corp.ad.broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: World Organi[sz]ation Of Broken Dreams
+Date: Mon, 15 Nov 2010 23:04:39 -0500
+Message-ID: <1289880279.3916.889.camel@constitution.bos.jonmasters.org>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+Subject: RE: PROBLEM: brcm80211 unable to survive suspend/resume cycle
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Nov 2009 07:31:22 +0000)
+X-SA-Exim-Scanned: Yes (on edison.jonmasters.org)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 16 Nov 2010 11:34:37 +1100
+On Tue, 2010-11-09 at 10:02 -0800, Brett Rudley wrote:
+> Hey Jon, thanks for the heads up.  I can repro and am looking into it.
 
-> After merging the net tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> ERROR: "netif_get_vlan_features" [drivers/net/xen-netfront.ko] undefined!
-> 
-> Caused by commit 58e998c6d23988490162cef0784b19ea274d90bb ("offloading:
-> Force software GSO for multiple vlan tags").
-> 
-> Presumably netif_get_vlan_features needs exporting.
+Did you get chance to poke much yet?
 
-Thanks Stephen, I've just pushed the following fix.
+Jon.
 
---------------------
-net: Export netif_get_vlan_features().
-
-ERROR: "netif_get_vlan_features" [drivers/net/xen-netfront.ko] undefined!
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/core/dev.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 8725d16..381b8e2 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1983,6 +1983,7 @@ int netif_get_vlan_features(struct sk_buff *skb, struct net_device *dev)
- 	else
- 		return 0;
- }
-+EXPORT_SYMBOL(netif_get_vlan_features);
- 
- /*
-  * Returns true if either:
--- 
-1.7.3.2
 
