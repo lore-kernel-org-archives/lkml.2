@@ -1,44 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933953Ab0KPHas (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 02:30:48 -0500
-Received: from mail.perches.com ([173.55.12.10]:1428 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753406Ab0KPHar (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 02:30:47 -0500
-Subject: Re: [PATCH 09/10] drivers/staging: Remove unnecessary casts of
- netdev_priv
-From: Joe Perches <joe@perches.com>
-To: Belisko Marek <marek.belisko@gmail.com>
-Cc: Jiri Kosina <trivial@kernel.org>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTi=1XasDJaaisZ=NnL3Yv5tx+vhuifCuq7e-0PMe@mail.gmail.com>
-References: <cover.1289855436.git.joe@perches.com>
-	 <223eff1b1e8c4d1791af56113d088b379a93780b.1289855436.git.joe@perches.com>
-	 <AANLkTi=1XasDJaaisZ=NnL3Yv5tx+vhuifCuq7e-0PMe@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Nov 2010 23:30:45 -0800
-Message-ID: <1289892645.28741.8.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S933969Ab0KPHa4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 02:30:56 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:65208 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab0KPHay (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 02:30:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=ElWKUw8+Miq6hXJg6HIExU2i0UPFTTxLlJuuvNZMeUZ8KNgBBwIx24PieT8awWblfz
+         zmpsDLuixW01+46ZjhAHgZKDVpaoEe0YpizwLdxPTOw/bq63Kr35oDlxKQuRx4HECySQ
+         Ejiqj+eWIdJW06F8AbygWt8xqL8A/NcEho/hc=
+MIME-Version: 1.0
+Date: Tue, 16 Nov 2010 09:30:53 +0200
+Message-ID: <AANLkTinLKibXfnN2XSVE2P_x3EJancRNdi3B4YBxvL=j@mail.gmail.com>
+Subject: Build failure 2.6.37-rc2
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 08:20 +0100, Belisko Marek wrote:
-> On Mon, Nov 15, 2010 at 10:12 PM, Joe Perches <joe@perches.com> wrote:
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> If I do: grep -r -n 'netdev_priv' drivers/staging/*/*[ch]
-
-Try:
-
-$ grep -rP --include=*.[ch] "=\s*\([^\*]+\*\s*\)\s*netdev_priv" drivers/staging
-
-> there is a more netdev_priv occurences ;)
-
-I'm sure there are, but probably not assigns.
-If you find more unnecessary casts, by all means submit them.
-
-cheers, Joe
-
+  Building modules, stage 2.
+  MODPOST 2794 modules
+FATAL: arch/x86/kernel/msr.o has no symtab?
+make[2]: *** [__modpost] Error 1
+make[1]: *** [modules] Error 2
+make[1]: Leaving directory `/home/emi/linux-2.6'
+make: *** [debian/stamp/build/kernel] Error 2
