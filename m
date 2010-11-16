@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752483Ab0KPF1D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 00:27:03 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:52817 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751706Ab0KPF1B (ORCPT
+	id S1753166Ab0KPFaI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 00:30:08 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:39819 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751783Ab0KPFaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 00:27:01 -0500
-Date: Tue, 16 Nov 2010 06:26:34 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: kernel list <linux-kernel@vger.kernel.org>,
-        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: 2.6.37-rc1+: hibernate regression, claims not enough swap space
-Message-ID: <20101116052634.GA30449@elf.ucw.cz>
-References: <20101114052138.GB2189@elf.ucw.cz>
- <201011152326.44357.rjw@sisk.pl>
+	Tue, 16 Nov 2010 00:30:05 -0500
+Message-ID: <001801cb854f$527a2bc0$66f8800a@maildom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "Marc Kleine-Budde" <mkl@pengutronix.de>
+Cc: "Wolfgang Grandegger" <wg@grandegger.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Wolfram Sang" <w.sang@pengutronix.de>,
+        "Christian Pellegrin" <chripell@fsfe.org>,
+        "Barry Song" <21cnbao@gmail.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
+        <margie.foster@intel.com>, <yong.y.wang@intel.com>,
+        "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>,
+        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>
+References: <4CE0EFA7.9020007@dsn.okisemi.com> <4CE0FF5A.3000100@pengutronix.de>
+Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Add Flow control,
+Date: Tue, 16 Nov 2010 14:30:03 +0900
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201011152326.44357.rjw@sisk.pl>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi Marc,
 
-> > ...but there's enough -- or at least it was enough to fit previous
-> > versions. 32-bit machine, so it has highmem.
-> > 
-> > System is in console mode, very lightly loaded.
-> > 
-> > Mem:   2054716k total,   736548k used,  1318168k free,    15368k buffers
-> > Swap:   779148k total,     2360k used,   776788k free,   546388k cached
-> 
-> Well, the swap is rather in short supply.  Below the 50% of RAM recommendation.
+On Monday, November 15, 2010 6:37 PM, Marc Kleine-Budde wrote :
 
-Well, but the biggest image we can write is not 50% of RAM, but 50% of
-lowmem... and swap is nearly as big as lowmem in this case -- so this
-machine is not misconfigured.
+> Either use ioread8 or ioread16 in both the rx and tx path.
+I will modify to ioread16
 
-root@amd:/# cat /proc/meminfo 
-MemTotal:        2054716 kB
-MemFree:          192048 kB
-Buffers:           97628 kB
-Cached:          1427088 kB
-SwapCached:            0 kB
-Active:           547580 kB
-Inactive:        1091744 kB
-Active(anon):      57060 kB
-Inactive(anon):    58908 kB
-Active(file):     490520 kB
-Inactive(file):  1032836 kB
-Unevictable:           0 kB
-Mlocked:               0 kB
-HighTotal:       1178440 kB
-HighFree:         128092 kB
-LowTotal:         876276 kB
-LowFree:           63956 kB
-SwapTotal:        779148 kB
-SwapFree:         779148 kB
+>> +  if (ioread32(&priv->regs->treq2) & 0xfc00) {
+> what does this if check?
+This is for whether all tx requests are complete or not.
 
-> > thinkpad_acpi: ACPI backlight control delay disabled
-> > PM: thaw of devices complete after 539.577 msecs
-> > PM: writing image.
-> > PM: Free swap pages: 194166
-> > PM: Not enough free swap
-> > Restarting tasks ...
-> > 
-> > Aha, and it is the new default /sys/power/image_size .. setting it to
-> > 0 lets machine hibernate. I guess the new default is very wrong for
-> > highmem machine...
-> 
-> The old default did the wrong thing for everyone with sufficient swap (it made
-> the OOM code trigger every time while preparing to create an image), so I think
-> the new one it's better overall.
+---
+Thanks,
 
-OOM? No... image_size of 0 should have written "as small image as
-possible"; slow, but should not OOM.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
