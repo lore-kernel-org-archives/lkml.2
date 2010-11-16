@@ -1,99 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab0KPGDR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 01:03:17 -0500
-Received: from mga09.intel.com ([134.134.136.24]:40476 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756275Ab0KPGDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 01:03:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,204,1288594800"; 
-   d="scan'208";a="677894639"
-Subject: [PATCH]  do not select ACPI_VIDEO in poulsbo stub driver
-From: Zhang Rui <rui.zhang@intel.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Joey Lee <jlee@novell.com>, mingo@elte.hu, airlied@redhat.com,
-        "Brown, Len" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Zhang, Rui" <rui.zhang@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Nov 2010 14:04:53 +0800
-Message-ID: <1289887493.8148.2040.camel@rui>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1757194Ab0KPGH1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 01:07:27 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34835 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754472Ab0KPGH0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 01:07:26 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH v3] factor out kswapd sleeping logic from kswapd()
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20101115094239.GH27362@csn.ul.ie>
+References: <20101114180505.BEE2.A69D9226@jp.fujitsu.com> <20101115094239.GH27362@csn.ul.ie>
+Message-Id: <20101116144709.BF26.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 16 Nov 2010 15:07:22 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > +void kswapd_try_to_sleep(pg_data_t *pgdat, int order)
+> > +{
+> 
+> As pointed out elsewhere, this should be static.
 
-the poulsbo stub driver should not select ACPI video driver.
+Fixed.
 
-The reason why i915 driver selects ACPI video driver is that it needs some
-cooperation between these two drivers during initialization, or else the
-system may hang.
 
-So if users want ACPI backlight control, please set CONFIG_ACPI_VIDEO manually.
+> > +	long remaining = 0;
+> > +	DEFINE_WAIT(wait);
+> > +
+> > +	if (freezing(current) || kthread_should_stop())
+> > +		return;
+> > +
+> > +	prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
+> > +
+> > +	/* Try to sleep for a short interval */
+> > +	if (!sleeping_prematurely(pgdat, order, remaining)) {
+> > +		remaining = schedule_timeout(HZ/10);
+> > +		finish_wait(&pgdat->kswapd_wait, &wait);
+> > +		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
+> > +	}
+> > +
+> > +	/*
+> > +	 * After a short sleep, check if it was a
+> > +	 * premature sleep. If not, then go fully
+> > +	 * to sleep until explicitly woken up
+> > +	 */
+> 
+> Very minor but that comment should now fit on fewer lines.
 
-http://marc.info/?l=linux-acpi&m=128952659018533&w=2
+Thanks, fixed.
 
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Dave Airlie <airlied@redhat.com>
-CC: Lee, Chun-Yi <joeyli.kernel@gmail.com>
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+
+> > +	if (!sleeping_prematurely(pgdat, order, remaining)) {
+> > +		trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
+> > +		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
+> > +		schedule();
+> > +		set_pgdat_percpu_threshold(pgdat, calculate_pressure_threshold);
+> 
+> I posted a patch adding a comment on why set_pgdat_percpu_threshold() is
+> called. I do not believe it has been picked up by Andrew but it if is,
+> the patches will conflict. The resolution will be obvious but you may
+> need to respin this patch if the comment patch gets picked up in mmotm.
+> 
+> Otherwise, I see no problems.
+
+OK, I've rebased the patch on top your comment patch. 
+
+
+
+>From 1bd232713d55f033676f80cc7451ff83d4483884 Mon Sep 17 00:00:00 2001
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Mon, 6 Dec 2010 20:44:27 +0900
+Subject: [PATCH] factor out kswapd sleeping logic from kswapd()
+
+Currently, kswapd() function has deeper nest and it slightly harder to
+read. cleanup it.
+
+Cc: Mel Gorman <mel@csn.ul.ie>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
- drivers/gpu/stub/Kconfig   |   11 +----------
- drivers/gpu/stub/poulsbo.c |    5 +----
- 2 files changed, 2 insertions(+), 14 deletions(-)
+ mm/vmscan.c |   92 +++++++++++++++++++++++++++++-----------------------------
+ 1 files changed, 46 insertions(+), 46 deletions(-)
 
-Index: linux-2.6/drivers/gpu/stub/Kconfig
-===================================================================
---- linux-2.6.orig/drivers/gpu/stub/Kconfig
-+++ linux-2.6/drivers/gpu/stub/Kconfig
-@@ -1,16 +1,7 @@
- config STUB_POULSBO
- 	tristate "Intel GMA500 Stub Driver"
- 	depends on PCI
--	# Poulsbo stub depends on ACPI_VIDEO when ACPI is enabled
--	# but for select to work, need to select ACPI_VIDEO's dependencies, ick
--	select VIDEO_OUTPUT_CONTROL if ACPI
--	select BACKLIGHT_CLASS_DEVICE if ACPI
--	select INPUT if ACPI
--	select ACPI_VIDEO if ACPI
- 	help
- 	  Choose this option if you have a system that has Intel GMA500
- 	  (Poulsbo) integrated graphics. If M is selected, the module will
--	  be called Poulsbo. This driver is a stub driver for Poulsbo that
--	  will call poulsbo.ko to enable the acpi backlight control sysfs
--	  entry file because there have no poulsbo native driver can support
--	  intel opregion.
-+	  be called Poulsbo.
-Index: linux-2.6/drivers/gpu/stub/poulsbo.c
-===================================================================
---- linux-2.6.orig/drivers/gpu/stub/poulsbo.c
-+++ linux-2.6/drivers/gpu/stub/poulsbo.c
-@@ -11,8 +11,6 @@
- 
- #include <linux/module.h>
- #include <linux/pci.h>
--#include <linux/acpi.h>
--#include <acpi/video.h>
- 
- #define DRIVER_NAME "poulsbo"
- 
-@@ -29,12 +27,11 @@ static DEFINE_PCI_DEVICE_TABLE(pciidlist
- 
- static int poulsbo_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- {
--	return acpi_video_register();
-+	return 0;
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 33994b7..cd07b97 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2364,6 +2364,50 @@ out:
+ 	return sc.nr_reclaimed;
  }
  
- static void poulsbo_remove(struct pci_dev *pdev)
- {
--	acpi_video_unregister();
- }
++static void kswapd_try_to_sleep(pg_data_t *pgdat, int order)
++{
++	long remaining = 0;
++	DEFINE_WAIT(wait);
++
++	if (freezing(current) || kthread_should_stop())
++		return;
++
++	prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
++
++	/* Try to sleep for a short interval */
++	if (!sleeping_prematurely(pgdat, order, remaining)) {
++		remaining = schedule_timeout(HZ/10);
++		finish_wait(&pgdat->kswapd_wait, &wait);
++		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
++	}
++
++	/*
++	 * After a short sleep, check if it was a premature sleep. If not, then
++	 * go fully to sleep until explicitly woken up.
++	 */
++	if (!sleeping_prematurely(pgdat, order, remaining)) {
++		trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
++
++		/*
++		 * vmstat counters are not perfectly accurate and the estimated
++		 * value for counters such as NR_FREE_PAGES can deviate from the
++		 * true value by nr_online_cpus * threshold. To avoid the zone
++		 * watermarks being breached while under pressure, we reduce the
++		 * per-cpu vmstat threshold while kswapd is awake and restore
++		 * them before going back to sleep.
++		 */
++		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
++		schedule();
++		set_pgdat_percpu_threshold(pgdat, calculate_pressure_threshold);
++	} else {
++		if (remaining)
++			count_vm_event(KSWAPD_LOW_WMARK_HIT_QUICKLY);
++		else
++			count_vm_event(KSWAPD_HIGH_WMARK_HIT_QUICKLY);
++	}
++	finish_wait(&pgdat->kswapd_wait, &wait);
++}
++
+ /*
+  * The background pageout daemon, started as a kernel thread
+  * from the init process.
+@@ -2382,7 +2426,7 @@ static int kswapd(void *p)
+ 	unsigned long order;
+ 	pg_data_t *pgdat = (pg_data_t*)p;
+ 	struct task_struct *tsk = current;
+-	DEFINE_WAIT(wait);
++
+ 	struct reclaim_state reclaim_state = {
+ 		.reclaimed_slab = 0,
+ 	};
+@@ -2414,7 +2458,6 @@ static int kswapd(void *p)
+ 		unsigned long new_order;
+ 		int ret;
  
- static struct pci_driver poulsbo_driver = {
+-		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
+ 		new_order = pgdat->kswapd_max_order;
+ 		pgdat->kswapd_max_order = 0;
+ 		if (order < new_order) {
+@@ -2424,52 +2467,9 @@ static int kswapd(void *p)
+ 			 */
+ 			order = new_order;
+ 		} else {
+-			if (!freezing(current) && !kthread_should_stop()) {
+-				long remaining = 0;
+-
+-				/* Try to sleep for a short interval */
+-				if (!sleeping_prematurely(pgdat, order, remaining)) {
+-					remaining = schedule_timeout(HZ/10);
+-					finish_wait(&pgdat->kswapd_wait, &wait);
+-					prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
+-				}
+-
+-				/*
+-				 * After a short sleep, check if it was a
+-				 * premature sleep. If not, then go fully
+-				 * to sleep until explicitly woken up
+-				 */
+-				if (!sleeping_prematurely(pgdat, order, remaining)) {
+-					trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
+-
+-					/*
+-					 * vmstat counters are not perfectly
+-					 * accurate and the estimated value
+-					 * for counters such as NR_FREE_PAGES
+-					 * can deviate from the true value by
+-					 * nr_online_cpus * threshold. To
+-					 * avoid the zone watermarks being
+-					 * breached while under pressure, we
+-					 * reduce the per-cpu vmstat threshold
+-					 * while kswapd is awake and restore
+-					 * them before going back to sleep.
+-					 */
+-					set_pgdat_percpu_threshold(pgdat,
+-						calculate_normal_threshold);
+-					schedule();
+-					set_pgdat_percpu_threshold(pgdat,
+-						calculate_pressure_threshold);
+-				} else {
+-					if (remaining)
+-						count_vm_event(KSWAPD_LOW_WMARK_HIT_QUICKLY);
+-					else
+-						count_vm_event(KSWAPD_HIGH_WMARK_HIT_QUICKLY);
+-				}
+-			}
+-
++			kswapd_try_to_sleep(pgdat, order);
+ 			order = pgdat->kswapd_max_order;
+ 		}
+-		finish_wait(&pgdat->kswapd_wait, &wait);
+ 
+ 		ret = try_to_freeze();
+ 		if (kthread_should_stop())
+-- 
+1.6.5.2
+
 
 
