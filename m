@@ -1,133 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759498Ab0KPICh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 03:02:37 -0500
-Received: from mail.sysgo.com ([195.145.229.155]:38985 "EHLO mail.sysgo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759476Ab0KPICg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 03:02:36 -0500
-Date: Tue, 16 Nov 2010 09:03:11 +0100
-From: Pavel Machek <pma@sysgo.com>
-To: kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        eric.y.miao@gmail.com, cko@sysgo.com
-Subject: 19851c58e68 breaks spacecom1 board
-Message-ID: <20101116080311.GA17397@pma.sysgo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933965Ab0KPIDf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 03:03:35 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:45062 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757210Ab0KPIDe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 03:03:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=OU9s1bI+4ATYf5FBf4ppE+FmLulFpiNSFSJRxkPi3uq+YMqOYLpdzIW5nelzDeBPVH
+         VIXDIbSavSr5ewl69u+ma8JHog+GwfakbUsYILjDsRF4vVDxaGe2TFAP/C0Lya5lsGPx
+         mAd0oHiUG9dwyoR2CW/6EZMX0TOQxu3WH+j9c=
+Subject: [PATCH 1/5] ASoC: Fix incorrect kfree in ad1836_probe error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Barry Song <21cnbao@gmail.com>
+In-Reply-To: <1289894800.19543.2.camel@mola>
+References: <1289894800.19543.2.camel@mola>
+Content-Type: text/plain
+Date: Tue, 16 Nov 2010 16:08:00 +0800
+Message-Id: <1289894880.19543.5.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+We allocated memory for ad1836 in ad1836_spi_probe,
+and will free the memory in either ad1836_spi_probe error path or
+ad1836_spi_remove.
 
-I'm working here with spacecom1 board... you probably do not want to
-know about. Unfortunately, the board does not work with 2.6.34, and I
-believe identified the offending patch...
+Thus we should not call kfree(ad1836) in ad1836_probe, otherwise
+we have double free of ad1836.
 
-commit 19851c58e680f71d087b79b53edbf814193e1d33
-Author: Eric Miao <eric.y.miao@gmail.com>
-Date:   Sat Dec 26 16:23:02 2009 +0800
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/ad1836.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-    [ARM] sa1111: allow cascaded IRQs to be used by platforms
-    
-    Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
-
-Now, what happens is this:
-
---- a/arch/arm/common/sa1111.c
-+++ b/arch/arm/common/sa1111.c
-@@ -35,6 +35,58 @@
- 
- #include <asm/hardware/sa1111.h>
- 
-+/* SA1111 IRQs */
-+#define IRQ_GPAIN0             (0)
-
-....
---- a/arch/arm/mach-pxa/include/mach/irqs.h
-+++ b/arch/arm/mach-pxa/include/mach/irqs.h
-@@ -135,58 +135,6 @@
- #define IRQ_BOARD_END          (IRQ_BOARD_START + 16)
- #endif
- 
--#define IRQ_SA1111_START       (IRQ_BOARD_END)
--#define IRQ_GPAIN0             (IRQ_BOARD_END + 0)
-...
-
-So, in 2.6.34, irq_base needs to be added to IRQ_GPAIN0 and
-similar. Unfortunately, it is not added at least in some users,
-registering sa1111 interrupts over those at zero, breaking everything.
-
-I have to do something like this to get my board back to boot.
-
-Signed-off-by: Pavel Machek <pma@sysgo.com>
-
-(but you probably don't want to apply the patch just like that).
-
-diff --git a/arch/arm/common/sa1111.c b/arch/arm/common/sa1111.c
-index f81543a..f1c0552 100644
---- a/arch/arm/common/sa1111.c
-+++ b/arch/arm/common/sa1111.c
-@@ -448,9 +448,9 @@ static struct irq_chip sa1111_high_chip = {
- static void sa1111_setup_irq(struct sa1111 *sachip)
- {
- 	void __iomem *irqbase = sachip->base + SA1111_INTC;
-+	int irq_base = sachip->irq_base; 
- 	unsigned int irq;
- 
--#if 0
- 	/*
- 	 * We're guaranteed that this region hasn't been taken.
- 	 */
-@@ -476,26 +476,28 @@ static void sa1111_setup_irq(struct sa1111 *sachip)
- 	sa1111_writel(~0, irqbase + SA1111_INTSTATCLR1);
- 
- 	for (irq = IRQ_GPAIN0; irq <= SSPROR; irq++) {
--		set_irq_chip(irq, &sa1111_low_chip);
--		set_irq_chip_data(irq, sachip);
--		set_irq_handler(irq, handle_edge_irq);
--		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
-+		printk("Setting up irq %d (irq_base %d)\n", irq, sachip->irq_base);
-+		set_irq_chip(irq + irq_base, &sa1111_low_chip);
-+		set_irq_chip_data(irq + irq_base, sachip);
-+		set_irq_handler(irq + irq_base, handle_edge_irq);
-+		set_irq_flags(irq + irq_base, IRQF_VALID | IRQF_PROBE);
+diff --git a/sound/soc/codecs/ad1836.c b/sound/soc/codecs/ad1836.c
+index c71b05d..e5d3db9 100644
+--- a/sound/soc/codecs/ad1836.c
++++ b/sound/soc/codecs/ad1836.c
+@@ -228,7 +228,6 @@ static int ad1836_probe(struct snd_soc_codec *codec)
+ 	if (ret < 0) {
+ 		dev_err(codec->dev, "failed to set cache I/O: %d\n",
+ 				ret);
+-		kfree(ad1836);
+ 		return ret;
  	}
  
- 	for (irq = AUDXMTDMADONEA; irq <= IRQ_S1_BVD1_STSCHG; irq++) {
--		set_irq_chip(irq, &sa1111_high_chip);
--		set_irq_chip_data(irq, sachip);
--		set_irq_handler(irq, handle_edge_irq);
--		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
-+		set_irq_chip(irq + irq_base, &sa1111_high_chip);
-+		set_irq_chip_data(irq + irq_base, sachip);
-+		set_irq_handler(irq + irq_base, handle_edge_irq);
-+		set_irq_flags(irq + irq_base, IRQF_VALID | IRQF_PROBE);
- 	}
- 
-+	printk("Registering sa1111 irq: %d\n", sachip->irq);
-+
- 	/*
- 	 * Register SA1111 interrupt
- 	 */
- 	set_irq_type(sachip->irq, IRQ_TYPE_EDGE_RISING);
- 	set_irq_data(sachip->irq, sachip);
- 	set_irq_chained_handler(sachip->irq, sa1111_irq_handler);
--#endif
- }
- 
- /*
-@@ -708,6 +710,7 @@ __sa1111_probe(struct device *me, struct resource *mem, int irq)
- 
- 	sachip->phys = mem->start;
- 	sachip->irq = irq;
-+	sachip->irq_base = IRQ_BOARD_END;
- 
- 	/*
- 	 * Map the whole region.  This also maps the
+-- 
+1.7.2
 
 
 
