@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758843Ab0KPAEr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 19:04:47 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:53625 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752244Ab0KPAEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 19:04:46 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+eSWwIK/iewVh6CS1Qua+EorPNAkNHqPQu61q0Af
-	uUV7XiJEXxsPP1
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Valdis.Kletnieks@vt.edu, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-In-Reply-To: <AANLkTikztvdgFucCUjZ+A5Je-LUKLknV5+aznVvL98oQ@mail.gmail.com>
-References: <1287479765.9920.9.camel@marge.simson.net>
-	 <1287487757.24189.40.camel@marge.simson.net>
-	 <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>
-	 <1287511983.7417.45.camel@marge.simson.net>
-	 <1287514410.7368.10.camel@marge.simson.net>
-	 <20101020025652.GB26822@elte.hu>
-	 <1287648715.9021.20.camel@marge.simson.net>
-	 <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>
-	 <20101021162924.GA3225@redhat.com>
-	 <1288076838.11930.1.camel@marge.simson.net>
-	 <1288078144.7478.9.camel@marge.simson.net>
-	 <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>
-	 <1289489200.11397.21.camel@maggy.simson.net> <30291.1289860866@localhost>
-	 <1289864780.14719.172.camel@maggy.simson.net>
-	 <AANLkTikztvdgFucCUjZ+A5Je-LUKLknV5+aznVvL98oQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 15 Nov 2010 17:04:30 -0700
-Message-ID: <1289865870.14719.185.camel@maggy.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1758883Ab0KPAG2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 19:06:28 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:42985 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757615Ab0KPAG1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 19:06:27 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=tySZSe4jIO7Ab0Jk6MRIdcM0gKIQirfrrioHVApI5G45m0MF5hPFKouqjvZIcC5Y8r
+         j/ckWV5huYUREIFxLAjw==
+Date: Mon, 15 Nov 2010 16:06:21 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jesper Juhl <jj@chaosbits.net>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
+        Bodo Eggert <7eggert@web.de>, Mandeep Singh Baines <msb@google.com>,
+        "Figo.zhang" <figo1802@gmail.com>
+Subject: Re: [PATCH] Revert oom rewrite series
+In-Reply-To: <alpine.LNX.2.00.1011160027180.22346@swampdragon.chaosbits.net>
+Message-ID: <alpine.DEB.2.00.1011151602090.29081@chino.kir.corp.google.com>
+References: <20101115093410.BEFD.A69D9226@jp.fujitsu.com> <20101114181905.bc5b44f9.akpm@linux-foundation.org> <20101115113238.BF06.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011150215460.2986@chino.kir.corp.google.com>
+ <alpine.LNX.2.00.1011160027180.22346@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-15 at 15:50 -0800, Linus Torvalds wrote:
-> On Mon, Nov 15, 2010 at 3:46 PM, Mike Galbraith <efault@gmx.de> wrote:
-> > On Mon, 2010-11-15 at 17:41 -0500, Valdis.Kletnieks@vt.edu wrote:
-> >
-> >> > +extern void sched_autogroup_detatch(struct task_struct *p);
-> >>
-> >> sched_autogroup_detach() instead?
-> >
-> > Hm, why?
+On Tue, 16 Nov 2010, Jesper Juhl wrote:
+
+> [jj@dragon ~]$ uname -a
+> Linux dragon 2.6.37-rc1-ARCH-00542-g0143832-dirty #1 SMP PREEMPT Mon Nov 15 22:01:52 CET 2010 x86_64 Intel(R) Core(TM)2 Duo CPU T7250 @ 2.00GHz GenuineIntel GNU/Linux
+> [jj@dragon ~]$ dmesg | grep oom_adj
+> start_kdeinit (1502): /proc/1502/oom_adj is deprecated, please use /proc/1502/oom_score_adj instead.
+> [jj@dragon ~]$ /usr/lib/kde4/libexec/start_kdeinit --version
 > 
-> You really aren't a good speller of that word, are you?
+> Qt: 4.7.1
+> KDE: 4.5.3 (KDE 4.5.3)
+> 
 
-<stare>  d e t a c h... d e t a t....t?  aw crap. Guess not.
+Thanks for the report!  I'll get involved with kde-devel and send a patch 
+to remove this dependency on newer kernels to expedite the process.
 
-Couldn't even see it.
-
-	-Mike
-
+ [ Others with reports of deprecated use of oom_adj can contact me 
+   privately and I'll find the parties of interest to avoid topics 
+   unrelated to the kernel itself on LKML. ]
