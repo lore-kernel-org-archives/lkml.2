@@ -1,37 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933607Ab0KPLhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 06:37:13 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58696 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933106Ab0KPLhM (ORCPT
+	id S933764Ab0KPLh0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 06:37:26 -0500
+Received: from nm29.bullet.mail.sp2.yahoo.com ([98.139.91.99]:48235 "HELO
+	nm29.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S933630Ab0KPLhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 06:37:12 -0500
-Date: Tue, 16 Nov 2010 11:37:09 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Barry Song <21cnbao@gmail.com>,
-        Vladimir Barinov <vbarinov@embeddedalley.com>,
-        Richard Purdie <richard@openedhand.com>
-Subject: Re: [PATCH 0/5] ASoC: Fix incorrect kfree in error path
-Message-ID: <20101116113709.GN12986@rakim.wolfsonmicro.main>
-References: <1289894800.19543.2.camel@mola>
- <1289901165.3338.12.camel@odin>
+	Tue, 16 Nov 2010 06:37:24 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 344517.20423.bm@omp1006.mail.sp2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:To:MIME-Version:Content-Type;
+  b=axwoudpIpUJw0g8HlwH3rgoBnk5Ssma6jc42DgGpQCNICaTvgyZVVBcjSVDEMNTNlN03ARx+/yA2BrfroU/tUfXBykjiMasrzjOnEwqJjSSulk222KNc7D1CNPIbkvPvVqQaZ2fwj6KWRQUdjbpcq8CEg/rG7/QYn43xIRx947g=;
+Message-ID: <9053.21346.qm@web45701.mail.sp1.yahoo.com>
+X-YMail-OSG: TAHBEbsVM1kNg.15GuB3cRgvpziucwH8cKZ_lM9tQ5PLPL.
+ 5e1gRPIUYNUDLy1_sSXoEvAEoYJbow7d_ORzxUSDzECvdyICI_K0azuseVMa
+ G1QFcEG5f.hId1KnPdrEbkyxXMpVk7p4apuO4vmUwrTSqAwQfVMezMnaPC2f
+ pY0rd94VvOsk5URLCniWsK1xMrqJg63IxEJGdN9ufOUQmkeit6kS2HblKqfm
+ 5cgKsYRygBaBytz54yqmZcFP950ea
+X-Mailer: YahooMailRC/504.5 YahooMailWebService/0.8.107.285259
+Date: Tue, 16 Nov 2010 03:37:22 -0800 (PST)
+From: Salim Tyrewala <salimtyrewala@yahoo.com>
+To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289901165.3338.12.camel@odin>
-X-Cookie: I like your SNOOPY POSTER!!
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 09:52:45AM +0000, Liam Girdwood wrote:
-> On Tue, 2010-11-16 at 16:06 +0800, Axel Lin wrote:
-> > This serial of patches fixes incorrect kfree in error path.
+subscribe linux-kernel
 
-> All 
 
-Applied, thanks.
+
+      
