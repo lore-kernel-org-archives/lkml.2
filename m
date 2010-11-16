@@ -1,108 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759322Ab0KPVUr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 16:20:47 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:55123 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759189Ab0KPVUq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 16:20:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uMKfg/WoyxLuGthUL1yEX8eGJClCSJ5UG46coDQ5GBC6Vi+HYSO8pzCesP57oVmZLn
-         Kfq4RqznRswhJKojjS70M3Txwyi1tyGEIFpDnkifqMWSFQ/Ibs6bCf3mwGzmExZo/JF/
-         NH9vyph9ixlpHy1/lxgdc+j60cSeayNC/SMDI=
+	id S1758839Ab0KPVWZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 16:22:25 -0500
+Received: from kroah.org ([198.145.64.141]:50195 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755170Ab0KPVWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 16:22:24 -0500
+Date: Tue, 16 Nov 2010 13:21:57 -0800
+From: Greg KH <greg@kroah.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        balbir@linux.vnet.ibm.com
+Subject: Re: [stable] [PATCH] Make swap accounting default behavior
+ configurable
+Message-ID: <20101116212157.GB9359@kroah.com>
+References: <20101116101726.GA21296@tiehlicka.suse.cz>
+ <20101116124615.978ed940.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1289941098.20058.1.camel@nisroch>
-References: <AANLkTi=34dJ1HJco8gw=Y+7Ear3mC+XnahqODhnn+56u@mail.gmail.com>
-	<20101116125055.74f78634.randy.dunlap@oracle.com>
-	<1289941098.20058.1.camel@nisroch>
-Date: Tue, 16 Nov 2010 22:20:45 +0100
-Message-ID: <AANLkTikViSXMO3wSi_=2FjwQhSzmx2Lndi7tdofLeDs0@mail.gmail.com>
-Subject: Re: nouveau build failure (was Re: Linux 2.6.37-rc2)
-From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-To: bskeggs@redhat.com
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Martin Peres <martin.peres@ensi-bourges.fr>,
-        Dave Airlie <airlied@linux.ie>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101116124615.978ed940.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Salve!
+On Tue, Nov 16, 2010 at 12:46:15PM -0800, Andrew Morton wrote:
+> On Tue, 16 Nov 2010 11:17:26 +0100
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > Hi Andrew,
+> > could you consider the following patch for the Linus tree, please?
+> > The discussion took place in this email thread 
+> > http://lkml.org/lkml/2010/11/10/114.
+> > The patch is based on top of 151f52f09c572 commit in the Linus tree.
+> > 
+> > Please let me know if there I should route this patch through somebody
+> > else.
+> > 
+> > Thanks!
+> > 
+> > ---
+> > >From 30238aaec758988493af793939f14b0ba83dc4b3 Mon Sep 17 00:00:00 2001
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Date: Wed, 10 Nov 2010 13:30:04 +0100
+> > Subject: [PATCH] Make swap accounting default behavior configurable
+> > 
+> > Swap accounting can be configured by CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+> > configuration option and then it is turned on by default. There is
+> > a boot option (noswapaccount) which can disable this feature.
+> > 
+> > This makes it hard for distributors to enable the configuration option
+> > as this feature leads to a bigger memory consumption and this is a no-go
+> > for general purpose distribution kernel. On the other hand swap
+> > accounting may be very usuful for some workloads.
+> 
+> This patch is needed by distros, and distros use the -stable tree, I
+> assume.  Do you see reasons why this patch should be backported into
+> -stable, so distros don't need to patch it themselves?  If so, any
+> particular kernel versions?  2.6.37?
 
-2010/11/16 Ben Skeggs <bskeggs@redhat.com>:
-> On Tue, 2010-11-16 at 12:50 -0800, Randy Dunlap wrote:
->> On Tue, 16 Nov 2010 12:45:43 -0800 Linus Torvalds wrote:
->>
->> > Looks like commit 34e9d85a1aae ("drm/nouveau: Add temperature support
->> > (vbios parsing, readings, hwmon)") didn't make things properly
->> > dependent on CONFIG_HWMON (or do the appropriate "select HWMON" or
->> > whatever).
->> >
->> > Added some collection of hopefully more relevant people to the discussion..
->> >
->> >                   Linus
->>
->>
->> This build error was reported for linux-next on 2010.1011 and 2010.1025,
->> with no replies.
->>
->> Some process fix would be nice to see.
-> It's actually been fixed in the nouveau tree, I have to go through and
-> get fixes out of it and send them to Dave.
+Sorry, I really don't want to start backporting features to stable
+kernels if at all possible.  Distros can pick them up on their own if
+they determine it is needed.
 
-thanks for the info
+thanks,
 
->
-> Ben.
->>
->>
->> > On Tue, Nov 16, 2010 at 12:35 PM, Zimny Lech
->> > <napohybelskurwysynom2010@gmail.com> wrote:
->> > >
->> > >  LD      vmlinux.o
->> > >  MODPOST vmlinux.o
->> > > WARNING: modpost: Found 7 section mismatch(es).
->> > > To see full details build your kernel with:
->> > > 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
->> > >  GEN     .version
->> > >  CHK     include/generated/compile.h
->> > >  UPD     include/generated/compile.h
->> > >  CC      init/version.o
->> > >  LD      init/built-in.o
->> > >  LD      .tmp_vmlinux1
->> > > drivers/built-in.o: In function `nouveau_pm_fini':
->> > > (.text+0xe1857): undefined reference to `hwmon_device_unregister'
->> > > drivers/built-in.o: In function `nouveau_pm_init':
->> > > (.text+0xe1b4d): undefined reference to `hwmon_device_register'
->> > > drivers/built-in.o: In function `nouveau_pm_init':
->> > > (.text+0xe1bef): undefined reference to `hwmon_device_unregister'
->> > > make[1]: *** [.tmp_vmlinux1] Error 1
->> > > make: *** [sub-make] Error 2
->> > --
->>
->>
->> ---
->> ~Randy
->> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->
->
->
-
-
-
--- 
-Slawa!
-N.P.S.
-
-Les fleurs du mal unfold
-Comme les fleurs du mal
-Dark demons of my soul
-Un amour fatal
+greg k-h
