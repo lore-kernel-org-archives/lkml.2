@@ -1,85 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934292Ab0KPLum (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 06:50:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49081 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932862Ab0KPLuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 06:50:40 -0500
-Date: Tue, 16 Nov 2010 12:50:38 +0100
-From: Jan Kara <jack@suse.cz>
-To: Josef Bacik <josef@redhat.com>
-Cc: david@fromorbit.com, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, cmm@us.ibm.com,
-        cluster-devel@redhat.com, ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 3/6] Ocfs2: handle hole punching via fallocate properly
-Message-ID: <20101116115038.GC4757@quack.suse.cz>
-References: <1289840723-3056-1-git-send-email-josef@redhat.com>
- <1289840723-3056-4-git-send-email-josef@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289840723-3056-4-git-send-email-josef@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S934307Ab0KPLuz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 06:50:55 -0500
+Received: from casper.infradead.org ([85.118.1.10]:33532 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933866Ab0KPLux convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 06:50:53 -0500
+Subject: Re: [PATCH -v4 2/2] lib, Add lock-less NULL terminated single list
+From: Peter Zijlstra <peterz@infradead.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, linux-acpi@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+In-Reply-To: <1289868791-16658-3-git-send-email-ying.huang@intel.com>
+References: <1289868791-16658-1-git-send-email-ying.huang@intel.com>
+	 <1289868791-16658-3-git-send-email-ying.huang@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 16 Nov 2010 12:50:41 +0100
+Message-ID: <1289908241.2109.570.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 15-11-10 12:05:20, Josef Bacik wrote:
-> This patch just makes ocfs2 use its UNRESERVP ioctl when we get the hole punch
-> flag in fallocate.  I didn't test it, but it seems simple enough.  Thanks,
-> 
-> Signed-off-by: Josef Bacik <josef@redhat.com>
-  You might want to directly CC Joel Becker <Joel.Becker@oracle.com> who
-maintains OCFS2. Otherwise the patch looks OK so you can add
-  Acked-by: Jan Kara <jack@suse.cz>
-for what it's worth ;).
+On Tue, 2010-11-16 at 08:53 +0800, Huang Ying wrote:
+> +/**
+> + * llist_del_all - delete all entries from lock-less list
+> + * @head:      the head of lock-less list to delete all entries
+> + *
+> + * If list is empty, return NULL, otherwise, delete all entries and
+> + * return the pointer to the first entry.
+> + */
+> +struct llist_node *llist_del_all(struct llist_head *head)
+> +{
+> +       return xchg(&head->first, NULL);
+> +}
+> +EXPORT_SYMBOL_GPL(llist_del_all); 
 
-								Honza
-> ---
->  fs/ocfs2/file.c |   10 ++++++++--
->  1 files changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-> index 77b4c04..181ae52 100644
-> --- a/fs/ocfs2/file.c
-> +++ b/fs/ocfs2/file.c
-> @@ -1992,6 +1992,7 @@ static long ocfs2_fallocate(struct inode *inode, int mode, loff_t offset,
->  	struct ocfs2_super *osb = OCFS2_SB(inode->i_sb);
->  	struct ocfs2_space_resv sr;
->  	int change_size = 1;
-> +	int cmd = OCFS2_IOC_RESVSP64;
->  
->  	if (!ocfs2_writes_unwritten_extents(osb))
->  		return -EOPNOTSUPP;
-> @@ -2002,12 +2003,17 @@ static long ocfs2_fallocate(struct inode *inode, int mode, loff_t offset,
->  	if (mode & FALLOC_FL_KEEP_SIZE)
->  		change_size = 0;
->  
-> +	if (mode & FALLOC_FL_PUNCH_HOLE) {
-> +		cmd = OCFS2_IOC_UNRESVSP64;
-> +		change_size = 0;
-> +	}
-> +
->  	sr.l_whence = 0;
->  	sr.l_start = (s64)offset;
->  	sr.l_len = (s64)len;
->  
-> -	return __ocfs2_change_file_space(NULL, inode, offset,
-> -					 OCFS2_IOC_RESVSP64, &sr, change_size);
-> +	return __ocfs2_change_file_space(NULL, inode, offset, cmd, &sr,
-> +					 change_size);
->  }
->  
->  int ocfs2_check_range_for_refcount(struct inode *inode, loff_t pos,
-> -- 
-> 1.6.6.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Its not del_all, since it returns the actual list. move or splice might
+be better names.
