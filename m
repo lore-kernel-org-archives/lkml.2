@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934056Ab0KPLpC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 06:45:02 -0500
-Received: from smtp.nokia.com ([147.243.1.47]:33555 "EHLO mgw-sa01.nokia.com"
+	id S934249Ab0KPLr2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 06:47:28 -0500
+Received: from smtp.nokia.com ([147.243.128.26]:46853 "EHLO mgw-da02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933110Ab0KPLo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 06:44:58 -0500
+	id S933110Ab0KPLr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 06:47:27 -0500
+X-Greylist: delayed 2617 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Nov 2010 06:47:26 EST
 From: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>
 To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm@lists.infradead.org, linux-serial@vger.kernel.org
 Subject: [RFC] OMAP: Serial: Define register access modes in LCR
-Date: Tue, 16 Nov 2010 13:43:00 +0200
-Message-Id: <1289907780-31817-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+Date: Tue, 16 Nov 2010 13:01:40 +0200
+Message-Id: <1289905300-31664-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
