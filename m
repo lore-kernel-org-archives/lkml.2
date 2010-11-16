@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756387Ab0KPUhF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:37:05 -0500
-Received: from tango.0pointer.de ([85.214.72.216]:52050 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753799Ab0KPUhD (ORCPT
+	id S1756703Ab0KPUii (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:38:38 -0500
+Received: from mail-out.m-online.net ([212.18.0.9]:36373 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755613Ab0KPUig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:37:03 -0500
-Date: Tue, 16 Nov 2010 21:36:42 +0100
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Stephen Clark <sclark46@earthlink.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101116203642.GF27235@tango.0pointer.de>
-References: <20101115125716.GA22422@redhat.com>
- <1289856350.14719.135.camel@maggy.simson.net>
- <20101116015648.GA11534@redhat.com>
- <1289916171.5169.117.camel@maggy.simson.net>
- <1289916683.2109.625.camel@laptop>
- <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
- <20101116170312.GA19327@tango.0pointer.de>
- <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
- <20101116181603.GC19327@tango.0pointer.de>
- <4CE2D41D.3070609@earthlink.net>
+	Tue, 16 Nov 2010 15:38:36 -0500
+X-Auth-Info: vvr0kFFTDxlQkVCA2RRsu6L2uQPSe6yH67gzOjspoMU=
+Message-ID: <4CE2EC13.9090707@grandegger.com>
+Date: Tue, 16 Nov 2010 21:39:47 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE2D41D.3070609@earthlink.net>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+To: David Miller <davem@davemloft.net>
+CC: tomoya-linux@dsn.okisemi.com, andrew.chih.howe.khor@intel.com,
+        masa-korg@dsn.okisemi.com, sameo@linux.intel.com,
+        margie.foster@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de,
+        kok.howg.ewe@intel.com, joel.clark@intel.com, yong.y.wang@intel.com,
+        chripell@fsfe.org, qi.wang@intel.com
+Subject: Re: [PATCH net-next-2.6 v4] can: Topcliff: PCH_CAN driver: Add	Flow
+ control/Fix Endianess issue/Separate IF register/Enumerate LEC	macro/Move
+ MSI processing/Use BIT(X)/Change Message Object index/Add	prefix PCH_
+References: <4CE275A4.9010400@dsn.okisemi.com> <20101116.091443.226753420.davem@davemloft.net>
+In-Reply-To: <20101116.091443.226753420.davem@davemloft.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16.11.10 13:57, Stephen Clark (sclark46@earthlink.net) wrote:
+Hi David,
 
-> >I am not sure I myself will find the time to prep some 'numbers' for
-> >you. They'd be the same as with the kernel patch anyway. But I am sure
-> >somebody else will do it for you...
->
-> So you have tested this and have a nice demo and numbers to back it up?
+On 11/16/2010 06:14 PM, David Miller wrote:
+> 
+> Way too many changes in one patch.
+> 
+> Please post one that fixes the endianness issues.
+> 
+> One that fixes the register interface seperation.
+> 
+> One that adds flow control processing.
+> 
+> etc.
+> 
+> When you combine many tasks into one patch it's impossible
+> to bisect through your changes to debug problems in order
+> to figure out which changed introduced a bug.
+> 
+> I am not applying this, and I will not apply your patches
+> until you split them up properly.
+> 
+> You may think that there is zero value in this, but there
+> is huge value in it for anyone who tries to debug your
+> changes in the future.  Right now you are making that a
+> nearly impossible task.
 
-Yes, I tested this. And I thought the paragraph was explicit enough
-about the numbers.
+Please take into account that this patch got accepted by accident
+(because the maintainer did not respond properly in time). At that time
+the driver was incomplete, not ready for mainline and did not even work
+properly. Therefore it makes little sense to debug or even bisec these
+changes. Just for that reason I made an exemption and added my
+"Acked-by". Hope you can share my arguments.
 
-Lennart
+Wolfgang.
 
--- 
-Lennart Poettering - Red Hat, Inc.
