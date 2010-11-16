@@ -1,87 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597Ab0KPRMz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 12:12:55 -0500
-Received: from tango.0pointer.de ([85.214.72.216]:43459 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754990Ab0KPRMy (ORCPT
+	id S1755609Ab0KPROU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 12:14:20 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40151
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753036Ab0KPROT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 12:12:54 -0500
-X-Greylist: delayed 561 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Nov 2010 12:12:54 EST
-Date: Tue, 16 Nov 2010 18:03:12 +0100
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Dhaval Giani <dhaval.giani@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Mike Galbraith <efault@gmx.de>,
-        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101116170312.GA19327@tango.0pointer.de>
-References: <1289783580.495.58.camel@maggy.simson.net>
- <1289811438.2109.474.camel@laptop>
- <1289820766.16406.45.camel@maggy.simson.net>
- <1289821590.16406.47.camel@maggy.simson.net>
- <20101115125716.GA22422@redhat.com>
- <1289856350.14719.135.camel@maggy.simson.net>
- <20101116015648.GA11534@redhat.com>
- <1289916171.5169.117.camel@maggy.simson.net>
- <1289916683.2109.625.camel@laptop>
- <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+	Tue, 16 Nov 2010 12:14:19 -0500
+Date: Tue, 16 Nov 2010 09:14:43 -0800 (PST)
+Message-Id: <20101116.091443.226753420.davem@davemloft.net>
+To: tomoya-linux@dsn.okisemi.com
+Cc: wg@grandegger.com, w.sang@pengutronix.de, chripell@fsfe.org,
+        21cnbao@gmail.com, sameo@linux.intel.com,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, masa-korg@dsn.okisemi.com,
+        margie.foster@intel.com
+Subject: Re: [PATCH net-next-2.6 v4] can: Topcliff: PCH_CAN driver: Add
+ Flow control/Fix Endianess issue/Separate IF register/Enumerate LEC
+ macro/Move MSI processing/Use BIT(X)/Change Message Object index/Add
+ prefix PCH_
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4CE275A4.9010400@dsn.okisemi.com>
+References: <4CE275A4.9010400@dsn.okisemi.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16.11.10 15:47, Dhaval Giani (dhaval.giani@gmail.com) wrote:
 
-> 
-> On Tue, Nov 16, 2010 at 3:11 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > On Tue, 2010-11-16 at 07:02 -0700, Mike Galbraith wrote:
-> >> While you can identify firefox etc,
-> >> it's not being done, and requires identifying every application.  Heck,
-> >> cgroups is built in, but userspace doesn't even mount.  Nothing but
-> >> nothing uses cgroups.
-> >
-> > The yet another init rewrite called systemd is supposedly cgroup happy..
-> > No idea if its going to be useful though, I doubt its going to have an
-> > effect on me launching a konsole or the like, or screen creating a bunch
-> > of ttys.
-> 
-> systemd uses cgroups only for process tracking. No resource
-> management. Though afaik, Lennart has some plans of doing resource
-> management using systemd. I wonder how autogroups will interact with
-> systemd in that case.
+Way too many changes in one patch.
 
-systemd already creates a named cgroup for each user who logs in and each
-session inside it. That's implemented via pam_systemd, which is enabled
-in all distros doing systemd. We create those groups right now only in
-the named "systemd" hierarchy, but iiuc then simply doing the same in
-the "cpu" hierarchy would have the exact same behaviour as this patch,
-but actually is based on a sane definition of what a session is.
+Please post one that fixes the endianness issues.
 
-Binding something like this to TTYs is just backwards. No graphical
-session has a TTY attached anymore. And there might be multiple TTYs
-used in the same session. 
+One that fixes the register interface seperation.
 
-I really wonder why logic like this should live in kernel space at all,
-since a) the kernel has no real notion of a session, except audit and b)
-this is policy and as soon as people have this kind of group then they
-probably want other kind of autogrouping as well for the other
-controllers, which hence means userspace is a better, and configurable
-place for this.
+One that adds flow control processing.
 
-Lennart
+etc.
 
--- 
-Lennart Poettering - Red Hat, Inc.
+When you combine many tasks into one patch it's impossible
+to bisect through your changes to debug problems in order
+to figure out which changed introduced a bug.
+
+I am not applying this, and I will not apply your patches
+until you split them up properly.
+
+You may think that there is zero value in this, but there
+is huge value in it for anyone who tries to debug your
+changes in the future.  Right now you are making that a
+nearly impossible task.
