@@ -1,202 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759365Ab0KPEyQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 23:54:16 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:61326 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757915Ab0KPEyO (ORCPT
+	id S1751135Ab0KPFEW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 00:04:22 -0500
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:6642 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703Ab0KPFEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 23:54:14 -0500
-Date: Tue, 16 Nov 2010 13:48:00 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	Tue, 16 Nov 2010 00:04:21 -0500
+Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAFSf4UyrR7Hu/2dsb2JhbACiW3GjWpsghUsEhFqFfg
+X-IronPort-AV: E=Sophos;i="4.59,204,1288569600"; 
+   d="scan'208";a="287113168"
+Message-ID: <4CE210D3.5060703@cisco.com>
+Date: Mon, 15 Nov 2010 21:04:19 -0800
+From: Joe Eykholt <jeykholt@cisco.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Vladislav Bolkhovitin <vst@vlnb.net>, Bart Van Assche <bvanassche@acm.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, balbir@linux.vnet.ibm.com,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC PATCH] Make swap accounting default behavior configurable
- v3
-Message-Id: <20101116134800.7d8b612d.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20101115083540.GA20156@tiehlicka.suse.cz>
-References: <20101110125154.GC5867@tiehlicka.suse.cz>
-	<20101111094613.eab2ec0b.nishimura@mxp.nes.nec.co.jp>
-	<20101111093155.GA20630@tiehlicka.suse.cz>
-	<20101112094118.b02b669f.nishimura@mxp.nes.nec.co.jp>
-	<20101112083103.GB7285@tiehlicka.suse.cz>
-	<20101115101335.8880fd87.nishimura@mxp.nes.nec.co.jp>
-	<20101115083540.GA20156@tiehlicka.suse.cz>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        James Smart <James.Smart@emulex.com>, Andy Yan <ayan@marvell.com>,
+        Chetan Loke <generationgnu@yahoo.com>, Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+References: <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <AANLkTi=PxYi8kCsAxbopUHBC+=2QPuoEcojdqugS88sH@mail.gmail.com> <20101115184422.GA9566@kroah.com> <4CE19A94.8080504@vlnb.net> <20101115221359.GA9530@kroah.com>
+In-Reply-To: <20101115221359.GA9530@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-Thank you for your work.
-Daisuke Nishimura.
 
-On Mon, 15 Nov 2010 09:35:40 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
+On 11/15/10 2:13 PM, Greg KH wrote:
+> On Mon, Nov 15, 2010 at 11:39:48PM +0300, Vladislav Bolkhovitin wrote:
+>> Greg KH, on 11/15/2010 09:44 PM wrote:
+>> > On Mon, Nov 15, 2010 at 06:45:24PM +0100, Bart Van Assche wrote:
+>> >> On Sun, Nov 14, 2010 at 12:59 AM, Greg KH <greg@kroah.com> wrote:
+>> >>>
+>> >>> On Sat, Nov 13, 2010 at 08:20:18PM +0300, Vladislav Bolkhovitin wrote:
+>> >>>> So, I decided to reimplement it to be completely synchronous. SYSFS
+>> >>>> authors did really great job and thanks to the excellent internal SYSFS
+>> >>>> design and implementation it is absolutely safe. See:
+>> >>>>
+>> >>>> [root@tgt ~]# modprobe scst
+>> >>>> [root@tgt ~]# cd /sys/kernel/scst_tgt/
+>> >>>
+>> >>> Sorry, but no, you can't put this in /sys/kernel/ without getting the
+>> >>> approval of the sysfs maintainer.
+>> >>>
+>> >>> I really don't understand why you are using kobjects in the first place,
+>> >>> why isn't this in the main device tree in the kernel, using 'struct
+>> >>> device'?
+>> >>
+>> >> We might have missed something, but as far as we know it has not yet
+>> >> been explained in this thread why using 'struct device' would be an
+>> >> advantage over using 'struct kobject'.
+>> >
+>> > It's very simple.
+>> >
+>> > You want your device to show up in the global device tree in the kernel,
+>> > not off to one side, unconnected to anything else.
+>> >
+>> > Please use 'struct device', it is what you want to do here.
+>>
+>> But we don't have any device to show up in the global device tree!
+> 
+> Not true at all.
+> 
+>> We don't have any devices in the struct device's understanding at all!
+> 
+> Then create them just like you are doing so for your kobject use.
+> 
+> The first device would be the root one, and then everything trickles
+> down from there.
+> 
+> And use configfs for your configuration stuff, that's what it is there
+> for, and if it doesn't somehow work properly for you, please work with
+> the configfs developers to fix that up.
+> 
+> thanks,
+> 
+> greg k-h
 
-> On Mon 15-11-10 10:13:35, Daisuke Nishimura wrote:
-> > On Fri, 12 Nov 2010 09:31:03 +0100
-> [...]
-> > > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> > > index ed45e98..7077148 100644
-> > > --- a/Documentation/kernel-parameters.txt
-> > > +++ b/Documentation/kernel-parameters.txt
-> > > @@ -1752,6 +1752,8 @@ and is between 256 and 4096 characters. It is defined in the file
-> > >  
-> > >  	noswapaccount	[KNL] Disable accounting of swap in memory resource
-> > >  			controller. (See Documentation/cgroups/memory.txt)
-> > > +	swapaccount	[KNL] Enable accounting of swap in memory resource
-> > > +			controller. (See Documentation/cgroups/memory.txt)
-> > >  
-> > >  	nosync		[HW,M68K] Disables sync negotiation for all devices.
-> > >  
-> > (I've add Andrew and Balbir to CC-list.)
-> > It seems that almost all parameters are listed in alphabetic order in the document,
-> > so I think it would be better to obey the rule.
-> 
-> You are right. The header of the file says:
-> 
-> " The following is a consolidated list of the kernel parameters as
-> implemented (mostly) by the __setup() macro and sorted into English
-> Dictionary order (defined as ignoring all punctuation and sorting digits
-> before letters in a case insensitive manner), and with descriptions
-> where known."
-> 
-> Updated patch follows bellow.
-> 
-> > 
-> > Thanks,
-> > Daisuke Nishimura.
-> 
-> Changes since v2:
-> * put the new parameter description to the proper (alphabetically sorted)
->   place in Documentation/kernel-parameters.txt
-> 
-> Changes since v1:
-> * do not remove noswapaccount parameter and add swapaccount parameter instead
-> * Documentation/kernel-parameters.txt updated
-> ---
-> 
-> From 21df3801e2b65f47a2807534487ebb353dad6340 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Wed, 10 Nov 2010 13:30:04 +0100
-> Subject: [PATCH] Make swap accounting default behavior configurable
-> 
-> Swap accounting can be configured by CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-> configuration option and then it is turned on by default. There is
-> a boot option (noswapaccount) which can disable this feature.
-> 
-> This makes it hard for distributors to enable the configuration option
-> as this feature leads to a bigger memory consumption and this is a no-go
-> for general purpose distribution kernel. On the other hand swap
-> accounting may be very usuful for some workloads.
-> 
-> This patch adds a new configuration option which controls the default
-> behavior (CGROUP_MEM_RES_CTLR_SWAP_ENABLED). If the option is selected
-> then the feature is turned on by default.
-> 
-> It also adds a new boot parameter swapaccount which (contrary to
-> noswapaccount) enables the feature. (I would consider swapaccount=yes|no
-> semantic with removed noswapaccount parameter much better but this
-> parameter is kind of API which might be in use and unexpected breakage
-> is no-go.)
-> 
-> The default behavior is unchanged (if CONFIG_CGROUP_MEM_RES_CTLR_SWAP is
-> enabled then CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED is enabled as well)
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> ---
->  Documentation/kernel-parameters.txt |    3 +++
->  init/Kconfig                        |   13 +++++++++++++
->  mm/memcontrol.c                     |   15 ++++++++++++++-
->  3 files changed, 30 insertions(+), 1 deletions(-)
-> 
-> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> index ed45e98..14eafa5 100644
-> --- a/Documentation/kernel-parameters.txt
-> +++ b/Documentation/kernel-parameters.txt
-> @@ -2385,6 +2385,9 @@ and is between 256 and 4096 characters. It is defined in the file
->  			improve throughput, but will also increase the
->  			amount of memory reserved for use by the client.
->  
-> +	swapaccount	[KNL] Enable accounting of swap in memory resource
-> +			controller. (See Documentation/cgroups/memory.txt)
-> +
->  	swiotlb=	[IA-64] Number of I/O TLB slabs
->  
->  	switches=	[HW,M68k]
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 88c1046..c972899 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -613,6 +613,19 @@ config CGROUP_MEM_RES_CTLR_SWAP
->  	  if boot option "noswapaccount" is set, swap will not be accounted.
->  	  Now, memory usage of swap_cgroup is 2 bytes per entry. If swap page
->  	  size is 4096bytes, 512k per 1Gbytes of swap.
-> +config CGROUP_MEM_RES_CTLR_SWAP_ENABLED
-> +	bool "Memory Resource Controller Swap Extension enabled by default"
-> +	depends on CGROUP_MEM_RES_CTLR_SWAP
-> +	default y
-> +	help
-> +	  Memory Resource Controller Swap Extension comes with its price in
-> +	  a bigger memory consumption. General purpose distribution kernels
-> +	  which want to enable the feautre but keep it disabled by default
-> +	  and let the user enable it by swapaccount boot command line
-> +	  parameter should have this option unselected.
-> +	  For those who want to have the feature enabled by default should
-> +	  select this option (if, for some reason, they need to disable it
-> +	  then noswapaccount does the trick).
->  
->  menuconfig CGROUP_SCHED
->  	bool "Group CPU scheduler"
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 9a99cfa..4f479fe 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -61,7 +61,14 @@ struct mem_cgroup *root_mem_cgroup __read_mostly;
->  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
->  /* Turned on only when memory cgroup is enabled && really_do_swap_account = 1 */
->  int do_swap_account __read_mostly;
-> -static int really_do_swap_account __initdata = 1; /* for remember boot option*/
-> +
-> +/* for remember boot option*/
-> +#ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED
-> +static int really_do_swap_account __initdata = 1;
-> +#else
-> +static int really_do_swap_account __initdata = 0;
-> +#endif
-> +
->  #else
->  #define do_swap_account		(0)
->  #endif
-> @@ -4909,6 +4916,12 @@ struct cgroup_subsys mem_cgroup_subsys = {
->  };
->  
->  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
-> +static int __init enable_swap_account(char *s)
-> +{
-> +	really_do_swap_account = 1;
-> +	return 1;
-> +}
-> +__setup("swapaccount", enable_swap_account);
->  
->  static int __init disable_swap_account(char *s)
->  {
-> -- 
-> 1.7.2.3
-> 
-> -- 
-> Michal Hocko
-> L3 team 
-> SUSE LINUX s.r.o.
-> Lihovarska 1060/12
-> 190 00 Praha 9    
-> Czech Republic
+I don't have any opinion on the above, but I don't see why sysfs can't be
+used for configuration as well as its other roles. It seems to me wasteful
+to require configfs to be used in order to change configuration when
+sysfs works fine for this.
+
+Here are a couple of existing examples where sysfs is used in a role that
+would seem similar to SCST's usage:
+
+1) scsi_transport_fc already has an sysfs file, fc_host/vport_create, which
+can be written to create new fc_host and scsi_host instances.
+
+2) fcoe.ko uses a write to the sysfs file /sys/module/fcoe/parameters/create
+to start the protocol on a particular ethernet interface.  There's another
+file for destroy.
+
+I'll bet there are other examples in other subsystems, and I don't think
+there is anything wrong with the above usages of sysfs.
+
+I agree with Vladislav's point that configfs doesn't work instead of sysfs
+because configs doesn't make it easy for the kernel side to create nodes for
+dynamic information like connected initiators and statistics.
+So, if the above examples are considered a misuse of sysfs,
+SCST would need to use both sysfs and configfs.  It would use configfs to
+do configuration, and sysfs to display and access the dynamic information
+like connected initiators.  That seems a minor role for configfs,
+which is easily handled in sysfs as SCST currently does.
+
+Just my two cents.
+
+	Joe
