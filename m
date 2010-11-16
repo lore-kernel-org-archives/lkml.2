@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab0KPT1V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 14:27:21 -0500
-Received: from palinux.external.hp.com ([192.25.206.14]:48490 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753528Ab0KPT1U (ORCPT
+	id S932071Ab0KPT1a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 14:27:30 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:49534 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757494Ab0KPT12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 14:27:20 -0500
-Date: Tue, 16 Nov 2010 12:27:19 -0700
-From: Matthew Wilcox <matthew@wil.cx>
-To: Wolfgang Denk <wd@denx.de>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Unloading sym53c8xx driver causes ___free_dma_mem_cluster
-	warnings
-Message-ID: <20101116192718.GC6178@parisc-linux.org>
-References: <20101116191309.DD04C14E644@gemini.denx.de>
+	Tue, 16 Nov 2010 14:27:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=WM5e8Yn570yBs/dsqL5EcHOP+eTvUNRnXXnaIsQHYcKGM6+3R+1imMSHGAScZOFlUc
+         bOOB0n3bz9Iyz6m9bW9Keulu9Y0ClWbTUgyRUGLekVKAdDTR3FOLDnjlaVoqF/rRkQAo
+         yb+wBFhiKVbjgjfCAcvDisRtvmWrg38U/3HyU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101116191309.DD04C14E644@gemini.denx.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+References: <1289820766.16406.45.camel@maggy.simson.net>
+	<1289821590.16406.47.camel@maggy.simson.net>
+	<20101115125716.GA22422@redhat.com>
+	<1289856350.14719.135.camel@maggy.simson.net>
+	<20101116015648.GA11534@redhat.com>
+	<1289916171.5169.117.camel@maggy.simson.net>
+	<1289916683.2109.625.camel@laptop>
+	<AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+	<20101116170312.GA19327@tango.0pointer.de>
+	<AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+	<20101116181603.GC19327@tango.0pointer.de>
+	<AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+Date: Tue, 16 Nov 2010 20:27:27 +0100
+Message-ID: <AANLkTikjQKmo0j5xbvPiS=eriAUUZPMGKkcxt8w_z8XB@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+From: Dhaval Giani <dhaval.giani@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Lennart Poettering <mzxreary@0pointer.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 08:13:09PM +0100, Wolfgang Denk wrote:
-> Hi,
-> 
-> when unloading the sym53c8xx driver a number of kernel warning
-> messages are printed:
+On Tue, Nov 16, 2010 at 7:49 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Nov 16, 2010 at 10:16 AM, Lennart Poettering
+> <mzxreary@0pointer.de> wrote:
+>>
+>> Here's my super-complex patch btw, to achieve exactly the same thing
+>> from userspace without involving any kernel or systemd patching and
+>> kernel-side logic. Simply edit your own ~/.bashrc and add this to the end:
+>
+> Right. And that's basically how this "patch" was actually tested
+> originally - by doing this by hand, without actually having a patch in
+> hand. I told people: this seems to work really well. Mike made it work
+> automatically.
+>
+> Because it's something we want to do it for all users, and for all
+> shells, and make sure it gets done automatically. Including for users
+> that have old distributions etc, and make it easy to do in one place.
+> And then you do it for all the other heuristics we can see easily in
+> the kernel. And then you do it magically without users even having to
+> _notice_.
+>
 
-Yes, this is well known (if you search the scsi archives, you'll find
-several previous reports).  It's harmless -- the only place it could hurt
-is on ARM, and I've never heard of anyone plugging a sym2 card into an
-ARM machine.
+So what do you think about something like systemd handling it. systemd
+already does a lot of this stuff already in the form of process
+tracking, so it is quite trivial to do this. And more happily avoids
+all this complexity in the kernel.
 
-The fix would be quite involved, and the driver really isn't worth fixing
--- the hardware tops out at 160 MB/s which is an order of magnitude
-lower performance than the hardware I'm currently working on.
-
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+Thanks,
+Dhaval
