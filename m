@@ -1,57 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759344Ab0KPEpf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 23:45:35 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:50168 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756784Ab0KPEpe (ORCPT
+	id S1759355Ab0KPEuF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 23:50:05 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55259 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756842Ab0KPEuE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 23:45:34 -0500
-X-Nat-Received: from [202.181.97.72]:52565 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1289882716.2201
-Message-Id: <201011160445.oAG4jGif079860@www262.sakura.ne.jp>
-Subject: [PATCH 2.6.37-rc2] x86, asm: Add parentheses around one pushl_cfi argument
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: jbeulich@novell.com, heukelum@fastmail.fm, mingo@elte.hu,
-        hpa@linux.intel.com
-Cc: linux-kernel@vger.kernel.org
+	Mon, 15 Nov 2010 23:50:04 -0500
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Nicolas Kaiser <nikai@nikai.net>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+CC: "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 16 Nov 2010 10:19:49 +0530
+Subject: RE: [PATCH] mach-davinci: signedness bug
+Thread-Topic: [PATCH] mach-davinci: signedness bug
+Thread-Index: AcuE9Pmvb28aoVqoR5mrq2bCBSBO3gAU/OyQ
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB5930234A2AF08@dbde02.ent.ti.com>
+References: <20101115194028.30f8b7f0@absol.kitzblitz>
+In-Reply-To: <20101115194028.30f8b7f0@absol.kitzblitz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Tue, 16 Nov 2010 13:45:16 +0900
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 15112010 #4290337, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From ed935c12f0b2b09c1586d22925261378e0d7eb83 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Tue, 16 Nov 2010 13:33:07 +0900
-Subject: [PATCH] x86, asm: Add parentheses around one pushl_cfi argument
+Hi Nicolas,
 
-Commit df5d1874 "x86: Use {push,pop}{l,q}_cfi in more places" caused GNU
-assembler 2.15 (Debian Sarge) to fail. It is still failing as of commit
-07bd8516 "x86, asm: Restore parentheses around one pushl_cfi argument".
-This patch solves build failure with GNU assembler 2.15.
+On Tue, Nov 16, 2010 at 00:10:28, Nicolas Kaiser wrote:
+> aemif_calc_rate() can return a negative error value, so all the
+> variables that get tested for this value need to be signed.
+>
+> The maximum bit width of WSETUP(WSETUP_MAX) appears to be 30 bits
+> (0xf << 26). Using a signed instead of an unsigned integer
+> shouldn't make a difference here.
+>
+> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- arch/x86/kernel/entry_32.S |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks for the fix. You could use the subject:
 
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 59e175e..591e601 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -395,7 +395,7 @@ sysenter_past_esp:
- 	 * A tiny bit of offset fixup is necessary - 4*4 means the 4 words
- 	 * pushed above; +8 corresponds to copy_thread's esp0 setting.
- 	 */
--	pushl_cfi (TI_sysenter_return-THREAD_SIZE_asm+8+4*4)(%esp)
-+	pushl_cfi ((TI_sysenter_return)-THREAD_SIZE_asm+8+4*4)(%esp)
- 	CFI_REL_OFFSET eip, 0
- 
- 	pushl_cfi %eax
--- 
-1.7.1
+"davinci: signedness bug in davinci_aemif_setup_timing()"
+
+Other than that:
+
+Acked-by: Sekhar Nori <nsekhar@ti.com>
+
+Thanks,
+Sekhar
+
+> ---
+>  arch/arm/mach-davinci/aemif.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/arm/mach-davinci/aemif.c b/arch/arm/mach-davinci/aemif.c
+> index 9c3f500..1ce70a9 100644
+> --- a/arch/arm/mach-davinci/aemif.c
+> +++ b/arch/arm/mach-davinci/aemif.c
+> @@ -90,7 +90,7 @@ int davinci_aemif_setup_timing(struct davinci_aemif_timing *t,
+>                                       void __iomem *base, unsigned cs)
+>  {
+>       unsigned set, val;
+> -     unsigned ta, rhold, rstrobe, rsetup, whold, wstrobe, wsetup;
+> +     int ta, rhold, rstrobe, rsetup, whold, wstrobe, wsetup;
+>       unsigned offset = A1CR_OFFSET + cs * 4;
+>       struct clk *aemif_clk;
+>       unsigned long clkrate;
+> --
+> 1.7.2.2
+>
 
