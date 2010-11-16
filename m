@@ -1,72 +1,323 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932355Ab0KPXvG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 18:51:06 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39597 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755793Ab0KPXvE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 18:51:04 -0500
-Date: Tue, 16 Nov 2010 23:49:50 +0000
-From: Etched Pixels <sales@etchedpixels.co.uk>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Kay Sievers <kay.sievers@vrfy.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Werner Fink <werner@suse.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
-Message-ID: <20101116234950.141686c9@etchedpixels.co.uk>
-In-Reply-To: <20101116231825.GC27594@tango.0pointer.de>
-References: <AANLkTimn7zyEjLhmOmUVQGnLDfM-A_uEgWETsM3nsyuY@mail.gmail.com>
-	<20101116171447.29336514@lxorguk.ukuu.org.uk>
-	<AANLkTi=ju4fON7Hz=j_tFtqFGD0b-c=-Ou+HQwfYDgOy@mail.gmail.com>
-	<20101116195538.7fa66b97@lxorguk.ukuu.org.uk>
-	<AANLkTinXy3pNhwqo5aqHrH9fN99JhJrBtnbbpnq2h_K-@mail.gmail.com>
-	<20101116204906.29d840e9@lxorguk.ukuu.org.uk>
-	<20101116214250.GB17824@tango.0pointer.de>
-	<20101116225138.4e09f4dc@lxorguk.ukuu.org.uk>
-	<20101116225834.GA27594@tango.0pointer.de>
-	<20101116230430.6ccbc48c@lxorguk.ukuu.org.uk>
-	<20101116231825.GC27594@tango.0pointer.de>
-Organization: Etched Pixels: www.etchedpixels.co.uk
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756355Ab0KPX4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 18:56:48 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:35574 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751238Ab0KPX4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 18:56:45 -0500
+Date: Tue, 16 Nov 2010 15:56:42 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] fs: rcu protect inode hash lookups
+Message-ID: <20101116235642.GM2503@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1288589624-15251-1-git-send-email-david@fromorbit.com>
+ <1288589624-15251-4-git-send-email-david@fromorbit.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1288589624-15251-4-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> How would that work? Not giving a user ownership of the tty device? That
-> would break like about every second program. It's too late for this.
-
-Actually almost nothing in the OS cares about what another user is doing,
-and you can have per mount /dev - a  la Plan 9.
-
-> And anyway unless the kernel is patched you can even see who is running
-> which process on the system. And now you become all nervous about
-> telling people which tty is currently in the fg? Seriously?
-
-procfs, to users.. not in that kind of environment !
-
-> Security is a fog granade here. It's a non-issue.
+On Mon, Nov 01, 2010 at 04:33:44PM +1100, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
 > 
-> Also, afaics the current ioctl() interface you love so much works on any
-> tty and gives you that information anyway, right? Some tty fd should be
+> Now that inodes are using RCU freeing, we can walk the hash lists
+> using RCU protection during lookups. Convert all the hash list
+> operations to use RCU-based operators and drop the inode_hash_lock
+> around pure lookup operations.
+> 
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> ---
+>  fs/inode.c |   89 ++++++++++++++++++++++++++++++++++++++---------------------
+>  1 files changed, 57 insertions(+), 32 deletions(-)
+> 
+> diff --git a/fs/inode.c b/fs/inode.c
+> index 106ec7a..6bead3d 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -50,11 +50,12 @@
+>   *   inode->i_lock
+>   *
+>   * inode_hash_lock
+> - *   inode_sb_list_lock
+> - *   inode->i_lock
+> + *   rcu_read_lock
+> + *     inode_sb_list_lock
+> + *     inode->i_lock
+>   *
+>   * iunique_lock
+> - *   inode_hash_lock
+> + *   rcu_read_lock
+>   */
+> 
+>  /*
+> @@ -413,7 +414,7 @@ void __insert_inode_hash(struct inode *inode, unsigned long hashval)
+> 
+>  	spin_lock(&inode_hash_lock);
+>  	spin_lock(&inode->i_lock);
+> -	hlist_add_head(&inode->i_hash, b);
+> +	hlist_add_head_rcu(&inode->i_hash, b);
+>  	spin_unlock(&inode->i_lock);
+>  	spin_unlock(&inode_hash_lock);
+>  }
+> @@ -429,7 +430,7 @@ void remove_inode_hash(struct inode *inode)
+>  {
+>  	spin_lock(&inode_hash_lock);
+>  	spin_lock(&inode->i_lock);
+> -	hlist_del_init(&inode->i_hash);
+> +	hlist_del_init_rcu(&inode->i_hash);
+>  	spin_unlock(&inode->i_lock);
+>  	spin_unlock(&inode_hash_lock);
+>  }
+> @@ -741,26 +742,38 @@ static void __wait_on_freeing_inode(struct inode *inode);
+>  static struct inode *find_inode(struct super_block *sb,
+>  				struct hlist_head *head,
+>  				int (*test)(struct inode *, void *),
+> -				void *data)
+> +				void *data, bool locked)
+>  {
+>  	struct hlist_node *node;
+>  	struct inode *inode = NULL;
+> 
+>  repeat:
+> +	rcu_read_lock();
+>  	hlist_for_each_entry(inode, node, head, i_hash) {
 
-I'm not particularly attached to the ioctl interface, and I'm not
-disagreeing with you that it needs redoing to actually be useful for what
-you want and for a lot of other cases. The question is what the resulting
-interface should look like so its useful for more than just your specific
-current pseudo-secure bits.
+The above needs to be hlist_for_each_entry_rcu(), correct?
 
-> accessible by about every process and VT_GETSTATE on that and you have
-> the same information -- and no further perm checking is done at all!
+This is needed even in the SLAB_DESTROY_BY_RCU case, because you
+are still inserting elements into this list concurrently with
+readers traversing it.
 
-You need to have access to a console fd, which in that case is normally
-fine, but it is a weakness and one reason I know about that is because it
-has been complained about !
+That said, this seems to be replaced by hlist_bl_for_each_entry()
+in your git tree with the caller doing hlist_bl_lock(), though it is
+entirely possible that I am looking at the wrong branch.  I feel
+slow and late to the party...  ;-)
 
-And as you say setting it to 0600 fixes that aspect. I've no problem
-with that either as SELinux rules can manage it effectively.
+							Thanx, Paul
 
-Alan
+>  		if (inode->i_sb != sb)
+>  			continue;
+>  		if (!test(inode, data))
+>  			continue;
+>  		spin_lock(&inode->i_lock);
+> +		if (inode_unhashed(inode)) {
+> +			spin_unlock(&inode->i_lock);
+> +			continue;
+> +		}
+>  		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
+> +			rcu_read_unlock();
+> +			if (locked)
+> +				spin_unlock(&inode_hash_lock);
+>  			__wait_on_freeing_inode(inode);
+> +			if (locked)
+> +				spin_lock(&inode_hash_lock);
+>  			goto repeat;
+>  		}
+>  		__iget(inode);
+>  		spin_unlock(&inode->i_lock);
+> +		rcu_read_unlock();
+>  		return inode;
+>  	}
+> +	rcu_read_unlock();
+>  	return NULL;
+>  }
+> 
+> @@ -769,26 +782,39 @@ repeat:
+>   * iget_locked for details.
+>   */
+>  static struct inode *find_inode_fast(struct super_block *sb,
+> -				struct hlist_head *head, unsigned long ino)
+> +				struct hlist_head *head, unsigned long ino,
+> +				bool locked)
+>  {
+>  	struct hlist_node *node;
+>  	struct inode *inode = NULL;
+> 
+>  repeat:
+> +	rcu_read_lock();
+>  	hlist_for_each_entry(inode, node, head, i_hash) {
+>  		if (inode->i_ino != ino)
+>  			continue;
+>  		if (inode->i_sb != sb)
+>  			continue;
+>  		spin_lock(&inode->i_lock);
+> +		if (inode_unhashed(inode)) {
+> +			spin_unlock(&inode->i_lock);
+> +			continue;
+> +		}
+>  		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
+> +			rcu_read_unlock();
+> +			if (locked)
+> +				spin_unlock(&inode_hash_lock);
+>  			__wait_on_freeing_inode(inode);
+> +			if (locked)
+> +				spin_lock(&inode_hash_lock);
+>  			goto repeat;
+>  		}
+>  		__iget(inode);
+>  		spin_unlock(&inode->i_lock);
+> +		rcu_read_unlock();
+>  		return inode;
+>  	}
+> +	rcu_read_unlock();
+>  	return NULL;
+>  }
+> 
+> @@ -913,14 +939,14 @@ static struct inode *get_new_inode(struct super_block *sb,
+> 
+>  		spin_lock(&inode_hash_lock);
+>  		/* We released the lock, so.. */
+> -		old = find_inode(sb, head, test, data);
+> +		old = find_inode(sb, head, test, data, true);
+>  		if (!old) {
+>  			if (set(inode, data))
+>  				goto set_failed;
+> 
+>  			spin_lock(&inode->i_lock);
+>  			inode->i_state = I_NEW;
+> -			hlist_add_head(&inode->i_hash, head);
+> +			hlist_add_head_rcu(&inode->i_hash, head);
+>  			spin_unlock(&inode->i_lock);
+>  			inode_sb_list_add(inode);
+>  			spin_unlock(&inode_hash_lock);
+> @@ -964,12 +990,12 @@ static struct inode *get_new_inode_fast(struct super_block *sb,
+> 
+>  		spin_lock(&inode_hash_lock);
+>  		/* We released the lock, so.. */
+> -		old = find_inode_fast(sb, head, ino);
+> +		old = find_inode_fast(sb, head, ino, true);
+>  		if (!old) {
+>  			inode->i_ino = ino;
+>  			spin_lock(&inode->i_lock);
+>  			inode->i_state = I_NEW;
+> -			hlist_add_head(&inode->i_hash, head);
+> +			hlist_add_head_rcu(&inode->i_hash, head);
+>  			spin_unlock(&inode->i_lock);
+>  			inode_sb_list_add(inode);
+>  			spin_unlock(&inode_hash_lock);
+> @@ -1006,15 +1032,22 @@ static int test_inode_iunique(struct super_block *sb, unsigned long ino)
+>  	struct hlist_node *node;
+>  	struct inode *inode;
+> 
+> -	spin_lock(&inode_hash_lock);
+> -	hlist_for_each_entry(inode, node, b, i_hash) {
+> -		if (inode->i_ino == ino && inode->i_sb == sb) {
+> -			spin_unlock(&inode_hash_lock);
+> -			return 0;
+> +	rcu_read_lock();
+> +	hlist_for_each_entry_rcu(inode, node, b, i_hash) {
+> +		if (inode->i_ino != ino)
+> +			continue;
+> +		if (inode->i_sb != sb)
+> +			continue;
+> +		spin_lock(&inode->i_lock);
+> +		if (inode_unhashed(inode)) {
+> +			spin_unlock(&inode->i_lock);
+> +			continue;
+>  		}
+> +		spin_unlock(&inode->i_lock);
+> +		rcu_read_unlock();
+> +		return 0;
+>  	}
+> -	spin_unlock(&inode_hash_lock);
+> -
+> +	rcu_read_unlock();
+>  	return 1;
+>  }
+> 
+> @@ -1099,15 +1132,12 @@ static struct inode *ifind(struct super_block *sb,
+>  {
+>  	struct inode *inode;
+> 
+> -	spin_lock(&inode_hash_lock);
+> -	inode = find_inode(sb, head, test, data);
+> +	inode = find_inode(sb, head, test, data, false);
+>  	if (inode) {
+> -		spin_unlock(&inode_hash_lock);
+>  		if (likely(wait))
+>  			wait_on_inode(inode);
+>  		return inode;
+>  	}
+> -	spin_unlock(&inode_hash_lock);
+>  	return NULL;
+>  }
+> 
+> @@ -1131,14 +1161,11 @@ static struct inode *ifind_fast(struct super_block *sb,
+>  {
+>  	struct inode *inode;
+> 
+> -	spin_lock(&inode_hash_lock);
+> -	inode = find_inode_fast(sb, head, ino);
+> +	inode = find_inode_fast(sb, head, ino, false);
+>  	if (inode) {
+> -		spin_unlock(&inode_hash_lock);
+>  		wait_on_inode(inode);
+>  		return inode;
+>  	}
+> -	spin_unlock(&inode_hash_lock);
+>  	return NULL;
+>  }
+> 
+> @@ -1301,7 +1328,7 @@ int insert_inode_locked(struct inode *inode)
+>  		struct hlist_node *node;
+>  		struct inode *old = NULL;
+>  		spin_lock(&inode_hash_lock);
+> -		hlist_for_each_entry(old, node, head, i_hash) {
+> +		hlist_for_each_entry_rcu(old, node, head, i_hash) {
+>  			if (old->i_ino != ino)
+>  				continue;
+>  			if (old->i_sb != sb)
+> @@ -1316,7 +1343,7 @@ int insert_inode_locked(struct inode *inode)
+>  		if (likely(!node)) {
+>  			spin_lock(&inode->i_lock);
+>  			inode->i_state |= I_NEW;
+> -			hlist_add_head(&inode->i_hash, head);
+> +			hlist_add_head_rcu(&inode->i_hash, head);
+>  			spin_unlock(&inode->i_lock);
+>  			spin_unlock(&inode_hash_lock);
+>  			return 0;
+> @@ -1345,7 +1372,7 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+>  		struct inode *old = NULL;
+> 
+>  		spin_lock(&inode_hash_lock);
+> -		hlist_for_each_entry(old, node, head, i_hash) {
+> +		hlist_for_each_entry_rcu(old, node, head, i_hash) {
+>  			if (old->i_sb != sb)
+>  				continue;
+>  			if (!test(old, data))
+> @@ -1360,7 +1387,7 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+>  		if (likely(!node)) {
+>  			spin_lock(&inode->i_lock);
+>  			inode->i_state |= I_NEW;
+> -			hlist_add_head(&inode->i_hash, head);
+> +			hlist_add_head_rcu(&inode->i_hash, head);
+>  			spin_unlock(&inode->i_lock);
+>  			spin_unlock(&inode_hash_lock);
+>  			return 0;
+> @@ -1646,10 +1673,8 @@ static void __wait_on_freeing_inode(struct inode *inode)
+>  	wq = bit_waitqueue(&inode->i_state, __I_NEW);
+>  	prepare_to_wait(wq, &wait.wait, TASK_UNINTERRUPTIBLE);
+>  	spin_unlock(&inode->i_lock);
+> -	spin_unlock(&inode_hash_lock);
+>  	schedule();
+>  	finish_wait(wq, &wait.wait);
+> -	spin_lock(&inode_hash_lock);
+>  }
+> 
+>  static __initdata unsigned long ihash_entries;
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
