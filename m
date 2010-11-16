@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932405Ab0KPVJs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 16:09:48 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49570 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758905Ab0KPVJp (ORCPT
+	id S932309Ab0KPVJr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 16:09:47 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49313
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757312Ab0KPVJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 16:09:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
-References: <20101115125716.GA22422@redhat.com> <1289856350.14719.135.camel@maggy.simson.net>
- <20101116015648.GA11534@redhat.com> <1289916171.5169.117.camel@maggy.simson.net>
- <1289916683.2109.625.camel@laptop> <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
- <20101116170312.GA19327@tango.0pointer.de> <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
- <20101116181603.GC19327@tango.0pointer.de> <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
- <20101116202839.GC27235@tango.0pointer.de> <20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 16 Nov 2010 13:08:49 -0800
-Message-ID: <AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Lennart Poettering <mzxreary@0pointer.de>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 16 Nov 2010 16:09:44 -0500
+Date: Tue, 16 Nov 2010 13:10:08 -0800 (PST)
+Message-Id: <20101116.131008.212663108.davem@davemloft.net>
+To: w.sang@pengutronix.de
+Cc: wg@grandegger.com, tomoya-linux@dsn.okisemi.com,
+        andrew.chih.howe.khor@intel.com, masa-korg@dsn.okisemi.com,
+        sameo@linux.intel.com, margie.foster@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de,
+        kok.howg.ewe@intel.com, joel.clark@intel.com, yong.y.wang@intel.com,
+        chripell@fsfe.org, qi.wang@intel.com
+Subject: Re: [PATCH net-next-2.6 v4] can: Topcliff: PCH_CAN driver: Add
+ Flow control/Fix Endianess issue/Separate IF register/Enumerate LEC
+ macro/Move MSI processing/Use BIT(X)/Change Message Object index/Add
+ prefix PCH_
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101116210716.GA19893@pengutronix.de>
+References: <4CE2EC13.9090707@grandegger.com>
+	<20101116.124325.116396459.davem@davemloft.net>
+	<20101116210716.GA19893@pengutronix.de>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 12:52 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> Well, if I make behaviour like this default in systemd, then this means
->> there won't be user setup for this. Because the distros shipping systemd
->> will get this as default behaviour.
->
-> And within the desktop where would you put this - in the window manager
-> on the basis of top level windows or in the app startup ?
+From: Wolfram Sang <w.sang@pengutronix.de>
+Date: Tue, 16 Nov 2010 22:07:16 +0100
 
-Btw, I suspect either of these are reasonable. In fact, I don't think
-it would be at all wrong to have the desktop launcher have an option
-to "launch in a group" (although I think it would need to be named
-better than that). Right now, when you create desktop launchers under
-at least gnome, it allows you to specify a "type" for the application
-("Application" or "Application in Terminal"), and maybe there could be
-a "CPU-bound application" choice that would set it in a CPU group of
-its own. Or whatever.
+> On Tue, Nov 16, 2010 at 12:43:25PM -0800, David Miller wrote:
+>> From: Wolfgang Grandegger <wg@grandegger.com>
+>> Date: Tue, 16 Nov 2010 21:39:47 +0100
+>> 
+>> > Please take into account that this patch got accepted by accident
+>> > (because the maintainer did not respond properly in time). At that time
+>> > the driver was incomplete, not ready for mainline and did not even work
+>> > properly. Therefore it makes little sense to debug or even bisec these
+>> > changes. Just for that reason I made an exemption and added my
+>> > "Acked-by". Hope you can share my arguments.
+>> 
+>> You don't put stupid on top of stupid and justify the latter using
+>> the former.
+> 
+> Is reverting the incomplete driver an option?
 
-So I do _not_ believe that the autogroup feature should necessarily
-mean that you cannot do other grouping decisions too. I just do think
-that the whole notion of "it got started from a tty" is actually a
-very useful thing for legacy applications, and one where it's just
-simpler to do it in the kernel than build up any extra infrastructure
-for it.
+I told everyone that the plan was that we had several months
+to fix this, and that's what we should do.
 
-So it's not necessarily at all an "either-or" thing.
+But yes if people are going to be maximally difficult about this and
+refuse to split up the bug fixes, I will have to regrettably revert
+the driver.
 
-                           Linus
+But let's avoid that if we can.
