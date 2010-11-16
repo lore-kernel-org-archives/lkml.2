@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758910Ab0KPVMR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 16:12:17 -0500
+	id S1758849Ab0KPVIz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 16:08:55 -0500
 Received: from claw.goop.org ([74.207.240.146]:50417 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758623Ab0KPVIx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 16:08:53 -0500
+	id S1758461Ab0KPVIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 16:08:54 -0500
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Peter Zijlstra <peterz@infradead.org>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
@@ -18,9 +18,9 @@ Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linux Virtualization <virtualization@lists.linux-foundation.org>,
         Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 02/14] x86/ticketlock: convert spin loop to C
-Date: Tue, 16 Nov 2010 13:08:33 -0800
-Message-Id: <ca1e50f5154676ed96689ab3ffa40eff22129458.1289940821.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 04/14] x86/ticketlock: make large and small ticket versions of spin_lock the same
+Date: Tue, 16 Nov 2010 13:08:35 -0800
+Message-Id: <3d2038044efd253450b17dc9df70a35d43e48bb9.1289940821.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com>
@@ -32,104 +32,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-The inner loop of __ticket_spin_lock isn't doing anything very special,
-so reimplement it in C.
-
-For the 8 bit ticket lock variant, we use a register union to get direct
-access to the lower and upper bytes in the tickets, but unfortunately gcc
-won't generate a direct comparison between the two halves of the register,
-so the generated asm isn't quite as pretty as the hand-coded version.
-However benchmarking shows that this is actually a small improvement in
-runtime performance on some benchmarks, and never a slowdown.
-
-We also need to make sure there's a barrier at the end of the lock loop
-to make sure that the compiler doesn't move any instructions from within
-the locked region into the region where we don't yet own the lock.
+Make the bulk of __ticket_spin_lock look identical for large and small
+number of cpus.
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/spinlock.h |   58 +++++++++++++++++++-------------------
- 1 files changed, 29 insertions(+), 29 deletions(-)
+ arch/x86/include/asm/spinlock.h |   23 ++++++++---------------
+ 1 files changed, 8 insertions(+), 15 deletions(-)
 
 diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index d6d5784..f48a6e3 100644
+index 0170ba9..1b81809 100644
 --- a/arch/x86/include/asm/spinlock.h
 +++ b/arch/x86/include/asm/spinlock.h
-@@ -58,21 +58,21 @@
+@@ -70,19 +70,16 @@ static __always_inline void __ticket_unlock_release(struct arch_spinlock *lock)
  #if (NR_CPUS < 256)
  static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
  {
--	unsigned short inc = 1 << TICKET_SHIFT;
--
--	asm volatile (
--		LOCK_PREFIX "xaddw %w0, %1\n"
--		"1:\t"
--		"cmpb %h0, %b0\n\t"
--		"je 2f\n\t"
--		"rep ; nop\n\t"
--		"movb %1, %b0\n\t"
--		/* don't need lfence here, because loads are in-order */
--		"jmp 1b\n"
--		"2:"
--		: "+Q" (inc), "+m" (lock->slock)
--		:
--		: "memory", "cc");
-+	register union {
-+		struct __raw_tickets tickets;
-+		unsigned short slock;
-+	} inc = { .slock = 1 << TICKET_SHIFT };
-+
-+	asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
-+		      : "+Q" (inc), "+m" (lock->slock) : : "memory", "cc");
-+
-+	for (;;) {
-+		if (inc.tickets.head == inc.tickets.tail)
-+			goto out;
-+		cpu_relax();
-+		inc.tickets.head = ACCESS_ONCE(lock->tickets.head);
-+	}
-+out:	barrier();		/* make sure nothing creeps before the lock is taken */
- }
+-	register union {
+-		struct __raw_tickets tickets;
+-		unsigned short slock;
+-	} inc = { .slock = 1 << TICKET_SHIFT };
++	register struct __raw_tickets inc = { .tail = 1 };
  
- static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
-@@ -105,22 +105,22 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
+ 	asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
+-		      : "+Q" (inc), "+m" (lock->slock) : : "memory", "cc");
++		      : "+r" (inc), "+m" (lock->tickets) : : "memory", "cc");
+ 
+ 	for (;;) {
+-		if (inc.tickets.head == inc.tickets.tail)
++		if (inc.head == inc.tail)
+ 			goto out;
+ 		cpu_relax();
+-		inc.tickets.head = ACCESS_ONCE(lock->tickets.head);
++		inc.head = ACCESS_ONCE(lock->tickets.head);
+ 	}
+ out:	barrier();		/* make sure nothing creeps before the lock is taken */
+ }
+@@ -108,21 +105,17 @@ static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
+ #else
  static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
  {
- 	unsigned inc = 1 << TICKET_SHIFT;
--	unsigned tmp;
-+	__ticket_t tmp;
+-	unsigned inc = 1 << TICKET_SHIFT;
+-	__ticket_t tmp;
++	register struct __raw_tickets inc = { .tail = 1 };
  
--	asm volatile(LOCK_PREFIX "xaddl %0, %1\n"
--		     "movzwl %w0, %2\n\t"
--		     "shrl $16, %0\n\t"
--		     "1:\t"
--		     "cmpl %0, %2\n\t"
--		     "je 2f\n\t"
--		     "rep ; nop\n\t"
--		     "movzwl %1, %2\n\t"
--		     /* don't need lfence here, because loads are in-order */
--		     "jmp 1b\n"
--		     "2:"
--		     : "+r" (inc), "+m" (lock->slock), "=&r" (tmp)
--		     :
--		     : "memory", "cc");
-+	asm volatile(LOCK_PREFIX "xaddl %0, %1\n\t"
-+		     : "+r" (inc), "+m" (lock->slock)
-+		     : : "memory", "cc");
-+
-+	tmp = inc;
-+	inc >>= TICKET_SHIFT;
-+
-+	for (;;) {
-+		if ((__ticket_t)inc == tmp)
-+			goto out;
-+		cpu_relax();
-+		tmp = ACCESS_ONCE(lock->tickets.head);
-+	}
-+out:	barrier();		/* make sure nothing creeps before the lock is taken */
+ 	asm volatile(LOCK_PREFIX "xaddl %0, %1\n\t"
+-		     : "+r" (inc), "+m" (lock->slock)
++		     : "+r" (inc), "+m" (lock->tickets)
+ 		     : : "memory", "cc");
+ 
+-	tmp = inc;
+-	inc >>= TICKET_SHIFT;
+-
+ 	for (;;) {
+-		if ((__ticket_t)inc == tmp)
++		if (inc.head == inc.tail)
+ 			goto out;
+ 		cpu_relax();
+-		tmp = ACCESS_ONCE(lock->tickets.head);
++		inc.head = ACCESS_ONCE(lock->tickets.head);
+ 	}
+ out:	barrier();		/* make sure nothing creeps before the lock is taken */
  }
- 
- static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
 -- 
 1.7.2.3
 
