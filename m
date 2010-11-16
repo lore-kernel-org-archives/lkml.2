@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932651Ab0KPVcu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 16:32:50 -0500
-Received: from mga11.intel.com ([192.55.52.93]:25972 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932594Ab0KPVcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 16:32:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,207,1288594800"; 
-   d="scan'208";a="627454843"
-Message-Id: <20101116212442.059967454@sbsiddha-MOBL3.sc.intel.com>
-User-Agent: quilt/0.47-1
-Date: Tue, 16 Nov 2010 13:23:51 -0800
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        "H. Peter Anvin" <hpa@linux.jf.intel.com>
-Subject: [patch 2/2] xsave: use alloc_bootmem_align() instead of alloc_bootmem()
-References: <20101116212441.977574826@sbsiddha-MOBL3.sc.intel.com>
-Content-Disposition: inline; filename=xsave_use_alloc_bootmem_align.patch
+	id S932604Ab0KPVfJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 16:35:09 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:35656 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932411Ab0KPVfI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 16:35:08 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6169"; a="63100631"
+From: Gregory Bean <gbean@codeaurora.org>
+To: dwalker@codeaurora.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>
+Subject: [PATCH] msm: 8x60: Add TLMM to the iomap.
+Date: Tue, 16 Nov 2010 13:35:05 -0800
+Message-Id: <1289943305-10949-1-git-send-email-gbean@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alignment of alloc_bootmem() depends on the value of L1_CACHE_SHIFT. What
-we need here is 64byte alignment. Use alloc_bootmem_align() instead.
+Add the TLMM block to the iomap for MSM8x60 to make gpio
+control registers available.
 
-This fixes a kernel boot crash reported by Jody when the cpu in .config
-is set to MPENTIUMII
-
-Reported-by: Jody Bruchon <jody@nctritech.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Gregory Bean <gbean@codeaurora.org>
 ---
- arch/x86/kernel/xsave.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ arch/arm/mach-msm/io.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Index: tree/arch/x86/kernel/xsave.c
-===================================================================
---- tree.orig/arch/x86/kernel/xsave.c
-+++ tree/arch/x86/kernel/xsave.c
-@@ -394,7 +394,8 @@ static void __init setup_xstate_init(voi
- 	 * Setup init_xstate_buf to represent the init state of
- 	 * all the features managed by the xsave
- 	 */
--	init_xstate_buf = alloc_bootmem(xstate_size);
-+	init_xstate_buf = alloc_bootmem_align(xstate_size,
-+					      __alignof__(struct xsave_struct));
- 	init_xstate_buf->i387.mxcsr = MXCSR_DEFAULT;
+diff --git a/arch/arm/mach-msm/io.c b/arch/arm/mach-msm/io.c
+index d36b610..e27d041 100644
+--- a/arch/arm/mach-msm/io.c
++++ b/arch/arm/mach-msm/io.c
+@@ -107,6 +107,7 @@ static struct map_desc msm8x60_io_desc[] __initdata = {
+ 	MSM_DEVICE(TMR),
+ 	MSM_DEVICE(ACC),
+ 	MSM_DEVICE(GCC),
++	MSM_DEVICE(TLMM),
+ };
  
- 	clts();
+ void __init msm_map_msm8x60_io(void)
+-- 
+1.7.0.4
 
-
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
