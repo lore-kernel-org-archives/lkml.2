@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934236Ab0KPKfM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 05:35:12 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:43252 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932793Ab0KPKfK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 05:35:10 -0500
-Date: Tue, 16 Nov 2010 11:34:18 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Wolfram Sang <w.sang@pengutronix.de>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-i2c@vger.kernel.org, Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Sergio Aguirre <saaguirre@ti.com>,
-        Michael Grzeschik <m.grzeschik@pengutronix.de>,
-        Philipp Wiesner <p.wiesner@phytec.de>,
-        =?ISO-8859-1?B?TeFydG9uIE7pbWV0aA==?= <nm127@freemail.hu>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] media: video: do not clear 'driver' from an i2c_client
-Message-ID: <20101116113418.5c4ee813@endymion.delvare>
-In-Reply-To: <20101115222815.GB25167@pengutronix.de>
-References: <1289398455-21949-1-git-send-email-w.sang@pengutronix.de>
-	<20101115222815.GB25167@pengutronix.de>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S934242Ab0KPKqH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 05:46:07 -0500
+Received: from cantor.suse.de ([195.135.220.2]:47300 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932529Ab0KPKqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 05:46:05 -0500
+Date: Tue, 16 Nov 2010 11:46:03 +0100
+From: Marcus Meissner <meissner@suse.de>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org, tj@kernel.org,
+        akpm@osdl.org, hpa@zytor.com, mingo@elte.hu, w@1wt.eu,
+        alan@lxorguk.ukuu.org.uk
+Subject: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
+ attacking
+Message-ID: <20101116104600.GA24015@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: SUSE LINUX Products GmbH, GF: Markus Rex, HRB 16746 (AG
+ Nuernberg)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+Hi,
 
-Sorry for the late answer.
+Making /proc/kallsyms readable only for root makes it harder
+for attackers to write generic kernel exploits by removing
+one source of knowledge where things are in the kernel.
 
-On Mon, 15 Nov 2010 23:28:15 +0100, Wolfram Sang wrote:
-> On Wed, Nov 10, 2010 at 03:14:13PM +0100, Wolfram Sang wrote:
-> > The i2c-core does this already.
-> > 
-> > Reported-by: Jean Delvare <khali@linux-fr.org>
-> > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> > ---
-> > 
-> > Not sure if this should go via i2c or media?
-> 
-> Okay, as Jean did not pick it up in his latest pull request, I guess this means
-> it shall go via the media-tree? :) Mauro, will you pick it up?
+This is the second submit, discussion happened on this on first submit
+and mostly concerned that this is just one hole of the sieve ... but
+one of the bigger ones.
 
-Yes I think it should go through Mauro's tree. I was simply waiting for
-your other patch to get merged first (which happened yesterday),
-because this patch depended on that one.
+Changing the permissions of at least System.map and vmlinux is
+also required to fix the same set, but a packaging issue.
 
-So:
+Target of this starter patch and follow ups is removing any kind of
+kernel space address information leak from the kernel.
 
-Acked-by: Jean Delvare <khali@linux-fr.org>
+Ciao, Marcus
 
-and Mauro please pick the patch in your tree.
+Signed-off-by: Marcus Meissner <meissner@suse.de>
+Acked-by: Tejun Heo <tj@kernel.org>
+Acked-by: Eugene Teo <eugeneteo@kernel.org>
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+---
+ kernel/kallsyms.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks,
+diff --git a/kernel/kallsyms.c b/kernel/kallsyms.c
+index 6f6d091..a8db257 100644
+--- a/kernel/kallsyms.c
++++ b/kernel/kallsyms.c
+@@ -546,7 +546,7 @@ static const struct file_operations kallsyms_operations = {
+ 
+ static int __init kallsyms_init(void)
+ {
+-	proc_create("kallsyms", 0444, NULL, &kallsyms_operations);
++	proc_create("kallsyms", 0400, NULL, &kallsyms_operations);
+ 	return 0;
+ }
+ device_initcall(kallsyms_init);
 -- 
-Jean Delvare
+1.7.1
+
