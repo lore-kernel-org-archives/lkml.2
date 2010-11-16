@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab0KPUVh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:21:37 -0500
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:33233 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753243Ab0KPUVf (ORCPT
+	id S1754915Ab0KPUWN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:22:13 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51305 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243Ab0KPUWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:21:35 -0500
-Date: Tue, 16 Nov 2010 21:19:53 +0100
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Jarod Wilson <jarod@redhat.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/media: nuvoton: always true expression
-Message-ID: <20101116211953.238012db@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Nov 2010 15:22:12 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=Z5CK3fOgXNs9odKnQNFHsbavpOvw8c3kh6zEG@mail.gmail.com>
+References: <1289820766.16406.45.camel@maggy.simson.net> <1289821590.16406.47.camel@maggy.simson.net>
+ <20101115125716.GA22422@redhat.com> <1289856350.14719.135.camel@maggy.simson.net>
+ <20101116015648.GA11534@redhat.com> <1289916171.5169.117.camel@maggy.simson.net>
+ <1289916683.2109.625.camel@laptop> <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+ <20101116170312.GA19327@tango.0pointer.de> <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+ <20101116181603.GC19327@tango.0pointer.de> <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+ <AANLkTi=Z5CK3fOgXNs9odKnQNFHsbavpOvw8c3kh6zEG@mail.gmail.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Tue, 16 Nov 2010 21:21:56 +0100
+Message-ID: <AANLkTikJoeOOAJco_y8pF0Qa9K239oEWh_p8q1605chx@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I noticed that the second part of this conditional is always true.
-Would the intention be to strictly check on both chip_major and
-chip_minor?
+On Tue, Nov 16, 2010 at 20:03, Pekka Enberg <penberg@kernel.org> wrote:
+> On Tue, Nov 16, 2010 at 8:49 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> User-level configuration for something that should just work is
+>> annoying. We can do better.
+>
+> Completely agreed. Desktop users should not be required to fiddle with
+> kernel knobs from userspace to fix interactivity problems. Having sane
+> defaults applies to the kernel as much as it does to userspace.
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- drivers/media/IR/nuvoton-cir.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+The only problem is that *desktop* users use *desktop* apps, which
+never have a controlling tty.
 
-diff --git a/drivers/media/IR/nuvoton-cir.c b/drivers/media/IR/nuvoton-cir.c
-index 301be53..896463b 100644
---- a/drivers/media/IR/nuvoton-cir.c
-+++ b/drivers/media/IR/nuvoton-cir.c
-@@ -249,8 +249,8 @@ static int nvt_hw_detect(struct nvt_dev *nvt)
- 	chip_minor = nvt_cr_read(nvt, CR_CHIP_ID_LO);
- 	nvt_dbg("%s: chip id: 0x%02x 0x%02x", chip_id, chip_major, chip_minor);
- 
--	if (chip_major != CHIP_ID_HIGH &&
--	    (chip_minor != CHIP_ID_LOW || chip_minor != CHIP_ID_LOW2))
-+	if (chip_major != CHIP_ID_HIGH ||
-+	    (chip_minor != CHIP_ID_LOW && chip_minor != CHIP_ID_LOW2))
- 		ret = -ENODEV;
- 
- 	nvt_efm_disable(nvt);
--- 
-1.7.2.2
+This is a *nerd* config not helping any regular desktop user. You guys
+are optimizing the system for people who build kernels and watch
+movies at the same time, not for desktop users. Hooking into TTYs
+works for almost nobody sane out there. :)
+
+It's all fine, no comment on the patch, it's a nice hack. But please
+stop talking about the *desktop* here, it has almost nothing to do
+with it.
+
+Kay
