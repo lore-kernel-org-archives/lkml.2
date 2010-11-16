@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758001Ab0KPOBV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 09:01:21 -0500
-Received: from casper.infradead.org ([85.118.1.10]:51296 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756474Ab0KPOBU convert rfc822-to-8bit (ORCPT
+	id S1758060Ab0KPOBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 09:01:25 -0500
+Received: from mxout1.idt.com ([157.165.5.25]:48219 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756474Ab0KPOBY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 09:01:20 -0500
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1289856350.14719.135.camel@maggy.simson.net>
-References: <AANLkTikjSCbcRnKOU=nd4os1sdW-GJkD6QVj=U5zPyu8@mail.gmail.com>
-	 <20101114202734.GA1627@arch.trippelsdorf.de>
-	 <AANLkTimHtjH3YvtX6i542_XjfFeuvG-AnU8i224a1R4j@mail.gmail.com>
-	 <1289778189.5154.10.camel@maggy.simson.net>
-	 <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
-	 <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com>
-	 <1289783580.495.58.camel@maggy.simson.net>
-	 <1289811438.2109.474.camel@laptop>
-	 <1289820766.16406.45.camel@maggy.simson.net>
-	 <1289821590.16406.47.camel@maggy.simson.net>
-	 <20101115125716.GA22422@redhat.com>
-	 <1289856350.14719.135.camel@maggy.simson.net>
-Content-Type: text/plain; charset="UTF-8"
+	Tue, 16 Nov 2010 09:01:24 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Date: Tue, 16 Nov 2010 15:01:21 +0100
-Message-ID: <1289916081.2109.620.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Subject: RE: [PATCH 4/4][v2] rapidio, powerpc/85xx: Error interrupt handler for sRIO.
+Date: Tue, 16 Nov 2010 06:00:42 -0800
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552015397DD@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <1288777048-25105-1-git-send-email-b21989@freescale.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 4/4][v2] rapidio, powerpc/85xx: Error interrupt handler for sRIO.
+Thread-Index: Act7PxazDA9lLqXhTJqKq+aY0TMBMQKVdNcA
+References: <1288777048-25105-1-git-send-email-b21989@freescale.com>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Shaohui Xie" <b21989@freescale.com>, <akpm@linux-foundation.org>
+Cc: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        "Li Yang" <leoli@freescale.com>,
+        "Kumar Gala" <kumar.gala@freescale.com>,
+        "Roy Zang" <tie-fei.zang@freescale.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-15 at 14:25 -0700, Mike Galbraith wrote:
-> > > +   if (p->flags & PF_EXITING)
-> > > +           return false;
-> > 
-> > Hmm, why? Perhaps PF_EXITING was needed in the previous version to
-> > avoid the race with release_task(). But now it is always safe to
-> > use signal->autogroup.
+> From: Shaohui Xie [mailto:b21989@freescale.com]
 > 
-> That came into existence when I stress tested previous version in
-> PREEMPT_RT (boom).  I see no good reason to bother an exiting task
-> though, so would prefer to leave it as is. 
+> The sRIO controller reports errors to the core with one signal, it
+uses
+> register EPWISR to provides the core quick access to where the error
+occurred.
+> The EPWISR indicates that there are 4 interrupts sources, port1,
+port2, message
+> unit and port write receive, but the sRIO driver does not support
+port2
+> for now, still the handler takes care of port2.
+> Currently the handler only clear error status without any recovery.
+>
 
-PREEMPT_RT has a slightly different exit path IIRC. If that was the only
-thing you saw it explode on we could leave the check out for now and
-revisit it in the -rt patches when and if it pops up. Hmm?
+Do these dual-RIO controllers have only one port-write interrupt?
+(sorry, user manuals are not available for download from FSL).   
+ 
+> @@ -1082,14 +1142,24 @@ fsl_rio_port_write_handler(int irq, void
+*dev_instance)
+>  	ipwsr = in_be32(&priv->msg_regs->pwsr);
+> 
+>  	epwisr = in_be32(priv->regs_win + RIO_EPWISR);
+> -	if (epwisr & 0x80000000) {
+> +	if (epwisr & EPWISR_ERR_PINT1) {
+>  		tmp = in_be32(priv->regs_win + RIO_LTLEDCSR);
+>  		pr_info("RIO_LTLEDCSR = 0x%x\n", tmp);
+> -		out_be32(priv->regs_win + RIO_LTLEDCSR, 0);
+> +		port_error_handler(port, 0);
+> +	}
+> +
+> +	if (epwisr & EPWISR_ERR_PINT2) {
+> +		pr_info("RIO: port2 error\n");
+> +		port_error_handler(port, 1);
+> +	}
+> +
+> +	if (epwisr & EPWISR_ERR_MU) {
+> +		pr_info("RIO: message unit error\n");
+> +		msg_unit_error_handler(port);
+>  	}
+> 
+> -	if (!(epwisr & 0x00000001))
+> -		return IRQ_HANDLED;
+> +	if (!(epwisr & EPWISR_ERR_PW))
+> +		return IRQ_NONE;
+> 
+>  #ifdef DEBUG_PW
+>  	pr_debug("PW Int->IPWMR: 0x%08x IPWSR: 0x%08x (", ipwmr, ipwsr);
+
+This part is out of sync with mainline code tree (37-rc1). Probably it
+should be updated to make it easier to apply your patch. Besides that,
+works as expected on my RIO setup.
+
+Regards,
+
+Alex.
+
+
