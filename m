@@ -1,210 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758955Ab0KPAsI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 19:48:08 -0500
-Received: from smarthost1.greenhost.nl ([195.190.28.78]:49569 "EHLO
-	smarthost1.greenhost.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab0KPAsH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 19:48:07 -0500
-Message-ID: <c30e46c1b5343789b6475722071c3020.squirrel@webmail.greenhost.nl>
-In-Reply-To: <4CE10B32.8090705@suse.cz>
-References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
-    <4CE0FE71.6000303@suse.cz> <20101115100838.GA3649@jasper.tkos.co.il>
-    <4CE10B32.8090705@suse.cz>
-Date: Tue, 16 Nov 2010 01:47:52 +0100 (CET)
-Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
-From: "Indan Zupancic" <indan@nul.nu>
-To: "Jiri Slaby" <jslaby@suse.cz>
-Cc: "Baruch Siach" <baruch@tkos.co.il>, linux-kernel@vger.kernel.org,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Greg KH" <greg@kroah.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Alex Gershgorin" <agersh@rambler.ru>
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain;charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Spam-Score: 0.0
-X-Scan-Signature: 1dbfdb8436ad4a04b825541b03d3e115
+	id S1758972Ab0KPAxw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 19:53:52 -0500
+Received: from mga14.intel.com ([143.182.124.37]:40415 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752826Ab0KPAxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 15 Nov 2010 19:53:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,203,1288594800"; 
+   d="scan'208";a="349121651"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH -v4 0/2] Lockless memory allocator and list
+Date: Tue, 16 Nov 2010 08:53:09 +0800
+Message-Id: <1289868791-16658-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi, Len,
 
-On Mon, November 15, 2010 11:28, Jiri Slaby wrote:
-> On 11/15/2010 11:08 AM, Baruch Siach wrote:
->> Hi Jiri,
->>
->> Thanks for reviewing. See my response to your comments below.
->>
->> On Mon, Nov 15, 2010 at 10:33:37AM +0100, Jiri Slaby wrote:
->>> On 11/15/2010 09:23 AM, Baruch Siach wrote:
->>>> --- /dev/null
->>>> +++ b/drivers/misc/altera_as.c
->>>> @@ -0,0 +1,349 @@
->>> ...
->>>> +struct altera_as_device {
->>>> +	unsigned id;
->>>> +	struct device *dev;
->>>> +	struct miscdevice miscdev;
->>>> +	struct mutex open_lock;
->>>> +	struct gpio gpios[AS_GPIO_NUM];
->>>> +};
->>>> +
->>>> +/*
->>>> + * The only functions updating this array are .probe/.remove, which are
->>>> + * serialized. Hence, no locking is needed here.
->>>> + */
->>>> +static struct {
->>>> +	int minor;
->>>
->>> Why you need minor here? It's in drvdata->miscdev.minor.
->>
->> I use the minor field to lookup the drvdata pointer in get_as_dev(), which I
->> use is altera_as_open().  I do this because I have no access to the 'struct
->> device' pointer from the .open method. Do you know a better way?
+This patchset is needed by APEI support. Which involves some lockless
+operations. And I think they can be used by some other part of kernel
+too.
 
-Yes.
+v4:
 
-Get rid of the array and minor lookup, and instead use container_of()
-to get struct altera_as_device directly from file->private_data, which
-is a pointer to miscdev, set by misc_open().
+- Split from APEI patchset
+- Update patch description and comments according to ML comments
 
-Sorry for not noticing this before.
+v3:
 
->>
->>>> +	struct altera_as_device *drvdata;
->>>> +} altera_as_devs[AS_MAX_DEVS];
->>>
->>> You don't need the struct at all.
->>> static struct altera_as_device *drvdata[AS_MAX_DEVS];
->>> should be enough.
->>
->> See above.
->
-> The answer to you previous question is here. You can just have a global
-> array of struct altera_as_device.
->
->>>> +static int altera_as_open(struct inode *inode, struct file *file)
->>>> +{
->>>> +	int ret;
->>>> +	struct altera_as_device *drvdata = get_as_dev(iminor(inode));
->>>> +
->>>> +	if (drvdata == NULL)
->>>> +		return -ENODEV;
->>>> +	file->private_data = drvdata;
->>>> +
->>>> +	ret = mutex_trylock(&drvdata->open_lock);
->>>> +	if (ret == 0)
->>>> +		return -EBUSY;
->>>> +
->>>> +	ret = gpio_request_array(drvdata->gpios, ARRAY_SIZE(drvdata->gpios));
->>>> +	if (ret < 0) {
->>>> +		mutex_unlock(&drvdata->open_lock);
->>>> +		return ret;
->>>> +	}
->>>
->>> So leaving to userspace with mutex held. This is *wrong*. use
->>> test_and_set_bit or alike instead.
->>
->> Can you explain why this is wrong? I don't mind doing test_and_set_bit
->> instead, I'm just curious.
->
-> The mutex has an owner which it expects to unlock it. For example if you
-> fork a process which already opened the device, you have a problem. This
-> is a technical point. Another point is that it's ugly to leave to
-> userspace with any lock.
->
->>>> +static int __init altera_as_probe(struct platform_device *pdev)
->>>> +{
->>> ...
->>>> +	drvdata->miscdev.minor = MISC_DYNAMIC_MINOR;
->>>> +	drvdata->miscdev.name = kasprintf(GFP_KERNEL, "altera_as%d",
->>>> +			pdata->id);
->>>> +	if (drvdata->miscdev.name == NULL)
->>>> +		return -ENOMEM;
->>>> +	drvdata->miscdev.fops = &altera_as_fops;
->>>> +	if (misc_register(&drvdata->miscdev) < 0) {
->>>
->>> Hmm, how many devices can be in the system?
->>
->> Up to AS_MAX_DEVS, currently 16.
->>
->>> This doesn't look like the right way.
->>
->> What is the right way then?
->
-> Ok, so for that count it definitely deserves its own major to not eat up
-> misc device space.
+- Rework lockless memory allocator and list according to ML comments
 
-Ther are only as many minors allocates as needed, not always 16.
-Almost always there will be only one FPGA, maybe a couple, but
-more is very rare. And when that's the case there are probably
-not many other misc devices around either, or they use a more
-scalable way to program many FPGAs.
-
-This is niche enough, don't make it more complicated than needed.
-Having its own major seems overkill.
-
->>>> +		kfree(drvdata->miscdev.name);
->>>> +		return -ENODEV;
->>>> +	}
->>>> +	altera_as_devs[pdata->id].minor = drvdata->miscdev.minor;
->>>> +	altera_as_devs[pdata->id].drvdata = drvdata;
->>>
->>> So now the device is usable without the mutex and gpios inited?
->>
->> I was thinking that the device lock which is being held during the .probe
->> run,
->> prevents the device from being open. After all I can still return -EGOAWAY
->> at
->> this point. Am I wrong?
->>
->> If so, I'll reorder this code.
->
-> This cannot be done easily. You need to set drvdata prior to minor and
-> after all the assignments here. The former because in get_as_dev you
-> test minor and return drvdata. The latter because you use open_lock &
-> gpios after playing with minor & drvdata.
->
-> Technically, it can be done with a use of barriers, but I don't
-> recommend it as drivers should not use barriers at all. You should
-> introduce some locking here (it introduces barriers on its own).
->
-> So move the assignment to altera_as_devs below the mutex_init & gpios
-> setup and lock it appropriately. Then add a lock to get_as_dev.
-
-Just put the misc_register() call at the end and it should be fine,
-once the array is gone.
-
->>>> +	mutex_init(&drvdata->open_lock);
->>>> +
->>>> +	drvdata->id = pdata->id;
->>>> +
->>>> +	drvdata->gpios[ASIO_DATA].gpio		= pdata->data;
->>>> +	drvdata->gpios[ASIO_DATA].flags		= GPIOF_IN;
->>>> +	drvdata->gpios[ASIO_DATA].label		= "as_data";
->>> ...
->>>> +	drvdata->gpios[ASIO_NCE].gpio		= pdata->nce;
->>>> +	drvdata->gpios[ASIO_NCE].flags		= GPIOF_OUT_INIT_HIGH;
->>>> +	drvdata->gpios[ASIO_NCE].label		= "as_nce";
->>>> +
->>>> +	dev_info(drvdata->dev, "Altera Cyclone Active Serial driver\n");
->>>> +
->>>> +	return 0;
->>>> +}
->
-> regards,
-> --
-> js
-> suse labs
->
-
-Greetings,
-
-Indan
-
-
+[PATCH -v4 1/2] lib, Make gen_pool memory allocator lockless
+[PATCH -v4 2/2] lib, Add lock-less NULL terminated single list
