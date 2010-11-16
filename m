@@ -1,91 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933902Ab0KPGg0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 01:36:26 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:50673 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932222Ab0KPGgY (ORCPT
+	id S933837Ab0KPGjD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 01:39:03 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33664 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932264Ab0KPGjA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 01:36:24 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6168"; a="63000529"
-Message-ID: <4CE22665.50209@codeaurora.org>
-Date: Tue, 16 Nov 2010 12:06:21 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Tue, 16 Nov 2010 01:39:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=QU8qwFmbhD4ZHLiisA8u4zadA2PdguxNtY/1EvYZANAAYOrfert2d/yL5IU3l56TVf
+         Up8aAuIQpJIlhwYKjHDwmifCod5R7zdIpRxeAp719K8xrbCA+V8C9+rZ6npJqWAZwGgT
+         nhK6HyAX49NNi7dTCLljd2oy+7Q1PvI3ybeXs=
 MIME-Version: 1.0
-To: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        Anirudh Ghayal <aghayal@codeaurora.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [RFC v1 PATCH 5/6] input: pmic8058-othc: Add support for PM8058
- based OTHC
-References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org> <1289393281-4459-6-git-send-email-tsoni@codeaurora.org> <0680EC522D0CC943BC586913CF3768C003FF9009B6@dbde02.ent.ti.com>
-In-Reply-To: <0680EC522D0CC943BC586913CF3768C003FF9009B6@dbde02.ent.ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4CE1CF88.2090702@canonical.com>
+References: <20101113023435.GB2713@localhost.localdomain>
+	<AANLkTikrdQw1h=efa7EtnXCbQ5APT0PtWdaCUA83T5pN@mail.gmail.com>
+	<4CE1CF88.2090702@canonical.com>
+Date: Tue, 16 Nov 2010 14:38:59 +0800
+Message-ID: <AANLkTinTbZPgTy=v+QjdbyBOZs-wrEVjTxPLe+zmK_vx@mail.gmail.com>
+Subject: Re: [PATCH] APPARMOR: code cleanup on context.h
+From: wzt wzt <wzt.wzt@gmail.com>
+To: John Johansen <john.johansen@canonical.com>
+Cc: linux-kernel@vger.kernel.org, apparmor@lists.ubuntu.com,
+        linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+OK, thank you.
 
-Hi Shubhrajyoti,
-
-On 11/16/2010 11:06 AM, Datta, Shubhrajyoti wrote:
-> Hi Anirudh,
-> 
->> -----Original Message-----
->> From: linux-input-owner@vger.kernel.org [mailto:linux-input-
->> owner@vger.kernel.org] On Behalf Of Trilok Soni
->> Sent: Wednesday, November 10, 2010 6:18 PM
->> To: linux-kernel@vger.kernel.org
->> Cc: linux-input@vger.kernel.org; rtc-linux@googlegroups.com; linux-arm-
->> msm@vger.kernel.org; Anirudh Ghayal; Dmitry Torokhov
->> Subject: [RFC v1 PATCH 5/6] input: pmic8058-othc: Add support for PM8058
->> based OTHC
->>
->> From: Anirudh Ghayal <aghayal@codeaurora.org>
->>
->> One-touch headset controller is a hardware module in Qualcomm's PMIC8058.
->> It supports headset insert/remove and switch press/release detection
->> events
->> over 3 MIC BIAS lines. The MIC BIAS lines can be configured to support
->> headset detection or act as regular BIAS lines.
-> Could  you help with the datasheet link if it is free.
-> 
-
-datasheets are not available for open access.
-
->> +
->> +static int
-> If this is called only at init it can also be a devinit ?
-
-Ok.
-
->> +     if (rc) {
->> +             dev_dbg(&pd->dev, "Headset inserted during boot up!\n");
->> +             dd->othc_ir_state = true;
->> +             input_report_switch(dd->othc_ipd, SW_HEADPHONE_INSERT, 1);
->> +             input_sync(dd->othc_ipd);
->> +     }
-> Not a comment. However I did not understand why the status at boot is required here.
-
-We need to report right status when the system boots up with headset inserted.
-
->> +
->> +fail_sw_irq:
->> +     free_irq(dd->othc_irq_ir, dd);
->> +fail_ir_irq:
->> +     input_unregister_device(ipd);
-> Unregister and then falling back to free may not be what you intended.
-> 
-
-Nope. Please see we are making othc_ipd = NULL, so everything should be fine.
-
-Thanks for the review comments.
-
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> Hi, yes sorry I am just trying to dig my self out from under a 4 day weekend :)
+>
+> ACK, I am going to add it to the apparmor tree tonight once I finish cleaning the
+> tree up and push, and it will be included in the next pull request to security.
+>
+> thanks
+> john
+>
