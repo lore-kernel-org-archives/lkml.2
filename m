@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756412Ab0KPSJJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 13:09:09 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:46788 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756300Ab0KPSJH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 13:09:07 -0500
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <20101116170312.GA19327@tango.0pointer.de>
-References: <1289783580.495.58.camel@maggy.simson.net>
-	 <1289811438.2109.474.camel@laptop>
-	 <1289820766.16406.45.camel@maggy.simson.net>
-	 <1289821590.16406.47.camel@maggy.simson.net>
-	 <20101115125716.GA22422@redhat.com>
-	 <1289856350.14719.135.camel@maggy.simson.net>
-	 <20101116015648.GA11534@redhat.com>
-	 <1289916171.5169.117.camel@maggy.simson.net>
-	 <1289916683.2109.625.camel@laptop>
-	 <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
-	 <20101116170312.GA19327@tango.0pointer.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 16 Nov 2010 19:08:54 +0100
-Message-ID: <1289930934.2109.644.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756351Ab0KPSLL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 13:11:11 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:49795 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754207Ab0KPSLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 13:11:10 -0500
+From: Kees Cook <kees.cook@canonical.com>
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: Yinghai Lu <yinghai@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH] x86: fix included-by file reference comments
+Date: Tue, 16 Nov 2010 10:10:04 -0800
+Message-Id: <1289931004-16066-1-git-send-email-kees.cook@canonical.com>
+X-Mailer: git-send-email 1.7.2.3
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 18:03 +0100, Lennart Poettering wrote:
-> Binding something like this to TTYs is just backwards. No graphical
-> session has a TTY attached anymore. And there might be multiple TTYs
-> used in the same session. 
+Adjust the paths for files that are including verify_cpu.S.
 
-Using a group per tty makes sense for us console jockeys..
+Reported-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+---
+ arch/x86/kernel/verify_cpu.S |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Anyway, nobody uses systemd yet and afaik not all distro's even plan on
-using it (I know I'm not waiting to learn yet another init variant).
+diff --git a/arch/x86/kernel/verify_cpu.S b/arch/x86/kernel/verify_cpu.S
+index 5644b4b..0edefc1 100644
+--- a/arch/x86/kernel/verify_cpu.S
++++ b/arch/x86/kernel/verify_cpu.S
+@@ -17,9 +17,9 @@
+  *	file is included at various places and compiled in that context.
+  *	This file is expected to run in 32bit code.  Currently:
+  *
+- *	arch/x86_64/boot/compressed/head_64.S: Boot cpu verification
+- *	arch/x86_64/kernel/trampoline_64.S: secondary processor verfication
+- *	arch/x86_64/kernel/head_32.S: processor startup
++ *	arch/x86/boot/compressed/head_64.S: Boot cpu verification
++ *	arch/x86/kernel/trampoline_64.S: secondary processor verfication
++ *	arch/x86/kernel/head_32.S: processor startup
+  *
+  *	verify_cpu, returns the status of longmode and SSE in register %eax.
+  *		0: Success    1: Failure
+-- 
+1.7.2.3
+
