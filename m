@@ -1,406 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab0KPRlY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 12:41:24 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:33695 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754101Ab0KPRlR (ORCPT
+	id S1756019Ab0KPRlO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 12:41:14 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39512 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752419Ab0KPRlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 12:41:17 -0500
+	Tue, 16 Nov 2010 12:41:13 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=CPSEJNu8ES6CJciWogwTHm7nh8nPMxPPcI9woh08AO+SX0aYChbPSCYKiDGqZ9cFKN
-         cANYUdCj4ZhH988AZ+vM5Y3ZPfFFUPxYYm5//YLblm/ROBtcgSYAUe1WEpa/Nm8UHPMz
-         igC5EX6t/i3lWuBLk/SAZm7ZDYFZNJitcOpwk=
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=ErQ98m0dznAZ9kTubTNLDrssLB8AhFbIVTFf28d03uAAPrxX3XDITSFG+gscewS7Rq
+         BaQ3nY69jOdkA9Isv+DpVSPOB7K6OiPVK7RelpRUeTlArSnLPquPYwanBSFgkjfb4Ar3
+         H/Rze7HpKgbSsZhpEknGpAN1z1P/42zw+eJcM=
 From: Alessio Igor Bogani <abogani@texware.it>
 To: Jan Kara <jack@suse.cz>, Arnd Bergmann <arnd@arndb.de>
 Cc: Christoph Hellwig <hch@infradead.org>, Tim Bird <tim.bird@am.sony.com>,
         LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
         Alessio Igor Bogani <abogani@texware.it>
-Subject: [PATCH 3/3] udf: Remove unnecessary bkl usages
-Date: Tue, 16 Nov 2010 18:40:49 +0100
-Message-Id: <1289929249-4863-3-git-send-email-abogani@texware.it>
+Subject: [PATCH 1/3] udf: Replace bkl with the inode->i_alloc_sem for protect udf_inode_info struct
+Date: Tue, 16 Nov 2010 18:40:47 +0100
+Message-Id: <1289929249-4863-1-git-send-email-abogani@texware.it>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1289929249-4863-1-git-send-email-abogani@texware.it>
-References: <1289929249-4863-1-git-send-email-abogani@texware.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The udf_readdir(), udf_lookup(), udf_create(), udf_mknod(), udf_mkdir(),
-udf_rmdir(), udf_link(), udf_get_parent() and udf_unlink() seems already
-adequately protected by i_mutex held by VFS invoking calls. The udf_rename()
-instead should be already protected by lock_rename again by VFS. The
-udf_truncate() is protected by i_alloc_sem. The udf_ioctl(), udf_fill_super()
-and udf_evict_inode() don't requires any further protection.
+Replace bkl with the inode->i_alloc_sem rw semaphore in udf_release_file(),
+udf_symlink(), udf_symlink_filler(), udf_get_block() and udf_block_map().
+Add protection in udf_evict_inode() using the same i_alloc_sem rw semaphore.
 
 This work was supported by a hardware donation from the CE Linux Forum.
 
 Signed-off-by: Alessio Igor Bogani <abogani@texware.it>
 ---
- fs/udf/dir.c   |    5 -----
- fs/udf/file.c  |    4 ----
- fs/udf/inode.c |    6 ------
- fs/udf/namei.c |   27 ---------------------------
- fs/udf/super.c |    9 +--------
- 5 files changed, 1 insertions(+), 50 deletions(-)
+ fs/udf/file.c    |    4 ++--
+ fs/udf/inode.c   |   11 +++++++----
+ fs/udf/namei.c   |    4 ++--
+ fs/udf/symlink.c |   12 +++++++-----
+ fs/udf/udf_i.h   |    9 +++++++++
+ 5 files changed, 27 insertions(+), 13 deletions(-)
 
-diff --git a/fs/udf/dir.c b/fs/udf/dir.c
-index 51552bf..eb8bfe2 100644
---- a/fs/udf/dir.c
-+++ b/fs/udf/dir.c
-@@ -30,7 +30,6 @@
- #include <linux/errno.h>
- #include <linux/mm.h>
- #include <linux/slab.h>
--#include <linux/smp_lock.h>
- #include <linux/buffer_head.h>
- 
- #include "udf_i.h"
-@@ -190,18 +189,14 @@ static int udf_readdir(struct file *filp, void *dirent, filldir_t filldir)
- 	struct inode *dir = filp->f_path.dentry->d_inode;
- 	int result;
- 
--	lock_kernel();
--
- 	if (filp->f_pos == 0) {
- 		if (filldir(dirent, ".", 1, filp->f_pos, dir->i_ino, DT_DIR) < 0) {
--			unlock_kernel();
- 			return 0;
- 		}
- 		filp->f_pos++;
- 	}
- 
- 	result = do_udf_readdir(dir, filp, filldir, dirent);
--	unlock_kernel();
-  	return result;
- }
- 
 diff --git a/fs/udf/file.c b/fs/udf/file.c
-index 4cb0f7a..aa12069 100644
+index 66b9e7e..4cb0f7a 100644
 --- a/fs/udf/file.c
 +++ b/fs/udf/file.c
-@@ -32,7 +32,6 @@
- #include <linux/string.h> /* memset */
- #include <linux/capability.h>
- #include <linux/errno.h>
--#include <linux/smp_lock.h>
- #include <linux/pagemap.h>
- #include <linux/buffer_head.h>
- #include <linux/aio.h>
-@@ -149,8 +148,6 @@ long udf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
- 	long old_block, new_block;
- 	int result = -EINVAL;
- 
--	lock_kernel();
--
- 	if (file_permission(filp, MAY_READ) != 0) {
- 		udf_debug("no permission to access inode %lu\n", inode->i_ino);
- 		result = -EPERM;
-@@ -196,7 +193,6 @@ long udf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+@@ -204,10 +204,10 @@ static int udf_release_file(struct inode *inode, struct file *filp)
+ {
+ 	if (filp->f_mode & FMODE_WRITE) {
+ 		mutex_lock(&inode->i_mutex);
+-		lock_kernel();
++		down_write(&inode->i_alloc_sem);
+ 		udf_discard_prealloc(inode);
+ 		udf_truncate_tail_extent(inode);
+-		unlock_kernel();
++		up_write(&inode->i_alloc_sem);
+ 		mutex_unlock(&inode->i_mutex);
  	}
- 
- out:
--	unlock_kernel();
- 	return result;
- }
- 
+ 	return 0;
 diff --git a/fs/udf/inode.c b/fs/udf/inode.c
-index 14e3f56..586ad6a 100644
+index fa3c154..14e3f56 100644
 --- a/fs/udf/inode.c
 +++ b/fs/udf/inode.c
-@@ -31,7 +31,6 @@
- 
- #include "udfdecl.h"
- #include <linux/mm.h>
--#include <linux/smp_lock.h>
- #include <linux/module.h>
- #include <linux/pagemap.h>
- #include <linux/buffer_head.h>
-@@ -98,9 +97,7 @@ void udf_evict_inode(struct inode *inode)
- 	kfree(iinfo->i_ext.i_data);
- 	iinfo->i_ext.i_data = NULL;
- 	if (want_delete) {
--		lock_kernel();
- 		udf_free_inode(inode);
--		unlock_kernel();
+@@ -79,7 +79,9 @@ void udf_evict_inode(struct inode *inode)
+ 	if (!inode->i_nlink && !is_bad_inode(inode)) {
+ 		want_delete = 1;
+ 		inode->i_size = 0;
++		down_write(&inode->i_alloc_sem);
+ 		udf_truncate(inode);
++		up_write(&inode->i_alloc_sem);
+ 		udf_update_inode(inode, IS_SYNC(inode));
  	}
+ 	invalidate_inode_buffers(inode);
+@@ -302,9 +304,10 @@ static int udf_get_block(struct inode *inode, sector_t block,
+ 	new = 0;
+ 	bh = NULL;
+ 
+-	lock_kernel();
++	down_write(&inode->i_alloc_sem);
+ 
+ 	iinfo = UDF_I(inode);
++
+ 	if (block == iinfo->i_next_alloc_block + 1) {
+ 		iinfo->i_next_alloc_block++;
+ 		iinfo->i_next_alloc_goal++;
+@@ -323,7 +326,7 @@ static int udf_get_block(struct inode *inode, sector_t block,
+ 	map_bh(bh_result, inode->i_sb, phys);
+ 
+ abort:
+-	unlock_kernel();
++	up_write(&inode->i_alloc_sem);
+ 	return err;
  }
  
-@@ -1024,7 +1021,6 @@ void udf_truncate(struct inode *inode)
- 	if (IS_APPEND(inode) || IS_IMMUTABLE(inode))
- 		return;
+@@ -2043,7 +2046,7 @@ long udf_block_map(struct inode *inode, sector_t block)
+ 	struct extent_position epos = {};
+ 	int ret;
+ 
+-	lock_kernel();
++	down_read(&inode->i_alloc_sem);
+ 
+ 	if (inode_bmap(inode, block, &epos, &eloc, &elen, &offset) ==
+ 						(EXT_RECORDED_ALLOCATED >> 30))
+@@ -2051,7 +2054,7 @@ long udf_block_map(struct inode *inode, sector_t block)
+ 	else
+ 		ret = 0;
+ 
+-	unlock_kernel();
++	up_read(&inode->i_alloc_sem);
+ 	brelse(epos.bh);
+ 
+ 	if (UDF_QUERY_FLAG(inode->i_sb, UDF_FLAG_VARCONV))
+diff --git a/fs/udf/namei.c b/fs/udf/namei.c
+index 701fcda..5aa2ca6 100644
+--- a/fs/udf/namei.c
++++ b/fs/udf/namei.c
+@@ -893,11 +893,11 @@ static int udf_symlink(struct inode *dir, struct dentry *dentry,
+ 	struct udf_inode_info *iinfo;
+ 	struct super_block *sb = dir->i_sb;
+ 
+-	lock_kernel();
+ 	inode = udf_new_inode(dir, S_IFLNK | S_IRWXUGO, &err);
+ 	if (!inode)
+ 		goto out;
+ 
++	down_write(&inode->i_alloc_sem);
+ 	name = kmalloc(UDF_NAME_LEN, GFP_NOFS);
+ 	if (!name) {
+ 		err = -ENOMEM;
+@@ -1032,10 +1032,10 @@ static int udf_symlink(struct inode *dir, struct dentry *dentry,
+ 
+ out:
+ 	kfree(name);
+-	unlock_kernel();
+ 	return err;
+ 
+ out_no_entry:
++	up_write(&inode->i_alloc_sem);
+ 	inode_dec_link_count(inode);
+ 	iput(inode);
+ 	goto out;
+diff --git a/fs/udf/symlink.c b/fs/udf/symlink.c
+index 1606478..358673d 100644
+--- a/fs/udf/symlink.c
++++ b/fs/udf/symlink.c
+@@ -27,7 +27,6 @@
+ #include <linux/mm.h>
+ #include <linux/stat.h>
+ #include <linux/pagemap.h>
+-#include <linux/smp_lock.h>
+ #include <linux/buffer_head.h>
+ #include "udf_i.h"
+ 
+@@ -78,13 +77,16 @@ static int udf_symlink_filler(struct file *file, struct page *page)
+ 	int err = -EIO;
+ 	unsigned char *p = kmap(page);
+ 	struct udf_inode_info *iinfo;
++	uint32_t pos;
  
 -	lock_kernel();
  	iinfo = UDF_I(inode);
++	pos = udf_block_map(inode, 0);
++
++	down_read(&inode->i_alloc_sem);
  	if (iinfo->i_alloc_type == ICBTAG_FLAG_AD_IN_ICB) {
- 		if (inode->i_sb->s_blocksize <
-@@ -1033,7 +1029,6 @@ void udf_truncate(struct inode *inode)
- 			udf_expand_file_adinicb(inode, inode->i_size, &err);
- 			if (iinfo->i_alloc_type == ICBTAG_FLAG_AD_IN_ICB) {
- 				inode->i_size = iinfo->i_lenAlloc;
--				unlock_kernel();
- 				return;
- 			} else
- 				udf_truncate_extents(inode);
-@@ -1055,7 +1050,6 @@ void udf_truncate(struct inode *inode)
- 		udf_sync_inode(inode);
- 	else
- 		mark_inode_dirty(inode);
+ 		symlink = iinfo->i_ext.i_data + iinfo->i_lenEAttr;
+ 	} else {
+-		bh = sb_bread(inode->i_sb, udf_block_map(inode, 0));
++		bh = sb_bread(inode->i_sb, pos);
+ 
+ 		if (!bh)
+ 			goto out;
+@@ -95,14 +97,14 @@ static int udf_symlink_filler(struct file *file, struct page *page)
+ 	udf_pc_to_char(inode->i_sb, symlink, inode->i_size, p);
+ 	brelse(bh);
+ 
 -	unlock_kernel();
- }
- 
- static void __udf_read_inode(struct inode *inode)
-diff --git a/fs/udf/namei.c b/fs/udf/namei.c
-index 5aa2ca6..f1e71d2 100644
---- a/fs/udf/namei.c
-+++ b/fs/udf/namei.c
-@@ -27,7 +27,6 @@
- #include <linux/errno.h>
- #include <linux/mm.h>
- #include <linux/slab.h>
--#include <linux/smp_lock.h>
- #include <linux/buffer_head.h>
- #include <linux/sched.h>
- #include <linux/crc-itu-t.h>
-@@ -263,7 +262,6 @@ static struct dentry *udf_lookup(struct inode *dir, struct dentry *dentry,
- 	if (dentry->d_name.len > UDF_NAME_LEN - 2)
- 		return ERR_PTR(-ENAMETOOLONG);
- 
--	lock_kernel();
- #ifdef UDF_RECOVERY
- 	/* temporary shorthand for specifying files by inode number */
- 	if (!strncmp(dentry->d_name.name, ".B=", 3)) {
-@@ -275,7 +273,6 @@ static struct dentry *udf_lookup(struct inode *dir, struct dentry *dentry,
- 		};
- 		inode = udf_iget(dir->i_sb, lb);
- 		if (!inode) {
--			unlock_kernel();
- 			return ERR_PTR(-EACCES);
- 		}
- 	} else
-@@ -291,11 +288,9 @@ static struct dentry *udf_lookup(struct inode *dir, struct dentry *dentry,
- 		loc = lelb_to_cpu(cfi.icb.extLocation);
- 		inode = udf_iget(dir->i_sb, &loc);
- 		if (!inode) {
--			unlock_kernel();
- 			return ERR_PTR(-EACCES);
- 		}
- 	}
--	unlock_kernel();
- 
- 	return d_splice_alias(inode, dentry);
- }
-@@ -562,10 +557,8 @@ static int udf_create(struct inode *dir, struct dentry *dentry, int mode,
- 	int err;
- 	struct udf_inode_info *iinfo;
- 
--	lock_kernel();
- 	inode = udf_new_inode(dir, mode, &err);
- 	if (!inode) {
--		unlock_kernel();
- 		return err;
- 	}
- 
-@@ -583,7 +576,6 @@ static int udf_create(struct inode *dir, struct dentry *dentry, int mode,
- 		inode->i_nlink--;
- 		mark_inode_dirty(inode);
- 		iput(inode);
--		unlock_kernel();
- 		return err;
- 	}
- 	cfi.icb.extLength = cpu_to_le32(inode->i_sb->s_blocksize);
-@@ -596,7 +588,6 @@ static int udf_create(struct inode *dir, struct dentry *dentry, int mode,
- 	if (fibh.sbh != fibh.ebh)
- 		brelse(fibh.ebh);
- 	brelse(fibh.sbh);
--	unlock_kernel();
- 	d_instantiate(dentry, inode);
- 
- 	return 0;
-@@ -614,7 +605,6 @@ static int udf_mknod(struct inode *dir, struct dentry *dentry, int mode,
- 	if (!old_valid_dev(rdev))
- 		return -EINVAL;
- 
--	lock_kernel();
- 	err = -EIO;
- 	inode = udf_new_inode(dir, mode, &err);
- 	if (!inode)
-@@ -627,7 +617,6 @@ static int udf_mknod(struct inode *dir, struct dentry *dentry, int mode,
- 		inode->i_nlink--;
- 		mark_inode_dirty(inode);
- 		iput(inode);
--		unlock_kernel();
- 		return err;
- 	}
- 	cfi.icb.extLength = cpu_to_le32(inode->i_sb->s_blocksize);
-@@ -646,7 +635,6 @@ static int udf_mknod(struct inode *dir, struct dentry *dentry, int mode,
- 	err = 0;
- 
- out:
--	unlock_kernel();
- 	return err;
- }
- 
-@@ -659,7 +647,6 @@ static int udf_mkdir(struct inode *dir, struct dentry *dentry, int mode)
- 	struct udf_inode_info *dinfo = UDF_I(dir);
- 	struct udf_inode_info *iinfo;
- 
--	lock_kernel();
- 	err = -EMLINK;
- 	if (dir->i_nlink >= (256 << sizeof(dir->i_nlink)) - 1)
- 		goto out;
-@@ -712,7 +699,6 @@ static int udf_mkdir(struct inode *dir, struct dentry *dentry, int mode)
- 	err = 0;
- 
- out:
--	unlock_kernel();
- 	return err;
- }
- 
-@@ -794,7 +780,6 @@ static int udf_rmdir(struct inode *dir, struct dentry *dentry)
- 	struct kernel_lb_addr tloc;
- 
- 	retval = -ENOENT;
--	lock_kernel();
- 	fi = udf_find_entry(dir, &dentry->d_name, &fibh, &cfi);
- 	if (!fi)
- 		goto out;
-@@ -826,7 +811,6 @@ end_rmdir:
- 	brelse(fibh.sbh);
- 
- out:
--	unlock_kernel();
- 	return retval;
- }
- 
-@@ -840,7 +824,6 @@ static int udf_unlink(struct inode *dir, struct dentry *dentry)
- 	struct kernel_lb_addr tloc;
- 
- 	retval = -ENOENT;
--	lock_kernel();
- 	fi = udf_find_entry(dir, &dentry->d_name, &fibh, &cfi);
- 	if (!fi)
- 		goto out;
-@@ -870,7 +853,6 @@ end_unlink:
- 	brelse(fibh.sbh);
- 
- out:
--	unlock_kernel();
- 	return retval;
- }
- 
-@@ -1049,15 +1031,12 @@ static int udf_link(struct dentry *old_dentry, struct inode *dir,
- 	struct fileIdentDesc cfi, *fi;
- 	int err;
- 
--	lock_kernel();
- 	if (inode->i_nlink >= (256 << sizeof(inode->i_nlink)) - 1) {
--		unlock_kernel();
- 		return -EMLINK;
- 	}
- 
- 	fi = udf_add_entry(dir, dentry, &fibh, &cfi, &err);
- 	if (!fi) {
--		unlock_kernel();
- 		return err;
- 	}
- 	cfi.icb.extLength = cpu_to_le32(inode->i_sb->s_blocksize);
-@@ -1078,7 +1057,6 @@ static int udf_link(struct dentry *old_dentry, struct inode *dir,
- 	mark_inode_dirty(inode);
- 	ihold(inode);
- 	d_instantiate(dentry, inode);
--	unlock_kernel();
- 
- 	return 0;
- }
-@@ -1099,7 +1077,6 @@ static int udf_rename(struct inode *old_dir, struct dentry *old_dentry,
- 	struct kernel_lb_addr tloc;
- 	struct udf_inode_info *old_iinfo = UDF_I(old_inode);
- 
--	lock_kernel();
- 	ofi = udf_find_entry(old_dir, &old_dentry->d_name, &ofibh, &ocfi);
- 	if (ofi) {
- 		if (ofibh.sbh != ofibh.ebh)
-@@ -1223,7 +1200,6 @@ end_rename:
- 			brelse(nfibh.ebh);
- 		brelse(nfibh.sbh);
- 	}
--	unlock_kernel();
- 
- 	return retval;
- }
-@@ -1236,7 +1212,6 @@ static struct dentry *udf_get_parent(struct dentry *child)
- 	struct fileIdentDesc cfi;
- 	struct udf_fileident_bh fibh;
- 
--	lock_kernel();
- 	if (!udf_find_entry(child->d_inode, &dotdot, &fibh, &cfi))
- 		goto out_unlock;
- 
-@@ -1248,11 +1223,9 @@ static struct dentry *udf_get_parent(struct dentry *child)
- 	inode = udf_iget(child->d_inode->i_sb, &tloc);
- 	if (!inode)
- 		goto out_unlock;
--	unlock_kernel();
- 
- 	return d_obtain_alias(inode);
- out_unlock:
--	unlock_kernel();
- 	return ERR_PTR(-EACCES);
- }
- 
-diff --git a/fs/udf/super.c b/fs/udf/super.c
-index d2ec9f3..f4a9dd7 100644
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -48,7 +48,6 @@
- #include <linux/stat.h>
- #include <linux/cdrom.h>
- #include <linux/nls.h>
--#include <linux/smp_lock.h>
- #include <linux/buffer_head.h>
- #include <linux/vfs.h>
- #include <linux/vmalloc.h>
-@@ -1910,8 +1909,6 @@ static int udf_fill_super(struct super_block *sb, void *options, int silent)
- 	struct kernel_lb_addr rootdir, fileset;
- 	struct udf_sb_info *sbi;
- 
--	lock_kernel();
--
- 	uopt.flags = (1 << UDF_FLAG_USE_AD_IN_ICB) | (1 << UDF_FLAG_STRICT);
- 	uopt.uid = -1;
- 	uopt.gid = -1;
-@@ -1920,10 +1917,8 @@ static int udf_fill_super(struct super_block *sb, void *options, int silent)
- 	uopt.dmode = UDF_INVALID_MODE;
- 
- 	sbi = kzalloc(sizeof(struct udf_sb_info), GFP_KERNEL);
--	if (!sbi) {
--		unlock_kernel();
-+	if (!sbi)
- 		return -ENOMEM;
--	}
- 
- 	sb->s_fs_info = sbi;
- 
-@@ -2070,7 +2065,6 @@ static int udf_fill_super(struct super_block *sb, void *options, int silent)
- 		goto error_out;
- 	}
- 	sb->s_maxbytes = MAX_LFS_FILESIZE;
--	unlock_kernel();
++	up_read(&inode->i_alloc_sem);
+ 	SetPageUptodate(page);
+ 	kunmap(page);
+ 	unlock_page(page);
  	return 0;
  
- error_out:
-@@ -2091,7 +2085,6 @@ error_out:
- 	kfree(sbi);
- 	sb->s_fs_info = NULL;
- 
+ out:
 -	unlock_kernel();
- 	return -EINVAL;
- }
++	up_read(&inode->i_alloc_sem);
+ 	SetPageError(page);
+ 	kunmap(page);
+ 	unlock_page(page);
+diff --git a/fs/udf/udf_i.h b/fs/udf/udf_i.h
+index e58d1de..d5026ae 100644
+--- a/fs/udf/udf_i.h
++++ b/fs/udf/udf_i.h
+@@ -1,6 +1,15 @@
+ #ifndef _UDF_I_H
+ #define _UDF_I_H
  
++/*
++ * The i_alloc_sem serves for protection of allocation information of a regular
++ * files and symlinks. This includes all extents belonging to the file/symlink,
++ * preallocation, and goal block information. When extents are read,
++ * i_alloc_sem must be held for reading, when extents are changed, i_alloc_sem
++ * must be held for writing. For directories i_mutex is used for all the
++ * necessary protection.
++ */
++
+ struct udf_inode_info {
+ 	struct timespec		i_crtime;
+ 	/* Physical address of inode */
 -- 
 1.7.0.4
 
