@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab0KPR2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 12:28:19 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60318 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753076Ab0KPR2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 12:28:18 -0500
-Date: Tue, 16 Nov 2010 18:28:04 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101116172804.GA9930@elte.hu>
-References: <1289783580.495.58.camel@maggy.simson.net>
- <1289811438.2109.474.camel@laptop>
- <1289820766.16406.45.camel@maggy.simson.net>
- <1289821590.16406.47.camel@maggy.simson.net>
- <20101115125716.GA22422@redhat.com>
- <1289856350.14719.135.camel@maggy.simson.net>
- <20101116130413.GA29368@redhat.com>
- <1289917109.5169.131.camel@maggy.simson.net>
- <20101116150319.GA3475@redhat.com>
- <1289922108.5169.185.camel@maggy.simson.net>
+	id S1755849Ab0KPRbT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 12:31:19 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:57735 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753372Ab0KPRbQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 12:31:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=rjaeFidpeTpa/KHvCx3rcQxpxjYJF5Y/olNMIcjeSd9/kYm1ilPEVvwKiNMY4OV+cG
+         kTOAjIsQLrqk4bo5fMq/EBay8RcKkxyUJYRJVU0q4uDMg/3SaIQScVsI1JSRHBhKA2O3
+         aJVXRolsFWO4yPquU8noubuIJ4NDyTTQRG7R4=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Zhang Rui <rui.zhang@intel.com>
+Subject: Re: [REGRESSION] [2.6.37-rc1] Fan noise after suspend to ram/disk
+Date: Tue, 16 Nov 2010 18:31:10 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc1; KDE/4.4.5; i686; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+References: <201011041706.59046.maciej.rutecki@gmail.com> <201011152139.46261.maciej.rutecki@gmail.com> <1289870775.8148.2020.camel@rui>
+In-Reply-To: <1289870775.8148.2020.camel@rui>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289922108.5169.185.camel@maggy.simson.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.3
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.3 required=5.9 tests=BAYES_00,FUZZY_VPILL autolearn=no SpamAssassin version=3.2.5
-	0.7 FUZZY_VPILL            BODY: Attempt to obfuscate words in spam
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201011161831.11209.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mike Galbraith <efault@gmx.de> wrote:
-
-> > Exactly. And this means we can _only_ assume it can't go away if 
-> > autogroup_move_group() can see us on ->thread_group list.
+On wtorek, 16 listopada 2010 o 02:26:15 Zhang Rui wrote:
+> On Tue, 2010-11-16 at 04:39 +0800, Maciej Rutecki wrote:
+> > On poniedziałek, 15 listopada 2010 o 04:16:35 Zhang Rui wrote:
+> > > On Tue, 2010-11-09 at 01:35 +0800, Maciej Rutecki wrote:
+> > > > On poniedziałek, 8 listopada 2010 o 07:58:52 Zhang Rui wrote:
+> > > > > IMO, the only one that may cause this regression is commit
+> > > > > c57b62f5b1e6dd69ff8c96f6db7f86ea31c0e21f
+> > > > > some app may enable polling via procfs and update the thermal zone
+> > > > > status.
+> > > > 
+> > > > I revert this commit from 2.6.37-rc1. Still the same:
+> > > could you please apply the patch attached, on top of 2.6.37-rc1, and
+> > > then attach the dmesg output if the fan is noise after suspend/resume.
+> > 
+> > Dmesg in attachement.
+> > 
+> > Starting suspend to ram from:
+> > [  104.602674] PM: Syncing filesystems ... done.
+> > resume OK, but next:
+> > [  144.298104] PM: Syncing filesystems ... done.
+> > after resume fan starts on full speed.
 > 
-> Aha!
+> it seems that it's not the thermal driver that changes the Fan speed.
+> Please apply the debug patch attached, rebuild with CONFIG_ACPI_DEBUG
+> set and reboot with "acpi.debug_level=0x004
+> acpi.debug_layer=0x04A10000", and then attach the dmesg output after the
+> same test.
 
-Mike,
+2.6.37-rc1 + your latest patch, suspend to ram&resume:
+http://unixy.pl/maciek/download/kernel/2.6.37-rc1/gumis/dmesg-debug-2.6.37-
+rc1.txt.zip
 
-Mind sending a new patch with a separate v2 announcement in a new thread, once you 
-have something i could apply to the scheduler tree (for a v2.6.38 merge)?
-
-You sent a couple of iterations in this discussion and i'd rather not fish out the 
-wrong one.
-
-Thanks,
-
-	Ingo
+Thanks
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
