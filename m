@@ -1,119 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab0KPTrP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 14:47:15 -0500
-Received: from ist.d-labs.de ([213.239.218.44]:48190 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758538Ab0KPTrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 14:47:14 -0500
-Date: Tue, 16 Nov 2010 20:46:45 +0100
-From: Florian Mickler <florian@mickler.org>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Dave Airlie <airlied@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Keith Packard <keithp@keithp.com>
-Subject: Re: "do_IRQ: 0.89 No irq handler for vector (irq -1)"
-Message-ID: <20101116204645.2c105e9b@schatten.dmk.lab>
-In-Reply-To: <20101012124938.47170457@jbarnes-desktop>
-References: <AANLkTikZj21CtFwC2ttvc0wJPx2qyedn7b1xXaxH659E@mail.gmail.com>
-	<20101011154826.440b4990@jbarnes-desktop>
-	<20101011164014.5a11ee48@jbarnes-desktop>
-	<201010122101.17812.rjw@sisk.pl>
-	<20101012124938.47170457@jbarnes-desktop>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932234Ab0KPTr7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 14:47:59 -0500
+Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:37129 "HELO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932166Ab0KPTr5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 14:47:57 -0500
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: Kevin Hilman <khilman@deeprootsystems.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-input@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Chris Cordahi <christophercordahi@nanometrics.ca>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Alexander Clouter <alex@digriz.org.uk>
+Subject: [PATCH v2 0/4] da850-evm: add gpio-{keys,leds} for UI and BB expanders
+Date: Tue, 16 Nov 2010 14:39:33 -0500
+Message-Id: <cover.1289935504.git.bengardiner@nanometrics.ca>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <cover.1289835508.git.bengardiner@nanometrics.ca>
+References: <cover.1289835508.git.bengardiner@nanometrics.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Oct 2010 12:49:38 -0700
-Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+The da850-evm baseboard (BB) and its UI board both have tca6416 IO expanders.
+They are bootstrapped to different I2C addresses so they can be used
+concurrently.
 
-> On Tue, 12 Oct 2010 21:01:17 +0200
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > On Tuesday, October 12, 2010, Jesse Barnes wrote:
-> > > On Mon, 11 Oct 2010 15:48:26 -0700
-> > > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> > > 
-> > > > On Fri, 8 Oct 2010 21:46:50 +1000
-> > > > Dave Airlie <airlied@gmail.com> wrote:
-> > > > > Not sure how best to fix, I can workaround by calling
-> > > > > pci_set_power_state(PCI_D0) in the drm drivers, but I sorta thing the
-> > > > > PCI layer should take care of this.
-> > > > 
-> > > > So I think we *should* be able to call pci_disable_device at remove
-> > > > time.  But as you say, some platforms may not correctly re-route VGA
-> > > > space to an existing device or disable it properly when we do that.
-> > > > AFAICT x86 will be ok here though (seems to work ok locally too).
-> > > 
-> > > Just tested this some more, and I think it's the right thing to do in
-> > > the KMS case at least.  When we load a KMS driver it takes over the gfx
-> > > device and nothing can assume anything about VGA state unless using the
-> > > VGA arbiter.  So calling pci_disable_device() in the shutdown path of a
-> > > KMS driver shouldn't make things any worse, and will work around this
-> > > issue.
-> > > 
-> > > Doing so in the non-KMS case violates some PC assumptions though, in
-> > > that things like vgacon and the BIOS will assume VGA memory is still
-> > > around, which on some platforms pci_disable_device() may affect (I only
-> > > checked the x86 implementation).
-> > > 
-> > > > That said, it seems like we should update the current device state at
-> > > > load time as well, once we've matched the driver it seems like there
-> > > > should be no harm.
-> > > > 
-> > > > Rafael, what do you think?  Would having the correct power state at
-> > > > load time cause any trouble with other PM code?  I know we've had
-> > > > issues with setting it explicitly in the past...
-> > > 
-> > > So we should probably make pci_enable_device pick up the current state
-> > > as well, instead of assuming it's unknown just because the enable count
-> > > was non-zero (which as Dave points out, can be affected by sysfs writes
-> > > too).
-> > > 
-> > > The only downside I can think of there is that if the device is already
-> > > enabled, we generally have to assume another driver owns it, and who
-> > > knows if the device is actually alive enough to read the current state
-> > > from.  But I think we handle those errors ok too, so pulling it out
-> > > should be safe.
-> > 
-> > I remember trying to do something like this and it didn't play well with the
-> > initialization.  Still, I didn't do that in pci_enable_device(), so I can't say
-> > for sure at the moment.  I _think_ it will be fine, though.
-> 
-> Seems to work ok for the buggy i915 reload case.  But looking at it
-> again, I really don't like two things:
->   1) doing just the set_power_state seems wrong, what about the rest of
->   enable?
->   2) allowing nested enables at all
-> 
-> I know sysfs currently allows us to bump the enable count to arbitrary
-> levels, but that's easy to fix; we can just check pci_is_enabled()
-> before calling enable_device in the sysfs store routine.
-> 
-> If we did that, we could warn when pci_enable_device is called in a
-> nested way, which is generally a bug (two drivers trying to take over a
-> device?).
-> 
-> I don't think I buy that VGA is special anyway, at least not for KMS
-> enabled kernels, where vgacon and the BIOS can't assume anything about
-> graphics state anymore.  More generally, I don't think BIOSes have been
-> able to assume anything about the current graphics state since Windows
-> 3.1, when most platforms stopped using BIOS calls and/or VGA regs for
-> mode setting.
-> 
-> Thoughts?
-> 
+The expander on the UI board is currently used to enable/disable the
+peripherals that are available on the UI board. In addition to this
+functionality the expander is also connected to 8 pushbuttons. The expander
+on the baseboard is not currently used; it is connected to deep sleep enable,
+sw reset, a push button, some switches and LEDs.
 
-does this need to go to 2.6.36.y? (is it already on it's way?)
+This proposed patch series enables the push buttons and switches on the UI and
+BB expanders using the gpio-keys polling mode patch by Alexander Clouter. Some
+work was performed to test irq-based gpio-keys support on the expanders (a WIP
+patch can be posted on request) but I believe that it is not possible to use 
+irq-based gpio-keys on IO expanders for arm systems at this time. 
 
-commit 97c145f7c87453cec90e91238fba5fe2c1561b32
-Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date:   Fri Nov 5 15:16:36 2010 -0400
+The attempt started when I noticed the patch of Alek Du and Alan Cox [1] which 
+was recently committed [2]; a stab at integrating irq-based gpio-keys support
+based on that patch was attempted. I found that I either got a warning that the
+irq could not be mapped for the given gpio ; or, when N_IRQ was increased, a
+system freeze.
 
-    PCI: read current power state at enable time
+>From what I have read (particularly the message by Grant Likely [3]) IRQs on
+IO expanders are not ready in ARM yet. I _think_ that the sparse IRQ rework by
+Thomas Gleixner [4] will resolve the blocker to irq-based gpio-keys support. 
+
+In the meantime we have buttons and switches that we would like to excersise
+in our prototyping development. The patch to convert this series to irq-based
+gpio-keys will be straighforward once the support in arch/arm is there.
+
+There is an existing tca6416-keypad driver with polling support which I did not
+employ because it isn't possible to keep the gpio's used for peripheral
+enable/disable on the UI board or the LEDs on the baseboard registered while
+simultaneously registering the pushbuttons or switches as a tca6416-keypad 
+instance.
+
+I tested this patch series using evtest on the resulting /dev/input/eventN 
+devices and also on the event node of a non-polling gpio-keys instance to 
+ensure that irq-based input handling is not broken by the introduction of the
+polling-mode gpio-keys patch. The non-polling instance creation and
+registration is not included in this series since it uses one of the boot-mode
+DIP switches and woult not (I think) be suitable for mainline.
+
+Disclaimer: 
+I'm not an expert in irq's or gpio-keys; this is, in fact, my first proposed
+feature. Please feel free to correct me -- I welcome the chance to learn from
+your expertise.
+
+[1] http://article.gmane.org/gmane.linux.kernel/1052551
+[2] http://article.gmane.org/gmane.linux.kernel.commits.head/260919
+[3] http://www.mail-archive.com/devicetree-discuss@lists.ozlabs.org/msg01974.html
+[4] http://article.gmane.org/gmane.linux.kernel.cross-arch/7786
+
+Alexander Clouter (1):
+  input: gpio_keys: polling mode support
+
+Ben Gardiner (3):
+  da850-evm: add UI Expander pushbuttons
+  da850-evm: extract defines for SEL{A,B,C} pins in UI expander
+  da850-evm: add baseboard UI expander buttons, switches and LEDs
+
+ arch/arm/mach-davinci/Kconfig           |    3 +
+ arch/arm/mach-davinci/board-da850-evm.c |  312 +++++++++++++++++++++++++++++--
+ drivers/input/keyboard/gpio_keys.c      |  120 ++++++++++--
+ include/linux/gpio_keys.h               |    1 +
+ 4 files changed, 406 insertions(+), 30 deletions(-)
+
+---
+
+Changes since v1:
+ * use locally defined functions that are no-ops/error checkers when
+   INPUT_POLLDEV is not defined.
+ * disable polling mode support when input-polldev is a module and gpio_keys
+   is builtin
+ * set INPUT_POLLDEV default for DA850_EVM machine, but don't select it
+   unconditionally
+ * adding note to description about why tca6416-keypad was not used
 
