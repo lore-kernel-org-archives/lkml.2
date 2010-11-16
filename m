@@ -1,39 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759299Ab0KPUHw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 15:07:52 -0500
-Received: from kroah.org ([198.145.64.141]:48874 "EHLO coco.kroah.org"
+	id S1759364Ab0KPUI7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 15:08:59 -0500
+Received: from mail.perches.com ([173.55.12.10]:1470 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758461Ab0KPUHv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 15:07:51 -0500
-Date: Tue, 16 Nov 2010 11:43:44 -0800
-From: Greg KH <greg@kroah.com>
-To: Damian Varayud <davarayud@gmail.com>
-Cc: gregkh@suse.de, arun.thomas@gmail.com, ezemed7@gmail.com, tj@kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: comedi: fix coding style issue in pcmuio.c
-Message-ID: <20101116194344.GA29291@kroah.com>
-References: <1289485692-1527-1-git-send-email-user@netbu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289485692-1527-1-git-send-email-user@netbu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758461Ab0KPUI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 15:08:58 -0500
+Subject: Re: [PATCH] ipc: explicitly clear stack memory for shminfo
+From: Joe Perches <joe@perches.com>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hugh Dickins <hughd@google.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Vasiliy Kulikov <segooon@gmail.com>
+In-Reply-To: <1289937508-19458-1-git-send-email-kees.cook@canonical.com>
+References: <1289937508-19458-1-git-send-email-kees.cook@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Nov 2010 12:08:56 -0800
+Message-ID: <1289938136.28741.198.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 11, 2010 at 11:28:12AM -0300, Damian Varayud wrote:
-> This is a patch to the pcmuio.c file that fixes up braces, overlines and
-> printk warnings found by the checkpatch.pl tool
-> 
-> Signed-off-by: Ezequiel Medina <ezemed7@gmail.com>
+On Tue, 2010-11-16 at 11:58 -0800, Kees Cook wrote:
+> This fixes a kernel stack memory contents leak by explicitly clearing
+> the shminfo structure on the kernel stack before it is populated and
+> copied back to userspace.
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 7d3bb22..1d3d41f 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -531,6 +531,7 @@ static inline unsigned long copy_shminfo_to_user(void __user *buf, struct shminf
+>  	    {
+>  		struct shminfo out;
+>  
+> +		memset(&out, 0, sizeof(out));
+>  		if(in->shmmax > INT_MAX)
+>  			out.shmmax = INT_MAX;
+>  		else
 
-I'm confused here.  The patch was sent by "Damian Varayud
-<davarayud@gmail.com>", yet the signed-off-by has a different name.
+Hi Kees.
 
-Please fix this up and resend all 3 of these patches.
+Trivial size optimization:
 
-thanks,
+Perhaps it's better to use
+	struct type var = {};
+instead of
+	struct type var;
+	memset(&var, 0, sizeof(var));
 
-greg k-h
+At least for x86, gcc produces very slightly smaller code
+when there are other automatic variables like:
+
+Larger:
+	struct type var;
+	struct type var2;
+	memset(&var, 0, sizeof(var));
+Smaller:
+	struct type var = {};
+	struct type var2;
+
+On the other hand, memset is more obvious.
+
