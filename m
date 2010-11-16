@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab0KPQNY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 11:13:24 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51057 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754071Ab0KPQNX convert rfc822-to-8bit (ORCPT
+	id S1754743Ab0KPQUA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 11:20:00 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:37170 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754441Ab0KPQT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 11:13:23 -0500
+	Tue, 16 Nov 2010 11:19:58 -0500
 MIME-Version: 1.0
-In-Reply-To: <20101116155717.6671e484@lxorguk.ukuu.org.uk>
-References: <1289922400.1253.3.camel@yio.site> <20101116155717.6671e484@lxorguk.ukuu.org.uk>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Tue, 16 Nov 2010 17:13:07 +0100
-Message-ID: <AANLkTimn7zyEjLhmOmUVQGnLDfM-A_uEgWETsM3nsyuY@mail.gmail.com>
-Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Werner Fink <werner@suse.de>, Jiri Slaby <jslaby@suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20101116143016.GB6527@ucw.cz>
+References: <20100408111310.524f7354@lxorguk.ukuu.org.uk> <4CBD8EE4.5040808@evidence.eu.com>
+ <i9ka0s$4ua$1@dough.gmane.org> <201010191727.53314.alexander.stein@systec-electronic.com>
+ <i9kk4o$svc$1@dough.gmane.org> <4CC418A9.6090602@evidence.eu.com>
+ <4CDA630F.4060903@atmel.com> <20101110172842.GC12371@suse.de>
+ <4CDBC3EC.6020707@evidence.eu.com> <20101116143016.GB6527@ucw.cz>
+From: Matt Schulte <matts@commtech-fastcom.com>
+Date: Tue, 16 Nov 2010 10:13:22 -0600
+Message-ID: <AANLkTi=grehSnfWzCDtSXXmNb=-NAwbHHJ_P1XPyOuw8@mail.gmail.com>
+Subject: Re: [PATCH] Documentation about RS485 serial communications
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Claudio Scordino <claudio@evidence.eu.com>, Greg KH <gregkh@suse.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-serial@vger.kernel.org,
+        Grant Edwards <grant.b.edwards@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 16:57, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Tue, 16 Nov 2010 16:46:40 +0100
-> Kay Sievers <kay.sievers@vrfy.org> wrote:
+On Tue, Nov 16, 2010 at 8:30 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
 >
->> commit be0d5f02c9194fe41c1aad11d7282db117bda938
->> Author: Kay Sievers <kay.sievers@vrfy.org>
->> Date:   Tue Nov 9 18:53:59 2010 +0100
->>
->>     tty: add 'active' sysfs attribute to tty0 and console device
+>> Documentation about RS485 serial communications
 >
-> This is all somewhat weird.
+> I have seen hardware (kontron pmc-6l) that was capable of switching
+> between RS232, RS485 and one other standard by software.
 >
->>     Userspace can query the actual virtual console, and the configured
->>     console devices behind /dev/tt0 and /dev/console.
->
-> All the other vt interface code is in the vt driver, the ioctls for it
-> are in the vt driver and a query about what is the active vt only has
-> meaning within that context as you need to post a waitevent first to
-> track changes during the query. So if you need a VT_GETACTIVE interface
-> put it in the tty ioctls where it can be properly locked and used.
->
->> +What:                /sys/class/tty/tty0/active
->> +Date:                Nov 2010
->> +Contact:     Kay Sievers <kay.sievers@vrfy.org>
->> +Description:
->> +              Shows the currently active virtual console
->> +              device, like 'tty1'.
->> +              The file supports poll() to detect virtual
->> +              console switches.
->
-> NAK this, its a nonsense interface
->
-> Seriously what use is an interface that tells you "what the console might
-> have been", this is why we have a proper event tracking interface instead.
+> Is such hw common? If so, should we have standard interface?
 
-You mean the VT_WAITEVENT? Sleeping ioctls() can't be used. The time
-between the check for the current, and you go to sleep in the ioctl()
-for teh next is a window which isn't covered with such interface.
+In my opinion this type of card is not that common.  Generally
+speaking the achievable baud rates for this type of multi-protocol
+card are very limited because of limitations of the transceiver chips.
+ It seems that most of the time people would rather have a faster
+serial port than one that does several different voltages.
 
-And 'might have been' does not matter, it's fine. We just need change
-notification, and can query the actual vt again.
-
-Kay
+Matt Schulte
