@@ -1,126 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759211Ab0KPCTl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 15 Nov 2010 21:19:41 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:5620 "EHLO
+	id S1759218Ab0KPCUO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 15 Nov 2010 21:20:14 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:60034 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759183Ab0KPCTk (ORCPT
+	with ESMTP id S1759184Ab0KPCUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 15 Nov 2010 21:19:40 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6168"; a="62794810"
+	Mon, 15 Nov 2010 21:20:12 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6168"; a="62794906"
 From: Stepan Moskovchenko <stepanm@codeaurora.org>
 To: dwalker@codeaurora.org
 Cc: davidb@codeaurora.org, bryanh@codeaurora.org,
         linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
         Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCH 12/14 v2] msm: iommu: Definitions for extended memory attributes
-Date: Mon, 15 Nov 2010 18:19:35 -0800
-Message-Id: <1289873975-23870-1-git-send-email-stepanm@codeaurora.org>
+Subject: [PATCH 13/14 v2] msm: iommu: Support cache-coherent memory access
+Date: Mon, 15 Nov 2010 18:20:08 -0800
+Message-Id: <1289874008-23911-1-git-send-email-stepanm@codeaurora.org>
 X-Mailer: git-send-email 1.7.0.2
-In-Reply-To: <1289619000-13167-13-git-send-email-stepanm@codeaurora.org>
-References: <1289619000-13167-13-git-send-email-stepanm@codeaurora.org>
+In-Reply-To: <1289619000-13167-14-git-send-email-stepanm@codeaurora.org>
+References: <1289619000-13167-14-git-send-email-stepanm@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the register field definitions and memory attribute
-definitions that will be needed to support IOMMU
-transactions with cache-coherent memory access.
+Add support for allowing IOMMU memory transactions to be
+cache coherent, eliminating the need for software cache
+management in certain situations. This can lead to
+improvements in performance and power usage, assuming the
+multimedia core's access pattern exhibits spatial locality
+and that its working set fits into the cache.
 
 Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
 ---
- arch/arm/mach-msm/include/mach/iommu.h         |   13 +++++++++++++
- arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h |   22 +++++++++++++++++++++-
- 2 files changed, 34 insertions(+), 1 deletions(-)
+ arch/arm/mach-msm/iommu.c |   93 +++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 82 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/mach-msm/include/mach/iommu.h b/arch/arm/mach-msm/include/mach/iommu.h
-index 17fc79f..296c0f1 100644
---- a/arch/arm/mach-msm/include/mach/iommu.h
-+++ b/arch/arm/mach-msm/include/mach/iommu.h
-@@ -20,6 +20,19 @@
+diff --git a/arch/arm/mach-msm/iommu.c b/arch/arm/mach-msm/iommu.c
+index 67e8f53..a468ee3 100644
+--- a/arch/arm/mach-msm/iommu.c
++++ b/arch/arm/mach-msm/iommu.c
+@@ -33,6 +33,16 @@
+ #include <mach/iommu_hw-8xxx.h>
+ #include <mach/iommu.h>
 
- #include <linux/interrupt.h>
-
-+/* Sharability attributes of MSM IOMMU mappings */
-+#define MSM_IOMMU_ATTR_NON_SH		0x0
-+#define MSM_IOMMU_ATTR_SH		0x4
++#define MRC(reg, processor, op1, crn, crm, op2)				\
++__asm__ __volatile__ (							\
++"   mrc   "   #processor "," #op1 ", %0,"  #crn "," #crm "," #op2 "\n"  \
++: "=r" (reg))
 +
-+/* Cacheability attributes of MSM IOMMU mappings */
-+#define MSM_IOMMU_ATTR_NONCACHED	0x0
-+#define MSM_IOMMU_ATTR_CACHED_WB_WA	0x1
-+#define MSM_IOMMU_ATTR_CACHED_WB_NWA	0x2
-+#define MSM_IOMMU_ATTR_CACHED_WT	0x3
++#define RCP15_PRRR(reg)		MRC(reg, p15, 0, c10, c2, 0)
++#define RCP15_NMRR(reg)		MRC(reg, p15, 0, c10, c2, 1)
 +
-+/* Mask for the cache policy attribute */
-+#define MSM_IOMMU_CP_MASK		0x03
++static int msm_iommu_tex_class[4];
 +
- /* Maximum number of Machine IDs that we are allowing to be mapped to the same
-  * context bank. The number of MIDs mapped to the same CB does not affect
-  * performance, but there is a practical limit on how many distinct MIDs may
-diff --git a/arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h b/arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h
-index f9386d3..c2c3da9 100644
---- a/arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h
-+++ b/arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h
-@@ -54,6 +54,7 @@ do { \
+ DEFINE_SPINLOCK(msm_iommu_lock);
 
- #define NUM_FL_PTE	4096
- #define NUM_SL_PTE	256
-+#define NUM_TEX_CLASS	8
+ struct msm_priv {
+@@ -98,6 +108,7 @@ static void __reset_context(void __iomem *base, int ctx)
 
- /* First-level page table bits */
- #define FL_BASE_MASK		0xFFFFFC00
-@@ -63,6 +64,9 @@ do { \
- #define FL_AP_WRITE		(1 << 10)
- #define FL_AP_READ		(1 << 11)
- #define FL_SHARED		(1 << 16)
-+#define FL_BUFFERABLE		(1 << 2)
-+#define FL_CACHEABLE		(1 << 3)
-+#define FL_TEX0			(1 << 12)
- #define FL_OFFSET(va)		(((va) & 0xFFF00000) >> 20)
+ static void __program_context(void __iomem *base, int ctx, phys_addr_t pgtable)
+ {
++	unsigned int prrr, nmrr;
+ 	__reset_context(base, ctx);
 
- /* Second-level page table bits */
-@@ -73,8 +77,20 @@ do { \
- #define SL_AP0			(1 << 4)
- #define SL_AP1			(2 << 4)
- #define SL_SHARED		(1 << 10)
-+#define SL_BUFFERABLE		(1 << 2)
-+#define SL_CACHEABLE		(1 << 3)
-+#define SL_TEX0			(1 << 6)
- #define SL_OFFSET(va)		(((va) & 0xFF000) >> 12)
+ 	/* Set up HTW mode */
+@@ -130,11 +141,11 @@ static void __program_context(void __iomem *base, int ctx, phys_addr_t pgtable)
+ 	/* Turn on TEX Remap */
+ 	SET_TRE(base, ctx, 1);
 
-+/* Memory type and cache policy attributes */
-+#define MT_SO			0
-+#define MT_DEV			1
-+#define MT_NORMAL		2
-+#define CP_NONCACHED		0
-+#define CP_WB_WA		1
-+#define CP_WT			2
-+#define CP_WB_NWA		3
+-	/* Do not configure PRRR / NMRR on the IOMMU for now. We will assume
+-	 * TEX class 0 for everything until attributes are properly worked out
+-	 */
+-	SET_PRRR(base, ctx, 0);
+-	SET_NMRR(base, ctx, 0);
++	/* Set TEX remap attributes */
++	RCP15_PRRR(prrr);
++	RCP15_NMRR(nmrr);
++	SET_PRRR(base, ctx, prrr);
++	SET_NMRR(base, ctx, nmrr);
+
+ 	/* Turn on BFB prefetch */
+ 	SET_BFBDFE(base, ctx, 1);
+@@ -304,12 +315,21 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
+ 	unsigned long *sl_table;
+ 	unsigned long *sl_pte;
+ 	unsigned long sl_offset;
++	unsigned int pgprot;
+ 	size_t len = 0x1000UL << order;
+-	int ret = 0;
++	int ret = 0, tex, sh;
+
+ 	spin_lock_irqsave(&msm_iommu_lock, flags);
+-	priv = domain->priv;
+
++	sh = (prot & MSM_IOMMU_ATTR_SH) ? 1 : 0;
++	tex = msm_iommu_tex_class[prot & MSM_IOMMU_CP_MASK];
 +
- /* Global register setters / getters */
- #define SET_M2VCBR_N(b, N, v)	 SET_GLOBAL_REG_N(M2VCBR_N, N, (b), (v))
- #define SET_CBACR_N(b, N, v)	 SET_GLOBAL_REG_N(CBACR_N, N, (b), (v))
-@@ -706,7 +722,9 @@ do { \
- #define GET_OCPC5(b, c)		GET_CONTEXT_FIELD(b, c, NMRR, OCPC5)
- #define GET_OCPC6(b, c)		GET_CONTEXT_FIELD(b, c, NMRR, OCPC6)
- #define GET_OCPC7(b, c)		GET_CONTEXT_FIELD(b, c, NMRR, OCPC7)
--
-+#define NMRR_ICP(nmrr, n)	(((nmrr) & (3 << ((n) * 2))) >> ((n) * 2))
-+#define NMRR_OCP(nmrr, n)	(((nmrr) & (3 << ((n) * 2 + 16))) >> \
-+								((n) * 2 + 16))
++	if (tex < 0 || tex > NUM_TEX_CLASS - 1) {
++		ret = -EINVAL;
++		goto fail;
++	}
++
++	priv = domain->priv;
+ 	if (!priv) {
+ 		ret = -EINVAL;
+ 		goto fail;
+@@ -330,6 +350,18 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
+ 		goto fail;
+ 	}
 
- /* PAR */
- #define GET_FAULT(b, c)		GET_CONTEXT_FIELD(b, c, PAR, FAULT)
-@@ -750,6 +768,8 @@ do { \
- #define GET_NOS5(b, c)		GET_CONTEXT_FIELD(b, c, PRRR, NOS5)
- #define GET_NOS6(b, c)		GET_CONTEXT_FIELD(b, c, PRRR, NOS6)
- #define GET_NOS7(b, c)		GET_CONTEXT_FIELD(b, c, PRRR, NOS7)
-+#define PRRR_NOS(prrr, n)	 ((prrr) & (1 << ((n) + 24)) ? 1 : 0)
-+#define PRRR_MT(prrr, n)	 ((((prrr) & (3 << ((n) * 2))) >> ((n) * 2)))
++	if (len == SZ_16M || len == SZ_1M) {
++		pgprot = sh ? FL_SHARED : 0;
++		pgprot |= tex & 0x01 ? FL_BUFFERABLE : 0;
++		pgprot |= tex & 0x02 ? FL_CACHEABLE : 0;
++		pgprot |= tex & 0x04 ? FL_TEX0 : 0;
++	} else	{
++		pgprot = sh ? SL_SHARED : 0;
++		pgprot |= tex & 0x01 ? SL_BUFFERABLE : 0;
++		pgprot |= tex & 0x02 ? SL_CACHEABLE : 0;
++		pgprot |= tex & 0x04 ? SL_TEX0 : 0;
++	}
++
+ 	fl_offset = FL_OFFSET(va);	/* Upper 12 bits */
+ 	fl_pte = fl_table + fl_offset;	/* int pointers, 4 bytes */
 
+@@ -338,12 +370,12 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
+ 		for (i = 0; i < 16; i++)
+ 			*(fl_pte+i) = (pa & 0xFF000000) | FL_SUPERSECTION |
+ 				  FL_AP_READ | FL_AP_WRITE | FL_TYPE_SECT |
+-				  FL_SHARED;
++				  FL_SHARED | pgprot;
+ 	}
 
- /* RESUME */
+ 	if (len == SZ_1M)
+ 		*fl_pte = (pa & 0xFFF00000) | FL_AP_READ | FL_AP_WRITE |
+-						FL_TYPE_SECT | FL_SHARED;
++					    FL_TYPE_SECT | FL_SHARED | pgprot;
+
+ 	/* Need a 2nd level table */
+ 	if ((len == SZ_4K || len == SZ_64K) && (*fl_pte) == 0) {
+@@ -368,14 +400,14 @@ static int msm_iommu_map(struct iommu_domain *domain, unsigned long va,
+
+ 	if (len == SZ_4K)
+ 		*sl_pte = (pa & SL_BASE_MASK_SMALL) | SL_AP0 | SL_AP1 |
+-					  SL_SHARED | SL_TYPE_SMALL;
++					  SL_SHARED | SL_TYPE_SMALL | pgprot;
+
+ 	if (len == SZ_64K) {
+ 		int i;
+
+ 		for (i = 0; i < 16; i++)
+ 			*(sl_pte+i) = (pa & SL_BASE_MASK_LARGE) | SL_AP0 |
+-					    SL_AP1 | SL_SHARED | SL_TYPE_LARGE;
++				SL_AP1 | SL_SHARED | SL_TYPE_LARGE | pgprot;
+ 	}
+
+ 	__flush_iotlb(domain);
+@@ -593,8 +625,47 @@ static struct iommu_ops msm_iommu_ops = {
+ 	.domain_has_cap = msm_iommu_domain_has_cap
+ };
+
++static int __init get_tex_class(int icp, int ocp, int mt, int nos)
++{
++	int i = 0;
++	unsigned int prrr = 0;
++	unsigned int nmrr = 0;
++	int c_icp, c_ocp, c_mt, c_nos;
++
++	RCP15_PRRR(prrr);
++	RCP15_NMRR(nmrr);
++
++	for (i = 0; i < NUM_TEX_CLASS; i++) {
++		c_nos = PRRR_NOS(prrr, i);
++		c_mt = PRRR_MT(prrr, i);
++		c_icp = NMRR_ICP(nmrr, i);
++		c_ocp = NMRR_OCP(nmrr, i);
++
++		if (icp == c_icp && ocp == c_ocp && c_mt == mt && c_nos == nos)
++			return i;
++	}
++
++	return -ENODEV;
++}
++
++static void __init setup_iommu_tex_classes(void)
++{
++	msm_iommu_tex_class[MSM_IOMMU_ATTR_NONCACHED] =
++			get_tex_class(CP_NONCACHED, CP_NONCACHED, MT_NORMAL, 1);
++
++	msm_iommu_tex_class[MSM_IOMMU_ATTR_CACHED_WB_WA] =
++			get_tex_class(CP_WB_WA, CP_WB_WA, MT_NORMAL, 1);
++
++	msm_iommu_tex_class[MSM_IOMMU_ATTR_CACHED_WB_NWA] =
++			get_tex_class(CP_WB_NWA, CP_WB_NWA, MT_NORMAL, 1);
++
++	msm_iommu_tex_class[MSM_IOMMU_ATTR_CACHED_WT] =
++			get_tex_class(CP_WT, CP_WT, MT_NORMAL, 1);
++}
++
+ static int __init msm_iommu_init(void)
+ {
++	setup_iommu_tex_classes();
+ 	register_iommu(&msm_iommu_ops);
+ 	return 0;
+ }
 --
 1.7.0.2
 
