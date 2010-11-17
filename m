@@ -1,95 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935492Ab0KQU0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 15:26:45 -0500
-Received: from antispam01.maxim-ic.com ([205.153.101.182]:38918 "EHLO
-	antispam01.maxim-ic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935282Ab0KQU0n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 15:26:43 -0500
-X-ASG-Debug-ID: 1290025602-1a8be26e0001-xx1T2L
-X-Barracuda-Envelope-From: Jesse.Marroquin@maxim-ic.com
-X-Barracuda-Apparent-Source-IP: 180.0.34.46
-Message-ID: <4CE43A80.4050209@maxim-ic.com>
-Date: Wed, 17 Nov 2010 14:26:40 -0600
-From: Jesse Marroquin <jesse.marroquin@maxim-ic.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S935484Ab0KQU2D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 15:28:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48067 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935028Ab0KQU2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 15:28:01 -0500
+Date: Wed, 17 Nov 2010 15:27:55 -0500
+From: Josef Bacik <josef@redhat.com>
+To: Josef Bacik <josef@redhat.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-fsdevel@vger.kernel.org,
+        eparis@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias
+Message-ID: <20101117202754.GC3818@localhost.localdomain>
+References: <1290016263-1637-1-git-send-email-josef@redhat.com> <20101117191817.GA26575@fieldses.org> <20101117192822.GB3818@localhost.localdomain>
 MIME-Version: 1.0
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Peter Hsiang <Peter.Hsiang@maxim-ic.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ASoC: Add support for MAX98089 CODEC
-Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [PATCH] ASoC: Add support for MAX98089 CODEC
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Nov 2010 20:27:06.0571 (UTC) FILETIME=[CD7929B0:01CB8695]
-X-Barracuda-Connect: terlingua.dalsemi.com[180.0.34.46]
-X-Barracuda-Start-Time: 1290025602
-X-Barracuda-URL: http://AntiSpam02.maxim-ic.com:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.46915
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101117192822.GB3818@localhost.localdomain>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds initial support for the MAX98089 CODEC.
+On Wed, Nov 17, 2010 at 02:28:22PM -0500, Josef Bacik wrote:
+> On Wed, Nov 17, 2010 at 02:18:17PM -0500, J. Bruce Fields wrote:
+> > On Wed, Nov 17, 2010 at 12:51:03PM -0500, Josef Bacik wrote:
+> > > While trying to track down some NFS problems with BTRFS, I kept noticing I was
+> > > getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
+> > > figure out that it was SELinux that was giving me grief, with the following
+> > > denial
+> > > 
+> > > type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
+> > > comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
+> > > tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
+> > > 
+> > > Turns out this is because in d_obtain_alias if we can't find an alias we create
+> > > one and do all the normal instantiation stuff, but we don't do the
+> > > security_d_instantiate.  With this patch I'm no longer seeing these errant
+> > > -EACCESS return values.  Thanks,
+> > 
+> > Possibly dumb question: Is there still a small race here?  Is it
+> > possible for another nfsd thread to find the new alias on the list while
+> > this thread is still:
+> > 
+> > > 
+> > > Signed-off-by: Josef Bacik <josef@redhat.com>
+> > > ---
+> > >  fs/dcache.c |    1 +
+> > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/fs/dcache.c b/fs/dcache.c
+> > > index 23702a9..890a59e 100644
+> > > --- a/fs/dcache.c
+> > > +++ b/fs/dcache.c
+> > > @@ -1201,6 +1201,7 @@ struct dentry *d_obtain_alias(struct inode *inode)
+> > >  	spin_unlock(&tmp->d_lock);
+> > >  
+> > >  	spin_unlock(&dcache_lock);
+> > 
+> > ... right here, so that that other nfsd thread still ends up trying to
+> > do something with a dentry that hasn't had security_d_instantiate called
+> > on it yet?
+> > 
+> > > +	security_d_instantiate(tmp, inode);
+> > >  	return tmp;
+> > >  
+> > >   out_iput:
+> > > -- 
+> > 
+> > Or does something else prevent that?
+> > 
+> 
+> That's a good question, I have no idea actually.  Every other consumer of
+> security_d_instantiate seems to hold the i_mutex of the parent directory inode,
+> tho I'm not sure if that is appropriate for d_obtain_alias, maybe somebody else
+> has an idea?  Thanks,
+> 
 
-Signed-off-by: Jesse Marroquin <jesse.marroquin@maxim-ic.com>
----
- sound/soc/codecs/max98088.c |   11 ++++++++++-
- 1 files changed, 10 insertions(+), 1 deletions(-)
+I'd like some input from the SELinux guys on this, talking with Bruce we can't
+really figure out a good way to deal with this.  If we're using the parent
+inode->i_mutex to guard the security initalization stuff we're screwed when it
+comes to this case, since we have no way to know who the parent is at this point
+in time.  Any suggestions?  Thanks,
 
-diff --git a/sound/soc/codecs/max98088.c b/sound/soc/codecs/max98088.c
-index ef06007..9c32237 100644
---- a/sound/soc/codecs/max98088.c
-+++ b/sound/soc/codecs/max98088.c
-@@ -28,6 +28,11 @@
- #include <sound/max98088.h>
- #include "max98088.h"
- 
-+enum max98088_type {
-+       MAX98088,
-+       MAX98089,
-+};
-+
- struct max98088_cdata {
-        unsigned int rate;
-        unsigned int fmt;
-@@ -36,6 +41,7 @@ struct max98088_cdata {
- 
- struct max98088_priv {
-        u8 reg_cache[M98088_REG_CNT];
-+       enum max98088_type devtype;
-        void *control_data;
-        struct max98088_pdata *pdata;
-        unsigned int sysclk;
-@@ -2042,6 +2048,8 @@ static int max98088_i2c_probe(struct i2c_client *i2c,
-        if (max98088 == NULL)
-                return -ENOMEM;
- 
-+       max98088->devtype = id->driver_data;
-+
-        i2c_set_clientdata(i2c, max98088);
-        max98088->control_data = i2c;
-        max98088->pdata = i2c->dev.platform_data;
-@@ -2061,7 +2069,8 @@ static int __devexit max98088_i2c_remove(struct i2c_client *client)
- }
- 
- static const struct i2c_device_id max98088_i2c_id[] = {
--       { "max98088", 0 },
-+       { "max98088", MAX98088 },
-+       { "max98089", MAX98089 },
-        { }
- };
- MODULE_DEVICE_TABLE(i2c, max98088_i2c_id);
--- 
-1.5.6.5
-
+Josef
