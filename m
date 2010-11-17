@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934721Ab0KQOlu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 09:41:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39272 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933353Ab0KQOls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 09:41:48 -0500
-Subject: Re: [PATCH 3/3] SELinux: return -ECONNREFUSED from ip_postroute to
- signal	fatal error
-From: Eric Paris <eparis@redhat.com>
-To: Patrick McHardy <kaber@trash.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        selinux@tycho.nsa.gov, netfilter-devel@vger.kernel.org,
-        equinox@diac24.net, eric.dumazet@gmail.com, davem@davemloft.net,
-        hzhong@gmail.com, jmorris@namei.org, kuznet@ms2.inr.ac.ru,
-        paul.moore@hp.com, pekkas@netcore.fi, sds@tycho.nsa.gov,
-        yoshfuji@linux-ipv6.org
-In-Reply-To: <4CE3BFC4.1010706@trash.net>
-References: <20101116215238.6727.39248.stgit@paris.rdu.redhat.com>
-	 <20101116215257.6727.12163.stgit@paris.rdu.redhat.com>
-	 <4CE3BFC4.1010706@trash.net>
+	id S934756Ab0KQOmL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 09:42:11 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46753 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934737Ab0KQOmI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 09:42:08 -0500
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+From: Peter Zijlstra <peterz@infradead.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>, "Ted Ts'o" <tytso@mit.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+In-Reply-To: <alpine.LFD.2.00.1011171529120.2900@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
+	 <20101117013700.GA3290@thunk.org> <20101117132404.GF27063@elte.hu>
+	 <1290001128.2109.785.camel@laptop>  <20101117140002.GH27063@elte.hu>
+	 <1290003110.2109.822.camel@laptop> <1290003505.2109.833.camel@laptop>
+	 <alpine.LFD.2.00.1011171529120.2900@localhost6.localdomain6>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Nov 2010 09:38:59 -0500
-Message-ID: <1290004739.14282.73.camel@localhost.localdomain>
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 17 Nov 2010 15:41:46 +0100
+Message-ID: <1290004906.2109.861.camel@laptop>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 12:43 +0100, Patrick McHardy wrote:
-> On 16.11.2010 22:52, Eric Paris wrote:
-> > The SELinux netfilter hooks just return NF_DROP if they drop a packet.  We
-> > want to signal that a drop in this hook is a permanant fatal error and is not
-> > transient.  If we do this the error will be passed back up the stack in some
-> > places and applications will get a faster interaction that something went
-> > wrong.
+On Wed, 2010-11-17 at 15:37 +0100, Thomas Gleixner wrote:
 > 
-> Looks good to me. I'd suggest to have these patches go through Dave's
-> tree since I want to make use of the netfilter error propagation
-> mechanism to return proper errno codes for netfilter re-routing
-> failures.
+> The only reason why these filters might make sense is to reduce the
+> trace volume on system wide traces in production environments, but
+> that's a completely different story. These scenarios can do with the
+> dynamic tracepoint stuff and the custom filtering w/o putting the
+> burden on the majority of users. 
 
+I've been hearing people claim 'enterprise' and custom are like mutually
+exclusive ;-)
 
-I'd be happy if Dave pulled patches 1 and 2.  I can resend patch #3 once
-I can cajole another of the SELinux maintainers to look at it (I believe
-he most likely one is on vacation this week)
-
--Eric
-
+But yeah, I totally agree, I've never used any of that filter stuff
+either, I always script the post-processing.
