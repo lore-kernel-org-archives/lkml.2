@@ -1,70 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934625Ab0KQI0w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 03:26:52 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:57900 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933434Ab0KQI0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 03:26:51 -0500
-Message-ID: <4CE3931D.1000403@cn.fujitsu.com>
-Date: Wed, 17 Nov 2010 16:32:29 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S934630Ab0KQI1v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 03:27:51 -0500
+Received: from mail30g.wh2.ocn.ne.jp ([220.111.41.239]:4109 "HELO
+	mail30g.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S934603Ab0KQI1t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 03:27:49 -0500
+From: Bruno Randolf <br1@einfach.org>
+To: Jouni Malinen <j@w1.fi>
+Subject: Re: [PATCH v7 3/3] nl80211/mac80211: Report signal average
+Date: Wed, 17 Nov 2010 17:28:06 +0900
+User-Agent: KMail/1.13.5 (Linux/2.6.35-22-generic; KDE/4.5.1; x86_64; ; )
+Cc: linville@tuxdriver.com, randy.dunlap@oracle.com, peterz@infradead.org,
+        blp@cs.stanford.edu, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
+        stefanr@s5r6.in-berlin.de, kosaki.motohiro@jp.fujitsu.com,
+        akpm@linux-foundation.org, kevin.granade@gmail.com
+References: <20101112024901.28522.21895.stgit@localhost6.localdomain6> <20101112030035.28522.75318.stgit@localhost6.localdomain6> <20101116093743.GA21872@jm.kir.nu>
+In-Reply-To: <20101116093743.GA21872@jm.kir.nu>
 MIME-Version: 1.0
-To: bharata@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pete@jasper.es
-Subject: Re: [PATCH v3 0/7] CFS Bandwidth Control
-References: <20101012074910.GA9893@in.ibm.com>
-In-Reply-To: <20101012074910.GA9893@in.ibm.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-17 16:27:10,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-17 16:27:12,
-	Serialize complete at 2010-11-17 16:27:12
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Message-Id: <201011171728.06801.br1@einfach.org>
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2010 03:49 PM, Bharata B Rao wrote:
-> Hi,
+On Tue November 16 2010 18:37:43 Jouni Malinen wrote:
+> On Fri, Nov 12, 2010 at 12:00:35PM +0900, Bruno Randolf wrote:
+> > Extend nl80211 to report an exponential weighted moving average (EWMA) of
+> > the signal value. Since the signal value usually fluctuates between
+> > different packets, an average can be more useful than the value of the
+> > last packet.
+> > 
+> > This uses the recently added generic EWMA library function.
 > 
-> Its been a while since we posted CPS hard limits (aka CFS bandwidth control
-> now) patches, hence a quick recap first:
+> Isn't that generic EWMA library function making this much more CPU
+> intensive than necessary? I would assume the compiler is not able to
+> optimize the unsigned long division in ewma_add() when the weight value
+> is "hidden" in this way through ewma_init() call. While generic library
+> functions can be nice, it could be useful to have an option for using an
+> inline version of ewma_add that takes in avg->weight as one of the
+> arguments to allow cases like weight=8 here to be implemented using
+> shift right instead of unsigned long division especially when done on
+> hot path..
 > 
-> - I have been working on CFS hard limits since last year and have posted
->   a few versions of the same (last post: http://lkml.org/lkml/2010/1/5/44)
-> - Paul Turner and Nikhil Rao meanwhile started working on CFS bandwidth
->   control and have posted a couple of versions.
->   (last post v2: http://lwn.net/Articles/385055/)
+> > @@ -1158,6 +1158,7 @@ ieee80211_rx_h_sta_process(struct ieee80211_rx_data
+> > *rx)
+> > 
+> >  	sta->last_signal = status->signal;
+> > 
+> > +	ewma_add(&sta->avg_signal, -status->signal);
 > 
+> This one here would be done for every frame received and by using a
+> function call that ends up doing a potentially expensive division.
+> 
+> > @@ -241,6 +241,8 @@ struct sta_info *sta_info_alloc(struct
+> > ieee80211_sub_if_data *sdata, +	ewma_init(&sta->avg_signal, 1000, 8);
+> 
+> The divisor (weight) is set to 8 here which should allow for quite a bit
+> more efficient ewma_add implementation if it were to be done in a way
+> that makes it easier for the compiler to see what value is being used
+> (e.g., passing this 8 to ewma_add_inline()) to allow shift right to be
+> used..
+> 
+> 
+> Or am I missing something here and we have a compiler that is actually
+> able to take care of this kind of optimizations by itself in the current
+> ewma library design? Or is the unsigned long division with the expected
+> weight values going to be fast enough to not justify caring about it
+> even on any of the embedded boards anyway?
 
-Hi, All
+I understand that this could be more efficient, but if it matters or not - 
+honestly, I don't know. Can a more knowledgeable person than me comment on 
+this?
 
-	I tried it, it works very good! It adds a very useful feature.
-It is very helpful for virtualization or cloud-computing I think.
-I hope the next version patchset of it will be sent and get merged soon.
-
-When I tested it, my box became dead several times, infrequently, and
-I don't know how to reproduce it, but next steps may help to reproduce it:
-
-# mount -t cgroup -o cpu xxx /mnt
-# cd /mnt
-# mkdir test
-# cd test
-# echo 5000000 > cpu.cfs_period_us
-# echo 1000000 > cpu.cfs_quota_us
-# cat /dev/zero > /dev/null &
-# echo $! > tasks
-# #make the system busy, browse websites and open many tabs in your browser etc
-# #but do NOT do things important.
-# #after some time, the system may dead. (can not respond even you type AltSysrqC)
-
-Thank you all
-Lai
+bruno
