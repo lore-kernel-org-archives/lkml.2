@@ -1,89 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759524Ab0KQDAn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 22:00:43 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:18844 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752370Ab0KQDAm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 22:00:42 -0500
-Message-ID: <00d101cb8603$9e2f3970$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: <w.sang@pengutronix.de>, "David Miller" <davem@davemloft.net>,
-        <wg@grandegger.com>
-Cc: <andrew.chih.howe.khor@intel.com>, <sameo@linux.intel.com>,
-        <margie.foster@intel.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <socketcan-core@lists.berlios.de>,
-        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>,
-        <yong.y.wang@intel.com>, <chripell@fsfe.org>, <qi.wang@intel.com>
-References: <4CE2EC13.9090707@grandegger.com><20101116.124325.116396459.davem@davemloft.net><20101116210716.GA19893@pengutronix.de> <20101116.131008.212663108.davem@davemloft.net>
-Subject: Re: [PATCH net-next-2.6 v4] can: Topcliff: PCH_CAN driver: Add Flow control/Fix Endianess issue/Separate IF register/Enumerate LEC macro/Move MSI processing/Use BIT(X)/Change Message Object index/Add prefix PCH_
-Date: Wed, 17 Nov 2010 12:00:37 +0900
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="ISO-8859-1"
+	id S1759571Ab0KQDDa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 22:03:30 -0500
+Received: from mga11.intel.com ([192.55.52.93]:36736 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752871Ab0KQDD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 22:03:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,209,1288594800"; 
+   d="scan'208";a="858393902"
+Subject: Re: [PATCH -v4 1/2] lib, Make gen_pool memory allocator lockless
+From: Huang Ying <ying.huang@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <20101116183506.41e77e1a.akpm@linux-foundation.org>
+References: <1289868791-16658-1-git-send-email-ying.huang@intel.com>
+	 <1289868791-16658-2-git-send-email-ying.huang@intel.com>
+	 <20101116135038.fcaa90ca.akpm@linux-foundation.org>
+	 <1289960281.8719.1218.camel@yhuang-dev>
+	 <20101116183506.41e77e1a.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Nov 2010 11:03:25 +0800
+Message-ID: <1289963005.8719.1238.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 3.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David Miller,
+On Wed, 2010-11-17 at 10:35 +0800, Andrew Morton wrote:
+> On Wed, 17 Nov 2010 10:18:01 +0800 Huang Ying <ying.huang@intel.com> wrote:
+> 
+> > On Wed, 2010-11-17 at 05:50 +0800, Andrew Morton wrote:
+> > > On Tue, 16 Nov 2010 08:53:10 +0800
+> > > Huang Ying <ying.huang@intel.com> wrote:
+> > > 
+> > > > This version of the gen_pool memory allocator supports lockless
+> > > > operation.
+> > > > 
+> > > > This makes it safe to use in NMI handlers and other special
+> > > > unblockable contexts that could otherwise deadlock on locks.  This is
+> > > > implemented by using atomic operations and retries on any conflicts.
+> > > > The disadvantage is that there may be livelocks in extreme cases.  For
+> > > > better scalability, one gen_pool allocator can be used for each CPU.
+> > > > 
+> > > > The lockless operation only works if there is enough memory available.
+> > > > If new memory is added to the pool a lock has to be still taken.  So
+> > > > any user relying on locklessness has to ensure that sufficient memory
+> > > > is preallocated.
+> > > > 
+> > > > The basic atomic operation of this allocator is cmpxchg on long.  On
+> > > > architectures that don't support cmpxchg natively a fallback is used.
+> > > > If the fallback uses locks it may not be safe to use it in NMI
+> > > > contexts on these architectures.
+> > > 
+> > > The code assumes that cmpxchg is atomic wrt NMI.  That would be news to
+> > > me - at present an architecture can legitimately implement cmpxchg()
+> > > with, say, spin_lock_irqsave() on a hashed spinlock.  I don't know
+> > > whether any architectures _do_ do anything like that.  If so then
+> > > that's a problem.  If not, it's an additional requirement on future
+> > > architecture ports.
+> > 
+> > cmpxchg has been used in that way by ftrace and perf for a long time. So
+> > I agree to make it a requirement on future architecture ports.
+> 
+> All I was really doing was inviting you to check your assumptions for
+> the known architecture ports.  Seems that I must do it myself.
 
-I see, I just have to obey your saying.
-I will split our patch per issue/indicated item and re-submit to you.
+Sorry. I should have done that by myself.
 
-Thanks,
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
------ Original Message ----- 
-From: "David Miller" <davem@davemloft.net>
-To: <w.sang@pengutronix.de>
-Cc: <wg@grandegger.com>; <tomoya-linux@dsn.okisemi.com>; <andrew.chih.howe.khor@intel.com>; <masa-korg@dsn.okisemi.com>;
-<sameo@linux.intel.com>; <margie.foster@intel.com>; <netdev@vger.kernel.org>; <linux-kernel@vger.kernel.org>;
-<socketcan-core@lists.berlios.de>; <kok.howg.ewe@intel.com>; <joel.clark@intel.com>; <yong.y.wang@intel.com>;
-<chripell@fsfe.org>; <qi.wang@intel.com>
-Sent: Wednesday, November 17, 2010 6:10 AM
-Subject: Re: [PATCH net-next-2.6 v4] can: Topcliff: PCH_CAN driver: Add Flow control/Fix Endianess issue/Separate IF
-register/Enumerate LEC macro/Move MSI processing/Use BIT(X)/Change Message Object index/Add prefix PCH_
+> dude, take a look at include/asm-generic/cmpxchg-local.h.  Not NMI-safe!
+> 
+> arch/arm/include/asm/atomic.h's atomic_cmpxchg() isn't NMi-safe.
+> 
+> arch/arm/include/asm/system.h uses include/asm-generic/cmpxchg-local.h.
+> 
+> as does avr32
+> 
+> and blackfin
+> 
+> Now go take a look at cris.
+> 
+> h8300 atomic_cmpxchg() isn't NMI-safe.
+> 
+> m32r isn't NMI-safe
+> 
+> go look at m68k, see if you can work it out.
+> 
+> microblaze?  Dunno.
+> 
+> mn10300 uniprocessor isn't NMI-safe
+> 
+> score isn't NMI-safe
+> 
+> I stopped looking there.
 
+I have talked about the NMI-safety of cmpxchg with Steven Rostedt before
+in following thread:
 
-> From: Wolfram Sang <w.sang@pengutronix.de>
-> Date: Tue, 16 Nov 2010 22:07:16 +0100
->
-> > On Tue, Nov 16, 2010 at 12:43:25PM -0800, David Miller wrote:
-> >> From: Wolfgang Grandegger <wg@grandegger.com>
-> >> Date: Tue, 16 Nov 2010 21:39:47 +0100
-> >>
-> >> > Please take into account that this patch got accepted by accident
-> >> > (because the maintainer did not respond properly in time). At that time
-> >> > the driver was incomplete, not ready for mainline and did not even work
-> >> > properly. Therefore it makes little sense to debug or even bisec these
-> >> > changes. Just for that reason I made an exemption and added my
-> >> > "Acked-by". Hope you can share my arguments.
-> >>
-> >> You don't put stupid on top of stupid and justify the latter using
-> >> the former.
-> >
-> > Is reverting the incomplete driver an option?
->
-> I told everyone that the plan was that we had several months
-> to fix this, and that's what we should do.
->
-> But yes if people are going to be maximally difficult about this and
-> refuse to split up the bug fixes, I will have to regrettably revert
-> the driver.
->
-> But let's avoid that if we can.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+http://lkml.org/lkml/2009/6/10/518
+
+It seems that Steven thinks many architectures without NMI-safe cmpxchg
+have no real NMI too.
+
+In the patch description and comments, it is said that on architectures
+without NMI-safe cmpxchg, gen_pool can not be used in NMI handler
+safely.
+
+Or do you think it is better to use a spin_trylock based fallback if
+NMI-safe cmpxchg is not available? Or require cmpxchg implementation
+uses spin_trylock instead of spin_lock?
+
+Best Regards,
+Huang Ying
+
 
