@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934688Ab0KQJer (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 04:34:47 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:33347 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934588Ab0KQJep convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:12:1>);
-	Wed, 17 Nov 2010 04:34:45 -0500
-Message-Id: <4CE3AFC00200007800022B85@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 17 Nov 2010 09:34:40 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Jeremy Fitzhardinge" <jeremy@goop.org>
-Cc: "Jeremy Fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
-        "Eric Dumazet" <dada1@cosmosbay.com>, <xiyou.wangcong@gmail.com>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "Nick Piggin" <npiggin@kernel.dk>,
-        "Srivatsa Vaddagiri" <vatsa@linux.vnet.ibm.com>,
-        "Linux Virtualization" <virtualization@lists.linux-foundation.org>,
-        "Xen-devel" <xen-devel@lists.xensource.com>,
-        "Mathieu Desnoyers" <mathieu.desnoyers@polymtl.ca>,
-        "Avi Kivity" <avi@redhat.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 13/14] x86/ticketlock: add slowpath logic
-References: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com><cover.1289940821.git.jeremy.fitzhardinge@citrix.com>
- <97ed99ae9160bdb6477284b333bd6708fb7a19cb.1289940821.git.jeremy.fitzhardinge@citrix.com>
- <4CE3A1060200007800022B04@vpn.id2.novell.com> <4CE397C8.9040901@goop.org>
- <4CE398A0.3040105@goop.org> <4CE39B7A.1080706@goop.org>
-In-Reply-To: <4CE39B7A.1080706@goop.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S932466Ab0KQJiN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 04:38:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:65385 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752332Ab0KQJiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 04:38:11 -0500
+Date: Wed, 17 Nov 2010 04:37:21 -0500
+From: Josef Bacik <josef@redhat.com>
+To: Josef Bacik <josef@redhat.com>
+Cc: Miao Xie <miaox@cn.fujitsu.com>, viro@zeniv.linux.org.uk,
+        Chris Mason <chris.mason@oracle.com>,
+        Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ito <t-itoh@jp.fujitsu.com>
+Subject: Re: [PATCH 1/3] direct-io: add a hook for the fs to provide its
+	own bio merging check function
+Message-ID: <20101117093720.GG5618@dhcp231-156.rdu.redhat.com>
+References: <4CE3579B.1000301@cn.fujitsu.com> <20101117070658.GF5618@dhcp231-156.rdu.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20101117070658.GF5618@dhcp231-156.rdu.redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 17.11.10 at 10:08, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> On 11/17/2010 12:56 AM, Jeremy Fitzhardinge wrote:
->> On 11/17/2010 12:52 AM, Jeremy Fitzhardinge wrote:
->>> But, yes, %z0 sounds interesting.  Is it documented anywhere?  I think
->>> I've tried to use it in the past and run into gcc bugs.
->> This one: http://gcc.gnu.org/bugzilla/show_bug.cgi?id=39590 
->>
->> Should be OK in this case because there's no 64-bit values to be seen...
-> Hm, it fails when __ticket_t is 16 bits:
+On Wed, Nov 17, 2010 at 02:06:59AM -0500, Josef Bacik wrote:
+> On Wed, Nov 17, 2010 at 12:18:35PM +0800, Miao Xie wrote:
+> > BTRFS can not submit bios that span its chunks or stripes, so it needs a
+> > function to check it when we want to add a page into the bios. So we add a
+> > can_merge_io hook to do it.
+> > 
 > 
-> /home/jeremy/git/linux/arch/x86/include/asm/spinlock.h: Assembler messages:
-> /home/jeremy/git/linux/arch/x86/include/asm/spinlock.h:73: Error: suffix
-> or operands invalid for `or'
+> Heh so I was going to fix this after the hole punching stuff.  The fact is btrfs
+> maps everything that is ok to do in one IO via get_blocks().  So all we need to
+> do is add another DIO_ flag to tell us to treat each get_blocks() call as
+> discrete.  I wanted to use buffer_boundary for this, but I think it's too
+> drastic of a change for people who already use buffer_boundary();
 > 
->         lock; ors $1, 2(%rbx)   #,
+> What happens today is that say we map 4k, we do submit_page_section, but if this
+> is our first bit of IO we just set dio->cur_page and such and then loop again.
+> Say there is 4k-hole-4k, we do the next mapping and set buffer_boundary again,
+> and come into submit_page_section and because cur_page is set, we do
+> dio_send_cur_page.  Because there is no dio->bio we setup a new bio, but when we
+> do that we clear dio->boundary, and leave the bio all setup.  So the next time
+> we loop around the tail 4k gets added to our previously setup bio and boom we
+> hit this problem with btrfs.
 > 
+> If we can add a DIO_GET_BLOCKS_DISCRETE or some other such non-sense then we can
+> easily kill all the logical offset code I had and just make some simple changes
+> to make the DIO stuff work for us.  All we do is in get_more_blocks we do
 > 
-> So I don't think that's going to work out...
+> if ((dio->flags & DIO_GET_BLOCKS_DISCRETE) && dio->bio)
+> 	dio_submit_bio(dio);
+>
 
-Indeed, it's only with 4.5 that non-float operands are properly
-supported here. Sad.
+Right after I went to bed I realized this should be
 
-Jan
+if (dio->flags & DIO_GET_BLOCKS_DISCRETE) {
+	if (dio->cur_page) {
+		dio_send_cur_page(dio);
+		page_cache_release(dio->cur_page);
+		dio->cur_page = NULL;
+	}
 
+	if (dio->bio)
+		dio_submit_bio(dio);
+ }
+
+Thanks,
+
+Josef
