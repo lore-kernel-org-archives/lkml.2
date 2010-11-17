@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757811Ab0KQCdr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 21:33:47 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:51889 "EHLO smtps.tip.net.au"
+	id S1757703Ab0KQCfp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 21:35:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61739 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757606Ab0KQCdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 21:33:46 -0500
-Date: Wed, 17 Nov 2010 13:33:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: linux-next: manual merge of the cleancache tree with the bkl-config
- tree
-Message-Id: <20101117133343.3d75d053.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754468Ab0KQCfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 21:35:44 -0500
+Date: Tue, 16 Nov 2010 21:34:56 -0500
+From: Josef Bacik <josef@redhat.com>
+To: Josef Bacik <josef@redhat.com>
+Cc: Dave Chinner <david@fromorbit.com>, Andreas Dilger <adilger@dilger.ca>,
+        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, cmm@us.ibm.com,
+        cluster-devel@redhat.com, ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
+Message-ID: <20101117023456.GD5618@dhcp231-156.rdu.redhat.com>
+References: <1289840723-3056-1-git-send-email-josef@redhat.com> <1289840723-3056-2-git-send-email-josef@redhat.com> <20101116111611.GA4757@quack.suse.cz> <20101116114346.GB4757@quack.suse.cz> <20101116125249.GB31957@dhcp231-156.rdu.redhat.com> <20101116131451.GH4757@quack.suse.cz> <18ACAA85-8847-4B12-9839-F99FB6C7B3E4@dilger.ca> <20101117021150.GL22876@dastard> <20101117022814.GB5618@dhcp231-156.rdu.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101117022814.GB5618@dhcp231-156.rdu.redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
+On Tue, Nov 16, 2010 at 09:28:14PM -0500, Josef Bacik wrote:
+> On Wed, Nov 17, 2010 at 01:11:50PM +1100, Dave Chinner wrote:
+> > On Tue, Nov 16, 2010 at 06:22:47PM -0600, Andreas Dilger wrote:
+> > > On 2010-11-16, at 07:14, Jan Kara wrote:
+> > > >> Yeah I went back and forth on this.  KEEP_SIZE won't change the
+> > > >> behavior of PUNCH_HOLE since PUNCH_HOLE implicitly means keep
+> > > >> the size.  I figured since its "mode" and not "flags" it would
+> > > >> be ok to make either way accepted, but if you prefer PUNCH_HOLE
+> > > >> means you have to have KEEP_SIZE set then I'm cool with that,
+> > > >> just let me know one way or the other.
+> > > > 
+> > > > So we call it "mode" but speak about "flags"? Seems a bit
+> > > > inconsistent.  I'd maybe lean a bit at the "flags" side and just
+> > > > make sure that only one of FALLOC_FL_KEEP_SIZE,
+> > > > FALLOC_FL_PUNCH_HOLE is set (interpreting FALLOC_FL_KEEP_SIZE as
+> > > > allocate blocks beyond i_size). But I'm not sure what others
+> > > > think.
+> > > 
+> > > IMHO, it makes more sense for consistency and "get what users
+> > > expect" that these be treated as flags.  Some users will want
+> > > KEEP_SIZE, but in other cases it may make sense that a hole punch
+> > > at the end of a file should shrink the file (i.e. the opposite of
+> > > an append).
+> > 
+> > What's wrong with ftruncate() for this?
+> > 
+> > There's plenty of open questions about the interface if we allow
+> > hole punching to change the file size. e.g. where do we set the EOF
+> > (offset or offset+len)?  What do we do with the rest of the blocks
+> > that are now beyond EOF?  We weren't asked to punch them out, so do
+> > we leave them behind? What if we are leaving written blocks beyond
+> > EOF - does any filesystem other than XFS support that (i.e. are we
+> > introducing different behaviour on different filesystems)?  And what
+> > happens if the offset is beyond EOF? Do we extend the file, and if
+> > so why wouldn't you just use ftruncate() instead?
+> > 
+> > IMO, allowing hole punching to change the file size makes it much
+> > more complicated and hence less likely to simply do what the user
+> > expects. It also is harder to implement and testing becomes much
+> > more intricate. From that perspective, it does not seem desirable to
+> > me...
+> > 
+> 
+> FWIW I agree with Dave, the only question at this point is do we force users to
+> specify KEEP_SIZE with PUNCH_HOLE?  On one hand it makes the interface a bit
+> more consistent, on the other hand it makes the documentation a little weird
+> 
+> "We have mode here, but if you want to use PUNCH_HOLE you also have to specify
+> KEEP_SIZE, so really it's like a flags field it's just named poorly"
+> 
+> I have no strong opinions the other way so if nobody else does then I'll just do
+> it Jan's way.  Thanks,
+>
 
-Today's linux-next merge of the cleancache tree got a conflict in
-fs/ocfs2/super.c between commit cdbe83a95ae7c7a8762c10567a2c5d08cfc1cc4d
-("BKL: remove extraneous #include <smp_lock.h>") from the bkl-config tree
-and commit 91bf812da0c4f2efd0883fe02dc057853de731b1 ("ocfs2: add
-cleancache support") from the cleancache tree.
+Sorry child induced sleep deprevation bleeding in there, that should read "I
+have no strong opinions one way or the other."  Sheesh,
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc fs/ocfs2/super.c
-index cfeab7c,e3f0a4e..0000000
---- a/fs/ocfs2/super.c
-+++ b/fs/ocfs2/super.c
-@@@ -41,6 -41,8 +41,7 @@@
-  #include <linux/mount.h>
-  #include <linux/seq_file.h>
-  #include <linux/quotaops.h>
- -#include <linux/smp_lock.h>
-+ #include <linux/cleancache.h>
-  
-  #define MLOG_MASK_PREFIX ML_SUPER
-  #include <cluster/masklog.h>
+Josef 
