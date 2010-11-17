@@ -1,125 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935550Ab0KQWdq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 17:33:46 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45205 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935047Ab0KQWdp (ORCPT
+	id S935580Ab0KQWec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 17:34:32 -0500
+Received: from tango.0pointer.de ([85.214.72.216]:53155 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935047Ab0KQWeb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 17:33:45 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=UqmpqEpIoFQA:10 a=kj9zAlcOel0A:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=WfulkdPnAAAA:8 a=7d_E57ReAAAA:8 a=07d9gI8wAAAA:8 a=WgtFgCoSZ-5Ah-RiLGMA:9 a=I-F-_DSiiSnGRCHggXIA:7 a=E-58kCmErwTYO_oTuQVThAwTIVMA:4 a=CjuIK1q_8ugA:10 a=l29vjEC0CZ8A:10 a=D6-X0JM3zdQA:10 a=_1x-x7IA_2d56rGX:21 a=nXJlGERx7XmegKQH:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Date: Wed, 17 Nov 2010 17:33:37 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
-        Andre@firstfloor.org, ltt-dev@lists.casi.polymtl.ca,
-        linux-kernel@vger.kernel.org, pierre-marc.fournier@polymtl.ca
-Subject: Re: [ANNOUNCE] New tools: lttngtrace and lttngreport
-Message-ID: <20101117223337.GA14525@home.goodmis.org>
-References: <20101115134243.GA2772@Krystal>
- <20101115160745.GA7203@Krystal>
- <87y68sqiyb.fsf@basil.nowhere.org>
- <20101117173124.GB13717@Krystal>
- <alpine.LFD.2.00.1011172146340.2900@localhost6.localdomain6>
+	Wed, 17 Nov 2010 17:34:31 -0500
+Date: Wed, 17 Nov 2010 23:34:11 +0100
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101117223411.GA23983@tango.0pointer.de>
+References: <1289916171.5169.117.camel@maggy.simson.net>
+ <1289916683.2109.625.camel@laptop>
+ <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+ <20101116170312.GA19327@tango.0pointer.de>
+ <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+ <20101116181603.GC19327@tango.0pointer.de>
+ <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+ <20101116202839.GC27235@tango.0pointer.de>
+ <20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
+ <AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011172146340.2900@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hmm, I was somehow cut from the Cc list?
+On Tue, 16.11.10 13:08, Linus Torvalds (torvalds@linux-foundation.org) wrote:
 
-On Wed, Nov 17, 2010 at 10:44:23PM +0100, Thomas Gleixner wrote:
-> On Wed, 17 Nov 2010, Mathieu Desnoyers wrote:
+> So I do _not_ believe that the autogroup feature should necessarily
+> mean that you cannot do other grouping decisions too. I just do think
+> that the whole notion of "it got started from a tty" is actually a
+> very useful thing for legacy applications, and one where it's just
+> simpler to do it in the kernel than build up any extra infrastructure
+> for it.
 > 
-> > * Andi Kleen (andi@firstfloor.org) wrote:
-> > > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> writes:
-> > > >
-> > > >         --> Blocked in RUNNING, SYSCALL 142 [sys_select+0x0/0xc0], ([...], dur: 0.029567)
-> > > >         |    --> Blocked in RUNNING, SYSCALL 168 [sys_poll+0x0/0xc0], ([...], dur: 1.187935)
-> > > >         |    --- Woken up by an IRQ: IRQ 0 [timer]
-> > > >         --- Woken up in context of 7401 [gnome-power-man] in high-level state RUNNING
-> > > 
-> > > Very nice! Now how can we get that with an unpatched kernel tree?
-> > 
-> > Well, I'm afraid the collection approach "trace" is currently taking won't allow
-> > this kind of dependency wakeup chain tracking, because they focus on tracing
-> > operations happening on a thread and its children, but the reality is that the
-> > wakeup chains often spread outside of this scope.
-> 
-> You are completely missing the point. There is no need to point out
-> that 'trace' does not do that. It is tracking a process (group)
-> context (though it can do system wide with the right permissions as
-> well).
-> 
-> And it's completely irrelevant for a user space programmer where the
-> kernel spends its time. What's not irrelevant is the information what
-> caused the kernel to spend time, i.e. which access to which data
-> resulted in a page fault or IO and how long did it take to come back.
-> 
-> It's completely irrelevant for him whether the kernel ran in circles
-> or not. If he sees a repeating pattern that a PF recovery or a
-> read/write to some file takes ages, he'll poke the sysadmin or the
-> kernel dude, which then will drill down into the gory details.
-> 
-> http://lwn.net/Articles/415760/
-> 
->  "... Indeed I've been wishing for a tool which would easily tell me
->  what pages I'm faulting in (and in what order) out of a 5GB mmaped
->  file, in order to help debug performance issues with disk seeks when
->  the file is totally paged out."
-> 
-> That's what relevant to user space developers, not the gory details
-> why the kernel took time X to retrieve that data from disk. Simply
-> because you can improve performance when you have such information by
-> rearranging your code and access patterns. The same applies for other
-> things like cache misses, which can be easily integrated into 'trace'.
+> So it's not necessarily at all an "either-or" thing.
 
-Yes, I think the point that is missing here is the focus of the user.
+As a last update to this messy discussion, here's a commit I made to
+systemd which ensures that every user session by default gets its own
+cgroup in the 'cpu' hierarchy.
 
-As Linus grinded into my head, he does not care about what the kernel is
-doing when he is working on git. He wants to know if he can make his app
-work better. Perhaps, localize data or such, which can help. Cache
-missies would also be good feedback.
+http://cgit.freedesktop.org/systemd/commit/?id=74fe1fe36e35a26d764f1e3119d5f6d014db573c
 
-If the user sees that a syscall or pagefault is totally wacked, they can
-then (as Thomas said) poke a kernel developer or admin to fix it. They
-wont understand the internals of the kernel to get anything useful out
-of it.
+And here's the one that does the same to ensure that every service
+systemd manages gets by default its own cgroup in the 'cpu' hierarchy.
 
+http://cgit.freedesktop.org/systemd/commit/?id=d686d8a97bd7945af0a61504392d01a3167b576f
 
-> 
-> > This is why lttngtrace gathers a system-wide trace even though we're mostly
-> > intested in the wait/wakeups of a specific PID.
-> 
-> Which results in a permission problem which you are completely
-> ignoring. Not a surprise though - I'm used to the academic way of
-> defining preliminaries and ignoring side effects just to get the paper
-> written.
+And finally, here's bugzilla entry for a patch I prepped for
+gnome-terminal's livte which creates a subgroup for each terminal widget
+shown by the same g-t instance:
 
-Yes, we do not want average Joe to be able to look at anything that they
-can't already see (to a point). Sure, let them see when their pages are
-being mapped in, or when they take a cache hit, or they block on IO, and
-for how long. But I would not want them to be able to see how other
-tasks that they do not own are affecting the system. Allowing that would
-be a rootkit developer's dream. If they know of some vulnerablility that
-takes some timing to trigger, they can then monitor that sshd or
-whatever, and see inject an attack at just the right moment to steal a
-password, or gain access to something else that they should not have.
+https://bugzilla.gnome.org/show_bug.cgi?id=635119
 
-But for admins, this is fine, since they have that ability anyway.
+With this all together we get quite a bit further than with the kernel
+patch, since we also cover all kinds of services, and treat user
+sessions equal to each other, and even users. (i.e. user A cannot get
+double the amount of CPU time simply by spawning double the amount of
+processes or double the amount of session thatn user B).
 
-Thus, LTTng is a great tool for admins who want to analyze how their
-system is running. But it is not something for the average Joe on a
-general system. They wont know what all this information means anyway.
+This should fix things for people with systemd and GNOME. Yes, all
+others are left in the cold. Sorry for that.
 
--- Steve
+Lennart
 
+-- 
+Lennart Poettering - Red Hat, Inc.
