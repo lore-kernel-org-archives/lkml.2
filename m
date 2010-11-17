@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab0KQC4T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 21:56:19 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56593 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754468Ab0KQC4S (ORCPT
+	id S1759547Ab0KQC4b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 21:56:31 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33055 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759431Ab0KQC4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 21:56:18 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=sFRc5P8Xm7OftsNlXyCOO88uW7jjO56MsruSEQ0tlsHO2hRZzIdgNwQgGu+KKQa+Sb
-         hxDl7AIp8mB2LLuUtcGDBIOeUDN6b05ce+g/eE05G4RKZaUrCxR4VLwKykITNzp+ejAy
-         M9G07KB+Z38IjyzEAveyJeE7RIdIm6X27bUOU=
-Subject: [PATCH] regulator: Move lp3971 regulator driver to
-	subsys_initcall()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain
-Date: Wed, 17 Nov 2010 11:00:44 +0800
-Message-Id: <1289962844.8233.2.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Nov 2010 21:56:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <20101116170005.2646f4fb.randy.dunlap@oracle.com>
+References: <AANLkTimYevUOSxDm+nGq_ctPEFp_E2zJR7rNGvUi2fWY@mail.gmail.com> <20101116170005.2646f4fb.randy.dunlap@oracle.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 16 Nov 2010 18:56:08 -0800
+Message-ID: <AANLkTimE_y=GFP+Sg-MYvEfQyg7GtzGRs+gdqjzOZm-_@mail.gmail.com>
+Subject: Re: [PATCH] cciss: fix build for PROC_FS disabled
+To: Randy Dunlap <randy.dunlap@oracle.com>, Jens Axboe <jaxboe@fusionio.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Regulators need to be available early in init in order to allow them
-to be available for consumers when requested.
+On Tue, Nov 16, 2010 at 5:00 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>
+> Fix cciss driver for CONFIG_PROC_FS not enabled:
+>
+> drivers/block/cciss.c:4929: error: 'proc_cciss' undeclared (first use in this function)
 
-Other regulator drivers are already moved to subsys_initcall(),
-looks like only lp3971 is missing.
+Hmm. I would almost prefer to not have this #ifdef inside code, and
+solve it by simply moving the definition of "proc_cciss" to outside
+the other #ifdef CONFIG_PROC_FS.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/lp3971.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+That way it allways stays NULL, and without CONFIG_PROC_FS the code in
+question will all be empty inline function calls anyway, so the
+compiler will compile it all away (at the cost of just keeping that
+one unnecessary variable around).
 
-diff --git a/drivers/regulator/lp3971.c b/drivers/regulator/lp3971.c
-index 0f22ef1..40520d9 100644
---- a/drivers/regulator/lp3971.c
-+++ b/drivers/regulator/lp3971.c
-@@ -554,7 +554,7 @@ static int __init lp3971_module_init(void)
- 
- 	return ret;
- }
--module_init(lp3971_module_init);
-+subsys_initcall(lp3971_module_init);
- 
- static void __exit lp3971_module_exit(void)
- {
--- 
-1.7.2
+I'd rather waste one useless pointer than have ugly source code.
 
+Comments?
 
-
+                Linus
