@@ -1,87 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935484Ab0KQU2D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 15:28:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48067 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935028Ab0KQU2B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 15:28:01 -0500
-Date: Wed, 17 Nov 2010 15:27:55 -0500
-From: Josef Bacik <josef@redhat.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-fsdevel@vger.kernel.org,
-        eparis@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias
-Message-ID: <20101117202754.GC3818@localhost.localdomain>
-References: <1290016263-1637-1-git-send-email-josef@redhat.com> <20101117191817.GA26575@fieldses.org> <20101117192822.GB3818@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117192822.GB3818@localhost.localdomain>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S935509Ab0KQU2M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 15:28:12 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52445
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935490Ab0KQU2K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 15:28:10 -0500
+Date: Wed, 17 Nov 2010 12:28:35 -0800 (PST)
+Message-Id: <20101117.122835.02291845.davem@davemloft.net>
+To: joe@perches.com
+Cc: trivial@kernel.org, ramkrishna.vepa@exar.com, sivakumar.subramani@exar.com,
+        sreenivasa.honnur@exar.com, jon.mason@exar.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/11] drivers/net/s2io.c: Remove unnecessary casts of
+ pci_get_drvdata
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <5add1304ab2cd7f730a81a85598ef7357b087a86.1289851770.git.joe@perches.com>
+References: <cover.1289851770.git.joe@perches.com>
+	<5add1304ab2cd7f730a81a85598ef7357b087a86.1289851770.git.joe@perches.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 02:28:22PM -0500, Josef Bacik wrote:
-> On Wed, Nov 17, 2010 at 02:18:17PM -0500, J. Bruce Fields wrote:
-> > On Wed, Nov 17, 2010 at 12:51:03PM -0500, Josef Bacik wrote:
-> > > While trying to track down some NFS problems with BTRFS, I kept noticing I was
-> > > getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
-> > > figure out that it was SELinux that was giving me grief, with the following
-> > > denial
-> > > 
-> > > type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
-> > > comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
-> > > tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
-> > > 
-> > > Turns out this is because in d_obtain_alias if we can't find an alias we create
-> > > one and do all the normal instantiation stuff, but we don't do the
-> > > security_d_instantiate.  With this patch I'm no longer seeing these errant
-> > > -EACCESS return values.  Thanks,
-> > 
-> > Possibly dumb question: Is there still a small race here?  Is it
-> > possible for another nfsd thread to find the new alias on the list while
-> > this thread is still:
-> > 
-> > > 
-> > > Signed-off-by: Josef Bacik <josef@redhat.com>
-> > > ---
-> > >  fs/dcache.c |    1 +
-> > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/fs/dcache.c b/fs/dcache.c
-> > > index 23702a9..890a59e 100644
-> > > --- a/fs/dcache.c
-> > > +++ b/fs/dcache.c
-> > > @@ -1201,6 +1201,7 @@ struct dentry *d_obtain_alias(struct inode *inode)
-> > >  	spin_unlock(&tmp->d_lock);
-> > >  
-> > >  	spin_unlock(&dcache_lock);
-> > 
-> > ... right here, so that that other nfsd thread still ends up trying to
-> > do something with a dentry that hasn't had security_d_instantiate called
-> > on it yet?
-> > 
-> > > +	security_d_instantiate(tmp, inode);
-> > >  	return tmp;
-> > >  
-> > >   out_iput:
-> > > -- 
-> > 
-> > Or does something else prevent that?
-> > 
-> 
-> That's a good question, I have no idea actually.  Every other consumer of
-> security_d_instantiate seems to hold the i_mutex of the parent directory inode,
-> tho I'm not sure if that is appropriate for d_obtain_alias, maybe somebody else
-> has an idea?  Thanks,
-> 
+From: Joe Perches <joe@perches.com>
+Date: Mon, 15 Nov 2010 12:13:57 -0800
 
-I'd like some input from the SELinux guys on this, talking with Bruce we can't
-really figure out a good way to deal with this.  If we're using the parent
-inode->i_mutex to guard the security initalization stuff we're screwed when it
-comes to this case, since we have no way to know who the parent is at this point
-in time.  Any suggestions?  Thanks,
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Josef
+Applied.
