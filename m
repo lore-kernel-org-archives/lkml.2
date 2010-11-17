@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933780Ab0KQK6X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 05:58:23 -0500
-Received: from mx2.fusionio.com ([64.244.102.31]:44049 "EHLO mx2.fusionio.com"
+	id S933871Ab0KQLA1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 06:00:27 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:37949 "EHLO mgw-sa02.nokia.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932541Ab0KQK6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 05:58:21 -0500
-X-ASG-Debug-ID: 1289991500-08b7aaac0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4CE3B547.7050907@fusionio.com>
-Date: Wed, 17 Nov 2010 11:58:15 +0100
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S932800Ab0KQLA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 06:00:26 -0500
+Date: Wed, 17 Nov 2010 12:52:48 +0200
+From: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
+To: ext Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Mika Westerberg <mika.westerberg@iki.fi>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/4] proc/vmcore: allow archs to override
+	vmcore_elf_check_arch()
+Message-ID: <20101117105248.GV17801@esdhcp04058.research.nokia.com>
+References: <cover.1289292124.git.mika.westerberg@iki.fi> <df680f67f33d8b0ef815045b53f205b3ff35de63.1289292124.git.mika.westerberg@iki.fi> <20101116142850.df5e9805.akpm@linux-foundation.org> <20101116225042.GH21926@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Randy Dunlap <randy.dunlap@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cciss: fix build for PROC_FS disabled
-References: <AANLkTimYevUOSxDm+nGq_ctPEFp_E2zJR7rNGvUi2fWY@mail.gmail.com> <20101116170005.2646f4fb.randy.dunlap@oracle.com> <AANLkTimE_y=GFP+Sg-MYvEfQyg7GtzGRs+gdqjzOZm-_@mail.gmail.com>
-X-ASG-Orig-Subj: Re: [PATCH] cciss: fix build for PROC_FS disabled
-In-Reply-To: <AANLkTimE_y=GFP+Sg-MYvEfQyg7GtzGRs+gdqjzOZm-_@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1289991500
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.46877
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20101116225042.GH21926@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-17 03:56, Linus Torvalds wrote:
-> On Tue, Nov 16, 2010 at 5:00 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
->>
->> Fix cciss driver for CONFIG_PROC_FS not enabled:
->>
->> drivers/block/cciss.c:4929: error: 'proc_cciss' undeclared (first use in this function)
+On Tue, Nov 16, 2010 at 10:50:42PM +0000, ext Russell King - ARM Linux wrote:
+[...]
 > 
-> Hmm. I would almost prefer to not have this #ifdef inside code, and
-> solve it by simply moving the definition of "proc_cciss" to outside
-> the other #ifdef CONFIG_PROC_FS.
-> 
-> That way it allways stays NULL, and without CONFIG_PROC_FS the code in
-> question will all be empty inline function calls anyway, so the
-> compiler will compile it all away (at the cost of just keeping that
-> one unnecessary variable around).
-> 
-> I'd rather waste one useless pointer than have ugly source code.
-> 
-> Comments?
+> So, as far as the above patch goes, I think it's sane, as it now
+> allows architectures to deal with the 64-bit/32-bit ELF issues in the
+> crash dump code in a more sane manner.
 
-Agree, I merged this:
+Russell,
 
-http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=bbe425cd9ae83eacd0c9f09df2bf56dc911a54cd
+Is it ok if I submit this patch (along with patches 2 and 3) to your patch
+system as Andrew suggested, or do you prefer to merge it via some other tree?
 
--- 
-Jens Axboe
-
+Thanks,
+MW
