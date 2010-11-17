@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964801Ab0KQXMU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:12:20 -0500
-Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:58858 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934863Ab0KQXMS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:12:18 -0500
-Date: Thu, 18 Nov 2010 10:11:43 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering
- writeback
-Message-ID: <20101117231143.GQ22876@dastard>
-References: <1289996638-21439-1-git-send-email-walken@google.com>
- <1289996638-21439-4-git-send-email-walken@google.com>
- <20101117125756.GA5576@amd>
- <1290007734.2109.941.camel@laptop>
- <AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S935704Ab0KQXPK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:15:10 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:41995 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935456Ab0KQXPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 18:15:08 -0500
+Date: Thu, 18 Nov 2010 10:14:59 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: Tree for November 17
+Message-Id: <20101118101459.472d540b.sfr@canb.auug.org.au>
+In-Reply-To: <20101117095920.2b9e2e6a.randy.dunlap@oracle.com>
+References: <20101117140956.a8264c75.sfr@canb.auug.org.au>
+	<AANLkTinBiGOPptOY18-D+=djKLsJj75mXxL6ht6xNJXL@mail.gmail.com>
+	<20101117095920.2b9e2e6a.randy.dunlap@oracle.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__18_Nov_2010_10_14_59_+1100_vI4p0LPVzqw8k4VC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 02:05:30PM -0800, Michel Lespinasse wrote:
-> On Wed, Nov 17, 2010 at 7:28 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Wed, 2010-11-17 at 23:57 +1100, Nick Piggin wrote:
-> >> On Wed, Nov 17, 2010 at 04:23:58AM -0800, Michel Lespinasse wrote:
-> >> > When faulting in pages for mlock(), we want to break COW for anonymous
-> >> > or file pages within VM_WRITABLE, non-VM_SHARED vmas. However, there is
-> >> > no need to write-fault into VM_SHARED vmas since shared file pages can
-> >> > be mlocked first and dirtied later, when/if they actually get written to.
-> >> > Skipping the write fault is desirable, as we don't want to unnecessarily
-> >> > cause these pages to be dirtied and queued for writeback.
-> >>
-> >> It's not just to break COW, but to do block allocation and such
-> >> (filesystem's page_mkwrite op). That needs to at least be explained
-> >> in the changelog.
-> >
-> > Agreed, the 0/3 description actually does mention this.
-> >
-> >> Filesystem doesn't have a good way to fully pin required things
-> >> according to mlock, but page_mkwrite provides some reasonable things
-> >> (like block allocation / reservation).
-> >
-> > Right, but marking all pages dirty isn't really sane. I can imagine
-> > making the reservation but not marking things dirty solution, although
-> > it might be lots harder to implement, esp since some filesystems don't
-> > actually have a page_mkwrite() implementation.
-> 
-> Really, my understanding is that not pre-allocating filesystem blocks
-> is just fine. This is, after all, what happens with ext3 and it's
-> never been reported as a bug (that I know of).
+--Signature=_Thu__18_Nov_2010_10_14_59_+1100_vI4p0LPVzqw8k4VC
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's not ext3 you have to worry about - it's the filesystems that
-need special state set up on their pages/buffers for ->writepage to
-work correctly that are the problem. You need to call
-->write_begin/->write_end to get the state set up properly.
+On Wed, 17 Nov 2010 09:59:20 -0800 Randy Dunlap <randy.dunlap@oracle.com> w=
+rote:
+>
+> Why was #include <linux/smp_lock.h> removed from <linux/hardirq.h> ?
+>=20
+> I added #include <linux/smp_lock.h> to i387.h, but them mm/filemap.c buil=
+d fails
+> with the same error:
+>=20
+> linux-next-20101117/mm/filemap.c: In function 'iov_iter_copy_from_user_at=
+omic':
+> linux-next-20101117/mm/filemap.c:1936: error: implicit declaration of fun=
+ction 'kernel_locked'
 
-If this state is not set up properly, silent data loss will occur
-during mmap writes either by ENOSPC or failing to set up writes into
-unwritten extents correctly (i.e. we'll be back to where we were in
-2.6.15).
+Was this fixed before Linus took that patch?  Also, the #include of
+linux/smp_lock.h in linux/hardirq.h was the only line between #ifdef
+CONFIG_PREEMPT and #endif ... was this patch even reviewed?
 
-I don't think ->page_mkwrite can be worked around - we need that to
-be called on the first write fault of any mmap()d page to ensure it
-is set up correctly for writeback.  If we don't get write faults
-after the page is mlock()d, then we need the ->page_mkwrite() call
-during the mlock() call.
+Maybe (after it was reviewed) it should have been given more time in
+linux-next before being merged.
 
-> If filesystem people's feedback is that they really want mlock() to
-> continue pre-allocating blocks, maybe we can just do it using
-> fallocate() rather than page_mkwrite() callbacks ?
-
-Fallocate is not good enough to avoid ->page_mkwrite callbacks.
-Indeed, XFS (at least) requires the ->page_mkwrite() callout even
-on preallocated space to correctly mark the buffers as unwritten so
-extent conversion in ->writepage is triggered correctly (see test
-#166 in xfstests).
-
-Hence I think that avoiding ->page_mkwrite callouts is likely to
-break some filesystems in subtle, undetected ways.  IMO, regardless
-of what is done, it would be really good to start by writing a new
-regression test to exercise and encode the expected the mlock
-behaviour so we can detect regressions later on....
-
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--Signature=_Thu__18_Nov_2010_10_14_59_+1100_vI4p0LPVzqw8k4VC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM5GHzAAoJEDMEi1NhKgbswGkH/i+IuOztcYLFtqM8YvdcwXdl
+J+W0es+6sspbFryDrTeHo/7LqSj2sL06j4HQvd6V2eTCpfw6DXPLvHDO9Hiau31P
+Yjm4HyId7/yVMRbwpu4/6NJohlSuT3302ho0pnZe+KrtHGz9+wm+b4S4PJqlLqIs
+5JwnQwDxjhRf3T2rDrTd+6TaJ7PTA0C89ivWbuRqPC7t2Ms13728NhrTiwo4JSXk
+RmrqanmirdEei4oA5RvHd7texwltkANEMfPQ2yaevALYUhHHOlHmcZY7RWITsUgG
+TPS1Mpo++DfPAMvbq3+5fRRlbsVwfpPVG97/SQC0W7nvg3YIVuG9j8dvywuPko4=
+=I7gh
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__18_Nov_2010_10_14_59_+1100_vI4p0LPVzqw8k4VC--
