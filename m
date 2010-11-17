@@ -1,41 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935Ab0KQIdO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 03:33:14 -0500
-Received: from mail1.ugh.no ([80.239.42.168]:48289 "EHLO mail1.ugh.no"
+	id S1757559Ab0KQIdK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 03:33:10 -0500
+Received: from mga01.intel.com ([192.55.52.88]:30956 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757689Ab0KQIdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 03:33:11 -0500
-X-Greylist: delayed 535 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Nov 2010 03:33:10 EST
-Message-ID: <4CE3912E.6060904@tomt.net>
-Date: Wed, 17 Nov 2010 09:24:14 +0100
-From: Andre Tomt <andre@tomt.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1753364Ab0KQIdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 03:33:08 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,209,1288594800"; 
+   d="scan'208";a="627601849"
+Date: Wed, 17 Nov 2010 16:33:01 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jens Axboe <axboe@kernel.dk>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Christoph Hellwig <hch@lst.de>, linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/13] writeback: IO-less balance_dirty_pages()
+Message-ID: <20101117083301.GA25946@localhost>
+References: <20101117035905.525232375@intel.com>
+ <20101117041926.GA14209@localhost>
 MIME-Version: 1.0
-To: thomas@fjellstrom.ca
-CC: Linux Kernel List <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org
-Subject: Re: mvsas errors in 2.6.36
-References: <201010290650.32892.thomas@fjellstrom.ca> <201010310911.45738.thomas@fjellstrom.ca> <201011170053.31174.thomas@fjellstrom.ca>
-In-Reply-To: <201011170053.31174.thomas@fjellstrom.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101117041926.GA14209@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2010 08:53 AM, Thomas Fjellstrom wrote:
-[snip]
-> Still no fatal errors, but the problem is still happening regularly. It causes
-> a pause in disk io of a couple seconds at least. Really quite annoying.
-[snip]
+On Wed, Nov 17, 2010 at 12:19:26PM +0800, Wu Fengguang wrote:
+> > BEHAVIOR CHANGE
+> > ===============
+> > 
+> > Users will notice that the applications will get throttled once the
+> > crossing the global (background + dirty)/2=15% threshold. For a single
+> > "cp", it could be soft throttled at 2*bdi->write_bandwidth around 15%
+> 
+> s/2/8/
+> 
+> Sorry, the initial soft throttle bandwidth for "cp" is about 8 times
+> of bdi bandwidth when reaching 15% dirty pages.
 
-After the mvsas update in 2.6.35 this started happening to me as well; 
-at least its better than the previous state - not working.. ;-) However, 
-after rolling a new 2.6.35 with the following fix that is queued up for 
-the upcoming 2.6.35 and 2.6.36 stable releases, they seem to have 
-dissapeared - 3 days and counting.
+Actually it's x8 for light dirtier and x6 for heavy dirtier. There are
+two control lines in the following code. The task control line is
+introduced in this patch, while the bdi control line is introduced in
+"[PATCH 11/13] writeback: scale down max throttle bandwidth on
+concurrent dirtiers".
 
-http://git.kernel.org/?p=linux/kernel/git/stable/stable-queue.git;a=blob_plain;f=queue-2.6.33/libsas-fix-ncq-mixing-with-non-ncq.patch;h=b6d7c92094d95ad67a3b23c2e09c25d4fbd0f46b;hb=HEAD
+baseline
+                bw = bdi->write_bandwidth;
 
-The fix is queued up for the next 2.6.36 and 2.6.35 stable point-releases.
+bdi control line
+                bw = bw * (bdi_thresh - bdi_dirty);               
+                bw = bw / (bdi_thresh / BDI_SOFT_DIRTY_LIMIT + 1);
+        
+task control line
+                bw = bw * (task_thresh - bdi_dirty);
+                bw = bw / (bdi_thresh / TASK_SOFT_DIRTY_LIMIT + 1);
+
+These figures demonstrate how they work together:
+
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/heavy-dirtier-control-line.svg
+http://www.kernel.org/pub/linux/kernel/people/wfg/writeback/light-dirtier-control-line.svg
+
+Thanks,
+Fengguang
+
+> > dirty pages, and be balanced at speed bdi->write_bandwidth around 17.5%
+> > dirty pages. Before patch, the behavior is to just throttle it at 17.5%
+> > dirty pages.
+> > 
+> > Since the task will be soft throttled earlier than before, it may be
+> > perceived by end users as performance "slow down" if his application
+> > happens to dirty more than ~15% memory.
