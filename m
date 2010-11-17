@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935162Ab0KQRwj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 12:52:39 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:48015 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935128Ab0KQRwi (ORCPT
+	id S935151Ab0KQRyQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:54:16 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:18537 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932391Ab0KQRyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 12:52:38 -0500
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=VINkOuZDQI4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=hduEXUPig9IjSzm5EHUA:9 a=tMOqPnvxjMe6CLlyx_VAv7Aki7QA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 1/5] [PATCH 1/5] events: Add EVENT_FS the event
- filesystem
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <20101117174652.GC13717@Krystal>
-References: <20101117005357.024472450@goodmis.org>
-	 <20101117005939.600541101@goodmis.org> <20101117033242.GB31335@suse.de>
-	 <20101117103914.GA21976@elte.hu>
-	 <1289996753.30543.35.camel@gandalf.stny.rr.com>
-	 <20101117174652.GC13717@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 17 Nov 2010 12:52:34 -0500
-Message-ID: <1290016354.30543.71.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 17 Nov 2010 12:54:15 -0500
+Message-ID: <4CE416C6.5090701@caviumnetworks.com>
+Date: Wed, 17 Nov 2010 09:54:14 -0800
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, sodaville@linutronix.de,
+        arjan@linux.intel.com, linuxppc-dev@lists.ozlabs.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] of: Add support for linking device tree blobs into
+ vmlinux
+References: <cover.1289943240.git.dirk.brandewie@gmail.com> <9129f0a21ea48fb2dcb89cea290e88f3e8c0d8a2.1289943240.git.dirk.brandewie@gmail.com> <4CE32453.2090403@caviumnetworks.com> <4CE33C14.9030503@gmail.com> <AANLkTi=T_bqEswe32dTAfL4++WAitc7+VHnyjqP2sQfi@mail.gmail.com> <4CE372A9.2050704@gmail.com>
+In-Reply-To: <4CE372A9.2050704@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Nov 2010 17:55:03.0733 (UTC) FILETIME=[8FD68E50:01CB8680]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 12:46 -0500, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> [...]
-> > Are these events now going to be labeled as stable?  Is every tracepoint
-> > we have, much have the same data?  Linus specifically said at Kernel
-> > Summit that he wants absolutely NO modules to have a stable tracepoint.
-> 
-> I'd like to bring up the point of KVM tracepoints here. KVM can be configured as
-> a module, and may clearly contain tracepoints that we'd like to be stable.
-> 
-> My thought is that what we really want to enforce is "no stable tracepoints in
-> drivers" rather than in "modules", but I might be wrong.
-> 
-> Thoughts ?
+On 11/16/2010 10:14 PM, Dirk Brandewie wrote:
+> On 11/16/2010 06:58 PM, Grant Likely wrote:
+>> On Tue, Nov 16, 2010 at 7:21 PM, Dirk Brandewie
+>> <dirk.brandewie@gmail.com> wrote:
+>>>
+>>> On 11/16/2010 04:39 PM, David Daney wrote:
+>>>>
+>>>> Thanks for doing this. However I have a few comments...
+>>>>
+>>>> On 11/16/2010 02:41 PM, dirk.brandewie@gmail.com wrote:
+>>>>>
+>>>>> From: Dirk Brandewie<dirk.brandewie@gmail.com>
+>>>>>
+>>>>> /* .data section */
+>>>>> #define DATA_DATA \
+>>>>> *(.data) \
+>>>>> @@ -468,7 +482,8 @@
+>>>>> MCOUNT_REC() \
+>>>>> DEV_DISCARD(init.rodata) \
+>>>>> CPU_DISCARD(init.rodata) \
+>>>>> - MEM_DISCARD(init.rodata)
+>>>>> + MEM_DISCARD(init.rodata) \
+>>>>> + KERNEL_DTB()
+>>>>>
+>>>>
+>>>> I thought the init.rodata was only for data used by __init things.
+>>>> Although the
+>>>> current linker scripts do not put it in the section that gets
+>>>> recycled as
+>>>> usable
+>>>> memory.
+>>>>
+>>>> IIRC the unflattened version of the device tree has pointers to the
+>>>> flattened
+>>>> data. Since the device tree nodes are live for the entire kernel
+>>>> lifecycle,
+>>>> shouldn't the device tree blobs be in non-init memory?
+>>>>
+>>>
+>>> The contents of the blob get copied to allocated memory during
+>>> unflatten_device_tree() so the blob that is linked in is no longer
+>>> needed
+>>> after init.
+>>
+>> Have you written a patch to add this behaviour? The current code
+>> doesn't. :-)
+>>
+>
+> I misspoke, my blob gets copied to allocated memory during
+> unflatten_device_tree.
+> my early_init_dt_alloc_memory_arch() returns the physical address of a
+> kmalloc'd
+> buffer.
+>
 
-I still say no to stable tracepoints in modules. Once you open that
-door, everyone will have it.
-
-But, that doesn't mean that a raw traepoint can't be stable. If the
-maintainer of that tracepoint states it is stable, then by all means,
-let tools use it.
-
--- Steve
+Perhaps you should take a look at unflatten_dt_node(), especially the 
+part where property names and values are assigned.  I could be mistaken, 
+but it appears to me that the memory allocated by 
+early_init_dt_alloc_memory_arch() is not used to hold the name and value 
+strings.  It is possible that they might be referred to in their 
+original location in the flattened blob.
 
 
+> You would want copy the dtb that your platform is going to use to
+> non-init memory.
+>
+
+... or you might want to locate the dtb somewhere where it would be 
+unlikely to get clobbered if someone were to arrange for the init.rodata 
+to be freed for reuse.
+
+David Daney
