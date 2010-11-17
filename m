@@ -1,80 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934401Ab0KQGaE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 01:30:04 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:44636 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933693Ab0KQGaA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S934288Ab0KQGaA (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 17 Nov 2010 01:30:00 -0500
-Message-ID: <4CE37663.2080806@bonesio.net>
-Date: Tue, 16 Nov 2010 22:29:55 -0800
-From: John Bonesio <bones@bonesio.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: John Bonesio <bones@secretlab.ca>, devicetree-discuss@lists.ozlabs.org,
-        jdl@jdl.com, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, david@gibson.dropbear.id.au
-Subject: Re: [PATCH 1/5] scripts: dtc: Merge in changes from the dtc repository
-References: <20101116204917.12146.39851.stgit@riker>	<20101116204951.12146.21084.stgit@riker> <AANLkTinYZYR_QtS5-Nodpaf2MBBuaw06SW9pDCNQ9ov3@mail.gmail.com>
-In-Reply-To: <AANLkTinYZYR_QtS5-Nodpaf2MBBuaw06SW9pDCNQ9ov3@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Received: from havoc.gtf.org ([69.61.125.42]:47665 "EHLO havoc.gtf.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756765Ab0KQG37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 01:29:59 -0500
+Date: Wed, 17 Nov 2010 01:29:58 -0500
+From: Jeff Garzik <jeff@garzik.org>
+To: linux-ide@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] libata: remove unlock+relock cycle in ata_scsi_queuecmd
+Message-ID: <20101117062958.GA2894@havoc.gtf.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arg!
 
-I had this working. I'll look into it.
+This is in #upstream-fixes...  Each libata command is now two lock-ops
+less expensive... for free!  Should be nice for multi-core SSD users etc.
 
-- John
+(not a pull request, Linus, just an FYI)
 
-On 11/16/2010 10:11 PM, Grant Likely wrote:
-> On Tue, Nov 16, 2010 at 1:49 PM, John Bonesio <bones@secretlab.ca> wrote:
->> Pull in recent changes from the main dtc repository. These changes primarily
->> allow multiple device trees to be declared which are merged by dtc. This
->> feature allows us to include a basic dts file and then provide more information
->> for the specific system through the merging functionality.
->>
->> Signed-off-by: John Bonesio <bones@secretlab.ca>
->> ---
->>
->>  0 files changed, 0 insertions(+), 0 deletions(-)
-> ???  Something isn't right in patch generation.
->
-> Also:
->
-> ~/hacking/linux-2.6$ xc-6xx make -j3
->   GEN     /home/grant/hacking/linux-2.6.build/6xx/Makefile
->   HOSTCC  scripts/kconfig/zconf.tab.o
->   HOSTLD  scripts/kconfig/conf
-> scripts/kconfig/conf --silentoldconfig Kconfig
-> #
-> # configuration written to .config
-> #
->   GEN     /home/grant/hacking/linux-2.6.build/6xx/Makefile
->   CHK     include/linux/version.h
->   UPD     include/linux/version.h
->   HOSTCC  scripts/dtc/checks.o
-> In file included from /home/grant/hacking/linux-2.6/scripts/dtc/checks.c:21:
-> /home/grant/hacking/linux-2.6/scripts/dtc/dtc.h:37: fatal error:
-> util.h: No such file or directory
-> compilation terminated.
-> make[3]: *** [scripts/dtc/checks.o] Error 1
-> make[2]: *** [scripts/dtc] Error 2
-> make[1]: *** [scripts] Error 2
-> make[1]: *** Waiting for unfinished jobs....
-> make: *** [sub-make] Error 2
-> (devicetree/test) ~/hacking/linux-2.6$
->
-> Looks like the updated dtc is broken.
->
-> g.
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
 
+commit 02ab5c49284c91901cad783921e816297c92ebf8
+Author: Jeff Garzik <jeff@garzik.org>
+Date:   Wed Nov 17 01:19:11 2010 -0500
+
+    [libata] kill unlock+relock cycle in SCSI queuecommand hook
+    
+    Now that SCSI's ->queuecommand hook is unlocked, ATA no longer needs
+    to unlock the SCSI host_lock prior to work, and re-lock the host_lock
+    once our work is complete.
+    
+    Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+
+ drivers/ata/libata-scsi.c |   23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index 19835d3..d72340e 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -3166,8 +3166,8 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
+ 
+ /**
+  *	ata_scsi_queuecmd - Issue SCSI cdb to libata-managed device
++ *	@shost: SCSI host destination for given command
+  *	@cmd: SCSI command to be sent
+- *	@done: Completion function, called when command is complete
+  *
+  *	In some cases, this function translates SCSI commands into
+  *	ATA taskfiles, and queues the taskfiles to be sent to
+@@ -3183,36 +3183,41 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
+  *	Return value from __ata_scsi_queuecmd() if @cmd can be queued,
+  *	0 otherwise.
+  */
+-static int ata_scsi_queuecmd_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
++int ata_scsi_queuecmd(struct Scsi_Host *shost, struct scsi_cmnd *cmd)
+ {
+ 	struct ata_port *ap;
+ 	struct ata_device *dev;
+ 	struct scsi_device *scsidev = cmd->device;
+-	struct Scsi_Host *shost = scsidev->host;
+ 	int rc = 0;
++	unsigned long irq_flags;
+ 
+-	ap = ata_shost_to_port(shost);
++	local_irq_save(irq_flags);
+ 
++	spin_lock(shost->host_lock);
++	scsi_cmd_get_serial(shost, cmd);
+ 	spin_unlock(shost->host_lock);
++
++	ap = ata_shost_to_port(shost);
++
+ 	spin_lock(ap->lock);
+ 
+ 	ata_scsi_dump_cdb(ap, cmd);
+ 
+ 	dev = ata_scsi_find_dev(ap, scsidev);
+ 	if (likely(dev))
+-		rc = __ata_scsi_queuecmd(cmd, done, dev);
++		rc = __ata_scsi_queuecmd(cmd, cmd->scsi_done, dev);
+ 	else {
+ 		cmd->result = (DID_BAD_TARGET << 16);
+-		done(cmd);
++		cmd->scsi_done(cmd);
+ 	}
+ 
+ 	spin_unlock(ap->lock);
+-	spin_lock(shost->host_lock);
++
++	local_irq_restore(irq_flags);
++
+ 	return rc;
+ }
+ 
+-DEF_SCSI_QCMD(ata_scsi_queuecmd)
+-
+ /**
+  *	ata_scsi_simulate - simulate SCSI command on ATA device
+  *	@dev: the target device
