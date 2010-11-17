@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751579Ab0KQX2o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:28:44 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:46987 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200Ab0KQX2n (ORCPT
+	id S1751712Ab0KQX2x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:28:53 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:62933 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab0KQX2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:28:43 -0500
-Subject: [PATCH 3/5] powerpc/5200: dts: remove unused properties
+	Wed, 17 Nov 2010 18:28:51 -0500
+Subject: [PATCH 4/5] powerpc/5200: dts: Change combatible strings on localbus
 To: linux-kernel@vger.kernel.org
 From: John Bonesio <bones@secretlab.ca>
 Cc: linuxppc-dev@lists.ozlabs.org, jdl@jdl.com, glikely@secretlab.ca,
         devicetree-discuss@lists.ozlabs.org, david@gibson.dropbear.id.au
-Date: Wed, 17 Nov 2010 15:28:39 -0800
-Message-ID: <20101117232838.25947.81482.stgit@riker>
+Date: Wed, 17 Nov 2010 15:28:47 -0800
+Message-ID: <20101117232847.25947.60171.stgit@riker>
 In-Reply-To: <20101117232520.25947.37475.stgit@riker>
 References: <20101117232520.25947.37475.stgit@riker>
 User-Agent: StGit/0.15
@@ -24,125 +24,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch remove unused properties in dts files in preparation of refactoring
-the dts files for MPC5200b based boards.
+This patch changes some incorrect compatible strings on the local plus bus node
+in dts files for MPC5200b based systems.
 
 Signed-off-by: John Bonesio <bones@secretlab.ca>
 ---
 
- arch/powerpc/boot/dts/cm5200.dts    |    2 --
- arch/powerpc/boot/dts/lite5200b.dts |    3 ---
- arch/powerpc/boot/dts/media5200.dts |    2 --
- arch/powerpc/boot/dts/motionpro.dts |    2 --
- arch/powerpc/boot/dts/pcm030.dts    |    2 --
- arch/powerpc/boot/dts/pcm032.dts    |    2 --
- 6 files changed, 0 insertions(+), 13 deletions(-)
+ arch/powerpc/boot/dts/cm5200.dts    |    2 +-
+ arch/powerpc/boot/dts/digsy_mtc.dts |    2 +-
+ arch/powerpc/boot/dts/media5200.dts |    2 +-
+ arch/powerpc/boot/dts/motionpro.dts |    2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/arch/powerpc/boot/dts/cm5200.dts b/arch/powerpc/boot/dts/cm5200.dts
-index 9369dcd..d549897 100644
+index d549897..22f7233 100644
 --- a/arch/powerpc/boot/dts/cm5200.dts
 +++ b/arch/powerpc/boot/dts/cm5200.dts
-@@ -230,8 +230,6 @@
- 			reg = <0 0 0x2000000>;
- 			bank-width = <2>;
- 			device-width = <2>;
--			#size-cells = <1>;
--			#address-cells = <1>;
- 		};
+@@ -219,7 +219,7 @@
  	};
- };
-diff --git a/arch/powerpc/boot/dts/lite5200b.dts b/arch/powerpc/boot/dts/lite5200b.dts
-index a74b790..c0a4e45 100644
---- a/arch/powerpc/boot/dts/lite5200b.dts
-+++ b/arch/powerpc/boot/dts/lite5200b.dts
-@@ -174,7 +174,6 @@
  
- 		psc@2000 {		// PSC1
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
--			cell-index = <0>;
- 			reg = <0x2000 0x100>;
- 			interrupts = <2 1 0>;
- 		};
-@@ -198,7 +197,6 @@
- 		// PSC4 in uart mode example
- 		//serial@2600 {		// PSC4
- 		//	compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
--		//	cell-index = <3>;
- 		//	reg = <0x2600 0x100>;
- 		//	interrupts = <2 11 0>;
- 		//};
-@@ -206,7 +204,6 @@
- 		// PSC5 in uart mode example
- 		//serial@2800 {		// PSC5
- 		//	compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
--		//	cell-index = <4>;
- 		//	reg = <0x2800 0x100>;
- 		//	interrupts = <2 12 0>;
- 		//};
+ 	localbus {
+-		compatible = "fsl,mpc5200b-lpb","simple-bus";
++		compatible = "fsl,mpc5200b-lpb","fsl,mpc5200-lpb","simple-bus";
+ 		#address-cells = <2>;
+ 		#size-cells = <1>;
+ 		ranges = <0 0 0xfc000000 0x2000000>;
+diff --git a/arch/powerpc/boot/dts/digsy_mtc.dts b/arch/powerpc/boot/dts/digsy_mtc.dts
+index f0592de..3147b98 100644
+--- a/arch/powerpc/boot/dts/digsy_mtc.dts
++++ b/arch/powerpc/boot/dts/digsy_mtc.dts
+@@ -218,7 +218,7 @@
+ 	};
+ 
+ 	localbus {
+-		compatible = "fsl,mpc5200b-lpb","simple-bus";
++		compatible = "fsl,mpc5200b-lpb","fsl,mpc5200-lpb","simple-bus";
+ 		#address-cells = <2>;
+ 		#size-cells = <1>;
+ 		ranges = <0 0 0xff000000 0x1000000>;
 diff --git a/arch/powerpc/boot/dts/media5200.dts b/arch/powerpc/boot/dts/media5200.dts
-index a70ef68..e027f45 100644
+index e027f45..861f09f 100644
 --- a/arch/powerpc/boot/dts/media5200.dts
 +++ b/arch/powerpc/boot/dts/media5200.dts
-@@ -185,8 +185,6 @@
- 		// PSC6 in uart mode
- 		console: psc@2c00 {		// PSC6
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
--			cell-index = <5>;
--			port-number = <0>;  // Logical port assignment
- 			reg = <0x2c00 0x100>;
- 			interrupts = <2 4 0>;
- 		};
+@@ -270,7 +270,7 @@
+ 	};
+ 
+ 	localbus {
+-		compatible = "fsl,mpc5200b-lpb","simple-bus";
++		compatible = "fsl,mpc5200b-lpb","fsl,mpc5200-lpb","simple-bus";
+ 		#address-cells = <2>;
+ 		#size-cells = <1>;
+ 
 diff --git a/arch/powerpc/boot/dts/motionpro.dts b/arch/powerpc/boot/dts/motionpro.dts
-index f6261ea..3ab4666 100644
+index 3ab4666..97cb085 100644
 --- a/arch/powerpc/boot/dts/motionpro.dts
 +++ b/arch/powerpc/boot/dts/motionpro.dts
-@@ -277,8 +277,6 @@
- 			reg = <0 0 0x01000000>;
- 			bank-width = <2>;
- 			device-width = <2>;
--			#size-cells = <1>;
--			#address-cells = <1>;
- 		};
+@@ -236,7 +236,7 @@
  	};
- };
-diff --git a/arch/powerpc/boot/dts/pcm030.dts b/arch/powerpc/boot/dts/pcm030.dts
-index 3a4f554..f3e30bb 100644
---- a/arch/powerpc/boot/dts/pcm030.dts
-+++ b/arch/powerpc/boot/dts/pcm030.dts
-@@ -196,7 +196,6 @@
  
- 		psc@2400 { /* PSC3 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
--			cell-index = <2>;
- 			reg = <0x2400 0x100>;
- 			interrupts = <2 3 0>;
- 		};
-@@ -207,7 +206,6 @@
- 
- 		psc@2c00 { /* PSC6 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
--			cell-index = <5>;
- 			reg = <0x2c00 0x100>;
- 			interrupts = <2 4 0>;
- 		};
-diff --git a/arch/powerpc/boot/dts/pcm032.dts b/arch/powerpc/boot/dts/pcm032.dts
-index 17596c7..e0f2702 100644
---- a/arch/powerpc/boot/dts/pcm032.dts
-+++ b/arch/powerpc/boot/dts/pcm032.dts
-@@ -196,7 +196,6 @@
- 
- 		psc@2400 { /* PSC3 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
--			cell-index = <2>;
- 			reg = <0x2400 0x100>;
- 			interrupts = <2 3 0>;
- 		};
-@@ -207,7 +206,6 @@
- 
- 		psc@2c00 { /* PSC6 in UART mode */
- 			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
--			cell-index = <5>;
- 			reg = <0x2c00 0x100>;
- 			interrupts = <2 4 0>;
- 		};
+ 	localbus {
+-		compatible = "fsl,mpc5200b-lpb","simple-bus";
++		compatible = "fsl,mpc5200b-lpb","fsl,mpc5200-lpb","simple-bus";
+ 		#address-cells = <2>;
+ 		#size-cells = <1>;
+ 		ranges = <0 0 0xff000000 0x01000000
 
