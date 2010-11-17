@@ -1,83 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab0KQNYO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 08:24:14 -0500
-Received: from elasmtp-scoter.atl.sa.earthlink.net ([209.86.89.67]:35242 "EHLO
-	elasmtp-scoter.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754390Ab0KQNYN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 08:24:13 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=sCxzq8f4e9SgcpMKkRxr1Dv/FsVy3pBYP7J/zSwZO5ha6G/KWJ5AYqOrZqIIBN2e;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4CE3D763.9020904@earthlink.net>
-Date: Wed, 17 Nov 2010 08:23:47 -0500
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: Lennart Poettering <mzxreary@0pointer.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
+	id S1757716Ab0KQNYd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 08:24:33 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:43255 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757488Ab0KQNYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 08:24:32 -0500
+Date: Wed, 17 Nov 2010 14:24:04 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: "Ted Ts'o" <tytso@mit.edu>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-References: <1289916171.5169.117.camel@maggy.simson.net> <1289916683.2109.625.camel@laptop> <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com> <20101116170312.GA19327@tango.0pointer.de> <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com> <20101116181603.GC19327@tango.0pointer.de> <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com> <alpine.DEB.2.00.1011161058180.3718@asgard.lang.hm> <20101116203306.GE27235@tango.0pointer.de> <AANLkTimC_TWzKET-aabYK0TPG6fUUW06HDej6iOzYtKo@mail.gmail.com> <20101116211431.GA15211@tango.0pointer.de>
-In-Reply-To: <20101116211431.GA15211@tango.0pointer.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec79160a541a2d7b296c80d18cdac53540d3350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.66
+        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+Message-ID: <20101117132404.GF27063@elte.hu>
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
+ <20101117013700.GA3290@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101117013700.GA3290@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2010 04:14 PM, Lennart Poettering wrote:
-> On Tue, 16.11.10 12:38, Linus Torvalds (torvalds@linux-foundation.org) wrote:
->
->    
->> On Tue, Nov 16, 2010 at 12:33 PM, Lennart Poettering
->> <mzxreary@0pointer.de>  wrote:
->>      
->>> No you don't. Because that is not a desktop use case.
->>>        
->> See my other response. You don't care AT ALL, because by your
->> judgement, all desktop is is a web browser and a word processor.
->>      
-> Well, I do care. But I care more about *real* problems. For example the
-> fact that "updatedb" makes your system sluggish while it runs. Or
-> "man-db". Or anything else that runs from cron in the background.
->
-> Doing this tty dance won't help you much with background tasks such as
-> man-db, updatedb and cron and its jobs, will it? They don't have
-> ttys. Sorry for you. meh! Meh! meh! meh! meh!
->
-> (And along comes systemd, which actually handles this properly, since it
-> actually has a proper notion of what a service is, and what a session
-> is, and what an app is. And which hence can control all this sanely.)
->
-> Binding this to a tty is just solves a tiny bit of the real problem:
-> i.e. your own use of make -j. End of story.
->
-> Lennart
->
->    
-Oh, you mean real problems like systemd can boot 10 seconds faster. What 
-is 10 seconds when your system is up days or weeks?
 
--- 
+* Ted Ts'o <tytso@mit.edu> wrote:
 
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
+> On Tue, Nov 16, 2010 at 10:04:40PM +0100, Thomas Gleixner wrote:
+> > If you've booted the new kernel you can run 'trace check' to double
+> > check that all events used by the tool are available:
+> > 
+> >  $ trace check
+> > 
+> >  Checking whether the kernel has all required events ...
+> >   ... Checking event  raw_syscalls:sys_enter:r      : ok
+> >   ...
+> >   ... Checking event  sched:sched_stat_runtime:r    : ok
+> >  Good: all required event types are supported by this kernel.
+> >  The 'trace' utility will be fully functional.
+> 
+> For the benefit of people who create tracepoints, what restrictions
+> does trace have with respect to event types, and is this anticipated
+> to change in the future?
 
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
+There are no conceptual restrictions - this v1 version of the tool uses a (small) 
+subset of tracepoints right now.
 
+ext4 tracepoints will be used once someone writes a trace code (or plugin) for it - 
+i think beyond simply displaying that trace data it would also be useful to 
+interpret it to a certain degree? They could also interact with the block events: so 
+we could track which inode (or other ext4 data structure) generates what IO, what 
+the latencies are and which task originated things. We could track what the wait 
+reasons are.
 
+At that point (when ext4 event support is added) we'd add 'trace check' test as 
+well, and would generally try to make sure that if distros enable events that all 
+commonly used tracepoints are available as well.
 
+I.e. the long term goal would be to create a widely available tool, which, amongst 
+other things, can be used to record and report ext4 events as well - with no kernel 
+reboots or tool rebuilds required.
+
+> > The combo diffstat of the tool is appended at the end of the mail. The
+> > overwhelming majority of changes is on the tooling side - it uses
+> > existing perf events facilities and features to implement the tool.
+> 
+> What about the filtering and other general features/functionality of
+> ftrace?  Is the anticipation that this will be ported over to perf?
+> What about things like blktrace?
+
+Yeah, i'd love to see all that available. Filtering is available already on the 
+kernel perf event side and could be added as an option.
+
+> Not that I expect all of this will be working with this initial
+> release, but I'm curious about the long-term roadmap of this
+> interface.  (Obviously subject to change as we learn more, etc.  But
+> I'd love to hear what your current thoughts and plans are.)
+>
+> P.S.  What about sysrq-z?  Is that going to stay with ftrace side of
+> the tracing architecture?
+
+What we are working towards is to unify the whole tracing infrastructure. IMHO it's 
+not really acceptable that there is an 'ftrace side' and a 'perf side', with feature 
+overlap and feature mismatch and general confusion.
+
+Thanks,
+
+	Ingo
