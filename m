@@ -1,38 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934589Ab0KQINz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 03:13:55 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57356 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934523Ab0KQINx (ORCPT
+	id S934587Ab0KQIQp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 03:16:45 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:2033 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934513Ab0KQIQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 03:13:53 -0500
+	Wed, 17 Nov 2010 03:16:44 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=DpKEDpteZPDqOIl1VzHrO9t9fMxD1jPl7DAPjALQVXJeEazqOUiTncu5L9p8Q4vh2e
-         oBBAjtRuwJTGCvp5Gn5L928PgJOdQNECo9Jai2ClMS3HaLH/5xOEyZQRDStSz6TKUr6J
-         OyejCv6E0XgV7gY/oPcnn5CKyRYs4yKWzaFJQ=
-Message-ID: <4CE38EBD.2040606@garzik.org>
-Date: Wed, 17 Nov 2010 03:13:49 -0500
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=VjXseaWnTYN6mEiG/ayK7QXwGWcf6XYkAT84nW/jme+tupLQc6MXfFJbgXcv0NiI4y
+         VJfrgCUITI2UtXiQNO2A==
+Date: Wed, 17 Nov 2010 00:16:34 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shaohui Zheng <shaohui.zheng@intel.com>
+cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [1/8,v3] NUMA Hotplug Emulator: add function to hide memory
+ region via e820 table.
+In-Reply-To: <20101117021000.479272928@intel.com>
+Message-ID: <alpine.DEB.2.00.1011162354390.16875@chino.kir.corp.google.com>
+References: <20101117020759.016741414@intel.com> <20101117021000.479272928@intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] libata: remove unlock+relock cycle in ata_scsi_queuecmd
-References: <20101117062958.GA2894@havoc.gtf.org> <AANLkTikQysiwSV_m38vKaEuPQ=NH10o2s69d=aNGOhLr@mail.gmail.com> <4CE38D70.4010507@garzik.org>
-In-Reply-To: <4CE38D70.4010507@garzik.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2010 03:08 AM, Jeff Garzik wrote:
-> So maybe an EH expert (Tejun?) can correct me here, but I think we may
-> be able to completely the lock/get-serial/unlock sequence from libata,
-		^^^ er, completely remove
+On Wed, 17 Nov 2010, shaohui.zheng@intel.com wrote:
 
+> Index: linux-hpe4/arch/x86/kernel/e820.c
+> ===================================================================
+> --- linux-hpe4.orig/arch/x86/kernel/e820.c	2010-11-15 17:13:02.483461667 +0800
+> +++ linux-hpe4/arch/x86/kernel/e820.c	2010-11-15 17:13:07.083461581 +0800
+> @@ -971,6 +971,7 @@
+>  }
+>  
+>  static int userdef __initdata;
+> +static u64 max_mem_size __initdata = ULLONG_MAX;
+>  
+>  /* "mem=nopentium" disables the 4MB page tables. */
+>  static int __init parse_memopt(char *p)
+> @@ -989,12 +990,28 @@
+>  
+>  	userdef = 1;
+>  	mem_size = memparse(p, &p);
+> -	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
+> +	e820_remove_range(mem_size, max_mem_size - mem_size, E820_RAM, 1);
+> +	max_mem_size = mem_size;
+>  
+>  	return 0;
+>  }
+
+This needs memmap= support as well, right?
+
+>  early_param("mem", parse_memopt);
+>  
+> +#ifdef CONFIG_NODE_HOTPLUG_EMU
+> +u64 __init e820_hide_mem(u64 mem_size)
+> +{
+> +	u64 start, end_pfn;
+> +
+> +	userdef = 1;
+> +	end_pfn = e820_end_of_ram_pfn();
+> +	start = (end_pfn << PAGE_SHIFT) - mem_size;
+> +	e820_remove_range(start, max_mem_size - start, E820_RAM, 1);
+> +	max_mem_size = start;
+> +
+> +	return start;
+> +}
+> +#endif
+
+This doesn't have any sanity checking for whether e820_remove_range() will 
+leave any significant amount of memory behind so the kernel will even boot 
+(probably should have a guaranteed FAKE_NODE_MIN_SIZE left behind?).
+
+> +
+>  static int __init parse_memmap_opt(char *p)
+>  {
+>  	char *oldp;
