@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab0KQCWW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 21:22:22 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59247 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab0KQCWT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 21:22:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=aTIWcicxtq0TuaYufe1E+sIcyH0FmkkNtKjnRG0LOS7AAJ05Fxpn5KNpuI3ooESCdw
-         kDOOD7PQtdkHyLDTY1zdV/5rlDSax1D2IkuFJMmqwKzkngQn1XoACD9Rv00Q3+d3+41J
-         oVNc/CIN95vILrcSZmPeQn+a5S+D3Y1ndiIMI=
-Subject: Re: [PATCH] 3c59x: fix build failure on !CONFIG_PCI
-From: Namhyung Kim <namhyung@gmail.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Steffen Klassert <klassert@mathematik.tu-chemnitz.de>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101116091408.abd36ec8.randy.dunlap@oracle.com>
-References: <1289921271-15295-1-git-send-email-namhyung@gmail.com>
-	 <20101116091408.abd36ec8.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Nov 2010 11:22:12 +0900
-Message-ID: <1289960532.1663.24.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1756510Ab0KQC3K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 21:29:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47207 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752370Ab0KQC3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 21:29:07 -0500
+Date: Tue, 16 Nov 2010 21:28:14 -0500
+From: Josef Bacik <josef@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andreas Dilger <adilger@dilger.ca>, Jan Kara <jack@suse.cz>,
+        Josef Bacik <josef@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, cmm@us.ibm.com,
+        cluster-devel@redhat.com, ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
+Message-ID: <20101117022814.GB5618@dhcp231-156.rdu.redhat.com>
+References: <1289840723-3056-1-git-send-email-josef@redhat.com> <1289840723-3056-2-git-send-email-josef@redhat.com> <20101116111611.GA4757@quack.suse.cz> <20101116114346.GB4757@quack.suse.cz> <20101116125249.GB31957@dhcp231-156.rdu.redhat.com> <20101116131451.GH4757@quack.suse.cz> <18ACAA85-8847-4B12-9839-F99FB6C7B3E4@dilger.ca> <20101117021150.GL22876@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101117021150.GL22876@dastard>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-11-16 (화), 09:14 -0800, Randy Dunlap:
-> Hi,
+On Wed, Nov 17, 2010 at 01:11:50PM +1100, Dave Chinner wrote:
+> On Tue, Nov 16, 2010 at 06:22:47PM -0600, Andreas Dilger wrote:
+> > On 2010-11-16, at 07:14, Jan Kara wrote:
+> > >> Yeah I went back and forth on this.  KEEP_SIZE won't change the
+> > >> behavior of PUNCH_HOLE since PUNCH_HOLE implicitly means keep
+> > >> the size.  I figured since its "mode" and not "flags" it would
+> > >> be ok to make either way accepted, but if you prefer PUNCH_HOLE
+> > >> means you have to have KEEP_SIZE set then I'm cool with that,
+> > >> just let me know one way or the other.
+> > > 
+> > > So we call it "mode" but speak about "flags"? Seems a bit
+> > > inconsistent.  I'd maybe lean a bit at the "flags" side and just
+> > > make sure that only one of FALLOC_FL_KEEP_SIZE,
+> > > FALLOC_FL_PUNCH_HOLE is set (interpreting FALLOC_FL_KEEP_SIZE as
+> > > allocate blocks beyond i_size). But I'm not sure what others
+> > > think.
+> > 
+> > IMHO, it makes more sense for consistency and "get what users
+> > expect" that these be treated as flags.  Some users will want
+> > KEEP_SIZE, but in other cases it may make sense that a hole punch
+> > at the end of a file should shrink the file (i.e. the opposite of
+> > an append).
+> 
+> What's wrong with ftruncate() for this?
+> 
+> There's plenty of open questions about the interface if we allow
+> hole punching to change the file size. e.g. where do we set the EOF
+> (offset or offset+len)?  What do we do with the rest of the blocks
+> that are now beyond EOF?  We weren't asked to punch them out, so do
+> we leave them behind? What if we are leaving written blocks beyond
+> EOF - does any filesystem other than XFS support that (i.e. are we
+> introducing different behaviour on different filesystems)?  And what
+> happens if the offset is beyond EOF? Do we extend the file, and if
+> so why wouldn't you just use ftruncate() instead?
+> 
+> IMO, allowing hole punching to change the file size makes it much
+> more complicated and hence less likely to simply do what the user
+> expects. It also is harder to implement and testing becomes much
+> more intricate. From that perspective, it does not seem desirable to
+> me...
 > 
 
-Hi, Randy
+FWIW I agree with Dave, the only question at this point is do we force users to
+specify KEEP_SIZE with PUNCH_HOLE?  On one hand it makes the interface a bit
+more consistent, on the other hand it makes the documentation a little weird
 
+"We have mode here, but if you want to use PUNCH_HOLE you also have to specify
+KEEP_SIZE, so really it's like a flags field it's just named poorly"
 
-> Interesting patch.  I have reported this build error and looked
-> into fixing it, but did not come up with this solution.
-> 
-> Looking at it more:  if CONFIG_PCI is not enabled, DEVICE_PCI() is NULL.
-> That makes VORTEX_PCI() (with or without your patch) have a value of NULL.
-> 
-> Is the line with the reported syntax error (3211) executed in
-> function acpi_set_WOL() ?  If so, let's assume that vp->enable_wol is true.
-> Then what happens on line 3211 (or 3213 after your patch)?
-> 
-> 		if (VORTEX_PCI(vp)->current_state < PCI_D3hot)
-> 			return;
-> 
-> or if I am really confuzed this morning, please tell me how it works.
-> 
+I have no strong opinions the other way so if nobody else does then I'll just do
+it Jan's way.  Thanks,
 
-At first glance, I've noticed that the code above could make a NULL
-dereference so I added NULL check prior to the line.
-
-But after reading more code I realized that other pci-functions called
-in acpi_set_WOL() would not work with NULL pci_dev pointer also. And I
-found all callers of the acpi_set_WOL() already checked NULL pointer
-before the call. Finally I could remove the NULL check and leave the
-code as is. That's how it works. :)
-
-Thanks.
-
--- 
-Regards,
-Namhyung Kim
-
-
+Josef
