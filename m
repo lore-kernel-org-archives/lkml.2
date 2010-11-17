@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934879Ab0KQP7X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:59:23 -0500
-Received: from www.tglx.de ([62.245.132.106]:40586 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934771Ab0KQP7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:59:21 -0500
-Date: Wed, 17 Nov 2010 16:58:08 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Avi Kivity <avi@redhat.com>
-cc: Tom Zanussi <tzanussi@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, "Ted Ts'o" <tytso@mit.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [ANNOUNCE] New utility: 'trace'
-In-Reply-To: <4CE3FB0D.30902@redhat.com>
-Message-ID: <alpine.LFD.2.00.1011171657400.2900@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>  <20101117013700.GA3290@thunk.org> <20101117132404.GF27063@elte.hu>  <1290001128.2109.785.camel@laptop>  <20101117140002.GH27063@elte.hu>  <1290003110.2109.822.camel@laptop>
- <1290003505.2109.833.camel@laptop>  <alpine.LFD.2.00.1011171529120.2900@localhost6.localdomain6> <1290008466.1921.21.camel@elnicho> <4CE3FB0D.30902@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S934896Ab0KQP7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:59:49 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59593 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934749Ab0KQP7s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 10:59:48 -0500
+Message-ID: <4CE3FBAC.3030503@oracle.com>
+Date: Wed, 17 Nov 2010 07:58:36 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Namhyung Kim <namhyung@gmail.com>
+CC: Steffen Klassert <klassert@mathematik.tu-chemnitz.de>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] 3c59x: fix build failure on !CONFIG_PCI
+References: <1289921271-15295-1-git-send-email-namhyung@gmail.com>	 <20101116091408.abd36ec8.randy.dunlap@oracle.com> <1289960532.1663.24.camel@leonhard>
+In-Reply-To: <1289960532.1663.24.camel@leonhard>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010, Avi Kivity wrote:
-
-> On 11/17/2010 05:41 PM, Tom Zanussi wrote:
-> > 
-> > > The only reason why these filters might make sense is to reduce the
-> > > trace volume on system wide traces in production environments, but
-> > > that's a completely different story. These scenarios can do with the
-> > > dynamic tracepoint stuff and the custom filtering w/o putting the
-> > > burden on the majority of users.
-> > > 
-> > Yeah, in my mind, the main point of the filters was to be a 'blunt
-> > force' instrument preventing userspace from being overwhelmed by events.
-> > The real filtering would happen in userspace with e.g. real scripting
-> > languages.
-> > 
+On 11/16/10 18:22, Namhyung Kim wrote:
+> 2010-11-16 (화), 09:14 -0800, Randy Dunlap:
+>> Hi,
+>>
 > 
-> Filtering is also useful for fine-grained perf events; this cannot be done in
-> userspace.
+> Hi, Randy
+> 
+> 
+>> Interesting patch.  I have reported this build error and looked
+>> into fixing it, but did not come up with this solution.
+>>
+>> Looking at it more:  if CONFIG_PCI is not enabled, DEVICE_PCI() is NULL.
+>> That makes VORTEX_PCI() (with or without your patch) have a value of NULL.
+>>
+>> Is the line with the reported syntax error (3211) executed in
+>> function acpi_set_WOL() ?  If so, let's assume that vp->enable_wol is true.
+>> Then what happens on line 3211 (or 3213 after your patch)?
+>>
+>> 		if (VORTEX_PCI(vp)->current_state < PCI_D3hot)
+>> 			return;
+>>
+>> or if I am really confuzed this morning, please tell me how it works.
+>>
+> 
+> At first glance, I've noticed that the code above could make a NULL
+> dereference so I added NULL check prior to the line.
+> 
+> But after reading more code I realized that other pci-functions called
+> in acpi_set_WOL() would not work with NULL pci_dev pointer also. And I
+> found all callers of the acpi_set_WOL() already checked NULL pointer
+> before the call. Finally I could remove the NULL check and leave the
+> code as is. That's how it works. :)
 
-Could you explain that a bit more detailed please ?
+I see.  and concur.  Thanks for the explanation.
 
-Thanks,
-
-	tglx
- 
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
