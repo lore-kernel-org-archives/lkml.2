@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933397Ab0KQA7n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 19:59:43 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:42678 "EHLO
+	id S933467Ab0KQA7o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 19:59:44 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:33454 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933255Ab0KQA7l (ORCPT
+	with ESMTP id S933145Ab0KQA7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 16 Nov 2010 19:59:41 -0500
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=OMjBytS-4nIA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=YhI5LnOVfFmIUZmwXNgA:9 a=XVE_omnNDlfU8NuHjEsA:7 a=m5DyE9ssCDCDCSMDpiMGGy-8dM4A:4 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=Vu7YGgH2cqEA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=dEC0tp_7AAAA:8 a=7OewIdkAlKxeLQdx660A:9 a=ptEvIu5V_b7I8X0kcuEA:7 a=OO11_UO4j3pwp2qVx0OlS_ILj_AA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101117005357.024472450@goodmis.org>
+Message-Id: <20101117005939.931158103@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 16 Nov 2010 19:53:57 -0500
+Date: Tue, 16 Nov 2010 19:53:59 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
@@ -22,174 +22,287 @@ Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [RFC][PATCH 0/5] tracing/events: stable tracepoints
+Subject: [RFC][PATCH 2/5] [PATCH 2/5] tracing/events: Add code to (un)register stable events
+References: <20101117005357.024472450@goodmis.org>
+Content-Disposition: inline; filename=0002-tracing-events-Add-code-to-un-register-stable-events.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ RFC ONLY - Not for inclusion ]
+From: Steven Rostedt <srostedt@redhat.com>
 
-As discussed at Kernel Summit, there was some issues about what to
-do with tracepoints.
+Add the framework to create and register stable events.
+To create a stable event, add a file into:
 
-Basically, anyone, anywhere, any developer, can create a tracepoint
-and have it appear in /sys/kernel/debug/tracing/events/...
+  include/trace/stable/myfile.h
 
-These events automatically appear in both perf and ftrace as events.
-And any tool can tap into them. That's where the problem rises.
+With the following format:
 
-What happens when a tool starts to depend on a tracepoint?
-Will that tracepoint always be there? Will it ever change?
+  STABLE_EVENT(myevent,
 
-The problem also extends to the fact that we can't guarantee that
-tracepoints will stay as is. There are literally hundreds of
-tracepoints, and they are used by developers to have in field
-debugging tools. As the kernel changes, so will these tracepoints.
-A developer can use these to ask a customer that has run into some
-problem to enable a trace and send the developer back the trace
-so they can go off and analyze it.
+	EVENT_STRUCT(
+		__field(type, item)
+		__array(type, item, count)
+	)
+  )
 
-But for tools, this is a different story. They want and depend on
-a tracepoint to be stable. If it changes under them, then it makes
-tracepoints completely useless for tools.
+This will create the function prototype:
 
-This patch series is a start and RFC for the creation of
-stable tracepoints. I will now call the current tracepoints raw
-or in-field-debugging tracepoints or events. What I call stable tracepoints
-are those that are to answer questions about the OS and not for
-a developer to debug their code.
+ typedef void (*trace_proto_myevent)(type item, type *item);
 
-What I propose is to create a new format and a new filesystem called
-eventfs. Like debugfs, when enabled, a directory will be created:
+And the functions:
 
-  /sys/kernel/events
+ int register_stable_trace_myevent(trace_proto_myevent func, void *data);
+ void unregister_stable_trace_myevent(trace_proto_myevent func, void *data);
 
-Which would be the normal place to mount the eventfs filesystem.
+This will allow developers to register a callback of a stable event.
 
-The old format for events looked like this:
+The stable events must have a matching raw (in field debugging)
+trace event. Although, only the names must match, the information
+in the stable event is just a subset of the information that can
+be extracted from the raw event.
 
-$ cat /debug/tracing/events/sched/sched_switch/format 
-name: sched_switch
-ID: 57
-format:
-	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
-	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
-	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
-	field:int common_pid;	offset:4;	size:4;	signed:1;
-	field:int common_lock_depth;	offset:8;	size:4;	signed:1;
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/trace/stable.h      |   72 +++++++++++++++++++++++++++++++++++++++
+ include/trace/stable_list.h |    2 +
+ kernel/Makefile             |    1 +
+ kernel/events/Makefile      |    1 +
+ kernel/events/event_reg.h   |   79 +++++++++++++++++++++++++++++++++++++++++++
+ kernel/events/events.c      |   16 +++++++++
+ kernel/trace/Kconfig        |    1 +
+ 7 files changed, 172 insertions(+), 0 deletions(-)
+ create mode 100644 include/trace/stable.h
+ create mode 100644 include/trace/stable_list.h
+ create mode 100644 kernel/events/Makefile
+ create mode 100644 kernel/events/event_reg.h
+ create mode 100644 kernel/events/events.c
 
-	field:char prev_comm[TASK_COMM_LEN];	offset:12;	size:16;	signed:1;
-	field:pid_t prev_pid;	offset:28;	size:4;	signed:1;
-	field:int prev_prio;	offset:32;	size:4;	signed:1;
-	field:long prev_state;	offset:40;	size:8;	signed:1;
-	field:char next_comm[TASK_COMM_LEN];	offset:48;	size:16;	signed:1;
-	field:pid_t next_pid;	offset:64;	size:4;	signed:1;
-	field:int next_prio;	offset:68;	size:4;	signed:1;
+diff --git a/include/trace/stable.h b/include/trace/stable.h
+new file mode 100644
+index 0000000..ee10f41
+--- /dev/null
++++ b/include/trace/stable.h
+@@ -0,0 +1,72 @@
++#ifndef _TRACE_STABLE_H
++#define _TRACE_STABLE_H
++/*
++ * stable.h - create structure and format for stable events
++ *
++ * Copyright (C) 2010 Steven Rostedt <srostedt@redhat.com>, Red Hat Inc
++ *
++ * This file creates the registering function prototypes
++ * to hook to the stable events and the function prototypes of those
++ * hooks.
++ *
++ * The stable events themselves reside in the directory:
++ *   include/trace/stable/
++ *
++ * Each of these files must be added to the header:
++ *   include/trace/stable_list.
++ *
++ * Code that registers and unregisters stable events only needs
++ * to include this file:
++ *   #include <trace/stable.h>
++ *
++ * and all the stable structures and registering functions will
++ * also be included for all stable events.
++ *
++ * The current elements that can be used by stable events are:
++ *
++ *    __field(type, item)
++ *    __array(type, time, size)
++ *
++ *  Example:
++ *   STABLE_EVENT(myevent,
++ * 	EVENT_STRUCT(
++ *      __field(	pid_t,		pid			)
++ *      __array(	char,		comm,	TASK_COMM_LEN	)
++ *	)
++ *   )
++ *
++ * The above would create the following:
++ *
++ *  typedef void (*trace_proto_myevent)(pid_t pid, char comm[TASK_COMM_LEN]);
++ *  int register_stable_trace_myevent(trace_proto_myevent func, void *data);
++ *  void unregister_stable_trace_myevent(trace_proto_myevent func, void *data);
++ *
++ * These functions will be created in kernel/events/events.c
++ */
++
++#define STABLE_HEADER_MULTI_READ
++
++#undef __SEP__
++#define __SEP__ ,
++
++#undef __field
++#define __field(type, item)				type item
++
++#undef __array
++#define __array(type, item, size)			type *item
++
++#undef EVENT_STRUCT
++#define EVENT_STRUCT(s)	s
++
++#undef STABLE_EVENT
++#define STABLE_EVENT(name, estruct)					\
++	typedef void (*trace_proto_##name)(void *data, estruct);	\
++	int register_stable_trace_##name(trace_proto_##name func, void *data); \
++	void unregister_stable_trace_##name(trace_proto_##name func, void *data)
++
++/* New stable defines must be added here */
++#include <trace/stable_list.h>
++
++#undef STABLE_HEADER_MULTI_READ
++
++#endif /* _TRACE_STABLE_H */
+diff --git a/include/trace/stable_list.h b/include/trace/stable_list.h
+new file mode 100644
+index 0000000..996932a
+--- /dev/null
++++ b/include/trace/stable_list.h
+@@ -0,0 +1,2 @@
++
++/* New stable defines must be added here */
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 0b5ff08..8c1cbbd 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -106,6 +106,7 @@ obj-$(CONFIG_PERF_EVENTS) += perf_event.o
+ obj-$(CONFIG_HAVE_HW_BREAKPOINT) += hw_breakpoint.o
+ obj-$(CONFIG_USER_RETURN_NOTIFIER) += user-return-notifier.o
+ obj-$(CONFIG_PADATA) += padata.o
++obj-y += events/
+ 
+ ifneq ($(CONFIG_SCHED_OMIT_FRAME_POINTER),y)
+ # According to Alan Modra <alan@linuxcare.com.au>, the -fno-omit-frame-pointer is
+diff --git a/kernel/events/Makefile b/kernel/events/Makefile
+new file mode 100644
+index 0000000..86fd7c1
+--- /dev/null
++++ b/kernel/events/Makefile
+@@ -0,0 +1 @@
++obj-y += events.o
+diff --git a/kernel/events/event_reg.h b/kernel/events/event_reg.h
+new file mode 100644
+index 0000000..dfe16df
+--- /dev/null
++++ b/kernel/events/event_reg.h
+@@ -0,0 +1,79 @@
++/*
++ * event_reg.h - code to register stable events
++ *
++ * Copyright (C) 2010 Steven Rostedt <srostedt@redhat.com> Red Hat Inc
++ *
++ * Create the registration functions for the stable events:
++ *
++ * int register_stable_trace_##name(func, data);
++ * void unregister_stable_stable_trace_##name(func, data);
++ *
++ * The func is of the format based off of the STABLE_EVENT() structure.
++ * For example:
++ *
++ *   STABLE_EVENT(myevent,
++ * 	EVENT_STRUCT(
++ *      __field(	pid_t,		pid			)
++ *      __array(	char,		comm,	TASK_COMM_LEN	)
++ *	)
++ *   )
++ *
++ *  Will yield a function proto type of:
++ *
++ *  void func(pid_t pid, char *comm, void *data);
++ *
++ * When registering a call back to a stable event, what ever you
++ * pass into data, will be sent to your function in the data field.
++ *
++ * Once you register it, the function will start being called when
++ * the corresponding tracepoint is hit.
++ *
++ * To stop tracing, just unregister the function. Note, both
++ * registering and unregistering must be called from sleepable
++ * context, since those functions may sleep.
++ */
++
++#define STABLE_HEADER_MULTI_READ
++
++#undef __SEP__
++#define __SEP__
++
++#undef __field
++#define __field(type, item)
++
++#undef __array
++#define __array(type, item, size)
++
++#undef STABLE_EVENT
++#define STABLE_EVENT(name, estruct)					\
++static int name##_ref_count;						\
++int register_stable_trace_##name(trace_proto_##name func, void *__data)	\
++{									\
++	int ret;							\
++									\
++	mutex_lock(&stable_event_mutex);				\
++	ret = register_trace_stable_##name(func, __data);		\
++	if (!ret)							\
++		goto out;						\
++									\
++	if (name##_ref_count++ == 0)					\
++		ret = register_trace_##name(hook_##name, NULL);		\
++									\
++ out:									\
++	mutex_unlock(&stable_event_mutex);				\
++	return ret;							\
++}									\
++EXPORT_SYMBOL(register_stable_trace_##name);				\
++									\
++void unregister_stable_trace_##name(trace_proto_##name func, void *__data) \
++{									\
++	mutex_lock(&stable_event_mutex);				\
++	if (--name##_ref_count == 0)					\
++		unregister_trace_##name(hook_##name, NULL);		\
++									\
++	unregister_trace_stable_##name(func, __data);			\
++	mutex_unlock(&stable_event_mutex);				\
++}									\
++EXPORT_SYMBOL(unregister_stable_trace_##name)
++
++#include <trace/stable_list.h>
+diff --git a/kernel/events/events.c b/kernel/events/events.c
+new file mode 100644
+index 0000000..6868bf1
+--- /dev/null
++++ b/kernel/events/events.c
+@@ -0,0 +1,16 @@
++/*
++ * events.c - code to register stable events
++ *
++ * Copyright (C) 2010 Steven Rostedt <srostedt@redhat.com> Red Hat Inc
++ *
++ * This file holds the hooks that are required to convert
++ * a raw tracepoing into a stable one. The conversion names
++ * must be named: hook_##tracepoint_name.
++ */
++#include <linux/tracepoint.h>
++#include <linux/module.h>
++#include <trace/stable.h>
++
++static struct mutex stable_event_mutex;
++
++#include "event_reg.h"
+diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
+index e04b8bc..0533182 100644
+--- a/kernel/trace/Kconfig
++++ b/kernel/trace/Kconfig
+@@ -94,6 +94,7 @@ config TRACING
+ 	select NOP_TRACER
+ 	select BINARY_PRINTF
+ 	select EVENT_TRACING
++	select EVENT_FS
+ 
+ config GENERIC_TRACER
+ 	bool
+-- 
+1.7.1
 
-print fmt: "prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s ==> next_comm=%s next_pid=%d next_prio=%d", REC->prev_comm, REC->prev_pid, REC->prev_prio, REC->prev_state ? __print_flags(REC->prev_state, "|", { 1, "S"} , { 2, "D" }, { 4, "T" }, { 8, "t" }, { 16, "Z" }, { 32, "X" }, { 64, "x" }, { 128, "W" }) : "R", REC->next_comm, REC->next_pid, REC->next_prio
 
-
-The "common" fields were ftrace (and because perf attached to it, also perf)
-specific. Also the size is in bytes, which would limit the ability
-to use bit fields. We also don't know about arch specific alignment
-that may be needed to write to these fields.
-
-We also have name (redundant), ID (should be agnostic), and print_fmt
-(lots of issues).
-
-So the new format looks like this:
-
-[root@bxf ~]# cat /sys/kernel/event/sched_switch/format 
-	array:prev_comm	type:char	size:8	count:16	align:1	signed:1;
-	field:prev_pid	type:pid_t	size:32	align:4	signed:1;
-	field:prev_state	type:char	size:8	align:1	signed:1;
-	array:next_comm	type:char	size:8	count:16	align:1	signed:1;
-	field:next_pid	type:pid_t	size:32	align:4	signed:1;
-
-
-Some notes:
-
-o  The size is in bits.
-o  We added an align, that is the natural alignment for the arch of that
-   type.
-o  We added an "array" type, that specifies the size of an element as
-   well as a "count", where total size can be align(size) * count.
-o  We separated the field name from the type.
-
-Not in this series, but for future (after we agree on all this) I would
-like to move the raw tracepoints into /debug/events/... and have the
-same format as here.
-
-This patch series uses some of the same tricks as the TRACE_EVENT() code.
-It has magic macros to do all the redundant code. But it has a bit
-of manual work.
-
-Right now, when a STABLE_EVENT() is created, the format appears.
-But nothing hooks into it yet. perf, trace, or ftrace could register
-a handle that is created, either manually, or it can use the same
-magic macro tricks to automate all the stable events. The design has
-been made to allow for that too.
-
-The last two patches create two stable tracepoints. sched_switch
-and sched_migrate_task (for examples as well as to get the ball rolling).
-As you may have already noticed, there is currently no hierarchy with
-the stable events. We want to limit the # of stable events, as they
-should only be created to help answer general questions about the OS.
-All events reside at the top layer of the eventfs filesystem.
-(I do not plan on doing this for the raw events though).
-
-Another note is that all stable events need a corresponding raw event.
-The raw event does not need to be of the same format as the stable
-event, it just needs to provide all the information that the stable
-event needs, but the raw event may supply much more. This should
-not be a problem, since the tracepoint that represents a stable event
-should, by definition, always be stable :-)
-
-Because the stable events piggy back on top of the raw events, the
-trace_...() function in the kernel can be used by both. No changes
-are needed there. As long as there's already a tracepoint
-represented by a raw event, a stable event can be placed on top.
-
-The raw event may change at anytime, as long as it always supplies
-the stable event with what is needed. It will require the hooks
-between them to be updated. The way tracepoints work, if they become
-out of sync, the code will fail to compile.
-
-Time to get out the hose!
-
--- Steve
-
-
-The following patches are in:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-
-    branch: rfc/events
-
-
-Steven Rostedt (5):
-      events: Add EVENT_FS the event filesystem
-      tracing/events: Add code to (un)register stable events
-      tracing/events: Add infrastructure to show stable event formats
-      tracing/events: Add stable event sched_switch
-      tracing/events: Add sched_migrate_task stable event
-
-----
- fs/Kconfig                   |    6 +
- fs/Makefile                  |    1 +
- fs/eventfs/Makefile          |    4 +
- fs/eventfs/file.c            |   53 +++++
- fs/eventfs/inode.c           |  433 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/eventfs.h      |   83 ++++++++
- include/linux/magic.h        |    3 +-
- include/trace/stable.h       |   72 +++++++
- include/trace/stable/sched.h |   33 ++++
- include/trace/stable_list.h  |    3 +
- kernel/Makefile              |    1 +
- kernel/events/Makefile       |    1 +
- kernel/events/event_format.c |   74 +++++++
- kernel/events/event_format.h |   64 ++++++
- kernel/events/event_reg.h    |   79 ++++++++
- kernel/events/events.c       |   48 +++++
- kernel/trace/Kconfig         |    1 +
- 17 files changed, 958 insertions(+), 1 deletions(-)
