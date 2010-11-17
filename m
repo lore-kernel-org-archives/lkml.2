@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933998Ab0KQPFf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:05:35 -0500
-Received: from usindmx04.hds.com ([207.126.252.15]:38754 "EHLO
-	usindmx04.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757034Ab0KQPFe (ORCPT
+	id S934685Ab0KQPHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:07:52 -0500
+Received: from usindmx01.hds.com ([207.126.252.12]:56105 "EHLO
+	usindmx01.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758094Ab0KQPHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:05:34 -0500
+	Wed, 17 Nov 2010 10:07:51 -0500
 From: Seiji Aguchi <seiji.aguchi@hds.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
         "Artem.Bityutskiy@nokia.com" <Artem.Bityutskiy@nokia.com>,
@@ -28,16 +28,13 @@ CC: "dle-develop@lists.sourceforge.net"
 	<dle-develop@lists.sourceforge.net>,
         Satoru Moriya <satoru.moriya@hds.com>,
         Seiji Aguchi <seiji.aguchi@hds.com>
-Date: Wed, 17 Nov 2010 10:03:16 -0500
-Subject: [PATCH 2/2] kmsg_dump: adding to reboot, halt, poweroff and
+Date: Wed, 17 Nov 2010 09:58:18 -0500
+Subject: [PATCH 0/2] kmsg_dump: adding to reboot, halt, poweroff and
  emergency_restart path
-Thread-Topic: [PATCH 2/2] kmsg_dump: adding to reboot, halt, poweroff and
+Thread-Topic: [PATCH 0/2] kmsg_dump: adding to reboot, halt, poweroff and
  emergency_restart path
-Thread-Index: AcuGZI2/m1RrdnFLRB6WCVKdkLnjOgAADLkQAADI5ZAAABVCIA==
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2FE@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2F5@USINDEVS01.corp.hds.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2FA@USINDEVS01.corp.hds.com>
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2FA@USINDEVS01.corp.hds.com>
+Thread-Index: AcuGZI2/m1RrdnFLRB6WCVKdkLnjOgAADLkQ
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2F5@USINDEVS01.corp.hds.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -49,99 +46,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oAHF5jSL004486
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oAHF85UK004490
 
- We need to know the reason why system rebooted in support service.
- However, we can't inform our customers of the reason because
- final messages are lost on current Linux kernel.
- 
- This patch improves the situation above because the final messages 
- are saved by adding kmsg_dump() to reboot, halt, poweroff and 
- emergency_restart path.
+Hi,
 
- Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+This series aims to develop logging facility for enterprise use.
 
----
- include/linux/kmsg_dump.h |    4 ++++
- kernel/printk.c           |    4 ++++
- kernel/sys.c              |    6 ++++++
- 3 files changed, 14 insertions(+), 0 deletions(-)
+It is important to save kernel messages reliably on enterprise system 
+because they are helpful for diagnosing system.
 
-diff --git a/include/linux/kmsg_dump.h b/include/linux/kmsg_dump.h
-index 24b4414..2a0d7d6 100644
---- a/include/linux/kmsg_dump.h
-+++ b/include/linux/kmsg_dump.h
-@@ -18,6 +18,10 @@ enum kmsg_dump_reason {
- 	KMSG_DUMP_OOPS,
- 	KMSG_DUMP_PANIC,
- 	KMSG_DUMP_KEXEC,
-+	KMSG_DUMP_RESTART,
-+	KMSG_DUMP_HALT,
-+	KMSG_DUMP_POWEROFF,
-+	KMSG_DUMP_EMERG,
- };
+This series add kmsg_dump() to the paths loosing kernel messages.
+The use case is the following.
+
+[Use case of reboot/poweroff/halt/emergency_restart]
+
+ My company has often experienced the followings in our support service.
+ - Customer's system suddenly reboots.
+ - Customers ask us to investigate the reason of the reboot.
+
+ We recognize the fact itself because boot messages remain in /var/log/messages.
+ However, we can't investigate the reason why the system rebooted,  because the last messages don't remain.
+ And off course we can't explain the reason.
  
- /**
-diff --git a/kernel/printk.c b/kernel/printk.c
-index b2ebaee..c5648b4 100644
---- a/kernel/printk.c
-+++ b/kernel/printk.c
-@@ -1516,6 +1516,10 @@ static const char * const kmsg_reasons[] = {
- 	[KMSG_DUMP_OOPS]	= "oops",
- 	[KMSG_DUMP_PANIC]	= "panic",
- 	[KMSG_DUMP_KEXEC]	= "kexec",
-+	[KMSG_DUMP_RESTART]	= "restart",
-+	[KMSG_DUMP_HALT]	= "halt",
-+	[KMSG_DUMP_POWEROFF]	= "poweroff",
-+	[KMSG_DUMP_EMERG]	= "emergency_restart",
- };
  
- static const char *kmsg_to_str(enum kmsg_dump_reason reason)
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 7f5a0cd..3eab886 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -43,6 +43,8 @@
- #include <linux/kprobes.h>
- #include <linux/user_namespace.h>
- 
-+#include <linux/kmsg_dump.h>
-+
- #include <asm/uaccess.h>
- #include <asm/io.h>
- #include <asm/unistd.h>
-@@ -285,6 +287,7 @@ out_unlock:
-  */
- void emergency_restart(void)
- {
-+	kmsg_dump(KMSG_DUMP_EMERG);
- 	machine_emergency_restart();
- }
- EXPORT_SYMBOL_GPL(emergency_restart);
-@@ -312,6 +315,7 @@ void kernel_restart(char *cmd)
- 		printk(KERN_EMERG "Restarting system.\n");
- 	else
- 		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
-+	kmsg_dump(KMSG_DUMP_RESTART);
- 	machine_restart(cmd);
- }
- EXPORT_SYMBOL_GPL(kernel_restart);
-@@ -333,6 +337,7 @@ void kernel_halt(void)
- 	kernel_shutdown_prepare(SYSTEM_HALT);
- 	sysdev_shutdown();
- 	printk(KERN_EMERG "System halted.\n");
-+	kmsg_dump(KMSG_DUMP_HALT);
- 	machine_halt();
- }
- 
-@@ -351,6 +356,7 @@ void kernel_power_off(void)
- 	disable_nonboot_cpus();
- 	sysdev_shutdown();
- 	printk(KERN_EMERG "Power down.\n");
-+	kmsg_dump(KMSG_DUMP_POWEROFF);
- 	machine_power_off();
- }
- EXPORT_SYMBOL_GPL(kernel_power_off);
--- 
-1.7.2.2
+ We can solve above problem with this patch as follows.
+ Case1: reboot with command 
+   - We can see "Restarting system with command:" or ""Restarting system.".
+
+ Case2: halt with command
+   - We can see "System halted.".
+
+ Case3: poweroff with command
+   - We can see " Power down.".
+
+ Case4: emergency_restart with sysrq.
+   - We can see "Sysrq:" outputted in __handle_sysrq().
+
+ Case5: emergency_restart with softdog.
+   - We can see "Initiating system reboot" in watchdog_fire().
+
+ So, we can distinguish the reason of reboot, poweroff, halt and emergency_restart.
+
+ If customer executed reboot command, you may think the customer should know the fact.
+ However, they often claim they don't execute the command when they rebooted system by mistake.
+
+ No evidential message remain on current Linux kernel, so we can't show the proof to the customer.
+ This patch improves this situation.
+
+
+The first patch alters mtdoops and ramoops to perform their actions only for KMSG_DUMP_PANIC,
+KMSG_DUMP_OOPS and KMSG_DUMP_KEXEC because they would like to log crashes only.
+
+The latter patch adds kmsg_dump() to reboot, halt, poweroff and emergency_restart path.
+
 ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
