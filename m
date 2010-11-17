@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934756Ab0KQOmL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 09:42:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46753 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934737Ab0KQOmI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 09:42:08 -0500
-Subject: Re: [ANNOUNCE] New utility: 'trace'
-From: Peter Zijlstra <peterz@infradead.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>, "Ted Ts'o" <tytso@mit.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
+	id S933672Ab0KQO6g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 09:58:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25326 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757404Ab0KQO6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 09:58:35 -0500
+Date: Wed, 17 Nov 2010 09:57:13 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Lennart Poettering <mzxreary@0pointer.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-In-Reply-To: <alpine.LFD.2.00.1011171529120.2900@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
-	 <20101117013700.GA3290@thunk.org> <20101117132404.GF27063@elte.hu>
-	 <1290001128.2109.785.camel@laptop>  <20101117140002.GH27063@elte.hu>
-	 <1290003110.2109.822.camel@laptop> <1290003505.2109.833.camel@laptop>
-	 <alpine.LFD.2.00.1011171529120.2900@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 17 Nov 2010 15:41:46 +0100
-Message-ID: <1290004906.2109.861.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101117145712.GA29892@redhat.com>
+References: <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+ <20101116181603.GC19327@tango.0pointer.de>
+ <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+ <20101116202839.GC27235@tango.0pointer.de>
+ <20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
+ <AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
+ <20101116211909.GB16589@tango.0pointer.de>
+ <20101116233934.GC1568@thunk.org>
+ <20101117002159.GA3184@tango.0pointer.de>
+ <20101117020626.GB3290@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101117020626.GB3290@thunk.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 15:37 +0100, Thomas Gleixner wrote:
+On Tue, Nov 16, 2010 at 09:06:26PM -0500, Ted Ts'o wrote:
+> On Wed, Nov 17, 2010 at 01:21:59AM +0100, Lennart Poettering wrote:
+> > > I think you really want to make this be something which the
+> > > application can specify by default that they should start in their own
+> > > cgroup.  One idea might be to it to the applications menu entry:
+> > > 
+> > > http://standards.freedesktop.org/desktop-entry-spec/latest/
+> > > 
+> > > ... so there would be a new key value pair, "start_in_cgroup", that
+> > > would allow the user to start an application in their own cgroup.  It
+> > > would be up to the desktop launcher to honor that if it was present.
+> > 
+> > This is pretty much in line with what I want to do, except I want
+> > opt-out, not opt-in behaviour here.
 > 
-> The only reason why these filters might make sense is to reduce the
-> trace volume on system wide traces in production environments, but
-> that's a completely different story. These scenarios can do with the
-> dynamic tracepoint stuff and the custom filtering w/o putting the
-> burden on the majority of users. 
+> That works for me.  One suggestion is that in addition to "opt-out",
+> it should be also possible for an application launcher file to specify
+> a specific cgroup name that should be used.  That would allow multiple
+> applications in a group to assigned to the same cgroup.
 
-I've been hearing people claim 'enterprise' and custom are like mutually
-exclusive ;-)
+Being able to specify cgroup name/path is a good idea. That way one can
+make use of cgroup hierarchy also.
 
-But yeah, I totally agree, I've never used any of that filter stuff
-either, I always script the post-processing.
+Thinking more about opt-in vs opt-out issue. Generally cgroups provide
+some kind of isolation between application groups and in the process
+can be somewhat expensive. More memory allocation, more accounting overhead
+and for CFQ block controller it can also mean additional idling and can result
+in overall reduced throughput.
+
+Keeping that in mind, is it really a good idea to launch each application
+in a separate group. Will it be better to let user decide if the
+application should be launched in a separate cgroup? 
+
+The flip side is that how many people will really know about the functionality
+and will really launch application in a separate group. And may be it is
+a good idea to put everybody in a seprate cgroup by default even it means
+some cost so that if a application starts consuming too much of resources
+(make -j64), then its impact on rest of the groups can be contained.
+
+I really don't have strong inclination for one over other. Just thinking
+loud...
+
+Vivek
