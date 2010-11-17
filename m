@@ -1,123 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759645Ab0KQELU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 23:11:20 -0500
-Received: from mga09.intel.com ([134.134.136.24]:8682 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759251Ab0KQEIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 23:08:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,209,1288594800"; 
-   d="scan'208";a="574571783"
-Message-Id: <20101117035905.642642393@intel.com>
-User-Agent: quilt/0.48-1
-Date: Wed, 17 Nov 2010 11:58:23 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Wu Fengguang <fengguang.wu@intel.com>
-CC: Dave Chinner <david@fromorbit.com>
-CC: Jan Kara <jack@suse.cz>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Rik van Riel <riel@redhat.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Chris Mason <chris.mason@oracle.com>
-CC: Christoph Hellwig <hch@lst.de>
-Cc: linux-mm <linux-mm@kvack.org>
-Cc: <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 02/13] writeback: consolidate variable names in balance_dirty_pages()
+	id S1759701Ab0KQENl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 23:13:41 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:37203 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757615Ab0KQENj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 23:13:39 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinop4_JT4JLtdmWkydPgDDU=TyZNbtiBbgeh1dj@mail.gmail.com>
+References: <AANLkTinop4_JT4JLtdmWkydPgDDU=TyZNbtiBbgeh1dj@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 16 Nov 2010 21:13:17 -0700
+X-Google-Sender-Auth: XobUkEfj4Ol3SH2081s472-ZBzE
+Message-ID: <AANLkTimQtXeCE1Gu4YuPBBZ_J3ieW6Z5JtvzF=hF7pWX@mail.gmail.com>
+Subject: Re: Behavior of BUG() [Was: Re: [PATCH 2/5] of/fdt: add kernel
+ command line option for dtb_compat string]
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
+        dirk.brandewie@gmail.com, linux-arch@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
-References: <20101117035821.000579293@intel.com>
-Content-Disposition: inline; filename=writeback-cleanup-name-merge.patch
+On Tue, Nov 16, 2010 at 8:45 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+> Hi,
+>
+> [CC: list reduced as starting a new thread, most on the context
+> removed as this concern a different issue.]
+>
+> On Tue, Nov 16, 2010 at 7:16 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>> On Tue, Nov 16, 2010 at 3:41 PM,  <dirk.brandewie@gmail.com> wrote:
+>>> From: Dirk Brandewie <dirk.brandewie@gmail.com>
+>>> [...]
+>> The kernel needs to complain *loudly* if this occurs because it
+>> represents a bug.  I'm tempted to say use BUG, but that would halt the
+>> kernel and prevent any possibility of kernel log output.
+>> [...]
+> does it ? if CONFIG_BUG is not enabled and the arch has no define for
+> it, the default does _nothing_:
+>
+> from `include/asm-generic/bug.h':
+>
+> #else /* !CONFIG_BUG */
+> #ifndef HAVE_ARCH_BUG
+> #define BUG() do {} while(0)
+> #endif
+>
+> #ifndef HAVE_ARCH_BUG_ON
+> #define BUG_ON(condition) do { if (condition) ; } while(0)
+> #endif
+> [...]
+>
+> gcc is triggering about ~30 warnings (like [0]) on code path using
+> BUG(). Most of these path assume BUG() will never return, which is not
+> true.
 
-Lots of lenthy tests.. Let's compact the names
+As far as I know, BUG() is not supposed to return.  Period.  The patch
+below is part of the linux-tiny work, and should only ever be used on
+embedded systems where small size is more important than debugability.
 
-	*_dirty = NR_FILE_DIRTY + NR_WRITEBACK + NR_UNSTABLE_NFS
+g.
 
-balance_dirty_pages() only cares about the above dirty sum except
-in one place -- on starting background writeback.
+>
+> The commit message introducing this behavior state:
+>
+> commit c8538a7aa5527d02c7191ac5da124efadf6a2827
+> Author: Matt Mackall <mpm@selenic.com>
+> Date:   Sun May 1 08:59:01 2005 -0700
+>
+>    [PATCH] remove all kernel BUGs
+>
+>    This patch eliminates all kernel BUGs, trims about 35k off the typical
+>    kernel, and makes the system slightly faster.
+>
+>    Signed-off-by: Matt Mackall <mpm@selenic.com>
+>    Signed-off-by: Andrew Morton <akpm@osdl.org>
+>    Signed-off-by: Linus Torvalds <torvalds@osdl.org>
+>
+> [...]
+>
+> +config BUG
+> +       bool "BUG() support" if EMBEDDED
+> +       default y
+> +       help
+> +          Disabling this option eliminates support for BUG and WARN, reducing
+> +          the size of your kernel image and potentially quietly ignoring
+> +          numerous fatal conditions. You should only consider disabling this
+> +          option for embedded systems with no facilities for reporting errors.
+>
+> So how should BUG() been used ?
+>  1) assuming it will never _ever_ return ?
+>  2) assuming it may return ?
+>
+> if (1), its definition has to be changed, if (2) a lot of path have to be fixed.
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/page-writeback.c |   26 ++++++++++++--------------
- 1 file changed, 12 insertions(+), 14 deletions(-)
+The answer is 1).
 
---- linux-next.orig/mm/page-writeback.c	2010-11-15 19:50:16.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-11-15 19:50:27.000000000 +0800
-@@ -461,8 +461,8 @@ unsigned long bdi_dirty_limit(struct bac
- static void balance_dirty_pages(struct address_space *mapping,
- 				unsigned long pages_dirtied)
- {
--	long nr_reclaimable, bdi_nr_reclaimable;
--	long nr_writeback, bdi_nr_writeback;
-+	long nr_reclaimable;
-+	long nr_dirty, bdi_dirty;  /* = file_dirty + writeback + unstable_nfs */
- 	unsigned long background_thresh;
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
-@@ -480,7 +480,7 @@ static void balance_dirty_pages(struct a
- 		 */
- 		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
- 					global_page_state(NR_UNSTABLE_NFS);
--		nr_writeback = global_page_state(NR_WRITEBACK);
-+		nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK);
- 
- 		global_dirty_limits(&background_thresh, &dirty_thresh);
- 
-@@ -489,8 +489,7 @@ static void balance_dirty_pages(struct a
- 		 * catch-up. This avoids (excessively) small writeouts
- 		 * when the bdi limits are ramping up.
- 		 */
--		if (nr_reclaimable + nr_writeback <=
--				(background_thresh + dirty_thresh) / 2)
-+		if (nr_dirty <= (background_thresh + dirty_thresh) / 2)
- 			break;
- 
- 		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
-@@ -507,21 +506,21 @@ static void balance_dirty_pages(struct a
- 		 * deltas.
- 		 */
- 		if (bdi_thresh < 2*bdi_stat_error(bdi)) {
--			bdi_nr_reclaimable = bdi_stat_sum(bdi, BDI_RECLAIMABLE);
--			bdi_nr_writeback = bdi_stat_sum(bdi, BDI_WRITEBACK);
-+			bdi_dirty = bdi_stat_sum(bdi, BDI_RECLAIMABLE) +
-+				    bdi_stat_sum(bdi, BDI_WRITEBACK);
- 		} else {
--			bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
--			bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
-+			bdi_dirty = bdi_stat(bdi, BDI_RECLAIMABLE) +
-+				    bdi_stat(bdi, BDI_WRITEBACK);
- 		}
- 
--		if (bdi_nr_reclaimable + bdi_nr_writeback >= bdi_thresh) {
-+		if (bdi_dirty >= bdi_thresh) {
- 			pause = HZ/10;
- 			goto pause;
- 		}
- 
- 		bw = 100 << 20; /* use static 100MB/s for the moment */
- 
--		bw = bw * (bdi_thresh - (bdi_nr_reclaimable + bdi_nr_writeback));
-+		bw = bw * (bdi_thresh - bdi_dirty);
- 		bw = bw / (bdi_thresh / TASK_SOFT_DIRTY_LIMIT + 1);
- 
- 		pause = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1);
-@@ -537,9 +536,8 @@ pause:
- 		 * bdi or process from holding back light ones; The latter is
- 		 * the last resort safeguard.
- 		 */
--		dirty_exceeded =
--			(bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
--			|| (nr_reclaimable + nr_writeback > dirty_thresh);
-+		dirty_exceeded = (bdi_dirty > bdi_thresh) ||
-+				  (nr_dirty > dirty_thresh);
- 
- 		if (!dirty_exceeded)
- 			break;
-
-
+g.
