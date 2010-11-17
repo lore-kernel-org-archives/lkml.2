@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758911Ab0KQVdF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 16:33:05 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62364 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758137Ab0KQVdD (ORCPT
+	id S935348Ab0KQVeR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 16:34:17 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53301 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752383Ab0KQVeQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 16:33:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=V2cb8Bq3NYn21eJiqu6Ol1wvuhodqHiMcItClKvLNKiQ+khhGvkWQxa54k+A1Jbh+R
-         jNigQhgRBOfIkaKS8A/LGQwTEqBtbCjTHeXDOYmOvu9j/ozmp1bv1YXeV/1vteoDzZe7
-         Yzw0KSQYF15T1ZxWMQEXbGJr67rTRsqGkpnKk=
-Date: Thu, 18 Nov 2010 00:32:46 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Nils Radtke <Nils.Radtke@Think-Future.de>, gregkh@suse.de,
-        kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: wlan-ng: p80211netdev.c cleanup
-Message-ID: <20101117213246.GJ31724@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Nils Radtke <Nils.Radtke@Think-Future.de>, gregkh@suse.de,
-	kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-	linux-kernel@vger.kernel.org
-References: <1284834652-26171-1-git-send-email-lkml@Think-Future.com>
- <20100918204112.GA6236@bicker>
- <20101117145548.GA6794@localhost>
+	Wed, 17 Nov 2010 16:34:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117145548.GA6794@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101117212912.GC26184@shisha.kicks-ass.net>
+References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
+ <22542.1289507293@localhost> <20101111205123.GC10585@shisha.kicks-ass.net>
+ <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
+ <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
+ <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6>
+ <20101117190659.GB26184@shisha.kicks-ass.net> <alpine.DEB.2.00.1011171130210.1595@davide-lnx1>
+ <20101117212912.GC26184@shisha.kicks-ass.net>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 17 Nov 2010 22:34:00 +0100
+Message-ID: <AANLkTi=MgkGsckJ0=K-+vfRMLmwUvJ0D4EY+tSA_N22c@mail.gmail.com>
+Subject: Re: [PATCHv6 0/7] system time changes notification
+To: Alexander Shishkin <virtuoso@slind.org>
+Cc: Davide Libenzi <davidel@xmailserver.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Kyle Moffett <kyle@moffetthome.net>, Valdis.Kletnieks@vt.edu,
+        LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Greg KH <gregkh@suse.de>,
+        Chris Friesen <chris.friesen@genband.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Lennart Poettering <lennart@poettering.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't want to be rude, but it's basically a kernel hacker rule that
-after you introduce a bug (and your last cleanup patch did) that you
-have to fix a bug to make up for it.  One excellent source of easy bugs
-is using static checkers.
+On Wed, Nov 17, 2010 at 22:29, Alexander Shishkin <virtuoso@slind.org> wrote:
+> On Wed, Nov 17, 2010 at 12:42:52PM -0800, Davide Libenzi wrote:
+>> On Wed, 17 Nov 2010, Alexander Shishkin wrote:
+>>
+>> > > But what you folks really want for this stuff is an extension to
+>> > > timerfd as you want to be able to poll, right?
+>> > >
+>> > > So what about the following:
+>> > >
+>> > > Add a new flag TDF_NOTIFY_CLOCK_WAS_SET to the timerfd flags. Now this
+>> > > flag adds the timer to a separate list, which gets woken up when the
+>> > > clock is set.
+>> > >
+>> > > No new syscall, just a few lines of code in fs/timerfd.c and
+>> > > clock_was_set().
+>> > >
+>> > > Thoughts ?
+>> >
+>> > Something like this (sans ugliness)?
+>>
+>> Oh, gosh, please.  This is interface-multiplexing-a-palooza.
+>
+> Thomas made a suggestion, I came up with how it might look like so that
+> pros and cons are clearer to everyone (or at least me) and can be discussed
+> on technical grounds. Code talks, sort of. I'm not convinced that a timer
+> that returns to userspace when the clock changes is such a bad idea, could
+> you please elaborate?
 
-I've found a static checker bug for you.
+I like it.
 
-drivers/staging/comedi/drivers/usbdux.c +1488
-	usbdux_ao_inttrig(38) warn: inconsistent returns sem:&this_usbduxsub->sem:
-	locked (1468) unlocked (1457,1462,1479,1488) 
+It's all bout timers, and timerfd is fine to use, I think. It has
+nothing to do with "system-events", we ask for the timer to serve us,
+but if the *time* changes underneath, we need to know to re-calculate.
 
-Here are some questions to help guide you.
+I think it's simple and fits very well in the current interface.
 
-1)  Does it look like a bug?
-2)  Who introduced the bug and in which commit?
-	Use: "git log -p" and "git blame"
-	If it's a real bug and you fix it, by deductive reasoning that
-	means you are smarter than the person who introduced it.
-3)  What is the return code on line 1468?
-4)  Is it a special case where the caller handles it differently?
-	Use cscope for this.
-	make cscope
-	Use "cscope -d" for speed.
-	Configure vim to use cscope.
-	:cs find c inttrig
-	^] takes you back a step.
-	cscope is an essential kernel hacking tool.
-5)  usbdux_ai_inttrig() is basically the same as usbdux_ao_inttrig().
-    Does the ai version ever return with a lock held?
-6)  What are the implications if we return with the lock held?
-7)  How is the bug triggered?
-8)  Can the user trigger the bug?
-9)  Can a regular user trigger the bug or only root?
-	I sometimes have to use google for this to try figure out how
-	people set up the permissions.
-10) Should this go into the -stable kernel?
-
-You don't have to answer all the questions, just enough to know what the
-correct fix is.  You can fix a different bug if you want to...  It
-doesn't matter so long as it is at least equal to the bug you
-introduced.
-
-regards,
-dan carpenter
-
-PS:
-
-> - When checking skb for NULL, which one is better? (I suppose the former one)
->   skb == NULL or !skb 
->   Rewrite occurrences of the other one for cleanup?
-
-You shouldn't even think about changing these.  But in new code then
-!skb is better as Al Viro explains in this email:
-http://lwn.net/Articles/331593/
-
+Kay
