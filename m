@@ -1,84 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933702Ab0KQBDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 20:03:11 -0500
-Received: from mga11.intel.com ([192.55.52.93]:60945 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932835Ab0KQBDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 20:03:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,208,1288594800"; 
-   d="scan'208";a="858362449"
-Subject: Re: [PATCH -v4 0/2] Lockless memory allocator and list
-From: Huang Ying <ying.huang@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-In-Reply-To: <AANLkTime3Sh2TbgCGKir=t_TBNsd5fHipEqQwa4bVJuY@mail.gmail.com>
-References: <1289868791-16658-1-git-send-email-ying.huang@intel.com>
-	 <1289908158.2109.568.camel@laptop>
-	 <AANLkTime3Sh2TbgCGKir=t_TBNsd5fHipEqQwa4bVJuY@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Nov 2010 09:03:05 +0800
-Message-ID: <1289955785.8719.1154.camel@yhuang-dev>
+	id S933650Ab0KQBDq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 20:03:46 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34426 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932835Ab0KQBDo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 20:03:44 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 17 Nov 2010 09:57:59 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        balbir@linux.vnet.ibm.com, stable@kernel.org
+Subject: Re: [PATCH] Make swap accounting default behavior configurable
+Message-Id: <20101117095759.738de832.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101117092339.1b7c2d6d.nishimura@mxp.nes.nec.co.jp>
+References: <20101116101726.GA21296@tiehlicka.suse.cz>
+	<20101116124615.978ed940.akpm@linux-foundation.org>
+	<20101117092339.1b7c2d6d.nishimura@mxp.nes.nec.co.jp>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 00:38 +0800, Linus Torvalds wrote:
-> On Tue, Nov 16, 2010 at 3:49 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, 2010-11-16 at 08:53 +0800, Huang Ying wrote:
-> >> Hi, Len,
-> >>
-> >> This patchset is needed by APEI support. Which involves some lockless
-> >> operations. And I think they can be used by some other part of kernel
-> >> too.
-> >
-> > The whole notion of allocating memory from NMI context seems incredibly
-> > offensive.
-> >
-> > And then there's the whole point of not merging stuff without a user.
+On Wed, 17 Nov 2010 09:23:39 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+
+> On Tue, 16 Nov 2010 12:46:15 -0800
+> Andrew Morton <akpm@linux-foundation.org> wrote:
 > 
-> So I do agree that people should look very hard at trying to use
-> existing infrastructure.
+> > On Tue, 16 Nov 2010 11:17:26 +0100
+> > Michal Hocko <mhocko@suse.cz> wrote:
+> > 
+> > > Hi Andrew,
+> > > could you consider the following patch for the Linus tree, please?
+> > > The discussion took place in this email thread 
+> > > http://lkml.org/lkml/2010/11/10/114.
+> > > The patch is based on top of 151f52f09c572 commit in the Linus tree.
+> > > 
+> > > Please let me know if there I should route this patch through somebody
+> > > else.
+> > > 
+> > > Thanks!
+> > > 
+> > > ---
+> > > >From 30238aaec758988493af793939f14b0ba83dc4b3 Mon Sep 17 00:00:00 2001
+> > > From: Michal Hocko <mhocko@suse.cz>
+> > > Date: Wed, 10 Nov 2010 13:30:04 +0100
+> > > Subject: [PATCH] Make swap accounting default behavior configurable
+> > > 
+> > > Swap accounting can be configured by CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+> > > configuration option and then it is turned on by default. There is
+> > > a boot option (noswapaccount) which can disable this feature.
+> > > 
+> > > This makes it hard for distributors to enable the configuration option
+> > > as this feature leads to a bigger memory consumption and this is a no-go
+> > > for general purpose distribution kernel. On the other hand swap
+> > > accounting may be very usuful for some workloads.
+> > 
+> > This patch is needed by distros, and distros use the -stable tree, I
+> > assume.  Do you see reasons why this patch should be backported into
+> > -stable, so distros don't need to patch it themselves?  If so, any
+> > particular kernel versions?  2.6.37?
+> > 
+> > > This patch adds a new configuration option which controls the default
+> > > behavior (CGROUP_MEM_RES_CTLR_SWAP_ENABLED). If the option is selected
+> > > then the feature is turned on by default.
+> > > 
+> > > It also adds a new boot parameter swapaccount which (contrary to
+> > > noswapaccount) enables the feature. (I would consider swapaccount=yes|no
+> > > semantic with removed noswapaccount parameter much better but this
+> > > parameter is kind of API which might be in use and unexpected breakage
+> > > is no-go.)
+> > > 
+> > > The default behavior is unchanged (if CONFIG_CGROUP_MEM_RES_CTLR_SWAP is
+> > > enabled then CONFIG_CGROUP_MEM_RES_CTLR_SWAP_ENABLED is enabled as well)
+> > > 
+> > > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > > Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> > > ---
+> > >  Documentation/kernel-parameters.txt |    3 +++
+> > >  init/Kconfig                        |   13 +++++++++++++
+> > >  mm/memcontrol.c                     |   15 ++++++++++++++-
+> > >  3 files changed, 30 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > > index ed45e98..14eafa5 100644
+> > > --- a/Documentation/kernel-parameters.txt
+> > > +++ b/Documentation/kernel-parameters.txt
+> > > @@ -2385,6 +2385,9 @@ and is between 256 and 4096 characters. It is defined in the file
+> > >  			improve throughput, but will also increase the
+> > >  			amount of memory reserved for use by the client.
+> > >  
+> > > +	swapaccount	[KNL] Enable accounting of swap in memory resource
+> > > +			controller. (See Documentation/cgroups/memory.txt)
+> > 
+> > So we have swapaccount and noswapaccount.  Ho hum, "swapaccount=[1|0]"
+> > would have been better.
+> > 
+> I suggested to keep "noswapaccount" for compatibility.
+> If you and other guys don't like having two parameters, I don't stick to
+> the old parameter.
 > 
-> I kind of like the lock-less list implementation (it could easily be
-> useful for random things, and it's very simple). And I don't think the
-> notion of a lockless memory allocator is wrong either, although it
-> looks a lot more specialized than the list thing (the solution to
-> lockless allocations is generally simply to do them ahead of time).
 
-Yes. The general solution is that. But lockless memory allocator has
-some advantages too for some situations. For example, the memory pool
-backing lockless memory allocator can be enlarged or shrunken (not
-implemented yet) when needed. That is hard for pre-allocation.
+I don't think "noswapaccount" is important if "enable is default" when 
+proper configuration is used ....because it's rarelly used.
+ 
+BTW, memory usage of swap_cgroup is really important ? It consumes 
+1 Mbytes per 2G of swap.
 
-> So the part I'm really not all that comfy with is the whole APEI side
-> of things. I'm not at all convinced that we want yet another random
-> hw-specific interface, and I really have yet to hear why it's so
-> magical.
+Off topic.
+I wonder I'll be happy if we can have default config template for all
+others as recent "Add Kconfig option for default swappiness" discuss.
 
-Yes. Random hardware-specific interface is not good. In fact we have a
-generic hardware error reporting infrastructure that can be used by
-Machine Check, EDAC, PCIe AER, APEI, etc in the original patchset as
-follow:
+Thanks,
+-Kame
 
-http://lkml.org/lkml/2010/10/27/23
-http://lkml.org/lkml/2010/10/27/18
 
-But it seem that nobody want to take a look at it. I will re-post the
-generic hardware error reporting infrastructure patchset with better
-description separately. Hope somebody will take a look at it this time.
+Thanks,
+-Kame
 
-Best Regards,
-Huang Ying
 
 
