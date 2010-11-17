@@ -1,148 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935369Ab0KQV34 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 16:29:56 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:50348 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754291Ab0KQV3y (ORCPT
+	id S935354Ab0KQVcU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 16:32:20 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:38832 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754440Ab0KQVcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 16:29:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=oeCcdT/SAx6GzbwMS3kjRqNHtMnseTV5SR00JSX7IrNu7Aq6yebkwro14xPKAKkS/u
-         WDnk2ljFb5uFUwsV/4CbDQ8eLUfsnD7dp1RX5gARySyD9xuCCiUM27dxYICYxziODhhg
-         NDfUv0D3eNSXyX1CtvlyfnevFKM93miSifm0s=
-Date: Wed, 17 Nov 2010 13:29:43 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH 3/3] ideapad: add hotkey support
-Message-ID: <20101117212943.GA6661@core.coreip.homeip.net>
-References: <1289977165-14802-1-git-send-email-ike.pan@canonical.com>
- <1289977238-15113-1-git-send-email-ike.pan@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289977238-15113-1-git-send-email-ike.pan@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 17 Nov 2010 16:32:18 -0500
+Subject: Re: [PATCH v2] libata: remove scsi host lock and serial number
+	usage
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Jeff Garzik <jeff@garzik.org>
+Cc: linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        James.Bottomley@suse.de
+In-Reply-To: <20101117172111.GA26812@havoc.gtf.org>
+References: <20101117172111.GA26812@havoc.gtf.org>
+Content-Type: text/plain
+Date: Wed, 17 Nov 2010 13:26:55 -0800
+Message-Id: <1290029215.31890.52.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 03:00:38PM +0800, Ike Panhc wrote:
-> Hotkey enabled by this patch:
->   Fn+F3: Video mode switch
->   Fn+F5: software rfkill for wifi
+On Wed, 2010-11-17 at 12:21 -0500, Jeff Garzik wrote:
+> Much better...  Just updated #upstream-fixes with the below patch.
 > 
-> For some ideapad when push Fn+F3, hardware generates Super-P keys, those key
-> will not be enabled by this patch.
+> James just posted to linux-scsi
+> 	[PATCH] Eliminate error handler overload of the SCSI serial number
+> but as Tejun pointed out, we _completely and entirely_ replace the SCSI
+> error handler apparatus with our own, thereby eliminating any
+> possibility that we would ever read or use cmd->serial_number.
 > 
-> Signed-off-by: Ike Panhc <ike.pan@canonical.com>
-> ---
->  drivers/platform/x86/ideapad-laptop.c |   74 +++++++++++++++++++++++++++++++++
->  1 files changed, 74 insertions(+), 0 deletions(-)
+> Our lock profile is quite a bit improved.
 > 
-> diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
-> index d75c21f..d397034 100644
-> --- a/drivers/platform/x86/ideapad-laptop.c
-> +++ b/drivers/platform/x86/ideapad-laptop.c
-> @@ -28,6 +28,8 @@
->  #include <acpi/acpi_drivers.h>
->  #include <linux/rfkill.h>
->  #include <linux/platform_device.h>
-> +#include <linux/input.h>
-> +#include <linux/input/sparse-keymap.h>
+> Further simplifications and cleanups related to 'done' are possible,
+> but those are kept separate from the change below.
+> 
+> 
+> commit 23e701e6208191ad103517ae7a700f2dc59ab2ec
+> Author: Jeff Garzik <jeff@garzik.org>
+> Date:   Wed Nov 17 12:03:58 2010 -0500
+> 
+>     [libata] remove SCSI host lock and serial number usage from ata_scsi_queuecmd
+>     
+>     cmd->serial_number is never tested in any path we reach; therefore we may
+>     remove the call to scsi_cmd_get_serial() inside DEF_SCSI_QCMD, the SCSI
+>     host_lock acquisition surrounding it, and our own SCSI host_lock
+>     unlock+relock cycle.
+>     
+>     Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+
+Hi Jeff,
+
+I have merged this patch into lock_less-LLDs-for-38-v2, and dropped the
+original:
+
+[PATCH 02/12] libata: Convert to host_lock less w/ interrupts disabled internally
+
+Thanks!
+
+--nab
+
+> 
+>  drivers/ata/libata-scsi.c |   21 +++++++++------------
+>  1 file changed, 9 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+> index 19835d3..66aa4be 100644
+> --- a/drivers/ata/libata-scsi.c
+> +++ b/drivers/ata/libata-scsi.c
+> @@ -3166,8 +3166,8 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
 >  
->  #define IDEAPAD_DEV_CAMERA	0
->  #define IDEAPAD_DEV_WLAN	1
-> @@ -39,6 +41,7 @@ struct ideapad_private {
->  	acpi_handle handle;
->  	struct rfkill *rfk[5];
->  	struct platform_device *platform_device;
-> +	struct input_dev *inputdev;
->  } *ideapad_priv;
+>  /**
+>   *	ata_scsi_queuecmd - Issue SCSI cdb to libata-managed device
+> + *	@shost: SCSI host of command to be sent
+>   *	@cmd: SCSI command to be sent
+> - *	@done: Completion function, called when command is complete
+>   *
+>   *	In some cases, this function translates SCSI commands into
+>   *	ATA taskfiles, and queues the taskfiles to be sent to
+> @@ -3177,42 +3177,39 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
+>   *	ATA and ATAPI devices appearing as SCSI devices.
+>   *
+>   *	LOCKING:
+> - *	Releases scsi-layer-held lock, and obtains host lock.
+> + *	ATA host lock
+>   *
+>   *	RETURNS:
+>   *	Return value from __ata_scsi_queuecmd() if @cmd can be queued,
+>   *	0 otherwise.
+>   */
+> -static int ata_scsi_queuecmd_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
+> +int ata_scsi_queuecmd(struct Scsi_Host *shost, struct scsi_cmnd *cmd)
+>  {
+>  	struct ata_port *ap;
+>  	struct ata_device *dev;
+>  	struct scsi_device *scsidev = cmd->device;
+> -	struct Scsi_Host *shost = scsidev->host;
+>  	int rc = 0;
+> +	unsigned long irq_flags;
 >  
->  static struct {
-> @@ -325,6 +328,68 @@ static void ideapad_platform_exit(void)
+>  	ap = ata_shost_to_port(shost);
+>  
+> -	spin_unlock(shost->host_lock);
+> -	spin_lock(ap->lock);
+> +	spin_lock_irqsave(ap->lock, irq_flags);
+>  
+>  	ata_scsi_dump_cdb(ap, cmd);
+>  
+>  	dev = ata_scsi_find_dev(ap, scsidev);
+>  	if (likely(dev))
+> -		rc = __ata_scsi_queuecmd(cmd, done, dev);
+> +		rc = __ata_scsi_queuecmd(cmd, cmd->scsi_done, dev);
+>  	else {
+>  		cmd->result = (DID_BAD_TARGET << 16);
+> -		done(cmd);
+> +		cmd->scsi_done(cmd);
+>  	}
+>  
+> -	spin_unlock(ap->lock);
+> -	spin_lock(shost->host_lock);
+> +	spin_unlock_irqrestore(ap->lock, irq_flags);
+> +
+>  	return rc;
 >  }
->  /* the above is platform device */
 >  
-> +/*
-> + * input device
-> + */
-> +static const struct key_entry ideapad_keymap[] = {
-> +	{ KE_KEY, 0x06, { KEY_SWITCHVIDEOMODE } },
-> +	{ KE_KEY, 0x0D, { KEY_WLAN } },
-> +	{ KE_END, 0 },
-> +};
-> +
-> +static int ideapad_input_init(void)
+> -DEF_SCSI_QCMD(ata_scsi_queuecmd)
+> -
+>  /**
+>   *	ata_scsi_simulate - simulate SCSI command on ATA device
+>   *	@dev: the target device
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-__devinit?
-
-> +{
-> +	struct input_dev *inputdev;
-> +	int error;
-> +
-> +	inputdev = input_allocate_device();
-> +	if (!inputdev) {
-> +		pr_info("Unable to allocate input device\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	inputdev->name = "Ideapad extra buttons";
-> +	inputdev->phys = "ideapad/input0";
-> +	inputdev->id.bustype = BUS_HOST;
-> +	inputdev->dev.parent = &ideapad_priv->platform_device->dev;
-> +
-> +	error = sparse_keymap_setup(inputdev, ideapad_keymap, NULL);
-> +	if (error) {
-> +		pr_err("Unable to setup input device keymap\n");
-> +		goto err_free_dev;
-> +	}
-> +
-> +	error = input_register_device(inputdev);
-> +	if (error) {
-> +		pr_err("Unable to register input device\n");
-> +		goto err_free_keymap;
-> +	}
-> +
-> +	ideapad_priv->inputdev = inputdev;
-
-Why don't you pass ideapad_priv in as an argument instead of relying on
-global. I know that there can only be one, but then why do you have a
-structure?
-
-> +	return 0;
-> +
-> +err_free_keymap:
-> +	sparse_keymap_free(inputdev);
-> +err_free_dev:
-> +	input_free_device(inputdev);
-> +	return error;
-> +}
-> +
-> +static void ideapad_input_exit(void)
-
-__devexit? The rest of the driver might user these markups as well.
-
-> +{
-> +	if (ideapad_priv->inputdev) {
-> +		sparse_keymap_free(ideapad_priv->inputdev);
-> +		input_unregister_device(ideapad_priv->inputdev);
-> +	}
-> +	ideapad_priv->inputdev = NULL;
-
-You fail driver initialization when ideapad_input_init() fails so there
-is no point in checking whether ideapad_priv->inputdev is null or not.
-
-Otherwise looks good from input POV.
-
-Thanks.
-
--- 
-Dmitry
