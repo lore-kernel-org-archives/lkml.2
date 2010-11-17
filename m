@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935141Ab0KQRq4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 12:46:56 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:59299 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934635Ab0KQRqy (ORCPT
+	id S935172Ab0KQRrR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:47:17 -0500
+Received: from mail.katsushiro.co.id ([124.81.81.132]:33160 "EHLO
+	mail.katsushiro.co.id" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934635Ab0KQRrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 12:46:54 -0500
-Date: Wed, 17 Nov 2010 12:46:52 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC][PATCH 1/5] [PATCH 1/5] events: Add EVENT_FS the event
-	filesystem
-Message-ID: <20101117174652.GC13717@Krystal>
-References: <20101117005357.024472450@goodmis.org> <20101117005939.600541101@goodmis.org> <20101117033242.GB31335@suse.de> <20101117103914.GA21976@elte.hu> <1289996753.30543.35.camel@gandalf.stny.rr.com>
+	Wed, 17 Nov 2010 12:47:15 -0500
+X-Greylist: delayed 461 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Nov 2010 12:47:15 EST
+Date: Thu, 18 Nov 2010 00:39:26 +0700 (WIT)
+From: WESTERN UNION MONEY TRANSFER <bakti@katsushiro.co.id>
+Reply-To: "MR. ANDREW GOUDIE " <processingunit15@yahoo.com.hk>
+Message-ID: <28513969.686.1290015566528.JavaMail.root@mail.katsushiro.co.id>
+Subject: Western Union Payment Alert!!!
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289996753.30543.35.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 12:43:59 up 55 days, 21:46,  5 users,  load average: 0.14, 0.12,
-	0.09
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [193.105.248.70]
+X-Mailer: Zimbra 6.0.7_GA_2473.UBUNTU8 (zclient/6.0.7_GA_2473.UBUNTU8)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-[...]
-> Are these events now going to be labeled as stable?  Is every tracepoint
-> we have, much have the same data?  Linus specifically said at Kernel
-> Summit that he wants absolutely NO modules to have a stable tracepoint.
 
-I'd like to bring up the point of KVM tracepoints here. KVM can be configured as
-a module, and may clearly contain tracepoints that we'd like to be stable.
 
-My thought is that what we really want to enforce is "no stable tracepoints in
-drivers" rather than in "modules", but I might be wrong.
+How are you doing today?
 
-Thoughts ?
+I write to inform you that we have
+already sent you USD5000.00 dollars through Western union as we have
+been given the mandate to transfer your full compensation payment of
+USD1.800,000.00 via western union by the United Nation Government. I
+called to give you the information through phone as internet hackers
+were many but i cannot reach you for over one week now and even this
+morning. So,I decided to email you the MTCN and Sender's Name so that
+can pick up this USD5000.00 to enable us send another USD5000.00 by
+tomorrow as you knows we will be sending you only USD5000.00 per
+day.Please pick up this information, you are run fast to any western
+union in your country to pick up the USD5000.00 and send us e-mail back
+so we can send you another payment tomorrow.
 
-Mathieu
+ Manager: Mr Andrew Goudie
+ website: www.westernunion.com
+ Telephone: +2347057416943
+ Email: processingunit15@yahoo.com.hk
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+E-mail me once you picked up this USD5000.00 today.
+Here is the western union information to pick up the USD5000.00,
+
+MTCN : 622 159 4597
+Sender's Name: MC Yak
+Question: Honest
+Answer:Trust
+Amount: $5000.00USD
+
+I am waiting for your E-mail once you pick up USD5000.00,
+
+For more information call +2347057416943
+
+Thanks
+RYAN MORGAN
