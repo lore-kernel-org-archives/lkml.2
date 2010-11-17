@@ -1,56 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933987Ab0KQN3w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 08:29:52 -0500
-Received: from tango.tkos.co.il ([62.219.50.35]:60263 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932615Ab0KQN3t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 08:29:49 -0500
-Date: Wed, 17 Nov 2010 15:28:44 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: Thomas Chou <thomas@wytron.com.tw>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Alex Gershgorin <agersh@rambler.ru>
-Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
-Message-ID: <20101117132844.GE26928@jasper.tkos.co.il>
-References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
- <4CE373BC.30805@wytron.com.tw>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE373BC.30805@wytron.com.tw>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S934407Ab0KQN35 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 08:29:57 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:44901 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934039Ab0KQN3y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 08:29:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=HjxpLNArV/nJovx5IQSY3bvySYK72BKu/RjOFEhgA0Xjy/soracqLkzOqPvM2bihcR
+         Vz5Trh0+3TYDmQXDQ93m7rVojyRnTQOGUd+nzWwdp8L6sR99ZOCeHqvdfLNhA7z49NIj
+         1cpqh6i4GvQYy4rexGOGLGQzM7tGOyjyovCa0=
+From: Hai Shan <haishan.bai@gmail.com>
+To: viro@zeniv.linux.org.uk, axboe@kernel.dk
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hai Shan <shan.hai@windriver.com>
+Subject: [PATCH] mpage: some code cleanups
+Date: Wed, 17 Nov 2010 21:29:23 +0800
+Message-Id: <1290000563-1803-2-git-send-email-shan.hai@windriver.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1290000563-1803-1-git-send-email-shan.hai@windriver.com>
+References: <1290000563-1803-1-git-send-email-shan.hai@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+merged mpage_end_io_read() and mpage_end_io_write() to mpage_end_io()
 
-On Wed, Nov 17, 2010 at 02:18:36PM +0800, Thomas Chou wrote:
-> On 11/15/2010 04:23 PM, Baruch Siach wrote:
-> >From: Alex Gershgorin<agersh@rambler.ru>
-> >
-> >The active serial protocol can be used to program Altera serial configuration
-> >devices. This driver uses the kernel gpio interface to implement the active
-> >serial protocol.
-> >
-> >This patch also introduces the include/platform_drivers/ directory, which is
-> >the new home for platform data headers. This is per Greg's suggestion.
-> 
-> Altera EPCS is normal SPI serial flash, which is exactly the same as
-> STmicro part. Please consider existing drivers/mtd/devices/m25p80.c
-> and drivers/spi/spi_gpio.c.
+Signed-off-by: Hai Shan <shan.hai@windriver.com>
+---
+ fs/mpage.c |   49 +++++++++++++++++--------------------------------
+ 1 files changed, 17 insertions(+), 32 deletions(-)
 
-Thanks for the pointer. Looking at the op codes and status bits it seems you 
-are right. The 38 pages Altera datasheet doesn't mention the terms SPI or 
-m25p80. Go figure.
-
-I'll test you suggestion.
-
-baruch
-
+diff --git a/fs/mpage.c b/fs/mpage.c
+index fd56ca2..1187e60 100644
+--- a/fs/mpage.c
++++ b/fs/mpage.c
+@@ -40,7 +40,7 @@
+  * status of that page is hard.  See end_buffer_async_read() for the details.
+  * There is no point in duplicating all that complexity.
+  */
+-static void mpage_end_io_read(struct bio *bio, int err)
++static void mpage_end_io(struct bio *bio, int err)
+ {
+ 	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+ 	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+@@ -50,44 +50,29 @@ static void mpage_end_io_read(struct bio *bio, int err)
+ 
+ 		if (--bvec >= bio->bi_io_vec)
+ 			prefetchw(&bvec->bv_page->flags);
+-
+-		if (uptodate) {
+-			SetPageUptodate(page);
+-		} else {
+-			ClearPageUptodate(page);
+-			SetPageError(page);
+-		}
+-		unlock_page(page);
+-	} while (bvec >= bio->bi_io_vec);
+-	bio_put(bio);
+-}
+-
+-static void mpage_end_io_write(struct bio *bio, int err)
+-{
+-	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
+-	struct bio_vec *bvec = bio->bi_io_vec + bio->bi_vcnt - 1;
+-
+-	do {
+-		struct page *page = bvec->bv_page;
+-
+-		if (--bvec >= bio->bi_io_vec)
+-			prefetchw(&bvec->bv_page->flags);
+-
+-		if (!uptodate){
+-			SetPageError(page);
+-			if (page->mapping)
+-				set_bit(AS_EIO, &page->mapping->flags);
++		if (bio_data_dir(bio) == READ) {
++			if (uptodate) {
++				SetPageUptodate(page);
++			} else {
++				ClearPageUptodate(page);
++				SetPageError(page);
++			}
++			unlock_page(page);
++		} else { /* bio_data_dir(bio) == WRITE */
++			if (!uptodate){
++				SetPageError(page);
++				if (page->mapping)
++					set_bit(AS_EIO, &page->mapping->flags);
++			}
++			end_page_writeback(page);
+ 		}
+-		end_page_writeback(page);
+ 	} while (bvec >= bio->bi_io_vec);
+ 	bio_put(bio);
+ }
+ 
+ static struct bio *mpage_bio_submit(int rw, struct bio *bio)
+ {
+-	bio->bi_end_io = mpage_end_io_read;
+-	if (rw == WRITE)
+-		bio->bi_end_io = mpage_end_io_write;
++	bio->bi_end_io = mpage_end_io;
+ 	submit_bio(rw, bio);
+ 	return NULL;
+ }
 -- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+1.7.0.4
+
