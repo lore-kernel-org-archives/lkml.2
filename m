@@ -1,51 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934291Ab0KQLSv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 06:18:51 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:59509 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933515Ab0KQLSu (ORCPT
+	id S934395Ab0KQLTy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 06:19:54 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:13044 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933515Ab0KQLTx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 06:18:50 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v3 15/20] ARM: LPAE: use phys_addr_t instead of unsigned long for physical addresses
-Date: Wed, 17 Nov 2010 12:18:13 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com> <20101116193335.GD21926@n2100.arm.linux.org.uk> <AANLkTinDGk2HPg7py9nzsqmM3_AbSG_GJJYwsiMr+wQL@mail.gmail.com>
-In-Reply-To: <AANLkTinDGk2HPg7py9nzsqmM3_AbSG_GJJYwsiMr+wQL@mail.gmail.com>
+	Wed, 17 Nov 2010 06:19:53 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Aq0DAPJI40x5LdurgWdsb2JhbACiQRYBARYiIsBNhUsE
+Date: Wed, 17 Nov 2010 22:19:47 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 00/28] [rfc] dcache scaling part 1
+Message-ID: <20101117111947.GA5218@amd>
+References: <20101116140900.039761100@kernel.dk>
+ <877hgcrzgd.fsf@basil.nowhere.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011171218.13910.arnd@arndb.de>
-X-Provags-ID: V02:K0:M6C88ZMo9Xnw6axHpBWloGEJmTVrPRmCk/54CddQTyH
- JTZP7WROuggYaIy1AVg07BDWsVhzGFnSffkTQbUU6xy6DUgMiM
- riX5J3rN7K96V5QDh1r5sFqfuJPDsn8ndFxA4/9YzaV7wfxM30
- H6hZJnU7oeteq41D6Dzgwh0NUiu515xh52t18+dqDiyIsjsHU7
- XT68+2fuqQD2ojv2iAC6w==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <877hgcrzgd.fsf@basil.nowhere.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 November 2010, Catalin Marinas wrote:
+On Wed, Nov 17, 2010 at 11:56:02AM +0100, Andi Kleen wrote:
+> Nick Piggin <npiggin@kernel.dk> writes:
+> 
+> > There are 3 main parts to dcache scaling. This one primarily adds new locks
+> > to take over dcache_lock, and some pre/post prep and streamlining patches.
 > >
-> > It may make sense to mark it const volatile, as that's the most
-> > permissive set of attributes possible (iow, it'll accept any pointer
-> > without warning.)  However, might be an idea to check what other
-> > arches do.
+> > The second implements fine grained locking, and is rather trivial after
+> > part 1.
+> >
+> > The third implements rcu-walk. rcu-walk depends on the first part, because it
+> > relies on using d_lock to protect the state of the dentry (when converting from
+> > rcu-walk to refcounted walk). Without the fine grained locing, we'd need to use
+> > dcache_lock for that, which would be a step backwards to put into path walking
+> > again.
+> >
+> > Comments?
 > 
-> The majority of architectures use volatile and a few add both const
-> and volatile.
-> 
-> I usually use the generic headers as reference for function prototypes
-> and that's just using volatile without a const (cc'ing Arnd for any
-> view on this).
+> I read 15, 10, 8, 5, 4, 3, 1 so far (weird order, it showed that way in
+> my reader :-) There was nothing surprising in any of those and they all
+> seem to do what the description advertises.
 
-const volatile sounds right here, I can also change the generic header
-if we agree to do the same in arm.
+Thanks for looking.
 
-	Arnd
+ 
+> I was scared a bit by the upto 4 level dcache lock nestings, but I
+> assume those will get better again when everything is done.
+> At least from a quick look they seem to be all in the right order
+> (I assume you attempted some runtime coverage with lockdep too, right?)
+
+Yes of course, it's been finding bugs in other code, actually :P
+
+Lock nesting is primarily an issue in killing a dentry, when it needs to
+be taken out of several data structures at the same time. I haven't
+tackled un-nesting these yet, because things become far more complex
+when you start allowing new types of concurrency like that.
+
+I found that with fine grained locking, lock contention was low enough
+that it really didn't matter to take a few locks at once (obviously it's
+far better than the existing dcache_lock situation).
+
+If it does become a problem, or we want to unwind some of the locks for
+any other reason, we'd probably have a DENTRY_TEARDOWN flag in the
+dentry, and dput / reclaim can set it without holding other locks, and
+then drop the d_lock and individually remove it from various lists.
+
+Of course that requires audits in every list walker, and list_empty() etc
+check everywhere, so it's not appropriate for initial patches.
+ 
+
+> For some of the hash lists it may become attractive to consider
+> the newly posted lockless list, but it wasn't fully clear
+> if that was easy to do (the lock protected a bit more than
+> just the list node)
+
+Well the first part of the series doesn't fine grain the locks, for
+the most part. After this is done, it's really pretty trivial to change
+locking schemes for data structures.
+ 
+
+> For the level file system tree sweep changes it would be nice
+> if there were semantic patches available. That would make
+> it easier to verify the changes have been consistently
+> done, by rerunning the patcher.
+
+I haven't looked at doing semantic patches. I suspect it might be
+a bit too hard to write.
+
+Really, *most* filesystems do not play silly games with dcache_lock,
+and those that don't are pretty easy. Ones that do need more thought
+than semantic patch could probably apply.
+
+ 
+> You can add a Reviewed-by: Andi Kleen <ak@linux.intel.com>
+> to the patches listed above.
+
+Thanks,
+Nick
+
