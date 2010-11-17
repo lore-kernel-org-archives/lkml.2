@@ -1,43 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934692Ab0KQMBd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 07:01:33 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:33659 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753977Ab0KQMBc (ORCPT
+	id S934687Ab0KQMCp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 07:02:45 -0500
+Received: from eazy.amigager.de ([213.239.192.238]:59318 "EHLO
+	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756041Ab0KQMCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 07:01:32 -0500
-Date: Wed, 17 Nov 2010 13:01:28 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 00/28] [rfc] dcache scaling part 1
-Message-ID: <20101117120128.GC23656@basil.fritz.box>
-References: <20101116140900.039761100@kernel.dk>
- <877hgcrzgd.fsf@basil.nowhere.org>
- <20101117111947.GA5218@amd>
+	Wed, 17 Nov 2010 07:02:45 -0500
+Date: Wed, 17 Nov 2010 13:02:59 +0100
+From: Tino Keitel <tino.keitel@tikei.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: DVI/EDID broken with Intel i945 graphics and 2.6.37-rc2
+Message-ID: <20101117120259.GA2786@mac.home>
+Mail-Followup-To: linux-kernel@vger.kernel.org
+References: <20101116184914.GA15794@mac.home>
+ <b9dded$h40vqf@orsmga002.jf.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101117111947.GA5218@amd>
+In-Reply-To: <b9dded$h40vqf@orsmga002.jf.intel.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I haven't looked at doing semantic patches. I suspect it might be
-> a bit too hard to write.
+On Wed, Nov 17, 2010 at 10:20:09 +0000, Chris Wilson wrote:
+> On Tue, 16 Nov 2010 19:49:14 +0100, Tino Keitel <tino.keitel@tikei.de> wrote:
+> > Hi,
+> > 
+> > 2.6.37-rc2 doesn't seem to detect the LCD connected via DVI on my Mac
+> > mini Core2 Duo with i945 graphics:
 > 
-> Really, *most* filesystems do not play silly games with dcache_lock,
-> and those that don't are pretty easy. Ones that do need more thought
-> than semantic patch could probably apply.
+> Hmm, sounds like fallout from detection of the VGA connection on the shared
+> GPIO wire.
+> 
+> Does this help?
 
-The advantage of using the semantic patch is that it catches
-error paths and unusal constructions which are bad for grep better. 
-It does not replace hand review and some hand modification of course.
+No. I still get this:
 
--Andi
+No connectors reported connected with modes
+[drm] Cannot find any crtc or sizes - going 1024x768
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Regards,
+Tino
