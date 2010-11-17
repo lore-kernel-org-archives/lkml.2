@@ -1,101 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934275Ab0KQGM4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 01:12:56 -0500
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:48118 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932824Ab0KQGMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 01:12:55 -0500
-Date: Tue, 16 Nov 2010 22:12:41 -0800
-From: Andres Salomon <dilinger@queued.net>
+	id S1759668Ab0KQGOH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 01:14:07 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59806 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754188Ab0KQGOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 01:14:05 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=tQa8QoF4y0hMRCHwVLrhLTujUwoX5wBnZgmf7mlEB9egDAeaH+UFZoYtFeEQkw8dIN
+         Op/qzKYlBfsZfoy7BqcwESh5lxIBFDSmIbU92qsKlVgGN/27eLD3WZuIOZm/YysbKXeU
+         OrakpyroBPCbY4PiaiJHq43nmgi6yyrJl66l8=
+Message-ID: <4CE372A9.2050704@gmail.com>
+Date: Tue, 16 Nov 2010 22:14:01 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+MIME-Version: 1.0
 To: Grant Likely <grant.likely@secretlab.ca>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Milton Miller <miltonm@bga.com>, devicetree-discuss@lists.ozlabs.org,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] x86: OLPC: speed up device tree creation during boot
- (v3)
-Message-ID: <20101116221241.21419250@queued.net>
-In-Reply-To: <4CE17133.2050101@zytor.com>
-References: <20101111214546.4e573cad@queued.net>
-	<reply-olpc-3-v2@mdm.bga.com>
-	<20101112002704.50c629e2@queued.net>
-	<20101114095013.GB24206@elte.hu>
-	<4CE0B54E.6000101@zytor.com>
-	<20101115070254.GA25243@elte.hu>
-	<4CE17133.2050101@zytor.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+CC: David Daney <ddaney@caviumnetworks.com>,
+        devicetree-discuss@lists.ozlabs.org, sodaville@linutronix.de,
+        arjan@linux.intel.com, linuxppc-dev@lists.ozlabs.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] of: Add support for linking device tree blobs into
+ vmlinux
+References: <cover.1289943240.git.dirk.brandewie@gmail.com> <9129f0a21ea48fb2dcb89cea290e88f3e8c0d8a2.1289943240.git.dirk.brandewie@gmail.com> <4CE32453.2090403@caviumnetworks.com> <4CE33C14.9030503@gmail.com> <AANLkTi=T_bqEswe32dTAfL4++WAitc7+VHnyjqP2sQfi@mail.gmail.com>
+In-Reply-To: <AANLkTi=T_bqEswe32dTAfL4++WAitc7+VHnyjqP2sQfi@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/16/2010 06:58 PM, Grant Likely wrote:
+> On Tue, Nov 16, 2010 at 7:21 PM, Dirk Brandewie
+> <dirk.brandewie@gmail.com>  wrote:
+>>
+>> On 11/16/2010 04:39 PM, David Daney wrote:
+>>>
+>>> Thanks for doing this. However I have a few comments...
+>>>
+>>> On 11/16/2010 02:41 PM, dirk.brandewie@gmail.com wrote:
+>>>>
+>>>> From: Dirk Brandewie<dirk.brandewie@gmail.com>
+>>>>
+>>>> /* .data section */
+>>>> #define DATA_DATA \
+>>>> *(.data) \
+>>>> @@ -468,7 +482,8 @@
+>>>> MCOUNT_REC() \
+>>>> DEV_DISCARD(init.rodata) \
+>>>> CPU_DISCARD(init.rodata) \
+>>>> - MEM_DISCARD(init.rodata)
+>>>> + MEM_DISCARD(init.rodata) \
+>>>> + KERNEL_DTB()
+>>>>
+>>>
+>>> I thought the init.rodata was only for data used by __init things.
+>>> Although the
+>>> current linker scripts do not put it in the section that gets recycled as
+>>> usable
+>>> memory.
+>>>
+>>> IIRC the unflattened version of the device tree has pointers to the
+>>> flattened
+>>> data. Since the device tree nodes are live for the entire kernel
+>>> lifecycle,
+>>> shouldn't the device tree blobs be in non-init memory?
+>>>
+>>
+>> The contents of the blob get copied to allocated memory during
+>> unflatten_device_tree() so the blob that is linked in is no longer needed
+>> after init.
+>
+> Have you written a patch to add this behaviour?  The current code doesn't.  :-)
+>
 
-Calling alloc_bootmem() for tiny chunks of memory over and over is really
-slow; on an XO-1, it caused the time between when the kernel started
-booting and when the display came alive (post-lxfb probe) to increase
-to 44s.  This patch optimizes the prom_early_alloc function by
-calling alloc_bootmem for 4k-sized blocks of memory, and handing out
-chunks of that to callers.  With this patch, the time between kernel load
-and display initialization decreased to 23s.  If there's a better way to
-do this early in the boot process, please let me know.
+I misspoke, my blob gets copied to allocated memory during unflatten_device_tree.
+my early_init_dt_alloc_memory_arch() returns the physical address of a kmalloc'd
+buffer.
 
-(Note: increasing the chunk size to 16k didn't noticably affect boot time,
-and wasted 9k.)
+You would want copy the dtb that your platform is going to use to non-init memory.
 
-v3: fix wasted memory buglet found by Milton Miller, and style fixes.
-v2: reorder prom_early_alloc as suggested by Grant Likely.
-
-Signed-off-by: Andres Salomon <dilinger@queued.net>
----
- arch/x86/platform/olpc/olpc_dt.c |   28 +++++++++++++++++++++++-----
- 1 files changed, 23 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/platform/olpc/olpc_dt.c b/arch/x86/platform/olpc/olpc_dt.c
-index 7054697..6614ec4 100644
---- a/arch/x86/platform/olpc/olpc_dt.c
-+++ b/arch/x86/platform/olpc/olpc_dt.c
-@@ -126,14 +126,32 @@ static unsigned int prom_early_allocated __initdata;
- 
- void * __init prom_early_alloc(unsigned long size)
- {
-+	static u8 *mem;
-+	static size_t free_mem;
- 	void *res;
- 
--	res = alloc_bootmem(size);
--	if (res)
--		memset(res, 0, size);
--
--	prom_early_allocated += size;
-+	if (free_mem < size) {
-+		const size_t chunk_size = max(PAGE_SIZE, size);
-+
-+		/*
-+		 * To mimimize the number of allocations, grab at least 4k of
-+		 * memory (that's an arbitrary choice that matches PAGE_SIZE on
-+		 * the platforms we care about, and minimizes wasted bootmem)
-+		 * and hand off chunks of it to callers.
-+		 */
-+		res = alloc_bootmem(chunk_size);
-+		if (!res)
-+			return NULL;
-+		prom_early_allocated += chunk_size;
-+		memset(res, 0, chunk_size);
-+		free_mem = chunk_size;
-+		mem = res;
-+	}
- 
-+	/* allocate from the local cache */
-+	free_mem -= size;
-+	res = mem;
-+	mem += size;
- 	return res;
- }
- 
--- 
-1.7.2.3
-
-
+--Dirk
 
