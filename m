@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758179Ab0KQPdQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:33:16 -0500
-Received: from gw0.danplanet.com ([71.245.107.82]:34087 "EHLO
-	mail.danplanet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753432Ab0KQPdP (ORCPT
+	id S1758456Ab0KQPd1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:33:27 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:37377 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758277Ab0KQPdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:33:15 -0500
-To: Tejun Heo <tj@kernel.org>
-Cc: Gene Cooperman <gene@ccs.neu.edu>, Oren Laadan <orenl@cs.columbia.edu>,
-        Kapil Arya <kapil@ccs.neu.edu>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, hch@lst.de
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>
-	<4CD26948.7050009@kernel.org>
-	<20101104164401.GC10656@sundance.ccs.neu.edu>
-	<4CD3CE29.2010105@kernel.org>
-	<AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com>
-	<4CD5DCE3.3000109@cs.columbia.edu>
-	<20101107194222.GG31077@sundance.ccs.neu.edu>
-	<4CD71A6B.3020905@cs.columbia.edu>
-	<20101107230516.GJ31077@sundance.ccs.neu.edu>
-	<4CD774CA.8030004@cs.columbia.edu>
-	<20101108162630.GN31077@sundance.ccs.neu.edu>
-	<8739rbpreb.fsf@localhost6.localdomain6> <4CE3B927.1020401@kernel.org>
-From: Dan Smith <danms@us.ibm.com>
-Date: Wed, 17 Nov 2010 07:33:12 -0800
-Message-ID: <8762vwvubr.fsf@localhost6.localdomain6>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 17 Nov 2010 10:33:25 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=DfoUvNbMtWGsIp+Z2kmsESsTHJT5IyaHFZXemXXrYvci7sH/wqF+FTXH+srj1m9Cjb
+         zcdgEA3DClpL7MLjbvHaHpZ03Ezj+2NIE7OJTjodUBYjSYncfgIS2tB/WvkuNHadoRIn
+         9mjh0YdbUdddj9Vvzoq9487UutbgwgxHzJ47U=
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+From: Tom Zanussi <tzanussi@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "Ted Ts'o" <tytso@mit.edu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+In-Reply-To: <1290003110.2109.822.camel@laptop>
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
+	 <20101117013700.GA3290@thunk.org> <20101117132404.GF27063@elte.hu>
+	 <1290001128.2109.785.camel@laptop>  <20101117140002.GH27063@elte.hu>
+	 <1290003110.2109.822.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Nov 2010 09:33:21 -0600
+Message-ID: <1290008001.1921.14.camel@elnicho>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TH> If it ever becomes a general enough problem (which I extremely
-TH> strongly doubt),
+On Wed, 2010-11-17 at 15:11 +0100, Peter Zijlstra wrote:
+> On Wed, 2010-11-17 at 15:00 +0100, Ingo Molnar wrote:
+> > > But yes, it is functional.
+> > 
+> > I suspect that is what matters mostly - unless you think that it's impossible to 
+> > have a sane implementation of it, if the users come. 
+> 
+> I'm not sure, I raised the point several times, and I think Steve and
+> Tom though it was possible to implement sanely, but I'm not sure if it
+> was expression invariant (the fix that is).
+> 
+> It would be very good to have a definite answer on that.
+> 
+> The idea was to not let the filter engine work on the trace data (once
+> its gathered) but on the trace argument right at the beginning of the
+> tracepoint callchain, since some of the trace data is an expression of
+> the trace argument (say next->prio instead of next), the trace
+> expression wouldn't stay invariant, you'd have to write a different
+> filter for the same effect.
+> 
 
-Migration of a container?  Yeah, it's one of the primary reasons for
-doing what we're doing :)
+IIRC, I think the conclusion we came to was that it could be done
+mechanically if for example the right-hand-side of an assignment in
+TP_fast_assign() only involved a simple variable assignment, but as
+Steve pointed out, some assignments are more complicated than that.
 
-TH> we can think about allowing processes in a netns to change
-TH> sequence number but that would be a single setsockopt option
+For example, in the sched_switch tracepoint assignments:
 
-Yeah, well there's more than that, of course, if you want to be able
-to checkpoint a socket in any state.  Buffers, time-wait, etc.
+	__entry->prev_prio      = prev->prio;
+        __entry->prev_state     = __trace_sched_switch_state(prev);
 
-TH> instead of the horror show of dumping in-kernel data structures in
-TH> binary blob.
+so the prev_prio should be able to be tested 'in-line' but the
+prev_state would require a temporary buffer to write the value into
+before doing the test as mentioned by Steve.  At which point you're no
+further ahead (in that case) than the current situation...
 
-Well, as should be evident from a review of the code, we don't dump
-binary kernel data structures as a general rule.  We canonicalize them
-into checkpoint headers on the way out and build the new data
-structures (or use existing kernel interfaces to do so) on the way in.
-You know, just like netlink does.
+Tom
 
-It has even been suggested that we do this with netlink instead, to
-mirror the other "horror show" tools that we all use on a daily basis.
-We're not opposed to this, but we do have some concerns about
-performance.
+> So I think it would be wise to make this change sooner rather than
+> later.
 
--- 
-Dan Smith
-IBM Linux Technology Center
-email: danms@us.ibm.com
+
