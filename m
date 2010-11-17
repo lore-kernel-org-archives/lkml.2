@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933343Ab0KQVLC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 16:11:02 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:59076 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758137Ab0KQVLA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 16:11:00 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=TJCxdvTDTvK+lV8gBffnVCbBylqI1vlA4uToq813bsiWgMuoPigeHRYVQQe4iMMGRI
-         Nq6fPzQpd2kmH/Gskanw==
-Date: Wed, 17 Nov 2010 13:10:50 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Shaohui Zheng <shaohui.zheng@intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [2/8,v3] NUMA Hotplug Emulator: infrastructure of NUMA hotplug
- emulation
-In-Reply-To: <20101117075128.GA30254@shaohui>
-Message-ID: <alpine.DEB.2.00.1011171304060.10254@chino.kir.corp.google.com>
-References: <20101117020759.016741414@intel.com> <20101117021000.568681101@intel.com> <alpine.DEB.2.00.1011162359160.17408@chino.kir.corp.google.com> <20101117075128.GA30254@shaohui>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758869Ab0KQVM4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 16:12:56 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:58724 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758137Ab0KQVMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 16:12:55 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: 2.6.35.5: hibernation broken... AGAIN
+Date: Wed, 17 Nov 2010 22:12:01 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Ondrej Zary <linux@rainbow-software.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@in.ibm.com>, Hugh Dickins <hughd@google.com>
+References: <201011171139.33398.linux@rainbow-software.org> <201011172153.52644.rjw@sisk.pl> <20101117130422.d9de48d8.akpm@linux-foundation.org>
+In-Reply-To: <20101117130422.d9de48d8.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011172212.01433.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010, Shaohui Zheng wrote:
-
-> > Hmm, why can't you use numa=hide to hide a specified quantity of memory 
-> > from the kernel and then use the add_memory() interface to hot-add the 
-> > offlined memory in the desired quantity?  In other words, why do you need 
-> > to track the offlined nodes with a state?
+On Wednesday, November 17, 2010, Andrew Morton wrote:
+> On Wed, 17 Nov 2010 21:53:52 +0100
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> 
+> > On Wednesday, November 17, 2010, Ondrej Zary wrote:
+> > > Hello,
+> > > the nasty memory-corrupting hibernation bug 
+> > > https://bugzilla.kernel.org/show_bug.cgi?id=15753 is back since 2.6.35.5.
+> > > 2.6.35.4 works fine, 2.6.35.5 crashes after two days.
+> > > 
+> > > It seems to be caused by b77c254d8d66e5e9aa81239fedba9f3d568097d9.
 > > 
-> > The userspace interface would take a desired size of hidden memory to 
-> > hot-add and the node id would be the first_unset_node(node_online_map).
-> Yes, it is a good idea, your solution is what we indeed do in our first 2
-> versions.  We use mem=memsize to hide memory, and we call add_memory interface
-> to hot-add offlined memory with desired quantity, and we can also add to
-> desired nodes(even through the nodes does not exists). it is very flexible
-> solution.
+> > Can you, _please_, always put all of the basic commit info (subject, author,
+> > who signed it off) in bug reports?
+> > 
+> > In this particular case I don't have a -stable tree handy at the moment and
+> > can't even see what the commit is.
 > 
-> However, this solution was denied since we notice NUMA emulation, we should
-> reuse it.
+> You can simply do a google search for the commit ID.  It is
+
+Thanks! :-)
+
+> commit b77c254d8d66e5e9aa81239fedba9f3d568097d9
+> Author: Hugh Dickins <hughd@google.com>
+> Date:   Thu Sep 9 16:38:09 2010 -0700
 > 
+>     swap: prevent reuse during hibernation
 
-I don't understand why that's a requirement, NUMA emulation is a seperate 
-feature.  Although both are primarily used to test and instrument other VM 
-and kernel code, NUMA emulation is restricted to only being used at boot 
-to fake nodes on smaller machines and can be used to test things like the 
-slab allocator.  The NUMA hotplug emulator that you're developing here is 
-primarily used to test the hotplug callbacks; for that use-case, it seems 
-particularly helpful if nodes can be hotplugged of various sizes and node 
-ids rather than having static characteristics that cannot be changed with 
-a reboot.
-
-> Currently, our solution creates static nodes when OS boots, only the node with 
-> state N_HIDDEN can be hot-added with node/probe interface, and we can query 
-> 
-
-The idea that I've proposed (and you've apparently thought about and even 
-implemented at one point) is much more powerful than that.  We need not 
-query the state of hidden nodes that we've setup at boot but can rather 
-use the amount of hidden memory to setup the nodes in any way that we want 
-at runtime (various sizes, interleaved node ids, etc).
+So I guess we should Cc Hugh ...
