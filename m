@@ -1,63 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933673Ab0KQBcJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 20:32:09 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:49810 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756739Ab0KQBcI (ORCPT
+	id S933619Ab0KQBew (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 20:34:52 -0500
+Received: from mail.windriver.com ([147.11.1.11]:43658 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755996Ab0KQBev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 20:32:08 -0500
-Date: Tue, 16 Nov 2010 20:31:48 -0500
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101117013148.GA22651@bombadil.infradead.org>
-References: <AANLkTimHtjH3YvtX6i542_XjfFeuvG-AnU8i224a1R4j@mail.gmail.com>
- <1289778189.5154.10.camel@maggy.simson.net>
- <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
- <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com>
- <1289783580.495.58.camel@maggy.simson.net>
- <1289811438.2109.474.camel@laptop>
- <1289820766.16406.45.camel@maggy.simson.net>
- <1289821590.16406.47.camel@maggy.simson.net>
- <20101115125716.GA22422@redhat.com>
- <1289856350.14719.135.camel@maggy.simson.net>
+	Tue, 16 Nov 2010 20:34:51 -0500
+Message-ID: <4CE33256.3030308@windriver.com>
+Date: Wed, 17 Nov 2010 09:39:34 +0800
+From: haishan <shan.hai@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289856350.14719.135.camel@maggy.simson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Josh Boyer <jwboyer@gmail.com>
+CC: Hai Shan <haishan.bai@gmail.com>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] Fix float to unsigned conversion failure with SPE enabled
+References: <1289707863-1768-1-git-send-email-shan.hai@windriver.com>	<1289707863-1768-2-git-send-email-shan.hai@windriver.com> <AANLkTi=SDjsDgzP=oLduB_Mo6BJCwEPe0q_VZva2VB1a@mail.gmail.com>
+In-Reply-To: <AANLkTi=SDjsDgzP=oLduB_Mo6BJCwEPe0q_VZva2VB1a@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Nov 2010 01:34:46.0360 (UTC) FILETIME=[9DF3AD80:01CB85F7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+Josh Boyer wrote:
+> On Sat, Nov 13, 2010 at 11:11 PM, Hai Shan <haishan.bai@gmail.com> wrote:
+>   
+>> Fixed the failure on converting minus float to unsigned int with SPE enabled
+>>
+>> Signed-off-by: Hai Shan <shan.hai@windriver.com>
+>>     
+>
+> You should make sure to send PowerPC patches to linuxppc-dev.
+>
+>   
 
-On Mon, Nov 15, 2010 at 02:25:50PM -0700, Mike Galbraith wrote:
-> --- linux-2.6.orig/drivers/tty/tty_io.c
-> +++ linux-2.6/drivers/tty/tty_io.c
-> @@ -3160,6 +3160,7 @@ static void __proc_set_tty(struct task_s
->  	put_pid(tsk->signal->tty_old_pgrp);
->  	tsk->signal->tty = tty_kref_get(tty);
->  	tsk->signal->tty_old_pgrp = NULL;
-> +	sched_autogroup_create_attach(tsk);
->  }
->  
+Thanks for your suggestion, I will send it to linuxppc-dev.
 
-This is a bit of a problem, as it's called in_atomic context and kmalloc's
-under GFP_KERNEL (which can sleep.) This results in sleep-under-spinlock
-prints when CONFIG_DEBUG_SPINLOCK_SLEEP=y.
+Regards
+Shan Hai
 
-I spent a bit of time thinking about how to fix that, but it's a bit
-difficult because of the nested spin_lock_irq in that bit of the
-tty_ioctl callchain.
+> josh
+>
+>   
+>> ---
+>>  arch/powerpc/math-emu/math_efp.c |   17 +++++++++++++----
+>>  1 files changed, 13 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/powerpc/math-emu/math_efp.c b/arch/powerpc/math-emu/math_efp.c
+>> index 41f4ef3..338a128 100644
+>> --- a/arch/powerpc/math-emu/math_efp.c
+>> +++ b/arch/powerpc/math-emu/math_efp.c
+>> @@ -320,7 +320,9 @@ int do_spe_mathemu(struct pt_regs *regs)
+>>                        } else {
+>>                                _FP_ROUND_ZERO(1, SB);
+>>                        }
+>> -                       FP_TO_INT_S(vc.wp[1], SB, 32, ((func & 0x3) != 0));
+>> +                       /* SB_s: convert from minus float to unsigned int */
+>> +                       FP_TO_INT_S(vc.wp[1], SB, 32,
+>> +                                       ((func & 0x3) != 0) || SB_s);
+>>                        goto update_regs;
+>>
+>>                default:
+>> @@ -458,7 +460,11 @@ cmp_s:
+>>                        } else {
+>>                                _FP_ROUND_ZERO(2, DB);
+>>                        }
+>> -                       FP_TO_INT_D(vc.wp[1], DB, 32, ((func & 0x3) != 0));
+>> +                       /* DB_s: convert from minus long double to
+>> +                        * unsigned long long
+>> +                        */
+>> +                       FP_TO_INT_D(vc.wp[1], DB, 32,
+>> +                                       ((func & 0x3) != 0) || DB_s);
+>>                        goto update_regs;
+>>
+>>                default:
+>> @@ -589,8 +595,11 @@ cmp_d:
+>>                                _FP_ROUND_ZERO(1, SB0);
+>>                                _FP_ROUND_ZERO(1, SB1);
+>>                        }
+>> -                       FP_TO_INT_S(vc.wp[0], SB0, 32, ((func & 0x3) != 0));
+>> -                       FP_TO_INT_S(vc.wp[1], SB1, 32, ((func & 0x3) != 0));
+>> +                       /* SB*_s: convert from minus float to unsigned int */
+>> +                       FP_TO_INT_S(vc.wp[0], SB0, 32,
+>> +                                       ((func & 0x3) != 0) || SB0_s);
+>> +                       FP_TO_INT_S(vc.wp[1], SB1, 32,
+>> +                                       ((func & 0x3) != 0) || SB1_s);
+>>                        goto update_regs;
+>>
+>>                default:
+>> --
+>> 1.7.0.4
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>     
 
-I'll think about it some more tonight and follow-up if I can think of a
-way to fix it.
-
-regards, Kyle
