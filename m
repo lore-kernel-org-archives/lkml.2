@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933871Ab0KQLA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 06:00:27 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:37949 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932800Ab0KQLA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 06:00:26 -0500
-Date: Wed, 17 Nov 2010 12:52:48 +0200
-From: Mika Westerberg <ext-mika.1.westerberg@nokia.com>
-To: ext Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mika Westerberg <mika.westerberg@iki.fi>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/4] proc/vmcore: allow archs to override
-	vmcore_elf_check_arch()
-Message-ID: <20101117105248.GV17801@esdhcp04058.research.nokia.com>
-References: <cover.1289292124.git.mika.westerberg@iki.fi> <df680f67f33d8b0ef815045b53f205b3ff35de63.1289292124.git.mika.westerberg@iki.fi> <20101116142850.df5e9805.akpm@linux-foundation.org> <20101116225042.GH21926@n2100.arm.linux.org.uk>
+	id S934071Ab0KQLF4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 06:05:56 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:33088 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933229Ab0KQLFq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 06:05:46 -0500
+Date: Wed, 17 Nov 2010 12:05:16 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Eric Cooper <ecc@cmu.edu>
+Cc: linux-kernel@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>,
+        Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] add netdev led trigger
+Message-ID: <20101117105925.GC1574@ucw.cz>
+References: <1289768305-1224-1-git-send-email-ecc@cmu.edu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101116225042.GH21926@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Nokia-AV: Clean
+In-Reply-To: <1289768305-1224-1-git-send-email-ecc@cmu.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 10:50:42PM +0000, ext Russell King - ARM Linux wrote:
-[...]
-> 
-> So, as far as the above patch goes, I think it's sane, as it now
-> allows architectures to deal with the 64-bit/32-bit ELF issues in the
-> crash dump code in a more sane manner.
+Hi!
 
-Russell,
+> Add a netdev LED trigger for all Blinkenlights lovers...
+> Originally taken from https://dev.openwrt.org/ticket/2776
+> Slightly updated for 2.6.24 by Mickey Lauer <mickey@openmoko.org>
+> and for 2.6.36 by Eric Cooper <ecc@cmu.edu>
 
-Is it ok if I submit this patch (along with patches 2 and 3) to your patch
-system as Andrew suggested, or do you prefer to merge it via some other tree?
+Nice!
 
-Thanks,
-MW
+> +/*
+> + * Configurable sysfs attributes:
+> + *
+> + * device_name - network device name to monitor
+> + *
+> + * interval - duration of LED blink, in milliseconds
+
+This needs to go to Doc/ somewhere.
+
+> + * mode - either "none" (LED is off) or a space separated list
+> + * of one or more of:
+> + *   link: LED's normal state reflects whether the link is up (has carrier)
+> + *         or not
+> + *   tx:   LED blinks on transmitted data
+> + *   rx:   LED blinks on receive data
+> + *
+> + * Some suggestions:
+> + *
+> + *  Simple link status LED:
+> + *  $ echo netdev >someled/trigger
+> + *  $ echo eth0 >someled/device_name
+> + *  $ echo link >someled/mode
+> + *
+> + *  Ethernet-style link/activity LED:
+> + *  $ echo netdev >someled/trigger
+> + *  $ echo eth0 >someled/device_name
+> + *  $ echo "link tx rx" >someled/mode
+
+One value per file?
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
