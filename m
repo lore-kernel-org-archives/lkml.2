@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757696Ab0KQBNB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 20:13:01 -0500
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:42926 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754186Ab0KQBNA (ORCPT
+	id S1757745Ab0KQBQG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 20:16:06 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60789 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755375Ab0KQBQF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 20:13:00 -0500
-Date: Wed, 17 Nov 2010 12:12:54 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Nick Piggin <npiggin@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [patch 1/6] fs: icache RCU free inodes
-Message-ID: <20101117011254.GJ22876@dastard>
-References: <20101109124610.GB11477@amd>
- <AANLkTi=b3dEmoTgrJ2xMTUzgM-mUQNNx6J9jeLq2=mtf@mail.gmail.com>
- <1289319698.2774.16.camel@edumazet-laptop>
- <AANLkTimJCgsPqB9ihbScr1RdZ+XGk2tq7LZNfh109Skv@mail.gmail.com>
- <20101109220506.GE3246@amd>
- <AANLkTi=H5ZZ3b5F=Z-PM6FX84FJNzdSh4_HbeeU666ts@mail.gmail.com>
- <20101115010027.GC22876@dastard>
- <20101115042059.GB3320@amd>
- <20101116030242.GI22876@dastard>
- <20101116034906.GA4596@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101116034906.GA4596@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 16 Nov 2010 20:16:05 -0500
+Date: Tue, 16 Nov 2010 17:12:25 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
+        stable@kernel.org
+Subject: Re: [PATCH] Make swap accounting default behavior configurable
+Message-Id: <20101116171225.274019cf.akpm@linux-foundation.org>
+In-Reply-To: <20101117092339.1b7c2d6d.nishimura@mxp.nes.nec.co.jp>
+References: <20101116101726.GA21296@tiehlicka.suse.cz>
+	<20101116124615.978ed940.akpm@linux-foundation.org>
+	<20101117092339.1b7c2d6d.nishimura@mxp.nes.nec.co.jp>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 02:49:06PM +1100, Nick Piggin wrote:
-> On Tue, Nov 16, 2010 at 02:02:43PM +1100, Dave Chinner wrote:
-> > On Mon, Nov 15, 2010 at 03:21:00PM +1100, Nick Piggin wrote:
-> > > This is 30K inodes per second per CPU, versus nearly 800K per second
-> > > number that I measured the 12% slowdown with. About 25x slower.
+On Wed, 17 Nov 2010 09:23:39 +0900 Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+
+> > > 
+> > > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > > index ed45e98..14eafa5 100644
+> > > --- a/Documentation/kernel-parameters.txt
+> > > +++ b/Documentation/kernel-parameters.txt
+> > > @@ -2385,6 +2385,9 @@ and is between 256 and 4096 characters. It is defined in the file
+> > >  			improve throughput, but will also increase the
+> > >  			amount of memory reserved for use by the client.
+> > >  
+> > > +	swapaccount	[KNL] Enable accounting of swap in memory resource
+> > > +			controller. (See Documentation/cgroups/memory.txt)
 > > 
-> > Hi Nick, the ramfs (800k/12%) numbers are not the context I was
-> > responding to - you're comparing apples to oranges. I was responding to
-> > the "XFS [on a ramdisk] is about 4.9% slower" result.
+> > So we have swapaccount and noswapaccount.  Ho hum, "swapaccount=[1|0]"
+> > would have been better.
+> > 
+> I suggested to keep "noswapaccount" for compatibility.
+> If you and other guys don't like having two parameters, I don't stick to
+> the old parameter.
 > 
-> Well xfs on ramdisk was (85k/4.9%).
 
-How many threads? On a 2.26GHz nehalem-class Xeon CPU, I'm seeing:
+Yes, we're stuck with the old one now.
 
-threads		files/s
- 1		 45k
- 2		 70k
- 4		130k
- 8		230k
+But we should note that "foo=[0|1]" is superior to "foo" and "nofoo". 
+Even if we didn't initially intend to add "nofoo".
 
-With scalability mainly limited by the dcache_lock. I'm not sure
-what you 85k number relates to in the above chart. Is it a single
-thread number, or something else? If it is a single thread, can you
-run you numbers again with a thread per CPU?
-
-> A a lower number, like 30k, I would
-> expect that should be around 1-2% perhaps. And when in the context of a
-> real workload that is not 100% CPU bound on creating and destroying a
-> single inode, I expect that to be well under 1%.
-
-I don't think we are comparing apples to apples. I cannot see how you
-can get mainline XFS to sustain 85kfiles/s/cpu across any number of
-CPUs, so lets make sure we are comparing the same thing....
-
-> Like I said, I never disputed a potential regression, but I have looked
-> for workloads that have a detectable regression and have not found any.
-> And I have extrapolated microbenchmark numbers to show that it's not
-> going to be a _big_ problem even in a worst case scenario.
-
-How did you extrapolate the numbers?
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
