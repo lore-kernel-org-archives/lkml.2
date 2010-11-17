@@ -1,23 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934959Ab0KQVo7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 16:44:59 -0500
-Received: from www.tglx.de ([62.245.132.106]:60279 "EHLO www.tglx.de"
+	id S1759085Ab0KQVrI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 16:47:08 -0500
+Received: from www.tglx.de ([62.245.132.106]:60355 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758075Ab0KQVo5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 16:44:57 -0500
-Date: Wed, 17 Nov 2010 22:44:23 +0100 (CET)
+	id S1758844Ab0KQVrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 16:47:07 -0500
+Date: Wed, 17 Nov 2010 22:46:48 +0100 (CET)
 From: Thomas Gleixner <tglx@linutronix.de>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: Andi Kleen <andi@firstfloor.org>,
+To: Alexander Shishkin <virtuoso@slind.org>
+cc: Davide Libenzi <davidel@xmailserver.org>,
+        Kyle Moffett <kyle@moffetthome.net>, Valdis.Kletnieks@vt.edu,
+        LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Arjan van de Ven <arjan@linux.intel.com>,
-        Andre@firstfloor.org, ltt-dev@lists.casi.polymtl.ca,
-        linux-kernel@vger.kernel.org, pierre-marc.fournier@polymtl.ca
-Subject: Re: [ANNOUNCE] New tools: lttngtrace and lttngreport
-In-Reply-To: <20101117173124.GB13717@Krystal>
-Message-ID: <alpine.LFD.2.00.1011172146340.2900@localhost6.localdomain6>
-References: <20101115134243.GA2772@Krystal> <20101115160745.GA7203@Krystal> <87y68sqiyb.fsf@basil.nowhere.org> <20101117173124.GB13717@Krystal>
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCHv6 0/7] system time changes notification
+In-Reply-To: <20101117212912.GC26184@shisha.kicks-ass.net>
+Message-ID: <alpine.LFD.2.00.1011172244470.2900@localhost6.localdomain6>
+References: <1289503802-22444-1-git-send-email-virtuoso@slind.org> <22542.1289507293@localhost> <20101111205123.GC10585@shisha.kicks-ass.net> <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6> <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
+ <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6> <20101117190659.GB26184@shisha.kicks-ass.net> <alpine.DEB.2.00.1011171130210.1595@davide-lnx1> <20101117212912.GC26184@shisha.kicks-ass.net>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -25,74 +29,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010, Mathieu Desnoyers wrote:
+On Wed, 17 Nov 2010, Alexander Shishkin wrote:
 
-> * Andi Kleen (andi@firstfloor.org) wrote:
-> > Mathieu Desnoyers <mathieu.desnoyers@efficios.com> writes:
-> > >
-> > >         --> Blocked in RUNNING, SYSCALL 142 [sys_select+0x0/0xc0], ([...], dur: 0.029567)
-> > >         |    --> Blocked in RUNNING, SYSCALL 168 [sys_poll+0x0/0xc0], ([...], dur: 1.187935)
-> > >         |    --- Woken up by an IRQ: IRQ 0 [timer]
-> > >         --- Woken up in context of 7401 [gnome-power-man] in high-level state RUNNING
+> On Wed, Nov 17, 2010 at 12:42:52PM -0800, Davide Libenzi wrote:
+> > On Wed, 17 Nov 2010, Alexander Shishkin wrote:
 > > 
-> > Very nice! Now how can we get that with an unpatched kernel tree?
+> > > > But what you folks really want for this stuff is an extension to
+> > > > timerfd as you want to be able to poll, right?
+> > > > 
+> > > > So what about the following:
+> > > > 
+> > > > Add a new flag TDF_NOTIFY_CLOCK_WAS_SET to the timerfd flags. Now this
+> > > > flag adds the timer to a separate list, which gets woken up when the
+> > > > clock is set.
+> > > > 
+> > > > No new syscall, just a few lines of code in fs/timerfd.c and
+> > > > clock_was_set().
+> > > > 
+> > > > Thoughts ?
+> > > 
+> > > Something like this (sans ugliness)?
+> > 
+> > Oh, gosh, please.  This is interface-multiplexing-a-palooza.
 > 
-> Well, I'm afraid the collection approach "trace" is currently taking won't allow
-> this kind of dependency wakeup chain tracking, because they focus on tracing
-> operations happening on a thread and its children, but the reality is that the
-> wakeup chains often spread outside of this scope.
+> Thomas made a suggestion, I came up with how it might look like so that
 
-You are completely missing the point. There is no need to point out
-that 'trace' does not do that. It is tracking a process (group)
-context (though it can do system wide with the right permissions as
-well).
-
-And it's completely irrelevant for a user space programmer where the
-kernel spends its time. What's not irrelevant is the information what
-caused the kernel to spend time, i.e. which access to which data
-resulted in a page fault or IO and how long did it take to come back.
-
-It's completely irrelevant for him whether the kernel ran in circles
-or not. If he sees a repeating pattern that a PF recovery or a
-read/write to some file takes ages, he'll poke the sysadmin or the
-kernel dude, which then will drill down into the gory details.
-
-http://lwn.net/Articles/415760/
-
- "... Indeed I've been wishing for a tool which would easily tell me
- what pages I'm faulting in (and in what order) out of a 5GB mmaped
- file, in order to help debug performance issues with disk seeks when
- the file is totally paged out."
-
-That's what relevant to user space developers, not the gory details
-why the kernel took time X to retrieve that data from disk. Simply
-because you can improve performance when you have such information by
-rearranging your code and access patterns. The same applies for other
-things like cache misses, which can be easily integrated into 'trace'.
-
-> This is why lttngtrace gathers a system-wide trace even though we're mostly
-> intested in the wait/wakeups of a specific PID.
-
-Which results in a permission problem which you are completely
-ignoring. Not a surprise though - I'm used to the academic way of
-defining preliminaries and ignoring side effects just to get the paper
-written.
-
-> Wakeup dependency analysis depends on a few key events to track these chains.
-> It's all described in Pierre-Marc Fournier's master thesis and implemented as
-
-You seem to believe that kernel developers need to read a thesis to
-understand wakeup chains and what it takes to trace them?
-
-Dammit, we do that on a daily base and we did it even before we had
-the ftrace/perf infrastructure in place without reading a thesis.
-
-Stop this bullshit once and forever. You can do that in the lecture
-room of your university and in the seminar for big corporate engineers
-who are made to believe that this is important to improve their
-productivity.
-
-Your "DrTracing knows it better attitude" starts to be really annoying.
+Yeah, I made the suggestion in the first place and I regretted it when
+Davide told me that I'm nuts :)
 
 Thanks,
 
