@@ -1,50 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934518Ab0KQGml (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 01:42:41 -0500
-Received: from www.wytron.com.tw ([211.75.82.101]:54281 "EHLO
-	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933297Ab0KQGmk (ORCPT
+	id S934538Ab0KQGnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 01:43:53 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44368 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934439Ab0KQGnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 01:42:40 -0500
-X-Greylist: delayed 1657 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Nov 2010 01:42:40 EST
-Message-ID: <4CE373BC.30805@wytron.com.tw>
-Date: Wed, 17 Nov 2010 14:18:36 +0800
-From: Thomas Chou <thomas@wytron.com.tw>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b2 Thunderbird/3.1.6
+	Wed, 17 Nov 2010 01:43:51 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=k0VKzm9Mekdixzbcc7lXuP38fiILA+sI38S8btpepo2DUS7cGt0ljAyvFQeOyVr+yg
+         KLql/SiJhlIK7P852gHaZJ4Om7ld0dw91IXG8PNT2+N03PANE9XJZqnV7YWWTowqxU99
+         daXzFTlqDv0oBHyQW0/p331wMu0CZ4agZghRs=
+Message-ID: <4CE379A3.2060007@gmail.com>
+Date: Tue, 16 Nov 2010 22:43:47 -0800
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: Baruch Siach <baruch@tkos.co.il>
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Alex Gershgorin <agersh@rambler.ru>
-Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
-References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
-In-Reply-To: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: devicetree-discuss@lists.ozlabs.org, linux-arch@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, sodaville@linutronix.de,
+        microblaze-uclinux@itee.uq.edu.au, arjan@linux.intel.com
+Subject: Re: [PATCH 3/5] x86/of:  Add building device tree blob(s) into image.
+References: <cover.1289943240.git.dirk.brandewie@gmail.com> <35263573f57fd7e780dede628cf489212bfa1400.1289943240.git.dirk.brandewie@gmail.com> <20101117060227.GH12813@angua.secretlab.ca>
+In-Reply-To: <20101117060227.GH12813@angua.secretlab.ca>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 192.168.1.15
-X-SA-Exim-Mail-From: thomas@wytron.com.tw
-X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/15/2010 04:23 PM, Baruch Siach wrote:
-> From: Alex Gershgorin<agersh@rambler.ru>
+On 11/16/2010 10:02 PM, Grant Likely wrote:
+> On Tue, Nov 16, 2010 at 02:41:38PM -0800, dirk.brandewie@gmail.com wrote:
+>> From: Dirk Brandewie<dirk.brandewie@gmail.com>
+>>
+>> This patch adds linking device tree blobs into vmlinux. DTB's are
+>> added by adding the blob object name to list of objects to be linked
+>> into the image.
+>> e.g:
+>>    obj-$(CONFIG_TEST_DTB) += test.dtb.o
+>>
+>> The set of DTB linked into the image is controlled the Kconfig file
+>> in arch/x86/kernel/dts/Kconfig
+>>
+>> Signed-off-by: Dirk Brandewie<dirk.brandewie@gmail.com>
+>> ---
+>>   arch/x86/Kconfig            |    6 +++++-
+>>   arch/x86/kernel/Makefile    |    6 ++++++
+>>   arch/x86/kernel/dts/Kconfig |    7 +++++++
+>>   3 files changed, 18 insertions(+), 1 deletions(-)
+>>   create mode 100644 arch/x86/kernel/dts/Kconfig
+>>
+>> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+>> index 5904f38..f2f516a 100644
+>> --- a/arch/x86/Kconfig
+>> +++ b/arch/x86/Kconfig
+>> @@ -299,13 +299,17 @@ config X86_BIGSMP
+>>   	---help---
+>>   	  This option is needed for the systems that have more than 8 CPUs
+>>
+>> -config X86_OF
+>> +menuconfig X86_OF
+>>   	bool "Support for device tree"
+>>   	select OF
+>>   	select OF_FLATTREE
+>>   	---help---
+>>   	  Device tree support on X86.
+>>
+>> +if X86_OF
+>> +source arch/x86/kernel/dts/Kconfig
+>> +endif
+>> +
+>>   if X86_32
+>>   config X86_EXTENDED_PLATFORM
+>>   	bool "Support for extended (non-PC) x86 platforms"
+>> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+>> index 586df14..49e017d 100644
+>> --- a/arch/x86/kernel/Makefile
+>> +++ b/arch/x86/kernel/Makefile
+>> @@ -114,6 +114,12 @@ obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
+>>   obj-$(CONFIG_X86_OF)			+= prom.o
+>>
+>>   ###
+>> +# device tree blobs
+>> +obj-$(CONFIG_CE4100_DTB) += ce4100.dtb.o
+>> +obj-$(CONFIG_TEST_DTB) += test.dtb.o
+>> +
+>> +
+>> +###
+>>   # 64 bit specific files
+>>   ifeq ($(CONFIG_X86_64),y)
+>>   	obj-$(CONFIG_AUDIT)		+= audit_64.o
+>> diff --git a/arch/x86/kernel/dts/Kconfig b/arch/x86/kernel/dts/Kconfig
+>> new file mode 100644
+>> index 0000000..d3e5cd4
+>> --- /dev/null
+>> +++ b/arch/x86/kernel/dts/Kconfig
+>> @@ -0,0 +1,7 @@
+>> +config CE4100_DTB
+>> +       bool "Intel CE4100"
+>> +
+>> +config TEST_DTB
+>> +       bool "Test DTS"
+>> +
+>> +
 >
-> The active serial protocol can be used to program Altera serial configuration
-> devices. This driver uses the kernel gpio interface to implement the active
-> serial protocol.
->
-> This patch also introduces the include/platform_drivers/ directory, which is
-> the new home for platform data headers. This is per Greg's suggestion.
+> As previously mentioned, this isn't going to scale.  Need to look at
+> allowing the user to specify a list of .dtbs that will be linked in.
 >
 
-Hi Alex,
+These config variables will likely get pushed into being set when the
+platform configuration is selected. I still need to talk to the x86 maintainers
+and my distribution team to figure out what is going to happen here.
 
-Altera EPCS is normal SPI serial flash, which is exactly the same as 
-STmicro part. Please consider existing drivers/mtd/devices/m25p80.c and 
-drivers/spi/spi_gpio.c.
+> g.
+>
+>> --
+>> 1.7.2.3
+>>
+>> _______________________________________________
+>> devicetree-discuss mailing list
+>> devicetree-discuss@lists.ozlabs.org
+>> https://lists.ozlabs.org/listinfo/devicetree-discuss
 
-Best regards,
-Thomas
