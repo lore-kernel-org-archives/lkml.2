@@ -1,109 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934288Ab0KQGaA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 01:30:00 -0500
-Received: from havoc.gtf.org ([69.61.125.42]:47665 "EHLO havoc.gtf.org"
+	id S934385Ab0KQGcZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 01:32:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25761 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756765Ab0KQG37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 01:29:59 -0500
-Date: Wed, 17 Nov 2010 01:29:58 -0500
-From: Jeff Garzik <jeff@garzik.org>
-To: linux-ide@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] libata: remove unlock+relock cycle in ata_scsi_queuecmd
-Message-ID: <20101117062958.GA2894@havoc.gtf.org>
-Mime-Version: 1.0
+	id S933323Ab0KQGcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 01:32:23 -0500
+Date: Wed, 17 Nov 2010 01:31:26 -0500
+From: Josef Bacik <josef@redhat.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Avi Kivity <avi@redhat.com>,
+        Josef Bacik <josef@redhat.com>, david@fromorbit.com,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com, cmm@us.ibm.com, cluster-devel@redhat.com,
+        ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH 4/6] Ext4: fail if we try to use hole punch
+Message-ID: <20101117063125.GE5618@dhcp231-156.rdu.redhat.com>
+References: <1289840723-3056-1-git-send-email-josef@redhat.com> <1289840723-3056-5-git-send-email-josef@redhat.com> <4CE2783F.1020004@redhat.com> <20101116125016.GA31957@dhcp231-156.rdu.redhat.com> <4CE28211.6060204@redhat.com> <20101117030640.GD3290@thunk.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20101117030640.GD3290@thunk.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Nov 16, 2010 at 10:06:40PM -0500, Ted Ts'o wrote:
+> > >There is no simple way to test if a filesystem supports hole punching or not so
+> > >the check has to be done per fs.  Thanks,
+> > 
+> > Could put a flag word in superblock_operations.  Filesystems which
+> > support punching (or other features) can enable it there.
+> 
+> No, it couldn't be in super_operations.  It may vary on a per-inode
+> basis for some file systems, such as ext4 (depending on whether the
+> inode is extent-mapped or indirect-block mapped).
+> 
+> So at least for ext4 we'd need to call into fallocate() function
+> anyway, once we add support.  I suppose if other file systems really
+> want it, we could add a flag to the super block ops structure, so they
+> don't have do the "do we support the punch" operation.  I can go
+> either way on that; although if we think the majority of file systems
+> are going support punch in the long-term, then it might not be worth
+> it to add such a flag.
+>
 
-This is in #upstream-fixes...  Each libata command is now two lock-ops
-less expensive... for free!  Should be nice for multi-core SSD users etc.
+Yeah thats alot of extra code just for one part of fallocate.  Calling into
+->fallocate is perfectly reasonable, especially since ext4 works the way it
+does, I'm going to leave things as they are.  Thanks,
 
-(not a pull request, Linus, just an FYI)
-
-
-commit 02ab5c49284c91901cad783921e816297c92ebf8
-Author: Jeff Garzik <jeff@garzik.org>
-Date:   Wed Nov 17 01:19:11 2010 -0500
-
-    [libata] kill unlock+relock cycle in SCSI queuecommand hook
-    
-    Now that SCSI's ->queuecommand hook is unlocked, ATA no longer needs
-    to unlock the SCSI host_lock prior to work, and re-lock the host_lock
-    once our work is complete.
-    
-    Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-
- drivers/ata/libata-scsi.c |   23 ++++++++++++++---------
- 1 file changed, 14 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 19835d3..d72340e 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3166,8 +3166,8 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
- 
- /**
-  *	ata_scsi_queuecmd - Issue SCSI cdb to libata-managed device
-+ *	@shost: SCSI host destination for given command
-  *	@cmd: SCSI command to be sent
-- *	@done: Completion function, called when command is complete
-  *
-  *	In some cases, this function translates SCSI commands into
-  *	ATA taskfiles, and queues the taskfiles to be sent to
-@@ -3183,36 +3183,41 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
-  *	Return value from __ata_scsi_queuecmd() if @cmd can be queued,
-  *	0 otherwise.
-  */
--static int ata_scsi_queuecmd_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
-+int ata_scsi_queuecmd(struct Scsi_Host *shost, struct scsi_cmnd *cmd)
- {
- 	struct ata_port *ap;
- 	struct ata_device *dev;
- 	struct scsi_device *scsidev = cmd->device;
--	struct Scsi_Host *shost = scsidev->host;
- 	int rc = 0;
-+	unsigned long irq_flags;
- 
--	ap = ata_shost_to_port(shost);
-+	local_irq_save(irq_flags);
- 
-+	spin_lock(shost->host_lock);
-+	scsi_cmd_get_serial(shost, cmd);
- 	spin_unlock(shost->host_lock);
-+
-+	ap = ata_shost_to_port(shost);
-+
- 	spin_lock(ap->lock);
- 
- 	ata_scsi_dump_cdb(ap, cmd);
- 
- 	dev = ata_scsi_find_dev(ap, scsidev);
- 	if (likely(dev))
--		rc = __ata_scsi_queuecmd(cmd, done, dev);
-+		rc = __ata_scsi_queuecmd(cmd, cmd->scsi_done, dev);
- 	else {
- 		cmd->result = (DID_BAD_TARGET << 16);
--		done(cmd);
-+		cmd->scsi_done(cmd);
- 	}
- 
- 	spin_unlock(ap->lock);
--	spin_lock(shost->host_lock);
-+
-+	local_irq_restore(irq_flags);
-+
- 	return rc;
- }
- 
--DEF_SCSI_QCMD(ata_scsi_queuecmd)
--
- /**
-  *	ata_scsi_simulate - simulate SCSI command on ATA device
-  *	@dev: the target device
+Josef 
