@@ -1,96 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935526Ab0KQWTO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 17:19:14 -0500
-Received: from cantor.suse.de ([195.135.220.2]:54862 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933707Ab0KQWTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 17:19:12 -0500
-Date: Wed, 17 Nov 2010 14:19:03 -0800
-From: Greg KH <gregkh@suse.de>
-To: Timur Tabi <timur@freescale.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>
-Subject: Re: How do I choose an arbitrary minor number for my tty device?
-Message-ID: <20101117221903.GA4066@suse.de>
-References: <4CE44B1B.9040709@freescale.com>
- <20101117215147.GA26792@suse.de>
- <4CE452CD.3050001@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE452CD.3050001@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S935543Ab0KQWXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 17:23:09 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55819 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935459Ab0KQWXH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 17:23:07 -0500
+Message-Id: <20101117222056.369896257@chello.nl>
+User-Agent: quilt/0.47-1
+Date: Wed, 17 Nov 2010 23:17:38 +0100
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+        Stephane Eranian <eranian@google.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Kyle Moffett <kyle@moffetthome.net>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [RFC][PATCH 8/8] perf: Sysfs events
+References: <20101117221730.002627458@chello.nl>
+Content-Disposition: inline; filename=perf-sysfs-events.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 04:10:21PM -0600, Timur Tabi wrote:
-> Greg KH wrote:
-> 
-> > What is ePAPR?
-> 
-> It's a specification for an interface between the boot loader and the operating
-> system.  It's based on the device tree model that exists on PowerPC today.
-> ePAPR defines a bunch of extensions, including one for hypervisors.  The byte
-> channel concept is an example of that.
-> 
-> > Why would you need this mapping?  Just do a first-come-first serve
-> > assignment of tty minor devices like all other subsystems do (usb,
-> > serial, acm, etc.)
-> 
-> Without some kind of mapping, there's no way for an application to know which
-> /dev entry to open.  Each byte channel goes to a different
-> 
-> > 
-> > sysfs will show the representation between your ePAPR device "handle"
-> > and the tty device minor just fine, as it does today for those other
-> > types of devices.
-> 
-> I don't see how.  A byte channel node defines several properties, one of which
-> could be a text string that acts as a label.  So if an application is looking
-> for the "channel-to-partition-two" byte channel, it can search for that string
-> in the device tree.  Once it finds the matching node, it can extract the byte
-> channel handle.
-> 
-> At this point, the application will want to open a /dev entry that corresponds
-> to that byte channel handle.  This is the piece I'm missing with the tty layer.
-> 
-> If I want to create a regular character device, I can do this:
-> 
-> bc->dev_id = MKDEV(MAJOR(dev_id), MINOR(dev_id) + i);
-> device_create(ehv_bc_class, NULL, bc->dev_id, bc, "bc%u", bc->handle);
-> 
-> Here, I control the name of the /dev entry via "bc%u".  I want something similar
-> for tty devices.
+Simple example of a static event enumeration,.. need to come up with
+something more dynamic for things like trace-events which can come
+and go during the life-time of a struct pmu.
 
-No, you want to have a tty device attached to your "byte channel
-device".  That will give you the correct mapping here.  Your tty device
-number is sequencial and has nothing in its name to do with your "byte
-channel device number" just like ttyS1 has nothing in its pci device id
-that it lives on with my multi-port serial card.
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ arch/x86/kernel/cpu/perf_event.c |   51 ++++++++++++++++++++++++++++++++++++
+ include/linux/perf_event.h       |    1 
+ kernel/perf_event.c              |   55 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 107 insertions(+)
 
-> > Bonus being that udev will create a persistant device id for your tty
-> > device based on that handle so you can just open that if you want to, no
-> > need to get the kernel involved in sparse minor mappings at all.
-> 
-> I'm not sure I understand that.  In order for udev to do this, I need to tell it
-> what the byte channel handle actually is.  How do I do that using the tty layer?
+Index: linux-2.6/include/linux/perf_event.h
+===================================================================
+--- linux-2.6.orig/include/linux/perf_event.h
++++ linux-2.6/include/linux/perf_event.h
+@@ -578,6 +578,7 @@ struct perf_event;
+ struct pmu {
+ 	struct list_head		entry;
+ 
++	const struct attribute_group	**groups;
+ 	struct device			*dev;
+ 	char				*name;
+ 	int				type;
+Index: linux-2.6/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/kernel/perf_event.c
++++ linux-2.6/kernel/perf_event.c
+@@ -4700,7 +4700,61 @@ static int perf_swevent_init(struct perf
+ 	return 0;
+ }
+ 
++static struct attribute *swevent_attrs[PERF_COUNT_SW_MAX+1];
++
++static ssize_t swevent_attr_show(struct device *dev,
++				 struct device_attribute *attr,
++				 char *buf)
++{
++	int i;
++
++	for (i = 0; swevent_attrs[i]; i++) {
++		if ((struct attribute *)attr == swevent_attrs[i])
++			break;
++	}
++
++	return snprintf(buf, PAGE_SIZE-1, "%d\n", i);
++}
++
++#define SWEVENT_ATTR(name)	\
++	static DEVICE_ATTR(name, S_IRUGO, swevent_attr_show, NULL)
++
++SWEVENT_ATTR(cpu_clock);
++SWEVENT_ATTR(task_clock);
++SWEVENT_ATTR(page_faults);
++SWEVENT_ATTR(context_switches);
++SWEVENT_ATTR(cpu_migrations);
++SWEVENT_ATTR(page_faults_min);
++SWEVENT_ATTR(page_faults_maj);
++SWEVENT_ATTR(alignment_faults);
++SWEVENT_ATTR(emulation_faults);
++
++static struct attribute *swevent_attrs[] = {
++	&dev_attr_cpu_clock.attr,
++	&dev_attr_task_clock.attr,
++	&dev_attr_page_faults.attr,
++	&dev_attr_context_switches.attr,
++	&dev_attr_cpu_migrations.attr,
++	&dev_attr_page_faults_min.attr,
++	&dev_attr_page_faults_maj.attr,
++	&dev_attr_alignment_faults.attr,
++	&dev_attr_emulation_faults.attr,
++	NULL,
++};
++
++static struct attribute_group swevent_group = {
++	.name	= "events",
++	.attrs	= swevent_attrs,
++};
++
++static const struct attribute_group *swevent_groups[] = {
++	&swevent_group,
++	NULL
++};
++
+ static struct pmu perf_swevent = {
++	.groups		= swevent_groups,
++
+ 	.task_ctx_nr	= perf_sw_context,
+ 
+ 	.event_init	= perf_swevent_init,
+@@ -5172,6 +5226,7 @@ static int pmu_dev_alloc(struct pmu *pmu
+ 	dev_set_drvdata(pmu->dev, pmu);
+ 	pmu->dev->bus = &pmu_bus;
+ 	pmu->dev->release = pmu_dev_release;
++	pmu->dev->groups = pmu->groups;
+ 	ret = device_add(pmu->dev);
+ 	if (ret)
+ 		goto free_dev;
+Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c
++++ linux-2.6/arch/x86/kernel/cpu/perf_event.c
+@@ -25,6 +25,7 @@
+ #include <linux/highmem.h>
+ #include <linux/cpu.h>
+ #include <linux/bitops.h>
++#include <linux/device.h>
+ 
+ #include <asm/apic.h>
+ #include <asm/stacktrace.h>
+@@ -1607,7 +1608,57 @@ int x86_pmu_event_init(struct perf_event
+ 	return err;
+ }
+ 
++static struct attribute *hwevent_attrs[PERF_COUNT_HW_MAX+1];
++
++static ssize_t hwevent_attr_show(struct device *dev,
++				 struct device_attribute *attr,
++				 char *buf)
++{
++	int i;
++
++	for (i = 0; hwevent_attrs[i]; i++) {
++		if ((struct attribute *)attr == hwevent_attrs[i])
++			break;
++	}
++
++	return snprintf(buf, PAGE_SIZE-1, "0x%Lx\n", x86_pmu.event_map(i));
++}
++
++#define HWEVENT_ATTR(name)	\
++	static DEVICE_ATTR(name, S_IRUGO, hwevent_attr_show, NULL)
++
++HWEVENT_ATTR(cpu_cycles);
++HWEVENT_ATTR(instructions);
++HWEVENT_ATTR(cache_references);
++HWEVENT_ATTR(cache_misses);
++HWEVENT_ATTR(branch_instructions);
++HWEVENT_ATTR(branch_misses);
++HWEVENT_ATTR(bus_cycles);
++
++static struct attribute *hwevent_attrs[] = {
++	&dev_attr_cpu_cycles.attr,
++	&dev_attr_instructions.attr,
++	&dev_attr_cache_references.attr,
++	&dev_attr_cache_misses.attr,
++	&dev_attr_branch_instructions.attr,
++	&dev_attr_branch_misses.attr,
++	&dev_attr_bus_cycles.attr,
++	NULL,
++};
++
++static struct attribute_group hwevent_group = {
++	.name	= "events",
++	.attrs	= hwevent_attrs,
++};
++
++static const struct attribute_group *hwevent_groups[] = {
++	&hwevent_group,
++	NULL
++};
++
+ static struct pmu pmu = {
++	.groups		= hwevent_groups,
++
+ 	.pmu_enable	= x86_pmu_enable,
+ 	.pmu_disable	= x86_pmu_disable,
+ 
 
-You just create your tty device and assign the parent of it to be your
-"byte channel device".  Just like we do for PCI, USB, and all other bus
-device types.
 
-I think you are forgetting that your byte channel devices must be
-"devices" in the system here, right?  There is a 'struct bus_id" for
-your bus that these devices live on.  Then you create a tty device in
-your tty driver that attaches to the byte channel that shows up as a tty
-device on your bus.
-
-Does that help explain things a bit better?
-
-thanks,
-
-greg k-h
