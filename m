@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935654Ab0KQWx0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 17:53:26 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:45686 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935592Ab0KQWxY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 17:53:24 -0500
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
+	id S964793Ab0KQW4z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 17:56:55 -0500
+Received: from smtp.polymtl.ca ([132.207.4.11]:41172 "EHLO smtp.polymtl.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935576Ab0KQW4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 17:56:54 -0500
+Message-ID: <1290034589.4ce45d9d7be28@www.imp.polymtl.ca>
+Date: Wed, 17 Nov 2010 17:56:29 -0500
+From: Douglas Santos <douglas.santos@polymtl.ca>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ltt-dev@lists.casi.polymtl.ca" <ltt-dev@lists.casi.polymtl.ca>,
+        David Sharp <dhsharp@google.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <20101117224547.GA26008@tango.0pointer.de>
-References: <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
-	 <20101116170312.GA19327@tango.0pointer.de>
-	 <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
-	 <20101116181603.GC19327@tango.0pointer.de>
-	 <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
-	 <20101116202839.GC27235@tango.0pointer.de>
-	 <20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
-	 <AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
-	 <20101117223411.GA23983@tango.0pointer.de>
-	 <1290033435.2109.1282.camel@laptop>
-	 <20101117224547.GA26008@tango.0pointer.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 17 Nov 2010 23:52:17 +0100
-Message-ID: <1290034337.2109.1287.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Michael Rubin <mrubin@google.com>
+Subject: Re: Benchmarks of kernel tracing options 2 (ftrace, lttng and perf)
+References: <1290029498.4ce449ba1679d@www.imp.polymtl.ca> <1290030106.30543.74.camel@gandalf.stny.rr.com>
+In-Reply-To: <1290030106.30543.74.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) 3.2.3
+X-Originating-IP: 70.55.65.249
+X-Poly-FromMTA: (imp-4-3.polymtl.ca [132.207.4.78]) at Wed, 17 Nov 2010 22:56:30 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 23:45 +0100, Lennart Poettering wrote:
-> On Wed, 17.11.10 23:37, Peter Zijlstra (a.p.zijlstra@chello.nl) wrote:
-> 
-> > 
-> > On Wed, 2010-11-17 at 23:34 +0100, Lennart Poettering wrote:
-> > > 
-> > > This should fix things for people with systemd and GNOME. Yes, all
-> > > others are left in the cold. Sorry for that. 
-> > 
-> > Is there an easy opt out for that, other than booting a CONFIG_CGROUP=n
-> > kernel?
-> 
-> systemd relies on CONFIG_CGROUP=y, since it useses it for service
-> management. It creates its own name=systemd hierarchy for that with no
-> controllers attached. If you turn that off, then systemd will refuse to
-> boot.
+Quoting Steven Rostedt <rostedt@goodmis.org>:
 
-Do expect distro bugzilla entries when this 'awesome'-ness hits the
-street.
+> On Wed, 2010-11-17 at 16:31 -0500, Douglas Santos wrote:
+> > Hi all,
+> >
+> > This is a response to a benchmark, submitted a few weeks ago, comparing
+> kernel
+> > tracing options.
+> > http://lkml.org/lkml/2010/10/28/422
+> >
+> > We followed the methodology described in the link bellow,
+> > but using the shellscripts posted there to reproduce autotest scripts.
+> > http://lkml.org/lkml/2010/10/28/261
+> >
+> > We disabled the extra syscall tracing on lttng, for a fair comparison.
+> > http://lkml.org/lkml/2010/10/28/290
+> >
+> > Average results with tracing "on":
+> >
+> > lttng:  220 ns
+> > ftrace: 260 ns
+>
+> Heh, so ftrace got worse with the new kernel?
 
->  However, it does not rely on any of the controllers, and hence you
-> are welcome to disable all cgroup controlls and systemd won't complain.
-> 
-> If you want to disable the automatic creation of groups in the 'cpu'
-> hierarchy for user sessions then you can tell pam_systemd that by passing
-> "controllers=" on the PAM config line. ("controllers=cpu" is the implied
-> default.)
-> 
-> There's currently no global option to disable the same logic in systemd
-> when it creates 'cpu' cgroups for the various services it runs. However,
-> you can disable that individually with "ControlGroups=cpu:/" in the
-> .service files. I will now add a global option as well.
+The previous bench was doing tracing "on" minus "off"
+average results. They also used autotest scripts, not sure if
+it does exactly the same thing.
 
-A global knob is a must -- preferably with neon signs on so I can find
-it.  Luckily I don't use this GNOME junk, otherwise I'd have had to ask
-how to revert that crap as well.
+I'll check if we missed something.
 
 
