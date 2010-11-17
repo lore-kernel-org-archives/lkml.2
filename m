@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759891Ab0KQHxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 02:53:13 -0500
-Received: from smtp-vbr6.xs4all.nl ([194.109.24.26]:1026 "EHLO
-	smtp-vbr6.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753757Ab0KQHxL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 02:53:11 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
-Subject: Re: [PATCH 1/1] videobuf: Initialize lists in videobuf_buffer.
-Date: Wed, 17 Nov 2010 08:52:53 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-tschai; KDE/4.4.5; x86_64; ; )
-Cc: Andrew Chew <AChew@nvidia.com>, "pawel@osciak.com" <pawel@osciak.com>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1289939083-27209-1-git-send-email-achew@nvidia.com> <201011170811.06697.hverkuil@xs4all.nl> <4CE3814B.5010008@leadcoretech.com>
-In-Reply-To: <4CE3814B.5010008@leadcoretech.com>
+	id S1759901Ab0KQHxq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 02:53:46 -0500
+Received: from tomasu.net ([64.85.170.234]:51119 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759879Ab0KQHxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 02:53:44 -0500
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: Linux Kernel List <linux-kernel@vger.kernel.org>
+Subject: Re: mvsas errors in 2.6.36
+Date: Wed, 17 Nov 2010 00:53:31 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
+Cc: linux-scsi@vger.kernel.org
+References: <201010290650.32892.thomas@fjellstrom.ca> <201010310911.45738.thomas@fjellstrom.ca>
+In-Reply-To: <201010310911.45738.thomas@fjellstrom.ca>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011170852.53093.hverkuil@xs4all.nl>
+Message-Id: <201011170053.31174.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 17, 2010 08:16:27 Figo.zhang wrote:
-> On 11/17/2010 03:11 PM, Hans Verkuil wrote:
-> > On Wednesday, November 17, 2010 02:38:09 Andrew Chew wrote:
-> >>>> diff --git a/drivers/media/video/videobuf-dma-contig.c
-> >>> b/drivers/media/video/videobuf-dma-contig.c
-> >>>> index c969111..f7e0f86 100644
-> >>>> --- a/drivers/media/video/videobuf-dma-contig.c
-> >>>> +++ b/drivers/media/video/videobuf-dma-contig.c
-> >>>> @@ -193,6 +193,8 @@ static struct videobuf_buffer
-> >>> *__videobuf_alloc_vb(size_t size)
-> >>>>    	if (vb) {
-> >>>>    		mem = vb->priv = ((char *)vb) + size;
-> >>>>    		mem->magic = MAGIC_DC_MEM;
-> >>>> +		INIT_LIST_HEAD(&vb->stream);
-> >>>> +		INIT_LIST_HEAD(&vb->queue);
-> >>>
-> >>> i think it no need to be init, it just a list-entry.
-> >>
-> >> Okay, if that's really the case, then sh_mobile_ceu_camera.c, pxa_camera.c, mx1_camera.c, mx2_camera.c, and omap1_camera.c needs to be fixed to remove that WARN_ON(!list_empty(&vb->queue)); in their videobuf_prepare() methods, because those WARN_ON's are assuming that vb->queue is properly initialized as a list head.
-> >>
-> >> Which will it be?
-> >>
-> >
-> > These list entries need to be inited. It is bad form to have uninitialized
-> > list entries. It is not as if this is a big deal to initialize them properly.
+On October 31, 2010, Thomas Fjellstrom wrote:
+> On October 29, 2010, Thomas Fjellstrom wrote:
+> > Good news and bad news, the current mvsas driver in 2.6.36 seems to work
+> > better than older kernels with my setup (2 port sas + 5 SATA disks). But
+> > I gotten the following messages so far:
+> > 
+[snip]
+> > I did not unplug a disk, the errors seem to be spurious.
+> > 
+> > Otherwise though things seem to be working. At least so far. The
+> > mv_abort_task part is very familiar, the older version of this driver
+> > would do it right after attempting to build/activate the md raid5 array
+> > that lives on this controller. Except the controller would lock up, and
+> > all drives would become inaccessible.
+> > 
+> > I'm going to attempt to grow this array today, so long as the xfs_fsr
+> > that I started doesn't cause the array to fail.
+> > 
+> > If I keep getting mv_abort_task errors, I'll have to back down to the
+> > copy of the driver I got from Andy Yan. I've managed to patch it up to
+> > compile for 2.6.36 just now, I just hope it'll work at least as well as
+> > it did with 2.6.34. At the very least I didn't get these errors.
+> > 
+> > Some background, the disks attached to the card are (5) Seagate 7200.12
+> > 1TB disks, using SAS->SATA cables. Machine is a amd64 Phenom II X4 810
+> > w/4G ram running debian sid and a vanila 2.6.36 kernel. The card is a
+> > AOC-SASLP-MV8, according to lspci:
+> > 
+> > 04:00.0 SCSI storage controller: Marvell Technology Group Ltd.
+> > MV64460/64461/64462 System Controller, Revision B (rev 01)
+> > 
+> > according to dmesg:
+> > 
+[snip]
+> > I just hope the raid5 reshape I'm about to do doesn't crap its pants
+> > because of the errors above.
+> > 
+> > I'd like to help test any fixes or changes if needed. Let me know.
+> > 
+> > Thanks again.
 > 
-> in kernel source code, list entry are not often to be inited.
+> After a couple days of uptime, the messages are still happening:
 > 
-> for example, see mm/vmscan.c register_shrinker(), no one init the 
-> shrinker->list.
-> 
-> another example: see mm/swapfile.c  add_swap_extent(), no one init the
-> new_se->list.
+[snip]
+> No fatal errors yet.
 
-I have to think some more about this. I'll get back to this today. BTW, I do
-agree that the WARN_ON's are bogus and should be removed.
+Still no fatal errors, but the problem is still happening regularly. It causes 
+a pause in disk io of a couple seconds at least. Really quite annoying.
 
-And BTW, this isn't going to work either (mx1_camera.c):
+One thing thats got me wondering, is could this be a power issue? It almost 
+seems like (from the messages) that a single drive (any drive) is freaking 
+out, and returning an error that probably shouldn't happen (no CHS 0?), which 
+could mean the drive is underpowered and the firmware is flipping out. I'm not 
+entirely sure. The system has a 750w decent quality Antec power supply. The 
+total power use of the system shouldn't come over half that (phenom II x4 810 
+cpu, gigabyte ma790fxtud5p mb, low profile nvidia 9400GS gpu, 8 sata hdds, 3 
+fans, etc). I'm /mostly/ sure the 12v rails are spread out evenly, but I have 
+yet to make absolutely sure.
 
-static int mx1_camera_setup_dma(struct mx1_camera_dev *pcdev)
-{
-        struct videobuf_buffer *vbuf = &pcdev->active->vb;
-        struct device *dev = pcdev->icd->dev.parent;
-        int ret;
+But then it doesn't seem as if the root drives are ever flipping out. Theres 
+two 500GB Seagate 7200.12 drives md raid1'ed on the motherboard's (SB750) sata 
+II controller. They work fine, no messages regarding them at all the entire 
+time. However I get frequent and repeated messages from all drives on the 
+mvsas based controller.
 
-        if (unlikely(!pcdev->active)) {
-                dev_err(dev, "DMA End IRQ with no active buffer\n");
-                return -EFAULT;
-        }
-
-The vbuf assignment should be moved after the 'if'.
-
-Regards,
-
-	Hans
+So color me stumped.
 
 -- 
-Hans Verkuil - video4linux developer - sponsored by Cisco
+Thomas Fjellstrom
+thomas@fjellstrom.ca
