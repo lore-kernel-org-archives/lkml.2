@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935595Ab0KQWiE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 17:38:04 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:51606 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935070Ab0KQWiC convert rfc822-to-8bit (ORCPT
+	id S935606Ab0KQWix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 17:38:53 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33818 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935070Ab0KQWix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 17:38:02 -0500
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <20101117223411.GA23983@tango.0pointer.de>
-References: <1289916171.5169.117.camel@maggy.simson.net>
-	 <1289916683.2109.625.camel@laptop>
-	 <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
-	 <20101116170312.GA19327@tango.0pointer.de>
-	 <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
-	 <20101116181603.GC19327@tango.0pointer.de>
-	 <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
-	 <20101116202839.GC27235@tango.0pointer.de>
-	 <20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
-	 <AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
-	 <20101117223411.GA23983@tango.0pointer.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 17 Nov 2010 23:37:15 +0100
-Message-ID: <1290033435.2109.1282.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 17 Nov 2010 17:38:53 -0500
+Message-ID: <4CE4592F.6060104@oracle.com>
+Date: Wed, 17 Nov 2010 14:37:35 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: BKL: remove extraneous #include <smp_lock.h>
+References: <201011172159.oAHLx1tu001236@hera.kernel.org> <20101117140526.d532b373.randy.dunlap@oracle.com> <AANLkTimO6CN9wOQco_1bqRmwBS7KfWW1CvumKFuiOWGH@mail.gmail.com>
+In-Reply-To: <AANLkTimO6CN9wOQco_1bqRmwBS7KfWW1CvumKFuiOWGH@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 23:34 +0100, Lennart Poettering wrote:
+On 11/17/10 14:23, Linus Torvalds wrote:
+> On Wed, Nov 17, 2010 at 2:05 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>>
+>> smp_lock.h was removed from hardirq.h.  smp_lock.h provided the function prototype
+>> for kernel_locked().  Should source files now #include <linux/smp_lock.h> ?
+>> even when not being built for SMP?
 > 
-> This should fix things for people with systemd and GNOME. Yes, all
-> others are left in the cold. Sorry for that. 
+> Hmm. I think that part was a mistake, but I suspect the simplest fix
+> for it is to simply get rid of "kernel_locked()". It has no other
+> users than the hardirq.h one, so let's just move it there.
+> 
+> Something like the attached?
+> 
+> NOTE! The reason I _only_ take the CONFIG_LOCK_KERNEL version from
+> smp_lock.h is because:
+> 
+>  - LOCK_KERNEL is defined by init/Kconfig as "(SMP || PREEMPT) && BKL"
+> 
+>  - inside hardirq.h we only use "kernel_locked()" inside "PREEMPT && BKL"
+> 
+>  - so "PREEMPT && BKL" implies "LOCK_KERNEL"
+> 
+>  - so the !LOCK_KERNEL kernel_locked() case is irrelevant.
+> 
+> unless I did a thinko somewhere.
+> 
+> Does this work in all configurations? TOTALLY UNTESTED! Caveat emptor.
 
-Is there an easy opt out for that, other than booting a CONFIG_CGROUP=n
-kernel?
+It goes from one use of kernel_locked in *.[ch] to no uses of kernel_locked(),
+so yes, it works for me.  (I did one previously-failing build with this patch,
+and it built with no errors.)
+
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
