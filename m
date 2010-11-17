@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935301Ab0KQWFf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 17:05:35 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:9212 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab0KQWFe (ORCPT
+	id S935438Ab0KQWH2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 17:07:28 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:16727 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934863Ab0KQWH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 17:05:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=B5ePRFe245tyNTHJS8b2RAHpadt655MxVIjFIJybo1JKi5h+6Ko4XQyF93CvMiCPPH
-         T6UVDncWWL5FTOnmG6ZQ==
-MIME-Version: 1.0
-In-Reply-To: <1290007734.2109.941.camel@laptop>
-References: <1289996638-21439-1-git-send-email-walken@google.com>
-	<1289996638-21439-4-git-send-email-walken@google.com>
-	<20101117125756.GA5576@amd>
-	<1290007734.2109.941.camel@laptop>
-Date: Wed, 17 Nov 2010 14:05:30 -0800
-Message-ID: <AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering writeback
-From: Michel Lespinasse <walken@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Wed, 17 Nov 2010 17:07:27 -0500
+Date: Wed, 17 Nov 2010 14:05:26 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: torvalds <torvalds@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: BKL: remove extraneous #include <smp_lock.h>
+Message-Id: <20101117140526.d532b373.randy.dunlap@oracle.com>
+In-Reply-To: <201011172159.oAHLx1tu001236@hera.kernel.org>
+References: <201011172159.oAHLx1tu001236@hera.kernel.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 7:28 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2010-11-17 at 23:57 +1100, Nick Piggin wrote:
->> On Wed, Nov 17, 2010 at 04:23:58AM -0800, Michel Lespinasse wrote:
->> > When faulting in pages for mlock(), we want to break COW for anonymous
->> > or file pages within VM_WRITABLE, non-VM_SHARED vmas. However, there is
->> > no need to write-fault into VM_SHARED vmas since shared file pages can
->> > be mlocked first and dirtied later, when/if they actually get written to.
->> > Skipping the write fault is desirable, as we don't want to unnecessarily
->> > cause these pages to be dirtied and queued for writeback.
->>
->> It's not just to break COW, but to do block allocation and such
->> (filesystem's page_mkwrite op). That needs to at least be explained
->> in the changelog.
->
-> Agreed, the 0/3 description actually does mention this.
->
->> Filesystem doesn't have a good way to fully pin required things
->> according to mlock, but page_mkwrite provides some reasonable things
->> (like block allocation / reservation).
->
-> Right, but marking all pages dirty isn't really sane. I can imagine
-> making the reservation but not marking things dirty solution, although
-> it might be lots harder to implement, esp since some filesystems don't
-> actually have a page_mkwrite() implementation.
+On Wed, 17 Nov 2010 21:59:01 GMT Linux Kernel Mailing List wrote:
 
-Really, my understanding is that not pre-allocating filesystem blocks
-is just fine. This is, after all, what happens with ext3 and it's
-never been reported as a bug (that I know of).
+> Gitweb:     http://git.kernel.org/linus/451a3c24b0135bce54542009b5fde43846c7cf67
+> Commit:     451a3c24b0135bce54542009b5fde43846c7cf67
+> Parent:     55f6561c6941713ab5ae9180525b026dd40b7d14
+> Author:     Arnd Bergmann <arnd@arndb.de>
+> AuthorDate: Wed Nov 17 16:26:55 2010 +0100
+> Committer:  Linus Torvalds <torvalds@linux-foundation.org>
+> CommitDate: Wed Nov 17 08:59:32 2010 -0800
+> 
+>     BKL: remove extraneous #include <smp_lock.h>
+>     
+>     The big kernel lock has been removed from all these files at some point,
+>     leaving only the #include.
+>     
+>     Remove this too as a cleanup.
+>     
+>     Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> ---
 
-If filesystem people's feedback is that they really want mlock() to
-continue pre-allocating blocks, maybe we can just do it using
-fallocate() rather than page_mkwrite() callbacks ?
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+
+causes build errors in linux-next of NOV. 17.
+
+see http://lkml.org/lkml/2010/11/17/339
+and http://lkml.org/lkml/2010/11/17/365
+
+
+smp_lock.h was removed from hardirq.h.  smp_lock.h provided the function prototype
+for kernel_locked().  Should source files now #include <linux/smp_lock.h> ?
+even when not being built for SMP?
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
