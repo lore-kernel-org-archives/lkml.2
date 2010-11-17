@@ -1,80 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab0KQMvL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 07:51:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38858 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024Ab0KQMvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 07:51:10 -0500
-Date: Wed, 17 Nov 2010 07:50:11 -0500
-From: Josef Bacik <josef@redhat.com>
-To: Miao Xie <miaox@cn.fujitsu.com>
-Cc: Josef Bacik <josef@redhat.com>, viro@zeniv.linux.org.uk,
-        Chris Mason <chris.mason@oracle.com>,
-        Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ito <t-itoh@jp.fujitsu.com>
-Subject: Re: [PATCH 1/3] direct-io: add a hook for the fs to provide its
-	own bio merging check function
-Message-ID: <20101117125011.GH5618@dhcp231-156.rdu.redhat.com>
-References: <4CE3579B.1000301@cn.fujitsu.com> <20101117070658.GF5618@dhcp231-156.rdu.redhat.com> <20101117093720.GG5618@dhcp231-156.rdu.redhat.com> <4CE3AA37.8060709@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE3AA37.8060709@cn.fujitsu.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S933293Ab0KQMvo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 07:51:44 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54759 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507Ab0KQMvn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 07:51:43 -0500
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+From: Peter Zijlstra <peterz@infradead.org>
+To: =?ISO-8859-1?Q?T=F6r=F6k?= Edwin <edwintorok@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <20101117144758.38bf4f05@deb0>
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
+	 <20101117144758.38bf4f05@deb0>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 17 Nov 2010 13:51:52 +0100
+Message-ID: <1289998312.2109.745.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 06:11:03PM +0800, Miao Xie wrote:
-> Hi, Josef
->
-> On wed, 17 Nov 2010 04:37:21 -0500, Josef Bacik wrote:
->>> Heh so I was going to fix this after the hole punching stuff.  The fact is btrfs
->>> maps everything that is ok to do in one IO via get_blocks().  So all we need to
->>> do is add another DIO_ flag to tell us to treat each get_blocks() call as
->>> discrete.  I wanted to use buffer_boundary for this, but I think it's too
->>> drastic of a change for people who already use buffer_boundary();
->>>
->>> What happens today is that say we map 4k, we do submit_page_section, but if this
->>> is our first bit of IO we just set dio->cur_page and such and then loop again.
->>> Say there is 4k-hole-4k, we do the next mapping and set buffer_boundary again,
->>> and come into submit_page_section and because cur_page is set, we do
->>> dio_send_cur_page.  Because there is no dio->bio we setup a new bio, but when we
->>> do that we clear dio->boundary, and leave the bio all setup.  So the next time
->>> we loop around the tail 4k gets added to our previously setup bio and boom we
->>> hit this problem with btrfs.
->>>
->>> If we can add a DIO_GET_BLOCKS_DISCRETE or some other such non-sense then we can
->>> easily kill all the logical offset code I had and just make some simple changes
->>> to make the DIO stuff work for us.  All we do is in get_more_blocks we do
->>>
->>> if ((dio->flags&  DIO_GET_BLOCKS_DISCRETE)&&  dio->bio)
->>> 	dio_submit_bio(dio);
->>>
->>
->> Right after I went to bed I realized this should be
->>
->> if (dio->flags&  DIO_GET_BLOCKS_DISCRETE) {
->> 	if (dio->cur_page) {
->> 		dio_send_cur_page(dio);
->> 		page_cache_release(dio->cur_page);
->> 		dio->cur_page = NULL;
->> 	}
->>
->> 	if (dio->bio)
->> 		dio_submit_bio(dio);
->>   }
->
-> As far as I know, get_block() can not make sure the IO doesn't span the chunks or
-> stripes. Maybe we can do this check in get_blocks(). In this way, we needn't change
-> vfs.
->
+On Wed, 2010-11-17 at 14:47 +0200, Török Edwin wrote:
+> I see --call-graph in the trace record -h output, but it doesn't seem
+> to work on x86_64 for me.
 
-Right thats the idea, if we can't span chunks/stripes we should be doing that
-limiting in our get_blocks call and that way we don't have to screw with the
-generic direct io stuff too much.  Thanks,
+If you want to unwind userspace you need to build everything with
+framepointers -- sadly some people have been lobbying to remove
+framepointers from all distro builds, even though on x86_64 its nearly
+free (i386 does have a significant performance benefit, sadly).
 
-Josef
+There's some work on-going to simply copy out the top of stack and let
+dwarves go wild at it in userspace, but that isn't done yet.
+
