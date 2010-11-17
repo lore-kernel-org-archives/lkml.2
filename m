@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935082Ab0KQR27 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 12:28:59 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55556 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934912Ab0KQR26 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 12:28:58 -0500
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Greg KH <greg@kroah.com>
-Cc: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm@lists.infradead.org, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] OMAP: Serial: Define register access modes in LCR
-Organization: Deep Root Systems, LLC
-References: <1289982712-7309-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-	<20101117161729.GF10992@kroah.com>
-Date: Wed, 17 Nov 2010 09:28:52 -0800
-In-Reply-To: <20101117161729.GF10992@kroah.com> (Greg KH's message of "Wed, 17
-	Nov 2010 08:17:29 -0800")
-Message-ID: <87hbff7tbf.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S935094Ab0KQRaA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:30:00 -0500
+Received: from kroah.org ([198.145.64.141]:47875 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934912Ab0KQR37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 12:29:59 -0500
+Date: Wed, 17 Nov 2010 09:19:24 -0800
+From: Greg KH <greg@kroah.com>
+To: Yehuda Sadeh <yehuda@hq.newdream.net>
+Cc: sage@newdream.net, yehudasa@gmail.com, ceph-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rbd: replace the rbd sysfs interface
+Message-ID: <20101117171924.GC12050@kroah.com>
+References: <1289953929-30896-1-git-send-email-yehuda@hq.newdream.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289953929-30896-1-git-send-email-yehuda@hq.newdream.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <greg@kroah.com> writes:
+On Tue, Nov 16, 2010 at 04:32:09PM -0800, Yehuda Sadeh wrote:
+> Hi Greg,
+> 
+> Following is the new rbd sysfs interface. It lists devices in their own
+> subdirectories, as well as their underlying snapshots. Please let us
+> know if there's any issue you think we missed or did wrong.
+> 
+> Thanks,
+> Yehuda
+> 
+> ---
+> 
+> The new interface creates directories per mapped image
+> and under each it creates a subdir per available snapshot.
+> This allows keeping a cleaner interface within the sysfs
+> guidelines. The ABI documentation was updated too.
+> 
+> Signed-off-by: Yehuda Sadeh <yehuda@hq.newdream.net>
+> ---
+>  Documentation/ABI/testing/sysfs-class-rbd |   83 +++
+>  drivers/block/rbd.c                       |  775 +++++++++++++++++------------
+>  2 files changed, 547 insertions(+), 311 deletions(-)
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-class-rbd b/Documentation/ABI/testing/sysfs-class-rbd
+> new file mode 100644
+> index 0000000..4d96618
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-class-rbd
+> @@ -0,0 +1,83 @@
+> +What:		/sys/class/rbd/
 
-> On Wed, Nov 17, 2010 at 10:31:52AM +0200, Emeltchenko Andrei wrote:
->> From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
->> 
->> Access to some registers depends on register access mode
->> Three different modes are available for OMAP (at least)
->> • Operational mode     LCR_REG[7] = 0x0
->> • Configuration mode A LCR_REG[7] = 0x1 and LCR_REG[7:0]! = 0xBF
->> • Configuration mode B LCR_REG[7] = 0x1 and LCR_REG[7:0]  = 0xBF
->> 
->> Define access modes and remove redefinitions and magic numbers
->> in serial drivers (and later in bluetooth driver).
->> 
->> Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
->> ---
->>  arch/arm/mach-omap2/serial.c                  |   12 ++++----
->>  arch/arm/plat-omap/include/plat/omap-serial.h |    9 ------
->>  drivers/serial/8250.c                         |   26 +++++++++---------
->>  drivers/serial/omap-serial.c                  |   34 ++++++++++++------------
->>  include/linux/serial_reg.h                    |    7 +++++
->
-> What tree should this go through?  THe omap or serial one?
+I thought I mentioned that you should not add new classes to the kernel.
+Please don't do that, make it a bus_type instead.
 
-Since this only affects OMAP drivers, we can take this through OMAP.
+Actually, that will solve some of your coding problems as well:
 
-That will also help us avoid conflicts, as we'll hopefully be converting
-the omap-serial driver to runtime PM for this next merge window as well.
+> @@ -193,6 +130,11 @@ struct rbd_device {
+>  	int read_only;
+>  
+>  	struct list_head	node;
+> +
+> +	struct device		dev;
+> +	struct kobject		snaps_kobj;
+> +	struct list_head	snaps;
+> +	int			kobj_ready;
+>  };
 
-Kevin
+Woah, that's wrong.  You can NEVER have two different reference counted
+objects as part of a single structure.  Your reference counting is
+guaranteed to be wrong.
 
+You should not need a kobject at all here, just use a device and be done
+with it.
+
+Hope this helps,
+
+greg k-h
