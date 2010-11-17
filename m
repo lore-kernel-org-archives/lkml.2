@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758425Ab0KQPjG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:39:06 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:56267 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758210Ab0KQPjE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:39:04 -0500
-X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=f8wm_IhKjn4A:10 a=kj9zAlcOel0A:10 a=ClVPYAY4FByjUdLuiT8neg==:17 a=VwQbUJbxAAAA:8 a=6rqHouBjAAAA:8 a=OsuJWyxC5J6dQxHz35kA:9 a=1muazlLnOKmt72RTAOmti-c3HzIA:4 a=CjuIK1q_8ugA:10 a=LI9Vle30uBYA:10 a=ClVPYAY4FByjUdLuiT8neg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 66.68.83.102
-Date: Wed, 17 Nov 2010 09:39:02 -0600
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oren Laadan <orenl@cs.columbia.edu>, Kapil Arya <kapil@ccs.neu.edu>,
-        Gene Cooperman <gene@ccs.neu.edu>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Linux Containers <containers@lists.osdl.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, xemul@sw.ru
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-Message-ID: <20101117153902.GA1155@hallyn.com>
-References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>
- <4CD26948.7050009@kernel.org>
- <20101104164401.GC10656@sundance.ccs.neu.edu>
- <4CD3CE29.2010105@kernel.org>
- <20101106053204.GB12449@count0.beaverton.ibm.com>
- <20101106204008.GA31077@sundance.ccs.neu.edu>
- <4CD5D99A.8000402@cs.columbia.edu>
- <20101107184927.GF31077@sundance.ccs.neu.edu>
- <4CD72150.9070705@cs.columbia.edu>
- <4CE3C334.9080401@kernel.org>
+	id S1758694Ab0KQPkW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:40:22 -0500
+Received: from fieldses.org ([174.143.236.118]:50400 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751207Ab0KQPkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 10:40:21 -0500
+Date: Wed, 17 Nov 2010 10:40:19 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH 4/7] BKL: remove references to lock_kernel from comments
+Message-ID: <20101117154018.GA16098@fieldses.org>
+References: <1290007619-5787-1-git-send-email-arnd@arndb.de>
+ <1290007619-5787-5-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CE3C334.9080401@kernel.org>
+In-Reply-To: <1290007619-5787-5-git-send-email-arnd@arndb.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Tejun Heo (tj@kernel.org):
-> Hello, Oren.
+On Wed, Nov 17, 2010 at 04:26:56PM +0100, Arnd Bergmann wrote:
+> Lock_kernel is gone from the code, so the comments
+> should be updated, too. nfsd now uses lock_flocks
+> instead of lock_kernel to protect against posix
+> file locks.
 > 
-> On 11/07/2010 10:59 PM, Oren Laadan wrote:
-> > We could work to add ABIs and APIs for each and every possible piece
-> > of state that affects userspace. And for each we'll argue forever
-> > about the design and some time later regret that it wasn't designed
-> > correctly :p
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: "J. Bruce Fields" <bfields@fieldses.org>
+
+Acked-by: J. Bruce Fields <bfields@redhat.com>
+
+I want to get rid of most of these callbacks, actually; but that can
+wait for the next merge window.
+
+--b.
+
+> Cc: linux-nfs@vger.kernel.org
+> ---
+>  fs/nfsd/nfs4state.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
 > 
-> I'm sorry but in-kernel CR already looks like a major misdesign to me.
-
-By this do you mean the very idea of having CR support in the kernel?
-Or our design of it in the kernel?  Let's go back to July 2008, at the
-containers mini-summit, where it was unanimously agreed upon that the
-kernel was the right place (Checkpoint/Resetart [CR] under
-http://wiki.openvz.org/Containers/Mini-summit_2008_notes ), and that
-we would start by supporting a single task with no resources.  Was that
-whole discussion effectively misguided, in your opinion?  Or do you
-feel that since the first steps outlined in that discussion we've
-either "gone too far" or strayed in the subsequent design?
-
--serge
+> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+> index f1e5ec6..36db9cc 100644
+> --- a/fs/nfsd/nfs4state.c
+> +++ b/fs/nfsd/nfs4state.c
+> @@ -2254,7 +2254,7 @@ nfs4_file_downgrade(struct nfs4_file *fp, unsigned int share_access)
+>   * Spawn a thread to perform a recall on the delegation represented
+>   * by the lease (file_lock)
+>   *
+> - * Called from break_lease() with lock_kernel() held.
+> + * Called from break_lease() with lock_flocks() held.
+>   * Note: we assume break_lease will only call this *once* for any given
+>   * lease.
+>   */
+> @@ -2278,7 +2278,7 @@ void nfsd_break_deleg_cb(struct file_lock *fl)
+>  	list_add_tail(&dp->dl_recall_lru, &del_recall_lru);
+>  	spin_unlock(&recall_lock);
+>  
+> -	/* only place dl_time is set. protected by lock_kernel*/
+> +	/* only place dl_time is set. protected by lock_flocks*/
+>  	dp->dl_time = get_seconds();
+>  
+>  	/*
+> @@ -2295,7 +2295,7 @@ void nfsd_break_deleg_cb(struct file_lock *fl)
+>  /*
+>   * The file_lock is being reapd.
+>   *
+> - * Called by locks_free_lock() with lock_kernel() held.
+> + * Called by locks_free_lock() with lock_flocks() held.
+>   */
+>  static
+>  void nfsd_release_deleg_cb(struct file_lock *fl)
+> @@ -2310,7 +2310,7 @@ void nfsd_release_deleg_cb(struct file_lock *fl)
+>  }
+>  
+>  /*
+> - * Called from setlease() with lock_kernel() held
+> + * Called from setlease() with lock_flocks() held
+>   */
+>  static
+>  int nfsd_same_client_deleg_cb(struct file_lock *onlist, struct file_lock *try)
+> -- 
+> 1.7.1
+> 
