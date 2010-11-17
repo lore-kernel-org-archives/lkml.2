@@ -1,133 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933057Ab0KQEIp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 23:08:45 -0500
-Received: from mga14.intel.com ([143.182.124.37]:59018 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759637Ab0KQEIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 23:08:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,209,1288594800"; 
-   d="scan'208";a="349735648"
-Message-Id: <20101117035906.702620674@intel.com>
-User-Agent: quilt/0.48-1
-Date: Wed, 17 Nov 2010 11:58:32 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "Theodore Ts'o" <tytso@mit.edu>, Wu Fengguang <fengguang.wu@intel.com>
-CC: Dave Chinner <david@fromorbit.com>
-CC: Jan Kara <jack@suse.cz>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Rik van Riel <riel@redhat.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Chris Mason <chris.mason@oracle.com>
-CC: Christoph Hellwig <hch@lst.de>
-Cc: linux-mm <linux-mm@kvack.org>
-Cc: <linux-fsdevel@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 11/13] writeback: scale down max throttle bandwidth on concurrent dirtiers
+	id S933606Ab0KQEJn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 23:09:43 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:61423 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758341Ab0KQEJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 23:09:41 -0500
+Message-ID: <4CE35687.1020109@cn.fujitsu.com>
+Date: Wed, 17 Nov 2010 12:13:59 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2 6/6] KVM: MMU: cleanup update_pte, pte_prefetch and sync_page
+ functions
+References: <4CE355A0.6020907@cn.fujitsu.com>
+In-Reply-To: <4CE355A0.6020907@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-17 12:10:02,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-17 12:10:03,
+	Serialize complete at 2010-11-17 12:10:03
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
-References: <20101117035821.000579293@intel.com>
-Content-Disposition: inline; filename=writeback-adaptive-throttle-bandwidth.patch
+Abstract the same operation to cleanup them
 
-This will noticeably reduce the fluctuaions of pause time when there are
-100+ concurrent dirtiers.
-
-The more parallel dirtiers (1 dirtier => 4 dirtiers), the smaller
-bandwidth each dirtier will share (bdi_bandwidth => bdi_bandwidth/4),
-the less gap to the dirty limit ((C-A) => (C-B)), the less stable the
-pause time will be (given the same fluctuation of bdi_dirty).
-
-For example, if A drifts to A', its pause time may drift from 5ms to
-6ms, while B to B' may drift from 50ms to 90ms.  It's much larger
-fluctuations in relative ratio as well as absolute time.
-
-Fig.1 before patch, gap (C-B) is too low to get smooth pause time
-
-throttle_bandwidth_A = bdi_bandwidth .........o
-                                              | o <= A'
-                                              |   o
-                                              |     o
-                                              |       o
-                                              |         o
-throttle_bandwidth_B = bdi_bandwidth / 4 .....|...........o
-                                              |           | o <= B'
-----------------------------------------------+-----------+---o
-                                              A           B   C
-
-The solution is to lower the slope of the throttle line accordingly,
-which makes B stabilize at some point more far away from C.
-
-Fig.2 after patch
-
-throttle_bandwidth_A = bdi_bandwidth .........o
-                                              | o <= A'
-                                              |   o
-                                              |     o
-    lowered max throttle bandwidth for B ===> *       o
-                                              |   *     o
-throttle_bandwidth_B = bdi_bandwidth / 4 .............*   o
-                                              |       |   * o
-----------------------------------------------+-------+-------o
-                                              A       B       C
-
-Note that C is actually different points for 1-dirty and 4-dirtiers
-cases, but for easy graphing, we move them together.
-
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- mm/page-writeback.c |   16 +++++++++++++---
- 1 file changed, 13 insertions(+), 3 deletions(-)
+ arch/x86/kvm/mmu.c         |    3 --
+ arch/x86/kvm/paging_tmpl.h |   70 ++++++++++++++++++++++---------------------
+ 2 files changed, 36 insertions(+), 37 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2010-11-15 19:52:43.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-11-15 21:30:45.000000000 +0800
-@@ -537,6 +537,7 @@ static void balance_dirty_pages(struct a
- 	unsigned long background_thresh;
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
-+	unsigned long task_thresh;
- 	unsigned long bw;
- 	unsigned long pause = 0;
- 	bool dirty_exceeded = false;
-@@ -566,7 +567,7 @@ static void balance_dirty_pages(struct a
- 			break;
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 0668f4b..c513afc 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -3082,9 +3082,6 @@ static void mmu_pte_write_new_pte(struct kvm_vcpu *vcpu,
+ 		return;
+         }
  
- 		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
--		bdi_thresh = task_dirty_limit(current, bdi_thresh);
-+		task_thresh = task_dirty_limit(current, bdi_thresh);
- 
- 		/*
- 		 * In order to avoid the stacked BDI deadlock we need
-@@ -605,14 +606,23 @@ static void balance_dirty_pages(struct a
- 			break;
- 		bdi_prev_dirty = bdi_dirty;
- 
--		if (bdi_dirty >= bdi_thresh) {
-+		if (bdi_dirty >= task_thresh) {
- 			pause = HZ/10;
- 			goto pause;
- 		}
- 
-+		/*
-+		 * When bdi_dirty grows closer to bdi_thresh, it indicates more
-+		 * concurrent dirtiers. Proportionally lower the max throttle
-+		 * bandwidth. This will resist bdi_dirty from approaching to
-+		 * close to task_thresh, and help reduce fluctuations of pause
-+		 * time when there are lots of dirtiers.
-+		 */
- 		bw = bdi->write_bandwidth;
+-	if (is_rsvd_bits_set(&vcpu->arch.mmu, *(u64 *)new, PT_PAGE_TABLE_LEVEL))
+-		return;
 -
- 		bw = bw * (bdi_thresh - bdi_dirty);
-+		bw = bw / (bdi_thresh / BDI_SOFT_DIRTY_LIMIT + 1);
-+
-+		bw = bw * (task_thresh - bdi_dirty);
- 		bw = bw / (bdi_thresh / TASK_SOFT_DIRTY_LIMIT + 1);
+ 	++vcpu->kvm->stat.mmu_pte_updated;
+ 	if (!sp->role.cr4_pae)
+ 		paging32_update_pte(vcpu, sp, spte, new);
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 60f00db..01a00b0 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -299,25 +299,43 @@ static int FNAME(walk_addr_nested)(struct guest_walker *walker,
+ 					addr, access);
+ }
  
- 		pause = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1);
-
++static bool FNAME(map_invalid_gpte)(struct kvm_vcpu *vcpu,
++				    struct kvm_mmu_page *sp, u64 *spte,
++				    pt_element_t gpte)
++{
++	u64 nonpresent = shadow_trap_nonpresent_pte;
++
++	if (is_rsvd_bits_set(&vcpu->arch.mmu, gpte, PT_PAGE_TABLE_LEVEL))
++		goto no_present;
++
++	if (!is_present_gpte(gpte)) {
++		if (!sp->unsync)
++			nonpresent = shadow_notrap_nonpresent_pte;
++		goto no_present;
++	}
++
++	if (!(gpte & PT_ACCESSED_MASK))
++		goto no_present;
++
++	return false;
++
++no_present:
++	if (drop_spte(vcpu->kvm, spte, nonpresent))
++		kvm_flush_remote_tlbs(vcpu->kvm);
++	return true;
++}
++
+ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 			      u64 *spte, const void *pte)
+ {
+ 	pt_element_t gpte;
+ 	unsigned pte_access;
+ 	pfn_t pfn;
+-	u64 new_spte;
+ 
+ 	gpte = *(const pt_element_t *)pte;
+-	if (~gpte & (PT_PRESENT_MASK | PT_ACCESSED_MASK)) {
+-		if (!is_present_gpte(gpte)) {
+-			if (sp->unsync)
+-				new_spte = shadow_trap_nonpresent_pte;
+-			else
+-				new_spte = shadow_notrap_nonpresent_pte;
+-			__set_spte(spte, new_spte);
+-		}
++	if (FNAME(map_invalid_gpte)(vcpu, sp, spte, gpte))
+ 		return;
+-	}
++
+ 	pgprintk("%s: gpte %llx spte %p\n", __func__, (u64)gpte, spte);
+ 	pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte);
+ 	if (gpte_to_gfn(gpte) != vcpu->arch.update_pte.gfn)
+@@ -364,7 +382,6 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+ 				u64 *sptep)
+ {
+ 	struct kvm_mmu_page *sp;
+-	struct kvm_mmu *mmu = &vcpu->arch.mmu;
+ 	pt_element_t *gptep = gw->prefetch_ptes;
+ 	u64 *spte;
+ 	int i;
+@@ -395,16 +412,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+ 
+ 		gpte = gptep[i];
+ 
+-		if (is_rsvd_bits_set(mmu, gpte, PT_PAGE_TABLE_LEVEL))
+-			continue;
+-
+-		if (!is_present_gpte(gpte)) {
+-			if (!sp->unsync)
+-				__set_spte(spte, shadow_notrap_nonpresent_pte);
+-			continue;
+-		}
+-
+-		if (!(gpte & PT_ACCESSED_MASK))
++		if (FNAME(map_invalid_gpte)(vcpu, sp, spte, gpte))
+ 			continue;
+ 
+ 		pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte);
+@@ -761,7 +769,6 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 		pt_element_t gpte;
+ 		gpa_t pte_gpa;
+ 		gfn_t gfn;
+-		bool rsvd_bits_set;
+ 
+ 		if (!is_shadow_present_pte(sp->spt[i]))
+ 			continue;
+@@ -773,18 +780,13 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 			return -EINVAL;
+ 
+ 		gfn = gpte_to_gfn(gpte);
+-		rsvd_bits_set = is_rsvd_bits_set(&vcpu->arch.mmu, gpte,
+-						 PT_PAGE_TABLE_LEVEL);
+-		if (rsvd_bits_set || gfn != sp->gfns[i] ||
+-		      !is_present_gpte(gpte) || !(gpte & PT_ACCESSED_MASK)) {
+-			u64 nonpresent;
+-
+-			if (rsvd_bits_set || is_present_gpte(gpte) ||
+-			      sp->unsync)
+-				nonpresent = shadow_trap_nonpresent_pte;
+-			else
+-				nonpresent = shadow_notrap_nonpresent_pte;
+-			drop_spte(vcpu->kvm, &sp->spt[i], nonpresent);
++
++		if (FNAME(map_invalid_gpte)(vcpu, sp, &sp->spt[i], gpte))
++			continue;
++
++		if (gfn != sp->gfns[i]) {
++			drop_spte(vcpu->kvm, &sp->spt[i],
++				      shadow_trap_nonpresent_pte);
+ 			kvm_flush_remote_tlbs(vcpu->kvm);
+ 			continue;
+ 		}
+-- 
+1.7.0.4
 
