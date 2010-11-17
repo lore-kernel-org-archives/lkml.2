@@ -1,163 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759737Ab0KQEp4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 23:45:56 -0500
-Received: from mga02.intel.com ([134.134.136.20]:25927 "EHLO mga02.intel.com"
+	id S1759781Ab0KQEqz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 23:46:55 -0500
+Received: from mga09.intel.com ([134.134.136.24]:7211 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759705Ab0KQEpp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 23:45:45 -0500
+	id S934326Ab0KQEph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 23:45:37 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,209,1288594800"; 
-   d="scan'208";a="678258389"
-X-Mailbox-Line: From shaohui.zheng@intel.com Wed Nov 17 10:10:01 2010
-Message-Id: <20101117021000.985643862@intel.com>
+   d="scan'208";a="574577854"
+X-Mailbox-Line: From shaohui.zheng@intel.com Wed Nov 17 10:10:00 2010
+Message-Id: <20101117021000.568681101@intel.com>
 References: <20101117020759.016741414@intel.com>
 User-Agent: quilt/0.46-1
-Date: Wed, 17 Nov 2010 10:08:07 +0800
+Date: Wed, 17 Nov 2010 10:08:01 +0800
 From: shaohui.zheng@intel.com
 To: akpm@linux-foundation.org, linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
         lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        Haicheng Li <haicheng.li@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>,
         Shaohui Zheng <shaohui.zheng@intel.com>
-Subject: [8/8,v3] NUMA Hotplug Emulator: documentation
-Content-Disposition: inline; filename=008-hotplug-emulator-doc-x86_64-of-numa-hotplug-emulator.patch
+Subject: [2/8,v3] NUMA Hotplug Emulator: infrastructure of NUMA hotplug emulation
+Content-Disposition: inline; filename=002-hotplug-emulator-x86-infrastructure-of-node-hotplug-emulation.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shaohui Zheng <shaohui.zheng@intel.com>
+From: Haicheng Li <haicheng.li@intel.com>
 
-add a text file Documentation/x86/x86_64/numa_hotplug_emulator.txt
-to explain the usage for the hotplug emulator.
+NUMA hotplug emulator introduces a new node state N_HIDDEN to
+identify the fake offlined node. It firstly hides RAM via E820
+table and then emulates fake offlined nodes with the hidden RAM.
 
+After system bootup, user is able to hotplug-add these offlined
+nodes, which is just similar to a real hardware hotplug behavior.
+
+Using boot option "numa=hide=N*size" to fake offlined nodes:
+	- N is the number of hidden nodes
+	- size is the memory size (in MB) per hidden node.
+
+OPEN: Kernel might use part of hidden memory region as RAM buffer,
+      now emulator directly hide 128M extra space to workaround
+      this issue.  Any better way to avoid this conflict?
+
+CC: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Haicheng Li <haicheng.li@intel.com>
 Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
 ---
-Index: linux-hpe4/Documentation/x86/x86_64/numa_hotplug_emulator.txt
+Index: linux-hpe4/arch/x86/include/asm/numa_64.h
 ===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-hpe4/Documentation/x86/x86_64/numa_hotplug_emulator.txt	2010-11-17 09:01:10.342836513 +0800
-@@ -0,0 +1,92 @@
-+NUMA Hotplug Emulator for x86
-+---------------------------------------------------
-+
-+NUMA hotplug emulator is able to emulate NUMA Node Hotplug
-+thru a pure software way. It intends to help people easily debug
-+and test node/cpu/memory hotplug related stuff on a
-+none-numa-hotplug-support machine, even a UMA machine and virtual
-+environment.
-+
-+1) Node hotplug emulation:
-+
-+The emulator firstly hides RAM via E820 table, and then it can
-+fake offlined nodes with the hidden RAM.
-+
-+After system bootup, user is able to hotplug-add these offlined
-+nodes, which is just similar to a real hotplug hardware behavior.
-+
-+Using boot option "numa=hide=N*size" to fake offlined nodes:
-+	- N is the number of hidden nodes
-+	- size is the memory size (in MB) per hidden node.
-+
-+There is a sysfs entry "probe" under /sys/devices/system/node/ for user
-+to hotplug the fake offlined nodes:
-+
-+ - to show all fake offlined nodes:
-+    $ cat /sys/devices/system/node/probe
-+
-+ - to hotadd a fake offlined node, e.g. nodeid is N:
-+    $ echo N > /sys/devices/system/node/probe
-+
-+2) CPU hotplug emulation:
-+
-+The emulator reserve CPUs throu grub parameter, the reserved CPUs can be
-+hot-add/hot-remove in software method, it emulates the process of physical
-+cpu hotplug.
-+
-+When hotplug a CPU with emulator, we are using a logical CPU to emulate the CPU
-+socket hotplug process. For the CPU supported SMT, some logical CPUs are in the
-+same socket, but it may located in different NUMA node after we have emulator.
-+We put the logical CPU into a fake CPU socket, and assign it an unique
-+phys_proc_id. For the fake socket, we put one logical CPU in only.
-+
-+ - to hide CPUs
-+	- Using boot option "maxcpus=N" hide CPUs
-+	  N is the number of initialize CPUs
-+	- Using boot option "cpu_hpe=on" to enable cpu hotplug emulation
-+      when cpu_hpe is enabled, the rest CPUs will not be initialized
-+
-+ - to hot-add CPU to node
-+	$ echo nid > cpu/probe
-+
-+ - to hot-remove CPU
-+	$ echo nid > cpu/release
-+
-+3) Memory hotplug emulation:
-+
-+The emulator reserve memory before OS booting, the reserved memory region
-+is remove from e820 table, and they can be hot-added via the probe interface,
-+this interface was extend to support add memory to the specified node, It
-+maintains backwards compatibility.
-+
-+The difficulty of Memory Release is well-known, we have no plan for it until now.
-+
-+ - reserve memory throu grub parameter
-+ 	mem=1024m
-+
-+ - add a memory section to node 3
-+    $ echo 0x40000000,3 > memory/probe
-+	OR
-+    $ echo 1024m,3 > memory/probe
-+	OR
-+    $ echo "physical_address=0x40000000 numa_node=3" > memory/probe
-+
-+4) Script for hotplug testing
-+
-+These scripts provides convenience when we hot-add memory/cpu in batch.
-+
-+- Online all memory sections:
-+for m in /sys/devices/system/memory/memory*;
-+do
-+	echo online > $m/state;
-+done
-+
-+- CPU Online:
-+for c in /sys/devices/system/cpu/cpu*;
-+do
-+	echo 1 > $c/online;
-+done
-+
-+- Haicheng Li <haicheng.li@intel.com>
-+- Shaohui Zheng <shaohui.zheng@intel.com>
-+  Nov 2010
-Index: linux-hpe4/Documentation/x86/x86_64/boot-options.txt
+--- linux-hpe4.orig/arch/x86/include/asm/numa_64.h	2010-11-15 17:13:02.453461462 +0800
++++ linux-hpe4/arch/x86/include/asm/numa_64.h	2010-11-15 17:13:07.093461818 +0800
+@@ -37,7 +37,7 @@
+ extern void __cpuinit numa_add_cpu(int cpu);
+ extern void __cpuinit numa_remove_cpu(int cpu);
+ 
+-#ifdef CONFIG_NUMA_EMU
++#if defined(CONFIG_NUMA_EMU) || defined(CONFIG_NODE_HOTPLUG_EMU)
+ #define FAKE_NODE_MIN_SIZE	((u64)64 << 20)
+ #define FAKE_NODE_MIN_HASH_MASK	(~(FAKE_NODE_MIN_SIZE - 1UL))
+ #endif /* CONFIG_NUMA_EMU */
+Index: linux-hpe4/arch/x86/mm/numa_64.c
 ===================================================================
---- linux-hpe4.orig/Documentation/x86/x86_64/boot-options.txt	2010-11-17 10:01:37.093461435 +0800
-+++ linux-hpe4/Documentation/x86/x86_64/boot-options.txt	2010-11-17 10:03:10.881043878 +0800
-@@ -173,6 +173,13 @@
-   numa=fake=<N>
- 		If given as an integer, fills all system RAM with N fake nodes
- 		interleaved over physical nodes.
-+  numa=hide=N*size1[,size2,...]
-+		Give an string seperated by comma, each sub string stands for a serie nodes.
-+		system will reserve an area to create hide numa nodes for them.
+--- linux-hpe4.orig/arch/x86/mm/numa_64.c	2010-11-15 17:13:02.463461371 +0800
++++ linux-hpe4/arch/x86/mm/numa_64.c	2010-11-15 17:21:05.510961676 +0800
+@@ -304,6 +304,123 @@
+ 	}
+ }
+ 
++#ifdef CONFIG_NODE_HOTPLUG_EMU
++static char *hp_cmdline __initdata;
++static struct bootnode *hidden_nodes;
++static u64 hp_start;
++static long hidden_num, hp_size;
++static u64 nodes_size[MAX_NUMNODES] __initdata;
 +
-+		for example: numa=hide=2*512,256
-+			system will reserve (2*512 + 256) M for 3 hide nodes. 2 nodes with 512M memory,
-+			and 1 node with 256 memory 
++int hotadd_hidden_nodes(int nid)
++{
++	int ret;
++
++	if (!node_hidden(nid))
++		return -EINVAL;
++
++	ret = add_memory(nid, hidden_nodes[nid].start,
++			 hidden_nodes[nid].end - hidden_nodes[nid].start);
++	if (!ret) {
++		node_clear_hidden(nid);
++		return 0;
++	} else {
++		return -EEXIST;
++	}
++}
++
++/* parse the comand line for numa=hide */
++static long __init parse_hide_nodes(char *hp_cmdline)
++{
++	int coef = 1, nid = 0;
++	u64 size = 0;
++	long total = 0;
++	char buf[512], *p;
++
++	/* parse numa=hide command-line */
++	hidden_num = 0;
++	p = buf;
++	while (1) {
++		if (*hp_cmdline == ',' || *hp_cmdline == '\0') {
++			*p = '\0';
++			size = simple_strtoul(buf, NULL, 0);
++			printk(KERN_ERR "size: %dM buf:%s coef: %d.\n", (int)size, buf, coef);
++			if (!((size<<20) & FAKE_NODE_MIN_HASH_MASK))
++				printk(KERN_ERR "%d M is less than minimum node size, ignore it.\n", (int)size);
++
++			size <<= 20;
++			/* Round down to nearest FAKE_NODE_MIN_SIZE. */
++			size &= FAKE_NODE_MIN_HASH_MASK;
++
++			if (size) {
++				int i;
++				total += size * coef;
++				for (i = 0; i < coef; i++)
++					nodes_size[nid++] = size;
++				hidden_num += coef;
++			}
++
++			coef = 1;
++			p = buf;
++			if (*hp_cmdline  == '\0')
++				break;
++			hp_cmdline++;
++		} else if (*hp_cmdline ==  '*') {
++			*p++ = '\0';
++			coef = simple_strtoul(buf, NULL, 0);
++			p = buf;
++			hp_cmdline++;
++		} else if (!isdigit(*hp_cmdline)) {
++			break;
++		}
++
++		*p++ = *hp_cmdline++;
++	}
++
++	return total;
++}
++
++static void __init numa_hide_nodes(void)
++{
++	hp_size = parse_hide_nodes(hp_cmdline);
++
++	hp_start = e820_hide_mem(hp_size);
++	if (hp_start <= 0) {
++		printk(KERN_ERR "Hide too much memory, disable node hotplug emualtion.");
++		hidden_num = 0;
++		return;
++	}
++
++	/* leave 128M space for possible RAM buffer usage later
++	 any other better way to avoid this conflict?*/
++
++	e820_hide_mem(128*1024*1024);
++}
++
++static void __init numa_hotplug_emulation(void)
++{
++	int i, num_nodes = 0, nid;
++
++	for_each_online_node(i)
++		if (i > num_nodes)
++			num_nodes = i;
++
++	i = num_nodes + hidden_num;
++	if (!hidden_nodes) {
++		hidden_nodes = alloc_bootmem(sizeof(struct bootnode) * i);
++		memset(hidden_nodes, 0, sizeof(struct bootnode) * i);
++	}
++
++	nid = num_nodes + 1;
++	for (i = 0; i < hidden_num; i++) {
++		node_set(nid, node_possible_map);
++		hidden_nodes[nid].start = hp_start;
++		hidden_nodes[nid].end = hp_start + (nodes_size[i]);
++		hp_start = hidden_nodes[nid].end;
++		node_set_hidden(nid++);
++	}
++}
++#endif /* CONFIG_NODE_HOTPLUG_EMU */
++
+ #ifdef CONFIG_NUMA_EMU
+ /* Numa emulation */
+ static struct bootnode nodes[MAX_NUMNODES] __initdata;
+@@ -658,7 +775,7 @@
  
- ACPI
+ #ifdef CONFIG_NUMA_EMU
+ 	if (cmdline && !numa_emulation(start_pfn, last_pfn, acpi, k8))
+-		return;
++		goto done;
+ 	nodes_clear(node_possible_map);
+ 	nodes_clear(node_online_map);
+ #endif
+@@ -666,14 +783,14 @@
+ #ifdef CONFIG_ACPI_NUMA
+ 	if (!numa_off && acpi && !acpi_scan_nodes(start_pfn << PAGE_SHIFT,
+ 						  last_pfn << PAGE_SHIFT))
+-		return;
++		goto done;
+ 	nodes_clear(node_possible_map);
+ 	nodes_clear(node_online_map);
+ #endif
  
-@@ -316,3 +323,8 @@
- 		Do not use GB pages for kernel direct mappings.
- 	gbpages
- 		Use GB pages for kernel direct mappings.
-+	cpu_hpe=on/off
-+		Enable/disable cpu hotplug emulation with software method. when cpu_hpe=on,
-+		sysfs provides probe/release interface to hot add/remove cpu dynamically.
-+		this option is disabled in default.
-+			
+ #ifdef CONFIG_K8_NUMA
+ 	if (!numa_off && k8 && !k8_scan_nodes())
+-		return;
++		goto done;
+ 	nodes_clear(node_possible_map);
+ 	nodes_clear(node_online_map);
+ #endif
+@@ -693,6 +810,13 @@
+ 		numa_set_node(i, 0);
+ 	e820_register_active_regions(0, start_pfn, last_pfn);
+ 	setup_node_bootmem(0, start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT);
++
++done:
++#ifdef CONFIG_NODE_HOTPLUG_EMU
++	if (hidden_num)
++		numa_hotplug_emulation();
++#endif
++	return;
+ }
+ 
+ unsigned long __init numa_free_all_bootmem(void)
+@@ -720,6 +844,12 @@
+ 	if (!strncmp(opt, "fake=", 5))
+ 		cmdline = opt + 5;
+ #endif
++#ifdef CONFIG_NODE_HOTPLUG_EMU
++	if (!strncmp(opt, "hide=", 5)) {
++		hp_cmdline = opt + 5;
++		numa_hide_nodes();
++	}
++#endif
+ #ifdef CONFIG_ACPI_NUMA
+ 	if (!strncmp(opt, "noacpi", 6))
+ 		acpi_numa = -1;
+Index: linux-hpe4/include/linux/nodemask.h
+===================================================================
+--- linux-hpe4.orig/include/linux/nodemask.h	2010-11-15 17:13:02.463461371 +0800
++++ linux-hpe4/include/linux/nodemask.h	2010-11-15 17:13:07.093461818 +0800
+@@ -371,6 +371,10 @@
+  */
+ enum node_states {
+ 	N_POSSIBLE,		/* The node could become online at some point */
++#ifdef CONFIG_NODE_HOTPLUG_EMU
++	N_HIDDEN,		/* The node is hidden at booting time, could be
++				 * onlined in run time */
++#endif
+ 	N_ONLINE,		/* The node is online */
+ 	N_NORMAL_MEMORY,	/* The node has regular memory */
+ #ifdef CONFIG_HIGHMEM
+@@ -470,6 +474,13 @@
+ #define node_online(node)	node_state((node), N_ONLINE)
+ #define node_possible(node)	node_state((node), N_POSSIBLE)
+ 
++#ifdef CONFIG_NODE_HOTPLUG_EMU
++#define node_set_hidden(node)	   node_set_state((node), N_HIDDEN)
++#define node_clear_hidden(node)	   node_clear_state((node), N_HIDDEN)
++#define node_hidden(node)	node_state((node), N_HIDDEN)
++extern int hotadd_hidden_nodes(int nid);
++#endif
++
+ #define for_each_node(node)	   for_each_node_state(node, N_POSSIBLE)
+ #define for_each_online_node(node) for_each_node_state(node, N_ONLINE)
+ 
 
 -- 
 Thanks & Regards,
