@@ -1,59 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935400Ab0KQUiq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 15:38:46 -0500
-Received: from www.tglx.de ([62.245.132.106]:41133 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755589Ab0KQUip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 15:38:45 -0500
-Date: Wed, 17 Nov 2010 21:37:44 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Marcus Meissner <meissner@suse.de>, mingo@elte.hu,
-        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel/time: Make /proc/timer_list mode 0400
-In-Reply-To: <20101117123039.d975aa70.akpm@linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1011172137040.2900@localhost6.localdomain6>
-References: <20101117170822.GW20727@suse.de> <1290014312.2109.1065.camel@laptop> <20101117123039.d975aa70.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S935498Ab0KQUkU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 15:40:20 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54298
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932364Ab0KQUkS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 15:40:18 -0500
+Date: Wed, 17 Nov 2010 12:40:43 -0800 (PST)
+Message-Id: <20101117.124043.52191671.davem@davemloft.net>
+To: nikai@nikai.net
+Cc: galak@kernel.crashing.org, netdev@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] gianfar: fix signedness issue
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101115215942.354b0394@absol.kitzblitz>
+References: <20101115215942.354b0394@absol.kitzblitz>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010, Andrew Morton wrote:
+From: Nicolas Kaiser <nikai@nikai.net>
+Date: Mon, 15 Nov 2010 21:59:42 +0100
 
-> On Wed, 17 Nov 2010 18:18:32 +0100
-> Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> irq_of_parse_and_map() has an unsigned return type.
+> Testing for a negative error value doesn't work here.
 > 
-> > On Wed, 2010-11-17 at 18:08 +0100, Marcus Meissner wrote:
-> > > Hi,
-> > > 
-> > > /proc/timer_list contains kernel addresses, like e.g.:
-> > >  #0: <c000000001404158>, tick_sched_timer, S:01, .tick_nohz_restart_sched_tick, swapper/0
-> > >  ...
-> > > 
-> > > Avoid leaking them to user space to make writing kernel exploits a bit harder.
-> > > 
-> > > (I currently cannot think of a userland tool that uses this, this is
-> > > likely pretty much root-only.)
-> > 
-> > iirc powertop parses this..
-> 
-> I bet it doesn't look at the kernel address (why was that added in the
-> first place, anyway?)
-> 
-> I'd suggest that the risk of breakage would be much less if we left the
-> file permissions alone and arranged for those addresses to be
-> 0000000000000000 for non-root readers.
+> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+> ---
+> I see that in numerous places the return value is tested
+> for NO_IRQ. I hope it's the right thing to do here as well?
 
-You beat me to it. Having the full information is quite helpful at
-times.
-
-Thanks,
-
-	tglx
-
+I think it is, applied, thank you.
