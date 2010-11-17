@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751533Ab0KQFIb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 00:08:31 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49306 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab0KQFIa (ORCPT
+	id S1751967Ab0KQFIi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 00:08:38 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:49369 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab0KQFIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 00:08:30 -0500
-Date: Tue, 16 Nov 2010 22:08:25 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: John Bonesio <bones@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, jdl@jdl.com,
-        glikely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        david@gibson.dropbear.id.au
-Subject: Re: [PATCH 4/5] powerpc/5200: dts: Remove incorrect combatible
- strings
-Message-ID: <20101117050825.GD12084@angua.secretlab.ca>
-References: <20101116204917.12146.39851.stgit@riker>
- <20101116205019.12146.79445.stgit@riker>
+	Wed, 17 Nov 2010 00:08:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=rTTSDQZX2H6/dd70Im26BvZ8CAobyjp3z4Ip7F3gjEzrnht1TVDz3kVLH3Onfbtebz
+         eNy4kz3ggSuKFft6znX8tuXNU2Ux0xKfodKXzMTFALJRXPyfQTI7QzNZhxIoxUgheLxQ
+         8BMulH0+774dwJOo7mUgc8vEC9piu23rJWA98=
+Date: Wed, 17 Nov 2010 08:07:32 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] ext4: missing unlock in ext4_clear_request_list()
+Message-ID: <20101117050732.GB31724@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Theodore Ts'o <tytso@mit.edu>, Lukas Czerner <lczerner@redhat.com>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101116205019.12146.79445.stgit@riker>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 12:50:19PM -0800, John Bonesio wrote:
-> This patch removes some incorrect compatible strings on the local plus bus node
-> in dts files for MPC5200b based systems.
-> 
-> Signed-off-by: John Bonesio <bones@secretlab.ca>
-> ---
-> 
->  arch/powerpc/boot/dts/lite5200b.dts |    2 +-
->  arch/powerpc/boot/dts/mucmc52.dts   |    2 +-
->  arch/powerpc/boot/dts/pcm032.dts    |    2 +-
->  arch/powerpc/boot/dts/uc101.dts     |    2 +-
->  4 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/powerpc/boot/dts/lite5200b.dts b/arch/powerpc/boot/dts/lite5200b.dts
-> index c0a4e45..ed8d7ae 100644
-> --- a/arch/powerpc/boot/dts/lite5200b.dts
-> +++ b/arch/powerpc/boot/dts/lite5200b.dts
-> @@ -295,7 +295,7 @@
->  	};
->  
->  	localbus {
-> -		compatible = "fsl,mpc5200b-lpb","fsl,mpc5200-lpb","simple-bus";
-> +		compatible = "fsl,mpc5200b-lpb","simple-bus";
+If the the li_request_list was empty then it returned with the lock
+held.  Instead of adding a "goto unlock" I just removed that special
+case and let it go past the empty list_for_each_safe().
 
-Actually, this is change backwards; all of the mpc5200b localbus nodes
-should be:
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+---
+This is a static checker patch.
 
-	compatible = "fsl,mpc5200b-lpb","fsl,mpc5200-lpb","simple-bus";
-
-
->  
->  		#address-cells = <2>;
->  		#size-cells = <1>;
-> diff --git a/arch/powerpc/boot/dts/mucmc52.dts b/arch/powerpc/boot/dts/mucmc52.dts
-> index 8dc212d..b9d3559 100644
-> --- a/arch/powerpc/boot/dts/mucmc52.dts
-> +++ b/arch/powerpc/boot/dts/mucmc52.dts
-> @@ -217,7 +217,7 @@
->  	};
->  
->  	localbus {
-> -		compatible = "fsl,mpc5200b-lpb","fsl,mpc5200-lpb","simple-bus";
-> +		compatible = "fsl,mpc5200b-lpb","simple-bus";
->  
->  		#address-cells = <2>;
->  		#size-cells = <1>;
-> diff --git a/arch/powerpc/boot/dts/pcm032.dts b/arch/powerpc/boot/dts/pcm032.dts
-> index e0f2702..085a646 100644
-> --- a/arch/powerpc/boot/dts/pcm032.dts
-> +++ b/arch/powerpc/boot/dts/pcm032.dts
-> @@ -292,7 +292,7 @@
->  	};
->  
->  	localbus {
-> -		compatible = "fsl,mpc5200b-lpb","fsl,mpc5200-lpb","simple-bus";
-> +		compatible = "fsl,mpc5200b-lpb","simple-bus";
->  
->  		#address-cells = <2>;
->  		#size-cells = <1>;
-> diff --git a/arch/powerpc/boot/dts/uc101.dts b/arch/powerpc/boot/dts/uc101.dts
-> index e00441a..70299a4 100644
-> --- a/arch/powerpc/boot/dts/uc101.dts
-> +++ b/arch/powerpc/boot/dts/uc101.dts
-> @@ -229,7 +229,7 @@
->  	};
->  
->  	localbus {
-> -		compatible = "fsl,mpc5200b-lpb","fsl,mpc5200-lpb","simple-bus";
-> +		compatible = "fsl,mpc5200b-lpb","simple-bus";
->  
->  		#address-cells = <2>;
->  		#size-cells = <1>;
-> 
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 61182fe..ef09d14 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -2799,9 +2799,6 @@ static void ext4_clear_request_list(void)
+ 	struct ext4_li_request *elr;
+ 
+ 	mutex_lock(&ext4_li_info->li_list_mtx);
+-	if (list_empty(&ext4_li_info->li_request_list))
+-		return;
+-
+ 	list_for_each_safe(pos, n, &ext4_li_info->li_request_list) {
+ 		elr = list_entry(pos, struct ext4_li_request,
+ 				 lr_request);
