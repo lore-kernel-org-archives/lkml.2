@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935441Ab0KQUGR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 15:06:17 -0500
-Received: from SMTP03.SRV.CS.CMU.EDU ([128.2.217.198]:43865 "EHLO
-	smtp03.srv.cs.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935344Ab0KQUGQ (ORCPT
+	id S935468Ab0KQULF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 15:11:05 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42218 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935286Ab0KQULD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 15:06:16 -0500
-Date: Wed, 17 Nov 2010 15:06:14 -0500
-From: Eric Cooper <ecc@cmu.edu>
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] add netdev led trigger
-Message-ID: <20101117200614.GK15096@localhost>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-References: <1289768305-1224-1-git-send-email-ecc@cmu.edu>
- <20101117105925.GC1574@ucw.cz>
- <20101117160919.GC10992@kroah.com>
- <20101117195843.GA31357@elf.ucw.cz>
+	Wed, 17 Nov 2010 15:11:03 -0500
+Message-ID: <4CE436C0.5050802@kernel.org>
+Date: Wed, 17 Nov 2010 12:10:40 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117195843.GA31357@elf.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] pci: Skip id checking if no id is passed
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 08:58:43PM +0100, Pavel Machek wrote:
-> I was hoping you'd comment on the ABI itself, too. It uses 
-> 
-> echo "foo bar baz" > file
-> 
-> to enable/disable specific events to be "displayed". More traditional
-> interface would be 
-> 
-> echo disable > file_foo
 
-The main arguments for using the single "mode" file are:
-1. that's how it was implemented for OpenWrt, and there's a fair
-   amount of userland (web admin tools, etc.) that groks it
-2. it's only specifying a set of three possible values -- separate
-   files seem like overkill
+Will get warning when pci stub driver is built-in kenel like:
+pci-stub: invalid id string ""
 
--- 
-Eric Cooper             e c c @ c m u . e d u
+So stop early if no id is passed.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ drivers/pci/pci-stub.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+Index: linux-2.6/drivers/pci/pci-stub.c
+===================================================================
+--- linux-2.6.orig/drivers/pci/pci-stub.c
++++ linux-2.6/drivers/pci/pci-stub.c
+@@ -47,6 +47,10 @@ static int __init pci_stub_init(void)
+ 	if (rc)
+ 		return rc;
+ 
++	/* no ids passed actually */
++	if (ids[0] == '\0')
++		return 0;
++
+ 	/* add ids specified in the module parameter */
+ 	p = ids;
+ 	while ((id = strsep(&p, ","))) {
