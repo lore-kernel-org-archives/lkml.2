@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759085Ab0KQVrI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 16:47:08 -0500
-Received: from www.tglx.de ([62.245.132.106]:60355 "EHLO www.tglx.de"
+	id S935312Ab0KQVz4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 16:55:56 -0500
+Received: from smtp.polymtl.ca ([132.207.4.11]:49672 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758844Ab0KQVrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 16:47:07 -0500
-Date: Wed, 17 Nov 2010 22:46:48 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alexander Shishkin <virtuoso@slind.org>
-cc: Davide Libenzi <davidel@xmailserver.org>,
-        Kyle Moffett <kyle@moffetthome.net>, Valdis.Kletnieks@vt.edu,
-        LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
+	id S933027Ab0KQVzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 16:55:55 -0500
+X-Greylist: delayed 1438 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Nov 2010 16:55:54 EST
+Message-ID: <1290029498.4ce449ba1679d@www.imp.polymtl.ca>
+Date: Wed, 17 Nov 2010 16:31:38 -0500
+From: Douglas Santos <douglas.santos@polymtl.ca>
+To: linux-kernel@vger.kernel.org
+Cc: ltt-dev@lists.casi.polymtl.ca, David Sharp <dhsharp@google.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: Re: [PATCHv6 0/7] system time changes notification
-In-Reply-To: <20101117212912.GC26184@shisha.kicks-ass.net>
-Message-ID: <alpine.LFD.2.00.1011172244470.2900@localhost6.localdomain6>
-References: <1289503802-22444-1-git-send-email-virtuoso@slind.org> <22542.1289507293@localhost> <20101111205123.GC10585@shisha.kicks-ass.net> <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6> <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
- <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6> <20101117190659.GB26184@shisha.kicks-ass.net> <alpine.DEB.2.00.1011171130210.1595@davide-lnx1> <20101117212912.GC26184@shisha.kicks-ass.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+        Michael Rubin <mrubin@google.com>
+Subject: Benchmarks of kernel tracing options 2 (ftrace, lttng and perf)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) 3.2.3
+X-Originating-IP: 132.207.72.44
+X-Poly-FromMTA: (imp-4-3.polymtl.ca [132.207.4.78]) at Wed, 17 Nov 2010 21:31:39 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010, Alexander Shishkin wrote:
+Hi all,
 
-> On Wed, Nov 17, 2010 at 12:42:52PM -0800, Davide Libenzi wrote:
-> > On Wed, 17 Nov 2010, Alexander Shishkin wrote:
-> > 
-> > > > But what you folks really want for this stuff is an extension to
-> > > > timerfd as you want to be able to poll, right?
-> > > > 
-> > > > So what about the following:
-> > > > 
-> > > > Add a new flag TDF_NOTIFY_CLOCK_WAS_SET to the timerfd flags. Now this
-> > > > flag adds the timer to a separate list, which gets woken up when the
-> > > > clock is set.
-> > > > 
-> > > > No new syscall, just a few lines of code in fs/timerfd.c and
-> > > > clock_was_set().
-> > > > 
-> > > > Thoughts ?
-> > > 
-> > > Something like this (sans ugliness)?
-> > 
-> > Oh, gosh, please.  This is interface-multiplexing-a-palooza.
-> 
-> Thomas made a suggestion, I came up with how it might look like so that
+This is a response to a benchmark, submitted a few weeks ago, comparing kernel
+tracing options.
+http://lkml.org/lkml/2010/10/28/422
 
-Yeah, I made the suggestion in the first place and I regretted it when
-Davide told me that I'm nuts :)
+We followed the methodology described in the link bellow,
+but using the shellscripts posted there to reproduce autotest scripts.
+http://lkml.org/lkml/2010/10/28/261
 
-Thanks,
+We disabled the extra syscall tracing on lttng, for a fair comparison.
+http://lkml.org/lkml/2010/10/28/290
 
-	tglx
+Average results with tracing "on":
+
+lttng:  220 ns
+ftrace: 260 ns
+perf:   740 ns
+
+
+E5405 system
+kernel 2.6.36
+
+-lttng 0.239 + 0.19.2modules + sys_getuid tracepoint + sys_getuid probe
+ + remove syscall_trace
+
+-ftrace and perf + sys_getuid tracepoint
+
