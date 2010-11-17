@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab0KQXj3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:39:29 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41498 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750940Ab0KQXj1 (ORCPT
+	id S1752146Ab0KQXkd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:40:33 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:64694 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481Ab0KQXkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:39:27 -0500
-Date: Wed, 17 Nov 2010 15:38:27 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Li Shaohua <shaohua.li@intel.com>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 06/13] writeback: bdi write bandwidth estimation
-Message-Id: <20101117153827.e9f169d1.akpm@linux-foundation.org>
-In-Reply-To: <1290036299.2109.1288.camel@laptop>
-References: <20101117042720.033773013@intel.com>
-	<20101117042850.002299964@intel.com>
-	<20101117150837.a18d56c1.akpm@linux-foundation.org>
-	<1290036299.2109.1288.camel@laptop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Nov 2010 18:40:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <25482.1290031268@localhost>
+References: <1289922400.1253.3.camel@yio.site> <20101116155717.6671e484@lxorguk.ukuu.org.uk>
+ <AANLkTimn7zyEjLhmOmUVQGnLDfM-A_uEgWETsM3nsyuY@mail.gmail.com>
+ <20101116171447.29336514@lxorguk.ukuu.org.uk> <AANLkTi=ju4fON7Hz=j_tFtqFGD0b-c=-Ou+HQwfYDgOy@mail.gmail.com>
+ <20101116195538.7fa66b97@lxorguk.ukuu.org.uk> <20101116213622.GA17824@tango.0pointer.de>
+ <20101116225619.5fa7ef8b@lxorguk.ukuu.org.uk> <20101116231023.GB27594@tango.0pointer.de>
+ <25482.1290031268@localhost>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 18 Nov 2010 00:40:16 +0100
+Message-ID: <AANLkTimV_zKK-Ubw3vJkDUtrYvB+W06cRR7Nz2vam6fP@mail.gmail.com>
+Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
+To: Valdis.Kletnieks@vt.edu
+Cc: Lennart Poettering <mzxreary@0pointer.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Werner Fink <werner@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010 00:24:59 +0100
-Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+On Wed, Nov 17, 2010 at 23:01,  <Valdis.Kletnieks@vt.edu> wrote:
+> On Wed, 17 Nov 2010 00:10:24 +0100, Lennart Poettering said:
+>
+>> When two users A and B are logged in, on tty1 resp. tty2, then as long
+>> as tty1 is active user A should get access to the sound card, usb key,
+>> .... As soon as we switch to tty2 user B should.
+>
+> So I change to tty1, plug in my 8G USB memory stick, and I have access to it.
+> I start copying something big to it, and change to tty2 to do something else
+> while the long copy happens...
+>
+> ... and my copy craps out because tty1 lost access to the USB.
+>
+> Brilliant.
 
-> On Wed, 2010-11-17 at 15:08 -0800, Andrew Morton wrote:
-> > On Wed, 17 Nov 2010 12:27:26 +0800
-> > Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > 
-> > > +     w = min(elapsed / (HZ/100), 128UL);
-> > 
-> > I did try setting HZ=10 many years ago, and the kernel blew up.
-> > 
-> > I do recall hearing of people who set HZ very low, perhaps because
-> > their huge machines were seeing performance prolems when the timer tick
-> > went off.  Probably there's no need to do that any more.
-> > 
-> > But still, we shouldn't hard-wire the (HZ >= 100) assumption if we
-> > don't absolutely need to, and I don't think it is absolutely needed
-> > here.  
-> 
-> People who do cpu bring-up on very slow FPGAs also lower HZ as far as
-> possible.
+Brilliant conclusion. If you have mounted it, you own it. But you can
+not make your inactive session mount another new one. It's like this
+since ages. Hint: try stuff before hitting reply too fast. :)
 
-	grep -r "[^a-zA-Z0-9_]HZ[ ]*/[ ]*100[^0-9]" .
-
-:-(
+Kay
