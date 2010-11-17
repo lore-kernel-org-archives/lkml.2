@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935003Ab0KQQXa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 11:23:30 -0500
+	id S935034Ab0KQQXx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 11:23:53 -0500
 Received: from gir.skynet.ie ([193.1.99.77]:33013 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758260Ab0KQQWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 11:22:54 -0500
+	id S934899Ab0KQQWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 11:22:53 -0500
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrea Arcangeli <aarcange@redhat.com>
 Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
@@ -13,9 +13,9 @@ Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 7/8] mm: compaction: Use the LRU to get a hint on where compaction should start
-Date: Wed, 17 Nov 2010 16:22:48 +0000
-Message-Id: <1290010969-26721-8-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 4/8] mm: migration: Allow migration to operate asynchronously and avoid synchronous compaction in the faster path
+Date: Wed, 17 Nov 2010 16:22:45 +0000
+Message-Id: <1290010969-26721-5-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1290010969-26721-1-git-send-email-mel@csn.ul.ie>
 References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie>
@@ -23,128 +23,251 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The end of the LRU stores the oldest known page. Compaction on the other
-hand always starts scanning from the start of the zone. This patch uses
-the LRU to hint to compaction where it should start scanning from. This
-means that compaction will at least start with some old pages reducing
-the impact on running processes and reducing the amount of scanning. The
-check it makes is racy as the LRU lock is not taken but it should be
-harmless as we are not manipulating the lists without the lock.
+Migration synchronously waits for writeback if the initial passes fails.
+try_to_compact_pages() does not want this behaviour. It's in a faster
+allocation path where no pages have been freed yet. If compaction does not
+succeed quickly, synchronous migration is not going to help and unnecessarily
+delays a process.
+
+This patch adds a sync parameter to migrate_pages() allowing the caller
+to indicate if wait_on_page_writeback() is allowed within migration or
+not. Only try_to_compact_pages() uses asynchronous migration with direct
+compaction using the synchronous version within the direct reclaim path.
+All other callers use synchronous migration to preserve existing
+behaviour.
+
+In tests, this reduces latency when allocating huge pages as the faster
+path is avoiding stalls and postponing synchronous migration until pages
+had been freed.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 ---
- include/linux/mmzone.h |    2 ++
- mm/compaction.c        |   42 +++++++++++++++++++++++++++++++++++++-----
- mm/vmscan.c            |    2 --
- 3 files changed, 39 insertions(+), 7 deletions(-)
+ include/linux/migrate.h |   12 ++++++++----
+ mm/compaction.c         |    6 +++++-
+ mm/memory-failure.c     |    3 ++-
+ mm/memory_hotplug.c     |    3 ++-
+ mm/mempolicy.c          |    4 ++--
+ mm/migrate.c            |   24 ++++++++++++++----------
+ 6 files changed, 33 insertions(+), 19 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 39c24eb..2b7e237 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -142,6 +142,8 @@ enum lru_list {
+diff --git a/include/linux/migrate.h b/include/linux/migrate.h
+index 085527f..fa31902 100644
+--- a/include/linux/migrate.h
++++ b/include/linux/migrate.h
+@@ -13,9 +13,11 @@ extern void putback_lru_pages(struct list_head *l);
+ extern int migrate_page(struct address_space *,
+ 			struct page *, struct page *);
+ extern int migrate_pages(struct list_head *l, new_page_t x,
+-			unsigned long private, int offlining);
++			unsigned long private, int offlining,
++			bool sync);
+ extern int migrate_huge_pages(struct list_head *l, new_page_t x,
+-			unsigned long private, int offlining);
++			unsigned long private, int offlining,
++			bool sync);
  
- #define for_each_evictable_lru(l) for (l = 0; l <= LRU_ACTIVE_FILE; l++)
+ extern int fail_migrate_page(struct address_space *,
+ 			struct page *, struct page *);
+@@ -33,9 +35,11 @@ extern int migrate_huge_page_move_mapping(struct address_space *mapping,
  
-+#define lru_to_page(_head) (list_entry((_head)->prev, struct page, lru))
-+
- static inline int is_file_lru(enum lru_list l)
- {
- 	return (l == LRU_INACTIVE_FILE || l == LRU_ACTIVE_FILE);
+ static inline void putback_lru_pages(struct list_head *l) {}
+ static inline int migrate_pages(struct list_head *l, new_page_t x,
+-		unsigned long private, int offlining) { return -ENOSYS; }
++		unsigned long private, int offlining,
++		bool sync) { return -ENOSYS; }
+ static inline int migrate_huge_pages(struct list_head *l, new_page_t x,
+-		unsigned long private, int offlining) { return -ENOSYS; }
++		unsigned long private, int offlining,
++		bool sync) { return -ENOSYS; }
+ 
+ static inline int migrate_prep(void) { return -ENOSYS; }
+ static inline int migrate_prep_local(void) { return -ENOSYS; }
 diff --git a/mm/compaction.c b/mm/compaction.c
-index 686db84..03bd878 100644
+index 3c37c52..b8e27cc 100644
 --- a/mm/compaction.c
 +++ b/mm/compaction.c
-@@ -37,6 +37,9 @@ struct compact_control {
- 					 * are scanned for pages to migrate and
- 					 * migration is asynchronous
- 					 */
-+	unsigned long abort_migrate_pfn;/* Finish compaction when the migration
-+					 * scanner reaches this PFN
-+					 */
+@@ -33,6 +33,7 @@ struct compact_control {
+ 	unsigned long nr_migratepages;	/* Number of pages to migrate */
+ 	unsigned long free_pfn;		/* isolate_freepages search base */
+ 	unsigned long migrate_pfn;	/* isolate_migratepages search base */
++	bool sync;			/* Synchronous migration */
  
  	/* Account for isolated anon and file pages */
  	unsigned long nr_anon;
-@@ -380,6 +383,10 @@ static int compact_finished(struct zone *zone,
- 	if (cc->free_pfn <= cc->migrate_pfn)
- 		return COMPACT_COMPLETE;
+@@ -449,7 +450,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
  
-+	/* Compaction run completes if migration reaches abort_migrate_pfn */
-+	if (cc->abort_migrate_pfn && cc->migrate_pfn >= cc->abort_migrate_pfn)
-+		return COMPACT_COMPLETE;
-+
- 	/* Compaction run is not finished if the watermark is not met */
- 	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
- 		return COMPACT_CONTINUE;
-@@ -450,10 +457,17 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		;
- 	}
+ 		nr_migrate = cc->nr_migratepages;
+ 		migrate_pages(&cc->migratepages, compaction_alloc,
+-						(unsigned long)cc, 0);
++				(unsigned long)cc, 0,
++				cc->sync);
+ 		update_nr_listpages(cc);
+ 		nr_remaining = cc->nr_migratepages;
  
--	/* Setup to move all movable pages to the end of the zone */
--	cc->migrate_pfn = zone->zone_start_pfn;
--	cc->free_pfn = cc->migrate_pfn + zone->spanned_pages;
--	cc->free_pfn &= ~(pageblock_nr_pages-1);
-+	/*
-+	 * Setup to move all movable pages to the end of the zone. If the
-+	 * caller does not specify starting points for the scanners,
-+	 * initialise them
-+	 */
-+	if (!cc->migrate_pfn)
-+		cc->migrate_pfn = zone->zone_start_pfn;
-+	if (!cc->free_pfn) {
-+		cc->free_pfn = zone->zone_start_pfn + zone->spanned_pages;
-+		cc->free_pfn &= ~(pageblock_nr_pages-1);
-+	}
- 
- 	migrate_prep_local();
- 
-@@ -512,6 +526,8 @@ static unsigned long compact_zone_order(struct zone *zone,
- unsigned long reclaimcompact_zone_order(struct zone *zone,
- 						int order, gfp_t gfp_mask)
- {
-+	unsigned long start_migrate_pfn, ret;
-+	struct page *anon_page, *file_page;
- 	struct compact_control cc = {
- 		.nr_freepages = 0,
- 		.nr_migratepages = 0,
-@@ -523,7 +539,23 @@ unsigned long reclaimcompact_zone_order(struct zone *zone,
+@@ -484,6 +486,7 @@ static unsigned long compact_zone_order(struct zone *zone,
+ 		.order = order,
+ 		.migratetype = allocflags_to_migratetype(gfp_mask),
+ 		.zone = zone,
++		.sync = false,
+ 	};
  	INIT_LIST_HEAD(&cc.freepages);
  	INIT_LIST_HEAD(&cc.migratepages);
+@@ -500,6 +503,7 @@ unsigned long reclaimcompact_zone_order(struct zone *zone,
+ 		.order = order,
+ 		.migratetype = allocflags_to_migratetype(gfp_mask),
+ 		.zone = zone,
++		.sync = true,
+ 	};
+ 	INIT_LIST_HEAD(&cc.freepages);
+ 	INIT_LIST_HEAD(&cc.migratepages);
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 1243241..ebc2a1b 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1413,7 +1413,8 @@ int soft_offline_page(struct page *page, int flags)
+ 		LIST_HEAD(pagelist);
  
--	return compact_zone(zone, &cc);
-+	/* Get a hint on where to start compacting from the LRU */
-+	anon_page = lru_to_page(&zone->lru[LRU_BASE + LRU_INACTIVE_ANON].list);
-+	file_page = lru_to_page(&zone->lru[LRU_BASE + LRU_INACTIVE_FILE].list);
-+	cc.migrate_pfn = min(page_to_pfn(anon_page), page_to_pfn(file_page));
-+	cc.migrate_pfn = ALIGN(cc.migrate_pfn, pageblock_nr_pages);
-+	start_migrate_pfn = cc.migrate_pfn;
-+
-+	ret = compact_zone(zone, &cc);
-+
-+	/* Restart migration from the start of zone if the hint did not work */
-+	if (!zone_watermark_ok(zone, cc.order, low_wmark_pages(zone), 0, 0)) {
-+		cc.migrate_pfn = 0;
-+		cc.abort_migrate_pfn = start_migrate_pfn;
-+		ret = compact_zone(zone, &cc);
-+	}
-+
-+	return ret;
+ 		list_add(&page->lru, &pagelist);
+-		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL, 0);
++		ret = migrate_pages(&pagelist, new_page, MPOL_MF_MOVE_ALL,
++									0, true);
+ 		if (ret) {
+ 			pr_info("soft offline: %#lx: migration failed %d, type %lx\n",
+ 				pfn, ret, page->flags);
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 9260314..221178b 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -716,7 +716,8 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
+ 			goto out;
+ 		}
+ 		/* this function returns # of failed pages */
+-		ret = migrate_pages(&source, hotremove_migrate_alloc, 0, 1);
++		ret = migrate_pages(&source, hotremove_migrate_alloc, 0,
++								1, true);
+ 		if (ret)
+ 			putback_lru_pages(&source);
+ 	}
+diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+index 4a57f13..8b1a490 100644
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -935,7 +935,7 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
+ 		return PTR_ERR(vma);
+ 
+ 	if (!list_empty(&pagelist)) {
+-		err = migrate_pages(&pagelist, new_node_page, dest, 0);
++		err = migrate_pages(&pagelist, new_node_page, dest, 0, true);
+ 		if (err)
+ 			putback_lru_pages(&pagelist);
+ 	}
+@@ -1155,7 +1155,7 @@ static long do_mbind(unsigned long start, unsigned long len,
+ 
+ 		if (!list_empty(&pagelist)) {
+ 			nr_failed = migrate_pages(&pagelist, new_vma_page,
+-						(unsigned long)vma, 0);
++						(unsigned long)vma, 0, true);
+ 			if (nr_failed)
+ 				putback_lru_pages(&pagelist);
+ 		}
+diff --git a/mm/migrate.c b/mm/migrate.c
+index fe5a3c6..ea684ab 100644
+--- a/mm/migrate.c
++++ b/mm/migrate.c
+@@ -612,7 +612,7 @@ static int move_to_new_page(struct page *newpage, struct page *page,
+  * to the newly allocated page in newpage.
+  */
+ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+-			struct page *page, int force, int offlining)
++			struct page *page, int force, int offlining, bool sync)
+ {
+ 	int rc = 0;
+ 	int *result = NULL;
+@@ -635,7 +635,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 	rc = -EAGAIN;
+ 
+ 	if (!trylock_page(page)) {
+-		if (!force)
++		if (!force || !sync)
+ 			goto move_newpage;
+ 		lock_page(page);
+ 	}
+@@ -663,7 +663,7 @@ static int unmap_and_move(new_page_t get_new_page, unsigned long private,
+ 	BUG_ON(charge);
+ 
+ 	if (PageWriteback(page)) {
+-		if (!force)
++		if (!force || !sync)
+ 			goto uncharge;
+ 		wait_on_page_writeback(page);
+ 	}
+@@ -808,7 +808,7 @@ move_newpage:
+  */
+ static int unmap_and_move_huge_page(new_page_t get_new_page,
+ 				unsigned long private, struct page *hpage,
+-				int force, int offlining)
++				int force, int offlining, bool sync)
+ {
+ 	int rc = 0;
+ 	int *result = NULL;
+@@ -822,7 +822,7 @@ static int unmap_and_move_huge_page(new_page_t get_new_page,
+ 	rc = -EAGAIN;
+ 
+ 	if (!trylock_page(hpage)) {
+-		if (!force)
++		if (!force || !sync)
+ 			goto out;
+ 		lock_page(hpage);
+ 	}
+@@ -890,7 +890,8 @@ out:
+  * Return: Number of pages not migrated or error code.
+  */
+ int migrate_pages(struct list_head *from,
+-		new_page_t get_new_page, unsigned long private, int offlining)
++		new_page_t get_new_page, unsigned long private, int offlining,
++		bool sync)
+ {
+ 	int retry = 1;
+ 	int nr_failed = 0;
+@@ -910,7 +911,8 @@ int migrate_pages(struct list_head *from,
+ 			cond_resched();
+ 
+ 			rc = unmap_and_move(get_new_page, private,
+-						page, pass > 2, offlining);
++						page, pass > 2, offlining,
++						sync);
+ 
+ 			switch(rc) {
+ 			case -ENOMEM:
+@@ -939,7 +941,8 @@ out:
  }
  
- int sysctl_extfrag_threshold = 500;
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index ca108ce..9a0fa57 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -113,8 +113,6 @@ struct scan_control {
- 	nodemask_t	*nodemask;
- };
+ int migrate_huge_pages(struct list_head *from,
+-		new_page_t get_new_page, unsigned long private, int offlining)
++		new_page_t get_new_page, unsigned long private, int offlining,
++		bool sync)
+ {
+ 	int retry = 1;
+ 	int nr_failed = 0;
+@@ -955,7 +958,8 @@ int migrate_huge_pages(struct list_head *from,
+ 			cond_resched();
  
--#define lru_to_page(_head) (list_entry((_head)->prev, struct page, lru))
--
- #ifdef ARCH_HAS_PREFETCH
- #define prefetch_prev_lru_page(_page, _base, _field)			\
- 	do {								\
+ 			rc = unmap_and_move_huge_page(get_new_page,
+-					private, page, pass > 2, offlining);
++					private, page, pass > 2, offlining,
++					sync);
+ 
+ 			switch(rc) {
+ 			case -ENOMEM:
+@@ -1088,7 +1092,7 @@ set_status:
+ 	err = 0;
+ 	if (!list_empty(&pagelist)) {
+ 		err = migrate_pages(&pagelist, new_page_node,
+-				(unsigned long)pm, 0);
++				(unsigned long)pm, 0, true);
+ 		if (err)
+ 			putback_lru_pages(&pagelist);
+ 	}
 -- 
 1.7.1
 
