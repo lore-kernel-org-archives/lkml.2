@@ -1,385 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759792Ab0KQIdx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 03:33:53 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:16541 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754914Ab0KQIdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 03:33:51 -0500
-From: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>
-To: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm@lists.infradead.org, linux-serial@vger.kernel.org
-Subject: [PATCH] OMAP: Serial: Define register access modes in LCR
-Date: Wed, 17 Nov 2010 10:31:52 +0200
-Message-Id: <1289982712-7309-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+	id S1759907Ab0KQIeI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 03:34:08 -0500
+Received: from vms173019pub.verizon.net ([206.46.173.19]:64514 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758550Ab0KQIeG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 03:34:06 -0500
+Date: Wed, 17 Nov 2010 03:33:47 -0500 (EST)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@x980
+To: stable@kernel.org
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [git pull 2.6.36.stable] intel_idle patches for 2.6.36.stable
+In-reply-to: <alpine.LFD.2.00.1011170322270.24426@x980>
+Message-id: <alpine.LFD.2.00.1011170331150.24426@x980>
+References: <alpine.LFD.2.00.1011151227190.2939@x980>
+ <alpine.LFD.2.00.1011170322270.24426@x980>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+Hi Greg,
 
-Access to some registers depends on register access mode
-Three different modes are available for OMAP (at least)
-• Operational mode     LCR_REG[7] = 0x0
-• Configuration mode A LCR_REG[7] = 0x1 and LCR_REG[7:0]! = 0xBF
-• Configuration mode B LCR_REG[7] = 0x1 and LCR_REG[7:0]  = 0xBF
+Please disregard the previous commit log on this thread,
+for it was the 2.6.35.y log, while the (smaller) 2.6.36.y log is below.
+      
+I've added upstream commit id's to each commit comment in this series.
+If that is enough to make -stable happy, then we're done.
 
-Define access modes and remove redefinitions and magic numbers
-in serial drivers (and later in bluetooth driver).
+If you would rather not pull this series because it 
+does not exclude the intermediate syntax patches that 
+are upstream, then I understand that viewpoint too. 
 
-Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
----
- arch/arm/mach-omap2/serial.c                  |   12 ++++----
- arch/arm/plat-omap/include/plat/omap-serial.h |    9 ------
- drivers/serial/8250.c                         |   26 +++++++++---------
- drivers/serial/omap-serial.c                  |   34 ++++++++++++------------
- include/linux/serial_reg.h                    |    7 +++++
- 5 files changed, 43 insertions(+), 45 deletions(-)
+thanks,
+-Len Brown, Intel Open Source Technology Center
 
-diff --git a/arch/arm/mach-omap2/serial.c b/arch/arm/mach-omap2/serial.c
-index edd7c99de38dde5bf877788fb4e48055c0d9fbfa..14c87157d70758d4203593f78f2eaf4c2f2cca68 100644
---- a/arch/arm/mach-omap2/serial.c
-+++ b/arch/arm/mach-omap2/serial.c
-@@ -218,7 +218,7 @@ static void omap_uart_save_context(struct omap_uart_state *uart)
- 		return;
- 
- 	lcr = serial_read_reg(uart, UART_LCR);
--	serial_write_reg(uart, UART_LCR, 0xBF);
-+	serial_write_reg(uart, UART_LCR, UART_LCR_CONF_MODE_B);
- 	uart->dll = serial_read_reg(uart, UART_DLL);
- 	uart->dlh = serial_read_reg(uart, UART_DLM);
- 	serial_write_reg(uart, UART_LCR, lcr);
-@@ -226,7 +226,7 @@ static void omap_uart_save_context(struct omap_uart_state *uart)
- 	uart->sysc = serial_read_reg(uart, UART_OMAP_SYSC);
- 	uart->scr = serial_read_reg(uart, UART_OMAP_SCR);
- 	uart->wer = serial_read_reg(uart, UART_OMAP_WER);
--	serial_write_reg(uart, UART_LCR, 0x80);
-+	serial_write_reg(uart, UART_LCR, UART_LCR_CONF_MODE_A);
- 	uart->mcr = serial_read_reg(uart, UART_MCR);
- 	serial_write_reg(uart, UART_LCR, lcr);
- 
-@@ -250,19 +250,19 @@ static void omap_uart_restore_context(struct omap_uart_state *uart)
- 	else
- 		serial_write_reg(uart, UART_OMAP_MDR1, UART_OMAP_MDR1_DISABLE);
- 
--	serial_write_reg(uart, UART_LCR, 0xBF); /* Config B mode */
-+	serial_write_reg(uart, UART_LCR, UART_LCR_CONF_MODE_B);
- 	efr = serial_read_reg(uart, UART_EFR);
- 	serial_write_reg(uart, UART_EFR, UART_EFR_ECB);
- 	serial_write_reg(uart, UART_LCR, 0x0); /* Operational mode */
- 	serial_write_reg(uart, UART_IER, 0x0);
--	serial_write_reg(uart, UART_LCR, 0xBF); /* Config B mode */
-+	serial_write_reg(uart, UART_LCR, UART_LCR_CONF_MODE_B);
- 	serial_write_reg(uart, UART_DLL, uart->dll);
- 	serial_write_reg(uart, UART_DLM, uart->dlh);
- 	serial_write_reg(uart, UART_LCR, 0x0); /* Operational mode */
- 	serial_write_reg(uart, UART_IER, uart->ier);
--	serial_write_reg(uart, UART_LCR, 0x80);
-+	serial_write_reg(uart, UART_LCR, UART_LCR_CONF_MODE_A);
- 	serial_write_reg(uart, UART_MCR, uart->mcr);
--	serial_write_reg(uart, UART_LCR, 0xBF); /* Config B mode */
-+	serial_write_reg(uart, UART_LCR, UART_LCR_CONF_MODE_B);
- 	serial_write_reg(uart, UART_EFR, efr);
- 	serial_write_reg(uart, UART_LCR, UART_LCR_WLEN8);
- 	serial_write_reg(uart, UART_OMAP_SCR, uart->scr);
-diff --git a/arch/arm/plat-omap/include/plat/omap-serial.h b/arch/arm/plat-omap/include/plat/omap-serial.h
-index 6a17880146111ddfabef564583e464c1c75bb379..b3e0bad9b77eb5138fe01253bd99bfc62bd6ac2d 100644
---- a/arch/arm/plat-omap/include/plat/omap-serial.h
-+++ b/arch/arm/plat-omap/include/plat/omap-serial.h
-@@ -33,15 +33,6 @@
- 
- #define OMAP_MODE13X_SPEED	230400
- 
--/*
-- * LCR = 0XBF: Switch to Configuration Mode B.
-- * In configuration mode b allow access
-- * to EFR,DLL,DLH.
-- * Reference OMAP TRM Chapter 17
-- * Section: 1.4.3 Mode Selection
-- */
--#define OMAP_UART_LCR_CONF_MDB	0XBF
--
- /* WER = 0x7F
-  * Enable module level wakeup in WER reg
-  */
-diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
-index 4d8e14b7aa931bcf3de11c6e5805005e0bf413ca..aaf9907e6014f547f28a617504125e6ffd177cbe 100644
---- a/drivers/serial/8250.c
-+++ b/drivers/serial/8250.c
-@@ -653,13 +653,13 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
- {
- 	if (p->capabilities & UART_CAP_SLEEP) {
- 		if (p->capabilities & UART_CAP_EFR) {
--			serial_outp(p, UART_LCR, 0xBF);
-+			serial_outp(p, UART_LCR, UART_LCR_CONF_MODE_B);
- 			serial_outp(p, UART_EFR, UART_EFR_ECB);
- 			serial_outp(p, UART_LCR, 0);
- 		}
- 		serial_outp(p, UART_IER, sleep ? UART_IERX_SLEEP : 0);
- 		if (p->capabilities & UART_CAP_EFR) {
--			serial_outp(p, UART_LCR, 0xBF);
-+			serial_outp(p, UART_LCR, UART_LCR_CONF_MODE_B);
- 			serial_outp(p, UART_EFR, 0);
- 			serial_outp(p, UART_LCR, 0);
- 		}
-@@ -752,7 +752,7 @@ static int size_fifo(struct uart_8250_port *up)
- 	serial_outp(up, UART_FCR, UART_FCR_ENABLE_FIFO |
- 		    UART_FCR_CLEAR_RCVR | UART_FCR_CLEAR_XMIT);
- 	serial_outp(up, UART_MCR, UART_MCR_LOOP);
--	serial_outp(up, UART_LCR, UART_LCR_DLAB);
-+	serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_A);
- 	old_dl = serial_dl_read(up);
- 	serial_dl_write(up, 0x0001);
- 	serial_outp(up, UART_LCR, 0x03);
-@@ -764,7 +764,7 @@ static int size_fifo(struct uart_8250_port *up)
- 		serial_inp(up, UART_RX);
- 	serial_outp(up, UART_FCR, old_fcr);
- 	serial_outp(up, UART_MCR, old_mcr);
--	serial_outp(up, UART_LCR, UART_LCR_DLAB);
-+	serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_A);
- 	serial_dl_write(up, old_dl);
- 	serial_outp(up, UART_LCR, old_lcr);
- 
-@@ -782,7 +782,7 @@ static unsigned int autoconfig_read_divisor_id(struct uart_8250_port *p)
- 	unsigned int id;
- 
- 	old_lcr = serial_inp(p, UART_LCR);
--	serial_outp(p, UART_LCR, UART_LCR_DLAB);
-+	serial_outp(p, UART_LCR, UART_LCR_CONF_MODE_A);
- 
- 	old_dll = serial_inp(p, UART_DLL);
- 	old_dlm = serial_inp(p, UART_DLM);
-@@ -836,7 +836,7 @@ static void autoconfig_has_efr(struct uart_8250_port *up)
- 	 * recommended for new designs).
- 	 */
- 	up->acr = 0;
--	serial_out(up, UART_LCR, 0xBF);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 	serial_out(up, UART_EFR, UART_EFR_ECB);
- 	serial_out(up, UART_LCR, 0x00);
- 	id1 = serial_icr_read(up, UART_ID1);
-@@ -945,7 +945,7 @@ static void autoconfig_16550a(struct uart_8250_port *up)
- 	 * Check for presence of the EFR when DLAB is set.
- 	 * Only ST16C650V1 UARTs pass this test.
- 	 */
--	serial_outp(up, UART_LCR, UART_LCR_DLAB);
-+	serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_A);
- 	if (serial_in(up, UART_EFR) == 0) {
- 		serial_outp(up, UART_EFR, 0xA8);
- 		if (serial_in(up, UART_EFR) != 0) {
-@@ -963,7 +963,7 @@ static void autoconfig_16550a(struct uart_8250_port *up)
- 	 * Maybe it requires 0xbf to be written to the LCR.
- 	 * (other ST16C650V2 UARTs, TI16C752A, etc)
- 	 */
--	serial_outp(up, UART_LCR, 0xBF);
-+	serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 	if (serial_in(up, UART_EFR) == 0 && !broken_efr(up)) {
- 		DEBUG_AUTOCONF("EFRv2 ");
- 		autoconfig_has_efr(up);
-@@ -1024,7 +1024,7 @@ static void autoconfig_16550a(struct uart_8250_port *up)
- 	serial_outp(up, UART_FCR, UART_FCR_ENABLE_FIFO | UART_FCR7_64BYTE);
- 	status1 = serial_in(up, UART_IIR) >> 5;
- 	serial_outp(up, UART_FCR, UART_FCR_ENABLE_FIFO);
--	serial_outp(up, UART_LCR, UART_LCR_DLAB);
-+	serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_A);
- 	serial_outp(up, UART_FCR, UART_FCR_ENABLE_FIFO | UART_FCR7_64BYTE);
- 	status2 = serial_in(up, UART_IIR) >> 5;
- 	serial_outp(up, UART_FCR, UART_FCR_ENABLE_FIFO);
-@@ -1183,7 +1183,7 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
- 	 * We also initialise the EFR (if any) to zero for later.  The
- 	 * EFR occupies the same register location as the FCR and IIR.
- 	 */
--	serial_outp(up, UART_LCR, 0xBF);
-+	serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 	serial_outp(up, UART_EFR, 0);
- 	serial_outp(up, UART_LCR, 0);
- 
-@@ -1952,7 +1952,7 @@ static int serial8250_startup(struct uart_port *port)
- 	if (up->port.type == PORT_16C950) {
- 		/* Wake up and initialize UART */
- 		up->acr = 0;
--		serial_outp(up, UART_LCR, 0xBF);
-+		serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 		serial_outp(up, UART_EFR, UART_EFR_ECB);
- 		serial_outp(up, UART_IER, 0);
- 		serial_outp(up, UART_LCR, 0);
-@@ -2002,7 +2002,7 @@ static int serial8250_startup(struct uart_port *port)
- 	if (up->port.type == PORT_16850) {
- 		unsigned char fctr;
- 
--		serial_outp(up, UART_LCR, 0xbf);
-+		serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 
- 		fctr = serial_inp(up, UART_FCTR) & ~(UART_FCTR_RX|UART_FCTR_TX);
- 		serial_outp(up, UART_FCTR, fctr | UART_FCTR_TRGD | UART_FCTR_RX);
-@@ -2363,7 +2363,7 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
- 		if (termios->c_cflag & CRTSCTS)
- 			efr |= UART_EFR_CTS;
- 
--		serial_outp(up, UART_LCR, 0xBF);
-+		serial_outp(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 		serial_outp(up, UART_EFR, efr);
- 	}
- 
-diff --git a/drivers/serial/omap-serial.c b/drivers/serial/omap-serial.c
-index 03a96db67de4a5b3120e094b25e10e2364b8be86..1201eff1831e976910cefebed09882c26e2fcf01 100644
---- a/drivers/serial/omap-serial.c
-+++ b/drivers/serial/omap-serial.c
-@@ -570,7 +570,7 @@ serial_omap_configure_xonxoff
- 	unsigned char efr = 0;
- 
- 	up->lcr = serial_in(up, UART_LCR);
--	serial_out(up, UART_LCR, OMAP_UART_LCR_CONF_MDB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 	up->efr = serial_in(up, UART_EFR);
- 	serial_out(up, UART_EFR, up->efr & ~UART_EFR_ECB);
- 
-@@ -598,7 +598,7 @@ serial_omap_configure_xonxoff
- 		efr |= OMAP_UART_SW_RX;
- 
- 	serial_out(up, UART_EFR, up->efr | UART_EFR_ECB);
--	serial_out(up, UART_LCR, UART_LCR_DLAB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
- 
- 	up->mcr = serial_in(up, UART_MCR);
- 
-@@ -612,14 +612,14 @@ serial_omap_configure_xonxoff
- 		up->mcr |= UART_MCR_XONANY;
- 
- 	serial_out(up, UART_MCR, up->mcr | UART_MCR_TCRTLR);
--	serial_out(up, UART_LCR, OMAP_UART_LCR_CONF_MDB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 	serial_out(up, UART_TI752_TCR, OMAP_UART_TCR_TRIG);
- 	/* Enable special char function UARTi.EFR_REG[5] and
- 	 * load the new software flow control mode IXON or IXOFF
- 	 * and restore the UARTi.EFR_REG[4] ENHANCED_EN value.
- 	 */
- 	serial_out(up, UART_EFR, efr | UART_EFR_SCD);
--	serial_out(up, UART_LCR, UART_LCR_DLAB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
- 
- 	serial_out(up, UART_MCR, up->mcr & ~UART_MCR_TCRTLR);
- 	serial_out(up, UART_LCR, up->lcr);
-@@ -724,22 +724,22 @@ serial_omap_set_termios(struct uart_port *port, struct ktermios *termios,
- 	 * baud clock is not running
- 	 * DLL_REG and DLH_REG set to 0.
- 	 */
--	serial_out(up, UART_LCR, UART_LCR_DLAB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
- 	serial_out(up, UART_DLL, 0);
- 	serial_out(up, UART_DLM, 0);
- 	serial_out(up, UART_LCR, 0);
- 
--	serial_out(up, UART_LCR, OMAP_UART_LCR_CONF_MDB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 
- 	up->efr = serial_in(up, UART_EFR);
- 	serial_out(up, UART_EFR, up->efr | UART_EFR_ECB);
- 
--	serial_out(up, UART_LCR, UART_LCR_DLAB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
- 	up->mcr = serial_in(up, UART_MCR);
- 	serial_out(up, UART_MCR, up->mcr | UART_MCR_TCRTLR);
- 	/* FIFO ENABLE, DMA MODE */
- 	serial_out(up, UART_FCR, up->fcr);
--	serial_out(up, UART_LCR, OMAP_UART_LCR_CONF_MDB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 
- 	if (up->use_dma) {
- 		serial_out(up, UART_TI752_TLR, 0);
-@@ -748,27 +748,27 @@ serial_omap_set_termios(struct uart_port *port, struct ktermios *termios,
- 	}
- 
- 	serial_out(up, UART_EFR, up->efr);
--	serial_out(up, UART_LCR, UART_LCR_DLAB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
- 	serial_out(up, UART_MCR, up->mcr);
- 
- 	/* Protocol, Baud Rate, and Interrupt Settings */
- 
- 	serial_out(up, UART_OMAP_MDR1, UART_OMAP_MDR1_DISABLE);
--	serial_out(up, UART_LCR, OMAP_UART_LCR_CONF_MDB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 
- 	up->efr = serial_in(up, UART_EFR);
- 	serial_out(up, UART_EFR, up->efr | UART_EFR_ECB);
- 
- 	serial_out(up, UART_LCR, 0);
- 	serial_out(up, UART_IER, 0);
--	serial_out(up, UART_LCR, OMAP_UART_LCR_CONF_MDB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 
- 	serial_out(up, UART_DLL, quot & 0xff);          /* LS of divisor */
- 	serial_out(up, UART_DLM, quot >> 8);            /* MS of divisor */
- 
- 	serial_out(up, UART_LCR, 0);
- 	serial_out(up, UART_IER, up->ier);
--	serial_out(up, UART_LCR, OMAP_UART_LCR_CONF_MDB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 
- 	serial_out(up, UART_EFR, up->efr);
- 	serial_out(up, UART_LCR, cval);
-@@ -782,18 +782,18 @@ serial_omap_set_termios(struct uart_port *port, struct ktermios *termios,
- 
- 	if (termios->c_cflag & CRTSCTS) {
- 		efr |= (UART_EFR_CTS | UART_EFR_RTS);
--		serial_out(up, UART_LCR, UART_LCR_DLAB);
-+		serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
- 
- 		up->mcr = serial_in(up, UART_MCR);
- 		serial_out(up, UART_MCR, up->mcr | UART_MCR_TCRTLR);
- 
--		serial_out(up, UART_LCR, OMAP_UART_LCR_CONF_MDB);
-+		serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 		up->efr = serial_in(up, UART_EFR);
- 		serial_out(up, UART_EFR, up->efr | UART_EFR_ECB);
- 
- 		serial_out(up, UART_TI752_TCR, OMAP_UART_TCR_TRIG);
- 		serial_out(up, UART_EFR, efr); /* Enable AUTORTS and AUTOCTS */
--		serial_out(up, UART_LCR, UART_LCR_DLAB);
-+		serial_out(up, UART_LCR, UART_LCR_CONF_MODE_A);
- 		serial_out(up, UART_MCR, up->mcr | UART_MCR_RTS);
- 		serial_out(up, UART_LCR, cval);
- 	}
-@@ -815,13 +815,13 @@ serial_omap_pm(struct uart_port *port, unsigned int state,
- 	unsigned char efr;
- 
- 	dev_dbg(up->port.dev, "serial_omap_pm+%d\n", up->pdev->id);
--	serial_out(up, UART_LCR, OMAP_UART_LCR_CONF_MDB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 	efr = serial_in(up, UART_EFR);
- 	serial_out(up, UART_EFR, efr | UART_EFR_ECB);
- 	serial_out(up, UART_LCR, 0);
- 
- 	serial_out(up, UART_IER, (state != 0) ? UART_IERX_SLEEP : 0);
--	serial_out(up, UART_LCR, OMAP_UART_LCR_CONF_MDB);
-+	serial_out(up, UART_LCR, UART_LCR_CONF_MODE_B);
- 	serial_out(up, UART_EFR, efr);
- 	serial_out(up, UART_LCR, 0);
- 	/* Enable module level wake up */
-diff --git a/include/linux/serial_reg.h b/include/linux/serial_reg.h
-index 6f3823474e6c070bd8456d4dd70559f4e18f2500..3ecb71a9e505901c1a0ff3a3780ba29d3c4c3741 100644
---- a/include/linux/serial_reg.h
-+++ b/include/linux/serial_reg.h
-@@ -99,6 +99,13 @@
- #define UART_LCR_WLEN7		0x02 /* Wordlength: 7 bits */
- #define UART_LCR_WLEN8		0x03 /* Wordlength: 8 bits */
- 
-+/*
-+ * Access to some registers depends on register access / configuration
-+ * mode.
-+ */
-+#define UART_LCR_CONF_MODE_A	UART_LCR_DLAB	/* Configutation mode A */
-+#define UART_LCR_CONF_MODE_B	0xBF		/* Configutation mode B */
-+
- #define UART_MCR	4	/* Out: Modem Control Register */
- #define UART_MCR_CLKSEL		0x80 /* Divide clock by 4 (TI16C752, EFR[4]=1) */
- #define UART_MCR_TCRTLR		0x40 /* Access TCR/TLR (TI16C752, EFR[4]=1) */
--- 
-1.7.0.4
+please pull from: 
+
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.git idle-release
+
+This will update the files shown below.
+
+thanks!
+
+ps. a consolidated plain patch is available here:
+http://ftp.kernel.org/pub/linux/kernel/people/lenb/idle/patches/2.6.36/idle-release-2.6.36.diff.gz
+
+ arch/x86/include/asm/mwait.h  |   15 +++++++++
+ arch/x86/kernel/acpi/cstate.c |   11 +------
+ drivers/acpi/acpi_pad.c       |    7 +---
+ drivers/idle/intel_idle.c     |   70 +++++++++++++++++++++++++++-------------
+ 4 files changed, 64 insertions(+), 39 deletions(-)
+ create mode 100644 arch/x86/include/asm/mwait.h
+
+through these commits:
+
+H. Peter Anvin (1):
+      x86, mwait: Move mwait constants to a common header file
+
+Len Brown (4):
+      intel_idle: simplify test for leave_mm()
+      intel_idle: delete bogus data from cpuidle_state.power_usage
+      intel_idle: add initial Sandy Bridge support
+      intel_idle: do not use the LAPIC timer for ATOM C2
+
+with this log:
+
+commit 7f3ea665c65b960fe5a2ea1e445e0df6e812008e
+Author: Len Brown <len.brown@intel.com>
+Date:   Sat Oct 23 23:25:53 2010 -0400
+
+    intel_idle: do not use the LAPIC timer for ATOM C2
+    
+    upstream: c25d29952b2a8c9aaf00e081c9162a0e383030cd
+    
+    If we use the LAPIC timer during ATOM C2 on
+    some nvidia chisets, the system stalls.
+    
+    https://bugzilla.kernel.org/show_bug.cgi?id=21032
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 46a9d923c69249ee31cdf1ca9acf5fb7b9c63e6a
+Author: Len Brown <len.brown@intel.com>
+Date:   Wed Jul 7 00:12:03 2010 -0400
+
+    intel_idle: add initial Sandy Bridge support
+    
+    upstream: d13780d439d08a57c87c1a07b6e76ddde61da1aa
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit a040a61b60cb03ffdfaeaa208a2fcf25f0e11727
+Author: Len Brown <len.brown@intel.com>
+Date:   Fri Oct 15 21:23:25 2010 -0400
+
+    intel_idle: delete bogus data from cpuidle_state.power_usage
+    
+    upstream: dea44c6b7df7f8bb67cb059b4c14b24288c4cd04
+    
+    The mW data in this field is a total fabrication
+    and serves no purpose other than to mislead
+    those who might see it in sysfs.  Delete it.
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit bd592a79c7eb1c52b812933dc64a37452b2e9047
+Author: Len Brown <len.brown@intel.com>
+Date:   Fri Oct 15 20:43:06 2010 -0400
+
+    intel_idle: simplify test for leave_mm()
+    
+    upstream: c8381cc3d8a9cc6c80f65bf60863c776651f245c
+    
+    A run-time test to invoke leave_mm() for the deepest
+    supported C-state is redundant, since the appropriate
+    C-states already have flags with CPUIDLE_FLAG_TLB_FLUSHED set.
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit b53be4ee844a7528565352e0cdab8ff9095a9f8f
+Author: H. Peter Anvin <hpa@linux.intel.com>
+Date:   Fri Sep 17 15:36:40 2010 -0700
+
+    x86, mwait: Move mwait constants to a common header file
+    
+    upstream: bc83cccc761953f878088cdfa682de0970b5561f
+    
+    We have MWAIT constants spread across three different .c files, for no
+    good reason.  Move them all into a common header file.
+    
+    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+    Reviewed-by: Arjan van de Ven <arjan@linux.intel.com>
+    Cc: Len Brown <lenb@kernel.org>
+    LKML-Reference: <tip-*@git.kernel.org>
 
