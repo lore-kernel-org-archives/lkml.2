@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935009Ab0KQREI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 12:04:08 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63162 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934933Ab0KQREH (ORCPT
+	id S935006Ab0KQRHv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:07:51 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34156 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757032Ab0KQRHu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 12:04:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=vFRTeiKbBW4LCdYBdnQOIi+wJowwNdd6hJ+deSXvLzOOxYCvsBECVd3q8ZEJit3H9H
-         axLCZPcBb9CyRtI/EC/BJpbOuj84dk6prK9OmQAl6xHyzou5KudaqLZ/1jOVWmujESsZ
-         nwtZhN6rop2cNkYUJHIfrPgwDG9KHvv50ZVds=
+	Wed, 17 Nov 2010 12:07:50 -0500
+Date: Wed, 17 Nov 2010 17:07:47 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Florian Mickler <florian@mickler.org>, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
+ preference tool
+Message-ID: <20101117170746.GB19488@rakim.wolfsonmicro.main>
+References: <20101116104921.GL12986@rakim.wolfsonmicro.main>
+ <1289919077.28741.50.camel@Joe-Laptop>
+ <20101116183707.179964dd@schatten.dmk.lab>
+ <20101116181226.GB26239@rakim.wolfsonmicro.main>
+ <20101116203522.65240b18@schatten.dmk.lab>
+ <20101116195530.GA7523@rakim.wolfsonmicro.main>
+ <20101116122102.86e7e0b9.rdunlap@xenotime.net>
+ <20101116230126.GB24623@opensource.wolfsonmicro.com>
+ <20101117014427.41d85b13@stein>
+ <alpine.LNX.2.00.1011170150060.7420@pobox.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <4CE3F773.2010303@kernel.org>
-References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>
-	<4CD26948.7050009@kernel.org>
-	<20101104164401.GC10656@sundance.ccs.neu.edu>
-	<4CD3CE29.2010105@kernel.org>
-	<AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com>
-	<4CD5DCE3.3000109@cs.columbia.edu>
-	<20101107194222.GG31077@sundance.ccs.neu.edu>
-	<4CD71A6B.3020905@cs.columbia.edu>
-	<20101107230516.GJ31077@sundance.ccs.neu.edu>
-	<4CD774CA.8030004@cs.columbia.edu>
-	<20101108162630.GN31077@sundance.ccs.neu.edu>
-	<8739rbpreb.fsf@localhost6.localdomain6>
-	<4CE3B927.1020401@kernel.org>
-	<8762vwvubr.fsf@localhost6.localdomain6>
-	<4CE3F773.2010303@kernel.org>
-Date: Wed, 17 Nov 2010 19:04:04 +0200
-Message-ID: <AANLkTikox4HcXzekv7nBOBRhCsyuz4aZ6rKqyrHFrVA-@mail.gmail.com>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Dan Smith <danms@us.ibm.com>, Gene Cooperman <gene@ccs.neu.edu>,
-        Oren Laadan <orenl@cs.columbia.edu>, Kapil Arya <kapil@ccs.neu.edu>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, hch@lst.de
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1011170150060.7420@pobox.suse.cz>
+X-Cookie: Killing turkeys causes winter.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 5:40 PM, Tejun Heo <tj@kernel.org> wrote:
-> The horror show part is dumping internal data structure without due
-> scrutinization in a way which can only ever be useful for CR when most
-> of the same states are already exported via ABI defined ways.
+On Wed, Nov 17, 2010 at 01:53:35AM +0100, Jiri Kosina wrote:
+> On Wed, 17 Nov 2010, Stefan Richter wrote:
 
-That's what review process is for, isn't it?
+> > Why should we codify our conventions in MAINTAINERS to accommodate the
+> > specific problem of virtually a _single_ patch author?
 
-Please, look at what is being dumped and what isn't.
+It seems to be the way we're heading in general - look at all the recent
+work on MAINTAINERS and get_maintainer.pl.  There seems to be a genral
+push to make all this stuff automatable.
+
+> Either the maintainer wants the patch. Then he is certainly able to apply 
+> it no matter the subject line (I personally am getting a lot of patches 
+> which don't follow the format I am using in my tree ... converting 
+> Subject: lines is so trivial that I have never felt like bothering anyone 
+> about it ... it's basically single condition in a shellscript). Or the 
+
+It's slightly more than that if you're dealing with more than one area,
+and I also find this sort of stuff is a good flag for scrubbing the
+patch in greater detail - when patches stand out from a 1000ft visual
+overview there's a fair chance that there's other issues so if people
+regularly submit good patches that have only cosmetic issues I find it's
+worth guiding them away from that.
+
+> maintainer doesn't feel like the patch is worth it, and then the 
+> subject-line format really doesn't matter.
+
+In this case if I don't apply it it's likely to end up going in via your
+tree and then I'll still have to deal with the merge conflicts which are
+more annoying.
