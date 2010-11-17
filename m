@@ -1,80 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935487Ab0KQUYi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 15:24:38 -0500
-Received: from pfepa.post.tele.dk ([195.41.46.235]:37053 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935355Ab0KQUYh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 15:24:37 -0500
-Date: Wed, 17 Nov 2010 21:24:34 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: dirk.brandewie@gmail.com, Michal Marek <mmarek@suse.cz>,
-        devicetree-discuss@lists.ozlabs.org, sodaville@linutronix.de,
-        arjan@linux.intel.com, linuxppc-dev@lists.ozlabs.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] of: Add support for linking device tree blobs into
-	vmlinux
-Message-ID: <20101117202434.GA20441@merkur.ravnborg.org>
-References: <cover.1289943240.git.dirk.brandewie@gmail.com> <9129f0a21ea48fb2dcb89cea290e88f3e8c0d8a2.1289943240.git.dirk.brandewie@gmail.com> <20101117092751.GA19781@merkur.ravnborg.org> <20101117180723.GA7550@angua.secretlab.ca>
+	id S935386Ab0KQU0U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 15:26:20 -0500
+Received: from fieldses.org ([174.143.236.118]:43886 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758075Ab0KQU0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 15:26:19 -0500
+Date: Wed, 17 Nov 2010 15:26:17 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Josef Bacik <josef@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, eparis@redhat.com,
+        linux-kernel@vger.kernel.org, sds@tycho.nsa.gov, selinux@tycho.nsa.gov
+Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias
+Message-ID: <20101117202617.GA31009@fieldses.org>
+References: <1290016263-1637-1-git-send-email-josef@redhat.com>
+ <20101117191817.GA26575@fieldses.org>
+ <20101117192822.GB3818@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101117180723.GA7550@angua.secretlab.ca>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101117192822.GB3818@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > +
-> > > +DTC = $(objtree)/scripts/dtc/dtc
-> > > +
-> > > +quiet_cmd_dtc = DTC	$@
-> > Please avoid tabs in the output - all other uses spaces. (There is a tab between DTC and $@)
+On Wed, Nov 17, 2010 at 02:28:22PM -0500, Josef Bacik wrote:
+> On Wed, Nov 17, 2010 at 02:18:17PM -0500, J. Bruce Fields wrote:
+> > On Wed, Nov 17, 2010 at 12:51:03PM -0500, Josef Bacik wrote:
+> > > While trying to track down some NFS problems with BTRFS, I kept noticing I was
+> > > getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
+> > > figure out that it was SELinux that was giving me grief, with the following
+> > > denial
+> > > 
+> > > type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
+> > > comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
+> > > tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
+> > > 
+> > > Turns out this is because in d_obtain_alias if we can't find an alias we create
+> > > one and do all the normal instantiation stuff, but we don't do the
+> > > security_d_instantiate.  With this patch I'm no longer seeing these errant
+> > > -EACCESS return values.  Thanks,
 > > 
-> > > +      cmd_dtc = $(DTC) -O dtb -o $(obj)/$*.dtb -b 0 $(DTS_FLAGS) $(src)/dts/$*.dts
+> > Possibly dumb question: Is there still a small race here?  Is it
+> > possible for another nfsd thread to find the new alias on the list while
+> > this thread is still:
 > > 
-> > Looks strange. How about:
-> >       cmd_dtc = $(DTC) -O dtb -o $@ -b 0 $(DTS_FLAGS) $<
+> > > 
+> > > Signed-off-by: Josef Bacik <josef@redhat.com>
+> > > ---
+> > >  fs/dcache.c |    1 +
+> > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/fs/dcache.c b/fs/dcache.c
+> > > index 23702a9..890a59e 100644
+> > > --- a/fs/dcache.c
+> > > +++ b/fs/dcache.c
+> > > @@ -1201,6 +1201,7 @@ struct dentry *d_obtain_alias(struct inode *inode)
+> > >  	spin_unlock(&tmp->d_lock);
+> > >  
+> > >  	spin_unlock(&dcache_lock);
 > > 
-> > Then you avoid the hardcoded path in the rule too.
+> > ... right here, so that that other nfsd thread still ends up trying to
+> > do something with a dentry that hasn't had security_d_instantiate called
+> > on it yet?
 > > 
+> > > +	security_d_instantiate(tmp, inode);
+> > >  	return tmp;
+> > >  
+> > >   out_iput:
+> > > -- 
 > > 
-> > > +
-> > > +$(obj)/%.dtb: $(src)/dts/%.dts
-> > > +	$(call if_changed,dtc)
+> > Or does something else prevent that?
+> > 
 > 
-> The rule should be generic (not depend on the presence of a dts
-> subdirectory.  Basically, the .dtb really should be generated in the
-> same directory as the .dts file.  There is no reason for this rule to
-> have special behaviour.
-> 
-> > 
-> > This snippet belong in the file that uses this.
-> > This is how we do for other rules like bzip etc.
-> 
-> This rule is intended to be generic and usable anywhere in the tree.
-I understand this.
-But only few people will recognize this so they see something like this:
+> That's a good question, I have no idea actually.  Every other consumer of
+> security_d_instantiate seems to hold the i_mutex of the parent directory inode,
+> tho I'm not sure if that is appropriate for d_obtain_alias, maybe somebody else
+> has an idea?  Thanks,
 
-obj-y := foo.dtb.o
+Actually, I don't get it:
 
-And they look for a file named foo.dtb.S or foo.dtb.c.
+	- Why is selinux using a *dentry* operation to initialize an
+	  *inode*?
+	- Are security hooks necessarily prepared to handle a
+	  disconnected dentry?  (Which has no real parent, name an empty
+	  string, etc.)
+	- What use is the dentry to the security module in this case
+	  anyway?
 
-If we spell it out then we have a better chance to allow
-people to understand the relation ships between the files.
-
-
-If we really want to hide this in scipts/Makefile.* then Makefile.build
-is the logical places to do so.
-Makefile.lib is supposed to be stuff that is relavent for more than
-one Makefile in scripts/* but it has unfortunately also grown
-some of the boot support stuff.
-
-Today there is a single rule related to _shipped files.
-We should not fill it up with additional rules - put them
-Makefile.build if we really want to avoid them in boot/Makefile.
-
-	Sam
+--b.
