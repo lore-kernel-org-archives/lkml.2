@@ -1,50 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934673Ab0KQJap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 04:30:45 -0500
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:37723 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934588Ab0KQJan convert rfc822-to-8bit (ORCPT
+	id S934682Ab0KQJb0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 04:31:26 -0500
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:40625 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934588Ab0KQJbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 04:30:43 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=EPI+Anp5axUU12/DJ58YCKzU/28JrKwJBM9MxN4j1qY= c=1 sm=1
- a=-7GN7jtwYLcA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
- a=c23vf5CSMVc0QQz9B4a6RA==:17 a=SZPcMJaOT5KGTx3Jp3cA:9
- a=tFfODJ8DFMr_qifDV7cA:7 a=hAFdFT0FYBrWpLKb9ULSG0gI0q0A:4 a=CjuIK1q_8ugA:10
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
-Mime-Version: 1.0 (Apple Message framework v1081)
+	Wed, 17 Nov 2010 04:31:22 -0500
+Date: Wed, 17 Nov 2010 18:30:46 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, g.liakhovetski@gmx.de,
+        linux-sh@vger.kernel.org, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 01/05] fbdev: sh_mipi_dsi: Remove request/release mem region
+Message-ID: <20101117093046.GC11447@linux-sh.org>
+References: <20101117064405.18139.57035.sendpatchset@t400s> <20101117064415.18139.28996.sendpatchset@t400s> <20101117072553.GB10671@linux-sh.org> <AANLkTi=coMHw+SZ_2DebQ29GVdAuoxRYPgbMYYkYZAXE@mail.gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20101117023456.GD5618@dhcp231-156.rdu.redhat.com>
-Date: Wed, 17 Nov 2010 03:30:40 -0600
-Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com, cmm@us.ibm.com, cluster-devel@redhat.com,
-        ocfs2-devel@oss.oracle.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <23A45B17-C23C-45DA-8C51-1CF315C851E2@dilger.ca>
-References: <1289840723-3056-1-git-send-email-josef@redhat.com> <1289840723-3056-2-git-send-email-josef@redhat.com> <20101116111611.GA4757@quack.suse.cz> <20101116114346.GB4757@quack.suse.cz> <20101116125249.GB31957@dhcp231-156.rdu.redhat.com> <20101116131451.GH4757@quack.suse.cz> <18ACAA85-8847-4B12-9839-F99FB6C7B3E4@dilger.ca> <20101117021150.GL22876@dastard> <20101117022814.GB5618@dhcp231-156.rdu.redhat.com> <20101117023456.GD5618@dhcp231-156.rdu.redhat.com>
-To: Josef Bacik <josef@redhat.com>
-X-Mailer: Apple Mail (2.1081)
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=coMHw+SZ_2DebQ29GVdAuoxRYPgbMYYkYZAXE@mail.gmail.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-16, at 20:34, Josef Bacik wrote:
-> FWIW I agree with Dave, the only question at this point is do we force users to specify KEEP_SIZE with PUNCH_HOLE?  On one hand it makes the interface a bit more consistent, on the other hand it makes the documentation a little weird
+On Wed, Nov 17, 2010 at 05:51:41PM +0900, Magnus Damm wrote:
+> On Wed, Nov 17, 2010 at 4:25 PM, Paul Mundt <lethal@linux-sh.org> wrote:
+> > No. This comes up time and time again for some reason, I'm not sure why
+> > this misconception keeps being propagated (and it's definitely a mistake
+> > I've made myself too!)
 > 
-> "We have mode here, but if you want to use PUNCH_HOLE you also have to specify KEEP_SIZE, so really it's like a flags field it's just named poorly"
+> Perhaps the confusing part is the -EBUSY error case for
+> insert_resource() in platform_device_add() located in
+> drivers/base/platform. Judging by that code it sure looks like there
+> is some kind of conflict management, but probably not enough as you
+> mention below.
+> 
+This is conflict management on a different level, and has nothing to do
+with the in-use region case which is separately accounted. It will handle
+duplicate insertion of the same resource, but that doesn't prevent
+multiple users from getting a handle on the same memory within the
+region. request_mem_region() and friends provide this explicitly.
 
-Even if this is the case, and we decide today that PUNCH_HOLE without KEEP_SIZE is not desirable to implement, it would be better to just return -EOPNOTSUPP if both flags are not set than assume one or the other is what the user wanted.  That allows the ability to implement this in the future without breaking every application, while if it is assumed that KEEP_SIZE is always implicit there will never be a way to add that functionality without something awful like a separate CHANGE_SIZE flag for PUNCH_HOLE.
+> > The current logic is quite correct in what it is doing.
+> 
+> It may be correct, but I don't like the smell of it.
+> 
+> Sound like begging for trouble to me - to require the majority of the
+> drivers (the simple ones) to call request/release_mem_region() even
+> though by context it's quite obvious that the driver will use
+> resource. It doesn't make sense to pass resources that are not going
+> to be used, does it?
+> 
+Begging for trouble is deleting the resource management and hoping for
+the best. Plenty of drivers pass in a large resource and then carve it up
+internally, it's only a detail the driver can work out for itself, and
+this is not knowledge that can be asserted generically.
 
-One option is to define FALLOC_FL_PUNCH_HOLE as 0x3 (so that KEEP_SIZE is always passed) and in the future we can define some new flag name like TRUNCATE_HOLE (or whatever) that is 0x2 only.
+You seem to have selectively ignored the MFD example that I cited, but
+there are plenty of non-MFD cases that do this as well. Some drivers do
+follow the one resource per logical abstraction approach that you seem to
+favour, mostly using named resources and groveling with
+platform_get_resource_byname(), but this is hardly the only way to go
+about it, and is by far the exception rather than the rule.
 
-Cheers, Andreas
+> Also, there are quite a few levels of resource handling / conflict
+> checking / device access:
+> 
+> 1) board/cpu code - contains struct resource for devices
+> 2) platform_device_add() - insert_resource() does basic checks
+> 3) driver probe() request_mem_region() does more checks, reserves
+> 4) driver probe() ioremap() gets a virtual address range
+> 5) driver uses ioreadN()/iowriteN() on virtual address range
+> 
+And each one of these steps is completely orthogonal to the other, so
+what exactly is your point? As it is, these all layer quite cleanly.
 
+> The physical range provided by struct resource and the virtual address
+> range from ioremap() are of course different things, but i think there
+> is a bit of overlap there. The driver isn't supposed to be using
+> ioremap() on an I/O memory region that hasn't been locked down with
+> request_mem_region() for instance.
+> 
+> I'd like to see a simplified interface that handles
+> request_mem_region() and ioremap() in the driver code, perhaps
+> together with automatic handling of request_irq(). Perhaps that's
+> difficult in real life, but if possible then that would cut away quite
+> a bit of code.
+> 
+The IRQ thing is obviously wholly unrelated and so doesn't factor in, but
+for the memory case you cite it sounds like you're after some devres and
+general helpers akin to what the PCI code has going with things like
+pci_request_regions() and the managed iomap helpers.
 
+Things work reasonably well in PCI land since you have at least a fairly
+logical and consistent abstraction in terms of how the BARs are arranged,
+but even then the request/remap helpers take a BAR mask to work out which
+ones to deal with in what way (your ioremap()'ed window will want to be
+requested, but not all requested windows will want to be remapped). You
+could probably do this for platform devices too if you really wanted to,
+but you're not likely to be able to generalize much beyond that.
 
-
-
+The end result however is that you're still required to deal with
+flagging the region (or the parts of the region your driver is
+immediately concerned with) as busy, so dropping it as you are doing here
+is unacceptable regardless of whether you are using a helper to make life
+easier or not.
