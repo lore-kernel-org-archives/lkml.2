@@ -1,121 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934397Ab0KQEcJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 23:32:09 -0500
-Received: from mga01.intel.com ([192.55.52.88]:47880 "EHLO mga01.intel.com"
+	id S934222Ab0KQEbd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 23:31:33 -0500
+Received: from mga11.intel.com ([192.55.52.93]:17287 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934362Ab0KQEcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 23:32:03 -0500
+	id S934136Ab0KQEba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 23:31:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,209,1288594800"; 
-   d="scan'208";a="858411809"
-Message-Id: <20101117042849.531141617@intel.com>
+   d="scan'208";a="627558216"
+Message-Id: <20101117042850.122583518@intel.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 17 Nov 2010 12:27:22 +0800
+Date: Wed, 17 Nov 2010 12:27:27 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
+CC: Jan Kara <jack@suse.cz>, Theodore Tso <tytso@mit.edu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Wu Fengguang <fengguang.wu@intel.com>
 CC: Christoph Hellwig <hch@lst.de>
 CC: Dave Chinner <david@fromorbit.com>
-CC: "Theodore Ts'o" <tytso@mit.edu>
 CC: Chris Mason <chris.mason@oracle.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Mel Gorman <mel@csn.ul.ie>
 CC: Rik van Riel <riel@redhat.com>
 CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 02/13] writeback: consolidate variable names in balance_dirty_pages()
+Subject: [PATCH 07/13] writeback: show bdi write bandwidth in debugfs
 References: <20101117042720.033773013@intel.com>
-Content-Disposition: inline; filename=writeback-cleanup-name-merge.patch
+Content-Disposition: inline; filename=writeback-bandwidth-show.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lots of lenthy tests.. Let's compact the names
+Add a "BdiWriteBandwidth" entry (and indent others) in /debug/bdi/*/stats.
 
-	*_dirty = NR_FILE_DIRTY + NR_WRITEBACK + NR_UNSTABLE_NFS
+btw increase digital field width to 10, for keeping the possibly
+huge BdiWritten number aligned at least for desktop systems.
 
-balance_dirty_pages() only cares about the above dirty sum except
-in one place -- on starting background writeback.
+This will break user space tools if they are dumb enough to depend on
+the number of white spaces.
 
+CC: Theodore Ts'o <tytso@mit.edu>
+CC: Jan Kara <jack@suse.cz>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/page-writeback.c |   26 ++++++++++++--------------
- 1 file changed, 12 insertions(+), 14 deletions(-)
+ mm/backing-dev.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2010-11-15 19:50:16.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-11-15 19:50:27.000000000 +0800
-@@ -461,8 +461,8 @@ unsigned long bdi_dirty_limit(struct bac
- static void balance_dirty_pages(struct address_space *mapping,
- 				unsigned long pages_dirtied)
- {
--	long nr_reclaimable, bdi_nr_reclaimable;
--	long nr_writeback, bdi_nr_writeback;
-+	long nr_reclaimable;
-+	long nr_dirty, bdi_dirty;  /* = file_dirty + writeback + unstable_nfs */
- 	unsigned long background_thresh;
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
-@@ -480,7 +480,7 @@ static void balance_dirty_pages(struct a
- 		 */
- 		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
- 					global_page_state(NR_UNSTABLE_NFS);
--		nr_writeback = global_page_state(NR_WRITEBACK);
-+		nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK);
+--- linux-next.orig/mm/backing-dev.c	2010-11-15 12:52:34.000000000 +0800
++++ linux-next/mm/backing-dev.c	2010-11-15 12:52:44.000000000 +0800
+@@ -87,21 +87,23 @@ static int bdi_debug_stats_show(struct s
  
- 		global_dirty_limits(&background_thresh, &dirty_thresh);
- 
-@@ -489,8 +489,7 @@ static void balance_dirty_pages(struct a
- 		 * catch-up. This avoids (excessively) small writeouts
- 		 * when the bdi limits are ramping up.
- 		 */
--		if (nr_reclaimable + nr_writeback <=
--				(background_thresh + dirty_thresh) / 2)
-+		if (nr_dirty <= (background_thresh + dirty_thresh) / 2)
- 			break;
- 
- 		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
-@@ -507,21 +506,21 @@ static void balance_dirty_pages(struct a
- 		 * deltas.
- 		 */
- 		if (bdi_thresh < 2*bdi_stat_error(bdi)) {
--			bdi_nr_reclaimable = bdi_stat_sum(bdi, BDI_RECLAIMABLE);
--			bdi_nr_writeback = bdi_stat_sum(bdi, BDI_WRITEBACK);
-+			bdi_dirty = bdi_stat_sum(bdi, BDI_RECLAIMABLE) +
-+				    bdi_stat_sum(bdi, BDI_WRITEBACK);
- 		} else {
--			bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
--			bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
-+			bdi_dirty = bdi_stat(bdi, BDI_RECLAIMABLE) +
-+				    bdi_stat(bdi, BDI_WRITEBACK);
- 		}
- 
--		if (bdi_nr_reclaimable + bdi_nr_writeback >= bdi_thresh) {
-+		if (bdi_dirty >= bdi_thresh) {
- 			pause = HZ/10;
- 			goto pause;
- 		}
- 
- 		bw = 100 << 20; /* use static 100MB/s for the moment */
- 
--		bw = bw * (bdi_thresh - (bdi_nr_reclaimable + bdi_nr_writeback));
-+		bw = bw * (bdi_thresh - bdi_dirty);
- 		bw = bw / (bdi_thresh / TASK_SOFT_DIRTY_LIMIT + 1);
- 
- 		pause = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1);
-@@ -537,9 +536,8 @@ pause:
- 		 * bdi or process from holding back light ones; The latter is
- 		 * the last resort safeguard.
- 		 */
--		dirty_exceeded =
--			(bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
--			|| (nr_reclaimable + nr_writeback > dirty_thresh);
-+		dirty_exceeded = (bdi_dirty > bdi_thresh) ||
-+				  (nr_dirty > dirty_thresh);
- 
- 		if (!dirty_exceeded)
- 			break;
+ #define K(x) ((x) << (PAGE_SHIFT - 10))
+ 	seq_printf(m,
+-		   "BdiWriteback:     %8lu kB\n"
+-		   "BdiReclaimable:   %8lu kB\n"
+-		   "BdiDirtyThresh:   %8lu kB\n"
+-		   "DirtyThresh:      %8lu kB\n"
+-		   "BackgroundThresh: %8lu kB\n"
+-		   "BdiWritten:       %8lu kB\n"
+-		   "b_dirty:          %8lu\n"
+-		   "b_io:             %8lu\n"
+-		   "b_more_io:        %8lu\n"
+-		   "bdi_list:         %8u\n"
+-		   "state:            %8lx\n",
++		   "BdiWriteback:       %10lu kB\n"
++		   "BdiReclaimable:     %10lu kB\n"
++		   "BdiDirtyThresh:     %10lu kB\n"
++		   "DirtyThresh:        %10lu kB\n"
++		   "BackgroundThresh:   %10lu kB\n"
++		   "BdiWritten:         %10lu kB\n"
++		   "BdiWriteBandwidth:  %10lu kBps\n"
++		   "b_dirty:            %10lu\n"
++		   "b_io:               %10lu\n"
++		   "b_more_io:          %10lu\n"
++		   "bdi_list:           %10u\n"
++		   "state:              %10lx\n",
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
+ 		   K(bdi_thresh), K(dirty_thresh), K(background_thresh),
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
++		   (unsigned long) bdi->write_bandwidth >> 10,
+ 		   nr_dirty, nr_io, nr_more_io,
+ 		   !list_empty(&bdi->bdi_list), bdi->state);
+ #undef K
 
 
