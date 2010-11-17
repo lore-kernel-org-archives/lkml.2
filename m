@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934732Ab0KQP3D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:29:03 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:53655 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933835Ab0KQP27 convert rfc822-to-8bit (ORCPT
+	id S1758179Ab0KQPdQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:33:16 -0500
+Received: from gw0.danplanet.com ([71.245.107.82]:34087 "EHLO
+	mail.danplanet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753432Ab0KQPdP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:28:59 -0500
-Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering
- writeback
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
-        Suleiman Souhlal <suleiman@google.com>
-In-Reply-To: <20101117125756.GA5576@amd>
-References: <1289996638-21439-1-git-send-email-walken@google.com>
-	 <1289996638-21439-4-git-send-email-walken@google.com>
-	 <20101117125756.GA5576@amd>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 17 Nov 2010 16:28:54 +0100
-Message-ID: <1290007734.2109.941.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 17 Nov 2010 10:33:15 -0500
+To: Tejun Heo <tj@kernel.org>
+Cc: Gene Cooperman <gene@ccs.neu.edu>, Oren Laadan <orenl@cs.columbia.edu>,
+        Kapil Arya <kapil@ccs.neu.edu>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, hch@lst.de
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>
+	<4CD26948.7050009@kernel.org>
+	<20101104164401.GC10656@sundance.ccs.neu.edu>
+	<4CD3CE29.2010105@kernel.org>
+	<AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com>
+	<4CD5DCE3.3000109@cs.columbia.edu>
+	<20101107194222.GG31077@sundance.ccs.neu.edu>
+	<4CD71A6B.3020905@cs.columbia.edu>
+	<20101107230516.GJ31077@sundance.ccs.neu.edu>
+	<4CD774CA.8030004@cs.columbia.edu>
+	<20101108162630.GN31077@sundance.ccs.neu.edu>
+	<8739rbpreb.fsf@localhost6.localdomain6> <4CE3B927.1020401@kernel.org>
+From: Dan Smith <danms@us.ibm.com>
+Date: Wed, 17 Nov 2010 07:33:12 -0800
+Message-ID: <8762vwvubr.fsf@localhost6.localdomain6>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 23:57 +1100, Nick Piggin wrote:
-> On Wed, Nov 17, 2010 at 04:23:58AM -0800, Michel Lespinasse wrote:
-> > When faulting in pages for mlock(), we want to break COW for anonymous
-> > or file pages within VM_WRITABLE, non-VM_SHARED vmas. However, there is
-> > no need to write-fault into VM_SHARED vmas since shared file pages can
-> > be mlocked first and dirtied later, when/if they actually get written to.
-> > Skipping the write fault is desirable, as we don't want to unnecessarily
-> > cause these pages to be dirtied and queued for writeback.
-> 
-> It's not just to break COW, but to do block allocation and such
-> (filesystem's page_mkwrite op). That needs to at least be explained
-> in the changelog.
+TH> If it ever becomes a general enough problem (which I extremely
+TH> strongly doubt),
 
-Agreed, the 0/3 description actually does mention this.
+Migration of a container?  Yeah, it's one of the primary reasons for
+doing what we're doing :)
 
-> Filesystem doesn't have a good way to fully pin required things
-> according to mlock, but page_mkwrite provides some reasonable things
-> (like block allocation / reservation).
+TH> we can think about allowing processes in a netns to change
+TH> sequence number but that would be a single setsockopt option
 
-Right, but marking all pages dirty isn't really sane. I can imagine
-making the reservation but not marking things dirty solution, although
-it might be lots harder to implement, esp since some filesystems don't
-actually have a page_mkwrite() implementation.
+Yeah, well there's more than that, of course, if you want to be able
+to checkpoint a socket in any state.  Buffers, time-wait, etc.
 
+TH> instead of the horror show of dumping in-kernel data structures in
+TH> binary blob.
 
+Well, as should be evident from a review of the code, we don't dump
+binary kernel data structures as a general rule.  We canonicalize them
+into checkpoint headers on the way out and build the new data
+structures (or use existing kernel interfaces to do so) on the way in.
+You know, just like netlink does.
+
+It has even been suggested that we do this with netlink instead, to
+mirror the other "horror show" tools that we all use on a daily basis.
+We're not opposed to this, but we do have some concerns about
+performance.
+
+-- 
+Dan Smith
+IBM Linux Technology Center
+email: danms@us.ibm.com
