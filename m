@@ -1,128 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934538Ab0KQGnx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 01:43:53 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44368 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934439Ab0KQGnv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 01:43:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=k0VKzm9Mekdixzbcc7lXuP38fiILA+sI38S8btpepo2DUS7cGt0ljAyvFQeOyVr+yg
-         KLql/SiJhlIK7P852gHaZJ4Om7ld0dw91IXG8PNT2+N03PANE9XJZqnV7YWWTowqxU99
-         daXzFTlqDv0oBHyQW0/p331wMu0CZ4agZghRs=
-Message-ID: <4CE379A3.2060007@gmail.com>
-Date: Tue, 16 Nov 2010 22:43:47 -0800
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
+	id S934553Ab0KQGoi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 01:44:38 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34631 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933259Ab0KQGoh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 01:44:37 -0500
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: devicetree-discuss@lists.ozlabs.org, linux-arch@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, sodaville@linutronix.de,
-        microblaze-uclinux@itee.uq.edu.au, arjan@linux.intel.com
-Subject: Re: [PATCH 3/5] x86/of:  Add building device tree blob(s) into image.
-References: <cover.1289943240.git.dirk.brandewie@gmail.com> <35263573f57fd7e780dede628cf489212bfa1400.1289943240.git.dirk.brandewie@gmail.com> <20101117060227.GH12813@angua.secretlab.ca>
-In-Reply-To: <20101117060227.GH12813@angua.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101117062958.GA2894@havoc.gtf.org>
+References: <20101117062958.GA2894@havoc.gtf.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 16 Nov 2010 22:44:14 -0800
+Message-ID: <AANLkTikQysiwSV_m38vKaEuPQ=NH10o2s69d=aNGOhLr@mail.gmail.com>
+Subject: Re: [PATCH] libata: remove unlock+relock cycle in ata_scsi_queuecmd
+To: Jeff Garzik <jeff@garzik.org>
+Cc: linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16/2010 10:02 PM, Grant Likely wrote:
-> On Tue, Nov 16, 2010 at 02:41:38PM -0800, dirk.brandewie@gmail.com wrote:
->> From: Dirk Brandewie<dirk.brandewie@gmail.com>
->>
->> This patch adds linking device tree blobs into vmlinux. DTB's are
->> added by adding the blob object name to list of objects to be linked
->> into the image.
->> e.g:
->>    obj-$(CONFIG_TEST_DTB) += test.dtb.o
->>
->> The set of DTB linked into the image is controlled the Kconfig file
->> in arch/x86/kernel/dts/Kconfig
->>
->> Signed-off-by: Dirk Brandewie<dirk.brandewie@gmail.com>
->> ---
->>   arch/x86/Kconfig            |    6 +++++-
->>   arch/x86/kernel/Makefile    |    6 ++++++
->>   arch/x86/kernel/dts/Kconfig |    7 +++++++
->>   3 files changed, 18 insertions(+), 1 deletions(-)
->>   create mode 100644 arch/x86/kernel/dts/Kconfig
->>
->> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
->> index 5904f38..f2f516a 100644
->> --- a/arch/x86/Kconfig
->> +++ b/arch/x86/Kconfig
->> @@ -299,13 +299,17 @@ config X86_BIGSMP
->>   	---help---
->>   	  This option is needed for the systems that have more than 8 CPUs
->>
->> -config X86_OF
->> +menuconfig X86_OF
->>   	bool "Support for device tree"
->>   	select OF
->>   	select OF_FLATTREE
->>   	---help---
->>   	  Device tree support on X86.
->>
->> +if X86_OF
->> +source arch/x86/kernel/dts/Kconfig
->> +endif
->> +
->>   if X86_32
->>   config X86_EXTENDED_PLATFORM
->>   	bool "Support for extended (non-PC) x86 platforms"
->> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
->> index 586df14..49e017d 100644
->> --- a/arch/x86/kernel/Makefile
->> +++ b/arch/x86/kernel/Makefile
->> @@ -114,6 +114,12 @@ obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
->>   obj-$(CONFIG_X86_OF)			+= prom.o
->>
->>   ###
->> +# device tree blobs
->> +obj-$(CONFIG_CE4100_DTB) += ce4100.dtb.o
->> +obj-$(CONFIG_TEST_DTB) += test.dtb.o
->> +
->> +
->> +###
->>   # 64 bit specific files
->>   ifeq ($(CONFIG_X86_64),y)
->>   	obj-$(CONFIG_AUDIT)		+= audit_64.o
->> diff --git a/arch/x86/kernel/dts/Kconfig b/arch/x86/kernel/dts/Kconfig
->> new file mode 100644
->> index 0000000..d3e5cd4
->> --- /dev/null
->> +++ b/arch/x86/kernel/dts/Kconfig
->> @@ -0,0 +1,7 @@
->> +config CE4100_DTB
->> +       bool "Intel CE4100"
->> +
->> +config TEST_DTB
->> +       bool "Test DTS"
->> +
->> +
+On Tue, Nov 16, 2010 at 10:29 PM, Jeff Garzik <jeff@garzik.org> wrote:
 >
-> As previously mentioned, this isn't going to scale.  Need to look at
-> allowing the user to specify a list of .dtbs that will be linked in.
->
+> +       spin_lock(shost->host_lock);
+> +       scsi_cmd_get_serial(shost, cmd);
+>        spin_unlock(shost->host_lock);
 
-These config variables will likely get pushed into being set when the
-platform configuration is selected. I still need to talk to the x86 maintainers
-and my distribution team to figure out what is going to happen here.
+This is just sad.
 
-> g.
->
->> --
->> 1.7.2.3
->>
->> _______________________________________________
->> devicetree-discuss mailing list
->> devicetree-discuss@lists.ozlabs.org
->> https://lists.ozlabs.org/listinfo/devicetree-discuss
+How important is that serial number? So important that we need to do a
+spinlock over it here? And it _must_ be per-shost?
 
+Because if you made it per-ap, you could easily just move that logic
+down to after you get the ap lock.
+
+Just add a "unsigned int serial_number" into the ata_port struct, and
+do the same (trivial) logic for getting a non-zero serial number
+there:
+
+  n = ap->serial_number;
+  if (!++n)
+    n = 1
+  ap->serial_number = n;
+  cmd->serial_number = n;
+
+or something. And then you'd _really_ not need to touch that totally
+pointless host lock at all.
+
+               Linus
