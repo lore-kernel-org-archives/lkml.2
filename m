@@ -1,102 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757213Ab0KQNLD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 08:11:03 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:46282 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756041Ab0KQNLA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 08:11:00 -0500
-Date: Wed, 17 Nov 2010 14:10:23 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [ANNOUNCE] New utility: 'trace'
-Message-ID: <20101117131023.GE27063@elte.hu>
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
- <4CE2F747.4060406@linux.intel.com>
- <20101116221726.GB26243@nowhere>
- <20101117083020.GA11336@elte.hu>
- <1289993750.2109.718.camel@laptop>
- <20101117125344.GC5464@nowhere>
- <1289998957.2109.751.camel@laptop>
+	id S933271Ab0KQNNK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 08:13:10 -0500
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:52202 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab0KQNNI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 08:13:08 -0500
+Message-ID: <4CE3D4D3.7020306@linux.vnet.ibm.com>
+Date: Wed, 17 Nov 2010 11:12:51 -0200
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289998957.2109.751.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+To: David Howells <dhowells@redhat.com>
+CC: David Safford <safford@watson.ibm.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-crypto@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        James Morris <jmorris@namei.org>
+Subject: Re: [PATCH v1.3 2/4] key: add tpm_send command
+References: <1289599613.4341.64.camel@localhost.localdomain> <1289514356.2726.18.camel@localhost.localdomain> <1289404309-15955-3-git-send-email-zohar@linux.vnet.ibm.com> <1289404309-15955-1-git-send-email-zohar@linux.vnet.ibm.com> <6651.1289504931@redhat.com> <22962.1289571072@redhat.com> <1289573330.4341.31.camel@localhost.localdomain> <4CDDB0A2.7090606@linux.vnet.ibm.com> <28655.1289599899@redhat.com>
+In-Reply-To: <28655.1289599899@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/11/10 20:11, David Howells wrote:
+> David Safford<safford@watson.ibm.com>  wrote:
+>
+>> David, does this look ok to you? If so, I will do two patches, one to
+>> fix the helper name throughout the existing tpm.c, and then a new
+>> version of the tpm_send patch which uses the new name.
+> I prefer my suggestion: Wrapping the module_put() up so that you don't see it
+> directly.  Then you don't need to alter tpm_chip_find_get().  I'll argue that
+> you don't need to know how tpm_chips are got/put, except in the code that
+> wraps it.
+>
+tpm_chip_find_get() not only gets the tpm_chip, but also searches for it 
+given an index in a tpm_chip_list.
+tpm_chip_put() is then the name that fits the argument here, given it'll 
+only be a wrapper of the tpm_chip put
+functionality, not the searching one I assume.
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+I'll ack any of the two approaches (tpm_chip_put or tpm_chip_find_get 
+renaming) in any case.
 
-> On Wed, 2010-11-17 at 13:53 +0100, Frederic Weisbecker wrote:
-> > On Wed, Nov 17, 2010 at 12:35:50PM +0100, Peter Zijlstra wrote:
-> > > On Wed, 2010-11-17 at 09:30 +0100, Ingo Molnar wrote:
-> > > > > For example I'm currently working with dozens of trace_printk() and I would be 
-> > > > > very happy to turn some of them off half of the time.
-> > > > 
-> > > > I guess we could try such a patch. If you send a prototype i'd be interested in 
-> > > > testing it out.
-> > > 
-> > > I don't see the point, the kernel shouldn't contain any trace_printk()s
-> > > to begin with..
-> > 
-> > 
-> > It's oriented toward developers. Those who use dozens of tracepoints in
-> > their tree because they are debugging something or developing a new feature,
-> > they might to deactivate/reactivate some of these independant points.
-> > 
-> > This can also apply to dynamic_printk of course.
-> > 
-> > Well, the very first and main point is to standardize trace_printk into
-> > a trace event so that it gets usable by perf tools. I have been asked many
-> > times "how to use trace_printk() with perf?".
-> 
-> Thing is, since its these dev who add the trace_printk()s to begin with, I don't 
-> see the point in splitting them out, if you didn't want them why did you add them 
-> to begin with?!
+Rajiv
 
-That's a common workflow: lots of printks (trace_printk's) put all around the code - 
-and sometimes one set of tracepoints is needed, one time another set.
-
-_If_ we succeed in presenting them like Frederic suggested it, and if we make the 
-turning on/off _simpler_ (no kernel modification) and faster (no kernel reboot) via 
-the tooling, people like Frederic might start using it.
-
-I dont think we should fight the workflow itself - it makes sense.
-
-The only question is whether we can represent it all in a nicer fashion than 'modify 
-the source code and reboot'. If we cannot then there's no point - but i'm not sure 
-about it and Frederic seems to be convinced too that he can make such a switch 
-on/off facility intuitive. We'll only see if we try it.
-
-Also, i dont see any harm - do you?
-
-Thanks,
-
-	Ingo
