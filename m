@@ -1,106 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934169Ab0KQEli (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 23:41:38 -0500
-Received: from mga02.intel.com ([134.134.136.20]:28119 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932950Ab0KQElg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 23:41:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,209,1288594800"; 
-   d="scan'208";a="678257766"
-Date: Wed, 17 Nov 2010 12:41:29 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/13] writeback: add trace event for
- balance_dirty_pages()
-Message-ID: <20101117044129.GA16203@localhost>
-References: <20101117042720.033773013@intel.com>
- <20101117042850.725694164@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117042850.725694164@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S934206Ab0KQEnp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 23:43:45 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43681 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932950Ab0KQEnn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 23:43:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=aC3jJLskuv4NFF9ENcjLRf8/9UP+QVLVwXkWTm8b/UCX3+W+gmaBpPZ9S1ZTHv9i3Z
+         iR5yPpvN6RGxZHvzOc7cCHRkJjo7dCSqm3uNPqnKnVFi8jevYAqQGdpWaymOrFo9Nc5M
+         WI5cvDv4O7fPrWdBDDB0OX/xuiNLqavizAD0s=
+Subject: Re: Kernel rwlock design, Multicore and IGMP
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Cypher Wu <cypher.w@gmail.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>,
+        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <AANLkTimA3mnPQHYWVb_fzONXMz40WGTaWpf83uZTsYQ2@mail.gmail.com>
+References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>
+	 <1289489007.17691.1310.camel@edumazet-laptop>
+	 <AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>
+	 <ZXmP8hjgLHA.4648@exchange1.tad.internal.tilera.com>
+	 <4CDF1945.8090101@tilera.com>
+	 <AANLkTind92uwcigzmDn8yn9a22exDy7zcreGQ5-6NLV-@mail.gmail.com>
+	 <AANLkTinzRm_5WW5HwxzXqZZD4255GDpR4yzELqz66Dfn@mail.gmail.com>
+	 <1289820672.2607.10.camel@edumazet-laptop>
+	 <AANLkTimA3mnPQHYWVb_fzONXMz40WGTaWpf83uZTsYQ2@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Nov 2010 05:43:37 +0100
+Message-ID: <1289969017.2732.82.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, there are some lags in the document.
+Le mercredi 17 novembre 2010 à 09:30 +0800, Cypher Wu a écrit :
+> O
+> struct in_device::mr_ifc_timer. Every time when a process join/leave a
+> MC group, igmp_ifc_event() -> igmp_ifc_start_timer() will start the
+> timer on the core that the system call issued, and
+> igmp_ifc_timer_expire() will be called on that core in the bottem halt
+> of timer interrupt.
+> If we call join/leave on mutlicores that timers will run on all these
+> cores, but it seems only one or two will generate IGMP message, others
+> will only lock the list and loop throught it with nothing generated.
+> 
+> 
 
-On Wed, Nov 17, 2010 at 12:27:32PM +0800, Wu, Fengguang wrote:
-> Here is an interesting test to verify the theory with balance_dirty_pages()
-> tracing. On a partition that can do ~60MB/s, a sparse file is created and
-> 4 rsync tasks with different write bandwidth started:
-> 
-> 	dd if=/dev/zero of=/mnt/1T bs=1M count=1 seek=1024000
-> 	echo 1 > /debug/tracing/events/writeback/balance_dirty_pages/enable
-> 
-> 	rsync localhost:/mnt/1T /mnt/a --bwlimit 10000&
-> 	rsync localhost:/mnt/1T /mnt/A --bwlimit 10000&
-> 	rsync localhost:/mnt/1T /mnt/b --bwlimit 20000&
-> 	rsync localhost:/mnt/1T /mnt/c --bwlimit 30000&
-> 
-> Trace outputs within 0.1 second, grouped by tasks:
-> 
-> rsync-3824  [004] 15002.076447: balance_dirty_pages: bdi=btrfs-2 weight=15% limit=130876 gap=5340 dirtied=192 pause=20
-> 
-> rsync-3822  [003] 15002.091701: balance_dirty_pages: bdi=btrfs-2 weight=15% limit=130777 gap=5113 dirtied=192 pause=20
-> 
-> rsync-3821  [006] 15002.004667: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129570 gap=3714 dirtied=64 pause=8
-> rsync-3821  [006] 15002.012654: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129589 gap=3733 dirtied=64 pause=8
-> rsync-3821  [006] 15002.021838: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129604 gap=3748 dirtied=64 pause=8
-> rsync-3821  [004] 15002.091193: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129583 gap=3983 dirtied=64 pause=8
-> rsync-3821  [004] 15002.102729: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129594 gap=3802 dirtied=64 pause=8
-> rsync-3821  [000] 15002.109252: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129619 gap=3827 dirtied=64 pause=8
-> 
-> rsync-3823  [002] 15002.009029: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128762 gap=2842 dirtied=64 pause=12
-> rsync-3823  [002] 15002.021598: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128813 gap=3021 dirtied=64 pause=12
-> rsync-3823  [003] 15002.032973: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128805 gap=2885 dirtied=64 pause=12
-> rsync-3823  [003] 15002.048800: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128823 gap=2967 dirtied=64 pause=12
-> rsync-3823  [003] 15002.060728: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128821 gap=3221 dirtied=64 pause=12
-> rsync-3823  [000] 15002.073152: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128825 gap=3225 dirtied=64 pause=12
-> rsync-3823  [005] 15002.090111: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128782 gap=3214 dirtied=64 pause=12
-> rsync-3823  [004] 15002.102520: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128764 gap=3036 dirtied=64 pause=12
+Problem would not be timer being restarted on different cores (very
+small impact), but scanning a list in igmpv3_send_cr() with many items
+in it and expensive things, under timer handler (softirq), so adding
+spikes of latency.
 
-The above lines are in the old output format, but you get the idea..
+IGMP_Unsolicited_Report_Interval is 10 seconds, so we start timer in a 5
+second average.
 
-> +	/*
-> +	 *           [..................soft throttling range.........]
-> +	 *           ^                |<=========== bdi_gap =========>|
-> +	 * background_thresh          |<== task_gap ==>|
+I am not sure there is a need to join/leave thousand of groups per
+second anyway...
 
-That background_thresh should be global (background+dirty)/2.
 
-> +	 * -------------------|-------+----------------|--------------|
-> +	 *   (bdi_limit * 7/8)^       ^bdi_dirty       ^task_limit    ^bdi_limit
-> +	 *
-> +	 * Reasonable large gaps help produce smooth pause times.
-> +	 */
-> +	TP_printk("bdi=%s bdi_dirty=%lu bdi_limit=%lu task_limit=%lu "
-> +		  "task_weight=%ld%% task_gap=%ld%% bdi_gap=%ld%% "
-> +		  "pages_dirtied=%lu pause=%lu",
-> +		  __entry->bdi,
-> +		  __entry->bdi_dirty,
-> +		  __entry->bdi_limit,
-> +		  __entry->task_limit,
-> +		  /* task weight: proportion of recent dirtied pages */
-> +		  BDP_PERCENT(bdi_limit, task_limit, TASK_SOFT_DIRTY_LIMIT),
-> +		  BDP_PERCENT(task_limit, bdi_dirty, TASK_SOFT_DIRTY_LIMIT),
-> +		  BDP_PERCENT(bdi_limit, bdi_dirty, BDI_SOFT_DIRTY_LIMIT),
-> +		  __entry->pages_dirtied,
-> +		  __entry->pause
-> +		  )
-> +);
 
-Thanks,
-Fengguang
