@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933555Ab0KQE3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 23:29:39 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:50017 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932768Ab0KQE3i convert rfc822-to-8bit (ORCPT
+	id S933855Ab0KQEaB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 23:30:01 -0500
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:51104 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932768Ab0KQE36 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 23:29:38 -0500
+	Tue, 16 Nov 2010 23:29:58 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=R5prQWUS6KP05H5brZ2+AIDrolkk9CZgCS2YCmGb1FWdi2Vi4Mn+uMwL+4+QBDUNlq
-         N7AxU0Q2Xx2rlrr0BGllJMVglBVqSRw0cOnUQNH0rWi19I0zZWrIxCXKu9WyOV706Est
-         PZqyuJn58fIn0NkkPM0Yaza4hBthnKUEv0dVc=
+        b=lclh9yUFC1DXDvJj1PllCcZwwfRwXt2zbMEkuOJ2L+w4yMMbzC6tao+JCvymdPNArr
+         F+RezL1Ho3w7J8JxaaWBQB5LO5o8tEy05Nj1VB+lcBJoO+N5w6RU3n5iEIPJxhPZUYmd
+         HoCqYpaJYewEnFulBbw6p6Llb2qiKozgzrOTA=
 MIME-Version: 1.0
-In-Reply-To: <4CE340BC.1010701@leadcoretech.com>
-References: <20101109123246.GA11477@amd>
-	<20101114182614.BEE5.A69D9226@jp.fujitsu.com>
-	<20101115092452.BEF1.A69D9226@jp.fujitsu.com>
-	<20101116074717.GB3460@amd>
-	<AANLkTi=BhuVn8F3ioTyR8S=J3LfJbuhYsMoHf9f=bvRn@mail.gmail.com>
-	<4CE23B3B.5050804@leadcoretech.com>
-	<AANLkTi=10NspL2fw66De8osjUC+2xnxsLpw+x=oNQQTv@mail.gmail.com>
-	<4CE23F33.5060401@leadcoretech.com>
-	<AANLkTi=Da76M+s92ZZnfw7ySjp3WWfDjW6n5G=hHheKB@mail.gmail.com>
-	<4CE340BC.1010701@leadcoretech.com>
-Date: Wed, 17 Nov 2010 06:29:36 +0200
-Message-ID: <AANLkTi==W_KHL3pd8Cq=ojV=aAAOxi4c=ZkHSednOVyH@mail.gmail.com>
-Subject: Re: [patch] mm: vmscan implement per-zone shrinkers
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: "Figo.zhang" <zhangtianfei@leadcoretech.com>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=GB2312
+In-Reply-To: <AANLkTimQtXeCE1Gu4YuPBBZ_J3ieW6Z5JtvzF=hF7pWX@mail.gmail.com>
+References: <AANLkTinop4_JT4JLtdmWkydPgDDU=TyZNbtiBbgeh1dj@mail.gmail.com>
+	<AANLkTimQtXeCE1Gu4YuPBBZ_J3ieW6Z5JtvzF=hF7pWX@mail.gmail.com>
+Date: Tue, 16 Nov 2010 23:29:57 -0500
+Message-ID: <AANLkTinz27cfdNKEtyUo9f3nuw+XbZ2Osz0ThRiOQnnL@mail.gmail.com>
+Subject: Re: Behavior of BUG() [Was: Re: [PATCH 2/5] of/fdt: add kernel
+ command line option for dtb_compat string]
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org,
+        dirk.brandewie@gmail.com, linux-arch@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/17 Figo.zhang <zhangtianfei@leadcoretech.com>:
-> ÓÚ 11/16/2010 04:26 PM, Anca Emanuel Ð´µÀ:
->> On Tue, Nov 16, 2010 at 10:22 AM, Figo.zhang
->> <zhangtianfei@leadcoretech.com>  wrote:
->>> ÓÚ 11/16/2010 04:20 PM, Anca Emanuel Ð´µÀ:
->>>>
->>>> On Tue, Nov 16, 2010 at 10:05 AM, Figo.zhang
->>>> <zhangtianfei@leadcoretech.com>   wrote:
->>>>>
->>>>> ÓÚ 11/16/2010 03:53 PM, Anca Emanuel Ð´µÀ:
->>>>>>
->>>>>> Nick, I want to test your tree.
->>>>>> This is taking too long.
->>>>>> Make something available now. And test it in real configs.
->>>>>>
->>>>>
->>>>> hi Anca,
->>>>>
->>>>> would you like to give your test method?
->>>>>
->>>>
->>>> Nothig special, for now I will test on my PC.
->>>>
->>>
->>> hi KOSAKI Motohiro,
->>>
->>> is it any test suite or test scripts for test page-reclaim performance?
->>>
->>> Best,
->>> Figo.zhang
->>>
->>
->> There is http://www.phoronix.com
->
-> it is not focus on page-reclaim test, or specially for MM.
->>
->
->
+Hi,
 
-If you want some special test, you have to ask Michael Larabel for that.
-http://www.phoronix-test-suite.com/
+On Tue, Nov 16, 2010 at 11:13 PM, Grant Likely
+<grant.likely@secretlab.ca> wrote:
+> On Tue, Nov 16, 2010 at 8:45 PM, Arnaud Lacombe <lacombar@gmail.com> wrote:
+>> Hi,
+>>
+>> [CC: list reduced as starting a new thread, most on the context
+>> removed as this concern a different issue.]
+>>
+>> On Tue, Nov 16, 2010 at 7:16 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>>> On Tue, Nov 16, 2010 at 3:41 PM,  <dirk.brandewie@gmail.com> wrote:
+>>>> From: Dirk Brandewie <dirk.brandewie@gmail.com>
+>>>> [...]
+>>> The kernel needs to complain *loudly* if this occurs because it
+>>> represents a bug.  I'm tempted to say use BUG, but that would halt the
+>>> kernel and prevent any possibility of kernel log output.
+>>> [...]
+>> does it ? if CONFIG_BUG is not enabled and the arch has no define for
+>> it, the default does _nothing_:
+>>
+>> from `include/asm-generic/bug.h':
+>>
+>> #else /* !CONFIG_BUG */
+>> #ifndef HAVE_ARCH_BUG
+>> #define BUG() do {} while(0)
+>> #endif
+>>
+>> #ifndef HAVE_ARCH_BUG_ON
+>> #define BUG_ON(condition) do { if (condition) ; } while(0)
+>> #endif
+>> [...]
+>>
+>> gcc is triggering about ~30 warnings (like [0]) on code path using
+>> BUG(). Most of these path assume BUG() will never return, which is not
+>> true.
+>
+> As far as I know, BUG() is not supposed to return.  Period.
+>
+but the code I pointed out _do_ return.
+
+> The patch
+> below is part of the linux-tiny work, and should only ever be used on
+> embedded systems where small size is more important than debugability.
+>
+AFAIK, this is not precised anywhere, but I may not have search enough.
+
+Matt, any reason the generic code does not just spin (or OOPS) and
+marked __noreturn in any case ?
+
+ - Arnaud
