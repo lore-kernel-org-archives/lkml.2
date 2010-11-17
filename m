@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab0KQFOg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 00:14:36 -0500
-Received: from sj-iport-1.cisco.com ([171.71.176.70]:12765 "EHLO
-	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750912Ab0KQFOe (ORCPT
+	id S1753270Ab0KQFWX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 00:22:23 -0500
+Received: from [120.204.251.227] ([120.204.251.227]:32717 "EHLO
+	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751718Ab0KQFWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 00:14:34 -0500
-Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlIEAGbz4kyrR7Ht/2dsb2JhbACDSJA5jkFxpSKKNZBggSKDNnMEhFqFfg
-X-IronPort-AV: E=Sophos;i="4.59,209,1288569600"; 
-   d="scan'208";a="381900981"
-From: Tom Lyon <pugs@cisco.com>
-Organization: Cisco Systems, Inc.
-To: Alex Williamson <alex.williamson@redhat.com>
-Subject: Re: [PATCH] vfio: fix config virtualization, esp command byte
-Date: Tue, 16 Nov 2010 21:14:50 -0800
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.5-desktop; KDE/4.4.4; x86_64; ; )
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-References: <4cd9f0d6.jnHBr6PBphKwDwhM%pugs@cisco.com> <1289930061.3069.5.camel@x201> <1289933847.3069.8.camel@x201>
-In-Reply-To: <1289933847.3069.8.camel@x201>
+	Wed, 17 Nov 2010 00:22:22 -0500
+Message-ID: <4CE36652.50305@leadcoretech.com>
+Date: Wed, 17 Nov 2010 13:21:22 +0800
+From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101028 Lightning/1.0b2 Lanikai/3.1.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Anca Emanuel <anca.emanuel@gmail.com>
+CC: Nick Piggin <npiggin@kernel.dk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [patch] mm: vmscan implement per-zone shrinkers
+References: <20101109123246.GA11477@amd>	<20101114182614.BEE5.A69D9226@jp.fujitsu.com>	<20101115092452.BEF1.A69D9226@jp.fujitsu.com>	<20101116074717.GB3460@amd>	<AANLkTi=BhuVn8F3ioTyR8S=J3LfJbuhYsMoHf9f=bvRn@mail.gmail.com>	<4CE23B3B.5050804@leadcoretech.com>	<AANLkTi=10NspL2fw66De8osjUC+2xnxsLpw+x=oNQQTv@mail.gmail.com>	<4CE23F33.5060401@leadcoretech.com>	<AANLkTi=Da76M+s92ZZnfw7ySjp3WWfDjW6n5G=hHheKB@mail.gmail.com>	<4CE340BC.1010701@leadcoretech.com> <AANLkTi==W_KHL3pd8Cq=ojV=aAAOxi4c=ZkHSednOVyH@mail.gmail.com>
+In-Reply-To: <AANLkTi==W_KHL3pd8Cq=ojV=aAAOxi4c=ZkHSednOVyH@mail.gmail.com>
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011162114.50954.pugs@cisco.com>
+X-OriginalArrivalTime: 17 Nov 2010 05:22:20.0358 (UTC) FILETIME=[685E6E60:01CB8617]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied.
+>>>>
+>>>> hi KOSAKI Motohiro,
+>>>>
+>>>> is it any test suite or test scripts for test page-reclaim performance?
+>>>>
+>>>> Best,
+>>>> Figo.zhang
+>>>>
+>>>
+>>> There is http://www.phoronix.com
+>>
+>> it is not focus on page-reclaim test, or specially for MM.
+>>>
+>>
+>>
+> 
+> If you want some special test, you have to ask Michael Larabel for that.
+> http://www.phoronix-test-suite.com/
 
-On Tuesday, November 16, 2010 10:57:27 am Alex Williamson wrote:
-> On Tue, 2010-11-16 at 10:54 -0700, Alex Williamson wrote:
-> > On Tue, 2010-11-09 at 17:09 -0800, Tom Lyon wrote:
-> > > Cleans up config space virtualization, especialy handling of bytes
-> > > which have some virtual and some real bits, like PCI_COMMAND.
-> > > 
-> > > Alex, I hope you can test this with your setups.
-> > 
-> > Sorry for the delay.  FWIW, I'm not having much luck with this, I'll try
-> > to debug the problem.  Thanks,
+yes, i see, the phoronix-test-suite is test such as ffmpeg, games. not
+focus on MM.
+
 > 
-> This seems to be the bug.  Thanks,
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom policy in Canada: sign http://dissolvethecrtc.ca/
+> Don't email:<a href=ilto:"dont@kvack.org">  email@kvack.org</a>
 > 
-> Alex
-> 
-> vfio: Don't write random bits on read
-> 
-> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
-> 
-> diff --git a/drivers/vfio/vfio_pci_config.c
-> b/drivers/vfio/vfio_pci_config.c index 7132ac4..422d7b1 100644
-> --- a/drivers/vfio/vfio_pci_config.c
-> +++ b/drivers/vfio/vfio_pci_config.c
-> @@ -964,11 +964,6 @@ static int vfio_config_rwbyte(int write,
->  		return 0;
->  	}
-> 
-> -	if (write) {
-> -		if (copy_from_user(&newval, buf, 1))
-> -			return -EFAULT;
-> -	}
-> -
->  	if (~virt) {	/* mix of real and virt bits */
->  		/* update vconfig with latest hw bits */
->  		ret = vfio_read_config_byte(vdev, pos, &realbits);
-> @@ -978,9 +973,14 @@ static int vfio_config_rwbyte(int write,
->  			(vdev->vconfig[pos] & virt) | (realbits & ~virt);
->  	}
-> 
-> -	/* update vconfig with writeable bits */
-> -	vdev->vconfig[pos] =
-> -		(vdev->vconfig[pos] & ~wr) | (newval & wr);
-> +	if (write) {
-> +		if (copy_from_user(&newval, buf, 1))
-> +			return -EFAULT;
-> +
-> +		/* update vconfig with writeable bits */
-> +		vdev->vconfig[pos] =
-> +			(vdev->vconfig[pos] & ~wr) | (newval & wr);
-> +        }
-> 
->  	/*
->  	 * Now massage virtual fields
+
