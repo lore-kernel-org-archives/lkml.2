@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758869Ab0KQVM4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 16:12:56 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:58724 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758137Ab0KQVMz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 16:12:55 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: 2.6.35.5: hibernation broken... AGAIN
-Date: Wed, 17 Nov 2010 22:12:01 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Ondrej Zary <linux@rainbow-software.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@in.ibm.com>, Hugh Dickins <hughd@google.com>
-References: <201011171139.33398.linux@rainbow-software.org> <201011172153.52644.rjw@sisk.pl> <20101117130422.d9de48d8.akpm@linux-foundation.org>
-In-Reply-To: <20101117130422.d9de48d8.akpm@linux-foundation.org>
+	id S934569Ab0KQVRX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 16:17:23 -0500
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:50707 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933693Ab0KQVRV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 16:17:21 -0500
+Date: Wed, 17 Nov 2010 22:19:17 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>
+Subject: Re: 2.6.37-rc1+: hibernate regression, claims not enough swap space
+Message-ID: <20101117211917.GA394@elf.ucw.cz>
+References: <20101114052138.GB2189@elf.ucw.cz>
+ <201011152326.44357.rjw@sisk.pl>
+ <20101116052634.GA30449@elf.ucw.cz>
+ <201011162327.27454.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011172212.01433.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201011162327.27454.rjw@sisk.pl>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 17, 2010, Andrew Morton wrote:
-> On Wed, 17 Nov 2010 21:53:52 +0100
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > On Wednesday, November 17, 2010, Ondrej Zary wrote:
-> > > Hello,
-> > > the nasty memory-corrupting hibernation bug 
-> > > https://bugzilla.kernel.org/show_bug.cgi?id=15753 is back since 2.6.35.5.
-> > > 2.6.35.4 works fine, 2.6.35.5 crashes after two days.
+Hi!
+
+> > > > ...but there's enough -- or at least it was enough to fit previous
+> > > > versions. 32-bit machine, so it has highmem.
+> > > > 
+> > > > System is in console mode, very lightly loaded.
+> > > > 
+> > > > Mem:   2054716k total,   736548k used,  1318168k free,    15368k buffers
+> > > > Swap:   779148k total,     2360k used,   776788k free,   546388k cached
 > > > 
-> > > It seems to be caused by b77c254d8d66e5e9aa81239fedba9f3d568097d9.
+> > > Well, the swap is rather in short supply.  Below the 50% of RAM recommendation.
 > > 
-> > Can you, _please_, always put all of the basic commit info (subject, author,
-> > who signed it off) in bug reports?
+> > Well, but the biggest image we can write is not 50% of RAM, but 50% of
+> > lowmem... 
+> 
+> No, it is not.  It's been 50% of RAM for a couple of years now. :-)
+
+
+
+
+> > > > PM: thaw of devices complete after 539.577 msecs
+> > > > PM: writing image.
+> > > > PM: Free swap pages: 194166
+> > > > PM: Not enough free swap
+> > > > Restarting tasks ...
+> > > > 
+> > > > Aha, and it is the new default /sys/power/image_size .. setting it to
+> > > > 0 lets machine hibernate. I guess the new default is very wrong for
+> > > > highmem machine...
+> > > 
+> > > The old default did the wrong thing for everyone with sufficient swap (it made
+> > > the OOM code trigger every time while preparing to create an image), so I think
+> > > the new one it's better overall.
 > > 
-> > In this particular case I don't have a -stable tree handy at the moment and
-> > can't even see what the commit is.
+> > OOM? No... image_size of 0 should have written "as small image as
+> > possible"; slow, but should not OOM.
 > 
-> You can simply do a google search for the commit ID.  It is
+> This is not how it works now.  We preallocate memory to create memory pressure,
+> so if image_size is 0, we need to preallocate until we run out of pages that
+> can be freed, which means OOM.
 
-Thanks! :-)
+That's bad, right? Instead of killing 
 
-> commit b77c254d8d66e5e9aa81239fedba9f3d568097d9
-> Author: Hugh Dickins <hughd@google.com>
-> Date:   Thu Sep 9 16:38:09 2010 -0700
-> 
->     swap: prevent reuse during hibernation
+Anyway, it does not work at all.
 
-So I guess we should Cc Hugh ...
+root@amd:~# echo 300000000 > /sys/power/image_size
+root@amd:~# echo disk > /sys/power/state 
+-su: echo: write error: No space left on device
+
+(And dmesg full of failed allocations).
+
+I can write 400M there, and it fails, too.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
