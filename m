@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933959Ab0KQBij (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 20:38:39 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:64927 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933200Ab0KQBii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 20:38:38 -0500
-Message-ID: <4CE33321.10207@cn.fujitsu.com>
-Date: Wed, 17 Nov 2010 09:42:57 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S933910Ab0KQBkl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 20:40:41 -0500
+Received: from [120.204.251.227] ([120.204.251.227]:40193 "EHLO
+	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933241Ab0KQBkk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 20:40:40 -0500
+Message-ID: <4CE3325E.6030008@leadcoretech.com>
+Date: Wed, 17 Nov 2010 09:39:42 +0800
+From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; zh-CN; rv:1.9.2.12) Gecko/20101028 Lightning/1.0b2 Lanikai/3.1.6
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/4] KVM: MMU: don't drop spte if overwrite it from W
- to RO
-References: <4CDD173E.8010706@cn.fujitsu.com> <20101116202414.GA24156@amt.cnet>
-In-Reply-To: <20101116202414.GA24156@amt.cnet>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-17 09:39:00,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-17 09:39:01,
-	Serialize complete at 2010-11-17 09:39:01
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Chew <AChew@nvidia.com>
+CC: "hverkuil@xs4all.nl" <hverkuil@xs4all.nl>,
+        "pawel@osciak.com" <pawel@osciak.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] videobuf: Initialize lists in videobuf_buffer.
+References: <1289939083-27209-1-git-send-email-achew@nvidia.com> <4CE32B9D.1020705@leadcoretech.com> <643E69AA4436674C8F39DCC2C05F763816BB828A40@HQMAIL03.nvidia.com>
+In-Reply-To: <643E69AA4436674C8F39DCC2C05F763816BB828A40@HQMAIL03.nvidia.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 17 Nov 2010 01:40:39.0067 (UTC) FILETIME=[702E7EB0:01CB85F8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2010 04:24 AM, Marcelo Tosatti wrote:
-> On Fri, Nov 12, 2010 at 06:30:22PM +0800, Xiao Guangrong wrote:
->> We just need flush tlb if overwrite a writable spte with a read-only one
+于 11/17/2010 09:38 AM, Andrew Chew 写道:
+>>> diff --git a/drivers/media/video/videobuf-dma-contig.c
+>> b/drivers/media/video/videobuf-dma-contig.c
+>>> index c969111..f7e0f86 100644
+>>> --- a/drivers/media/video/videobuf-dma-contig.c
+>>> +++ b/drivers/media/video/videobuf-dma-contig.c
+>>> @@ -193,6 +193,8 @@ static struct videobuf_buffer
+>> *__videobuf_alloc_vb(size_t size)
+>>>    	if (vb) {
+>>>    		mem = vb->priv = ((char *)vb) + size;
+>>>    		mem->magic = MAGIC_DC_MEM;
+>>> +		INIT_LIST_HEAD(&vb->stream);
+>>> +		INIT_LIST_HEAD(&vb->queue);
 >>
->> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
->> ---
->>  arch/x86/kvm/mmu.c |   19 +++++++++----------
->>  1 files changed, 9 insertions(+), 10 deletions(-)
->>
->> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
->> index 4b6d54c..1a93ab4 100644
->> --- a/arch/x86/kvm/mmu.c
->> +++ b/arch/x86/kvm/mmu.c
->> @@ -2044,6 +2044,15 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->>  	if (pte_access & ACC_WRITE_MASK)
->>  		mark_page_dirty(vcpu->kvm, gfn);
->>  
->> +	/*
->> +	 * If we overwrite a writable spte with a read-only one,
->> +	 * flush remote TLBs. Otherwise rmap_write_protect will
->> +	 * find a read-only spte, even though the writable spte
->> +	 * might be cached on a CPU's TLB.
->> +	 */
->> +	else if (is_writable_pte(*sptep))
->> +		ret = 1;
->> +
-> 
-> The return value of set_spte indicates whether the gfn being mapped to
-> was write protected, not if a TLB flush is necessary.
-> 
+>> i think it no need to be init, it just a list-entry.
+>
+> Okay, if that's really the case, then sh_mobile_ceu_camera.c, pxa_camera.c, mx1_camera.c, mx2_camera.c, and omap1_camera.c needs to be fixed to remove that WARN_ON(!list_empty(&vb->queue)); in their videobuf_prepare() methods, because those WARN_ON's are assuming that vb->queue is properly initialized as a list head.
+>
+> Which will it be?
 
-Yes, i also noticed this and have fixed in the v2 queue, thanks Marcelo!
+yes, i think those WARN_ONs are no need.
