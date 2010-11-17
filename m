@@ -1,89 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935186Ab0KQSXt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 13:23:49 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:43948 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933148Ab0KQSXr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 13:23:47 -0500
-Date: Wed, 17 Nov 2010 13:23:44 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+	id S935228Ab0KQS0h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 13:26:37 -0500
+Received: from mga09.intel.com ([134.134.136.24]:37363 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933148Ab0KQS0g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 13:26:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,212,1288594800"; 
+   d="scan'208";a="574795698"
+Message-ID: <4CE4077F.1090303@linux.intel.com>
+Date: Wed, 17 Nov 2010 08:49:03 -0800
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
 To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        "Ted Ts'o" <tytso@mit.edu>, Thomas Gleixner <tglx@linutronix.de>,
+CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
         LKML <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
         Arjan van de Ven <arjan@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tzanussi@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Jason Baron <jbaron@redhat.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
         "David S. Miller" <davem@davemloft.net>,
         Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
         Lai Jiangshan <laijs@cn.fujitsu.com>,
         Eric Dumazet <eric.dumazet@gmail.com>
 Subject: Re: [ANNOUNCE] New utility: 'trace'
-Message-ID: <20101117182344.GD13717@Krystal>
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6> <20101117013700.GA3290@thunk.org> <20101117132404.GF27063@elte.hu> <1290001128.2109.785.camel@laptop> <20101117140002.GH27063@elte.hu> <1290003110.2109.822.camel@laptop> <1290006634.30543.61.camel@gandalf.stny.rr.com> <1290008637.2109.967.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290008637.2109.967.camel@laptop>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:17:42 up 55 days, 22:19,  6 users,  load average: 0.34, 0.25,
-	0.14
-User-Agent: Mutt/1.5.18 (2008-05-17)
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>	 <4CE2F747.4060406@linux.intel.com> <20101116221726.GB26243@nowhere>	 <20101117083020.GA11336@elte.hu> <1289993750.2109.718.camel@laptop>	 <20101117125344.GC5464@nowhere> <1289998957.2109.751.camel@laptop>
+In-Reply-To: <1289998957.2109.751.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Wed, 2010-11-17 at 10:10 -0500, Steven Rostedt wrote:
-> > 
-> > Right, the problem with filtering is what do we want to filter, and what
-> > about copying?
-> > 
-> > Currently, we copy the data into the buffer and then filter on that
-> > data. We could also easily filter on the parameters of the tracepoint,
-> > but sometimes those parameters do not match the final output (as the
-> > case with sched_switch). Do we copy the data into a separate "per cpu"
-> > temp buffer, and figure out the filter then? And if the filter is fine,
-> > then copy into the buffer. This obviously is slow, due to the multiple
-> > copies. We could do this only if the filtering is enabled.
-> 
-> Right, so what is the primary purpose of this filtering stuff? As it
-> stands it makes stuff terribly slow, so you add overhead but the win
-> (presumably) is less data output, is that a sane trade-off?
-> 
-> Most people I've heard -- both at LinuxCon.JP and LPC -- are asking for
-> lower overhead tracing (while at the same time demanding more features).
-> 
-> Who are actually using this and can they provide some input on this?
+On 11/17/2010 05:02 AM, Peter Zijlstra wrote:
+> On Wed, 2010-11-17 at 13:53 +0100, Frederic Weisbecker wrote:
+>> On Wed, Nov 17, 2010 at 12:35:50PM +0100, Peter Zijlstra wrote:
+>>> On Wed, 2010-11-17 at 09:30 +0100, Ingo Molnar wrote:
+>>>>> For example I'm currently working with dozens of trace_printk() and I would be
+>>>>> very happy to turn some of them off half of the time.
+>>>>
+>>>> I guess we could try such a patch. If you send a prototype i'd be interested in
+>>>> testing it out.
+>>>
+>>> I don't see the point, the kernel shouldn't contain any trace_printk()s
+>>> to begin with..
+>>
+>>
+>> It's oriented toward developers. Those who use dozens of tracepoints in
+>> their tree because they are debugging something or developing a new feature,
+>> they might to deactivate/reactivate some of these independant points.
+>>
+>> This can also apply to dynamic_printk of course.
+>>
+>> Well, the very first and main point is to standardize trace_printk into
+>> a trace event so that it gets usable by perf tools. I have been asked many
+>> times "how to use trace_printk() with perf?".
+>
+> Thing is, since its these dev who add the trace_printk()s to begin with,
+> I don't see the point in splitting them out, if you didn't want them why
+> did you add them to begin with?!
 
-Amongst others, Ericsson rely on this kind of feature. The case where we're
-filtering "out" should be really, really fast (even if it makes the recording
-slightly slower). If there is a race modifying the data underneath between the
-filter execution and the copy to the buffers, I really don't think it matters.
-If the tracepoint caller context don't provide data consistency guarantees for
-the parameters it passes, we should not expect 100% perfect consistency between
-filter and what is actually saved in the trace. The trace analysis tools should
-just be able to cope with that, but I really don't think anyone should care.
-
-So I would recommend no copy, filter directly on the source data, stop the
-filter chain as soon as a non-match is observed. Copy the data into the buffers
-if the filter passes.
-
-Thanks,
-
-Mathieu
+What I understood from Frederic's email was that during a debug session 
+it is sometimes helpful to be able to enable and disable the 
+trace_printk's. This makes sense as it reduces the number of kernel 
+build/reboot cycles. However, I would think most of that could be 
+accomplished with some judicious message tagging and post-processing to 
+filter out the unwanted trace_printk's. The only exception might be when 
+the trace_printk's add enough overhead to mask a timing related bug. In 
+this case, I'd probably be tempted to remove the stubs anyway.
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Darren Hart
+Yocto Linux Kernel
