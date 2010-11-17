@@ -1,59 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934467Ab0KQLi7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 06:38:59 -0500
-Received: from casper.infradead.org ([85.118.1.10]:60532 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932962Ab0KQLi6 convert rfc822-to-8bit (ORCPT
+	id S934586Ab0KQLnH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 06:43:07 -0500
+Received: from stinky.trash.net ([213.144.137.162]:43029 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934163Ab0KQLnF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 06:38:58 -0500
-Subject: Re: [PATCH -v4 1/2] lib, Make gen_pool memory allocator lockless
-From: Peter Zijlstra <peterz@infradead.org>
-To: huang ying <huang.ying.caritas@gmail.com>
-Cc: Huang Ying <ying.huang@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <AANLkTi=F+r77f5WJpPPh2rtWgtcVqGS-qbCJZ11Fy1yN@mail.gmail.com>
-References: <1289868791-16658-1-git-send-email-ying.huang@intel.com>
-	 <1289868791-16658-2-git-send-email-ying.huang@intel.com>
-	 <20101116135038.fcaa90ca.akpm@linux-foundation.org>
-	 <1289960281.8719.1218.camel@yhuang-dev>
-	 <20101116183506.41e77e1a.akpm@linux-foundation.org>
-	 <1289963005.8719.1238.camel@yhuang-dev>
-	 <20101116195720.23287038.akpm@linux-foundation.org>
-	 <1289973914.8719.1261.camel@yhuang-dev> <1289990983.2109.678.camel@laptop>
-	 <AANLkTi=F+r77f5WJpPPh2rtWgtcVqGS-qbCJZ11Fy1yN@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 17 Nov 2010 12:38:56 +0100
-Message-ID: <1289993936.2109.721.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 17 Nov 2010 06:43:05 -0500
+Message-ID: <4CE3BFC4.1010706@trash.net>
+Date: Wed, 17 Nov 2010 12:43:00 +0100
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+MIME-Version: 1.0
+To: Eric Paris <eparis@redhat.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        selinux@tycho.nsa.gov, netfilter-devel@vger.kernel.org,
+        equinox@diac24.net, eric.dumazet@gmail.com, davem@davemloft.net,
+        hzhong@gmail.com, jmorris@namei.org, kuznet@ms2.inr.ac.ru,
+        paul.moore@hp.com, pekkas@netcore.fi, sds@tycho.nsa.gov,
+        yoshfuji@linux-ipv6.org
+Subject: Re: [PATCH 3/3] SELinux: return -ECONNREFUSED from ip_postroute to
+ signal	fatal error
+References: <20101116215238.6727.39248.stgit@paris.rdu.redhat.com> <20101116215257.6727.12163.stgit@paris.rdu.redhat.com>
+In-Reply-To: <20101116215257.6727.12163.stgit@paris.rdu.redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 19:16 +0800, huang ying wrote:
-> > I'm not sure Andrew's CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG makes much sense
-> > for CONFIG_ARCH_HAVE_NMI=n though..
-> 
-> Sorry, I do not find ARCH_HAVE_NMI in any Kconfig, can you help me to
-> point out? I think cmpxchg can be used safely in lock-less code on
-> architectures without NMI. 
+On 16.11.2010 22:52, Eric Paris wrote:
+> The SELinux netfilter hooks just return NF_DROP if they drop a packet.  We
+> want to signal that a drop in this hook is a permanant fatal error and is not
+> transient.  If we do this the error will be passed back up the stack in some
+> places and applications will get a faster interaction that something went
+> wrong.
 
-It doesn't exist, but what I'm saying is that HAVE_NMI_SAFE_CMPXCHG is
-pointless for architectures that don't actually have an NMI, although I
-guess you can argue that since it doesn't have one its safe by default,
-still slightly confusing.
-
-Some arch don't currently implement NMI like functionality (ARM comes to
-mind) but they could using interrupt priorities (like SPARC64 does for
-example).
-
-
+Looks good to me. I'd suggest to have these patches go through Dave's
+tree since I want to make use of the netfilter error propagation
+mechanism to return proper errno codes for netfilter re-routing
+failures.
