@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935439Ab0KQT4q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 14:56:46 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:46671 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S935187Ab0KQT4p (ORCPT
+	id S935452Ab0KQT5M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 14:57:12 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:37933 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935187Ab0KQT5K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 14:56:45 -0500
-Date: Wed, 17 Nov 2010 20:58:43 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Greg KH <greg@kroah.com>
-Cc: Eric Cooper <ecc@cmu.edu>, linux-kernel@vger.kernel.org,
-        Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH] add netdev led trigger
-Message-ID: <20101117195843.GA31357@elf.ucw.cz>
-References: <1289768305-1224-1-git-send-email-ecc@cmu.edu>
- <20101117105925.GC1574@ucw.cz>
- <20101117160919.GC10992@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117160919.GC10992@kroah.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 17 Nov 2010 14:57:10 -0500
+Subject: Re: [RFC][PATCH] perf: sysfs type id
+From: Peter Zijlstra <peterz@infradead.org>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <4CE43153.2070206@linux.vnet.ibm.com>
+References: <1289339119.2191.92.camel@laptop>
+	 <AANLkTi=ojOnLyRO4hTgYdCCXLsN0wUeTcme=5h8-mjdz@mail.gmail.com>
+	 <1289398207.2191.117.camel@laptop> <1289398763.2191.121.camel@laptop>
+	 <AANLkTimQ7w38wzrYT4MgjHFr6LCVj2M5fB11-n3XCD2w@mail.gmail.com>
+	 <1289421164.2084.56.camel@laptop>
+	 <AANLkTiku7UsVoYv_+6r79rvGPJU7OU=VGDiaYo0H=82y@mail.gmail.com>
+	 <1289423135.2084.63.camel@laptop>  <4CE33F86.7040403@linux.vnet.ibm.com>
+	 <1289993128.2109.714.camel@laptop>  <4CE43153.2070206@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 17 Nov 2010 20:57:14 +0100
+Message-ID: <1290023834.2109.1240.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-
-> > > Add a netdev LED trigger for all Blinkenlights lovers...
-> > > Originally taken from https://dev.openwrt.org/ticket/2776
-> > > Slightly updated for 2.6.24 by Mickey Lauer <mickey@openmoko.org>
-> > > and for 2.6.36 by Eric Cooper <ecc@cmu.edu>
-> > 
-> > Nice!
-> > 
-> > > +/*
-> > > + * Configurable sysfs attributes:
-> > > + *
-> > > + * device_name - network device name to monitor
-> > > + *
-> > > + * interval - duration of LED blink, in milliseconds
-> > 
-> > This needs to go to Doc/ somewhere.
+On Wed, 2010-11-17 at 11:47 -0800, Corey Ashford wrote:
 > 
-> Documentation/ABI is the correct place for it.
+> This is an interesting approach, though for the IBM WSP (aka PowerEN) 
+> chip, the config_format would have to be at a deeper level than the PMU, 
+> because the modifiers that affect the event, vary from event to event. 
+> Either that or you'd have to provide a complex union structure.
 
-I was hoping you'd comment on the ABI itself, too. It uses 
+Eew.. how uhm creative ;-), yeah, not quite sure how to deal with that,
+I wasn't planning to make a directory for each event, just a single file
+with the u64 in it.
 
-echo "foo bar baz" > file
+> However, above you say that you want to have "a few frequently 
+> used/common events".  I thought that was the job of the perf "generic 
+> events".  My understanding was that the sysfs tree was the solution for 
+> all events, including arch-specific, and seldom-used events. 
 
-to enable/disable specific events to be "displayed". More traditional
-interface would be 
+My intent for the sysfs bits is to replace all the static stuff encoded
+in PERF_TYPE_ and PERF_COUNT_ because it simply doesn't extend to a much
+more dynamic world.
 
-echo disable > file_foo
+And GPUs/DSPs might have radically different common events than CPUs do.
 
-...
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Doing exhaustive lists in sysfs is simply going to waste tons of memory
+for no real gain.
+
+>  Ingo 
+> pushed back on a user-space library solution (like libpfm4) because he 
+> wanted event info in sysfs (or some other mechanism by which the kernel 
+> could expose event info to user space).
+
+I can't fully remember the details of that discussion.
+
+> If there is going to be no place in sysfs for arch-specific events, I'll 
+> want to start pushing for perf to be able to use a user space library again.
+> 
+> How about a compromise position: all of the arch-specific events are 
+> exposed to user space via sysfs iff some CONFIG_* variable to set to 
+> true.  Something like CONFIG_EXPOSE_ALL_HW_PERF_EVENTS_IN_SYSFS.
+> This way you would only use all that memory when it's explicitly 
+> configured in. 
+
+Ingo, any opinions?
