@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752410Ab0KQXsp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:48:45 -0500
-Received: from THUNK.ORG ([69.25.196.29]:51440 "EHLO thunker.thunk.org"
+	id S1752377Ab0KQXtX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:49:23 -0500
+Received: from mail.perches.com ([173.55.12.10]:1507 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850Ab0KQXsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:48:43 -0500
-Date: Wed, 17 Nov 2010 18:48:33 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [RFC][PATCH 1/5] [PATCH 1/5] events: Add EVENT_FS the event
- filesystem
-Message-ID: <20101117234833.GK3290@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-	Ingo Molnar <mingo@elte.hu>, Greg KH <gregkh@suse.de>,
-	linux-kernel@vger.kernel.org,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Arjan van de Ven <arjan@infradead.org>,
-	Lin Ming <ming.m.lin@intel.com>,
-	Arnaldo Carvalho de Melo <acme@redhat.com>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>
-References: <20101117005357.024472450@goodmis.org>
- <20101117005939.600541101@goodmis.org>
- <20101117033242.GB31335@suse.de>
- <20101117103914.GA21976@elte.hu>
- <1289996753.30543.35.camel@gandalf.stny.rr.com>
- <20101117174652.GC13717@Krystal>
- <1290016354.30543.71.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290016354.30543.71.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1750850Ab0KQXtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 18:49:22 -0500
+Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
+ preference tool
+From: Joe Perches <joe@perches.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jiri Kosina <jkosina@suse.cz>, Randy Dunlap <rdunlap@xenotime.net>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101117220737.2d3d7356@stein>
+References: <20101116104921.GL12986@rakim.wolfsonmicro.main>
+	 <1289919077.28741.50.camel@Joe-Laptop>
+	 <20101116183707.179964dd@schatten.dmk.lab>
+	 <20101116181226.GB26239@rakim.wolfsonmicro.main>
+	 <20101116203522.65240b18@schatten.dmk.lab>
+	 <20101116195530.GA7523@rakim.wolfsonmicro.main>
+	 <20101116122102.86e7e0b9.rdunlap@xenotime.net>
+	 <20101116230126.GB24623@opensource.wolfsonmicro.com>
+	 <20101117014427.41d85b13@stein>
+	 <alpine.LNX.2.00.1011170150060.7420@pobox.suse.cz>
+	 <20101117170746.GB19488@rakim.wolfsonmicro.main>
+	 <20101117220737.2d3d7356@stein>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Nov 2010 15:49:19 -0800
+Message-ID: <1290037759.28741.313.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 12:52:34PM -0500, Steven Rostedt wrote:
-> 
-> I still say no to stable tracepoints in modules. Once you open that
-> door, everyone will have it.
+On Wed, 2010-11-17 at 22:07 +0100, Stefan Richter wrote:
+> So, if this boring thread does at least yield the conclusion that
+> ${path}/${filename}: is a bad title prefix, at least something was
+> won. :-)
 
-What about having KVM define the stable tracepoints in the built-in
-part of the kernel, if CONFIG_KVM is Y or M, and then export the
-tracepoints, such that the tracepoints can be called from a module?
+I've changed my scripts to use this style:
 
-That way the tracepoints aren't being *defined* in a module, they are
-just being *called* from the module.  Does that seem like a reasonable
-compromise?
+Subject: [PATCH] $(basename $(dirname $file)): commit desc... 
 
-						- Ted
+until a better tool is available.
+
