@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934797Ab0KQPgJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:36:09 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:44420 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757672Ab0KQPgG convert rfc822-to-8bit (ORCPT
+	id S1758425Ab0KQPjG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:39:06 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:56267 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758210Ab0KQPjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:36:06 -0500
-Subject: Re: [RFC][PATCH 1/5] [PATCH 1/5] events: Add EVENT_FS the event
- filesystem
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Christoph Hellwig <hch@lst.de>
-In-Reply-To: <1290007019.30543.65.camel@gandalf.stny.rr.com>
-References: <20101117005357.024472450@goodmis.org>
-	 <20101117005939.600541101@goodmis.org> <20101117033242.GB31335@suse.de>
-	 <20101117103914.GA21976@elte.hu>
-	 <1289996753.30543.35.camel@gandalf.stny.rr.com>
-	 <20101117150332.GA7603@elte.hu>
-	 <1290007019.30543.65.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 17 Nov 2010 16:35:50 +0100
-Message-ID: <1290008150.2109.953.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 17 Nov 2010 10:39:04 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=f8wm_IhKjn4A:10 a=kj9zAlcOel0A:10 a=ClVPYAY4FByjUdLuiT8neg==:17 a=VwQbUJbxAAAA:8 a=6rqHouBjAAAA:8 a=OsuJWyxC5J6dQxHz35kA:9 a=1muazlLnOKmt72RTAOmti-c3HzIA:4 a=CjuIK1q_8ugA:10 a=LI9Vle30uBYA:10 a=ClVPYAY4FByjUdLuiT8neg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 66.68.83.102
+Date: Wed, 17 Nov 2010 09:39:02 -0600
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oren Laadan <orenl@cs.columbia.edu>, Kapil Arya <kapil@ccs.neu.edu>,
+        Gene Cooperman <gene@ccs.neu.edu>, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Linux Containers <containers@lists.osdl.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, xemul@sw.ru
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+Message-ID: <20101117153902.GA1155@hallyn.com>
+References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>
+ <4CD26948.7050009@kernel.org>
+ <20101104164401.GC10656@sundance.ccs.neu.edu>
+ <4CD3CE29.2010105@kernel.org>
+ <20101106053204.GB12449@count0.beaverton.ibm.com>
+ <20101106204008.GA31077@sundance.ccs.neu.edu>
+ <4CD5D99A.8000402@cs.columbia.edu>
+ <20101107184927.GF31077@sundance.ccs.neu.edu>
+ <4CD72150.9070705@cs.columbia.edu>
+ <4CE3C334.9080401@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE3C334.9080401@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 10:16 -0500, Steven Rostedt wrote:
-> What about a tool that picks up tracepoints that were only used by a
-> developer for in-field debugging, and then that tracepoint disappears
-> because of a design change. Is it OK for that tool to break with it?
+Quoting Tejun Heo (tj@kernel.org):
+> Hello, Oren.
 > 
-> Do all tools that use tracepoints require a "check" feature?
+> On 11/07/2010 10:59 PM, Oren Laadan wrote:
+> > We could work to add ABIs and APIs for each and every possible piece
+> > of state that affects userspace. And for each we'll argue forever
+> > about the design and some time later regret that it wasn't designed
+> > correctly :p
+> 
+> I'm sorry but in-kernel CR already looks like a major misdesign to me.
 
-Not sure what you mean with a 'check' feature, but I do think its useful
-to tools authors to clearly delineate between stable and debug
-tracepoints, that also facilitates
+By this do you mean the very idea of having CR support in the kernel?
+Or our design of it in the kernel?  Let's go back to July 2008, at the
+containers mini-summit, where it was unanimously agreed upon that the
+kernel was the right place (Checkpoint/Resetart [CR] under
+http://wiki.openvz.org/Containers/Mini-summit_2008_notes ), and that
+we would start by supporting a single task with no resources.  Was that
+whole discussion effectively misguided, in your opinion?  Or do you
+feel that since the first steps outlined in that discussion we've
+either "gone too far" or strayed in the subsequent design?
 
-> I guess the problem is that creators of the tools to analyze the kernel
-> have no idea of what they can count on and what they can't. Do we need a
-> process to have these tool creators request to developers to "keep this
-> tracepoint"? 
-
-the process mentioned here, if they cannot find the data they want
-through existing stable tracepoints they have to request it, or
-otherwise clearly suffer breakage whenever we feel like changing stuff.
-
-A nice aspect of devs coming to us and requesting data is that we get a
-fairly good idea of what tools are available and get to discuss the
-problem they're trying to solve.
-
-Esp. that latter point is a very good one imho, we might have a totally
-different view on some of the problems :-)
+-serge
