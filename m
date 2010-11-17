@@ -1,107 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759432Ab0KQPlM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:41:12 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49588 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759338Ab0KQPlK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:41:10 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=RJcGuM7Kzb2EI8KF8GPGek58BROk7L4gFEYTyFeT8DwfdM2j8YxYxMso4x7SZXHxcJ
-         piwClh5XjlfbqPOdn7tyNVGIQGqkzi8E1XitB8tMH4kqTdf+RlLD07HhFkesR6MLmRkk
-         RgesUSF0BoSfFgnatqbMLuqT/UhXXruAf06os=
-Subject: Re: [ANNOUNCE] New utility: 'trace'
-From: Tom Zanussi <tzanussi@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "Ted Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-In-Reply-To: <alpine.LFD.2.00.1011171529120.2900@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
-	 <20101117013700.GA3290@thunk.org> <20101117132404.GF27063@elte.hu>
-	 <1290001128.2109.785.camel@laptop>  <20101117140002.GH27063@elte.hu>
-	 <1290003110.2109.822.camel@laptop> <1290003505.2109.833.camel@laptop>
-	 <alpine.LFD.2.00.1011171529120.2900@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Nov 2010 09:41:06 -0600
-Message-ID: <1290008466.1921.21.camel@elnicho>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1758902Ab0KQPne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:43:34 -0500
+Received: from hera.kernel.org ([140.211.167.34]:50494 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756169Ab0KQPnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 10:43:33 -0500
+Message-ID: <4CE3F773.2010303@kernel.org>
+Date: Wed, 17 Nov 2010 16:40:35 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Dan Smith <danms@us.ibm.com>
+CC: Gene Cooperman <gene@ccs.neu.edu>, Oren Laadan <orenl@cs.columbia.edu>,
+        Kapil Arya <kapil@ccs.neu.edu>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, hch@lst.de
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>	<4CD26948.7050009@kernel.org>	<20101104164401.GC10656@sundance.ccs.neu.edu>	<4CD3CE29.2010105@kernel.org>	<AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com>	<4CD5DCE3.3000109@cs.columbia.edu>	<20101107194222.GG31077@sundance.ccs.neu.edu>	<4CD71A6B.3020905@cs.columbia.edu>	<20101107230516.GJ31077@sundance.ccs.neu.edu>	<4CD774CA.8030004@cs.columbia.edu>	<20101108162630.GN31077@sundance.ccs.neu.edu>	<8739rbpreb.fsf@localhost6.localdomain6> <4CE3B927.1020401@kernel.org> <8762vwvubr.fsf@localhost6.localdomain6>
+In-Reply-To: <8762vwvubr.fsf@localhost6.localdomain6>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Nov 2010 15:40:37 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 15:37 +0100, Thomas Gleixner wrote:
-> On Wed, 17 Nov 2010, Peter Zijlstra wrote:
-> 
-> > On Wed, 2010-11-17 at 15:11 +0100, Peter Zijlstra wrote:
-> > > The idea was to not let the filter engine work on the trace data (once
-> > > its gathered) but on the trace argument right at the beginning of the
-> > > tracepoint callchain, since some of the trace data is an expression of
-> > > the trace argument (say next->prio instead of next), the trace
-> > > expression wouldn't stay invariant, you'd have to write a different
-> > > filter for the same effect.
-> > > 
-> > > So I think it would be wise to make this change sooner rather than
-> > > later. 
-> > 
-> > Also, I see a lot of overlap with the dynamic probes stuff which needs
-> > the help of magic dwarves to come up with the right data to gather.
-> > 
-> > Merging the dynamic tracepoint and filter stuff would be nice, there's
-> > no way you can express next->prio without the help of these short
-> > buggers with large axes.
-> > 
-> > The trouble is that the dynamic tracepoint stuff is privileged for good
-> > reasons, try next+0x1000000 and you're out in the woods, priv. only
-> > filters otoh just doesn't sound too hot.
-> > 
-> > Another nasty thing is that you actually need to have these dwarves
-> > present, which means having the -debug package installed.
-> 
-> That sounds utterly insane for the basic use case where you trace
-> application context. There is no point to filter out the tracepoints,
-> really. Postprocessing can do that just fine.
-> 
-> I consider myself a power user of tracing, but hell I never used any
-> of those filters in a real use case. awk, grep, scripting languages do
-> just a better job and you don't miss any data just because you got
-> your filter expression slightly wrong. Postprocessing always wins in
-> that regard.
-> 
-> The only reason why these filters might make sense is to reduce the
-> trace volume on system wide traces in production environments, but
-> that's a completely different story. These scenarios can do with the
-> dynamic tracepoint stuff and the custom filtering w/o putting the
-> burden on the majority of users.
-> 
+Hello,
 
-Yeah, in my mind, the main point of the filters was to be a 'blunt
-force' instrument preventing userspace from being overwhelmed by events.
-The real filtering would happen in userspace with e.g. real scripting
-languages.
-
-Tom 
-
-> Thanks,
+On 11/17/2010 04:33 PM, Dan Smith wrote:
+> TH> If it ever becomes a general enough problem (which I extremely
+> TH> strongly doubt),
 > 
-> 	tglx
+> Migration of a container?  Yeah, it's one of the primary reasons for
+> doing what we're doing :)
 
+Well, then push for the feature.  If the rationale is strong enough,
+it'll get in.
 
+> TH> we can think about allowing processes in a netns to change
+> TH> sequence number but that would be a single setsockopt option
+> 
+> Yeah, well there's more than that, of course, if you want to be able
+> to checkpoint a socket in any state.  Buffers, time-wait, etc.
+
+I haven't really thought about it too deeply but for all other misc
+states, you should be able to emulate it by talking to a netfilter
+module.  The reason why I suggested sequence number changing setsocket
+option is because that is the only performance sensitive part and with
+that you should be able to resume live sockets without conntracking.
+For cold paths, using netfilter module during resume should do, right?
+
+> TH> instead of the horror show of dumping in-kernel data structures in
+> TH> binary blob.
+> 
+> Well, as should be evident from a review of the code, we don't dump
+> binary kernel data structures as a general rule.  We canonicalize them
+> into checkpoint headers on the way out and build the new data
+> structures (or use existing kernel interfaces to do so) on the way in.
+> You know, just like netlink does.
+
+netlink interaction is defined by ABI.
+
+> It has even been suggested that we do this with netlink instead, to
+> mirror the other "horror show" tools that we all use on a daily basis.
+> We're not opposed to this, but we do have some concerns about
+> performance.
+
+The horror show part is dumping internal data structure without due
+scrutinization in a way which can only ever be useful for CR when most
+of the same states are already exported via ABI defined ways.
+
+Thanks.
+
+-- 
+tejun
