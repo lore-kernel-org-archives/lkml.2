@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755839Ab0KQFn2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 00:43:28 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43774 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753642Ab0KQFn1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 00:43:27 -0500
+	id S1758451Ab0KQFoS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 00:44:18 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45716 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753642Ab0KQFoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 00:44:17 -0500
+Message-ID: <4CE36B8B.3040403@zytor.com>
+Date: Tue, 16 Nov 2010 21:43:39 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
 MIME-Version: 1.0
-X-Originating-IP: [192.163.20.232]
-In-Reply-To: <AANLkTi=TxKKxjLdK-6Jwu9oBCiGHXJ8UxrAQH+C82wNK@mail.gmail.com>
-References: <1289394446-14021-1-git-send-email-pavan_savoy@ti.com>
-	<20101116225418.GA15101@vigoh>
-	<AANLkTi=TxKKxjLdK-6Jwu9oBCiGHXJ8UxrAQH+C82wNK@mail.gmail.com>
-Date: Wed, 17 Nov 2010 11:13:26 +0530
-Message-ID: <AANLkTi=NH8gbW8iCKOQN0bmbL=nqewsZkUik+VkvWUgi@mail.gmail.com>
-Subject: Re: [PATCH v5] Bluetooth: btwilink driver
-From: Pavan Savoy <pavan_savoy@sify.com>
-To: Vitaly Wool <vitalywool@gmail.com>
-Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>, marcel@holtmann.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Baruch Siach <baruch@tkos.co.il>
+CC: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Alex Gershgorin <agersh@rambler.ru>, Indan Zupancic <indan@nul.nu>
+Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
+References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il> <4CE0FE71.6000303@suse.cz> <20101115100838.GA3649@jasper.tkos.co.il> <4CE10B32.8090705@suse.cz> <c30e46c1b5343789b6475722071c3020.squirrel@webmail.greenhost.nl> <20101116110444.2f0cabd9@lxorguk.ukuu.org.uk> <4CE28299.30907@suse.cz> <20101117053251.GA26928@jasper.tkos.co.il>
+In-Reply-To: <20101117053251.GA26928@jasper.tkos.co.il>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 4:50 AM, Vitaly Wool <vitalywool@gmail.com> wrote:
->>> +     /* Registration with ST layer is successful,
->>> +      * hardware is ready to accept commands from HCI core.
->>> +      */
->>> +     if (test_and_set_bit(HCI_RUNNING, &hdev->flags)) {
->>> +             clear_bit(HCI_RUNNING, &hdev->flags);
->>> +             err = st_unregister(ST_BT);
->>> +             if (err)
->>> +                     BT_ERR("st_unregister() failed with error %d", err);
->>> +             hst->st_write = NULL;
->>> +     }
+On 11/16/2010 09:32 PM, Baruch Siach wrote:
+> Hi Jiri, Alan,
+> 
+> On Tue, Nov 16, 2010 at 02:09:45PM +0100, Jiri Slaby wrote:
+>> On 11/16/2010 12:04 PM, Alan Cox wrote:
+>>> Sixteen devices is way too many for drivers/misc - it only has 256 total
+>>> and only half of those are dynamic.
 >>
->>
->> What are you trying to do here? test_and_set_bit() result doesn't say
->> nothing about error and you shall put test_and_set_bit should be in the
->> beginning, to know if your device is already opened or not and then
->> clear_bit if some error ocurrs during the function.
->>
->
-> Yeap, this piece of code beats me is well. Why is it an error if this
-> bit wasn't already set?
+>> Seconded. (And it's a quarter, not even a half like I already wrote.)
+> 
+> If I reduce the maximal number of devices to 4, will it make any difference? I 
+> don't mind even having a limit of 2 by default, as long as a simple define 
+> change is enough to raise this limit.
+> 
+Just use a major.  No biggie.
 
-Vitaly, Gustavo,
+	-hpa
 
-I suppose I never understood HCI_RUNNING flag that way, as in an error
-check mechanism to avoid multiple hci0 ups.
 
-What I understood was that HCI_RUNNING suggested as to when hci0 was
-ready to be used. With this understanding, I wanted to make sure I
-downloaded the firmware for the chip before I proclaim to the world
-that the hci0 is ready to be used, as in HCI_RUNNING.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-For example, I didn't want my _send_frame to be called before I did
-the firmware download - since firmware download takes time - 45kb
-send/wait commands :(
-
-But I suppose I now understand - What I would rather do is test_bit in
-the beginning of function and do a set_bit at the end of function -
-does this make sense ?
-
-> ~Vitaly
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-bluetooth" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
