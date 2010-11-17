@@ -1,116 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab0KQAZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 19:25:46 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:43461 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755498Ab0KQAZo (ORCPT
+	id S932603Ab0KQA0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 19:26:19 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:39995 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755498Ab0KQA0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 19:25:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=img4aNdFLnRJzhyp4a9bfAdoZwmT52rRaQzY1qgMe0zk4jR3LXpFjhH8j019lFv12s
-         Id0vwbXhE62v5TITMNvw==
-Date: Tue, 16 Nov 2010 16:25:35 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Bodo Eggert <7eggert@gmx.de>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ying Han <yinghan@google.com>, Bodo Eggert <7eggert@web.de>,
-        Mandeep Singh Baines <msb@google.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-Subject: Re: [PATCH] Revert oom rewrite series
-In-Reply-To: <alpine.LSU.0.999.1011170035050.5484@be1.lrz>
-Message-ID: <alpine.DEB.2.00.1011161613030.23571@chino.kir.corp.google.com>
-References: <20101114133543.E00A.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011141345100.22262@chino.kir.corp.google.com> <alpine.LNX.2.00.1011152255580.17235@be10.lrz> <alpine.DEB.2.00.1011151537580.29081@chino.kir.corp.google.com>
- <alpine.LSU.0.999.1011170035050.5484@be1.lrz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Tue, 16 Nov 2010 19:26:18 -0500
+Subject: Re: [PATCH] Improve clocksource unstable warning
+From: john stultz <johnstul@us.ibm.com>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        pc@us.ibm.com
+In-Reply-To: <AANLkTim27c_pHpawoGw3VyV9qQAF_8twJPTr5kqt6jhW@mail.gmail.com>
+References: <80b5a10ac1a6ef51afca3c113b624bf1b5049452.1289427381.git.luto@mit.edu>
+	 <AANLkTi=s+0i36qd-bd3=MdeiJS-TThos9RmeUCsfHyy=@mail.gmail.com>
+	 <AANLkTimAfULHTkyLVpGv5r3DcSfVXzsgGiHgTdamNpt2@mail.gmail.com>
+	 <1289605221.3292.53.camel@localhost.localdomain>
+	 <AANLkTi=iso2+R6-5+2ipe39JLHw9o0TgMGCRSTqd5qQz@mail.gmail.com>
+	 <AANLkTikd0rstGDDcNdb8u2_H09giaZVxPY1Y5qaiy6_O@mail.gmail.com>
+	 <1289607722.3292.84.camel@localhost.localdomain>
+	 <1289609931.3292.87.camel@localhost.localdomain>
+	 <AANLkTim27c_pHpawoGw3VyV9qQAF_8twJPTr5kqt6jhW@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 16 Nov 2010 16:26:10 -0800
+Message-ID: <1289953570.3860.34.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010, Bodo Eggert wrote:
-
-> The old oom killer's task was to guess the best victim to kill. For me, it 
-> did a good job (but the system kept thrashing for too long until it kicked
-> the offender). Looking at CAP_SYS_RESOURCE was one way to recognize 
-> important processes.
+On Tue, 2010-11-16 at 19:05 -0500, Andrew Lutomirski wrote:
+> On Fri, Nov 12, 2010 at 7:58 PM, john stultz <johnstul@us.ibm.com> wrote:
+> > On Sat, 2010-11-13 at 00:22 +0000, john stultz wrote:
+> >> On Fri, 2010-11-12 at 18:51 -0500, Andrew Lutomirski wrote:
+> >> > Also wrong if cs_elapsed is just slightly less than wd_wrapping_time
+> >> > but the wd clocksource runs enough faster that it wrapped.
+> >>
+> >> Ok. Good point, that's a problem. Hrmmmm. Too much math for Friday. :)
+> >
+> > I have a hard time leaving things alone. :)
+> >
+> > So this still has the issue of the u64%u64 won't work on 32bit systems,
+> > but I think once I rework the modulo bit the following should be what
+> > you were describing.
+> >
+> > It is ugly, so let me know if you have a cleaner way.
+> >
 > 
+> I'm playing with this stuff now, and it looks like my (invariant,
+> constant, single-package i7) TSC has a max_idle_ns of just over 3
+> seconds.  I'm confused.
 
-CAP_SYS_RESOURCE does not imply the task is important.
+Yea. I hit this wall the other day as well. So my patch is invalid
+because its assuming the TSC deltas will be large, but for any
+unreasonable delay, we'll actually end up with multiply overflows,
+causing the tsc ns interval to be invalid as well.
 
-There's a problem when the kernel is oom; killing a thread that is getting 
-work done is one of the most serious remedies the kernel will ever do to 
-allow forward progress.  In almost all scenarios (except in some cpuset or 
-memcg configurations), it's a userspace configuration issue that exhausts 
-memory and the VM finds no other alternative.  CAP_SYS_RESOURCE threads 
-have access to unbounded amounts of resources and thus can use an 
-extremely large amount of memory very quickly and at a detriment to other 
-threads that may be as important to more important.  Considering them any 
-different is an unsubstantiated and undefined behavior that should not be 
-considered in the heuristic _unless_ the administrator or the task itself 
-tells the kernel via oom_score_adj of its priority.
+I'm starting to think we should be pushing the watchdog check into the
+timekeeping accumulation loop (or have it hang off of the accumulation
+loop).
 
-> > The old heuristics were a mixture of arbitrary values that didn't adjust 
-> > scores based on a unit and would often cause the incorrect task to be 
-> > targeted because there was no clear goal being achieved.  The new 
-> > heuristic has a solid goal: to identify and kill the most memory-hogging 
-> > task that is eligible given the context in which the oom occurs.  If you 
-> > disagree with that goal and want any of the old heursitics reintroduced, 
-> > please show that it makes sense in the oom killer.
-> 
-> The first old OOM killer did the same as you promise the current one does,
-> except for your bugfixes. That's why it killed the wrong applications and
-> all the heuristics were added until the complaints stopped.
-> 
+1) The clocksource cyc2ns conversion code is built with assumptions
+linked to how frequently we accumulate time via update_wall_time().
 
-No, the old oom killer did not always kill the application that used the 
-most amount of memory; it considered other factors with arbitrary point 
-deductions such as nice level, runtime, CAP_SYS_RAWIO, CAP_SYS_RESOURCE, 
-etc.  We had to remove those heuristics internally in older kernels as 
-well because it would often allow a task to runaway using a massive amount 
-of memory because of leaks and kill everything else on the system before 
-targeting the appropriate task.  At that point, it left the system with 
-barely anything running and no work was getting done.
+2) update_wall_time() happens in timer irq context, so we don't have to
+worry about being delayed. If an irq storm or something does actually
+cause the timer irq to be delayed, we have bigger issues. 
 
-> Off cause I did not yet test your OOM killer, maybe it really is better.
-> Heuristics tend to rot and you did much work to make it right.
-> 
-> I don't want the old OOM killer back, but I don't want you to fall
-> into the same pits as the pre-old OOM killer used to do.
-> 
+The only trouble with this, is that if we actually push the max_idle_ns
+out to something like 10 seconds on the TSC, we could end up having the
+watchdog clocksource wrapping while we're in nohz idle.  So that could
+be ugly. Maybe if the current clocksource needs the watchdog
+observations, we should cap the max_idle_ns to the smaller of the
+current clocksource and the watchdog clocksource.
 
-Thanks, and that's why I'm trying to avoid additional heuristics such 
-CAP_SYS_RESOURCE where the priority is _implied_ rather than _proven_.  If 
-CAP_SYS_RESOURCE was defined to be more preferred to stay alive, then I'd 
-have no argument; it isn't.
+Oof. Its just ugly. If I can get some time this week I'll try to take a
+rough swing at refactoring that code.
 
-> > > PS) Mapping an exponential value to a linear score is bad. E.g. A
-> > >     oom_adj of 8 should make an 1-MB-process as likely to kill as
-> > >     a 256-MB-process with oom_adj=0.
-> > > 
-> > 
-> > To show that, you would have to show that an application that exists today 
-> > uses an oom_adj for something other than polarization and is based on a 
-> > calculation of allowable memory usage.  It simply doesn't exist.
-> 
-> No such application should exist because the OOM killer should DTRT.
-> oom_adj was supposed to let the sysadmin lower his mission-critical
-> DB's score to be just lower than the less-important tasks, or to
-> point the kernel to his ever-faulty and easily-restarted browser.
-> 
+thanks
+-john
 
-oom_score_adj allows use to define when an application is using more 
-memory than expected and is often helpful in cpuset, memcg, or mempolicy 
-constrained cases as well.  We'd like to be able to say that 30% of 
-available memory should be discounted from a particular task that is 
-expected to use 30% more memory than others without getting preferred.  
-oom_score_adj can do that, oom_adj could not.
+
+
+
