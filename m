@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935694Ab0KQXJT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:09:19 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53411 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759035Ab0KQXJR (ORCPT
+	id S935715Ab0KQXKH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:10:07 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42987 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935648Ab0KQXKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:09:17 -0500
-Date: Wed, 17 Nov 2010 15:08:14 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Jan Kara <jack@suse.cz>, Chris Mason <chris.mason@oracle.com>,
-        Dave Chinner <david@fromorbit.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jens Axboe <axboe@kernel.dk>,
-        Christoph Hellwig <hch@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, <linux-fsdevel@vger.kernel.org>,
+	Wed, 17 Nov 2010 18:10:04 -0500
+Date: Wed, 17 Nov 2010 15:09:31 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
+        <paulmck@linux.vnet.ibm.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/13] writeback: IO-less balance_dirty_pages()
-Message-Id: <20101117150814.393ab033.akpm@linux-foundation.org>
-In-Reply-To: <20101117042849.410279291@intel.com>
-References: <20101117042720.033773013@intel.com>
-	<20101117042849.410279291@intel.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Subject: Re: linux-next: Tree for November 17
+Message-Id: <20101117150931.48cbd397.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTimKbxE6MQrp_pdgk-HAUxXU+iukFFPvFtsbP+DB@mail.gmail.com>
+References: <20101117140956.a8264c75.sfr@canb.auug.org.au>
+	<AANLkTimKbxE6MQrp_pdgk-HAUxXU+iukFFPvFtsbP+DB@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -31,48 +27,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010 12:27:21 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
+On Wed, 17 Nov 2010 23:53:14 +0100 Zimny Lech wrote:
 
-> Since the task will be soft throttled earlier than before, it may be
-> perceived by end users as performance "slow down" if his application
-> happens to dirty more than ~15% memory.
-
-writeback has always had these semi-bogus assumptions that all pages
-are the same, and it can sometimes go very wrong.
-
-A chronic case would be a 4GB i386 machine where only 1/4 of memory is
-useable for GFP_KERNEL allocations, filesystem metadata and /dev/sdX
-pagecache.
-
-When you think about it, a lot of the throttling work being done in
-writeback is really being done on behalf of the page allocator (and
-hence page reclaim).  But what happens if the workload is mainly
-hammering away at ZONE_NORMAL, but writeback is considering ZONE_NORMAL
-to be the same thing as ZONE_HIGHMEM?
-
-Or vice versa, where page-dirtyings are all happening in lowmem?  Can
-writeback then think that there are plenty of clean pages (because it's
-looking at highmem as well) so little or no throttling is happening? 
-If so, what effect does this have upon GFP_KERNEL/GFP_USER allocation?
-
-And bear in mind that the user can tune the dirty levels.  If they're
-set to 10% on a machine on which 25% of memory is lowmem then ill
-effects might be rare.  But if the user tweaks the thresholds to 30%
-then can we get into problems?  Such as a situation where 100% of
-lowmem is dirty and throttling isn't cutting in?
+[adding Paul McKenney]
 
 
+> Salve!
+> 
+> 2010/11/17 Stephen Rothwell <sfr@canb.auug.org.au>:
+> > Hi all,
+> >
+> > Changes since 20101116:
+> 
+> Might be something new
+> 
+>   CC      kernel/rcutiny.o
+> In file included from /home/test/linux-2.6/kernel/rcutiny_plugin.h:264:0,
+>                  from /home/test/linux-2.6/kernel/rcutiny.c:53:
+> /home/test/linux-2.6/kernel/rtmutex_common.h: In function 'task_has_pi_waiters':
+> /home/test/linux-2.6/kernel/rtmutex_common.h:81:29: error: 'struct
+> task_struct' has no member named 'pi_waiters'
+> /home/test/linux-2.6/kernel/rtmutex_common.h: In function 'task_top_pi_waiter':
+> /home/test/linux-2.6/kernel/rtmutex_common.h:87:9: error: 'struct
+> task_struct' has no member named 'pi_waiters'
+> make[2]: *** [kernel/rcutiny.o] Error 1
+> make[1]: *** [kernel] Error 2
+> make: *** [sub-make] Error 2
+> 
+> 
+> Probably know issue
+>   CC      sound/oss/ad1848.o
+> /home/test/linux-2.6/sound/oss/ad1848.c:2867:32: warning: 'id_table'
+> defined but not used
+>   CC      sound/oss/mpu401.o
+> make[3]: *** No rule to make target `/etc/sound/trxpro.hex', needed by
+> `sound/oss/trix_boot.h'.  Stop.
+> make[2]: *** [sound/oss] Error 2
+> make[1]: *** [sound] Error 2
+> make: *** [sub-make] Error 2
 
-So please have a think about that and see if you can think of ways in
-which this assumption can cause things to go bad.  I'd suggest
-writing some targetted tests which write to /dev/sdX (to generate
-lowmem-only dirty pages) and which read from /dev/sdX (to request
-allocation of lowmem pages).  Run these tests in conjunction with tests
-which exercise the highmem zone as well and check that everything
-behaves as expected.
 
-Of course, this all assumes that you have a 4GB i386 box :( It's almost
-getting to the stage where we need a fake-zone-highmem option for
-x86_64 boxes just so we can test this stuff.
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
