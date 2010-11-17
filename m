@@ -1,24 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab0KQXjB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:39:01 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31452 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab0KQXi7 (ORCPT
+	id S1752220Ab0KQXj3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:39:29 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41498 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750940Ab0KQXj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:38:59 -0500
-Date: Wed, 17 Nov 2010 15:38:46 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-        driverdevel <devel@driverdev.osuosl.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Ramesh Agarwal <ramesh.agarwal@intel.com>
-Subject: [PATCH -next] staging: clearpad_tm1217 depends on INPUT
-Message-Id: <20101117153846.072dc988.randy.dunlap@oracle.com>
-In-Reply-To: <20101117140956.a8264c75.sfr@canb.auug.org.au>
-References: <20101117140956.a8264c75.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Wed, 17 Nov 2010 18:39:27 -0500
+Date: Wed, 17 Nov 2010 15:38:27 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Li Shaohua <shaohua.li@intel.com>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 06/13] writeback: bdi write bandwidth estimation
+Message-Id: <20101117153827.e9f169d1.akpm@linux-foundation.org>
+In-Reply-To: <1290036299.2109.1288.camel@laptop>
+References: <20101117042720.033773013@intel.com>
+	<20101117042850.002299964@intel.com>
+	<20101117150837.a18d56c1.akpm@linux-foundation.org>
+	<1290036299.2109.1288.camel@laptop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -26,37 +33,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Thu, 18 Nov 2010 00:24:59 +0100
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-clearpad_tm1217 driver uses many input_() interfaces, so it should
-depend on INPUT.
+> On Wed, 2010-11-17 at 15:08 -0800, Andrew Morton wrote:
+> > On Wed, 17 Nov 2010 12:27:26 +0800
+> > Wu Fengguang <fengguang.wu@intel.com> wrote:
+> > 
+> > > +     w = min(elapsed / (HZ/100), 128UL);
+> > 
+> > I did try setting HZ=10 many years ago, and the kernel blew up.
+> > 
+> > I do recall hearing of people who set HZ very low, perhaps because
+> > their huge machines were seeing performance prolems when the timer tick
+> > went off.  Probably there's no need to do that any more.
+> > 
+> > But still, we shouldn't hard-wire the (HZ >= 100) assumption if we
+> > don't absolutely need to, and I don't think it is absolutely needed
+> > here.  
+> 
+> People who do cpu bring-up on very slow FPGAs also lower HZ as far as
+> possible.
 
-clearpad_tm1217.c:(.text+0xf19ac): undefined reference to `input_unregister_device'
-clearpad_tm1217.c:(.text+0xf1b19): undefined reference to `input_event'
-clearpad_tm1217.c:(.text+0xf1b31): undefined reference to `input_event'
-clearpad_tm1217.c:(.text+0xf1bb4): undefined reference to `input_event'
-clearpad_tm1217.c:(.text+0xf1bf2): undefined reference to `input_event'
-drivers/built-in.o:clearpad_tm1217.c:(.text+0xf1c08): more undefined references to `input_event' follow
-clearpad_tm1217.c:(.text+0xf1df3): undefined reference to `input_allocate_device'
-clearpad_tm1217.c:(.text+0xf1eac): undefined reference to `input_set_abs_params'
-clearpad_tm1217.c:(.text+0xf1ed1): undefined reference to `input_set_abs_params'
-clearpad_tm1217.c:(.text+0xf1ed8): undefined reference to `input_register_device'
-clearpad_tm1217.c:(.text+0xf2040): undefined reference to `input_unregister_device'
-clearpad_tm1217.c:(.text+0xf204b): undefined reference to `input_free_device'
+	grep -r "[^a-zA-Z0-9_]HZ[ ]*/[ ]*100[^0-9]" .
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Ramesh Agarwal <ramesh.agarwal@intel.com>
----
- drivers/staging/cptm1217/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
---- linux-next-20101117.orig/drivers/staging/cptm1217/Kconfig
-+++ linux-next-20101117/drivers/staging/cptm1217/Kconfig
-@@ -2,6 +2,7 @@ config TOUCHSCREEN_CLEARPAD_TM1217
- 	tristate "Synaptics Clearpad TM1217"
- 	depends on I2C
- 	depends on GPIOLIB
-+	depends on INPUT
- 	help
- 	  Say Y here if you have a Synaptics Clearpad TM1217 Controller
- 
+:-(
