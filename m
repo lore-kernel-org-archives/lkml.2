@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934848Ab0KQP2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:28:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40074 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758252Ab0KQP2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:28:44 -0500
-Subject: Re: [PATCH] libata: remove unlock+relock cycle in ata_scsi_queuecmd
-From: James Bottomley <James.Bottomley@suse.de>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-ide@vger.kernel.org,
-        linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-In-Reply-To: <4CE38D70.4010507@garzik.org>
-References: <20101117062958.GA2894@havoc.gtf.org>
-	 <AANLkTikQysiwSV_m38vKaEuPQ=NH10o2s69d=aNGOhLr@mail.gmail.com>
-	 <4CE38D70.4010507@garzik.org>
+	id S934732Ab0KQP3D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:29:03 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:53655 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933835Ab0KQP27 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 10:28:59 -0500
+Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering
+ writeback
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+In-Reply-To: <20101117125756.GA5576@amd>
+References: <1289996638-21439-1-git-send-email-walken@google.com>
+	 <1289996638-21439-4-git-send-email-walken@google.com>
+	 <20101117125756.GA5576@amd>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Nov 2010 09:28:39 -0600
-Message-ID: <1290007719.4736.9.camel@mulgrave.site>
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 17 Nov 2010 16:28:54 +0100
+Message-ID: <1290007734.2109.941.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 03:08 -0500, Jeff Garzik wrote:
-> On 11/17/2010 01:44 AM, Linus Torvalds wrote:
-> > On Tue, Nov 16, 2010 at 10:29 PM, Jeff Garzik<jeff@garzik.org>  wrote:
-> >>
-> >> +       spin_lock(shost->host_lock);
-> >> +       scsi_cmd_get_serial(shost, cmd);
-> >>         spin_unlock(shost->host_lock);
-> >
-> > This is just sad.
-> >
-> > How important is that serial number? So important that we need to do a
-> > spinlock over it here? And it _must_ be per-shost?
+On Wed, 2010-11-17 at 23:57 +1100, Nick Piggin wrote:
+> On Wed, Nov 17, 2010 at 04:23:58AM -0800, Michel Lespinasse wrote:
+> > When faulting in pages for mlock(), we want to break COW for anonymous
+> > or file pages within VM_WRITABLE, non-VM_SHARED vmas. However, there is
+> > no need to write-fault into VM_SHARED vmas since shared file pages can
+> > be mlocked first and dirtied later, when/if they actually get written to.
+> > Skipping the write fault is desirable, as we don't want to unnecessarily
+> > cause these pages to be dirtied and queued for writeback.
 > 
-> Quite unimportant.  Quoting James from 
-> http://marc.info/?l=linux-kernel&m=128949079704323&w=2
-> > There are only a few drivers left that actually make use of a serial
-> > number.  Of those, the only modern ones are qla4, lpfc, mpt2sas and
-> > megaraid.
-> >
-> > So the next logical step seems to be eliminate the overloading of the
-> > serial number zero value, which removes the last mid-layer use (dpt_i2o
-> > seems to abuse this unnecessarily as well), then the serial number code
-> > can be pushed down into the queuecommand routines of only those drivers
-> > that actually use it.  None of the modern ones seems to have a
-> > legitimate use, so I think their uses can mostly be eliminated.  Thus,
-> > we might be able to get away with a simple queuecommand push down and
-> > never bother with atomics for this (since it's unlikely the legacy users
-> > would convert away from a lock wrapping their queuecommand routines).
-> 
-> 
-> Looking solely at the SCSI code (ie. ignoring LLD code), it seems like 
-> the magic number zero for serial_number is signaling a boolean condition 
-> "are we an EH command?"
-> 
-> EH tests this at the very beginning of the abort/reset/explode error 
-> handling sequence, presumably to avoid recursive EH invocations 
-> (scsi_try_to_abort_cmd).
-> 
-> So maybe an EH expert (Tejun?) can correct me here, but I think we may 
-> be able to completely the lock/get-serial/unlock sequence from libata, 
-> as long as scsi_init_cmd_errh() reliably sets an "I am an EH command" flag.
-> 
-> Would be nice if true...
+> It's not just to break COW, but to do block allocation and such
+> (filesystem's page_mkwrite op). That needs to at least be explained
+> in the changelog.
 
-Right ... I couldn't persuade anyone else to do it, so I'll probably end
-up coding it.  It looks like the serial number zero check might be
-bogus.  If so I'll remove it, then push the serial number acquisition
-down only into the locked queuecommand of only those drivers that
-actually use it (which were listed in the quoted email, and which might
-have a big impetus to remove it if the use is trivial).  Then we can
-begin unwinding the locking.
+Agreed, the 0/3 description actually does mention this.
 
-James
+> Filesystem doesn't have a good way to fully pin required things
+> according to mlock, but page_mkwrite provides some reasonable things
+> (like block allocation / reservation).
+
+Right, but marking all pages dirty isn't really sane. I can imagine
+making the reservation but not marking things dirty solution, although
+it might be lots harder to implement, esp since some filesystems don't
+actually have a page_mkwrite() implementation.
 
 
