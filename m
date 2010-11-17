@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377Ab0KQXtX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:49:23 -0500
-Received: from mail.perches.com ([173.55.12.10]:1507 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850Ab0KQXtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:49:22 -0500
-Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
- preference tool
-From: Joe Perches <joe@perches.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jiri Kosina <jkosina@suse.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101117220737.2d3d7356@stein>
-References: <20101116104921.GL12986@rakim.wolfsonmicro.main>
-	 <1289919077.28741.50.camel@Joe-Laptop>
-	 <20101116183707.179964dd@schatten.dmk.lab>
-	 <20101116181226.GB26239@rakim.wolfsonmicro.main>
-	 <20101116203522.65240b18@schatten.dmk.lab>
-	 <20101116195530.GA7523@rakim.wolfsonmicro.main>
-	 <20101116122102.86e7e0b9.rdunlap@xenotime.net>
-	 <20101116230126.GB24623@opensource.wolfsonmicro.com>
-	 <20101117014427.41d85b13@stein>
-	 <alpine.LNX.2.00.1011170150060.7420@pobox.suse.cz>
-	 <20101117170746.GB19488@rakim.wolfsonmicro.main>
-	 <20101117220737.2d3d7356@stein>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Nov 2010 15:49:19 -0800
-Message-ID: <1290037759.28741.313.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752536Ab0KQXtt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:49:49 -0500
+Received: from tango.0pointer.de ([85.214.72.216]:37114 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab0KQXts (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 18:49:48 -0500
+Date: Thu, 18 Nov 2010 00:49:28 +0100
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101117234928.GA32624@tango.0pointer.de>
+References: <20101116170312.GA19327@tango.0pointer.de>
+ <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+ <20101116181603.GC19327@tango.0pointer.de>
+ <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+ <20101116202839.GC27235@tango.0pointer.de>
+ <20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
+ <AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
+ <20101117223411.GA23983@tango.0pointer.de>
+ <1290033435.2109.1282.camel@laptop>
+ <20101117224547.GA26008@tango.0pointer.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101117224547.GA26008@tango.0pointer.de>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 22:07 +0100, Stefan Richter wrote:
-> So, if this boring thread does at least yield the conclusion that
-> ${path}/${filename}: is a bad title prefix, at least something was
-> won. :-)
+On Wed, 17.11.10 23:45, Lennart Poettering (mzxreary@0pointer.de) wrote:
 
-I've changed my scripts to use this style:
+> There's currently no global option to disable the same logic in systemd
+> when it creates 'cpu' cgroups for the various services it runs. However,
+> you can disable that individually with "ControlGroups=cpu:/" in the
+> .service files. I will now add a global option as well.
 
-Subject: [PATCH] $(basename $(dirname $file)): commit desc... 
+This global option is now commited to systemd git.
 
-until a better tool is available.
+Lennart
 
+-- 
+Lennart Poettering - Red Hat, Inc.
