@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934656Ab0KQLxN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 06:53:13 -0500
-Received: from mga11.intel.com ([192.55.52.93]:22594 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934550Ab0KQLxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 06:53:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,210,1288594800"; 
-   d="scan'208";a="858501258"
-Date: Wed, 17 Nov 2010 11:33:14 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Mike Frysinger <vapier@gentoo.org>, Feng Tang <feng.tang@intel.com>,
-        Tobias Klauser <tklauser@distanz.ch>, yong.y.wang@intel.com,
-        qi.wang@intel.com, kok.howg.ewe@intel.com,
-        andrew.chih.howe.khor@intel.com
-Subject: Re: [PATCH v5] EG20T: Update PCH_UART driver to 2.6.36
-Message-ID: <20101117113314.5f2db145@linux.intel.com>
-In-Reply-To: <4CE3281A.4050709@dsn.okisemi.com>
-References: <4CE3281A.4050709@dsn.okisemi.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S934681Ab0KQLxa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 06:53:30 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:59292 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934581Ab0KQLx2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 06:53:28 -0500
+Subject: Re: [PATCH -v4 1/2] lib, Make gen_pool memory allocator lockless
+From: Peter Zijlstra <peterz@infradead.org>
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: Huang Ying <ying.huang@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+In-Reply-To: <AANLkTi=X2noJJwJwWh30-ac76f-pN5W0cD2c9w0F1EeK@mail.gmail.com>
+References: <1289868791-16658-1-git-send-email-ying.huang@intel.com>
+	 <1289868791-16658-2-git-send-email-ying.huang@intel.com>
+	 <20101116135038.fcaa90ca.akpm@linux-foundation.org>
+	 <1289960281.8719.1218.camel@yhuang-dev> <1289990458.2109.675.camel@laptop>
+	 <AANLkTi=X2noJJwJwWh30-ac76f-pN5W0cD2c9w0F1EeK@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 17 Nov 2010 12:53:16 +0100
+Message-ID: <1289994796.2109.722.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010 09:55:54 +0900
-Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com> wrote:
-
-> Hi Alan,
+On Wed, 2010-11-17 at 19:47 +0800, huang ying wrote:
+> On Wed, Nov 17, 2010 at 6:40 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Wed, 2010-11-17 at 10:18 +0800, Huang Ying wrote:
+> >>
+> >> cmpxchg has been used in that way by ftrace and perf for a long time. So
+> >> I agree to make it a requirement on future architecture ports.
+> >
+> > Neither mandate an architecture do this though, only that when an
+> > architecture wants to support either feature and has NMIs (not all archs
+> > have NMI equivalents) it has to be safe.
 > 
-> I have modified for your indications.
->  - Delete unnecessary loop at tty_intert_flip_string processing.
->  - Replace pr_info to pr_debug in case tty_port_tty_get fails.
-> 
-> Please check below.
+> So we can make sure cmpxchg can be used in lock-less code on
+> architectures with perf, irq_work or ftrace enabled?
 
-Acked-by: Alan Cox <alan@linux.intel.com>
-
-There are other minor cleanups that could be done but nothing I see now
-which is a barrier to merging it.
-
-Alan
+It had better, otherwise stuff is broken.
