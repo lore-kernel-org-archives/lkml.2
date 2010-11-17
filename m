@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934686Ab0KQOck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 09:32:40 -0500
-Received: from mga09.intel.com ([134.134.136.24]:20610 "EHLO mga09.intel.com"
+	id S934725Ab0KQOjV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 09:39:21 -0500
+Received: from www.tglx.de ([62.245.132.106]:33351 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933847Ab0KQOcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 09:32:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,211,1288594800"; 
-   d="scan'208";a="574715882"
-Date: Wed, 17 Nov 2010 22:09:54 +0800
-From: Yong Wang <yong.y.wang@linux.intel.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Arjan van de Ven <arjan@linux.intel.com>, chuanxiao.dong@intel.com,
-        yunpeng.gao@intel.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: spectra: asynchronous init
-Message-ID: <20101117140954.GB5790@ywang-moblin2.bj.intel.com>
+	id S933812Ab0KQOjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 09:39:18 -0500
+Date: Wed, 17 Nov 2010 15:37:28 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Ingo Molnar <mingo@elte.hu>, "Ted Ts'o" <tytso@mit.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+In-Reply-To: <1290003505.2109.833.camel@laptop>
+Message-ID: <alpine.LFD.2.00.1011171529120.2900@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>  <20101117013700.GA3290@thunk.org> <20101117132404.GF27063@elte.hu>  <1290001128.2109.785.camel@laptop>  <20101117140002.GH27063@elte.hu>  <1290003110.2109.822.camel@laptop>
+ <1290003505.2109.833.camel@laptop>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The spectra nand driver takes quite some time to initialize because
-it needs to scan the whole nand disk to find the latest block table.
-This patch initializes the spectra nand driver asynchronously so that
-other things in the kernel can initialize in parallel to the scanning
-operation.
+On Wed, 17 Nov 2010, Peter Zijlstra wrote:
 
-Signed-off-by: Yong Wang <yong.y.wang@intel.com>
----
- drivers/staging/spectra/ffsport.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
+> On Wed, 2010-11-17 at 15:11 +0100, Peter Zijlstra wrote:
+> > The idea was to not let the filter engine work on the trace data (once
+> > its gathered) but on the trace argument right at the beginning of the
+> > tracepoint callchain, since some of the trace data is an expression of
+> > the trace argument (say next->prio instead of next), the trace
+> > expression wouldn't stay invariant, you'd have to write a different
+> > filter for the same effect.
+> > 
+> > So I think it would be wise to make this change sooner rather than
+> > later. 
+> 
+> Also, I see a lot of overlap with the dynamic probes stuff which needs
+> the help of magic dwarves to come up with the right data to gather.
+> 
+> Merging the dynamic tracepoint and filter stuff would be nice, there's
+> no way you can express next->prio without the help of these short
+> buggers with large axes.
+> 
+> The trouble is that the dynamic tracepoint stuff is privileged for good
+> reasons, try next+0x1000000 and you're out in the woods, priv. only
+> filters otoh just doesn't sound too hot.
+> 
+> Another nasty thing is that you actually need to have these dwarves
+> present, which means having the -debug package installed.
 
-diff --git a/drivers/staging/spectra/ffsport.c b/drivers/staging/spectra/ffsport.c
-index ae101a2..007b24b 100644
---- a/drivers/staging/spectra/ffsport.c
-+++ b/drivers/staging/spectra/ffsport.c
-@@ -28,6 +28,7 @@
- #include <linux/log2.h>
- #include <linux/init.h>
- #include <linux/slab.h>
-+#include <linux/async.h>
- 
- /**** Helper functions used for Div, Remainder operation on u64 ****/
- 
-@@ -729,7 +730,7 @@ static void create_sysfs_entry(struct device *dev)
- }
- */
- 
--int register_spectra_ftl()
-+static void register_spectra_ftl_async(void *unused, async_cookie_t cookie)
- {
- 	int i;
- 
-@@ -738,7 +739,7 @@ int register_spectra_ftl()
- 	if (PASS != GLOB_FTL_IdentifyDevice(&IdentifyDeviceData)) {
- 		printk(KERN_ERR "Spectra: Unable to Read Flash Device. "
- 		       "Aborting\n");
--		return -ENOMEM;
-+		return;
- 	} else {
- 		nand_dbg_print(NAND_DBG_WARN, "In GLOB_SBD_init: "
- 			       "Num blocks=%d, pagesperblock=%d, "
-@@ -772,15 +773,19 @@ int register_spectra_ftl()
- 		       "Spectra: module loaded with major number %d\n",
- 		       GLOB_SBD_majornum);
- 
--	return PASS;
-+	return;
- 
- out_blk_register:
- 	unregister_blkdev(GLOB_SBD_majornum, GLOB_SBD_NAME);
- out_ftl_flash_register:
- 	GLOB_FTL_Cache_Release();
- 	printk(KERN_ERR "Spectra: Module load failed.\n");
-+}
- 
--	return FAIL;
-+int register_spectra_ftl()
-+{
-+	async_schedule(register_spectra_ftl_async, NULL);
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(register_spectra_ftl);
- 
--- 
-1.5.5.1
+That sounds utterly insane for the basic use case where you trace
+application context. There is no point to filter out the tracepoints,
+really. Postprocessing can do that just fine.
 
+I consider myself a power user of tracing, but hell I never used any
+of those filters in a real use case. awk, grep, scripting languages do
+just a better job and you don't miss any data just because you got
+your filter expression slightly wrong. Postprocessing always wins in
+that regard.
+
+The only reason why these filters might make sense is to reduce the
+trace volume on system wide traces in production environments, but
+that's a completely different story. These scenarios can do with the
+dynamic tracepoint stuff and the custom filtering w/o putting the
+burden on the majority of users.
+
+Thanks,
+
+	tglx
