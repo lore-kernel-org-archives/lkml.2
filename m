@@ -1,142 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935354Ab0KQVcU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 16:32:20 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:38832 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754440Ab0KQVcS (ORCPT
+	id S1758911Ab0KQVdF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 16:33:05 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62364 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758137Ab0KQVdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 16:32:18 -0500
-Subject: Re: [PATCH v2] libata: remove scsi host lock and serial number
-	usage
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        James.Bottomley@suse.de
-In-Reply-To: <20101117172111.GA26812@havoc.gtf.org>
-References: <20101117172111.GA26812@havoc.gtf.org>
-Content-Type: text/plain
-Date: Wed, 17 Nov 2010 13:26:55 -0800
-Message-Id: <1290029215.31890.52.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Nov 2010 16:33:03 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=V2cb8Bq3NYn21eJiqu6Ol1wvuhodqHiMcItClKvLNKiQ+khhGvkWQxa54k+A1Jbh+R
+         jNigQhgRBOfIkaKS8A/LGQwTEqBtbCjTHeXDOYmOvu9j/ozmp1bv1YXeV/1vteoDzZe7
+         Yzw0KSQYF15T1ZxWMQEXbGJr67rTRsqGkpnKk=
+Date: Thu, 18 Nov 2010 00:32:46 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Nils Radtke <Nils.Radtke@Think-Future.de>, gregkh@suse.de,
+        kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: wlan-ng: p80211netdev.c cleanup
+Message-ID: <20101117213246.GJ31724@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Nils Radtke <Nils.Radtke@Think-Future.de>, gregkh@suse.de,
+	kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
+References: <1284834652-26171-1-git-send-email-lkml@Think-Future.com>
+ <20100918204112.GA6236@bicker>
+ <20101117145548.GA6794@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101117145548.GA6794@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 12:21 -0500, Jeff Garzik wrote:
-> Much better...  Just updated #upstream-fixes with the below patch.
-> 
-> James just posted to linux-scsi
-> 	[PATCH] Eliminate error handler overload of the SCSI serial number
-> but as Tejun pointed out, we _completely and entirely_ replace the SCSI
-> error handler apparatus with our own, thereby eliminating any
-> possibility that we would ever read or use cmd->serial_number.
-> 
-> Our lock profile is quite a bit improved.
-> 
-> Further simplifications and cleanups related to 'done' are possible,
-> but those are kept separate from the change below.
-> 
-> 
-> commit 23e701e6208191ad103517ae7a700f2dc59ab2ec
-> Author: Jeff Garzik <jeff@garzik.org>
-> Date:   Wed Nov 17 12:03:58 2010 -0500
-> 
->     [libata] remove SCSI host lock and serial number usage from ata_scsi_queuecmd
->     
->     cmd->serial_number is never tested in any path we reach; therefore we may
->     remove the call to scsi_cmd_get_serial() inside DEF_SCSI_QCMD, the SCSI
->     host_lock acquisition surrounding it, and our own SCSI host_lock
->     unlock+relock cycle.
->     
->     Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+I don't want to be rude, but it's basically a kernel hacker rule that
+after you introduce a bug (and your last cleanup patch did) that you
+have to fix a bug to make up for it.  One excellent source of easy bugs
+is using static checkers.
 
-Hi Jeff,
+I've found a static checker bug for you.
 
-I have merged this patch into lock_less-LLDs-for-38-v2, and dropped the
-original:
+drivers/staging/comedi/drivers/usbdux.c +1488
+	usbdux_ao_inttrig(38) warn: inconsistent returns sem:&this_usbduxsub->sem:
+	locked (1468) unlocked (1457,1462,1479,1488) 
 
-[PATCH 02/12] libata: Convert to host_lock less w/ interrupts disabled internally
+Here are some questions to help guide you.
 
-Thanks!
+1)  Does it look like a bug?
+2)  Who introduced the bug and in which commit?
+	Use: "git log -p" and "git blame"
+	If it's a real bug and you fix it, by deductive reasoning that
+	means you are smarter than the person who introduced it.
+3)  What is the return code on line 1468?
+4)  Is it a special case where the caller handles it differently?
+	Use cscope for this.
+	make cscope
+	Use "cscope -d" for speed.
+	Configure vim to use cscope.
+	:cs find c inttrig
+	^] takes you back a step.
+	cscope is an essential kernel hacking tool.
+5)  usbdux_ai_inttrig() is basically the same as usbdux_ao_inttrig().
+    Does the ai version ever return with a lock held?
+6)  What are the implications if we return with the lock held?
+7)  How is the bug triggered?
+8)  Can the user trigger the bug?
+9)  Can a regular user trigger the bug or only root?
+	I sometimes have to use google for this to try figure out how
+	people set up the permissions.
+10) Should this go into the -stable kernel?
 
---nab
+You don't have to answer all the questions, just enough to know what the
+correct fix is.  You can fix a different bug if you want to...  It
+doesn't matter so long as it is at least equal to the bug you
+introduced.
 
-> 
->  drivers/ata/libata-scsi.c |   21 +++++++++------------
->  1 file changed, 9 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-> index 19835d3..66aa4be 100644
-> --- a/drivers/ata/libata-scsi.c
-> +++ b/drivers/ata/libata-scsi.c
-> @@ -3166,8 +3166,8 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
->  
->  /**
->   *	ata_scsi_queuecmd - Issue SCSI cdb to libata-managed device
-> + *	@shost: SCSI host of command to be sent
->   *	@cmd: SCSI command to be sent
-> - *	@done: Completion function, called when command is complete
->   *
->   *	In some cases, this function translates SCSI commands into
->   *	ATA taskfiles, and queues the taskfiles to be sent to
-> @@ -3177,42 +3177,39 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
->   *	ATA and ATAPI devices appearing as SCSI devices.
->   *
->   *	LOCKING:
-> - *	Releases scsi-layer-held lock, and obtains host lock.
-> + *	ATA host lock
->   *
->   *	RETURNS:
->   *	Return value from __ata_scsi_queuecmd() if @cmd can be queued,
->   *	0 otherwise.
->   */
-> -static int ata_scsi_queuecmd_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
-> +int ata_scsi_queuecmd(struct Scsi_Host *shost, struct scsi_cmnd *cmd)
->  {
->  	struct ata_port *ap;
->  	struct ata_device *dev;
->  	struct scsi_device *scsidev = cmd->device;
-> -	struct Scsi_Host *shost = scsidev->host;
->  	int rc = 0;
-> +	unsigned long irq_flags;
->  
->  	ap = ata_shost_to_port(shost);
->  
-> -	spin_unlock(shost->host_lock);
-> -	spin_lock(ap->lock);
-> +	spin_lock_irqsave(ap->lock, irq_flags);
->  
->  	ata_scsi_dump_cdb(ap, cmd);
->  
->  	dev = ata_scsi_find_dev(ap, scsidev);
->  	if (likely(dev))
-> -		rc = __ata_scsi_queuecmd(cmd, done, dev);
-> +		rc = __ata_scsi_queuecmd(cmd, cmd->scsi_done, dev);
->  	else {
->  		cmd->result = (DID_BAD_TARGET << 16);
-> -		done(cmd);
-> +		cmd->scsi_done(cmd);
->  	}
->  
-> -	spin_unlock(ap->lock);
-> -	spin_lock(shost->host_lock);
-> +	spin_unlock_irqrestore(ap->lock, irq_flags);
-> +
->  	return rc;
->  }
->  
-> -DEF_SCSI_QCMD(ata_scsi_queuecmd)
-> -
->  /**
->   *	ata_scsi_simulate - simulate SCSI command on ATA device
->   *	@dev: the target device
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+regards,
+dan carpenter
+
+PS:
+
+> - When checking skb for NULL, which one is better? (I suppose the former one)
+>   skb == NULL or !skb 
+>   Rewrite occurrences of the other one for cleanup?
+
+You shouldn't even think about changing these.  But in new code then
+!skb is better as Al Viro explains in this email:
+http://lwn.net/Articles/331593/
 
