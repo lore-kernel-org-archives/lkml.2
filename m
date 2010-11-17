@@ -1,84 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756036Ab0KQEFK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 23:05:10 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:60422 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab0KQEFI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 23:05:08 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Florian Mickler <florian@mickler.org>, Jesper Juhl <jj@chaosbits.net>,
-        David Rientjes <rientjes@google.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
-        Bodo Eggert <7eggert@web.de>, Mandeep Singh Baines <msb@google.com>,
-        "Figo.zhang" <figo1802@gmail.com>
-Subject: Re: [PATCH] Revert oom rewrite series
-In-Reply-To: Your message of "Tue, 16 Nov 2010 14:55:51 GMT."
-             <20101116145551.49c47df5@lxorguk.ukuu.org.uk>
-From: Valdis.Kletnieks@vt.edu
-References: <20101115093410.BEFD.A69D9226@jp.fujitsu.com> <20101114181905.bc5b44f9.akpm@linux-foundation.org> <20101115113238.BF06.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011150215460.2986@chino.kir.corp.google.com> <alpine.LNX.2.00.1011160027180.22346@swampdragon.chaosbits.net> <34565.1289866395@localhost> <20101116110310.1502de2a@lxorguk.ukuu.org.uk> <20101116140341.42561c84@schatten.dmk.lab>
-            <20101116145551.49c47df5@lxorguk.ukuu.org.uk>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1289966681_4694P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1758026Ab0KQEFw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 23:05:52 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:50003 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752741Ab0KQEFv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 23:05:51 -0500
+Message-ID: <4CE355A0.6020907@cn.fujitsu.com>
+Date: Wed, 17 Nov 2010 12:10:08 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v2 1/6] KVM: MMU: fix forgot flush vcpu tlbs
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-17 12:06:11,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-17 12:06:12,
+	Serialize complete at 2010-11-17 12:06:12
 Content-Transfer-Encoding: 7bit
-Date: Tue, 16 Nov 2010 23:04:41 -0500
-Message-ID: <18510.1289966681@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020205.4CE3545A.00E3,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1289966681_4694P
-Content-Type: text/plain; charset=us-ascii
+Some paths forgot to flush vcpu tlbs after remove rmap, this
+patch fix it.
 
-On Tue, 16 Nov 2010 14:55:51 GMT, Alan Cox said:
-> > How does one mark it apropriately?
-> > The commit 51b1bd2 (oom: deprecate oom_adj tunable, see below) 
-> > added it to feature-removal-schedule.txt, a patch for
-> > Documentation/ABI has also been provided in the meantime, if i'm not
-> > mistaken. 
-> 
-> Yes - so why is it spewing crap, annoying users and trying to irritate
-> application authors. It's not 2012 yet.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c         |   14 +++++++++++---
+ arch/x86/kvm/paging_tmpl.h |    1 +
+ 2 files changed, 12 insertions(+), 3 deletions(-)
 
-Aug 2012 is only 6 kernel releases or so away....
-
-Presumably the whinging is so we start tracking down the offending userspace
-and getting it fixed before 2012 gets here.  Sticking the warning in just one
-or two kernel releases before it becomes official leads to "I can't run the new
-kernel because my userspace isn't patched yet".  We really can't win here,
-we don't whinge and stuff doesn't get tracked down and fixed, we do whinge
-and that gets people upset too.
-
---==_Exmh_1289966681_4694P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFM41RZcC3lWbTT17ARAo+YAJ9A0IvKvJ24BXUEw/yGtF8CYDd76ACeNGbA
-iqdFFSVCusUYWMcpTlokjY0=
-=5h2H
------END PGP SIGNATURE-----
-
---==_Exmh_1289966681_4694P--
-
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index bdb9fa9..e008ae7 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -736,10 +736,16 @@ static int set_spte_track_bits(u64 *sptep, u64 new_spte)
+ 	return 1;
+ }
+ 
+-static void drop_spte(struct kvm *kvm, u64 *sptep, u64 new_spte)
++static bool drop_spte(struct kvm *kvm, u64 *sptep, u64 new_spte)
+ {
+-	if (set_spte_track_bits(sptep, new_spte))
++	bool ret = false;
++
++	if (set_spte_track_bits(sptep, new_spte)) {
+ 		rmap_remove(kvm, sptep);
++		ret = true;
++	}
++
++	return ret;
+ }
+ 
+ static u64 *rmap_next(struct kvm *kvm, unsigned long *rmapp, u64 *spte)
+@@ -1997,7 +2003,9 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 		if (level > PT_PAGE_TABLE_LEVEL &&
+ 		    has_wrprotected_page(vcpu->kvm, gfn, level)) {
+ 			ret = 1;
+-			drop_spte(vcpu->kvm, sptep, shadow_trap_nonpresent_pte);
++			if (drop_spte(vcpu->kvm, sptep,
++				      shadow_trap_nonpresent_pte))
++				kvm_flush_remote_tlbs(vcpu->kvm);
+ 			goto done;
+ 		}
+ 
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index ba00eef..58b4d9a 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -781,6 +781,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 			else
+ 				nonpresent = shadow_notrap_nonpresent_pte;
+ 			drop_spte(vcpu->kvm, &sp->spt[i], nonpresent);
++			kvm_flush_remote_tlbs(vcpu->kvm);
+ 			continue;
+ 		}
+ 
+-- 
+1.7.0.4
