@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933699Ab0KQPCS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:02:18 -0500
-Received: from tango.0pointer.de ([85.214.72.216]:35544 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757034Ab0KQPCR (ORCPT
+	id S934495Ab0KQPCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:02:46 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53676 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932367Ab0KQPCp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:02:17 -0500
-Date: Wed, 17 Nov 2010 16:01:56 +0100
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Wed, 17 Nov 2010 10:02:45 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=2kSzP4yT2LoA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=FD8hK331BKvw8mrw_coA:9 a=ve-AGOkLlbpImW6calTJ5jzepTEA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101117150156.GA17082@tango.0pointer.de>
-References: <20101116181603.GC19327@tango.0pointer.de>
- <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
- <20101116202839.GC27235@tango.0pointer.de>
- <20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
- <AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
- <20101116211909.GB16589@tango.0pointer.de>
- <20101116233934.GC1568@thunk.org>
- <20101117002159.GA3184@tango.0pointer.de>
- <20101117020626.GB3290@thunk.org>
- <20101117145712.GA29892@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117145712.GA29892@redhat.com>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+In-Reply-To: <20101117141031.GH5464@nowhere>
+References: <4CE2F747.4060406@linux.intel.com>
+	 <20101116221726.GB26243@nowhere> <20101117083020.GA11336@elte.hu>
+	 <1289993750.2109.718.camel@laptop> <20101117125344.GC5464@nowhere>
+	 <1289998957.2109.751.camel@laptop> <20101117131023.GE27063@elte.hu>
+	 <1290000976.2109.782.camel@laptop> <20101117134300.GG5464@nowhere>
+	 <1290002029.2109.799.camel@laptop>  <20101117141031.GH5464@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 17 Nov 2010 10:02:41 -0500
+Message-ID: <1290006161.30543.54.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17.11.10 09:57, Vivek Goyal (vgoyal@redhat.com) wrote:
+On Wed, 2010-11-17 at 15:10 +0100, Frederic Weisbecker wrote:
 
-> Being able to specify cgroup name/path is a good idea. That way one can
-> make use of cgroup hierarchy also.
+> Yeah I have a strange workflow. I'm working on that CPU isolation thing
+> and I have dozens of trace_printk all over the place for tons of
+> things. And everytime I remove one to unwind some output or to focus
+> on another one, I often have to restore it later because I need it
+> again. Usually I even just comment it out instead of removing it.
 > 
-> Thinking more about opt-in vs opt-out issue. Generally cgroups provide
-> some kind of isolation between application groups and in the process
-> can be somewhat expensive. More memory allocation, more accounting overhead
-> and for CFQ block controller it can also mean additional idling and can result
-> in overall reduced throughput.
+> If I could make this dynamically on a per line filtering, or sometimes on
+> a per file granularity (as both are equally often the case for me), I would
+> probably win some time.
 > 
-> Keeping that in mind, is it really a good idea to launch each application
-> in a separate group. Will it be better to let user decide if the
-> application should be launched in a separate cgroup? 
-> 
-> The flip side is that how many people will really know about the functionality
-> and will really launch application in a separate group. And may be it is
-> a good idea to put everybody in a seprate cgroup by default even it means
-> some cost so that if a application starts consuming too much of resources
-> (make -j64), then its impact on rest of the groups can be contained.
-> 
-> I really don't have strong inclination for one over other. Just thinking
-> loud...
+> I just don't know how many developers have a similar workflow than mine.
 
-I wouldn't be too concerned here. It's not that we end up with 1000s of
-groups here. It's way < 40 or in the end, for a single user
-machine. Which I think isn't that bad.
+I usually wrap trace_printk() (or printk sometimes) in my own wrapper:
 
-Lennart
+#define sprintk(on, x...) do { if (on) { trace_prinkt(x); } } while (0)
 
--- 
-Lennart Poettering - Red Hat, Inc.
+Then have things like:
+
+#define SDR_DEBUG_IRQS 0
+#define SDR_DEBUG_SCHED 1
+[...]
+
+and in the irq code I'll have:
+
+	sprintk(SDR_DEBUG_IRQS, "printme"...);
+
+and the sched code:
+
+	sprintk(SDR_DEBUG_SCHED, "printthis"...);
+
+And I can easily enable or disable the prints I want. Sometimes I'll
+define it as a variable, and enable them either in certain code paths,
+or export them in the debugfs system and enable or disable them from
+userspace.
+
+extern int sdr_debug_irqs;
+#define SDR_DEBUG_IRQS sdr_debug_irqs
+
+[...]
+int sdr_debug_irqs;
+[...]
+
+	debugfs_create_bool("sdr_debug_sched", 0644, NULL, &sdr_debug_irqs);
+
+Of course this is all for temporary debugging. I use SDR and sdr and
+sprintk to search and delete the debugging output when done.
+
+-- Steve
+
+
