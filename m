@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935071Ab0KQRYy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 12:24:54 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36436 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934729Ab0KQRYx (ORCPT
+	id S935042Ab0KQR06 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:26:58 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51280
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754518Ab0KQR05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 12:24:53 -0500
-Date: Wed, 17 Nov 2010 17:24:25 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 05/20] ARM: LPAE: Introduce L_PTE_NOEXEC and
-	L_PTE_NOWRITE
-Message-ID: <20101117172425.GE5308@n2100.arm.linux.org.uk>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com> <1289584840-18097-6-git-send-email-catalin.marinas@arm.com> <20101115183014.GD31421@n2100.arm.linux.org.uk> <AANLkTik5FcZ3rNtiwN8kYP0LZh+YqGtKP_RteoFiWa16@mail.gmail.com> <20101117171613.GB5308@n2100.arm.linux.org.uk> <AANLkTincmfqXmNQznd1fdSRYd4Vc+p47cgTfEwQoXdFm@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTincmfqXmNQznd1fdSRYd4Vc+p47cgTfEwQoXdFm@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 17 Nov 2010 12:26:57 -0500
+Date: Wed, 17 Nov 2010 09:27:22 -0800 (PST)
+Message-Id: <20101117.092722.193716325.davem@davemloft.net>
+To: bhutchings@solarflare.com
+Cc: sbhatewara@vmware.com, shemminger@vyatta.com, netdev@vger.kernel.org,
+        pv-drivers@vmware.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.37-rc1] net-next: Add multiqueue support to vmxnet3
+ driver v3
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1290014618.2588.50.camel@bwh-desktop>
+References: <alpine.LRH.2.00.1011101426410.816@sbhatewara-dev1.eng.vmware.com>
+	<alpine.LRH.2.00.1011161939500.25227@sbhatewara-dev1.eng.vmware.com>
+	<1290014618.2588.50.camel@bwh-desktop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 05:22:12PM +0000, Catalin Marinas wrote:
-> Ah, good point, that was the mask.
+From: Ben Hutchings <bhutchings@solarflare.com>
+Date: Wed, 17 Nov 2010 17:23:38 +0000
+
+> On Tue, 2010-11-16 at 21:14 -0800, Shreyas Bhatewara wrote:
+> [...]
+>> Okay. I am resending the patch with no module params what-so-ever. The default
+>> is no-multiqueue though. Single queue code has matured and is optimized for
+>> performance. Multiqueue code has got relatively lesser performance tuning. Since
+>> there is no way to switch between the two modes as of now, it only makes sense
+>> to keep the best known as default. When configuration knobs are introduced 
+>> later, multiqueue can be made default.
 > 
-> So for dmacoherent we make sure that L_PTE_EXEC is cleared. I suspect
-> we should now make sure that L_PTE_NOEXEC is set. For the other two,
-> just leave them as they are.
+> But so far as I can see there is currently *no* way to enable multiqueue
+> without editing the code.  Perhaps there could be an experimental config
+> option that people can use to enable and test it now, before we sort out
+> the proper API?
 
-Already done:
+It should be turned on by default, otherwise don't add the code until
+it's "ready."
 
- #define pgprot_dmacoherent(prot) \
--       __pgprot_modify(prot, L_PTE_MT_MASK|L_PTE_EXEC, L_PTE_MT_BUFFERABLE)
-+       __pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_BUFFERABLE|L_PTE_XN)
-...
- #define pgprot_dmacoherent(prot) \
--       __pgprot_modify(prot, L_PTE_MT_MASK|L_PTE_EXEC, L_PTE_MT_UNCACHED)
-+       __pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_UNCACHED|L_PTE_XN)
+We had slight performance regressions in the past when various drivers
+added multiqueue support, but the aggregate performance increased for
+multi-flow cases, and this was deemed a fine tradeoff.  I was hoping
+you'd use similar logic.
+
+Otherwise, send this stuff when it's ready, and no sooner.
