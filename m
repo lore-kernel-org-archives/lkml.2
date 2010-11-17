@@ -1,73 +1,484 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751881Ab0KQXdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:33:07 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:61774 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751023Ab0KQXdG (ORCPT
+	id S1751529Ab0KQXgV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:36:21 -0500
+Received: from mail.selbetti.com.br ([201.67.157.50]:43754 "EHLO
+	mail.selbetti.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751023Ab0KQXgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:33:06 -0500
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=meSPosxfOXMA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=D19gQVrFAAAA:8 a=opNAwP4dILp0_SIRnmEA:9 a=_3CGIoDu73ZJn4_IKsVYZV8PQLIA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Benchmarks of kernel tracing options 2 (ftrace, lttng and perf)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Sharp <dhsharp@google.com>
-Cc: Douglas Santos <douglas.santos@polymtl.ca>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ltt-dev@lists.casi.polymtl.ca" <ltt-dev@lists.casi.polymtl.ca>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>
-In-Reply-To: <AANLkTim9f2aNAaF8YgbOH3xKY9pjAtkHOoYVTv+XOE8W@mail.gmail.com>
-References: <1290029498.4ce449ba1679d@www.imp.polymtl.ca>
-	 <1290030106.30543.74.camel@gandalf.stny.rr.com>
-	 <1290034589.4ce45d9d7be28@www.imp.polymtl.ca>
-	 <AANLkTim9f2aNAaF8YgbOH3xKY9pjAtkHOoYVTv+XOE8W@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 17 Nov 2010 18:33:02 -0500
-Message-ID: <1290036782.30543.84.camel@gandalf.stny.rr.com>
+	Wed, 17 Nov 2010 18:36:20 -0500
+Subject: Re: Galbraith patch
+From: Gilberto Nunes <gilberto.nunes@selbetti.com.br>
+Reply-To: gilberto.nunes@selbetti.com.br
+To: Mike Galbraith <efault@gmx.de>
+Cc: Dhaval Giani <dhaval.giani@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1290036097.27521.5.camel@maggy.simson.net>
+References: <1290018947.4887.14.camel@note-311a>
+	 <AANLkTi=3nDO7QtezcoOyimPvXqLBgxtO18HjjuT_6WKb@mail.gmail.com>
+	 <AANLkTinRBvZQmeU-eEeDSd1ELvcxDZAdM6F8-UCROybq@mail.gmail.com>
+	 <1290021497.4887.24.camel@note-311a>
+	 <1290036097.27521.5.camel@maggy.simson.net>
+Content-Type: multipart/mixed; boundary="=-8Aa0Ap9HaUfYp9bBlcFq"
+Organization: Selbetti =?ISO-8859-1?Q?Gest=E3o?= de Documentos
+Date: Wed, 17 Nov 2010 21:36:09 -0200
+Message-ID: <1290036969.26521.15.camel@note-311a>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 15:22 -0800, David Sharp wrote:
-> On Wed, Nov 17, 2010 at 2:56 PM, Douglas Santos
-> <douglas.santos@polymtl.ca> wrote:
-> > Quoting Steven Rostedt <rostedt@goodmis.org>:
-> >> On Wed, 2010-11-17 at 16:31 -0500, Douglas Santos wrote:
-> >> > Hi all,
-> >> >
-> >> > This is a response to a benchmark, submitted a few weeks ago, comparing
-> >> kernel
-> >> > tracing options.
-> >> > http://lkml.org/lkml/2010/10/28/422
-> >> >
-> >> > We followed the methodology described in the link bellow,
-> >> > but using the shellscripts posted there to reproduce autotest scripts.
-> >> > http://lkml.org/lkml/2010/10/28/261
-> >> >
-> >> > We disabled the extra syscall tracing on lttng, for a fair comparison.
-> >> > http://lkml.org/lkml/2010/10/28/290
-> >> >
-> >> > Average results with tracing "on":
-> >> >
-> >> > lttng:  220 ns
-> >> > ftrace: 260 ns
-> >>
-> >> Heh, so ftrace got worse with the new kernel?
+
+--=-8Aa0Ap9HaUfYp9bBlcFq
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+
+Hi...
+
+On fact, when I try apply the patch, I took some errors. Here's:
+
+patching file include/linux/sched.h
+Hunk #1 succeeded at 506 (offset -3 lines).
+Hunk #2 succeeded at 575 (offset -3 lines).
+Hunk #3 succeeded at 1905 (offset -31 lines).
+patching file kernel/sched.c
+Hunk #2 succeeded at 613 (offset 7 lines).
+Hunk #3 FAILED at 2010.
+Hunk #4 succeeded at 7753 (offset -230 lines).
+Hunk #5 succeeded at 8283 (offset -230 lines).
+Hunk #6 succeeded at 8308 (offset -230 lines).
+1 out of 6 hunks FAILED -- saving rejects to file kernel/sched.c.rej
+patching file kernel/fork.c
+Hunk #1 succeeded at 173 (offset -1 lines).
+Hunk #2 succeeded at 902 (offset -4 lines).
+patching file drivers/tty/tty_io.c
+Hunk #1 FAILED at 3160.
+1 out of 1 hunk FAILED -- saving rejects to file
+drivers/tty/tty_io.c.rej
+patching file kernel/sched_autogroup.h
+patching file kernel/sched_autogroup.c
+patching file kernel/sysctl.c
+Hunk #1 succeeded at 384 (offset 2 lines).
+patching file init/Kconfig
+Hunk #1 succeeded at 652 with fuzz 2 (offset -76 lines).
+patching file Documentation/kernel-parameters.txt
+Hunk #1 succeeded at 1610 (offset -12 lines).
+
+Attached, you have the patch.
+
+How can I fix this! 
+
+Note: I'm using Ubuntu Linux 10.10... But, as I said before, I'm using
+vanilla kernel... 
+
+Thanks again
+
+Em Qua, 2010-11-17 às 16:21 -0700, Mike Galbraith escreveu:
+> On Wed, 2010-11-17 at 17:18 -0200, Gilberto Nunes wrote:
+> > Here is!!
 > 
-> Steve, can you explain how you're drawing that conclusion? Did Douglas
-> run this benchmark before on a previous kernel (I didn't see it if
-> so)?
+> Hm.  Looks like you must have a miss-applied patch.  Builds fine here
+> with your config.
+> 
+> 	-Mike
+> 
 
-Oops, no, I was thinking that this was from your tests. I remember
-asking you to try the new kernel. I think I got you and Douglas
-confused :-)
+-- 
+--
+Gilberto Nunes
 
--- Steve
 
+<><
+
+--=-8Aa0Ap9HaUfYp9bBlcFq
+Content-Disposition: attachment; filename="patch"
+Content-Type: text/x-patch; name="patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+Index: linux-2.6/include/linux/sched.h
+===================================================================
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -509,6 +509,8 @@ struct thread_group_cputimer {
+ 	spinlock_t lock;
+ };
+ 
++struct autogroup;
++
+ /*
+  * NOTE! "signal_struct" does not have it's own
+  * locking, because a shared signal_struct always
+@@ -576,6 +578,9 @@ struct signal_struct {
+ 
+ 	struct tty_struct *tty; /* NULL if no tty */
+ 
++#ifdef CONFIG_SCHED_AUTOGROUP
++	struct autogroup *autogroup;
++#endif
+ 	/*
+ 	 * Cumulative resource counters for dead threads in the group,
+ 	 * and for reaped dead child processes forked by this group.
+@@ -1931,6 +1936,20 @@ int sched_rt_handler(struct ctl_table *t
+ 
+ extern unsigned int sysctl_sched_compat_yield;
+ 
++#ifdef CONFIG_SCHED_AUTOGROUP
++extern unsigned int sysctl_sched_autogroup_enabled;
++
++extern void sched_autogroup_create_attach(struct task_struct *p);
++extern void sched_autogroup_detach(struct task_struct *p);
++extern void sched_autogroup_fork(struct signal_struct *sig);
++extern void sched_autogroup_exit(struct signal_struct *sig);
++#else
++static inline void sched_autogroup_create_attach(struct task_struct *p) { }
++static inline void sched_autogroup_detach(struct task_struct *p) { }
++static inline void sched_autogroup_fork(struct signal_struct *sig) { }
++static inline void sched_autogroup_exit(struct signal_struct *sig) { }
++#endif
++
+ #ifdef CONFIG_RT_MUTEXES
+ extern int rt_mutex_getprio(struct task_struct *p);
+ extern void rt_mutex_setprio(struct task_struct *p, int prio);
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -78,6 +78,7 @@
+ 
+ #include "sched_cpupri.h"
+ #include "workqueue_sched.h"
++#include "sched_autogroup.h"
+ 
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/sched.h>
+@@ -605,11 +606,14 @@ static inline int cpu_of(struct rq *rq)
+  */
+ static inline struct task_group *task_group(struct task_struct *p)
+ {
++	struct task_group *tg;
+ 	struct cgroup_subsys_state *css;
+ 
+ 	css = task_subsys_state_check(p, cpu_cgroup_subsys_id,
+ 			lockdep_is_held(&task_rq(p)->lock));
+-	return container_of(css, struct task_group, css);
++	tg = container_of(css, struct task_group, css);
++
++	return autogroup_task_group(p, tg);
+ }
+ 
+ /* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
+@@ -2006,6 +2010,7 @@ static void sched_irq_time_avg_update(st
+ #include "sched_idletask.c"
+ #include "sched_fair.c"
+ #include "sched_rt.c"
++#include "sched_autogroup.c"
+ #include "sched_stoptask.c"
+ #ifdef CONFIG_SCHED_DEBUG
+ # include "sched_debug.c"
+@@ -7979,7 +7984,7 @@ void __init sched_init(void)
+ #ifdef CONFIG_CGROUP_SCHED
+ 	list_add(&init_task_group.list, &task_groups);
+ 	INIT_LIST_HEAD(&init_task_group.children);
+-
++	autogroup_init(&init_task);
+ #endif /* CONFIG_CGROUP_SCHED */
+ 
+ #if defined CONFIG_FAIR_GROUP_SCHED && defined CONFIG_SMP
+@@ -8509,15 +8514,11 @@ void sched_destroy_group(struct task_gro
+ /* change task's runqueue when it moves between groups.
+  *	The caller of this function should have put the task in its new group
+  *	by now. This function just updates tsk->se.cfs_rq and tsk->se.parent to
+- *	reflect its new group.
++ *	reflect its new group.  Called with the runqueue lock held.
+  */
+-void sched_move_task(struct task_struct *tsk)
++void __sched_move_task(struct task_struct *tsk, struct rq *rq)
+ {
+ 	int on_rq, running;
+-	unsigned long flags;
+-	struct rq *rq;
+-
+-	rq = task_rq_lock(tsk, &flags);
+ 
+ 	running = task_current(rq, tsk);
+ 	on_rq = tsk->se.on_rq;
+@@ -8538,7 +8539,15 @@ void sched_move_task(struct task_struct
+ 		tsk->sched_class->set_curr_task(rq);
+ 	if (on_rq)
+ 		enqueue_task(rq, tsk, 0);
++}
+ 
++void sched_move_task(struct task_struct *tsk)
++{
++	struct rq *rq;
++	unsigned long flags;
++
++	rq = task_rq_lock(tsk, &flags);
++	__sched_move_task(tsk, rq);
+ 	task_rq_unlock(rq, &flags);
+ }
+ #endif /* CONFIG_CGROUP_SCHED */
+Index: linux-2.6/kernel/fork.c
+===================================================================
+--- linux-2.6.orig/kernel/fork.c
++++ linux-2.6/kernel/fork.c
+@@ -174,8 +174,10 @@ static inline void free_signal_struct(st
+ 
+ static inline void put_signal_struct(struct signal_struct *sig)
+ {
+-	if (atomic_dec_and_test(&sig->sigcnt))
++	if (atomic_dec_and_test(&sig->sigcnt)) {
++		sched_autogroup_exit(sig);
+ 		free_signal_struct(sig);
++	}
+ }
+ 
+ void __put_task_struct(struct task_struct *tsk)
+@@ -904,6 +906,7 @@ static int copy_signal(unsigned long clo
+ 	posix_cpu_timers_init_group(sig);
+ 
+ 	tty_audit_fork(sig);
++	sched_autogroup_fork(sig);
+ 
+ 	sig->oom_adj = current->signal->oom_adj;
+ 	sig->oom_score_adj = current->signal->oom_score_adj;
+Index: linux-2.6/drivers/tty/tty_io.c
+===================================================================
+--- linux-2.6.orig/drivers/tty/tty_io.c
++++ linux-2.6/drivers/tty/tty_io.c
+@@ -3160,6 +3160,7 @@ static void __proc_set_tty(struct task_s
+ 	put_pid(tsk->signal->tty_old_pgrp);
+ 	tsk->signal->tty = tty_kref_get(tty);
+ 	tsk->signal->tty_old_pgrp = NULL;
++	sched_autogroup_create_attach(tsk);
+ }
+ 
+ static void proc_set_tty(struct task_struct *tsk, struct tty_struct *tty)
+Index: linux-2.6/kernel/sched_autogroup.h
+===================================================================
+--- /dev/null
++++ linux-2.6/kernel/sched_autogroup.h
+@@ -0,0 +1,18 @@
++#ifdef CONFIG_SCHED_AUTOGROUP
++
++static void __sched_move_task(struct task_struct *tsk, struct rq *rq);
++
++static inline struct task_group *
++autogroup_task_group(struct task_struct *p, struct task_group *tg);
++
++#else /* !CONFIG_SCHED_AUTOGROUP */
++
++static inline void autogroup_init(struct task_struct *init_task) {  }
++
++static inline struct task_group *
++autogroup_task_group(struct task_struct *p, struct task_group *tg)
++{
++	return tg;
++}
++
++#endif /* CONFIG_SCHED_AUTOGROUP */
+Index: linux-2.6/kernel/sched_autogroup.c
+===================================================================
+--- /dev/null
++++ linux-2.6/kernel/sched_autogroup.c
+@@ -0,0 +1,140 @@
++#ifdef CONFIG_SCHED_AUTOGROUP
++
++unsigned int __read_mostly sysctl_sched_autogroup_enabled = 1;
++
++struct autogroup {
++	struct kref		kref;
++	struct task_group	*tg;
++};
++
++static struct autogroup autogroup_default;
++
++static void autogroup_init(struct task_struct *init_task)
++{
++	autogroup_default.tg = &init_task_group;
++	kref_init(&autogroup_default.kref);
++	init_task->signal->autogroup = &autogroup_default;
++}
++
++static inline void autogroup_destroy(struct kref *kref)
++{
++	struct autogroup *ag = container_of(kref, struct autogroup, kref);
++	struct task_group *tg = ag->tg;
++
++	kfree(ag);
++	sched_destroy_group(tg);
++}
++
++static inline void autogroup_kref_put(struct autogroup *ag)
++{
++	kref_put(&ag->kref, autogroup_destroy);
++}
++
++static inline struct autogroup *autogroup_kref_get(struct autogroup *ag)
++{
++	kref_get(&ag->kref);
++	return ag;
++}
++
++static inline struct autogroup *autogroup_create(void)
++{
++	struct autogroup *ag = kmalloc(sizeof(*ag), GFP_KERNEL);
++
++	if (!ag)
++		goto out_fail;
++
++	ag->tg = sched_create_group(&init_task_group);
++	kref_init(&ag->kref);
++
++	if (!(IS_ERR(ag->tg)))
++		return ag;
++
++out_fail:
++	if (ag) {
++		kfree(ag);
++		WARN_ON(1);
++	} else
++		WARN_ON(1);
++
++	return autogroup_kref_get(&autogroup_default);
++}
++
++static inline struct task_group *
++autogroup_task_group(struct task_struct *p, struct task_group *tg)
++{
++	int enabled = ACCESS_ONCE(sysctl_sched_autogroup_enabled);
++
++	enabled &= (tg == &root_task_group);
++	enabled &= (p->sched_class == &fair_sched_class);
++	enabled &= (!(p->flags & PF_EXITING));
++
++	if (enabled)
++		return p->signal->autogroup->tg;
++
++	return tg;
++}
++
++static void
++autogroup_move_group(struct task_struct *p, struct autogroup *ag)
++{
++	struct autogroup *prev;
++	struct task_struct *t;
++	struct rq *rq;
++	unsigned long flags;
++
++	rq = task_rq_lock(p, &flags);
++	prev = p->signal->autogroup;
++	if (prev == ag) {
++		task_rq_unlock(rq, &flags);
++		return;
++	}
++
++	p->signal->autogroup = autogroup_kref_get(ag);
++	__sched_move_task(p, rq);
++	task_rq_unlock(rq, &flags);
++
++	rcu_read_lock();
++	list_for_each_entry_rcu(t, &p->thread_group, thread_group) {
++		sched_move_task(t);
++	}
++	rcu_read_unlock();
++
++	autogroup_kref_put(prev);
++}
++
++void sched_autogroup_create_attach(struct task_struct *p)
++{
++	struct autogroup *ag = autogroup_create();
++
++	autogroup_move_group(p, ag);
++	/* drop extra refrence added by autogroup_create() */
++	autogroup_kref_put(ag);
++}
++EXPORT_SYMBOL(sched_autogroup_create_attach);
++
++/* currently has no users */
++void sched_autogroup_detach(struct task_struct *p)
++{
++	autogroup_move_group(p, &autogroup_default);
++}
++EXPORT_SYMBOL(sched_autogroup_detach);
++
++void sched_autogroup_fork(struct signal_struct *sig)
++{
++	sig->autogroup = autogroup_kref_get(current->signal->autogroup);
++}
++
++void sched_autogroup_exit(struct signal_struct *sig)
++{
++	autogroup_kref_put(sig->autogroup);
++}
++
++static int __init setup_autogroup(char *str)
++{
++	sysctl_sched_autogroup_enabled = 0;
++
++	return 1;
++}
++
++__setup("noautogroup", setup_autogroup);
++#endif
+Index: linux-2.6/kernel/sysctl.c
+===================================================================
+--- linux-2.6.orig/kernel/sysctl.c
++++ linux-2.6/kernel/sysctl.c
+@@ -382,6 +382,17 @@ static struct ctl_table kern_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec,
+ 	},
++#ifdef CONFIG_SCHED_AUTOGROUP
++	{
++		.procname	= "sched_autogroup_enabled",
++		.data		= &sysctl_sched_autogroup_enabled,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++		.extra1		= &zero,
++		.extra2		= &one,
++	},
++#endif
+ #ifdef CONFIG_PROVE_LOCKING
+ 	{
+ 		.procname	= "prove_locking",
+Index: linux-2.6/init/Kconfig
+===================================================================
+--- linux-2.6.orig/init/Kconfig
++++ linux-2.6/init/Kconfig
+@@ -728,6 +728,18 @@ config NET_NS
+ 
+ endif # NAMESPACES
+ 
++config SCHED_AUTOGROUP
++	bool "Automatic process group scheduling"
++	select CGROUPS
++	select CGROUP_SCHED
++	select FAIR_GROUP_SCHED
++	help
++	  This option optimizes the scheduler for common desktop workloads by
++	  automatically creating and populating task groups.  This separation
++	  of workloads isolates aggressive CPU burners (like build jobs) from
++	  desktop applications.  Task group autogeneration is currently based
++	  upon task tty association.
++
+ config MM_OWNER
+ 	bool
+ 
+Index: linux-2.6/Documentation/kernel-parameters.txt
+===================================================================
+--- linux-2.6.orig/Documentation/kernel-parameters.txt
++++ linux-2.6/Documentation/kernel-parameters.txt
+@@ -1622,6 +1622,8 @@ and is between 256 and 4096 characters.
+ 	noapic		[SMP,APIC] Tells the kernel to not make use of any
+ 			IOAPICs that may be present in the system.
+ 
++	noautogroup	Disable scheduler automatic task group creation.
++
+ 	nobats		[PPC] Do not use BATs for mapping kernel lowmem
+ 			on "Classic" PPC cores.
+
+--=-8Aa0Ap9HaUfYp9bBlcFq--
 
