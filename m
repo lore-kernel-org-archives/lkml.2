@@ -1,128 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933660Ab0KQBCq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 20:02:46 -0500
-Received: from mga01.intel.com ([192.55.52.88]:10843 "EHLO mga01.intel.com"
+	id S933702Ab0KQBDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 20:03:11 -0500
+Received: from mga11.intel.com ([192.55.52.93]:60945 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933435Ab0KQBCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 20:02:43 -0500
+	id S932835Ab0KQBDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 20:03:08 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,208,1288594800"; 
-   d="scan'208";a="627518302"
-Date: Wed, 17 Nov 2010 09:36:21 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: Jan Kara <jack@suse.cz>
-CC: no To-header on input <""@suse.de>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] jbd2: avoid the concurrent data writeback
-Message-ID: <20101117093621.29fed027@feng-i7>
-In-Reply-To: <20101116121323.GE4757@quack.suse.cz>
-References: <1289827533-2576-1-git-send-email-feng.tang@intel.com>
-	<20101115055420.GA21785@localhost>
-	<20101115175943.490d3469@feng-i7>
-	<20101116121323.GE4757@quack.suse.cz>
-Organization: intel
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+   d="scan'208";a="858362449"
+Subject: Re: [PATCH -v4 0/2] Lockless memory allocator and list
+From: Huang Ying <ying.huang@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+In-Reply-To: <AANLkTime3Sh2TbgCGKir=t_TBNsd5fHipEqQwa4bVJuY@mail.gmail.com>
+References: <1289868791-16658-1-git-send-email-ying.huang@intel.com>
+	 <1289908158.2109.568.camel@laptop>
+	 <AANLkTime3Sh2TbgCGKir=t_TBNsd5fHipEqQwa4bVJuY@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Nov 2010 09:03:05 +0800
+Message-ID: <1289955785.8719.1154.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
-
-On Tue, 16 Nov 2010 20:13:23 +0800
-Jan Kara <jack@suse.cz> wrote:
-
->   Hi,
+On Wed, 2010-11-17 at 00:38 +0800, Linus Torvalds wrote:
+> On Tue, Nov 16, 2010 at 3:49 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, 2010-11-16 at 08:53 +0800, Huang Ying wrote:
+> >> Hi, Len,
+> >>
+> >> This patchset is needed by APEI support. Which involves some lockless
+> >> operations. And I think they can be used by some other part of kernel
+> >> too.
+> >
+> > The whole notion of allocating memory from NMI context seems incredibly
+> > offensive.
+> >
+> > And then there's the whole point of not merging stuff without a user.
 > 
->   sorry for chiming in a bit late...
-> On Mon 15-11-10 17:59:43, Feng Tang wrote:
-> > From b16cfc5a560f2549ac69dbb235a550500ea1719f Mon Sep 17 00:00:00
-> > 2001 From: Feng Tang <feng.tang@intel.com>
-> > Date: Mon, 15 Nov 2010 21:06:44 +0800
-> > Subject: [PATCH] jbd2: avoid the concurrent data writeback
-> > 
-> > When dd a big file to an ext4 partition, it is very likely to happen
-> > that both the background flush thread and kjounald try to do data
-> > writeback for it, that the flush thread is doing the writeback for
-> > this file and jbd2 thread are also waken up to commit the
-> > transaction. Because kjounald only calls the generic_writepages()
-> > whose path doesn't really allocate disk blocks, the ext4_witepage()
-> > may be called lots of times (100000+ for a 1g file dd) without
-> > really writing one page back (skipped), which will consume lots of
-> > unnecessary CPU time
-> > 
-> > This could be found by a simple test case with ftrace:
-> > $ sync;
-> > $ echo 40960 > buffer_size_kb;echo 1 > events/writeback/enable;echo
-> > 1 > events/jbd2/enable;echo 1 > events/ext4/enable; $ dd
-> > if=/dev/zero of=/home/test/1g.bin bs=1M count=1024;sync; $ cat
-> > trace > /home/test/jbd2_ext4_1g_dd.log $ grep -c
-> > wcb_writepage /home/test/jbd2_ext4_1g_dd.log
-> > 
-> > This patch will check if the inode is under data syncing, if yes
-> > then don't start the writeback from kjournald
-> > 
-> > The Perf statics (On my Core Duo 2 + 4G RAM + SATA disk + Ext4 in
-> > all default modes): before the patch >  112191
-> > writeback:wbc_writepage  #      0.005 M/sec after the patch  >  54
-> > writeback:wbc_writepage  #      0.000 M/sec
-> > 
-> > Signed-off-by: Feng Tang <feng.tang@intel.com>
-> > ---
-> >  fs/jbd2/commit.c |   11 +++++++++++
-> >  1 files changed, 11 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-> > index f3ad159..0f3e356 100644
-> > --- a/fs/jbd2/commit.c
-> > +++ b/fs/jbd2/commit.c
-> > @@ -170,6 +170,10 @@ static int
-> > journal_wait_on_commit_record(journal_t *journal,
-> >   * We don't do block allocation here even for delalloc. We don't
-> >   * use writepages() because with dealyed allocation we may be doing
-> >   * block allocation in writepages().
-> > + *
-> > + * Sometimes when this get called, the host inode may be under data
-> > + * syncing initiated by flush thread(especially for a large file),
-> > and 
-> > + * in such situation, we should skip this path of writeback
-> >   */
-> >  static int journal_submit_inode_data_buffers(struct address_space
-> > *mapping) {
-> > @@ -181,6 +185,13 @@ static int
-> > journal_submit_inode_data_buffers(struct address_space
-> > *mapping) .range_end = i_size_read(mapping->host), };
-> >  
-> > +	spin_lock(&inode_lock);
-> > +	if (mapping->host->i_state & I_SYNC) {
-> > +		spin_unlock(&inode_lock);
-> > +		return 0;
-> > +	}
-> > +	spin_unlock(&inode_lock);
-> > +
->   Sorry, but this is just wrong. Not only because of inode_lock as
-> Christoph pointed out but mainly principially. ext4 and ocfs2 in
-> data=ordered mode rely on data pages (with underlying blocks already
-> allocated) being written out before transaction commit proceeds for
-> data integrity. So you cannot just go and remove the writeback saying
-> it improves performance.
+> So I do agree that people should look very hard at trying to use
+> existing infrastructure.
 > 
-> I'm not saying that ext4 handling of ordered mode does not need a
-> revision (we actually talked with Ted about it at Kernel Summit). But
-> the solution for it is to use IO completion callback to do extent
-> tree manipulations and stop using JBD2 for data syncing. We already
-> do that for direct IO and conversion of preallocated space so doing
-> it in all cases should be reasonably easy. Until that happens, you
-> can run ext4 in data=writeback mode which will also stop JBD2 from
-> doing the writeback (and effectively is rather similar to your patch).
+> I kind of like the lock-less list implementation (it could easily be
+> useful for random things, and it's very simple). And I don't think the
+> notion of a lockless memory allocator is wrong either, although it
+> looks a lot more specialized than the list thing (the solution to
+> lockless allocations is generally simply to do them ahead of time).
 
-Glad to know that the revision is on the way, and thanks for the 
-detailed clarification.
+Yes. The general solution is that. But lockless memory allocator has
+some advantages too for some situations. For example, the memory pool
+backing lockless memory allocator can be enlarged or shrunken (not
+implemented yet) when needed. That is hard for pre-allocation.
 
-- Feng 
+> So the part I'm really not all that comfy with is the whole APEI side
+> of things. I'm not at all convinced that we want yet another random
+> hw-specific interface, and I really have yet to hear why it's so
+> magical.
+
+Yes. Random hardware-specific interface is not good. In fact we have a
+generic hardware error reporting infrastructure that can be used by
+Machine Check, EDAC, PCIe AER, APEI, etc in the original patchset as
+follow:
+
+http://lkml.org/lkml/2010/10/27/23
+http://lkml.org/lkml/2010/10/27/18
+
+But it seem that nobody want to take a look at it. I will re-post the
+generic hardware error reporting infrastructure patchset with better
+description separately. Hope somebody will take a look at it this time.
+
+Best Regards,
+Huang Ying
+
+
