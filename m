@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab0KQC3K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 21:29:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47207 "EHLO mx1.redhat.com"
+	id S1757547Ab0KQCdi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 21:33:38 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:51882 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752370Ab0KQC3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 21:29:07 -0500
-Date: Tue, 16 Nov 2010 21:28:14 -0500
-From: Josef Bacik <josef@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andreas Dilger <adilger@dilger.ca>, Jan Kara <jack@suse.cz>,
-        Josef Bacik <josef@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, cmm@us.ibm.com,
-        cluster-devel@redhat.com, ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
-Message-ID: <20101117022814.GB5618@dhcp231-156.rdu.redhat.com>
-References: <1289840723-3056-1-git-send-email-josef@redhat.com> <1289840723-3056-2-git-send-email-josef@redhat.com> <20101116111611.GA4757@quack.suse.cz> <20101116114346.GB4757@quack.suse.cz> <20101116125249.GB31957@dhcp231-156.rdu.redhat.com> <20101116131451.GH4757@quack.suse.cz> <18ACAA85-8847-4B12-9839-F99FB6C7B3E4@dilger.ca> <20101117021150.GL22876@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117021150.GL22876@dastard>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1756369Ab0KQCdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 21:33:37 -0500
+Date: Wed, 17 Nov 2010 13:33:24 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus <torvalds@linux-foundation.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: linux-next: fate of the cleancache tree
+Message-Id: <20101117133324.0654bfd9.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__17_Nov_2010_13_33_24_+1100__59AbtRlEan0VObW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 01:11:50PM +1100, Dave Chinner wrote:
-> On Tue, Nov 16, 2010 at 06:22:47PM -0600, Andreas Dilger wrote:
-> > On 2010-11-16, at 07:14, Jan Kara wrote:
-> > >> Yeah I went back and forth on this.  KEEP_SIZE won't change the
-> > >> behavior of PUNCH_HOLE since PUNCH_HOLE implicitly means keep
-> > >> the size.  I figured since its "mode" and not "flags" it would
-> > >> be ok to make either way accepted, but if you prefer PUNCH_HOLE
-> > >> means you have to have KEEP_SIZE set then I'm cool with that,
-> > >> just let me know one way or the other.
-> > > 
-> > > So we call it "mode" but speak about "flags"? Seems a bit
-> > > inconsistent.  I'd maybe lean a bit at the "flags" side and just
-> > > make sure that only one of FALLOC_FL_KEEP_SIZE,
-> > > FALLOC_FL_PUNCH_HOLE is set (interpreting FALLOC_FL_KEEP_SIZE as
-> > > allocate blocks beyond i_size). But I'm not sure what others
-> > > think.
-> > 
-> > IMHO, it makes more sense for consistency and "get what users
-> > expect" that these be treated as flags.  Some users will want
-> > KEEP_SIZE, but in other cases it may make sense that a hole punch
-> > at the end of a file should shrink the file (i.e. the opposite of
-> > an append).
-> 
-> What's wrong with ftruncate() for this?
-> 
-> There's plenty of open questions about the interface if we allow
-> hole punching to change the file size. e.g. where do we set the EOF
-> (offset or offset+len)?  What do we do with the rest of the blocks
-> that are now beyond EOF?  We weren't asked to punch them out, so do
-> we leave them behind? What if we are leaving written blocks beyond
-> EOF - does any filesystem other than XFS support that (i.e. are we
-> introducing different behaviour on different filesystems)?  And what
-> happens if the offset is beyond EOF? Do we extend the file, and if
-> so why wouldn't you just use ftruncate() instead?
-> 
-> IMO, allowing hole punching to change the file size makes it much
-> more complicated and hence less likely to simply do what the user
-> expects. It also is harder to implement and testing becomes much
-> more intricate. From that perspective, it does not seem desirable to
-> me...
-> 
+--Signature=_Wed__17_Nov_2010_13_33_24_+1100__59AbtRlEan0VObW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-FWIW I agree with Dave, the only question at this point is do we force users to
-specify KEEP_SIZE with PUNCH_HOLE?  On one hand it makes the interface a bit
-more consistent, on the other hand it makes the documentation a little weird
+Hi Linus, Dan,
 
-"We have mode here, but if you want to use PUNCH_HOLE you also have to specify
-KEEP_SIZE, so really it's like a flags field it's just named poorly"
+I didn't really follow the discussion at Kernel Summit, but there seemed
+to be some question as to whether the cleancache stuff will be merged or
+not.  It missed 2.6.37 (obviously), but my question now is do I keep in
+in linux-next in the hope that it will be merged in 2.6.38?  Or is that
+not going to happen?
 
-I have no strong opinions the other way so if nobody else does then I'll just do
-it Jan's way.  Thanks,
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Josef
+--Signature=_Wed__17_Nov_2010_13_33_24_+1100__59AbtRlEan0VObW
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM4z70AAoJEDMEi1NhKgbsjEwH/1XSfvx6XrcO7a9EdCWUZRZi
+TslAyUMp8Ftt3qwi276sfatHx0f6dCAwTZQ8VYom40l858heUCWUirDignlYIdYN
+MYLO4DLk+MLaL9BUfEVlqdQ+VlEKoj/kc5z2fPLrIq70bYuOEcs/9jkQiTITWRdj
+B+saZADpq4KmNX5TrW5QZSo6S/WmsKJ2aiE75TwgRg4eBs86nXekBQHw7/4+U9//
+D7v3gNorAQs6Tw1npV9dL7qmC1FWkR9VlYTyG45ee7GOTjhmIqdCpd+rp2id7FIT
+PGndiweNQfPznJ6YjFLswFNGG6sfpJXuwiLeqvECSLW23p3cI0OztWoDdwG4bjU=
+=4pX8
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__17_Nov_2010_13_33_24_+1100__59AbtRlEan0VObW--
