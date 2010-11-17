@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932712Ab0KQNFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 08:05:23 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43847 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754979Ab0KQNFV convert rfc822-to-8bit (ORCPT
+	id S933461Ab0KQNF0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 08:05:26 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56047 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756195Ab0KQNFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 08:05:21 -0500
+	Wed, 17 Nov 2010 08:05:22 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=nmVUZG4jmXd8A4XdMloI7Jqj5DAVsuhdGCHLgjUzLYePUpBNIQCl2QpfgHlDQLfM+Z
-         FDv5uNL+pmGC3boIi13T7lkzvBy/RWKQOKENeM5paCaaG6Al+YC8o3sUsDN/TfVCirEj
-         UXCudUg9MbrnQvaLOIyAwzfEshB9OZmB585Ik=
-Date: Wed, 17 Nov 2010 15:05:16 +0200
-From: =?UTF-8?B?VMO2csO2aw==?= Edwin <edwintorok@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [ANNOUNCE] New utility: 'trace'
-Message-ID: <20101117150516.18136834@deb0>
-In-Reply-To: <1289998312.2109.745.camel@laptop>
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
-	<20101117144758.38bf4f05@deb0>
-	<1289998312.2109.745.camel@laptop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=UxtiYeUIYxFTzKo6Y/XUrMZ95MGIIYEA6mtYiAzlXaBGFxishcGBRAGPZNB5t1Ooj1
+         Zn/snveombA3Lot/VvsDrEZTIer8KrEhtcIv/9nhT5m8nhpMdCQyPMESProCcgQ+5/Ik
+         +na+r2C2Q8ymZ1+JbGk9mODKa3wzAj7Jqo5hU=
+Subject: Re: 2.6.37-rc2 regression: usb network hotplug
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Patrick Schaaf <netdev@bof.de>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <1289995848.5034.5.camel@lat1>
+References: <1289995848.5034.5.camel@lat1>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Nov 2010 14:05:17 +0100
+Message-ID: <1289999117.2687.26.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010 13:51:52 +0100
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Wed, 2010-11-17 at 14:47 +0200, Török Edwin wrote:
-> > I see --call-graph in the trace record -h output, but it doesn't
-> > seem to work on x86_64 for me.
+Le mercredi 17 novembre 2010 à 13:10 +0100, Patrick Schaaf a écrit :
+> When trying out 2.6.37-rc2 on my Dell Latitude D630 laptop, I notice a
+> regression, compared to plain 2.6.36, related to USB unplugging my N900
+> (cdc_ether network device).
 > 
-> If you want to unwind userspace you need to build everything with
-> framepointers -- sadly some people have been lobbying to remove
-> framepointers from all distro builds, even though on x86_64 its nearly
-> free (i386 does have a significant performance benefit, sadly).
+> The usb0 interface is configured to automatically plug into a bridge
+> group, if that matters.
 > 
-> There's some work on-going to simply copy out the top of stack and let
-> dwarves go wild at it in userspace, but that isn't done yet.
+> On 2.6.36 I can unplug and replug the device properly.
+> 
+> Under 2.6.37-rc2, the first plugging works, the device is reachable as
+> desired, but after unplugging it the first time, I receive the following
+> message every 10 seconds:
+> 
+>  kernel:[  149.632104] unregister_netdevice: waiting for usb0 to become
+> free. Usage count = 1
+> 
+> The usb0 device is gone at that point. Replugging does not work.
+> 
+> When I reboot into the same kernel, a list of "cannot reset port"
+> messages is apparent in the boot logs, as appended. This disappears
+> after shutting down the machine.
+> 
+> I'll gladly try out patches that could fix this, or try out other things
+> to help diagnose.
+> 
+> best regards
+>   Patrick
+> 
+> <3>[    4.449056] usb 6-1.2: device not accepting address 3, error -71
+> <3>[    4.452793] hub 6-1:1.0: cannot disable port 2 (err = -71)
+> <3>[    4.454787] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.456787] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.458787] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.460787] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.462786] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.464491] hub 6-1:1.0: Cannot enable port 2.  Maybe the USB
+> cable is bad?
+> <3>[    4.466787] hub 6-1:1.0: cannot disable port 2 (err = -71)
+> <3>[    4.468785] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.470786] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.472787] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.474780] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.476784] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.478261] hub 6-1:1.0: Cannot enable port 2.  Maybe the USB
+> cable is bad?
+> <3>[    4.479773] hub 6-1:1.0: cannot disable port 2 (err = -71)
+> <3>[    4.481773] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.483772] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.485778] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.487787] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.489789] hub 6-1:1.0: cannot reset port 2 (err = -71)
+> <3>[    4.491052] hub 6-1:1.0: Cannot enable port 2.  Maybe the USB
+> cable is bad?
+> <3>[    4.492788] hub 6-1:1.0: cannot disable port 2 (err = -71)
+> <3>[    4.494079] hub 6-1:1.0: unable to enumerate USB device on port 2
+> <3>[    4.495787] hub 6-1:1.0: cannot disable port 2 (err = -71)
+> <3>[    4.497790] hub 6-1:1.0: hub_port_status failed (err = -71)
+> <6>[    4.499100] usb 6-1: USB disconnect, address 2
+> 
 
-Even without frame-pointers I should see at least the first caller in
-userspace, since that can be obtained by reading the return address of
-the syscall, right?
-I don't see any difference in the output of 'trace report' thats why
-I'm asking it is implemented at all right now, or I need additional
-flags to see it.
+Please try
 
-I do see some difference in output of 'perf record -g/perf report'
-though.
+http://patchwork.ozlabs.org/patch/71354/
 
-Best regards,
---Edwin
 
 
