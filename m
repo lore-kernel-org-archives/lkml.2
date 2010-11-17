@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753181Ab0KRArr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 19:47:47 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:42519 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab0KRArp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 19:47:45 -0500
-Content-Type: text/plain; charset=UTF-8
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [ANNOUNCE] New utility: 'trace'
-From: Ian Munsie <imunsie@au1.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-In-reply-to: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
-Date: Thu, 18 Nov 2010 11:47:39 +1100
-Message-Id: <1290041086-sup-5766@au1.ibm.com>
-User-Agent: Sup/0.11
-Content-Transfer-Encoding: 8bit
+	id S1753277Ab0KRAsl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 19:48:41 -0500
+Received: from rps9232.ovh.net ([94.23.201.187]:33955 "EHLO sirion.mallorn.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752114Ab0KRAsj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 19:48:39 -0500
+X-Greylist: delayed 1801 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Nov 2010 19:48:39 EST
+Date: Thu, 18 Nov 2010 00:45:43 +0100
+From: Michael Stuermer <ms@mallorn.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <20101117234543.GB23213@sirion.mallorn.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ms@mallorn.de
+Subject: [PATCH] USB: ftdi_sio: Add ID for RT Systems USB-29B radio cable
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on sirion.mallorn.de)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Thomas Gleixner's message of Wed Nov 17 08:04:40 +1100 2010:
-> We are pleased to announce a new tracing tool called 'trace'.
+From: Michael Stuermer <ms@mallorn.de>
 
-Cool!
+Another variant of the RT Systems programming cable for ham radios.
 
-> Build the -tip kernel and reboot into it to get the most out of the
-> tool - but even on default kernels it will try to cope. Syscall events
-> (CONFIG_FTRACE_SYSCALLS=y) is a must for most methods of analysis
-> though. (with the above -tip tree you'll get it all configured by
-> default)
+Signed-off-by: Michael Stuermer <ms@mallorn.de>
+---
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-OK, now I'll really have to find some time in the near future to go back
-to the work I was doing on the ftrace syscalls + building on Jason's
-ftrace compat syscall patches to make the most of this.
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 76f8b35..1c5892a 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -696,6 +696,7 @@ static struct usb_device_id id_table_combined [] = {
+ 		.driver_info = (kernel_ulong_t)&ftdi_NDI_device_quirk },
+ 	{ USB_DEVICE(TELLDUS_VID, TELLDUS_TELLSTICK_PID) },
+ 	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_SERIAL_VX7_PID) },
++	{ USB_DEVICE(RTSYSTEMS_VID, RTSYSTEMS_CT29B_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_MAXSTREAM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PHI_FISCO_PID) },
+ 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 263f625..cee062f 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -721,6 +721,7 @@
+  */
+ #define RTSYSTEMS_VID			0x2100	/* Vendor ID */
+ #define RTSYSTEMS_SERIAL_VX7_PID	0x9e52	/* Serial converter for VX-7 Radios using FT232RL */
++#define RTSYSTEMS_CT29B_PID		0x9e54	/* CT29B Radio Cable */
+ 
+ /*
+  * Bayer Ascensia Contour blood glucose meter USB-converter cable.
+-- 
+1.5.6.5
 
-Cheers,
--Ian
