@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934838Ab0KQP2E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:28:04 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:58563 "EHLO
+	id S1758486Ab0KQP2e (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:28:34 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:55565 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933251Ab0KQP2B (ORCPT
+	with ESMTP id S1758158Ab0KQP1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:28:01 -0500
+	Wed, 17 Nov 2010 10:27:18 -0500
 From: Arnd Bergmann <arnd@arndb.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 7/7] BKL: move CONFIG_BKL to staging
-Date: Wed, 17 Nov 2010 16:26:59 +0100
-Message-Id: <1290007619-5787-8-git-send-email-arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org
+Subject: [PATCH 4/7] BKL: remove references to lock_kernel from comments
+Date: Wed, 17 Nov 2010 16:26:56 +0100
+Message-Id: <1290007619-5787-5-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1290007619-5787-1-git-send-email-arnd@arndb.de>
 References: <1290007619-5787-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:6+5IHAj6ePAcdnTqAwnyCTJKETW884Td1Be25UnbOTM
- J1H2N/0DY/DPlxrQ6HS5j27ZV0hnL/XRlLCqionQu3VKqAtdIk
- eEZR7hCDND5rncmmlQX00Hx+THMZSg9WQdkIrDEqs0VskAZnXk
- LVWKZGRYudtmnFRz66n7YoUssrHm2a8yBai7E8SrpQ9OcaV4y4
- MoG63KL13rBcfxBRYgEJQ==
+X-Provags-ID: V02:K0:e5IBX9UNJ0KDayllKTA4HRkkXhcpUVAIrEKOam3UL56
+ nThAF3xsJdANxcOz/L82QTpg6ahDbCQw/Jta/oQGUwRP1tX3qI
+ XzZzGVnKq+xdyijpdO/y+SRBj3k4iJV9WqMZRrF/c0CMmEIpmT
+ Fbpr2AYSXGiq/AUQa1qmX0E5Tg2i+MCT0YplVJiyiizxauQLXx
+ s8WMILyqv96A2ietOxUmw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of moving the actual code to staging for stuff that
-depends on CONFIG_BKL, this moves just the configuration
-option it depends on.
-
-As a consequence, the remaining non-staging drivers that use
-the BKL (i830, appletalk, ipx, x25, adfs, hpfs and ufs)
-implicitly depend on staging until they get fixed.
-
-This sets 2.6.39 as the arbitrary date when we actually remove
-the option along with its last users.
+Lock_kernel is gone from the code, so the comments
+should be updated, too. nfsd now uses lock_flocks
+instead of lock_kernel to protect against posix
+file locks.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-nfs@vger.kernel.org
 ---
- drivers/staging/Kconfig |   11 +++++++++++
- lib/Kconfig.debug       |    9 ---------
- 2 files changed, 11 insertions(+), 9 deletions(-)
+ fs/nfsd/nfs4state.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
-index 5eafdf4..5adf537 100644
---- a/drivers/staging/Kconfig
-+++ b/drivers/staging/Kconfig
-@@ -41,6 +41,17 @@ config STAGING_EXCLUDE_BUILD
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index f1e5ec6..36db9cc 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -2254,7 +2254,7 @@ nfs4_file_downgrade(struct nfs4_file *fp, unsigned int share_access)
+  * Spawn a thread to perform a recall on the delegation represented
+  * by the lease (file_lock)
+  *
+- * Called from break_lease() with lock_kernel() held.
++ * Called from break_lease() with lock_flocks() held.
+  * Note: we assume break_lease will only call this *once* for any given
+  * lease.
+  */
+@@ -2278,7 +2278,7 @@ void nfsd_break_deleg_cb(struct file_lock *fl)
+ 	list_add_tail(&dp->dl_recall_lru, &del_recall_lru);
+ 	spin_unlock(&recall_lock);
  
- if !STAGING_EXCLUDE_BUILD
+-	/* only place dl_time is set. protected by lock_kernel*/
++	/* only place dl_time is set. protected by lock_flocks*/
+ 	dp->dl_time = get_seconds();
  
-+config BKL
-+	bool "Include drivers that depend on the Big Kernel Lock" if (SMP || PREEMPT)
-+	default !(SMP || PREEMPT)
-+	help
-+	  This is the traditional lock that is used in old code instead
-+	  of proper locking. All drivers that use the BKL should depend
-+	  on this symbol.
-+	  A small number of drivers still require this. All drivers that
-+	  use the BKL should be changed to a better serialisation method
-+	  or they will be removed in 2.6.39.
-+
- source "drivers/staging/et131x/Kconfig"
+ 	/*
+@@ -2295,7 +2295,7 @@ void nfsd_break_deleg_cb(struct file_lock *fl)
+ /*
+  * The file_lock is being reapd.
+  *
+- * Called by locks_free_lock() with lock_kernel() held.
++ * Called by locks_free_lock() with lock_flocks() held.
+  */
+ static
+ void nfsd_release_deleg_cb(struct file_lock *fl)
+@@ -2310,7 +2310,7 @@ void nfsd_release_deleg_cb(struct file_lock *fl)
+ }
  
- source "drivers/staging/slicoss/Kconfig"
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 65aaefd..968d183 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -469,15 +469,6 @@ config DEBUG_MUTEXES
- 	 This feature allows mutex semantics violations to be detected and
- 	 reported.
- 
--config BKL
--	bool "Big Kernel Lock" if (SMP || PREEMPT)
--	default !(SMP || PREEMPT)
--	help
--	  This is the traditional lock that is used in old code instead
--	  of proper locking. The big kernel lock will go away in 2.6.39,
--	  so all modules that still depend on it need to be changed or
--	  they will be removed as well.
--
- config DEBUG_LOCK_ALLOC
- 	bool "Lock debugging: detect incorrect freeing of live locks"
- 	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
+ /*
+- * Called from setlease() with lock_kernel() held
++ * Called from setlease() with lock_flocks() held
+  */
+ static
+ int nfsd_same_client_deleg_cb(struct file_lock *onlist, struct file_lock *try)
 -- 
 1.7.1
 
