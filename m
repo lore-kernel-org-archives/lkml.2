@@ -1,81 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933947Ab0KQCGq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 21:06:46 -0500
-Received: from THUNK.ORG ([69.25.196.29]:56740 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933756Ab0KQCGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 21:06:45 -0500
-Date: Tue, 16 Nov 2010 21:06:26 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101117020626.GB3290@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Lennart Poettering <mzxreary@0pointer.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	Dhaval Giani <dhaval.giani@gmail.com>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
-	Oleg Nesterov <oleg@redhat.com>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-	Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-	Balbir Singh <balbir@linux.vnet.ibm.com>
-References: <20101116170312.GA19327@tango.0pointer.de>
- <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
- <20101116181603.GC19327@tango.0pointer.de>
- <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
- <20101116202839.GC27235@tango.0pointer.de>
- <20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
- <AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
- <20101116211909.GB16589@tango.0pointer.de>
- <20101116233934.GC1568@thunk.org>
- <20101117002159.GA3184@tango.0pointer.de>
+	id S934018Ab0KQCL2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 21:11:28 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:50480 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933395Ab0KQCL1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 21:11:27 -0500
+X-AuditID: b753bd60-a69a5ba000003e7d-25-4ce339ccc323
+Message-ID: <4CE339C3.6070009@hitachi.com>
+Date: Wed, 17 Nov 2010 11:11:15 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117002159.GA3184@tango.0pointer.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+To: Robert Morell <rmorell@nvidia.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND] perf: Remove hardcoded include paths for elfutils
+References: <1289945793-31441-1-git-send-email-rmorell@nvidia.com>
+In-Reply-To: <1289945793-31441-1-git-send-email-rmorell@nvidia.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 01:21:59AM +0100, Lennart Poettering wrote:
-> > I think you really want to make this be something which the
-> > application can specify by default that they should start in their own
-> > cgroup.  One idea might be to it to the applications menu entry:
-> > 
-> > http://standards.freedesktop.org/desktop-entry-spec/latest/
-> > 
-> > ... so there would be a new key value pair, "start_in_cgroup", that
-> > would allow the user to start an application in their own cgroup.  It
-> > would be up to the desktop launcher to honor that if it was present.
+(2010/11/17 7:16), Robert Morell wrote:
+> This change removes the use of hardcoded absolute
+> "/usr/include/elfutils" paths from the perf build.  The problem with
+> hardcoded paths is that it prevents them from being overridden by
+> $prefix or by -I in CFLAGS (e.g., for cross-compiling purposes).
 > 
-> This is pretty much in line with what I want to do, except I want
-> opt-out, not opt-in behaviour here.
+> Instead, just include the "elfutils/" subdirectory as a relative path
+> when files are needed from that directory.
 
-That works for me.  One suggestion is that in addition to "opt-out",
-it should be also possible for an application launcher file to specify
-a specific cgroup name that should be used.  That would allow multiple
-applications in a group to assigned to the same cgroup.
+Looks good to me, Thanks!
 
-There also needs to be a way to start applications that are started
-via the GNOME and KDE session manager in a specified cgroup as well.
-I assume that's in your plan as well?
+> 
+> Tested by building perf:
+> - Cross-compiled for ARM on x86_64
+> - Built natively on x86_64
+> - Built on x86_64 with /usr/include/elfutils moved to another location
+>   and manually included in CFLAGS
+> 
+> Signed-off-by: Robert Morell <rmorell@nvidia.com>
 
-    	      	      	      	      - Ted
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+
+> ---
+>  tools/perf/Makefile            |    4 ++--
+>  tools/perf/feature-tests.mak   |    4 ++--
+>  tools/perf/util/probe-finder.h |    6 +++---
+>  3 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index d1db0f6..74b684d 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -507,7 +507,7 @@ PERFLIBS = $(LIB_FILE)
+>  -include config.mak
+>  
+>  ifndef NO_DWARF
+> -FLAGS_DWARF=$(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
+> +FLAGS_DWARF=$(ALL_CFLAGS) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
+>  ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
+>  	msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
+>  	NO_DWARF := 1
+> @@ -554,7 +554,7 @@ ifndef NO_DWARF
+>  ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
+>  	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
+>  else
+> -	BASIC_CFLAGS += -I/usr/include/elfutils -DDWARF_SUPPORT
+> +	BASIC_CFLAGS += -DDWARF_SUPPORT
+>  	EXTLIBS += -lelf -ldw
+>  	LIB_OBJS += $(OUTPUT)util/probe-finder.o
+>  endif # PERF_HAVE_DWARF_REGS
+> diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
+> index b253db6..b041ca6 100644
+> --- a/tools/perf/feature-tests.mak
+> +++ b/tools/perf/feature-tests.mak
+> @@ -9,8 +9,8 @@ endef
+>  ifndef NO_DWARF
+>  define SOURCE_DWARF
+>  #include <dwarf.h>
+> -#include <libdw.h>
+> -#include <version.h>
+> +#include <elfutils/libdw.h>
+> +#include <elfutils/version.h>
+>  #ifndef _ELFUTILS_PREREQ
+>  #error
+>  #endif
+> diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
+> index bba69d4..beaefc3 100644
+> --- a/tools/perf/util/probe-finder.h
+> +++ b/tools/perf/util/probe-finder.h
+> @@ -34,9 +34,9 @@ extern int find_available_vars_at(int fd, struct perf_probe_event *pev,
+>  				  bool externs);
+>  
+>  #include <dwarf.h>
+> -#include <libdw.h>
+> -#include <libdwfl.h>
+> -#include <version.h>
+> +#include <elfutils/libdw.h>
+> +#include <elfutils/libdwfl.h>
+> +#include <elfutils/version.h>
+>  
+>  struct probe_finder {
+>  	struct perf_probe_event	*pev;		/* Target probe event */
+
+
+-- 
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
