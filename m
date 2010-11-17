@@ -1,69 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757085Ab0KPX56 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 18:57:58 -0500
-Received: from mail.perches.com ([173.55.12.10]:1485 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751238Ab0KPX55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 18:57:57 -0500
-Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
- preference tool
-From: Joe Perches <joe@perches.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Florian Mickler <florian@mickler.org>,
-        Jiri Kosina <trivial@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101116152835.b0ab571c.rdunlap@xenotime.net>
-References: <1289850773.16461.166.camel@Joe-Laptop>
-	 <20101116104921.GL12986@rakim.wolfsonmicro.main>
-	 <1289919077.28741.50.camel@Joe-Laptop>
-	 <20101116183707.179964dd@schatten.dmk.lab>
-	 <20101116181226.GB26239@rakim.wolfsonmicro.main>
-	 <20101116203522.65240b18@schatten.dmk.lab>
-	 <20101116195530.GA7523@rakim.wolfsonmicro.main>
-	 <20101116122102.86e7e0b9.rdunlap@xenotime.net>
-	 <1289940156.28741.207.camel@Joe-Laptop>
-	 <20101116124609.382e42fb.rdunlap@xenotime.net>
-	 <20101116232258.GC24623@opensource.wolfsonmicro.com>
-	 <20101116152835.b0ab571c.rdunlap@xenotime.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 16 Nov 2010 15:57:55 -0800
-Message-ID: <1289951875.28741.261.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S932302Ab0KPX6G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 18:58:06 -0500
+Received: from cobra.newdream.net ([66.33.216.30]:40785 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757896Ab0KPX6A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 18:58:00 -0500
+Date: Tue, 16 Nov 2010 16:02:02 -0800 (PST)
+From: Sage Weil <sage@newdream.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the ceph tree
+In-Reply-To: <20101117104314.56aeb069.sfr@canb.auug.org.au>
+Message-ID: <Pine.LNX.4.64.1011161558180.1702@cobra.newdream.net>
+References: <20101117104314.56aeb069.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 15:28 -0800, Randy Dunlap wrote:
-> On Tue, 16 Nov 2010 23:22:58 +0000 Mark Brown wrote:
-> > On Tue, Nov 16, 2010 at 12:46:09PM -0800, Randy Dunlap wrote:
-> > > On Tue, 16 Nov 2010 12:42:36 -0800 Joe Perches wrote:
-> > > > Some subsystem maintainers like upper case, some mixed, some lower.
-> > > > Some aren't consistent.  (Staging/staging)
-> > > Case usually doesn't matter to most of us.
-> > Given that we're working in case sensitive languages here it's probably
-> > safe to assume that a reasonable proportion of people will care; being
-> > reasonably consistent with existing practice for the subsystem seems
-> > sensible.
-> Greg takes patches that say STAGING or Staging or staging.
+On Wed, 17 Nov 2010, Stephen Rothwell wrote:
+> Hi Sage,
+> 
+> After merging the ceph tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> ERROR: "ceph_str_hash" [fs/ceph/ceph.ko] undefined!
+> 
+> Caused by commit 5f69106b3f68be20015d1d8a43192bc2f14c7046 ("ceph: add
+> dir_layout to inode").
+> 
+> I have used the ceph tree from next-20101116 for today.
 
-Greg seems to rewrite patch subjects and is inconsistent
-about case, so he might be doing that by hand.
+I've added the missing EXPORT_SYMBOL and pushed a new for-next.
 
-> DaveM takes patches that say net: or netdev: or network: or NET:
-
-DaveM doesn't appear to be choosy about patch subject lines.
-He seems to take any sensible patch and as far as I know he
-doesn't edit the subject lines.  He does reject inferior
-patches outright.
-
-> The sound maintainers take patches that say sound: or alsa: or ALSA:
-
-The sound maintainers seem to rewrite patch subjects on an
-ad-hoc basis.
-
-
+Thanks!
+sage
