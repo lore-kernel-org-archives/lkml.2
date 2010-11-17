@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933968Ab0KQBss (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 20:48:48 -0500
-Received: from mail.ensi-bourges.fr ([195.221.38.25]:41860 "EHLO
-	ensi-bourges.fr" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933200Ab0KQBsr (ORCPT
+	id S933893Ab0KQBvU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 20:51:20 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59163 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932959Ab0KQBvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 20:48:47 -0500
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Tue, 16 Nov 2010 20:48:46 EST
-Message-ID: <4CE332F7.2070805@ensi-bourges.fr>
-Date: Wed, 17 Nov 2010 02:42:15 +0100
-From: Martin Peres <martin.peres@ensi-bourges.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101028 Lanikai/3.1.6
+	Tue, 16 Nov 2010 20:51:19 -0500
 MIME-Version: 1.0
-To: bskeggs@redhat.com
-CC: Randy Dunlap <randy.dunlap@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Zimny Lech <napohybelskurwysynom2010@gmail.com>,
-        Dave Airlie <airlied@linux.ie>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: nouveau build failure (was Re: Linux 2.6.37-rc2)
-References: <AANLkTi=34dJ1HJco8gw=Y+7Ear3mC+XnahqODhnn+56u@mail.gmail.com>	 <20101116125055.74f78634.randy.dunlap@oracle.com> <1289941098.20058.1.camel@nisroch>
-In-Reply-To: <1289941098.20058.1.camel@nisroch>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101117013148.GA22651@bombadil.infradead.org>
+References: <AANLkTimHtjH3YvtX6i542_XjfFeuvG-AnU8i224a1R4j@mail.gmail.com>
+ <1289778189.5154.10.camel@maggy.simson.net> <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
+ <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com>
+ <1289783580.495.58.camel@maggy.simson.net> <1289811438.2109.474.camel@laptop>
+ <1289820766.16406.45.camel@maggy.simson.net> <1289821590.16406.47.camel@maggy.simson.net>
+ <20101115125716.GA22422@redhat.com> <1289856350.14719.135.camel@maggy.simson.net>
+ <20101117013148.GA22651@bombadil.infradead.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 16 Nov 2010 17:50:41 -0800
+Message-ID: <AANLkTi=ynv+TAB9a2-+9PDhYbmopMn+6FPxh4ZUdro2K@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+To: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 16/11/2010 21:58, Ben Skeggs a écrit :
-> On Tue, 2010-11-16 at 12:50 -0800, Randy Dunlap wrote:
->> On Tue, 16 Nov 2010 12:45:43 -0800 Linus Torvalds wrote:
->>
->>> Looks like commit 34e9d85a1aae ("drm/nouveau: Add temperature support
->>> (vbios parsing, readings, hwmon)") didn't make things properly
->>> dependent on CONFIG_HWMON (or do the appropriate "select HWMON" or
->>> whatever).
->>>
->>> Added some collection of hopefully more relevant people to the discussion..
->>>
->>>                    Linus
->>
->> This build error was reported for linux-next on 2010.1011 and 2010.1025,
->> with no replies.
->>
->> Some process fix would be nice to see.
-> It's actually been fixed in the nouveau tree, I have to go through and
-> get fixes out of it and send them to Dave.
+On Tue, Nov 16, 2010 at 5:31 PM, Kyle McMartin <kyle@mcmartin.ca> wrote:
 >
-> Ben.
-Thanks Ben, I should have checked my fix actually went in David's 
-drm-fixes branch. I'll try to be more vigilent on this in the future.
+> This is a bit of a problem, as it's called in_atomic context and kmalloc's
+> under GFP_KERNEL (which can sleep.) This results in sleep-under-spinlock
+> prints when CONFIG_DEBUG_SPINLOCK_SLEEP=y.
 
-Martin
+Blame me, I threw that out as a single point where this can be done.
+
+In fact, holding the signal spinlock was seen as a bonus, since that
+was used to serialize the access to the signal->autogroup access.
+Which I think is required.
+
+But yes, it does create problems for the allocation. It could be done
+as just a GFP_ATOMIC, of course, and on allocation failure you'd just
+punt and not do it. Not pretty, but functional.
+
+                  Linus
