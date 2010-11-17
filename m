@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935243Ab0KQWCR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 17:02:17 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:59227 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759082Ab0KQWCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 17:02:16 -0500
-Date: Wed, 17 Nov 2010 23:01:52 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arjan van de Ven <arjan@linux.intel.com>, Andre@firstfloor.org,
-        ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org,
-        pierre-marc.fournier@polymtl.ca
-Subject: Re: [ANNOUNCE] New tools: lttngtrace and lttngreport
-Message-ID: <20101117220152.GA2915@elte.hu>
-References: <20101115134243.GA2772@Krystal>
- <20101115160745.GA7203@Krystal>
- <87y68sqiyb.fsf@basil.nowhere.org>
- <20101117173124.GB13717@Krystal>
+	id S935301Ab0KQWFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 17:05:35 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:9212 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563Ab0KQWFe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 17:05:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=B5ePRFe245tyNTHJS8b2RAHpadt655MxVIjFIJybo1JKi5h+6Ko4XQyF93CvMiCPPH
+         T6UVDncWWL5FTOnmG6ZQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117173124.GB13717@Krystal>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <1290007734.2109.941.camel@laptop>
+References: <1289996638-21439-1-git-send-email-walken@google.com>
+	<1289996638-21439-4-git-send-email-walken@google.com>
+	<20101117125756.GA5576@amd>
+	<1290007734.2109.941.camel@laptop>
+Date: Wed, 17 Nov 2010 14:05:30 -0800
+Message-ID: <AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering writeback
+From: Michel Lespinasse <walken@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-
-> Well, I'm afraid the collection approach "trace" is currently taking won't allow 
-> this kind of dependency wakeup chain tracking, because they focus on tracing 
-> operations happening on a thread and its children, but the reality is that the 
-> wakeup chains often spread outside of this scope.
+On Wed, Nov 17, 2010 at 7:28 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-11-17 at 23:57 +1100, Nick Piggin wrote:
+>> On Wed, Nov 17, 2010 at 04:23:58AM -0800, Michel Lespinasse wrote:
+>> > When faulting in pages for mlock(), we want to break COW for anonymous
+>> > or file pages within VM_WRITABLE, non-VM_SHARED vmas. However, there is
+>> > no need to write-fault into VM_SHARED vmas since shared file pages can
+>> > be mlocked first and dirtied later, when/if they actually get written to.
+>> > Skipping the write fault is desirable, as we don't want to unnecessarily
+>> > cause these pages to be dirtied and queued for writeback.
+>>
+>> It's not just to break COW, but to do block allocation and such
+>> (filesystem's page_mkwrite op). That needs to at least be explained
+>> in the changelog.
 >
-> This is why lttngtrace gathers a system-wide trace even though we're mostly 
-> intested in the wait/wakeups of a specific PID.
+> Agreed, the 0/3 description actually does mention this.
+>
+>> Filesystem doesn't have a good way to fully pin required things
+>> according to mlock, but page_mkwrite provides some reasonable things
+>> (like block allocation / reservation).
+>
+> Right, but marking all pages dirty isn't really sane. I can imagine
+> making the reservation but not marking things dirty solution, although
+> it might be lots harder to implement, esp since some filesystems don't
+> actually have a page_mkwrite() implementation.
 
-Mathieu, what you say is factually wrong - of course perf events allows system-wide 
-tracing, it always did.
+Really, my understanding is that not pre-allocating filesystem blocks
+is just fine. This is, after all, what happens with ext3 and it's
+never been reported as a bug (that I know of).
 
-This is available in the 'trace' tool as well, try:
+If filesystem people's feedback is that they really want mlock() to
+continue pre-allocating blocks, maybe we can just do it using
+fallocate() rather than page_mkwrite() callbacks ?
 
-  $ trace record --all sleep 1          # do system-wide tracing
-  
-  # trace recorded [1.928 MB] - try 'trace summary' to get an overview
-
-  $ trace summary
-
-   .-----------------------------------.
- __)    Summary of 'sleep 1' events    (__
-
-              [ task - pid ]     [ events ] [ ratio ]  [ runtime ]
- _____________________________________________________________________
-
-             swapper - 0     :         64   [  0.4% ]      0.000 ms
-         ksoftirqd/0 - 3     :          6   [  0.0% ]      0.063 ms
-         migration/1 - 7     :          2   [  0.0% ]      0.000 ms
-         kworker/0:1 - 10    :          6   [  0.0% ]      0.139 ms
-         kworker/6:1 - 53    :          3   [  0.0% ]      0.014 ms
-         kworker/5:1 - 54    :          3   [  0.0% ]      0.014 ms
-         kworker/4:1 - 55    :          3   [  0.0% ]      0.014 ms
-         kworker/3:1 - 56    :          3   [  0.0% ]      0.015 ms
-         kworker/2:1 - 57    :          3   [  0.0% ]      0.015 ms
-         kworker/1:1 - 58    :          3   [  0.0% ]      0.015 ms
-        kworker/15:1 - 318   :          6   [  0.0% ]      0.045 ms
-        kworker/14:1 - 319   :          6   [  0.0% ]      0.033 ms
-        kworker/13:1 - 320   :          6   [  0.0% ]      0.036 ms
-        kworker/12:1 - 321   :          6   [  0.0% ]      0.035 ms
-        kworker/11:1 - 322   :          6   [  0.0% ]      0.041 ms
-        kworker/10:1 - 323   :          6   [  0.0% ]      0.037 ms
-         kworker/9:1 - 324   :          6   [  0.0% ]      0.042 ms
-         kworker/7:1 - 326   :          6   [  0.0% ]      0.032 ms
-         kworker/8:2 - 1047  :          6   [  0.0% ]      0.039 ms
-            sendmail - 2327  :         18   [  0.1% ]      0.111 ms
-               trace - 32281 :      15728   [ 96.2% ]     86.478 ms
-               sleep - 32282 :        460   [  2.8% ]      1.305 ms
- _____________________________________________________________________
-
-As you can see all those kworker events - it's a system-wide trace.
-
-This is in addition to per process and per workflow (child hierarchy) tracing - 
-which we expect to be more commonly used.
-
-Thanks,
-
-	Ingo
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
