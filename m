@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751317Ab0KQX1H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:27:07 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37452 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab0KQX1E (ORCPT
+	id S1751295Ab0KQX2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:28:16 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:47362 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060Ab0KQX2Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:27:04 -0500
-Message-ID: <4CE46443.2000002@oracle.com>
-Date: Wed, 17 Nov 2010 15:24:51 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Wed, 17 Nov 2010 18:28:16 -0500
+Subject: [PATCH 0/5] refactor dts files for mpc5200b based systems (take 2)
+To: linux-kernel@vger.kernel.org
+From: John Bonesio <bones@secretlab.ca>
+Cc: linuxppc-dev@lists.ozlabs.org, jdl@jdl.com, glikely@secretlab.ca,
+        devicetree-discuss@lists.ozlabs.org, david@gibson.dropbear.id.au
+Date: Wed, 17 Nov 2010 15:28:11 -0800
+Message-ID: <20101117232520.25947.37475.stgit@riker>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: Tree for November 17
-References: <20101117140956.a8264c75.sfr@canb.auug.org.au>	<AANLkTinBiGOPptOY18-D+=djKLsJj75mXxL6ht6xNJXL@mail.gmail.com>	<20101117095920.2b9e2e6a.randy.dunlap@oracle.com> <20101118101459.472d540b.sfr@canb.auug.org.au>
-In-Reply-To: <20101118101459.472d540b.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/10 15:14, Stephen Rothwell wrote:
-> On Wed, 17 Nov 2010 09:59:20 -0800 Randy Dunlap <randy.dunlap@oracle.com> wrote:
->>
->> Why was #include <linux/smp_lock.h> removed from <linux/hardirq.h> ?
->>
->> I added #include <linux/smp_lock.h> to i387.h, but them mm/filemap.c build fails
->> with the same error:
->>
->> linux-next-20101117/mm/filemap.c: In function 'iov_iter_copy_from_user_atomic':
->> linux-next-20101117/mm/filemap.c:1936: error: implicit declaration of function 'kernel_locked'
-> 
-> Was this fixed before Linus took that patch?  Also, the #include of
+I belive I've fixed the problems with the messed up [PATCH 1/5]. I've also
+incorporated changes per comments.
 
-This build error was in linux-next of NOV. 17.  What mainline base did it use?
-I don't exactly know how to answer your question...
+The following series implements a set of changes to refactor dts (device tree
+source) files for systems using the mpc5200b SoC.
+
+The dtc changes allow a base dts to be defined in a common dts file included
+with '/include/ <filename>'. This base dts can then be updated and modified
+by merging in a second device tree defined in the system specific dts file.
+
+The rest of the changes are the refactoring of the mpc5200b dts files.
+
+---
+
+John Bonesio (5):
+      Pull in recent changes from the main dtc repository. These changes primarily
+      powerpc/5200: dts: rename nodes to prepare for refactoring dts files
+      powerpc/5200: dts: remove unused properties
+      powerpc/5200: dts: Change combatible strings on localbus
+      powerpc/5200: dts: refactor dts files
 
 
-> linux/smp_lock.h in linux/hardirq.h was the only line between #ifdef
-> CONFIG_PREEMPT and #endif ... was this patch even reviewed?
-> 
-> Maybe (after it was reviewed) it should have been given more time in
-> linux-next before being merged.
-
+ arch/powerpc/boot/dts/cm5200.dts    |  198 +++----------------------
+ arch/powerpc/boot/dts/digsy_mtc.dts |  179 +++--------------------
+ arch/powerpc/boot/dts/lite5200b.dts |  232 ++---------------------------
+ arch/powerpc/boot/dts/media5200.dts |  216 +++------------------------
+ arch/powerpc/boot/dts/motionpro.dts |  198 +++----------------------
+ arch/powerpc/boot/dts/mpc5200b.dtsi |  276 +++++++++++++++++++++++++++++++++++
+ arch/powerpc/boot/dts/mucmc52.dts   |  176 ++++++----------------
+ arch/powerpc/boot/dts/pcm030.dts    |  201 ++-----------------------
+ arch/powerpc/boot/dts/pcm032.dts    |  205 ++------------------------
+ arch/powerpc/boot/dts/uc101.dts     |  162 ++++-----------------
+ 10 files changed, 499 insertions(+), 1544 deletions(-)
+ create mode 100644 arch/powerpc/boot/dts/mpc5200b.dtsi
 
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Signature
