@@ -1,74 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935406Ab0KQTkl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 14:40:41 -0500
-Received: from mga09.intel.com ([134.134.136.24]:37881 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933666Ab0KQTkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 14:40:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,212,1288594800"; 
-   d="scan'208";a="678473925"
-Message-ID: <4CE42FB7.8000806@linux.intel.com>
-Date: Wed, 17 Nov 2010 11:40:39 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "Ted Ts'o" <tytso@mit.edu>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
+	id S935424Ab0KQTni (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 14:43:38 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:49601 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935246Ab0KQTnh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 14:43:37 -0500
+Subject: Re: [PATCH] sched: Simplify cpu-hot-unplug task migration
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Raistlin <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Chris Friesen <cfriesen@nortel.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [ANNOUNCE] New utility: 'trace'
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>	 <20101117013700.GA3290@thunk.org> <20101117132404.GF27063@elte.hu>	 <1290001128.2109.785.camel@laptop>  <20101117140002.GH27063@elte.hu>	 <1290003110.2109.822.camel@laptop>	 <1290006634.30543.61.camel@gandalf.stny.rr.com>	 <1290008637.2109.967.camel@laptop> <1290010521.30543.68.camel@gandalf.stny.rr.com>
-In-Reply-To: <1290010521.30543.68.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
+        "p.faure" <p.faure@akatech.ch>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Claudio Scordino <claudio@evidence.eu.com>,
+        michael trimarchi <trimarchi@retis.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>,
+        Tommaso Cucinotta <cucinotta@sssup.it>,
+        Juri Lelli <juri.lelli@gmail.com>,
+        Nicola Manica <nicola.manica@disi.unitn.it>,
+        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
+        Harald Gustafsson <hgu1972@gmail.com>,
+        paulmck <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20101117192713.GA11910@redhat.com>
+References: <1289486096.2084.123.camel@laptop>
+	 <20101111152750.GA2510@redhat.com> <1289490202.2084.140.camel@laptop>
+	 <20101111163242.GA5697@redhat.com> <1289673355.2109.79.camel@laptop>
+	 <20101113195857.GA11411@redhat.com> <1289680291.2109.244.camel@laptop>
+	 <1289681497.2109.270.camel@laptop> <1289691081.2109.452.camel@laptop>
+	 <1289851597.2109.547.camel@laptop>  <20101117192713.GA11910@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 17 Nov 2010 20:42:34 +0100
+Message-ID: <1290022954.2109.1217.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2010 08:15 AM, Steven Rostedt wrote:
-> On Wed, 2010-11-17 at 16:43 +0100, Peter Zijlstra wrote:
->> On Wed, 2010-11-17 at 10:10 -0500, Steven Rostedt wrote:
->>>
->>> Right, the problem with filtering is what do we want to filter, and what
->>> about copying?
->>>
->>> Currently, we copy the data into the buffer and then filter on that
->>> data. We could also easily filter on the parameters of the tracepoint,
->>> but sometimes those parameters do not match the final output (as the
->>> case with sched_switch). Do we copy the data into a separate "per cpu"
->>> temp buffer, and figure out the filter then? And if the filter is fine,
->>> then copy into the buffer. This obviously is slow, due to the multiple
->>> copies. We could do this only if the filtering is enabled.
->>
->> Right, so what is the primary purpose of this filtering stuff? As it
->> stands it makes stuff terribly slow, so you add overhead but the win
->> (presumably) is less data output, is that a sane trade-off?
->
-> I've actually used filtering too. Not for speed up, but because I was
-> recording a lot of data and the reader could not keep up. By filtering,
-> I was able to get all the relevant information without needing to make
-> the kernel buffer a Gig.
+On Wed, 2010-11-17 at 20:27 +0100, Oleg Nesterov wrote:
+> Peter, sorry for delay.
+> 
+> I was going to read this patch carefully today, but due to the holiday
+> in the Czech Republic I have to drink (too much) beer instead ;)
+> 
+> This means you should probably ignore my question, but can't resist...
+> 
+> > -static void migrate_dead_tasks(unsigned int dead_cpu)
+> > -{
+> > -	struct rq *rq = cpu_rq(dead_cpu);
+> > -	struct task_struct *next;
+> > +	rq->stop = NULL;
+> 
+> (or we could do current->state = TASK_INTERRUPTIPLE, afaics)
 
-I have run into situations where the volume of output becomes a problem 
-and not every system will have the memory to dedicate to massive trace 
-buffers. This is, for me, probably the one motivating argument for doing 
-filtering in the kernel as opposed to post-processing scripts.
+Ah, you missed a patch that made pick_next_task_stop() look like:
 
--- 
-Darren Hart
-Yocto Linux Kernel
+static struct task_struct *pick_next_task_stop(struct rq *rq)
+{
+        struct task_struct *stop = rq->stop;
+
+        if (stop && stop->se.on_rq)
+                return stop;
+
+        return NULL;
+}
+
+> >  	for ( ; ; ) {
+> > -		if (!rq->nr_running)
+> > +		/*
+> > +		 * There's this thread running, bail when that's the only
+> > +		 * remaining thread.
+> > +		 */
+> > +		if (rq->nr_running == 1)
+> >  			break;
+> 
+> I was very much confused, and I was going to say this is wrong.
+> However, now I think this is correct, just the comment is not
+> right.
+> 
+> There is another running thread we should not migrate, rq->idle.
+> If nothing else, dequeue_task_idle() should be never called.
+
+In fact, dequeue_task_idle() will yell if you try that ;-)
+
+> But, if I understand correctly, ->nr_running does not account
+> the idle thread, and this is what makes this correct.
+> 
+> Correct?
+
+Right, I can add: (the idle thread is not counted in nr_running), if
+that makes things clearer for you; however its a quite fundamental
+property, we don't consider the idle task a proper runnable entity, its
+simply the thing we do when there's nothing else to do.
