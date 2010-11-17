@@ -1,38 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935472Ab0KQUWh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 15:22:37 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33143
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935179Ab0KQUWg convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 15:22:36 -0500
-Date: Wed, 17 Nov 2010 12:23:01 -0800 (PST)
-Message-Id: <20101117.122301.233699121.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: segoon@openwall.com, kernel-janitors@vger.kernel.org, eilong@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: bnx2x: fix error value sign
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1289766728.2743.147.camel@edumazet-laptop>
-References: <1289765315-6028-1-git-send-email-segoon@openwall.com>
-	<1289766583.2743.144.camel@edumazet-laptop>
-	<1289766728.2743.147.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S935487Ab0KQUYi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 15:24:38 -0500
+Received: from pfepa.post.tele.dk ([195.41.46.235]:37053 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935355Ab0KQUYh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 15:24:37 -0500
+Date: Wed, 17 Nov 2010 21:24:34 +0100
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: dirk.brandewie@gmail.com, Michal Marek <mmarek@suse.cz>,
+        devicetree-discuss@lists.ozlabs.org, sodaville@linutronix.de,
+        arjan@linux.intel.com, linuxppc-dev@lists.ozlabs.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] of: Add support for linking device tree blobs into
+	vmlinux
+Message-ID: <20101117202434.GA20441@merkur.ravnborg.org>
+References: <cover.1289943240.git.dirk.brandewie@gmail.com> <9129f0a21ea48fb2dcb89cea290e88f3e8c0d8a2.1289943240.git.dirk.brandewie@gmail.com> <20101117092751.GA19781@merkur.ravnborg.org> <20101117180723.GA7550@angua.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101117180723.GA7550@angua.secretlab.ca>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Sun, 14 Nov 2010 21:32:08 +0100
-
-> Le dimanche 14 novembre 2010 à 21:29 +0100, Eric Dumazet a écrit :
+> > > +
+> > > +DTC = $(objtree)/scripts/dtc/dtc
+> > > +
+> > > +quiet_cmd_dtc = DTC	$@
+> > Please avoid tabs in the output - all other uses spaces. (There is a tab between DTC and $@)
+> > 
+> > > +      cmd_dtc = $(DTC) -O dtb -o $(obj)/$*.dtb -b 0 $(DTS_FLAGS) $(src)/dts/$*.dts
+> > 
+> > Looks strange. How about:
+> >       cmd_dtc = $(DTC) -O dtb -o $@ -b 0 $(DTS_FLAGS) $<
+> > 
+> > Then you avoid the hardcoded path in the rule too.
+> > 
+> > 
+> > > +
+> > > +$(obj)/%.dtb: $(src)/dts/%.dts
+> > > +	$(call if_changed,dtc)
 > 
->> I remember sending same patch in the past... it was lost somehow...
+> The rule should be generic (not depend on the presence of a dts
+> subdirectory.  Basically, the .dtb really should be generated in the
+> same directory as the .dts file.  There is no reason for this rule to
+> have special behaviour.
 > 
-> Ah, it was another issue, patch was not lost ;)
+> > 
+> > This snippet belong in the file that uses this.
+> > This is how we do for other rules like bzip etc.
+> 
+> This rule is intended to be generic and usable anywhere in the tree.
+I understand this.
+But only few people will recognize this so they see something like this:
 
-:-)  Applied, thanks everyone.
+obj-y := foo.dtb.o
+
+And they look for a file named foo.dtb.S or foo.dtb.c.
+
+If we spell it out then we have a better chance to allow
+people to understand the relation ships between the files.
+
+
+If we really want to hide this in scipts/Makefile.* then Makefile.build
+is the logical places to do so.
+Makefile.lib is supposed to be stuff that is relavent for more than
+one Makefile in scripts/* but it has unfortunately also grown
+some of the boot support stuff.
+
+Today there is a single rule related to _shipped files.
+We should not fill it up with additional rules - put them
+Makefile.build if we really want to avoid them in boot/Makefile.
+
+	Sam
