@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933083Ab0KQAoK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 19:44:10 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:50410 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932265Ab0KQAoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 19:44:09 -0500
-From: "Tim Pepper" <lnxninja@linux.vnet.ibm.com>
-Date: Tue, 16 Nov 2010 16:44:03 -0800
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 07/28] fs: change d_compare for rcu-walk
-Message-ID: <20101117004403.GB22789@tpepper-t61p.dolavim.us>
-References: <20101116140900.039761100@kernel.dk>
- <20101116142028.836625566@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101116142028.836625566@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S933150Ab0KQApU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 19:45:20 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:40608 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932265Ab0KQApS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 19:45:18 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 17 Nov 2010 01:44:27 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Florian Mickler <florian@mickler.org>,
+        Joe Perches <joe@perches.com>, Jiri Kosina <trivial@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
+ preference tool
+Message-ID: <20101117014427.41d85b13@stein>
+In-Reply-To: <20101116230126.GB24623@opensource.wolfsonmicro.com>
+References: <1289848458.16461.150.camel@Joe-Laptop>
+	<20101115193407.GK12986@rakim.wolfsonmicro.main>
+	<1289850773.16461.166.camel@Joe-Laptop>
+	<20101116104921.GL12986@rakim.wolfsonmicro.main>
+	<1289919077.28741.50.camel@Joe-Laptop>
+	<20101116183707.179964dd@schatten.dmk.lab>
+	<20101116181226.GB26239@rakim.wolfsonmicro.main>
+	<20101116203522.65240b18@schatten.dmk.lab>
+	<20101116195530.GA7523@rakim.wolfsonmicro.main>
+	<20101116122102.86e7e0b9.rdunlap@xenotime.net>
+	<20101116230126.GB24623@opensource.wolfsonmicro.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 17 Nov at 01:09:07 +1100 npiggin@kernel.dk said:
-
-> Index: linux-2.6/include/linux/dcache.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/dcache.h	2010-11-17 00:52:37.000000000 +1100
-> +++ linux-2.6/include/linux/dcache.h	2010-11-17 01:05:48.000000000 +1100
-> @@ -134,7 +134,9 @@ enum dentry_d_lock_class
->  struct dentry_operations {
->  	int (*d_revalidate)(struct dentry *, struct nameidata *);
->  	int (*d_hash)(struct dentry *, struct qstr *);
-> -	int (*d_compare)(struct dentry *, struct qstr *, struct qstr *);
-> +	int (*d_compare)(const struct dentry *,
-> +			const struct dentry *, const struct inode *,
-> +			unsigned int, const char *, const struct qstr *);
->  	int (*d_delete)(const struct dentry *);
->  	void (*d_release)(struct dentry *);
->  	void (*d_iput)(struct dentry *, struct inode *);
-
-The white space change I'd previously noted may as well happen here
-if you're wanting it...just keeps the revision history cleaner for
-future eyes.
-
-> Index: linux-2.6/Documentation/filesystems/vfs.txt
-> ===================================================================
-> --- linux-2.6.orig/Documentation/filesystems/vfs.txt	2010-11-17 00:52:37.000000000 +1100
-> +++ linux-2.6/Documentation/filesystems/vfs.txt	2010-11-17 01:05:49.000000000 +1100
-> @@ -842,7 +842,9 @@ the VFS uses a default. As of kernel 2.6
->  struct dentry_operations {
->  	int (*d_revalidate)(struct dentry *, struct nameidata *);
->  	int (*d_hash)(struct dentry *, struct qstr *);
-> -	int (*d_compare)(struct dentry *, struct qstr *, struct qstr *);
-> +	int (*d_compare)(const struct dentry *,
-> +			const struct dentry *, const struct inode *,
-> +			unsigned int, const char *, const struct qstr *);
->  	int (*d_delete)(const struct dentry *);
->  	void (*d_release)(struct dentry *);
->  	void (*d_iput)(struct dentry *, struct inode *);
-
-Ditto.
-
-> @@ -854,9 +856,26 @@ struct dentry_operations {
->  	dcache. Most filesystems leave this as NULL, because all their
->  	dentries in the dcache are valid
+On Nov 16 Mark Brown wrote:
+> On Tue, Nov 16, 2010 at 12:21:02PM -0800, Randy Dunlap wrote:
 > 
-> -  d_hash: called when the VFS adds a dentry to the hash table
-> +  d_hash: called when the VFS adds a dentry to the hash table. The first
-> +	dentry passed to d_hash is the parent directory that the name is
-> + 	to be hashed into.
-
-Similarly it'd be cleaner if this was in the next patch which is changing
-d_hash().  Same for the d_hash() prototype white space changes.
-
+> > I don't know what you asked Joe to change, but asking someone to use
+> > the documented canonical patch format:
 > 
-> -  d_compare: called when a dentry should be compared with another
-> +  d_compare: called to compare a dentry name with a given name. The first
-> +	dentry is the parent of the dentry to be compared, the second is
-> +	the dentry itself. inode, len, and name string are properties of
-> +	the dentry to be compared. qstr is the name to compare it with.
-> +
-> +	Must be constant and idempotent, and should not take locks if
-> +	possible, and should not or store into the dentry or inodes.
-                           ^^^^^^^^^^^^^^^^
-Verb missing?  Or extra conjunction?
-
-> +	Should not dereference pointers outside the dentry or inodes without
-> +	lots of care (eg.  d_parent, d_inode shouldn't be used).
-> +
-> +	However, our vfsmount is pinned, and RCU held, so the dentries and
-> +	inodes won't disappear, neither will our sb or filesystem module.
-> +	->i_sb and ->d_sb may be used.
-> +
-> +	It is a tricky calling convention because it needs to be called under
-> +	"rcu-walk", ie. without any locks or references on things.
+> > <quote>
+> > The canonical patch subject line is:
 > 
->    d_delete: called when the last reference to a dentry is dropped and the
->  	dcache is deciding whether or not to cache it. Return 1 to delete
+> >     Subject: [PATCH 001/123] subsystem: summary phrase
+> > </quote>
+> 
+> > should be fine.  And there is no need for printf-ish templates
+> > for this in MAINTAINERS either.
+> 
+> That's exactly what I asked him to do.  He said he's not willing to use
+> anything for "subsystem" which can't be automatically generated.
 
+Why should we codify our conventions in MAINTAINERS to accommodate the
+specific problem of virtually a _single_ patch author?
+
+Conventions are living and are being adjusted all the time, as code
+organization changes, people join and go, projects start and cease.
+
+Said author please looks the conventions up in the git history.  If he
+finds that this decelerates his patch generation rate, he can surely
+code a script that looks into git for him and suggests plausible
+prefixes for his patch titles to him.  Or he can collect a kind of
+database (a config file) locally for his own use in which he records
+conventional prefixes on the go.
 -- 
-Tim Pepper  <lnxninja@linux.vnet.ibm.com>
-IBM Linux Technology Center
+Stefan Richter
+-=====-==-=- =-== =---=
+http://arcgraph.de/sr/
