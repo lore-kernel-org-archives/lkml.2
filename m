@@ -1,164 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759812Ab0KQHAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 02:00:45 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:56468 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759774Ab0KQHAo (ORCPT
+	id S933372Ab0KQHCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 02:02:46 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63291 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759710Ab0KQHCo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 02:00:44 -0500
-From: Ike Panhc <ike.pan@canonical.com>
-To: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Cc: Matthew Garrett <mjg@redhat.com>, David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH 3/3] ideapad: add hotkey support
-Date: Wed, 17 Nov 2010 15:00:38 +0800
-Message-Id: <1289977238-15113-1-git-send-email-ike.pan@canonical.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1289977165-14802-1-git-send-email-ike.pan@canonical.com>
-References: <1289977165-14802-1-git-send-email-ike.pan@canonical.com>
+	Wed, 17 Nov 2010 02:02:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <4CE33F86.7040403@linux.vnet.ibm.com>
+References: <1289339119.2191.92.camel@laptop> <AANLkTi=ojOnLyRO4hTgYdCCXLsN0wUeTcme=5h8-mjdz@mail.gmail.com>
+ <1289398207.2191.117.camel@laptop> <1289398763.2191.121.camel@laptop>
+ <AANLkTimQ7w38wzrYT4MgjHFr6LCVj2M5fB11-n3XCD2w@mail.gmail.com>
+ <1289421164.2084.56.camel@laptop> <AANLkTiku7UsVoYv_+6r79rvGPJU7OU=VGDiaYo0H=82y@mail.gmail.com>
+ <1289423135.2084.63.camel@laptop> <4CE33F86.7040403@linux.vnet.ibm.com>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Wed, 17 Nov 2010 02:02:22 -0500
+Message-ID: <AANLkTikz6+_Ue53P1DmOyZD1+0SoMsX0NwdvqiT-5Ced@mail.gmail.com>
+Subject: Re: [RFC][PATCH] perf: sysfs type id
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Lin Ming <ming.m.lin@intel.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hotkey enabled by this patch:
-  Fn+F3: Video mode switch
-  Fn+F5: software rfkill for wifi
+On Tue, Nov 16, 2010 at 21:35, Corey Ashford
+<cjashfor@linux.vnet.ibm.com> wrote:
+> On 11/10/2010 01:05 PM, Peter Zijlstra wrote:
+>> On Wed, 2010-11-10 at 21:53 +0100, Stephane Eranian wrote:
+>>> On Wed, Nov 10, 2010 at 9:32 PM, Peter Zijlstra<peterz@infradead.org> wrote:
+>>>> possible, or something like<pmu-name>:<event-name>, cpu:cycles would
+>>>> map to /sys/class/pmu/cpu/events/cycles (given the previous patch).
+>>>
+>>> Ok, but I think you're proposal is missing one bit. You are addressing
+>>> the class (or type) of PMU, but you are not addressing the naming of
+>>> an instance.
+>>>
+>>> Let's take an example, suppose you have counters on a graphic card.
+>>> Your system has two such graphic cards. In your scheme you would
+>>> end up with a sys/class/pmu/gfx/.....
 
-For some ideapad when push Fn+F3, hardware generates Super-P keys, those key
-will not be enabled by this patch.
+Not quite.  I'm still a relative newbie to bits and pieces of the
+device model, but I'll explain what I believe the best representation
+would be:
 
-Signed-off-by: Ike Panhc <ike.pan@canonical.com>
----
- drivers/platform/x86/ideapad-laptop.c |   74 +++++++++++++++++++++++++++++++++
- 1 files changed, 74 insertions(+), 0 deletions(-)
+Assuming you have counters on graphics cards, you would already have
+the PCI device directories for the GPUs themselves.  For example:
+/sys/devices/[...]/0000:01:00.0/
+/sys/devices/[...]/0000:02:00.0/
 
-diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
-index d75c21f..d397034 100644
---- a/drivers/platform/x86/ideapad-laptop.c
-+++ b/drivers/platform/x86/ideapad-laptop.c
-@@ -28,6 +28,8 @@
- #include <acpi/acpi_drivers.h>
- #include <linux/rfkill.h>
- #include <linux/platform_device.h>
-+#include <linux/input.h>
-+#include <linux/input/sparse-keymap.h>
- 
- #define IDEAPAD_DEV_CAMERA	0
- #define IDEAPAD_DEV_WLAN	1
-@@ -39,6 +41,7 @@ struct ideapad_private {
- 	acpi_handle handle;
- 	struct rfkill *rfk[5];
- 	struct platform_device *platform_device;
-+	struct input_dev *inputdev;
- } *ideapad_priv;
- 
- static struct {
-@@ -325,6 +328,68 @@ static void ideapad_platform_exit(void)
- }
- /* the above is platform device */
- 
-+/*
-+ * input device
-+ */
-+static const struct key_entry ideapad_keymap[] = {
-+	{ KE_KEY, 0x06, { KEY_SWITCHVIDEOMODE } },
-+	{ KE_KEY, 0x0D, { KEY_WLAN } },
-+	{ KE_END, 0 },
-+};
-+
-+static int ideapad_input_init(void)
-+{
-+	struct input_dev *inputdev;
-+	int error;
-+
-+	inputdev = input_allocate_device();
-+	if (!inputdev) {
-+		pr_info("Unable to allocate input device\n");
-+		return -ENOMEM;
-+	}
-+
-+	inputdev->name = "Ideapad extra buttons";
-+	inputdev->phys = "ideapad/input0";
-+	inputdev->id.bustype = BUS_HOST;
-+	inputdev->dev.parent = &ideapad_priv->platform_device->dev;
-+
-+	error = sparse_keymap_setup(inputdev, ideapad_keymap, NULL);
-+	if (error) {
-+		pr_err("Unable to setup input device keymap\n");
-+		goto err_free_dev;
-+	}
-+
-+	error = input_register_device(inputdev);
-+	if (error) {
-+		pr_err("Unable to register input device\n");
-+		goto err_free_keymap;
-+	}
-+
-+	ideapad_priv->inputdev = inputdev;
-+	return 0;
-+
-+err_free_keymap:
-+	sparse_keymap_free(inputdev);
-+err_free_dev:
-+	input_free_device(inputdev);
-+	return error;
-+}
-+
-+static void ideapad_input_exit(void)
-+{
-+	if (ideapad_priv->inputdev) {
-+		sparse_keymap_free(ideapad_priv->inputdev);
-+		input_unregister_device(ideapad_priv->inputdev);
-+	}
-+	ideapad_priv->inputdev = NULL;
-+}
-+
-+static void ideapad_input_report(unsigned long scancode)
-+{
-+	sparse_keymap_report_event(ideapad_priv->inputdev, scancode, 1, true);
-+}
-+/* the above is input device */
-+
- static const struct acpi_device_id ideapad_device_ids[] = {
- 	{ "VPC2004", 0},
- 	{ "", 0},
-@@ -350,6 +415,10 @@ static int ideapad_acpi_add(struct acpi_device *adevice)
- 	if (ret)
- 		goto platform_failed;
- 
-+	ret = ideapad_input_init();
-+	if (ret)
-+		goto input_failed;
-+
- 	for (i = IDEAPAD_DEV_WLAN; i < IDEAPAD_DEV_KILLSW; i++) {
- 		if (test_bit(ideapad_rfk_data[i].cfgbit, (unsigned long *)&cfg))
- 			ideapad_register_rfkill(adevice, i);
-@@ -358,6 +427,8 @@ static int ideapad_acpi_add(struct acpi_device *adevice)
- 
- 	return 0;
- 
-+input_failed:
-+	ideapad_platform_exit();
- platform_failed:
- 	kfree(priv);
- 	return ret;
-@@ -370,6 +441,7 @@ static int ideapad_acpi_remove(struct acpi_device *adevice, int type)
- 
- 	for (i = IDEAPAD_DEV_WLAN; i < IDEAPAD_DEV_KILLSW; i++)
- 		ideapad_unregister_rfkill(adevice, i);
-+	ideapad_input_exit();
- 	ideapad_platform_exit();
- 	dev_set_drvdata(&adevice->dev, NULL);
- 	kfree(priv);
-@@ -392,6 +464,8 @@ static void ideapad_acpi_notify(struct acpi_device *adevice, u32 event)
- 		if (test_bit(vpc_bit, &vpc1)) {
- 			if (vpc_bit == 9)
- 				ideapad_sync_rfk_state(adevice);
-+			else
-+				ideapad_input_report(vpc_bit);
- 		}
- 	}
- }
--- 
-1.7.1
+Those already obviously have various DRM-related device directories
+under them, but I'll assume the PMU is tied directly to the PCI device
+(although it could be put elsewhere if appropriate).
 
+So then I believe you would create your "PMU" devices with names
+"pmu0", "pmu1", etc, and set their "parent" to point to the PCI
+device, and set their "bus" to point to the "pmu" bus.
+
+What would happen is you would get subdirectories for your "pmu" devices
+/sys/devices/[...]/0000:01:00.0/pmu0/
+/sys/devices/[...]/0000:02:00.0/pmu1/
+
+Each of those devices would have a "driver" symlink inside pointing to
+something like:
+/sys/subsystem/pmu/drivers/radeonpmu
+
+There would also be symlinks:
+/sys/subsystem/pmu/devices/pmu0 => ../../../../devices/[...]/0000:01:00.0/pmu0
+/sys/subsystem/pmu/devices/pmu1 => ../../../../devices/[...]/0000:02:00.0/pmu1
+
+So that lets you find your various PMU devices.
+
+Then you'd have another "bus", perhaps, for "pmuevents", where the
+"pmuevent" device nodes get useful names.  Please note that including
+the PMU name in the event name is necessary as you cannot have two
+devices on the same "bus" with the exact same name.
+/sys/devices/[...]/0000:01:00.0/pmu0/pmu0:gpu_idle/
+/sys/devices/[...]/0000:01:00.0/pmu0/pmu0:gpu_throttle/
+/sys/devices/[...]/0000:02:00.0/pmu1/pmu1:gpu_idle/
+/sys/devices/[...]/0000:02:00.0/pmu1/pmu1:gpu_throttle/
+
+Each event directory would contain other directories full of various
+registered attributes of the event.
+
+And again the directory full of symlinks (this is what requires the
+"different names" thing as mentioned above):
+/sys/subsystem/pmuevent/devices/pmu0:gpu_idle => [......]
+/sys/subsystem/pmuevent/devices/pmu0:gpu_throttle => [......]
+/sys/subsystem/pmuevent/devices/pmu1:gpu_idle => [......]
+/sys/subsystem/pmuevent/devices/pmu1:gpu_throttle => [......]
+
+So if you wanted to enumerate all of the "gpu_idle" events on the
+system, you could just do:
+ls /sys/subsystem/pmuevent/devices/*:gpu_idle
+
+And then by following the symlinks into /sys/devices and traversing
+the path upwards you can examine all of the other properties the same
+way that udev does.
+
+>>> But now, suppose I want to count cycles on the first graphic card.
+>>> Seems to me you need to expose the instances as well. The instance
+>>> number needs to be passed in the attr struct somehow.
+>>>
+>>> You can either create multiple subdir under gfx, or have this info
+>>> somewhere
+>>> else in the sysfs tree, if people really care about class vs. instance.
+>>>
+>>> I can see users doing:
+>>> $ perf stat -e gfx@1::cycles ...  ->  sys/class/gfx/1/event/cycles
+>>>
+>>> The reason I am using :: here is because libpfm4 is already using
+>>> this as a separator for PMU type vs. event.
+
+So in this case, because all of the events get linked into a global
+list, you could just use the "pmu0:gpu_idle" or some similar
+derivation as a unique name with an easy lookup in
+/sys/subsystem/pmuevent/devices/.  As above it's trivial to follow the
+symlinks down into the real /sys/devices/ tree and see where it's
+physically located.
+
+
+> Some of these events may need modifiers / attributes / umasks... whatever
+> you want to call them.  And they may need more than one each, and they may
+> vary from event to event.  So to add to the hierarchy,
+> we'd have:
+>
+> radeon0/
+>    type (for attr.type)
+>    event/
+>        evt0/
+>            id (a base number for attr.config)
+>            description (text file - but could be CONFIG_*'d out)
+>            modifiers/
+>                mod0/
+>                    formula (some ascii syntax for describing how
+>                             to set .config and/or .config_extra
+>                             with this modifer's value)
+>                    description (text - can configure out)
+>                    constraints (some ascii syntax for describing
+>                                 the values mod0 can take on)
+>                ..
+>                modn/
+>        ..
+>        evtn/
+>
+> And this would be replicated for radeon1..n
+
+As for the specific attribute hierarchy, I'm even less sure.  One
+*potential* approach would be to create a "struct device_driver" for
+each type of pmuevent.  You would then assign those drivers to each
+pmuevent device as it is registered.
+
+To determine how to *configure* the event you would then look up the
+event name within the PMU driver, so for example:
+
+Considering the previously-described:
+/sys/devices/[...]/0000:01:00.0/pmu0/pmu0:gpu_idle/
+
+You would look at the symlink to the PMU event driver:
+/sys/devices/[...]/0000:01:00.0/pmu0/pmu0:gpu_idle/driver => [...]
+
+That symlink would point to:
+/sys/subsystem/pmuevent/drivers/radeonpmu:gpu_idle
+
+You could then trivially add driver attributes to that directory for
+describing the nitty-gritty details of that event.
+
+I believe with the described model you could still use trivial and
+short names like "pmu0:gpu_idle", and yet still be perfectly able to
+reference them with all of the hardware in the system.  If you have
+specific software events or PMUs that are not tied to any particular
+hardware, you could easily fiddle with the parent pointer to stuff
+them into /sys/devices/virtual/ along with other things like ptys.
+
+Cheers,
+Kyle Moffett
