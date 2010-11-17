@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934650Ab0KQJT5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 04:19:57 -0500
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:17136 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932635Ab0KQJTy convert rfc822-to-8bit (ORCPT
+	id S934657Ab0KQJ1E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 04:27:04 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:38369 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933804Ab0KQJ1A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 04:19:54 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=Mj7okGGiyvljez8nourwAOSCyIXzraNcHEi86Qy5a+Y= c=1 sm=1
- a=-7GN7jtwYLcA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
- a=c23vf5CSMVc0QQz9B4a6RA==:17 a=_n1ZDqKEzxPHza6SYOMA:9
- a=D4aQioasw1dRB3Q2tEwA:7 a=JVhJIHBBB2E8nZTEiW8VMlkbw6UA:4 a=CjuIK1q_8ugA:10
- a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20101117021150.GL22876@dastard>
-Date: Wed, 17 Nov 2010 03:19:49 -0600
-Cc: Jan Kara <jack@suse.cz>, Josef Bacik <josef@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        xfs@oss.sgi.com, cmm@us.ibm.com, cluster-devel@redhat.com,
-        ocfs2-devel@oss.oracle.com
+	Wed, 17 Nov 2010 04:27:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=RHlwbgqeh9OH9GFLE/6gI4u+ZoytAAXfmb0Muj6sjoqY1aXG15mCsnghTAoT+sRCxV
+         94o3c+pIQTZznnN4RjmXxyrB4qR8EbQtM0HG3aP7WD6O/q6UJu0CHHxhgnJ0Uj1/KJlg
+         aKsXdA6OzWZdqAD5ZOQ4Qp/nUQLC354Db3ibs=
+MIME-Version: 1.0
+In-Reply-To: <20101117020759.016741414@intel.com>
+References: <20101117020759.016741414@intel.com>
+Date: Wed, 17 Nov 2010 01:26:59 -0800
+X-Google-Sender-Auth: pr7Tq-X7I1TJkcSgOqELCSdt0yo
+Message-ID: <AANLkTinp4A8U61rgODAKyQpauhgTbv4p55utaoVEQR0Q@mail.gmail.com>
+Subject: Re: [0/8,v3] NUMA Hotplug Emulator - Introduction & Feedbacks
+From: Yinghai Lu <yinghai@kernel.org>
+To: shaohui.zheng@intel.com
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <7CF30C2C-44CE-4DFC-BB8B-92A207E4052A@dilger.ca>
-References: <1289840723-3056-1-git-send-email-josef@redhat.com> <1289840723-3056-2-git-send-email-josef@redhat.com> <20101116111611.GA4757@quack.suse.cz> <20101116114346.GB4757@quack.suse.cz> <20101116125249.GB31957@dhcp231-156.rdu.redhat.com> <20101116131451.GH4757@quack.suse.cz> <18ACAA85-8847-4B12-9839-F99FB6C7B3E4@dilger.ca> <20101117021150.GL22876@dastard>
-To: Dave Chinner <david@fromorbit.com>
-X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-11-16, at 20:11, Dave Chinner wrote:
-> On Tue, Nov 16, 2010 at 06:22:47PM -0600, Andreas Dilger wrote:
->> IMHO, it makes more sense for consistency and "get what users
->> expect" that these be treated as flags.  Some users will want
->> KEEP_SIZE, but in other cases it may make sense that a hole punch
->> at the end of a file should shrink the file (i.e. the opposite of
->> an append).
-> 
-> What's wrong with ftruncate() for this?
+On Tue, Nov 16, 2010 at 6:07 PM,  <shaohui.zheng@intel.com> wrote:
+>
+> * WHAT IS HOTPLUG EMULATOR
+>
+> NUMA hotplug emulator is collectively named for the hotplug emulation
+> it is able to emulate NUMA Node Hotplug thru a pure software way. It
+> intends to help people easily debug and test node/cpu/memory hotplug
+> related stuff on a none-numa-hotplug-support machine, even an UMA machine.
+>
+> The emulator provides mechanism to emulate the process of physcial cpu/mem
+> hotadd, it provides possibility to debug CPU and memory hotplug on the machines
+> without NUMA support for kenrel developers. It offers an interface for cpu
+> and memory hotplug test purpose.
+>
+> * WHY DO WE USE HOTPLUG EMULATOR
+>
+> We are focusing on the hotplug emualation for a few months. The emualor helps
+>  team to reproduce all the major hotplug bugs. It plays an important role to
+> the hotplug code quality assuirance. Because of the hotplug emulator, we already
+> move most of the debug working to virtual evironment.
 
-It makes the API usage from applications more consistent.  It would be inconvenient, for example, if applications had to use a different system call if they were writing in the middle of the file vs. at the end, wouldn't it?
+You should extend kvm to make it support NUMA hotplug guest.
+instead of messing up linux numa code.
 
-Similarly, if multiple threads are appending vs. punching (let's assume non-overlapping regions, for sanity, like a producer/consumer model punching out completed records) then using ftruncate() to remove the last record and shrink the file would require locking the whole file from userspace (unlike the append, which does this in the kernel), or risk discarding unprocessed data beyond the record that was punched out.
+Thanks
 
-> There's plenty of open questions about the interface if we allow
-> hole punching to change the file size. e.g. where do we set the EOF
-> (offset or offset+len)?
-
-I would think it natural that the new size is the start of the region, like an "anti-write" (where write sets the size at the end of the added bytes).
-
->  What do we do with the rest of the blocks that are now beyond EOF?
-> We weren't asked to punch them out, so do we leave them behind?
-
-I definitely think they should be left as is.  If they were in the punched-out range, they would be deallocated, and if they are beyond EOF they will remain as they are - we didn't ask to remove them unless the punched-out range went to ~0ULL (which would make it equivalent to an ftruncate()).
-
-> What if we are leaving written blocks beyond EOF - does any filesystem other than XFS support that (i.e. are we introducing different behaviour on different filesystems)?
-
-I'm not sure I understand what a "written block beyond EOF" means.  How can there be data beyond EOF?  I think the KEEP_SIZE flag is only relevant if the punch is spanning EOF, like the opposite of a write that is spanning EOF.  If KEEP_SIZE is set, then it leaves the size unchanged, and if unset and punch spans EOF it reduces the file size.  If the punch is not at EOF it doesn't change the file size, just like a write that is not at EOF.
-
-> And what happens if the offset is beyond EOF? Do we extend the file, and if so why wouldn't you just use ftruncate() instead?
-
-Even if the effects were the same, it makes sense because applications may be using fallocate(PUNCH_HOLE) to punch out records, and having them special case the use of ftruncate() to get certain semantics at the end of the file adds needless complexity.
-
-Cheers, Andreas
-
-
-
-
-
+Yinghai
