@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934984Ab0KQQ4s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 11:56:48 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51588 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932743Ab0KQQ4q (ORCPT
+	id S934990Ab0KQRCk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:02:40 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42293 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932743Ab0KQRCj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 11:56:46 -0500
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: Miao Xie <miaox@cn.fujitsu.com>, viro <viro@zeniv.linux.org.uk>,
-        Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ito <t-itoh@jp.fujitsu.com>
-Subject: Re: [PATCH 1/3] direct-io: add a hook for the fs to provide its own bio merging check function
-In-reply-to: <20101117125011.GH5618@dhcp231-156.rdu.redhat.com>
-References: <4CE3579B.1000301@cn.fujitsu.com> <20101117070658.GF5618@dhcp231-156.rdu.redhat.com> <20101117093720.GG5618@dhcp231-156.rdu.redhat.com> <4CE3AA37.8060709@cn.fujitsu.com> <20101117125011.GH5618@dhcp231-156.rdu.redhat.com>
-Date: Wed, 17 Nov 2010 11:55:28 -0500
-Message-Id: <1290012777-sup-9103@think>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
+	Wed, 17 Nov 2010 12:02:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=eUHY7tNYJU8Gk4Dov1eRVPMb24DT4J7cQFC7XkeNw/R0zH/k3AQ6BCOT3lG49CPqBh
+         1ESUvS5cHWOWbUEAJ8+bPHLd7OwjXJxGSB7cYyWqRAGa7d7QP4mf1MXvk+81TlGuTEoF
+         Wm6+JLRgSJEpSTlQVU026uDoA5StMkHKfwOxI=
+MIME-Version: 1.0
+In-Reply-To: <20101115183014.GD31421@n2100.arm.linux.org.uk>
+References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
+	<1289584840-18097-6-git-send-email-catalin.marinas@arm.com>
+	<20101115183014.GD31421@n2100.arm.linux.org.uk>
+Date: Wed, 17 Nov 2010 17:02:37 +0000
+X-Google-Sender-Auth: 2Sd3cM5Jvyic-faZCOsWRaVxDw8
+Message-ID: <AANLkTik5FcZ3rNtiwN8kYP0LZh+YqGtKP_RteoFiWa16@mail.gmail.com>
+Subject: Re: [PATCH v2 05/20] ARM: LPAE: Introduce L_PTE_NOEXEC and L_PTE_NOWRITE
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Josef Bacik's message of 2010-11-17 07:50:11 -0500:
-> On Wed, Nov 17, 2010 at 06:11:03PM +0800, Miao Xie wrote:
-> > Hi, Josef
-> >
-> > On wed, 17 Nov 2010 04:37:21 -0500, Josef Bacik wrote:
-> >>> Heh so I was going to fix this after the hole punching stuff.  The fact is btrfs
-> >>> maps everything that is ok to do in one IO via get_blocks().  So all we need to
-> >>> do is add another DIO_ flag to tell us to treat each get_blocks() call as
-> >>> discrete.  I wanted to use buffer_boundary for this, but I think it's too
-> >>> drastic of a change for people who already use buffer_boundary();
-> >>>
-> >>> What happens today is that say we map 4k, we do submit_page_section, but if this
-> >>> is our first bit of IO we just set dio->cur_page and such and then loop again.
-> >>> Say there is 4k-hole-4k, we do the next mapping and set buffer_boundary again,
-> >>> and come into submit_page_section and because cur_page is set, we do
-> >>> dio_send_cur_page.  Because there is no dio->bio we setup a new bio, but when we
-> >>> do that we clear dio->boundary, and leave the bio all setup.  So the next time
-> >>> we loop around the tail 4k gets added to our previously setup bio and boom we
-> >>> hit this problem with btrfs.
-> >>>
-> >>> If we can add a DIO_GET_BLOCKS_DISCRETE or some other such non-sense then we can
-> >>> easily kill all the logical offset code I had and just make some simple changes
-> >>> to make the DIO stuff work for us.  All we do is in get_more_blocks we do
-> >>>
-> >>> if ((dio->flags&  DIO_GET_BLOCKS_DISCRETE)&&  dio->bio)
-> >>>     dio_submit_bio(dio);
-> >>>
-> >>
-> >> Right after I went to bed I realized this should be
-> >>
-> >> if (dio->flags&  DIO_GET_BLOCKS_DISCRETE) {
-> >>     if (dio->cur_page) {
-> >>         dio_send_cur_page(dio);
-> >>         page_cache_release(dio->cur_page);
-> >>         dio->cur_page = NULL;
-> >>     }
-> >>
-> >>     if (dio->bio)
-> >>         dio_submit_bio(dio);
-> >>   }
-> >
-> > As far as I know, get_block() can not make sure the IO doesn't span the chunks or
-> > stripes. Maybe we can do this check in get_blocks(). In this way, we needn't change
-> > vfs.
-> >
-> 
-> Right thats the idea, if we can't span chunks/stripes we should be doing that
-> limiting in our get_blocks call and that way we don't have to screw with the
-> generic direct io stuff too much.  Thanks,
+On 15 November 2010 18:30, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Fri, Nov 12, 2010 at 06:00:25PM +0000, Catalin Marinas wrote:
+>> --- a/arch/arm/include/asm/pgtable-2level.h
+>> +++ b/arch/arm/include/asm/pgtable-2level.h
+>> @@ -128,6 +128,8 @@
+>>  #define L_PTE_USER           (1 << 8)
+>>  #define L_PTE_EXEC           (1 << 9)
+>>  #define L_PTE_SHARED         (1 << 10)       /* shared(v6), coherent(xsc3) */
+>> +#define L_PTE_NOEXEC         (0)
+>> +#define L_PTE_NOWRITE                (0)
+>
+> Let's not make this more complicated than it has to be.  If we need the
+> inverse of WRITE and EXEC, then that's what we should change everyone to,
+> not invent a new system to work along side the old system.
 
-In this case we're adding complexity to the O_DIRECT mapping code, when
-we really should be adding it to the btrfs submit bio hook.  It can
-easily break up the bio into smaller units, which will leave us with a
-smaller number of get_blocks calls overall.
+Question on the pgprot_noncached/writecombine/dmacoherent - in the
+current implementation we pass L_PTE_EXEC on the dmacoherent macro. Do
+we need to pass L_PTE_NOEXEC to the noncached/writecombine ones? I
+don't see a reason for any of these to be executable but maybe we can
+let the code calling them decide.
 
-I'm working that out now.
+Thanks.
 
--chris
-
-
+-- 
+Catalin
