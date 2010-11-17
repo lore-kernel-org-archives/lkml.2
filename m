@@ -1,55 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759149Ab0KQPk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:40:57 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:50184 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758574Ab0KQPk4 (ORCPT
+	id S1759432Ab0KQPlM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:41:12 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49588 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759338Ab0KQPlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:40:56 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [PATCH v3 15/20] ARM: LPAE: use phys_addr_t instead of unsigned long for physical addresses
-Date: Wed, 17 Nov 2010 16:40:47 +0100
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com> <201011171218.13910.arnd@arndb.de> <AANLkTik39iqXsLJiJ7cWwweO2VBoJ0Y4ymwKqx7X5ziA@mail.gmail.com>
-In-Reply-To: <AANLkTik39iqXsLJiJ7cWwweO2VBoJ0Y4ymwKqx7X5ziA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Wed, 17 Nov 2010 10:41:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=RJcGuM7Kzb2EI8KF8GPGek58BROk7L4gFEYTyFeT8DwfdM2j8YxYxMso4x7SZXHxcJ
+         piwClh5XjlfbqPOdn7tyNVGIQGqkzi8E1XitB8tMH4kqTdf+RlLD07HhFkesR6MLmRkk
+         RgesUSF0BoSfFgnatqbMLuqT/UhXXruAf06os=
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+From: Tom Zanussi <tzanussi@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        "Ted Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+In-Reply-To: <alpine.LFD.2.00.1011171529120.2900@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
+	 <20101117013700.GA3290@thunk.org> <20101117132404.GF27063@elte.hu>
+	 <1290001128.2109.785.camel@laptop>  <20101117140002.GH27063@elte.hu>
+	 <1290003110.2109.822.camel@laptop> <1290003505.2109.833.camel@laptop>
+	 <alpine.LFD.2.00.1011171529120.2900@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Nov 2010 09:41:06 -0600
+Message-ID: <1290008466.1921.21.camel@elnicho>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011171640.47639.arnd@arndb.de>
-X-Provags-ID: V02:K0:IL7uZShh4VueBI1A0KMdkUbSnjDVkuz0bkVC7XtkJPj
- b6ojmJfFWqot5RddNGh8nbtJ1XYKrzBxRLruC8Uubnf7zPxFB5
- qbR0obs8yPWHf8uyxZsBbuH8wHlZfGH6jSOyq+QnX3E3/0cUyj
- vtT6NsG4SisdZ+Qssr2C7uBT1j1qymIHP9hXB3KCTE9iWWigRm
- uRPS4ysusEnFEreJFdCwQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 17 November 2010, Catalin Marinas wrote:
-> That's what I plan to add, though it may be better to push as a
-> separate patch to fix compiler warnings now. I don't know when the
-> LPAE patches would go in.
+On Wed, 2010-11-17 at 15:37 +0100, Thomas Gleixner wrote:
+> On Wed, 17 Nov 2010, Peter Zijlstra wrote:
 > 
-> --- a/arch/arm/include/asm/memory.h
-> +++ b/arch/arm/include/asm/memory.h
-> @@ -189,7 +189,7 @@
->   * translation for translating DMA addresses.  Use the driver
->   * DMA support - see dma-mapping.h.
->   */
-> -static inline phys_addr_t virt_to_phys(void *x)
-> +static inline phys_addr_t virt_to_phys(const volatile void *x)
->  {
->         return __virt_to_phys((unsigned long)(x));
->  }
+> > On Wed, 2010-11-17 at 15:11 +0100, Peter Zijlstra wrote:
+> > > The idea was to not let the filter engine work on the trace data (once
+> > > its gathered) but on the trace argument right at the beginning of the
+> > > tracepoint callchain, since some of the trace data is an expression of
+> > > the trace argument (say next->prio instead of next), the trace
+> > > expression wouldn't stay invariant, you'd have to write a different
+> > > filter for the same effect.
+> > > 
+> > > So I think it would be wise to make this change sooner rather than
+> > > later. 
+> > 
+> > Also, I see a lot of overlap with the dynamic probes stuff which needs
+> > the help of magic dwarves to come up with the right data to gather.
+> > 
+> > Merging the dynamic tracepoint and filter stuff would be nice, there's
+> > no way you can express next->prio without the help of these short
+> > buggers with large axes.
+> > 
+> > The trouble is that the dynamic tracepoint stuff is privileged for good
+> > reasons, try next+0x1000000 and you're out in the woods, priv. only
+> > filters otoh just doesn't sound too hot.
+> > 
+> > Another nasty thing is that you actually need to have these dwarves
+> > present, which means having the -debug package installed.
+> 
+> That sounds utterly insane for the basic use case where you trace
+> application context. There is no point to filter out the tracepoints,
+> really. Postprocessing can do that just fine.
+> 
+> I consider myself a power user of tracing, but hell I never used any
+> of those filters in a real use case. awk, grep, scripting languages do
+> just a better job and you don't miss any data just because you got
+> your filter expression slightly wrong. Postprocessing always wins in
+> that regard.
+> 
+> The only reason why these filters might make sense is to reduce the
+> trace volume on system wide traces in production environments, but
+> that's a completely different story. These scenarios can do with the
+> dynamic tracepoint stuff and the custom filtering w/o putting the
+> burden on the majority of users.
+> 
 
-The only impact of this patch is reducing compiler warnings, it should
-not add any. Since the patch is correct and independent of the other
-changes, it still sounds like a good idea to push it into -next now.
+Yeah, in my mind, the main point of the filters was to be a 'blunt
+force' instrument preventing userspace from being overwhelmed by events.
+The real filtering would happen in userspace with e.g. real scripting
+languages.
 
-	Arnd
+Tom 
+
+> Thanks,
+> 
+> 	tglx
+
+
