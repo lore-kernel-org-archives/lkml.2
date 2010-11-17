@@ -1,44 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934497Ab0KQH0c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 02:26:32 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:33844 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933223Ab0KQH0b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 02:26:31 -0500
-Date: Wed, 17 Nov 2010 16:25:53 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, g.liakhovetski@gmx.de,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH 01/05] fbdev: sh_mipi_dsi: Remove request/release mem region
-Message-ID: <20101117072553.GB10671@linux-sh.org>
-References: <20101117064405.18139.57035.sendpatchset@t400s> <20101117064415.18139.28996.sendpatchset@t400s>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117064415.18139.28996.sendpatchset@t400s>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	id S934533Ab0KQHbE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 02:31:04 -0500
+Received: from ist.d-labs.de ([213.239.218.44]:43497 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933879Ab0KQHbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 02:31:02 -0500
+Date: Wed, 17 Nov 2010 08:30:31 +0100
+From: Florian Mickler <florian@mickler.org>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Audun Hoem <audun.hoem@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] checkpatch.pl: fix CAST detection to not screw with
+ parens handling
+Message-ID: <20101117083031.669b8676@schatten.dmk.lab>
+In-Reply-To: <20101103162042.297958c3@schatten.dmk.lab>
+References: <AANLkTimA1d88FwGGE-BW4WvyuaFB7xewN_ubko+kj2+X@mail.gmail.com>
+	<1288785873-16519-1-git-send-email-florian@mickler.org>
+	<20101103162042.297958c3@schatten.dmk.lab>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 03:44:15PM +0900, Magnus Damm wrote:
-> The driver core already manages resources for us, so
-> there is no need to perform request_mem_region() and
-> release_mem_region() in the MIPI-DSI driver.
+
+Hi Andy, 
+
+did you get this?
+
+Regards,
+Flo
+
+On Wed, 3 Nov 2010 16:20:42 +0100
+Florian Mickler <florian@mickler.org> wrote:
+
+> On Wed,  3 Nov 2010 13:04:33 +0100
+> Florian Mickler <florian@mickler.org> wrote:
 > 
-No. This comes up time and time again for some reason, I'm not sure why
-this misconception keeps being propagated (and it's definitely a mistake
-I've made myself too!)
-
-The driver core simply takes your resources and inserts them in to the
-resource tree, it has nothing to do with requesting ranges, or checking
-for conflicts. The main rationale for this is that drivers (think MFDs)
-may pass in a large resource range, which in turn will be broken up and
-requested by individual drivers nested underneath it. Only at request
-time will the requested range (which can be the entire thing, or a
-subset) be flagged as busy and conflicts detected.
-
-The current logic is quite correct in what it is doing.
+> > Casts have to be handled after the last type that is followed by an
+> > opening parenthesis is handled.
+> 
+> That is the wrong fix. I realized now that with that patch we would
+> not claim anything as a CAST anymore. Better is probably to only claim
+> a CAST if av_pending is not set. Andy, would that work? It seems to be
+> alright... Do you have some tests for checkpatch?
+> 
+> Testing it with the reported line and some other random samples it
+> seems to be alright.
+> 
+> Regards,
+> Flo
+> 
+> >8------------------------------------------------------------------------
+> commit 11ed611c647420ea27124faf269d724b4fd3ade4
+> Author: Florian Mickler <florian@mickler.org>
+> Date:   Wed Nov 3 15:54:26 2010 +0100
+> 
+>     checkpatch.pl: fix CAST detection
+>     
+>     We should only claim that something is a cast if we did not encouter a
+>     token before, that did set av_pending.
+>     
+>     This fixes the operator * in the line below  to be detected as
+>     binary (vs unary).
+>     
+>      kmalloc(sizeof(struct alphatrack_ocmd) * true_size, GFP_KERNEL);
+>     
+>     Reported-by: Audun Hoem <audun.hoem@gmail.com>
+>     Signed-off-by: Florian Mickler <florian@mickler.org>
+> 
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 90b54d4..06f5c44 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -859,7 +859,7 @@ sub annotate_values {
+>  				$av_preprocessor = 0;
+>  			}
+>  
+> -		} elsif ($cur =~ /^(\(\s*$Type\s*)\)/) {
+> +		} elsif ($cur =~ /^(\(\s*$Type\s*)\)/ && $av_pending eq '_') {
+>  			print "CAST($1)\n" if ($dbg_values > 1);
+>  			push(@av_paren_type, $type);
+>  			$type = 'C';
