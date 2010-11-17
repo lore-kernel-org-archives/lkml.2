@@ -1,92 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759599Ab0KQDQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 22:16:15 -0500
-Received: from THUNK.ORG ([69.25.196.29]:54447 "EHLO thunker.thunk.org"
+	id S1759602Ab0KQD1g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 22:27:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17204 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753188Ab0KQDQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 22:16:13 -0500
-Date: Tue, 16 Nov 2010 22:16:09 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [ANNOUNCE] New utility: 'trace'
-Message-ID: <20101117031609.GE3290@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	LKML <linux-kernel@vger.kernel.org>,
+	id S1757980Ab0KQD1f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 22:27:35 -0500
+Date: Tue, 16 Nov 2010 22:27:22 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <lenb@kernel.org>
+Subject: failure to boot any kernel since 2.6.36rc6-git2.
+Message-ID: <20101117032721.GA8630@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
 	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-	Arjan van de Ven <arjan@infradead.org>,
-	Arnaldo Carvalho de Melo <acme@redhat.com>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-	Tom Zanussi <tzanussi@gmail.com>,
-	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-	Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
-	Lai Jiangshan <laijs@cn.fujitsu.com>,
-	Eric Dumazet <eric.dumazet@gmail.com>
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
- <20101117013700.GA3290@thunk.org>
- <1289958460.30543.13.camel@gandalf.stny.rr.com>
+	Len Brown <lenb@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289958460.30543.13.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 08:47:40PM -0500, Steven Rostedt wrote:
-> 
-> Note, I just posted an RFC stable event patch set. I would like any tool
-> that does general analysis, to use stable events and not random raw
-> events created by the perspective maintainers.
-> 
-> The tool could tap into the raw events, but I don't like the "trace
-> check" I think anything that the trace needs should be guaranteed there
-> (with the stable tracepoints).
-> 
-> The tracepoints used for general analysis should be stable, anything
-> else is just shear bonus.
+Every kernel between 2.6.36-rc6 and 2.6.37rc2 fails to boot on my laptop.
+The -git's that followed -rc6 had a fairly large (considering rc6) acpi merge,
+which I suspected was the cause.
 
-Which is fine with me, so long as it is accepted that the 'trace' tool
-is not targetted at kernel developers (who would probably like to use
-a combination of stable and unstable tracepoints).
+The boot failure manifests by a complete lockup as soon as usb initializes.
 
-Do we all agree on what the intended target audience is for this
-'trace' tool?
+I spent the last 6 hours bisecting it, and every bisect point failed to boot
+(sometimes in slightly different ways, but always just after usb initializes)
+http://codemonkey.org.uk/junk/usb-hang/IMG_0054.JPG and 
+http://codemonkey.org.uk/junk/usb-hang/IMG_0056.JPG being the more common type,
+but http://codemonkey.org.uk/junk/usb-hang/IMG_0055.JPG showed up at one bisect point.
 
-My one concern of having a tool that doesn't support the unstable
-tracepoints is that if the kernel developers aren't using it for their
-day-to-day use, it won't get attention/love, and it risks the fate of
-'systemtap' --- ignored by kernel developers and treated as if it
-doesn't exist.
+The real kicker is that it eventually pointed at something that can't be relevant,
+as it patches a file that I don't even compile in my config.
 
-Maybe the answer is there's a #ifdef, and there's one version of the
-tool that is intended for use by kernel developers, and one which is
-restricted to the stable interface that we give to the hoi polloi?
+git bisect start
+# bad: [c6ea21e35bf3691cad59647c771e6606067f627d] Merge git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6
+git bisect bad c6ea21e35bf3691cad59647c771e6606067f627d
+# good: [899611ee7d373e5eeda08e9a8632684e1ebbbf00] Linux 2.6.36-rc6
+git bisect good 899611ee7d373e5eeda08e9a8632684e1ebbbf00
+# bad: [35ec42167bb5f13db93f1e8c13298eb564f95142] Merge branch 'idle-release' of git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6
+git bisect bad 35ec42167bb5f13db93f1e8c13298eb564f95142
+# bad: [64aab720bdf8771214a7c88872bd8e3194c2d279] i7core_edac: fix panic in udimm sysfs attributes registration
+git bisect bad 64aab720bdf8771214a7c88872bd8e3194c2d279
+# bad: [77f890223338c890fc33972673d2bd3a53061570] Merge branch 'fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/djbw/async_tx
+git bisect bad 77f890223338c890fc33972673d2bd3a53061570
+# bad: [9d457c60ba783c709c750b851d07f0ac8af78ce9] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6
+git bisect bad 9d457c60ba783c709c750b851d07f0ac8af78ce9
+# bad: [90182317a9e383474613aa60e9d61d57bdf17c3e] mfd: Fix max8925 irq control bit incorrect setting
+git bisect bad 90182317a9e383474613aa60e9d61d57bdf17c3e
+# bad: [c9d66d3515bbb0ad8062721487de7ade02d2b936] mfd: Ignore non-GPIO IRQs when setting wm831x IRQ types
+git bisect bad c9d66d3515bbb0ad8062721487de7ade02d2b936
 
-	      	  	 	   	   - Ted
+
+Before I start going through every one of those acpi commits one by one, does
+anything jump out from the screen captures that fingers a specific patch ?
+
+
+Sidenote: booting with initcall_debug didn't print anything. Did that break ?
+
+	Dave
