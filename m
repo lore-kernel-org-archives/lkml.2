@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934453Ab0KQEc4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 23:32:56 -0500
-Received: from mga02.intel.com ([134.134.136.20]:52857 "EHLO mga02.intel.com"
+	id S934179Ab0KQEbb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 23:31:31 -0500
+Received: from mga11.intel.com ([192.55.52.93]:17287 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934264Ab0KQEbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 23:31:39 -0500
+	id S934125Ab0KQEba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 23:31:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,209,1288594800"; 
-   d="scan'208";a="574575910"
-Message-Id: <20101117042849.766920152@intel.com>
+   d="scan'208";a="627558214"
+Message-Id: <20101117042849.884566722@intel.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 17 Nov 2010 12:27:24 +0800
+Date: Wed, 17 Nov 2010 12:27:25 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
@@ -26,49 +26,68 @@ CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 04/13] writeback: prevent duplicate balance_dirty_pages_ratelimited() calls
+Subject: [PATCH 05/13] writeback: account per-bdi accumulated written pages
 References: <20101117042720.033773013@intel.com>
-Content-Disposition: inline; filename=writeback-fix-duplicate-bdp-calls.patch
+Content-Disposition: inline; filename=writeback-bdi-written.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When dd in 512bytes, balance_dirty_pages_ratelimited() used to be called
-8 times for the same page, even if the page is only dirtied once. Fix it
-with a (slightly racy) PageDirty() test.
+From: Jan Kara <jack@suse.cz>
 
+Introduce the BDI_WRITTEN counter. It will be used for estimating the
+bdi's write bandwidth.
+
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/filemap.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ include/linux/backing-dev.h |    1 +
+ mm/backing-dev.c            |    6 ++++--
+ mm/page-writeback.c         |    1 +
+ 3 files changed, 6 insertions(+), 2 deletions(-)
 
---- linux-next.orig/mm/filemap.c	2010-11-16 22:20:08.000000000 +0800
-+++ linux-next/mm/filemap.c	2010-11-16 22:45:05.000000000 +0800
-@@ -2258,6 +2258,7 @@ static ssize_t generic_perform_write(str
- 	long status = 0;
- 	ssize_t written = 0;
- 	unsigned int flags = 0;
-+	unsigned int dirty;
+--- linux-next.orig/include/linux/backing-dev.h	2010-11-16 22:48:28.000000000 +0800
++++ linux-next/include/linux/backing-dev.h	2010-11-17 00:18:56.000000000 +0800
+@@ -40,6 +40,7 @@ typedef int (congested_fn)(void *, int);
+ enum bdi_stat_item {
+ 	BDI_RECLAIMABLE,
+ 	BDI_WRITEBACK,
++	BDI_WRITTEN,
+ 	NR_BDI_STAT_ITEMS
+ };
  
- 	/*
- 	 * Copies from kernel address space cannot fail (NFSD is a big user).
-@@ -2306,6 +2307,7 @@ again:
- 		pagefault_enable();
- 		flush_dcache_page(page);
+--- linux-next.orig/mm/backing-dev.c	2010-11-16 22:48:28.000000000 +0800
++++ linux-next/mm/backing-dev.c	2010-11-17 00:18:56.000000000 +0800
+@@ -92,6 +92,7 @@ static int bdi_debug_stats_show(struct s
+ 		   "BdiDirtyThresh:   %8lu kB\n"
+ 		   "DirtyThresh:      %8lu kB\n"
+ 		   "BackgroundThresh: %8lu kB\n"
++		   "BdiWritten:       %8lu kB\n"
+ 		   "b_dirty:          %8lu\n"
+ 		   "b_io:             %8lu\n"
+ 		   "b_more_io:        %8lu\n"
+@@ -99,8 +100,9 @@ static int bdi_debug_stats_show(struct s
+ 		   "state:            %8lx\n",
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
+-		   K(bdi_thresh), K(dirty_thresh),
+-		   K(background_thresh), nr_dirty, nr_io, nr_more_io,
++		   K(bdi_thresh), K(dirty_thresh), K(background_thresh),
++		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
++		   nr_dirty, nr_io, nr_more_io,
+ 		   !list_empty(&bdi->bdi_list), bdi->state);
+ #undef K
  
-+		dirty = PageDirty(page);
- 		mark_page_accessed(page);
- 		status = a_ops->write_end(file, mapping, pos, bytes, copied,
- 						page, fsdata);
-@@ -2332,7 +2334,8 @@ again:
- 		pos += copied;
- 		written += copied;
- 
--		balance_dirty_pages_ratelimited(mapping);
-+		if (!dirty)
-+			balance_dirty_pages_ratelimited(mapping);
- 
- 	} while (iov_iter_count(i));
- 
+--- linux-next.orig/mm/page-writeback.c	2010-11-17 00:18:54.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-11-17 00:18:56.000000000 +0800
+@@ -1292,6 +1292,7 @@ int test_clear_page_writeback(struct pag
+ 						PAGECACHE_TAG_WRITEBACK);
+ 			if (bdi_cap_account_writeback(bdi)) {
+ 				__dec_bdi_stat(bdi, BDI_WRITEBACK);
++				__inc_bdi_stat(bdi, BDI_WRITTEN);
+ 				__bdi_writeout_inc(bdi);
+ 			}
+ 		}
 
 
