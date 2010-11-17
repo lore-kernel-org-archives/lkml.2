@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759901Ab0KQHxq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 02:53:46 -0500
-Received: from tomasu.net ([64.85.170.234]:51119 "EHLO mail.tomasu.net"
+	id S1759881Ab0KQIHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 03:07:06 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:58836 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759879Ab0KQHxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 02:53:44 -0500
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: Linux Kernel List <linux-kernel@vger.kernel.org>
-Subject: Re: mvsas errors in 2.6.36
-Date: Wed, 17 Nov 2010 00:53:31 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
-Cc: linux-scsi@vger.kernel.org
-References: <201010290650.32892.thomas@fjellstrom.ca> <201010310911.45738.thomas@fjellstrom.ca>
-In-Reply-To: <201010310911.45738.thomas@fjellstrom.ca>
+	id S1758033Ab0KQIHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 03:07:03 -0500
+Date: Wed, 17 Nov 2010 13:36:55 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Mike Galbraith <efault@gmx.de>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101117080653.GB16969@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
+ <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com>
+ <1289783580.495.58.camel@maggy.simson.net>
+ <1289811438.2109.474.camel@laptop>
+ <1289820766.16406.45.camel@maggy.simson.net>
+ <1289821590.16406.47.camel@maggy.simson.net>
+ <20101115125716.GA22422@redhat.com>
+ <1289856350.14719.135.camel@maggy.simson.net>
+ <20101116015648.GA11534@redhat.com>
+ <AANLkTik4J7u1zC+D7bkB5PyVHRS_pLOU=c5HFUMxGqwM@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011170053.31174.thomas@fjellstrom.ca>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <AANLkTik4J7u1zC+D7bkB5PyVHRS_pLOU=c5HFUMxGqwM@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On October 31, 2010, Thomas Fjellstrom wrote:
-> On October 29, 2010, Thomas Fjellstrom wrote:
-> > Good news and bad news, the current mvsas driver in 2.6.36 seems to work
-> > better than older kernels with my setup (2 port sas + 5 SATA disks). But
-> > I gotten the following messages so far:
-> > 
-[snip]
-> > I did not unplug a disk, the errors seem to be spurious.
-> > 
-> > Otherwise though things seem to be working. At least so far. The
-> > mv_abort_task part is very familiar, the older version of this driver
-> > would do it right after attempting to build/activate the md raid5 array
-> > that lives on this controller. Except the controller would lock up, and
-> > all drives would become inaccessible.
-> > 
-> > I'm going to attempt to grow this array today, so long as the xfs_fsr
-> > that I started doesn't cause the array to fail.
-> > 
-> > If I keep getting mv_abort_task errors, I'll have to back down to the
-> > copy of the driver I got from Andy Yan. I've managed to patch it up to
-> > compile for 2.6.36 just now, I just hope it'll work at least as well as
-> > it did with 2.6.34. At the very least I didn't get these errors.
-> > 
-> > Some background, the disks attached to the card are (5) Seagate 7200.12
-> > 1TB disks, using SAS->SATA cables. Machine is a amd64 Phenom II X4 810
-> > w/4G ram running debian sid and a vanila 2.6.36 kernel. The card is a
-> > AOC-SASLP-MV8, according to lspci:
-> > 
-> > 04:00.0 SCSI storage controller: Marvell Technology Group Ltd.
-> > MV64460/64461/64462 System Controller, Revision B (rev 01)
-> > 
-> > according to dmesg:
-> > 
-[snip]
-> > I just hope the raid5 reshape I'm about to do doesn't crap its pants
-> > because of the errors above.
-> > 
-> > I'd like to help test any fixes or changes if needed. Let me know.
-> > 
-> > Thanks again.
+* Linus Torvalds <torvalds@linux-foundation.org> [2010-11-15 18:18:20]:
+
+> On Mon, Nov 15, 2010 at 5:56 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> >
+> > Should this kind of thing be done in user space?
 > 
-> After a couple days of uptime, the messages are still happening:
+> Almost certainly not.
+>
+> First off, user-space is a fragmented mess. Just from a "let's get it
+> done" angle, it just doesn't work. There are lots of different thing
+> that create new tty's, and you can't have them all fixed. Plus it
+> would be _way_ more code in user space than it is in kernel space.
+>
+> Secondly, user-space daemons are a total mess. We've tried it many
+> many times, and every time the _intention_ is to make things simpler
+> to debug and deploy. And it almost never is. The interfaces end up
+> being too painful, and the "part of the code is in kernel space, part
+> of it is in user space" means that things just break all the time.
 > 
-[snip]
-> No fatal errors yet.
 
-Still no fatal errors, but the problem is still happening regularly. It causes 
-a pause in disk io of a couple seconds at least. Really quite annoying.
+Please elaborate, is this a generic statement or a comment on
+cgclassify or cgroup user rules.
 
-One thing thats got me wondering, is could this be a power issue? It almost 
-seems like (from the messages) that a single drive (any drive) is freaking 
-out, and returning an error that probably shouldn't happen (no CHS 0?), which 
-could mean the drive is underpowered and the firmware is flipping out. I'm not 
-entirely sure. The system has a 750w decent quality Antec power supply. The 
-total power use of the system shouldn't come over half that (phenom II x4 810 
-cpu, gigabyte ma790fxtud5p mb, low profile nvidia 9400GS gpu, 8 sata hdds, 3 
-fans, etc). I'm /mostly/ sure the 12v rails are spread out evenly, but I have 
-yet to make absolutely sure.
-
-But then it doesn't seem as if the root drives are ever flipping out. Theres 
-two 500GB Seagate 7200.12 drives md raid1'ed on the motherboard's (SB750) sata 
-II controller. They work fine, no messages regarding them at all the entire 
-time. However I get frequent and repeated messages from all drives on the 
-mvsas based controller.
-
-So color me stumped.
+> Finally, the whole "user space is more flexible" is just a lie. It
+> simply doesn't end up being true. It will be _harder_ to configure
+> some user-space daemon than it is to just set a flag in /sys or
+> whatever. The "flexibility" tends to be more a flexibility to get
+> things wrong than any actual advantage.
+> 
+> Just look at the patch in question. It's simple, it's clean, and it
+> "just works". Doing the same thing in user space? It would be a total
+> nightmare, and exactly _because_ it would be a total nightmare, the
+> code would never be that simple or clean.
+> 
+>                        Linus
 
 -- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+	Three Cheers,
+	Balbir
