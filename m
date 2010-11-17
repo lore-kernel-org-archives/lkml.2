@@ -1,120 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935056Ab0KQRVW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 12:21:22 -0500
-Received: from havoc.gtf.org ([69.61.125.42]:33046 "EHLO havoc.gtf.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934939Ab0KQRVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 12:21:19 -0500
-Date: Wed, 17 Nov 2010 12:21:11 -0500
-From: Jeff Garzik <jeff@garzik.org>
-To: linux-ide@vger.kernel.org
-Cc: linux-scsi@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        James.Bottomley@suse.de
-Subject: [PATCH v2] libata: remove scsi host lock and serial number usage
-Message-ID: <20101117172111.GA26812@havoc.gtf.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1758522Ab0KQRWR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:22:17 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48732 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754518Ab0KQRWQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 12:22:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=vuwd/wP5RsQnCfgLAJ6eQyWVR1uxvTIqwbFuwNS/gFgwzqOKDt6fyBQomQWcLUZs7L
+         f/OJhJce12tIUwonpf6pWrswlFglBYtm+WngWjLCryXLVSV8LPmf1SBnW2s2UMemWyUC
+         EvZvLSVD84GS6eaEACwZf+IPZM/PW0UHD365U=
+MIME-Version: 1.0
+In-Reply-To: <20101117171613.GB5308@n2100.arm.linux.org.uk>
+References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
+	<1289584840-18097-6-git-send-email-catalin.marinas@arm.com>
+	<20101115183014.GD31421@n2100.arm.linux.org.uk>
+	<AANLkTik5FcZ3rNtiwN8kYP0LZh+YqGtKP_RteoFiWa16@mail.gmail.com>
+	<20101117171613.GB5308@n2100.arm.linux.org.uk>
+Date: Wed, 17 Nov 2010 17:22:12 +0000
+X-Google-Sender-Auth: mQj3aWYyTVy1p5LnVbatLdHV1XA
+Message-ID: <AANLkTincmfqXmNQznd1fdSRYd4Vc+p47cgTfEwQoXdFm@mail.gmail.com>
+Subject: Re: [PATCH v2 05/20] ARM: LPAE: Introduce L_PTE_NOEXEC and L_PTE_NOWRITE
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 17 November 2010 17:16, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Wed, Nov 17, 2010 at 05:02:37PM +0000, Catalin Marinas wrote:
+>> On 15 November 2010 18:30, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>> > On Fri, Nov 12, 2010 at 06:00:25PM +0000, Catalin Marinas wrote:
+>> >> --- a/arch/arm/include/asm/pgtable-2level.h
+>> >> +++ b/arch/arm/include/asm/pgtable-2level.h
+>> >> @@ -128,6 +128,8 @@
+>> >>  #define L_PTE_USER           (1 << 8)
+>> >>  #define L_PTE_EXEC           (1 << 9)
+>> >>  #define L_PTE_SHARED         (1 << 10)       /* shared(v6), coherent(xsc3) */
+>> >> +#define L_PTE_NOEXEC         (0)
+>> >> +#define L_PTE_NOWRITE                (0)
+>> >
+>> > Let's not make this more complicated than it has to be.  If we need the
+>> > inverse of WRITE and EXEC, then that's what we should change everyone to,
+>> > not invent a new system to work along side the old system.
+>>
+>> Question on the pgprot_noncached/writecombine/dmacoherent - in the
+>> current implementation we pass L_PTE_EXEC on the dmacoherent macro.
+>
+> Erm.  Please look at the code again.
 
-Much better...  Just updated #upstream-fixes with the below patch.
+Ah, good point, that was the mask.
 
-James just posted to linux-scsi
-	[PATCH] Eliminate error handler overload of the SCSI serial number
-but as Tejun pointed out, we _completely and entirely_ replace the SCSI
-error handler apparatus with our own, thereby eliminating any
-possibility that we would ever read or use cmd->serial_number.
+So for dmacoherent we make sure that L_PTE_EXEC is cleared. I suspect
+we should now make sure that L_PTE_NOEXEC is set. For the other two,
+just leave them as they are.
 
-Our lock profile is quite a bit improved.
-
-Further simplifications and cleanups related to 'done' are possible,
-but those are kept separate from the change below.
-
-
-commit 23e701e6208191ad103517ae7a700f2dc59ab2ec
-Author: Jeff Garzik <jeff@garzik.org>
-Date:   Wed Nov 17 12:03:58 2010 -0500
-
-    [libata] remove SCSI host lock and serial number usage from ata_scsi_queuecmd
-    
-    cmd->serial_number is never tested in any path we reach; therefore we may
-    remove the call to scsi_cmd_get_serial() inside DEF_SCSI_QCMD, the SCSI
-    host_lock acquisition surrounding it, and our own SCSI host_lock
-    unlock+relock cycle.
-    
-    Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
-
- drivers/ata/libata-scsi.c |   21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index 19835d3..66aa4be 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3166,8 +3166,8 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
- 
- /**
-  *	ata_scsi_queuecmd - Issue SCSI cdb to libata-managed device
-+ *	@shost: SCSI host of command to be sent
-  *	@cmd: SCSI command to be sent
-- *	@done: Completion function, called when command is complete
-  *
-  *	In some cases, this function translates SCSI commands into
-  *	ATA taskfiles, and queues the taskfiles to be sent to
-@@ -3177,42 +3177,39 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
-  *	ATA and ATAPI devices appearing as SCSI devices.
-  *
-  *	LOCKING:
-- *	Releases scsi-layer-held lock, and obtains host lock.
-+ *	ATA host lock
-  *
-  *	RETURNS:
-  *	Return value from __ata_scsi_queuecmd() if @cmd can be queued,
-  *	0 otherwise.
-  */
--static int ata_scsi_queuecmd_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
-+int ata_scsi_queuecmd(struct Scsi_Host *shost, struct scsi_cmnd *cmd)
- {
- 	struct ata_port *ap;
- 	struct ata_device *dev;
- 	struct scsi_device *scsidev = cmd->device;
--	struct Scsi_Host *shost = scsidev->host;
- 	int rc = 0;
-+	unsigned long irq_flags;
- 
- 	ap = ata_shost_to_port(shost);
- 
--	spin_unlock(shost->host_lock);
--	spin_lock(ap->lock);
-+	spin_lock_irqsave(ap->lock, irq_flags);
- 
- 	ata_scsi_dump_cdb(ap, cmd);
- 
- 	dev = ata_scsi_find_dev(ap, scsidev);
- 	if (likely(dev))
--		rc = __ata_scsi_queuecmd(cmd, done, dev);
-+		rc = __ata_scsi_queuecmd(cmd, cmd->scsi_done, dev);
- 	else {
- 		cmd->result = (DID_BAD_TARGET << 16);
--		done(cmd);
-+		cmd->scsi_done(cmd);
- 	}
- 
--	spin_unlock(ap->lock);
--	spin_lock(shost->host_lock);
-+	spin_unlock_irqrestore(ap->lock, irq_flags);
-+
- 	return rc;
- }
- 
--DEF_SCSI_QCMD(ata_scsi_queuecmd)
--
- /**
-  *	ata_scsi_simulate - simulate SCSI command on ATA device
-  *	@dev: the target device
+-- 
+Catalin
