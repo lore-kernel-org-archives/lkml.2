@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759809Ab0KQHH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 02:07:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13042 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752799Ab0KQHHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 02:07:55 -0500
-Date: Wed, 17 Nov 2010 02:06:59 -0500
-From: Josef Bacik <josef@redhat.com>
-To: Miao Xie <miaox@cn.fujitsu.com>
-Cc: viro@zeniv.linux.org.uk, Josef Bacik <josef@redhat.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ito <t-itoh@jp.fujitsu.com>
-Subject: Re: [PATCH 1/3] direct-io: add a hook for the fs to provide its
-	own bio merging check function
-Message-ID: <20101117070658.GF5618@dhcp231-156.rdu.redhat.com>
-References: <4CE3579B.1000301@cn.fujitsu.com>
+	id S934318Ab0KQHL2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 02:11:28 -0500
+Received: from smtp-vbr16.xs4all.nl ([194.109.24.36]:4827 "EHLO
+	smtp-vbr16.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933055Ab0KQHL1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 02:11:27 -0500
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Andrew Chew <AChew@nvidia.com>
+Subject: Re: [PATCH 1/1] videobuf: Initialize lists in videobuf_buffer.
+Date: Wed, 17 Nov 2010 08:11:06 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-tschai; KDE/4.4.5; x86_64; ; )
+Cc: "'Figo.zhang'" <zhangtianfei@leadcoretech.com>,
+        "pawel@osciak.com" <pawel@osciak.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1289939083-27209-1-git-send-email-achew@nvidia.com> <4CE32B9D.1020705@leadcoretech.com> <643E69AA4436674C8F39DCC2C05F763816BB828A40@HQMAIL03.nvidia.com>
+In-Reply-To: <643E69AA4436674C8F39DCC2C05F763816BB828A40@HQMAIL03.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE3579B.1000301@cn.fujitsu.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011170811.06697.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 12:18:35PM +0800, Miao Xie wrote:
-> BTRFS can not submit bios that span its chunks or stripes, so it needs a
-> function to check it when we want to add a page into the bios. So we add a
-> can_merge_io hook to do it.
+On Wednesday, November 17, 2010 02:38:09 Andrew Chew wrote:
+> > > diff --git a/drivers/media/video/videobuf-dma-contig.c 
+> > b/drivers/media/video/videobuf-dma-contig.c
+> > > index c969111..f7e0f86 100644
+> > > --- a/drivers/media/video/videobuf-dma-contig.c
+> > > +++ b/drivers/media/video/videobuf-dma-contig.c
+> > > @@ -193,6 +193,8 @@ static struct videobuf_buffer 
+> > *__videobuf_alloc_vb(size_t size)
+> > >   	if (vb) {
+> > >   		mem = vb->priv = ((char *)vb) + size;
+> > >   		mem->magic = MAGIC_DC_MEM;
+> > > +		INIT_LIST_HEAD(&vb->stream);
+> > > +		INIT_LIST_HEAD(&vb->queue);
+> > 
+> > i think it no need to be init, it just a list-entry.
+> 
+> Okay, if that's really the case, then sh_mobile_ceu_camera.c, pxa_camera.c, mx1_camera.c, mx2_camera.c, and omap1_camera.c needs to be fixed to remove that WARN_ON(!list_empty(&vb->queue)); in their videobuf_prepare() methods, because those WARN_ON's are assuming that vb->queue is properly initialized as a list head.
+> 
+> Which will it be?
 > 
 
-Heh so I was going to fix this after the hole punching stuff.  The fact is btrfs
-maps everything that is ok to do in one IO via get_blocks().  So all we need to
-do is add another DIO_ flag to tell us to treat each get_blocks() call as
-discrete.  I wanted to use buffer_boundary for this, but I think it's too
-drastic of a change for people who already use buffer_boundary();
+These list entries need to be inited. It is bad form to have uninitialized
+list entries. It is not as if this is a big deal to initialize them properly.
 
-What happens today is that say we map 4k, we do submit_page_section, but if this
-is our first bit of IO we just set dio->cur_page and such and then loop again.
-Say there is 4k-hole-4k, we do the next mapping and set buffer_boundary again,
-and come into submit_page_section and because cur_page is set, we do
-dio_send_cur_page.  Because there is no dio->bio we setup a new bio, but when we
-do that we clear dio->boundary, and leave the bio all setup.  So the next time
-we loop around the tail 4k gets added to our previously setup bio and boom we
-hit this problem with btrfs.
+Regards,
 
-If we can add a DIO_GET_BLOCKS_DISCRETE or some other such non-sense then we can
-easily kill all the logical offset code I had and just make some simple changes
-to make the DIO stuff work for us.  All we do is in get_more_blocks we do
+	Hans
 
-if ((dio->flags & DIO_GET_BLOCKS_DISCRETE) && dio->bio)
-	dio_submit_bio(dio);
-
-before we do anything else and that way btrfs is satisfied since we won't merge
-non logically contiguous requests.
-
-So thats a long-winded way of saying NACK, lets not add even more complicated
-special crap for dealing with btrfs when we can just do something like the
-above.  Thanks,
-
-Josef
+-- 
+Hans Verkuil - video4linux developer - sponsored by Cisco
