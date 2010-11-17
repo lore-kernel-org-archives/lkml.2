@@ -1,80 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935265Ab0KQV3U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 16:29:20 -0500
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:38699 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754440Ab0KQV3T (ORCPT
+	id S935369Ab0KQV34 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 16:29:56 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:50348 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754291Ab0KQV3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 16:29:19 -0500
-Date: Wed, 17 Nov 2010 23:29:13 +0200
-From: Alexander Shishkin <virtuoso@slind.org>
-To: Davide Libenzi <davidel@xmailserver.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Kyle Moffett <kyle@moffetthome.net>,
-        Valdis.Kletnieks@vt.edu, LKML <linux-kernel@vger.kernel.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Alexander Shishkin <virtuoso@slind.org>
-Subject: Re: [PATCHv6 0/7] system time changes notification
-Message-ID: <20101117212912.GC26184@shisha.kicks-ass.net>
-References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
- <22542.1289507293@localhost>
- <20101111205123.GC10585@shisha.kicks-ass.net>
- <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
- <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
- <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6>
- <20101117190659.GB26184@shisha.kicks-ass.net>
- <alpine.DEB.2.00.1011171130210.1595@davide-lnx1>
+	Wed, 17 Nov 2010 16:29:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=oeCcdT/SAx6GzbwMS3kjRqNHtMnseTV5SR00JSX7IrNu7Aq6yebkwro14xPKAKkS/u
+         WDnk2ljFb5uFUwsV/4CbDQ8eLUfsnD7dp1RX5gARySyD9xuCCiUM27dxYICYxziODhhg
+         NDfUv0D3eNSXyX1CtvlyfnevFKM93miSifm0s=
+Date: Wed, 17 Nov 2010 13:29:43 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Ike Panhc <ike.pan@canonical.com>
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 3/3] ideapad: add hotkey support
+Message-ID: <20101117212943.GA6661@core.coreip.homeip.net>
+References: <1289977165-14802-1-git-send-email-ike.pan@canonical.com>
+ <1289977238-15113-1-git-send-email-ike.pan@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1011171130210.1595@davide-lnx1>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1289977238-15113-1-git-send-email-ike.pan@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 12:42:52PM -0800, Davide Libenzi wrote:
-> On Wed, 17 Nov 2010, Alexander Shishkin wrote:
+On Wed, Nov 17, 2010 at 03:00:38PM +0800, Ike Panhc wrote:
+> Hotkey enabled by this patch:
+>   Fn+F3: Video mode switch
+>   Fn+F5: software rfkill for wifi
 > 
-> > > But what you folks really want for this stuff is an extension to
-> > > timerfd as you want to be able to poll, right?
-> > > 
-> > > So what about the following:
-> > > 
-> > > Add a new flag TDF_NOTIFY_CLOCK_WAS_SET to the timerfd flags. Now this
-> > > flag adds the timer to a separate list, which gets woken up when the
-> > > clock is set.
-> > > 
-> > > No new syscall, just a few lines of code in fs/timerfd.c and
-> > > clock_was_set().
-> > > 
-> > > Thoughts ?
-> > 
-> > Something like this (sans ugliness)?
+> For some ideapad when push Fn+F3, hardware generates Super-P keys, those key
+> will not be enabled by this patch.
 > 
-> Oh, gosh, please.  This is interface-multiplexing-a-palooza.
+> Signed-off-by: Ike Panhc <ike.pan@canonical.com>
+> ---
+>  drivers/platform/x86/ideapad-laptop.c |   74 +++++++++++++++++++++++++++++++++
+>  1 files changed, 74 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
+> index d75c21f..d397034 100644
+> --- a/drivers/platform/x86/ideapad-laptop.c
+> +++ b/drivers/platform/x86/ideapad-laptop.c
+> @@ -28,6 +28,8 @@
+>  #include <acpi/acpi_drivers.h>
+>  #include <linux/rfkill.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/input.h>
+> +#include <linux/input/sparse-keymap.h>
+>  
+>  #define IDEAPAD_DEV_CAMERA	0
+>  #define IDEAPAD_DEV_WLAN	1
+> @@ -39,6 +41,7 @@ struct ideapad_private {
+>  	acpi_handle handle;
+>  	struct rfkill *rfk[5];
+>  	struct platform_device *platform_device;
+> +	struct input_dev *inputdev;
+>  } *ideapad_priv;
+>  
+>  static struct {
+> @@ -325,6 +328,68 @@ static void ideapad_platform_exit(void)
+>  }
+>  /* the above is platform device */
+>  
+> +/*
+> + * input device
+> + */
+> +static const struct key_entry ideapad_keymap[] = {
+> +	{ KE_KEY, 0x06, { KEY_SWITCHVIDEOMODE } },
+> +	{ KE_KEY, 0x0D, { KEY_WLAN } },
+> +	{ KE_END, 0 },
+> +};
+> +
+> +static int ideapad_input_init(void)
 
-Thomas made a suggestion, I came up with how it might look like so that
-pros and cons are clearer to everyone (or at least me) and can be discussed
-on technical grounds. Code talks, sort of. I'm not convinced that a timer
-that returns to userspace when the clock changes is such a bad idea, could
-you please elaborate?
+__devinit?
 
-> It should be decided if the feature makes sense, and then have proper 
-> interface, instead of multiplexing unrelated insterfaces.
+> +{
+> +	struct input_dev *inputdev;
+> +	int error;
+> +
+> +	inputdev = input_allocate_device();
+> +	if (!inputdev) {
+> +		pr_info("Unable to allocate input device\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	inputdev->name = "Ideapad extra buttons";
+> +	inputdev->phys = "ideapad/input0";
+> +	inputdev->id.bustype = BUS_HOST;
+> +	inputdev->dev.parent = &ideapad_priv->platform_device->dev;
+> +
+> +	error = sparse_keymap_setup(inputdev, ideapad_keymap, NULL);
+> +	if (error) {
+> +		pr_err("Unable to setup input device keymap\n");
+> +		goto err_free_dev;
+> +	}
+> +
+> +	error = input_register_device(inputdev);
+> +	if (error) {
+> +		pr_err("Unable to register input device\n");
+> +		goto err_free_keymap;
+> +	}
+> +
+> +	ideapad_priv->inputdev = inputdev;
 
-It is not a question any more.
+Why don't you pass ideapad_priv in as an argument instead of relying on
+global. I know that there can only be one, but then why do you have a
+structure?
 
-> This is a sort of system-event-report pattern.  What is wrong with using a 
-> netlink-based transport for those kind of things?
+> +	return 0;
+> +
+> +err_free_keymap:
+> +	sparse_keymap_free(inputdev);
+> +err_free_dev:
+> +	input_free_device(inputdev);
+> +	return error;
+> +}
+> +
+> +static void ideapad_input_exit(void)
 
-What is wrong with eventfd-based implementation that's already there?
+__devexit? The rest of the driver might user these markups as well.
 
-Thanks,
---
-Alex
+> +{
+> +	if (ideapad_priv->inputdev) {
+> +		sparse_keymap_free(ideapad_priv->inputdev);
+> +		input_unregister_device(ideapad_priv->inputdev);
+> +	}
+> +	ideapad_priv->inputdev = NULL;
+
+You fail driver initialization when ideapad_input_init() fails so there
+is no point in checking whether ideapad_priv->inputdev is null or not.
+
+Otherwise looks good from input POV.
+
+Thanks.
+
+-- 
+Dmitry
