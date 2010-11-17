@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758591Ab0KQRap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 12:30:45 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36338 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758291Ab0KQRao (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 12:30:44 -0500
-Subject: Re: [PATCH v2 05/20] ARM: LPAE: Introduce L_PTE_NOEXEC and
- L_PTE_NOWRITE
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101117172425.GE5308@n2100.arm.linux.org.uk>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
-	 <1289584840-18097-6-git-send-email-catalin.marinas@arm.com>
-	 <20101115183014.GD31421@n2100.arm.linux.org.uk>
-	 <AANLkTik5FcZ3rNtiwN8kYP0LZh+YqGtKP_RteoFiWa16@mail.gmail.com>
-	 <20101117171613.GB5308@n2100.arm.linux.org.uk>
-	 <AANLkTincmfqXmNQznd1fdSRYd4Vc+p47cgTfEwQoXdFm@mail.gmail.com>
-	 <20101117172425.GE5308@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Wed, 17 Nov 2010 17:30:33 +0000
-Message-ID: <1290015033.2351.69.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Nov 2010 17:30:33.0751 (UTC) FILETIME=[23A91A70:01CB867D]
+	id S935098Ab0KQRbY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:31:24 -0500
+Received: from kroah.org ([198.145.64.141]:47892 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758291Ab0KQRbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 12:31:21 -0500
+Date: Wed, 17 Nov 2010 09:31:15 -0800
+From: Greg KH <greg@kroah.com>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm@lists.infradead.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] OMAP: Serial: Define register access modes in LCR
+Message-ID: <20101117173115.GA12349@kroah.com>
+References: <1289982712-7309-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+ <20101117161729.GF10992@kroah.com>
+ <87hbff7tbf.fsf@deeprootsystems.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87hbff7tbf.fsf@deeprootsystems.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 17:24 +0000, Russell King - ARM Linux wrote:
-> On Wed, Nov 17, 2010 at 05:22:12PM +0000, Catalin Marinas wrote:
-> > Ah, good point, that was the mask.
+On Wed, Nov 17, 2010 at 09:28:52AM -0800, Kevin Hilman wrote:
+> Greg KH <greg@kroah.com> writes:
+> 
+> > On Wed, Nov 17, 2010 at 10:31:52AM +0200, Emeltchenko Andrei wrote:
+> >> From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+> >> 
+> >> Access to some registers depends on register access mode
+> >> Three different modes are available for OMAP (at least)
+> >> • Operational mode     LCR_REG[7] = 0x0
+> >> • Configuration mode A LCR_REG[7] = 0x1 and LCR_REG[7:0]! = 0xBF
+> >> • Configuration mode B LCR_REG[7] = 0x1 and LCR_REG[7:0]  = 0xBF
+> >> 
+> >> Define access modes and remove redefinitions and magic numbers
+> >> in serial drivers (and later in bluetooth driver).
+> >> 
+> >> Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+> >> ---
+> >>  arch/arm/mach-omap2/serial.c                  |   12 ++++----
+> >>  arch/arm/plat-omap/include/plat/omap-serial.h |    9 ------
+> >>  drivers/serial/8250.c                         |   26 +++++++++---------
+> >>  drivers/serial/omap-serial.c                  |   34 ++++++++++++------------
+> >>  include/linux/serial_reg.h                    |    7 +++++
 > >
-> > So for dmacoherent we make sure that L_PTE_EXEC is cleared. I suspect
-> > we should now make sure that L_PTE_NOEXEC is set. For the other two,
-> > just leave them as they are.
+> > What tree should this go through?  THe omap or serial one?
 > 
-> Already done:
+> Since this only affects OMAP drivers, we can take this through OMAP.
 > 
->  #define pgprot_dmacoherent(prot) \
-> -       __pgprot_modify(prot, L_PTE_MT_MASK|L_PTE_EXEC, L_PTE_MT_BUFFERABLE)
-> +       __pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_BUFFERABLE|L_PTE_XN)
-> ...
->  #define pgprot_dmacoherent(prot) \
-> -       __pgprot_modify(prot, L_PTE_MT_MASK|L_PTE_EXEC, L_PTE_MT_UNCACHED)
-> +       __pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_UNCACHED|L_PTE_XN)
+> That will also help us avoid conflicts, as we'll hopefully be converting
+> the omap-serial driver to runtime PM for this next merge window as well.
 
-Are you already doing such changes? Just to avoid duplicating effort
-(and use common naming scheme).
+Fine with me, feel free to add:
+	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
--- 
-Catalin
+to it.
 
+thanks,
+
+greg k-h
