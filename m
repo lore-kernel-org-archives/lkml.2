@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933893Ab0KQBvU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 20:51:20 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59163 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932959Ab0KQBvT (ORCPT
+	id S933993Ab0KQBwF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 20:52:05 -0500
+Received: from casper.infradead.org ([85.118.1.10]:60137 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932959Ab0KQBwD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 20:51:19 -0500
+	Tue, 16 Nov 2010 20:52:03 -0500
+Message-ID: <4CE33527.8090800@infradead.org>
+Date: Tue, 16 Nov 2010 23:51:35 -0200
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-In-Reply-To: <20101117013148.GA22651@bombadil.infradead.org>
-References: <AANLkTimHtjH3YvtX6i542_XjfFeuvG-AnU8i224a1R4j@mail.gmail.com>
- <1289778189.5154.10.camel@maggy.simson.net> <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
- <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com>
- <1289783580.495.58.camel@maggy.simson.net> <1289811438.2109.474.camel@laptop>
- <1289820766.16406.45.camel@maggy.simson.net> <1289821590.16406.47.camel@maggy.simson.net>
- <20101115125716.GA22422@redhat.com> <1289856350.14719.135.camel@maggy.simson.net>
- <20101117013148.GA22651@bombadil.infradead.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 16 Nov 2010 17:50:41 -0800
-Message-ID: <AANLkTi=ynv+TAB9a2-+9PDhYbmopMn+6FPxh4ZUdro2K@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-To: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+To: Jarod Wilson <jarod@redhat.com>
+CC: Nicolas Kaiser <nikai@nikai.net>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/media: nuvoton: always true expression
+References: <20101116211953.238012db@absol.kitzblitz> <20101116215408.GA17140@redhat.com>
+In-Reply-To: <20101116215408.GA17140@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 5:31 PM, Kyle McMartin <kyle@mcmartin.ca> wrote:
->
-> This is a bit of a problem, as it's called in_atomic context and kmalloc's
-> under GFP_KERNEL (which can sleep.) This results in sleep-under-spinlock
-> prints when CONFIG_DEBUG_SPINLOCK_SLEEP=y.
+Em 16-11-2010 19:54, Jarod Wilson escreveu:
+> On Tue, Nov 16, 2010 at 09:19:53PM +0100, Nicolas Kaiser wrote:
+>> I noticed that the second part of this conditional is always true.
+>> Would the intention be to strictly check on both chip_major and
+>> chip_minor?
+>>
+>> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+> 
+> Hrm, yeah, looks like I screwed that one up. You're correct, the intention
+> was to make sure we have a matching chip id high and one or the other of
+> the chip id low values.
+> 
+> Acked-by: Jarod Wilson <jarod@redhat.com>
+> 
+I wander if it wouldn't be good to print something if the probe fails due to
+the wrong chip ID. It may help if someone complain about a different 
+revision.
 
-Blame me, I threw that out as a single point where this can be done.
-
-In fact, holding the signal spinlock was seen as a bonus, since that
-was used to serialize the access to the signal->autogroup access.
-Which I think is required.
-
-But yes, it does create problems for the allocation. It could be done
-as just a GFP_ATOMIC, of course, and on allocation failure you'd just
-punt and not do it. Not pretty, but functional.
-
-                  Linus
+Mauro.
