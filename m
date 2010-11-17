@@ -1,41 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636Ab0KQXyi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:54:38 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:9661 "EHLO
+	id S1752899Ab0KQXyq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:54:46 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:9684 "EHLO
 	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263Ab0KQXyh (ORCPT
+	with ESMTP id S1752750Ab0KQXyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:54:37 -0500
+	Wed, 17 Nov 2010 18:54:44 -0500
 From: David Daney <ddaney@caviumnetworks.com>
 To: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
         linux-kernel@vger.kernel.org, netdev@vger.kernel.org
 Cc: David Daney <ddaney@caviumnetworks.com>
-Subject: [PATCH 0/2] of/phylib: Use device tree properties for PHY configuration.
-Date: Wed, 17 Nov 2010 15:54:29 -0800
-Message-Id: <1290038071-13296-1-git-send-email-ddaney@caviumnetworks.com>
+Subject: [PATCH 2/2] phylib: Add support for Marvell 88E1149R devices.
+Date: Wed, 17 Nov 2010 15:54:31 -0800
+Message-Id: <1290038071-13296-3-git-send-email-ddaney@caviumnetworks.com>
 X-Mailer: git-send-email 1.7.2.3
-X-OriginalArrivalTime: 17 Nov 2010 23:55:26.0613 (UTC) FILETIME=[E8143450:01CB86B2]
+In-Reply-To: <1290038071-13296-1-git-send-email-ddaney@caviumnetworks.com>
+References: <1290038071-13296-1-git-send-email-ddaney@caviumnetworks.com>
+X-OriginalArrivalTime: 17 Nov 2010 23:55:33.0066 (UTC) FILETIME=[EBECDAA0:01CB86B2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is my first take at using the device tree to control PHY
-configuration.  This first set enables some Marvell PHYs.  If the
-scheme is deemed acceptable, I would probably do something similar for
-Broadcom PHYs as well.
+The 88E1149R is 10/100/1000 quad-gigabit Ethernet PHY.  The
+.config_aneg function can be shared with 88E1118, but it needs its own
+.config_init.
 
-The first patch is the meat of the change.  The second adds support
-for the 88E1149R PHY that I have on one of my boards.
-
-David Daney (2):
-  of/phylib: Use device tree properties to initialize Marvell PHYs.
-  phylib: Add support for Marvell 88E1149R devices.
-
- drivers/net/phy/marvell.c   |  135 +++++++++++++++++++++++++++++++++++++++++++
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+---
+ drivers/net/phy/marvell.c   |   44 +++++++++++++++++++++++++++++++++++++++++++
  include/linux/marvell_phy.h |    1 +
- 2 files changed, 136 insertions(+), 0 deletions(-)
+ 2 files changed, 45 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
+index 33ad654..a0851c7 100644
+--- a/drivers/net/phy/marvell.c
++++ b/drivers/net/phy/marvell.c
+@@ -519,6 +519,36 @@ static int m88e1118_config_init(struct phy_device *phydev)
+ 	return 0;
+ }
+ 
++static int m88e1149_config_init(struct phy_device *phydev)
++{
++	int err;
++
++	/* Change address */
++	err = phy_write(phydev, 0x16, 0x0002);
++	if (err < 0)
++		return err;
++
++	/* Enable 1000 Mbit */
++	err = phy_write(phydev, 0x15, 0x1048);
++	if (err < 0)
++		return err;
++
++	err = marvell_of_reg_init(phydev);
++	if (err < 0)
++		return err;
++
++	/* Reset address */
++	err = phy_write(phydev, 0x16, 0x0);
++	if (err < 0)
++		return err;
++
++	err = phy_write(phydev, MII_BMCR, BMCR_RESET);
++	if (err < 0)
++		return err;
++
++	return 0;
++}
++
+ static int m88e1145_config_init(struct phy_device *phydev)
+ {
+ 	int err;
+@@ -776,6 +806,19 @@ static struct phy_driver marvell_drivers[] = {
+ 		.driver = { .owner = THIS_MODULE },
+ 	},
+ 	{
++		.phy_id = MARVELL_PHY_ID_88E1149R,
++		.phy_id_mask = MARVELL_PHY_ID_MASK,
++		.name = "Marvell 88E1149R",
++		.features = PHY_GBIT_FEATURES,
++		.flags = PHY_HAS_INTERRUPT,
++		.config_init = &m88e1149_config_init,
++		.config_aneg = &m88e1118_config_aneg,
++		.read_status = &genphy_read_status,
++		.ack_interrupt = &marvell_ack_interrupt,
++		.config_intr = &marvell_config_intr,
++		.driver = { .owner = THIS_MODULE },
++	},
++	{
+ 		.phy_id = MARVELL_PHY_ID_88E1240,
+ 		.phy_id_mask = MARVELL_PHY_ID_MASK,
+ 		.name = "Marvell 88E1240",
+@@ -826,6 +869,7 @@ static struct mdio_device_id __maybe_unused marvell_tbl[] = {
+ 	{ 0x01410e10, 0xfffffff0 },
+ 	{ 0x01410cb0, 0xfffffff0 },
+ 	{ 0x01410cd0, 0xfffffff0 },
++	{ 0x01410e50, 0xfffffff0 },
+ 	{ 0x01410e30, 0xfffffff0 },
+ 	{ 0x01410e90, 0xfffffff0 },
+ 	{ }
+diff --git a/include/linux/marvell_phy.h b/include/linux/marvell_phy.h
+index 1ff81b5..dd3c34e 100644
+--- a/include/linux/marvell_phy.h
++++ b/include/linux/marvell_phy.h
+@@ -11,6 +11,7 @@
+ #define MARVELL_PHY_ID_88E1118		0x01410e10
+ #define MARVELL_PHY_ID_88E1121R		0x01410cb0
+ #define MARVELL_PHY_ID_88E1145		0x01410cd0
++#define MARVELL_PHY_ID_88E1149R		0x01410e50
+ #define MARVELL_PHY_ID_88E1240		0x01410e30
+ #define MARVELL_PHY_ID_88E1318S		0x01410e90
+ 
 -- 
 1.7.2.3
 
