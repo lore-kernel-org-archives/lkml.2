@@ -1,115 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933331Ab0KQEJF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 23:09:05 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56929 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759680Ab0KQEJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 23:09:00 -0500
-Message-ID: <4CE3565D.4080004@cn.fujitsu.com>
-Date: Wed, 17 Nov 2010 12:13:17 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH v2 5/6] KVM: MMU: remove 'clear_unsync' parameter
-References: <4CE355A0.6020907@cn.fujitsu.com>
-In-Reply-To: <4CE355A0.6020907@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-17 12:09:20,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-17 12:09:21,
-	Serialize complete at 2010-11-17 12:09:21
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1759695Ab0KQEJb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 23:09:31 -0500
+Received: from mga09.intel.com ([134.134.136.24]:4385 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759633Ab0KQEIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 23:08:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,209,1288594800"; 
+   d="scan'208";a="678252831"
+Message-Id: <20101117035906.840703610@intel.com>
+User-Agent: quilt/0.48-1
+Date: Wed, 17 Nov 2010 11:58:33 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "Theodore Ts'o" <tytso@mit.edu>, Wu Fengguang <fengguang.wu@intel.com>
+CC: Dave Chinner <david@fromorbit.com>
+CC: Jan Kara <jack@suse.cz>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Mel Gorman <mel@csn.ul.ie>
+CC: Rik van Riel <riel@redhat.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Chris Mason <chris.mason@oracle.com>
+CC: Christoph Hellwig <hch@lst.de>
+Cc: linux-mm <linux-mm@kvack.org>
+Cc: <linux-fsdevel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 12/13] writeback: add trace event for balance_dirty_pages()
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove it since we can jude it by sp->unsync
+Andrew,
+References: <20101117035821.000579293@intel.com>
+Content-Disposition: inline; filename=writeback-trace-balance_dirty_pages.patch
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Here is an interesting test to verify the theory with balance_dirty_pages()
+tracing. On a partition that can do ~60MB/s, a sparse file is created and
+4 rsync tasks with different write bandwidth started:
+
+	dd if=/dev/zero of=/mnt/1T bs=1M count=1 seek=1024000
+	echo 1 > /debug/tracing/events/writeback/balance_dirty_pages/enable
+
+	rsync localhost:/mnt/1T /mnt/a --bwlimit 10000&
+	rsync localhost:/mnt/1T /mnt/A --bwlimit 10000&
+	rsync localhost:/mnt/1T /mnt/b --bwlimit 20000&
+	rsync localhost:/mnt/1T /mnt/c --bwlimit 30000&
+
+Trace outputs within 0.1 second, grouped by tasks:
+
+rsync-3824  [004] 15002.076447: balance_dirty_pages: bdi=btrfs-2 weight=15% limit=130876 gap=5340 dirtied=192 pause=20
+
+rsync-3822  [003] 15002.091701: balance_dirty_pages: bdi=btrfs-2 weight=15% limit=130777 gap=5113 dirtied=192 pause=20
+
+rsync-3821  [006] 15002.004667: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129570 gap=3714 dirtied=64 pause=8
+rsync-3821  [006] 15002.012654: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129589 gap=3733 dirtied=64 pause=8
+rsync-3821  [006] 15002.021838: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129604 gap=3748 dirtied=64 pause=8
+rsync-3821  [004] 15002.091193: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129583 gap=3983 dirtied=64 pause=8
+rsync-3821  [004] 15002.102729: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129594 gap=3802 dirtied=64 pause=8
+rsync-3821  [000] 15002.109252: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129619 gap=3827 dirtied=64 pause=8
+
+rsync-3823  [002] 15002.009029: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128762 gap=2842 dirtied=64 pause=12
+rsync-3823  [002] 15002.021598: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128813 gap=3021 dirtied=64 pause=12
+rsync-3823  [003] 15002.032973: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128805 gap=2885 dirtied=64 pause=12
+rsync-3823  [003] 15002.048800: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128823 gap=2967 dirtied=64 pause=12
+rsync-3823  [003] 15002.060728: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128821 gap=3221 dirtied=64 pause=12
+rsync-3823  [000] 15002.073152: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128825 gap=3225 dirtied=64 pause=12
+rsync-3823  [005] 15002.090111: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128782 gap=3214 dirtied=64 pause=12
+rsync-3823  [004] 15002.102520: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128764 gap=3036 dirtied=64 pause=12
+
+The data vividly show that
+
+- the heaviest writer is throttled a bit (weight=39%)
+
+- the lighter writers run at full speed (weight=15%,15%,30%)
+  rsync is smart enough to compensate for the in-kernel pause time
+
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- arch/x86/include/asm/kvm_host.h |    2 +-
- arch/x86/kvm/mmu.c              |    8 ++++----
- arch/x86/kvm/paging_tmpl.h      |    5 ++---
- 3 files changed, 7 insertions(+), 8 deletions(-)
+ include/trace/events/writeback.h |   61 +++++++++++++++++++++++++++--
+ mm/page-writeback.c              |    6 ++
+ 2 files changed, 64 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index b04c0fa..ce8c1e4 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -250,7 +250,7 @@ struct kvm_mmu {
- 	void (*prefetch_page)(struct kvm_vcpu *vcpu,
- 			      struct kvm_mmu_page *page);
- 	int (*sync_page)(struct kvm_vcpu *vcpu,
--			 struct kvm_mmu_page *sp, bool clear_unsync);
-+			 struct kvm_mmu_page *sp);
- 	void (*invlpg)(struct kvm_vcpu *vcpu, gva_t gva);
- 	hpa_t root_hpa;
- 	int root_level;
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index c4531a3..0668f4b 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1162,7 +1162,7 @@ static void nonpaging_prefetch_page(struct kvm_vcpu *vcpu,
- }
+--- linux-next.orig/include/trace/events/writeback.h	2010-11-15 18:59:00.000000000 +0800
++++ linux-next/include/trace/events/writeback.h	2010-11-15 21:31:46.000000000 +0800
+@@ -147,11 +147,66 @@ DEFINE_EVENT(wbc_class, name, \
+ DEFINE_WBC_EVENT(wbc_writeback_start);
+ DEFINE_WBC_EVENT(wbc_writeback_written);
+ DEFINE_WBC_EVENT(wbc_writeback_wait);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_start);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_written);
+-DEFINE_WBC_EVENT(wbc_balance_dirty_wait);
+ DEFINE_WBC_EVENT(wbc_writepage);
  
- static int nonpaging_sync_page(struct kvm_vcpu *vcpu,
--			       struct kvm_mmu_page *sp, bool clear_unsync)
-+			       struct kvm_mmu_page *sp)
- {
- 	return 1;
- }
-@@ -1292,7 +1292,7 @@ static int __kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 	if (clear_unsync)
- 		kvm_unlink_unsync_page(vcpu->kvm, sp);
++#define BDP_PERCENT(a, b, c)	((__entry->a - __entry->b) * 100 * c + \
++				  __entry->bdi_limit/2) / (__entry->bdi_limit|1)
++TRACE_EVENT(balance_dirty_pages,
++
++	TP_PROTO(struct backing_dev_info *bdi,
++		 long bdi_dirty,
++		 long bdi_limit,
++		 long task_limit,
++		 long pages_dirtied,
++		 long pause),
++
++	TP_ARGS(bdi, bdi_dirty, bdi_limit, task_limit,
++		pages_dirtied, pause),
++
++	TP_STRUCT__entry(
++		__array(char,	bdi, 32)
++		__field(long,	bdi_dirty)
++		__field(long,	bdi_limit)
++		__field(long,	task_limit)
++		__field(long,	pages_dirtied)
++		__field(long,	pause)
++	),
++
++	TP_fast_assign(
++		strlcpy(__entry->bdi, dev_name(bdi->dev), 32);
++		__entry->bdi_dirty	= bdi_dirty;
++		__entry->bdi_limit	= bdi_limit;
++		__entry->task_limit	= task_limit;
++		__entry->pages_dirtied	= pages_dirtied;
++		__entry->pause		= pause * 1000 / HZ;
++	),
++
++
++	/*
++	 *           [..................soft throttling range.........]
++	 *           ^                |<=========== bdi_gap =========>|
++	 * background_thresh          |<== task_gap ==>|
++	 * -------------------|-------+----------------|--------------|
++	 *   (bdi_limit * 7/8)^       ^bdi_dirty       ^task_limit    ^bdi_limit
++	 *
++	 * Reasonable large gaps help produce smooth pause times.
++	 */
++	TP_printk("bdi=%s bdi_dirty=%lu bdi_limit=%lu task_limit=%lu "
++		  "task_weight=%ld%% task_gap=%ld%% bdi_gap=%ld%% "
++		  "pages_dirtied=%lu pause=%lu",
++		  __entry->bdi,
++		  __entry->bdi_dirty,
++		  __entry->bdi_limit,
++		  __entry->task_limit,
++		  /* task weight: proportion of recent dirtied pages */
++		  BDP_PERCENT(bdi_limit, task_limit, TASK_SOFT_DIRTY_LIMIT),
++		  BDP_PERCENT(task_limit, bdi_dirty, TASK_SOFT_DIRTY_LIMIT),
++		  BDP_PERCENT(bdi_limit, bdi_dirty, BDI_SOFT_DIRTY_LIMIT),
++		  __entry->pages_dirtied,
++		  __entry->pause
++		  )
++);
++
+ DECLARE_EVENT_CLASS(writeback_congest_waited_template,
  
--	if (vcpu->arch.mmu.sync_page(vcpu, sp, clear_unsync)) {
-+	if (vcpu->arch.mmu.sync_page(vcpu, sp)) {
- 		kvm_mmu_prepare_zap_page(vcpu->kvm, sp, invalid_list);
- 		return 1;
- 	}
-@@ -1333,12 +1333,12 @@ static void kvm_sync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
- 			continue;
+ 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
+--- linux-next.orig/mm/page-writeback.c	2010-11-15 21:30:45.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-11-15 21:31:46.000000000 +0800
+@@ -629,6 +629,12 @@ static void balance_dirty_pages(struct a
+ 		pause = clamp_val(pause, 1, HZ/10);
  
- 		WARN_ON(s->role.level != PT_PAGE_TABLE_LEVEL);
-+		kvm_unlink_unsync_page(vcpu->kvm, s);
- 		if ((s->role.cr4_pae != !!is_pae(vcpu)) ||
--			(vcpu->arch.mmu.sync_page(vcpu, s, true))) {
-+			(vcpu->arch.mmu.sync_page(vcpu, s))) {
- 			kvm_mmu_prepare_zap_page(vcpu->kvm, s, &invalid_list);
- 			continue;
- 		}
--		kvm_unlink_unsync_page(vcpu->kvm, s);
- 		flush = true;
- 	}
- 
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 57619ed..60f00db 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -740,8 +740,7 @@ static void FNAME(prefetch_page)(struct kvm_vcpu *vcpu,
-  * - The spte has a reference to the struct page, so the pfn for a given gfn
-  *   can't change unless all sptes pointing to it are nuked first.
-  */
--static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
--			    bool clear_unsync)
-+static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
- {
- 	int i, offset, nr_present;
- 	bool host_writable;
-@@ -781,7 +780,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 			u64 nonpresent;
- 
- 			if (rsvd_bits_set || is_present_gpte(gpte) ||
--			      !clear_unsync)
-+			      sp->unsync)
- 				nonpresent = shadow_trap_nonpresent_pte;
- 			else
- 				nonpresent = shadow_notrap_nonpresent_pte;
--- 
-1.7.0.4
+ pause:
++		trace_balance_dirty_pages(bdi,
++					  bdi_dirty,
++					  bdi_thresh,
++					  task_thresh,
++					  pages_dirtied,
++					  pause);
+ 		bdi_update_write_bandwidth(bdi, &bw_time, &bw_written);
+ 		__set_current_state(TASK_INTERRUPTIBLE);
+ 		io_schedule_timeout(pause);
+
 
