@@ -1,45 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935283Ab0KQUyp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 15:54:45 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:58671 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757797Ab0KQUyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 15:54:44 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ondrej Zary <linux@rainbow-software.org>
-Subject: Re: 2.6.35.5: hibernation broken... AGAIN
-Date: Wed, 17 Nov 2010 21:53:52 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@in.ibm.com>
-References: <201011171139.33398.linux@rainbow-software.org>
-In-Reply-To: <201011171139.33398.linux@rainbow-software.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1758663Ab0KQVAl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 16:00:41 -0500
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:52738 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754022Ab0KQVAj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 16:00:39 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=pUA2/6w7rATjUhHqRxd3TZn9VT4E8NySOr5rPUWXAtNpAOM76L95usjF5KC4rch2+dybt0lbos85kkShRRRiYuoc7FL8PU0mcw2ntO4O3ugy5uog0T2XB7ISm4EPqWh9;
+Date: Wed, 17 Nov 2010 13:00:18 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: maciej.rutecki@gmail.com
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, martin.wilck@ts.fujitsu.com
+Subject: Re: [Regression] [2.6.37-rc2] WARNING: at
+ drivers/pci/pci-sysfs.c:758 pci_mmap_resource+0x133/0x190()
+Message-ID: <20101117130018.432b0ec8@jbarnes-desktop>
+In-Reply-To: <201011172153.11313.maciej.rutecki@gmail.com>
+References: <201011172153.11313.maciej.rutecki@gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011172153.52644.rjw@sisk.pl>
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, November 17, 2010, Ondrej Zary wrote:
-> Hello,
-> the nasty memory-corrupting hibernation bug 
-> https://bugzilla.kernel.org/show_bug.cgi?id=15753 is back since 2.6.35.5.
-> 2.6.35.4 works fine, 2.6.35.5 crashes after two days.
-> 
-> It seems to be caused by b77c254d8d66e5e9aa81239fedba9f3d568097d9.
+On Wed, 17 Nov 2010 21:53:10 +0100
+Maciej Rutecki <maciej.rutecki@gmail.com> wrote:
 
-Can you, _please_, always put all of the basic commit info (subject, author,
-who signed it off) in bug reports?
+> Last known good: 2.6.37-rc1
+> Bad kernel: 2.6.37-rc2
+> Hardware: VirtualBox
 
-In this particular case I don't have a -stable tree handy at the moment and
-can't even see what the commit is.
+Should be fixed in master now, please re-test.
 
-Thanks,
-Rafael
+-- 
+Jesse Barnes, Intel Open Source Technology Center
