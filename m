@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934937Ab0KQQZc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 11:25:32 -0500
-Received: from jdl.com ([208.123.74.7]:48533 "EHLO jdl.com"
+	id S934927Ab0KQQ07 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 11:26:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37052 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758210Ab0KQQZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 11:25:31 -0500
-X-Greylist: delayed 2250 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Nov 2010 11:25:30 EST
-To: Grant Likely <grant.likely@secretlab.ca>
-cc: John Bonesio <bones@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, glikely@secretlab.ca,
-        devicetree-discuss@lists.ozlabs.org, david@gibson.dropbear.id.au
-Subject: Re: [PATCH 1/5] scripts: dtc: Merge in changes from the dtc repository 
-In-reply-to: <20101117045935.GA12084@angua.secretlab.ca> 
-References: <20101116204917.12146.39851.stgit@riker> <20101116204951.12146.21084.stgit@riker> <20101117045935.GA12084@angua.secretlab.ca>
-Comments: In-reply-to Grant Likely <grant.likely@secretlab.ca>
-   message dated "Tue, 16 Nov 2010 21:59:35 -0700."
-Date: Wed, 17 Nov 2010 09:47:55 -0600
-From: Jon Loeliger <jdl@jdl.com>
-Message-Id: <E1PIkEl-0006Zt-W7@jdl.com>
-X-Spam-Score: -1.8
+	id S933790Ab0KQQ06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 11:26:58 -0500
+Message-ID: <4CE4024B.4090600@redhat.com>
+Date: Wed, 17 Nov 2010 18:26:51 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 1/6] KVM: MMU: fix forgot flush vcpu tlbs
+References: <4CE355A0.6020907@cn.fujitsu.com> <20101117152943.GA18959@amt.cnet>
+In-Reply-To: <20101117152943.GA18959@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, Nov 16, 2010 at 12:49:51PM -0800, John Bonesio wrote:
-> > Pull in recent changes from the main dtc repository. These changes primarily
-> > allow multiple device trees to be declared which are merged by dtc. This
-> > feature allows us to include a basic dts file and then provide more informatio
-> n
-> > for the specific system through the merging functionality.
-> > 
-> > Signed-off-by: John Bonesio <bones@secretlab.ca>
-> 
-> Jon & David, I'll need your input on whether or not this is the best
-> way to handle updating the dtc copy in the kernel tree.
-> 
-> g.
+On 11/17/2010 05:29 PM, Marcelo Tosatti wrote:
+> >  diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> >  index ba00eef..58b4d9a 100644
+> >  --- a/arch/x86/kvm/paging_tmpl.h
+> >  +++ b/arch/x86/kvm/paging_tmpl.h
+> >  @@ -781,6 +781,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+> >   			else
+> >   				nonpresent = shadow_notrap_nonpresent_pte;
+> >   			drop_spte(vcpu->kvm,&sp->spt[i], nonpresent);
+> >  +			kvm_flush_remote_tlbs(vcpu->kvm);
+> >   			continue;
+> >   		}
+>
+> This is not needed. Guest is responsible for flushing on
+> present->nonpresent change.
 
-Grant,
+sync_page
+drop_spte
+kvm_mmu_notifier_invalidate_page
+kvm_unmap_rmapp
+spte doesn't exist -> no flush
+page is freed
+guest can write into freed page?
 
-Yeah, I wondered too. :-)  David added it and updated
-in the kernel last round, so he may have some good notion
-of what would be best there.
+I don't think we need to flush immediately; set a "tlb dirty" bit 
+somewhere that is cleareded when we flush the tlb.  
+kvm_mmu_notifier_invalidate_page() can consult the bit and force a flush 
+if set.
 
-jdl
+-- 
+error compiling committee.c: too many arguments to function
+
