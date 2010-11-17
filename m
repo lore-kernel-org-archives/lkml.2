@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934619Ab0KQIV7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 03:21:59 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:37035 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934588Ab0KQIV6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 03:21:58 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=wdgNt5VWbpGeH6ZF3DFwDOY6n/rd8jU8EZNNvec7GKaSFBfUf/CIY63UXDXZxPXeXC
-         STO5Aoehzv9UHJHRdeM0D9B2i8rtuQSWZlWh5ZB0jbxDnXJhYJwCaIPXnWc+OEs/n7UK
-         /MEK6DLPbpxDjfFTt/h3XCFYaweBJG7JtZlS0=
+	id S934625Ab0KQI0w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 03:26:52 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:57900 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S933434Ab0KQI0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 03:26:51 -0500
+Message-ID: <4CE3931D.1000403@cn.fujitsu.com>
+Date: Wed, 17 Nov 2010 16:32:29 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20101117081205.GB11542@pengutronix.de>
-References: <1289962844.8233.2.camel@mola> <20101117081205.GB11542@pengutronix.de>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Wed, 17 Nov 2010 16:21:37 +0800
-Message-ID: <AANLkTik_b=JT3Fwep4cdNoguoFHEQ=xV+mL2DKJVo5c+@mail.gmail.com>
-Subject: Re: [PATCH] regulator: Move lp3971 regulator driver to subsys_initcall()
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: bharata@linux.vnet.ibm.com
+CC: linux-kernel@vger.kernel.org, Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pete@jasper.es
+Subject: Re: [PATCH v3 0/7] CFS Bandwidth Control
+References: <20101012074910.GA9893@in.ibm.com>
+In-Reply-To: <20101012074910.GA9893@in.ibm.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-17 16:27:10,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-17 16:27:12,
+	Serialize complete at 2010-11-17 16:27:12
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/17 Wolfram Sang <w.sang@pengutronix.de>:
-> On Wed, Nov 17, 2010 at 11:00:44AM +0800, Axel Lin wrote:
->> Regulators need to be available early in init in order to allow them
->> to be available for consumers when requested.
->>
->> Other regulator drivers are already moved to subsys_initcall(),
->> looks like only lp3971 is missing.
->
-> My 2 cents: it is safer to create such patches with real HW when there is a
-> need (we deal with a similar situation in i2c). Janitorial might do more harm
-> than good. Another option might be to call the patch a RFC?
+On 10/12/2010 03:49 PM, Bharata B Rao wrote:
+> Hi,
+> 
+> Its been a while since we posted CPS hard limits (aka CFS bandwidth control
+> now) patches, hence a quick recap first:
+> 
+> - I have been working on CFS hard limits since last year and have posted
+>   a few versions of the same (last post: http://lkml.org/lkml/2010/1/5/44)
+> - Paul Turner and Nikhil Rao meanwhile started working on CFS bandwidth
+>   control and have posted a couple of versions.
+>   (last post v2: http://lwn.net/Articles/385055/)
+> 
 
-Thanks for the comments.
-I appreciate if someone who has this device can test it.
-I only have a similar device ( lp3972 ) and it works with using
-subsys_initcall().
+Hi, All
 
-Regards,
-Axel
->
-> Regards,
->
->   Wolfram
->
-> --
-> Pengutronix e.K.                           | Wolfram Sang                |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
->
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.9 (GNU/Linux)
->
-> iEYEARECAAYFAkzjjlUACgkQD27XaX1/VRsF2QCfQn/bCEZSb0qkn1aj9SpqxsST
-> zlMAoIyd6I+c4XitD1KRHe53/n3wlXOQ
-> =MQc1
-> -----END PGP SIGNATURE-----
->
->
+	I tried it, it works very good! It adds a very useful feature.
+It is very helpful for virtualization or cloud-computing I think.
+I hope the next version patchset of it will be sent and get merged soon.
+
+When I tested it, my box became dead several times, infrequently, and
+I don't know how to reproduce it, but next steps may help to reproduce it:
+
+# mount -t cgroup -o cpu xxx /mnt
+# cd /mnt
+# mkdir test
+# cd test
+# echo 5000000 > cpu.cfs_period_us
+# echo 1000000 > cpu.cfs_quota_us
+# cat /dev/zero > /dev/null &
+# echo $! > tasks
+# #make the system busy, browse websites and open many tabs in your browser etc
+# #but do NOT do things important.
+# #after some time, the system may dead. (can not respond even you type AltSysrqC)
+
+Thank you all
+Lai
