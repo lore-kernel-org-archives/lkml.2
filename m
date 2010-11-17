@@ -1,49 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934925Ab0KQQP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 11:15:26 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:47725 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab0KQQPZ (ORCPT
+	id S934921Ab0KQQR5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 11:17:57 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:48241 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934868Ab0KQQR4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 11:15:25 -0500
-Subject: Re: [PATCH v7 3/3] nl80211/mac80211: Report signal average
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Bruno Randolf <br1@einfach.org>
-Cc: Jouni Malinen <j@w1.fi>, linville@tuxdriver.com, randy.dunlap@oracle.com,
-        peterz@infradead.org, blp@cs.stanford.edu,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars_Ericsson@telia.com, stefanr@s5r6.in-berlin.de,
-        kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
-        kevin.granade@gmail.com
-In-Reply-To: <201011171728.06801.br1@einfach.org>
-References: <20101112024901.28522.21895.stgit@localhost6.localdomain6>
-	 <20101112030035.28522.75318.stgit@localhost6.localdomain6>
-	 <20101116093743.GA21872@jm.kir.nu>  <201011171728.06801.br1@einfach.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Nov 2010 08:16:35 -0800
-Message-ID: <1290010595.3777.0.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 17 Nov 2010 11:17:56 -0500
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 1/7] sst: remove rest of aava bits and aava related code
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Date: Wed, 17 Nov 2010 15:57:57 +0000
+Message-ID: <20101117155748.21681.71501.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 17:28 +0900, Bruno Randolf wrote:
+From: Vinod Koul <vinod.koul@intel.com>
 
-> > Or am I missing something here and we have a compiler that is actually
-> > able to take care of this kind of optimizations by itself in the current
-> > ewma library design? Or is the unsigned long division with the expected
-> > weight values going to be fast enough to not justify caring about it
-> > even on any of the embedded boards anyway?
-> 
-> I understand that this could be more efficient, but if it matters or not - 
-> honestly, I don't know. Can a more knowledgeable person than me comment on 
-> this?
+This removes the remaining bit of aava dependent and related bits from driver
 
-Yes, it does matter -- think of an embedded MIPS board running at 500MHz
-and trying to push 11n speeds.
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-johannes
+ drivers/staging/intel_sst/intelmid.h            |    5 --
+ drivers/staging/intel_sst/intelmid_v1_control.c |   50 -----------------------
+ drivers/staging/intel_sst/intelmid_v2_control.c |    2 -
+ 3 files changed, 1 insertions(+), 56 deletions(-)
+
+
+diff --git a/drivers/staging/intel_sst/intelmid.h b/drivers/staging/intel_sst/intelmid.h
+index 81e7448..0ce1031 100644
+--- a/drivers/staging/intel_sst/intelmid.h
++++ b/drivers/staging/intel_sst/intelmid.h
+@@ -178,9 +178,4 @@ extern struct snd_kcontrol_new snd_intelmad_controls_mrst[];
+ extern struct snd_kcontrol_new snd_intelmad_controls_mfld[];
+ extern struct snd_pmic_ops *intelmad_vendor_ops[];
+ 
+-/* This is an enabler hook as the platform detection logic isn't yet
+-   present and depends on some firmware and DMI support to detect AAVA
+-   devices. It will vanish once the AAVA platform support is merged */
+-#define is_aava()	0
+-
+ #endif /* __INTELMID_H */
+diff --git a/drivers/staging/intel_sst/intelmid_v1_control.c b/drivers/staging/intel_sst/intelmid_v1_control.c
+index 9de86b2..3cc459b 100644
+--- a/drivers/staging/intel_sst/intelmid_v1_control.c
++++ b/drivers/staging/intel_sst/intelmid_v1_control.c
+@@ -132,56 +132,6 @@ static int mx_init_card(void)
+ 	return sst_sc_reg_access(sc_access, PMIC_WRITE, 47);
+ }
+ 
+-static int mx_init_capture_card(void)
+-{
+-	struct sc_reg_access sc_access[] = {
+-		{0x206, 0x5a, 0x0},
+-		{0x207, 0xbe, 0x0},
+-		{0x208, 0x90, 0x0},
+-		{0x209, 0x32, 0x0},
+-		{0x20e, 0x22, 0x0},
+-		{0x210, 0x84, 0x0},
+-		{0x223, 0x20, 0x0},
+-		{0x226, 0xC0, 0x0},
+-	};
+-
+-	int retval = 0;
+-
+-	retval = sst_sc_reg_access(sc_access, PMIC_WRITE, 8);
+-	if (0 != retval) {
+-		/* pmic communication fails */
+-		pr_debug("sst: pmic commn failed\n");
+-		return retval;
+-	}
+-
+-	pr_debug("sst: Capture configuration complete!!\n");
+-	return 0;
+-}
+-
+-static int mx_init_playback_card(void)
+-{
+-	struct sc_reg_access sc_access[] = {
+-		{0x206, 0x00, 0x0},
+-		{0x207, 0x00, 0x0},
+-		{0x208, 0x00, 0x0},
+-		{0x209, 0x51, 0x0},
+-		{0x20e, 0x51, 0x0},
+-		{0x210, 0x21, 0x0},
+-		{0x223, 0x01, 0x0},
+-	};
+-	int retval = 0;
+-
+-	retval = sst_sc_reg_access(sc_access, PMIC_WRITE, 9);
+-	if (0 != retval) {
+-		/* pmic communication fails */
+-		pr_debug("sst: pmic commn failed\n");
+-		return retval;
+-	}
+-
+-	pr_debug("sst: Playback configuration complete!!\n");
+-	return 0;
+-}
+-
+ static int mx_enable_audiodac(int value)
+ {
+ 	struct sc_reg_access sc_access[3];
+diff --git a/drivers/staging/intel_sst/intelmid_v2_control.c b/drivers/staging/intel_sst/intelmid_v2_control.c
+index 3a7de76..0ad11eb 100644
+--- a/drivers/staging/intel_sst/intelmid_v2_control.c
++++ b/drivers/staging/intel_sst/intelmid_v2_control.c
+@@ -871,7 +871,7 @@ static int nc_set_selected_input_dev(u8 value)
+ 		sc_access[2].mask = MASK6;
+ 		sc_access[3].reg_addr = 0x109;
+ 		sc_access[3].mask = MASK6;
+-		sc_access[3].value = 0x40;
++		sc_access[3].value = 0x00;
+ 		num_val = 4;
+ 		break;
+ 	default:
 
