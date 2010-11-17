@@ -1,89 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935193Ab0KQRym (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 12:54:42 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58589 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754518Ab0KQRyk (ORCPT
+	id S935184Ab0KQR7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:59:35 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54792 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934788Ab0KQR7d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 12:54:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=ih9bLmkPC5tgvH51TQPSVPnT/FDTXndeV6IXySAii0wTzEEX2XQnSXChR9SjMaxylJ
-         TMb2atCAjm76phtq32SCnuylLgMvheQchzbc7dB8G0tp+KAb1MxOFNb/N2GlxtU3OIOq
-         MqlAc/d9xKZ86gPvdGj0NtGem2VHJ8c6JACdM=
-Date: Wed, 17 Nov 2010 09:54:29 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Trilok Soni <tsoni@codeaurora.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, rtc-linux@googlegroups.com,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [RFC v1 PATCH 1/6] matrix_keypad: Increase the max limit of rows
- and columns
-Message-ID: <20101117175429.GB6148@core.coreip.homeip.net>
-References: <1289393281-4459-1-git-send-email-tsoni@codeaurora.org>
- <1289393281-4459-2-git-send-email-tsoni@codeaurora.org>
- <AANLkTi=J2fGOC-RQsPB1SD4GcQ2Df2ZO_a=2mxneHbUa@mail.gmail.com>
- <20101110233036.GB2121@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101110233036.GB2121@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 17 Nov 2010 12:59:33 -0500
+Date: Wed, 17 Nov 2010 09:59:20 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: linux-next: Tree for November 17
+Message-Id: <20101117095920.2b9e2e6a.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTinBiGOPptOY18-D+=djKLsJj75mXxL6ht6xNJXL@mail.gmail.com>
+References: <20101117140956.a8264c75.sfr@canb.auug.org.au>
+	<AANLkTinBiGOPptOY18-D+=djKLsJj75mXxL6ht6xNJXL@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 10, 2010 at 03:30:36PM -0800, Dmitry Torokhov wrote:
-> On Thu, Nov 11, 2010 at 02:33:45AM +0800, Eric Miao wrote:
-> > On Wed, Nov 10, 2010 at 8:47 PM, Trilok Soni <tsoni@codeaurora.org> wrote:
-> > > Some keyboard controller have support for more than
-> > > 16 columns and rows.
-> > >
-> > > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> > > Cc: Eric Miao <eric.y.miao@gmail.com>
-> > > Signed-off-by: Trilok Soni <tsoni@codeaurora.org>
-> > > ---
-> > >  include/linux/input/matrix_keypad.h |    8 ++++----
-> > >  1 files changed, 4 insertions(+), 4 deletions(-)
-> > >
-> > > diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h
-> > > index 80352ad..d80845e 100644
-> > > --- a/include/linux/input/matrix_keypad.h
-> > > +++ b/include/linux/input/matrix_keypad.h
-> > > @@ -4,11 +4,11 @@
-> > >  #include <linux/types.h>
-> > >  #include <linux/input.h>
-> > >
-> > > -#define MATRIX_MAX_ROWS                16
-> > > -#define MATRIX_MAX_COLS                16
-> > > +#define MATRIX_MAX_ROWS                18
-> > > +#define MATRIX_MAX_COLS                18
-> > >
-> > > -#define KEY(row, col, val)     ((((row) & (MATRIX_MAX_ROWS - 1)) << 24) |\
-> > > -                                (((col) & (MATRIX_MAX_COLS - 1)) << 16) |\
-> > > +#define KEY(row, col, val)     ((((row) % (MATRIX_MAX_ROWS)) << 24) |\
-> > > +                                (((col) % (MATRIX_MAX_COLS)) << 16) |\
-> > >                                 (val & 0xffff))
-> > >
-> > 
-> > Or maybe we can solve this completely by introducing something like:
-> > 
-> > struct matrix_keycode {
-> >         int row;
-> >         int col;
-> >         int value;
-> 
-> Though that triples the space needed to store initial keymaps.
-> 
+On Wed, 17 Nov 2010 18:23:20 +0100 Zimny Lech wrote:
 
-Looking at it I think we should simply bump up max cols/rows to 32 and
-be done with it. It will grow the matrix keypad structure by a few bytes
-but nothing drastic.
+> Ave
+> 
+> 2010/11/17 Stephen Rothwell <sfr@canb.auug.org.au>:
+> > Hi all,
+> >
+> > Changes since 20101116:
+> >
+> 
+> I think that this is well know
+>   LD [M]  sound/oss/sound.o
+> make[3]: *** No rule to make target `/etc/sound/dsp001.ld', needed by
+> `sound/oss/pss_boot.h'.  Stop.
+> make[2]: *** [sound/oss] Error 2
+> make[1]: *** [sound] Error 2
+> make: *** [sub-make] Error 2
+> 
+> This one can be interesting
+> 
+>   GEN     /home/test/linux-2.6-obj/Makefile
+> scripts/kconfig/conf --silentoldconfig Kconfig
+> warning: (MTD_NAND && MTD || MTD_DOC2000 && MTD || MTD_DOC2001 && MTD
+> || MTD_DOC2001PLUS && MTD) selects MTD_NAND_IDS which has unmet direct
+> dependencies (MTD
+>  && MTD_NAND)
+> warning: (MTD_NAND && MTD || MTD_DOC2000 && MTD || MTD_DOC2001 && MTD
+> || MTD_DOC2001PLUS && MTD) selects MTD_NAND_IDS which has unmet direct
+> dependencies (MTD
+>  && MTD_NAND)
+>   Using /home/test/linux-2.6 as source for kernel
+>   GEN     /home/test/linux-2.6-obj/Makefile
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CC      kernel/bounds.s
+>   GEN     include/generated/bounds.h
+>   CC      arch/x86/kernel/asm-offsets.s
+> In file included from
+> /home/test/linux-2.6/arch/x86/include/asm/suspend_64.h:10:0,
+>                  from /home/test/linux-2.6/arch/x86/include/asm/suspend.h:4,
+>                  from /home/test/linux-2.6/arch/x86/kernel/asm-offsets_64.c:20,
+>                  from /home/test/linux-2.6/arch/x86/kernel/asm-offsets.c:4:
+> /home/test/linux-2.6/arch/x86/include/asm/i387.h: In function 'irq_ts_save':
+> /home/test/linux-2.6/arch/x86/include/asm/i387.h:348:2: error:
+> implicit declaration of function 'kernel_locked'
+> make[2]: *** [arch/x86/kernel/asm-offsets.s] Error 1
+> make[1]: *** [prepare0] Error 2
+> make: *** [sub-make] Error 2
+> 
+> 
+> Config attached.
 
--- 
-Dmitry
+
+Why was #include <linux/smp_lock.h> removed from <linux/hardirq.h> ?
+
+I added #include <linux/smp_lock.h> to i387.h, but them mm/filemap.c build fails
+with the same error:
+
+linux-next-20101117/mm/filemap.c: In function 'iov_iter_copy_from_user_atomic':
+linux-next-20101117/mm/filemap.c:1936: error: implicit declaration of function 'kernel_locked'
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
