@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935220Ab0KQSyN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 13:54:13 -0500
-Received: from mail.selbetti.com.br ([201.67.157.50]:44959 "EHLO
-	mail.selbetti.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935069Ab0KQSyM (ORCPT
+	id S935238Ab0KQSzR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 13:55:17 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60530
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935059Ab0KQSzP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 13:54:12 -0500
-X-Greylist: delayed 1097 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Nov 2010 13:54:12 EST
-Subject: Galbraith patch
-From: Gilberto Nunes <gilberto.nunes@selbetti.com.br>
-Reply-To: gilberto.nunes@selbetti.com.br
-To: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Selbetti =?ISO-8859-1?Q?Gest=E3o?= de Documentos
-Date: Wed, 17 Nov 2010 16:35:47 -0200
-Message-ID: <1290018947.4887.14.camel@note-311a>
+	Wed, 17 Nov 2010 13:55:15 -0500
+Date: Wed, 17 Nov 2010 10:55:39 -0800 (PST)
+Message-Id: <20101117.105539.28812351.davem@davemloft.net>
+To: eparis@redhat.com
+Cc: kaber@trash.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        selinux@tycho.nsa.gov, netfilter-devel@vger.kernel.org,
+        equinox@diac24.net, eric.dumazet@gmail.com, hzhong@gmail.com,
+        jmorris@namei.org, kuznet@ms2.inr.ac.ru, paul.moore@hp.com,
+        pekkas@netcore.fi, sds@tycho.nsa.gov, yoshfuji@linux-ipv6.org
+Subject: Re: [PATCH 3/3] SELinux: return -ECONNREFUSED from ip_postroute to
+ signal fatal error
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1290004739.14282.73.camel@localhost.localdomain>
+References: <20101116215257.6727.12163.stgit@paris.rdu.redhat.com>
+	<4CE3BFC4.1010706@trash.net>
+	<1290004739.14282.73.camel@localhost.localdomain>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi folks...
+From: Eric Paris <eparis@redhat.com>
+Date: Wed, 17 Nov 2010 09:38:59 -0500
 
-That is my first post...
-I tried compile a vanilla kernel with Galbraith patch, but without
-sucess...
-When I turn on "Automatic process group scheduling" and try to compile
-the kernel, I get this error:
+> On Wed, 2010-11-17 at 12:43 +0100, Patrick McHardy wrote:
+>> On 16.11.2010 22:52, Eric Paris wrote:
+>> > The SELinux netfilter hooks just return NF_DROP if they drop a packet.  We
+>> > want to signal that a drop in this hook is a permanant fatal error and is not
+>> > transient.  If we do this the error will be passed back up the stack in some
+>> > places and applications will get a faster interaction that something went
+>> > wrong.
+>> 
+>> Looks good to me. I'd suggest to have these patches go through Dave's
+>> tree since I want to make use of the netfilter error propagation
+>> mechanism to return proper errno codes for netfilter re-routing
+>> failures.
+> 
+> 
+> I'd be happy if Dave pulled patches 1 and 2.  I can resend patch #3 once
+> I can cajole another of the SELinux maintainers to look at it (I believe
+> he most likely one is on vacation this week)
 
-kernel/sched.c: In function ‘sched_init’:
-kernel/sched.c:7756: error: implicit declaration of function
-‘autogroup_init’
-make[1]: ** [kernel/sched.o] Erro 1
-make: ** [kernel] Erro 2
+I think it's best to pull this all into net-next-2.6 now, so that's what
+I'm doing right now.
 
+If there are problems we can apply changes on top.
 
-Someone know what is wrong here??
-
-Thanks for any help!
-
-Regards
-
-
-<><
-
+Thanks.
