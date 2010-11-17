@@ -1,151 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933857Ab0KQBZu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 20:25:50 -0500
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:51970 "EHLO e5.ny.us.ibm.com"
+	id S933901Ab0KQB1Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 20:27:25 -0500
+Received: from mga11.intel.com ([192.55.52.93]:43519 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932747Ab0KQBZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 20:25:49 -0500
-Date: Tue, 16 Nov 2010 17:25:44 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Joe Korty <joe.korty@ccur.com>,
-        mathieu.desnoyers@efficios.com, dhowells@redhat.com,
-        loic.minier@linaro.org, dhaval.giani@gmail.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, josh@joshtriplett.org,
-        houston.jim@comcast.net
-Subject: Re: [PATCH] a local-timer-free version of RCU
-Message-ID: <20101117012544.GN2503@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101105210059.GA27317@tsunami.ccur.com>
- <4CD912E9.1080907@cn.fujitsu.com>
- <20101110155419.GC5750@nowhere>
- <1289410271.2084.25.camel@laptop>
- <20101111041920.GD3134@linux.vnet.ibm.com>
- <20101113223046.GB5445@nowhere>
- <20101116012846.GV2555@linux.vnet.ibm.com>
- <20101116135230.GA5362@nowhere>
- <20101116155104.GB2497@linux.vnet.ibm.com>
- <20101117005229.GC26243@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117005229.GC26243@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933606Ab0KQB1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 20:27:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,208,1288594800"; 
+   d="scan'208";a="627523919"
+Subject: Re: [PATCH] acpi: fix acpi/video.h error and warning when PM is
+ not enabled
+From: Zhang Rui <rui.zhang@intel.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "lenb@kernel.org" <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101116165954.f7d8540b.randy.dunlap@oracle.com>
+References: <AANLkTimYevUOSxDm+nGq_ctPEFp_E2zJR7rNGvUi2fWY@mail.gmail.com>
+	 <20101116165954.f7d8540b.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Nov 2010 09:29:08 +0800
+Message-ID: <1289957348.8148.2098.camel@rui>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 01:52:33AM +0100, Frederic Weisbecker wrote:
-> On Tue, Nov 16, 2010 at 07:51:04AM -0800, Paul E. McKenney wrote:
-> > On Tue, Nov 16, 2010 at 02:52:34PM +0100, Frederic Weisbecker wrote:
-> > > On Mon, Nov 15, 2010 at 05:28:46PM -0800, Paul E. McKenney wrote:
-> > > > My concern is not the tick -- it is really easy to work around lack of a
-> > > > tick from an RCU viewpoint.  In fact, this happens automatically given the
-> > > > current implementations!  If there is a callback anywhere in the system,
-> > > > then RCU will prevent the corresponding CPU from entering dyntick-idle
-> > > > mode, and that CPU's clock will drive the rest of RCU as needed via
-> > > > force_quiescent_state().
-> > > 
-> > > Now, I'm confused, I thought a CPU entering idle nohz had nothing to do
-> > > if it has no local callbacks, and rcu_enter_nohz already deals with
-> > > everything.
-> > > 
-> > > There is certainly tons of subtle things in RCU anyway :)
-> > 
-> > Well, I wasn't being all that clear above, apologies!!!
-> > 
-> > If a given CPU hasn't responded to the current RCU grace period,
-> > perhaps due to being in a longer-than-average irq handler, then it
-> > doesn't necessarily need its own scheduler tick enabled.  If there is a
-> > callback anywhere else in the system, then there is some other CPU with
-> > its scheduler tick enabled.  That other CPU can drive the slow-to-respond
-> > CPU through the grace-period process.
+On Wed, 2010-11-17 at 08:59 +0800, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
 > 
-> So, the scenario is that a first CPU (CPU 0) enqueues a callback and then
-> starts a new GP. But the GP is abnormally long because another CPU (CPU 1)
-> takes too much time to respond. But the CPU 2 enqueues a new callback.
+> When CONFIG_PM is not enabled, acpi/video.h causes a build error.
+> Also fix a longstanding warning.
 > 
-> What you're saying is that CPU 2 will take care of the current grace period
-> that hasn't finished, because it needs to start another one?
-> So this CPU 2 is going to be more insistant and will then send IPIs to
-> CPU 1.
+> include/acpi/video.h:22: warning: 'struct acpi_device' declared inside parameter list
+> include/acpi/video.h:22: warning: its scope is only this definition or declaration, which is probably not what you want
+> include/acpi/video.h: In function 'acpi_video_get_edid':
+> include/acpi/video.h:24: error: 'ENODEV' undeclared (first use in this function)
 > 
-> Or am I completely confused? :-D
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-The main thing is that all CPUs that have at least one callback queued
-will also have their scheduler tick enabled.  So in your example above,
-both CPU 0 and CPU 2 would get insistent at about the same time.  Internal
-RCU locking would choose which one of the two actually send the IPIs
-(currently just resched IPIs, but can be changed fairly easily if needed).
+we already have a patch at
+http://marc.info/?l=linux-kernel&m=128369371631933&w=2
+Not sure if Len has applied it or not.
+Anyway, thanks for the patch. :)
 
-> Ah, and if I understood well, if nobody like CPU 2 had been starting a new
-> grace period, then nobody would send those IPIs?
-
-Yep, if there are no callbacks, there is no grace period, so RCU would
-have no reason to send any IPIs.  And again, this should be the common
-case for HPC applications.
-
-> Looking at the rcu tree code, the IPI is sent from the state machine in
-> force_quiescent_state(), if the given CPU is not in dyntick mode.
-> And force_quiescent_state() is either called from the rcu softirq
-> or when one queues a callback. So, yeah, I think I understood correctly :)
-
-Yep!!!
-
-> But it also means that if we have two CPUs only, and CPU 0 starts a grace
-> period and then goes idle. CPU 1 may never respond and the grace period
-> may end in a rough while.
-
-Well, if CPU 0 started a grace period, there must have been an RCU
-callback in the system somewhere.  (Otherwise, there is an RCU bug, though
-a fairly minor one -- if there are no RCU callbacks, then there isn't
-too much of a problem if the needless RCU grace period takes forever.)
-That RCU callback will be enqueued on one of the two CPUs, and that CPU
-will keep its scheduler tick running, and thus will help the grace period
-along as needed.
-
-> > The current RCU code should work in the common case.  There are probably
-> > a few bugs, but I will make you a deal.  You find them, I will fix them.
-> > Particularly if you are willing to test the  fixes.
+-rui
+> ---
+>  include/acpi/video.h |    4 ++++
+>  1 file changed, 4 insertions(+)
 > 
-> Of course :)
-> 
-> > > > The force_quiescent_state() workings would
-> > > > want to be slightly different for dyntick-hpc, but not significantly so
-> > > > (especially once I get TREE_RCU moved to kthreads).
-> > > > 
-> > > > My concern is rather all the implicit RCU-sched read-side critical
-> > > > sections, particularly those that arch-specific code is creating.
-> > > > And it recently occurred to me that there are necessarily more implicit
-> > > > irq/preempt disables than there are exception entries.
-> > > 
-> > > Doh! You're right, I don't know why I thought that adaptive tick would
-> > > solve the implicit rcu sched/bh cases, my vision took a shortcut.
-> > 
-> > Yeah, and I was clearly suffering from a bit of sleep deprivation when
-> > we discussed this in Boston.  :-/
-> 
-> I suspect the real problem was my oral english understanding ;-)
+> --- lnx-2637-rc2.orig/include/acpi/video.h
+> +++ lnx-2637-rc2/include/acpi/video.h
+> @@ -1,6 +1,10 @@
+>  #ifndef __ACPI_VIDEO_H
+>  #define __ACPI_VIDEO_H
+>  
+> +#include <linux/errno.h>
+> +
+> +struct acpi_device;
+> +
+>  #define ACPI_VIDEO_DISPLAY_CRT  1
+>  #define ACPI_VIDEO_DISPLAY_TV   2
+>  #define ACPI_VIDEO_DISPLAY_DVI  3
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Mostly I didn't think to ask if re-enabling the scheduler tick was
-the only problem.  ;-)
 
-> > > > 3.	The implicit RCU-sched read-side critical sections just work
-> > > > 	as they do today.
-> > > > 
-> > > > Or am I missing some other problems with this approach?
-> > > 
-> > > No, looks good, now I'm going to implement/test a draft of these ideas.
-> > > 
-> > > Thanks a lot!
-> > 
-> > Very cool, and thank you!!!  I am sure that you will not be shy about
-> > letting me know of any RCU problems that you might encounter.  ;-)
-> 
-> Of course not ;-)
-
-Sounds good!  ;-)
-
-							Thanx, Paul
