@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935094Ab0KQRaA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 12:30:00 -0500
-Received: from kroah.org ([198.145.64.141]:47875 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934912Ab0KQR37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 12:29:59 -0500
-Date: Wed, 17 Nov 2010 09:19:24 -0800
-From: Greg KH <greg@kroah.com>
-To: Yehuda Sadeh <yehuda@hq.newdream.net>
-Cc: sage@newdream.net, yehudasa@gmail.com, ceph-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rbd: replace the rbd sysfs interface
-Message-ID: <20101117171924.GC12050@kroah.com>
-References: <1289953929-30896-1-git-send-email-yehuda@hq.newdream.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289953929-30896-1-git-send-email-yehuda@hq.newdream.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758591Ab0KQRap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:30:45 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36338 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758291Ab0KQRao (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 12:30:44 -0500
+Subject: Re: [PATCH v2 05/20] ARM: LPAE: Introduce L_PTE_NOEXEC and
+ L_PTE_NOWRITE
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101117172425.GE5308@n2100.arm.linux.org.uk>
+References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
+	 <1289584840-18097-6-git-send-email-catalin.marinas@arm.com>
+	 <20101115183014.GD31421@n2100.arm.linux.org.uk>
+	 <AANLkTik5FcZ3rNtiwN8kYP0LZh+YqGtKP_RteoFiWa16@mail.gmail.com>
+	 <20101117171613.GB5308@n2100.arm.linux.org.uk>
+	 <AANLkTincmfqXmNQznd1fdSRYd4Vc+p47cgTfEwQoXdFm@mail.gmail.com>
+	 <20101117172425.GE5308@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Wed, 17 Nov 2010 17:30:33 +0000
+Message-ID: <1290015033.2351.69.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Nov 2010 17:30:33.0751 (UTC) FILETIME=[23A91A70:01CB867D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 04:32:09PM -0800, Yehuda Sadeh wrote:
-> Hi Greg,
+On Wed, 2010-11-17 at 17:24 +0000, Russell King - ARM Linux wrote:
+> On Wed, Nov 17, 2010 at 05:22:12PM +0000, Catalin Marinas wrote:
+> > Ah, good point, that was the mask.
+> >
+> > So for dmacoherent we make sure that L_PTE_EXEC is cleared. I suspect
+> > we should now make sure that L_PTE_NOEXEC is set. For the other two,
+> > just leave them as they are.
 > 
-> Following is the new rbd sysfs interface. It lists devices in their own
-> subdirectories, as well as their underlying snapshots. Please let us
-> know if there's any issue you think we missed or did wrong.
+> Already done:
 > 
-> Thanks,
-> Yehuda
-> 
-> ---
-> 
-> The new interface creates directories per mapped image
-> and under each it creates a subdir per available snapshot.
-> This allows keeping a cleaner interface within the sysfs
-> guidelines. The ABI documentation was updated too.
-> 
-> Signed-off-by: Yehuda Sadeh <yehuda@hq.newdream.net>
-> ---
->  Documentation/ABI/testing/sysfs-class-rbd |   83 +++
->  drivers/block/rbd.c                       |  775 +++++++++++++++++------------
->  2 files changed, 547 insertions(+), 311 deletions(-)
-> 
-> diff --git a/Documentation/ABI/testing/sysfs-class-rbd b/Documentation/ABI/testing/sysfs-class-rbd
-> new file mode 100644
-> index 0000000..4d96618
-> --- /dev/null
-> +++ b/Documentation/ABI/testing/sysfs-class-rbd
-> @@ -0,0 +1,83 @@
-> +What:		/sys/class/rbd/
+>  #define pgprot_dmacoherent(prot) \
+> -       __pgprot_modify(prot, L_PTE_MT_MASK|L_PTE_EXEC, L_PTE_MT_BUFFERABLE)
+> +       __pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_BUFFERABLE|L_PTE_XN)
+> ...
+>  #define pgprot_dmacoherent(prot) \
+> -       __pgprot_modify(prot, L_PTE_MT_MASK|L_PTE_EXEC, L_PTE_MT_UNCACHED)
+> +       __pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_UNCACHED|L_PTE_XN)
 
-I thought I mentioned that you should not add new classes to the kernel.
-Please don't do that, make it a bus_type instead.
+Are you already doing such changes? Just to avoid duplicating effort
+(and use common naming scheme).
 
-Actually, that will solve some of your coding problems as well:
+-- 
+Catalin
 
-> @@ -193,6 +130,11 @@ struct rbd_device {
->  	int read_only;
->  
->  	struct list_head	node;
-> +
-> +	struct device		dev;
-> +	struct kobject		snaps_kobj;
-> +	struct list_head	snaps;
-> +	int			kobj_ready;
->  };
-
-Woah, that's wrong.  You can NEVER have two different reference counted
-objects as part of a single structure.  Your reference counting is
-guaranteed to be wrong.
-
-You should not need a kobject at all here, just use a device and be done
-with it.
-
-Hope this helps,
-
-greg k-h
