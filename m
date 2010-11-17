@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759500Ab0KQAed (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 19:34:33 -0500
-Received: from void.printf.net ([89.145.121.20]:56516 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753459Ab0KQAec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 19:34:32 -0500
-Date: Wed, 17 Nov 2010 00:34:29 +0000
-From: Chris Ball <cjb@laptop.org>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-mmc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] mmci: handle clock frequency 0 properly
-Message-ID: <20101117003429.GA2578@void.printf.net>
-References: <1289927869-14519-1-git-send-email-linus.walleij@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289927869-14519-1-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759558Ab0KQAfM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 19:35:12 -0500
+Received: from mail-iw0-f194.google.com ([209.85.214.194]:39934 "EHLO
+	mail-iw0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759259Ab0KQAfK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 19:35:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=jdLD8utn+wm9u/FzICxLEA1cSZkbD6vCgTl62BAlFfTJfpBYy6EiF1qnzowEjwo32N
+         xqcgtbi5nLOf0QhAoI3OiVJ9p22PBDRHMEXeV4KWBIV3y/kHh7DRxPQr1rRKyBI4XKWL
+         BGjVY2rSH6+PXUiYlVdIvVN8rhLlb8QnreviY=
+From: Vamsi Krishna B <vamsikrishna.brahmajosyula@gmail.com>
+To: tytso@mit.edu
+Cc: adilger.kernel@dilger.ca, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Vamsi Krishna B <vamsikrishna.brahmajosyula@gmail.com>
+Subject: [PATCH] fs : ext4 : super.c 	fixed coding style violations fs/ext4/super.c:41: WARNING: Use #include <linux/uaccess.h> instead of <asm/uaccess.h> fs/ext4/super.c:546: ERROR: "foo * bar" should be "foo *bar" fs/ext4/super.c:546: WARNING: space prohibited between function name and open parenthesis '(' fs/ext4/super.c:1141: ERROR: spaces required around that '?' (ctx:VxV) fs/ext4/super.c:1141: ERROR: spaces required around that ':' (ctx:VxV)
+Date: Wed, 17 Nov 2010 06:11:26 +0530
+Message-Id: <1289954486-13580-1-git-send-email-vamsikrishna.brahmajosyula@gmail.com>
+X-Mailer: git-send-email 1.7.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Signed-off-by: Vamsi Krishna B <vamsikrishna.brahmajosyula@gmail.com>
+---
+ fs/ext4/super.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-On Tue, Nov 16, 2010 at 06:17:49PM +0100, Linus Walleij wrote:
-> This removes the default clocking for the MMCI controller so that
-> the external MCI card clock does not activate until the first
-> .set_ios() call is issued. It will further handle the transitions
-> from a clock != 0 to 0 and vice versa by gating/ungating the
-> clock with clk_disable()/clk_enable().
-> 
-> This assures that the MCI clock will not be active unless there
-> is a card in the MMC slot.
-> 
-> By default the MMC core will not gate off the clock to a card
-> once it's enabled, but with the separate patch for aggressive
-> clocking this can optionally be enabled for the system.
-> 
-> Cc: Chris Ball <cjb@laptop.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
-> ---
-> Changes since v8:
-> 
-> The frequency registers shall be set with mmci_set_clkreg()
-> no matter whether the clock gets enabled or disabled, systems
-> without a clk framework will need this so that the clock
-> dividers are set to the apropriate values for clock 0 as
-> well, and that will probably mitigate power consumption
-> somewhat on these systems.
-> 
-> Chris: this is a new version after Russell found an error in
-> it. Can you please take the old version of this patch out of
-> the MMC tree so I can merge it through Russells ARM tree
-> instead? The patches are perfectly orthogonal so it doesn't
-> need to live in the MMC tree.
-
-Okay, this patch has been removed from mmc-next now.
-
-(I'm holding off on pulling the rest of your latest patchset until
-you reply to David Vrabel's review of [2/3] -- let me know if you
-think it should be pulled now instead.)
-
-Thanks,
-
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 61182fe..11a46dc 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -38,7 +38,7 @@
+ #include <linux/ctype.h>
+ #include <linux/log2.h>
+ #include <linux/crc16.h>
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ 
+ #include <linux/kthread.h>
+ #include <linux/freezer.h>
+@@ -543,7 +543,7 @@ void __ext4_abort(struct super_block *sb, const char *function,
+ 		panic("EXT4-fs panic from previous error\n");
+ }
+ 
+-void ext4_msg (struct super_block * sb, const char *prefix,
++void ext4_msg(struct super_block *sb, const char *prefix,
+ 		   const char *fmt, ...)
+ {
+ 	va_list args;
+@@ -1138,7 +1138,7 @@ static int bdev_try_to_free_page(struct super_block *sb, struct page *page,
+ 
+ #ifdef CONFIG_QUOTA
+ #define QTYPE2NAME(t) ((t) == USRQUOTA ? "user" : "group")
+-#define QTYPE2MOPT(on, t) ((t) == USRQUOTA?((on)##USRJQUOTA):((on)##GRPJQUOTA))
++#define QTYPE2MOPT(on, t) ((t) == USRQUOTA ? ((on)##USRJQUOTA) : ((on)##GRPJQUOTA))
+ 
+ static int ext4_write_dquot(struct dquot *dquot);
+ static int ext4_acquire_dquot(struct dquot *dquot);
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+1.7.3.2
+
