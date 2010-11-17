@@ -1,142 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935234Ab0KQSHb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 13:07:31 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38428 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934809Ab0KQSH2 (ORCPT
+	id S935218Ab0KQSMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 13:12:25 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:44499 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758512Ab0KQSMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 13:07:28 -0500
-Date: Wed, 17 Nov 2010 11:07:23 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: dirk.brandewie@gmail.com, Michal Marek <mmarek@suse.cz>,
-        devicetree-discuss@lists.ozlabs.org, sodaville@linutronix.de,
-        arjan@linux.intel.com, linuxppc-dev@lists.ozlabs.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] of: Add support for linking device tree blobs into
- vmlinux
-Message-ID: <20101117180723.GA7550@angua.secretlab.ca>
-References: <cover.1289943240.git.dirk.brandewie@gmail.com>
- <9129f0a21ea48fb2dcb89cea290e88f3e8c0d8a2.1289943240.git.dirk.brandewie@gmail.com>
- <20101117092751.GA19781@merkur.ravnborg.org>
+	Wed, 17 Nov 2010 13:12:24 -0500
+Date: Wed, 17 Nov 2010 13:12:22 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Avi Kivity <avi@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC][PATCH 1/5] [PATCH 1/5] events: Add EVENT_FS the event
+	filesystem
+Message-ID: <20101117181222.GB1093@Krystal>
+References: <20101117005357.024472450@goodmis.org> <20101117005939.600541101@goodmis.org> <20101117033242.GB31335@suse.de> <20101117103914.GA21976@elte.hu> <1289996753.30543.35.camel@gandalf.stny.rr.com> <20101117174652.GC13717@Krystal> <1290016354.30543.71.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101117092751.GA19781@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1290016354.30543.71.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 13:11:55 up 55 days, 22:14,  6 users,  load average: 0.17, 0.12,
+	0.09
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 10:27:51AM +0100, Sam Ravnborg wrote:
-> On Tue, Nov 16, 2010 at 02:41:36PM -0800, dirk.brandewie@gmail.com wrote:
-> > From: Dirk Brandewie <dirk.brandewie@gmail.com>
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Wed, 2010-11-17 at 12:46 -0500, Mathieu Desnoyers wrote:
+> > * Steven Rostedt (rostedt@goodmis.org) wrote:
+> > [...]
+> > > Are these events now going to be labeled as stable?  Is every tracepoint
+> > > we have, much have the same data?  Linus specifically said at Kernel
+> > > Summit that he wants absolutely NO modules to have a stable tracepoint.
 > > 
-> > This patch adds support for linking device tree blobs into
-> > vmlinux. Modifies asm-generic/vmlinux.lds.h to add linking
-> > .dtb.init.rodata sections into the .init.data section of the vmlinux
-> > image. Modifies scripts/Makefile.lib to add a kbuild command to
-> > compile DTS files to device tree blobs and a rule to create objects to
-> > wrap the blobs for linking.
+> > I'd like to bring up the point of KVM tracepoints here. KVM can be configured as
+> > a module, and may clearly contain tracepoints that we'd like to be stable.
 > > 
-> > The DTB's are placed on 32 byte boundries to allow parsing the blob
-> > with driver/of/fdt.c during early boot without having to copy the blob
-> > to get the structure alignment GCC expects.
+> > My thought is that what we really want to enforce is "no stable tracepoints in
+> > drivers" rather than in "modules", but I might be wrong.
 > > 
-> > A DTB is linked in by adding the DTB object to the list of objects to
-> > be linked into vmlinux in the archtecture specific Makefile using
-> >    obj-y += foo.dtb.o
-> > 
-> > Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-> > ---
-> >  include/asm-generic/vmlinux.lds.h |   19 +++++++++++++++++--
-> >  scripts/Makefile.lib              |   20 ++++++++++++++++++++
-> >  2 files changed, 37 insertions(+), 2 deletions(-)
+> > Thoughts ?
 > 
-> When you touch Makefiles in scripts/* it is always a good idea to cc:
-> kbuild maintainer on the patch - I have added Michal.
+> I still say no to stable tracepoints in modules. Once you open that
+> door, everyone will have it.
 > 
-> Support functionality in Makefile.lib is documented in
-> Documentation/kbuild/* - please add documentation there.
-> 
-> > 
-> > diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> > index bd69d79..ea671e7 100644
-> > --- a/include/asm-generic/vmlinux.lds.h
-> > +++ b/include/asm-generic/vmlinux.lds.h
-> > @@ -67,7 +67,14 @@
-> >   * Align to a 32 byte boundary equal to the
-> >   * alignment gcc 4.5 uses for a struct
-> >   */
-> > -#define STRUCT_ALIGN() . = ALIGN(32)
-> > +#define STRUCT_ALIGNMENT 32
-> > +#define STRUCT_ALIGN() . = ALIGN(STRUCT_ALIGNMENT)
-> > +
-> > +/* Device tree blobs linked into the kernel need to have proper
-> > + * structure alignment to be parsed by the flat device tree library
-> > + * used in early boot
-> > +*/
-> > +#define DTB_ALIGNMENT STRUCT_ALIGNMENT
-> 
-> It has been discussed in another thread some time ago to move
-> to a general 32 byte alignment for everything in vmlinux.lds.h
-> So there is not much need for the specific DTB alignment.
-> 
-> > diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> > index 4c72c11..29db062 100644
-> > --- a/scripts/Makefile.lib
-> > +++ b/scripts/Makefile.lib
-> > @@ -200,6 +200,26 @@ quiet_cmd_gzip = GZIP    $@
-> >  cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -f -9 > $@) || \
-> >  	(rm -f $@ ; false)
-> >  
-> > +# DTC
-> > +#  ---------------------------------------------------------------------------
-> > +$(obj)/%.dtb.S: $(obj)/%.dtb FORCE
-> > +	@echo '#include <asm-generic/vmlinux.lds.h>' > $@
-> > +	@echo '.section .dtb.init.rodata,"a"' >> $@
-> > +	@echo '.balign DTB_ALIGNMENT' >> $@
-> > +	@echo '.global __dtb_$(*F)_begin' >> $@
-> > +	@echo '__dtb_$(*F)_begin:' >> $@
-> > +	@echo '.incbin "$<" ' >> $@
-> > +	@echo '__dtb_$(*F)_end:' >> $@
-> > +	@echo '.global __dtb_$(*F)_end' >> $@
-> > +	@echo '.balign DTB_ALIGNMENT' >> $@
-> 
-> 
-> This will be noisy during build. Please use proper macors to supress output.
-> 
-> 
-> > +
-> > +DTC = $(objtree)/scripts/dtc/dtc
-> > +
-> > +quiet_cmd_dtc = DTC	$@
-> Please avoid tabs in the output - all other uses spaces. (There is a tab between DTC and $@)
-> 
-> > +      cmd_dtc = $(DTC) -O dtb -o $(obj)/$*.dtb -b 0 $(DTS_FLAGS) $(src)/dts/$*.dts
-> 
-> Looks strange. How about:
->       cmd_dtc = $(DTC) -O dtb -o $@ -b 0 $(DTS_FLAGS) $<
-> 
-> Then you avoid the hardcoded path in the rule too.
-> 
-> 
-> > +
-> > +$(obj)/%.dtb: $(src)/dts/%.dts
-> > +	$(call if_changed,dtc)
+> But, that doesn't mean that a raw traepoint can't be stable. If the
+> maintainer of that tracepoint states it is stable, then by all means,
+> let tools use it.
 
-The rule should be generic (not depend on the presence of a dts
-subdirectory.  Basically, the .dtb really should be generated in the
-same directory as the .dts file.  There is no reason for this rule to
-have special behaviour.
+I'd really like to hear Avi's thoughts on this.
 
-> 
-> This snippet belong in the file that uses this.
-> This is how we do for other rules like bzip etc.
+Thanks,
 
-This rule is intended to be generic and usable anywhere in the tree.
+Mathieu
 
-g.
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
