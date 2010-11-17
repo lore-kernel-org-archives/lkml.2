@@ -1,119 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759259Ab0KQWMc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 17:12:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61737 "EHLO mx1.redhat.com"
+	id S1759555Ab0KQWNM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 17:13:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25660 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758606Ab0KQWMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 17:12:31 -0500
-Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias
-From: Eric Paris <eparis@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
-        linux-security-module@vger.kernel.org
-In-Reply-To: <20101117202617.GA31009@fieldses.org>
-References: <1290016263-1637-1-git-send-email-josef@redhat.com>
-	 <20101117191817.GA26575@fieldses.org>
-	 <20101117192822.GB3818@localhost.localdomain>
-	 <20101117202617.GA31009@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Nov 2010 17:12:21 -0500
-Message-ID: <1290031941.14282.101.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1759034Ab0KQWNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 17:13:10 -0500
+Date: Thu, 18 Nov 2010 00:12:54 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Gregory Haskins <ghaskins@novell.com>,
+        Chris Lalancette <clalance@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH RFC] kvm: fast-path msi injection with irqfd
+Message-ID: <20101117221254.GA8296@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 15:26 -0500, J. Bruce Fields wrote:
-> On Wed, Nov 17, 2010 at 02:28:22PM -0500, Josef Bacik wrote:
-> > On Wed, Nov 17, 2010 at 02:18:17PM -0500, J. Bruce Fields wrote:
-> > > On Wed, Nov 17, 2010 at 12:51:03PM -0500, Josef Bacik wrote:
-> > > > While trying to track down some NFS problems with BTRFS, I kept noticing I was
-> > > > getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
-> > > > figure out that it was SELinux that was giving me grief, with the following
-> > > > denial
-> > > > 
-> > > > type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
-> > > > comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
-> > > > tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
-> > > > 
-> > > > Turns out this is because in d_obtain_alias if we can't find an alias we create
-> > > > one and do all the normal instantiation stuff, but we don't do the
-> > > > security_d_instantiate.  With this patch I'm no longer seeing these errant
-> > > > -EACCESS return values.  Thanks,
-> > > 
-> > > Possibly dumb question: Is there still a small race here?  Is it
-> > > possible for another nfsd thread to find the new alias on the list while
-> > > this thread is still:
-> > > 
-> > > > 
-> > > > Signed-off-by: Josef Bacik <josef@redhat.com>
-> > > > ---
-> > > >  fs/dcache.c |    1 +
-> > > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/fs/dcache.c b/fs/dcache.c
-> > > > index 23702a9..890a59e 100644
-> > > > --- a/fs/dcache.c
-> > > > +++ b/fs/dcache.c
-> > > > @@ -1201,6 +1201,7 @@ struct dentry *d_obtain_alias(struct inode *inode)
-> > > >  	spin_unlock(&tmp->d_lock);
-> > > >  
-> > > >  	spin_unlock(&dcache_lock);
-> > > 
-> > > ... right here, so that that other nfsd thread still ends up trying to
-> > > do something with a dentry that hasn't had security_d_instantiate called
-> > > on it yet?
-> > > 
-> > > > +	security_d_instantiate(tmp, inode);
-> > > >  	return tmp;
-> > > >  
-> > > >   out_iput:
-> > > > -- 
-> > > 
-> > > Or does something else prevent that?
-> > > 
-> > 
-> > That's a good question, I have no idea actually.  Every other consumer of
-> > security_d_instantiate seems to hold the i_mutex of the parent directory inode,
-> > tho I'm not sure if that is appropriate for d_obtain_alias, maybe somebody else
-> > has an idea?  Thanks,
-> 
-> Actually, I don't get it:
-> 
-> 	- Why is selinux using a *dentry* operation to initialize an
-> 	  *inode*?
-> 	- Are security hooks necessarily prepared to handle a
-> 	  disconnected dentry?  (Which has no real parent, name an empty
-> 	  string, etc.)
-> 	- What use is the dentry to the security module in this case
-> 	  anyway?
+Store irq routing table pointer in the irqfd object,
+and use that to inject MSI directly without bouncing out to
+a kernel thread.
 
-I only know a bit from the SELinux world and can't speak at all for any
-other LSMs.  SELinux however needs the dentry when an inode first enters
-core for a couple of reasons.  (once the inode is in core it should have
-already been initialized and we skip all this)
+While we touch this structure, rearrange irqfd fields to make fastpath
+better packed for better cache utilization.
 
-If you have persistent xattr support we need the dentry since the xattr
-code requires a dentry.  I have no idea why but that's what
-inode->i_op->getxattr() requires.
+Some notes on the design:
+- Use pointer into the rt instead of copying an entry,
+  to make it possible to use rcu, thus side-stepping
+  locking complexities.  We also save some memory this way.
+- Old workqueue code is still used for level irqs.
+  I don't think we DTRT with level anyway, however,
+  it seems easier to keep the code around as
+  it has been thought through and debugged, and fix level later than
+  rip out and re-instate it later.
 
-Then we come to procfs.  In that filesystem we actually label based on
-the pathname.  oh no did I say SELinux uses pathnames?  yes, I did, but
-we only use the part of the pathname relative to the procfs root, so
-really it's a static identifier which is immutable.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
->From what I can see SELinux doesn't really care about the dentry, we
-don't care about IS_ROOT() or the name or any of that crap (in the
-non-procfs case).  All we really about is that if something can find an
-inode and use it that security_d_instantiate() was called....
+The below is compile tested only.  Sending out for early
+flames/feedback.  Please review!
 
-Calling security_d_instantiate() extra times is very low overhead and
-not harmful.  the dirtiest (but easiest I guess) fix would be to add it
-into the out_iput path as well.  I feel like there has to be an easier
-solution, I'm just not sure what it is...
+ include/linux/kvm_host.h |    4 ++
+ virt/kvm/eventfd.c       |   81 +++++++++++++++++++++++++++++++++++++++------
+ virt/kvm/irq_comm.c      |    6 ++-
+ 3 files changed, 78 insertions(+), 13 deletions(-)
 
--Eric
-
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index a055742..b6f7047 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -462,6 +462,8 @@ void kvm_get_intr_delivery_bitmask(struct kvm_ioapic *ioapic,
+ 				   unsigned long *deliver_bitmask);
+ #endif
+ int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level);
++int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
++		int irq_source_id, int level);
+ void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin);
+ void kvm_register_irq_ack_notifier(struct kvm *kvm,
+ 				   struct kvm_irq_ack_notifier *kian);
+@@ -603,6 +605,7 @@ static inline void kvm_free_irq_routing(struct kvm *kvm) {}
+ void kvm_eventfd_init(struct kvm *kvm);
+ int kvm_irqfd(struct kvm *kvm, int fd, int gsi, int flags);
+ void kvm_irqfd_release(struct kvm *kvm);
++void kvm_irqfd_update(struct kvm *kvm, struct kvm_irq_routing_table *irq_rt);
+ int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args);
+ 
+ #else
+@@ -614,6 +617,7 @@ static inline int kvm_irqfd(struct kvm *kvm, int fd, int gsi, int flags)
+ }
+ 
+ static inline void kvm_irqfd_release(struct kvm *kvm) {}
++static inline void kvm_irqfd_update(struct kvm *kvm) {}
+ static inline int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+ {
+ 	return -ENOSYS;
+diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+index c1f1e3c..49c1864 100644
+--- a/virt/kvm/eventfd.c
++++ b/virt/kvm/eventfd.c
+@@ -44,14 +44,18 @@
+  */
+ 
+ struct _irqfd {
+-	struct kvm               *kvm;
+-	struct eventfd_ctx       *eventfd;
+-	int                       gsi;
+-	struct list_head          list;
+-	poll_table                pt;
+-	wait_queue_t              wait;
+-	struct work_struct        inject;
+-	struct work_struct        shutdown;
++	/* Used for MSI fast-path */
++	struct kvm *kvm;
++	wait_queue_t wait;
++	struct kvm_kernel_irq_routing_entry __rcu *irq_entry;
++	/* Used for level IRQ fast-path */
++	int gsi;
++	struct work_struct inject;
++	/* Used for setup/shutdown */
++	struct eventfd_ctx *eventfd;
++	struct list_head list;
++	poll_table pt;
++	struct work_struct shutdown;
+ };
+ 
+ static struct workqueue_struct *irqfd_cleanup_wq;
+@@ -125,10 +129,18 @@ irqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
+ {
+ 	struct _irqfd *irqfd = container_of(wait, struct _irqfd, wait);
+ 	unsigned long flags = (unsigned long)key;
++	struct kvm_kernel_irq_routing_entry *irq;
+ 
+-	if (flags & POLLIN)
++	if (flags & POLLIN) {
++		rcu_read_lock();
++		irq = irqfd->irq_entry;
+ 		/* An event has been signaled, inject an interrupt */
+-		schedule_work(&irqfd->inject);
++		if (irq)
++			kvm_set_msi(irq, irqfd->kvm, KVM_USERSPACE_IRQ_SOURCE_ID, 1);
++		else
++			schedule_work(&irqfd->inject);
++		rcu_read_unlock();
++	}
+ 
+ 	if (flags & POLLHUP) {
+ 		/* The eventfd is closing, detach from KVM */
+@@ -166,6 +178,7 @@ irqfd_ptable_queue_proc(struct file *file, wait_queue_head_t *wqh,
+ static int
+ kvm_irqfd_assign(struct kvm *kvm, int fd, int gsi)
+ {
++	struct kvm_irq_routing_table *irq_rt;
+ 	struct _irqfd *irqfd, *tmp;
+ 	struct file *file = NULL;
+ 	struct eventfd_ctx *eventfd = NULL;
+@@ -215,6 +228,10 @@ kvm_irqfd_assign(struct kvm *kvm, int fd, int gsi)
+ 		goto fail;
+ 	}
+ 
++	rcu_read_lock();
++	irqfd_update(kvm, irqfd, rcu_dereference(kvm->irq_routing));
++	rcu_read_unlock();
++
+ 	events = file->f_op->poll(file, &irqfd->pt);
+ 
+ 	list_add_tail(&irqfd->list, &kvm->irqfds.items);
+@@ -271,8 +288,15 @@ kvm_irqfd_deassign(struct kvm *kvm, int fd, int gsi)
+ 	spin_lock_irq(&kvm->irqfds.lock);
+ 
+ 	list_for_each_entry_safe(irqfd, tmp, &kvm->irqfds.items, list) {
+-		if (irqfd->eventfd == eventfd && irqfd->gsi == gsi)
++		if (irqfd->eventfd == eventfd && irqfd->gsi == gsi) {
++			/* This rcu_assign_pointer is needed for when
++			 * another thread calls kvm_irqfd_update before
++			 * we flush workqueue below.
++			 * It is paired with synchronize_rcu done by caller
++			 * of that function. */
++			rcu_assign_pointer(irqfd->irq_entry, NULL);
+ 			irqfd_deactivate(irqfd);
++		}
+ 	}
+ 
+ 	spin_unlock_irq(&kvm->irqfds.lock);
+@@ -321,6 +345,41 @@ kvm_irqfd_release(struct kvm *kvm)
+ 
+ }
+ 
++/* Must be called under irqfds.lock */
++static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
++			 struct kvm_irq_routing_table *irq_rt)
++{
++	struct kvm_kernel_irq_routing_entry *e;
++	struct hlist_node *n;
++
++	if (irqfd->gsi >= irq_rt->nr_rt_entries) {
++		rcu_assign_pointer(irqfd->irq_entry, NULL);
++		return;
++	}
++
++	hlist_for_each_entry(e, n, &irq_rt->map[irqfd->gsi], link) {
++		/* Only fast-path MSI. */
++		if (e->type == KVM_IRQ_ROUTING_MSI)
++			rcu_assign_pointer(irqfd->irq_entry, e);
++		else
++			rcu_assign_pointer(irqfd->irq_entry, NULL);
++	}
++}
++
++/* Update irqfd after a routing change.  Caller must invoke synchronize_rcu
++ * afterwards. */
++void kvm_irqfd_update(struct kvm *kvm, struct kvm_irq_routing_table *irq_rt)
++{
++	struct _irqfd *irqfd;
++
++	spin_lock_irq(&kvm->irqfds.lock);
++
++	list_for_each_entry(irqfd, &kvm->irqfds.items, list)
++		irqfd_update(kvm, irqfd, irq_rt);
++
++	spin_unlock_irq(&kvm->irqfds.lock);
++}
++
+ /*
+  * create a host-wide workqueue for issuing deferred shutdown requests
+  * aggregated from all vm* instances. We need our own isolated single-thread
+diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
+index 8edca91..265ab72 100644
+--- a/virt/kvm/irq_comm.c
++++ b/virt/kvm/irq_comm.c
+@@ -114,8 +114,8 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
+ 	return r;
+ }
+ 
+-static int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
+-		       struct kvm *kvm, int irq_source_id, int level)
++int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
++		struct kvm *kvm, int irq_source_id, int level)
+ {
+ 	struct kvm_lapic_irq irq;
+ 
+@@ -410,7 +410,9 @@ int kvm_set_irq_routing(struct kvm *kvm,
+ 	mutex_lock(&kvm->irq_lock);
+ 	old = kvm->irq_routing;
+ 	rcu_assign_pointer(kvm->irq_routing, new);
++	kvm_irqfd_update(kvm, new);
+ 	mutex_unlock(&kvm->irq_lock);
++
+ 	synchronize_rcu();
+ 
+ 	new = old;
+-- 
+1.7.3.2.91.g446ac
