@@ -1,73 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758861Ab0KQAG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 19:06:57 -0500
-Received: from mga14.intel.com ([143.182.124.37]:17762 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754502Ab0KQAG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 19:06:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,208,1288594800"; 
-   d="scan'208";a="349668476"
-Subject: Re: [patch 1/2] bootmem: add alloc_bootmem_align()
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: "hpa@zytor.com" <hpa@zytor.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@linux.jf.intel.com>
-In-Reply-To: <4CE30244.6090208@linux.intel.com>
-References: <20101116212441.977574826@sbsiddha-MOBL3.sc.intel.com>
-	 <4CE30244.6090208@linux.intel.com>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Tue, 16 Nov 2010 16:06:50 -0800
-Message-Id: <1289952410.2683.38.camel@sbsiddha-MOBL3.sc.intel.com>
+	id S1759003Ab0KQAIg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 19:08:36 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42593 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755964Ab0KQAIe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 19:08:34 -0500
+Date: Tue, 16 Nov 2010 16:07:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Shaohua Li <shaohua.li@intel.com>,
+        Christoph Lameter <cl@linux.com>, David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] set_pgdat_percpu_threshold() don't use
+ for_each_online_cpu
+Message-Id: <20101116160720.5244ea22.akpm@linux-foundation.org>
+In-Reply-To: <20101114163727.BEE0.A69D9226@jp.fujitsu.com>
+References: <1288169256-7174-2-git-send-email-mel@csn.ul.ie>
+	<20101028100920.5d4ce413.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101114163727.BEE0.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-11-16 at 14:14 -0800, H. Peter Anvin wrote:
-> On 11/16/2010 01:23 PM, Suresh Siddha wrote:
-> > Index: tree/include/linux/bootmem.h
-> > ===================================================================
-> > --- tree.orig/include/linux/bootmem.h
-> > +++ tree/include/linux/bootmem.h
-> > @@ -105,6 +105,8 @@ extern void *__alloc_bootmem_low_node(pg
-> >  
-> >  #define alloc_bootmem(x) \
-> >  	__alloc_bootmem(x, SMP_CACHE_BYTES, __pa(MAX_DMA_ADDRESS))
-> > +#define alloc_bootmem_align(x, align) \
-> > +	__alloc_bootmem(x, align, __pa(MAX_DMA_ADDRESS))
-> >  #define alloc_bootmem_nopanic(x) \
-> >  	__alloc_bootmem_nopanic(x, SMP_CACHE_BYTES, __pa(MAX_DMA_ADDRESS))
-> >  #define alloc_bootmem_pages(x) \
-> 
->   [...]
-> 
-> >  	 */
-> > -	init_xstate_buf = alloc_bootmem(xstate_size);
-> > +	init_xstate_buf = alloc_bootmem_align(xstate_size,
-> > +					      __alignof__(struct xsave_struct));
-> >  	init_xstate_buf->i387.mxcsr = MXCSR_DEFAULT;
-> 
-> Perhaps it would make even more sense to have:
-> 
-> #define alloc_bootmem_alignof(x, type) \
-> 	__alloc_bootmem(x, __alignof__(type), __pa(MAX_DMA_ADDRESS))
-> 
+On Sun, 14 Nov 2010 17:53:03 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-Wanted to keep it broad so that more people can start using it.
+> > > @@ -159,6 +165,44 @@ static void refresh_zone_stat_thresholds(void)
+> > >  	}
+> > >  }
+> > >  
+> > > +void reduce_pgdat_percpu_threshold(pg_data_t *pgdat)
+> > > +{
+> > > +	struct zone *zone;
+> > > +	int cpu;
+> > > +	int threshold;
+> > > +	int i;
+> > > +
+> > 
+> > get_online_cpus();
+> 
+> 
+> This caused following runtime warnings. but I don't think here is
+> real lock inversion. 
+> 
+> =================================
+> [ INFO: inconsistent lock state ]
+> 2.6.37-rc1-mm1+ #150
+> ---------------------------------
+> inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
+> kswapd0/419 [HC0[0]:SC0[0]:HE1:SE1] takes:
+>  (cpu_hotplug.lock){+.+.?.}, at: [<ffffffff810520d1>] get_online_cpus+0x41/0x60
+> {RECLAIM_FS-ON-W} state was registered at:
+>   [<ffffffff8108a1a3>] mark_held_locks+0x73/0xa0
+>   [<ffffffff8108a296>] lockdep_trace_alloc+0xc6/0x100
+>   [<ffffffff8113fba9>] kmem_cache_alloc+0x39/0x2b0
+>   [<ffffffff812eea10>] idr_pre_get+0x60/0x90
+>   [<ffffffff812ef5b7>] ida_pre_get+0x27/0xf0
+>   [<ffffffff8106ebf5>] create_worker+0x55/0x190
+>   [<ffffffff814fb4f4>] workqueue_cpu_callback+0xbc/0x235
+>   [<ffffffff8151934c>] notifier_call_chain+0x8c/0xe0
+>   [<ffffffff8107a34e>] __raw_notifier_call_chain+0xe/0x10
+>   [<ffffffff81051f30>] __cpu_notify+0x20/0x40
+>   [<ffffffff8150bff7>] _cpu_up+0x73/0x113
+>   [<ffffffff8150c175>] cpu_up+0xde/0xf1
+>   [<ffffffff81dcc81d>] kernel_init+0x21b/0x342
+>   [<ffffffff81003724>] kernel_thread_helper+0x4/0x10
+> irq event stamp: 27
+> hardirqs last  enabled at (27): [<ffffffff815152c0>] _raw_spin_unlock_irqrestore+0x40/0x80
+> hardirqs last disabled at (26): [<ffffffff81514982>] _raw_spin_lock_irqsave+0x32/0xa0
+> softirqs last  enabled at (20): [<ffffffff810614c4>] del_timer_sync+0x54/0xa0
+> softirqs last disabled at (18): [<ffffffff8106148c>] del_timer_sync+0x1c/0xa0
+> 
+> other info that might help us debug this:
+> no locks held by kswapd0/419.
+> 
+> stack backtrace:
+> Pid: 419, comm: kswapd0 Not tainted 2.6.37-rc1-mm1+ #150
+> Call Trace:
+>  [<ffffffff810890b1>] print_usage_bug+0x171/0x180
+>  [<ffffffff8108a057>] mark_lock+0x377/0x450
+>  [<ffffffff8108ab67>] __lock_acquire+0x267/0x15e0
+>  [<ffffffff8107af0f>] ? local_clock+0x6f/0x80
+>  [<ffffffff81086789>] ? trace_hardirqs_off_caller+0x29/0x150
+>  [<ffffffff8108bf94>] lock_acquire+0xb4/0x150
+>  [<ffffffff810520d1>] ? get_online_cpus+0x41/0x60
+>  [<ffffffff81512cf4>] __mutex_lock_common+0x44/0x3f0
+>  [<ffffffff810520d1>] ? get_online_cpus+0x41/0x60
+>  [<ffffffff810744f0>] ? prepare_to_wait+0x60/0x90
+>  [<ffffffff81086789>] ? trace_hardirqs_off_caller+0x29/0x150
+>  [<ffffffff810520d1>] ? get_online_cpus+0x41/0x60
+>  [<ffffffff810868bd>] ? trace_hardirqs_off+0xd/0x10
+>  [<ffffffff8107af0f>] ? local_clock+0x6f/0x80
+>  [<ffffffff815131a8>] mutex_lock_nested+0x48/0x60
+>  [<ffffffff810520d1>] get_online_cpus+0x41/0x60
+>  [<ffffffff811138b2>] set_pgdat_percpu_threshold+0x22/0xe0
+>  [<ffffffff81113970>] ? calculate_normal_threshold+0x0/0x60
+>  [<ffffffff8110b552>] kswapd+0x1f2/0x360
+>  [<ffffffff81074180>] ? autoremove_wake_function+0x0/0x40
+>  [<ffffffff8110b360>] ? kswapd+0x0/0x360
+>  [<ffffffff81073ae6>] kthread+0xa6/0xb0
+>  [<ffffffff81003724>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff81515710>] ? restore_args+0x0/0x30
+>  [<ffffffff81073a40>] ? kthread+0x0/0xb0
+>  [<ffffffff81003720>] ? kernel_thread_helper+0x0/0x10
 
-For example, most of the current x86 uses of alloc_bootmem_pages() (or
-the __alloc_bootmem() calls in other architectures) can be replaced with
-alloc_bootmem_align() and most of them don't have a relevant type to
-describe the alignment.
+Well what's actually happening here?  Where is the alleged deadlock?
 
-thanks,
-suresh
+In the kernel_init() case we have a GFP_KERNEL allocation inside
+get_online_cpus().  In the other case we simply have kswapd calling
+get_online_cpus(), yes?
 
+Does lockdep consider all kswapd actions to be "in reclaim context"? 
+If so, why?
+
+> 
+> I think we have two option 1) call lockdep_clear_current_reclaim_state()
+> every time 2) use for_each_possible_cpu instead for_each_online_cpu.
+> 
+> Following patch use (2) beucase removing get_online_cpus() makes good
+> side effect. It reduce potentially cpu-hotplug vs memory-shortage deadlock
+> risk. 
+
+Well.  Being able to run for_each_online_cpu() is a pretty low-level
+and fundamental thing.  It's something we're likely to want to do more
+and more of as time passes.  It seems a bad thing to tell ourselves
+that we cannot use it in reclaim context.  That blots out large chunks
+of filesystem and IO-layer code as well!
+
+> --- a/mm/vmstat.c
+> +++ b/mm/vmstat.c
+> @@ -193,18 +193,16 @@ void set_pgdat_percpu_threshold(pg_data_t *pgdat,
+>  	int threshold;
+>  	int i;
+>  
+> -	get_online_cpus();
+>  	for (i = 0; i < pgdat->nr_zones; i++) {
+>  		zone = &pgdat->node_zones[i];
+>  		if (!zone->percpu_drift_mark)
+>  			continue;
+>  
+>  		threshold = (*calculate_pressure)(zone);
+> -		for_each_online_cpu(cpu)
+> +		for_each_possible_cpu(cpu)
+>  			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
+>  							= threshold;
+>  	}
+> -	put_online_cpus();
+>  }
+
+That's a pretty sad change IMO, especially of num_possible_cpus is much
+larger than num_online_cpus.
+
+What do we need to do to make get_online_cpus() safe to use in reclaim
+context?  (And in kswapd context, if that's really equivalent to
+"reclaim context").
