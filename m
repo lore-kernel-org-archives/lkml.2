@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751214Ab0KQXZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:25:58 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:41900 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915Ab0KQXZ5 convert rfc822-to-8bit (ORCPT
+	id S1751317Ab0KQX1H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:27:07 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37452 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751109Ab0KQX1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:25:57 -0500
-Subject: Re: [PATCH 06/13] writeback: bdi write bandwidth estimation
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Li Shaohua <shaohua.li@intel.com>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101117150837.a18d56c1.akpm@linux-foundation.org>
-References: <20101117042720.033773013@intel.com>
-	 <20101117042850.002299964@intel.com>
-	 <20101117150837.a18d56c1.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 18 Nov 2010 00:24:59 +0100
-Message-ID: <1290036299.2109.1288.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 17 Nov 2010 18:27:04 -0500
+Message-ID: <4CE46443.2000002@oracle.com>
+Date: Wed, 17 Nov 2010 15:24:51 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: Tree for November 17
+References: <20101117140956.a8264c75.sfr@canb.auug.org.au>	<AANLkTinBiGOPptOY18-D+=djKLsJj75mXxL6ht6xNJXL@mail.gmail.com>	<20101117095920.2b9e2e6a.randy.dunlap@oracle.com> <20101118101459.472d540b.sfr@canb.auug.org.au>
+In-Reply-To: <20101118101459.472d540b.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 15:08 -0800, Andrew Morton wrote:
-> On Wed, 17 Nov 2010 12:27:26 +0800
-> Wu Fengguang <fengguang.wu@intel.com> wrote:
+On 11/17/10 15:14, Stephen Rothwell wrote:
+> On Wed, 17 Nov 2010 09:59:20 -0800 Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>>
+>> Why was #include <linux/smp_lock.h> removed from <linux/hardirq.h> ?
+>>
+>> I added #include <linux/smp_lock.h> to i387.h, but them mm/filemap.c build fails
+>> with the same error:
+>>
+>> linux-next-20101117/mm/filemap.c: In function 'iov_iter_copy_from_user_atomic':
+>> linux-next-20101117/mm/filemap.c:1936: error: implicit declaration of function 'kernel_locked'
 > 
-> > +     w = min(elapsed / (HZ/100), 128UL);
-> 
-> I did try setting HZ=10 many years ago, and the kernel blew up.
-> 
-> I do recall hearing of people who set HZ very low, perhaps because
-> their huge machines were seeing performance prolems when the timer tick
-> went off.  Probably there's no need to do that any more.
-> 
-> But still, we shouldn't hard-wire the (HZ >= 100) assumption if we
-> don't absolutely need to, and I don't think it is absolutely needed
-> here.  
+> Was this fixed before Linus took that patch?  Also, the #include of
 
-People who do cpu bring-up on very slow FPGAs also lower HZ as far as
-possible.
+This build error was in linux-next of NOV. 17.  What mainline base did it use?
+I don't exactly know how to answer your question...
+
+
+> linux/smp_lock.h in linux/hardirq.h was the only line between #ifdef
+> CONFIG_PREEMPT and #endif ... was this patch even reviewed?
+> 
+> Maybe (after it was reviewed) it should have been given more time in
+> linux-next before being merged.
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
