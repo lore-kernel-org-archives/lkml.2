@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758902Ab0KQPne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:43:34 -0500
-Received: from hera.kernel.org ([140.211.167.34]:50494 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756169Ab0KQPnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:43:33 -0500
-Message-ID: <4CE3F773.2010303@kernel.org>
-Date: Wed, 17 Nov 2010 16:40:35 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Dan Smith <danms@us.ibm.com>
-CC: Gene Cooperman <gene@ccs.neu.edu>, Oren Laadan <orenl@cs.columbia.edu>,
-        Kapil Arya <kapil@ccs.neu.edu>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, hch@lst.de
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>	<4CD26948.7050009@kernel.org>	<20101104164401.GC10656@sundance.ccs.neu.edu>	<4CD3CE29.2010105@kernel.org>	<AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com>	<4CD5DCE3.3000109@cs.columbia.edu>	<20101107194222.GG31077@sundance.ccs.neu.edu>	<4CD71A6B.3020905@cs.columbia.edu>	<20101107230516.GJ31077@sundance.ccs.neu.edu>	<4CD774CA.8030004@cs.columbia.edu>	<20101108162630.GN31077@sundance.ccs.neu.edu>	<8739rbpreb.fsf@localhost6.localdomain6> <4CE3B927.1020401@kernel.org> <8762vwvubr.fsf@localhost6.localdomain6>
-In-Reply-To: <8762vwvubr.fsf@localhost6.localdomain6>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Nov 2010 15:40:37 +0000 (UTC)
+	id S933864Ab0KQPnl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:43:41 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49891 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758439Ab0KQPnj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 10:43:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=SN6G9v1QIE6RtrLVUsI0j/50ub3hdeKRDBuWgBJwuGtUMwbzQI/oiGkp2udbvrTJb/
+         K09gyY99Dlwo32ZeonDC3qgl+AehYg52yeU40OJAjGifSG6VRg4vcqekyXS0cFoZYb6r
+         RidwWvRtnbzsEeEJ6hncMKoBVNm8T0WnN0S9s=
+From: dirk.brandewie@gmail.com
+To: linux-kernel@vger.kernel.org
+Cc: dirk.brandewie@gmail.com, greg@kroah.com, linux-usb@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>
+Subject: [PATCH] ce4100: Add support for CE4100 EHCI IP block to EHCI driver
+Date: Wed, 17 Nov 2010 07:43:09 -0800
+Message-Id: <1290008589-3349-1-git-send-email-dirk.brandewie@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <3b35daeb1bbc42f758e3407a8b28d21dd999c5d9.1289331834.git.dirk.brandewie@gmail.com>
+References: <3b35daeb1bbc42f758e3407a8b28d21dd999c5d9.1289331834.git.dirk.brandewie@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-On 11/17/2010 04:33 PM, Dan Smith wrote:
-> TH> If it ever becomes a general enough problem (which I extremely
-> TH> strongly doubt),
-> 
-> Migration of a container?  Yeah, it's one of the primary reasons for
-> doing what we're doing :)
+This patch adds support for the EHCI IP block present on the Intel
+CE4100.
 
-Well, then push for the feature.  If the rationale is strong enough,
-it'll get in.
+Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
+CC: linux-usb@vger.kernel.org
+CC: David Brownell <dbrownell@users.sourceforge.net>
+---
+ drivers/usb/host/ehci-pci.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-> TH> we can think about allowing processes in a netns to change
-> TH> sequence number but that would be a single setsockopt option
-> 
-> Yeah, well there's more than that, of course, if you want to be able
-> to checkpoint a socket in any state.  Buffers, time-wait, etc.
-
-I haven't really thought about it too deeply but for all other misc
-states, you should be able to emulate it by talking to a netfilter
-module.  The reason why I suggested sequence number changing setsocket
-option is because that is the only performance sensitive part and with
-that you should be able to resume live sockets without conntracking.
-For cold paths, using netfilter module during resume should do, right?
-
-> TH> instead of the horror show of dumping in-kernel data structures in
-> TH> binary blob.
-> 
-> Well, as should be evident from a review of the code, we don't dump
-> binary kernel data structures as a general rule.  We canonicalize them
-> into checkpoint headers on the way out and build the new data
-> structures (or use existing kernel interfaces to do so) on the way in.
-> You know, just like netlink does.
-
-netlink interaction is defined by ABI.
-
-> It has even been suggested that we do this with netlink instead, to
-> mirror the other "horror show" tools that we all use on a daily basis.
-> We're not opposed to this, but we do have some concerns about
-> performance.
-
-The horror show part is dumping internal data structure without due
-scrutinization in a way which can only ever be useful for CR when most
-of the same states are already exported via ABI defined ways.
-
-Thanks.
-
+diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
+index a1e8d27..56c78e9 100644
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -22,6 +22,9 @@
+ #error "This file is PCI bus glue.  CONFIG_PCI must be defined."
+ #endif
+ 
++/* defined here to avoid adding to pci_ids.h for single instance use */
++#define PCI_DEVICE_ID_INTEL_CE4100_USB	0x2e70
++
+ /*-------------------------------------------------------------------------*/
+ 
+ /* called after powerup, by probe or system-pm "wakeup" */
+@@ -124,6 +127,10 @@ static int ehci_pci_setup(struct usb_hcd *hcd)
+ 			ehci_info(ehci, "disable lpm for langwell/penwell\n");
+ 			ehci->has_lpm = 0;
+ 		}
++		if (pdev->device == PCI_DEVICE_ID_INTEL_CE4100_USB) {
++			hcd->has_tt = 1;
++			tdi_reset(ehci);
++		}
+ 		break;
+ 	case PCI_VENDOR_ID_TDI:
+ 		if (pdev->device == PCI_DEVICE_ID_TDI_EHCI) {
 -- 
-tejun
+1.7.2.3
+
