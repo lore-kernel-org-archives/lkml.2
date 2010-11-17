@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759808Ab0KQHNz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 02:13:55 -0500
-Received: from smtp-vbr14.xs4all.nl ([194.109.24.34]:1945 "EHLO
-	smtp-vbr14.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab0KQHNx (ORCPT
+	id S1759827Ab0KQHR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 02:17:29 -0500
+Received: from [120.204.251.227] ([120.204.251.227]:58694 "EHLO
+	LC-SHMAIL-01.SHANGHAI.LEADCORETECH.COM" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751481Ab0KQHR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 02:13:53 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: achew@nvidia.com
-Subject: Re: [PATCH 1/1] videobuf: Initialize lists in videobuf_buffer.
-Date: Wed, 17 Nov 2010 08:13:43 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-tschai; KDE/4.4.5; x86_64; ; )
-Cc: zhangtianfei@leadcoretech.com, pawel@osciak.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1289939083-27209-1-git-send-email-achew@nvidia.com>
-In-Reply-To: <1289939083-27209-1-git-send-email-achew@nvidia.com>
+	Wed, 17 Nov 2010 02:17:28 -0500
+Message-ID: <4CE3814B.5010008@leadcoretech.com>
+Date: Wed, 17 Nov 2010 15:16:27 +0800
+From: "Figo.zhang" <zhangtianfei@leadcoretech.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101028 Lightning/1.0b2 Lanikai/3.1.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Hans Verkuil <hverkuil@xs4all.nl>
+CC: Andrew Chew <AChew@nvidia.com>, "pawel@osciak.com" <pawel@osciak.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] videobuf: Initialize lists in videobuf_buffer.
+References: <1289939083-27209-1-git-send-email-achew@nvidia.com> <4CE32B9D.1020705@leadcoretech.com> <643E69AA4436674C8F39DCC2C05F763816BB828A40@HQMAIL03.nvidia.com> <201011170811.06697.hverkuil@xs4all.nl>
+In-Reply-To: <201011170811.06697.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011170813.43236.hverkuil@xs4all.nl>
+X-OriginalArrivalTime: 17 Nov 2010 07:17:26.0599 (UTC) FILETIME=[7CCF2D70:01CB8627]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 16, 2010 21:24:43 achew@nvidia.com wrote:
-> From: Andrew Chew <achew@nvidia.com>
-> 
-> There are two struct list_head's in struct videobuf_buffer.
-> Prior to this fix, all we did for initialization of struct videobuf_buffer
-> was to zero out its memory.  This does not properly initialize this struct's
-> two list_head members.
-> 
-> This patch immediately calls INIT_LIST_HEAD on both lists after the kzalloc,
-> so that the two lists are initialized properly.
+On 11/17/2010 03:11 PM, Hans Verkuil wrote:
+> On Wednesday, November 17, 2010 02:38:09 Andrew Chew wrote:
+>>>> diff --git a/drivers/media/video/videobuf-dma-contig.c
+>>> b/drivers/media/video/videobuf-dma-contig.c
+>>>> index c969111..f7e0f86 100644
+>>>> --- a/drivers/media/video/videobuf-dma-contig.c
+>>>> +++ b/drivers/media/video/videobuf-dma-contig.c
+>>>> @@ -193,6 +193,8 @@ static struct videobuf_buffer
+>>> *__videobuf_alloc_vb(size_t size)
+>>>>    	if (vb) {
+>>>>    		mem = vb->priv = ((char *)vb) + size;
+>>>>    		mem->magic = MAGIC_DC_MEM;
+>>>> +		INIT_LIST_HEAD(&vb->stream);
+>>>> +		INIT_LIST_HEAD(&vb->queue);
+>>>
+>>> i think it no need to be init, it just a list-entry.
+>>
+>> Okay, if that's really the case, then sh_mobile_ceu_camera.c, pxa_camera.c, mx1_camera.c, mx2_camera.c, and omap1_camera.c needs to be fixed to remove that WARN_ON(!list_empty(&vb->queue)); in their videobuf_prepare() methods, because those WARN_ON's are assuming that vb->queue is properly initialized as a list head.
+>>
+>> Which will it be?
+>>
+>
+> These list entries need to be inited. It is bad form to have uninitialized
+> list entries. It is not as if this is a big deal to initialize them properly.
 
-Rather than doing this for all videobuf variants I would suggest that you
-do this in videobuf-core.c, videobuf_alloc_vb().
+in kernel source code, list entry are not often to be inited.
 
-Regards,
+for example, see mm/vmscan.c register_shrinker(), no one init the 
+shrinker->list.
 
-	Hans
+another example: see mm/swapfile.c  add_swap_extent(), no one init the
+new_se->list.
 
-> 
-> Signed-off-by: Andrew Chew <achew@nvidia.com>
-> ---
-> I thought I'd submit a patch for this anyway.  Without this, the existing
-> camera host drivers will spew an ugly warning on every videobuf allocation,
-> which gets annoying really fast.
-> 
->  drivers/media/video/videobuf-dma-contig.c |    2 ++
->  drivers/media/video/videobuf-dma-sg.c     |    2 ++
->  drivers/media/video/videobuf-vmalloc.c    |    2 ++
->  3 files changed, 6 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/media/video/videobuf-dma-contig.c b/drivers/media/video/videobuf-dma-contig.c
-> index c969111..f7e0f86 100644
-> --- a/drivers/media/video/videobuf-dma-contig.c
-> +++ b/drivers/media/video/videobuf-dma-contig.c
-> @@ -193,6 +193,8 @@ static struct videobuf_buffer *__videobuf_alloc_vb(size_t size)
->  	if (vb) {
->  		mem = vb->priv = ((char *)vb) + size;
->  		mem->magic = MAGIC_DC_MEM;
-> +		INIT_LIST_HEAD(&vb->stream);
-> +		INIT_LIST_HEAD(&vb->queue);
->  	}
->  
->  	return vb;
-> diff --git a/drivers/media/video/videobuf-dma-sg.c b/drivers/media/video/videobuf-dma-sg.c
-> index 20f227e..5af3217 100644
-> --- a/drivers/media/video/videobuf-dma-sg.c
-> +++ b/drivers/media/video/videobuf-dma-sg.c
-> @@ -430,6 +430,8 @@ static struct videobuf_buffer *__videobuf_alloc_vb(size_t size)
->  
->  	mem = vb->priv = ((char *)vb) + size;
->  	mem->magic = MAGIC_SG_MEM;
-> +	INIT_LIST_HEAD(&vb->stream);
-> +	INIT_LIST_HEAD(&vb->queue);
->  
->  	videobuf_dma_init(&mem->dma);
->  
-> diff --git a/drivers/media/video/videobuf-vmalloc.c b/drivers/media/video/videobuf-vmalloc.c
-> index df14258..8babedd 100644
-> --- a/drivers/media/video/videobuf-vmalloc.c
-> +++ b/drivers/media/video/videobuf-vmalloc.c
-> @@ -146,6 +146,8 @@ static struct videobuf_buffer *__videobuf_alloc_vb(size_t size)
->  
->  	mem = vb->priv = ((char *)vb) + size;
->  	mem->magic = MAGIC_VMAL_MEM;
-> +	INIT_LIST_HEAD(&vb->stream);
-> +	INIT_LIST_HEAD(&vb->queue);
->  
->  	dprintk(1, "%s: allocated at %p(%ld+%ld) & %p(%ld)\n",
->  		__func__, vb, (long)sizeof(*vb), (long)size - sizeof(*vb),
-> 
 
--- 
-Hans Verkuil - video4linux developer - sponsored by Cisco
+
+
+
