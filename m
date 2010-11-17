@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298Ab0KQXsR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:48:17 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57860 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750915Ab0KQXsP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:48:15 -0500
-Date: Wed, 17 Nov 2010 15:46:41 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] Use memory compaction instead of lumpy reclaim
- during high-order allocations
-Message-Id: <20101117154641.51fd7ce5.akpm@linux-foundation.org>
-In-Reply-To: <1290010969-26721-1-git-send-email-mel@csn.ul.ie>
-References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752410Ab0KQXsp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:48:45 -0500
+Received: from THUNK.ORG ([69.25.196.29]:51440 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750850Ab0KQXsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 18:48:43 -0500
+Date: Wed, 17 Nov 2010 18:48:33 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC][PATCH 1/5] [PATCH 1/5] events: Add EVENT_FS the event
+ filesystem
+Message-ID: <20101117234833.GK3290@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+	Ingo Molnar <mingo@elte.hu>, Greg KH <gregkh@suse.de>,
+	linux-kernel@vger.kernel.org,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Arjan van de Ven <arjan@infradead.org>,
+	Lin Ming <ming.m.lin@intel.com>,
+	Arnaldo Carvalho de Melo <acme@redhat.com>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>
+References: <20101117005357.024472450@goodmis.org>
+ <20101117005939.600541101@goodmis.org>
+ <20101117033242.GB31335@suse.de>
+ <20101117103914.GA21976@elte.hu>
+ <1289996753.30543.35.camel@gandalf.stny.rr.com>
+ <20101117174652.GC13717@Krystal>
+ <1290016354.30543.71.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290016354.30543.71.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010 16:22:41 +0000
-Mel Gorman <mel@csn.ul.ie> wrote:
+On Wed, Nov 17, 2010 at 12:52:34PM -0500, Steven Rostedt wrote:
+> 
+> I still say no to stable tracepoints in modules. Once you open that
+> door, everyone will have it.
 
-> Huge page allocations are not expected to be cheap but lumpy reclaim
-> is still very disruptive.
+What about having KVM define the stable tracepoints in the built-in
+part of the kernel, if CONFIG_KVM is Y or M, and then export the
+tracepoints, such that the tracepoints can be called from a module?
 
-Huge pages are boring.  Can we expect any benefit for the
-stupid-nic-driver-which-does-order-4-GFP_ATOMIC-allocations problem?
+That way the tracepoints aren't being *defined* in a module, they are
+just being *called* from the module.  Does that seem like a reasonable
+compromise?
 
->
-> ...
->
-> I haven't pushed hard on the concept of lumpy compaction yet and right
-> now I don't intend to during this cycle. The initial prototypes did not
-> behave as well as expected and this series improves the current situation
-> a lot without introducing new algorithms. Hence, I'd like this series to
-> be considered for merging.
-
-Translation: "Andrew, wait for the next version"? :)
-
-> I'm hoping that this series also removes the
-> necessity for the "delete lumpy reclaim" patch from the THP tree.
-
-Now I'm sad.  I read all that and was thinking "oh goody, we get to
-delete something for once".  But no :(
-
-If you can get this stuff to work nicely, why can't we remove lumpy
-reclaim?
+						- Ted
