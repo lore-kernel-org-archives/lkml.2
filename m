@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759881Ab0KQIHG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 03:07:06 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:58836 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758033Ab0KQIHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 03:07:03 -0500
-Date: Wed, 17 Nov 2010 13:36:55 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101117080653.GB16969@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <AANLkTimwSktAQ5PkXNGY2EQz71DFmKY3Bt2fbZYasD0G@mail.gmail.com>
- <AANLkTi=fT-DCP40_U24zft-3owseW24px=Zq=LnEJ_FF@mail.gmail.com>
- <1289783580.495.58.camel@maggy.simson.net>
- <1289811438.2109.474.camel@laptop>
- <1289820766.16406.45.camel@maggy.simson.net>
- <1289821590.16406.47.camel@maggy.simson.net>
- <20101115125716.GA22422@redhat.com>
- <1289856350.14719.135.camel@maggy.simson.net>
- <20101116015648.GA11534@redhat.com>
- <AANLkTik4J7u1zC+D7bkB5PyVHRS_pLOU=c5HFUMxGqwM@mail.gmail.com>
+	id S934548Ab0KQIIX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 03:08:23 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:43218 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758033Ab0KQIIW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 03:08:22 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=VSuQ74ydPcFMpTHOTtyqkULT9bNSAlsTUv8Th3L+73wqPNt1tF3XpIWYaxCSQGNw74
+         g+lwA6A6HWYRC2NMNFU1eFJtzTul96QJHie9OHIaCzhK88AXxjXE2U3rdgpDzVHUl6ZH
+         YF7WImttNXcWTcIQLYZHbf42/dNrxCCy/8zs4=
+Message-ID: <4CE38D70.4010507@garzik.org>
+Date: Wed, 17 Nov 2010 03:08:16 -0500
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <AANLkTik4J7u1zC+D7bkB5PyVHRS_pLOU=c5HFUMxGqwM@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] libata: remove unlock+relock cycle in ata_scsi_queuecmd
+References: <20101117062958.GA2894@havoc.gtf.org> <AANLkTikQysiwSV_m38vKaEuPQ=NH10o2s69d=aNGOhLr@mail.gmail.com>
+In-Reply-To: <AANLkTikQysiwSV_m38vKaEuPQ=NH10o2s69d=aNGOhLr@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds <torvalds@linux-foundation.org> [2010-11-15 18:18:20]:
-
-> On Mon, Nov 15, 2010 at 5:56 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> >
-> > Should this kind of thing be done in user space?
-> 
-> Almost certainly not.
+On 11/17/2010 01:44 AM, Linus Torvalds wrote:
+> On Tue, Nov 16, 2010 at 10:29 PM, Jeff Garzik<jeff@garzik.org>  wrote:
+>>
+>> +       spin_lock(shost->host_lock);
+>> +       scsi_cmd_get_serial(shost, cmd);
+>>         spin_unlock(shost->host_lock);
 >
-> First off, user-space is a fragmented mess. Just from a "let's get it
-> done" angle, it just doesn't work. There are lots of different thing
-> that create new tty's, and you can't have them all fixed. Plus it
-> would be _way_ more code in user space than it is in kernel space.
+> This is just sad.
 >
-> Secondly, user-space daemons are a total mess. We've tried it many
-> many times, and every time the _intention_ is to make things simpler
-> to debug and deploy. And it almost never is. The interfaces end up
-> being too painful, and the "part of the code is in kernel space, part
-> of it is in user space" means that things just break all the time.
-> 
+> How important is that serial number? So important that we need to do a
+> spinlock over it here? And it _must_ be per-shost?
 
-Please elaborate, is this a generic statement or a comment on
-cgclassify or cgroup user rules.
+Quite unimportant.  Quoting James from 
+http://marc.info/?l=linux-kernel&m=128949079704323&w=2
+> There are only a few drivers left that actually make use of a serial
+> number.  Of those, the only modern ones are qla4, lpfc, mpt2sas and
+> megaraid.
+>
+> So the next logical step seems to be eliminate the overloading of the
+> serial number zero value, which removes the last mid-layer use (dpt_i2o
+> seems to abuse this unnecessarily as well), then the serial number code
+> can be pushed down into the queuecommand routines of only those drivers
+> that actually use it.  None of the modern ones seems to have a
+> legitimate use, so I think their uses can mostly be eliminated.  Thus,
+> we might be able to get away with a simple queuecommand push down and
+> never bother with atomics for this (since it's unlikely the legacy users
+> would convert away from a lock wrapping their queuecommand routines).
 
-> Finally, the whole "user space is more flexible" is just a lie. It
-> simply doesn't end up being true. It will be _harder_ to configure
-> some user-space daemon than it is to just set a flag in /sys or
-> whatever. The "flexibility" tends to be more a flexibility to get
-> things wrong than any actual advantage.
-> 
-> Just look at the patch in question. It's simple, it's clean, and it
-> "just works". Doing the same thing in user space? It would be a total
-> nightmare, and exactly _because_ it would be a total nightmare, the
-> code would never be that simple or clean.
-> 
->                        Linus
 
--- 
-	Three Cheers,
-	Balbir
+Looking solely at the SCSI code (ie. ignoring LLD code), it seems like 
+the magic number zero for serial_number is signaling a boolean condition 
+"are we an EH command?"
+
+EH tests this at the very beginning of the abort/reset/explode error 
+handling sequence, presumably to avoid recursive EH invocations 
+(scsi_try_to_abort_cmd).
+
+So maybe an EH expert (Tejun?) can correct me here, but I think we may 
+be able to completely the lock/get-serial/unlock sequence from libata, 
+as long as scsi_init_cmd_errh() reliably sets an "I am an EH command" flag.
+
+Would be nice if true...
+
+	Jeff
+
+
