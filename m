@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758694Ab0KQPkW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:40:22 -0500
-Received: from fieldses.org ([174.143.236.118]:50400 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751207Ab0KQPkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:40:21 -0500
-Date: Wed, 17 Nov 2010 10:40:19 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH 4/7] BKL: remove references to lock_kernel from comments
-Message-ID: <20101117154018.GA16098@fieldses.org>
-References: <1290007619-5787-1-git-send-email-arnd@arndb.de>
- <1290007619-5787-5-git-send-email-arnd@arndb.de>
+	id S1759149Ab0KQPk5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:40:57 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:50184 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758574Ab0KQPk4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 10:40:56 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v3 15/20] ARM: LPAE: use phys_addr_t instead of unsigned long for physical addresses
+Date: Wed, 17 Nov 2010 16:40:47 +0100
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Stephen Boyd <sboyd@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <1289842829-3027-1-git-send-email-catalin.marinas@arm.com> <201011171218.13910.arnd@arndb.de> <AANLkTik39iqXsLJiJ7cWwweO2VBoJ0Y4ymwKqx7X5ziA@mail.gmail.com>
+In-Reply-To: <AANLkTik39iqXsLJiJ7cWwweO2VBoJ0Y4ymwKqx7X5ziA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290007619-5787-5-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011171640.47639.arnd@arndb.de>
+X-Provags-ID: V02:K0:IL7uZShh4VueBI1A0KMdkUbSnjDVkuz0bkVC7XtkJPj
+ b6ojmJfFWqot5RddNGh8nbtJ1XYKrzBxRLruC8Uubnf7zPxFB5
+ qbR0obs8yPWHf8uyxZsBbuH8wHlZfGH6jSOyq+QnX3E3/0cUyj
+ vtT6NsG4SisdZ+Qssr2C7uBT1j1qymIHP9hXB3KCTE9iWWigRm
+ uRPS4ysusEnFEreJFdCwQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 04:26:56PM +0100, Arnd Bergmann wrote:
-> Lock_kernel is gone from the code, so the comments
-> should be updated, too. nfsd now uses lock_flocks
-> instead of lock_kernel to protect against posix
-> file locks.
+On Wednesday 17 November 2010, Catalin Marinas wrote:
+> That's what I plan to add, though it may be better to push as a
+> separate patch to fix compiler warnings now. I don't know when the
+> LPAE patches would go in.
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: "J. Bruce Fields" <bfields@fieldses.org>
-
-Acked-by: J. Bruce Fields <bfields@redhat.com>
-
-I want to get rid of most of these callbacks, actually; but that can
-wait for the next merge window.
-
---b.
-
-> Cc: linux-nfs@vger.kernel.org
-> ---
->  fs/nfsd/nfs4state.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index f1e5ec6..36db9cc 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -2254,7 +2254,7 @@ nfs4_file_downgrade(struct nfs4_file *fp, unsigned int share_access)
->   * Spawn a thread to perform a recall on the delegation represented
->   * by the lease (file_lock)
->   *
-> - * Called from break_lease() with lock_kernel() held.
-> + * Called from break_lease() with lock_flocks() held.
->   * Note: we assume break_lease will only call this *once* for any given
->   * lease.
+> --- a/arch/arm/include/asm/memory.h
+> +++ b/arch/arm/include/asm/memory.h
+> @@ -189,7 +189,7 @@
+>   * translation for translating DMA addresses.  Use the driver
+>   * DMA support - see dma-mapping.h.
 >   */
-> @@ -2278,7 +2278,7 @@ void nfsd_break_deleg_cb(struct file_lock *fl)
->  	list_add_tail(&dp->dl_recall_lru, &del_recall_lru);
->  	spin_unlock(&recall_lock);
->  
-> -	/* only place dl_time is set. protected by lock_kernel*/
-> +	/* only place dl_time is set. protected by lock_flocks*/
->  	dp->dl_time = get_seconds();
->  
->  	/*
-> @@ -2295,7 +2295,7 @@ void nfsd_break_deleg_cb(struct file_lock *fl)
->  /*
->   * The file_lock is being reapd.
->   *
-> - * Called by locks_free_lock() with lock_kernel() held.
-> + * Called by locks_free_lock() with lock_flocks() held.
->   */
->  static
->  void nfsd_release_deleg_cb(struct file_lock *fl)
-> @@ -2310,7 +2310,7 @@ void nfsd_release_deleg_cb(struct file_lock *fl)
+> -static inline phys_addr_t virt_to_phys(void *x)
+> +static inline phys_addr_t virt_to_phys(const volatile void *x)
+>  {
+>         return __virt_to_phys((unsigned long)(x));
 >  }
->  
->  /*
-> - * Called from setlease() with lock_kernel() held
-> + * Called from setlease() with lock_flocks() held
->   */
->  static
->  int nfsd_same_client_deleg_cb(struct file_lock *onlist, struct file_lock *try)
-> -- 
-> 1.7.1
-> 
+
+The only impact of this patch is reducing compiler warnings, it should
+not add any. Since the patch is correct and independent of the other
+changes, it still sounds like a good idea to push it into -next now.
+
+	Arnd
