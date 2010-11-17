@@ -1,104 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933429Ab0KQEXy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 23:23:54 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:50946 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759116Ab0KQEXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 23:23:37 -0500
-Message-ID: <4CE358C7.3040902@cn.fujitsu.com>
-Date: Wed, 17 Nov 2010 12:23:35 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
+	id S933144Ab0KQE0h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 23:26:37 -0500
+Received: from kroah.org ([198.145.64.141]:59752 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932332Ab0KQE0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 23:26:35 -0500
+Date: Tue, 16 Nov 2010 20:20:34 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: linux-next: build warning after merge of the usb tree
+Message-ID: <20101117042034.GA2999@kroah.com>
+References: <20101117131427.fd26efd8.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-To: Josef Bacik <josef@redhat.com>, Chris Mason <chris.mason@oracle.com>
-CC: Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ito <t-itoh@jp.fujitsu.com>
-Subject: [PATCH 3/3] btrfs: fix panic caused by direct IO
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-17 12:23:55,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-17 12:23:58,
-	Serialize complete at 2010-11-17 12:23:58
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=GB2312
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101117131427.fd26efd8.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-btrfs paniced when we write >64KB data by direct IO at one time.
+On Wed, Nov 17, 2010 at 01:14:27PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> After merging the usb tree, today's linux-next build (x86_64 allmodconfig)
+> produced this warning:
+> 
+> In file included from drivers/usb/gadget/g_ffs.c:64:
+> drivers/usb/gadget/f_fs.c:30:1: warning: "pr_fmt" redefined
+> In file included from include/linux/kernel.h:20,
+>                  from arch/x86/include/asm/percpu.h:44,
+>                  from arch/x86/include/asm/current.h:5,
+>                  from arch/x86/include/asm/processor.h:15,
+>                  from include/linux/prefetch.h:14,
+>                  from include/linux/list.h:7,
+>                  from include/linux/module.h:9,
+>                  from drivers/usb/gadget/g_ffs.c:22:
+> include/linux/printk.h:161:1: warning: this is the location of the previous definition
+> 
+> Introduced by commit d8df0b611c66db3b7afd0678213979209616681a ("usb:
+> gadget: f_fs: remove custom printk() wrappers").
 
-Reproduce steps:
- # mkfs.btrfs /dev/sda5 /dev/sda6
- # mount /dev/sda5 /mnt
- # dd if=/dev/zero of=/mnt/tmpfile bs=100K count=1 oflag=direct
+Thanks, I told Michal about this, he should be sending me a patch for it
+soon.
 
-Then btrfs paniced:
-mapping failed logical 1103155200 bio len 69632 len 12288
-------------[ cut here ]------------
-kernel BUG at fs/btrfs/volumes.c:3010!
-[SNIP]
-Pid: 1992, comm: btrfs-worker-0 Not tainted 2.6.37-rc1 #1 D2399/PRIMERGY
-RIP: 0010:[<ffffffffa03d1462>]  [<ffffffffa03d1462>] btrfs_map_bio+0x202/0x210 [btrfs]
-[SNIP]
-Call Trace:
- [<ffffffffa03ab3eb>] __btrfs_submit_bio_done+0x1b/0x20 [btrfs]
- [<ffffffffa03a35ff>] run_one_async_done+0x9f/0xb0 [btrfs]
- [<ffffffffa03d3d20>] run_ordered_completions+0x80/0xc0 [btrfs]
- [<ffffffffa03d45a4>] worker_loop+0x154/0x5f0 [btrfs]
- [<ffffffffa03d4450>] ? worker_loop+0x0/0x5f0 [btrfs]
- [<ffffffffa03d4450>] ? worker_loop+0x0/0x5f0 [btrfs]
- [<ffffffff81083216>] kthread+0x96/0xa0
- [<ffffffff8100cec4>] kernel_thread_helper+0x4/0x10
- [<ffffffff81083180>] ? kthread+0x0/0xa0
- [<ffffffff8100cec0>] ? kernel_thread_helper+0x0/0x10
-
-We fix this problem by adding a function to check the end of the bio span
-the chunks/stripes or not when we want to add a page into the bios.
-
-Reported-by: Tsutomu Itoh <t-itoh@jp.fujitsu.com>
-Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-Tested-by: Tsutomu Itoh <t-itoh@jp.fujitsu.com>
----
- fs/btrfs/inode.c |   16 +++++++++++++++-
- 1 files changed, 15 insertions(+), 1 deletions(-)
-
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index 32b68fa..341d080 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -5689,6 +5689,20 @@ static int __btrfs_submit_bio_start_direct_io(struct inode *inode, int rw,
- 	return 0;
- }
- 
-+/*
-+ * This function is used to check the chunk tree when doing direct IO because
-+ * btrfs can't create bios that span stripes or chunks.
-+ */
-+static int btrfs_can_merge_page_dio(size_t size, struct inode *inode,
-+				    struct bio *bio)
-+{
-+	struct btrfs_root *root = BTRFS_I(inode)->root;
-+	struct btrfs_mapping_tree *map_tree;
-+
-+	map_tree = &root->fs_info->mapping_tree;
-+	return __btrfs_can_merge_page_to_bio(map_tree, size, bio);
-+}
-+
- static void btrfs_submit_direct(int rw, struct bio *bio, struct inode *inode,
- 				loff_t file_offset)
- {
-@@ -5873,7 +5887,7 @@ static ssize_t btrfs_direct_IO(int rw, struct kiocb *iocb,
- 	ret = __blockdev_direct_IO(rw, iocb, inode,
- 		   BTRFS_I(inode)->root->fs_info->fs_devices->latest_bdev,
- 		   iov, offset, nr_segs, btrfs_get_blocks_direct, NULL,
--		   btrfs_submit_direct, NULL, 0);
-+		   btrfs_submit_direct, btrfs_can_merge_page_dio, 0);
- 
- 	if (ret < 0 && ret != -EIOCBQUEUED) {
- 		clear_extent_bit(&BTRFS_I(inode)->io_tree, offset,
--- 
-1.7.0.1
+greg k-h
