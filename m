@@ -1,155 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751190Ab0KQFFU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 00:05:20 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59707 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab0KQFFT (ORCPT
+	id S1751306Ab0KQFIH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 00:08:07 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:45609 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab0KQFIG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 00:05:19 -0500
-Date: Tue, 16 Nov 2010 22:05:14 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: John Bonesio <bones@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org, jdl@jdl.com,
-        glikely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        david@gibson.dropbear.id.au
-Subject: Re: [PATCH 3/5] powerpc/5200: dts: remove unused properties
-Message-ID: <20101117050514.GC12084@angua.secretlab.ca>
-References: <20101116204917.12146.39851.stgit@riker>
- <20101116205010.12146.37154.stgit@riker>
+	Wed, 17 Nov 2010 00:08:06 -0500
+Date: Wed, 17 Nov 2010 00:07:59 -0500
+From: Kyle McMartin <kyle@mcmartin.ca>
+To: Marcus Meissner <meissner@suse.de>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org, tj@kernel.org,
+        akpm@osdl.org, hpa@zytor.com, mingo@elte.hu, w@1wt.eu,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
+ attacking
+Message-ID: <20101117050759.GE22651@bombadil.infradead.org>
+References: <20101116104600.GA24015@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101116205010.12146.37154.stgit@riker>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101116104600.GA24015@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 12:50:10PM -0800, John Bonesio wrote:
-> This patch remove unused properties in dts files in preparation of refactoring
-> the dts files for MPC5200b based boards.
+On Tue, Nov 16, 2010 at 11:46:03AM +0100, Marcus Meissner wrote:
+> Target of this starter patch and follow ups is removing any kind of
+> kernel space address information leak from the kernel.
 > 
-> Signed-off-by: John Bonesio <bones@secretlab.ca>
-> ---
-> 
->  arch/powerpc/boot/dts/cm5200.dts    |    2 --
->  arch/powerpc/boot/dts/lite5200b.dts |    3 ---
->  arch/powerpc/boot/dts/media5200.dts |    2 --
->  arch/powerpc/boot/dts/motionpro.dts |    2 --
->  arch/powerpc/boot/dts/pcm030.dts    |    2 --
->  arch/powerpc/boot/dts/pcm032.dts    |    2 --
->  6 files changed, 0 insertions(+), 13 deletions(-)
-> 
-> diff --git a/arch/powerpc/boot/dts/cm5200.dts b/arch/powerpc/boot/dts/cm5200.dts
-> index 9369dcd..d549897 100644
-> --- a/arch/powerpc/boot/dts/cm5200.dts
-> +++ b/arch/powerpc/boot/dts/cm5200.dts
-> @@ -230,8 +230,6 @@
->  			reg = <0 0 0x2000000>;
->  			bank-width = <2>;
->  			device-width = <2>;
-> -			#size-cells = <1>;
-> -			#address-cells = <1>;
->  		};
->  	};
->  };
-> diff --git a/arch/powerpc/boot/dts/lite5200b.dts b/arch/powerpc/boot/dts/lite5200b.dts
-> index a74b790..c0a4e45 100644
-> --- a/arch/powerpc/boot/dts/lite5200b.dts
-> +++ b/arch/powerpc/boot/dts/lite5200b.dts
-> @@ -174,7 +174,6 @@
->  
->  		psc@2000 {		// PSC1
->  			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
-> -			cell-index = <0>;
->  			reg = <0x2000 0x100>;
->  			interrupts = <2 1 0>;
->  		};
-> @@ -198,7 +197,6 @@
->  		// PSC4 in uart mode example
->  		//serial@2600 {		// PSC4
->  		//	compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
-> -		//	cell-index = <3>;
->  		//	reg = <0x2600 0x100>;
->  		//	interrupts = <2 11 0>;
->  		//};
-> @@ -206,7 +204,6 @@
->  		// PSC5 in uart mode example
->  		//serial@2800 {		// PSC5
->  		//	compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
-> -		//	cell-index = <4>;
->  		//	reg = <0x2800 0x100>;
->  		//	interrupts = <2 12 0>;
->  		//};
 
-How about deleting the commented out nodes entirely since they can now
-be captured in the mpc5200.dtsi file.
+Er. Should probably hit /proc/modules while you're at it.
 
-> diff --git a/arch/powerpc/boot/dts/media5200.dts b/arch/powerpc/boot/dts/media5200.dts
-> index a70ef68..e027f45 100644
-> --- a/arch/powerpc/boot/dts/media5200.dts
-> +++ b/arch/powerpc/boot/dts/media5200.dts
-> @@ -185,8 +185,6 @@
->  		// PSC6 in uart mode
->  		console: psc@2c00 {		// PSC6
->  			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
-> -			cell-index = <5>;
-> -			port-number = <0>;  // Logical port assignment
->  			reg = <0x2c00 0x100>;
->  			interrupts = <2 4 0>;
->  		};
-> diff --git a/arch/powerpc/boot/dts/motionpro.dts b/arch/powerpc/boot/dts/motionpro.dts
-> index f6261ea..3ab4666 100644
-> --- a/arch/powerpc/boot/dts/motionpro.dts
-> +++ b/arch/powerpc/boot/dts/motionpro.dts
-> @@ -277,8 +277,6 @@
->  			reg = <0 0 0x01000000>;
->  			bank-width = <2>;
->  			device-width = <2>;
-> -			#size-cells = <1>;
-> -			#address-cells = <1>;
->  		};
->  	};
->  };
-> diff --git a/arch/powerpc/boot/dts/pcm030.dts b/arch/powerpc/boot/dts/pcm030.dts
-> index 3a4f554..f3e30bb 100644
-> --- a/arch/powerpc/boot/dts/pcm030.dts
-> +++ b/arch/powerpc/boot/dts/pcm030.dts
-> @@ -196,7 +196,6 @@
->  
->  		psc@2400 { /* PSC3 in UART mode */
->  			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
-> -			cell-index = <2>;
->  			reg = <0x2400 0x100>;
->  			interrupts = <2 3 0>;
->  		};
-> @@ -207,7 +206,6 @@
->  
->  		psc@2c00 { /* PSC6 in UART mode */
->  			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
-> -			cell-index = <5>;
->  			reg = <0x2c00 0x100>;
->  			interrupts = <2 4 0>;
->  		};
-> diff --git a/arch/powerpc/boot/dts/pcm032.dts b/arch/powerpc/boot/dts/pcm032.dts
-> index 17596c7..e0f2702 100644
-> --- a/arch/powerpc/boot/dts/pcm032.dts
-> +++ b/arch/powerpc/boot/dts/pcm032.dts
-> @@ -196,7 +196,6 @@
->  
->  		psc@2400 { /* PSC3 in UART mode */
->  			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
-> -			cell-index = <2>;
->  			reg = <0x2400 0x100>;
->  			interrupts = <2 3 0>;
->  		};
-> @@ -207,7 +206,6 @@
->  
->  		psc@2c00 { /* PSC6 in UART mode */
->  			compatible = "fsl,mpc5200b-psc-uart","fsl,mpc5200-psc-uart";
-> -			cell-index = <5>;
->  			reg = <0x2c00 0x100>;
->  			interrupts = <2 4 0>;
->  		};
-> 
+--Kyle
