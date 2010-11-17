@@ -1,100 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934495Ab0KQPCq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:02:46 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53676 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932367Ab0KQPCp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:02:45 -0500
-X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=2kSzP4yT2LoA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=FD8hK331BKvw8mrw_coA:9 a=ve-AGOkLlbpImW6calTJ5jzepTEA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [ANNOUNCE] New utility: 'trace'
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S934357Ab0KQPD5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:03:57 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34148 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932419Ab0KQPD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 10:03:56 -0500
+Date: Wed, 17 Nov 2010 16:03:32 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-In-Reply-To: <20101117141031.GH5464@nowhere>
-References: <4CE2F747.4060406@linux.intel.com>
-	 <20101116221726.GB26243@nowhere> <20101117083020.GA11336@elte.hu>
-	 <1289993750.2109.718.camel@laptop> <20101117125344.GC5464@nowhere>
-	 <1289998957.2109.751.camel@laptop> <20101117131023.GE27063@elte.hu>
-	 <1290000976.2109.782.camel@laptop> <20101117134300.GG5464@nowhere>
-	 <1290002029.2109.799.camel@laptop>  <20101117141031.GH5464@nowhere>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 17 Nov 2010 10:02:41 -0500
-Message-ID: <1290006161.30543.54.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC][PATCH 1/5] [PATCH 1/5] events: Add EVENT_FS the event
+ filesystem
+Message-ID: <20101117150332.GA7603@elte.hu>
+References: <20101117005357.024472450@goodmis.org>
+ <20101117005939.600541101@goodmis.org>
+ <20101117033242.GB31335@suse.de>
+ <20101117103914.GA21976@elte.hu>
+ <1289996753.30543.35.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289996753.30543.35.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 15:10 +0100, Frederic Weisbecker wrote:
 
-> Yeah I have a strange workflow. I'm working on that CPU isolation thing
-> and I have dozens of trace_printk all over the place for tons of
-> things. And everytime I remove one to unwind some output or to focus
-> on another one, I often have to restore it later because I need it
-> again. Usually I even just comment it out instead of removing it.
-> 
-> If I could make this dynamically on a per line filtering, or sometimes on
-> a per file granularity (as both are equally often the case for me), I would
-> probably win some time.
-> 
-> I just don't know how many developers have a similar workflow than mine.
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-I usually wrap trace_printk() (or printk sometimes) in my own wrapper:
+> Are these events now going to be labeled as stable?  Is every tracepoint we have, 
+> much have the same data?  Linus specifically said at Kernel Summit that he wants 
+> absolutely NO modules to have a stable tracepoint.
 
-#define sprintk(on, x...) do { if (on) { trace_prinkt(x); } } while (0)
+I think you are worrying about the wrong things.
 
-Then have things like:
+I think Arjan's complaints at the KS stemmed from prior sporadic declarations on 
+lkml that there is no tracepoint ABI _at all_, and that powertop/latencytop could 
+break anytime.
 
-#define SDR_DEBUG_IRQS 0
-#define SDR_DEBUG_SCHED 1
-[...]
+But in reality i strongly disagree with such declarations, and tracepoint data that 
+is used by PowerTop/timechart/latencytop or perf is and was an ABI, simple as that - 
+and i've been enforcing that for two years. (We have so few good instrumentation 
+tools that we _really_ dont want to break them.)
 
-and in the irq code I'll have:
+At that point, realizing that we have an ABI for existing tools, i think it's 
+fundamentally misguided to go out on a limb trying to put barriers in the way of 
+other tools that do not even exist to begin with ...
 
-	sprintk(SDR_DEBUG_IRQS, "printme"...);
+Our real problem with tracing is lack of relevance, lack of utility, lack of 
+punch-through analytical power.
 
-and the sched code:
+Trying to create a sandbox to _reduce utility_ is like the last step, and a really 
+optional step, when we have such variety that we want some control over it. It's 
+always expensive, it always reduces the tool space as collateral damage.
 
-	sprintk(SDR_DEBUG_SCHED, "printthis"...);
+So please dont think of sysfs or eventfs as a tool to restrict. Think of it as a 
+tool to _organize_.
 
-And I can easily enable or disable the prints I want. Sometimes I'll
-define it as a variable, and enable them either in certain code paths,
-or export them in the debugfs system and enable or disable them from
-userspace.
+Again, i'd _LOVE_ to have the 'problem' of us having so many tools that analyze 
+application and kernel behavior in such a rich way that they use tracepoints that 
+were not supposed to be 'stable'.
 
-extern int sdr_debug_irqs;
-#define SDR_DEBUG_IRQS sdr_debug_irqs
+I simply dont see the 'problem' that is being solved here. We had a stable ABI and 
+we didnt break sysprof or powertop/latencytop in the past and wont break it in the 
+future either.
 
-[...]
-int sdr_debug_irqs;
-[...]
+Thanks,
 
-	debugfs_create_bool("sdr_debug_sched", 0644, NULL, &sdr_debug_irqs);
-
-Of course this is all for temporary debugging. I use SDR and sdr and
-sprintk to search and delete the debugging output when done.
-
--- Steve
-
-
+	Ingo
