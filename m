@@ -1,26 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758713Ab0KQVEo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 16:04:44 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50447 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757797Ab0KQVEn (ORCPT
+	id S1758628Ab0KQVHz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 16:07:55 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:48630 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563Ab0KQVHy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 16:04:43 -0500
-Date: Wed, 17 Nov 2010 13:04:22 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Ondrej Zary <linux@rainbow-software.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@in.ibm.com>
-Subject: Re: 2.6.35.5: hibernation broken... AGAIN
-Message-Id: <20101117130422.d9de48d8.akpm@linux-foundation.org>
-In-Reply-To: <201011172153.52644.rjw@sisk.pl>
-References: <201011171139.33398.linux@rainbow-software.org>
-	<201011172153.52644.rjw@sisk.pl>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Wed, 17 Nov 2010 16:07:54 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 17 Nov 2010 22:07:37 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Randy Dunlap <rdunlap@xenotime.net>,
+        Florian Mickler <florian@mickler.org>, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
+ preference tool
+Message-ID: <20101117220737.2d3d7356@stein>
+In-Reply-To: <20101117170746.GB19488@rakim.wolfsonmicro.main>
+References: <20101116104921.GL12986@rakim.wolfsonmicro.main>
+	<1289919077.28741.50.camel@Joe-Laptop>
+	<20101116183707.179964dd@schatten.dmk.lab>
+	<20101116181226.GB26239@rakim.wolfsonmicro.main>
+	<20101116203522.65240b18@schatten.dmk.lab>
+	<20101116195530.GA7523@rakim.wolfsonmicro.main>
+	<20101116122102.86e7e0b9.rdunlap@xenotime.net>
+	<20101116230126.GB24623@opensource.wolfsonmicro.com>
+	<20101117014427.41d85b13@stein>
+	<alpine.LNX.2.00.1011170150060.7420@pobox.suse.cz>
+	<20101117170746.GB19488@rakim.wolfsonmicro.main>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -28,29 +38,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010 21:53:52 +0100
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-
-> On Wednesday, November 17, 2010, Ondrej Zary wrote:
-> > Hello,
-> > the nasty memory-corrupting hibernation bug 
-> > https://bugzilla.kernel.org/show_bug.cgi?id=15753 is back since 2.6.35.5.
-> > 2.6.35.4 works fine, 2.6.35.5 crashes after two days.
-> > 
-> > It seems to be caused by b77c254d8d66e5e9aa81239fedba9f3d568097d9.
+On Nov 17 Mark Brown wrote:
+> On Wed, Nov 17, 2010 at 01:53:35AM +0100, Jiri Kosina wrote:
+> > On Wed, 17 Nov 2010, Stefan Richter wrote:
 > 
-> Can you, _please_, always put all of the basic commit info (subject, author,
-> who signed it off) in bug reports?
+> > > Why should we codify our conventions in MAINTAINERS to accommodate the
+> > > specific problem of virtually a _single_ patch author?
 > 
-> In this particular case I don't have a -stable tree handy at the moment and
-> can't even see what the commit is.
+> It seems to be the way we're heading in general - look at all the recent
+> work on MAINTAINERS and get_maintainer.pl.  There seems to be a genral
+> push to make all this stuff automatable.
 
-You can simply do a google search for the commit ID.  It is
+get_maintainer.pl, used with judgment and together with "gitk
+the/patched/source.c" is nice not only for people like Joe who
+regularly work tree-wide but also for ones like me who only rarely want
+to submit a bug report or patch for a subsystem with they are
+unfamiliar with.
 
+But the thought of a database of "how to start a good patch title" is
+far-fetched.  Really, as a patch author, just look how other people
+write patch titles and judge whether this is good for your work too or
+not.
 
-commit b77c254d8d66e5e9aa81239fedba9f3d568097d9
-Author: Hugh Dickins <hughd@google.com>
-Date:   Thu Sep 9 16:38:09 2010 -0700
+> > Either the maintainer wants the patch. Then he is certainly able to apply 
+> > it no matter the subject line (I personally am getting a lot of patches 
+> > which don't follow the format I am using in my tree ... converting 
+> > Subject: lines is so trivial that I have never felt like bothering anyone 
+> > about it ... it's basically single condition in a shellscript). Or the 
+> 
+> It's slightly more than that if you're dealing with more than one area,
+> and I also find this sort of stuff is a good flag for scrubbing the
+> patch in greater detail - when patches stand out from a 1000ft visual
+> overview there's a fair chance that there's other issues so if people
+> regularly submit good patches that have only cosmetic issues I find it's
+> worth guiding them away from that.
 
-    swap: prevent reuse during hibernation
- 
+On one hand Jiri is right that maintainers can adjust title prefixes ad
+hoc.  (Downside:  Weaker connection to mailinglist archives.)  On the
+other hand, in the case of long-term prolific authors like Joe it is
+more optimal if there is a good patch title right from the outset.
+
+So, if this boring thread does at least yield the conclusion that
+${path}/${filename}: is a bad title prefix, at least something was
+won. :-)
+
+Another thought:  Whether a typical part of a mass conversion, e.g. to
+use a new helper macro without change of functionality, is named
+
+	[PATCH] [subsystem] driver: use foo_bar helper
+or
+	[PATCH] use foo_bar helper in subsystem, driver
+
+does not really matter, does it?  This change is more about the helper
+than about the driver.  It is really a different kind of changeset than
+a functional change that we want to be called
+
+	[PATCH] [subsystem] driver: fix crash at disconnection
+
+or so.  This is something that those who look for release notes of
+that driver or subsystem want to grep in the changelog.
+
+Or in other words:  If you as patch author wonder what would be a good
+title for your patch, then ask yourself:  How should this change show up
+in kernel release notes that are constructed from the git shortlog?
+Sometimes the answer to this question includes among else a prefix with
+a canonical subsystem name (even case sensitive, with brackets or
+colon), whereas other times such formalities are utterly pointless.
+
+[Sorry for the spent electrons.  But OTOH, issues like (1.) optimum
+use of reviewer bandwidth, (2.) kernel changelog alias release
+notes /do/ matter.]
+-- 
+Stefan Richter
+-=====-==-=- =-== =---=
+http://arcgraph.de/sr/
