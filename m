@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759695Ab0KQEJb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 23:09:31 -0500
-Received: from mga09.intel.com ([134.134.136.24]:4385 "EHLO mga09.intel.com"
+	id S933530Ab0KQEJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 23:09:34 -0500
+Received: from mga14.intel.com ([143.182.124.37]:59018 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759633Ab0KQEIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 23:08:12 -0500
+	id S1759622Ab0KQEIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 23:08:11 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,209,1288594800"; 
-   d="scan'208";a="678252831"
-Message-Id: <20101117035906.840703610@intel.com>
+   d="scan'208";a="349735642"
+Message-Id: <20101117035906.354946272@intel.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 17 Nov 2010 11:58:33 +0800
+Date: Wed, 17 Nov 2010 11:58:29 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 CC: "Theodore Ts'o" <tytso@mit.edu>, Wu Fengguang <fengguang.wu@intel.com>
@@ -26,148 +26,77 @@ CC: Christoph Hellwig <hch@lst.de>
 Cc: linux-mm <linux-mm@kvack.org>
 Cc: <linux-fsdevel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 12/13] writeback: add trace event for balance_dirty_pages()
+Subject: [PATCH 08/13] writeback: quit throttling when bdi dirty pages dropped low
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Andrew,
 References: <20101117035821.000579293@intel.com>
-Content-Disposition: inline; filename=writeback-trace-balance_dirty_pages.patch
+Content-Disposition: inline; filename=writeback-bdi-throttle-break.patch
 
-Here is an interesting test to verify the theory with balance_dirty_pages()
-tracing. On a partition that can do ~60MB/s, a sparse file is created and
-4 rsync tasks with different write bandwidth started:
+Tests show that bdi_thresh may take minutes to ramp up on a typical
+desktop. The time should be improvable but cannot be eliminated totally.
+So when (background_thresh + dirty_thresh)/2 is reached and
+balance_dirty_pages() starts to throttle the task, it will suddenly find
+the (still low and ramping up) bdi_thresh is exceeded _excessively_. Here
+we definitely don't want to stall the task for one minute (when it's
+writing to USB stick). So introduce an alternative way to break out of
+the loop when the bdi dirty/write pages has dropped by a reasonable
+amount.
 
-	dd if=/dev/zero of=/mnt/1T bs=1M count=1 seek=1024000
-	echo 1 > /debug/tracing/events/writeback/balance_dirty_pages/enable
+When dirty_background_ratio is set close to dirty_ratio, bdi_thresh may
+also be constantly exceeded due to the task_dirty_limit() gap. This is
+addressed by another patch to lower the background threshold when
+necessary.
 
-	rsync localhost:/mnt/1T /mnt/a --bwlimit 10000&
-	rsync localhost:/mnt/1T /mnt/A --bwlimit 10000&
-	rsync localhost:/mnt/1T /mnt/b --bwlimit 20000&
-	rsync localhost:/mnt/1T /mnt/c --bwlimit 30000&
+It will take at least 100ms before trying to break out.
 
-Trace outputs within 0.1 second, grouped by tasks:
-
-rsync-3824  [004] 15002.076447: balance_dirty_pages: bdi=btrfs-2 weight=15% limit=130876 gap=5340 dirtied=192 pause=20
-
-rsync-3822  [003] 15002.091701: balance_dirty_pages: bdi=btrfs-2 weight=15% limit=130777 gap=5113 dirtied=192 pause=20
-
-rsync-3821  [006] 15002.004667: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129570 gap=3714 dirtied=64 pause=8
-rsync-3821  [006] 15002.012654: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129589 gap=3733 dirtied=64 pause=8
-rsync-3821  [006] 15002.021838: balance_dirty_pages: bdi=btrfs-2 weight=30% limit=129604 gap=3748 dirtied=64 pause=8
-rsync-3821  [004] 15002.091193: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129583 gap=3983 dirtied=64 pause=8
-rsync-3821  [004] 15002.102729: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129594 gap=3802 dirtied=64 pause=8
-rsync-3821  [000] 15002.109252: balance_dirty_pages: bdi=btrfs-2 weight=29% limit=129619 gap=3827 dirtied=64 pause=8
-
-rsync-3823  [002] 15002.009029: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128762 gap=2842 dirtied=64 pause=12
-rsync-3823  [002] 15002.021598: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128813 gap=3021 dirtied=64 pause=12
-rsync-3823  [003] 15002.032973: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128805 gap=2885 dirtied=64 pause=12
-rsync-3823  [003] 15002.048800: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128823 gap=2967 dirtied=64 pause=12
-rsync-3823  [003] 15002.060728: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128821 gap=3221 dirtied=64 pause=12
-rsync-3823  [000] 15002.073152: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128825 gap=3225 dirtied=64 pause=12
-rsync-3823  [005] 15002.090111: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128782 gap=3214 dirtied=64 pause=12
-rsync-3823  [004] 15002.102520: balance_dirty_pages: bdi=btrfs-2 weight=39% limit=128764 gap=3036 dirtied=64 pause=12
-
-The data vividly show that
-
-- the heaviest writer is throttled a bit (weight=39%)
-
-- the lighter writers run at full speed (weight=15%,15%,30%)
-  rsync is smart enough to compensate for the in-kernel pause time
+Note that this opens the chance that during normal operation, a huge
+number of slow dirtiers writing to a really slow device might manage to
+outrun bdi_thresh. But the risk is pretty low. It takes at least one
+100ms sleep loop to break out, and the global limit is still enforced.
 
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- include/trace/events/writeback.h |   61 +++++++++++++++++++++++++++--
- mm/page-writeback.c              |    6 ++
- 2 files changed, 64 insertions(+), 3 deletions(-)
+ mm/page-writeback.c |   20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
---- linux-next.orig/include/trace/events/writeback.h	2010-11-15 18:59:00.000000000 +0800
-+++ linux-next/include/trace/events/writeback.h	2010-11-15 21:31:46.000000000 +0800
-@@ -147,11 +147,66 @@ DEFINE_EVENT(wbc_class, name, \
- DEFINE_WBC_EVENT(wbc_writeback_start);
- DEFINE_WBC_EVENT(wbc_writeback_written);
- DEFINE_WBC_EVENT(wbc_writeback_wait);
--DEFINE_WBC_EVENT(wbc_balance_dirty_start);
--DEFINE_WBC_EVENT(wbc_balance_dirty_written);
--DEFINE_WBC_EVENT(wbc_balance_dirty_wait);
- DEFINE_WBC_EVENT(wbc_writepage);
+--- linux-next.orig/mm/page-writeback.c	2010-11-15 12:52:34.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-11-15 13:08:16.000000000 +0800
+@@ -526,6 +526,7 @@ static void balance_dirty_pages(struct a
+ {
+ 	long nr_reclaimable;
+ 	long nr_dirty, bdi_dirty;  /* = file_dirty + writeback + unstable_nfs */
++	long bdi_prev_dirty = 0;
+ 	unsigned long background_thresh;
+ 	unsigned long dirty_thresh;
+ 	unsigned long bdi_thresh;
+@@ -578,6 +579,25 @@ static void balance_dirty_pages(struct a
+ 				    bdi_stat(bdi, BDI_WRITEBACK);
+ 		}
  
-+#define BDP_PERCENT(a, b, c)	((__entry->a - __entry->b) * 100 * c + \
-+				  __entry->bdi_limit/2) / (__entry->bdi_limit|1)
-+TRACE_EVENT(balance_dirty_pages,
++		/*
++		 * bdi_thresh takes time to ramp up from the initial 0,
++		 * especially for slow devices.
++		 *
++		 * It's possible that at the moment dirty throttling starts,
++		 * 	bdi_dirty = nr_dirty
++		 * 		  = (background_thresh + dirty_thresh) / 2
++		 * 		  >> bdi_thresh
++		 * Then the task could be blocked for a dozen second to flush
++		 * all the exceeded (bdi_dirty - bdi_thresh) pages. So offer a
++		 * complementary way to break out of the loop when 250ms worth
++		 * of dirty pages have been cleaned during our pause time.
++		 */
++		if (nr_dirty < dirty_thresh &&
++		    bdi_prev_dirty - bdi_dirty >
++		    bdi->write_bandwidth >> (PAGE_CACHE_SHIFT + 2))
++			break;
++		bdi_prev_dirty = bdi_dirty;
 +
-+	TP_PROTO(struct backing_dev_info *bdi,
-+		 long bdi_dirty,
-+		 long bdi_limit,
-+		 long task_limit,
-+		 long pages_dirtied,
-+		 long pause),
-+
-+	TP_ARGS(bdi, bdi_dirty, bdi_limit, task_limit,
-+		pages_dirtied, pause),
-+
-+	TP_STRUCT__entry(
-+		__array(char,	bdi, 32)
-+		__field(long,	bdi_dirty)
-+		__field(long,	bdi_limit)
-+		__field(long,	task_limit)
-+		__field(long,	pages_dirtied)
-+		__field(long,	pause)
-+	),
-+
-+	TP_fast_assign(
-+		strlcpy(__entry->bdi, dev_name(bdi->dev), 32);
-+		__entry->bdi_dirty	= bdi_dirty;
-+		__entry->bdi_limit	= bdi_limit;
-+		__entry->task_limit	= task_limit;
-+		__entry->pages_dirtied	= pages_dirtied;
-+		__entry->pause		= pause * 1000 / HZ;
-+	),
-+
-+
-+	/*
-+	 *           [..................soft throttling range.........]
-+	 *           ^                |<=========== bdi_gap =========>|
-+	 * background_thresh          |<== task_gap ==>|
-+	 * -------------------|-------+----------------|--------------|
-+	 *   (bdi_limit * 7/8)^       ^bdi_dirty       ^task_limit    ^bdi_limit
-+	 *
-+	 * Reasonable large gaps help produce smooth pause times.
-+	 */
-+	TP_printk("bdi=%s bdi_dirty=%lu bdi_limit=%lu task_limit=%lu "
-+		  "task_weight=%ld%% task_gap=%ld%% bdi_gap=%ld%% "
-+		  "pages_dirtied=%lu pause=%lu",
-+		  __entry->bdi,
-+		  __entry->bdi_dirty,
-+		  __entry->bdi_limit,
-+		  __entry->task_limit,
-+		  /* task weight: proportion of recent dirtied pages */
-+		  BDP_PERCENT(bdi_limit, task_limit, TASK_SOFT_DIRTY_LIMIT),
-+		  BDP_PERCENT(task_limit, bdi_dirty, TASK_SOFT_DIRTY_LIMIT),
-+		  BDP_PERCENT(bdi_limit, bdi_dirty, BDI_SOFT_DIRTY_LIMIT),
-+		  __entry->pages_dirtied,
-+		  __entry->pause
-+		  )
-+);
-+
- DECLARE_EVENT_CLASS(writeback_congest_waited_template,
- 
- 	TP_PROTO(unsigned int usec_timeout, unsigned int usec_delayed),
---- linux-next.orig/mm/page-writeback.c	2010-11-15 21:30:45.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-11-15 21:31:46.000000000 +0800
-@@ -629,6 +629,12 @@ static void balance_dirty_pages(struct a
- 		pause = clamp_val(pause, 1, HZ/10);
- 
- pause:
-+		trace_balance_dirty_pages(bdi,
-+					  bdi_dirty,
-+					  bdi_thresh,
-+					  task_thresh,
-+					  pages_dirtied,
-+					  pause);
- 		bdi_update_write_bandwidth(bdi, &bw_time, &bw_written);
- 		__set_current_state(TASK_INTERRUPTIBLE);
- 		io_schedule_timeout(pause);
+ 		if (bdi_dirty >= bdi_thresh) {
+ 			pause = HZ/10;
+ 			goto pause;
 
 
