@@ -1,98 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934190Ab0KQLQA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 06:16:00 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61610 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933515Ab0KQLP7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 06:15:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nQ3yFnaBvtvsdzzPJ9aoYgJ/8Xrh2DVyTL7tkZB6RUG8W2rZdT4ulxwjterdWk41DE
-         aUklKD1lDTjEdDPVgK4Dof/Dffas5s3TBAdns3l8Ou3A9F7wyihKrZU6wjih2cuyC99p
-         IZCFkbnRdZZ8jUm+LzPFAbe21BR0DkCKo7lZ4=
+	id S934255Ab0KQLRP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 06:17:15 -0500
+Received: from hera.kernel.org ([140.211.167.34]:47250 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933515Ab0KQLRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 06:17:14 -0500
+Message-ID: <4CE3B927.1020401@kernel.org>
+Date: Wed, 17 Nov 2010 12:14:47 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=6RtPDnZZa=jrcciB1zHQMiB3LnouBw3G2OyaK@mail.gmail.com>
-References: <20101109162525.BC87.A69D9226@jp.fujitsu.com>
-	<877hgmr72o.fsf@gmail.com>
-	<20101114140920.E013.A69D9226@jp.fujitsu.com>
-	<AANLkTim59Qx6TsvXnTBL5Lg6JorbGaqx3KsdBDWO04X9@mail.gmail.com>
-	<1289810825.2109.469.camel@laptop>
-	<AANLkTikibS1fDuk67RHk4SU14pJ9nPdodWba1T3Z_pWE@mail.gmail.com>
-	<4CE14848.2060805@redhat.com>
-	<AANLkTi=6RtPDnZZa=jrcciB1zHQMiB3LnouBw3G2OyaK@mail.gmail.com>
-Date: Wed, 17 Nov 2010 20:15:41 +0900
-Message-ID: <AANLkTimjfbMrNii-ps17QmEc0prBwnxwR1LYcid_ej+k@mail.gmail.com>
-Subject: Re: fadvise DONTNEED implementation (or lack thereof)
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ben Gamari <bgamari.foss@gmail.com>, linux-kernel@vger.kernel.org,
-        rsync@lists.samba.org, linux-mm@kvack.org,
-        Wu Fengguang <fengguang.wu@intel.com>
+To: Dan Smith <danms@us.ibm.com>
+CC: Gene Cooperman <gene@ccs.neu.edu>, Oren Laadan <orenl@cs.columbia.edu>,
+        Kapil Arya <kapil@ccs.neu.edu>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, hch@lst.de
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>	<4CD26948.7050009@kernel.org>	<20101104164401.GC10656@sundance.ccs.neu.edu>	<4CD3CE29.2010105@kernel.org>	<AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com>	<4CD5DCE3.3000109@cs.columbia.edu>	<20101107194222.GG31077@sundance.ccs.neu.edu>	<4CD71A6B.3020905@cs.columbia.edu>	<20101107230516.GJ31077@sundance.ccs.neu.edu>	<4CD774CA.8030004@cs.columbia.edu>	<20101108162630.GN31077@sundance.ccs.neu.edu> <8739rbpreb.fsf@localhost6.localdomain6>
+In-Reply-To: <8739rbpreb.fsf@localhost6.localdomain6>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Nov 2010 11:14:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 7:16 PM, Minchan Kim <minchan.kim@gmail.com> wrote:
-> On Mon, Nov 15, 2010 at 11:48 PM, Rik van Riel <riel@redhat.com> wrote:
->> On 11/15/2010 04:05 AM, Minchan Kim wrote:
->>>
->>> On Mon, Nov 15, 2010 at 5:47 PM, Peter Zijlstra<peterz@infradead.org>
->>>  wrote:
->>>>
->>>> On Mon, 2010-11-15 at 15:07 +0900, Minchan Kim wrote:
->>
->>>>> I wonder what's the problem in Peter's patch 'drop behind'.
->>>>> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg179576.html
->>>>>
->>>>> Could anyone tell me why it can't accept upstream?
->>>>
->>>> Read the thread, its quite clear nobody got convinced it was a good idea
->>>> and wanted to fix the use-once policy, then Rik rewrote all of
->>>> page-reclaim.
->>>>
->>>
->>> Thanks for the information.
->>> I hope this is a chance to rethink about it.
->>> Rik, Could you give us to any comment about this idea?
->
->
-> Sorry for late reply, Rik.
->
->> At the time, there were all kinds of general problems
->> in page reclaim that all needed to be fixed.  Peter's
->> patch was mostly a band-aid for streaming IO.
->>
->> However, now that most of the other page reclaim problems
->> seem to have been resolved, it would be worthwhile to test
->> whether Peter's drop-behind approach gives an additional
->> improvement.
->
-> Okay. I will have a time to make the workload for testing.
->
->>
->> I could see it help by getting rid of already-read pages
->> earlier, leaving more space for read-ahead data.
->
-> Yes. Peter's logic breaks demotion if the page is in active list.
-> But I think if it's just active page like rsync's two touch, we have
-> to move tail of inactive although it's in active list.
-> I will look into this, too.
+Hello,
 
-Most important thing is how to know it's real working set or just
-trick by two touch.
-If it's very hard, recent Mandeep's patch can be a another solution.
-http://thread.gmane.org/gmane.linux.kernel.mm/54572
-I will try it, too.
+On 11/08/2010 08:05 PM, Dan Smith wrote:
+> GC> As before, Oren, let's have that phone discussion so that we can
+> GC> preprocess a lot of this, instead of acting like the the three
+> GC> blind men and the elephant.  I will _tell you_ the strengths and
+> GC> weaknesses of DMTCP on the phone, instead of you having to guess
+> GC> at them here on LKML.  And of course, I hope you will be similarly
+> GC> frank about Linux C/R on the phone.
+> 
+> I want to be in on that discussion too, as do a lot of other people
+> here.  However, I doubt we'll all be able to find a common spot on our
+> collective schedules, nor would that conversation be archived for
+> posterity.  I think sticking to LKML is the right (and time-tested)
+> approach.
 
+Amen.
+
+> OL> Linux-cr can do live migration - e.g. VDI, move the desktop - in
+> OL> which case skype's sockets' network stacks are reconstructed,
+> OL> transparently to both skype (local apps) and the peer (remote
+> OL> apps).  Then, at the destination host and skype continues to work.
+> 
+> GC> That's a really cool thing to do, and it's definitely not part of
+> GC> what DMTCP does.  It might be possible to do userland live
+> GC> migration, but it's definitely not part of our current scope.
+> 
+> How would you go about doing that in userland?  With the current
+> linux-cr implementation, I can move something like sshd or sendmail
+> from one machine to another without a remote (connected) client
+> noticing anything more than a bit of delay during the move.
+> 
+> I think that saving and restoring the state of a TCP connection from
+> userland is probably a good example of a case where it makes sense to
+> have it as part of a C/R function, but not necessarily exposed in /sys
+> or /proc somewhere.  Unless it can be argued that doing so is not
+> useful, I think that's a good talking point for discussing the kernel
+> vs. user approach, no?
+
+Meh, just implementing a conntrack module should be good enough for
+most use cases.  If it ever becomes a general enough problem (which I
+extremely strongly doubt), we can think about allowing processes in a
+netns to change sequence number but that would be a single setsockopt
+option instead of the horror show of dumping in-kernel data structures
+in binary blob.
+
+Thanks.
 
 -- 
-Kind regards,
-Minchan Kim
+tejun
