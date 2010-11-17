@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935514Ab0KQU35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 15:29:57 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52481
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758563Ab0KQU34 (ORCPT
+	id S935517Ab0KQUb0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 15:31:26 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58106 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933745Ab0KQUb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 15:29:56 -0500
-Date: Wed, 17 Nov 2010 12:30:21 -0800 (PST)
-Message-Id: <20101117.123021.241451290.davem@davemloft.net>
-To: segoon@openwall.com
-Cc: kernel-janitors@vger.kernel.org, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
-        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: ipv4: tcp_probe: cleanup snprintf() use
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1289754368-31660-1-git-send-email-segoon@openwall.com>
-References: <1289754368-31660-1-git-send-email-segoon@openwall.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 17 Nov 2010 15:31:26 -0500
+Date: Wed, 17 Nov 2010 12:30:39 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Marcus Meissner <meissner@suse.de>, tglx@linutronix.de, mingo@elte.hu,
+        rusty@rustcorp.com.au, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernel/time: Make /proc/timer_list mode 0400
+Message-Id: <20101117123039.d975aa70.akpm@linux-foundation.org>
+In-Reply-To: <1290014312.2109.1065.camel@laptop>
+References: <20101117170822.GW20727@suse.de>
+	<1290014312.2109.1065.camel@laptop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vasiliy Kulikov <segoon@openwall.com>
-Date: Sun, 14 Nov 2010 20:06:08 +0300
+On Wed, 17 Nov 2010 18:18:32 +0100
+Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-> snprintf() returns number of bytes that were copied if there is no overflow.
-> This code uses return value as number of copied bytes.  Theoretically format
-> string '%lu.%09lu %pI4:%u %pI4:%u %d %#x %#x %u %u %u %u\n' may be expanded
-> up to 163 bytes.  In reality tv.tv_sec is just few bytes instead of 20, 2 ports
-> are just 5 bytes each instead of 10, length is 5 bytes instead of 10.  The rest
-> is an unstrusted input.  Theoretically if tv_sec is big then copy_to_user() would
-> overflow tbuf.
+> On Wed, 2010-11-17 at 18:08 +0100, Marcus Meissner wrote:
+> > Hi,
+> > 
+> > /proc/timer_list contains kernel addresses, like e.g.:
+> >  #0: <c000000001404158>, tick_sched_timer, S:01, .tick_nohz_restart_sched_tick, swapper/0
+> >  ...
+> > 
+> > Avoid leaking them to user space to make writing kernel exploits a bit harder.
+> > 
+> > (I currently cannot think of a userland tool that uses this, this is
+> > likely pretty much root-only.)
 > 
-> tbuf was increased to fit in 163 bytes.  snprintf() is used to follow return
-> value semantic.
-> 
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> iirc powertop parses this..
 
-Applied, thanks.
+I bet it doesn't look at the kernel address (why was that added in the
+first place, anyway?)
+
+I'd suggest that the risk of breakage would be much less if we left the
+file permissions alone and arranged for those addresses to be
+0000000000000000 for non-root readers.
