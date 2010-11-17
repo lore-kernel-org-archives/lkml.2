@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759368Ab0KQARN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 19:17:13 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:52807 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756087Ab0KQARL (ORCPT
+	id S1759454Ab0KQAWV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 19:22:21 -0500
+Received: from tango.0pointer.de ([85.214.72.216]:59679 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758564Ab0KQAWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 19:17:11 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 17 Nov 2010 09:11:35 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+	Tue, 16 Nov 2010 19:22:20 -0500
+Date: Wed, 17 Nov 2010 01:21:59 +0100
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: "Ted Ts'o" <tytso@mit.edu>, Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
         Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [BUGFIX] memcg: avoid deadlock between move charge and
- try_charge()
-Message-Id: <20101117091135.1d811e89.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101116191748.d6645376.nishimura@mxp.nes.nec.co.jp>
-References: <20101116191748.d6645376.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101117002159.GA3184@tango.0pointer.de>
+References: <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com>
+ <20101116170312.GA19327@tango.0pointer.de>
+ <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+ <20101116181603.GC19327@tango.0pointer.de>
+ <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+ <20101116202839.GC27235@tango.0pointer.de>
+ <20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
+ <AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
+ <20101116211909.GB16589@tango.0pointer.de>
+ <20101116233934.GC1568@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101116233934.GC1568@thunk.org>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Nov 2010 19:17:48 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+On Tue, 16.11.10 18:39, Ted Ts'o (tytso@mit.edu) wrote:
 
-> From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 > 
-> __mem_cgroup_try_charge() can be called under down_write(&mmap_sem)(e.g.
-> mlock does it). This means it can cause deadlock if it races with move charge:
+> On Tue, Nov 16, 2010 at 10:19:09PM +0100, Lennart Poettering wrote:
+> > Well, my plan was actually to by default put everything into its own
+> > group, and then let users opt-out of that for specific processes, if the
+> > want to.
 > 
-> Ex.1)
->                 move charge             |        try charge
->   --------------------------------------+------------------------------
->     mem_cgroup_can_attach()             |  down_write(&mmap_sem)
->       mc.moving_task = current          |    ..
->       mem_cgroup_precharge_mc()         |  __mem_cgroup_try_charge()
->         mem_cgroup_count_precharge()    |    prepare_to_wait()
->           down_read(&mmap_sem)          |    if (mc.moving_task)
->           -> cannot aquire the lock     |    -> true
->                                         |      schedule()
+> How many users are likely to do this, though?
 > 
-> Ex.2)
->                 move charge             |        try charge
->   --------------------------------------+------------------------------
->     mem_cgroup_can_attach()             |
->       mc.moving_task = current          |
->       mem_cgroup_precharge_mc()         |
->         mem_cgroup_count_precharge()    |
->           down_read(&mmap_sem)          |
->           ..                            |
->           up_read(&mmap_sem)            |
->                                         |  down_write(&mmap_sem)
->     mem_cgroup_move_task()              |    ..
->       mem_cgroup_move_charge()          |  __mem_cgroup_try_charge()
->         down_read(&mmap_sem)            |    prepare_to_wait()
->         -> cannot aquire the lock       |    if (mc.moving_task)
->                                         |    -> true
->                                         |      schedule()
+> I think you really want to make this be something which the
+> application can specify by default that they should start in their own
+> cgroup.  One idea might be to it to the applications menu entry:
 > 
-> To avoid this deadlock, we do all the move charge works (both can_attach() and
-> attach()) under one mmap_sem section.
-> And after this patch, we set/clear mc.moving_task outside mc.lock, because we
-> use the lock only to check mc.from/to.
+> http://standards.freedesktop.org/desktop-entry-spec/latest/
 > 
-> Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> Cc: <stable@kernel.org>
+> ... so there would be a new key value pair, "start_in_cgroup", that
+> would allow the user to start an application in their own cgroup.  It
+> would be up to the desktop launcher to honor that if it was present.
 
-Thanks,
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+This is pretty much in line with what I want to do, except I want
+opt-out, not opt-in behaviour here.
 
+Lennart
+
+-- 
+Lennart Poettering - Red Hat, Inc.
