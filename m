@@ -1,114 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628Ab0KQVHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 16:07:55 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:48630 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab0KQVHy (ORCPT
+	id S933343Ab0KQVLC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 16:11:02 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:59076 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758137Ab0KQVLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 16:07:54 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 17 Nov 2010 22:07:37 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-        Florian Mickler <florian@mickler.org>, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: rfc: rewrite commit subject line for subsystem maintainer
- preference tool
-Message-ID: <20101117220737.2d3d7356@stein>
-In-Reply-To: <20101117170746.GB19488@rakim.wolfsonmicro.main>
-References: <20101116104921.GL12986@rakim.wolfsonmicro.main>
-	<1289919077.28741.50.camel@Joe-Laptop>
-	<20101116183707.179964dd@schatten.dmk.lab>
-	<20101116181226.GB26239@rakim.wolfsonmicro.main>
-	<20101116203522.65240b18@schatten.dmk.lab>
-	<20101116195530.GA7523@rakim.wolfsonmicro.main>
-	<20101116122102.86e7e0b9.rdunlap@xenotime.net>
-	<20101116230126.GB24623@opensource.wolfsonmicro.com>
-	<20101117014427.41d85b13@stein>
-	<alpine.LNX.2.00.1011170150060.7420@pobox.suse.cz>
-	<20101117170746.GB19488@rakim.wolfsonmicro.main>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 17 Nov 2010 16:11:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=TJCxdvTDTvK+lV8gBffnVCbBylqI1vlA4uToq813bsiWgMuoPigeHRYVQQe4iMMGRI
+         Nq6fPzQpd2kmH/Gskanw==
+Date: Wed, 17 Nov 2010 13:10:50 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shaohui Zheng <shaohui.zheng@intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [2/8,v3] NUMA Hotplug Emulator: infrastructure of NUMA hotplug
+ emulation
+In-Reply-To: <20101117075128.GA30254@shaohui>
+Message-ID: <alpine.DEB.2.00.1011171304060.10254@chino.kir.corp.google.com>
+References: <20101117020759.016741414@intel.com> <20101117021000.568681101@intel.com> <alpine.DEB.2.00.1011162359160.17408@chino.kir.corp.google.com> <20101117075128.GA30254@shaohui>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Nov 17 Mark Brown wrote:
-> On Wed, Nov 17, 2010 at 01:53:35AM +0100, Jiri Kosina wrote:
-> > On Wed, 17 Nov 2010, Stefan Richter wrote:
+On Wed, 17 Nov 2010, Shaohui Zheng wrote:
+
+> > Hmm, why can't you use numa=hide to hide a specified quantity of memory 
+> > from the kernel and then use the add_memory() interface to hot-add the 
+> > offlined memory in the desired quantity?  In other words, why do you need 
+> > to track the offlined nodes with a state?
+> > 
+> > The userspace interface would take a desired size of hidden memory to 
+> > hot-add and the node id would be the first_unset_node(node_online_map).
+> Yes, it is a good idea, your solution is what we indeed do in our first 2
+> versions.  We use mem=memsize to hide memory, and we call add_memory interface
+> to hot-add offlined memory with desired quantity, and we can also add to
+> desired nodes(even through the nodes does not exists). it is very flexible
+> solution.
 > 
-> > > Why should we codify our conventions in MAINTAINERS to accommodate the
-> > > specific problem of virtually a _single_ patch author?
+> However, this solution was denied since we notice NUMA emulation, we should
+> reuse it.
 > 
-> It seems to be the way we're heading in general - look at all the recent
-> work on MAINTAINERS and get_maintainer.pl.  There seems to be a genral
-> push to make all this stuff automatable.
 
-get_maintainer.pl, used with judgment and together with "gitk
-the/patched/source.c" is nice not only for people like Joe who
-regularly work tree-wide but also for ones like me who only rarely want
-to submit a bug report or patch for a subsystem with they are
-unfamiliar with.
+I don't understand why that's a requirement, NUMA emulation is a seperate 
+feature.  Although both are primarily used to test and instrument other VM 
+and kernel code, NUMA emulation is restricted to only being used at boot 
+to fake nodes on smaller machines and can be used to test things like the 
+slab allocator.  The NUMA hotplug emulator that you're developing here is 
+primarily used to test the hotplug callbacks; for that use-case, it seems 
+particularly helpful if nodes can be hotplugged of various sizes and node 
+ids rather than having static characteristics that cannot be changed with 
+a reboot.
 
-But the thought of a database of "how to start a good patch title" is
-far-fetched.  Really, as a patch author, just look how other people
-write patch titles and judge whether this is good for your work too or
-not.
-
-> > Either the maintainer wants the patch. Then he is certainly able to apply 
-> > it no matter the subject line (I personally am getting a lot of patches 
-> > which don't follow the format I am using in my tree ... converting 
-> > Subject: lines is so trivial that I have never felt like bothering anyone 
-> > about it ... it's basically single condition in a shellscript). Or the 
+> Currently, our solution creates static nodes when OS boots, only the node with 
+> state N_HIDDEN can be hot-added with node/probe interface, and we can query 
 > 
-> It's slightly more than that if you're dealing with more than one area,
-> and I also find this sort of stuff is a good flag for scrubbing the
-> patch in greater detail - when patches stand out from a 1000ft visual
-> overview there's a fair chance that there's other issues so if people
-> regularly submit good patches that have only cosmetic issues I find it's
-> worth guiding them away from that.
 
-On one hand Jiri is right that maintainers can adjust title prefixes ad
-hoc.  (Downside:  Weaker connection to mailinglist archives.)  On the
-other hand, in the case of long-term prolific authors like Joe it is
-more optimal if there is a good patch title right from the outset.
-
-So, if this boring thread does at least yield the conclusion that
-${path}/${filename}: is a bad title prefix, at least something was
-won. :-)
-
-Another thought:  Whether a typical part of a mass conversion, e.g. to
-use a new helper macro without change of functionality, is named
-
-	[PATCH] [subsystem] driver: use foo_bar helper
-or
-	[PATCH] use foo_bar helper in subsystem, driver
-
-does not really matter, does it?  This change is more about the helper
-than about the driver.  It is really a different kind of changeset than
-a functional change that we want to be called
-
-	[PATCH] [subsystem] driver: fix crash at disconnection
-
-or so.  This is something that those who look for release notes of
-that driver or subsystem want to grep in the changelog.
-
-Or in other words:  If you as patch author wonder what would be a good
-title for your patch, then ask yourself:  How should this change show up
-in kernel release notes that are constructed from the git shortlog?
-Sometimes the answer to this question includes among else a prefix with
-a canonical subsystem name (even case sensitive, with brackets or
-colon), whereas other times such formalities are utterly pointless.
-
-[Sorry for the spent electrons.  But OTOH, issues like (1.) optimum
-use of reviewer bandwidth, (2.) kernel changelog alias release
-notes /do/ matter.]
--- 
-Stefan Richter
--=====-==-=- =-== =---=
-http://arcgraph.de/sr/
+The idea that I've proposed (and you've apparently thought about and even 
+implemented at one point) is much more powerful than that.  We need not 
+query the state of hidden nodes that we've setup at boot but can rather 
+use the amount of hidden memory to setup the nodes in any way that we want 
+at runtime (various sizes, interleaved node ids, etc).
