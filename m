@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab0KQNBK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 08:01:10 -0500
-Received: from bof-2.saar.de ([192.109.53.146]:54414 "EHLO oknodo.bof.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750722Ab0KQNBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 08:01:09 -0500
-X-Greylist: delayed 2713 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Nov 2010 08:01:09 EST
-Subject: 2.6.37-rc2 regression: usb network hotplug
-From: Patrick Schaaf <netdev@bof.de>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Nov 2010 13:10:48 +0100
-Message-ID: <1289995848.5034.5.camel@lat1>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Spam_score: -4.4
-X-Spam_score_int: -43
+	id S1755674Ab0KQNCa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 08:02:30 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:35908 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab0KQNC3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 08:02:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <1289913494-21590-1-git-send-email-manjunatha_halli@ti.com>
+References: <1289913494-21590-1-git-send-email-manjunatha_halli@ti.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 17 Nov 2010 15:02:07 +0200
+X-Google-Sender-Auth: OjPrTFVmcBfcWdi0R8EGUkRj0kw
+Message-ID: <AANLkTi=ZT0E=A9ZYAM86qu4P8eStkF2PLep6-DofCX-s@mail.gmail.com>
+Subject: Re: [PATCH v4 0/6] FM V4L2 drivers for WL128x
+To: manjunatha_halli@ti.com
+Cc: mchehab@infradead.org, hverkuil@xs4all.nl, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When trying out 2.6.37-rc2 on my Dell Latitude D630 laptop, I notice a
-regression, compared to plain 2.6.36, related to USB unplugging my N900
-(cdc_ether network device).
+Hi Manjunatha,
 
-The usb0 interface is configured to automatically plug into a bridge
-group, if that matters.
+On Tue, Nov 16, 2010 at 3:18 PM,  <manjunatha_halli@ti.com> wrote:
+>  drivers/staging/ti-st/Kconfig        |   10 +
+>  drivers/staging/ti-st/Makefile       |    2 +
+>  drivers/staging/ti-st/fmdrv.h        |  259 ++++
+>  drivers/staging/ti-st/fmdrv_common.c | 2141 ++++++++++++++++++++++++++++++++++
+>  drivers/staging/ti-st/fmdrv_common.h |  458 ++++++++
+>  drivers/staging/ti-st/fmdrv_rx.c     |  979 ++++++++++++++++
+>  drivers/staging/ti-st/fmdrv_rx.h     |   59 +
+>  drivers/staging/ti-st/fmdrv_tx.c     |  461 ++++++++
+>  drivers/staging/ti-st/fmdrv_tx.h     |   37 +
+>  drivers/staging/ti-st/fmdrv_v4l2.c   |  757 ++++++++++++
+>  drivers/staging/ti-st/fmdrv_v4l2.h   |   32 +
+>  11 files changed, 5195 insertions(+), 0 deletions(-)
 
-On 2.6.36 I can unplug and replug the device properly.
+Usually when a driver is added to staging, it should also have a TODO
+file specifying what needs to be done before the driver can be taken
+out of staging (at least as far as the author knows of today).
 
-Under 2.6.37-rc2, the first plugging works, the device is reachable as
-desired, but after unplugging it the first time, I receive the following
-message every 10 seconds:
+It helps keeping track of the open issues in the driver, which is good
+for everyone - the author, the random contributor/observer, and
+probably even the staging maintainer.
 
- kernel:[  149.632104] unregister_netdevice: waiting for usb0 to become
-free. Usage count = 1
+Can you please add such a TODO file ?
 
-The usb0 device is gone at that point. Replugging does not work.
+Thanks,
+Ohad.
 
-When I reboot into the same kernel, a list of "cannot reset port"
-messages is apparent in the boot logs, as appended. This disappears
-after shutting down the machine.
-
-I'll gladly try out patches that could fix this, or try out other things
-to help diagnose.
-
-best regards
-  Patrick
-
-<3>[    4.449056] usb 6-1.2: device not accepting address 3, error -71
-<3>[    4.452793] hub 6-1:1.0: cannot disable port 2 (err = -71)
-<3>[    4.454787] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.456787] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.458787] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.460787] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.462786] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.464491] hub 6-1:1.0: Cannot enable port 2.  Maybe the USB
-cable is bad?
-<3>[    4.466787] hub 6-1:1.0: cannot disable port 2 (err = -71)
-<3>[    4.468785] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.470786] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.472787] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.474780] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.476784] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.478261] hub 6-1:1.0: Cannot enable port 2.  Maybe the USB
-cable is bad?
-<3>[    4.479773] hub 6-1:1.0: cannot disable port 2 (err = -71)
-<3>[    4.481773] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.483772] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.485778] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.487787] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.489789] hub 6-1:1.0: cannot reset port 2 (err = -71)
-<3>[    4.491052] hub 6-1:1.0: Cannot enable port 2.  Maybe the USB
-cable is bad?
-<3>[    4.492788] hub 6-1:1.0: cannot disable port 2 (err = -71)
-<3>[    4.494079] hub 6-1:1.0: unable to enumerate USB device on port 2
-<3>[    4.495787] hub 6-1:1.0: cannot disable port 2 (err = -71)
-<3>[    4.497790] hub 6-1:1.0: hub_port_status failed (err = -71)
-<6>[    4.499100] usb 6-1: USB disconnect, address 2
-
-
-
+>  create mode 100644 drivers/staging/ti-st/fmdrv.h
+>  create mode 100644 drivers/staging/ti-st/fmdrv_common.c
+>  create mode 100644 drivers/staging/ti-st/fmdrv_common.h
+>  create mode 100644 drivers/staging/ti-st/fmdrv_rx.c
+>  create mode 100644 drivers/staging/ti-st/fmdrv_rx.h
+>  create mode 100644 drivers/staging/ti-st/fmdrv_tx.c
+>  create mode 100644 drivers/staging/ti-st/fmdrv_tx.h
+>  create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.c
+>  create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.h
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
