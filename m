@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935402Ab0KQT2b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 14:28:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37363 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758075Ab0KQT2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 14:28:30 -0500
-Date: Wed, 17 Nov 2010 14:28:22 -0500
-From: Josef Bacik <josef@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        eparis@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias
-Message-ID: <20101117192822.GB3818@localhost.localdomain>
-References: <1290016263-1637-1-git-send-email-josef@redhat.com> <20101117191817.GA26575@fieldses.org>
+	id S935370Ab0KQTcS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 14:32:18 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49171 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935075Ab0KQTcQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 14:32:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=KEoMNM/gCBeQ3cZ2uupAaB9sSWs5hdeZhaF0OY+z1ND+smZNZurNKwti1LOg75bvE9
+         WVhEOB/cyq4FhgfV80Qm66GdDkXzddC/FTW/rtdi98zH4T7yDwWgOkPF+ZKguR7dvilR
+         QotpIYNLwr7/K2KTAOw97m43jnM4f7lvqY41w=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117191817.GA26575@fieldses.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <alpine.DEB.2.00.1011172027440.14551@ayla.of.borg>
+References: <alpine.DEB.2.00.1011172027440.14551@ayla.of.borg>
+Date: Wed, 17 Nov 2010 20:32:15 +0100
+X-Google-Sender-Auth: rug38AMhcNrkHtrxF8NwfVYqePQ
+Message-ID: <AANLkTi=NTGOv+EF_y=__=+P1ud7vqjvoaELPNi6ZhqbE@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v2.6.37-rc2
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Michael Ellerman <michael@ellerman.id.au>
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 02:18:17PM -0500, J. Bruce Fields wrote:
-> On Wed, Nov 17, 2010 at 12:51:03PM -0500, Josef Bacik wrote:
-> > While trying to track down some NFS problems with BTRFS, I kept noticing I was
-> > getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
-> > figure out that it was SELinux that was giving me grief, with the following
-> > denial
-> > 
-> > type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
-> > comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
-> > tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
-> > 
-> > Turns out this is because in d_obtain_alias if we can't find an alias we create
-> > one and do all the normal instantiation stuff, but we don't do the
-> > security_d_instantiate.  With this patch I'm no longer seeing these errant
-> > -EACCESS return values.  Thanks,
-> 
-> Possibly dumb question: Is there still a small race here?  Is it
-> possible for another nfsd thread to find the new alias on the list while
-> this thread is still:
-> 
-> > 
-> > Signed-off-by: Josef Bacik <josef@redhat.com>
-> > ---
-> >  fs/dcache.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/fs/dcache.c b/fs/dcache.c
-> > index 23702a9..890a59e 100644
-> > --- a/fs/dcache.c
-> > +++ b/fs/dcache.c
-> > @@ -1201,6 +1201,7 @@ struct dentry *d_obtain_alias(struct inode *inode)
-> >  	spin_unlock(&tmp->d_lock);
-> >  
-> >  	spin_unlock(&dcache_lock);
-> 
-> ... right here, so that that other nfsd thread still ends up trying to
-> do something with a dentry that hasn't had security_d_instantiate called
-> on it yet?
-> 
-> > +	security_d_instantiate(tmp, inode);
-> >  	return tmp;
-> >  
-> >   out_iput:
-> > -- 
-> 
-> Or does something else prevent that?
-> 
+On Wed, Nov 17, 2010 at 20:28, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> Below is the list of build error/warning regressions/improvements in
+> v2.6.37-rc2[1] compared to v2.6.36[2].
 
-That's a good question, I have no idea actually.  Every other consumer of
-security_d_instantiate seems to hold the i_mutex of the parent directory inode,
-tho I'm not sure if that is appropriate for d_obtain_alias, maybe somebody else
-has an idea?  Thanks,
+> Thanks to the linux-next team for providing the build service.
+>
+> [1] http://kisskb.ellerman.id.au/kisskb/head/3363/ (97 out of 108 configs)
+> [2] http://kisskb.ellerman.id.au/kisskb/head/3461/ (75 out of 108 configs)
 
-Josef
+Would it be possible to make sure tagged versions are always built for
+all 108 configs?
+Currently the coverage depends on how soon Linus pushes a new commit.
+
+Thanks!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
