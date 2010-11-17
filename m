@@ -1,65 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934187Ab0KQCPA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 21:15:00 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:34770 "EHLO smtps.tip.net.au"
+	id S1757214Ab0KQCSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 21:18:07 -0500
+Received: from mga01.intel.com ([192.55.52.88]:54398 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933804Ab0KQCO6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 21:14:58 -0500
-Date: Wed, 17 Nov 2010 13:14:53 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: linux-next: build failure after merge of the usb tree
-Message-Id: <20101117131453.5b94f435.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752128Ab0KQCSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 21:18:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,208,1288594800"; 
+   d="scan'208";a="858382236"
+Subject: Re: [PATCH -v4 1/2] lib, Make gen_pool memory allocator lockless
+From: Huang Ying <ying.huang@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <20101116135038.fcaa90ca.akpm@linux-foundation.org>
+References: <1289868791-16658-1-git-send-email-ying.huang@intel.com>
+	 <1289868791-16658-2-git-send-email-ying.huang@intel.com>
+	 <20101116135038.fcaa90ca.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 17 Nov 2010 10:18:01 +0800
+Message-ID: <1289960281.8719.1218.camel@yhuang-dev>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__17_Nov_2010_13_14_53_+1100_PqR6Q.g9KMYTB_9+"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__17_Nov_2010_13_14_53_+1100_PqR6Q.g9KMYTB_9+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2010-11-17 at 05:50 +0800, Andrew Morton wrote:
+> On Tue, 16 Nov 2010 08:53:10 +0800
+> Huang Ying <ying.huang@intel.com> wrote:
+> 
+> > This version of the gen_pool memory allocator supports lockless
+> > operation.
+> > 
+> > This makes it safe to use in NMI handlers and other special
+> > unblockable contexts that could otherwise deadlock on locks.  This is
+> > implemented by using atomic operations and retries on any conflicts.
+> > The disadvantage is that there may be livelocks in extreme cases.  For
+> > better scalability, one gen_pool allocator can be used for each CPU.
+> > 
+> > The lockless operation only works if there is enough memory available.
+> > If new memory is added to the pool a lock has to be still taken.  So
+> > any user relying on locklessness has to ensure that sufficient memory
+> > is preallocated.
+> > 
+> > The basic atomic operation of this allocator is cmpxchg on long.  On
+> > architectures that don't support cmpxchg natively a fallback is used.
+> > If the fallback uses locks it may not be safe to use it in NMI
+> > contexts on these architectures.
+> 
+> The code assumes that cmpxchg is atomic wrt NMI.  That would be news to
+> me - at present an architecture can legitimately implement cmpxchg()
+> with, say, spin_lock_irqsave() on a hashed spinlock.  I don't know
+> whether any architectures _do_ do anything like that.  If so then
+> that's a problem.  If not, it's an additional requirement on future
+> architecture ports.
 
-Hi Greg,
+cmpxchg has been used in that way by ftrace and perf for a long time. So
+I agree to make it a requirement on future architecture ports.
 
-After merging the usb tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > Reviewed-by: Andi Kleen <ak@linux.intel.com>
+> > ---
+> >  include/linux/bitmap.h   |    1 
+> >  include/linux/genalloc.h |   35 +++++--
+> >  lib/bitmap.c             |    2 
+> >  lib/genalloc.c           |  228 ++++++++++++++++++++++++++++++++++++++---------
+> >  4 files changed, 215 insertions(+), 51 deletions(-)
+> > 
+> > --- a/include/linux/bitmap.h
+> > +++ b/include/linux/bitmap.h
+> > @@ -142,6 +142,7 @@ extern void bitmap_release_region(unsign
+> >  extern int bitmap_allocate_region(unsigned long *bitmap, int pos, int order);
+> >  extern void bitmap_copy_le(void *dst, const unsigned long *src, int nbits);
+> >  
+> > +#define BITMAP_FIRST_WORD_MASK(start) (~0UL << ((start) % BITS_PER_LONG))
+> >  #define BITMAP_LAST_WORD_MASK(nbits)					\
+> >  (									\
+> >  	((nbits) % BITS_PER_LONG) ?					\
+> > --- a/include/linux/genalloc.h
+> > +++ b/include/linux/genalloc.h
+> > @@ -1,19 +1,26 @@
+> > +#ifndef GENALLOC_H
+> > +#define GENALLOC_H
+> >  /*
+> > - * Basic general purpose allocator for managing special purpose memory
+> > - * not managed by the regular kmalloc/kfree interface.
+> > - * Uses for this includes on-device special memory, uncached memory
+> > - * etc.
+> > + * Basic general purpose allocator for managing special purpose
+> > + * memory, for example, memory not managed by the regular
+> > + * kmalloc/kfree interface.  Uses for this includes on-device special
+> > + * memory, uncached memory etc.
+> > + *
+> > + * The gen_pool_alloc, gen_pool_free, gen_pool_avail and gen_pool_size
+> > + * implementation is lockless, that is, multiple users can
+> > + * allocate/free memory in the pool simultaneously without lock.  This
+> > + * also makes the gen_pool memory allocator can be used to
+> 
+> That sentence needs a fixup.
 
-drivers/media/video/tlg2300/pd-main.c: In function 'poseidon_probe':
-drivers/media/video/tlg2300/pd-main.c:455: error: 'struct usb_device' has n=
-o member named 'autosuspend_delay'
-drivers/net/wimax/i2400m/usb.c: In function 'i2400mu_probe':
-drivers/net/wimax/i2400m/usb.c:517: error: 'struct usb_device' has no membe=
-r named 'autosuspend_delay'
+Yes. I will fix it.
+  
+> > +static inline int set_bits_ll(unsigned long *addr, unsigned long mask_to_set)
+> > +{
+> > +	unsigned long val, nval;
+> > +
+> > +	nval = *addr;
+> > +	do {
+> > +		val = nval;
+> > +		if (val & mask_to_set)
+> > +			return -EBUSY;
+> > +	} while ((nval = cmpxchg(addr, val, val | mask_to_set)) != val);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static inline int clear_bits_ll(unsigned long *addr,
+> > +				unsigned long mask_to_clear)
+> > +{
+> > +	unsigned long val, nval;
+> > +
+> > +	nval = *addr;
+> > +	do {
+> > +		val = nval;
+> > +		if ((val & mask_to_clear) != mask_to_clear)
+> > +			return -EBUSY;
+> > +	} while ((nval = cmpxchg(addr, val, val & ~mask_to_clear)) != val);
+> > +
+> > +	return 0;
+> > +}
+> 
+> These are waaaay too big to be inlined.  Let the compiler decide.
 
-Caused by commit fcc4a01eb8661226e80632327673f67bf6a5840b ("USB: use the
-runtime-PM autosuspend implementation").  More grepping required ...
+Yes. Will change it.
 
-I have used the usb tree from next-20101116 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Best Regards,
+Huang Ying
 
---Signature=_Wed__17_Nov_2010_13_14_53_+1100_PqR6Q.g9KMYTB_9+
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJM4zqdAAoJEDMEi1NhKgbs7XUH/2YWQNc9Fsnwo2kz3uzrcmKU
-z+f3SEQLT6HfrnWe59OnaCmTZff35pDBj2fwHnEFTbbKTHDy/i3S5DfKLB4AUxKK
-gKpC6UxLSsK27NnmuXBC7lB0GqRTcwC48jw/V0vo3KfOyKoSU0yVcqJBLn7A6aa7
-AwMNdE4JqRQuBTPxBp1SeONcFJmTaDWi0nDWou9D+CxOdlODq8xDqD1l66G5KPQH
-ftsjPw0MrEuAUOB4V78kUkIAxv/NkE3lmt9FF9cRgJLuXHow75jYhucOVv37uG7A
-UwDYbCIo93DBICmVImzWGPy9z1qtWoi6/AYxct9vjrSzJ3uWAmGx5nytFwmWb64=
-=VvTm
------END PGP SIGNATURE-----
-
---Signature=_Wed__17_Nov_2010_13_14_53_+1100_PqR6Q.g9KMYTB_9+--
