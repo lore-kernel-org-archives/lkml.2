@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934627Ab0KQI2o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 03:28:44 -0500
-Received: from vms173011pub.verizon.net ([206.46.173.11]:64992 "EHLO
-	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934594Ab0KQI2n (ORCPT
+	id S934612Ab0KQIa6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 03:30:58 -0500
+Received: from vms173001pub.verizon.net ([206.46.173.1]:33967 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933427Ab0KQIa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 03:28:43 -0500
-Date: Wed, 17 Nov 2010 03:28:24 -0500 (EST)
+	Wed, 17 Nov 2010 03:30:57 -0500
+Date: Wed, 17 Nov 2010 03:30:41 -0500 (EST)
 From: Len Brown <lenb@kernel.org>
 X-X-Sender: lenb@x980
 To: stable@kernel.org
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [git pull 2.6.36.stable] intel_idle patches for 2.6.36.stable
-In-reply-to: <alpine.LFD.2.00.1011151227190.2939@x980>
-Message-id: <alpine.LFD.2.00.1011170322270.24426@x980>
-References: <alpine.LFD.2.00.1011151227190.2939@x980>
+Cc: linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Subject: Re: [git pull 2.6.35.stable] intel_idle patches for 2.6.35.stable
+In-reply-to: <alpine.LFD.2.00.1011151221420.2939@x980>
+Message-id: <alpine.LFD.2.00.1011170330020.24426@x980>
+References: <alpine.LFD.2.00.1011151221420.2939@x980>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-version: 1.0
 Content-type: TEXT/PLAIN; charset=US-ASCII
@@ -24,28 +24,26 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Greg,
-
+      
 I've added upstream commit id's to each commit comment in this series.
 If that is enough to make -stable happy, then we're done.
 
-If you would rather not pull this series because it
-does not exclude the intermediate syntax patches that
-are upstream, then I understand that viewpoint too.
+If you would rather not pull this series because it 
+does not exclude the intermediate syntax patches that 
+are upstream, then I understand that viewpoint too. 
 
 thanks,
 -Len Brown, Intel Open Source Technology Center
----
+
+Hi Linus,
 
 please pull from: 
 
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.36.git idle-release
-
-to sync 2.6.36.y with upstream changes to the intel_idle driver.
-
-After applying this series, 2.6.36.y and upstream intel_idle.c
-are identical.
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.git idle-release
 
 This will update the files shown below.
+
+thanks!
 
 ps. a consolidated plain patch is available here:
 http://ftp.kernel.org/pub/linux/kernel/people/lenb/idle/patches/2.6.35/idle-release-2.6.35.8.diff.gz
@@ -341,3 +339,4 @@ Date:   Fri May 28 02:22:03 2010 -0400
     it isn't useful anymore
     
     Signed-off-by: Len Brown <len.brown@intel.com>
+
