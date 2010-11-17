@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935312Ab0KQVz4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 16:55:56 -0500
-Received: from smtp.polymtl.ca ([132.207.4.11]:49672 "EHLO smtp.polymtl.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933027Ab0KQVzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S935158Ab0KQVzz (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 17 Nov 2010 16:55:55 -0500
-X-Greylist: delayed 1438 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Nov 2010 16:55:54 EST
-Message-ID: <1290029498.4ce449ba1679d@www.imp.polymtl.ca>
-Date: Wed, 17 Nov 2010 16:31:38 -0500
-From: Douglas Santos <douglas.santos@polymtl.ca>
-To: linux-kernel@vger.kernel.org
-Cc: ltt-dev@lists.casi.polymtl.ca, David Sharp <dhsharp@google.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>
-Subject: Benchmarks of kernel tracing options 2 (ftrace, lttng and perf)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) 3.2.3
-X-Originating-IP: 132.207.72.44
-X-Poly-FromMTA: (imp-4-3.polymtl.ca [132.207.4.78]) at Wed, 17 Nov 2010 21:31:39 +0000
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:46676 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932367Ab0KQVzx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 16:55:53 -0500
+Subject: Re: [7/8,v3] NUMA Hotplug Emulator: extend memory probe interface
+ to support NUMA
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: David Rientjes <rientjes@google.com>
+Cc: shaohui.zheng@intel.com, akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        Haicheng Li <haicheng.li@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Greg KH <greg@kroah.com>
+In-Reply-To: <alpine.DEB.2.00.1011171312590.10254@chino.kir.corp.google.com>
+References: <20101117020759.016741414@intel.com>
+	 <20101117021000.916235444@intel.com> <1290019807.9173.3789.camel@nimitz>
+	 <alpine.DEB.2.00.1011171312590.10254@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Wed, 17 Nov 2010 13:55:45 -0800
+Message-ID: <1290030945.9173.4211.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+> On Wed, 2010-11-17 at 13:18 -0800, David Rientjes wrote:
+> On Wed, 17 Nov 2010, Dave Hansen wrote:
+> > The other thing that Greg suggested was to use configfs.  Looking back
+> > on it, that makes a lot of sense.  We can do better than these "probe"
+> > files.
+> > 
+> > In your case, it might be useful to tell the kernel to be able to add
+> > memory in a node and add the node all in one go.  That'll probably be
+> > closer to what the hardware will do, and will exercise different code
+> > paths that the separate "add node", "then add memory" steps that you're
+> > using here.
+> 
+> That seems like a seperate issue of moving the memory hotplug interface 
+> over to configfs and that seems like it will cause a lot of userspace 
+> breakage.  The memory hotplug interface can already add memory to a node 
+> without using the ACPI notifier, so what does it have to do with this 
+> patchset?
 
-This is a response to a benchmark, submitted a few weeks ago, comparing kernel
-tracing options.
-http://lkml.org/lkml/2010/10/28/422
+I was actually just thinking of the node hotplug interface not using a
+'probe' file.  But, you make a good point.  They _have_ to be tied
+together, and doing one via configfs would mean that we probably have to
+do the other that way.  We wouldn't have to _remove_ the ...memory/probe
+interface (breaking userspace), but we would add some redundancy.
 
-We followed the methodology described in the link bellow,
-but using the shellscripts posted there to reproduce autotest scripts.
-http://lkml.org/lkml/2010/10/28/261
+> I think what this patchset really wants to do is map offline hot-added 
+> memory to a different node id before it is onlined.  It needs no 
+> additional command-line interface or kconfig options, users just need to 
+> physically hot-add memory at runtime or use mem= when booting to reserve 
+> present memory from being used.
+> 
+> Then, export the amount of memory that is actually physically present in 
+> the e820 but was truncated by mem=
 
-We disabled the extra syscall tracing on lttng, for a fair comparison.
-http://lkml.org/lkml/2010/10/28/290
+I _think_ that's already effectively done in /sys/firmware/memmap.   
 
-Average results with tracing "on":
+> and allow users to hot-add the memory 
+> via the probe interface.  Add a writeable 'node' file to offlined memory 
+> section directories and allow it to be changed prior to online.
 
-lttng:  220 ns
-ftrace: 260 ns
-perf:   740 ns
+That would work, in theory.  But, in practice, we allocate the mem_map[]
+at probe time.  So, we've already effectively picked a node at probe.
+That was done because the probe is equivalent to the hardware "add"
+event.  Once the hardware where in the address space the memory is, it
+always also knows the node.
 
+But, I guess it also wouldn't be horrible if we just hot-removed and
+hot-added an offline section if someone did write to a node file like
+you're suggesting.  It might actually exercise some interesting code
+paths.
 
-E5405 system
-kernel 2.6.36
-
--lttng 0.239 + 0.19.2modules + sys_getuid tracepoint + sys_getuid probe
- + remove syscall_trace
-
--ftrace and perf + sys_getuid tracepoint
+-- Dave
 
