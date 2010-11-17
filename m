@@ -1,108 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933017Ab0KQKQW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 05:16:22 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41898 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736Ab0KQKQV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 05:16:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=IqFxp98qpWO0gvb1xkU+FQQW15aBqRlfB66PSLrob6201IaY6InPWRexoBuBkyavzC
-         rlGghBLsoyiDarIkAdbRUqE3HPDvAGnaHdjf8kfkZo0CL8hh4mcqWwryo+hrRMaBAipK
-         P2fk7E9mwQU1ztLHZtpVH06qu60zxi7X12fX4=
-MIME-Version: 1.0
-In-Reply-To: <4CE14848.2060805@redhat.com>
-References: <20101109162525.BC87.A69D9226@jp.fujitsu.com>
-	<877hgmr72o.fsf@gmail.com>
-	<20101114140920.E013.A69D9226@jp.fujitsu.com>
-	<AANLkTim59Qx6TsvXnTBL5Lg6JorbGaqx3KsdBDWO04X9@mail.gmail.com>
-	<1289810825.2109.469.camel@laptop>
-	<AANLkTikibS1fDuk67RHk4SU14pJ9nPdodWba1T3Z_pWE@mail.gmail.com>
-	<4CE14848.2060805@redhat.com>
-Date: Wed, 17 Nov 2010 19:16:19 +0900
-Message-ID: <AANLkTi=6RtPDnZZa=jrcciB1zHQMiB3LnouBw3G2OyaK@mail.gmail.com>
-Subject: Re: fadvise DONTNEED implementation (or lack thereof)
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ben Gamari <bgamari.foss@gmail.com>, linux-kernel@vger.kernel.org,
-        rsync@lists.samba.org, linux-mm@kvack.org,
-        Wu Fengguang <fengguang.wu@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S933546Ab0KQKUT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 05:20:19 -0500
+Received: from mga02.intel.com ([134.134.136.20]:27919 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750736Ab0KQKUS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 05:20:18 -0500
+Message-Id: <b9dded$h40vqf@orsmga002.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,210,1288594800"; 
+   d="scan'208";a="574652239"
+Date: Wed, 17 Nov 2010 10:20:09 +0000
+To: Tino Keitel <tino.keitel@tikei.de>, linux-kernel@vger.kernel.org
+Subject: Re: DVI/EDID broken with Intel i945 graphics and 2.6.37-rc2
+In-Reply-To: <20101116184914.GA15794@mac.home>
+References: <20101116184914.GA15794@mac.home>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 15, 2010 at 11:48 PM, Rik van Riel <riel@redhat.com> wrote:
-> On 11/15/2010 04:05 AM, Minchan Kim wrote:
->>
->> On Mon, Nov 15, 2010 at 5:47 PM, Peter Zijlstra<peterz@infradead.org>
->>  wrote:
->>>
->>> On Mon, 2010-11-15 at 15:07 +0900, Minchan Kim wrote:
->
->>>> I wonder what's the problem in Peter's patch 'drop behind'.
->>>> http://www.mail-archive.com/linux-kernel@vger.kernel.org/msg179576.html
->>>>
->>>> Could anyone tell me why it can't accept upstream?
->>>
->>> Read the thread, its quite clear nobody got convinced it was a good idea
->>> and wanted to fix the use-once policy, then Rik rewrote all of
->>> page-reclaim.
->>>
->>
->> Thanks for the information.
->> I hope this is a chance to rethink about it.
->> Rik, Could you give us to any comment about this idea?
+On Tue, 16 Nov 2010 19:49:14 +0100, Tino Keitel <tino.keitel@tikei.de> wrote:
+> Hi,
+> 
+> 2.6.37-rc2 doesn't seem to detect the LCD connected via DVI on my Mac
+> mini Core2 Duo with i945 graphics:
 
+Hmm, sounds like fallout from detection of the VGA connection on the shared
+GPIO wire.
 
-Sorry for late reply, Rik.
+Does this help?
 
-> At the time, there were all kinds of general problems
-> in page reclaim that all needed to be fixed.  Peter's
-> patch was mostly a band-aid for streaming IO.
->
-> However, now that most of the other page reclaim problems
-> seem to have been resolved, it would be worthwhile to test
-> whether Peter's drop-behind approach gives an additional
-> improvement.
-
-Okay. I will have a time to make the workload for testing.
-
->
-> I could see it help by getting rid of already-read pages
-> earlier, leaving more space for read-ahead data.
-
-Yes. Peter's logic breaks demotion if the page is in active list.
-But I think if it's just active page like rsync's two touch, we have
-to move tail of inactive although it's in active list.
-I will look into this, too.
-
->
-> I suspect it would do fairly little to protect the working
-> set, because we do not scan the active file list at all
-> unless it grows to be larger than the inactive file list.
-
-Absolutely. But how about rsync's two touch?
-It can evict working set.
-
-I need the time for investigation.
-Thanks for the comment.
-
-
->
-> --
-> All rights reversed
->
-
-
+diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo
+index de158b7..ec32ceb 100644
+--- a/drivers/gpu/drm/i915/intel_sdvo.c
++++ b/drivers/gpu/drm/i915/intel_sdvo.c
+@@ -1327,11 +1327,8 @@ intel_analog_is_connected(struct drm_device *dev)
+        if (!analog_connector)
+                return false;
+ 
+-       if (analog_connector->funcs->detect(analog_connector, false) ==
+-                       connector_status_disconnected)
+-               return false;
+-
+-       return true;
++       return analog_connector->funcs->detect(analog_connector, false) ==
++               connector_status_connected;
+ }
+ 
+An alternative is to force detection, ie change the detect(analog, false)
+to true.
+-Chris
 
 -- 
-Kind regards,
-Minchan Kim
+Chris Wilson, Intel Open Source Technology Centre
