@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934971Ab0KQQWz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 11:22:55 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:32985 "EHLO gir.skynet.ie"
+	id S935000Ab0KQQXJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 11:23:09 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:33017 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758176Ab0KQQWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 11:22:52 -0500
+	id S934965Ab0KQQWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 11:22:55 -0500
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrea Arcangeli <aarcange@redhat.com>
 Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
@@ -13,9 +13,9 @@ Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
         Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/8] mm: compaction: Add trace events for memory compaction activity
-Date: Wed, 17 Nov 2010 16:22:42 +0000
-Message-Id: <1290010969-26721-2-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 8/8] mm: vmscan: Rename lumpy_mode to reclaim_mode
+Date: Wed, 17 Nov 2010 16:22:49 +0000
+Message-Id: <1290010969-26721-9-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1290010969-26721-1-git-send-email-mel@csn.ul.ie>
 References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie>
@@ -23,180 +23,255 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for a patches promoting the use of memory compaction over lumpy
-reclaim, this patch adds trace points for memory compaction activity. Using
-them, we can monitor the scanning activity of the migration and free page
-scanners as well as the number and success rates of pages passed to page
-migration.
+With compaction being used instead of lumpy reclaim, the name lumpy_mode
+and associated variables is a bit misleading. Rename lumpy_mode to
+reclaim_mode which is a better fit. There is no functional change.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 ---
- include/trace/events/compaction.h |   74 +++++++++++++++++++++++++++++++++++++
- mm/compaction.c                   |   14 ++++++-
- 2 files changed, 87 insertions(+), 1 deletions(-)
- create mode 100644 include/trace/events/compaction.h
+ include/trace/events/vmscan.h |    6 ++--
+ mm/vmscan.c                   |   72 ++++++++++++++++++++--------------------
+ 2 files changed, 39 insertions(+), 39 deletions(-)
 
-diff --git a/include/trace/events/compaction.h b/include/trace/events/compaction.h
-new file mode 100644
-index 0000000..388bcdd
---- /dev/null
-+++ b/include/trace/events/compaction.h
-@@ -0,0 +1,74 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM compaction
-+
-+#if !defined(_TRACE_COMPACTION_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_COMPACTION_H
-+
-+#include <linux/types.h>
-+#include <linux/tracepoint.h>
-+#include "gfpflags.h"
-+
-+DECLARE_EVENT_CLASS(mm_compaction_isolate_template,
-+
-+	TP_PROTO(unsigned long nr_scanned,
-+		unsigned long nr_taken),
-+
-+	TP_ARGS(nr_scanned, nr_taken),
-+
-+	TP_STRUCT__entry(
-+		__field(unsigned long, nr_scanned)
-+		__field(unsigned long, nr_taken)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->nr_scanned = nr_scanned;
-+		__entry->nr_taken = nr_taken;
-+	),
-+
-+	TP_printk("nr_scanned=%lu nr_taken=%lu",
-+		__entry->nr_scanned,
-+		__entry->nr_taken)
-+);
-+
-+DEFINE_EVENT(mm_compaction_isolate_template, mm_compaction_isolate_migratepages,
-+
-+	TP_PROTO(unsigned long nr_scanned,
-+		unsigned long nr_taken),
-+
-+	TP_ARGS(nr_scanned, nr_taken)
-+);
-+
-+DEFINE_EVENT(mm_compaction_isolate_template, mm_compaction_isolate_freepages,
-+	TP_PROTO(unsigned long nr_scanned,
-+		unsigned long nr_taken),
-+
-+	TP_ARGS(nr_scanned, nr_taken)
-+);
-+
-+TRACE_EVENT(mm_compaction_migratepages,
-+
-+	TP_PROTO(unsigned long nr_migrated,
-+		unsigned long nr_failed),
-+
-+	TP_ARGS(nr_migrated, nr_failed),
-+
-+	TP_STRUCT__entry(
-+		__field(unsigned long, nr_migrated)
-+		__field(unsigned long, nr_failed)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->nr_migrated = nr_migrated;
-+		__entry->nr_failed = nr_failed;
-+	),
-+
-+	TP_printk("nr_migrated=%lu nr_failed=%lu",
-+		__entry->nr_migrated,
-+		__entry->nr_failed)
-+);
-+
-+
-+#endif /* _TRACE_COMPACTION_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 4d709ee..bc8eb8a 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -16,6 +16,9 @@
- #include <linux/sysfs.h>
- #include "internal.h"
+diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+index be76429..ea422aa 100644
+--- a/include/trace/events/vmscan.h
++++ b/include/trace/events/vmscan.h
+@@ -25,13 +25,13 @@
  
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/compaction.h>
-+
+ #define trace_reclaim_flags(page, sync) ( \
+ 	(page_is_file_cache(page) ? RECLAIM_WB_FILE : RECLAIM_WB_ANON) | \
+-	(sync & LUMPY_MODE_SYNC ? RECLAIM_WB_SYNC : RECLAIM_WB_ASYNC)   \
++	(sync & RECLAIM_MODE_SYNC ? RECLAIM_WB_SYNC : RECLAIM_WB_ASYNC)   \
+ 	)
+ 
+ #define trace_shrink_flags(file, sync) ( \
+-	(sync & LUMPY_MODE_SYNC ? RECLAIM_WB_MIXED : \
++	(sync & RECLAIM_MODE_SYNC ? RECLAIM_WB_MIXED : \
+ 			(file ? RECLAIM_WB_FILE : RECLAIM_WB_ANON)) |  \
+-	(sync & LUMPY_MODE_SYNC ? RECLAIM_WB_SYNC : RECLAIM_WB_ASYNC) \
++	(sync & RECLAIM_MODE_SYNC ? RECLAIM_WB_SYNC : RECLAIM_WB_ASYNC) \
+ 	)
+ 
+ TRACE_EVENT(mm_vmscan_kswapd_sleep,
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 9a0fa57..52a0f0c 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -53,22 +53,22 @@
+ #include <trace/events/vmscan.h>
+ 
  /*
-  * compact_control is used to track pages being migrated and the free pages
-  * they are being migrated to during memory compaction. The free_pfn starts
-@@ -60,7 +63,7 @@ static unsigned long isolate_freepages_block(struct zone *zone,
- 				struct list_head *freelist)
+- * lumpy_mode determines how the inactive list is shrunk
+- * LUMPY_MODE_SINGLE: Reclaim only order-0 pages
+- * LUMPY_MODE_ASYNC:  Do not block
+- * LUMPY_MODE_SYNC:   Allow blocking e.g. call wait_on_page_writeback
+- * LUMPY_MODE_CONTIGRECLAIM: For high-order allocations, take a reference
++ * reclaim_mode determines how the inactive list is shrunk
++ * RECLAIM_MODE_SINGLE: Reclaim only order-0 pages
++ * RECLAIM_MODE_ASYNC:  Do not block
++ * RECLAIM_MODE_SYNC:   Allow blocking e.g. call wait_on_page_writeback
++ * RECLAIM_MODE_LUMPYRECLAIM: For high-order allocations, take a reference
+  *			page from the LRU and reclaim all pages within a
+  *			naturally aligned range
+- * LUMPY_MODE_COMPACTION: For high-order allocations, reclaim a number of
++ * RECLAIM_MODE_COMPACTION: For high-order allocations, reclaim a number of
+  *			order-0 pages and then compact the zone
+  */
+-typedef unsigned __bitwise__ lumpy_mode;
+-#define LUMPY_MODE_SINGLE		((__force lumpy_mode)0x01u)
+-#define LUMPY_MODE_ASYNC		((__force lumpy_mode)0x02u)
+-#define LUMPY_MODE_SYNC			((__force lumpy_mode)0x04u)
+-#define LUMPY_MODE_CONTIGRECLAIM	((__force lumpy_mode)0x08u)
+-#define LUMPY_MODE_COMPACTION		((__force lumpy_mode)0x10u)
++typedef unsigned __bitwise__ reclaim_mode;
++#define RECLAIM_MODE_SINGLE		((__force reclaim_mode)0x01u)
++#define RECLAIM_MODE_ASYNC		((__force reclaim_mode)0x02u)
++#define RECLAIM_MODE_SYNC		((__force reclaim_mode)0x04u)
++#define RECLAIM_MODE_LUMPYRECLAIM	((__force reclaim_mode)0x08u)
++#define RECLAIM_MODE_COMPACTION		((__force reclaim_mode)0x10u)
+ 
+ struct scan_control {
+ 	/* Incremented by the number of inactive pages that were scanned */
+@@ -101,7 +101,7 @@ struct scan_control {
+ 	 * Intend to reclaim enough continuous memory rather than reclaim
+ 	 * enough amount of memory. i.e, mode for high order allocation.
+ 	 */
+-	lumpy_mode lumpy_reclaim_mode;
++	reclaim_mode reclaim_mode;
+ 
+ 	/* Which cgroup do we reclaim from */
+ 	struct mem_cgroup *mem_cgroup;
+@@ -282,10 +282,10 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+ 	return ret;
+ }
+ 
+-static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc,
++static void set_reclaim_mode(int priority, struct scan_control *sc,
+ 				   bool sync)
  {
- 	unsigned long zone_end_pfn, end_pfn;
--	int total_isolated = 0;
-+	int nr_scanned = 0, total_isolated = 0;
- 	struct page *cursor;
+-	lumpy_mode syncmode = sync ? LUMPY_MODE_SYNC : LUMPY_MODE_ASYNC;
++	reclaim_mode syncmode = sync ? RECLAIM_MODE_SYNC : RECLAIM_MODE_ASYNC;
  
- 	/* Get the last PFN we should scan for free pages at */
-@@ -81,6 +84,7 @@ static unsigned long isolate_freepages_block(struct zone *zone,
+ 	/*
+ 	 * Initially assume we are entering either lumpy reclaim or lumpy
+@@ -293,9 +293,9 @@ static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc,
+ 	 * mode or just reclaim order-0 pages later.
+ 	 */
+ 	if (COMPACTION_BUILD)
+-		sc->lumpy_reclaim_mode = LUMPY_MODE_COMPACTION;
++		sc->reclaim_mode = RECLAIM_MODE_COMPACTION;
+ 	else
+-		sc->lumpy_reclaim_mode = LUMPY_MODE_CONTIGRECLAIM;
++		sc->reclaim_mode = RECLAIM_MODE_LUMPYRECLAIM;
  
- 		if (!pfn_valid_within(blockpfn))
- 			continue;
-+		nr_scanned++;
+ 	/*
+ 	 * If we need a large contiguous chunk of memory, or have
+@@ -303,16 +303,16 @@ static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc,
+ 	 * will reclaim both active and inactive pages.
+ 	 */
+ 	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+-		sc->lumpy_reclaim_mode |= syncmode;
++		sc->reclaim_mode |= syncmode;
+ 	else if (sc->order && priority < DEF_PRIORITY - 2)
+-		sc->lumpy_reclaim_mode |= syncmode;
++		sc->reclaim_mode |= syncmode;
+ 	else
+-		sc->lumpy_reclaim_mode = LUMPY_MODE_SINGLE | LUMPY_MODE_ASYNC;
++		sc->reclaim_mode = RECLAIM_MODE_SINGLE | RECLAIM_MODE_ASYNC;
+ }
  
- 		if (!PageBuddy(page))
- 			continue;
-@@ -100,6 +104,7 @@ static unsigned long isolate_freepages_block(struct zone *zone,
+-static void disable_lumpy_reclaim_mode(struct scan_control *sc)
++static void reset_reclaim_mode(struct scan_control *sc)
+ {
+-	sc->lumpy_reclaim_mode = LUMPY_MODE_SINGLE | LUMPY_MODE_ASYNC;
++	sc->reclaim_mode = RECLAIM_MODE_SINGLE | RECLAIM_MODE_ASYNC;
+ }
+ 
+ static inline int is_page_cache_freeable(struct page *page)
+@@ -443,7 +443,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
+ 		 * first attempt to free a range of pages fails.
+ 		 */
+ 		if (PageWriteback(page) &&
+-		    (sc->lumpy_reclaim_mode & LUMPY_MODE_SYNC))
++		    (sc->reclaim_mode & RECLAIM_MODE_SYNC))
+ 			wait_on_page_writeback(page);
+ 
+ 		if (!PageWriteback(page)) {
+@@ -451,7 +451,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
+ 			ClearPageReclaim(page);
  		}
+ 		trace_mm_vmscan_writepage(page,
+-			trace_reclaim_flags(page, sc->lumpy_reclaim_mode));
++			trace_reclaim_flags(page, sc->reclaim_mode));
+ 		inc_zone_page_state(page, NR_VMSCAN_WRITE);
+ 		return PAGE_SUCCESS;
+ 	}
+@@ -629,7 +629,7 @@ static enum page_references page_check_references(struct page *page,
+ 	referenced_page = TestClearPageReferenced(page);
+ 
+ 	/* Lumpy reclaim - ignore references */
+-	if (sc->lumpy_reclaim_mode & LUMPY_MODE_CONTIGRECLAIM)
++	if (sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM)
+ 		return PAGEREF_RECLAIM;
+ 
+ 	/*
+@@ -746,7 +746,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 			 * for any page for which writeback has already
+ 			 * started.
+ 			 */
+-			if ((sc->lumpy_reclaim_mode & LUMPY_MODE_SYNC) &&
++			if ((sc->reclaim_mode & RECLAIM_MODE_SYNC) &&
+ 			    may_enter_fs)
+ 				wait_on_page_writeback(page);
+ 			else {
+@@ -902,7 +902,7 @@ cull_mlocked:
+ 			try_to_free_swap(page);
+ 		unlock_page(page);
+ 		putback_lru_page(page);
+-		disable_lumpy_reclaim_mode(sc);
++		reset_reclaim_mode(sc);
+ 		continue;
+ 
+ activate_locked:
+@@ -915,7 +915,7 @@ activate_locked:
+ keep_locked:
+ 		unlock_page(page);
+ keep:
+-		disable_lumpy_reclaim_mode(sc);
++		reset_reclaim_mode(sc);
+ keep_lumpy:
+ 		list_add(&page->lru, &ret_pages);
+ 		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
+@@ -1331,7 +1331,7 @@ static inline bool should_reclaim_stall(unsigned long nr_taken,
+ 		return false;
+ 
+ 	/* Only stall on lumpy reclaim */
+-	if (sc->lumpy_reclaim_mode & LUMPY_MODE_SINGLE)
++	if (sc->reclaim_mode & RECLAIM_MODE_SINGLE)
+ 		return false;
+ 
+ 	/* If we have relaimed everything on the isolated list, no stall */
+@@ -1375,7 +1375,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+ 			return SWAP_CLUSTER_MAX;
  	}
  
-+	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
- 	return total_isolated;
+-	set_lumpy_reclaim_mode(priority, sc, false);
++	set_reclaim_mode(priority, sc, false);
+ 	lru_add_drain();
+ 	spin_lock_irq(&zone->lru_lock);
+ 
+@@ -1383,13 +1383,13 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+ 	 * If we are lumpy compacting, we bump nr_to_scan to at least
+ 	 * the size of the page we are trying to allocate
+ 	 */
+-	if (sc->lumpy_reclaim_mode & LUMPY_MODE_COMPACTION)
++	if (sc->reclaim_mode & RECLAIM_MODE_COMPACTION)
+ 		nr_to_scan = max(nr_to_scan, (1UL << sc->order));
+ 
+ 	if (scanning_global_lru(sc)) {
+ 		nr_taken = isolate_pages_global(nr_to_scan,
+ 			&page_list, &nr_scanned, sc->order,
+-			sc->lumpy_reclaim_mode & LUMPY_MODE_CONTIGRECLAIM ?
++			sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
+ 					ISOLATE_BOTH : ISOLATE_INACTIVE,
+ 			zone, 0, file);
+ 		zone->pages_scanned += nr_scanned;
+@@ -1402,7 +1402,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+ 	} else {
+ 		nr_taken = mem_cgroup_isolate_pages(nr_to_scan,
+ 			&page_list, &nr_scanned, sc->order,
+-			sc->lumpy_reclaim_mode & LUMPY_MODE_CONTIGRECLAIM ?
++			sc->reclaim_mode & RECLAIM_MODE_LUMPYRECLAIM ?
+ 					ISOLATE_BOTH : ISOLATE_INACTIVE,
+ 			zone, sc->mem_cgroup,
+ 			0, file);
+@@ -1425,7 +1425,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+ 
+ 	/* Check if we should syncronously wait for writeback */
+ 	if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
+-		set_lumpy_reclaim_mode(priority, sc, true);
++		set_reclaim_mode(priority, sc, true);
+ 		nr_reclaimed += shrink_page_list(&page_list, zone, sc);
+ 	}
+ 
+@@ -1436,14 +1436,14 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+ 
+ 	putback_lru_pages(zone, sc, nr_anon, nr_file, &page_list);
+ 
+-	if (sc->lumpy_reclaim_mode & LUMPY_MODE_COMPACTION)
++	if (sc->reclaim_mode & RECLAIM_MODE_COMPACTION)
+ 		reclaimcompact_zone_order(zone, sc->order, sc->gfp_mask);
+ 
+ 	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
+ 		zone_idx(zone),
+ 		nr_scanned, nr_reclaimed,
+ 		priority,
+-		trace_shrink_flags(file, sc->lumpy_reclaim_mode));
++		trace_shrink_flags(file, sc->reclaim_mode));
+ 	return nr_reclaimed;
  }
  
-@@ -234,6 +239,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 					struct compact_control *cc)
- {
- 	unsigned long low_pfn, end_pfn;
-+	unsigned long nr_scanned = 0, nr_isolated = 0;
- 	struct list_head *migratelist = &cc->migratepages;
- 
- 	/* Do not scan outside zone boundaries */
-@@ -266,6 +272,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 		struct page *page;
- 		if (!pfn_valid_within(low_pfn))
- 			continue;
-+		nr_scanned++;
- 
- 		/* Get the page and skip if free */
- 		page = pfn_to_page(low_pfn);
-@@ -281,6 +288,7 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 		list_add(&page->lru, migratelist);
- 		mem_cgroup_del_lru(page);
- 		cc->nr_migratepages++;
-+		nr_isolated++;
- 
- 		/* Avoid isolating too much */
- 		if (cc->nr_migratepages == COMPACT_CLUSTER_MAX)
-@@ -292,6 +300,8 @@ static unsigned long isolate_migratepages(struct zone *zone,
- 	spin_unlock_irq(&zone->lru_lock);
- 	cc->migrate_pfn = low_pfn;
- 
-+	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
-+
- 	return cc->nr_migratepages;
- }
- 
-@@ -402,6 +412,8 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 		count_vm_events(COMPACTPAGES, nr_migrate - nr_remaining);
- 		if (nr_remaining)
- 			count_vm_events(COMPACTPAGEFAILED, nr_remaining);
-+		trace_mm_compaction_migratepages(nr_migrate - nr_remaining,
-+						nr_remaining);
- 
- 		/* Release LRU pages not migrated */
- 		if (!list_empty(&cc->migratepages)) {
 -- 
 1.7.1
 
