@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934914Ab0KQQKQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 11:10:16 -0500
-Received: from cantor.suse.de ([195.135.220.2]:43090 "EHLO mx1.suse.de"
+	id S934906Ab0KQQLW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 11:11:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41471 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934779Ab0KQQKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 11:10:11 -0500
-Subject: Re: [PATCH] scsi: Convert scsi_host->cmd_serial_number to odd
- numbered atomic_t counter
+	id S934741Ab0KQQLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 11:11:21 -0500
+Subject: Re: [PATCH] libata: remove unlock+relock cycle in ata_scsi_queuecmd
 From: James Bottomley <James.Bottomley@suse.de>
-To: Mike Anderson <andmike@linux.vnet.ibm.com>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jeff Garzik <jeff@garzik.org>, Christoph Hellwig <hch@lst.de>
-In-Reply-To: <20101111223650.GA10257@linux.vnet.ibm.com>
-References: <1289472405-31003-1-git-send-email-nab@linux-iscsi.org>
-	 <1289490783.2982.33.camel@mulgrave.site>
-	 <1289511475.2867.138.camel@haakon2.linux-iscsi.org>
-	 <1289512549.2982.44.camel@mulgrave.site>
-	 <20101111223650.GA10257@linux.vnet.ibm.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jeff Garzik <jeff@garzik.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
+In-Reply-To: <20101117154741.GA16768@infradead.org>
+References: <20101117062958.GA2894@havoc.gtf.org>
+	 <AANLkTikQysiwSV_m38vKaEuPQ=NH10o2s69d=aNGOhLr@mail.gmail.com>
+	 <4CE38D70.4010507@garzik.org> <1290007719.4736.9.camel@mulgrave.site>
+	 <20101117154741.GA16768@infradead.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Nov 2010 10:10:06 -0600
-Message-ID: <1290010206.4736.47.camel@mulgrave.site>
+Date: Wed, 17 Nov 2010 10:11:16 -0600
+Message-ID: <1290010276.4736.51.camel@mulgrave.site>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
@@ -30,36 +28,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-11 at 14:36 -0800, Mike Anderson wrote:
-> James Bottomley <James.Bottomley@suse.de> wrote:
-> > On Thu, 2010-11-11 at 13:37 -0800, Nicholas A. Bellinger wrote:
-> > >
-> > >  ..snip..
-> > >
-> > > Sounds good to me, but you will recall the last attempt to make
-> > > scsi_cmd_get_serial() optional for the special case LLDs, that we
-> > > started running quickly in the legacy usage of cmd->serial_number in
-> > > scsi_softirq_done() and the side effects in scsi_try_to_abort_cmd(), who
-> > > use is complex enough that we have not found a proper resolution
-> > > sufficent to andmike discussed here:
-> > 
-> > Yes, that's what I meant by "eliminate the overloading of the serial
-> > number zero value" above.  This needs fixing before the serial number
-> > can be dumped for fast hba drivers.
-> > 
+On Wed, 2010-11-17 at 10:47 -0500, Christoph Hellwig wrote:
+> > Right ... I couldn't persuade anyone else to do it, so I'll probably end
+> > up coding it.  It looks like the serial number zero check might be
+> > bogus.  If so I'll remove it, then push the serial number acquisition
+> > down only into the locked queuecommand of only those drivers that
+> > actually use it (which were listed in the quoted email, and which might
+> > have a big impetus to remove it if the use is trivial).  Then we can
+> > begin unwinding the locking.
 > 
-> In the last email referenced below I believed that since
-> scsi_softirq_done is calling scsi_eh_scmd_add without the
-> SCSI_EH_CANCEL_CMD flag set this will stop scsi_try_to_abort_cmd from
-> being called. Since scsi_softirq_done is the one setting serial_number
-> to 0 I do not believe we can hit the serial number == 0 check in
-> scsi_try_to_abort_cmd anymore.
+> In dc395x, eata_pio, in2000, lpfc, megaraid_legacy, megaraid_mbox,
+> megaraid_sas, mesh, ncr53c8xx, qla1280, qla4xxx, wd33c93 and i2o_scsi
+> use it in printks only, and all this can be safely removed.
 > 
-> > > http://marc.info/?l=linux-scsi&m=128820726325009&w=2
+> Except for EH that only leaves dpt_i2o, eata, mpt2sas, u14-34f, mptscsi
+> as non-trivial users.  If you sort out the EH side I'll volunteer to
+> kill the printks and add private serial numbers to the five drivers
+> mentioned above.
 
-I buy this.  The REQ_ATOM_COMPLETE flag in the block layer now mediates
-timer vs completion atomically ... so either one or the other is allowed
-to occur.
+You're on (you were cc'd on the patch) ... I was planning just to move
+the scsi_cmnd_get_serial() call into the locked queuecommand routine,
+but a more permanent solution might be better.
 
 James
 
