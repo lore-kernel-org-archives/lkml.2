@@ -1,107 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934395Ab0KQLTy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 06:19:54 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:13044 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933515Ab0KQLTx (ORCPT
+	id S934382Ab0KQLZY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 06:25:24 -0500
+Received: from casper.infradead.org ([85.118.1.10]:39609 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932962Ab0KQLZX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 06:19:53 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aq0DAPJI40x5LdurgWdsb2JhbACiQRYBARYiIsBNhUsE
-Date: Wed, 17 Nov 2010 22:19:47 +1100
-From: Nick Piggin <npiggin@kernel.dk>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 00/28] [rfc] dcache scaling part 1
-Message-ID: <20101117111947.GA5218@amd>
-References: <20101116140900.039761100@kernel.dk>
- <877hgcrzgd.fsf@basil.nowhere.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <877hgcrzgd.fsf@basil.nowhere.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 17 Nov 2010 06:25:23 -0500
+Subject: Re: [RFC][PATCH] perf: sysfs type id
+From: Peter Zijlstra <peterz@infradead.org>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <4CE33F86.7040403@linux.vnet.ibm.com>
+References: <1289339119.2191.92.camel@laptop>
+	 <AANLkTi=ojOnLyRO4hTgYdCCXLsN0wUeTcme=5h8-mjdz@mail.gmail.com>
+	 <1289398207.2191.117.camel@laptop> <1289398763.2191.121.camel@laptop>
+	 <AANLkTimQ7w38wzrYT4MgjHFr6LCVj2M5fB11-n3XCD2w@mail.gmail.com>
+	 <1289421164.2084.56.camel@laptop>
+	 <AANLkTiku7UsVoYv_+6r79rvGPJU7OU=VGDiaYo0H=82y@mail.gmail.com>
+	 <1289423135.2084.63.camel@laptop>  <4CE33F86.7040403@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 17 Nov 2010 12:25:28 +0100
+Message-ID: <1289993128.2109.714.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 11:56:02AM +0100, Andi Kleen wrote:
-> Nick Piggin <npiggin@kernel.dk> writes:
+On Tue, 2010-11-16 at 18:35 -0800, Corey Ashford wrote:
+
+> I don't understand the /sys/devices tree much (I will read up on it), 
+> but this idea looks good to me.
+
+Yeah, me too.. I talked to Kay a bit earlier on and /sys/devices/system
+is 'special'..
+
+> To clarify my understanding a bit and taking the gfx example, in the 
+> path /sys/class/pmu/radeon0, is the '0' here denoting the 0'th radeon 
+> chip in the system, or the radeon model number?  I would assume the 0'th 
+> chip.
+
+Chip indeed.
+
+> So if I assume that now points to a unique radeon chip in the system, 
+> underneath /sys/class/pmu/radeon0 will be a structure something like:
 > 
-> > There are 3 main parts to dcache scaling. This one primarily adds new locks
-> > to take over dcache_lock, and some pre/post prep and streamlining patches.
-> >
-> > The second implements fine grained locking, and is rather trivial after
-> > part 1.
-> >
-> > The third implements rcu-walk. rcu-walk depends on the first part, because it
-> > relies on using d_lock to protect the state of the dentry (when converting from
-> > rcu-walk to refcounted walk). Without the fine grained locing, we'd need to use
-> > dcache_lock for that, which would be a step backwards to put into path walking
-> > again.
-> >
-> > Comments?
+> radeon0/
+> 	event/
+> 		evt0
+> 		..
+> 		evtn
 > 
-> I read 15, 10, 8, 5, 4, 3, 1 so far (weird order, it showed that way in
-> my reader :-) There was nothing surprising in any of those and they all
-> seem to do what the description advertises.
+> And if there is a second radeon chip, there would be a nearly identical 
+> tree:
+> 
+> radeon1/
+> 	event/
+> 		evt0
+> 		..
+> 		evtn
+> 
+> Is that correct?
 
-Thanks for looking.
+Yes.
 
- 
-> I was scared a bit by the upto 4 level dcache lock nestings, but I
-> assume those will get better again when everything is done.
-> At least from a quick look they seem to be all in the right order
-> (I assume you attempted some runtime coverage with lockdep too, right?)
+> Some of these events may need modifiers / attributes / umasks... 
+> whatever you want to call them.  And they may need more than one each, 
+> and they may vary from event to event.  So to add to the hierarchy,
+> we'd have:
+> 
+> radeon0/
+>      type (for attr.type)
+>      event/
+>          evt0/
+>              id (a base number for attr.config)
+>              description (text file - but could be CONFIG_*'d out)
+>              modifiers/
+>                  mod0/
+>                      formula (some ascii syntax for describing how
+>                               to set .config and/or .config_extra
+>                               with this modifer's value)
+>                      description (text - can configure out)
+>                      constraints (some ascii syntax for describing
+>                                   the values mod0 can take on)
+>                  ..
+>                  modn/
+>          ..
+> 	evtn/
+> 
+> And this would be replicated for radeon1..n
 
-Yes of course, it's been finding bugs in other code, actually :P
+The idea of the events dir is to provide a few frequently used/common
+events, not to be an exhaustive list.
 
-Lock nesting is primarily an issue in killing a dentry, when it needs to
-be taken out of several data structures at the same time. I haven't
-tackled un-nesting these yet, because things become far more complex
-when you start allowing new types of concurrency like that.
+What we can do is provide a break-down of the config in the top-level
+directory and refer people to the hardware documentation (they need to
+read that anyway if they want to make use special events anyway).
 
-I found that with fine grained locking, lock contention was low enough
-that it really didn't matter to take a few locks at once (obviously it's
-far better than the existing dcache_lock situation).
+> Maybe all of the "event" directories could be soft links to a common
+> radeon<model_number> event directory.
 
-If it does become a problem, or we want to unwind some of the locks for
-any other reason, we'd probably have a DENTRY_TEARDOWN flag in the
-dentry, and dput / reclaim can set it without holding other locks, and
-then drop the d_lock and individually remove it from various lists.
+Possibly, but I don't expect this to be a common thing, and we can
+always do it later.
 
-Of course that requires audits in every list walker, and list_empty() etc
-check everywhere, so it's not appropriate for initial patches.
- 
+> When you fully specify an event, you have something like:
+> 
+> /sys/devices/pci0000:00/0000:00:1e.0/0000:0b:01.0/drm/card0/pmu/<event>[:<modifier>=nnn:...]
+> 
+> So it wouldn't end up being strictly a sysfs path anymore, and perf 
+> would have a bit of parsing work to do, to evaluate the modifiers, using 
+> the info from constraints, and construct the .type, .config, and 
+> .config_extra fields using formula.
+> 
+> Or maybe you have some other structure in mind?
 
-> For some of the hash lists it may become attractive to consider
-> the newly posted lockless list, but it wasn't fully clear
-> if that was easy to do (the lock protected a bit more than
-> just the list node)
+I wouldn't bother with modifiers and all that:
+  perf record -e radeon0:r0123456789ABCDEF 
 
-Well the first part of the series doesn't fine grain the locks, for
-the most part. After this is done, it's really pretty trivial to change
-locking schemes for data structures.
- 
+is there for people who know what they're doing, possibly we can parse
+the config format and use some of that to enable things like:
 
-> For the level file system tree sweep changes it would be nice
-> if there were semantic patches available. That would make
-> it easier to verify the changes have been consistently
-> done, by rerunning the patcher.
+[ using the x86-intel format because I actually know that, as opposed to
+  the radeon case which I know absolutely nothing about. ]
 
-I haven't looked at doing semantic patches. I suspect it might be
-a bit too hard to write.
+# cat cpu/config_format  
+event_selector:8
+unit_mask:8
+NULL:7
+invert:1
+counter_mask:8
 
-Really, *most* filesystems do not play silly games with dcache_lock,
-and those that don't are pretty easy. Ones that do need more thought
-than semantic patch could probably apply.
+perf record -e radeon0:event_selector=0xf;unit_mask=0x5;invert;counter_mask=1
 
- 
-> You can add a Reviewed-by: Andi Kleen <ak@linux.intel.com>
-> to the patches listed above.
+To make it slightly easier, we could maybe event do something like:
 
-Thanks,
-Nick
+perf record -e radeon0:instructions;invert;counter_mask=1
 
+To take the base of the 'instructions' event and modify that with the
+invert and counter_mask details.
+
+A further attribute we can give the top level node is something like
+'name', which would describe the actual PMU, ARM people want something
+like that because its near impossible to figure out what PMU lives on
+your chip from userspace.
+
+# cat cpu/name
+x86,Core2,PEBS
+
+or somesuch.
