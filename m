@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128Ab0KQFt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 00:49:29 -0500
-Received: from tango.tkos.co.il ([62.219.50.35]:55250 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754867Ab0KQFt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 00:49:28 -0500
-Date: Wed, 17 Nov 2010 07:48:57 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Alex Gershgorin <agersh@rambler.ru>, Indan Zupancic <indan@nul.nu>
-Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
-Message-ID: <20101117054857.GB26928@jasper.tkos.co.il>
-References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
- <4CE0FE71.6000303@suse.cz>
- <20101115100838.GA3649@jasper.tkos.co.il>
- <4CE10B32.8090705@suse.cz>
- <c30e46c1b5343789b6475722071c3020.squirrel@webmail.greenhost.nl>
- <20101116110444.2f0cabd9@lxorguk.ukuu.org.uk>
- <4CE28299.30907@suse.cz>
- <20101117053251.GA26928@jasper.tkos.co.il>
- <4CE36B8B.3040403@zytor.com>
+	id S1754004Ab0KQFxB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 00:53:01 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41546 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751105Ab0KQFxA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 00:53:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE36B8B.3040403@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101117032721.GA8630@redhat.com>
+References: <20101117032721.GA8630@redhat.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 16 Nov 2010 21:52:12 -0800
+Message-ID: <AANLkTi=MLowxVT2BoXuA9r8EnYDWPNTYyMP9AhHseznB@mail.gmail.com>
+Subject: Re: failure to boot any kernel since 2.6.36rc6-git2.
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi H. Peter,
+On Tue, Nov 16, 2010 at 7:27 PM, Dave Jones <davej@redhat.com> wrote:
+> Every kernel between 2.6.36-rc6 and 2.6.37rc2 fails to boot on my laptop.
+> The -git's that followed -rc6 had a fairly large (considering rc6) acpi merge,
+> which I suspected was the cause.
 
-On Tue, Nov 16, 2010 at 09:43:39PM -0800, H. Peter Anvin wrote:
-> On 11/16/2010 09:32 PM, Baruch Siach wrote:
-> > On Tue, Nov 16, 2010 at 02:09:45PM +0100, Jiri Slaby wrote:
-> >> On 11/16/2010 12:04 PM, Alan Cox wrote:
-> >>> Sixteen devices is way too many for drivers/misc - it only has 256 total
-> >>> and only half of those are dynamic.
-> >>
-> >> Seconded. (And it's a quarter, not even a half like I already wrote.)
-> > 
-> > If I reduce the maximal number of devices to 4, will it make any difference? I 
-> > don't mind even having a limit of 2 by default, as long as a simple define 
-> > change is enough to raise this limit.
-> > 
-> Just use a major.  No biggie.
+You have marked (for example) commit 77f890223338 as bad, but that's
+way before the ACPI merge.
 
-And create my own 'struct class'?
+So there's something wrong with your bisect. When you marked c9d66d35
+as bad, that is literally _exactly_ v2.6.36-rc6 plus one mfd commit.
+So if that kernel doesnt' boot for you, then neither will plain
+2.6.36-rc6.
 
-baruch
+I see a few possibilities:
 
--- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+ - you somehow tested/booted the wrong kernels and thus marked things
+"bad" when they weren't.
+
+ - 2.6.36-rc6 doesn't work either, so you started out saying it was
+good even though it wasn't really. Everything after it is obviously
+also broken, so you'll just end up with everything marked "bad", and
+bisection will decide it must be the first commit after 2.6.36-rc6
+(since that was marked "good").
+
+ - there's some bug that affects boot of the "next" kernel, and the
+kernel you go back to in between has that problem.
+
+ - you switched compiler or other build tool in between things, so
+back when you started, 2.6.36-rc6 was good, but then when you compiled
+that same kernel with the trivial mfd thing on top, the build tool
+change resulted in it no longer working - but not having anything to
+do with the actual kernel sources in question.
+
+So double-check that 2.6.36-rc6 kernel.
+
+                 Linus
