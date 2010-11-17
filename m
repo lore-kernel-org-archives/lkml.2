@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934906Ab0KQQLW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 11:11:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41471 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934741Ab0KQQLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 11:11:21 -0500
-Subject: Re: [PATCH] libata: remove unlock+relock cycle in ata_scsi_queuecmd
-From: James Bottomley <James.Bottomley@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jeff Garzik <jeff@garzik.org>,
+	id S934901Ab0KQQPY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 11:15:24 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57016 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab0KQQPX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 11:15:23 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=2kSzP4yT2LoA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=MVX4k8YorKC4dX2FL0oA:9 a=HvNjchhq8YuwTpn9jrJKbQjZVXoA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "Ted Ts'o" <tytso@mit.edu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>
-In-Reply-To: <20101117154741.GA16768@infradead.org>
-References: <20101117062958.GA2894@havoc.gtf.org>
-	 <AANLkTikQysiwSV_m38vKaEuPQ=NH10o2s69d=aNGOhLr@mail.gmail.com>
-	 <4CE38D70.4010507@garzik.org> <1290007719.4736.9.camel@mulgrave.site>
-	 <20101117154741.GA16768@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Nov 2010 10:11:16 -0600
-Message-ID: <1290010276.4736.51.camel@mulgrave.site>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+In-Reply-To: <1290008637.2109.967.camel@laptop>
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
+	 <20101117013700.GA3290@thunk.org> <20101117132404.GF27063@elte.hu>
+	 <1290001128.2109.785.camel@laptop>  <20101117140002.GH27063@elte.hu>
+	 <1290003110.2109.822.camel@laptop>
+	 <1290006634.30543.61.camel@gandalf.stny.rr.com>
+	 <1290008637.2109.967.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 17 Nov 2010 11:15:21 -0500
+Message-ID: <1290010521.30543.68.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 10:47 -0500, Christoph Hellwig wrote:
-> > Right ... I couldn't persuade anyone else to do it, so I'll probably end
-> > up coding it.  It looks like the serial number zero check might be
-> > bogus.  If so I'll remove it, then push the serial number acquisition
-> > down only into the locked queuecommand of only those drivers that
-> > actually use it (which were listed in the quoted email, and which might
-> > have a big impetus to remove it if the use is trivial).  Then we can
-> > begin unwinding the locking.
+On Wed, 2010-11-17 at 16:43 +0100, Peter Zijlstra wrote:
+> On Wed, 2010-11-17 at 10:10 -0500, Steven Rostedt wrote:
+> > 
+> > Right, the problem with filtering is what do we want to filter, and what
+> > about copying?
+> > 
+> > Currently, we copy the data into the buffer and then filter on that
+> > data. We could also easily filter on the parameters of the tracepoint,
+> > but sometimes those parameters do not match the final output (as the
+> > case with sched_switch). Do we copy the data into a separate "per cpu"
+> > temp buffer, and figure out the filter then? And if the filter is fine,
+> > then copy into the buffer. This obviously is slow, due to the multiple
+> > copies. We could do this only if the filtering is enabled.
 > 
-> In dc395x, eata_pio, in2000, lpfc, megaraid_legacy, megaraid_mbox,
-> megaraid_sas, mesh, ncr53c8xx, qla1280, qla4xxx, wd33c93 and i2o_scsi
-> use it in printks only, and all this can be safely removed.
-> 
-> Except for EH that only leaves dpt_i2o, eata, mpt2sas, u14-34f, mptscsi
-> as non-trivial users.  If you sort out the EH side I'll volunteer to
-> kill the printks and add private serial numbers to the five drivers
-> mentioned above.
+> Right, so what is the primary purpose of this filtering stuff? As it
+> stands it makes stuff terribly slow, so you add overhead but the win
+> (presumably) is less data output, is that a sane trade-off?
 
-You're on (you were cc'd on the patch) ... I was planning just to move
-the scsi_cmnd_get_serial() call into the locked queuecommand routine,
-but a more permanent solution might be better.
+I've actually used filtering too. Not for speed up, but because I was
+recording a lot of data and the reader could not keep up. By filtering,
+I was able to get all the relevant information without needing to make
+the kernel buffer a Gig.
 
-James
+-- Steve
 
 
