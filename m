@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934968Ab0KQQxQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 11:53:16 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:45586 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934918Ab0KQQxP convert rfc822-to-8bit (ORCPT
+	id S934984Ab0KQQ4s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 11:56:48 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51588 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932743Ab0KQQ4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 11:53:15 -0500
-Date: Wed, 17 Nov 2010 14:52:48 -0200
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Pavan Savoy <pavan_savoy@sify.com>
-Cc: Vitaly Wool <vitalywool@gmail.com>, marcel@holtmann.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5] Bluetooth: btwilink driver
-Message-ID: <20101117165248.GB21729@vigoh>
-References: <1289394446-14021-1-git-send-email-pavan_savoy@ti.com>
- <20101116225418.GA15101@vigoh>
- <AANLkTi=TxKKxjLdK-6Jwu9oBCiGHXJ8UxrAQH+C82wNK@mail.gmail.com>
- <AANLkTi=NH8gbW8iCKOQN0bmbL=nqewsZkUik+VkvWUgi@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <AANLkTi=NH8gbW8iCKOQN0bmbL=nqewsZkUik+VkvWUgi@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 17 Nov 2010 11:56:46 -0500
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: Josef Bacik <josef@redhat.com>
+Cc: Miao Xie <miaox@cn.fujitsu.com>, viro <viro@zeniv.linux.org.uk>,
+        Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ito <t-itoh@jp.fujitsu.com>
+Subject: Re: [PATCH 1/3] direct-io: add a hook for the fs to provide its own bio merging check function
+In-reply-to: <20101117125011.GH5618@dhcp231-156.rdu.redhat.com>
+References: <4CE3579B.1000301@cn.fujitsu.com> <20101117070658.GF5618@dhcp231-156.rdu.redhat.com> <20101117093720.GG5618@dhcp231-156.rdu.redhat.com> <4CE3AA37.8060709@cn.fujitsu.com> <20101117125011.GH5618@dhcp231-156.rdu.redhat.com>
+Date: Wed, 17 Nov 2010 11:55:28 -0500
+Message-Id: <1290012777-sup-9103@think>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavan,
-
-* Pavan Savoy <pavan_savoy@sify.com> [2010-11-17 11:13:26 +0530]:
-
-> On Wed, Nov 17, 2010 at 4:50 AM, Vitaly Wool <vitalywool@gmail.com> wrote:
-> >>> +     /* Registration with ST layer is successful,
-> >>> +      * hardware is ready to accept commands from HCI core.
-> >>> +      */
-> >>> +     if (test_and_set_bit(HCI_RUNNING, &hdev->flags)) {
-> >>> +             clear_bit(HCI_RUNNING, &hdev->flags);
-> >>> +             err = st_unregister(ST_BT);
-> >>> +             if (err)
-> >>> +                     BT_ERR("st_unregister() failed with error %d", err);
-> >>> +             hst->st_write = NULL;
-> >>> +     }
-> >>
-> >>
-> >> What are you trying to do here? test_and_set_bit() result doesn't say
-> >> nothing about error and you shall put test_and_set_bit should be in the
-> >> beginning, to know if your device is already opened or not and then
-> >> clear_bit if some error ocurrs during the function.
-> >>
+Excerpts from Josef Bacik's message of 2010-11-17 07:50:11 -0500:
+> On Wed, Nov 17, 2010 at 06:11:03PM +0800, Miao Xie wrote:
+> > Hi, Josef
 > >
-> > Yeap, this piece of code beats me is well. Why is it an error if this
-> > bit wasn't already set?
+> > On wed, 17 Nov 2010 04:37:21 -0500, Josef Bacik wrote:
+> >>> Heh so I was going to fix this after the hole punching stuff.  The fact is btrfs
+> >>> maps everything that is ok to do in one IO via get_blocks().  So all we need to
+> >>> do is add another DIO_ flag to tell us to treat each get_blocks() call as
+> >>> discrete.  I wanted to use buffer_boundary for this, but I think it's too
+> >>> drastic of a change for people who already use buffer_boundary();
+> >>>
+> >>> What happens today is that say we map 4k, we do submit_page_section, but if this
+> >>> is our first bit of IO we just set dio->cur_page and such and then loop again.
+> >>> Say there is 4k-hole-4k, we do the next mapping and set buffer_boundary again,
+> >>> and come into submit_page_section and because cur_page is set, we do
+> >>> dio_send_cur_page.  Because there is no dio->bio we setup a new bio, but when we
+> >>> do that we clear dio->boundary, and leave the bio all setup.  So the next time
+> >>> we loop around the tail 4k gets added to our previously setup bio and boom we
+> >>> hit this problem with btrfs.
+> >>>
+> >>> If we can add a DIO_GET_BLOCKS_DISCRETE or some other such non-sense then we can
+> >>> easily kill all the logical offset code I had and just make some simple changes
+> >>> to make the DIO stuff work for us.  All we do is in get_more_blocks we do
+> >>>
+> >>> if ((dio->flags&  DIO_GET_BLOCKS_DISCRETE)&&  dio->bio)
+> >>>     dio_submit_bio(dio);
+> >>>
+> >>
+> >> Right after I went to bed I realized this should be
+> >>
+> >> if (dio->flags&  DIO_GET_BLOCKS_DISCRETE) {
+> >>     if (dio->cur_page) {
+> >>         dio_send_cur_page(dio);
+> >>         page_cache_release(dio->cur_page);
+> >>         dio->cur_page = NULL;
+> >>     }
+> >>
+> >>     if (dio->bio)
+> >>         dio_submit_bio(dio);
+> >>   }
+> >
+> > As far as I know, get_block() can not make sure the IO doesn't span the chunks or
+> > stripes. Maybe we can do this check in get_blocks(). In this way, we needn't change
+> > vfs.
+> >
 > 
-> Vitaly, Gustavo,
-> 
-> I suppose I never understood HCI_RUNNING flag that way, as in an error
-> check mechanism to avoid multiple hci0 ups.
-> 
-> What I understood was that HCI_RUNNING suggested as to when hci0 was
-> ready to be used. With this understanding, I wanted to make sure I
-> downloaded the firmware for the chip before I proclaim to the world
-> that the hci0 is ready to be used, as in HCI_RUNNING.
-> 
-> For example, I didn't want my _send_frame to be called before I did
-> the firmware download - since firmware download takes time - 45kb
-> send/wait commands :(
-> 
-> But I suppose I now understand - What I would rather do is test_bit in
-> the beginning of function and do a set_bit at the end of function -
-> does this make sense ?
+> Right thats the idea, if we can't span chunks/stripes we should be doing that
+> limiting in our get_blocks call and that way we don't have to screw with the
+> generic direct io stuff too much.  Thanks,
 
-It does, but does it as test_and_set and then clear if error as we do in
-other drivers.
+In this case we're adding complexity to the O_DIRECT mapping code, when
+we really should be adding it to the btrfs submit bio hook.  It can
+easily break up the bio into smaller units, which will leave us with a
+smaller number of get_blocks calls overall.
 
--- 
-Gustavo F. Padovan
-http://profusion.mobi
+I'm working that out now.
+
+-chris
+
+
