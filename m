@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759619Ab0KQDnd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 22:43:33 -0500
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:43660 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752332Ab0KQDnc (ORCPT
+	id S1759628Ab0KQDpr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 22:45:47 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:41708 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab0KQDpn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 22:43:32 -0500
-Date: Wed, 17 Nov 2010 12:28:01 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
-        stable@kernel.org, Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH] Make swap accounting default behavior configurable
-Message-Id: <20101117122801.e9850acf.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20101116171225.274019cf.akpm@linux-foundation.org>
-References: <20101116101726.GA21296@tiehlicka.suse.cz>
-	<20101116124615.978ed940.akpm@linux-foundation.org>
-	<20101117092339.1b7c2d6d.nishimura@mxp.nes.nec.co.jp>
-	<20101116171225.274019cf.akpm@linux-foundation.org>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 16 Nov 2010 22:45:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=RX9UFkTP0/++RuD1+UIFfZ4NF9ETlskfmbQHaL1sAKmlKNoJwR5T/u5dcqVVJEsZCf
+         16vo+QBOU2eOE8wyyxy4crhtfXvPPyABO172vHByuZftH6d7wU07kADWcMjh5i4v8W5Y
+         lGCRtQKKPEaYQwr9NIOinRytdjwImLgY+wzS0=
+MIME-Version: 1.0
+Date: Tue, 16 Nov 2010 22:45:42 -0500
+Message-ID: <AANLkTinop4_JT4JLtdmWkydPgDDU=TyZNbtiBbgeh1dj@mail.gmail.com>
+Subject: Behavior of BUG() [Was: Re: [PATCH 2/5] of/fdt: add kernel command
+ line option for dtb_compat string]
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: Matt Mackall <mpm@selenic.com>, linux-kernel@vger.kernel.org
+Cc: dirk.brandewie@gmail.com, linux-arch@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Nov 2010 17:12:25 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Hi,
 
-> On Wed, 17 Nov 2010 09:23:39 +0900 Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> 
-> > > > 
-> > > > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> > > > index ed45e98..14eafa5 100644
-> > > > --- a/Documentation/kernel-parameters.txt
-> > > > +++ b/Documentation/kernel-parameters.txt
-> > > > @@ -2385,6 +2385,9 @@ and is between 256 and 4096 characters. It is defined in the file
-> > > >  			improve throughput, but will also increase the
-> > > >  			amount of memory reserved for use by the client.
-> > > >  
-> > > > +	swapaccount	[KNL] Enable accounting of swap in memory resource
-> > > > +			controller. (See Documentation/cgroups/memory.txt)
-> > > 
-> > > So we have swapaccount and noswapaccount.  Ho hum, "swapaccount=[1|0]"
-> > > would have been better.
-> > > 
-> > I suggested to keep "noswapaccount" for compatibility.
-> > If you and other guys don't like having two parameters, I don't stick to
-> > the old parameter.
-> > 
-> 
-> Yes, we're stuck with the old one now.
-> 
-> But we should note that "foo=[0|1]" is superior to "foo" and "nofoo". 
-> Even if we didn't initially intend to add "nofoo".
-> 
-I see.
+[CC: list reduced as starting a new thread, most on the context
+removed as this concern a different issue.]
 
-Michal-san, could you update your patch to use "swapaccount=[1|0]" ?
+On Tue, Nov 16, 2010 at 7:16 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Tue, Nov 16, 2010 at 3:41 PM,  <dirk.brandewie@gmail.com> wrote:
+>> From: Dirk Brandewie <dirk.brandewie@gmail.com>
+>> [...]
+> The kernel needs to complain *loudly* if this occurs because it
+> represents a bug.  I'm tempted to say use BUG, but that would halt the
+> kernel and prevent any possibility of kernel log output.
+> [...]
+does it ? if CONFIG_BUG is not enabled and the arch has no define for
+it, the default does _nothing_:
 
-Thanks,
-Daisuke Nishimura.
+from `include/asm-generic/bug.h':
+
+#else /* !CONFIG_BUG */
+#ifndef HAVE_ARCH_BUG
+#define BUG() do {} while(0)
+#endif
+
+#ifndef HAVE_ARCH_BUG_ON
+#define BUG_ON(condition) do { if (condition) ; } while(0)
+#endif
+[...]
+
+gcc is triggering about ~30 warnings (like [0]) on code path using
+BUG(). Most of these path assume BUG() will never return, which is not
+true.
+
+The commit message introducing this behavior state:
+
+commit c8538a7aa5527d02c7191ac5da124efadf6a2827
+Author: Matt Mackall <mpm@selenic.com>
+Date:   Sun May 1 08:59:01 2005 -0700
+
+    [PATCH] remove all kernel BUGs
+
+    This patch eliminates all kernel BUGs, trims about 35k off the typical
+    kernel, and makes the system slightly faster.
+
+    Signed-off-by: Matt Mackall <mpm@selenic.com>
+    Signed-off-by: Andrew Morton <akpm@osdl.org>
+    Signed-off-by: Linus Torvalds <torvalds@osdl.org>
+
+[...]
+
++config BUG
++       bool "BUG() support" if EMBEDDED
++       default y
++       help
++          Disabling this option eliminates support for BUG and WARN, reducing
++          the size of your kernel image and potentially quietly ignoring
++          numerous fatal conditions. You should only consider disabling this
++          option for embedded systems with no facilities for reporting errors.
+
+So how should BUG() been used ?
+ 1) assuming it will never _ever_ return ?
+ 2) assuming it may return ?
+
+if (1), its definition has to be changed, if (2) a lot of path have to be fixed.
+
+Thanks in advance,
+ - Arnaud
+
+[0]: fs/dcache.c:1899:1: warning: control reaches end of non-void
+function, line match an old revision, but the BUG() is still there.
