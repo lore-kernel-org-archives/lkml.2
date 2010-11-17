@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934813Ab0KQMnL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 07:43:11 -0500
-Received: from hera.kernel.org ([140.211.167.34]:36159 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934510Ab0KQMnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 07:43:09 -0500
-Date: Wed, 17 Nov 2010 12:42:43 GMT
-From: tip-bot for Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk, randy.dunlap@oracle.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, randy.dunlap@oracle.com, alan@lxorguk.ukuu.org.uk
-In-Reply-To: <20101115101406.77e072ef.randy.dunlap@oracle.com>
-References: <20101115101406.77e072ef.randy.dunlap@oracle.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86, mrst: Fix dependencies of "select INTEL_SCU_IPC"
-Message-ID: <tip-ad02519a0d27da4a0a50cbc696e810c94e27c28e@git.kernel.org>
-Git-Commit-ID: ad02519a0d27da4a0a50cbc696e810c94e27c28e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S934817Ab0KQMpH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 07:45:07 -0500
+Received: from smtp-vbr8.xs4all.nl ([194.109.24.28]:1616 "EHLO
+	smtp-vbr8.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933626Ab0KQMpG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 07:45:06 -0500
+Message-ID: <79f17a04986247b4ac5806e708f3d2d5.squirrel@webmail.xs4all.nl>
+In-Reply-To: <201011171337.35663.laurent.pinchart@ideasonboard.com>
+References: <1289939083-27209-1-git-send-email-achew@nvidia.com>
+    <643E69AA4436674C8F39DCC2C05F763816BB828A40@HQMAIL03.nvidia.com>
+    <201011170811.06697.hverkuil@xs4all.nl>
+    <201011171337.35663.laurent.pinchart@ideasonboard.com>
+Date: Wed, 17 Nov 2010 13:44:57 +0100
+Subject: Re: [PATCH 1/1] videobuf: Initialize lists in videobuf_buffer.
+From: "Hans Verkuil" <hverkuil@xs4all.nl>
+To: "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>
+Cc: "Andrew Chew" <achew@nvidia.com>,
+        "'Figo.zhang'" <zhangtianfei@leadcoretech.com>,
+        "pawel@osciak.com" <pawel@osciak.com>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 17 Nov 2010 12:42:44 +0000 (UTC)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ad02519a0d27da4a0a50cbc696e810c94e27c28e
-Gitweb:     http://git.kernel.org/tip/ad02519a0d27da4a0a50cbc696e810c94e27c28e
-Author:     Randy Dunlap <randy.dunlap@oracle.com>
-AuthorDate: Mon, 15 Nov 2010 10:14:06 -0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 17 Nov 2010 13:41:44 +0100
 
-x86, mrst: Fix dependencies of "select INTEL_SCU_IPC"
+> Hi Hans,
+>
+> On Wednesday 17 November 2010 08:11:06 Hans Verkuil wrote:
+>> On Wednesday, November 17, 2010 02:38:09 Andrew Chew wrote:
+>> > > > diff --git a/drivers/media/video/videobuf-dma-contig.c
+>> > >
+>> > > b/drivers/media/video/videobuf-dma-contig.c
+>> > >
+>> > > > index c969111..f7e0f86 100644
+>> > > > --- a/drivers/media/video/videobuf-dma-contig.c
+>> > > > +++ b/drivers/media/video/videobuf-dma-contig.c
+>> > > > @@ -193,6 +193,8 @@ static struct videobuf_buffer
+>> > >
+>> > > *__videobuf_alloc_vb(size_t size)
+>> > >
+>> > > >   	if (vb) {
+>> > > >
+>> > > >   		mem = vb->priv = ((char *)vb) + size;
+>> > > >   		mem->magic = MAGIC_DC_MEM;
+>> > > >
+>> > > > +		INIT_LIST_HEAD(&vb->stream);
+>> > > > +		INIT_LIST_HEAD(&vb->queue);
+>> > >
+>> > > i think it no need to be init, it just a list-entry.
+>> >
+>> > Okay, if that's really the case, then sh_mobile_ceu_camera.c,
+>> > pxa_camera.c, mx1_camera.c, mx2_camera.c, and omap1_camera.c needs to
+>> be
+>> > fixed to remove that WARN_ON(!list_empty(&vb->queue)); in their
+>> > videobuf_prepare() methods, because those WARN_ON's are assuming that
+>> > vb->queue is properly initialized as a list head.
+>> >
+>> > Which will it be?
+>>
+>> These list entries need to be inited. It is bad form to have
+>> uninitialized
+>> list entries. It is not as if this is a big deal to initialize them
+>> properly.
+>
+> I disagree with that. List heads must be initialized, but there's no point
+> in
+> initializing list entries.
 
-commit b9fc71f47 (x86, mrst: The shutdown for MRST requires the SCU
-IPC mechanism) introduced the following warning:
+You are right. I got confused due to some problems I had in the past in
+another driver, but it turned out to be a list header that caused the
+problems, not a list entry. So removing the bogus WARN_ONs is sufficient.
 
- warning: (X86_MRST && PCI && PCI_GOANY && X86_32 &&
- X86_EXTENDED_PLATFORM && X86_IO_APIC) selects INTEL_SCU_IPC which has
- unmet direct dependencies (X86 && X86_PLATFORM_DEVICES && X86_MRST)
+Regards,
 
-which is due to the hierarchical menu structure.
+       Hans
 
-Select X86_PLATFORM_DEVICES as well.
+-- 
+Hans Verkuil - video4linux developer - sponsored by Cisco
 
-Originally-from: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <20101115101406.77e072ef.randy.dunlap@oracle.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
----
- arch/x86/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 6e877b9..655fcf5 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -400,6 +400,7 @@ config X86_MRST
- 	select I2C
- 	select SPI
- 	select INTEL_SCU_IPC
-+	select X86_PLATFORM_DEVICES
- 	---help---
- 	  Moorestown is Intel's Low Power Intel Architecture (LPIA) based Moblin
- 	  Internet Device(MID) platform. Moorestown consists of two chips:
