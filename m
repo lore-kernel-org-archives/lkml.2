@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935050Ab0KQRQj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 12:16:39 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36233 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935027Ab0KQRQi (ORCPT
+	id S935060Ab0KQRRd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:17:33 -0500
+Received: from Mycroft.westnet.com ([216.187.52.7]:33860 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935027Ab0KQRRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 12:16:38 -0500
-Date: Wed, 17 Nov 2010 17:16:13 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 05/20] ARM: LPAE: Introduce L_PTE_NOEXEC and
-	L_PTE_NOWRITE
-Message-ID: <20101117171613.GB5308@n2100.arm.linux.org.uk>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com> <1289584840-18097-6-git-send-email-catalin.marinas@arm.com> <20101115183014.GD31421@n2100.arm.linux.org.uk> <AANLkTik5FcZ3rNtiwN8kYP0LZh+YqGtKP_RteoFiWa16@mail.gmail.com>
+	Wed, 17 Nov 2010 12:17:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTik5FcZ3rNtiwN8kYP0LZh+YqGtKP_RteoFiWa16@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19684.3589.497919.669784@quad.stoffel.home>
+Date: Wed, 17 Nov 2010 12:16:53 -0500
+From: "John Stoffel" <john@stoffel.org>
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Vivek Goyal <vgoyal@redhat.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+In-Reply-To: <20101117150156.GA17082@tango.0pointer.de>
+References: <20101116181603.GC19327@tango.0pointer.de>
+	<AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+	<20101116202839.GC27235@tango.0pointer.de>
+	<20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
+	<AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
+	<20101116211909.GB16589@tango.0pointer.de>
+	<20101116233934.GC1568@thunk.org>
+	<20101117002159.GA3184@tango.0pointer.de>
+	<20101117020626.GB3290@thunk.org>
+	<20101117145712.GA29892@redhat.com>
+	<20101117150156.GA17082@tango.0pointer.de>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 05:02:37PM +0000, Catalin Marinas wrote:
-> On 15 November 2010 18:30, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Fri, Nov 12, 2010 at 06:00:25PM +0000, Catalin Marinas wrote:
-> >> --- a/arch/arm/include/asm/pgtable-2level.h
-> >> +++ b/arch/arm/include/asm/pgtable-2level.h
-> >> @@ -128,6 +128,8 @@
-> >>  #define L_PTE_USER           (1 << 8)
-> >>  #define L_PTE_EXEC           (1 << 9)
-> >>  #define L_PTE_SHARED         (1 << 10)       /* shared(v6), coherent(xsc3) */
-> >> +#define L_PTE_NOEXEC         (0)
-> >> +#define L_PTE_NOWRITE                (0)
-> >
-> > Let's not make this more complicated than it has to be.  If we need the
-> > inverse of WRITE and EXEC, then that's what we should change everyone to,
-> > not invent a new system to work along side the old system.
-> 
-> Question on the pgprot_noncached/writecombine/dmacoherent - in the
-> current implementation we pass L_PTE_EXEC on the dmacoherent macro.
+>>>>> "Lennart" == Lennart Poettering <mzxreary@0pointer.de> writes:
 
-Erm.  Please look at the code again.
+Lennart> I wouldn't be too concerned here. It's not that we end up
+Lennart> with 1000s of groups here. It's way < 40 or in the end, for a
+Lennart> single user machine. Which I think isn't that bad.
+
+Ok, so how will this impact users on a single machine which is used to
+host VNC sessions?  I've got machines with 30+ users all running one
+or more VNC sessions each on there.  Nothing CPU bound generally,
+unless something freaks out and starts hogging a CPU.  But will the
+overhead of 1000 groups be noticeable?
+
+Thanks,
+John
