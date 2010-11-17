@@ -1,86 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757703Ab0KQCfp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 21:35:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61739 "EHLO mx1.redhat.com"
+	id S1759092Ab0KQCf4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 21:35:56 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56709 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754468Ab0KQCfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 21:35:44 -0500
-Date: Tue, 16 Nov 2010 21:34:56 -0500
-From: Josef Bacik <josef@redhat.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: Dave Chinner <david@fromorbit.com>, Andreas Dilger <adilger@dilger.ca>,
-        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, cmm@us.ibm.com,
-        cluster-devel@redhat.com, ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
-Message-ID: <20101117023456.GD5618@dhcp231-156.rdu.redhat.com>
-References: <1289840723-3056-1-git-send-email-josef@redhat.com> <1289840723-3056-2-git-send-email-josef@redhat.com> <20101116111611.GA4757@quack.suse.cz> <20101116114346.GB4757@quack.suse.cz> <20101116125249.GB31957@dhcp231-156.rdu.redhat.com> <20101116131451.GH4757@quack.suse.cz> <18ACAA85-8847-4B12-9839-F99FB6C7B3E4@dilger.ca> <20101117021150.GL22876@dastard> <20101117022814.GB5618@dhcp231-156.rdu.redhat.com>
+	id S1758598Ab0KQCfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 21:35:54 -0500
+Message-ID: <4CE33F86.7040403@linux.vnet.ibm.com>
+Date: Tue, 16 Nov 2010 18:35:50 -0800
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117022814.GB5618@dhcp231-156.rdu.redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+        "robert.richter" <robert.richter@amd.com>,
+        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [RFC][PATCH] perf: sysfs type id
+References: <1289339119.2191.92.camel@laptop> <AANLkTi=ojOnLyRO4hTgYdCCXLsN0wUeTcme=5h8-mjdz@mail.gmail.com> <1289398207.2191.117.camel@laptop> <1289398763.2191.121.camel@laptop> <AANLkTimQ7w38wzrYT4MgjHFr6LCVj2M5fB11-n3XCD2w@mail.gmail.com> <1289421164.2084.56.camel@laptop> <AANLkTiku7UsVoYv_+6r79rvGPJU7OU=VGDiaYo0H=82y@mail.gmail.com> <1289423135.2084.63.camel@laptop>
+In-Reply-To: <1289423135.2084.63.camel@laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 09:28:14PM -0500, Josef Bacik wrote:
-> On Wed, Nov 17, 2010 at 01:11:50PM +1100, Dave Chinner wrote:
-> > On Tue, Nov 16, 2010 at 06:22:47PM -0600, Andreas Dilger wrote:
-> > > On 2010-11-16, at 07:14, Jan Kara wrote:
-> > > >> Yeah I went back and forth on this.  KEEP_SIZE won't change the
-> > > >> behavior of PUNCH_HOLE since PUNCH_HOLE implicitly means keep
-> > > >> the size.  I figured since its "mode" and not "flags" it would
-> > > >> be ok to make either way accepted, but if you prefer PUNCH_HOLE
-> > > >> means you have to have KEEP_SIZE set then I'm cool with that,
-> > > >> just let me know one way or the other.
-> > > > 
-> > > > So we call it "mode" but speak about "flags"? Seems a bit
-> > > > inconsistent.  I'd maybe lean a bit at the "flags" side and just
-> > > > make sure that only one of FALLOC_FL_KEEP_SIZE,
-> > > > FALLOC_FL_PUNCH_HOLE is set (interpreting FALLOC_FL_KEEP_SIZE as
-> > > > allocate blocks beyond i_size). But I'm not sure what others
-> > > > think.
-> > > 
-> > > IMHO, it makes more sense for consistency and "get what users
-> > > expect" that these be treated as flags.  Some users will want
-> > > KEEP_SIZE, but in other cases it may make sense that a hole punch
-> > > at the end of a file should shrink the file (i.e. the opposite of
-> > > an append).
-> > 
-> > What's wrong with ftruncate() for this?
-> > 
-> > There's plenty of open questions about the interface if we allow
-> > hole punching to change the file size. e.g. where do we set the EOF
-> > (offset or offset+len)?  What do we do with the rest of the blocks
-> > that are now beyond EOF?  We weren't asked to punch them out, so do
-> > we leave them behind? What if we are leaving written blocks beyond
-> > EOF - does any filesystem other than XFS support that (i.e. are we
-> > introducing different behaviour on different filesystems)?  And what
-> > happens if the offset is beyond EOF? Do we extend the file, and if
-> > so why wouldn't you just use ftruncate() instead?
-> > 
-> > IMO, allowing hole punching to change the file size makes it much
-> > more complicated and hence less likely to simply do what the user
-> > expects. It also is harder to implement and testing becomes much
-> > more intricate. From that perspective, it does not seem desirable to
-> > me...
-> > 
-> 
-> FWIW I agree with Dave, the only question at this point is do we force users to
-> specify KEEP_SIZE with PUNCH_HOLE?  On one hand it makes the interface a bit
-> more consistent, on the other hand it makes the documentation a little weird
-> 
-> "We have mode here, but if you want to use PUNCH_HOLE you also have to specify
-> KEEP_SIZE, so really it's like a flags field it's just named poorly"
-> 
-> I have no strong opinions the other way so if nobody else does then I'll just do
-> it Jan's way.  Thanks,
+On 11/10/2010 01:05 PM, Peter Zijlstra wrote:
+> On Wed, 2010-11-10 at 21:53 +0100, Stephane Eranian wrote:
+>> On Wed, Nov 10, 2010 at 9:32 PM, Peter Zijlstra<peterz@infradead.org>  wrote:
+>>> On Wed, 2010-11-10 at 21:08 +0100, Stephane Eranian wrote:
+>>>> Would that be by passing the full filename to the tool?
+>>>
+>>> possible, or something like<pmu-name>:<event-name>, cpu:cycles would
+>>> map to /sys/class/pmu/cpu/events/cycles (given the previous patch).
+>>>
+>>>
+>> Ok, but I think you're proposal is missing one bit. You are addressing
+>> the class (or type) of PMU, but you are not addressing the naming of
+>> an instance.
+>>
+>> Let's take an example, suppose you have counters on a graphic card.
+>> Your system has two such graphic cards. In your scheme you would
+>> end up with a sys/class/pmu/gfx/.....
+>>
+>> But now, suppose I want to count cycles on the first graphic card.
+>> Seems to me you need to expose the instances as well. The instance
+>> number needs to be passed in the attr struct somehow.
+>>
+>> You can either create multiple subdir under gfx, or have this info somewhere
+>> else in the sysfs tree, if people really care about class vs. instance.
+>>
+>> I can see users doing:
+>> $ perf stat -e gfx@1::cycles ...  ->  sys/class/gfx/1/event/cycles
+>>
+>> The reason I am using :: here is because libpfm4 is already using
+>> this as a separator for PMU type vs. event.
 >
+>
+> right, so the idea is to have these pmu devices hooked into the existing
+> sysfs topology, my proposed patch misses that bit because I wanted to
+> get something out before having to dig through the topology code trying
+> to figure out how all that works.
+>
+> So the 'cpu' pmu device would be linked from:
+>
+>    /sys/devices/system/cpu/pmu ->  /sys/class/pmu/cpu
+>
+> and gfx things would be linked like:
+>
+>    /sys/devices/pci0000:00/0000:00:1e.0/0000:0b:01.0/drm/card0/pmu ->  /sys/class/pmu/radeon0
 
-Sorry child induced sleep deprevation bleeding in there, that should read "I
-have no strong opinions one way or the other."  Sheesh,
+I don't understand the /sys/devices tree much (I will read up on it), 
+but this idea looks good to me.
 
-Josef 
+To clarify my understanding a bit and taking the gfx example, in the 
+path /sys/class/pmu/radeon0, is the '0' here denoting the 0'th radeon 
+chip in the system, or the radeon model number?  I would assume the 0'th 
+chip.
+
+So if I assume that now points to a unique radeon chip in the system, 
+underneath /sys/class/pmu/radeon0 will be a structure something like:
+
+radeon0/
+	event/
+		evt0
+		..
+		evtn
+
+And if there is a second radeon chip, there would be a nearly identical 
+tree:
+
+radeon1/
+	event/
+		evt0
+		..
+		evtn
+
+Is that correct?
+
+Some of these events may need modifiers / attributes / umasks... 
+whatever you want to call them.  And they may need more than one each, 
+and they may vary from event to event.  So to add to the hierarchy,
+we'd have:
+
+radeon0/
+     type (for attr.type)
+     event/
+         evt0/
+             id (a base number for attr.config)
+             description (text file - but could be CONFIG_*'d out)
+             modifiers/
+                 mod0/
+                     formula (some ascii syntax for describing how
+                              to set .config and/or .config_extra
+                              with this modifer's value)
+                     description (text - can configure out)
+                     constraints (some ascii syntax for describing
+                                  the values mod0 can take on)
+                 ..
+                 modn/
+         ..
+	evtn/
+
+And this would be replicated for radeon1..n
+
+Maybe all of the "event" directories could be soft links to a common
+radeon<model_number> event directory.
+
+When you fully specify an event, you have something like:
+
+/sys/devices/pci0000:00/0000:00:1e.0/0000:0b:01.0/drm/card0/pmu/<event>[:<modifier>=nnn:...]
+
+So it wouldn't end up being strictly a sysfs path anymore, and perf 
+would have a bit of parsing work to do, to evaluate the modifiers, using 
+the info from constraints, and construct the .type, .config, and 
+.config_extra fields using formula.
+
+Or maybe you have some other structure in mind?
+
+- Corey
