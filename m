@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759054Ab0KQALx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 19:11:53 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25193 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757276Ab0KQALw (ORCPT
+	id S1757389Ab0KQAQT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 19:16:19 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:59004 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751011Ab0KQAQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 19:11:52 -0500
-Date: Tue, 16 Nov 2010 16:10:47 -0800
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>, Mark Fasheh <mfasheh@suse.com>,
-        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 36/44] fs/ocfs2: Remove unnecessary semicolons
-Message-ID: <20101117001046.GE10237@mail.oracle.com>
-Mail-Followup-To: Joe Perches <joe@perches.com>,
-	Jiri Kosina <trivial@kernel.org>, Mark Fasheh <mfasheh@suse.com>,
-	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
-References: <cover.1289789604.git.joe@perches.com>
- <e32409b17aaa1a54fec85f3654583ef08fcf851c.1289789605.git.joe@perches.com>
+	Tue, 16 Nov 2010 19:16:18 -0500
+From: "Tim Pepper" <lnxninja@linux.vnet.ibm.com>
+Date: Tue, 16 Nov 2010 16:16:12 -0800
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 04/28] fs: change d_delete semantics
+Message-ID: <20101117001611.GA22789@tpepper-t61p.dolavim.us>
+References: <20101116140900.039761100@kernel.dk>
+ <20101116142028.552806605@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <e32409b17aaa1a54fec85f3654583ef08fcf851c.1289789605.git.joe@perches.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101116142028.552806605@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 14, 2010 at 07:04:55PM -0800, Joe Perches wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Wed 17 Nov at 01:09:04 +1100 npiggin@kernel.dk said:
 
-Acked-by: Joel Becker <joel.becker@oracle.com>
+>  Documentation/filesystems/vfs.txt |   27 +++++++++++++--------------
+>  include/linux/dcache.h            |    6 +++---
 
+...minor nit:
 
-> ---
->  fs/ocfs2/refcounttree.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+There are white space changes in here around d_hash() and d_compare().
+
 > 
-> diff --git a/fs/ocfs2/refcounttree.c b/fs/ocfs2/refcounttree.c
-> index b5f9160..da14a42 100644
-> --- a/fs/ocfs2/refcounttree.c
-> +++ b/fs/ocfs2/refcounttree.c
-> @@ -3704,7 +3704,7 @@ int ocfs2_refcount_cow_xattr(struct inode *inode,
->  	context->cow_start = cow_start;
->  	context->cow_len = cow_len;
->  	context->ref_tree = ref_tree;
-> -	context->ref_root_bh = ref_root_bh;;
-> +	context->ref_root_bh = ref_root_bh;
->  	context->cow_object = xv;
->  
->  	context->cow_duplicate_clusters = ocfs2_duplicate_clusters_by_jbd;
-> -- 
-> 1.7.3.1.g432b3.dirty
+> Index: linux-2.6/Documentation/filesystems/vfs.txt
+> ===================================================================
+> --- linux-2.6.orig/Documentation/filesystems/vfs.txt	2010-11-17 00:50:54.000000000 +1100
+> +++ linux-2.6/Documentation/filesystems/vfs.txt	2010-11-17 01:05:50.000000000 +1100
+> @@ -841,9 +841,9 @@ the VFS uses a default. As of kernel 2.6
 > 
+>  struct dentry_operations {
+>  	int (*d_revalidate)(struct dentry *, struct nameidata *);
+> -	int (*d_hash) (struct dentry *, struct qstr *);
+> -	int (*d_compare) (struct dentry *, struct qstr *, struct qstr *);
+> -	int (*d_delete)(struct dentry *);
+> +	int (*d_hash)(struct dentry *, struct qstr *);
+> +	int (*d_compare)(struct dentry *, struct qstr *, struct qstr *);
+> +	int (*d_delete)(const struct dentry *);
+>  	void (*d_release)(struct dentry *);
+>  	void (*d_iput)(struct dentry *, struct inode *);
+>  	char *(*d_dname)(struct dentry *, char *, int);
+
+> Index: linux-2.6/include/linux/dcache.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/dcache.h	2010-11-17 00:52:04.000000000 +1100
+> +++ linux-2.6/include/linux/dcache.h	2010-11-17 01:05:50.000000000 +1100
+> @@ -133,9 +133,9 @@ enum dentry_d_lock_class
+> 
+>  struct dentry_operations {
+>  	int (*d_revalidate)(struct dentry *, struct nameidata *);
+> -	int (*d_hash) (struct dentry *, struct qstr *);
+> -	int (*d_compare) (struct dentry *, struct qstr *, struct qstr *);
+> -	int (*d_delete)(struct dentry *);
+> +	int (*d_hash)(struct dentry *, struct qstr *);
+> +	int (*d_compare)(struct dentry *, struct qstr *, struct qstr *);
+> +	int (*d_delete)(const struct dentry *);
+>  	void (*d_release)(struct dentry *);
+>  	void (*d_iput)(struct dentry *, struct inode *);
+>  	char *(*d_dname)(struct dentry *, char *, int);
 
 -- 
-
-Life's Little Instruction Book #237
-
-	"Seek out the good in people."
-
-Joel Becker
-Senior Development Manager
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+Tim Pepper  <lnxninja@linux.vnet.ibm.com>
+IBM Linux Technology Center
