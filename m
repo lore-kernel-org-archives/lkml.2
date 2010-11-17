@@ -1,96 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934734Ab0KQPIE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 10:08:04 -0500
-Received: from usindmx01.hds.com ([207.126.252.12]:56104 "EHLO
-	usindmx01.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758075Ab0KQPIB (ORCPT
+	id S934713Ab0KQPKi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 10:10:38 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:61159 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933120Ab0KQPKh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 10:08:01 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Artem.Bityutskiy@nokia.com" <Artem.Bityutskiy@nokia.com>,
-        ext KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "simon.kagstrom@netinsight.net" <simon.kagstrom@netinsight.net>,
-        "David.Woodhouse@intel.com" <David.Woodhouse@intel.com>,
-        "anders.grafstrom@netinsight.net" <anders.grafstrom@netinsight.net>,
-        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "eparis@redhat.com" <eparis@redhat.com>, "hch@lst.de" <hch@lst.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
-        "marco.stornelli@gmail.com" <marco.stornelli@gmail.com>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        Aaron Durbin <adurbin@google.com>,
-        "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>
-CC: "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>
-Date: Wed, 17 Nov 2010 10:00:37 -0500
-Subject: [PATCH 1/2] kmsg_dump: adding to reboot, halt, poweroff and
- emergency_restart path
-Thread-Topic: [PATCH 1/2] kmsg_dump: adding to reboot, halt, poweroff and
- emergency_restart path
-Thread-Index: AcuGZI2/m1RrdnFLRB6WCVKdkLnjOgAADLkQAADI5ZA=
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2FA@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2F5@USINDEVS01.corp.hds.com>
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C12D6E2F5@USINDEVS01.corp.hds.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Wed, 17 Nov 2010 10:10:37 -0500
+X-Authority-Analysis: v=1.1 cv=6ptpMFIBtxRk0xdOb6IhJTbTLVRlKjWFes7R4SsWCrA= c=1 sm=0 a=2kSzP4yT2LoA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=9YFv4M9CJv9Quf_-15wA:9 a=OQ2rEvxo_NaAW4ypFQY8d_qBfbcA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "Ted Ts'o" <tytso@mit.edu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Jason Baron <jbaron@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+In-Reply-To: <1290003110.2109.822.camel@laptop>
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
+	 <20101117013700.GA3290@thunk.org> <20101117132404.GF27063@elte.hu>
+	 <1290001128.2109.785.camel@laptop>  <20101117140002.GH27063@elte.hu>
+	 <1290003110.2109.822.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 17 Nov 2010 10:10:34 -0500
+Message-ID: <1290006634.30543.61.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oAHF8SIF004495
 
-This patch alters mtdoops and ramoops to perform their actions only for KMSG_DUMP_PANIC,
-KMSG_DUMP_OOPS and KMSG_DUMP_KEXEC because they would like to log crashes only.
+On Wed, 2010-11-17 at 15:11 +0100, Peter Zijlstra wrote:
+> On Wed, 2010-11-17 at 15:00 +0100, Ingo Molnar wrote:
+> > > But yes, it is functional.
+> > 
+> > I suspect that is what matters mostly - unless you think that it's impossible to 
+> > have a sane implementation of it, if the users come. 
+> 
+> I'm not sure, I raised the point several times, and I think Steve and
+> Tom though it was possible to implement sanely, but I'm not sure if it
+> was expression invariant (the fix that is).
+> 
+> It would be very good to have a definite answer on that.
+> 
+> The idea was to not let the filter engine work on the trace data (once
+> its gathered) but on the trace argument right at the beginning of the
+> tracepoint callchain, since some of the trace data is an expression of
+> the trace argument (say next->prio instead of next), the trace
+> expression wouldn't stay invariant, you'd have to write a different
+> filter for the same effect.
+> 
+> So I think it would be wise to make this change sooner rather than
+> later.
 
- Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+Right, the problem with filtering is what do we want to filter, and what
+about copying?
 
----
- drivers/char/ramoops.c |    5 +++++
- drivers/mtd/mtdoops.c  |    5 +++++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+Currently, we copy the data into the buffer and then filter on that
+data. We could also easily filter on the parameters of the tracepoint,
+but sometimes those parameters do not match the final output (as the
+case with sched_switch). Do we copy the data into a separate "per cpu"
+temp buffer, and figure out the filter then? And if the filter is fine,
+then copy into the buffer. This obviously is slow, due to the multiple
+copies. We could do this only if the filtering is enabled.
 
-diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c index 73dcb0e..8998b29 100644
---- a/drivers/char/ramoops.c
-+++ b/drivers/char/ramoops.c
-@@ -69,6 +69,11 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
- 	char *buf;
- 	struct timeval timestamp;
- 
-+	if (reason != KMSG_DUMP_OOPS &&
-+	    reason != KMSG_DUMP_PANIC &&
-+	    reason != KMSG_DUMP_KEXEC)
-+		return;
-+
- 	/* Only dump oopses if dump_oops is set */
- 	if (reason == KMSG_DUMP_OOPS && !dump_oops)
- 		return;
-diff --git a/drivers/mtd/mtdoops.c b/drivers/mtd/mtdoops.c index 1ee72f3..c948150 100644
---- a/drivers/mtd/mtdoops.c
-+++ b/drivers/mtd/mtdoops.c
-@@ -307,6 +307,11 @@ static void mtdoops_do_dump(struct kmsg_dumper *dumper,
- 	unsigned long l1_cpy, l2_cpy;
- 	char *dst;
- 
-+	if (reason != KMSG_DUMP_OOPS &&
-+	    reason != KMSG_DUMP_PANIC &&
-+	    reason != KMSG_DUMP_KEXEC)
-+		return;
-+
- 	/* Only dump oopses if dump_oops is set */
- 	if (reason == KMSG_DUMP_OOPS && !dump_oops)
- 		return;
---
-1.7.2.2
+Note, the stable event proposal I suggested passes the same info via the
+trace callback parameters that is expected to go into the buffer. Arrays
+are passed as pointers so the copying is of the minimum. This would give
+us the ability to filter _before_ writing into the buffer, and no
+unnecessary copying.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+-- Steve
+
+
