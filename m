@@ -1,36 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759676Ab0KQEpl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 23:45:41 -0500
-Received: from mga03.intel.com ([143.182.124.21]:37715 "EHLO mga03.intel.com"
+	id S934306Ab0KQEpg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 23:45:36 -0500
+Received: from mga09.intel.com ([134.134.136.24]:7211 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759618Ab0KQEpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 23:45:39 -0500
+	id S1754387Ab0KQEpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 23:45:35 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.59,209,1288594800"; 
-   d="scan'208";a="349743923"
+   d="scan'208";a="678258358"
 X-Mailbox-Line: From shaohui.zheng@intel.com Wed Nov 17 10:10:00 2010
-Message-Id: <20101117021000.638336620@intel.com>
-References: <20101117020759.016741414@intel.com>
+Message-Id: <20101117020759.016741414@intel.com>
 User-Agent: quilt/0.46-1
-Date: Wed, 17 Nov 2010 10:08:02 +0800
+Date: Wed, 17 Nov 2010 10:07:59 +0800
 From: shaohui.zheng@intel.com
 To: akpm@linux-foundation.org, linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        Dave Hansen <haveblue@us.ibm.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Haicheng Li <haicheng.li@intel.com>,
-        Shaohui Zheng <shaohui.zheng@intel.com>
-Subject: [3/8,v3] NUMA Hotplug Emulator: Userland interface to hotplug-add fake offlined nodes.
-Content-Disposition: inline; filename=003-hotplug-emulator-userland-interface-to-add-fake-node.patch
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com
+Subject: [0/8,v3] NUMA Hotplug Emulator - Introduction & Feedbacks 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Haicheng Li <haicheng.li@intel.com>
+* PATCHSET INTRODUCTION
 
-Add a sysfs entry "probe" under /sys/devices/system/node/:
+patch 1: Add function to hide memory region via e820 table. Then emulator will
+	     use these memory regions to fake offlined numa nodes.
+patch 2: Infrastructure of NUMA hotplug emulation, introduce "hide node".
+patch 3: Provide an userland interface to hotplug-add fake offlined nodes.
+patch 4: Abstract cpu register functions, make these interface friend for cpu
+		 hotplug emulation
+patch 5: Support cpu probe/release in x86, it provide a software method to hot
+		 add/remove cpu with sysfs interface.
+patch 6: Fake CPU socket with logical CPU on x86, to prevent the scheduling
+		 domain to build the incorrect hierarchy.
+patch 7: extend memory probe interface to support NUMA, we can add the memory to
+		 a specified node with the interface.
+patch 8: Documentations
+
+* FEEDBACKS & RESPONSES
+
+1) Patch 0
+Balbir & Greg: Suggest to use tool git/quilt to manage/send the patchset.
+Response: Thanks for the recommendation, With help from Fengguang, I get quilt
+		  working, it is a great tool.
+
+2) Patch 2
+Jaswinder Singh: if (hidden_num) is not required in patch 2
+Response: good catching, it is removed in v2.
+
+
+3) Patch 3
+Dave Hansen: Suggest to create a dedicated sysfs file for each possible node.
+Greg: 	  How big would this "list" be?  What will it look like exactly?
+Haicheng: It should follow "one value per file". It intends to show acceptable
+		  parameters.
+
+		  For example, if we have 4 fake offlined nodes, like node 2-5, then:
+			   $ cat /sys/devices/system/node/probe
+				 2-5
+
+		  Then user hotadds node3 to system:
+			   $ echo 3 > /sys/devices/system/node/probe
+			   $ cat /sys/devices/system/node/probe
+				 2,4-5
+
+Greg:   As you are trying to add a new sysfs file, please create the matching
+		Documentation/ABI/ file as well.
+Response: We miss it, and we already add it in v2.
+
+Patch 4 & 5: 
+Paul Mundt: This looks like an incredibly painful interface. How about scrapping all
+of this _emu() mess and just reworking the register_cpu() interface?
+Response: accept Paul's suggestion, and remove the cpu _emu functions.
+
+Patch 7: 
+Dave Hansen: If we're going to put multiple values into the file now and
+		 add to the ABI, can we be more explicit about it?
+		echo "physical_address=0x40000000 numa_node=3" > memory/probe
+Response: Dave's new interface was accpeted, and more we still keep the old 
+	      format for compatibility. We documented the these interfaces into
+		  Documentation/ABI in v2.
+Greg: 	suggest to use configfs replace for the memory probe interface
+Andi: 	This is a debugging interface. It doesn't need to have the
+	  	most pretty interface in the world, because it will be only used for
+	  	QA by a few people. it's just a QA interface, not the next generation
+		of POSIX.
+Response: We still keep it as sysfs interface since node/cpu/memory probe interface
+		  are all in sysfs, we can create another group of patches to support
+		  configfs if we have this strong requirement in future.
+
+
+* WHAT IS HOTPLUG EMULATOR 
+
+NUMA hotplug emulator is collectively named for the hotplug emulation
+it is able to emulate NUMA Node Hotplug thru a pure software way. It
+intends to help people easily debug and test node/cpu/memory hotplug
+related stuff on a none-numa-hotplug-support machine, even an UMA machine.
+
+The emulator provides mechanism to emulate the process of physcial cpu/mem
+hotadd, it provides possibility to debug CPU and memory hotplug on the machines
+without NUMA support for kenrel developers. It offers an interface for cpu
+and memory hotplug test purpose.
+
+* WHY DO WE USE HOTPLUG EMULATOR
+
+We are focusing on the hotplug emualation for a few months. The emualor helps
+ team to reproduce all the major hotplug bugs. It plays an important role to
+the hotplug code quality assuirance. Because of the hotplug emulator, we already
+move most of the debug working to virtual evironment.
+
+* Principles & Usages 
+
+NUMA hotplug emulator include 3 different parts, We add a menu item to the
+menuconfig to enable/disable them.
+
+1) Node hotplug emulation:
+
+The emulator firstly hides RAM via E820 table, and then it can
+fake offlined nodes with the hidden RAM.
+
+After system bootup, user is able to hotplug-add these offlined
+nodes, which is just similar to a real hotplug hardware behavior.
+
+Using boot option "numa=hide=N*size" to fake offlined nodes:
+	- N is the number of hidden nodes
+	- size is the memory size (in MB) per hidden node.
+
+There is a sysfs entry "probe" under /sys/devices/system/node/ for user
+to hotplug the fake offlined nodes:
 
  - to show all fake offlined nodes:
     $ cat /sys/devices/system/node/probe
@@ -38,130 +136,51 @@ Add a sysfs entry "probe" under /sys/devices/system/node/:
  - to hotadd a fake offlined node, e.g. nodeid is N:
     $ echo N > /sys/devices/system/node/probe
 
-CC: Dave Hansen <haveblue@us.ibm.com>
-CC: Christoph Lameter <cl@linux-foundation.org>
-Signed-off-by: Haicheng Li <haicheng.li@intel.com>
-Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
----
-Index: linux-hpe4/Documentation/ABI/testing/sysfs-devices-node
-===================================================================
---- linux-hpe4.orig/Documentation/ABI/testing/sysfs-devices-node	2010-11-15 17:13:02.433461413 +0800
-+++ linux-hpe4/Documentation/ABI/testing/sysfs-devices-node	2010-11-15 17:13:07.093461818 +0800
-@@ -5,3 +5,11 @@
- 		When this file is written to, all memory within that node
- 		will be compacted. When it completes, memory will be freed
- 		into blocks which have as many contiguous pages as possible
-+
-+What:		/sys/devices/system/node/probe
-+Date:		Jun 2010
-+Contact:	Haicheng Li <haicheng.li@intel.com>
-+Description:
-+		This file lists all the availabe hidden nodes, when we write
-+		a nid number to this interface, and the nid is in the available
-+		node list, the hidden node becomes visible.
-Index: linux-hpe4/drivers/base/node.c
-===================================================================
---- linux-hpe4.orig/drivers/base/node.c	2010-11-15 17:13:02.433461413 +0800
-+++ linux-hpe4/drivers/base/node.c	2010-11-15 17:13:07.093461818 +0800
-@@ -538,6 +538,25 @@
- 	unregister_node(&node_devices[nid]);
- }
- 
-+#ifdef CONFIG_NODE_HOTPLUG_EMU
-+static ssize_t store_nodes_probe(struct sysdev_class *class,
-+				  struct sysdev_class_attribute *attr,
-+				  const char *buf, size_t count)
-+{
-+	long nid;
-+
-+	strict_strtol(buf, 0, &nid);
-+	if (nid < 0 || nid > nr_node_ids - 1) {
-+		printk(KERN_ERR "Invalid NUMA node id: %ld (0 <= nid < %d).\n",
-+			nid, nr_node_ids);
-+		return -EPERM;
-+	}
-+	hotadd_hidden_nodes(nid);
-+
-+	return count;
-+}
-+#endif
-+
- /*
-  * node states attributes
-  */
-@@ -566,26 +585,35 @@
- 	return print_nodes_state(na->state, buf);
- }
- 
--#define _NODE_ATTR(name, state) \
-+#define _NODE_ATTR_RO(name, state) \
- 	{ _SYSDEV_CLASS_ATTR(name, 0444, show_node_state, NULL), state }
- 
-+#define _NODE_ATTR_RW(name, store_func, state) \
-+	{ _SYSDEV_CLASS_ATTR(name, 0644, show_node_state, store_func), state }
-+
- static struct node_attr node_state_attr[] = {
--	_NODE_ATTR(possible, N_POSSIBLE),
--	_NODE_ATTR(online, N_ONLINE),
--	_NODE_ATTR(has_normal_memory, N_NORMAL_MEMORY),
--	_NODE_ATTR(has_cpu, N_CPU),
-+	[N_POSSIBLE] = _NODE_ATTR_RO(possible, N_POSSIBLE),
-+#ifdef CONFIG_NODE_HOTPLUG_EMU
-+	[N_HIDDEN] = _NODE_ATTR_RW(probe, store_nodes_probe, N_HIDDEN),
-+#endif
-+	[N_ONLINE] = _NODE_ATTR_RO(online, N_ONLINE),
-+	[N_NORMAL_MEMORY] = _NODE_ATTR_RO(has_normal_memory, N_NORMAL_MEMORY),
- #ifdef CONFIG_HIGHMEM
--	_NODE_ATTR(has_high_memory, N_HIGH_MEMORY),
-+	[N_HIGH_MEMORY] = _NODE_ATTR_RO(has_high_memory, N_HIGH_MEMORY),
- #endif
-+	[N_CPU] = _NODE_ATTR_RO(has_cpu, N_CPU),
- };
- 
- static struct sysdev_class_attribute *node_state_attrs[] = {
--	&node_state_attr[0].attr,
--	&node_state_attr[1].attr,
--	&node_state_attr[2].attr,
--	&node_state_attr[3].attr,
-+	&node_state_attr[N_POSSIBLE].attr,
-+#ifdef CONFIG_NODE_HOTPLUG_EMU
-+	&node_state_attr[N_HIDDEN].attr,
-+#endif
-+	&node_state_attr[N_ONLINE].attr,
-+	&node_state_attr[N_NORMAL_MEMORY].attr,
-+	&node_state_attr[N_CPU].attr,
- #ifdef CONFIG_HIGHMEM
--	&node_state_attr[4].attr,
-+	&node_state_attr[N_HIGH_MEMORY].attr,
- #endif
- 	NULL
- };
-Index: linux-hpe4/mm/Kconfig
-===================================================================
---- linux-hpe4.orig/mm/Kconfig	2010-11-15 17:13:02.443461606 +0800
-+++ linux-hpe4/mm/Kconfig	2010-11-15 17:21:05.535335091 +0800
-@@ -147,6 +147,21 @@
- 	depends on MEMORY_HOTPLUG && ARCH_ENABLE_MEMORY_HOTREMOVE
- 	depends on MIGRATION
- 
-+config NUMA_HOTPLUG_EMU
-+	bool "NUMA hotplug emulator"
-+	depends on X86_64 && NUMA && MEMORY_HOTPLUG
-+
-+	---help---
-+
-+config NODE_HOTPLUG_EMU
-+	bool "Node hotplug emulation"
-+	depends on NUMA_HOTPLUG_EMU && MEMORY_HOTPLUG
-+	---help---
-+	  Enable Node hotplug emulation. The machine will be setup with
-+	  hidden virtual nodes when booted with "numa=hide=N*size", where
-+	  N is the number of hidden nodes, size is the memory size per
-+	  hidden node. This is only useful for debugging.
-+
- #
- # If we have space for more page flags then we can enable additional
- # optimizations and functionality.
+2) CPU hotplug emulation:
+
+The emulator reserve CPUs throu grub parameter, the reserved CPUs can be
+hot-add/hot-remove in software method.
+
+When hotplug a CPU with emulator, we are using a logical CPU to emulate the CPU
+hotplug process. For the CPU supported SMT, some logical CPUs are in the same
+socket, but it may located in different NUMA node after we have emulator.  We
+put the logical CPU into a fake CPU socket, and assign it an unique
+phys_proc_id. For the fake socket, we put one logical CPU in only.
+
+ - to hide CPUs
+	- Using boot option "maxcpus=N" hide CPUs
+	  N is the number of initialize CPUs
+	- Using boot option "cpu_hpe=on" to enable cpu hotplug emulation
+      when cpu_hpe is enabled, the rest CPUs will not be initialized 
+
+ - to hot-add CPU to node
+	$ echo nid > cpu/probe
+
+ - to hot-remove CPU
+	$ echo nid > cpu/release
+
+3) Memory hotplug emulation:
+
+The emulator reserve memory before OS booting, the reserved memory region
+is remove from e820 table, and they can be hot-added via the probe interface,
+this interface was extend to support add memory to the specified node, It
+maintains backwards compatibility.
+
+The difficulty of Memory Release is well-known, we have no plan for it until now.
+
+ - reserve memory throu grub parameter
+ 	mem=1024m
+
+ - add a memory section to node 3
+    $ echo 0x40000000,3 > memory/probe
+	OR
+    $ echo 1024m,3 > memory/probe
+
+* ACKNOWLEDGMENT 
+
+hotplug emulator includes a team's efforts, thanks all of them.
+They are:
+Andi Kleen, Haicheng Li, Shaohui Zheng, Fengguang Wu and Yongkang You
 
 -- 
 Thanks & Regards,
