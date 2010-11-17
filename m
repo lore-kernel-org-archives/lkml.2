@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935332Ab0KQTEU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 14:04:20 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:57972 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934902Ab0KQTET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 14:04:19 -0500
-Subject: Re: [7/8,v3] NUMA Hotplug Emulator: extend memory probe interface
- to support NUMA
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: shaohui.zheng@intel.com
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        Haicheng Li <haicheng.li@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Greg KH <greg@kroah.com>
-In-Reply-To: <20101117021000.916235444@intel.com>
-References: <20101117020759.016741414@intel.com>
-	 <20101117021000.916235444@intel.com>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Wed, 17 Nov 2010 10:50:07 -0800
-Message-ID: <1290019807.9173.3789.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1758709Ab0KQTFr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 14:05:47 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:32757 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758075Ab0KQTFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 14:05:45 -0500
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18+w67CZIImmkLBr7L7ZOnm
+Date: Wed, 17 Nov 2010 11:05:24 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Greg KH <greg@kroah.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+        Emeltchenko Andrei <Andrei.Emeltchenko.news@gmail.com>,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm@lists.infradead.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] OMAP: Serial: Define register access modes in LCR
+Message-ID: <20101117190524.GV9264@atomide.com>
+References: <1289982712-7309-1-git-send-email-Andrei.Emeltchenko.news@gmail.com>
+ <20101117161729.GF10992@kroah.com>
+ <87hbff7tbf.fsf@deeprootsystems.com>
+ <20101117173115.GA12349@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101117173115.GA12349@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 10:08 +0800, shaohui.zheng@intel.com wrote:
-> And more we make it friendly, it is possible to add memory to do
+* Greg KH <greg@kroah.com> [101117 09:21]:
+> On Wed, Nov 17, 2010 at 09:28:52AM -0800, Kevin Hilman wrote:
+> > Greg KH <greg@kroah.com> writes:
+> > 
+> > > On Wed, Nov 17, 2010 at 10:31:52AM +0200, Emeltchenko Andrei wrote:
+> > >> From: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+> > >> 
+> > >> Access to some registers depends on register access mode
+> > >> Three different modes are available for OMAP (at least)
+> > >> • Operational mode     LCR_REG[7] = 0x0
+> > >> • Configuration mode A LCR_REG[7] = 0x1 and LCR_REG[7:0]! = 0xBF
+> > >> • Configuration mode B LCR_REG[7] = 0x1 and LCR_REG[7:0]  = 0xBF
+> > >> 
+> > >> Define access modes and remove redefinitions and magic numbers
+> > >> in serial drivers (and later in bluetooth driver).
+> > >> 
+> > >> Signed-off-by: Andrei Emeltchenko <andrei.emeltchenko@nokia.com>
+> > >> ---
+> > >>  arch/arm/mach-omap2/serial.c                  |   12 ++++----
+> > >>  arch/arm/plat-omap/include/plat/omap-serial.h |    9 ------
+> > >>  drivers/serial/8250.c                         |   26 +++++++++---------
+> > >>  drivers/serial/omap-serial.c                  |   34 ++++++++++++------------
+> > >>  include/linux/serial_reg.h                    |    7 +++++
+> > >
+> > > What tree should this go through?  THe omap or serial one?
+> > 
+> > Since this only affects OMAP drivers, we can take this through OMAP.
+> > 
+> > That will also help us avoid conflicts, as we'll hopefully be converting
+> > the omap-serial driver to runtime PM for this next merge window as well.
 > 
->         echo 3g > memory/probe
->         echo 1024m,3 > memory/probe
+> Fine with me, feel free to add:
+> 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 > 
-> It maintains backwards compatibility.
-> 
-> Another format suggested by Dave Hansen:
-> 
->         echo physical_address=0x40000000 numa_node=3 > memory/probe
-> 
-> it is more explicit to show meaning of the parameters.
+> to it.
 
-The other thing that Greg suggested was to use configfs.  Looking back
-on it, that makes a lot of sense.  We can do better than these "probe"
-files.
+Thanks, will queue for 2.6.38 merge window.
 
-In your case, it might be useful to tell the kernel to be able to add
-memory in a node and add the node all in one go.  That'll probably be
-closer to what the hardware will do, and will exercise different code
-paths that the separate "add node", "then add memory" steps that you're
-using here.
+Regards,
 
-For the emulator, I also have to wonder if using debugfs is the right
-was since its ABI is a bit more, well, _flexible_ over time. :)
-
-> +       depends on NUMA_HOTPLUG_EMU
-> +       ---help---
-> +         Enable memory hotplug emulation. Reserve memory with grub parameter
-> +         "mem=N"(such as mem=1024M), where N is the initial memory size, the
-> +         rest physical memory will be removed from e820 table; the memory probe
-> +         interface is for memory hot-add to specified node in software method.
-> +         This is for debuging and testing purpose
-
-mem= actually sets the largest physical address that we're trying to
-use.  If you have a 256MB hole at 768MB, then mem=1G will only get you
-768MB of memory.  We probably get this wrong in a number of other places
-in the documentation, but we might as well get it right here.
-
-Maybe something like:
-        
-        Enable emulation of hotplug of NUMA nodes.  To use this, you
-        must also boot with the kernel command-line parameter
-        "mem=N"(such as mem=1024M), where N is the highest physical
-        address you would like to use at boot.  The rest of physical
-        memory will be removed from firmware tables and may be then be
-        hotplugged with this feature. This is for debuging and testing
-        purposes.
-        
-        Note that you can still examine the original, non-modified
-        firmware tables in: /sys/firmware/memmap
-        
--- Dave
-
+Tony
