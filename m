@@ -1,129 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934668Ab0KQJ15 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 04:27:57 -0500
-Received: from pfepa.post.tele.dk ([195.41.46.235]:35173 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933804Ab0KQJ1y (ORCPT
+	id S934673Ab0KQJap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 04:30:45 -0500
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:37723 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934588Ab0KQJan convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 04:27:54 -0500
-Date: Wed, 17 Nov 2010 10:27:51 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: dirk.brandewie@gmail.com, Michal Marek <mmarek@suse.cz>
-Cc: devicetree-discuss@lists.ozlabs.org, sodaville@linutronix.de,
-        arjan@linux.intel.com, linuxppc-dev@lists.ozlabs.org,
-        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] of: Add support for linking device tree blobs into
-	vmlinux
-Message-ID: <20101117092751.GA19781@merkur.ravnborg.org>
-References: <cover.1289943240.git.dirk.brandewie@gmail.com> <9129f0a21ea48fb2dcb89cea290e88f3e8c0d8a2.1289943240.git.dirk.brandewie@gmail.com>
-MIME-Version: 1.0
+	Wed, 17 Nov 2010 04:30:43 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=EPI+Anp5axUU12/DJ58YCKzU/28JrKwJBM9MxN4j1qY= c=1 sm=1
+ a=-7GN7jtwYLcA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10 a=xqWC_Br6kY4A:10
+ a=c23vf5CSMVc0QQz9B4a6RA==:17 a=SZPcMJaOT5KGTx3Jp3cA:9
+ a=tFfODJ8DFMr_qifDV7cA:7 a=hAFdFT0FYBrWpLKb9ULSG0gI0q0A:4 a=CjuIK1q_8ugA:10
+ a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
+Mime-Version: 1.0 (Apple Message framework v1081)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <9129f0a21ea48fb2dcb89cea290e88f3e8c0d8a2.1289943240.git.dirk.brandewie@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20101117023456.GD5618@dhcp231-156.rdu.redhat.com>
+Date: Wed, 17 Nov 2010 03:30:40 -0600
+Cc: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com, cmm@us.ibm.com, cluster-devel@redhat.com,
+        ocfs2-devel@oss.oracle.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <23A45B17-C23C-45DA-8C51-1CF315C851E2@dilger.ca>
+References: <1289840723-3056-1-git-send-email-josef@redhat.com> <1289840723-3056-2-git-send-email-josef@redhat.com> <20101116111611.GA4757@quack.suse.cz> <20101116114346.GB4757@quack.suse.cz> <20101116125249.GB31957@dhcp231-156.rdu.redhat.com> <20101116131451.GH4757@quack.suse.cz> <18ACAA85-8847-4B12-9839-F99FB6C7B3E4@dilger.ca> <20101117021150.GL22876@dastard> <20101117022814.GB5618@dhcp231-156.rdu.redhat.com> <20101117023456.GD5618@dhcp231-156.rdu.redhat.com>
+To: Josef Bacik <josef@redhat.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 02:41:36PM -0800, dirk.brandewie@gmail.com wrote:
-> From: Dirk Brandewie <dirk.brandewie@gmail.com>
+On 2010-11-16, at 20:34, Josef Bacik wrote:
+> FWIW I agree with Dave, the only question at this point is do we force users to specify KEEP_SIZE with PUNCH_HOLE?  On one hand it makes the interface a bit more consistent, on the other hand it makes the documentation a little weird
 > 
-> This patch adds support for linking device tree blobs into
-> vmlinux. Modifies asm-generic/vmlinux.lds.h to add linking
-> .dtb.init.rodata sections into the .init.data section of the vmlinux
-> image. Modifies scripts/Makefile.lib to add a kbuild command to
-> compile DTS files to device tree blobs and a rule to create objects to
-> wrap the blobs for linking.
-> 
-> The DTB's are placed on 32 byte boundries to allow parsing the blob
-> with driver/of/fdt.c during early boot without having to copy the blob
-> to get the structure alignment GCC expects.
-> 
-> A DTB is linked in by adding the DTB object to the list of objects to
-> be linked into vmlinux in the archtecture specific Makefile using
->    obj-y += foo.dtb.o
-> 
-> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-> ---
->  include/asm-generic/vmlinux.lds.h |   19 +++++++++++++++++--
->  scripts/Makefile.lib              |   20 ++++++++++++++++++++
->  2 files changed, 37 insertions(+), 2 deletions(-)
+> "We have mode here, but if you want to use PUNCH_HOLE you also have to specify KEEP_SIZE, so really it's like a flags field it's just named poorly"
 
-When you touch Makefiles in scripts/* it is always a good idea to cc:
-kbuild maintainer on the patch - I have added Michal.
+Even if this is the case, and we decide today that PUNCH_HOLE without KEEP_SIZE is not desirable to implement, it would be better to just return -EOPNOTSUPP if both flags are not set than assume one or the other is what the user wanted.  That allows the ability to implement this in the future without breaking every application, while if it is assumed that KEEP_SIZE is always implicit there will never be a way to add that functionality without something awful like a separate CHANGE_SIZE flag for PUNCH_HOLE.
 
-Support functionality in Makefile.lib is documented in
-Documentation/kbuild/* - please add documentation there.
+One option is to define FALLOC_FL_PUNCH_HOLE as 0x3 (so that KEEP_SIZE is always passed) and in the future we can define some new flag name like TRUNCATE_HOLE (or whatever) that is 0x2 only.
 
-> 
-> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-> index bd69d79..ea671e7 100644
-> --- a/include/asm-generic/vmlinux.lds.h
-> +++ b/include/asm-generic/vmlinux.lds.h
-> @@ -67,7 +67,14 @@
->   * Align to a 32 byte boundary equal to the
->   * alignment gcc 4.5 uses for a struct
->   */
-> -#define STRUCT_ALIGN() . = ALIGN(32)
-> +#define STRUCT_ALIGNMENT 32
-> +#define STRUCT_ALIGN() . = ALIGN(STRUCT_ALIGNMENT)
-> +
-> +/* Device tree blobs linked into the kernel need to have proper
-> + * structure alignment to be parsed by the flat device tree library
-> + * used in early boot
-> +*/
-> +#define DTB_ALIGNMENT STRUCT_ALIGNMENT
-
-It has been discussed in another thread some time ago to move
-to a general 32 byte alignment for everything in vmlinux.lds.h
-So there is not much need for the specific DTB alignment.
-
-> diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-> index 4c72c11..29db062 100644
-> --- a/scripts/Makefile.lib
-> +++ b/scripts/Makefile.lib
-> @@ -200,6 +200,26 @@ quiet_cmd_gzip = GZIP    $@
->  cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -f -9 > $@) || \
->  	(rm -f $@ ; false)
->  
-> +# DTC
-> +#  ---------------------------------------------------------------------------
-> +$(obj)/%.dtb.S: $(obj)/%.dtb FORCE
-> +	@echo '#include <asm-generic/vmlinux.lds.h>' > $@
-> +	@echo '.section .dtb.init.rodata,"a"' >> $@
-> +	@echo '.balign DTB_ALIGNMENT' >> $@
-> +	@echo '.global __dtb_$(*F)_begin' >> $@
-> +	@echo '__dtb_$(*F)_begin:' >> $@
-> +	@echo '.incbin "$<" ' >> $@
-> +	@echo '__dtb_$(*F)_end:' >> $@
-> +	@echo '.global __dtb_$(*F)_end' >> $@
-> +	@echo '.balign DTB_ALIGNMENT' >> $@
+Cheers, Andreas
 
 
-This will be noisy during build. Please use proper macors to supress output.
 
 
-> +
-> +DTC = $(objtree)/scripts/dtc/dtc
-> +
-> +quiet_cmd_dtc = DTC	$@
-Please avoid tabs in the output - all other uses spaces. (There is a tab between DTC and $@)
 
-> +      cmd_dtc = $(DTC) -O dtb -o $(obj)/$*.dtb -b 0 $(DTS_FLAGS) $(src)/dts/$*.dts
-
-Looks strange. How about:
-      cmd_dtc = $(DTC) -O dtb -o $@ -b 0 $(DTS_FLAGS) $<
-
-Then you avoid the hardcoded path in the rule too.
-
-
-> +
-> +$(obj)/%.dtb: $(src)/dts/%.dts
-> +	$(call if_changed,dtc)
-
-This snippet belong in the file that uses this.
-This is how we do for other rules like bzip etc.
-
-	Sam
