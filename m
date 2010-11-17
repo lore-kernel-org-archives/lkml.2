@@ -1,173 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759305Ab0KQTG0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 14:06:26 -0500
-Received: from mx0a-000f4101.pphosted.com ([67.231.144.146]:54983 "EHLO
-	mx0a-000f4101.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758687Ab0KQTGY (ORCPT
+	id S935294Ab0KQTHF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 14:07:05 -0500
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:53063 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758075Ab0KQTHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 14:06:24 -0500
-X-Greylist: delayed 508 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Nov 2010 14:06:24 EST
-Subject: [PATCH] md: Fix nr_pending race during raid10 recovery
-From: Aniket Kulkarni <aniket@netezza.com>
-Reply-To: <aniket@netezza.com>
-To: Neil Brown <neilb@suse.de>
-CC: <linux-raid@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Netezza
-Date: Wed, 17 Nov 2010 13:57:50 -0500
-Message-ID: <1290020270.3055.12.camel@aniket-desktop>
+	Wed, 17 Nov 2010 14:07:03 -0500
+Date: Wed, 17 Nov 2010 21:06:59 +0200
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Kyle Moffett <kyle@moffetthome.net>, Valdis.Kletnieks@vt.edu,
+        LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Davide Libenzi <davidel@xmailserver.org>
+Subject: Re: [PATCHv6 0/7] system time changes notification
+Message-ID: <20101117190659.GB26184@shisha.kicks-ass.net>
+References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
+ <22542.1289507293@localhost>
+ <20101111205123.GC10585@shisha.kicks-ass.net>
+ <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
+ <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
+ <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-11-17_06:2010-11-17,2010-11-17,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a RAID10 rdev that is undergoing recovery is marked 'faulty', the rdev 
-could get taken out of the array in spite of outstanding IOs leading to 
-a kernel panic. There are two issues here -
+On Thu, Nov 11, 2010 at 11:50:38PM +0100, Thomas Gleixner wrote:
+> B1;2401;0cOn Thu, 11 Nov 2010, Kyle Moffett wrote:
+> > On Thu, Nov 11, 2010 at 16:16, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > > The notification itself is pointless unless your application is
+> > > dealing with timers which need to be adjusted the one way or the
+> > > other.
+> > >
+> > > That said, I'm still not convinced that this usecase justifies a new
+> > > systemcall.
+> > >
+> > > 1) We can make timers wake up when a clock change happens
+> > > 2) Can't we use existing notification stuff like uevents or such ?
+> > 
+> > What about maybe adding device nodes for various kinds of "clock"
+> > devices?  You could then do:
+> > 
+> > #define CLOCK_FD 0x80000000
+> > fd = open("/dev/clock/realtime", O_RDWR);
+> > poll(fd);
+> > clock_gettime(CLOCK_FD|fd, &ts);
+> 
+> That won't work due to the posix-cputimers occupying the negative
+> number space already.
+> 
+> > [...]
+> > 
+> > This would also enable the folks who want to support things like PHY
+> > hardware clocks (for very-low-latency ethernet timestamping).  It
+> > would resolve the enumeration problem; instead of 0, 1, 2, ... as
+> > constants, they would show up in sysfs and be open()able.  Ideally you
+> > would be able to set up ntpd to slew the "realtime" clock by following
+> > a particular hardware clock, or vice versa.
+> 
+> There are other plans for the various interesting clocks floating
+> around which look pretty good.
+> 
+> But what you folks really want for this stuff is an extension to
+> timerfd as you want to be able to poll, right?
+> 
+> So what about the following:
+> 
+> Add a new flag TDF_NOTIFY_CLOCK_WAS_SET to the timerfd flags. Now this
+> flag adds the timer to a separate list, which gets woken up when the
+> clock is set.
+> 
+> No new syscall, just a few lines of code in fs/timerfd.c and
+> clock_was_set().
+> 
+> Thoughts ?
 
-1. The ref count (nr_pending) increment for sync or recovery leaves a lot of
-open windows for concurrent rdev removals
-2. raid10 sync thread continues to submit recovery IOs to faulty devices. These get
-rejected at a later stage by management thread (raid10d).
+Something like this (sans ugliness)?
 
-Note - rd denotes the rdev from which we are reading, and wr the one we are
-writing to
-
-  Sync Thread                                Management Thread
-
-sync_request
-  ++rd.nr_pending
-  bi_end_io = end_sync_read
-  generic_make_request         -------> recovery_request_write
-         |                    |             wr.nr_pending++
-         |                    |             bi_end_io = end_sync_write
-         V                    |             generic_make_request
-end_sync_read    --------------                      |
-  --rd.nr_pending                                    |
-  reschedule_retry for write                         |
-                                                     v
-                                         end_sync_write
-                                             --wr.nr_pending
-
-So a set-faulty and remove on recovery rdev between sync_request and 
-recovery_request_write is allowed and will lead to a panic.
-
-The fix is -
-
-1. Increment wr.nr_pending immediately after selecting a good target. Ofcourse
-the decrements will be added to error paths in sync_request and end_sync_read.
-2. Don't submit recovery IOs to faulty targets
-
-Signed-off-by: Aniket Kulkarni <aniket@netezza.com>
+Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
 ---
- drivers/md/raid10.c |   46 +++++++++++++++++++++++++++++++++++++++++++---
- 1 files changed, 43 insertions(+), 3 deletions(-)
+ fs/timerfd.c            |   52 +++++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/timerfd.h |    3 +-
+ kernel/hrtimer.c        |    2 +
+ 3 files changed, 54 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index c67aa54..ec1ea43 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -1408,6 +1408,16 @@ static void sync_request_write(mddev_t *mddev, r10bio_t *r10_bio)
+diff --git a/fs/timerfd.c b/fs/timerfd.c
+index 8c4fc14..51a033e 100644
+--- a/fs/timerfd.c
++++ b/fs/timerfd.c
+@@ -30,8 +30,14 @@ struct timerfd_ctx {
+ 	u64 ticks;
+ 	int expired;
+ 	int clockid;
++	int clock_notifier; /* list_empty()? */
++	struct list_head notifiers_list;
+ };
  
- done:
- 	if (atomic_dec_and_test(&r10_bio->remaining)) {
-+		for (i = 0; i < conf->copies ; i++)  {
-+			/* for any unsuccessful IOs give up the pending count on the
-+			 * write device
-+			 */
-+			if (!test_bit(BIO_UPTODATE, &r10_bio->devs[i].bio->bi_flags) &&
-+				r10_bio->devs[i].bio->bi_end_io == end_sync_write) {
-+				int d = r10_bio->devs[i].devnum;
-+				rdev_dec_pending(conf->mirrors[d].rdev, mddev);
-+			}
-+		}
- 		md_done_sync(mddev, r10_bio->sectors, 1);
- 		put_buf(r10_bio);
- 	}
-@@ -1443,7 +1453,6 @@ static void recovery_request_write(mddev_t *mddev, r10bio_t *r10_bio)
- 	}
- 	d = r10_bio->devs[1].devnum;
- 
--	atomic_inc(&conf->mirrors[d].rdev->nr_pending);
- 	md_sync_acct(conf->mirrors[d].rdev->bdev, wbio->bi_size >> 9);
- 	if (test_bit(R10BIO_Uptodate, &r10_bio->state))
- 		generic_make_request(wbio);
-@@ -1906,14 +1915,24 @@ static sector_t sync_request(mddev_t *mddev, sector_t sector_nr, int *skipped, i
- 		int j, k;
- 		r10_bio = NULL;
- 
--		for (i=0 ; i<conf->raid_disks; i++)
-+		for (i = 0; i < conf->raid_disks; i++)
- 			if (conf->mirrors[i].rdev &&
- 			    !test_bit(In_sync, &conf->mirrors[i].rdev->flags)) {
- 				int still_degraded = 0;
- 				/* want to reconstruct this device */
- 				r10bio_t *rb2 = r10_bio;
--				sector_t sect = raid10_find_virt(conf, sector_nr, i);
-+				sector_t sect;
- 				int must_sync;
++/* TFD_NOTIFY_CLOCK_SET timers go here */
++static DEFINE_SPINLOCK(notifiers_lock);
++static LIST_HEAD(notifiers_list);
 +
-+				/* Skip over the faulty drives */
-+				if (test_bit(Faulty, &conf->mirrors[i].rdev->flags))
-+					continue;
-+
-+				/* up the nr_pending count; this will be decremented on
-+				 * sync/recovery IO completion (success/erorr) to this dev
-+				 */
-+				atomic_inc(&conf->mirrors[i].rdev->nr_pending);
-+				sect = raid10_find_virt(conf, sector_nr, i);
- 				/* Unless we are doing a full sync, we only need
- 				 * to recover the block if it is set in the bitmap
- 				 */
-@@ -1927,6 +1946,7 @@ static sector_t sync_request(mddev_t *mddev, sector_t sector_nr, int *skipped, i
- 					 * that there will never be anything to do here
- 					 */
- 					chunks_skipped = -1;
-+					rdev_dec_pending(conf->mirrors[i].rdev, mddev);
- 					continue;
- 				}
+ /*
+  * This gets called when the timer event triggers. We set the "expired"
+  * flag, but we do not re-arm the timer (in case it's necessary,
+@@ -51,6 +57,21 @@ static enum hrtimer_restart timerfd_tmrproc(struct hrtimer *htmr)
+ 	return HRTIMER_NORESTART;
+ }
  
-@@ -1997,6 +2017,10 @@ static sector_t sync_request(mddev_t *mddev, sector_t sector_nr, int *skipped, i
- 				if (j == conf->copies) {
- 					/* Cannot recover, so abort the recovery */
- 					put_buf(r10_bio);
-+					/* we wanted to write to 'i' but we didn't; so dec the
-+					 * pending count
-+					 */
-+					rdev_dec_pending(conf->mirrors[i].rdev, mddev);
- 					if (rb2)
- 						atomic_dec(&rb2->remaining);
- 					r10_bio = rb2;
-@@ -2014,6 +2038,22 @@ static sector_t sync_request(mddev_t *mddev, sector_t sector_nr, int *skipped, i
- 				r10_bio = (r10bio_t*) rb2->master_bio;
- 				rb2->master_bio = NULL;
- 				put_buf(rb2);
-+				if (r10_bio)  {
-+					int d;
-+					/* Before throwing away the complete r10bio chain, decrement
-+					 * the nr_pending ref counts incremented along the way
-+					 * We do this only for our master_bio and then on because
-+					 * if biolist == NULL no ref count was incremented in this
-+					 * r10_bio
-+					 */
-+					for (d = 0; d < conf->copies; d++)  {
-+						if (r10_bio->devs[d].bio &&
-+							r10_bio->devs[d].bio->bi_end_io)	{
-+							int dn = r10_bio->devs[d].devnum;
-+							rdev_dec_pending(conf->mirrors[dn].rdev, mddev);
-+						}
-+					}
-+				}
- 			}
- 			goto giveup;
- 		}
++void timerfd_clock_was_set(void)
++{
++	struct timerfd_ctx *ctx;
++	unsigned long flags;
++
++	spin_lock(&notifiers_lock);
++	list_for_each_entry(ctx, &notifiers_list, notifiers_list) {
++		spin_lock_irqsave(&ctx->wqh.lock, flags);
++		ctx->ticks++;
++		wake_up_locked(&ctx->wqh);
++		spin_unlock_irqrestore(&ctx->wqh.lock, flags);
++	}
++	spin_unlock(&notifiers_lock);
++}
++
+ static ktime_t timerfd_get_remaining(struct timerfd_ctx *ctx)
+ {
+ 	ktime_t remaining;
+@@ -65,6 +86,14 @@ static void timerfd_setup(struct timerfd_ctx *ctx, int flags,
+ 	enum hrtimer_mode htmode;
+ 	ktime_t texp;
+ 
++	if (flags & TFD_NOTIFY_CLOCK_SET) {
++		ctx->clock_notifier = 1;
++		ctx->ticks = 0;
++		INIT_LIST_HEAD(&ctx->notifiers_list);
++		list_add(&ctx->notifiers_list, &notifiers_list);
++		return;
++	}
++
+ 	htmode = (flags & TFD_TIMER_ABSTIME) ?
+ 		HRTIMER_MODE_ABS: HRTIMER_MODE_REL;
+ 
+@@ -83,7 +112,12 @@ static int timerfd_release(struct inode *inode, struct file *file)
+ {
+ 	struct timerfd_ctx *ctx = file->private_data;
+ 
+-	hrtimer_cancel(&ctx->tmr);
++	if (ctx->clock_notifier) {
++		spin_lock(&notifiers_lock);
++		list_del(&ctx->notifiers_list);
++		spin_unlock(&notifiers_lock);
++	} else
++		hrtimer_cancel(&ctx->tmr);
+ 	kfree(ctx);
+ 	return 0;
+ }
+@@ -113,6 +147,7 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+ 
+ 	if (count < sizeof(ticks))
+ 		return -EINVAL;
++
+ 	spin_lock_irq(&ctx->wqh.lock);
+ 	if (file->f_flags & O_NONBLOCK)
+ 		res = -EAGAIN;
+@@ -120,7 +155,7 @@ static ssize_t timerfd_read(struct file *file, char __user *buf, size_t count,
+ 		res = wait_event_interruptible_locked_irq(ctx->wqh, ctx->ticks);
+ 	if (ctx->ticks) {
+ 		ticks = ctx->ticks;
+-		if (ctx->expired && ctx->tintv.tv64) {
++		if (ctx->expired && ctx->tintv.tv64 && !ctx->clock_notifier) {
+ 			/*
+ 			 * If tintv.tv64 != 0, this is a periodic timer that
+ 			 * needs to be re-armed. We avoid doing it in the timer
+@@ -218,13 +253,20 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
+ 	 * it to the new values.
+ 	 */
+ 	for (;;) {
++		spin_lock(&notifiers_lock);
+ 		spin_lock_irq(&ctx->wqh.lock);
+ 		if (hrtimer_try_to_cancel(&ctx->tmr) >= 0)
+ 			break;
+ 		spin_unlock_irq(&ctx->wqh.lock);
++		spin_unlock(&notifiers_lock);
+ 		cpu_relax();
+ 	}
+ 
++	if (ctx->clock_notifier) {
++		ctx->clock_notifier = 0;
++		list_del(&ctx->notifiers_list);
++	}
++
+ 	/*
+ 	 * If the timer is expired and it's periodic, we need to advance it
+ 	 * because the caller may want to know the previous expiration time.
+@@ -243,6 +285,7 @@ SYSCALL_DEFINE4(timerfd_settime, int, ufd, int, flags,
+ 	timerfd_setup(ctx, flags, &ktmr);
+ 
+ 	spin_unlock_irq(&ctx->wqh.lock);
++	spin_unlock(&notifiers_lock);
+ 	fput(file);
+ 	if (otmr && copy_to_user(otmr, &kotmr, sizeof(kotmr)))
+ 		return -EFAULT;
+@@ -262,6 +305,11 @@ SYSCALL_DEFINE2(timerfd_gettime, int, ufd, struct itimerspec __user *, otmr)
+ 	ctx = file->private_data;
+ 
+ 	spin_lock_irq(&ctx->wqh.lock);
++	if (ctx->clock_notifier) {
++		spin_unlock_irq(&ctx->wqh.lock);
++		return -EINVAL;
++	}
++
+ 	if (ctx->expired && ctx->tintv.tv64) {
+ 		ctx->expired = 0;
+ 		ctx->ticks +=
+diff --git a/include/linux/timerfd.h b/include/linux/timerfd.h
+index 2d07929..c3ddad9 100644
+--- a/include/linux/timerfd.h
++++ b/include/linux/timerfd.h
+@@ -19,6 +19,7 @@
+  * shared O_* flags.
+  */
+ #define TFD_TIMER_ABSTIME (1 << 0)
++#define TFD_NOTIFY_CLOCK_SET (1 << 1)
+ #define TFD_CLOEXEC O_CLOEXEC
+ #define TFD_NONBLOCK O_NONBLOCK
+ 
+@@ -26,6 +27,6 @@
+ /* Flags for timerfd_create.  */
+ #define TFD_CREATE_FLAGS TFD_SHARED_FCNTL_FLAGS
+ /* Flags for timerfd_settime.  */
+-#define TFD_SETTIME_FLAGS TFD_TIMER_ABSTIME
++#define TFD_SETTIME_FLAGS (TFD_TIMER_ABSTIME | TFD_NOTIFY_CLOCK_SET)
+ 
+ #endif /* _LINUX_TIMERFD_H */
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 72206cf..a779e0f 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -642,8 +642,10 @@ static void retrigger_next_event(void *arg)
+  * resolution timer interrupts. On UP we just disable interrupts and
+  * call the high resolution interrupt code.
+  */
++void timerfd_clock_was_set(clockid_t clockid);
+ void clock_was_set(void)
+ {
++	timerfd_clock_was_set(CLOCK_REALTIME);
+ 	/* Retrigger the CPU local events everywhere */
+ 	on_each_cpu(retrigger_next_event, NULL, 1);
+ }
 -- 
-1.7.1
-
-
+1.7.2.1.45.gb66c2
 
