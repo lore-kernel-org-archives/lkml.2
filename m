@@ -1,123 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934786Ab0KQMY4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 07:24:56 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:44122 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934722Ab0KQMYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 07:24:55 -0500
-Date: Wed, 17 Nov 2010 13:24:25 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S934743Ab0KQMZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 07:25:56 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:63690 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934606Ab0KQMZz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 07:25:55 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=VINkOuZDQI4A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=6yBUgjC6AATK4R6N9QAA:9 a=GmBH4ST9CoG2WIqBrNEA:7 a=Q_WuZfK7BwJ66rHf-tXqsswcwBYA:4 a=PUjeQqilurYA:10 a=0kPLrQdw3YYA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 1/5] [PATCH 1/5] events: Add EVENT_FS the event
+ filesystem
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [patch] trace: Add user-space event tracing/injection
-Message-ID: <20101117122425.GA25294@elte.hu>
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
- <4CE38C53.8090606@kernel.org>
- <20101117120740.GA24972@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117120740.GA24972@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <20101117103914.GA21976@elte.hu>
+References: <20101117005357.024472450@goodmis.org>
+	 <20101117005939.600541101@goodmis.org> <20101117033242.GB31335@suse.de>
+	 <20101117103914.GA21976@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 17 Nov 2010 07:25:53 -0500
+Message-ID: <1289996753.30543.35.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@elte.hu> wrote:
-
-> > Does this concept lend itself to tracing latencies in userspace applications 
-> > that run in virtual machines (e.g. the Java kind)? I'm of course interested in 
-> > this because of Jato [1] where bunch of interesting things can cause jitter: JIT 
-> > compilation, GC, kernel, and the actual application doing something (in either 
-> > native code or JIT'd code). It's important to be able to measure where 
-> > "slowness" to desktop applications and certain class of server applications 
-> > comes from to be able to improve things.
+On Wed, 2010-11-17 at 11:39 +0100, Ingo Molnar wrote:
+> * Greg KH <gregkh@suse.de> wrote:
 > 
-> Makes quite a bit of sense.
+> > On Tue, Nov 16, 2010 at 07:53:58PM -0500, Steven Rostedt wrote:
+> > > From: Steven Rostedt <srostedt@redhat.com>
+> > > 
+> > > Copied mostly from debugfs, the eventfs is the filesystem that will include 
+> > > stable tracepoints. Currently nothing enables this filesystem as of this patch.
+> > 
+> > What?  Wait, I wrote tracefs a long time ago just for this, why not take that code 
+> > and use it instead?
 > 
-> How about the attached patch? It works fine with the simple testcase included in 
-> the changelog. There's a common-sense limit on the message size - but otherwise it 
-> adds support for apps to generate a free-form string trace event.
+> Yeah, and i know that i suggested 'eventfs' to Steve and others in a prior thread a 
+> few months ago - and i suspect Steve was following up on that suggestion with this 
+> patch? So i guess it's partly my fault ;-)
 
-The entirely untested Jato patch below adds support for this to Jato's user-space 
-tracer. Btw., you have _hundreds_ of tracepoints in Jato, wow!
+And we brought this up at Kernel Summit.
 
-The prctl() approach is very attractive because it's very simple to integrate. It's 
-also reasonably fast, there's no fd baggage in prctl(). It is also arguably a 
-'process/task event' so fits prctl()'s original design (if it ever had one ...).
+> 
+> [ Also, i think our _real_ problems with tracing lie entirely elsewhere, but i've
+>   explained that numerous times. Maintaining instrumentation bits is the ultimate
+>   cat herding experience ;-) ]
+> 
+> I also explained it in that eventfs suggestion thread that eventfs (or, indeed 
+> tracefs) is IMO only a second tier approach compared to the real thing: proper 
+> enumeration of events in sysfs.
+> 
+> [ Beyond the obvious compatibility detail that we are _NOT_ getting rid of 
+>   /debug/tracing/events/, as existing tooling depends on it. So unless eventfs or 
+>   sysfs integration brings some real tangible benefits over what we have already we 
+>   dont want to force tooling to migrate to yet another API. ]
 
-Note, i kept the original Jato buffering as well, and the prctl() does finegrained 
-events, one event per trace_printf() line printed.
+One benefit is that we have a way to distinguish between
+in-field-debugging tracepoints and tracepoints that are only for
+analysis tools.
 
-I think it makes sense to generate a separate event for all trace_printf() calls, 
-because that way the events propagate immediately. OTOH i dont know how large the 
-trace messages are - if there's really big tables printed (or lines are constructed 
-out of many trace_printf() calls) then it may make sense to buffer them a bit.
+> 
+> Lin Ming and PeterZ are working on sysfs integration and they have posted several 
+> iterations of that work which extends event details to sysfs. That work is not 
+> complete yet and they need help. (I've Cc:-ed them.)
 
-Anyway, this demonstrates the concept.
+Actually, I suck at adding anything to the sysfs/kobject code. I always
+screw it up. I only got the /sys/kernel/events working because I copied
+it directly from Greg. I doubt I'd be much help.
 
-Thanks,
 
-	Ingo
+> 
+> The sysfs approach has numerous upsides:
+> 
+>  - Design: sysfs is a mature, multi-year project with tons of meaningful hardware 
+>    and software hieararchies already well established. Attaching events to these
+>    existing nodes optionally is an obvious advantage and avoids duplication and
+>    forces people to think about structure.
+> 
+>  - Concentration of structure: subsystem and driver authors/maintainers already care 
+>    about their sysfs layout - and when they define new tracepoints for subsystem or 
+>    driver instrumentation it would be very natural for those events to go somewhere 
+>    nearby, in the existing sysfs hieararchy.
+> 
+>  - Practicalities: sysfs is already mounted on all distros so tooling could rely on 
+>    it universally. It's the ultimate 'describe system structure' store.
+> 
+>  - Long term maintenance: we want to be strict with events, i.e. keep the 
+>    descriptors read only and single-line structured. You sysfs folks are enforcing 
+>    that pretty well - with eventfs we'd always have the nasty lure to apply API 
+>    hacks to eventfs components when we really shouldnt ...
 
-diff --git a/vm/trace.c b/vm/trace.c
-index 0192de6..64030ff 100644
---- a/vm/trace.c
-+++ b/vm/trace.c
-@@ -24,10 +24,13 @@
-  * Please refer to the file LICENSE for details.
-  */
- 
-+#include <sys/prctl.h>
- #include <stdlib.h>
- #include <string.h>
- #include <stdio.h>
- 
-+#define PR_TASK_PERF_USER_TRACE 35
-+
- #include "jit/compiler.h"
- #include "lib/string.h"
- #include "vm/thread.h"
-@@ -50,15 +53,24 @@ static void setup_trace_buffer(void)
- 
- int trace_printf(const char *fmt, ...)
- {
-+	unsigned long curr_pos;
- 	va_list args;
- 	int err;
- 
- 	setup_trace_buffer();
- 
-+	curr_pos = trace_buffer->length;
-+
- 	va_start(args, fmt);
- 	err = str_vappend(trace_buffer, fmt, args);
- 	va_end(args);
- 
-+	/*
-+	 * Send the trace buffer to perf, it will show up as user:user events:
-+	 * (on non-perf kernels this will produce a harmless -EINVAL)
-+	 */
-+	prctl(PR_TASK_PERF_USER_TRACE, trace_buffer->value + curr_pos, trace_buffer->length - curr_pos);
-+
- 	return err;
- }
- 
+
+Are these events now going to be labeled as stable?  Is every tracepoint
+we have, much have the same data?  Linus specifically said at Kernel
+Summit that he wants absolutely NO modules to have a stable tracepoint.
+
+Also, if we just blindly label a tracepoint as "stable" then we must
+keep all its contents. For example, the sched_switch will contain the
+priority. As Peter has stated several times, that may go away. We also
+do not want to lose getting that information, as a lot of us use it.
+
+> 
+> Eventfs has a couple of downsides:
+> 
+>  - Design: it's slapping events into a separate, partly duplicated, partly unique, 
+>    partly inconsistent set of hierarchies. We can deal with it, but it's not 
+>    particularly intelligent and i'd like us to try harder.
+> 
+>  - Practicalities: eventfs has to be mounted on every distro. It's an uphill climb
+>    in general and the appeal of an approach has to be _strong_ for this to be 
+>    feasible.
+
+Some distros already mount debugfs by default. It's a oneliner in fstab.
+
+> 
+> So putting it into sysfs looks like a pretty intelligent solution all around and i'd 
+> prefer it.
+
+Another downside is that you need to scan hundreds of directories to
+find tracepoints. And again, are they all now stable?
+
+
+> 
+> Steve, would you be interested in helping out Lin Ming and PeterZ with the sysfs 
+> work - or at least help them come to the conclusion that we want eventfs?
+
+I don't think I would be much help with the former, and I'm thinking I'm
+losing the later.
+
+Hmm, seems that every decision that we came to agreement with at Kernel
+Summit has been declined in practice. Makes me think that Kernel Summit
+is pointless, and was a waste of my time. :-(
+
+-- Steve
+
+> 
+> Thanks,
+> 
+> 	Ingo
+
+
