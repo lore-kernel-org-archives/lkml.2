@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759617Ab0KQGAS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 01:00:18 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56600 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab0KQGAR (ORCPT
+	id S933038Ab0KQGBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 01:01:12 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:40762 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932824Ab0KQGBK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 01:00:17 -0500
+	Wed, 17 Nov 2010 01:01:10 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=oojjin0D3ezFF4MR+Q7onajRwpJ6Fk/6OU7TyKlyn+8hpjDuB0XLUBb8eJZUyzYcXb
+         Ims0X2f8qSom3x8WqObk2xbSA14Gc9cnGoHmEe1U/4Yd2F+P1ZhHiQQVYf4vb1l1lMY7
+         d9Tnvf+tNWiOTCUC7ldhTp0jFEA8xJbsck/Ic=
+Date: Wed, 17 Nov 2010 14:05:52 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Tracey Dent <tdent48227@gmail.com>
+Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, chatty@enac.fr,
+        spbnick@gmail.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] Drivers: hid: Makefile: Cleaned up Makefile
+Message-ID: <20101117052123.GA5282@cr0.nay.redhat.com>
+References: <1289141188-1447-1-git-send-email-tdent48227@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimTks01SnjWJZFycSCQC+ZBEonPLLUwMRQkxLz2@mail.gmail.com>
-References: <20101116204917.12146.39851.stgit@riker> <20101116204951.12146.21084.stgit@riker>
- <AANLkTimTks01SnjWJZFycSCQC+ZBEonPLLUwMRQkxLz2@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 16 Nov 2010 22:59:55 -0700
-X-Google-Sender-Auth: Vn-rUZPw44is6UL6Asdt1rF1r6I
-Message-ID: <AANLkTinZ0yi-ZdwjG-KNcjXBuBzNMxrsFRJq4NZOiwk=@mail.gmail.com>
-Subject: Re: [PATCH 1/5] scripts: dtc: Merge in changes from the dtc repository
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: John Bonesio <bones@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, jdl@jdl.com,
-        devicetree-discuss@lists.ozlabs.org, david@gibson.dropbear.id.au
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289141188-1447-1-git-send-email-tdent48227@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 10:56 PM, Kyle Moffett <kyle@moffetthome.net> wrote:
-> On Tue, Nov 16, 2010 at 15:49, John Bonesio <bones@secretlab.ca> wrote:
->> Pull in recent changes from the main dtc repository. These changes primarily
->> allow multiple device trees to be declared which are merged by dtc. This
->> feature allows us to include a basic dts file and then provide more information
->> for the specific system through the merging functionality.
+On Sun, Nov 07, 2010 at 09:46:27AM -0500, Tracey Dent wrote:
+>Changed Makefile to use <modules>-y instead of <modules>-objs because -objs is
+>deprecated and should now be switched. According to (documentation/kbuild/makefiles.txt).
 >
-> Hmm, is there some documentation for how to use this feature?
-> Specifically I have a custom board with multiple discrete computers on
-> it which are only very slightly physically different from each other
-> and I'd like to be able to avoid maintaining 2 nearly-exact copies of
-> the same DTS file.
+>Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 
-Not yet, but there will be.
-
-g.
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
