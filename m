@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935704Ab0KQXPK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:15:10 -0500
-Received: from chilli.pcug.org.au ([203.10.76.44]:41995 "EHLO smtps.tip.net.au"
+	id S1751079Ab0KQXTr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:19:47 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:58992 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935456Ab0KQXPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:15:08 -0500
-Date: Thu, 18 Nov 2010 10:14:59 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: Tree for November 17
-Message-Id: <20101118101459.472d540b.sfr@canb.auug.org.au>
-In-Reply-To: <20101117095920.2b9e2e6a.randy.dunlap@oracle.com>
-References: <20101117140956.a8264c75.sfr@canb.auug.org.au>
-	<AANLkTinBiGOPptOY18-D+=djKLsJj75mXxL6ht6xNJXL@mail.gmail.com>
-	<20101117095920.2b9e2e6a.randy.dunlap@oracle.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__18_Nov_2010_10_14_59_+1100_vI4p0LPVzqw8k4VC"
+	id S1750743Ab0KQXTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 18:19:46 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: 2.6.37-rc1+: hibernate regression, claims not enough swap space
+Date: Thu, 18 Nov 2010 00:18:42 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+References: <20101114052138.GB2189@elf.ucw.cz> <201011162327.27454.rjw@sisk.pl> <20101117211917.GA394@elf.ucw.cz>
+In-Reply-To: <20101117211917.GA394@elf.ucw.cz>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011180018.42858.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__18_Nov_2010_10_14_59_+1100_vI4p0LPVzqw8k4VC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wednesday, November 17, 2010, Pavel Machek wrote:
+> Hi!
+> 
+> > > > > ...but there's enough -- or at least it was enough to fit previous
+> > > > > versions. 32-bit machine, so it has highmem.
+> > > > > 
+> > > > > System is in console mode, very lightly loaded.
+> > > > > 
+> > > > > Mem:   2054716k total,   736548k used,  1318168k free,    15368k buffers
+> > > > > Swap:   779148k total,     2360k used,   776788k free,   546388k cached
+> > > > 
+> > > > Well, the swap is rather in short supply.  Below the 50% of RAM recommendation.
+> > > 
+> > > Well, but the biggest image we can write is not 50% of RAM, but 50% of
+> > > lowmem... 
+> > 
+> > No, it is not.  It's been 50% of RAM for a couple of years now. :-)
+> 
+> 
+> 
+> 
+> > > > > PM: thaw of devices complete after 539.577 msecs
+> > > > > PM: writing image.
+> > > > > PM: Free swap pages: 194166
+> > > > > PM: Not enough free swap
+> > > > > Restarting tasks ...
+> > > > > 
+> > > > > Aha, and it is the new default /sys/power/image_size .. setting it to
+> > > > > 0 lets machine hibernate. I guess the new default is very wrong for
+> > > > > highmem machine...
+> > > > 
+> > > > The old default did the wrong thing for everyone with sufficient swap (it made
+> > > > the OOM code trigger every time while preparing to create an image), so I think
+> > > > the new one it's better overall.
+> > > 
+> > > OOM? No... image_size of 0 should have written "as small image as
+> > > possible"; slow, but should not OOM.
+> > 
+> > This is not how it works now.  We preallocate memory to create memory pressure,
+> > so if image_size is 0, we need to preallocate until we run out of pages that
+> > can be freed, which means OOM.
+> 
+> That's bad, right? Instead of killing 
 
-On Wed, 17 Nov 2010 09:59:20 -0800 Randy Dunlap <randy.dunlap@oracle.com> w=
-rote:
->
-> Why was #include <linux/smp_lock.h> removed from <linux/hardirq.h> ?
->=20
-> I added #include <linux/smp_lock.h> to i387.h, but them mm/filemap.c buil=
-d fails
-> with the same error:
->=20
-> linux-next-20101117/mm/filemap.c: In function 'iov_iter_copy_from_user_at=
-omic':
-> linux-next-20101117/mm/filemap.c:1936: error: implicit declaration of fun=
-ction 'kernel_locked'
+I'm not sure what you mean.
 
-Was this fixed before Linus took that patch?  Also, the #include of
-linux/smp_lock.h in linux/hardirq.h was the only line between #ifdef
-CONFIG_PREEMPT and #endif ... was this patch even reviewed?
+> Anyway, it does not work at all.
+> 
+> root@amd:~# echo 300000000 > /sys/power/image_size
+> root@amd:~# echo disk > /sys/power/state 
+> -su: echo: write error: No space left on device
+> 
+> (And dmesg full of failed allocations).
+> 
+> I can write 400M there, and it fails, too.
 
-Maybe (after it was reviewed) it should have been given more time in
-linux-next before being merged.
+Well, in that case your swap is smaller than the requested image size, isn't it?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+There's a check in there that should catch that and it apparently doesn't work.
 
---Signature=_Thu__18_Nov_2010_10_14_59_+1100_vI4p0LPVzqw8k4VC
-Content-Type: application/pgp-signature
+Do you have that dmesg by chance?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJM5GHzAAoJEDMEi1NhKgbswGkH/i+IuOztcYLFtqM8YvdcwXdl
-J+W0es+6sspbFryDrTeHo/7LqSj2sL06j4HQvd6V2eTCpfw6DXPLvHDO9Hiau31P
-Yjm4HyId7/yVMRbwpu4/6NJohlSuT3302ho0pnZe+KrtHGz9+wm+b4S4PJqlLqIs
-5JwnQwDxjhRf3T2rDrTd+6TaJ7PTA0C89ivWbuRqPC7t2Ms13728NhrTiwo4JSXk
-RmrqanmirdEei4oA5RvHd7texwltkANEMfPQ2yaevALYUhHHOlHmcZY7RWITsUgG
-TPS1Mpo++DfPAMvbq3+5fRRlbsVwfpPVG97/SQC0W7nvg3YIVuG9j8dvywuPko4=
-=I7gh
------END PGP SIGNATURE-----
-
---Signature=_Thu__18_Nov_2010_10_14_59_+1100_vI4p0LPVzqw8k4VC--
+Rafael
