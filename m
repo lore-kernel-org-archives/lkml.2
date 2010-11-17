@@ -1,143 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759092Ab0KQCf4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 21:35:56 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56709 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758598Ab0KQCfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 21:35:54 -0500
-Message-ID: <4CE33F86.7040403@linux.vnet.ibm.com>
-Date: Tue, 16 Nov 2010 18:35:50 -0800
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Stephane Eranian <eranian@google.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-        "robert.richter" <robert.richter@amd.com>,
-        fweisbec <fweisbec@gmail.com>, paulus <paulus@samba.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [RFC][PATCH] perf: sysfs type id
-References: <1289339119.2191.92.camel@laptop> <AANLkTi=ojOnLyRO4hTgYdCCXLsN0wUeTcme=5h8-mjdz@mail.gmail.com> <1289398207.2191.117.camel@laptop> <1289398763.2191.121.camel@laptop> <AANLkTimQ7w38wzrYT4MgjHFr6LCVj2M5fB11-n3XCD2w@mail.gmail.com> <1289421164.2084.56.camel@laptop> <AANLkTiku7UsVoYv_+6r79rvGPJU7OU=VGDiaYo0H=82y@mail.gmail.com> <1289423135.2084.63.camel@laptop>
-In-Reply-To: <1289423135.2084.63.camel@laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1757834Ab0KQCj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 21:39:27 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45416 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754468Ab0KQCj0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 16 Nov 2010 21:39:26 -0500
+Date: Tue, 16 Nov 2010 18:35:06 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH -v4 1/2] lib, Make gen_pool memory allocator lockless
+Message-Id: <20101116183506.41e77e1a.akpm@linux-foundation.org>
+In-Reply-To: <1289960281.8719.1218.camel@yhuang-dev>
+References: <1289868791-16658-1-git-send-email-ying.huang@intel.com>
+	<1289868791-16658-2-git-send-email-ying.huang@intel.com>
+	<20101116135038.fcaa90ca.akpm@linux-foundation.org>
+	<1289960281.8719.1218.camel@yhuang-dev>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/10/2010 01:05 PM, Peter Zijlstra wrote:
-> On Wed, 2010-11-10 at 21:53 +0100, Stephane Eranian wrote:
->> On Wed, Nov 10, 2010 at 9:32 PM, Peter Zijlstra<peterz@infradead.org>  wrote:
->>> On Wed, 2010-11-10 at 21:08 +0100, Stephane Eranian wrote:
->>>> Would that be by passing the full filename to the tool?
->>>
->>> possible, or something like<pmu-name>:<event-name>, cpu:cycles would
->>> map to /sys/class/pmu/cpu/events/cycles (given the previous patch).
->>>
->>>
->> Ok, but I think you're proposal is missing one bit. You are addressing
->> the class (or type) of PMU, but you are not addressing the naming of
->> an instance.
->>
->> Let's take an example, suppose you have counters on a graphic card.
->> Your system has two such graphic cards. In your scheme you would
->> end up with a sys/class/pmu/gfx/.....
->>
->> But now, suppose I want to count cycles on the first graphic card.
->> Seems to me you need to expose the instances as well. The instance
->> number needs to be passed in the attr struct somehow.
->>
->> You can either create multiple subdir under gfx, or have this info somewhere
->> else in the sysfs tree, if people really care about class vs. instance.
->>
->> I can see users doing:
->> $ perf stat -e gfx@1::cycles ...  ->  sys/class/gfx/1/event/cycles
->>
->> The reason I am using :: here is because libpfm4 is already using
->> this as a separator for PMU type vs. event.
->
->
-> right, so the idea is to have these pmu devices hooked into the existing
-> sysfs topology, my proposed patch misses that bit because I wanted to
-> get something out before having to dig through the topology code trying
-> to figure out how all that works.
->
-> So the 'cpu' pmu device would be linked from:
->
->    /sys/devices/system/cpu/pmu ->  /sys/class/pmu/cpu
->
-> and gfx things would be linked like:
->
->    /sys/devices/pci0000:00/0000:00:1e.0/0000:0b:01.0/drm/card0/pmu ->  /sys/class/pmu/radeon0
+On Wed, 17 Nov 2010 10:18:01 +0800 Huang Ying <ying.huang@intel.com> wrote:
 
-I don't understand the /sys/devices tree much (I will read up on it), 
-but this idea looks good to me.
+> On Wed, 2010-11-17 at 05:50 +0800, Andrew Morton wrote:
+> > On Tue, 16 Nov 2010 08:53:10 +0800
+> > Huang Ying <ying.huang@intel.com> wrote:
+> > 
+> > > This version of the gen_pool memory allocator supports lockless
+> > > operation.
+> > > 
+> > > This makes it safe to use in NMI handlers and other special
+> > > unblockable contexts that could otherwise deadlock on locks.  This is
+> > > implemented by using atomic operations and retries on any conflicts.
+> > > The disadvantage is that there may be livelocks in extreme cases.  For
+> > > better scalability, one gen_pool allocator can be used for each CPU.
+> > > 
+> > > The lockless operation only works if there is enough memory available.
+> > > If new memory is added to the pool a lock has to be still taken.  So
+> > > any user relying on locklessness has to ensure that sufficient memory
+> > > is preallocated.
+> > > 
+> > > The basic atomic operation of this allocator is cmpxchg on long.  On
+> > > architectures that don't support cmpxchg natively a fallback is used.
+> > > If the fallback uses locks it may not be safe to use it in NMI
+> > > contexts on these architectures.
+> > 
+> > The code assumes that cmpxchg is atomic wrt NMI.  That would be news to
+> > me - at present an architecture can legitimately implement cmpxchg()
+> > with, say, spin_lock_irqsave() on a hashed spinlock.  I don't know
+> > whether any architectures _do_ do anything like that.  If so then
+> > that's a problem.  If not, it's an additional requirement on future
+> > architecture ports.
+> 
+> cmpxchg has been used in that way by ftrace and perf for a long time. So
+> I agree to make it a requirement on future architecture ports.
 
-To clarify my understanding a bit and taking the gfx example, in the 
-path /sys/class/pmu/radeon0, is the '0' here denoting the 0'th radeon 
-chip in the system, or the radeon model number?  I would assume the 0'th 
-chip.
+All I was really doing was inviting you to check your assumptions for
+the known architecture ports.  Seems that I must do it myself.
 
-So if I assume that now points to a unique radeon chip in the system, 
-underneath /sys/class/pmu/radeon0 will be a structure something like:
 
-radeon0/
-	event/
-		evt0
-		..
-		evtn
+dude, take a look at include/asm-generic/cmpxchg-local.h.  Not NMI-safe!
 
-And if there is a second radeon chip, there would be a nearly identical 
-tree:
+arch/arm/include/asm/atomic.h's atomic_cmpxchg() isn't NMi-safe.
 
-radeon1/
-	event/
-		evt0
-		..
-		evtn
+arch/arm/include/asm/system.h uses include/asm-generic/cmpxchg-local.h.
 
-Is that correct?
+as does avr32
 
-Some of these events may need modifiers / attributes / umasks... 
-whatever you want to call them.  And they may need more than one each, 
-and they may vary from event to event.  So to add to the hierarchy,
-we'd have:
+and blackfin
 
-radeon0/
-     type (for attr.type)
-     event/
-         evt0/
-             id (a base number for attr.config)
-             description (text file - but could be CONFIG_*'d out)
-             modifiers/
-                 mod0/
-                     formula (some ascii syntax for describing how
-                              to set .config and/or .config_extra
-                              with this modifer's value)
-                     description (text - can configure out)
-                     constraints (some ascii syntax for describing
-                                  the values mod0 can take on)
-                 ..
-                 modn/
-         ..
-	evtn/
+Now go take a look at cris.
 
-And this would be replicated for radeon1..n
+h8300 atomic_cmpxchg() isn't NMI-safe.
 
-Maybe all of the "event" directories could be soft links to a common
-radeon<model_number> event directory.
+m32r isn't NMI-safe
 
-When you fully specify an event, you have something like:
+go look at m68k, see if you can work it out.
 
-/sys/devices/pci0000:00/0000:00:1e.0/0000:0b:01.0/drm/card0/pmu/<event>[:<modifier>=nnn:...]
+microblaze?  Dunno.
 
-So it wouldn't end up being strictly a sysfs path anymore, and perf 
-would have a bit of parsing work to do, to evaluate the modifiers, using 
-the info from constraints, and construct the .type, .config, and 
-.config_extra fields using formula.
+mn10300 uniprocessor isn't NMI-safe
 
-Or maybe you have some other structure in mind?
+score isn't NMI-safe
 
-- Corey
+I stopped looking there.
+
