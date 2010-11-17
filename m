@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935104Ab0KQRlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 12:41:13 -0500
-Received: from claw.goop.org ([74.207.240.146]:54828 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933709Ab0KQRlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 12:41:11 -0500
-Message-ID: <4CE413B3.3010207@goop.org>
-Date: Wed, 17 Nov 2010 09:41:07 -0800
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S935141Ab0KQRq4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:46:56 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:59299 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934635Ab0KQRqy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 12:46:54 -0500
+Date: Wed, 17 Nov 2010 12:46:52 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Arjan van de Ven <arjan@infradead.org>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC][PATCH 1/5] [PATCH 1/5] events: Add EVENT_FS the event
+	filesystem
+Message-ID: <20101117174652.GC13717@Krystal>
+References: <20101117005357.024472450@goodmis.org> <20101117005939.600541101@goodmis.org> <20101117033242.GB31335@suse.de> <20101117103914.GA21976@elte.hu> <1289996753.30543.35.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@novell.com>
-CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Eric Dumazet <dada1@cosmosbay.com>, xiyou.wangcong@gmail.com,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Xen-devel <xen-devel@lists.xensource.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        Avi Kivity <avi@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [Xen-devel] Re: [PATCH 09/14] xen/pvticketlock: Xen	 implementation
- for PV ticket locks
-References: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com><cover.1289940821.git.jeremy.fitzhardinge@citrix.com> <aa32da076143b8e13c23c1f589d7e6cbedb22907.1289940821.git.jeremy.fitzhardinge@citrix.com> <4CE39C3C0200007800022AE2@vpn.id2.novell.com> <4CE397E7.2010107@goop.org> <4CE3A714.9010509@goop.org> <4CE3BDCF0200007800022BF1@vpn.id2.novell.com>
-In-Reply-To: <4CE3BDCF0200007800022BF1@vpn.id2.novell.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289996753.30543.35.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 12:43:59 up 55 days, 21:46,  5 users,  load average: 0.14, 0.12,
+	0.09
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2010 02:34 AM, Jan Beulich wrote:
->> Actually, on second thoughts, maybe it doesn't matter so much.  The main
->> issue is making sure that the interrupt will make the VCPU drop out of
->> xen_poll_irq() - if it happens before xen_poll_irq(), it should leave
->> the event pending, which will cause the poll to return immediately.  I
->> hope.  Certainly disabling interrupts for some of the function will make
->> it easier to analyze with respect to interrupt nesting.
-> That's not my main concern. Instead, what if you get interrupted
-> anywhere here, the interrupt handler tries to acquire another
-> spinlock and also has to go into the slow path? It'll overwrite part
-> or all of the outer context's state.
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+[...]
+> Are these events now going to be labeled as stable?  Is every tracepoint
+> we have, much have the same data?  Linus specifically said at Kernel
+> Summit that he wants absolutely NO modules to have a stable tracepoint.
 
-That doesn't matter if the outer context doesn't end up blocking.  If it
-has already blocked then it will unblock as a result of the interrupt;
-if it hasn't yet blocked, then the inner context will leave the event
-pending and cause it to not block.  Either way, it no longer uses or
-needs that per-cpu state: it will return to the spin loop and (maybe)
-get re-entered, setting it all up again.
+I'd like to bring up the point of KVM tracepoints here. KVM can be configured as
+a module, and may clearly contain tracepoints that we'd like to be stable.
 
-I think there is a problem with the code as posted because it sets up
-the percpu data before clearing the pending event, so it can end up
-blocking with bad percpu data.
+My thought is that what we really want to enforce is "no stable tracepoints in
+drivers" rather than in "modules", but I might be wrong.
 
->> Another issue may be making sure the writes and reads of "w->want" and
->> "w->lock" are ordered properly to make sure that xen_unlock_kick() never
->> sees an inconsistent view of the (lock,want) tuple.  The risk being that
->> xen_unlock_kick() sees a random, spurious (lock,want) pairing and sends
->> the kick event to the wrong VCPU, leaving the deserving one hung.
-> Yes, proper operation sequence (and barriers) is certainly
-> required here. If you allowed nesting, this may even become
-> simpler (as you'd have a single write making visible the new
-> "head" pointer, after having written all relevant fields of the
-> new "head" structure).
+Thoughts ?
 
-Yes, simple nesting should be quite straightforward (ie allowing an
-interrupt handler to take some other lock than the one the outer context
-is waiting on).
+Mathieu
 
-    J
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
