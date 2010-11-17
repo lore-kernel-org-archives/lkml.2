@@ -1,92 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932630Ab0KQEBY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 23:01:24 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51780 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757546Ab0KQEBX (ORCPT
+	id S1756036Ab0KQEFK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 23:05:10 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:60422 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741Ab0KQEFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 23:01:23 -0500
-Date: Tue, 16 Nov 2010 19:57:20 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+	Tue, 16 Nov 2010 23:05:08 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Florian Mickler <florian@mickler.org>, Jesper Juhl <jj@chaosbits.net>,
+        David Rientjes <rientjes@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH -v4 1/2] lib, Make gen_pool memory allocator lockless
-Message-Id: <20101116195720.23287038.akpm@linux-foundation.org>
-In-Reply-To: <1289963005.8719.1238.camel@yhuang-dev>
-References: <1289868791-16658-1-git-send-email-ying.huang@intel.com>
-	<1289868791-16658-2-git-send-email-ying.huang@intel.com>
-	<20101116135038.fcaa90ca.akpm@linux-foundation.org>
-	<1289960281.8719.1218.camel@yhuang-dev>
-	<20101116183506.41e77e1a.akpm@linux-foundation.org>
-	<1289963005.8719.1238.camel@yhuang-dev>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+        LKML <linux-kernel@vger.kernel.org>, Ying Han <yinghan@google.com>,
+        Bodo Eggert <7eggert@web.de>, Mandeep Singh Baines <msb@google.com>,
+        "Figo.zhang" <figo1802@gmail.com>
+Subject: Re: [PATCH] Revert oom rewrite series
+In-Reply-To: Your message of "Tue, 16 Nov 2010 14:55:51 GMT."
+             <20101116145551.49c47df5@lxorguk.ukuu.org.uk>
+From: Valdis.Kletnieks@vt.edu
+References: <20101115093410.BEFD.A69D9226@jp.fujitsu.com> <20101114181905.bc5b44f9.akpm@linux-foundation.org> <20101115113238.BF06.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1011150215460.2986@chino.kir.corp.google.com> <alpine.LNX.2.00.1011160027180.22346@swampdragon.chaosbits.net> <34565.1289866395@localhost> <20101116110310.1502de2a@lxorguk.ukuu.org.uk> <20101116140341.42561c84@schatten.dmk.lab>
+            <20101116145551.49c47df5@lxorguk.ukuu.org.uk>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: multipart/signed; boundary="==_Exmh_1289966681_4694P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Tue, 16 Nov 2010 23:04:41 -0500
+Message-ID: <18510.1289966681@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020205.4CE3545A.00E3,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010 11:03:25 +0800 Huang Ying <ying.huang@intel.com> wrote:
+--==_Exmh_1289966681_4694P
+Content-Type: text/plain; charset=us-ascii
 
-> It seems that Steven thinks many architectures without NMI-safe cmpxchg
-> have no real NMI too.
-
-Could be.
-
-Really, we should nail this down and work out the matrix of
-what-works-with-what, and then arrange for the things which _won't_
-work to be either non-Kconfigurable or non-compilable.
-
-The worst thing we could do would be to advertise some code as
-"nmi-safe!!", then to have someone go and use it on that basis, only
-for their users to later discover ghastly rare races.
-
-> In the patch description and comments, it is said that on architectures
-> without NMI-safe cmpxchg, gen_pool can not be used in NMI handler
-> safely.
+On Tue, 16 Nov 2010 14:55:51 GMT, Alan Cox said:
+> > How does one mark it apropriately?
+> > The commit 51b1bd2 (oom: deprecate oom_adj tunable, see below) 
+> > added it to feature-removal-schedule.txt, a patch for
+> > Documentation/ABI has also been provided in the meantime, if i'm not
+> > mistaken. 
 > 
-> Or do you think it is better to use a spin_trylock based fallback if
-> NMI-safe cmpxchg is not available? Or require cmpxchg implementation
-> uses spin_trylock instead of spin_lock?
+> Yes - so why is it spewing crap, annoying users and trying to irritate
+> application authors. It's not 2012 yet.
 
-As a first step, a typical thing to do would be to create
-CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG, define that in the appropriate
-architectures, make ftrace and perf and genpool and anything else
-dependent upon that at Kconfig-time.
+Aug 2012 is only 6 kernel releases or so away....
 
-A spin_trylock_irqsave() implementation would do what?  Rarely fail the
-memory allocation attempt if the trylock failed?  I guess that's
-acceptable in the context of gen_pool, because memory allocators are
-expected to fail, and everyone carefully tests the allocation-failed
-error paths (lol).
+Presumably the whinging is so we start tracking down the offending userspace
+and getting it fixed before 2012 gets here.  Sticking the warning in just one
+or two kernel releases before it becomes official leads to "I can't run the new
+kernel because my userspace isn't patched yet".  We really can't win here,
+we don't whinge and stuff doesn't get tracked down and fixed, we do whinge
+and that gets people upset too.
 
-But rare failures may not be useful within the context of future
-clients of the "lockless" list implementation so I'd say that a safer
-approach would be to make the list implementation require
-CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG and be done with it.
+--==_Exmh_1289966681_4694P
+Content-Type: application/pgp-signature
 
-So that's all pretty simple so far.  However...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-The list implementation is still useful to
-non-CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG clients, as long as they aren't
-using it from NMI context, yes?
+iD8DBQFM41RZcC3lWbTT17ARAo+YAJ9A0IvKvJ24BXUEw/yGtF8CYDd76ACeNGbA
+iqdFFSVCusUYWMcpTlokjY0=
+=5h2H
+-----END PGP SIGNATURE-----
 
-In which case I suppose we could add a library of lockless_list_foo()
-functions which are usable from non-NMI contexts and which are
-available to all configs.  And on top of that implement a library of
-nmi_safe_lockless_list_foo() functions which are just wrappers around
-lockless_list_foo(), but which are only available if
-CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG=y.
+--==_Exmh_1289966681_4694P--
 
-Which is getting to be a bit of a pain, so you might choose to
-disregard everything after "However..." ;)
