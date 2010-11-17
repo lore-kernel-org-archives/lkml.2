@@ -1,59 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935701Ab0KQXLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:11:20 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59038 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935559Ab0KQXLT (ORCPT
+	id S964801Ab0KQXMU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:12:20 -0500
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:58858 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934863Ab0KQXMS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:11:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=EVY5lOoJf3YoJJG/TNmMQsnZfywBIfZvUB4M+ywZQlTF+fmILfOOw2LvemwHDjGVSo
-         k0PnuUKcG4tRSoDalyOeViDN5NtG0wOEMmjyWYJ7rTPdBiy224jKcgeQfZ2cST1d1IuY
-         +nqicwgJzJWITCSoqJjY/1VhI5amcmsbZsWfQ=
+	Wed, 17 Nov 2010 18:12:18 -0500
+Date: Thu, 18 Nov 2010 10:11:43 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering
+ writeback
+Message-ID: <20101117231143.GQ22876@dastard>
+References: <1289996638-21439-1-git-send-email-walken@google.com>
+ <1289996638-21439-4-git-send-email-walken@google.com>
+ <20101117125756.GA5576@amd>
+ <1290007734.2109.941.camel@laptop>
+ <AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1290010595.3777.0.camel@jlt3.sipsolutions.net>
-References: <20101112024901.28522.21895.stgit@localhost6.localdomain6>
-	<20101112030035.28522.75318.stgit@localhost6.localdomain6>
-	<20101116093743.GA21872@jm.kir.nu>
-	<201011171728.06801.br1@einfach.org>
-	<1290010595.3777.0.camel@jlt3.sipsolutions.net>
-Date: Wed, 17 Nov 2010 18:11:18 -0500
-X-Google-Sender-Auth: Sd0Tm3QbtOPVZtaOVzYho5ZPCuE
-Message-ID: <AANLkTimoogSLAipNy=njGtHypqBQSk=usDmXut=KN9TM@mail.gmail.com>
-Subject: Re: [PATCH v7 3/3] nl80211/mac80211: Report signal average
-From: Bob Copeland <me@bobcopeland.com>
-To: Bruno Randolf <br1@einfach.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>, Jouni Malinen <j@w1.fi>,
-        linville@tuxdriver.com, randy.dunlap@oracle.com, peterz@infradead.org,
-        blp@cs.stanford.edu, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
-        stefanr@s5r6.in-berlin.de, kosaki.motohiro@jp.fujitsu.com,
-        akpm@linux-foundation.org, kevin.granade@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 11:16 AM, Johannes Berg
-<johannes@sipsolutions.net> wrote:
-> On Wed, 2010-11-17 at 17:28 +0900, Bruno Randolf wrote:
->> I understand that this could be more efficient, but if it matters or not -
->> honestly, I don't know. Can a more knowledgeable person than me comment on
->> this?
->
-> Yes, it does matter -- think of an embedded MIPS board running at 500MHz
-> and trying to push 11n speeds.
+On Wed, Nov 17, 2010 at 02:05:30PM -0800, Michel Lespinasse wrote:
+> On Wed, Nov 17, 2010 at 7:28 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Wed, 2010-11-17 at 23:57 +1100, Nick Piggin wrote:
+> >> On Wed, Nov 17, 2010 at 04:23:58AM -0800, Michel Lespinasse wrote:
+> >> > When faulting in pages for mlock(), we want to break COW for anonymous
+> >> > or file pages within VM_WRITABLE, non-VM_SHARED vmas. However, there is
+> >> > no need to write-fault into VM_SHARED vmas since shared file pages can
+> >> > be mlocked first and dirtied later, when/if they actually get written to.
+> >> > Skipping the write fault is desirable, as we don't want to unnecessarily
+> >> > cause these pages to be dirtied and queued for writeback.
+> >>
+> >> It's not just to break COW, but to do block allocation and such
+> >> (filesystem's page_mkwrite op). That needs to at least be explained
+> >> in the changelog.
+> >
+> > Agreed, the 0/3 description actually does mention this.
+> >
+> >> Filesystem doesn't have a good way to fully pin required things
+> >> according to mlock, but page_mkwrite provides some reasonable things
+> >> (like block allocation / reservation).
+> >
+> > Right, but marking all pages dirty isn't really sane. I can imagine
+> > making the reservation but not marking things dirty solution, although
+> > it might be lots harder to implement, esp since some filesystems don't
+> > actually have a page_mkwrite() implementation.
+> 
+> Really, my understanding is that not pre-allocating filesystem blocks
+> is just fine. This is, after all, what happens with ext3 and it's
+> never been reported as a bug (that I know of).
 
-I assume the number of samples (weight) is the more
-important tunable.  One option is you can require factor
-to be a power of two that is much larger than weight,
-then at least you can store factor/weight precomputed
-and multiply by it instead of doing a divide in ewma_add.
-Then ewma_get can also just be a shift as well.
+It's not ext3 you have to worry about - it's the filesystems that
+need special state set up on their pages/buffers for ->writepage to
+work correctly that are the problem. You need to call
+->write_begin/->write_end to get the state set up properly.
 
+If this state is not set up properly, silent data loss will occur
+during mmap writes either by ENOSPC or failing to set up writes into
+unwritten extents correctly (i.e. we'll be back to where we were in
+2.6.15).
+
+I don't think ->page_mkwrite can be worked around - we need that to
+be called on the first write fault of any mmap()d page to ensure it
+is set up correctly for writeback.  If we don't get write faults
+after the page is mlock()d, then we need the ->page_mkwrite() call
+during the mlock() call.
+
+> If filesystem people's feedback is that they really want mlock() to
+> continue pre-allocating blocks, maybe we can just do it using
+> fallocate() rather than page_mkwrite() callbacks ?
+
+Fallocate is not good enough to avoid ->page_mkwrite callbacks.
+Indeed, XFS (at least) requires the ->page_mkwrite() callout even
+on preallocated space to correctly mark the buffers as unwritten so
+extent conversion in ->writepage is triggered correctly (see test
+#166 in xfstests).
+
+Hence I think that avoiding ->page_mkwrite callouts is likely to
+break some filesystems in subtle, undetected ways.  IMO, regardless
+of what is done, it would be really good to start by writing a new
+regression test to exercise and encode the expected the mlock
+behaviour so we can detect regressions later on....
+
+Cheers,
+
+Dave.
 -- 
-Bob Copeland %% www.bobcopeland.com
+Dave Chinner
+david@fromorbit.com
