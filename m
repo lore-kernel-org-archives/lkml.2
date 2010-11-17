@@ -1,84 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751113Ab0KQXWk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 18:22:40 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:54191 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750698Ab0KQXWj convert rfc822-to-8bit (ORCPT
+	id S1751214Ab0KQXZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 18:25:58 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:41900 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab0KQXZ5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 18:22:39 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=wrbrn0nws+YR5lVQRAH8Rm/nBDDSKOO7FrswIA6qIfhWLUAXQoFNfFTNexCEMLM0hs
-         HjQtjK2D4g4AKyXZqJmA==
-MIME-Version: 1.0
-In-Reply-To: <1290034589.4ce45d9d7be28@www.imp.polymtl.ca>
-References: <1290029498.4ce449ba1679d@www.imp.polymtl.ca> <1290030106.30543.74.camel@gandalf.stny.rr.com>
- <1290034589.4ce45d9d7be28@www.imp.polymtl.ca>
-From: David Sharp <dhsharp@google.com>
-Date: Wed, 17 Nov 2010 15:22:15 -0800
-Message-ID: <AANLkTim9f2aNAaF8YgbOH3xKY9pjAtkHOoYVTv+XOE8W@mail.gmail.com>
-Subject: Re: Benchmarks of kernel tracing options 2 (ftrace, lttng and perf)
-To: Douglas Santos <douglas.santos@polymtl.ca>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ltt-dev@lists.casi.polymtl.ca" <ltt-dev@lists.casi.polymtl.ca>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 17 Nov 2010 18:25:57 -0500
+Subject: Re: [PATCH 06/13] writeback: bdi write bandwidth estimation
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Li Shaohua <shaohua.li@intel.com>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101117150837.a18d56c1.akpm@linux-foundation.org>
+References: <20101117042720.033773013@intel.com>
+	 <20101117042850.002299964@intel.com>
+	 <20101117150837.a18d56c1.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Date: Thu, 18 Nov 2010 00:24:59 +0100
+Message-ID: <1290036299.2109.1288.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 2:56 PM, Douglas Santos
-<douglas.santos@polymtl.ca> wrote:
-> Quoting Steven Rostedt <rostedt@goodmis.org>:
->> On Wed, 2010-11-17 at 16:31 -0500, Douglas Santos wrote:
->> > Hi all,
->> >
->> > This is a response to a benchmark, submitted a few weeks ago, comparing
->> kernel
->> > tracing options.
->> > http://lkml.org/lkml/2010/10/28/422
->> >
->> > We followed the methodology described in the link bellow,
->> > but using the shellscripts posted there to reproduce autotest scripts.
->> > http://lkml.org/lkml/2010/10/28/261
->> >
->> > We disabled the extra syscall tracing on lttng, for a fair comparison.
->> > http://lkml.org/lkml/2010/10/28/290
->> >
->> > Average results with tracing "on":
->> >
->> > lttng:  220 ns
->> > ftrace: 260 ns
->>
->> Heh, so ftrace got worse with the new kernel?
+On Wed, 2010-11-17 at 15:08 -0800, Andrew Morton wrote:
+> On Wed, 17 Nov 2010 12:27:26 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
+> 
+> > +     w = min(elapsed / (HZ/100), 128UL);
+> 
+> I did try setting HZ=10 many years ago, and the kernel blew up.
+> 
+> I do recall hearing of people who set HZ very low, perhaps because
+> their huge machines were seeing performance prolems when the timer tick
+> went off.  Probably there's no need to do that any more.
+> 
+> But still, we shouldn't hard-wire the (HZ >= 100) assumption if we
+> don't absolutely need to, and I don't think it is absolutely needed
+> here.  
 
-Steve, can you explain how you're drawing that conclusion? Did Douglas
-run this benchmark before on a previous kernel (I didn't see it if
-so)?
-
-- You can't directly compare to my results because of different hardware.
-- The methodology for lttng is different (syscall tracing was removed).
-- My results were also on 2.6.36
-
-> The previous bench was doing tracing "on" minus "off"
-> average results. They also used autotest scripts, not sure if
-> it does exactly the same thing.
-
-I think the subtraction is important, or it is at least important to
-see what the "off" result is as a baseline of comparison. Otherwise, a
-huge portion of the measurement is the cost of making the syscall
-itself.
-
->
-> I'll check if we missed something.
->
->
->
+People who do cpu bring-up on very slow FPGAs also lower HZ as far as
+possible.
