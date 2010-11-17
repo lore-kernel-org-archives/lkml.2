@@ -1,73 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935078Ab0KQRet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 12:34:49 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36564 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758221Ab0KQRes (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 12:34:48 -0500
-Subject: Re: [PATCH v2 05/20] ARM: LPAE: Introduce L_PTE_NOEXEC and
- L_PTE_NOWRITE
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101117173248.GG5308@n2100.arm.linux.org.uk>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
-	 <1289584840-18097-6-git-send-email-catalin.marinas@arm.com>
-	 <20101115183014.GD31421@n2100.arm.linux.org.uk>
-	 <AANLkTik5FcZ3rNtiwN8kYP0LZh+YqGtKP_RteoFiWa16@mail.gmail.com>
-	 <20101117171613.GB5308@n2100.arm.linux.org.uk>
-	 <AANLkTincmfqXmNQznd1fdSRYd4Vc+p47cgTfEwQoXdFm@mail.gmail.com>
-	 <20101117172425.GE5308@n2100.arm.linux.org.uk>
-	 <1290015033.2351.69.camel@e102109-lin.cambridge.arm.com>
-	 <20101117173248.GG5308@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Wed, 17 Nov 2010 17:34:42 +0000
-Message-ID: <1290015282.2351.70.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 17 Nov 2010 17:34:43.0148 (UTC) FILETIME=[B85010C0:01CB867D]
+	id S935143Ab0KQRgd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:36:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10494 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758544Ab0KQRg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 12:36:28 -0500
+Date: Wed, 17 Nov 2010 14:49:03 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 5/6] KVM: MMU: remove 'clear_unsync' parameter
+Message-ID: <20101117164903.GE18959@amt.cnet>
+References: <4CE355A0.6020907@cn.fujitsu.com>
+ <4CE3565D.4080004@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE3565D.4080004@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 17:32 +0000, Russell King - ARM Linux wrote:
-> On Wed, Nov 17, 2010 at 05:30:33PM +0000, Catalin Marinas wrote:
-> > On Wed, 2010-11-17 at 17:24 +0000, Russell King - ARM Linux wrote:
-> > > On Wed, Nov 17, 2010 at 05:22:12PM +0000, Catalin Marinas wrote:
-> > > > Ah, good point, that was the mask.
-> > > >
-> > > > So for dmacoherent we make sure that L_PTE_EXEC is cleared. I suspect
-> > > > we should now make sure that L_PTE_NOEXEC is set. For the other two,
-> > > > just leave them as they are.
-> > >
-> > > Already done:
-> > >
-> > >  #define pgprot_dmacoherent(prot) \
-> > > -       __pgprot_modify(prot, L_PTE_MT_MASK|L_PTE_EXEC, L_PTE_MT_BUFFERABLE)
-> > > +       __pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_BUFFERABLE|L_PTE_XN)
-> > > ...
-> > >  #define pgprot_dmacoherent(prot) \
-> > > -       __pgprot_modify(prot, L_PTE_MT_MASK|L_PTE_EXEC, L_PTE_MT_UNCACHED)
-> > > +       __pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_UNCACHED|L_PTE_XN)
-> >
-> > Are you already doing such changes? Just to avoid duplicating effort
-> > (and use common naming scheme).
+On Wed, Nov 17, 2010 at 12:13:17PM +0800, Xiao Guangrong wrote:
+> Remove it since we can jude it by sp->unsync
 > 
-> I did say that I had patches for all the issues I raised so far...  They're
-> just in the process of being posted (if lists.infradead.org this time can
-> cope with one patch every 20 secs...)
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> ---
+>  arch/x86/include/asm/kvm_host.h |    2 +-
+>  arch/x86/kvm/mmu.c              |    8 ++++----
+>  arch/x86/kvm/paging_tmpl.h      |    5 ++---
+>  3 files changed, 7 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index b04c0fa..ce8c1e4 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -250,7 +250,7 @@ struct kvm_mmu {
+>  	void (*prefetch_page)(struct kvm_vcpu *vcpu,
+>  			      struct kvm_mmu_page *page);
+>  	int (*sync_page)(struct kvm_vcpu *vcpu,
+> -			 struct kvm_mmu_page *sp, bool clear_unsync);
+> +			 struct kvm_mmu_page *sp);
+>  	void (*invlpg)(struct kvm_vcpu *vcpu, gva_t gva);
+>  	hpa_t root_hpa;
+>  	int root_level;
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index c4531a3..0668f4b 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -1162,7 +1162,7 @@ static void nonpaging_prefetch_page(struct kvm_vcpu *vcpu,
+>  }
+>  
+>  static int nonpaging_sync_page(struct kvm_vcpu *vcpu,
+> -			       struct kvm_mmu_page *sp, bool clear_unsync)
+> +			       struct kvm_mmu_page *sp)
+>  {
+>  	return 1;
+>  }
+> @@ -1292,7 +1292,7 @@ static int __kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+>  	if (clear_unsync)
+>  		kvm_unlink_unsync_page(vcpu->kvm, sp);
+>  
+> -	if (vcpu->arch.mmu.sync_page(vcpu, sp, clear_unsync)) {
+> +	if (vcpu->arch.mmu.sync_page(vcpu, sp)) {
+>  		kvm_mmu_prepare_zap_page(vcpu->kvm, sp, invalid_list);
+>  		return 1;
+>  	}
+> @@ -1333,12 +1333,12 @@ static void kvm_sync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
+>  			continue;
+>  
+>  		WARN_ON(s->role.level != PT_PAGE_TABLE_LEVEL);
+> +		kvm_unlink_unsync_page(vcpu->kvm, s);
+>  		if ((s->role.cr4_pae != !!is_pae(vcpu)) ||
+> -			(vcpu->arch.mmu.sync_page(vcpu, s, true))) {
+> +			(vcpu->arch.mmu.sync_page(vcpu, s))) {
+>  			kvm_mmu_prepare_zap_page(vcpu->kvm, s, &invalid_list);
+>  			continue;
+>  		}
+> -		kvm_unlink_unsync_page(vcpu->kvm, s);
+>  		flush = true;
+>  	}
+>  
+> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+> index 57619ed..60f00db 100644
+> --- a/arch/x86/kvm/paging_tmpl.h
+> +++ b/arch/x86/kvm/paging_tmpl.h
+> @@ -740,8 +740,7 @@ static void FNAME(prefetch_page)(struct kvm_vcpu *vcpu,
+>   * - The spte has a reference to the struct page, so the pfn for a given gfn
+>   *   can't change unless all sptes pointing to it are nuked first.
+>   */
+> -static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+> -			    bool clear_unsync)
+> +static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+>  {
+>  	int i, offset, nr_present;
+>  	bool host_writable;
+> @@ -781,7 +780,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+>  			u64 nonpresent;
+>  
+>  			if (rsvd_bits_set || is_present_gpte(gpte) ||
+> -			      !clear_unsync)
+> +			      sp->unsync)
+>  				nonpresent = shadow_trap_nonpresent_pte;
+>  			else
+>  				nonpresent = shadow_notrap_nonpresent_pte;
 
-I wasn't sure which patches, so I did the XN/RDONLY as well (not big
-patch though).
-
-I'll rebase my LPAE stuff in the next days and repost.
-
-Thanks.
-
--- 
-Catalin
-
+Its better to keep this explicit as a parameter. 
