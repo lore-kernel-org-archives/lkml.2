@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab0KQIb6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 03:31:58 -0500
-Received: from vpn.id2.novell.com ([195.33.99.129]:45537 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab0KQIb5 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:12:1>);
-	Wed, 17 Nov 2010 03:31:57 -0500
-Message-Id: <4CE3A1060200007800022B04@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 17 Nov 2010 08:31:50 +0000
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Jeremy Fitzhardinge" <jeremy@goop.org>
-Cc: "Jeremy Fitzhardinge" <jeremy.fitzhardinge@citrix.com>,
-        "Eric Dumazet" <dada1@cosmosbay.com>, <xiyou.wangcong@gmail.com>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "Nick Piggin" <npiggin@kernel.dk>,
-        "Srivatsa Vaddagiri" <vatsa@linux.vnet.ibm.com>,
-        "Linux Virtualization" <virtualization@lists.linux-foundation.org>,
-        "Xen-devel" <xen-devel@lists.xensource.com>,
-        "Mathieu Desnoyers" <mathieu.desnoyers@polymtl.ca>,
-        "Avi Kivity" <avi@redhat.com>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 13/14] x86/ticketlock: add slowpath logic
-References: <cover.1289940821.git.jeremy.fitzhardinge@citrix.com><cover.1289940821.git.jeremy.fitzhardinge@citrix.com>
- <97ed99ae9160bdb6477284b333bd6708fb7a19cb.1289940821.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <97ed99ae9160bdb6477284b333bd6708fb7a19cb.1289940821.git.jeremy.fitzhardinge@citrix.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S932747Ab0KQIcE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 03:32:04 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36173 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756844Ab0KQIcB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 03:32:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=oReBLn0KF6Rci7AUtgOuX6lIaCxkWHm+NVm9rtu7LoCyThgr6p7gefrIJ7sXkb4vT4
+         OXZ4fcNFWrx6vtb6FpBaZ1l5Uo0sLjAUjS7mtqQ0UINbyDwC+9Gn+RyDT/mAg7B8GomL
+         Poj9FY0BO5GMlnhkUzfFwnAGGQwOU8SoUOW6M=
+Message-ID: <4CE392FB.1010402@suse.cz>
+Date: Wed, 17 Nov 2010 09:31:55 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Baruch Siach <baruch@tkos.co.il>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Alex Gershgorin <agersh@rambler.ru>, Indan Zupancic <indan@nul.nu>
+Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
+References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il> <4CE0FE71.6000303@suse.cz> <20101115100838.GA3649@jasper.tkos.co.il> <4CE10B32.8090705@suse.cz> <c30e46c1b5343789b6475722071c3020.squirrel@webmail.greenhost.nl> <20101116110444.2f0cabd9@lxorguk.ukuu.org.uk> <4CE28299.30907@suse.cz> <20101117053251.GA26928@jasper.tkos.co.il> <4CE36B8B.3040403@zytor.com> <20101117054857.GB26928@jasper.tkos.co.il>
+In-Reply-To: <20101117054857.GB26928@jasper.tkos.co.il>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 16.11.10 at 22:08, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> +static inline void __ticket_enter_slowpath(struct arch_spinlock *lock)
-> +{
-> +	if (sizeof(lock->tickets.tail) == sizeof(u8))
-> +		asm (LOCK_PREFIX "orb %1, %0"
-> +		     : "+m" (lock->tickets.tail)
-> +		     : "i" (TICKET_SLOWPATH_FLAG) : "memory");
-> +	else
-> +		asm (LOCK_PREFIX "orw %1, %0"
-> +		     : "+m" (lock->tickets.tail)
-> +		     : "i" (TICKET_SLOWPATH_FLAG) : "memory");
-> +}
+On 11/17/2010 06:48 AM, Baruch Siach wrote:
+>> Just use a major.  No biggie.
+> 
+> And create my own 'struct class'?
 
-Came only now to mind: Here and elsewhere, did you try using
-%z0 to have gcc produce the opcode suffix character, rather
-than having these somewhat ugly if()-s?
+No, use bus_type struct as Greg suggested.
 
-Jan
-
+regards,
+-- 
+js
+suse labs
