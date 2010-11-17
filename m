@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934558Ab0KQGmE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 01:42:04 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:39401 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934513Ab0KQGmB (ORCPT
+	id S934518Ab0KQGml (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 01:42:41 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:54281 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933297Ab0KQGmk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 01:42:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:date:message-id:in-reply-to:references:subject;
-        b=i10dblxNiJGBfWYACuCp23+IULqJvl2x8Zc9jE4vMbc26qvDDGQ1Xj7fW3+EqM6pPy
-         8gqBEr4AGQJ23DdiXCQLwKajjcPkvE6pw8e6GKuViUUdxOSAKUqvsYX7HeRloMjws/63
-         G6uhmdYkiahXsi8U+Koqj3UY2xZQ5FMqxKkKo=
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Magnus Damm <magnus.damm@gmail.com>, lethal@linux-sh.org,
-        g.liakhovetski@gmx.de, linux-sh@vger.kernel.org
-Date: Wed, 17 Nov 2010 15:44:54 +0900
-Message-Id: <20101117064454.18139.40718.sendpatchset@t400s>
-In-Reply-To: <20101117064405.18139.57035.sendpatchset@t400s>
-References: <20101117064405.18139.57035.sendpatchset@t400s>
-Subject: [PATCH 05/05] fbdev: sh_mipi_dsi: Allow LCDC board callbacks
+	Wed, 17 Nov 2010 01:42:40 -0500
+X-Greylist: delayed 1657 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Nov 2010 01:42:40 EST
+Message-ID: <4CE373BC.30805@wytron.com.tw>
+Date: Wed, 17 Nov 2010 14:18:36 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Baruch Siach <baruch@tkos.co.il>
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Alex Gershgorin <agersh@rambler.ru>
+Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
+References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
+In-Reply-To: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+On 11/15/2010 04:23 PM, Baruch Siach wrote:
+> From: Alex Gershgorin<agersh@rambler.ru>
+>
+> The active serial protocol can be used to program Altera serial configuration
+> devices. This driver uses the kernel gpio interface to implement the active
+> serial protocol.
+>
+> This patch also introduces the include/platform_drivers/ directory, which is
+> the new home for platform data headers. This is per Greg's suggestion.
+>
 
-Update the MIPI-DSI driver to make use of the
-LCD panel callbacks in the LCDC platform data.
+Hi Alex,
 
-Without this patch MIPI panels cannot use board
-specific LCDC callbacks to control power and/or
-back light.
+Altera EPCS is normal SPI serial flash, which is exactly the same as 
+STmicro part. Please consider existing drivers/mtd/devices/m25p80.c and 
+drivers/spi/spi_gpio.c.
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
----
-
- drivers/video/sh_mipi_dsi.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
---- 0008/drivers/video/sh_mipi_dsi.c
-+++ work/drivers/video/sh_mipi_dsi.c	2010-11-16 17:41:32.000000000 +0900
-@@ -50,6 +50,9 @@ struct sh_mipi {
- 	void __iomem	*linkbase;
- 	struct clk	*dsit_clk;
- 	struct clk	*dsip_clk;
-+	void *next_board_data;
-+	void (*next_display_on)(void *board_data, struct fb_info *info);
-+	void (*next_display_off)(void *board_data);
- };
- 
- static struct sh_mipi *mipi_dsi[MAX_SH_MIPI_DSI];
-@@ -122,12 +125,18 @@ static void mipi_display_on(void *arg, s
- 	struct sh_mipi *mipi = arg;
- 
- 	sh_mipi_dsi_enable(mipi, true);
-+
-+	if (mipi->next_display_on)
-+		mipi->next_display_on(mipi->next_board_data, info);
- }
- 
- static void mipi_display_off(void *arg)
- {
- 	struct sh_mipi *mipi = arg;
- 
-+	if (mipi->next_display_off)
-+		mipi->next_display_off(mipi->next_board_data);
-+
- 	sh_mipi_dsi_enable(mipi, false);
- }
- 
-@@ -431,6 +440,11 @@ static int __init sh_mipi_probe(struct p
- 	mutex_unlock(&array_lock);
- 	platform_set_drvdata(pdev, mipi);
- 
-+	/* Save original LCDC callbacks */
-+	mipi->next_board_data = pdata->lcd_chan->board_cfg.board_data;
-+	mipi->next_display_on = pdata->lcd_chan->board_cfg.display_on;
-+	mipi->next_display_off = pdata->lcd_chan->board_cfg.display_off;
-+
- 	/* Set up LCDC callbacks */
- 	pdata->lcd_chan->board_cfg.board_data = mipi;
- 	pdata->lcd_chan->board_cfg.display_on = mipi_display_on;
+Best regards,
+Thomas
