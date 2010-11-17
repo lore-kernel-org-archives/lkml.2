@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935348Ab0KQVeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 16:34:17 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53301 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752383Ab0KQVeQ convert rfc822-to-8bit (ORCPT
+	id S1758928Ab0KQVhh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 16:37:37 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:52395
+	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754022Ab0KQVhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 16:34:16 -0500
+	Wed, 17 Nov 2010 16:37:36 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzzz2dh2a8h637h668h67dh685h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw01.freescale.net;RD:de01egw01.freescale.net;EFVD:NLI
+Message-ID: <4CE44B1B.9040709@freescale.com>
+Date: Wed, 17 Nov 2010 15:37:31 -0600
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101101 Fedora/2.0.10-1.fc13 SeaMonkey/2.0.10
 MIME-Version: 1.0
-In-Reply-To: <20101117212912.GC26184@shisha.kicks-ass.net>
-References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
- <22542.1289507293@localhost> <20101111205123.GC10585@shisha.kicks-ass.net>
- <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
- <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
- <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6>
- <20101117190659.GB26184@shisha.kicks-ass.net> <alpine.DEB.2.00.1011171130210.1595@davide-lnx1>
- <20101117212912.GC26184@shisha.kicks-ass.net>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 17 Nov 2010 22:34:00 +0100
-Message-ID: <AANLkTi=MgkGsckJ0=K-+vfRMLmwUvJ0D4EY+tSA_N22c@mail.gmail.com>
-Subject: Re: [PATCHv6 0/7] system time changes notification
-To: Alexander Shishkin <virtuoso@slind.org>
-Cc: Davide Libenzi <davidel@xmailserver.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kyle Moffett <kyle@moffetthome.net>, Valdis.Kletnieks@vt.edu,
-        LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Greg KH <gregkh@suse.de>,
-        Chris Friesen <chris.friesen@genband.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Lennart Poettering <lennart@poettering.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Scott Wood <scottwood@freescale.com>,
+        Stuart Yoder <stuart.yoder@freescale.com>
+Subject: How do I choose an arbitrary minor number for my tty device?
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 17 Nov 2010 21:38:33.0366 (UTC) FILETIME=[C89A2B60:01CB869F]
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 22:29, Alexander Shishkin <virtuoso@slind.org> wrote:
-> On Wed, Nov 17, 2010 at 12:42:52PM -0800, Davide Libenzi wrote:
->> On Wed, 17 Nov 2010, Alexander Shishkin wrote:
->>
->> > > But what you folks really want for this stuff is an extension to
->> > > timerfd as you want to be able to poll, right?
->> > >
->> > > So what about the following:
->> > >
->> > > Add a new flag TDF_NOTIFY_CLOCK_WAS_SET to the timerfd flags. Now this
->> > > flag adds the timer to a separate list, which gets woken up when the
->> > > clock is set.
->> > >
->> > > No new syscall, just a few lines of code in fs/timerfd.c and
->> > > clock_was_set().
->> > >
->> > > Thoughts ?
->> >
->> > Something like this (sans ugliness)?
->>
->> Oh, gosh, please.  This is interface-multiplexing-a-palooza.
->
-> Thomas made a suggestion, I came up with how it might look like so that
-> pros and cons are clearer to everyone (or at least me) and can be discussed
-> on technical grounds. Code talks, sort of. I'm not convinced that a timer
-> that returns to userspace when the clock changes is such a bad idea, could
-> you please elaborate?
+Arnd and Greg,
 
-I like it.
+I'm working on a TTY driver for a virtual device that we call "byte channels".
+This are likes pipes, but they go through an ePAPR hypervisor.
 
-It's all bout timers, and timerfd is fine to use, I think. It has
-nothing to do with "system-events", we ask for the timer to serve us,
-but if the *time* changes underneath, we need to know to re-calculate.
+The hypervisor declares byte channels as nodes in a device tree.  Each byte
+channel has a unique 32-bit number called a "handle", and this handle is
+specified in the node for that device tree.  Applications are expected to scan
+the device tree to look for the node they want, and then extract the handle from
+that node.
 
-I think it's simple and fits very well in the current interface.
+The problem I have is that the handles are, from Linux's perspective, arbitrary
+and sparsely assigned.  For example, we could have four byte channels with
+handles of 2, 8, 73, and 74.
 
-Kay
+What I would like is for the minor number for each tty device to be the byte
+channel handle.  Or the byte channel could be in the /dev name.  Either way,
+applications can figure out which /dev entry to open in order to communicate
+with a given byte channel.
+
+Unfortunately, the only way I know how to do this is to create a separate tty
+driver instance for each byte channel.  This is because of this code in
+tty_register_driver:
+
+	if (!(driver->flags & TTY_DRIVER_DEVPTS_MEM) && driver->num) {
+		p = kzalloc(driver->num * 2 * sizeof(void *), GFP_KERNEL);
+		if (!p)
+			return -ENOMEM;
+	}
+
+The 'index' passed to tty_register_device() is added to minor_start to create
+the /dev entry, and it's added to name_base to create the name.  If I specify a
+very large number for driver->num, then tty_register_driver will create a large
+but sparsely-populated array.
+
+Would you be okay with creating a separate driver for each byte channel, or is
+there a better way to do what I want?
+
+--
+Timur Tabi
+Linux kernel developer at Freescale
+
