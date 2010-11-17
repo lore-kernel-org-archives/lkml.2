@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934990Ab0KQRCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 12:02:40 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42293 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932743Ab0KQRCj convert rfc822-to-8bit (ORCPT
+	id S935009Ab0KQREI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 12:04:08 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63162 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934933Ab0KQREH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 12:02:39 -0500
+	Wed, 17 Nov 2010 12:04:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=eUHY7tNYJU8Gk4Dov1eRVPMb24DT4J7cQFC7XkeNw/R0zH/k3AQ6BCOT3lG49CPqBh
-         1ESUvS5cHWOWbUEAJ8+bPHLd7OwjXJxGSB7cYyWqRAGa7d7QP4mf1MXvk+81TlGuTEoF
-         Wm6+JLRgSJEpSTlQVU026uDoA5StMkHKfwOxI=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=vFRTeiKbBW4LCdYBdnQOIi+wJowwNdd6hJ+deSXvLzOOxYCvsBECVd3q8ZEJit3H9H
+         axLCZPcBb9CyRtI/EC/BJpbOuj84dk6prK9OmQAl6xHyzou5KudaqLZ/1jOVWmujESsZ
+         nwtZhN6rop2cNkYUJHIfrPgwDG9KHvv50ZVds=
 MIME-Version: 1.0
-In-Reply-To: <20101115183014.GD31421@n2100.arm.linux.org.uk>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com>
-	<1289584840-18097-6-git-send-email-catalin.marinas@arm.com>
-	<20101115183014.GD31421@n2100.arm.linux.org.uk>
-Date: Wed, 17 Nov 2010 17:02:37 +0000
-X-Google-Sender-Auth: 2Sd3cM5Jvyic-faZCOsWRaVxDw8
-Message-ID: <AANLkTik5FcZ3rNtiwN8kYP0LZh+YqGtKP_RteoFiWa16@mail.gmail.com>
-Subject: Re: [PATCH v2 05/20] ARM: LPAE: Introduce L_PTE_NOEXEC and L_PTE_NOWRITE
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4CE3F773.2010303@kernel.org>
+References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com>
+	<4CD26948.7050009@kernel.org>
+	<20101104164401.GC10656@sundance.ccs.neu.edu>
+	<4CD3CE29.2010105@kernel.org>
+	<AANLkTimDXKsBCxbsEOfgkYV2R8FK=bhFdmx9UQow5hqp@mail.gmail.com>
+	<4CD5DCE3.3000109@cs.columbia.edu>
+	<20101107194222.GG31077@sundance.ccs.neu.edu>
+	<4CD71A6B.3020905@cs.columbia.edu>
+	<20101107230516.GJ31077@sundance.ccs.neu.edu>
+	<4CD774CA.8030004@cs.columbia.edu>
+	<20101108162630.GN31077@sundance.ccs.neu.edu>
+	<8739rbpreb.fsf@localhost6.localdomain6>
+	<4CE3B927.1020401@kernel.org>
+	<8762vwvubr.fsf@localhost6.localdomain6>
+	<4CE3F773.2010303@kernel.org>
+Date: Wed, 17 Nov 2010 19:04:04 +0200
+Message-ID: <AANLkTikox4HcXzekv7nBOBRhCsyuz4aZ6rKqyrHFrVA-@mail.gmail.com>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Dan Smith <danms@us.ibm.com>, Gene Cooperman <gene@ccs.neu.edu>,
+        Oren Laadan <orenl@cs.columbia.edu>, Kapil Arya <kapil@ccs.neu.edu>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, hch@lst.de
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 November 2010 18:30, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Nov 12, 2010 at 06:00:25PM +0000, Catalin Marinas wrote:
->> --- a/arch/arm/include/asm/pgtable-2level.h
->> +++ b/arch/arm/include/asm/pgtable-2level.h
->> @@ -128,6 +128,8 @@
->>  #define L_PTE_USER           (1 << 8)
->>  #define L_PTE_EXEC           (1 << 9)
->>  #define L_PTE_SHARED         (1 << 10)       /* shared(v6), coherent(xsc3) */
->> +#define L_PTE_NOEXEC         (0)
->> +#define L_PTE_NOWRITE                (0)
->
-> Let's not make this more complicated than it has to be.  If we need the
-> inverse of WRITE and EXEC, then that's what we should change everyone to,
-> not invent a new system to work along side the old system.
+On Wed, Nov 17, 2010 at 5:40 PM, Tejun Heo <tj@kernel.org> wrote:
+> The horror show part is dumping internal data structure without due
+> scrutinization in a way which can only ever be useful for CR when most
+> of the same states are already exported via ABI defined ways.
 
-Question on the pgprot_noncached/writecombine/dmacoherent - in the
-current implementation we pass L_PTE_EXEC on the dmacoherent macro. Do
-we need to pass L_PTE_NOEXEC to the noncached/writecombine ones? I
-don't see a reason for any of these to be executable but maybe we can
-let the code calling them decide.
+That's what review process is for, isn't it?
 
-Thanks.
-
--- 
-Catalin
+Please, look at what is being dumped and what isn't.
