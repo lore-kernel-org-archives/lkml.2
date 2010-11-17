@@ -1,121 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934018Ab0KQCL2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 16 Nov 2010 21:11:28 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:50480 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933395Ab0KQCL1 (ORCPT
+	id S934081Ab0KQCMk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 16 Nov 2010 21:12:40 -0500
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:42233 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933395Ab0KQCMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 16 Nov 2010 21:11:27 -0500
-X-AuditID: b753bd60-a69a5ba000003e7d-25-4ce339ccc323
-Message-ID: <4CE339C3.6070009@hitachi.com>
-Date: Wed, 17 Nov 2010 11:11:15 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Tue, 16 Nov 2010 21:12:38 -0500
+Date: Wed, 17 Nov 2010 13:11:50 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Jan Kara <jack@suse.cz>, Josef Bacik <josef@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        xfs@oss.sgi.com, cmm@us.ibm.com, cluster-devel@redhat.com,
+        ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH 1/6] fs: add hole punching to fallocate
+Message-ID: <20101117021150.GL22876@dastard>
+References: <1289840723-3056-1-git-send-email-josef@redhat.com>
+ <1289840723-3056-2-git-send-email-josef@redhat.com>
+ <20101116111611.GA4757@quack.suse.cz>
+ <20101116114346.GB4757@quack.suse.cz>
+ <20101116125249.GB31957@dhcp231-156.rdu.redhat.com>
+ <20101116131451.GH4757@quack.suse.cz>
+ <18ACAA85-8847-4B12-9839-F99FB6C7B3E4@dilger.ca>
 MIME-Version: 1.0
-To: Robert Morell <rmorell@nvidia.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND] perf: Remove hardcoded include paths for elfutils
-References: <1289945793-31441-1-git-send-email-rmorell@nvidia.com>
-In-Reply-To: <1289945793-31441-1-git-send-email-rmorell@nvidia.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <18ACAA85-8847-4B12-9839-F99FB6C7B3E4@dilger.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/11/17 7:16), Robert Morell wrote:
-> This change removes the use of hardcoded absolute
-> "/usr/include/elfutils" paths from the perf build.  The problem with
-> hardcoded paths is that it prevents them from being overridden by
-> $prefix or by -I in CFLAGS (e.g., for cross-compiling purposes).
+On Tue, Nov 16, 2010 at 06:22:47PM -0600, Andreas Dilger wrote:
+> On 2010-11-16, at 07:14, Jan Kara wrote:
+> >> Yeah I went back and forth on this.  KEEP_SIZE won't change the
+> >> behavior of PUNCH_HOLE since PUNCH_HOLE implicitly means keep
+> >> the size.  I figured since its "mode" and not "flags" it would
+> >> be ok to make either way accepted, but if you prefer PUNCH_HOLE
+> >> means you have to have KEEP_SIZE set then I'm cool with that,
+> >> just let me know one way or the other.
+> > 
+> > So we call it "mode" but speak about "flags"? Seems a bit
+> > inconsistent.  I'd maybe lean a bit at the "flags" side and just
+> > make sure that only one of FALLOC_FL_KEEP_SIZE,
+> > FALLOC_FL_PUNCH_HOLE is set (interpreting FALLOC_FL_KEEP_SIZE as
+> > allocate blocks beyond i_size). But I'm not sure what others
+> > think.
 > 
-> Instead, just include the "elfutils/" subdirectory as a relative path
-> when files are needed from that directory.
+> IMHO, it makes more sense for consistency and "get what users
+> expect" that these be treated as flags.  Some users will want
+> KEEP_SIZE, but in other cases it may make sense that a hole punch
+> at the end of a file should shrink the file (i.e. the opposite of
+> an append).
 
-Looks good to me, Thanks!
+What's wrong with ftruncate() for this?
 
-> 
-> Tested by building perf:
-> - Cross-compiled for ARM on x86_64
-> - Built natively on x86_64
-> - Built on x86_64 with /usr/include/elfutils moved to another location
->   and manually included in CFLAGS
-> 
-> Signed-off-by: Robert Morell <rmorell@nvidia.com>
+There's plenty of open questions about the interface if we allow
+hole punching to change the file size. e.g. where do we set the EOF
+(offset or offset+len)?  What do we do with the rest of the blocks
+that are now beyond EOF?  We weren't asked to punch them out, so do
+we leave them behind? What if we are leaving written blocks beyond
+EOF - does any filesystem other than XFS support that (i.e. are we
+introducing different behaviour on different filesystems)?  And what
+happens if the offset is beyond EOF? Do we extend the file, and if
+so why wouldn't you just use ftruncate() instead?
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+IMO, allowing hole punching to change the file size makes it much
+more complicated and hence less likely to simply do what the user
+expects. It also is harder to implement and testing becomes much
+more intricate. From that perspective, it does not seem desirable to
+me...
 
-> ---
->  tools/perf/Makefile            |    4 ++--
->  tools/perf/feature-tests.mak   |    4 ++--
->  tools/perf/util/probe-finder.h |    6 +++---
->  3 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index d1db0f6..74b684d 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -507,7 +507,7 @@ PERFLIBS = $(LIB_FILE)
->  -include config.mak
->  
->  ifndef NO_DWARF
-> -FLAGS_DWARF=$(ALL_CFLAGS) -I/usr/include/elfutils -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
-> +FLAGS_DWARF=$(ALL_CFLAGS) -ldw -lelf $(ALL_LDFLAGS) $(EXTLIBS)
->  ifneq ($(call try-cc,$(SOURCE_DWARF),$(FLAGS_DWARF)),y)
->  	msg := $(warning No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev);
->  	NO_DWARF := 1
-> @@ -554,7 +554,7 @@ ifndef NO_DWARF
->  ifeq ($(origin PERF_HAVE_DWARF_REGS), undefined)
->  	msg := $(warning DWARF register mappings have not been defined for architecture $(ARCH), DWARF support disabled);
->  else
-> -	BASIC_CFLAGS += -I/usr/include/elfutils -DDWARF_SUPPORT
-> +	BASIC_CFLAGS += -DDWARF_SUPPORT
->  	EXTLIBS += -lelf -ldw
->  	LIB_OBJS += $(OUTPUT)util/probe-finder.o
->  endif # PERF_HAVE_DWARF_REGS
-> diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
-> index b253db6..b041ca6 100644
-> --- a/tools/perf/feature-tests.mak
-> +++ b/tools/perf/feature-tests.mak
-> @@ -9,8 +9,8 @@ endef
->  ifndef NO_DWARF
->  define SOURCE_DWARF
->  #include <dwarf.h>
-> -#include <libdw.h>
-> -#include <version.h>
-> +#include <elfutils/libdw.h>
-> +#include <elfutils/version.h>
->  #ifndef _ELFUTILS_PREREQ
->  #error
->  #endif
-> diff --git a/tools/perf/util/probe-finder.h b/tools/perf/util/probe-finder.h
-> index bba69d4..beaefc3 100644
-> --- a/tools/perf/util/probe-finder.h
-> +++ b/tools/perf/util/probe-finder.h
-> @@ -34,9 +34,9 @@ extern int find_available_vars_at(int fd, struct perf_probe_event *pev,
->  				  bool externs);
->  
->  #include <dwarf.h>
-> -#include <libdw.h>
-> -#include <libdwfl.h>
-> -#include <version.h>
-> +#include <elfutils/libdw.h>
-> +#include <elfutils/libdwfl.h>
-> +#include <elfutils/version.h>
->  
->  struct probe_finder {
->  	struct perf_probe_event	*pev;		/* Target probe event */
+Cheers,
 
-
+Dave.
 -- 
-Masami HIRAMATSU
-2nd Dept. Linux Technology Center
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Dave Chinner
+david@fromorbit.com
