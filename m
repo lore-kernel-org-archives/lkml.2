@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760404Ab0KRWCN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 17:02:13 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:61681 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753908Ab0KRWCL convert rfc822-to-8bit (ORCPT
+	id S1757355Ab0KRWE1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 17:04:27 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:12864 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754397Ab0KRWE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 17:02:11 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DFMOvw4JN2kstT3LyKz3+sQ5j5Gt3wPbw4gmVNWx1u1NCznvzqwXkKdKm1laCryf7v
-         aoZ1SBTxpejuuBgR+/Xsc/QaZM6C7MBm0MF9z96QgaGo0j7gNFjDDRq89t1cGQ5J9DcC
-         +Z2cY8RP0H/czUhnuEzMvqohoUg+Zr0CnM5D8=
+	Thu, 18 Nov 2010 17:04:26 -0500
+Date: Thu, 18 Nov 2010 22:51:43 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Michael Ellerman <michael@ellerman.id.au>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] iSeries: Remove unused mf_getSrcHistory function and
+ caller.
+In-Reply-To: <1290117470.29105.9.camel@concordia>
+Message-ID: <alpine.LNX.2.00.1011182249300.11697@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1010301911220.1572@swampdragon.chaosbits.net>  <1288609842.10671.7.camel@concordia>  <20101102071025.2fe5e6ca.sfr@canb.auug.org.au>  <alpine.LNX.2.00.1011012104050.12889@swampdragon.chaosbits.net>  <20101102082634.65342ce6.sfr@canb.auug.org.au>
+  <alpine.LNX.2.00.1011012218420.12889@swampdragon.chaosbits.net>  <1288657250.16790.4.camel@concordia>  <alpine.LNX.2.00.1011050026220.16015@swampdragon.chaosbits.net>  <alpine.LNX.2.00.1011182044490.3651@swampdragon.chaosbits.net>
+ <1290117470.29105.9.camel@concordia>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1011181256470.29924@gbean-linux.qualcomm.com>
-References: <1290109970-26752-1-git-send-email-gbean@codeaurora.org>
-	<1290109970-26752-2-git-send-email-gbean@codeaurora.org>
-	<AANLkTimTsyhjHJZggFO31C-2RswpmKWn-V4pGEiQ3+_2@mail.gmail.com>
-	<alpine.DEB.2.00.1011181229380.26784@gbean-linux.qualcomm.com>
-	<AANLkTi=p02P=-JQ9+FynFyM1yxrAh3utKTD2uzqhnLxK@mail.gmail.com>
-	<alpine.DEB.2.00.1011181256470.29924@gbean-linux.qualcomm.com>
-Date: Thu, 18 Nov 2010 14:02:09 -0800
-Message-ID: <AANLkTiknYmWOmiFXGp6h2dT==aMuGs3BtXi82b6Vdq5i@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] msm: gpio: Add irq support to v2 gpiolib.
-From: Janakiram Sistla <janakiram.sistla@gmail.com>
-To: Gregory Bean <gbean@codeaurora.org>
-Cc: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 12:59 PM, Gregory Bean <gbean@codeaurora.org> wrote:
->>>> Do you mean to MSM have v1 and v2 gpio hardware ??? can not we
->>>> have one file under mach-msm as gpio.c??
->>>
->>> The MSM8x60 is the first MSM chip to carry the second-generation, or v2,
->>> GPIO hardware block.  This block is not backward compatible with the
->>> v1 block found on older MSMs, so the two drivers cannot be elegantly
->>> merged.
->>
->> so this is applicable to 8x60 and coming chip sets.I basically have a
->> question,How come a a new person under stand the  chipset uses gpio-v1
->> or gpiov2??
->
-> Targets with the v2 block define CONFIG_MSM_V2_TLMM.
-So in that case we can name  it as gpio-tlmm.c ??
-> --
-> Employee of Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+On Fri, 19 Nov 2010, Michael Ellerman wrote:
+
+> On Thu, 2010-11-18 at 20:45 +0100, Jesper Juhl wrote:
+> > On Fri, 5 Nov 2010, Jesper Juhl wrote:
+> > >  
+> > >  static int mf_src_proc_open(struct inode *inode, struct file *file)
+> 
+> > PING.
+> > 
+> > Is this going to get merged somewhere or is there a problem?
+> 
+> Yes, no.
+> 
+> It won't get lost:
+> http://patchwork.ozlabs.org/patch/70201/
+> 
+Ok. Thank you for that bit of information. That was one place that I had 
+no knowledge about what-so-ever, so I didn't look.
+
+I will now rest happily in the knowledge that the patch is in good hands. 
+Thanks.
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
