@@ -1,82 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754810Ab0KRGJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 01:09:56 -0500
-Received: from mga11.intel.com ([192.55.52.93]:62309 "EHLO mga11.intel.com"
+	id S1754851Ab0KRGN5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 01:13:57 -0500
+Received: from cantor.suse.de ([195.135.220.2]:35876 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754458Ab0KRGJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 01:09:55 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,216,1288594800"; 
-   d="scan'208";a="858845400"
-Date: Thu, 18 Nov 2010 12:48:50 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        haicheng.li@linux.intel.com, lethal@linux-sh.org, ak@linux.intel.com,
-        shaohui.zheng@linux.intel.com, Haicheng Li <haicheng.li@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Greg KH <greg@kroah.com>
-Subject: Re: [7/8,v3] NUMA Hotplug Emulator: extend memory probe interface
- to support NUMA
-Message-ID: <20101118044850.GC2408@shaohui>
-References: <20101117020759.016741414@intel.com>
- <20101117021000.916235444@intel.com>
- <1290019807.9173.3789.camel@nimitz>
- <alpine.DEB.2.00.1011171312590.10254@chino.kir.corp.google.com>
+	id S1750893Ab0KRGN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 01:13:56 -0500
+Date: Wed, 17 Nov 2010 22:14:15 -0800
+From: Greg KH <gregkh@suse.de>
+To: Shan Wei <shanwei@cn.fujitsu.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: WARNING in tty_io.c
+Message-ID: <20101118061415.GA14712@suse.de>
+References: <4CDA5291.4010802@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1011171312590.10254@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4CDA5291.4010802@cn.fujitsu.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 01:18:50PM -0800, David Rientjes wrote:
-> On Wed, 17 Nov 2010, Dave Hansen wrote:
+On Wed, Nov 10, 2010 at 04:06:41PM +0800, Shan Wei wrote:
 > 
-> > The other thing that Greg suggested was to use configfs.  Looking back
-> > on it, that makes a lot of sense.  We can do better than these "probe"
-> > files.
-> > 
-> > In your case, it might be useful to tell the kernel to be able to add
-> > memory in a node and add the node all in one go.  That'll probably be
-> > closer to what the hardware will do, and will exercise different code
-> > paths that the separate "add node", "then add memory" steps that you're
-> > using here.
-> > 
+> Modify start-ttys.conf to add ttyS0 device on my Fedora13 with 2.6.37-rc1+ kernel.
+> After rebooting system, got the following WARNING.
 > 
-> That seems like a seperate issue of moving the memory hotplug interface 
-> over to configfs and that seems like it will cause a lot of userspace 
-> breakage.  The memory hotplug interface can already add memory to a node 
-> without using the ACPI notifier, so what does it have to do with this 
-> patchset?
-
-Agree with you, I do not suggest to implement it in this patchset.
-
 > 
-> I think what this patchset really wants to do is map offline hot-added 
-> memory to a different node id before it is onlined.  It needs no 
-> additional command-line interface or kconfig options, users just need to 
-> physically hot-add memory at runtime or use mem= when booting to reserve 
-> present memory from being used.
+> ------------[ cut here ]------------
+> WARNING: at drivers/char/tty_io.c:1331 tty_open+0x20e/0x3b2()
+> Hardware name: Aspire SA80
+> Modules linked in: ipv6 uinput snd_intel8x0 snd_ac97_codec ac97_bus r8169 ppdev parport_pc snd_seq snd_seq_device snd_pcm sis900 mii snd_timer snd soundcore parport snd_page_alloc pcspkr ata_generic pata_acpi sata_sis pata_sis [last unloaded: scsi_wait_scan]
+> Pid: 117, comm: plymouthd Not tainted 2.6.37-rc1+ #4
 
-I already send out the implementation in another email, you can help to do
-a review.
+Does this still happen in .37-rc2?
 
-> 
-> Then, export the amount of memory that is actually physically present in 
-> the e820 but was truncated by mem= and allow users to hot-add the memory 
-> via the probe interface.  Add a writeable 'node' file to offlined memory 
-> section directories and allow it to be changed prior to online.
+Alan, any ideas?
 
-for memory offlining, it is a known diffcult thing, and it is not supported 
-well in current kernel, so I do not suggest to provide the offline interface
-in the emulator, it just take more pains. We can consider to add it when
-the memory offlining works well.
-
--- 
-Thanks & Regards,
-Shaohui
-
+> Call Trace:
+>  [<c044045c>] warn_slowpath_common+0x6a/0x7f
+>  [<c062aff0>] ? tty_open+0x20e/0x3b2
+>  [<c0440485>] warn_slowpath_null+0x14/0x18
+>  [<c062aff0>] tty_open+0x20e/0x3b2
+>  [<c04dc6c7>] chrdev_open+0xf3/0x110
+>  [<c04d8688>] __dentry_open+0x141/0x237
+>  [<c04d8833>] nameidata_to_filp+0x43/0x51
+>  [<c04dc5d4>] ? chrdev_open+0x0/0x110
+>  [<c04e25b8>] do_last+0x372/0x47f
+>  [<c04e3b8d>] do_filp_open+0x19c/0x406
+>  [<c04e5085>] ? do_vfs_ioctl+0x55e/0x5b4
+>  [<c05b6232>] ? might_fault+0x1e/0x20
+>  [<c04d8457>] do_sys_open+0x4d/0xcf
+>  [<c0581f47>] ? selinux_file_ioctl+0x43/0x46
+>  [<c04d8525>] sys_open+0x23/0x2b
+>  [<c04097df>] sysenter_do_call+0x12/0x28
+>  [<c07a0000>] ? init_intel_cacheinfo+0x6d/0x39e
+> ---[ end trace eeb22dd7bedfb0b1 ]---
+>  
