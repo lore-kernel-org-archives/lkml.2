@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760159Ab0KRSkg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 13:40:36 -0500
-Received: from mbox1.netikka.net ([213.250.81.202]:51750 "EHLO
-	mbox1.netikka.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758731Ab0KRSke (ORCPT
+	id S1760015Ab0KRSo3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 13:44:29 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58148 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755959Ab0KRSo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 13:40:34 -0500
-Message-ID: <4CE5731B.20807@mandriva.org>
-Date: Thu, 18 Nov 2010 20:40:27 +0200
-From: Thomas Backlund <tmb@mandriva.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; sv-SE; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Thu, 18 Nov 2010 13:44:28 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GdfaX7bFUqqtNVB6PhPm6ulwKQ4nkOFpOBa4Q2prppwbrbs3uG3RnKxhAHEI/HwfNK
+         TjuQMD6W+5vYDiyYAEk00u21acxYdezouUyZw+elw1Mytq0LWMkBqxFXvHAe3uZa55QB
+         ndqcXtCXqv94sy+rTPhBnwQX1kdvuvkSZfiTk=
+Date: Thu, 18 Nov 2010 21:44:21 +0300
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: kernel-janitors@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Feng Tang <feng.tang@intel.com>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] x86: platform: mrst: check
+ platform_device_register() return code
+Message-ID: <20101118184419.GA31886@albatros>
+References: <1290104207-31279-1-git-send-email-segoon@openwall.com>
+ <20101118181814.290811f0@linux.intel.com>
 MIME-Version: 1.0
-To: Mike Galbraith <efault@gmx.de>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Galbraith patch
-References: <1290018947.4887.14.camel@note-311a>	 <AANLkTi=3nDO7QtezcoOyimPvXqLBgxtO18HjjuT_6WKb@mail.gmail.com>	 <AANLkTinRBvZQmeU-eEeDSd1ELvcxDZAdM6F8-UCROybq@mail.gmail.com>	 <1290021497.4887.24.camel@note-311a>	 <1290036097.27521.5.camel@maggy.simson.net>	 <1290095008.9939.0.camel@note-311a> <1290096365.30211.5.camel@maggy.simson.net>
-In-Reply-To: <1290096365.30211.5.camel@maggy.simson.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101118181814.290811f0@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Galbraith skrev 18.11.2010 18:06:
-> On Thu, 2010-11-18 at 13:43 -0200, Gilberto Nunes wrote:
->> Hi...
->>
->> Someone can help with this????
->
-> Hey, patience please, I'm on vacation :)
->
-> You can try the below if you like.  It's what I'm currently tinkering
-> with, and has a patch it depends on appended for ease of application.
-> Should apply cleanly to virgin 2.6.36.
->
+On Thu, Nov 18, 2010 at 18:18 +0000, Alan Cox wrote:
+> >  I cannot compile this driver in next-20101117, so it is not tested
+> > at all.
+> 
+> Compile or test - if it bombs out compiling for you please send me (off
+> list the .config that fails so I can fix that
+> 
+> Otherwise NAK the patch because it needs to do the cleanup but thanks
+> for finding the bug - you've done the hard 99%
 
-[...]
+make -C /home/vasya/linux arch/x86/platform/mrst/vrtc.o
+make: Entering directory `/home/vasya/dev/linux-next'
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+  CC      arch/x86/platform/mrst/vrtc.o
+arch/x86/platform/mrst/vrtc.c: In function 'mrst_rtc_init':
+arch/x86/platform/mrst/vrtc.c:113: error: 'FIX_LNW_VRTC' undeclared (first use in this function)
+arch/x86/platform/mrst/vrtc.c:113: error: (Each undeclared identifier is reported only once
+arch/x86/platform/mrst/vrtc.c:113: error: for each function it appears in.)
+make[1]: *** [arch/x86/platform/mrst/vrtc.o] Error 1
 
-This diffstat does not match the patch:
----
->   Documentation/kernel-parameters.txt |    2
->   include/linux/sched.h               |   19 ++++
->   init/Kconfig                        |   12 ++
->   kernel/fork.c                       |    5 -
->   kernel/sched.c                      |   13 ++
->   kernel/sched_autogroup.c            |  170 ++++++++++++++++++++++++++++++++++++
->   kernel/sched_autogroup.h            |   23 ++++
->   kernel/sched_debug.c                |   29 +++---
->   kernel/sys.c                        |    4
->   kernel/sysctl.c                     |   11 ++
+Both with allyesconfig and allmodconfig, x86_64.
 
-It's really:
->  Documentation/kernel-parameters.txt |    2 ++
->  include/linux/sched.h               |   21 ++++++++++++++++++++-
->  init/Kconfig                        |   12 ++++++++++++
->  kernel/fork.c                       |    5 ++++-
->  kernel/sched.c                      |   21 +++++++++++++++------
->  kernel/sched_debug.c                |   29 +++++++++++++++--------------
->  kernel/sched_fair.c                 |   25 +++++++++++++++++++------
->  kernel/sys.c                        |    4 +++-
->  kernel/sysctl.c                     |   11 +++++++++++
->  9 files changed, 101 insertions(+), 29 deletions(-)
+These are not patched lines, though.
 
-and more importantly it misses theese:
->>   kernel/sched_autogroup.c            |  170 ++++++++++++++++++++++++++++++++++++
->>   kernel/sched_autogroup.h            |   23 ++++
 
-Wich means it wont build...
+Thanks,
 
---
-Thomas
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
