@@ -1,64 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab0KRBch (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 20:32:37 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:57525 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab0KRBcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 20:32:35 -0500
-Message-ID: <4CE48265.5060803@cn.fujitsu.com>
-Date: Thu, 18 Nov 2010 09:33:25 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>
-CC: Josef Bacik <josef@redhat.com>, viro <viro@zeniv.linux.org.uk>,
-        Linux Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ito <t-itoh@jp.fujitsu.com>
-Subject: Re: [PATCH 1/3] direct-io: add a hook for the fs to provide its own
- bio merging check function
-References: <4CE3579B.1000301@cn.fujitsu.com> <20101117070658.GF5618@dhcp231-156.rdu.redhat.com> <20101117093720.GG5618@dhcp231-156.rdu.redhat.com> <4CE3AA37.8060709@cn.fujitsu.com> <20101117125011.GH5618@dhcp231-156.rdu.redhat.com> <1290012777-sup-9103@think> <4CE47EDA.90205@cn.fujitsu.com> <1290043239-sup-7020@think>
-In-Reply-To: <1290043239-sup-7020@think>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-18 09:32:53,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-18 09:32:55,
-	Serialize complete at 2010-11-18 09:32:55
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1753411Ab0KRBcw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 20:32:52 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46469 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753151Ab0KRBcu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 20:32:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
+         :in-reply-to:references;
+        b=ZfUpboLMzg8FH6FgZtKq5NPoc/mYVJ0yU1wDrkyWIrRYAo/oe/12Oi6iXpfP8m2vPA
+         Y7WXS94EjM5FBPAejWD8gUVjoq9c1NDVInSKdk7qUWGbdAPaNNONId5mCvki9Viws1iZ
+         92ejLp1SCdoySeYONnN0J4S6ZJuuUg1nHDycM=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Jason Baron <jbaron@redhat.com>
+Subject: [PATCH 1/5] tracing: New flag to allow non privileged users to use a trace event
+Date: Thu, 18 Nov 2010 02:32:39 +0100
+Message-Id: <1290043963-1480-2-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+In-Reply-To: <1290043963-1480-1-git-send-regression-fweisbec@gmail.com>
+References: <1290043963-1480-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 	wed, 17 Nov 2010 20:24:39 -0500, Chris Mason wrote:
-> Excerpts from Miao Xie's message of 2010-11-17 20:18:18 -0500:
->>>> Right thats the idea, if we can't span chunks/stripes we should be doing that
->>>> limiting in our get_blocks call and that way we don't have to screw with the
->>>> generic direct io stuff too much.  Thanks,
->>>
->>> In this case we're adding complexity to the O_DIRECT mapping code, when
->>> we really should be adding it to the btrfs submit bio hook.  It can
->>> easily break up the bio into smaller units, which will leave us with a
->>> smaller number of get_blocks calls overall.
->>>
->>> I'm working that out now.
->>
->> Do you mean you are fixing this bug now?
->
-> I started on it this afternoon, but lost network due to high winds here.
-> So, I didn't make any real progress.
->
-> If you'd like to fix this in the btrfs direct-io bio submit call you're
-> welcome to continue working on it.
->
-> The idea is to just clone and split up the bio, which will keep us from
-> filling up fs/direct-io.c w/btrfs rules and allow us to take fewer
-> trips into the get_blocks call.
+This adds a new trace event internal flag that allows them to be
+used in perf by non privileged users in case of task bound tracing.
 
-Ok, I'll do it.
+This is desired for syscalls tracepoint because they don't leak
+global system informations, like some other tracepoints.
 
-Thanks
-Miao
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Jason Baron <jbaron@redhat.com>
+---
+ include/linux/ftrace_event.h    |    2 ++
+ kernel/perf_event.c             |    9 ---------
+ kernel/trace/trace_event_perf.c |   31 ++++++++++++++++++++++++++++++-
+ 3 files changed, 32 insertions(+), 10 deletions(-)
+
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 8beabb9..312dce7 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -154,12 +154,14 @@ enum {
+ 	TRACE_EVENT_FL_ENABLED_BIT,
+ 	TRACE_EVENT_FL_FILTERED_BIT,
+ 	TRACE_EVENT_FL_RECORDED_CMD_BIT,
++	TRACE_EVENT_FL_CAP_ANY_BIT,
+ };
+ 
+ enum {
+ 	TRACE_EVENT_FL_ENABLED		= (1 << TRACE_EVENT_FL_ENABLED_BIT),
+ 	TRACE_EVENT_FL_FILTERED		= (1 << TRACE_EVENT_FL_FILTERED_BIT),
+ 	TRACE_EVENT_FL_RECORDED_CMD	= (1 << TRACE_EVENT_FL_RECORDED_CMD_BIT),
++	TRACE_EVENT_FL_CAP_ANY		= (1 << TRACE_EVENT_FL_CAP_ANY_BIT),
+ };
+ 
+ struct ftrace_event_call {
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 517d827..ee1e903 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -4747,15 +4747,6 @@ static int perf_tp_event_init(struct perf_event *event)
+ 	if (event->attr.type != PERF_TYPE_TRACEPOINT)
+ 		return -ENOENT;
+ 
+-	/*
+-	 * Raw tracepoint data is a severe data leak, only allow root to
+-	 * have these.
+-	 */
+-	if ((event->attr.sample_type & PERF_SAMPLE_RAW) &&
+-			perf_paranoid_tracepoint_raw() &&
+-			!capable(CAP_SYS_ADMIN))
+-		return -EPERM;
+-
+ 	err = perf_trace_init(event);
+ 	if (err)
+ 		return err;
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 39c059c..19a359d 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -21,17 +21,46 @@ typedef typeof(unsigned long [PERF_MAX_TRACE_SIZE / sizeof(unsigned long)])
+ /* Count the events in use (per event id, not per instance) */
+ static int	total_ref_count;
+ 
++static int perf_trace_event_perm(struct ftrace_event_call *tp_event,
++				 struct perf_event *p_event)
++{
++	/* No tracing, just counting, so no obvious leak */
++	if (!(p_event->attr.sample_type & PERF_SAMPLE_RAW))
++		return 0;
++
++	/* Some events are ok to be traced by non-root users... */
++	if (p_event->attach_state == PERF_ATTACH_TASK) {
++		if (tp_event->flags & TRACE_EVENT_FL_CAP_ANY)
++			return 0;
++	}
++
++	/*
++	 * ...otherwise raw tracepoint data can be a severe data leak,
++	 * only allow root to have these.
++	 */
++	if (perf_paranoid_tracepoint_raw() && !capable(CAP_SYS_ADMIN))
++		return -EPERM;
++
++	return 0;
++}
++
+ static int perf_trace_event_init(struct ftrace_event_call *tp_event,
+ 				 struct perf_event *p_event)
+ {
+ 	struct hlist_head __percpu *list;
+-	int ret = -ENOMEM;
++	int ret;
+ 	int cpu;
+ 
++	ret = perf_trace_event_perm(tp_event, p_event);
++	if (ret)
++		return ret;
++
+ 	p_event->tp_event = tp_event;
+ 	if (tp_event->perf_refcount++ > 0)
+ 		return 0;
+ 
++	ret = -ENOMEM;
++
+ 	list = alloc_percpu(struct hlist_head);
+ 	if (!list)
+ 		goto fail;
+-- 
+1.6.2.3
+
