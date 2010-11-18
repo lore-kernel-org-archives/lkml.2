@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab0KRCZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 21:25:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57916 "EHLO mx2.suse.de"
+	id S1754811Ab0KRC1d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 21:27:33 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:36378 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753459Ab0KRCZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 21:25:15 -0500
-Date: Wed, 17 Nov 2010 18:24:34 -0800
-From: Greg KH <gregkh@suse.de>
-To: Timur Tabi <timur@freescale.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>
-Subject: Re: How do I choose an arbitrary minor number for my tty device?
-Message-ID: <20101118022434.GA9833@suse.de>
-References: <4CE44B1B.9040709@freescale.com> <20101117215147.GA26792@suse.de> <4CE452CD.3050001@freescale.com> <20101117221903.GA4066@suse.de> <4CE45A4E.70308@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE45A4E.70308@freescale.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1753459Ab0KRC1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 21:27:31 -0500
+Date: Thu, 18 Nov 2010 13:27:24 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (wireless tree related)
+Message-Id: <20101118132724.f7d21899.sfr@canb.auug.org.au>
+In-Reply-To: <4CE3FCB5.6030909@oracle.com>
+References: <20101117134820.bca8d764.sfr@canb.auug.org.au>
+	<4CE3FCB5.6030909@oracle.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__18_Nov_2010_13_27_24_+1100_uU3AaCT5d.+tDB/k"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 04:42:22PM -0600, Timur Tabi wrote:
-> Greg KH wrote:
-> > I think you are forgetting that your byte channel devices must be
-> > "devices" in the system here, right?  There is a 'struct bus_id" for
-> > your bus that these devices live on.
-> 
-> Do you mean "struct bus_type"?  I don't have any concept of a "bus" in my
-> driver.  I didn't know I needed to create one, and I'm not sure how, either.
+--Signature=_Thu__18_Nov_2010_13_27_24_+1100_uU3AaCT5d.+tDB/k
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You need to create one as you really have a "bus" here, as you
-described.
+Hi all,
 
-> I guess my real problem is that I'm not really sure what I should be doing.  I
-> already have a plain character driver that creates devices for each byte
-> channel.  First I call alloc_chrdev_region() to get a started dev_id.  Then I
-> iterate over the byte channels and call device_create() for each one, with NULL
-> for the parent.  At the end, I call cdev_init() and cdev_add().
+On Wed, 17 Nov 2010 08:03:01 -0800 Randy Dunlap <randy.dunlap@oracle.com> w=
+rote:
+>
+> On 11/16/10 18:48, Stephen Rothwell wrote:
+> >=20
+> > After merging the final tree, today's linux-next build (powerpc allyesc=
+onfig)
+> > failed like this:
+> >=20
+> > drivers/net/wireless/iwlwifi/iwl3945.o: In function `iwl_legacy_mac_res=
+et_tsf':
+> > (.opd+0xf00): multiple definition of `iwl_legacy_mac_reset_tsf'
+> > drivers/net/wireless/iwlwifi/iwlagn.o:(.opd+0x90): first defined here
+	.
+	.
+> > I should have known when I reported the warning ...
+> >=20
+> > Caused by commit dd0dd411f7178a20ea93a3cfa39123f078a07e25 ("iwlwifi: fix
+> > modular legacy build errors").
+> >=20
+> > I have reverted that commit for today.
+>=20
+> Ack.  John, please drop/revert that patch.
+>=20
+> Sorry about the problem.
 
-Ick, no.
+Looks like John removed it but the bluetooth tree (which is based on top
+of the wireless tree) brought it back in by rebasing on top of yesterday's
+wireless tree. :-(
 
-Please take a step back and go to your original message where you
-described something like "we have a bus and devices we discover on the
-bus and they have ids".  Because of that, you should just create a bus,
-create the devices on the bus, and then, attach specific types of
-drivers to those devices (like your tty driver.)
+I have reverted it again today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-And your bus is automatically discoverable, right?  So you don't need
-any interface for userspace to "create" devices, so you should be fine.
+--Signature=_Thu__18_Nov_2010_13_27_24_+1100_uU3AaCT5d.+tDB/k
+Content-Type: application/pgp-signature
 
-If it's not discoverable, go kick some firmware programmers butt and
-make it so, as that is unforgivable in this age.  Seriously, that's flat
-out broken and wrong, get it fixed first.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-thanks,
+iQEcBAEBAgAGBQJM5I8MAAoJEDMEi1NhKgbsnywH/jk3Z3lZRTCgBVT+VsHS3AvI
+rKvE77UbvuXwk4QqYal+JJ3rjGolKLHmuXCfA1J3mUNXvKToT8Rbt0+TYtLWxmuM
+Uc816uMzj3YesT3YCQ8fnIsQzsCFfm2YO4GpHbBcyiCmT2V2+kGUSMgKXipGTHtr
+c/ui+2NILbEpqSUxQIXdTX8FnRngF6W3QSotNN6oSto4ZYZsEXWBEw55X0Nk/RTq
+TDZA8p/fC7anmJXsuTrWm4CFQfi79QylaPrRdE/moWPUs5M8KLmFlwxDU/PeehdY
+tTnhHNz8RcvUIIxD60W7qUohjFHsBjQO9LXv8DGETeXwTPcrp6rS7ODqoaf8aaM=
+=/mdB
+-----END PGP SIGNATURE-----
 
-greg k-h
+--Signature=_Thu__18_Nov_2010_13_27_24_+1100_uU3AaCT5d.+tDB/k--
