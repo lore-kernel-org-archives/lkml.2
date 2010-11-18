@@ -1,57 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760612Ab0KRVby (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:31:54 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:38483 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757156Ab0KRVbx (ORCPT
+	id S932589Ab0KRVeI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:34:08 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:12407 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757165Ab0KRVeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:31:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=wSO7uIdDvTB79FyBmURF0XYbP+ECkO1mkaU3EQghqR42onTmgkEohPYE6b+vCyGU3S
-         kRm0EDTW6TgWegBpIpAQ==
-Date: Thu, 18 Nov 2010 13:31:45 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Shaohui Zheng <shaohui.zheng@intel.com>
-cc: Dave Hansen <dave@linux.vnet.ibm.com>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        haicheng.li@linux.intel.com, lethal@linux-sh.org, ak@linux.intel.com,
-        shaohui.zheng@linux.intel.com, Haicheng Li <haicheng.li@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Greg KH <greg@kroah.com>
-Subject: Re: [7/8,v3] NUMA Hotplug Emulator: extend memory probe interface
- to support NUMA
-In-Reply-To: <20101118044850.GC2408@shaohui>
-Message-ID: <alpine.DEB.2.00.1011181328540.26680@chino.kir.corp.google.com>
-References: <20101117020759.016741414@intel.com> <20101117021000.916235444@intel.com> <1290019807.9173.3789.camel@nimitz> <alpine.DEB.2.00.1011171312590.10254@chino.kir.corp.google.com> <20101118044850.GC2408@shaohui>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 18 Nov 2010 16:34:07 -0500
+Date: Thu, 18 Nov 2010 22:21:24 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-kernel@vger.kernel.org, Eric Youngdale <eric@andante.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Mike Anderson <andmike@us.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH][resend][SCSI] Reduce number of sequential pointer derefs
+ in scsi_error.c and reduce size as well
+In-Reply-To: <AANLkTim1MChiEa9rBL0ZfSCak6G2x4ivK47Svd6swEBS@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1011182218500.11697@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1011181957500.3651@swampdragon.chaosbits.net> <AANLkTi=McRJSHp8==o+=coK0_pK5s9dwUgLmrkohSmTX@mail.gmail.com> <alpine.LNX.2.00.1011182140510.8526@swampdragon.chaosbits.net>
+ <AANLkTim1MChiEa9rBL0ZfSCak6G2x4ivK47Svd6swEBS@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010, Shaohui Zheng wrote:
+On Thu, 18 Nov 2010, Linus Torvalds wrote:
 
-> > Then, export the amount of memory that is actually physically present in 
-> > the e820 but was truncated by mem= and allow users to hot-add the memory 
-> > via the probe interface.  Add a writeable 'node' file to offlined memory 
-> > section directories and allow it to be changed prior to online.
+> On Thu, Nov 18, 2010 at 12:49 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> >
+> > Fair enough. Seeing your version of this and looking a second time at mine
+> > I have to agree completely.
+> > You are absolutely right in stating that the compiler will handle this
+> > just fine, so it's only a readabillity issue and your version is a *lot*
+> > more readable than what I came up with.
 > 
-> for memory offlining, it is a known diffcult thing, and it is not supported 
-> well in current kernel, so I do not suggest to provide the offline interface
-> in the emulator, it just take more pains. We can consider to add it when
-> the memory offlining works well.
+> Btw, one thing to look out for is all those function calls: it really
+> looks like many of them would be better off not having to dereference
+> the thing inside each helper function, but just have it dereferenced
+> in the caller.
+> 
+> You might trying passing in "struct Scsi_Host *host" to a lot of those
+> helper functions in addition to the 'scmd' part. There's a lot of
+> "scmd->device->host" going on, and even if you remove some of them
+> _within_ a function, if you really want to get rid of them you should
+> probably do one of them in the caller.
+> 
+> That's why the queuecommand() function was changed to take
+> 
+>     struct Scsi_Host *h, struct scsi_cmnd *
+> 
+> as its arguments, because that host is used so commonly. And passing
+> two arguments is usually free (ie almost all architectures pass it in
+> registers), and that host variable almost always already exists in the
+> caller because the caller already needed it.
+> 
+> So if you changed the functions that only take "scsi_cmnd *" as an
+> argument to match the new queuecommand() interface, I bet you'd get
+> more cleanups. And the interfaces would match.
 > 
 
-You're referring to the inability to remove memory sections for 
-CONFIG_SPARSEMEM_VMEMMAP?  You should still able to test the offlining 
-with other memory models of emulated nodes by using the generic support 
-already implemented for CONFIG_MEMORY_HOTREMOVE; the short answer is that 
-it probably shouldn't matter at all since we already support node 
-hot-remove and the fact that they are emulated nodes isn't really of 
-interest.
+That's a good point.
+
+I don't have time to look at that tonight, but I'll (hopefully) get around 
+to it over the weekend. I'll submit a new patch (or at least email) during 
+the weekend (or early next week) when I've had some time to look into 
+that.
+
+Thanks.
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
