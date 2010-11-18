@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab0KRJ0s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 04:26:48 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:39186 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191Ab0KRJ0q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 04:26:46 -0500
-Date: Thu, 18 Nov 2010 17:26:40 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: tadeusz.struk@intel.com, linux-kernel@vger.kernel.org,
-        linux-crypto@vger.kernel.org, aidan.o.mahony@intel.com,
-        gabriele.paoloni@intel.com, adrian.hoban@intel.com
-Subject: Re: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
-Message-ID: <20101118092640.GA9486@gondor.apana.org.au>
-References: <4CC9946D.mailLH511GU0C@intel.com> <20101104190405.GA2501@gondor.apana.org.au> <20101117172331.3bbec734.akpm@linux-foundation.org>
+	id S1755994Ab0KRJ1M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 04:27:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38154 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755561Ab0KRJ1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 04:27:11 -0500
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 2/3] PERF(kernel): Cleanup power events
+Date: Thu, 18 Nov 2010 10:27:08 +0100
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: Jean Pihet <jean.pihet@newoldbits.com>, rjw@sisk.pl,
+        linux-kernel@vger.kernel.org, arjan@linux.intel.com
+References: <1289498595-25806-1-git-send-email-trenn@suse.de> <201011140734.07770.trenn@suse.de> <20101118080132.GH32621@elte.hu>
+In-Reply-To: <20101118080132.GH32621@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117172331.3bbec734.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011181027.09363.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 05:23:31PM -0800, Andrew Morton wrote:
-> On Thu, 4 Nov 2010 14:04:05 -0500
-> Herbert Xu <herbert@gondor.hengli.com.au> wrote:
+On Thursday 18 November 2010 09:01:32 Ingo Molnar wrote:
+...
+> > @Ingo: If this does not go into x86/tip, but perf or whatever tree, it would
+> > be great if you can ping me as soon as this stuff is in.
 > 
-> > On Thu, Oct 28, 2010 at 04:19:09PM +0100, tadeusz.struk@intel.com wrote:
-> > > Hi Herbert,
-> > >    We have reworked the assembly to use macros instead of the new aesni instructions.
-> > 
-> > Both applied.  Thanks for your efforts!
-> 
-> Whatever's in today's linux-next is a big fail with gas-2.16.1.
-> 
-> Which was entirely predictable!  How often has this happened recently??
-> 
-> 
-> arch/x86/crypto/aesni-intel_asm.S: Assembler messages:
-> arch/x86/crypto/aesni-intel_asm.S:834: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm13'
-> arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm5'
-> arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
-> arch/x86/crypto/aesni-intel_asm.S:866: Error: bad expression
+> Mind sending the latest version which has been adjusted/fixed and all acks added?
+Done.
+This time with lkml excluded as there were only cleanups/fixes
+due to a messed merge.
 
-Sorry, but I no longer have access to a binutils that is older
-than 2.18 so I never saw this failure.
+Thanks,
 
-Tadeusz, could you please make an incremental patch that converts
-all the pshufb instructions to macros?
-
-Thanks!
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+  Thomas
