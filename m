@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab0KRMGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 07:06:30 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:39980 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750917Ab0KRMG3 (ORCPT
+	id S1756293Ab0KRMH3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 07:07:29 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42596 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917Ab0KRMH2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 07:06:29 -0500
-Date: Thu, 18 Nov 2010 07:06:26 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "jason.wessel" <jason.wessel@windriver.com>,
-        "Ted Ts'o" <tytso@mit.edu>
-Subject: Re: [RFC][PATCH 0/2] tracing: Have trace_printk()s in the events/
-	directory
-Message-ID: <20101118120626.GB27474@Krystal>
-References: <20101118035803.453609353@goodmis.org> <1290076866.2109.1305.camel@laptop> <1290081203.30543.96.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290081203.30543.96.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 07:01:55 up 56 days, 16:04,  1 user,  load average: 1.21, 1.27,
-	1.18
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 18 Nov 2010 07:07:28 -0500
+Subject: Re: [PATCH 3/4] perf-events: Add support for supplementary event
+ registers v3
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: eranian@google.com, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <1290077254-12165-4-git-send-email-andi@firstfloor.org>
+References: <1290077254-12165-1-git-send-email-andi@firstfloor.org>
+	 <1290077254-12165-4-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 18 Nov 2010 13:07:36 +0100
+Message-ID: <1290082056.2109.1406.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Thu, 2010-11-18 at 11:41 +0100, Peter Zijlstra wrote:
-> > On Wed, 2010-11-17 at 22:58 -0500, Steven Rostedt wrote:
-> > > For example, I added a trace_printk() in kernel/sched.c at line 2180
-> > > and it creates:
-> > > 
-> > > # ls /debug/tracing/events/printk/kernel/sched.c/2180/
-> > > enable  format
-> > > 
-> > > The format is the printk format:
-> > > 
-> > > # cat /debug/tracing/events/printk/kernel/sched.c/2180/format 
-> > > "migrate task %s:%d"
-> > 
-> > *groan*, so you're creating a tracepoint per instance?
-> > 
-> > That's going to be massive pain for perf.. I really don't see the point
-> > in splitting all that out.
+On Thu, 2010-11-18 at 11:47 +0100, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> a) The file directory was what was asked about in the referenced email.
-> b) This is just an example of a way to display it to the user, which
-> seems to be very intuitive.
-> c) Perf can implement the details anyway it wants. It can make a single
-> tracepoint callback and have the enabling of the points as a special
-> filter.
-> d) This was just an RFC that Frederic asked if I would do. I thought it
-> would be a fun challenge and did it. Let it bit rot in hell for all I
-> care, I wasn't taking it any further anyway.
+> Intel Nehalem/Westmere have a special OFFCORE_RESPONSE event
+> that can be used to monitor any offcore accesses from a core.
+> This is a very useful event for various tunings, and it's
+> also needed to implement the generic LLC-* events correctly.
+> 
+> Unfortunately this event requires programming a mask in a separate
+> register. And worse this separate register is per core, not per
+> CPU thread.
+> 
+> This patch adds:
+> - Teaches perf_events that OFFCORE_RESPONSE needs extra parameters.
+> The extra parameters are passed by user space in the unused upper
+> 32bits of the config word.
+> - Add support to the Intel perf_event core to schedule per
+> core resources. This adds fairly generic infrastructure that
+> can be also used for other per core resources.
+> The basic code has is patterned after the similar AMD northbridge
+> constraints code.
+> 
+> Thanks to Stephane Eranian who pointed out some problems
+> in the original version and suggested improvements.
 
-Hi Steven,
+WARNING: please, no space before tabs
+#59: FILE: arch/x86/kernel/cpu/perf_event.c:136:
++^Iint ^I^I^I^Ipercore_used; /* Used by this CPU? */$
 
-The LTTng tree still keeps the "trace_mark()" kernel markers, which are
-very very similar to ftrace_printk(). I'd be happy to combine the two
-eventually. This one file per line approach seems very good -- rather than
-explicitely naming each instance, as I did in trace_mark(), you end up
-automatically naming them by file/line number.
+WARNING: please, no space before tabs
+#80: FILE: arch/x86/kernel/cpu/perf_event.c:198:
++^Iu64 ^I^I^Iconfig_mask;$
 
-How does this behave from within static inlines called multiple times and
-unrolled loops ?
+WARNING: please, no space before tabs
+#81: FILE: arch/x86/kernel/cpu/perf_event.c:199:
++^Iu64 ^I^I^Ivalid_mask;$
 
-Thanks,
+WARNING: please, no space before tabs
+#85: FILE: arch/x86/kernel/cpu/perf_event.c:203:
++^I.event = (e),    ^I\$
 
-Mathieu
+WARNING: please, no space before tabs
+#86: FILE: arch/x86/kernel/cpu/perf_event.c:204:
++^I.msr = (ms),^I     ^I\$
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+WARNING: please, no space before tabs
+#87: FILE: arch/x86/kernel/cpu/perf_event.c:205:
++^I.config_mask = (m),  ^I\$
+
+WARNING: please, no space before tabs
+#177: FILE: arch/x86/kernel/cpu/perf_event_intel.c:12:
++^Iint ^I^Iref;^I^I/* reference count */$
+
+WARNING: please, no space before tabs
+#179: FILE: arch/x86/kernel/cpu/perf_event_intel.c:14:
++^Iu64 ^I^Iextra_config;^I/* extra MSR config */$
+
+WARNING: please, no space before tabs
+#183: FILE: arch/x86/kernel/cpu/perf_event_intel.c:18:
++^Iraw_spinlock_t ^I^Ilock;^I^I/* protect structure */$
+
+WARNING: please, no space before tabs
+#184: FILE: arch/x86/kernel/cpu/perf_event_intel.c:19:
++^Istruct er_account ^Iregs[MAX_EXTRA_REGS];$
+
+WARNING: please use device_initcall() instead of __initcall()
+#408: FILE: arch/x86/kernel/cpu/perf_event_intel.c:1108:
++__initcall(init_intel_percore);
+
+
+Fixed those up, please be more careful next time.
