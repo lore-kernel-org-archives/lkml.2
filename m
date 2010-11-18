@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab0KRKnR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 05:43:17 -0500
-Received: from DMZ-MAILSEC-SCANNER-1.MIT.EDU ([18.9.25.12]:53599 "EHLO
-	dmz-mailsec-scanner-1.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755832Ab0KRKnP convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 05:43:15 -0500
-X-AuditID: 1209190c-b7ba9ae0000009f8-3e-4ce5034294ba
-Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering writeback
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <20101118054629.GA3339@amd>
-Date: Thu, 18 Nov 2010 05:43:06 -0500
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2ADBEB7E-0EC8-4536-B556-0453A8E1D5FA@mit.edu>
-References: <1289996638-21439-1-git-send-email-walken@google.com> <1289996638-21439-4-git-send-email-walken@google.com> <20101117125756.GA5576@amd> <1290007734.2109.941.camel@laptop> <20101118054629.GA3339@amd>
-To: Nick Piggin <npiggin@kernel.dk>
-X-Mailer: Apple Mail (2.1082)
-X-Brightmail-Tracker: AAAAAA==
+	id S1756600Ab0KRKrs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 05:47:48 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:42115 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216Ab0KRKrr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 05:47:47 -0500
+From: Andi Kleen <andi@firstfloor.org>
+To: a.p.zijlstra@chello.nl
+Cc: eranian@google.com, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 2/4] perf: Document enhanced event encoding for OFFCORE_MSR
+Date: Thu, 18 Nov 2010 11:47:32 +0100
+Message-Id: <1290077254-12165-3-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1290077254-12165-1-git-send-email-andi@firstfloor.org>
+References: <1290077254-12165-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Andi Kleen <ak@linux.intel.com>
 
-On Nov 18, 2010, at 12:46 AM, Nick Piggin wrote:
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/Documentation/perf-list.txt |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
-> The right way to fix this would not be to introduce the new regression
-> but either/both: a specific syscall to mlock-for-read which does not do
-> any reservations, fix filesystem hook to allow reservation without
-> implying dirtying. A simple flag to page_mkwrite will be enough (plus
-> the logic to call it from VM).
-
-Why is it at all important that mlock() force block allocation for sparse blocks?    It's  not at all specified in the mlock() API definition that it does that.
-
-Are there really programs that assume that mlock() == fallocate()?!?
-
--- Ted
-
+diff --git a/tools/perf/Documentation/perf-list.txt b/tools/perf/Documentation/perf-list.txt
+index 399751b..700afd7 100644
+--- a/tools/perf/Documentation/perf-list.txt
++++ b/tools/perf/Documentation/perf-list.txt
+@@ -58,6 +58,13 @@ raw encoding of 0x1A8 can be used:
+  perf stat -e r1a8 -a sleep 1
+  perf record -e r1a8 ...
+ 
++Some special events on x86 encode additional data in the normally unused 
++[32;63] bits of the raw value. This is particularly used for 
++the OFFCORE_RESPONSE events on Intel Core i7.  The 16bit 
++mask in the OFFCORE_RESPONSE register is put into bits [32;48].
++For example the OFFCORE_RESPONSE_0.ANY_DATA.ANY_CACHE_DRAM event
++is encoded as r00007f11004301b7.
++
+ You should refer to the processor specific documentation for getting these
+ details. Some of them are referenced in the SEE ALSO section below.
+ 
+-- 
+1.7.1
 
