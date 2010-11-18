@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492Ab0KRRP5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:15:57 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54015 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932120Ab0KRRP4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:15:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Yx+WRtrliGkGc5tiNR541rNPynNg0XURhYskjxRgOeuAewrIl6QJAwVov2eB4P+hNH
-         ftBrHFDWRbJ8doMN/JUZCo9PnOUydFWFkmmE1Qnd2ck1yx6nJfGL7DAmEoNqZCpBi+tL
-         2uA0iyrNpywHOnhtrYkbEU7HAqlUkzi6GMPGk=
-Subject: Re: [PATCH] checkpatch: teach checkpatch about rcu
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Andy Whitcroft <apw@canonical.com>,
+	id S932471Ab0KRRRe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:17:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755131Ab0KRRRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 12:17:33 -0500
+Date: Thu, 18 Nov 2010 18:10:01 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>,
-        Patrick Pannuto <ppannuto@codeaurora.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101118170515.GA14005@redhat.com>
-References: <20101118170515.GA14005@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Nov 2010 18:15:47 +0100
-Message-ID: <1290100547.2781.206.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+Subject: Re: [RFC][PATCH v2 5/7] taskstats: Improve cumulative CPU time
+	accounting
+Message-ID: <20101118171001.GB3249@redhat.com>
+References: <20101111170352.732381138@linux.vnet.ibm.com> <20101111170815.404670062@linux.vnet.ibm.com> <20101113183810.GA9021@redhat.com> <1289926635.1940.100.camel@holzheu-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289926635.1940.100.camel@holzheu-laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 18 novembre 2010 à 19:05 +0200, Michael S. Tsirkin a écrit :
-> I got this:
-> +       struct kvm_kernel_irq_routing_entry __rcu *irq_entry;
-> which is because checkpatch does not know about __rcu.
-> So here's a patch to teach it about that tag.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->  scripts/checkpatch.pl |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> index 2039acd..1b11c8e 100755
-> --- a/scripts/checkpatch.pl
-> +++ b/scripts/checkpatch.pl
-> @@ -143,6 +143,7 @@ our $Sparse	= qr{
->  			__must_check|
->  			__init_refok|
->  			__kprobes|
-> +			__rcu|
->  			__ref
->  		}x;
->  
+Sorry for delay.
+
+On 11/16, Michael Holzheu wrote:
+>
+> On Sat, 2010-11-13 at 19:38 +0100, Oleg Nesterov wrote:
+> > First of all, let me repeat, I am not going to discuss whether we need
+> > these changes or not, I do not know even if I understand your motivation.
+>
+> Sorry, if I was not clear enough with my descriptions. Let me try to
+> describe my motivation again:
+
+Yes, more or less I see what this patch does (I hope ;).
+
+> 2. Because of reparent to init, there are situations where it is
+>    not clear to which tasks the CPU time of dead tasks between
+>    two snapshots has been accounted. This is a problem for example 2.
+
+Yes, I see.
+
+But I must admit, _personally_ I am not sure this problem worth the
+trouble. And, I already mentioned daemonize() case, IOW I am not sure
+it is _always_ right to choose exiting_parent->parent for accounting.
+To me, this can be equally confusing. A user sees the running deamon
+with ppid = 1, then this daemon exits and top reports the "unrelated"
+process as cpu consumer.
 
 
-Hmm, why __percpu is in $Attribute, and __rcu in $Sparse ?
+But once again. I am _not_ against this patch. I never know when it
+comes to new features. Certainly you know better if this suits top.
 
+What I actually meant is: dear CC list, please look at this change
+and comment ;)
 
+Oleg.
 
