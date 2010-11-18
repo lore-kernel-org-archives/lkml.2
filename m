@@ -1,247 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758466Ab0KRT4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 14:56:46 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46446 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758027Ab0KRT4o convert rfc822-to-8bit (ORCPT
+	id S1759342Ab0KRT6V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 14:58:21 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:10803 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758364Ab0KRT6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 14:56:44 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fxuKJ4aSy5a9PUiDSPJ6rWW/gskLyQEfELUqRKlC5IXq5uAIUbrThOf2tzxA6Po10Q
-         2/h9bIFCdIfXzPunteRw9cvyLcYbBMV8moyzS43wOrW5XDRYFgr7Fp4nbLZBqpFTmdSt
-         xJE5Vaxi4apbS7N4ILJgJz2Y4xPljMGdt+2SY=
+	Thu, 18 Nov 2010 14:58:20 -0500
+Date: Thu, 18 Nov 2010 20:45:38 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Michael Ellerman <michael@ellerman.id.au>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] iSeries: Remove unused mf_getSrcHistory function and
+ caller.
+In-Reply-To: <alpine.LNX.2.00.1011050026220.16015@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1011182044490.3651@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1010301911220.1572@swampdragon.chaosbits.net>  <1288609842.10671.7.camel@concordia>  <20101102071025.2fe5e6ca.sfr@canb.auug.org.au>  <alpine.LNX.2.00.1011012104050.12889@swampdragon.chaosbits.net>  <20101102082634.65342ce6.sfr@canb.auug.org.au>
+  <alpine.LNX.2.00.1011012218420.12889@swampdragon.chaosbits.net> <1288657250.16790.4.camel@concordia> <alpine.LNX.2.00.1011050026220.16015@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1290109970-26752-1-git-send-email-gbean@codeaurora.org>
-References: <1290109970-26752-1-git-send-email-gbean@codeaurora.org>
-Date: Thu, 18 Nov 2010 11:56:41 -0800
-Message-ID: <AANLkTikdPLWH0d4ci89nzF_83=_qWAB+T6yRsuqXZf=m@mail.gmail.com>
-Subject: Re: [PATCH v4 1/2] msm: gpio: Add v2 gpio support to MSM SoCs.
-From: Janakiram Sistla <janakiram.sistla@gmail.com>
-To: Gregory Bean <gbean@codeaurora.org>
-Cc: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Baruch Siach <baruch@tkos.co.il>,
-        Pavan Kondeti <pkondeti@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 11:52 AM, Gregory Bean <gbean@codeaurora.org> wrote:
-> Beginning with the MSM8x60, the hardware block responsible for gpio
-> support changes.  Provide gpiolib support for the new v2 architecture.
->
-> Cc: Baruch Siach <baruch@tkos.co.il>
-> Cc: Pavan Kondeti <pkondeti@codeaurora.org>
-> Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+On Fri, 5 Nov 2010, Jesper Juhl wrote:
+
+> On Tue, 2 Nov 2010, Michael Ellerman wrote:
+> 
+> > On Mon, 2010-11-01 at 22:20 +0100, Jesper Juhl wrote:
+> > > Hi Stephen,
+> > > 
+> > > On Tue, 2 Nov 2010, Stephen Rothwell wrote:
+> > > 
+> > > > On Mon, 1 Nov 2010 21:06:23 +0100 (CET) Jesper Juhl <jj@chaosbits.net> wrote:
+> > > > >
+> > > > > Remove unused function 'mf_getSrcHistory' (that will never be used ever 
+> > > > > according to Stephen Rothwell).
+> > > > > 
+> > > > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > > > 
+> > > > Acked-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > > > 
+> > > 
+> > > Ok, so if you are the (unofficial) iSeries maintainer and you don't merge 
+> > > the patch somewhere that'll eventually go up-stream, but just ACK it 
+> > > (thank you for that btw), then where do I send it to get it merged?
+> > 
+> > Here. ie. linuxppc-dev.
+> > 
+> > But, while you're removing it you should remove the #if 0'ed callsite as
+> > well, see mf_src_proc_show() in that file. :)
+> > 
+> Done. See patch below.
+> 
+> 
+> Remove unused function 'mf_getSrcHistory' (that will never be used 
+> ever according to Stephen Rothwell) and also remove most of (under 'if 
+> 0') code from mf_src_proc_show() where the function was called.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 > ---
->  v4 - miscellaneous cleanup, per pkondeti@codeaurora.org
->  v3 - miscellaneous cleanup, per baruch@tkos.co.il
->  v2 - miscellaneous cleanup, per baruch@tkos.co.il
->
->  arch/arm/mach-msm/Makefile  |    4 +-
->  arch/arm/mach-msm/gpio-v2.c |  163 +++++++++++++++++++++++++++++++++++++++++++
-[Ram] Can you let me know how this naming convention gpio-v2??
->  2 files changed, 166 insertions(+), 1 deletions(-)
->  create mode 100644 arch/arm/mach-msm/gpio-v2.c
->
-> diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-> index b5a7b07..4a1a7ea 100644
-> --- a/arch/arm/mach-msm/Makefile
-> +++ b/arch/arm/mach-msm/Makefile
-> @@ -28,6 +28,8 @@ obj-$(CONFIG_ARCH_MSM8X60) += board-msm8x60.o
->  obj-$(CONFIG_ARCH_MSM7X30) += gpiomux-7x30.o gpiomux-v1.o gpiomux.o
->  obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o gpiomux-v1.o gpiomux.o
->  obj-$(CONFIG_ARCH_MSM8X60) += gpiomux-8x60.o gpiomux-v2.o gpiomux.o
-> -ifndef CONFIG_MSM_V2_TLMM
-> +ifdef CONFIG_MSM_V2_TLMM
-> +obj-y  += gpio-v2.o
-> +else
->  obj-y  += gpio.o
->  endif
-> diff --git a/arch/arm/mach-msm/gpio-v2.c b/arch/arm/mach-msm/gpio-v2.c
-> new file mode 100644
-> index 0000000..d907af6
-> --- /dev/null
-> +++ b/arch/arm/mach-msm/gpio-v2.c
-> @@ -0,0 +1,163 @@
-> +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-> + * 02110-1301, USA.
-> + *
-> + */
-> +#include <linux/gpio.h>
-> +#include <linux/io.h>
-> +#include <linux/irq.h>
-> +#include <linux/module.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/spinlock.h>
-> +#include <mach/msm_iomap.h>
-> +#include "gpiomux.h"
-> +
-> +/* Bits of interest in the GPIO_IN_OUT register.
-> + */
-> +enum {
-> +       GPIO_IN_BIT  = 0,
-> +       GPIO_OUT_BIT = 1
-> +};
-> +
-> +/* Bits of interest in the GPIO_CFG register.
-> + */
-> +enum {
-> +       GPIO_OE_BIT = 9,
-> +};
-> +
-> +#define GPIO_CONFIG(gpio)         (MSM_TLMM_BASE + 0x1000 + (0x10 * (gpio)))
-> +#define GPIO_IN_OUT(gpio)         (MSM_TLMM_BASE + 0x1004 + (0x10 * (gpio)))
-> +
-> +static DEFINE_SPINLOCK(tlmm_lock);
-> +
-> +static int msm_gpio_get(struct gpio_chip *chip, unsigned offset)
-> +{
-> +       return readl(GPIO_IN_OUT(offset)) & BIT(GPIO_IN_BIT);
-> +}
-> +
-> +static void msm_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
-> +{
-> +       writel(val ? BIT(GPIO_OUT_BIT) : 0, GPIO_IN_OUT(offset));
-> +}
-> +
-> +static int msm_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
-> +{
-> +       unsigned long irq_flags;
-> +
-> +       spin_lock_irqsave(&tlmm_lock, irq_flags);
-> +       writel(readl(GPIO_CONFIG(offset)) & ~BIT(GPIO_OE_BIT),
-> +               GPIO_CONFIG(offset));
-> +       spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-> +       return 0;
-> +}
-> +
-> +static int msm_gpio_direction_output(struct gpio_chip *chip,
-> +                               unsigned offset,
-> +                               int val)
-> +{
-> +       unsigned long irq_flags;
-> +
-> +       spin_lock_irqsave(&tlmm_lock, irq_flags);
-> +       msm_gpio_set(chip, offset, val);
-> +       writel(readl(GPIO_CONFIG(offset)) | BIT(GPIO_OE_BIT),
-> +               GPIO_CONFIG(offset));
-> +       spin_unlock_irqrestore(&tlmm_lock, irq_flags);
-> +       return 0;
-> +}
-> +
-> +static int msm_gpio_request(struct gpio_chip *chip, unsigned offset)
-> +{
-> +       return msm_gpiomux_get(chip->base + offset);
-> +}
-> +
-> +static void msm_gpio_free(struct gpio_chip *chip, unsigned offset)
-> +{
-> +       msm_gpiomux_put(chip->base + offset);
-> +}
-> +
-> +static struct gpio_chip msm_gpio = {
-> +       .base             = 0,
-> +       .ngpio            = NR_GPIO_IRQS,
-> +       .direction_input  = msm_gpio_direction_input,
-> +       .direction_output = msm_gpio_direction_output,
-> +       .get              = msm_gpio_get,
-> +       .set              = msm_gpio_set,
-> +       .request          = msm_gpio_request,
-> +       .free             = msm_gpio_free,
-> +};
-> +
-> +static int __devinit msm_gpio_probe(struct platform_device *dev)
-> +{
-> +       int ret;
-> +
-> +       msm_gpio.label = dev->name;
-> +       ret = gpiochip_add(&msm_gpio);
-> +
-> +       return ret;
-> +}
-> +
-> +static int __devexit msm_gpio_remove(struct platform_device *dev)
-> +{
-> +       int ret = gpiochip_remove(&msm_gpio);
-> +
-> +       if (ret < 0)
-> +               return ret;
-> +
-> +       set_irq_handler(TLMM_SCSS_SUMMARY_IRQ, NULL);
-> +
-> +       return 0;
-> +}
-> +
-> +static struct platform_driver msm_gpio_driver = {
-> +       .probe = msm_gpio_probe,
-> +       .remove = __devexit_p(msm_gpio_remove),
-> +       .driver = {
-> +               .name = "msmgpio",
-> +               .owner = THIS_MODULE,
-> +       },
-> +};
-> +
-> +static struct platform_device msm_device_gpio = {
-> +       .name = "msmgpio",
-> +       .id   = -1,
-> +};
-> +
-> +static int __init msm_gpio_init(void)
-> +{
-> +       int rc;
-> +
-> +       rc = platform_driver_register(&msm_gpio_driver);
-> +       if (!rc) {
-> +               rc = platform_device_register(&msm_device_gpio);
-> +               if (rc)
-> +                       platform_driver_unregister(&msm_gpio_driver);
-> +       }
-> +
-> +       return rc;
-> +}
-> +
-> +static void __exit msm_gpio_exit(void)
-> +{
-> +       platform_device_unregister(&msm_device_gpio);
-> +       platform_driver_unregister(&msm_gpio_driver);
-> +}
-> +
-> +postcore_initcall(msm_gpio_init);
-> +module_exit(msm_gpio_exit);
-> +
-> +MODULE_AUTHOR("Gregory Bean <gbean@codeaurora.org>");
-> +MODULE_DESCRIPTION("Driver for Qualcomm MSM TLMMv2 SoC GPIOs");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:msmgpio");
-> --
-> 1.7.0.4
->
-> --
-> Employee of Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+>  mf.c |   62 
+> --------------------------------------------------------------
+>  1 file changed, 62 deletions(-)
+> 
+> diff --git a/arch/powerpc/platforms/iseries/mf.c b/arch/powerpc/platforms/iseries/mf.c
+> index 42d0a88..b5e026b 100644
+> --- a/arch/powerpc/platforms/iseries/mf.c
+> +++ b/arch/powerpc/platforms/iseries/mf.c
+> @@ -1045,71 +1045,9 @@ static const struct file_operations mf_side_proc_fops = {
+>  	.write		= mf_side_proc_write,
+>  };
+>  
+> -#if 0
+> -static void mf_getSrcHistory(char *buffer, int size)
+> -{
+> -	struct IplTypeReturnStuff return_stuff;
+> -	struct pending_event *ev = new_pending_event();
+> -	int rc = 0;
+> -	char *pages[4];
+> -
+> -	pages[0] = kmalloc(4096, GFP_ATOMIC);
+> -	pages[1] = kmalloc(4096, GFP_ATOMIC);
+> -	pages[2] = kmalloc(4096, GFP_ATOMIC);
+> -	pages[3] = kmalloc(4096, GFP_ATOMIC);
+> -	if ((ev == NULL) || (pages[0] == NULL) || (pages[1] == NULL)
+> -			 || (pages[2] == NULL) || (pages[3] == NULL))
+> -		return -ENOMEM;
+> -
+> -	return_stuff.xType = 0;
+> -	return_stuff.xRc = 0;
+> -	return_stuff.xDone = 0;
+> -	ev->event.hp_lp_event.xSubtype = 6;
+> -	ev->event.hp_lp_event.x.xSubtypeData =
+> -		subtype_data('M', 'F', 'V', 'I');
+> -	ev->event.data.vsp_cmd.xEvent = &return_stuff;
+> -	ev->event.data.vsp_cmd.cmd = 4;
+> -	ev->event.data.vsp_cmd.lp_index = HvLpConfig_getLpIndex();
+> -	ev->event.data.vsp_cmd.result_code = 0xFF;
+> -	ev->event.data.vsp_cmd.reserved = 0;
+> -	ev->event.data.vsp_cmd.sub_data.page[0] = iseries_hv_addr(pages[0]);
+> -	ev->event.data.vsp_cmd.sub_data.page[1] = iseries_hv_addr(pages[1]);
+> -	ev->event.data.vsp_cmd.sub_data.page[2] = iseries_hv_addr(pages[2]);
+> -	ev->event.data.vsp_cmd.sub_data.page[3] = iseries_hv_addr(pages[3]);
+> -	mb();
+> -	if (signal_event(ev) != 0)
+> -		return;
+> -
+> - 	while (return_stuff.xDone != 1)
+> - 		udelay(10);
+> - 	if (return_stuff.xRc == 0)
+> - 		memcpy(buffer, pages[0], size);
+> -	kfree(pages[0]);
+> -	kfree(pages[1]);
+> -	kfree(pages[2]);
+> -	kfree(pages[3]);
+> -}
+> -#endif
+> -
+>  static int mf_src_proc_show(struct seq_file *m, void *v)
+>  {
+> -#if 0
+> -	int len;
+> -
+> -	mf_getSrcHistory(page, count);
+> -	len = count;
+> -	len -= off;
+> -	if (len < count) {
+> -		*eof = 1;
+> -		if (len <= 0)
+> -			return 0;
+> -	} else
+> -		len = count;
+> -	*start = page + off;
+> -	return len;
+> -#else
+>  	return 0;
+> -#endif
+>  }
+>  
+>  static int mf_src_proc_open(struct inode *inode, struct file *file)
+> 
+> 
+> 
+> 
+
+PING.
+
+Is this going to get merged somewhere or is there a problem?
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
+Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
+Plain text mails only, please.
+
