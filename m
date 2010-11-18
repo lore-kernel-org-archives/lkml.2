@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757671Ab0KROW2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 09:22:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58112 "EHLO mx1.redhat.com"
+	id S1757916Ab0KROXs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 09:23:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14405 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757264Ab0KROW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 09:22:27 -0500
-Date: Thu, 18 Nov 2010 09:22:13 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 1/3] x86: only call smp_processor_id in non-preempt cases
-Message-ID: <20101118142213.GB18100@redhat.com>
-References: <1289573455-3410-1-git-send-email-dzickus@redhat.com>
- <20101118081407.GB23481@elte.hu>
+	id S1757598Ab0KROXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 09:23:47 -0500
+Date: Thu, 18 Nov 2010 09:23:22 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Pavel Machek <pma@sysgo.com>
+Cc: kernel list <linux-kernel@vger.kernel.org>, horms@verge.net.au,
+        akpm@linux-foundation.org, randy.dunlap@oracle.com
+Subject: Re: kexec documentation missing, bad links in kdump.txt
+Message-ID: <20101118142322.GA13933@redhat.com>
+References: <20101118095015.GA12071@pma.sysgo.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101118081407.GB23481@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20101118095015.GA12071@pma.sysgo.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 09:14:07AM +0100, Ingo Molnar wrote:
+On Thu, Nov 18, 2010 at 10:50:15AM +0100, Pavel Machek wrote:
+> Hi!
 > 
-> * Don Zickus <dzickus@redhat.com> wrote:
+> Where can one get kexec documentation?
 > 
-> > There are some paths that walk the die_chain with preemption on.
+> (In particular, we are trying to get it to boot on ARM board, and
+> wonder if something like CONFIG_RELOCATABLE_KERNEL is needed.)
 > 
-> What are those codepaths? At minimum it's worth documenting them.
 
-Well the one that caused the bug was do_general_protection which walks the
-die_chain with DIE_GPF.
+For kexec you will not need CONFIG_RELOCATABLE_KERNEL. But if you also
+want to use kdump and use same bzImage as first kernel then you will
+need relocatable kernel support.
 
-I can document them, though it might be time consuming to audit them and
-hope they don't change.  I guess my bigger question is, is it expected
-that anyone who calls the die_chain to have preemption disabled?  If not,
-then does it matter if we document it?
+For kdump I had done two presentations at OLS. You might find little
+bit of kexec details too.
 
-Cheers,
-Don
+Kdump: Smarter, Easier, Trustier
+http://www.kernel.org/doc/ols/2007/ols2007v1-pages-167-178.pdf
+
+Kdump, a kexec based crash dumping mechanism.
+http://lse.sourceforge.net/kdump/documentation/ols2oo5-kdump-paper.pdf
+
+thanks
+Vivek
+ 
+> Unfortunately, only pieces mentioning kexec are kdump pieces
+> (Documentation/kdump/kdump.txt), and links there, such as
+> 
+> http://www.kernel.org/pub/linux/kernel/people/horms/kexec-tools/kexec-tools.tar.gz
+> 
+> http://www.kernel.org/pub/linux/kernel/people/horms/kexec-tools/README.html
+> 
+> http://www.kernel.org/git/?p=linux/kernel/git/horms/kexec-tools.git
+> 
+> are no longer valid :-(.
+> 								Pavel
