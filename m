@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760718Ab0KRVuN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:50:13 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51910 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760708Ab0KRVuL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:50:11 -0500
-Date: Thu, 18 Nov 2010 15:50:02 -0600
-From: Sonny Rao <sonnyrao@us.ibm.com>
-To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Cc: Milton Miller <miltonm@bga.com>, Linux Driver <Linux-Driver@qlogic.com>,
+	id S1760694Ab0KRVwV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:52:21 -0500
+Received: from kroah.org ([198.145.64.141]:35302 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755654Ab0KRVwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 16:52:19 -0500
+Date: Thu, 18 Nov 2010 13:46:19 -0800
+From: Greg KH <greg@kroah.com>
+To: Vladislav Bolkhovitin <vvvvvst@gmail.com>
+Cc: Richard Williams <richard@etechsoft.com>,
+        Bart Van Assche <bvanassche@acm.org>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ron Mercer <ron.mercer@qlogic.com>, sonnyrao@linux.vnet.ibm.com
-Subject: [PATCH] qlge: Fix incorrect usage of module parameters and netdev
- msg level
-Message-ID: <20101118215002.GS32203@us.ibm.com>
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        Hannes Reinecke <hare@suse.de>, Andy Yan <ayan@marvell.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vu Pham <vuhuong@mellanox.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joel Becker <joel.becker@oracle.com>
+Subject: Re: [Scst-devel] [PATCH 8/19]: SCST SYSFS interface implementation
+Message-ID: <20101118214619.GA29097@kroah.com>
+References: <20101112012315.GE17097@core.coreip.homeip.net>
+ <4CDEC8D2.8080101@vlnb.net>
+ <20101113235938.GA1827@kroah.com>
+ <4CE1017E.4090409@panasas.com>
+ <20101115161620.GB5981@kroah.com>
+ <4CE16B8E.1000300@panasas.com>
+ <AANLkTikPVXGJ5-5YDk1uqfqrqxGLpSiSdaX3h7qxo-ie@mail.gmail.com>
+ <8985DEAF-4227-4629-B90A-938D2BA3534E@etechsoft.com>
+ <4CE2846C.6070501@vlnb.net>
+ <4CE59482.3050002@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4CE59482.3050002@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver appears to be mistaking the permission field with default value
-in the case of debug and qlge_irq_type.
+On Fri, Nov 19, 2010 at 12:02:58AM +0300, Vladislav Bolkhovitin wrote:
+> Since nobody objected, Greg, could you consider to ACK SCST SYSFS
+> management interface in /sys/kernel/scst_tgt/, please? Please find the
+> SCST SYSFS ABI documentation file you requested below.
 
-Driver is also passing debug as a bitmask into netif_msg_init()
-which wants a number of bits.  Ron Mercer suggests we should
-change this to pass in -1 so the defaults get used instead,
-which makes the default much less verbose.
+No, sorry, again, you should not be using kobjects, and do not polute
+the main /sys/kernel/ namespace with this.
 
-Signed-off-by: Milton Miller <miltonm@bga.com>
-Signed-off-by: Sonny Rao <sonnyrao@linux.vnet.ibm.com>
----
+Use 'struct device' please, that is what it is there for, and is what
+the rest of the kernel is using.  And use the rest of the
+driver/bus/device infrastructure as your model will work with it just
+fine.
 
-v2: Changed debug to be -1 and updated changelog
+Yes, I know you said you didn't think you could use it, and that your
+code was different than everyone elses, but I still do not believe it,
+sorry.
 
- drivers/net/qlge/qlge_main.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+good luck,
 
-diff --git a/drivers/net/qlge/qlge_main.c b/drivers/net/qlge/qlge_main.c
-index d9a7626..66878bb 100644
---- a/drivers/net/qlge/qlge_main.c
-+++ b/drivers/net/qlge/qlge_main.c
-@@ -62,15 +62,15 @@ static const u32 default_msg =
- /* NETIF_MSG_PKTDATA | */
-     NETIF_MSG_HW | NETIF_MSG_WOL | 0;
- 
--static int debug = 0x00007fff;	/* defaults above */
--module_param(debug, int, 0);
-+static int debug = -1;	/* defaults above */
-+module_param(debug, int, 0664);
- MODULE_PARM_DESC(debug, "Debug level (0=none,...,16=all)");
- 
- #define MSIX_IRQ 0
- #define MSI_IRQ 1
- #define LEG_IRQ 2
- static int qlge_irq_type = MSIX_IRQ;
--module_param(qlge_irq_type, int, MSIX_IRQ);
-+module_param(qlge_irq_type, int, 0664);
- MODULE_PARM_DESC(qlge_irq_type, "0 = MSI-X, 1 = MSI, 2 = Legacy.");
- 
- static int qlge_mpi_coredump;
+greg k-h
