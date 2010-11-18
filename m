@@ -1,99 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293Ab0KRMH3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 07:07:29 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42596 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab0KRMH2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 07:07:28 -0500
-Subject: Re: [PATCH 3/4] perf-events: Add support for supplementary event
- registers v3
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: eranian@google.com, linux-kernel@vger.kernel.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <1290077254-12165-4-git-send-email-andi@firstfloor.org>
-References: <1290077254-12165-1-git-send-email-andi@firstfloor.org>
-	 <1290077254-12165-4-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 18 Nov 2010 13:07:36 +0100
-Message-ID: <1290082056.2109.1406.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1753141Ab0KRMND (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 07:13:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42811 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750940Ab0KRMNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 07:13:01 -0500
+Date: Thu, 18 Nov 2010 13:12:56 +0100
+From: "Dr. Werner Fink" <werner@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg KH <greg@kroah.com>, Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
+Message-ID: <20101118121256.GA19884@boole.suse.de>
+Mail-Followup-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Greg KH <greg@kroah.com>, Lennart Poettering <mzxreary@0pointer.de>,
+	Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
+References: <20101116225619.5fa7ef8b@lxorguk.ukuu.org.uk>
+ <20101116231023.GB27594@tango.0pointer.de>
+ <25482.1290031268@localhost>
+ <AANLkTimV_zKK-Ubw3vJkDUtrYvB+W06cRR7Nz2vam6fP@mail.gmail.com>
+ <20101117235647.00766e32@lxorguk.ukuu.org.uk>
+ <20101118012734.GA8558@kroah.com>
+ <20101118014848.GA7873@tango.0pointer.de>
+ <20101118015310.GA30480@kroah.com>
+ <20101118110020.GA13871@boole.suse.de>
+ <20101118112335.434de53a@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20101118112335.434de53a@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 11:47 +0100, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On Thu, Nov 18, 2010 at 11:23:35AM +0000, Alan Cox wrote:
+> > is the most pressing case e.g. on s390 or zSeries) and this without
+> > forcing (and maybe stealing) the controlling tty on the system console
+> > to be able to detect the primary tty/console.
 > 
-> Intel Nehalem/Westmere have a special OFFCORE_RESPONSE event
-> that can be used to monitor any offcore accesses from a core.
-> This is a very useful event for various tunings, and it's
-> also needed to implement the generic LLC-* events correctly.
+> What do you mean by console in this context
 > 
-> Unfortunately this event requires programming a mask in a separate
-> register. And worse this separate register is per core, not per
-> CPU thread.
+> The console in printk context and the "console" in "active vt window" are
+> unrelated concepts with the same name, so its a bit confusing to follow
+> here. 
+
+Example: running a boot script on /dev/console and after fsck
+sulogin has to called to be able to asked the system admin.
+Now the question is which console device the system admin is
+waiting in front of (before /dev/ttyS0 or /dev/tty3270 or whatever).
+
+> > facilities (having device, read, write, and unblank) are also shown
+> > in the new file /sys/class/tty/console/active ... but maybe Randy
+> > could says a few words for what this is usable.
 > 
-> This patch adds:
-> - Teaches perf_events that OFFCORE_RESPONSE needs extra parameters.
-> The extra parameters are passed by user space in the unused upper
-> 32bits of the config word.
-> - Add support to the Intel perf_event core to schedule per
-> core resources. This adds fairly generic infrastructure that
-> can be also used for other per core resources.
-> The basic code has is patterned after the similar AMD northbridge
-> constraints code.
+> The system console does not even need to be a tty device, and on many
+> embedded devices is not (it may for example by a RAM buffer not wiped
+> over reboots or it may be jtag or MIPI trace ports.
 > 
-> Thanks to Stephane Eranian who pointed out some problems
-> in the original version and suggested improvements.
+> "tty0" is *currently* a shorthand for "the VT the keyboard/display are
+> showing". That's a shorthand that in itself will make no sense in future.
 
-WARNING: please, no space before tabs
-#59: FILE: arch/x86/kernel/cpu/perf_event.c:136:
-+^Iint ^I^I^I^Ipercore_used; /* Used by this CPU? */$
+I'm aware of.  For using tty devices of the system console it requires
+to have e.g. with my patch:
 
-WARNING: please, no space before tabs
-#80: FILE: arch/x86/kernel/cpu/perf_event.c:198:
-+^Iu64 ^I^I^Iconfig_mask;$
+  bash> cat /proc/tty/consoles 
+  tty0                 -WU (ECp)       4:7
 
-WARNING: please, no space before tabs
-#81: FILE: arch/x86/kernel/cpu/perf_event.c:199:
-+^Iu64 ^I^I^Ivalid_mask;$
+the `W' flag for write and the major:minor pair, beside this the `U'
+flag indicates the tty can do an unblank operation, the `-' shows that
+there is no read operation (never seen such a console tty).  On an other
+system here I see:
 
-WARNING: please, no space before tabs
-#85: FILE: arch/x86/kernel/cpu/perf_event.c:203:
-+^I.event = (e),    ^I\$
+  bash> cat /proc/tty/consoles
+  ttyS0                -W- (ECp)       4:64
+  tty0                 -WU (Ep)        4:1
 
-WARNING: please, no space before tabs
-#86: FILE: arch/x86/kernel/cpu/perf_event.c:204:
-+^I.msr = (ms),^I     ^I\$
+which I'm using in user space with
 
-WARNING: please, no space before tabs
-#87: FILE: arch/x86/kernel/cpu/perf_event.c:205:
-+^I.config_mask = (m),  ^I\$
+    dev_t dev = 0;
+    FILE * fc;
 
-WARNING: please, no space before tabs
-#177: FILE: arch/x86/kernel/cpu/perf_event_intel.c:12:
-+^Iint ^I^Iref;^I^I/* reference count */$
+    if ((fc = fopen("/proc/tty/consoles", "r"))) {
+        char fbuf[16];
+        int maj, min;
+        while ((fscanf(fc, "%*s %*s (%[^)]) %d:%d", &fbuf[0], &maj, &min) == 3)) {
+            if (!strchr(fbuf, 'E'))
+                continue;
+            if (strchr(fbuf, 'C')) {
+                dev = makedev(maj, min);
+                break;
+            }
+        }
+        fclose(fc);
+    }
 
-WARNING: please, no space before tabs
-#179: FILE: arch/x86/kernel/cpu/perf_event_intel.c:14:
-+^Iu64 ^I^Iextra_config;^I/* extra MSR config */$
-
-WARNING: please, no space before tabs
-#183: FILE: arch/x86/kernel/cpu/perf_event_intel.c:18:
-+^Iraw_spinlock_t ^I^Ilock;^I^I/* protect structure */$
-
-WARNING: please, no space before tabs
-#184: FILE: arch/x86/kernel/cpu/perf_event_intel.c:19:
-+^Istruct er_account ^Iregs[MAX_EXTRA_REGS];$
-
-WARNING: please use device_initcall() instead of __initcall()
-#408: FILE: arch/x86/kernel/cpu/perf_event_intel.c:1108:
-+__initcall(init_intel_percore);
+to detect the primary console device here.
 
 
-Fixed those up, please be more careful next time.
+       Werner
+
+-- 
+  "Having a smoking section in a restaurant is like having
+          a peeing section in a swimming pool." -- Edward Burr
