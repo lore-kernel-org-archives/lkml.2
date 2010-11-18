@@ -1,110 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753141Ab0KRMND (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 07:13:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42811 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750940Ab0KRMNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 07:13:01 -0500
-Date: Thu, 18 Nov 2010 13:12:56 +0100
-From: "Dr. Werner Fink" <werner@suse.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <greg@kroah.com>, Lennart Poettering <mzxreary@0pointer.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
-Message-ID: <20101118121256.GA19884@boole.suse.de>
-Mail-Followup-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	Greg KH <greg@kroah.com>, Lennart Poettering <mzxreary@0pointer.de>,
-	Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
-References: <20101116225619.5fa7ef8b@lxorguk.ukuu.org.uk>
- <20101116231023.GB27594@tango.0pointer.de>
- <25482.1290031268@localhost>
- <AANLkTimV_zKK-Ubw3vJkDUtrYvB+W06cRR7Nz2vam6fP@mail.gmail.com>
- <20101117235647.00766e32@lxorguk.ukuu.org.uk>
- <20101118012734.GA8558@kroah.com>
- <20101118014848.GA7873@tango.0pointer.de>
- <20101118015310.GA30480@kroah.com>
- <20101118110020.GA13871@boole.suse.de>
- <20101118112335.434de53a@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20101118112335.434de53a@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754902Ab0KRMOR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 07:14:17 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:38315 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab0KRMOQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 07:14:16 -0500
+X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=AvpIYEOr2ZAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=jnR3hxDqDRGRDv3j-v4A:9 a=GP4KNBvfEBGc3QOLUkHjB5pPedUA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 0/2] tracing: Have trace_printk()s in the events/
+ directory
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "jason.wessel" <jason.wessel@windriver.com>,
+        "Ted Ts'o" <tytso@mit.edu>
+In-Reply-To: <20101118120626.GB27474@Krystal>
+References: <20101118035803.453609353@goodmis.org>
+	 <1290076866.2109.1305.camel@laptop>
+	 <1290081203.30543.96.camel@gandalf.stny.rr.com>
+	 <20101118120626.GB27474@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 18 Nov 2010 07:14:14 -0500
+Message-ID: <1290082454.30543.98.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 11:23:35AM +0000, Alan Cox wrote:
-> > is the most pressing case e.g. on s390 or zSeries) and this without
-> > forcing (and maybe stealing) the controlling tty on the system console
-> > to be able to detect the primary tty/console.
+On Thu, 2010-11-18 at 07:06 -0500, Mathieu Desnoyers wrote:
+> * Steven Rostedt (rostedt@goodmis.org) wrote:
+> > On Thu, 2010-11-18 at 11:41 +0100, Peter Zijlstra wrote:
+> > > On Wed, 2010-11-17 at 22:58 -0500, Steven Rostedt wrote:
+> > > > For example, I added a trace_printk() in kernel/sched.c at line 2180
+> > > > and it creates:
+> > > > 
+> > > > # ls /debug/tracing/events/printk/kernel/sched.c/2180/
+> > > > enable  format
+> > > > 
+> > > > The format is the printk format:
+> > > > 
+> > > > # cat /debug/tracing/events/printk/kernel/sched.c/2180/format 
+> > > > "migrate task %s:%d"
+> > > 
+> > > *groan*, so you're creating a tracepoint per instance?
+> > > 
+> > > That's going to be massive pain for perf.. I really don't see the point
+> > > in splitting all that out.
+> > 
+> > a) The file directory was what was asked about in the referenced email.
+> > b) This is just an example of a way to display it to the user, which
+> > seems to be very intuitive.
+> > c) Perf can implement the details anyway it wants. It can make a single
+> > tracepoint callback and have the enabling of the points as a special
+> > filter.
+> > d) This was just an RFC that Frederic asked if I would do. I thought it
+> > would be a fun challenge and did it. Let it bit rot in hell for all I
+> > care, I wasn't taking it any further anyway.
 > 
-> What do you mean by console in this context
+> Hi Steven,
 > 
-> The console in printk context and the "console" in "active vt window" are
-> unrelated concepts with the same name, so its a bit confusing to follow
-> here. 
-
-Example: running a boot script on /dev/console and after fsck
-sulogin has to called to be able to asked the system admin.
-Now the question is which console device the system admin is
-waiting in front of (before /dev/ttyS0 or /dev/tty3270 or whatever).
-
-> > facilities (having device, read, write, and unblank) are also shown
-> > in the new file /sys/class/tty/console/active ... but maybe Randy
-> > could says a few words for what this is usable.
+> The LTTng tree still keeps the "trace_mark()" kernel markers, which are
+> very very similar to ftrace_printk(). I'd be happy to combine the two
+> eventually. This one file per line approach seems very good -- rather than
+> explicitely naming each instance, as I did in trace_mark(), you end up
+> automatically naming them by file/line number.
 > 
-> The system console does not even need to be a tty device, and on many
-> embedded devices is not (it may for example by a RAM buffer not wiped
-> over reboots or it may be jtag or MIPI trace ports.
-> 
-> "tty0" is *currently* a shorthand for "the VT the keyboard/display are
-> showing". That's a shorthand that in itself will make no sense in future.
+> How does this behave from within static inlines called multiple times and
+> unrolled loops ?
 
-I'm aware of.  For using tty devices of the system console it requires
-to have e.g. with my patch:
+Actually you mean macros:
 
-  bash> cat /proc/tty/consoles 
-  tty0                 -WU (ECp)       4:7
+You'll get a 2181-1, 2181-2, 2181-3, etc.
 
-the `W' flag for write and the major:minor pair, beside this the `U'
-flag indicates the tty can do an unblank operation, the `-' shows that
-there is no read operation (never seen such a console tty).  On an other
-system here I see:
+Although a trace_printk() in a header static inline may be interesting.
 
-  bash> cat /proc/tty/consoles
-  ttyS0                -W- (ECp)       4:64
-  tty0                 -WU (Ep)        4:1
-
-which I'm using in user space with
-
-    dev_t dev = 0;
-    FILE * fc;
-
-    if ((fc = fopen("/proc/tty/consoles", "r"))) {
-        char fbuf[16];
-        int maj, min;
-        while ((fscanf(fc, "%*s %*s (%[^)]) %d:%d", &fbuf[0], &maj, &min) == 3)) {
-            if (!strchr(fbuf, 'E'))
-                continue;
-            if (strchr(fbuf, 'C')) {
-                dev = makedev(maj, min);
-                break;
-            }
-        }
-        fclose(fc);
-    }
-
-to detect the primary console device here.
+-- Steve
 
 
-       Werner
-
--- 
-  "Having a smoking section in a restaurant is like having
-          a peeing section in a swimming pool." -- Edward Burr
