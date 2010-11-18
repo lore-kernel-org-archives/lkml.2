@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305Ab0KRALk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 19:11:40 -0500
-Received: from lares.culture.fr ([143.126.211.20]:55358 "EHLO lares.culture.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750731Ab0KRALj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 19:11:39 -0500
-X-Greylist: delayed 321 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Nov 2010 19:11:39 EST
-Message-ID: <20101118000201.fs56ssdb8k0c0owc@messagerie.int.culture.fr>
-X-Priority: 3 (Normal)
-Date: Thu, 18 Nov 2010 00:02:01 +0100
-From: HATZFELD =?utf-8?b?aMOpbMOobmU=?= 
-	<helene.hatzfeld@culture.gouv.fr>
-Reply-to: natioallttery.department@paysandu.com
-To: undisclosed-recipients:;
-Subject: You Have Won 500,000.00 Gbp,
+	id S1751502Ab0KRAM1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 19:12:27 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:16933 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab0KRAM0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 19:12:26 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6170"; a="63305367"
+Date: Wed, 17 Nov 2010 16:12:24 -0800
+From: David Brown <davidb@codeaurora.org>
+To: Greg KH <greg@kroah.com>
+Cc: Tatyana Brokhman <tlinder@codeaurora.org>, gregkh@suse.de,
+        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 1/1] usb: Adding SuperSpeed support to dummy_hcd
+Message-ID: <20101118001224.GA19942@huya.qualcomm.com>
+References: <1289916492-28402-1-git-send-email-tlinder@codeaurora.org>
+ <20101117213535.GD10541@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=UTF-8;
-	DelSp="Yes";
-	format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
-X-Virus-Version: vendor=nai engine=5400 definitions=6170 signatures=648859
+In-Reply-To: <20101117213535.GD10541@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 17, 2010 at 01:35:35PM -0800, Greg KH wrote:
 
+> Does your lawyers agree that this is correct to add based on the size of
+> the file?  Hint, it doesn't pass the rule that some lawyers I work with
+> go by, so I would be surprised that it passes theirs.
 
+The guideline I've been giving people is to not add a Code Aurora
+copyright unless we change a very significant portion of the file.
 
-PROMOTIONS/ PRICE AWARD
-DEPARTMENT.
-NATIONAL LOTTERY.
-Flat 69, Chaucer House,
-Churchill Gardens, London,
-Greater London, SW1V 3DP
-REF No: EGS/875061725/07
-BATCH No: 505649092/188
+> Also, I didn't think that "Code Aurora Forum" was a "real" legal entity
+> last time I looked, so how can it own copyrights?  Who is the "real"
+> owner here?  (hint, who does your lawyers work for...)
 
-Your email has emerged you a winner in the
-NATIONAL LOTTERY, program that was held on the 17th of November
-2010. You have been approved a lump sum 500,000 GBP,
-in cash credited to File KTU/9023118308/03. Contact your fiduciary agent
-for you claim with the below email
-Agents Name: Mr Morgan Ashton
-Email:natioallttery.department@paysandu.com
-send to him via email the below informations:
+The copyrights are assigned to the Code Aurora Forum.
 
-Full Name:
-Address:
-Country:
-Sex:
-Age:
-Occupation:
-Phone number:
-
-Yours faithfully,
-NATIONAL LOTTERY MANAGEMENT.
-
-
+David
