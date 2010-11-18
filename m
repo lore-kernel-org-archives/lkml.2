@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759679Ab0KRQQm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:16:42 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:39552 "EHLO gir.skynet.ie"
+	id S1759604Ab0KRQR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:17:57 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:39619 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757014Ab0KRQQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 11:16:40 -0500
-Date: Thu, 18 Nov 2010 16:16:24 +0000
+	id S1754722Ab0KRQRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 11:17:55 -0500
+Date: Thu, 18 Nov 2010 16:17:41 +0000
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrea Arcangeli <aarcange@redhat.com>
 Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
@@ -27,132 +27,48 @@ Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
         Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 51 of 66] set recommended min free kbytes
-Message-ID: <20101118161623.GB8135@csn.ul.ie>
-References: <patchbomb.1288798055@v2.random> <e4c3f336872db7bfbf58.1288798106@v2.random>
+Subject: Re: [PATCH 52 of 66] enable direct defrag
+Message-ID: <20101118161740.GC8135@csn.ul.ie>
+References: <patchbomb.1288798055@v2.random> <db936dd7c1e500045f51.1288798107@v2.random>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <e4c3f336872db7bfbf58.1288798106@v2.random>
+In-Reply-To: <db936dd7c1e500045f51.1288798107@v2.random>
 User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 04:28:26PM +0100, Andrea Arcangeli wrote:
+On Wed, Nov 03, 2010 at 04:28:27PM +0100, Andrea Arcangeli wrote:
 > From: Andrea Arcangeli <aarcange@redhat.com>
 > 
-> If transparent hugepage is enabled initialize min_free_kbytes to an optimal
-> value by default. This moves the hugeadm algorithm in kernel.
+> With memory compaction in, and lumpy-reclaim removed, it seems safe enough to
+> defrag memory during the (synchronous) transparent hugepage page faults
+> (TRANSPARENT_HUGEPAGE_DEFRAG_FLAG) and not only during khugepaged (async)
+> hugepage allocations that was already enabled even before memory compaction was
+> in (TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG).
 > 
+
+While I'm hoping that my series on using compaction will be used instead
+of outright deletion of lumpy reclaim, this patch would still make
+sense.
+
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+
 > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 > ---
 > 
 > diff --git a/mm/huge_memory.c b/mm/huge_memory.c
 > --- a/mm/huge_memory.c
 > +++ b/mm/huge_memory.c
-> @@ -85,6 +85,47 @@ struct khugepaged_scan {
->  	.mm_head = LIST_HEAD_INIT(khugepaged_scan.mm_head),
->  };
+> @@ -28,6 +28,7 @@
+>   */
+>  unsigned long transparent_hugepage_flags __read_mostly =
+>  	(1<<TRANSPARENT_HUGEPAGE_FLAG)|
+> +	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_FLAG)|
+>  	(1<<TRANSPARENT_HUGEPAGE_DEFRAG_KHUGEPAGED_FLAG);
 >  
-> +
-> +static int set_recommended_min_free_kbytes(void)
-> +{
-> +	struct zone *zone;
-> +	int nr_zones = 0;
-> +	unsigned long recommended_min;
-> +	extern int min_free_kbytes;
-> +
-> +	if (!test_bit(TRANSPARENT_HUGEPAGE_FLAG,
-> +		      &transparent_hugepage_flags) &&
-> +	    !test_bit(TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG,
-> +		      &transparent_hugepage_flags))
-> +		return 0;
-> +
-> +	for_each_populated_zone(zone)
-> +		nr_zones++;
-> +
-> +	/* Make sure at least 2 hugepages are free for MIGRATE_RESERVE */
-> +	recommended_min = HPAGE_PMD_NR * nr_zones * 2;
-> +
-
-The really important value is pageblock_nr_pages here. It'll just happen
-to work on x86 and x86-64 but anti-fragmentation is really about
-pageblocks, not PMDs.
-
-> +	/*
-> +	 * Make sure that on average at least two pageblocks are almost free
-> +	 * of another type, one for a migratetype to fall back to and a
-> +	 * second to avoid subsequent fallbacks of other types There are 3
-> +	 * MIGRATE_TYPES we care about.
-> +	 */
-> +	recommended_min += HPAGE_PMD_NR * nr_zones * 3 * 3;
-> +
-
-Same on the use of pageblock_nr_pages. Also, you can replace 3 with
-MIGRATE_PCPTYPES.
-
-> +	/* don't ever allow to reserve more than 5% of the lowmem */
-> +	recommended_min = min(recommended_min,
-> +			      (unsigned long) nr_free_buffer_pages() / 20);
-> +	recommended_min <<= (PAGE_SHIFT-10);
-> +
-> +	if (recommended_min > min_free_kbytes) {
-> +		min_free_kbytes = recommended_min;
-> +		setup_per_zone_wmarks();
-> +	}
-
-
-The timing this is called is important. Would you mind doing a quick
-debugging check by adding a printk to setup_zone_migrate_reserve() to ensure
-MIGRATE_RESERVE is getting set on sensible pageblocks? (see where the comment
-Suitable for reserving if this block is movable is) If MIGRATE_RESERVE blocks
-are not being created in a sensible fashion, atomic high-order allocations
-will suffer in mysterious ways.
-
-SEtting the higher min free kbytes from userspace happens to work because
-the system is initialised and MIGRATE_MOVABLE exists but that might not be
-the case when automatically set like this patch.
-
-> +	return 0;
-> +}
-> +late_initcall(set_recommended_min_free_kbytes);
-> +
->  static int start_khugepaged(void)
->  {
->  	int err = 0;
-> @@ -108,6 +149,8 @@ static int start_khugepaged(void)
->  		mutex_unlock(&khugepaged_mutex);
->  		if (wakeup)
->  			wake_up_interruptible(&khugepaged_wait);
-> +
-> +		set_recommended_min_free_kbytes();
->  	} else
->  		/* wakeup to exit */
->  		wake_up_interruptible(&khugepaged_wait);
-> @@ -177,6 +220,13 @@ static ssize_t enabled_store(struct kobj
->  			ret = err;
->  	}
->  
-> +	if (ret > 0 &&
-> +	    (test_bit(TRANSPARENT_HUGEPAGE_FLAG,
-> +		      &transparent_hugepage_flags) ||
-> +	     test_bit(TRANSPARENT_HUGEPAGE_REQ_MADV_FLAG,
-> +		      &transparent_hugepage_flags)))
-> +		set_recommended_min_free_kbytes();
-> +
->  	return ret;
->  }
->  static struct kobj_attribute enabled_attr =
-> @@ -464,6 +514,8 @@ static int __init hugepage_init(void)
->  
->  	start_khugepaged();
->  
-> +	set_recommended_min_free_kbytes();
-> +
->  out:
->  	return err;
->  }
+>  /* default scan 8*512 pte (or vmas) every 30 second */
 > 
 
 -- 
