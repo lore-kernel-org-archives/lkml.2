@@ -1,781 +1,1194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208Ab0KROFt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 09:05:49 -0500
-Received: from hera.kernel.org ([140.211.167.34]:53457 "EHLO hera.kernel.org"
+	id S1758218Ab0KROGT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 09:06:19 -0500
+Received: from hera.kernel.org ([140.211.167.34]:53494 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758182Ab0KROFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 09:05:46 -0500
-Date: Thu, 18 Nov 2010 14:05:24 GMT
+	id S1758086Ab0KROGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 09:06:16 -0500
+Date: Thu, 18 Nov 2010 14:05:42 GMT
 From: tip-bot for Don Zickus <dzickus@redhat.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         tglx@linutronix.de, mingo@elte.hu, dzickus@redhat.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         tglx@linutronix.de, dzickus@redhat.com, mingo@elte.hu
-In-Reply-To: <1289578944-28564-2-git-send-email-dzickus@redhat.com>
-References: <1289578944-28564-2-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1289578944-28564-3-git-send-email-dzickus@redhat.com>
+References: <1289578944-28564-3-git-send-email-dzickus@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86, nmi_watchdog: Remove the old nmi_watchdog
-Message-ID: <tip-5f2b0ba4d94b3ac23cbc4b7f675d98eb677a760a@git.kernel.org>
-Git-Commit-ID: 5f2b0ba4d94b3ac23cbc4b7f675d98eb677a760a
+Subject: [tip:perf/core] x86, nmi_watchdog: Remove all stub function calls from old nmi_watchdog
+Message-ID: <tip-072b198a4ad48bd722ec6d203d65422a4698eae7@git.kernel.org>
+Git-Commit-ID: 072b198a4ad48bd722ec6d203d65422a4698eae7
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 18 Nov 2010 14:05:25 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 18 Nov 2010 14:05:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5f2b0ba4d94b3ac23cbc4b7f675d98eb677a760a
-Gitweb:     http://git.kernel.org/tip/5f2b0ba4d94b3ac23cbc4b7f675d98eb677a760a
+Commit-ID:  072b198a4ad48bd722ec6d203d65422a4698eae7
+Gitweb:     http://git.kernel.org/tip/072b198a4ad48bd722ec6d203d65422a4698eae7
 Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Fri, 12 Nov 2010 11:22:23 -0500
+AuthorDate: Fri, 12 Nov 2010 11:22:24 -0500
 Committer:  Ingo Molnar <mingo@elte.hu>
 CommitDate: Thu, 18 Nov 2010 09:08:23 +0100
 
-x86, nmi_watchdog: Remove the old nmi_watchdog
+x86, nmi_watchdog: Remove all stub function calls from old nmi_watchdog
 
-Now that we have a new nmi_watchdog that is more generic and
-sits on top of the perf subsystem, we really do not need the old
-nmi_watchdog any more.
+Now that the bulk of the old nmi_watchdog is gone, remove all
+the stub variables and hooks associated with it.
 
-In addition, the old nmi_watchdog doesn't really work if you are
-using the default clocksource, hpet.  The old nmi_watchdog code
-relied on local apic interrupts to determine if the cpu is still
-alive.  With hpet as the clocksource, these interrupts don't
-increment any more and the old nmi_watchdog triggers false
-postives.
+This touches lots of files mainly because of how the io_apic
+nmi_watchdog was implemented.  Now that the io_apic nmi_watchdog
+is forever gone, remove all its fingers.
 
-This piece removes the old nmi_watchdog code and stubs out any
-variables and functions calls.  The stubs are the same ones used
-by the new nmi_watchdog code, so it should be well tested.
+Most of this code was not being exercised by virtue of
+nmi_watchdog != NMI_IO_APIC, so there shouldn't be anything to
+risky here.
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 Cc: fweisbec@gmail.com
 Cc: gorcunov@openvz.org
-LKML-Reference: <1289578944-28564-2-git-send-email-dzickus@redhat.com>
+LKML-Reference: <1289578944-28564-3-git-send-email-dzickus@redhat.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/nmi.h    |    4 -
- arch/x86/kernel/apic/Makefile |    5 +-
- arch/x86/kernel/apic/hw_nmi.c |    6 +-
- arch/x86/kernel/apic/nmi.c    |  567 -----------------------------------------
- arch/x86/kernel/traps.c       |    9 -
- include/linux/nmi.h           |    6 +-
- kernel/sysctl.c               |   16 --
- 7 files changed, 5 insertions(+), 608 deletions(-)
+ arch/x86/include/asm/nmi.h             |   47 ---
+ arch/x86/include/asm/smpboot_hooks.h   |    1 -
+ arch/x86/include/asm/timer.h           |    6 -
+ arch/x86/kernel/apic/apic.c            |   15 +-
+ arch/x86/kernel/apic/hw_nmi.c          |   10 -
+ arch/x86/kernel/apic/io_apic.c         |   46 ---
+ arch/x86/kernel/cpu/perf_event.c       |    9 -
+ arch/x86/kernel/cpu/perfctr-watchdog.c |  642 --------------------------------
+ arch/x86/kernel/smpboot.c              |   11 -
+ arch/x86/kernel/time.c                 |   18 -
+ arch/x86/kernel/traps.c                |    2 -
+ arch/x86/oprofile/nmi_timer_int.c      |    3 -
+ drivers/acpi/acpica/nsinit.c           |    2 -
+ drivers/watchdog/hpwdt.c               |    7 +-
+ include/linux/nmi.h                    |    2 -
+ 15 files changed, 2 insertions(+), 819 deletions(-)
 
 diff --git a/arch/x86/include/asm/nmi.h b/arch/x86/include/asm/nmi.h
-index 932f0f8..33292ec 100644
+index 33292ec..3545838 100644
 --- a/arch/x86/include/asm/nmi.h
 +++ b/arch/x86/include/asm/nmi.h
-@@ -17,9 +17,6 @@ int do_nmi_callback(struct pt_regs *regs, int cpu);
+@@ -7,35 +7,13 @@
  
+ #ifdef ARCH_HAS_NMI_WATCHDOG
+ 
+-/**
+- * do_nmi_callback
+- *
+- * Check to see if a callback exists and execute it.  Return 1
+- * if the handler exists and was handled successfully.
+- */
+-int do_nmi_callback(struct pt_regs *regs, int cpu);
+-
  extern void die_nmi(char *str, struct pt_regs *regs, int do_panic);
- extern int check_nmi_watchdog(void);
--#if !defined(CONFIG_LOCKUP_DETECTOR)
--extern int nmi_watchdog_enabled;
--#endif
+-extern int check_nmi_watchdog(void);
  extern int avail_to_resrv_perfctr_nmi_bit(unsigned int);
  extern int reserve_perfctr_nmi(unsigned int);
  extern void release_perfctr_nmi(unsigned int);
-@@ -30,7 +27,6 @@ extern void setup_apic_nmi_watchdog(void *);
- extern void stop_apic_nmi_watchdog(void *);
- extern void disable_timer_nmi_watchdog(void);
- extern void enable_timer_nmi_watchdog(void);
--extern int nmi_watchdog_tick(struct pt_regs *regs, unsigned reason);
- extern void cpu_nmi_set_wd_enabled(void);
+ extern int reserve_evntsel_nmi(unsigned int);
+ extern void release_evntsel_nmi(unsigned int);
  
- extern atomic_t nmi_active;
-diff --git a/arch/x86/kernel/apic/Makefile b/arch/x86/kernel/apic/Makefile
-index 910f20b..3966b56 100644
---- a/arch/x86/kernel/apic/Makefile
-+++ b/arch/x86/kernel/apic/Makefile
-@@ -3,10 +3,7 @@
- #
+-extern void setup_apic_nmi_watchdog(void *);
+-extern void stop_apic_nmi_watchdog(void *);
+-extern void disable_timer_nmi_watchdog(void);
+-extern void enable_timer_nmi_watchdog(void);
+-extern void cpu_nmi_set_wd_enabled(void);
+-
+-extern atomic_t nmi_active;
+-extern unsigned int nmi_watchdog;
+-#define NMI_NONE	0
+-#define NMI_IO_APIC	1
+-#define NMI_LOCAL_APIC	2
+-#define NMI_INVALID	3
+-
+ struct ctl_table;
+ extern int proc_nmi_enabled(struct ctl_table *, int ,
+ 			void __user *, size_t *, loff_t *);
+@@ -43,33 +21,8 @@ extern int unknown_nmi_panic;
  
- obj-$(CONFIG_X86_LOCAL_APIC)	+= apic.o apic_noop.o probe_$(BITS).o ipi.o
--ifneq ($(CONFIG_HARDLOCKUP_DETECTOR),y)
--obj-$(CONFIG_X86_LOCAL_APIC)	+= nmi.o
--endif
--obj-$(CONFIG_HARDLOCKUP_DETECTOR)	+= hw_nmi.o
-+obj-y				+= hw_nmi.o
+ void arch_trigger_all_cpu_backtrace(void);
+ #define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
+-
+-static inline void localise_nmi_watchdog(void)
+-{
+-	if (nmi_watchdog == NMI_IO_APIC)
+-		nmi_watchdog = NMI_LOCAL_APIC;
+-}
+-
+-/* check if nmi_watchdog is active (ie was specified at boot) */
+-static inline int nmi_watchdog_active(void)
+-{
+-	/*
+-	 * actually it should be:
+-	 * 	return (nmi_watchdog == NMI_LOCAL_APIC ||
+-	 * 		nmi_watchdog == NMI_IO_APIC)
+-	 * but since they are power of two we could use a
+-	 * cheaper way --cvg
+-	 */
+-	return nmi_watchdog & (NMI_LOCAL_APIC | NMI_IO_APIC);
+-}
+ #endif
  
- obj-$(CONFIG_X86_IO_APIC)	+= io_apic.o
- obj-$(CONFIG_SMP)		+= ipi.o
+-void lapic_watchdog_stop(void);
+-int lapic_watchdog_init(unsigned nmi_hz);
+-int lapic_wd_event(unsigned nmi_hz);
+-unsigned lapic_adjust_nmi_hz(unsigned hz);
+-void disable_lapic_nmi_watchdog(void);
+-void enable_lapic_nmi_watchdog(void);
+ void stop_nmi(void);
+ void restart_nmi(void);
+ 
+diff --git a/arch/x86/include/asm/smpboot_hooks.h b/arch/x86/include/asm/smpboot_hooks.h
+index 1def601..6c22bf3 100644
+--- a/arch/x86/include/asm/smpboot_hooks.h
++++ b/arch/x86/include/asm/smpboot_hooks.h
+@@ -48,7 +48,6 @@ static inline void __init smpboot_setup_io_apic(void)
+ 		setup_IO_APIC();
+ 	else {
+ 		nr_ioapics = 0;
+-		localise_nmi_watchdog();
+ 	}
+ #endif
+ }
+diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
+index 5469630..fa7b917 100644
+--- a/arch/x86/include/asm/timer.h
++++ b/arch/x86/include/asm/timer.h
+@@ -10,12 +10,6 @@
+ unsigned long long native_sched_clock(void);
+ extern int recalibrate_cpu_khz(void);
+ 
+-#if defined(CONFIG_X86_32) && defined(CONFIG_X86_IO_APIC)
+-extern int timer_ack;
+-#else
+-# define timer_ack (0)
+-#endif
+-
+ extern int no_timer_check;
+ 
+ /* Accelerators for sched_clock()
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 3f838d5..e9e2a93 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -31,7 +31,6 @@
+ #include <linux/init.h>
+ #include <linux/cpu.h>
+ #include <linux/dmi.h>
+-#include <linux/nmi.h>
+ #include <linux/smp.h>
+ #include <linux/mm.h>
+ 
+@@ -799,11 +798,7 @@ void __init setup_boot_APIC_clock(void)
+ 	 * PIT/HPET going.  Otherwise register lapic as a dummy
+ 	 * device.
+ 	 */
+-	if (nmi_watchdog != NMI_IO_APIC)
+-		lapic_clockevent.features &= ~CLOCK_EVT_FEAT_DUMMY;
+-	else
+-		pr_warning("APIC timer registered as dummy,"
+-			" due to nmi_watchdog=%d!\n", nmi_watchdog);
++	lapic_clockevent.features &= ~CLOCK_EVT_FEAT_DUMMY;
+ 
+ 	/* Setup the lapic or request the broadcast */
+ 	setup_APIC_timer();
+@@ -1387,7 +1382,6 @@ void __cpuinit end_local_APIC_setup(void)
+ 	}
+ #endif
+ 
+-	setup_apic_nmi_watchdog(NULL);
+ 	apic_pm_activate();
+ }
+ 
+@@ -1750,17 +1744,10 @@ int __init APIC_init_uniprocessor(void)
+ 		setup_IO_APIC();
+ 	else {
+ 		nr_ioapics = 0;
+-		localise_nmi_watchdog();
+ 	}
+-#else
+-	localise_nmi_watchdog();
+ #endif
+ 
+ 	x86_init.timers.setup_percpu_clockev();
+-#ifdef CONFIG_X86_64
+-	check_nmi_watchdog();
+-#endif
+-
+ 	return 0;
+ }
+ 
 diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index cefd694..b68b174 100644
+index b68b174..3e25afe 100644
 --- a/arch/x86/kernel/apic/hw_nmi.c
 +++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -20,12 +20,14 @@
- /* For reliability, we're prepared to waste bits here. */
- static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
- 
-+#ifdef CONFIG_HARDLOCKUP_DETECTOR
- u64 hw_nmi_get_sample_period(void)
- {
- 	return (u64)(cpu_khz) * 1000 * 60;
- }
-+#endif
- 
--#ifdef ARCH_HAS_NMI_WATCHDOG
-+#ifdef arch_trigger_all_cpu_backtrace
- void arch_trigger_all_cpu_backtrace(void)
- {
- 	int i;
-@@ -95,8 +97,6 @@ early_initcall(register_trigger_all_cpu_backtrace);
- #if defined(CONFIG_X86_LOCAL_APIC)
- unsigned int nmi_watchdog = NMI_NONE;
- EXPORT_SYMBOL(nmi_watchdog);
--void acpi_nmi_enable(void) { return; }
--void acpi_nmi_disable(void) { return; }
+@@ -94,14 +94,4 @@ early_initcall(register_trigger_all_cpu_backtrace);
  #endif
- atomic_t nmi_active = ATOMIC_INIT(0);           /* oprofile uses this */
- EXPORT_SYMBOL(nmi_active);
-diff --git a/arch/x86/kernel/apic/nmi.c b/arch/x86/kernel/apic/nmi.c
-deleted file mode 100644
-index c90041c..0000000
---- a/arch/x86/kernel/apic/nmi.c
-+++ /dev/null
-@@ -1,567 +0,0 @@
--/*
-- *  NMI watchdog support on APIC systems
-- *
-- *  Started by Ingo Molnar <mingo@redhat.com>
-- *
-- *  Fixes:
-- *  Mikael Pettersson	: AMD K7 support for local APIC NMI watchdog.
-- *  Mikael Pettersson	: Power Management for local APIC NMI watchdog.
-- *  Mikael Pettersson	: Pentium 4 support for local APIC NMI watchdog.
-- *  Pavel Machek and
-- *  Mikael Pettersson	: PM converted to driver model. Disable/enable API.
-- */
--
--#include <asm/apic.h>
--
--#include <linux/nmi.h>
--#include <linux/mm.h>
--#include <linux/delay.h>
--#include <linux/interrupt.h>
--#include <linux/module.h>
--#include <linux/slab.h>
--#include <linux/sysdev.h>
--#include <linux/sysctl.h>
--#include <linux/percpu.h>
--#include <linux/kprobes.h>
--#include <linux/cpumask.h>
--#include <linux/kernel_stat.h>
--#include <linux/kdebug.h>
--#include <linux/smp.h>
--
--#include <asm/i8259.h>
--#include <asm/io_apic.h>
--#include <asm/proto.h>
--#include <asm/timer.h>
--
--#include <asm/mce.h>
--
--#include <asm/mach_traps.h>
--
--int unknown_nmi_panic;
--int nmi_watchdog_enabled;
--
--/* For reliability, we're prepared to waste bits here. */
--static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
--
--/* nmi_active:
-- * >0: the lapic NMI watchdog is active, but can be disabled
-- * <0: the lapic NMI watchdog has not been set up, and cannot
-- *     be enabled
-- *  0: the lapic NMI watchdog is disabled, but can be enabled
-- */
--atomic_t nmi_active = ATOMIC_INIT(0);		/* oprofile uses this */
--EXPORT_SYMBOL(nmi_active);
--
+ 
+ /* STUB calls to mimic old nmi_watchdog behaviour */
+-#if defined(CONFIG_X86_LOCAL_APIC)
 -unsigned int nmi_watchdog = NMI_NONE;
 -EXPORT_SYMBOL(nmi_watchdog);
--
--static int panic_on_timeout;
--
--static unsigned int nmi_hz = HZ;
--static DEFINE_PER_CPU(short, wd_enabled);
--static int endflag __initdata;
--
--static inline unsigned int get_nmi_count(int cpu)
--{
--	return per_cpu(irq_stat, cpu).__nmi_count;
--}
--
--static inline int mce_in_progress(void)
--{
--#if defined(CONFIG_X86_MCE)
--	return atomic_read(&mce_entry) > 0;
 -#endif
--	return 0;
--}
--
--/*
-- * Take the local apic timer and PIT/HPET into account. We don't
-- * know which one is active, when we have highres/dyntick on
-- */
--static inline unsigned int get_timer_irqs(int cpu)
+-atomic_t nmi_active = ATOMIC_INIT(0);           /* oprofile uses this */
+-EXPORT_SYMBOL(nmi_active);
+ int unknown_nmi_panic;
+-void cpu_nmi_set_wd_enabled(void) { return; }
+-void stop_apic_nmi_watchdog(void *unused) { return; }
+-void setup_apic_nmi_watchdog(void *unused) { return; }
+-int __init check_nmi_watchdog(void) { return 0; }
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 7cc0a72..e4a040c 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -54,7 +54,6 @@
+ #include <asm/dma.h>
+ #include <asm/timer.h>
+ #include <asm/i8259.h>
+-#include <asm/nmi.h>
+ #include <asm/msidef.h>
+ #include <asm/hypertransport.h>
+ #include <asm/setup.h>
+@@ -2643,24 +2642,6 @@ static void lapic_register_intr(int irq)
+ 				      "edge");
+ }
+ 
+-static void __init setup_nmi(void)
 -{
--	return per_cpu(irq_stat, cpu).apic_timer_irqs +
--		per_cpu(irq_stat, cpu).irq0_irqs;
--}
--
--#ifdef CONFIG_SMP
--/*
-- * The performance counters used by NMI_LOCAL_APIC don't trigger when
-- * the CPU is idle. To make sure the NMI watchdog really ticks on all
-- * CPUs during the test make them busy.
-- */
--static __init void nmi_cpu_busy(void *data)
--{
--	local_irq_enable_in_hardirq();
 -	/*
--	 * Intentionally don't use cpu_relax here. This is
--	 * to make sure that the performance counter really ticks,
--	 * even if there is a simulator or similar that catches the
--	 * pause instruction. On a real HT machine this is fine because
--	 * all other CPUs are busy with "useless" delay loops and don't
--	 * care if they get somewhat less cycles.
+-	 * Dirty trick to enable the NMI watchdog ...
+-	 * We put the 8259A master into AEOI mode and
+-	 * unmask on all local APICs LVT0 as NMI.
+-	 *
+-	 * The idea to use the 8259A in AEOI mode ('8259A Virtual Wire')
+-	 * is from Maciej W. Rozycki - so we do not have to EOI from
+-	 * the NMI handler or the timer interrupt.
 -	 */
--	while (endflag == 0)
--		mb();
--}
--#endif
+-	apic_printk(APIC_VERBOSE, KERN_INFO "activating NMI Watchdog ...");
 -
--static void report_broken_nmi(int cpu, unsigned int *prev_nmi_count)
--{
--	printk(KERN_CONT "\n");
+-	enable_NMI_through_LVT0();
 -
--	printk(KERN_WARNING
--		"WARNING: CPU#%d: NMI appears to be stuck (%d->%d)!\n",
--			cpu, prev_nmi_count[cpu], get_nmi_count(cpu));
--
--	printk(KERN_WARNING
--		"Please report this to bugzilla.kernel.org,\n");
--	printk(KERN_WARNING
--		"and attach the output of the 'dmesg' command.\n");
--
--	per_cpu(wd_enabled, cpu) = 0;
--	atomic_dec(&nmi_active);
+-	apic_printk(APIC_VERBOSE, " done.\n");
 -}
 -
--static void __acpi_nmi_disable(void *__unused)
--{
--	apic_write(APIC_LVT0, APIC_DM_NMI | APIC_LVT_MASKED);
--}
+ /*
+  * This looks a bit hackish but it's about the only one way of sending
+  * a few INTA cycles to 8259As and any associated glue logic.  ICR does
+@@ -2766,15 +2747,6 @@ static inline void __init check_timer(void)
+ 	 */
+ 	apic_write(APIC_LVT0, APIC_LVT_MASKED | APIC_DM_EXTINT);
+ 	legacy_pic->init(1);
+-#ifdef CONFIG_X86_32
+-	{
+-		unsigned int ver;
 -
--int __init check_nmi_watchdog(void)
--{
--	unsigned int *prev_nmi_count;
--	int cpu;
--
--	if (!nmi_watchdog_active() || !atomic_read(&nmi_active))
--		return 0;
--
--	prev_nmi_count = kmalloc(nr_cpu_ids * sizeof(int), GFP_KERNEL);
--	if (!prev_nmi_count)
--		goto error;
--
--	printk(KERN_INFO "Testing NMI watchdog ... ");
--
--#ifdef CONFIG_SMP
--	if (nmi_watchdog == NMI_LOCAL_APIC)
--		smp_call_function(nmi_cpu_busy, (void *)&endflag, 0);
--#endif
--
--	for_each_possible_cpu(cpu)
--		prev_nmi_count[cpu] = get_nmi_count(cpu);
--	local_irq_enable();
--	mdelay((20 * 1000) / nmi_hz); /* wait 20 ticks */
--
--	for_each_online_cpu(cpu) {
--		if (!per_cpu(wd_enabled, cpu))
--			continue;
--		if (get_nmi_count(cpu) - prev_nmi_count[cpu] <= 5)
--			report_broken_nmi(cpu, prev_nmi_count);
+-		ver = apic_read(APIC_LVR);
+-		ver = GET_APIC_VERSION(ver);
+-		timer_ack = (nmi_watchdog == NMI_IO_APIC && !APIC_INTEGRATED(ver));
 -	}
--	endflag = 1;
--	if (!atomic_read(&nmi_active)) {
--		kfree(prev_nmi_count);
--		atomic_set(&nmi_active, -1);
--		goto error;
--	}
--	printk("OK.\n");
--
--	/*
--	 * now that we know it works we can reduce NMI frequency to
--	 * something more reasonable; makes a difference in some configs
--	 */
--	if (nmi_watchdog == NMI_LOCAL_APIC)
--		nmi_hz = lapic_adjust_nmi_hz(1);
--
--	kfree(prev_nmi_count);
--	return 0;
--error:
+-#endif
+ 
+ 	pin1  = find_isa_irq_pin(0, mp_INT);
+ 	apic1 = find_isa_irq_apic(0, mp_INT);
+@@ -2822,10 +2794,6 @@ static inline void __init check_timer(void)
+ 				unmask_ioapic(cfg);
+ 		}
+ 		if (timer_irq_works()) {
+-			if (nmi_watchdog == NMI_IO_APIC) {
+-				setup_nmi();
+-				legacy_pic->unmask(0);
+-			}
+ 			if (disable_timer_pin_1 > 0)
+ 				clear_IO_APIC_pin(0, pin1);
+ 			goto out;
+@@ -2851,11 +2819,6 @@ static inline void __init check_timer(void)
+ 		if (timer_irq_works()) {
+ 			apic_printk(APIC_QUIET, KERN_INFO "....... works.\n");
+ 			timer_through_8259 = 1;
+-			if (nmi_watchdog == NMI_IO_APIC) {
+-				legacy_pic->mask(0);
+-				setup_nmi();
+-				legacy_pic->unmask(0);
+-			}
+ 			goto out;
+ 		}
+ 		/*
+@@ -2867,15 +2830,6 @@ static inline void __init check_timer(void)
+ 		apic_printk(APIC_QUIET, KERN_INFO "....... failed.\n");
+ 	}
+ 
 -	if (nmi_watchdog == NMI_IO_APIC) {
--		if (!timer_through_8259)
--			legacy_pic->mask(0);
--		on_each_cpu(__acpi_nmi_disable, NULL, 1);
+-		apic_printk(APIC_QUIET, KERN_WARNING "timer doesn't work "
+-			    "through the IO-APIC - disabling NMI Watchdog!\n");
+-		nmi_watchdog = NMI_NONE;
 -	}
--
 -#ifdef CONFIG_X86_32
 -	timer_ack = 0;
 -#endif
--	return -1;
--}
 -
--static int __init setup_nmi_watchdog(char *str)
--{
--	unsigned int nmi;
--
--	if (!strncmp(str, "panic", 5)) {
--		panic_on_timeout = 1;
--		str = strchr(str, ',');
--		if (!str)
--			return 1;
--		++str;
--	}
--
--	if (!strncmp(str, "lapic", 5))
--		nmi_watchdog = NMI_LOCAL_APIC;
--	else if (!strncmp(str, "ioapic", 6))
--		nmi_watchdog = NMI_IO_APIC;
--	else {
--		get_option(&str, &nmi);
--		if (nmi >= NMI_INVALID)
--			return 0;
--		nmi_watchdog = nmi;
--	}
--
--	return 1;
--}
--__setup("nmi_watchdog=", setup_nmi_watchdog);
--
--/*
-- * Suspend/resume support
-- */
--#ifdef CONFIG_PM
--
--static int nmi_pm_active; /* nmi_active before suspend */
--
--static int lapic_nmi_suspend(struct sys_device *dev, pm_message_t state)
--{
--	/* only CPU0 goes here, other CPUs should be offline */
--	nmi_pm_active = atomic_read(&nmi_active);
--	stop_apic_nmi_watchdog(NULL);
--	BUG_ON(atomic_read(&nmi_active) != 0);
--	return 0;
--}
--
--static int lapic_nmi_resume(struct sys_device *dev)
--{
--	/* only CPU0 goes here, other CPUs should be offline */
--	if (nmi_pm_active > 0) {
--		setup_apic_nmi_watchdog(NULL);
--		touch_nmi_watchdog();
--	}
--	return 0;
--}
--
--static struct sysdev_class nmi_sysclass = {
--	.name		= "lapic_nmi",
--	.resume		= lapic_nmi_resume,
--	.suspend	= lapic_nmi_suspend,
--};
--
--static struct sys_device device_lapic_nmi = {
--	.id	= 0,
--	.cls	= &nmi_sysclass,
--};
--
--static int __init init_lapic_nmi_sysfs(void)
--{
--	int error;
--
--	/*
--	 * should really be a BUG_ON but b/c this is an
--	 * init call, it just doesn't work.  -dcz
--	 */
--	if (nmi_watchdog != NMI_LOCAL_APIC)
--		return 0;
--
--	if (atomic_read(&nmi_active) < 0)
--		return 0;
--
--	error = sysdev_class_register(&nmi_sysclass);
--	if (!error)
--		error = sysdev_register(&device_lapic_nmi);
--	return error;
--}
--
--/* must come after the local APIC's device_initcall() */
--late_initcall(init_lapic_nmi_sysfs);
--
--#endif	/* CONFIG_PM */
--
--static void __acpi_nmi_enable(void *__unused)
--{
--	apic_write(APIC_LVT0, APIC_DM_NMI);
--}
--
--/*
-- * Enable timer based NMIs on all CPUs:
-- */
--void acpi_nmi_enable(void)
--{
--	if (atomic_read(&nmi_active) && nmi_watchdog == NMI_IO_APIC)
--		on_each_cpu(__acpi_nmi_enable, NULL, 1);
--}
--
--/*
-- * Disable timer based NMIs on all CPUs:
-- */
--void acpi_nmi_disable(void)
--{
--	if (atomic_read(&nmi_active) && nmi_watchdog == NMI_IO_APIC)
--		on_each_cpu(__acpi_nmi_disable, NULL, 1);
--}
--
--/*
-- * This function is called as soon the LAPIC NMI watchdog driver has everything
-- * in place and it's ready to check if the NMIs belong to the NMI watchdog
-- */
--void cpu_nmi_set_wd_enabled(void)
--{
--	__get_cpu_var(wd_enabled) = 1;
--}
--
--void setup_apic_nmi_watchdog(void *unused)
--{
--	if (__get_cpu_var(wd_enabled))
--		return;
--
--	/* cheap hack to support suspend/resume */
--	/* if cpu0 is not active neither should the other cpus */
--	if (smp_processor_id() != 0 && atomic_read(&nmi_active) <= 0)
--		return;
--
--	switch (nmi_watchdog) {
--	case NMI_LOCAL_APIC:
--		if (lapic_watchdog_init(nmi_hz) < 0) {
--			__get_cpu_var(wd_enabled) = 0;
--			return;
--		}
--		/* FALL THROUGH */
--	case NMI_IO_APIC:
--		__get_cpu_var(wd_enabled) = 1;
--		atomic_inc(&nmi_active);
--	}
--}
--
--void stop_apic_nmi_watchdog(void *unused)
--{
--	/* only support LOCAL and IO APICs for now */
--	if (!nmi_watchdog_active())
--		return;
--	if (__get_cpu_var(wd_enabled) == 0)
--		return;
+ 	apic_printk(APIC_QUIET, KERN_INFO
+ 		    "...trying to set up timer as Virtual Wire IRQ...\n");
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index ed63101..1f129a1 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -330,9 +330,6 @@ static bool reserve_pmc_hardware(void)
+ {
+ 	int i;
+ 
 -	if (nmi_watchdog == NMI_LOCAL_APIC)
--		lapic_watchdog_stop();
--	else
--		__acpi_nmi_disable(NULL);
--	__get_cpu_var(wd_enabled) = 0;
--	atomic_dec(&nmi_active);
+-		disable_lapic_nmi_watchdog();
+-
+ 	for (i = 0; i < x86_pmu.num_counters; i++) {
+ 		if (!reserve_perfctr_nmi(x86_pmu.perfctr + i))
+ 			goto perfctr_fail;
+@@ -355,9 +352,6 @@ perfctr_fail:
+ 	for (i--; i >= 0; i--)
+ 		release_perfctr_nmi(x86_pmu.perfctr + i);
+ 
+-	if (nmi_watchdog == NMI_LOCAL_APIC)
+-		enable_lapic_nmi_watchdog();
+-
+ 	return false;
+ }
+ 
+@@ -369,9 +363,6 @@ static void release_pmc_hardware(void)
+ 		release_perfctr_nmi(x86_pmu.perfctr + i);
+ 		release_evntsel_nmi(x86_pmu.eventsel + i);
+ 	}
+-
+-	if (nmi_watchdog == NMI_LOCAL_APIC)
+-		enable_lapic_nmi_watchdog();
+ }
+ 
+ #else
+diff --git a/arch/x86/kernel/cpu/perfctr-watchdog.c b/arch/x86/kernel/cpu/perfctr-watchdog.c
+index d9f4ff8..14d4592 100644
+--- a/arch/x86/kernel/cpu/perfctr-watchdog.c
++++ b/arch/x86/kernel/cpu/perfctr-watchdog.c
+@@ -22,26 +22,6 @@
+ #include <asm/apic.h>
+ #include <asm/perf_event.h>
+ 
+-struct nmi_watchdog_ctlblk {
+-	unsigned int cccr_msr;
+-	unsigned int perfctr_msr;  /* the MSR to reset in NMI handler */
+-	unsigned int evntsel_msr;  /* the MSR to select the events to handle */
+-};
+-
+-/* Interface defining a CPU specific perfctr watchdog */
+-struct wd_ops {
+-	int (*reserve)(void);
+-	void (*unreserve)(void);
+-	int (*setup)(unsigned nmi_hz);
+-	void (*rearm)(struct nmi_watchdog_ctlblk *wd, unsigned nmi_hz);
+-	void (*stop)(void);
+-	unsigned perfctr;
+-	unsigned evntsel;
+-	u64 checkbit;
+-};
+-
+-static const struct wd_ops *wd_ops;
+-
+ /*
+  * this number is calculated from Intel's MSR_P4_CRU_ESCR5 register and it's
+  * offset from MSR_P4_BSU_ESCR0.
+@@ -60,8 +40,6 @@ static const struct wd_ops *wd_ops;
+ static DECLARE_BITMAP(perfctr_nmi_owner, NMI_MAX_COUNTER_BITS);
+ static DECLARE_BITMAP(evntsel_nmi_owner, NMI_MAX_COUNTER_BITS);
+ 
+-static DEFINE_PER_CPU(struct nmi_watchdog_ctlblk, nmi_watchdog_ctlblk);
+-
+ /* converts an msr to an appropriate reservation bit */
+ static inline unsigned int nmi_perfctr_msr_to_bit(unsigned int msr)
+ {
+@@ -172,623 +150,3 @@ void release_evntsel_nmi(unsigned int msr)
+ 	clear_bit(counter, evntsel_nmi_owner);
+ }
+ EXPORT_SYMBOL(release_evntsel_nmi);
+-
+-void disable_lapic_nmi_watchdog(void)
+-{
+-	BUG_ON(nmi_watchdog != NMI_LOCAL_APIC);
+-
+-	if (atomic_read(&nmi_active) <= 0)
+-		return;
+-
+-	on_each_cpu(stop_apic_nmi_watchdog, NULL, 1);
+-
+-	if (wd_ops)
+-		wd_ops->unreserve();
+-
+-	BUG_ON(atomic_read(&nmi_active) != 0);
 -}
 -
--/*
-- * the best way to detect whether a CPU has a 'hard lockup' problem
-- * is to check it's local APIC timer IRQ counts. If they are not
-- * changing then that CPU has some problem.
-- *
-- * as these watchdog NMI IRQs are generated on every CPU, we only
-- * have to check the current processor.
-- *
-- * since NMIs don't listen to _any_ locks, we have to be extremely
-- * careful not to rely on unsafe variables. The printk might lock
-- * up though, so we have to break up any console locks first ...
-- * [when there will be more tty-related locks, break them up here too!]
-- */
--
--static DEFINE_PER_CPU(unsigned, last_irq_sum);
--static DEFINE_PER_CPU(long, alert_counter);
--static DEFINE_PER_CPU(int, nmi_touch);
--
--void touch_nmi_watchdog(void)
+-void enable_lapic_nmi_watchdog(void)
 -{
--	if (nmi_watchdog_active()) {
--		unsigned cpu;
+-	BUG_ON(nmi_watchdog != NMI_LOCAL_APIC);
 -
--		/*
--		 * Tell other CPUs to reset their alert counters. We cannot
--		 * do it ourselves because the alert count increase is not
--		 * atomic.
--		 */
--		for_each_present_cpu(cpu) {
--			if (per_cpu(nmi_touch, cpu) != 1)
--				per_cpu(nmi_touch, cpu) = 1;
--		}
+-	/* are we already enabled */
+-	if (atomic_read(&nmi_active) != 0)
+-		return;
+-
+-	/* are we lapic aware */
+-	if (!wd_ops)
+-		return;
+-	if (!wd_ops->reserve()) {
+-		printk(KERN_ERR "NMI watchdog: cannot reserve perfctrs\n");
+-		return;
 -	}
 -
--	/*
--	 * Tickle the softlockup detector too:
--	 */
--	touch_softlockup_watchdog();
--}
--EXPORT_SYMBOL(touch_nmi_watchdog);
--
--notrace __kprobes int
--nmi_watchdog_tick(struct pt_regs *regs, unsigned reason)
--{
--	/*
--	 * Since current_thread_info()-> is always on the stack, and we
--	 * always switch the stack NMI-atomically, it's safe to use
--	 * smp_processor_id().
--	 */
--	unsigned int sum;
--	int touched = 0;
--	int cpu = smp_processor_id();
--	int rc = 0;
--
--	sum = get_timer_irqs(cpu);
--
--	if (__get_cpu_var(nmi_touch)) {
--		__get_cpu_var(nmi_touch) = 0;
--		touched = 1;
--	}
--
--	/* We can be called before check_nmi_watchdog, hence NULL check. */
--	if (cpumask_test_cpu(cpu, to_cpumask(backtrace_mask))) {
--		static DEFINE_RAW_SPINLOCK(lock); /* Serialise the printks */
--
--		raw_spin_lock(&lock);
--		printk(KERN_WARNING "NMI backtrace for cpu %d\n", cpu);
--		show_regs(regs);
--		dump_stack();
--		raw_spin_unlock(&lock);
--		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
--
--		rc = 1;
--	}
--
--	/* Could check oops_in_progress here too, but it's safer not to */
--	if (mce_in_progress())
--		touched = 1;
--
--	/* if the none of the timers isn't firing, this cpu isn't doing much */
--	if (!touched && __get_cpu_var(last_irq_sum) == sum) {
--		/*
--		 * Ayiee, looks like this CPU is stuck ...
--		 * wait a few IRQs (5 seconds) before doing the oops ...
--		 */
--		__this_cpu_inc(alert_counter);
--		if (__this_cpu_read(alert_counter) == 5 * nmi_hz)
--			/*
--			 * die_nmi will return ONLY if NOTIFY_STOP happens..
--			 */
--			die_nmi("BUG: NMI Watchdog detected LOCKUP",
--				regs, panic_on_timeout);
--	} else {
--		__get_cpu_var(last_irq_sum) = sum;
--		__this_cpu_write(alert_counter, 0);
--	}
--
--	/* see if the nmi watchdog went off */
--	if (!__get_cpu_var(wd_enabled))
--		return rc;
--	switch (nmi_watchdog) {
--	case NMI_LOCAL_APIC:
--		rc |= lapic_wd_event(nmi_hz);
--		break;
--	case NMI_IO_APIC:
--		/*
--		 * don't know how to accurately check for this.
--		 * just assume it was a watchdog timer interrupt
--		 * This matches the old behaviour.
--		 */
--		rc = 1;
--		break;
--	}
--	return rc;
--}
--
--#ifdef CONFIG_SYSCTL
--
--static void enable_ioapic_nmi_watchdog_single(void *unused)
--{
--	__get_cpu_var(wd_enabled) = 1;
--	atomic_inc(&nmi_active);
--	__acpi_nmi_enable(NULL);
--}
--
--static void enable_ioapic_nmi_watchdog(void)
--{
--	on_each_cpu(enable_ioapic_nmi_watchdog_single, NULL, 1);
+-	on_each_cpu(setup_apic_nmi_watchdog, NULL, 1);
 -	touch_nmi_watchdog();
 -}
 -
--static void disable_ioapic_nmi_watchdog(void)
+-/*
+- * Activate the NMI watchdog via the local APIC.
+- */
+-
+-static unsigned int adjust_for_32bit_ctr(unsigned int hz)
 -{
--	on_each_cpu(stop_apic_nmi_watchdog, NULL, 1);
+-	u64 counter_val;
+-	unsigned int retval = hz;
+-
+-	/*
+-	 * On Intel CPUs with P6/ARCH_PERFMON only 32 bits in the counter
+-	 * are writable, with higher bits sign extending from bit 31.
+-	 * So, we can only program the counter with 31 bit values and
+-	 * 32nd bit should be 1, for 33.. to be 1.
+-	 * Find the appropriate nmi_hz
+-	 */
+-	counter_val = (u64)cpu_khz * 1000;
+-	do_div(counter_val, retval);
+-	if (counter_val > 0x7fffffffULL) {
+-		u64 count = (u64)cpu_khz * 1000;
+-		do_div(count, 0x7fffffffUL);
+-		retval = count + 1;
+-	}
+-	return retval;
 -}
 -
--static int __init setup_unknown_nmi_panic(char *str)
+-static void write_watchdog_counter(unsigned int perfctr_msr,
+-				const char *descr, unsigned nmi_hz)
 -{
--	unknown_nmi_panic = 1;
--	return 1;
+-	u64 count = (u64)cpu_khz * 1000;
+-
+-	do_div(count, nmi_hz);
+-	if (descr)
+-		pr_debug("setting %s to -0x%08Lx\n", descr, count);
+-	wrmsrl(perfctr_msr, 0 - count);
 -}
--__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
 -
--static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
+-static void write_watchdog_counter32(unsigned int perfctr_msr,
+-				const char *descr, unsigned nmi_hz)
 -{
--	unsigned char reason = get_nmi_reason();
--	char buf[64];
+-	u64 count = (u64)cpu_khz * 1000;
 -
--	sprintf(buf, "NMI received for unknown reason %02x\n", reason);
--	die_nmi(buf, regs, 1); /* Always panic here */
--	return 0;
+-	do_div(count, nmi_hz);
+-	if (descr)
+-		pr_debug("setting %s to -0x%08Lx\n", descr, count);
+-	wrmsr(perfctr_msr, (u32)(-count), 0);
 -}
 -
 -/*
-- * proc handler for /proc/sys/kernel/nmi
+- * AMD K7/K8/Family10h/Family11h support.
+- * AMD keeps this interface nicely stable so there is not much variety
 - */
--int proc_nmi_enabled(struct ctl_table *table, int write,
--			void __user *buffer, size_t *length, loff_t *ppos)
--{
--	int old_state;
+-#define K7_EVNTSEL_ENABLE	(1 << 22)
+-#define K7_EVNTSEL_INT		(1 << 20)
+-#define K7_EVNTSEL_OS		(1 << 17)
+-#define K7_EVNTSEL_USR		(1 << 16)
+-#define K7_EVENT_CYCLES_PROCESSOR_IS_RUNNING	0x76
+-#define K7_NMI_EVENT		K7_EVENT_CYCLES_PROCESSOR_IS_RUNNING
 -
--	nmi_watchdog_enabled = (atomic_read(&nmi_active) > 0) ? 1 : 0;
--	old_state = nmi_watchdog_enabled;
--	proc_dointvec(table, write, buffer, length, ppos);
--	if (!!old_state == !!nmi_watchdog_enabled)
+-static int setup_k7_watchdog(unsigned nmi_hz)
+-{
+-	unsigned int perfctr_msr, evntsel_msr;
+-	unsigned int evntsel;
+-	struct nmi_watchdog_ctlblk *wd = &__get_cpu_var(nmi_watchdog_ctlblk);
+-
+-	perfctr_msr = wd_ops->perfctr;
+-	evntsel_msr = wd_ops->evntsel;
+-
+-	wrmsrl(perfctr_msr, 0UL);
+-
+-	evntsel = K7_EVNTSEL_INT
+-		| K7_EVNTSEL_OS
+-		| K7_EVNTSEL_USR
+-		| K7_NMI_EVENT;
+-
+-	/* setup the timer */
+-	wrmsr(evntsel_msr, evntsel, 0);
+-	write_watchdog_counter(perfctr_msr, "K7_PERFCTR0", nmi_hz);
+-
+-	/* initialize the wd struct before enabling */
+-	wd->perfctr_msr = perfctr_msr;
+-	wd->evntsel_msr = evntsel_msr;
+-	wd->cccr_msr = 0;  /* unused */
+-
+-	/* ok, everything is initialized, announce that we're set */
+-	cpu_nmi_set_wd_enabled();
+-
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
+-	evntsel |= K7_EVNTSEL_ENABLE;
+-	wrmsr(evntsel_msr, evntsel, 0);
+-
+-	return 1;
+-}
+-
+-static void single_msr_stop_watchdog(void)
+-{
+-	struct nmi_watchdog_ctlblk *wd = &__get_cpu_var(nmi_watchdog_ctlblk);
+-
+-	wrmsr(wd->evntsel_msr, 0, 0);
+-}
+-
+-static int single_msr_reserve(void)
+-{
+-	if (!reserve_perfctr_nmi(wd_ops->perfctr))
 -		return 0;
 -
--	if (atomic_read(&nmi_active) < 0 || !nmi_watchdog_active()) {
--		printk(KERN_WARNING
--			"NMI watchdog is permanently disabled\n");
--		return -EIO;
+-	if (!reserve_evntsel_nmi(wd_ops->evntsel)) {
+-		release_perfctr_nmi(wd_ops->perfctr);
+-		return 0;
 -	}
--
--	if (nmi_watchdog == NMI_LOCAL_APIC) {
--		if (nmi_watchdog_enabled)
--			enable_lapic_nmi_watchdog();
--		else
--			disable_lapic_nmi_watchdog();
--	} else if (nmi_watchdog == NMI_IO_APIC) {
--		if (nmi_watchdog_enabled)
--			enable_ioapic_nmi_watchdog();
--		else
--			disable_ioapic_nmi_watchdog();
--	} else {
--		printk(KERN_WARNING
--			"NMI watchdog doesn't know what hardware to touch\n");
--		return -EIO;
--	}
--	return 0;
+-	return 1;
 -}
 -
--#endif /* CONFIG_SYSCTL */
--
--int do_nmi_callback(struct pt_regs *regs, int cpu)
+-static void single_msr_unreserve(void)
 -{
--#ifdef CONFIG_SYSCTL
--	if (unknown_nmi_panic)
--		return unknown_nmi_panic_callback(regs, cpu);
+-	release_evntsel_nmi(wd_ops->evntsel);
+-	release_perfctr_nmi(wd_ops->perfctr);
+-}
+-
+-static void __kprobes
+-single_msr_rearm(struct nmi_watchdog_ctlblk *wd, unsigned nmi_hz)
+-{
+-	/* start the cycle over again */
+-	write_watchdog_counter(wd->perfctr_msr, NULL, nmi_hz);
+-}
+-
+-static const struct wd_ops k7_wd_ops = {
+-	.reserve	= single_msr_reserve,
+-	.unreserve	= single_msr_unreserve,
+-	.setup		= setup_k7_watchdog,
+-	.rearm		= single_msr_rearm,
+-	.stop		= single_msr_stop_watchdog,
+-	.perfctr	= MSR_K7_PERFCTR0,
+-	.evntsel	= MSR_K7_EVNTSEL0,
+-	.checkbit	= 1ULL << 47,
+-};
+-
+-/*
+- * Intel Model 6 (PPro+,P2,P3,P-M,Core1)
+- */
+-#define P6_EVNTSEL0_ENABLE	(1 << 22)
+-#define P6_EVNTSEL_INT		(1 << 20)
+-#define P6_EVNTSEL_OS		(1 << 17)
+-#define P6_EVNTSEL_USR		(1 << 16)
+-#define P6_EVENT_CPU_CLOCKS_NOT_HALTED	0x79
+-#define P6_NMI_EVENT		P6_EVENT_CPU_CLOCKS_NOT_HALTED
+-
+-static int setup_p6_watchdog(unsigned nmi_hz)
+-{
+-	unsigned int perfctr_msr, evntsel_msr;
+-	unsigned int evntsel;
+-	struct nmi_watchdog_ctlblk *wd = &__get_cpu_var(nmi_watchdog_ctlblk);
+-
+-	perfctr_msr = wd_ops->perfctr;
+-	evntsel_msr = wd_ops->evntsel;
+-
+-	/* KVM doesn't implement this MSR */
+-	if (wrmsr_safe(perfctr_msr, 0, 0) < 0)
+-		return 0;
+-
+-	evntsel = P6_EVNTSEL_INT
+-		| P6_EVNTSEL_OS
+-		| P6_EVNTSEL_USR
+-		| P6_NMI_EVENT;
+-
+-	/* setup the timer */
+-	wrmsr(evntsel_msr, evntsel, 0);
+-	nmi_hz = adjust_for_32bit_ctr(nmi_hz);
+-	write_watchdog_counter32(perfctr_msr, "P6_PERFCTR0", nmi_hz);
+-
+-	/* initialize the wd struct before enabling */
+-	wd->perfctr_msr = perfctr_msr;
+-	wd->evntsel_msr = evntsel_msr;
+-	wd->cccr_msr = 0;  /* unused */
+-
+-	/* ok, everything is initialized, announce that we're set */
+-	cpu_nmi_set_wd_enabled();
+-
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
+-	evntsel |= P6_EVNTSEL0_ENABLE;
+-	wrmsr(evntsel_msr, evntsel, 0);
+-
+-	return 1;
+-}
+-
+-static void __kprobes p6_rearm(struct nmi_watchdog_ctlblk *wd, unsigned nmi_hz)
+-{
+-	/*
+-	 * P6 based Pentium M need to re-unmask
+-	 * the apic vector but it doesn't hurt
+-	 * other P6 variant.
+-	 * ArchPerfom/Core Duo also needs this
+-	 */
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
+-
+-	/* P6/ARCH_PERFMON has 32 bit counter write */
+-	write_watchdog_counter32(wd->perfctr_msr, NULL, nmi_hz);
+-}
+-
+-static const struct wd_ops p6_wd_ops = {
+-	.reserve	= single_msr_reserve,
+-	.unreserve	= single_msr_unreserve,
+-	.setup		= setup_p6_watchdog,
+-	.rearm		= p6_rearm,
+-	.stop		= single_msr_stop_watchdog,
+-	.perfctr	= MSR_P6_PERFCTR0,
+-	.evntsel	= MSR_P6_EVNTSEL0,
+-	.checkbit	= 1ULL << 39,
+-};
+-
+-/*
+- * Intel P4 performance counters.
+- * By far the most complicated of all.
+- */
+-#define MSR_P4_MISC_ENABLE_PERF_AVAIL	(1 << 7)
+-#define P4_ESCR_EVENT_SELECT(N)	((N) << 25)
+-#define P4_ESCR_OS		(1 << 3)
+-#define P4_ESCR_USR		(1 << 2)
+-#define P4_CCCR_OVF_PMI0	(1 << 26)
+-#define P4_CCCR_OVF_PMI1	(1 << 27)
+-#define P4_CCCR_THRESHOLD(N)	((N) << 20)
+-#define P4_CCCR_COMPLEMENT	(1 << 19)
+-#define P4_CCCR_COMPARE		(1 << 18)
+-#define P4_CCCR_REQUIRED	(3 << 16)
+-#define P4_CCCR_ESCR_SELECT(N)	((N) << 13)
+-#define P4_CCCR_ENABLE		(1 << 12)
+-#define P4_CCCR_OVF 		(1 << 31)
+-
+-#define P4_CONTROLS 18
+-static unsigned int p4_controls[18] = {
+-	MSR_P4_BPU_CCCR0,
+-	MSR_P4_BPU_CCCR1,
+-	MSR_P4_BPU_CCCR2,
+-	MSR_P4_BPU_CCCR3,
+-	MSR_P4_MS_CCCR0,
+-	MSR_P4_MS_CCCR1,
+-	MSR_P4_MS_CCCR2,
+-	MSR_P4_MS_CCCR3,
+-	MSR_P4_FLAME_CCCR0,
+-	MSR_P4_FLAME_CCCR1,
+-	MSR_P4_FLAME_CCCR2,
+-	MSR_P4_FLAME_CCCR3,
+-	MSR_P4_IQ_CCCR0,
+-	MSR_P4_IQ_CCCR1,
+-	MSR_P4_IQ_CCCR2,
+-	MSR_P4_IQ_CCCR3,
+-	MSR_P4_IQ_CCCR4,
+-	MSR_P4_IQ_CCCR5,
+-};
+-/*
+- * Set up IQ_COUNTER0 to behave like a clock, by having IQ_CCCR0 filter
+- * CRU_ESCR0 (with any non-null event selector) through a complemented
+- * max threshold. [IA32-Vol3, Section 14.9.9]
+- */
+-static int setup_p4_watchdog(unsigned nmi_hz)
+-{
+-	unsigned int perfctr_msr, evntsel_msr, cccr_msr;
+-	unsigned int evntsel, cccr_val;
+-	unsigned int misc_enable, dummy;
+-	unsigned int ht_num;
+-	struct nmi_watchdog_ctlblk *wd = &__get_cpu_var(nmi_watchdog_ctlblk);
+-
+-	rdmsr(MSR_IA32_MISC_ENABLE, misc_enable, dummy);
+-	if (!(misc_enable & MSR_P4_MISC_ENABLE_PERF_AVAIL))
+-		return 0;
+-
+-#ifdef CONFIG_SMP
+-	/* detect which hyperthread we are on */
+-	if (smp_num_siblings == 2) {
+-		unsigned int ebx, apicid;
+-
+-		ebx = cpuid_ebx(1);
+-		apicid = (ebx >> 24) & 0xff;
+-		ht_num = apicid & 1;
+-	} else
 -#endif
+-		ht_num = 0;
+-
+-	/*
+-	 * performance counters are shared resources
+-	 * assign each hyperthread its own set
+-	 * (re-use the ESCR0 register, seems safe
+-	 * and keeps the cccr_val the same)
+-	 */
+-	if (!ht_num) {
+-		/* logical cpu 0 */
+-		perfctr_msr = MSR_P4_IQ_PERFCTR0;
+-		evntsel_msr = MSR_P4_CRU_ESCR0;
+-		cccr_msr = MSR_P4_IQ_CCCR0;
+-		cccr_val = P4_CCCR_OVF_PMI0 | P4_CCCR_ESCR_SELECT(4);
+-
+-		/*
+-		 * If we're on the kdump kernel or other situation, we may
+-		 * still have other performance counter registers set to
+-		 * interrupt and they'll keep interrupting forever because
+-		 * of the P4_CCCR_OVF quirk. So we need to ACK all the
+-		 * pending interrupts and disable all the registers here,
+-		 * before reenabling the NMI delivery. Refer to p4_rearm()
+-		 * about the P4_CCCR_OVF quirk.
+-		 */
+-		if (reset_devices) {
+-			unsigned int low, high;
+-			int i;
+-
+-			for (i = 0; i < P4_CONTROLS; i++) {
+-				rdmsr(p4_controls[i], low, high);
+-				low &= ~(P4_CCCR_ENABLE | P4_CCCR_OVF);
+-				wrmsr(p4_controls[i], low, high);
+-			}
+-		}
+-	} else {
+-		/* logical cpu 1 */
+-		perfctr_msr = MSR_P4_IQ_PERFCTR1;
+-		evntsel_msr = MSR_P4_CRU_ESCR0;
+-		cccr_msr = MSR_P4_IQ_CCCR1;
+-
+-		/* Pentium 4 D processors don't support P4_CCCR_OVF_PMI1 */
+-		if (boot_cpu_data.x86_model == 4 && boot_cpu_data.x86_mask == 4)
+-			cccr_val = P4_CCCR_OVF_PMI0;
+-		else
+-			cccr_val = P4_CCCR_OVF_PMI1;
+-		cccr_val |= P4_CCCR_ESCR_SELECT(4);
+-	}
+-
+-	evntsel = P4_ESCR_EVENT_SELECT(0x3F)
+-		| P4_ESCR_OS
+-		| P4_ESCR_USR;
+-
+-	cccr_val |= P4_CCCR_THRESHOLD(15)
+-		 | P4_CCCR_COMPLEMENT
+-		 | P4_CCCR_COMPARE
+-		 | P4_CCCR_REQUIRED;
+-
+-	wrmsr(evntsel_msr, evntsel, 0);
+-	wrmsr(cccr_msr, cccr_val, 0);
+-	write_watchdog_counter(perfctr_msr, "P4_IQ_COUNTER0", nmi_hz);
+-
+-	wd->perfctr_msr = perfctr_msr;
+-	wd->evntsel_msr = evntsel_msr;
+-	wd->cccr_msr = cccr_msr;
+-
+-	/* ok, everything is initialized, announce that we're set */
+-	cpu_nmi_set_wd_enabled();
+-
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
+-	cccr_val |= P4_CCCR_ENABLE;
+-	wrmsr(cccr_msr, cccr_val, 0);
+-	return 1;
+-}
+-
+-static void stop_p4_watchdog(void)
+-{
+-	struct nmi_watchdog_ctlblk *wd = &__get_cpu_var(nmi_watchdog_ctlblk);
+-	wrmsr(wd->cccr_msr, 0, 0);
+-	wrmsr(wd->evntsel_msr, 0, 0);
+-}
+-
+-static int p4_reserve(void)
+-{
+-	if (!reserve_perfctr_nmi(MSR_P4_IQ_PERFCTR0))
+-		return 0;
+-#ifdef CONFIG_SMP
+-	if (smp_num_siblings > 1 && !reserve_perfctr_nmi(MSR_P4_IQ_PERFCTR1))
+-		goto fail1;
+-#endif
+-	if (!reserve_evntsel_nmi(MSR_P4_CRU_ESCR0))
+-		goto fail2;
+-	/* RED-PEN why is ESCR1 not reserved here? */
+-	return 1;
+- fail2:
+-#ifdef CONFIG_SMP
+-	if (smp_num_siblings > 1)
+-		release_perfctr_nmi(MSR_P4_IQ_PERFCTR1);
+- fail1:
+-#endif
+-	release_perfctr_nmi(MSR_P4_IQ_PERFCTR0);
 -	return 0;
 -}
 -
--void arch_trigger_all_cpu_backtrace(void)
+-static void p4_unreserve(void)
 -{
--	int i;
+-#ifdef CONFIG_SMP
+-	if (smp_num_siblings > 1)
+-		release_perfctr_nmi(MSR_P4_IQ_PERFCTR1);
+-#endif
+-	release_evntsel_nmi(MSR_P4_CRU_ESCR0);
+-	release_perfctr_nmi(MSR_P4_IQ_PERFCTR0);
+-}
 -
--	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
+-static void __kprobes p4_rearm(struct nmi_watchdog_ctlblk *wd, unsigned nmi_hz)
+-{
+-	unsigned dummy;
+-	/*
+-	 * P4 quirks:
+-	 * - An overflown perfctr will assert its interrupt
+-	 *   until the OVF flag in its CCCR is cleared.
+-	 * - LVTPC is masked on interrupt and must be
+-	 *   unmasked by the LVTPC handler.
+-	 */
+-	rdmsrl(wd->cccr_msr, dummy);
+-	dummy &= ~P4_CCCR_OVF;
+-	wrmsrl(wd->cccr_msr, dummy);
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
+-	/* start the cycle over again */
+-	write_watchdog_counter(wd->perfctr_msr, NULL, nmi_hz);
+-}
 -
--	printk(KERN_INFO "sending NMI to all CPUs:\n");
--	apic->send_IPI_all(NMI_VECTOR);
+-static const struct wd_ops p4_wd_ops = {
+-	.reserve	= p4_reserve,
+-	.unreserve	= p4_unreserve,
+-	.setup		= setup_p4_watchdog,
+-	.rearm		= p4_rearm,
+-	.stop		= stop_p4_watchdog,
+-	/* RED-PEN this is wrong for the other sibling */
+-	.perfctr	= MSR_P4_BPU_PERFCTR0,
+-	.evntsel	= MSR_P4_BSU_ESCR0,
+-	.checkbit	= 1ULL << 39,
+-};
 -
--	/* Wait for up to 10 seconds for all CPUs to do the backtrace */
--	for (i = 0; i < 10 * 1000; i++) {
--		if (cpumask_empty(to_cpumask(backtrace_mask)))
+-/*
+- * Watchdog using the Intel architected PerfMon.
+- * Used for Core2 and hopefully all future Intel CPUs.
+- */
+-#define ARCH_PERFMON_NMI_EVENT_SEL	ARCH_PERFMON_UNHALTED_CORE_CYCLES_SEL
+-#define ARCH_PERFMON_NMI_EVENT_UMASK	ARCH_PERFMON_UNHALTED_CORE_CYCLES_UMASK
+-
+-static struct wd_ops intel_arch_wd_ops;
+-
+-static int setup_intel_arch_watchdog(unsigned nmi_hz)
+-{
+-	unsigned int ebx;
+-	union cpuid10_eax eax;
+-	unsigned int unused;
+-	unsigned int perfctr_msr, evntsel_msr;
+-	unsigned int evntsel;
+-	struct nmi_watchdog_ctlblk *wd = &__get_cpu_var(nmi_watchdog_ctlblk);
+-
+-	/*
+-	 * Check whether the Architectural PerfMon supports
+-	 * Unhalted Core Cycles Event or not.
+-	 * NOTE: Corresponding bit = 0 in ebx indicates event present.
+-	 */
+-	cpuid(10, &(eax.full), &ebx, &unused, &unused);
+-	if ((eax.split.mask_length <
+-			(ARCH_PERFMON_UNHALTED_CORE_CYCLES_INDEX+1)) ||
+-	    (ebx & ARCH_PERFMON_UNHALTED_CORE_CYCLES_PRESENT))
+-		return 0;
+-
+-	perfctr_msr = wd_ops->perfctr;
+-	evntsel_msr = wd_ops->evntsel;
+-
+-	wrmsrl(perfctr_msr, 0UL);
+-
+-	evntsel = ARCH_PERFMON_EVENTSEL_INT
+-		| ARCH_PERFMON_EVENTSEL_OS
+-		| ARCH_PERFMON_EVENTSEL_USR
+-		| ARCH_PERFMON_NMI_EVENT_SEL
+-		| ARCH_PERFMON_NMI_EVENT_UMASK;
+-
+-	/* setup the timer */
+-	wrmsr(evntsel_msr, evntsel, 0);
+-	nmi_hz = adjust_for_32bit_ctr(nmi_hz);
+-	write_watchdog_counter32(perfctr_msr, "INTEL_ARCH_PERFCTR0", nmi_hz);
+-
+-	wd->perfctr_msr = perfctr_msr;
+-	wd->evntsel_msr = evntsel_msr;
+-	wd->cccr_msr = 0;  /* unused */
+-
+-	/* ok, everything is initialized, announce that we're set */
+-	cpu_nmi_set_wd_enabled();
+-
+-	apic_write(APIC_LVTPC, APIC_DM_NMI);
+-	evntsel |= ARCH_PERFMON_EVENTSEL_ENABLE;
+-	wrmsr(evntsel_msr, evntsel, 0);
+-	intel_arch_wd_ops.checkbit = 1ULL << (eax.split.bit_width - 1);
+-	return 1;
+-}
+-
+-static struct wd_ops intel_arch_wd_ops __read_mostly = {
+-	.reserve	= single_msr_reserve,
+-	.unreserve	= single_msr_unreserve,
+-	.setup		= setup_intel_arch_watchdog,
+-	.rearm		= p6_rearm,
+-	.stop		= single_msr_stop_watchdog,
+-	.perfctr	= MSR_ARCH_PERFMON_PERFCTR1,
+-	.evntsel	= MSR_ARCH_PERFMON_EVENTSEL1,
+-};
+-
+-static void probe_nmi_watchdog(void)
+-{
+-	switch (boot_cpu_data.x86_vendor) {
+-	case X86_VENDOR_AMD:
+-		if (boot_cpu_data.x86 == 6 ||
+-		    (boot_cpu_data.x86 >= 0xf && boot_cpu_data.x86 <= 0x15))
+-			wd_ops = &k7_wd_ops;
+-		return;
+-	case X86_VENDOR_INTEL:
+-		/* Work around where perfctr1 doesn't have a working enable
+-		 * bit as described in the following errata:
+-		 * AE49 Core Duo and Intel Core Solo 65 nm
+-		 * AN49 Intel Pentium Dual-Core
+-		 * AF49 Dual-Core Intel Xeon Processor LV
+-		 */
+-		if ((boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 14) ||
+-		    ((boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 15 &&
+-		     boot_cpu_data.x86_mask == 4))) {
+-			intel_arch_wd_ops.perfctr = MSR_ARCH_PERFMON_PERFCTR0;
+-			intel_arch_wd_ops.evntsel = MSR_ARCH_PERFMON_EVENTSEL0;
+-		}
+-		if (cpu_has(&boot_cpu_data, X86_FEATURE_ARCH_PERFMON)) {
+-			wd_ops = &intel_arch_wd_ops;
 -			break;
--		mdelay(1);
+-		}
+-		switch (boot_cpu_data.x86) {
+-		case 6:
+-			if (boot_cpu_data.x86_model > 13)
+-				return;
+-
+-			wd_ops = &p6_wd_ops;
+-			break;
+-		case 15:
+-			wd_ops = &p4_wd_ops;
+-			break;
+-		default:
+-			return;
+-		}
+-		break;
 -	}
 -}
+-
+-/* Interface to nmi.c */
+-
+-int lapic_watchdog_init(unsigned nmi_hz)
+-{
+-	if (!wd_ops) {
+-		probe_nmi_watchdog();
+-		if (!wd_ops) {
+-			printk(KERN_INFO "NMI watchdog: CPU not supported\n");
+-			return -1;
+-		}
+-
+-		if (!wd_ops->reserve()) {
+-			printk(KERN_ERR
+-				"NMI watchdog: cannot reserve perfctrs\n");
+-			return -1;
+-		}
+-	}
+-
+-	if (!(wd_ops->setup(nmi_hz))) {
+-		printk(KERN_ERR "Cannot setup NMI watchdog on CPU %d\n",
+-		       raw_smp_processor_id());
+-		return -1;
+-	}
+-
+-	return 0;
+-}
+-
+-void lapic_watchdog_stop(void)
+-{
+-	if (wd_ops)
+-		wd_ops->stop();
+-}
+-
+-unsigned lapic_adjust_nmi_hz(unsigned hz)
+-{
+-	struct nmi_watchdog_ctlblk *wd = &__get_cpu_var(nmi_watchdog_ctlblk);
+-	if (wd->perfctr_msr == MSR_P6_PERFCTR0 ||
+-	    wd->perfctr_msr == MSR_ARCH_PERFMON_PERFCTR1)
+-		hz = adjust_for_32bit_ctr(hz);
+-	return hz;
+-}
+-
+-int __kprobes lapic_wd_event(unsigned nmi_hz)
+-{
+-	struct nmi_watchdog_ctlblk *wd = &__get_cpu_var(nmi_watchdog_ctlblk);
+-	u64 ctr;
+-
+-	rdmsrl(wd->perfctr_msr, ctr);
+-	if (ctr & wd_ops->checkbit) /* perfctr still running? */
+-		return 0;
+-
+-	wd_ops->rearm(wd, nmi_hz);
+-	return 1;
+-}
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 083e99d..f0a0624 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -316,12 +316,6 @@ notrace static void __cpuinit start_secondary(void *unused)
+ 	 */
+ 	check_tsc_sync_target();
+ 
+-	if (nmi_watchdog == NMI_IO_APIC) {
+-		legacy_pic->mask(0);
+-		enable_NMI_through_LVT0();
+-		legacy_pic->unmask(0);
+-	}
+-
+ 	/* This must be done before setting cpu_online_mask */
+ 	set_cpu_sibling_map(raw_smp_processor_id());
+ 	wmb();
+@@ -1061,8 +1055,6 @@ static int __init smp_sanity_check(unsigned max_cpus)
+ 		printk(KERN_INFO "SMP mode deactivated.\n");
+ 		smpboot_clear_io_apic();
+ 
+-		localise_nmi_watchdog();
+-
+ 		connect_bsp_APIC();
+ 		setup_local_APIC();
+ 		end_local_APIC_setup();
+@@ -1196,7 +1188,6 @@ void __init native_smp_cpus_done(unsigned int max_cpus)
+ #ifdef CONFIG_X86_IO_APIC
+ 	setup_ioapic_dest();
+ #endif
+-	check_nmi_watchdog();
+ 	mtrr_aps_init();
+ }
+ 
+@@ -1341,8 +1332,6 @@ int native_cpu_disable(void)
+ 	if (cpu == 0)
+ 		return -EBUSY;
+ 
+-	if (nmi_watchdog == NMI_LOCAL_APIC)
+-		stop_apic_nmi_watchdog(NULL);
+ 	clear_local_APIC();
+ 
+ 	cpu_disable_common();
+diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
+index fb5cc5e1..25a28a2 100644
+--- a/arch/x86/kernel/time.c
++++ b/arch/x86/kernel/time.c
+@@ -22,10 +22,6 @@
+ #include <asm/hpet.h>
+ #include <asm/time.h>
+ 
+-#if defined(CONFIG_X86_32) && defined(CONFIG_X86_IO_APIC)
+-int timer_ack;
+-#endif
+-
+ #ifdef CONFIG_X86_64
+ volatile unsigned long __jiffies __section_jiffies = INITIAL_JIFFIES;
+ #endif
+@@ -63,20 +59,6 @@ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ 	/* Keep nmi watchdog up to date */
+ 	inc_irq_stat(irq0_irqs);
+ 
+-	/* Optimized out for !IO_APIC and x86_64 */
+-	if (timer_ack) {
+-		/*
+-		 * Subtle, when I/O APICs are used we have to ack timer IRQ
+-		 * manually to deassert NMI lines for the watchdog if run
+-		 * on an 82489DX-based system.
+-		 */
+-		raw_spin_lock(&i8259A_lock);
+-		outb(0x0c, PIC_MASTER_OCW3);
+-		/* Ack the IRQ; AEOI will end it automatically. */
+-		inb(PIC_MASTER_POLL);
+-		raw_spin_unlock(&i8259A_lock);
+-	}
+-
+ 	global_clock_event->event_handler(global_clock_event);
+ 
+ 	/* MCA bus quirk: Acknowledge irq0 by setting bit 7 in port 0x61 */
 diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index cb838ca..db30d9c 100644
+index db30d9c..f02c179 100644
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -398,15 +398,6 @@ static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- 							== NOTIFY_STOP)
- 			return;
+@@ -437,14 +437,12 @@ do_nmi(struct pt_regs *regs, long error_code)
  
--#ifndef CONFIG_LOCKUP_DETECTOR
--		/*
--		 * Ok, so this is none of the documented NMI sources,
--		 * so it must be the NMI watchdog.
--		 */
--		if (nmi_watchdog_tick(regs, reason))
--			return;
--		if (!do_nmi_callback(regs, cpu))
--#endif /* !CONFIG_LOCKUP_DETECTOR */
- 			unknown_nmi_error(reason, regs);
+ void stop_nmi(void)
+ {
+-	acpi_nmi_disable();
+ 	ignore_nmis++;
+ }
+ 
+ void restart_nmi(void)
+ {
+ 	ignore_nmis--;
+-	acpi_nmi_enable();
+ }
+ 
+ /* May run on IST stack. */
+diff --git a/arch/x86/oprofile/nmi_timer_int.c b/arch/x86/oprofile/nmi_timer_int.c
+index e3ecb71..0636dd9 100644
+--- a/arch/x86/oprofile/nmi_timer_int.c
++++ b/arch/x86/oprofile/nmi_timer_int.c
+@@ -58,9 +58,6 @@ static void timer_stop(void)
+ 
+ int __init op_nmi_timer_init(struct oprofile_operations *ops)
+ {
+-	if ((nmi_watchdog != NMI_IO_APIC) || (atomic_read(&nmi_active) <= 0))
+-		return -ENODEV;
+-
+ 	ops->start = timer_start;
+ 	ops->stop = timer_stop;
+ 	ops->cpu_type = "timer";
+diff --git a/drivers/acpi/acpica/nsinit.c b/drivers/acpi/acpica/nsinit.c
+index 660a272..0cac7ec 100644
+--- a/drivers/acpi/acpica/nsinit.c
++++ b/drivers/acpi/acpica/nsinit.c
+@@ -577,9 +577,7 @@ acpi_ns_init_one_device(acpi_handle obj_handle,
+ 	 * as possible (without an NMI being received in the middle of
+ 	 * this) - so disable NMIs and initialize the device:
+ 	 */
+-	acpi_nmi_disable();
+ 	status = acpi_ns_evaluate(info);
+-	acpi_nmi_enable();
+ 
+ 	if (ACPI_SUCCESS(status)) {
+ 		walk_info->num_INI++;
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index 3d77116..c19f4a2 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -649,12 +649,7 @@ static void __devinit hpwdt_check_nmi_decoding(struct pci_dev *dev)
+ 	 * If nmi_watchdog is turned off then we can turn on
+ 	 * our nmi decoding capability.
+ 	 */
+-	if (!nmi_watchdog_active())
+-		hpwdt_nmi_decoding = 1;
+-	else
+-		dev_warn(&dev->dev, "NMI decoding is disabled. To enable this "
+-			"functionality you must reboot with nmi_watchdog=0 "
+-			"and load the hpwdt driver with priority=1.\n");
++	hpwdt_nmi_decoding = 1;
+ }
  #else
- 		unknown_nmi_error(reason, regs);
+ static void __devinit hpwdt_check_nmi_decoding(struct pci_dev *dev)
 diff --git a/include/linux/nmi.h b/include/linux/nmi.h
-index 06aab5e..0cb3e5c 100644
+index 0cb3e5c..1c451e6 100644
 --- a/include/linux/nmi.h
 +++ b/include/linux/nmi.h
-@@ -16,10 +16,7 @@
-  */
- #ifdef ARCH_HAS_NMI_WATCHDOG
- #include <asm/nmi.h>
--extern void touch_nmi_watchdog(void);
--extern void acpi_nmi_disable(void);
--extern void acpi_nmi_enable(void);
--#else
-+#endif
- #ifndef CONFIG_HARDLOCKUP_DETECTOR
- static inline void touch_nmi_watchdog(void)
- {
-@@ -30,7 +27,6 @@ extern void touch_nmi_watchdog(void);
+@@ -25,8 +25,6 @@ static inline void touch_nmi_watchdog(void)
+ #else
+ extern void touch_nmi_watchdog(void);
  #endif
- static inline void acpi_nmi_disable(void) { }
- static inline void acpi_nmi_enable(void) { }
--#endif
+-static inline void acpi_nmi_disable(void) { }
+-static inline void acpi_nmi_enable(void) { }
  
  /*
   * Create trigger_all_cpu_backtrace() out of the arch-provided
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index b65bf63..ce33e2a 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -746,22 +746,6 @@ static struct ctl_table kern_table[] = {
- 		.extra2		= &one,
- 	},
- #endif
--#if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86) && !defined(CONFIG_LOCKUP_DETECTOR)
--	{
--		.procname       = "unknown_nmi_panic",
--		.data           = &unknown_nmi_panic,
--		.maxlen         = sizeof (int),
--		.mode           = 0644,
--		.proc_handler   = proc_dointvec,
--	},
--	{
--		.procname       = "nmi_watchdog",
--		.data           = &nmi_watchdog_enabled,
--		.maxlen         = sizeof (int),
--		.mode           = 0644,
--		.proc_handler   = proc_nmi_enabled,
--	},
--#endif
- #if defined(CONFIG_X86)
- 	{
- 		.procname	= "panic_on_unrecovered_nmi",
