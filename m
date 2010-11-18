@@ -1,431 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab0KRBSL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 20:18:11 -0500
-Received: from mga01.intel.com ([192.55.52.88]:22953 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751962Ab0KRBSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 20:18:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,214,1288594800"; 
-   d="scan'208";a="627874261"
-Message-ID: <4CE47ED0.7080901@linux.intel.com>
-Date: Wed, 17 Nov 2010 17:18:08 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Pekka Enberg <penberg@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [patch] trace: Add user-space event tracing/injection
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6> <4CE38C53.8090606@kernel.org> <20101117120740.GA24972@elte.hu>
-In-Reply-To: <20101117120740.GA24972@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1751856Ab0KRBYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 20:24:08 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54871 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751210Ab0KRBYG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 20:24:06 -0500
+Date: Wed, 17 Nov 2010 17:23:31 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: tadeusz.struk@intel.com, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, aidan.o.mahony@intel.com,
+        gabriele.paoloni@intel.com, adrian.hoban@intel.com
+Subject: Re: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
+Message-Id: <20101117172331.3bbec734.akpm@linux-foundation.org>
+In-Reply-To: <20101104190405.GA2501@gondor.apana.org.au>
+References: <4CC9946D.mailLH511GU0C@intel.com>
+	<20101104190405.GA2501@gondor.apana.org.au>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2010 04:07 AM, Ingo Molnar wrote:
->
-> * Pekka Enberg<penberg@kernel.org>  wrote:
->
->> (Trimming CC for sanity.)
->
-> [ Added back Linus (in case he wants to object to the new prctl()) and lkml. ]
->
->> On 11/16/10 11:04 PM, Thomas Gleixner wrote:
->>> 'trace' is our shot at improving the situation: it aims at providing a
->>> simple to use and straightforward tracing tool based on the perf
->>> infrastructure and on the well-known perf profiling workflow:
->>>
->>>     trace record firefox          # trace firefox and all child tasks,
->>>                                     put it into trace.data
->>>
->>>     trace summary                 # show quick overview of the trace,
->>>                                     based on trace.data
->>>
->>>     trace report                  # detailed traces, based on trace.data
->>
->> Nice work guys!
->>
->> Does this concept lend itself to tracing latencies in userspace applications that
->> run in virtual machines (e.g. the Java kind)? I'm of course interested in this
->> because of Jato [1] where bunch of interesting things can cause jitter: JIT
->> compilation, GC, kernel, and the actual application doing something (in either
->> native code or JIT'd code). It's important to be able to measure where "slowness"
->> to desktop applications and certain class of server applications comes from to be
->> able to improve things.
->
-> Makes quite a bit of sense.
->
-> How about the attached patch? It works fine with the simple testcase included in the
-> changelog. There's a common-sense limit on the message size - but otherwise it adds
-> support for apps to generate a free-form string trace event.
+On Thu, 4 Nov 2010 14:04:05 -0500
+Herbert Xu <herbert@gondor.hengli.com.au> wrote:
+
+> On Thu, Oct 28, 2010 at 04:19:09PM +0100, tadeusz.struk@intel.com wrote:
+> > Hi Herbert,
+> >    We have reworked the assembly to use macros instead of the new aesni instructions.
+> 
+> Both applied.  Thanks for your efforts!
+
+Whatever's in today's linux-next is a big fail with gas-2.16.1.
+
+Which was entirely predictable!  How often has this happened recently??
 
 
-Ideally I would like to see something just like trace_printf() without 
-having to define it myself in each of my testcases. I only see a few 
-ways of doing that, none of which are particularly nice:
+arch/x86/crypto/aesni-intel_asm.S: Assembler messages:
+arch/x86/crypto/aesni-intel_asm.S:834: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm13'
+arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm5'
+arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:866: Error: bad expression
+arch/x86/crypto/aesni-intel_asm.S:866: Error: junk at end of line, first unrecognized character is `0'
+arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm6'
+arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm7'
+arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:866: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm6'
+arch/x86/crypto/aesni-intel_asm.S:866: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm7'
+arch/x86/crypto/aesni-intel_asm.S:866: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:866: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:871: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm6'
+arch/x86/crypto/aesni-intel_asm.S:871: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:871: Error: bad expression
+arch/x86/crypto/aesni-intel_asm.S:871: Error: junk at end of line, first unrecognized character is `0'
+arch/x86/crypto/aesni-intel_asm.S:871: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm7'
+arch/x86/crypto/aesni-intel_asm.S:871: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:871: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:871: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm7'
+arch/x86/crypto/aesni-intel_asm.S:871: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:871: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:871: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:871: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:871: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:871: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:876: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm7'
+arch/x86/crypto/aesni-intel_asm.S:876: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:876: Error: bad expression
+arch/x86/crypto/aesni-intel_asm.S:876: Error: junk at end of line, first unrecognized character is `0'
+arch/x86/crypto/aesni-intel_asm.S:876: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:876: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:876: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:876: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:876: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:876: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:876: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:881: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:881: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:881: Error: bad expression
+arch/x86/crypto/aesni-intel_asm.S:881: Error: junk at end of line, first unrecognized character is `0'
+arch/x86/crypto/aesni-intel_asm.S:881: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:881: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:881: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:881: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:881: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:881: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:881: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:889: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:889: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:889: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:889: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:889: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:889: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:889: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:889: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:889: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:889: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:889: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:889: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:905: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:915: Error: no such instruction: `pshufb %xmm2,%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:922: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:930: Error: suffix or operands invalid for `movq'
+arch/x86/crypto/aesni-intel_asm.S:936: Error: suffix or operands invalid for `movq'
+arch/x86/crypto/aesni-intel_asm.S:949: Error: suffix or operands invalid for `movq'
+arch/x86/crypto/aesni-intel_asm.S:955: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:968: Error: suffix or operands invalid for `movq'
+arch/x86/crypto/aesni-intel_asm.S:972: Error: suffix or operands invalid for `movq'
+arch/x86/crypto/aesni-intel_asm.S:1084: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm13'
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm5'
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: bad expression
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: junk at end of line, first unrecognized character is `0'
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm6'
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm7'
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm6'
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm7'
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:1115: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm6'
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: bad expression
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: junk at end of line, first unrecognized character is `0'
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm7'
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm7'
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:1120: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:1125: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm7'
+arch/x86/crypto/aesni-intel_asm.S:1125: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:1125: Error: bad expression
+arch/x86/crypto/aesni-intel_asm.S:1125: Error: junk at end of line, first unrecognized character is `0'
+arch/x86/crypto/aesni-intel_asm.S:1125: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:1125: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:1125: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:1125: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:1125: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:1125: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:1125: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:1130: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:1130: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:1130: Error: bad expression
+arch/x86/crypto/aesni-intel_asm.S:1130: Error: junk at end of line, first unrecognized character is `0'
+arch/x86/crypto/aesni-intel_asm.S:1130: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:1130: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:1130: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:1130: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:1130: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:1130: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:1130: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:15: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:1141: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:1141: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:1141: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:1141: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:1141: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:1141: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:1141: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:1141: Error: non-constant expression in ".if" statement
+arch/x86/crypto/aesni-intel_asm.S:1141: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:1141: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm2'
+arch/x86/crypto/aesni-intel_asm.S:1141: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm3'
+arch/x86/crypto/aesni-intel_asm.S:1141: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm4'
+arch/x86/crypto/aesni-intel_asm.S:1156: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:1166: Error: no such instruction: `pshufb %xmm2,%xmm1'
+arch/x86/crypto/aesni-intel_asm.S:1172: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:1178: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm0'
+arch/x86/crypto/aesni-intel_asm.S:1182: Error: suffix or operands invalid for `movq'
+arch/x86/crypto/aesni-intel_asm.S:1188: Error: suffix or operands invalid for `movq'
+arch/x86/crypto/aesni-intel_asm.S:1201: Error: suffix or operands invalid for `movq'
+arch/x86/crypto/aesni-intel_asm.S:1208: Error: no such instruction: `pshufb SHUF_MASK(%rip),%xmm8'
+arch/x86/crypto/aesni-intel_asm.S:1221: Error: suffix or operands invalid for `movq'
+arch/x86/crypto/aesni-intel_asm.S:1225: Error: suffix or operands invalid for `movq'
+make[2]: *** [arch/x86/crypto/aesni-intel_asm.o] Error 1
+make[1]: *** [arch/x86/crypto] Error 2
+make: *** [arch/x86] Error 2
 
-# Perf trace wrappers in linux header files
-#include <linux/perf-trace.h>
-   - requires working with glibc for headers installation
-   - could just be something like trace_printf() (that Ingo posted in
-     another mail in this thread) in the header file itself, no need for
-     a library.
-
-
-# Perf vDSO and /sys exported headers
--lperf -I/sys/kernel/include/perf/
-#include <perf-trace.h>
-   - introduces including from and linking to the kernel to applications
-     (not just glibc)
-   - introduces kernel /sys exported headers (ewe)
-
-
-# Limited variable count
-Use the max syscall argument count (7?) to allow for an opcode, format 
-string, and at most 5 arguments. This isn't very pretty in the user code 
-and I'd probably rather wrap the prctl version below than use this idea.
-
-# char[] pointer argument
-This requires the conversion of all arguments to strings and rather 
-defeats the purpose of having the kernel do the formatting.
-
-
-Are there any other tricks I'm not thinking of which we could use to 
-implement:
-
-int trace_printf(const char *format, ...);
-
-
-The only other approach I can think of is a per process file descriptor 
-which could be used with fprintf. Something like 
-/proc/$PID/trace_marker. That wouldn't require any new headers or vDSO, 
-but it would add to the vfs, which Ingo objected to. However, placing it 
-in proc makes it feasible to access even in chroot environments. Leaving 
-the existing prctl implementation would provide a bare bones fallback 
-when needed.
-
-Thoughts?
-
-Thanks,
-
-Darren
-
->
-> Thanks,
->
-> 	Ingo
->
-> ---------------------------------->
-> Subject: trace: Add user-space event tracing/injection
-> From: Ingo Molnar<mingo@elte.hu>
-> Date: Wed Nov 17 10:11:53 CET 2010
->
-> This feature (suggested by Darren Hart and Pekka Engberg) allows user-space
-> programs to print trace events in a very simple and self-contained way:
->
->   #include<sys/prctl.h>
->   #include<string.h>
->
->   #define PR_TASK_PERF_USER_TRACE 35
->
->   int main(void)
->   {
->           char *msg = "Hello World!\n";
->
->           prctl(PR_TASK_PERF_USER_TRACE, msg, strlen(msg));
->
->           return 0;
->   }
->
-> These show up in 'trace' output as:
->
->   $ trace report
->   #
->   # trace events of 'sleep 1':
->   #
->          testit/ 6006 ( 0.002 ms):<"Hello World!">
->          testit/ 6006 ( 0.002 ms):<"Hello World!">
->
-> Suggested-by: Darren Hart<dvhart@linux.intel.com>
-> Suggested-by: Pekka Enberg<penberg@kernel.org>
-> Signed-off-by: Ingo Molnar<mingo@elte.hu>
-> ---
->   include/linux/prctl.h       |    2 ++
->   include/trace/events/user.h |   32 ++++++++++++++++++++++++++++++++
->   kernel/sys.c                |   23 +++++++++++++++++++++++
->   kernel/trace/trace_events.c |   34 +++++++++++-----------------------
->   tools/perf/builtin-trace.c  |   41 +++++++++++++++++++++++++++++++++++++++++
->   5 files changed, 109 insertions(+), 23 deletions(-)
->
-> Index: linux/include/linux/prctl.h
-> ===================================================================
-> --- linux.orig/include/linux/prctl.h
-> +++ linux/include/linux/prctl.h
-> @@ -102,4 +102,6 @@
->
->   #define PR_MCE_KILL_GET 34
->
-> +#define PR_TASK_PERF_USER_TRACE			35
-> +
->   #endif /* _LINUX_PRCTL_H */
-> Index: linux/include/trace/events/user.h
-> ===================================================================
-> --- /dev/null
-> +++ linux/include/trace/events/user.h
-> @@ -0,0 +1,32 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM user
-> +
-> +#if !defined(_TRACE_USER_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_USER_H_
-> +
-> +#include<linux/tracepoint.h>
-> +#include<linux/ftrace.h>
-> +
-> +TRACE_EVENT(user,
-> +
-> +	TP_PROTO(const char *message),
-> +
-> +	TP_ARGS(message),
-> +
-> +	TP_STRUCT__entry(
-> +		__string(	message, message);
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__assign_str(message, message);
-> +	),
-> +
-> +	TP_printk("user %s", __get_str(message))
-> +);
-> +
-> +#undef NO_DEV
-> +
-> +#endif /* _TRACE_USER_H_ */
-> +
-> +/* This part must be outside protection */
-> +#include<trace/define_trace.h>
-> Index: linux/kernel/sys.c
-> ===================================================================
-> --- linux.orig/kernel/sys.c
-> +++ linux/kernel/sys.c
-> @@ -47,6 +47,11 @@
->   #include<asm/io.h>
->   #include<asm/unistd.h>
->
-> +#define MAX_USER_TRACE_SIZE 128
-> +
-> +#define CREATE_TRACE_POINTS
-> +#include<trace/events/user.h>
-> +
->   #ifndef SET_UNALIGN_CTL
->   # define SET_UNALIGN_CTL(a,b)	(-EINVAL)
->   #endif
-> @@ -1681,6 +1686,24 @@ SYSCALL_DEFINE5(prctl, int, option, unsi
->   		case PR_TASK_PERF_EVENTS_ENABLE:
->   			error = perf_event_task_enable();
->   			break;
-> +		/*
-> +		 * Inject a trace event into the current tracing context:
-> +		 */
-> +		case PR_TASK_PERF_USER_TRACE:
-> +		{
-> +			void __user *uevent_ptr = (void *)arg2;
-> +			char kstring[MAX_USER_TRACE_SIZE+1];
-> +			unsigned long uevent_len = arg3;
-> +
-> +			if (uevent_len>  MAX_USER_TRACE_SIZE)
-> +				return -EINVAL;
-> +			if (copy_from_user(kstring, uevent_ptr, uevent_len))
-> +				return -EFAULT;
-> +			kstring[uevent_len] = 0;
-> +
-> +			trace_user(kstring);
-> +			return 0;
-> +		}
->   		case PR_GET_TIMERSLACK:
->   			error = current->timer_slack_ns;
->   			break;
-> Index: linux/kernel/trace/trace_events.c
-> ===================================================================
-> --- linux.orig/kernel/trace/trace_events.c
-> +++ linux/kernel/trace/trace_events.c
-> @@ -989,8 +989,7 @@ static struct dentry *event_trace_events
->
->   	d_events = debugfs_create_dir("events", d_tracer);
->   	if (!d_events)
-> -		pr_warning("Could not create debugfs "
-> -			   "'events' directory\n");
-> +		pr_warning("Could not create debugfs 'events' directory\n");
->
->   	return d_events;
->   }
-> @@ -1014,15 +1013,13 @@ event_subsystem_dir(const char *name, st
->   	/* need to create new entry */
->   	system = kmalloc(sizeof(*system), GFP_KERNEL);
->   	if (!system) {
-> -		pr_warning("No memory to create event subsystem %s\n",
-> -			   name);
-> +		pr_warning("No memory to create event subsystem %s\n", name);
->   		return d_events;
->   	}
->
->   	system->entry = debugfs_create_dir(name, d_events);
->   	if (!system->entry) {
-> -		pr_warning("Could not create event subsystem %s\n",
-> -			   name);
-> +		pr_warning("Could not create event subsystem %s\n", name);
->   		kfree(system);
->   		return d_events;
->   	}
-> @@ -1041,8 +1038,7 @@ event_subsystem_dir(const char *name, st
->
->   	system->filter = kzalloc(sizeof(struct event_filter), GFP_KERNEL);
->   	if (!system->filter) {
-> -		pr_warning("Could not allocate filter for subsystem "
-> -			   "'%s'\n", name);
-> +		pr_warning("Could not allocate filter for subsystem '%s'\n", name);
->   		return system->entry;
->   	}
->
-> @@ -1051,8 +1047,7 @@ event_subsystem_dir(const char *name, st
->   	if (!entry) {
->   		kfree(system->filter);
->   		system->filter = NULL;
-> -		pr_warning("Could not create debugfs "
-> -			   "'%s/filter' entry\n", name);
-> +		pr_warning("Could not create debugfs '%s/filter' entry\n", name);
->   	}
->
->   	trace_create_file("enable", 0644, system->entry,
-> @@ -1081,19 +1076,16 @@ event_create_dir(struct ftrace_event_cal
->
->   	call->dir = debugfs_create_dir(call->name, d_events);
->   	if (!call->dir) {
-> -		pr_warning("Could not create debugfs "
-> -			   "'%s' directory\n", call->name);
-> +		pr_warning("Could not create debugfs '%s' directory\n", call->name);
->   		return -1;
->   	}
->
->   	if (call->class->reg)
-> -		trace_create_file("enable", 0644, call->dir, call,
-> -				  enable);
-> +		trace_create_file("enable", 0644, call->dir, call, enable);
->
->   #ifdef CONFIG_PERF_EVENTS
->   	if (call->event.type&&  call->class->reg)
-> -		trace_create_file("id", 0444, call->dir, call,
-> -		 		  id);
-> +		trace_create_file("id", 0444, call->dir, call, id);
->   #endif
->
->   	/*
-> @@ -1104,16 +1096,12 @@ event_create_dir(struct ftrace_event_cal
->   	if (list_empty(head)) {
->   		ret = call->class->define_fields(call);
->   		if (ret<  0) {
-> -			pr_warning("Could not initialize trace point"
-> -				   " events/%s\n", call->name);
-> +			pr_warning("Could not initialize trace point events/%s\n", call->name);
->   			return ret;
->   		}
->   	}
-> -	trace_create_file("filter", 0644, call->dir, call,
-> -			  filter);
-> -
-> -	trace_create_file("format", 0444, call->dir, call,
-> -			  format);
-> +	trace_create_file("filter", 0644, call->dir, call, filter);
-> +	trace_create_file("format", 0444, call->dir, call, format);
->
->   	return 0;
->   }
-> Index: linux/tools/perf/builtin-trace.c
-> ===================================================================
-> --- linux.orig/tools/perf/builtin-trace.c
-> +++ linux/tools/perf/builtin-trace.c
-> @@ -719,6 +719,44 @@ static void vfs_getname(void *data,
->   	}
->   }
->
-> +static void user_event(void *data,
-> +			struct event *event __used,
-> +			int cpu __used,
-> +			u64 timestamp __used,
-> +			struct thread *thread __used)
-> +{
-> +	struct thread_data *tdata = get_thread_data(thread);
-> +	unsigned int i;
-> +	char *message;
-> +	u64 t = 0;
-> +
-> +	if (!tdata->enabled)
-> +		return;
-> +	if (time_filtered(timestamp))
-> +		return;
-> +	if (cpu_filtered(cpu))
-> +		return;
-> +	if (tdata->entry_time) {
-> +		t = timestamp - tdata->entry_time;
-> +		if (filter_duration(t))
-> +			return;
-> +	} else if (duration_filter)
-> +		return;
-> +
-> +	print_entry_head(thread, timestamp, t, cpu);
-> +	message = strdup(raw_field_ptr(event, "message", data));
-> +
-> +	/* Sanitize the string a bit before printing it: */
-> +	for (i = 0; i<  strlen(message); i++) {
-> +		if (message[i] == '\n')
-> +			message[i] = ' ';
-> +	}
-> +
-> +	color_fprintf(stdout, PERF_COLOR_GREEN, "<\"%s\">\n", message);
-> +
-> +	free(message);
-> +}
-> +
->   static int pagefault_preprocess_sample(const event_t *self,
->   				       struct addr_location *al,
->   				       struct sample_data *data,
-> @@ -1036,6 +1074,8 @@ process_raw_event(event_t *self, void *d
->   		pagefault_exit(data, event, cpu, timestamp, thread);
->   	if (!strcmp(event->name, "vfs_getname"))
->   		vfs_getname(data, event, cpu, timestamp, thread);
-> +	if (!strcmp(event->name, "user"))
-> +		user_event(data, event, cpu, timestamp, thread);
->
->   	if (!scheduler_events&&  !scheduler_all_events)
->   		return;
-> @@ -1226,6 +1266,7 @@ static const char *record_args[] = {
->   	"-e", "sched:sched_stat_sleep:r",
->   	"-e", "sched:sched_stat_iowait:r",
->   	"-e", "sched:sched_stat_runtime:r",
-> +	"-e", "user:user:r",
->   };
->
->   static int __cmd_record(int argc, const char **argv)
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
--- 
-Darren Hart
-Yocto Linux Kernel
