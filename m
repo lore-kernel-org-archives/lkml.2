@@ -1,63 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760203Ab0KRULY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 15:11:24 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62826 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754655Ab0KRULW (ORCPT
+	id S1760217Ab0KRULd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 15:11:33 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41733 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755568Ab0KRULX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 15:11:22 -0500
+	Thu, 18 Nov 2010 15:11:23 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=tlwN4V5yJB9wyFuPd3C1c+ILNa4yQho85NbDs48Xdngvy/IvvGrr6StHOhcmi0/6bh
-         XmMcBVYdPzj4XEtt39gauVqHXg+8NeQHPgUOowyQEYsiC1NUeR+qi+9ngIGsZ8dHNqLD
-         jg6EmudfD1a0F8x4cthxDSPBORtL8lm129Zt4=
-Date: Thu, 18 Nov 2010 23:11:18 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
-Message-ID: <20101118201118.GC6028@lenovo>
-References: <4CDD6CAD.30303@windriver.com> <20101112172755.GR4823@redhat.com> <20101116184325.GB4823@redhat.com> <4CE2E3C3.6060800@windriver.com> <20101118080516.GJ32621@elte.hu> <4CE52048.5080802@windriver.com> <1290086232.2109.1507.camel@laptop> <20101118193247.GF18100@redhat.com> <4CE583D0.8050407@windriver.com> <20101118200807.GC8131@redhat.com>
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=d+fm8QgWPxCFQim7yWB+rKuORTzIwn7oZlOc9ZY70NMtysULkcLQM5InE3CBlydAGV
+         J4Rld2STLzVD1SBxgy1evg2RfY9AzvuBvwXIgEG39KwngeWzCzmJAn4RL5S2I+E/cFYB
+         tvjw5N2ibRzTh1rAVRX27XLHKkz+NxPWIZilI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101118200807.GC8131@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1290102098.3041.77.camel@mulgrave.site>
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
+ <20101118130630.GJ6178@parisc-linux.org> <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
+ <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org>
+ <1290100750.3041.72.camel@mulgrave.site> <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
+ <1290102098.3041.77.camel@mulgrave.site>
+From: Greg Freemyer <greg.freemyer@gmail.com>
+Date: Thu, 18 Nov 2010 12:04:31 -0800
+Message-ID: <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+To: James Bottomley <James.Bottomley@suse.de>, Mark Lord <kernel@teksavvy.com>
+Cc: Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>, tytso@mit.edu,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, sandeen@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 03:08:07PM -0500, Don Zickus wrote:
-> On Thu, Nov 18, 2010 at 01:51:44PM -0600, Jason Wessel wrote:
-> > > So the problem is when the nmi watchdog is enabled, the perf event is
-> > > 'active' and thus tries to read the counter value.  Because it is always
-> > > zero, perf just assumes the counter overflowed and the NMI is his.
-> > >
-> > > Not sure how to fix it yet, other than include the logic that detects we
-> > > are on a guest and disable perf??
-> > >
-> > >   
-> > 
-> > I highly doubt we want to disable perf.   I would rather use the source
-> > and fix the nmi emulation in KVM/Qemu after we hear back the results
-> 
-> Well I think Peter does not have a positive opinion about emulating perf
-> inside a guest.  Nor are the KVM folks having much success in doing so.
-> 
-> Just to clarify, perf counter emulation is _not_ implemented in kvm.
-> Therefore disabling perf in the guest makes sense until someone gets
-> around to actually writing the emulation code for perf in a guest. :-)
-> 
-> Cheers,
-> Don
+Adding Mark Lord in CC:
 
-ok, Don, but you mentioned there are false alarms on real P4 machine, right?
+On Thu, Nov 18, 2010 at 9:41 AM, James Bottomley
+<James.Bottomley@suse.de> wrote:
+> On Thu, 2010-11-18 at 12:22 -0500, Jeff Moyer wrote:
+>> James Bottomley <James.Bottomley@suse.de> writes:
+>>
+>> > Not stepping into the debate: I'm happy to see punch go to the mapping
+>> > data and FITRIM pick it up later.
+>> >
+>> > However, I think it's time to question whether we actually still want to
+>> > allow online discard at all.  Most of the benchmarks show it to be a net
+>>
+>> Define online discard, please.
+>
+> Trims emitted inline at the FS operates (mount option -o discard)
+>
+>> > lose to almost everything (either SSD or Thinly Provisioned arrays), so
+>> > it's become an "enable this to degrade performance" option with no
+>> > upside.
+>>
+>> Some SSDs very much require TRIMming to perform well as they age.  If
+>> you're suggesting that we move from doing discards in journal commits to
+>> a batched discard, like the one Lukas implemented, then I think that's
+>> fine.  If we need to reintroduce the finer-grained discards due to some
+>> hardware changes in the future, we can always do that.
+>
+> Right, I'm suggesting we just rely on offline methods.  Regardless of
+> what happens to FITRIM, we have wiper.sh now (although it does require
+> unmounted use for most of the less than modern fs).
+>
+> James
 
- Cyrill
+I'm a fan of wiper.sh, but afaik it still cannot address a
+multi-spindle LVM setup, Nor a MDraid setup.  etc.
+
+That's because it bypasses the block stack and talks directly to the
+devices.  Thus it doesn't get the benefit of all the logical to
+physical sector remapping handled via the block stack.
+
+Mark, please correct me if I'm wrong.
+
+The LVM and MDraid setup are important to support, and only "mount -o
+discard" and Lucas's FITRIM support them.
+
+So afaik we have 3 options, each with an opportunity for improvement:
+
+1) mount -o discard - needs kernel tuning / new hardware to be a
+performance win.
+
+2) FITRIM doesn't leverage the fact the a TRIM command can handle
+multiple ranges per TRIM command payload.  I haven't seen any FITRIM
+vs. wiper.sh benchmarks, so I don't know what impact that has in
+practice.  Mark Lord thought that this lacking feature would cause
+FITRIM to take minutes or hours with some hardware.  Especially early
+generation SSDs.
+
+3) wiper.sh does leverage the multiple ranges per TRIM command, but it
+really needs a new block layer interface that would allow it to push
+discard commands into the kernel via the block layer, not just down at
+the physical drive layer.  The interface should accept multiple ranges
+per invocation and trigger TRIM commands to the SSD that have have a
+multi-range discard payload.
+
+So it seems that for now keeping all 3 is best.  My personal hope is
+that the block layer grows the ability to accept multirange discard
+requests and  FITRIM is updated to leverage it.
+
+Greg
