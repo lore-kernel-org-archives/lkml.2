@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760587Ab0KRVag (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:30:36 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54346 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754896Ab0KRVaf (ORCPT
+	id S1760612Ab0KRVby (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:31:54 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:38483 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757156Ab0KRVbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:30:35 -0500
-Date: Thu, 18 Nov 2010 13:29:00 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        mm-commits@vger.kernel.org
-Subject: Re: mmotm 2010-11-17-17-03 uploaded
-Message-Id: <20101118132900.2d7e2a11.randy.dunlap@oracle.com>
-In-Reply-To: <73121.1290115539@localhost>
-References: <201011180135.oAI1Znl3017273@imap1.linux-foundation.org>
-	<73121.1290115539@localhost>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Nov 2010 16:31:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=wSO7uIdDvTB79FyBmURF0XYbP+ECkO1mkaU3EQghqR42onTmgkEohPYE6b+vCyGU3S
+         kRm0EDTW6TgWegBpIpAQ==
+Date: Thu, 18 Nov 2010 13:31:45 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shaohui Zheng <shaohui.zheng@intel.com>
+cc: Dave Hansen <dave@linux.vnet.ibm.com>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        haicheng.li@linux.intel.com, lethal@linux-sh.org, ak@linux.intel.com,
+        shaohui.zheng@linux.intel.com, Haicheng Li <haicheng.li@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Greg KH <greg@kroah.com>
+Subject: Re: [7/8,v3] NUMA Hotplug Emulator: extend memory probe interface
+ to support NUMA
+In-Reply-To: <20101118044850.GC2408@shaohui>
+Message-ID: <alpine.DEB.2.00.1011181328540.26680@chino.kir.corp.google.com>
+References: <20101117020759.016741414@intel.com> <20101117021000.916235444@intel.com> <1290019807.9173.3789.camel@nimitz> <alpine.DEB.2.00.1011171312590.10254@chino.kir.corp.google.com> <20101118044850.GC2408@shaohui>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010 16:25:39 -0500 Valdis.Kletnieks@vt.edu wrote:
+On Thu, 18 Nov 2010, Shaohui Zheng wrote:
 
-> On Wed, 17 Nov 2010 17:03:30 PST, akpm@linux-foundation.org said:
-> > The mm-of-the-moment snapshot 2010-11-17-17-03 has been uploaded to
-> > 
-> >    http://userweb.kernel.org/~akpm/mmotm/
+> > Then, export the amount of memory that is actually physically present in 
+> > the e820 but was truncated by mem= and allow users to hot-add the memory 
+> > via the probe interface.  Add a writeable 'node' file to offlined memory 
+> > section directories and allow it to be changed prior to online.
 > 
-> Using my current .config and a 'make oldconfig' dies a horrid quick death:
-
-
-Hi,
-
-Yep, this has been fixed in mainline now.
-
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
->   CC      arch/x86/kernel/asm-offsets.s
-> In file included from /usr/src/linux-2.6.37-rc2-mmotm1117/arch/x86/include/asm/suspend_64.h:10:0,
->                  from /usr/src/linux-2.6.37-rc2-mmotm1117/arch/x86/include/asm/suspend.h:4,
->                  from arch/x86/kernel/asm-offsets_64.c:20,
->                  from arch/x86/kernel/asm-offsets.c:4:
-> /usr/src/linux-2.6.37-rc2-mmotm1117/arch/x86/include/asm/i387.h: In function 'irq_ts_save':
-> /usr/src/linux-2.6.37-rc2-mmotm1117/arch/x86/include/asm/i387.h:348:2: error: implicit declaration of function 'kernel_locked'
-> make[1]: *** [arch/x86/kernel/asm-offsets.s] Error 1
-> make: *** [prepare0] Error 2
+> for memory offlining, it is a known diffcult thing, and it is not supported 
+> well in current kernel, so I do not suggest to provide the offline interface
+> in the emulator, it just take more pains. We can consider to add it when
+> the memory offlining works well.
 > 
-> static inline int irq_ts_save(void)
-> {
->         /*
->          * If in process context and not atomic, we can take a spurious DNA fault.
->          * Otherwise, doing clts() in process context requires disabling preemption
->          * or some heavy lifting like kernel_fpu_begin()
->          */
->         if (!in_atomic())
->                 return 0;
-> 
-> in_atomic() did me in.  CONFIG_LOCK_KERNEL and CONFIG_BKL are both =y in this build.
-> 
-> Not sure if asm-offsets_64.c needs a #include <smp-locks.h> or if it's something else...
 
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+You're referring to the inability to remove memory sections for 
+CONFIG_SPARSEMEM_VMEMMAP?  You should still able to test the offlining 
+with other memory models of emulated nodes by using the generic support 
+already implemented for CONFIG_MEMORY_HOTREMOVE; the short answer is that 
+it probably shouldn't matter at all since we already support node 
+hot-remove and the fact that they are emulated nodes isn't really of 
+interest.
