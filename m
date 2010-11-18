@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755334Ab0KRH5n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 02:57:43 -0500
-Received: from arrakis.dune.hu ([78.24.191.176]:45943 "EHLO arrakis.dune.hu"
+	id S1755370Ab0KRH6e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 02:58:34 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:58445 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754856Ab0KRH5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 02:57:42 -0500
-X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Nov 2010 02:57:41 EST
-X-Spam-Flag: NO
-X-Spam-Score: -3.489
-Content-Type: text/plain; charset=us-ascii; format=flowed; delsp=yes
-To: linux-kernel@vger.kernel.org, "Brian Walsh" <brian@walsh.ws>
-Cc: "Russell King" <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: ixp4xx export symbol dma_set_coherent_mask
-References: <201011172325.10894.brian@walsh.ws>
-Date: Thu, 18 Nov 2010 08:51:48 +0100
+	id S1754550Ab0KRH6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 02:58:33 -0500
+Date: Thu, 18 Nov 2010 08:58:16 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+        Ma Ling <ling.ma@intel.com>, Zhao Yakui <yakui.zhao@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] perf bench: print both of prefaulted and no prefaulted
+ results
+Message-ID: <20101118075816.GG32621@elte.hu>
+References: <4CDD56E3.5030303@dcl.info.waseda.ac.jp>
+ <1289574158-6959-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-From: "Imre Kaloz" <kaloz@openwrt.org>
-Organization: OpenWrt - Wireless Freedom
-Message-ID: <op.vmcv4jpf2s3iss@ecaz>
-In-Reply-To: <201011172325.10894.brian@walsh.ws>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289574158-6959-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010 05:25:10 +0100, Brian Walsh <brian@walsh.ws> wrote:
 
-> ARM ixp4xx module building has been broken since commit 710224fa2750.
-> arm: fix "arm: fix pci_set_consistent_dma_mask for dmabounce devices"
->
-> Signed-off-by: Brian Walsh <brian@walsh.ws>
->
-> diff --git a/arch/arm/mach-ixp4xx/common-pci.c b/arch/arm/mach-ixp4xx/common-pci.c
-> index 24498a9..d54b219 100644
-> --- a/arch/arm/mach-ixp4xx/common-pci.c
-> +++ b/arch/arm/mach-ixp4xx/common-pci.c
-> @@ -513,4 +513,5 @@ int dma_set_coherent_mask(struct device *dev, u64 mask)
-> EXPORT_SYMBOL(ixp4xx_pci_read);
->  EXPORT_SYMBOL(ixp4xx_pci_write);
-> +EXPORT_SYMBOL(dma_set_coherent_mask);
->
+* Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp> wrote:
 
-Same reply as for http://lists.arm.linux.org.uk/lurker/message/20101108.104326.f5a6c7dd.en.html :
+> After applying this patch, perf bench mem memcpy prints
+> both of prefualted and without prefaulted score of memcpy().
+> 
+> New options --no-prefault and --only-prefault are added
+> for printing single result, mainly for scripting usage.
 
-http://lists.arm.linux.org.uk/lurker/message/20101102.114433.8822afb6.en.html
-
-
-Russell, could you apply that patch?
-
+Ok. Mind resending the whole series once all review feedback has been incorporated?
 
 Thanks,
 
-Imre
+	Ingo
