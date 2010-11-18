@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757517Ab0KRNTd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 08:19:33 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:53012 "EHLO gir.skynet.ie"
+	id S1757288Ab0KRNUm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 08:20:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53602 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756521Ab0KRNTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 08:19:32 -0500
-Date: Thu, 18 Nov 2010 13:19:17 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 29 of 66] don't alloc harder for gfp nomemalloc even if
-	nowait
-Message-ID: <20101118131917.GS8135@csn.ul.ie>
-References: <patchbomb.1288798055@v2.random> <ed6c78af29bc105fcee3.1288798084@v2.random>
+	id S1753034Ab0KRNUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 08:20:40 -0500
+Date: Thu, 18 Nov 2010 15:20:27 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Gregory Haskins <ghaskins@novell.com>,
+        Chris Lalancette <clalance@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] kvm: fast-path msi injection with irqfd
+Message-ID: <20101118132027.GB8247@redhat.com>
+References: <20101117221254.GA8296@redhat.com>
+ <20101118105741.GA31261@redhat.com>
+ <4CE50810.3090502@redhat.com>
+ <20101118111037.GB31261@redhat.com>
+ <4CE51C17.4000108@redhat.com>
+ <20101118130337.GA2254@redhat.com>
+ <20101118131453.GO7948@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <ed6c78af29bc105fcee3.1288798084@v2.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20101118131453.GO7948@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 04:28:04PM +0100, Andrea Arcangeli wrote:
-> From: Andrea Arcangeli <aarcange@redhat.com>
-> 
-> Not worth throwing away the precious reserved free memory pool for allocations
-> that can fail gracefully (either through mempool or because they're transhuge
-> allocations later falling back to 4k allocations).
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
+On Thu, Nov 18, 2010 at 03:14:53PM +0200, Gleb Natapov wrote:
+> On Thu, Nov 18, 2010 at 03:03:37PM +0200, Michael S. Tsirkin wrote:
+> > > >+static inline void kvm_irq_routing_update(struct kvm *kvm,
+> > > >+					  struct kvm_irq_routing_table *irq_rt)
+> > > >+{
+> > > >+	rcu_assign_pointer(kvm->irq_routing, irq_rt);
+> > > >+}
+> > > >+
+> > > >  static inline int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+> > > >  {
+> > > >  	return -ENOSYS;
+> > > 
+> > > Apart from these minor issues, looks good.
+> > 
+> > 
+> > Something we should consider improving is the loop over all VCPUs that
+> > kvm_irq_delivery_to_apic invokes.  I think that (for non-broadcast
+> > interrupts) it should be possible to precompute an store the CPU
+> > in question as part of the routing entry.
+> > 
+> > Something for a separate patch ... comments?
+> > 
+> I do not think this info should be part of routing entry. Routing entry
+> is more about describing wires on the board.
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+Not for msi. kvm_kernel_irq_routing_entry seems to just keep an
+address/data pair in that case. So
 
-> ---
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1941,7 +1941,12 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
->  	alloc_flags |= (__force int) (gfp_mask & __GFP_HIGH);
->  
->  	if (!wait) {
-> -		alloc_flags |= ALLOC_HARDER;
-> +		/*
-> +		 * Not worth trying to allocate harder for
-> +		 * __GFP_NOMEMALLOC even if it can't schedule.
-> +		 */
-> +		if  (!(gfp_mask & __GFP_NOMEMALLOC))
-> +			alloc_flags |= ALLOC_HARDER;
->  		/*
->  		 * Ignore cpuset if GFP_ATOMIC (!wait) rather than fail alloc.
->  		 * See also cpuset_zone_allowed() comment in kernel/cpuset.c.
-> 
+	union {
+		struct {
+			unsigned irqchip;
+			unsigned pin;
+		} irqchip;
+		struct msi_msg msi;
+	};
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+would become
+
+	union {
+		struct {
+			unsigned irqchip;
+			unsigned pin;
+		} irqchip;
+		struct {
+			struct msi_msg msi;
+			struct kvm_vpcu *dest;
+		} msi;
+	};
+
+or something like this.
+
+> Other then that
+> this is a good idea that, IIRC, we already discussed once.
+> 
+> --
+> 			Gleb.
