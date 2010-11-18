@@ -1,83 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760898Ab0KRXqd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:46:33 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:53342 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277Ab0KRXqc (ORCPT
+	id S1760920Ab0KRXsG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:48:06 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40479 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755398Ab0KRXsE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:46:32 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h67dh685h)
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw01.freescale.net;RD:de01egw01.freescale.net;EFVD:NLI
-From: <Dinh.Nguyen@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
-        Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCH] ARM: imx: Return the correct chip version instead of zero for mx51 and mx53
-Date: Thu, 18 Nov 2010 17:51:41 -0600
-Message-ID: <1290124301-6286-1-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
+	Thu, 18 Nov 2010 18:48:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=cIIXnp8NMGKZ2kDDfh/OdkKtu7tanVRPw22tdtq64U965uDhYvdothcF0GGVt+V3A2
+         7C4wsKd5h8WXDwhM8AdjjZNXe1ZKENiNW3ij7ZGkxrVoM4VGpw/QXHYH774fcUFPks9y
+         LtTRHuttuR7v7SonG4wgHElOP6Tt3Iz+T5+Ss=
+Message-ID: <4CE5BB30.5080209@gmail.com>
+Date: Thu, 18 Nov 2010 15:48:00 -0800
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+To: Patrick McHardy <kaber@trash.net>
+CC: David Miller <davem@davemloft.net>, randy.dunlap@oracle.com,
+        eric.dumazet@gmail.com, linux-net@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        horms@verge.net.au, netfilter-devel@vger.kernel.org
+Subject: Re: error while building the kernel Mainline
+References: <20101118.125451.98885354.davem@davemloft.net>	<20101118130318.073f6beb.randy.dunlap@oracle.com>	<20101118.131004.58430322.davem@davemloft.net> <20101118.131527.45904827.davem@davemloft.net> <4CE59F3F.3080407@trash.net>
+In-Reply-To: <4CE59F3F.3080407@trash.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-
-get_mx51_srev() and get_mx53_srev() are returning zero so cpu_silicon_rev
-becomes zero instead of the correct chip version.
-
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- arch/arm/mach-mx5/cpu.c |   10 ++++------
- 1 files changed, 4 insertions(+), 6 deletions(-)
-
-diff --git a/arch/arm/mach-mx5/cpu.c b/arch/arm/mach-mx5/cpu.c
-index 974a22f..0949251 100644
---- a/arch/arm/mach-mx5/cpu.c
-+++ b/arch/arm/mach-mx5/cpu.c
-@@ -22,22 +22,20 @@ static int cpu_silicon_rev = -1;
- 
- #define SREV 0x24
- 
--static int get_mx51_srev(u32 rev)
-+static void get_mx51_srev(u32 rev)
- {
- 	if (rev == 0x0)
- 		cpu_silicon_rev = IMX_CHIP_REVISION_2_0;
- 	else if (rev == 0x10)
- 		cpu_silicon_rev = IMX_CHIP_REVISION_3_0;
--	return 0;
- }
- 
--static int get_mx53_srev(u32 rev)
-+static void get_mx53_srev(u32 rev)
- {
- 	if (rev == 0x0)
- 		cpu_silicon_rev = IMX_CHIP_REVISION_1_0;
- 	else if (rev == 0x10)
- 		cpu_silicon_rev = IMX_CHIP_REVISION_2_0;
--	return 0;
- }
- 
- static void query_silicon_parameter(void)
-@@ -54,9 +52,9 @@ static void query_silicon_parameter(void)
- 
- 	cpu_silicon_rev = 0;
- 	if (cpu_is_mx51())
--		cpu_silicon_rev = get_mx51_srev(rev);
-+		get_mx51_srev(rev);
- 	else if(cpu_is_mx53())
--		cpu_silicon_rev = get_mx53_srev(rev);
-+		get_mx53_srev(rev);
- }
- 
- /*
--- 
-1.6.0.4
+On 11/18/2010 01:48 PM, Patrick McHardy wrote:
+> Am 18.11.2010 22:15, schrieb David Miller:
+>> From: David Miller<davem@davemloft.net>
+>> Date: Thu, 18 Nov 2010 13:10:04 -0800 (PST)
+>>
+>>> From: Randy Dunlap<randy.dunlap@oracle.com>
+>>> Date: Thu, 18 Nov 2010 13:03:18 -0800
+>>>
+>>>> On Thu, 18 Nov 2010 12:54:51 -0800 (PST) David Miller wrote:
+>>>>
+>>>>> From: Patrick McHardy<kaber@trash.net>
+>>>>> Date: Thu, 18 Nov 2010 21:32:11 +0100
+>>>>>
+>>>>>> Thanks for testing. Dave, please apply directly, thanks!
+>>>>
+>>>> Dave,
+>>>>
+>>>> This patch does not fix the config/build error that I posted for linux-next.
+>>>
+>>> And it has bugs, now when NF_CONNTRACT is set to "m" IPVS isn't offered
+>>> at all.
+>>>
+>>> So I'm reverting.
+>>
+>> Ignore this, I was looking for "*_IPVS" in the config instead of
+>> "*_IP_VS" for some stupid reason.
+>
+> I always make the same mistake :)
+>
+>> Patch is sane and I'll look into Randy's problem when I get a chance.
+>> :-)
+>
+> I've already asked the tproxy guys to look into this, it's a
+> different problem that requires more tproxy knowledge than
+> have.
+>
 
 
+go outside to clean the garage, and put up the christmas lights up, come 
+back and am freaking for a second that the problems not fixed...
+
+tripping me out man!!
+
+Justin P. Mattock
