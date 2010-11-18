@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760615Ab0KRV0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:26:12 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:36257 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760606Ab0KRV0K (ORCPT
+	id S1760611Ab0KRV11 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:27:27 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38559 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756899Ab0KRV10 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:26:10 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, mm-commits@vger.kernel.org
-Subject: Re: mmotm 2010-11-17-17-03 uploaded
-In-Reply-To: Your message of "Wed, 17 Nov 2010 17:03:30 PST."
-             <201011180135.oAI1Znl3017273@imap1.linux-foundation.org>
-From: Valdis.Kletnieks@vt.edu
-References: <201011180135.oAI1Znl3017273@imap1.linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1290115539_6548P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 18 Nov 2010 16:25:39 -0500
-Message-ID: <73121.1290115539@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020206.4CE599D4.0011,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Thu, 18 Nov 2010 16:27:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1011182140510.8526@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1011181957500.3651@swampdragon.chaosbits.net>
+ <AANLkTi=McRJSHp8==o+=coK0_pK5s9dwUgLmrkohSmTX@mail.gmail.com> <alpine.LNX.2.00.1011182140510.8526@swampdragon.chaosbits.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 18 Nov 2010 13:18:58 -0800
+Message-ID: <AANLkTim1MChiEa9rBL0ZfSCak6G2x4ivK47Svd6swEBS@mail.gmail.com>
+Subject: Re: [PATCH][resend][SCSI] Reduce number of sequential pointer derefs
+ in scsi_error.c and reduce size as well
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-kernel@vger.kernel.org, Eric Youngdale <eric@andante.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Mike Anderson <andmike@us.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1290115539_6548P
-Content-Type: text/plain; charset=us-ascii
+On Thu, Nov 18, 2010 at 12:49 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+>
+> Fair enough. Seeing your version of this and looking a second time at mine
+> I have to agree completely.
+> You are absolutely right in stating that the compiler will handle this
+> just fine, so it's only a readabillity issue and your version is a *lot*
+> more readable than what I came up with.
 
-On Wed, 17 Nov 2010 17:03:30 PST, akpm@linux-foundation.org said:
-> The mm-of-the-moment snapshot 2010-11-17-17-03 has been uploaded to
-> 
->    http://userweb.kernel.org/~akpm/mmotm/
+Btw, one thing to look out for is all those function calls: it really
+looks like many of them would be better off not having to dereference
+the thing inside each helper function, but just have it dereferenced
+in the caller.
 
-Using my current .config and a 'make oldconfig' dies a horrid quick death:
+You might trying passing in "struct Scsi_Host *host" to a lot of those
+helper functions in addition to the 'scmd' part. There's a lot of
+"scmd->device->host" going on, and even if you remove some of them
+_within_ a function, if you really want to get rid of them you should
+probably do one of them in the caller.
 
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CC      arch/x86/kernel/asm-offsets.s
-In file included from /usr/src/linux-2.6.37-rc2-mmotm1117/arch/x86/include/asm/suspend_64.h:10:0,
-                 from /usr/src/linux-2.6.37-rc2-mmotm1117/arch/x86/include/asm/suspend.h:4,
-                 from arch/x86/kernel/asm-offsets_64.c:20,
-                 from arch/x86/kernel/asm-offsets.c:4:
-/usr/src/linux-2.6.37-rc2-mmotm1117/arch/x86/include/asm/i387.h: In function 'irq_ts_save':
-/usr/src/linux-2.6.37-rc2-mmotm1117/arch/x86/include/asm/i387.h:348:2: error: implicit declaration of function 'kernel_locked'
-make[1]: *** [arch/x86/kernel/asm-offsets.s] Error 1
-make: *** [prepare0] Error 2
+That's why the queuecommand() function was changed to take
 
-static inline int irq_ts_save(void)
-{
-        /*
-         * If in process context and not atomic, we can take a spurious DNA fault.
-         * Otherwise, doing clts() in process context requires disabling preemption
-         * or some heavy lifting like kernel_fpu_begin()
-         */
-        if (!in_atomic())
-                return 0;
+    struct Scsi_Host *h, struct scsi_cmnd *
 
-in_atomic() did me in.  CONFIG_LOCK_KERNEL and CONFIG_BKL are both =y in this build.
+as its arguments, because that host is used so commonly. And passing
+two arguments is usually free (ie almost all architectures pass it in
+registers), and that host variable almost always already exists in the
+caller because the caller already needed it.
 
-Not sure if asm-offsets_64.c needs a #include <smp-locks.h> or if it's something else...
+So if you changed the functions that only take "scsi_cmnd *" as an
+argument to match the new queuecommand() interface, I bet you'd get
+more cleanups. And the interfaces would match.
 
---==_Exmh_1290115539_6548P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFM5ZnTcC3lWbTT17ARAvq7AKCFoCLyyWvV2BM88YGEy9FdvOJtIgCdF42M
-XLxCHOOmsLLo9GihX+E0RII=
-=+i0B
------END PGP SIGNATURE-----
-
---==_Exmh_1290115539_6548P--
-
+              Linus
