@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab0KRDwZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 22:52:25 -0500
-Received: from mga14.intel.com ([143.182.124.37]:17927 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751371Ab0KRDwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 22:52:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,215,1288594800"; 
-   d="scan'208";a="350213641"
-Date: Thu, 18 Nov 2010 10:31:14 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [8/8,v3] NUMA Hotplug Emulator: documentation
-Message-ID: <20101118023114.GB1980@shaohui>
-References: <20101117020759.016741414@intel.com>
- <20101117021000.985643862@intel.com>
- <20101117150659.0e0473c7.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117150659.0e0473c7.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754159Ab0KRDyf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 22:54:35 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:43128 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752460Ab0KRDyf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 22:54:35 -0500
+X-Sasl-enc: hAuwJXSJ9V6xWuvsUclhx9Xh7DGiv4sAL3DDYvtxaqgz 1290052473
+Subject: Re: autofs4 hang in 2.6.37-rc1
+From: Ian Kent <raven@themaw.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Avi Kivity <avi@redhat.com>, autofs@linux.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <201011150954.34289.arnd@arndb.de>
+References: <4CDFDC2B.6040205@redhat.com> <4CE00194.3070601@redhat.com>
+	 <1289785533.3248.18.camel@localhost>  <201011150954.34289.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Nov 2010 11:54:27 +0800
+Message-ID: <1290052468.2465.7.camel@perseus.themaw.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 03:06:59PM -0800, Randy Dunlap wrote:
-> On Wed, 17 Nov 2010 10:08:07 +0800 shaohui.zheng@intel.com wrote:
+On Mon, 2010-11-15 at 09:54 +0100, Arnd Bergmann wrote:
+> On Monday 15 November 2010 02:45:33 Ian Kent wrote:
 > 
-> > From: Shaohui Zheng <shaohui.zheng@intel.com>
+> > You can't hold an exclusive mutex during an autofs expire because the
+> > daemon will start by calling the ioctl to check for a dentry to expire
+> > then call back to the daemon to perform the umount and wait for a status
+> > return (also an ioctl).
+> 
+> Ok, I see. So it's my fault for not realizing that there are long blocking
+> ioctls. I was under the assumption that all of these ioctl commands were
+> simple non-blocking commands.
+> 
+> > >From memory the expire is the only ioctl that is sensitive to this
+> > deadlock.
 > > 
-> > add a text file Documentation/x86/x86_64/numa_hotplug_emulator.txt
-> > to explain the usage for the hotplug emulator.
-> > 
-> > Signed-off-by: Haicheng Li <haicheng.li@intel.com>
-> > Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
-> > ---
-> > Index: linux-hpe4/Documentation/x86/x86_64/numa_hotplug_emulator.txt
-> > ===================================================================
-> > --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-> > +++ linux-hpe4/Documentation/x86/x86_64/numa_hotplug_emulator.txt	2010-11-17 09:01:10.342836513 +0800
-> > @@ -0,0 +1,92 @@
-> > +NUMA Hotplug Emulator for x86
+> > So, either the mutex must be released while waiting for the status
+> > return or get rid of the autofs4_ioctl_mutex altogether.
 > 
-> (I'm only looking at the documentation file.)
+> Right. As I said with the original patch, I don't think the mutex
+> is really needed, but using it seemed to be the safer alternative.
+> It was in the sense that it guaranteed the breakage to be obvious
+> rather than silent...
 > 
-> Is this only for x86_64?  if so, please change the line above (for x86).
-> If not, then don't put this file into the /x86_64/ sub-directory.
+> Ian, if you can prove that the lock is not needed, I think we shold
+> just remove it.
 
-There are only a few x86_64 specific codes on the patch series, so it should
-work for both x86_64 and i386. Currently cpu/memory hotplug works stable against
-x86_64 kernel, it still has many issues for i386, so we can not do the testing
-for emualtor on i386 kernel, I'd prefer to keep the document for x86_64 only.
+I've looked through the old ioctl interface code and that looks fine.
 
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
-I will check the documentation once again, thanks for the careful review from Randy.
+But the important thing to notice is that the new ioctl interface (in
+fs/autofs4/dev-ioctl.c) used the unlocked_ioctl method since it was
+merged in 2.6.28 and that calls back into the core ioctl code for its
+major functionality. So the core function of the ioctl interface has
+been used without the BKL for quite a while now and has been heavily
+exercised in subsequent testing since the new ioctl interface has been
+in place.
 
--- 
-Thanks & Regards,
-Shaohui
+I can't see any reason for keeping the autofs4_ioctl_mutex.
+
+Ian
+
 
