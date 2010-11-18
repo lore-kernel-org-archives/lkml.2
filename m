@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757599Ab0KRNaf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 08:30:35 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50691 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754900Ab0KRNae (ORCPT
+	id S1757616Ab0KRNbS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 08:31:18 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:42010 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756583Ab0KRNbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 08:30:34 -0500
-Date: Thu, 18 Nov 2010 13:30:33 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Joe Perches <joe@perches.com>
-Cc: Daniel Walker <dwalker@codeaurora.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        bleong@codeaurora.org
-Subject: Re: [PATCH 2/2] drivers: regulator: core: convert to using pr_
- macros
-Message-ID: <20101118133033.GE7233@rakim.wolfsonmicro.main>
-References: <1290036628-9928-1-git-send-email-dwalker@codeaurora.org>
- <1290036628-9928-2-git-send-email-dwalker@codeaurora.org>
- <1290040611.28741.332.camel@Joe-Laptop>
- <1290043807.28741.334.camel@Joe-Laptop>
+	Thu, 18 Nov 2010 08:31:17 -0500
+Date: Thu, 18 Nov 2010 14:31:12 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>, acme@redhat.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] perf: Fix compilation on gcc 4.0.2
+Message-ID: <20101118133112.GC12667@basil.fritz.box>
+References: <1290077461-12321-1-git-send-email-andi@firstfloor.org>
+ <1290077461-12321-2-git-send-email-andi@firstfloor.org>
+ <1290078937.2109.1345.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1290043807.28741.334.camel@Joe-Laptop>
-X-Cookie: Pass with care.
+In-Reply-To: <1290078937.2109.1345.camel@laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 05:30:07PM -0800, Joe Perches wrote:
+> Should we be using more of the kernel makefile magic to detect this?
 
-> Perhaps something like this:
+In theory yes, but the two warnings didn't seem to be too useful
+to me so it's probably not worth it just for those two.
 
-This looks reasonable, please rebase on top of Daniel's patches and
-submit it properly (with changelog and so on).
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
