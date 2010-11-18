@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab0KRRRe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:17:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8026 "EHLO mx1.redhat.com"
+	id S932542Ab0KRRTS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:19:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52571 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755131Ab0KRRRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:17:33 -0500
-Date: Thu, 18 Nov 2010 18:10:01 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [RFC][PATCH v2 5/7] taskstats: Improve cumulative CPU time
-	accounting
-Message-ID: <20101118171001.GB3249@redhat.com>
-References: <20101111170352.732381138@linux.vnet.ibm.com> <20101111170815.404670062@linux.vnet.ibm.com> <20101113183810.GA9021@redhat.com> <1289926635.1940.100.camel@holzheu-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289926635.1940.100.camel@holzheu-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756877Ab0KRRTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 12:19:16 -0500
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
+ super_operation
+From: James Bottomley <James.Bottomley@suse.de>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>, tytso@mit.edu,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, sandeen@redhat.com
+In-Reply-To: <20101118142918.GA18510@infradead.org>
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
+	 <20101118130630.GJ6178@parisc-linux.org>
+	 <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
+	 <20101118141957.GK6178@parisc-linux.org>
+	 <20101118142918.GA18510@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Nov 2010 11:19:10 -0600
+Message-ID: <1290100750.3041.72.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for delay.
+On Thu, 2010-11-18 at 09:29 -0500, Christoph Hellwig wrote:
+> On Thu, Nov 18, 2010 at 07:19:58AM -0700, Matthew Wilcox wrote:
+> > I guess I was assuming that, on receiving a FALLOC_FL_PUNCH_HOLE, a
+> > filesystem that was TRIM-aware would pass that information down to the
+> > block device that it's mounted on.  I strongly feel that we shouldn't
+> > have two interfaces to do essentially the same thing.
+> > 
+> > I guess I'm saying that you're going to have to learn about TRIM :-)
+> 
+> Did you actually look Lukas FITRIM code (not the slight reordering here,
+> but the original one).  It's the ext4 version of the batched discard
+> model, that is a userspace ioctl to discard free space in the
+> filesystem.
+> 
+> hole punching will free the blocks into the free space pool.  If you do
+> online discard it will also get discarded, but a filesystem that has
+> online discard enabled doesn't need FITRIM.
 
-On 11/16, Michael Holzheu wrote:
->
-> On Sat, 2010-11-13 at 19:38 +0100, Oleg Nesterov wrote:
-> > First of all, let me repeat, I am not going to discuss whether we need
-> > these changes or not, I do not know even if I understand your motivation.
->
-> Sorry, if I was not clear enough with my descriptions. Let me try to
-> describe my motivation again:
+Not stepping into the debate: I'm happy to see punch go to the mapping
+data and FITRIM pick it up later.
 
-Yes, more or less I see what this patch does (I hope ;).
+However, I think it's time to question whether we actually still want to
+allow online discard at all.  Most of the benchmarks show it to be a net
+lose to almost everything (either SSD or Thinly Provisioned arrays), so
+it's become an "enable this to degrade performance" option with no
+upside.
 
-> 2. Because of reparent to init, there are situations where it is
->    not clear to which tasks the CPU time of dead tasks between
->    two snapshots has been accounted. This is a problem for example 2.
+James
 
-Yes, I see.
-
-But I must admit, _personally_ I am not sure this problem worth the
-trouble. And, I already mentioned daemonize() case, IOW I am not sure
-it is _always_ right to choose exiting_parent->parent for accounting.
-To me, this can be equally confusing. A user sees the running deamon
-with ppid = 1, then this daemon exits and top reports the "unrelated"
-process as cpu consumer.
-
-
-But once again. I am _not_ against this patch. I never know when it
-comes to new features. Certainly you know better if this suits top.
-
-What I actually meant is: dear CC list, please look at this change
-and comment ;)
-
-Oleg.
 
