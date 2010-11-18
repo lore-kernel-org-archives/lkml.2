@@ -1,101 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab0KRHtD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 02:49:03 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47810 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753607Ab0KRHtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 02:49:01 -0500
-Date: Thu, 18 Nov 2010 08:48:04 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Marcus Meissner <meissner@suse.de>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, tj@kernel.org, akpm@osdl.org,
-        hpa@zytor.com, w@1wt.eu, alan@lxorguk.ukuu.org.uk,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
- attacking
-Message-ID: <20101118074804.GC32621@elte.hu>
-References: <20101116104600.GA24015@suse.de>
- <20101117050759.GE22651@bombadil.infradead.org>
+	id S1755395Ab0KRHtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 02:49:15 -0500
+Received: from smtp-vbr14.xs4all.nl ([194.109.24.34]:3059 "EHLO
+	smtp-vbr14.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755280Ab0KRHtN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 02:49:13 -0500
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: manjunatha_halli@ti.com
+Subject: Re: [PATCH v4 2/6] drivers:staging: ti-st: fmdrv_v4l2 sources
+Date: Thu, 18 Nov 2010 08:49:07 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-tschai; KDE/4.4.5; x86_64; ; )
+Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+References: <1289913494-21590-1-git-send-email-manjunatha_halli@ti.com> <1289913494-21590-2-git-send-email-manjunatha_halli@ti.com> <1289913494-21590-3-git-send-email-manjunatha_halli@ti.com>
+In-Reply-To: <1289913494-21590-3-git-send-email-manjunatha_halli@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117050759.GE22651@bombadil.infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011180849.07405.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Kyle McMartin <kyle@mcmartin.ca> wrote:
-
-> On Tue, Nov 16, 2010 at 11:46:03AM +0100, Marcus Meissner wrote:
-> > Target of this starter patch and follow ups is removing any kind of
-> > kernel space address information leak from the kernel.
-> > 
+On Tuesday, November 16, 2010 14:18:10 manjunatha_halli@ti.com wrote:
+> From: Manjunatha Halli <manjunatha_halli@ti.com>
 > 
-> Er. Should probably hit /proc/modules while you're at it.
+> This module interfaces V4L2 subsystem and FM common
+> module. It registers itself with V4L2 as Radio module.
+> 
+> Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
+> ---
+>  drivers/staging/ti-st/fmdrv_v4l2.c |  757 ++++++++++++++++++++++++++++++++++++
+>  drivers/staging/ti-st/fmdrv_v4l2.h |   32 ++
+>  2 files changed, 789 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.c
+>  create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.h
+> 
+> diff --git a/drivers/staging/ti-st/fmdrv_v4l2.c b/drivers/staging/ti-st/fmdrv_v4l2.c
+> new file mode 100644
+> index 0000000..687d10f
+> --- /dev/null
+> +++ b/drivers/staging/ti-st/fmdrv_v4l2.c
+> @@ -0,0 +1,757 @@
+> +/*
+> + *  FM Driver for Connectivity chip of Texas Instruments.
+> + *  This file provides interfaces to V4L2 subsystem.
+> + *
+> + *  This module registers with V4L2 subsystem as Radio
+> + *  data system interface (/dev/radio). During the registration,
+> + *  it will expose two set of function pointers.
+> + *
+> + *    1) File operation related API (open, close, read, write, poll...etc).
+> + *    2) Set of V4L2 IOCTL complaint API.
+> + *
+> + *  Copyright (C) 2010 Texas Instruments
+> + *  Author: Raja Mani <raja_mani@ti.com>
+> + *
+> + *  This program is free software; you can redistribute it and/or modify
+> + *  it under the terms of the GNU General Public License version 2 as
+> + *  published by the Free Software Foundation.
+> + *
+> + *  This program is distributed in the hope that it will be useful,
+> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + *  GNU General Public License for more details.
+> + *
+> + *  You should have received a copy of the GNU General Public License
+> + *  along with this program; if not, write to the Free Software
+> + *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + *
+> + */
+> +
+> +#include "fmdrv.h"
+> +#include "fmdrv_v4l2.h"
+> +#include "fmdrv_common.h"
+> +#include "fmdrv_rx.h"
+> +#include "fmdrv_tx.h"
+> +
+> +static struct video_device *gradio_dev;
+> +static unsigned char radio_disconnected;
+> +
+> +/* Query control */
+> +static struct v4l2_queryctrl fmdrv_v4l2_queryctrl[] = {
+> +	{
+> +	 .id = V4L2_CID_AUDIO_VOLUME,
+> +	 .type = V4L2_CTRL_TYPE_INTEGER,
+> +	 .name = "Volume",
+> +	 .minimum = FM_RX_VOLUME_MIN,
+> +	 .maximum = FM_RX_VOLUME_MAX,
+> +	 .step = 1,
+> +	 .default_value = FM_DEFAULT_RX_VOLUME,
+> +	 },
+> +	{
+> +	 .id = V4L2_CID_AUDIO_BALANCE,
+> +	 .flags = V4L2_CTRL_FLAG_DISABLED,
+> +	 },
+> +	{
+> +	 .id = V4L2_CID_AUDIO_BASS,
+> +	 .flags = V4L2_CTRL_FLAG_DISABLED,
+> +	 },
+> +	{
+> +	 .id = V4L2_CID_AUDIO_TREBLE,
+> +	 .flags = V4L2_CTRL_FLAG_DISABLED,
+> +	 },
+> +	{
+> +	 .id = V4L2_CID_AUDIO_MUTE,
+> +	 .type = V4L2_CTRL_TYPE_BOOLEAN,
+> +	 .name = "Mute",
+> +	 .minimum = 0,
+> +	 .maximum = 2,
+> +	 .step = 1,
+> +	 .default_value = FM_MUTE_OFF,
+> +	 },
+> +	{
+> +	 .id = V4L2_CID_AUDIO_LOUDNESS,
+> +	 .flags = V4L2_CTRL_FLAG_DISABLED,
+> +	 },
+> +};
 
-Agreed. A few other kernel address things that should be hidden are:
+Please use the control framework. See Documentation/video4linux/v4l2-controls.txt.
+It's much easier to use and should be used for new drivers.
 
-1) /proc/<PID>/stack
+Regards,
 
-Gives out kernel addresses and is a partial /proc/kallsyms table in essence. This 
-got introduced recently. Useful to attackers.
+	Hans
 
-Then there's a handful of physical address leaks - those are less useful but useful 
-in some situations:
-
-2) /proc/mtrr
-
-Gives some idea about the physical layout of the machine and can give information 
-about the location of certain physical devices as well. Limited but nonzero utility 
-to attackers.
-
-3) /proc/asound/cards
-
-Can gives out the physical address of a device. Limited but nonzero utility to 
-attackers.
-
-4) /sys/devices/*/*/resources
-
-Shows physical addresses. Limited but nonzero utility to attackers.
-
-Plus there's some really limited fractional pieces of information - again, of 
-nonzero utility to attackers:
-
-5) /proc/net/ptype
-
-Shows the sizes of a few kernel functions in networking code. Very limited but 
-nonzero utility to attackers.
-
-6) /sys/kernel/slab/*/ctor
-
-Shows the sizes of a few kernel functions. Very limited but nonzero utility to 
-attackers.
-
-7) /sys/module/*/sections/*
-
-For example:
-
- /sys/module/sunrpc/sections/__bug_table
- /sys/module/sunrpc/sections/__ex_table
- /sys/module/sunrpc/sections/__ksymtab
- /sys/module/sunrpc/sections/__ksymtab_gpl
- /sys/module/sunrpc/sections/__ksymtab_strings
- /sys/module/sunrpc/sections/__mcount_loc
- /sys/module/sunrpc/sections/__param
-
-Potentially useful to attackers.
-
-There's probably a few more i missed.
-
-	Ingo
+-- 
+Hans Verkuil - video4linux developer - sponsored by Cisco
