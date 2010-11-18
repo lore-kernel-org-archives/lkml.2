@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757538Ab0KRNN5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 08:13:57 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:52501 "EHLO gir.skynet.ie"
+	id S1757577Ab0KRNO1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 08:14:27 -0500
+Received: from cantor.suse.de ([195.135.220.2]:46255 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757020Ab0KRNN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 08:13:56 -0500
-Date: Thu, 18 Nov 2010 13:13:40 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 23 of 66] add pmd_huge_pte to mm_struct
-Message-ID: <20101118131340.GQ8135@csn.ul.ie>
-References: <patchbomb.1288798055@v2.random> <8497eaf69975ceba0c79.1288798078@v2.random>
+	id S1757020Ab0KRNO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 08:14:26 -0500
+Date: Thu, 18 Nov 2010 14:14:20 +0100
+From: "Dr. Werner Fink" <werner@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg KH <greg@kroah.com>, Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
+Message-ID: <20101118131420.GA23872@boole.suse.de>
+Mail-Followup-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Greg KH <greg@kroah.com>, Lennart Poettering <mzxreary@0pointer.de>,
+	Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
+References: <25482.1290031268@localhost>
+ <AANLkTimV_zKK-Ubw3vJkDUtrYvB+W06cRR7Nz2vam6fP@mail.gmail.com>
+ <20101117235647.00766e32@lxorguk.ukuu.org.uk>
+ <20101118012734.GA8558@kroah.com>
+ <20101118014848.GA7873@tango.0pointer.de>
+ <20101118015310.GA30480@kroah.com>
+ <20101118110020.GA13871@boole.suse.de>
+ <20101118112335.434de53a@lxorguk.ukuu.org.uk>
+ <20101118121256.GA19884@boole.suse.de>
+ <20101118125822.16718289@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <8497eaf69975ceba0c79.1288798078@v2.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20101118125822.16718289@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 04:27:58PM +0100, Andrea Arcangeli wrote:
-> From: Andrea Arcangeli <aarcange@redhat.com>
+On Thu, Nov 18, 2010 at 12:58:22PM +0000, Alan Cox wrote:
+> > Example: running a boot script on /dev/console and after fsck
+> > sulogin has to called to be able to asked the system admin.
+> > Now the question is which console device the system admin is
+> > waiting in front of (before /dev/ttyS0 or /dev/tty3270 or whatever).
 > 
-> This increase the size of the mm struct a bit but it is needed to preallocate
-> one pte for each hugepage so that split_huge_page will not require a fail path.
-> Guarantee of success is a fundamental property of split_huge_page to avoid
-> decrasing swapping reliability and to avoid adding -ENOMEM fail paths that
-> would otherwise force the hugepage-unaware VM code to learn rolling back in the
-> middle of its pte mangling operations (if something we need it to learn
-> handling pmd_trans_huge natively rather being capable of rollback). When
-> split_huge_page runs a pte is needed to succeed the split, to map the newly
-> splitted regular pages with a regular pte.  This way all existing VM code
-> remains backwards compatible by just adding a split_huge_page* one liner. The
-> memory waste of those preallocated ptes is negligible and so it is worth it.
+> Ok that is a rather nebulous concept for embedded. The answer probably
+> being that the true console device has no input facility.
 > 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
+> > I'm aware of.  For using tty devices of the system console it requires
+> > to have e.g. with my patch:
+> > 
+> >   bash> cat /proc/tty/consoles 
+> >   tty0                 -WU (ECp)       4:7
+> > 
+> > the `W' flag for write and the major:minor pair, beside this the `U'
+> > flag indicates the tty can do an unblank operation, the `-' shows that
+> > there is no read operation (never seen such a console tty).  On an other
+> 
+> Try the lp printer console if you want a test case
+> 
+> > to detect the primary console device here.
+> 
+> Why not just open /dev/console ?
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+How can I detect the major and minor of the primary console device
+of /dev/console without controlling tty?  Even if my old blogd
+and the bootlogd(8) of SysInitV using TIOCCONS are outdated by SystemD
+the question before doing the TIOCCONS is which is the primary console
+device to e.g. create the device node in initrd or for bootlogd(8)
+to write a copy of the console messages back to the original
+primary console (and the other console devices).
+
+   Werner
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+  "Having a smoking section in a restaurant is like having
+          a peeing section in a swimming pool." -- Edward Burr
