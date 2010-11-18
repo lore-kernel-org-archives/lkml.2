@@ -1,149 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab0KRGkX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 01:40:23 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46261 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab0KRGkV (ORCPT
+	id S1752502Ab0KRGrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 01:47:53 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:22696 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab0KRGrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 01:40:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type:content-transfer-encoding;
-        b=FkQ58FFQIAvWMXkYL8M8ovAI4dWrz9+m5BOk3TNRBSXz8y39VfIepX0CCvVZ+oEcCb
-         RSU8pxIEVmANMOxAURF9JKHQ0Dg3z7PADBM1MVl3C93oW21npRfh9+ahJWgYYy8KS7it
-         iaC825rv/y17YJXanNapn/ZQSnINZA1vsIn4s=
-MIME-Version: 1.0
-Date: Thu, 18 Nov 2010 07:40:19 +0100
-X-Google-Sender-Auth: VGQuZbyjb9xjHU-GyK1stSPMP3E
-Message-ID: <AANLkTimYDAJr9x00sjGGnDF2vOVXU12qmbnmfuzA5_0h@mail.gmail.com>
-Subject: abs() vs. abs64() (was: Re: [PATCH] fbdev: fix nearest mode search)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: michalj@gmail.com, Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 18 Nov 2010 01:47:52 -0500
+From: Colin Cross <ccross@android.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Harald Gustafsson <harald.gustafsson@ericsson.com>,
+        Rickard ANDERSSON <Rickard.Andersson@stericsson.com>,
+        Rob Herring <robherring2@gmail.com>, Colin Cross <ccross@android.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Varun Swara <Varun.Swara@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: twd: Adjust localtimer frequency with cpufreq notifiers
+Date: Wed, 17 Nov 2010 22:47:23 -0800
+Message-Id: <1290062843-10539-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id oAI6ejk6008722
 
-[Don't use the obsolete linux-fbdev-devel address]
+The clock to the ARM TWD local timer scales with the cpu
+frequency. To allow the cpu frequency to change while
+maintaining a constant TWD frequency, pick a lower target
+frequency for the TWD and use the prescaler to divide down
+to the closest lower frequency.
 
-On Thu, Nov 18, 2010 at 00:08, Michal Januszewski <michalj@gmail.com> wrote:
-> In the framebuffer subsystem the abs() macro is often used as a part of
-> the calculation of a Manhattan metric, which in turn is used as a measure
-> of similarity between video modes.  The arguments of abs() are sometimes
-> unsigned numbers.  This worked fine until commit a49c59c0, which changed
-> the definition of abs() to prevent truncation.  As a result of this
-> change, in the following piece of code:
->
->  u32 a = 0, b = 1;
->  u32 c = abs(a - b);
+This patch provides a new initialization function that takes
+a target TWD frequency and the ratio between the cpu
+clock and the TWD clock, specified as an integer divider >= 2
+in the Cortex A9 MPCore TRM, and 2 in the ARM11 MPCore TRM.
+It also registers a cpufreq notifier that adjusts the
+prescaler when the cpu frequency changes.
 
-Indeed, the difference of 2 numbers is unsigned, as per C.
+Signed-off-by: Colin Cross <ccross@android.com>
+---
+ arch/arm/include/asm/smp_twd.h |   11 ++++
+ arch/arm/kernel/smp_twd.c      |  106 +++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 109 insertions(+), 8 deletions(-)
 
-> 'c' will end up with a value of 0xffffffff instead of the expected 0x1.
+diff --git a/arch/arm/include/asm/smp_twd.h b/arch/arm/include/asm/smp_twd.h
+index 634f357..5119763 100644
+--- a/arch/arm/include/asm/smp_twd.h
++++ b/arch/arm/include/asm/smp_twd.h
+@@ -17,6 +17,7 @@
+ #define TWD_TIMER_CONTROL_ONESHOT	(0 << 1)
+ #define TWD_TIMER_CONTROL_PERIODIC	(1 << 1)
+ #define TWD_TIMER_CONTROL_IT_ENABLE	(1 << 2)
++#define TWD_TIMER_CONTROL_PRESCALE_MASK	(0xFF << 8)
+ 
+ struct clock_event_device;
+ 
+@@ -26,4 +27,14 @@ void twd_timer_stop(void);
+ int twd_timer_ack(void);
+ void twd_timer_setup(struct clock_event_device *);
+ 
++/*
++ * Use this setup function on systems that support cpufreq.
++ * periphclk_prescaler is the fixed divider value between the cpu
++ * clock and the PERIPHCLK clock that feeds the TWD.  target_rate should be
++ * low enough that the prescaler can accurately reach the target rate from the
++ * lowest cpu frequency, but high enough to give a reasonable timer accuracy.
++ */
++void twd_timer_setup_scalable(struct clock_event_device *,
++	unsigned long target_rate, unsigned int periphclk_prescaler);
++
+ #endif
+diff --git a/arch/arm/kernel/smp_twd.c b/arch/arm/kernel/smp_twd.c
+index 35882fb..e2bc65c 100644
+--- a/arch/arm/kernel/smp_twd.c
++++ b/arch/arm/kernel/smp_twd.c
+@@ -17,6 +17,7 @@
+ #include <linux/clockchips.h>
+ #include <linux/irq.h>
+ #include <linux/io.h>
++#include <linux/cpufreq.h>
+ 
+ #include <asm/smp_twd.h>
+ #include <asm/hardware/gic.h>
+@@ -25,11 +26,17 @@
+ void __iomem *twd_base;
+ 
+ static unsigned long twd_timer_rate;
++static unsigned long twd_periphclk_prescaler;
++static unsigned long twd_target_rate;
+ 
+ static void twd_set_mode(enum clock_event_mode mode,
+ 			struct clock_event_device *clk)
+ {
+ 	unsigned long ctrl;
++	unsigned long prescale;
++
++	prescale = __raw_readl(twd_base + TWD_TIMER_CONTROL) &
++			TWD_TIMER_CONTROL_PRESCALE_MASK;
+ 
+ 	switch (mode) {
+ 	case CLOCK_EVT_MODE_PERIODIC:
+@@ -47,6 +54,8 @@ static void twd_set_mode(enum clock_event_mode mode,
+ 		ctrl = 0;
+ 	}
+ 
++	ctrl |= prescale;
++
+ 	__raw_writel(ctrl, twd_base + TWD_TIMER_CONTROL);
+ }
+ 
+@@ -79,9 +88,55 @@ int twd_timer_ack(void)
+ 	return 0;
+ }
+ 
++/*
++ * must be called with interrupts disabled and on the cpu that is being changed
++ */
++static void twd_update_cpu_frequency(unsigned long new_rate)
++{
++	u32 ctrl;
++	int prescaler;
++
++	BUG_ON(twd_periphclk_prescaler == 0 || twd_target_rate == 0);
++
++	twd_timer_rate = new_rate / twd_periphclk_prescaler;
++
++	prescaler = DIV_ROUND_UP(twd_timer_rate, twd_target_rate);
++	prescaler = clamp(prescaler - 1, 0, 0xFF);
++
++	ctrl = __raw_readl(twd_base + TWD_TIMER_CONTROL);
++	ctrl &= ~TWD_TIMER_CONTROL_PRESCALE_MASK;
++	ctrl |= prescaler << 8;
++	__raw_writel(ctrl, twd_base + TWD_TIMER_CONTROL);
++}
++
++static void twd_update_cpu_frequency_on_cpu(void *data)
++{
++	struct cpufreq_freqs *freq = data;
++
++	twd_update_cpu_frequency(freq->new * 1000);
++}
++
++static int twd_cpufreq_notifier(struct notifier_block *nb,
++			unsigned long event, void *data)
++{
++	struct cpufreq_freqs *freq = data;
++
++	if (event == CPUFREQ_RESUMECHANGE ||
++	    (event == CPUFREQ_PRECHANGE && freq->new > freq->old) ||
++	    (event == CPUFREQ_POSTCHANGE && freq->new < freq->old))
++		smp_call_function_single(freq->cpu,
++			twd_update_cpu_frequency_on_cpu, freq, 1);
++
++	return 0;
++}
++
++static struct notifier_block twd_cpufreq_notifier_block = {
++	.notifier_call = twd_cpufreq_notifier,
++};
++
+ static void __cpuinit twd_calibrate_rate(void)
+ {
+-	unsigned long load, count;
++	unsigned long count;
+ 	u64 waitjiffies;
+ 
+ 	/*
+@@ -114,23 +169,37 @@ static void __cpuinit twd_calibrate_rate(void)
+ 		twd_timer_rate = (0xFFFFFFFFU - count) * (HZ / 5);
+ 
+ 		printk("%lu.%02luMHz.\n", twd_timer_rate / 1000000,
+-			(twd_timer_rate / 100000) % 100);
++			(twd_timer_rate / 10000) % 100);
+ 	}
+-
+-	load = twd_timer_rate / HZ;
+-
+-	__raw_writel(load, twd_base + TWD_TIMER_LOAD);
+ }
+ 
+ /*
+  * Setup the local clock events for a CPU.
+  */
+-void __cpuinit twd_timer_setup(struct clock_event_device *clk)
++static void __cpuinit __twd_timer_setup(struct clock_event_device *clk,
++	unsigned long target_rate, unsigned int periphclk_prescaler)
+ {
+ 	unsigned long flags;
++	unsigned long load;
++	unsigned long cpu_rate;
++	unsigned long twd_tick_rate;
+ 
+ 	twd_calibrate_rate();
+ 
++	if (target_rate && periphclk_prescaler) {
++		cpu_rate = twd_timer_rate * periphclk_prescaler;
++		twd_target_rate = target_rate;
++		twd_periphclk_prescaler = periphclk_prescaler;
++		twd_update_cpu_frequency(cpu_rate);
++		twd_tick_rate = twd_target_rate;
++	} else {
++		twd_tick_rate = twd_timer_rate;
++	}
++
++	load = twd_tick_rate / HZ;
++
++	__raw_writel(load, twd_base + TWD_TIMER_LOAD);
++
+ 	clk->name = "local_timer";
+ 	clk->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT |
+ 			CLOCK_EVT_FEAT_C3STOP;
+@@ -138,7 +207,7 @@ void __cpuinit twd_timer_setup(struct clock_event_device *clk)
+ 	clk->set_mode = twd_set_mode;
+ 	clk->set_next_event = twd_set_next_event;
+ 	clk->shift = 20;
+-	clk->mult = div_sc(twd_timer_rate, NSEC_PER_SEC, clk->shift);
++	clk->mult = div_sc(twd_tick_rate, NSEC_PER_SEC, clk->shift);
+ 	clk->max_delta_ns = clockevent_delta2ns(0xffffffff, clk);
+ 	clk->min_delta_ns = clockevent_delta2ns(0xf, clk);
+ 
+@@ -151,6 +220,27 @@ void __cpuinit twd_timer_setup(struct clock_event_device *clk)
+ 	clockevents_register_device(clk);
+ }
+ 
++void __cpuinit twd_timer_setup_scalable(struct clock_event_device *clk,
++	unsigned long target_rate, unsigned int periphclk_prescaler)
++{
++	__twd_timer_setup(clk, target_rate, periphclk_prescaler);
++}
++
++void __cpuinit twd_timer_setup(struct clock_event_device *clk)
++{
++	__twd_timer_setup(clk, 0, 0);
++}
++
++static int twd_timer_setup_cpufreq(void)
++{
++	if (twd_periphclk_prescaler)
++		cpufreq_register_notifier(&twd_cpufreq_notifier_block,
++			CPUFREQ_TRANSITION_NOTIFIER);
++
++	return 0;
++}
++arch_initcall(twd_timer_setup_cpufreq);
++
+ #ifdef CONFIG_HOTPLUG_CPU
+ /*
+  * take a local timer down
+-- 
+1.7.3.1
 
-This happens on 64-bit only, right?
-
-Anyway, I think commit a49c59c0 is wrong: abs() operates on signed
-(32-bit) numbers. For larger (64-bit signed) numbers, we have abs64().
-
-> A problem caused by this change and visible by the end user is that
-> framebuffer drivers relying on functions from modedb.c will fail to
-> find high resolution video modes similar to that explicitly requested
-> by the user if an exact match cannot be found (see e.g.
-> https://bugs.gentoo.org/show_bug.cgi?id=296539).
->
-> Fix this problem by casting all arguments of abs() to an int prior
-> to the macro evaluation in modedb.c and uvesafb.c.
->
-> Signed-off-by: Michal Januszewski <michalj@gmail.com>
-> ---
-> diff --git a/drivers/video/modedb.c b/drivers/video/modedb.c
-> index 0a4dbdc..878bea1 100644
-> --- a/drivers/video/modedb.c
-> +++ b/drivers/video/modedb.c
-> @@ -636,8 +636,10 @@ done:
->                        if (refresh_specified && db[i].refresh == refresh) {
->                                return 1;
->                        } else {
-> -                               if (abs(db[i].refresh - refresh) < diff) {
-> -                                       diff = abs(db[i].refresh - refresh);
-> +                               if (abs((int)(db[i].refresh - refresh)) <
-> +                                   diff) {
-> +                                       diff = abs((int)(db[i].refresh -
-> +                                               refresh));
->                                        best = i;
->                                }
->                        }
-> @@ -654,8 +656,8 @@ done:
->        for (i = 0; i < dbsize; i++) {
->                DPRINTK("Trying %ix%i\n", db[i].xres, db[i].yres);
->                if (!fb_try_mode(var, info, &db[i], bpp)) {
-> -                       tdiff = abs(db[i].xres - xres) +
-> -                               abs(db[i].yres - yres);
-> +                       tdiff = abs((int)(db[i].xres - xres)) +
-> +                               abs((int)(db[i].yres - yres));
->
->                        /*
->                         * Penalize modes with resolutions smaller
-> @@ -851,13 +853,13 @@ const struct fb_videomode *fb_find_nearest_mode(const struct fb_videomode *mode,
->                modelist = list_entry(pos, struct fb_modelist, list);
->                cmode = &modelist->mode;
->
-> -               d = abs(cmode->xres - mode->xres) +
-> -                       abs(cmode->yres - mode->yres);
-> +               d = abs((int)(cmode->xres - mode->xres)) +
-> +                       abs((int)(cmode->yres - mode->yres));
->                if (diff > d) {
->                        diff = d;
->                        best = cmode;
->                } else if (diff == d) {
-> -                       d = abs(cmode->refresh - mode->refresh);
-> +                       d = abs((int)(cmode->refresh - mode->refresh));
->                        if (diff_refresh > d) {
->                                diff_refresh = d;
->                                best = cmode;
-> diff --git a/drivers/video/uvesafb.c b/drivers/video/uvesafb.c
-> index 7b8839e..6621427 100644
-> --- a/drivers/video/uvesafb.c
-> +++ b/drivers/video/uvesafb.c
-> @@ -320,9 +320,9 @@ static int uvesafb_vbe_find_mode(struct uvesafb_par *par,
->        int i, match = -1, h = 0, d = 0x7fffffff;
->
->        for (i = 0; i < par->vbe_modes_cnt; i++) {
-> -               h = abs(par->vbe_modes[i].x_res - xres) +
-> -                   abs(par->vbe_modes[i].y_res - yres) +
-> -                   abs(depth - par->vbe_modes[i].depth);
-> +               h = abs((int)(par->vbe_modes[i].x_res - xres)) +
-> +                   abs((int)(par->vbe_modes[i].y_res - yres)) +
-> +                   abs((int)(depth - par->vbe_modes[i].depth));
->
->                /*
->                 * We have an exact match in terms of resolution
-> @@ -1375,7 +1375,7 @@ static int uvesafb_check_var(struct fb_var_screeninfo *var,
->         * which is theoretically incorrect, but which we'll try to handle
->         * here.
->         */
-> -       if (depth == 0 || abs(depth - var->bits_per_pixel) >= 8)
-> +       if (depth == 0 || abs((int)(depth - var->bits_per_pixel)) >= 8)
->                depth = var->bits_per_pixel;
->
->        match = uvesafb_vbe_find_mode(par, var->xres, var->yres, depth,
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
