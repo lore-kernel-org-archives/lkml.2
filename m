@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760255Ab0KRUcS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 15:32:18 -0500
-Received: from stinky.trash.net ([213.144.137.162]:41447 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757021Ab0KRUcR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 15:32:17 -0500
-Message-ID: <4CE58D4B.6070105@trash.net>
-Date: Thu, 18 Nov 2010 21:32:11 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: David Miller <davem@davemloft.net>, eric.dumazet@gmail.com,
-        linux-net@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, horms@verge.net.au,
-        netfilter-devel@vger.kernel.org
-Subject: Re: error while building the kernel Mainline
-References: <1290093135.2781.167.camel@edumazet-laptop>	<4CE561A2.2020600@gmail.com>	<1290102497.2781.242.camel@edumazet-laptop> <20101118.095046.28818361.davem@davemloft.net> <4CE56CC4.4020107@gmail.com> <4CE56E89.4000902@trash.net> <4CE57C06.4080105@gmail.com>
-In-Reply-To: <4CE57C06.4080105@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1760290Ab0KRUdG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 15:33:06 -0500
+Received: from xenotime.net ([72.52.115.56]:51041 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1760247Ab0KRUdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 15:33:03 -0500
+Date: Thu, 18 Nov 2010 12:27:34 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org
+Cc: Bernhard Walle <walle@corscience.de>
+Subject: [PATCH 3/7] Documentation/gpio.txt: explain poll/select usage
+Message-ID: <12901120543034@xenotime.net>
+In-Reply-To: <12901120542939@xenotime.net>
+X-Mailer: gregkh_patchbomb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 18.11.2010 20:18, schrieb Justin P. Mattock:
-> On 11/18/2010 10:20 AM, Patrick McHardy wrote:
->> Am 18.11.2010 19:13, schrieb Justin P. Mattock:
->>> On 11/18/2010 09:50 AM, David Miller wrote:
->>>> From: Eric Dumazet<eric.dumazet@gmail.com>
->>>> Date: Thu, 18 Nov 2010 18:48:17 +0100
->>>>
->>>>> Let me guess...
->>>>>
->>>>> net/netfilter/nf_conntrack_core is compiled as a module, and ip_vs
->>>>> statically (in vmlinux) ?
->>>>>
->>>>> CONFIG_NF_CONNTRACK=m
->>>>> CONFIG_IP_VS=y
->>>>>
->>>>> We probably need some Kconfig magic ;)
->>>>
->>
->> Please try whether this patch fixes the problem.
->>
->> netfilter: fix IP_VS dependencies
->>
->> When NF_CONNTRACK is enabled, IP_VS uses conntrack symbols.
->> Therefore IP_VS can't be linked statically when conntrack
->> is built modular.
->>
->> Reported-by: Justin P. Mattock<justinmattock@gmail.com>
->> Signed-off-by: Patrick McHardy<kaber@trash.net>
->>
->>
-> 
-> 
-> alright!! doing the above change
-> CONFIG_NF_CONNTRACK=y gets a clean build.. as well as reverting
-> everything and using your patch..
-> 
-> Thanks for the fix..
+From: Bernhard Walle <walle@corscience.de>
 
-Thanks for testing. Dave, please apply directly, thanks!
+Add a bit more information how to use poll(2) on GPIO value files
+correctly. For me it was not clear that I need to poll(2) for
+POLLPRI|POLLERR or select(2) for exceptfds.
+
+Signed-off-by: Bernhard Walle <walle@corscience.de>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ Documentation/gpio.txt |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+--- linux-2.6.37-rc2-git4.orig/Documentation/gpio.txt
++++ linux-2.6.37-rc2-git4/Documentation/gpio.txt
+@@ -617,6 +617,16 @@ and have the following read/write attrib
+ 		is configured as an output, this value may be written;
+ 		any nonzero value is treated as high.
+ 
++		If the pin can be configured as interrupt-generating interrupt
++		and if it has been configured to generate interrupts (see the
++		description of "edge"), you can poll(2) on that file and
++		poll(2) will return whenever the interrupt was triggered. If
++		you use poll(2), set the events POLLPRI and POLLERR. If you
++		use select(2), set the file descriptor in exceptfds. After
++		poll(2) returns, either lseek(2) to the beginning of the sysfs
++		file and read the new value or close the file and re-open it
++		to read the value.
++
+ 	"edge" ... reads as either "none", "rising", "falling", or
+ 		"both". Write these strings to select the signal edge(s)
+ 		that will make poll(2) on the "value" file return.
+
+
+-- 
+
