@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759531Ab0KRUGW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 15:06:22 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:49789
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756258Ab0KRUGV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 15:06:21 -0500
-X-SpamScore: -6
-X-BigFish: VS-6(zz98dNzz1202hzzz2dh2a8h637h668h67dh685h63h)
-X-Spam-TCS-SCL: 2:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw01.freescale.net;RD:az33egw01.freescale.net;EFVD:NLI
-Message-ID: <4CE58736.4090703@freescale.com>
-Date: Thu, 18 Nov 2010 14:06:14 -0600
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101101 Fedora/2.0.10-1.fc13 SeaMonkey/2.0.10
+	id S1760134Ab0KRUIY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 15:08:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755902Ab0KRUIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 15:08:23 -0500
+Date: Thu, 18 Nov 2010 15:08:07 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
+Message-ID: <20101118200807.GC8131@redhat.com>
+References: <20101112161144.GP4823@redhat.com>
+ <4CDD6CAD.30303@windriver.com>
+ <20101112172755.GR4823@redhat.com>
+ <20101116184325.GB4823@redhat.com>
+ <4CE2E3C3.6060800@windriver.com>
+ <20101118080516.GJ32621@elte.hu>
+ <4CE52048.5080802@windriver.com>
+ <1290086232.2109.1507.camel@laptop>
+ <20101118193247.GF18100@redhat.com>
+ <4CE583D0.8050407@windriver.com>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>
-Subject: Re: How do I choose an arbitrary minor number for my tty device?
-References: <20101118153912.GA1443@suse.de> <4CE54E40.9040503@freescale.com> <20101118163321.GA2723@suse.de> <4CE5562B.8080604@freescale.com> <20101118165136.GA3103@suse.de> <4CE55ACB.80207@freescale.com> <20101118171856.GA4283@suse.de> <4CE5647F.5000203@freescale.com> <20101118175832.GA4931@suse.de> <4CE58005.7040308@freescale.com> <20101118200230.GA25715@suse.de>
-In-Reply-To: <20101118200230.GA25715@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Nov 2010 20:07:17.0018 (UTC) FILETIME=[32DB87A0:01CB875C]
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE583D0.8050407@windriver.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> Does that work for you?  Looks fine to me :)
+On Thu, Nov 18, 2010 at 01:51:44PM -0600, Jason Wessel wrote:
+> > So the problem is when the nmi watchdog is enabled, the perf event is
+> > 'active' and thus tries to read the counter value.  Because it is always
+> > zero, perf just assumes the counter overflowed and the NMI is his.
+> >
+> > Not sure how to fix it yet, other than include the logic that detects we
+> > are on a guest and disable perf??
+> >
+> >   
+> 
+> I highly doubt we want to disable perf.   I would rather use the source
+> and fix the nmi emulation in KVM/Qemu after we hear back the results
 
-Ok!
+Well I think Peter does not have a positive opinion about emulating perf
+inside a guest.  Nor are the KVM folks having much success in doing so.
 
-> But again, you really should get the driver model portion right...
+Just to clarify, perf counter emulation is _not_ implemented in kvm.
+Therefore disabling perf in the guest makes sense until someone gets
+around to actually writing the emulation code for perf in a guest. :-)
 
-I'll do that.
-
-One last question.  If I create multiple TTY devices, how do I tell the kernel
-which one should be used for the console?
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+Cheers,
+Don
