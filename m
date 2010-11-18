@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747Ab0KRAAC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 19:00:02 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:65162 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751532Ab0KRAAA (ORCPT
+	id S1752671Ab0KRAB0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 19:01:26 -0500
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:9854 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab0KRABY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 19:00:00 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6170"; a="63303506"
-Subject: Re: [PATCH v5 1/1] usb: Adding SuperSpeed support to dummy_hcd
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Greg KH <greg@kroah.com>
-Cc: Tatyana Brokhman <tlinder@codeaurora.org>, gregkh@suse.de,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101117213535.GD10541@kroah.com>
-References: <1289916492-28402-1-git-send-email-tlinder@codeaurora.org>
-	 <20101117213535.GD10541@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 17 Nov 2010 15:59:48 -0800
-Message-ID: <1290038388.16344.529.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 17 Nov 2010 19:01:24 -0500
+Message-ID: <4CE46CCF.4080707@caviumnetworks.com>
+Date: Wed, 17 Nov 2010 16:01:19 -0800
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: David Daney <ddaney@caviumnetworks.com>
+CC: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Cyril Chemparathy <cyril@ti.com>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 1/2] of/phylib: Use device tree properties to initialize
+ Marvell PHYs.
+References: <1290038071-13296-1-git-send-email-ddaney@caviumnetworks.com> <1290038071-13296-2-git-send-email-ddaney@caviumnetworks.com>
+In-Reply-To: <1290038071-13296-2-git-send-email-ddaney@caviumnetworks.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Nov 2010 00:02:13.0954 (UTC) FILETIME=[DADF8220:01CB86B3]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 13:35 -0800, Greg KH wrote:
-> On Tue, Nov 16, 2010 at 04:08:12PM +0200, Tatyana Brokhman wrote:
-> > USB 3.0 hub includes 2 hubs - HS and SS ones.
-> > Thus, when dummy_hcd enabled it will register 2 root hubs (SS and HS).
-> > 
-> > Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
-> > ---
-> >  drivers/usb/gadget/dummy_hcd.c |  500 ++++++++++++++++++++++++++++++++++++++-
-> >  1 files changed, 487 insertions(+), 13 deletions(-)
-> > 
-> > diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
-> > index 13b9f47..ec6adf6 100644
-> > --- a/drivers/usb/gadget/dummy_hcd.c
-> > +++ b/drivers/usb/gadget/dummy_hcd.c
-> > @@ -5,6 +5,7 @@
-> >   *
-> >   * Copyright (C) 2003 David Brownell
-> >   * Copyright (C) 2003-2005 Alan Stern
-> > + * Copyright (C) 2010 Code Aurora Forum. All rights reserved.
-> 
-> Does your lawyers agree that this is correct to add based on the size of
-> the file?  Hint, it doesn't pass the rule that some lawyers I work with
-> go by, so I would be surprised that it passes theirs.
+On 11/17/2010 03:54 PM, David Daney wrote:
+> Some aspects of PHY initialization are board dependent, things like
+> indicator LED connections and some clocking modes cannot be determined
+> by probing.  The dev_flags element of struct phy_device can be used to
+> control these things if an appropriate value can be passed from the
+> Ethernet driver.  We run into problems however if the PHY connections
+> are specified by the device tree.  There is no way for the Ethernet
+> driver to know what flags it should pass.
+>
+> If we are using the device tree, the struct phy_device will be
+> populated with the device tree node corresponding to the PHY, and we
+> can extract extra configuration information from there.
+>
+> The next question is what should the format of that information be?
+> It is highly device specific, and the device tree representation
+> should not be tied to any arbitrary kernel defined constants.  A
+> straight forward representation is just to specify the exact bits that
+> should be set using the "marvell,reg-init" property:
+>
+>        phy5: ethernet-phy@5 {
+> 	reg =<5>;
+> 	device_type = "ethernet-phy";
+> 	marvell,reg-init =
+> 		<0x00030010 0x5777>, /* Reg 3,16<- 0x5777 */
+> 		<0x00030011 0x00aa>, /* Reg 3,17<- 0x00aa */
+> 		<0x00030012 0x4105>, /* Reg 3,18<- 0x4105 */
+> 		<0x00030013 0x0060>; /* Reg 3,19<- 0x0060 */
+> 		<0x00020015 0x00300000>; /* clear bits 4..5 of Reg 2,21 */
 
-It's part of our requirements .. However, if you push back on it I think
-Tatyana can remove it.
+Well, of course these mask bits are reversed.  That last line should 
+really be:
 
-> Also, I didn't think that "Code Aurora Forum" was a "real" legal entity
-> last time I looked, so how can it own copyrights?  Who is the "real"
-> owner here?  (hint, who does your lawyers work for...)
+  	<0x00020015 0xffcf0000>; /* clear bits 4..5 of Reg 2,21 */
 
-The "Code Aurora Forum" is a real entity, and they do take the
-copyrights .. At least that's the intent I think. We're not lawyers tho.
 
-I work for QuiC which stands for Qualcomm Innovation Center, Inc. (as
-mentioned below) .. I think Tatyana does as well since he emails have
-the same signature as mine.
+>        };
+>
+> The Marvell PHYs have a page select register at register 22 (0x16), we
+> can specify any register by its page and register number.  These are
+> encoded in the high and low parts of the first word.  The second word
+> contains a mask and value to be ORed in its high and low parts.
+> property, the PHY initialization is unchanged.
+[...]
 
-Daniel
-
--- 
-
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+David Daney
