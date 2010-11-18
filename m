@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab0KRFkl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 00:40:41 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33948 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751254Ab0KRFkj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 00:40:39 -0500
-Message-ID: <4CE4BC49.10105@oracle.com>
-Date: Thu, 18 Nov 2010 13:40:25 +0800
-From: Tao Ma <tao.ma@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+	id S1753051Ab0KRFoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 00:44:23 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:61469 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751276Ab0KRFoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 00:44:22 -0500
+Message-ID: <4CE4BE8E.8060509@cn.fujitsu.com>
+Date: Thu, 18 Nov 2010 13:50:06 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Milton Miller <miltonm@bga.com>
-CC: Joel Becker <joel.becker@oracle.com>, ocfs2-devel@oss.oracle.com,
-        Mark Fasheh <mfasheh@suse.com>, linux-kernel@vger.kernel.org,
-        Goldwyn Rodrigues <rgoldwyn@suse.de>
-Subject: Re: ocfs2: char is not always signed
-References: <1290054011_17741@mail4.comsite.net>
-In-Reply-To: <1290054011_17741@mail4.comsite.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "jason.wessel" <jason.wessel@windriver.com>,
+        "Ted Ts'o" <tytso@mit.edu>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [RFC][PATCH 2/2] [PATCH 2/2] tracing: Make event based trace_printk()
+References: <20101118035803.453609353@goodmis.org> <20101118040949.782054673@goodmis.org>
+In-Reply-To: <20101118040949.782054673@goodmis.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-18 13:44:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-18 13:44:41,
+	Serialize complete at 2010-11-18 13:44:41
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/18/2010 11:58 AM, Steven Rostedt wrote:
+> +#define trace_printk(fmt, args...)					\
+> +	do {								\
+> +		static struct event_printk_struct			\
+> +		__attribute__((__aligned__(4)))				\
+> +		__attribute__((section("_trace_printk")))		\
+> +		______t = {						\
+> +			.format = fmt,					\
 
+if fmt is not constant, the compiler will complain...
 
-2010-11-18 12:20, Milton Miller wrote:
-> Commit 1c66b360fe262 (Change some lock status member in ocfs2_lock_res
-> to char.)  states that these fields need to be signed due to comparision
-> to -1, but only changed the type from unsigned char to char.   However, it
-> is a compiler option if char is a signed or unsigned type.  Change these
-> fields to signed char so the code will work with all compilers.
->
-> Signed-off-by: Milton Miller<miltonm@bga.com>
-oh, sorry I don't know this. Thanks.
-Acked-by: Tao Ma <tao.ma@oracle.com>
-> ---
-> I did not look for other fields that might be char.  PowerPC compilers
-> default to unsigned char, and aparently arm does as well from a quick
-> google search, to name two examples.
->
-> diff --git a/fs/ocfs2/ocfs2.h b/fs/ocfs2/ocfs2.h
-> index 1efea36..70dd3b1 100644
-> --- a/fs/ocfs2/ocfs2.h
-> +++ b/fs/ocfs2/ocfs2.h
-> @@ -159,9 +159,9 @@ struct ocfs2_lock_res {
->   	char                     l_name[OCFS2_LOCK_ID_MAX_LEN];
->   	unsigned int             l_ro_holders;
->   	unsigned int             l_ex_holders;
-> -	char			 l_level;
-> -	char			 l_requested;
-> -	char			 l_blocking;
-> +	signed char		 l_level;
-> +	signed char		 l_requested;
-> +	signed char		 l_blocking;
->
->   	/* Data packed - type enum ocfs2_lock_type */
->   	unsigned char            l_type;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> +			.func = __func__,				\
+> +			.file = __FILE__,				\
+> +			.line = __LINE__,				\
+> +		};							\
+> +		__trace_printk_check_format(fmt, ##args);		\
+> +		if (!__builtin_constant_p(fmt))				\
+> +			trace_printk_can_only_have_constant_format();	\
+
+so this is not need.
+
+> +		if (unlikely(__event_printk_test(&______t.enable)))	\
+> +			__trace_bprintk(_THIS_IP_, fmt, ##args); \
+> +	} while (0)
+
