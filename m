@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933763Ab0KSAMH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 19:12:07 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35205 "EHLO ogre.sisk.pl"
+	id S933799Ab0KSAMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 19:12:09 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:35209 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933490Ab0KSAJS convert rfc822-to-8bit (ORCPT
+	id S933493Ab0KSAJS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Nov 2010 19:09:18 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Norbert Preining" <preining@logic.at>
+        "Michael Stefaniuc" <mstefani@redhat.com>
 References: <tTUH_XeInOH.A.dMF.c3b5MB@chimera>
 In-Reply-To: <tTUH_XeInOH.A.dMF.c3b5MB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <t78YtCSuOqN.A.j7F.A4b5MB@chimera>
-Subject: [Bug #21652] several problems with intel graphics since 2.6.36
+Message-ID: <t78YtCSuOqN.A.hvF.83b5MB@chimera>
+Subject: [Bug #21932] Regression in 2.6.36 in single stepping over hardware breakpoint (Wine)
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 19 Nov 2010 00:53:40 +0100 (CET)
+Date: Fri, 19 Nov 2010 00:53:42 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,11 +34,11 @@ introduced between 2.6.35 and 2.6.36.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=21652
-Subject		: several problems with intel graphics since 2.6.36
-Submitter	: Norbert Preining <preining@logic.at>
-Date		: 2010-10-27 14:32 (23 days old)
-Message-ID	: <20101027143252.GA8676@gamma.logic.tuwien.ac.at>
-References	: http://marc.info/?l=linux-kernel&m=128818998630241&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=21932
+Subject		: Regression in 2.6.36 in single stepping over hardware breakpoint (Wine)
+Submitter	: Michael Stefaniuc <mstefani@redhat.com>
+Date		: 2010-10-28 0:12 (22 days old)
+Message-ID	: <4CC8BFDD.8080600@redhat.com>
+References	: http://marc.info/?l=linux-kernel&m=128822477714448&w=2
 
 
