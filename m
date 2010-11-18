@@ -1,153 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932598Ab0KRSaX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 13:30:23 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:46970 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758988Ab0KRSaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 13:30:22 -0500
-Date: Thu, 18 Nov 2010 18:30:07 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/8] mm: vmscan: Reclaim order-0 and use compaction
-	instead of lumpy reclaim
-Message-ID: <20101118183006.GO8135@csn.ul.ie>
-References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie> <1290010969-26721-4-git-send-email-mel@csn.ul.ie> <20101118180956.GA30376@random.random>
+	id S1760116Ab0KRScQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 13:32:16 -0500
+Received: from stinky.trash.net ([213.144.137.162]:39526 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755539Ab0KRScO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 13:32:14 -0500
+Message-ID: <4CE5712B.2080909@trash.net>
+Date: Thu, 18 Nov 2010 19:32:11 +0100
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101118180956.GA30376@random.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, netfilter-devel@vger.kernel.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, KOVACS Krisztian <hidden@balabit.hu>,
+        Balazs Scheidler <bazsi@balabit.hu>
+Subject: Re: linux-next: Tree for November 18 (netfilter)
+References: <20101118134256.fe132215.sfr@canb.auug.org.au> <20101118092520.6ad964c7.randy.dunlap@oracle.com>
+In-Reply-To: <20101118092520.6ad964c7.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 07:09:56PM +0100, Andrea Arcangeli wrote:
-> On Wed, Nov 17, 2010 at 04:22:44PM +0000, Mel Gorman wrote:
-> > +	 */
-> > +	if (sc->lumpy_reclaim_mode & LUMPY_MODE_COMPACTION)
-> > +		nr_to_scan = max(nr_to_scan, (1UL << sc->order));
+Am 18.11.2010 18:25, schrieb Randy Dunlap:
+> On Thu, 18 Nov 2010 13:42:56 +1100 Stephen Rothwell wrote:
 > 
-> Just one nitpick: I'm not sure this is a good idea. We can scan quite
-> some pages and we may do nothing on them.
-
-True, I could loop based on nr_taken taking care to not infinite loop in
-there.
-
-> First I guess for symmetry
-> this should be 2UL << sc->oder to match the 2UL << order in the
-> watermark checks in compaction.c (maybe it should be 3UL if something
-> considering the probability at least one page is mapped and won't be
-> freed is quite high). But SWAP_CLUSTER_MAX is only 32 pages.. not even
-> close to 1UL << 9 (hugepage order 9).
-
-True again, the scan rate gets bumped up for compaction recognising that
-more pages are required.
-
-> So I think this can safely be
-> removed... it only makes a difference for the stack with order 2. And
-> for order 2 when we take the spinlocks we can take all 32 pages
-> without screwing the "free" levels in any significant way, considering
-> maybe only 4 pages are really freed in the end, and if all 32 pages
-> are really freed (i.e. all plain clean cache), all that matters to
-> avoid freeing more cache is to stick to compaction next time around
-> (i.e. at the next allocation). And if compaction fails again next time
-> around, then it's all right to shrink 32 more pages even for order
-> 2...
+>> Hi all,
+>>
+>> Changes since 20101117:
 > 
-
-Well, I'm expecting the exit of direct reclaim and another full
-allocation loop so this is taken into account.
-
-> In short I'd delete the above chunk and to run the shrinker unmodified
-> as this is a too lowlevel idea, and the only real life effect is to
-> decrease VM scalability for kernel stack allocation a tiny bit, with
-> no benefit whatsoever.
 > 
-
-I'm not sure I get this. If it reclaims too few pages then compaction
-will just fail the next time so we'll take the larger loop more
-frequently. This in itself is not too bad although it interferes with
-the patches later in the series that has try_to_compact_pages() do a
-faster scan than this inner compaction loop.
-
-> It's subtle because the difference it'd makes it so infinitesimal and
-> I can only imagine it's a worsening overall difference.
-
-I can try it out to be sure but right now I'm not convinced. Then again,
-I'm burned out after reviewing THP so I'm not at my best either :)
-
-> > @@ -1425,6 +1438,9 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
-> >  
-> >  	putback_lru_pages(zone, sc, nr_anon, nr_file, &page_list);
-> >  
-> > +	if (sc->lumpy_reclaim_mode & LUMPY_MODE_COMPACTION)
-> > +		reclaimcompact_zone_order(zone, sc->order, sc->gfp_mask);
-> > +
-> >  	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
-> >  		zone_idx(zone),
-> >  		nr_scanned, nr_reclaimed,
+> include/net/netfilter/nf_conntrack.h:94: error: field 'ct_general' has incomplete type
+> include/net/netfilter/nf_conntrack.h:174: error: 'const struct sk_buff' has no member named 'nfct'
+> include/net/netfilter/nf_conntrack.h:181: error: implicit declaration of function 'nf_conntrack_put'
+> include/net/netfilter/nf_conntrack_ecache.h:35: error: 'struct net' has no member named 'ct'
+> include/net/netfilter/nf_conntrack_core.h:60: error: 'struct sk_buff' has no member named 'nfct'
+> net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:36: error: 'struct sk_buff' has no member named 'nfct'
+> net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:37: error: implicit declaration of function 'nf_ct_zone'
+> net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:37: error: 'struct sk_buff' has no member named 'nfct'
+> net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:60: error: 'struct sk_buff' has no member named 'nfct'
+> net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:60: error: 'struct sk_buff' has no member named 'nfct'
+> net/ipv6/netfilter/nf_conntrack_reasm.c:598: error: implicit declaration of function 'nf_conntrack_put_reasm'
+> net/ipv6/netfilter/nf_conntrack_reasm.c:598: error: 'struct sk_buff' has no member named 'nfct_reasm'
+> net/ipv6/netfilter/nf_conntrack_reasm.c:599: error: implicit declaration of function 'nf_conntrack_get_reasm'
+> net/ipv6/netfilter/nf_conntrack_reasm.c:600: error: 'struct sk_buff' has no member named 'nfct_reasm'
 > 
-> I'm worried about this one as the objective here is to increase the
-> amount of free pages, and the loop won't stop until we reach
-> nr_reclaimed >= nr_to_reclaim.
-
-Which remains at SWAP_CLUSTER_MAX. shrink_inactive_list is doing more
-work than requested to satisfy the compaction requirements. It could be
-fed directly into nr_to_reclaim though if necessary.
-
-> I'm afraid it'd lead sometime to be
-> doing an overwork of compaction here for no good. In short there is no
-> feedback check into the loop to verify if this newly introduced
-> compaction work in the shrinker lead us to get the hugepage and stop
-> the loop. It sounds some pretty random compaction invocation here just
-> to run it more frequently.
 > 
+> randconfig file is attached.
 
-While we enter compaction, we also use compaction_suitable() to predict
-if compaction would be a waste of time. If it would be, we don't compact
-and instead go all the way out to the allocator again. From this
-perspective, it makes more sense to have altered nr_to_reclaim than
-nr_to_scan.
-
-> nr_to_reclaim is only 32 anyway. So my suggestion is to remove it and
-> let the shrinker do its thing without interleaving compaction inside
-> the shrinker, without feedback check if the compaction actually
-> succeeded (maybe 100% of free ram is contiguous already), and then try
-> compaction again outside of the shrinker interleaving it with the
-> shrinker as usual if the watermarks aren't satisfied yet after
-> shrinker freed nr_to_reclaim pages.
-> 
-
-I'll try it but again it busts the idea of try_to_compact_page() doing an
-optimistic compaction of a subset of pages. It also puts a bit of a hole in
-the idea of developing lumpy compaction later because the outer allocation
-loop is unsuitable and I'm not keen on the idea of putting reclaim logic
-in mm/compaction.c
-
-> I prefer we keep separated the job of freeing more pages from the job
-> of compacting the single free pages into higher order pages. It's only
-> 32 pages being freed we're talking about here so no need to calling
-> compaction more frequently
-
-Compaction doesn't happen if enough pages are not free. Yes, I call into
-compaction but it shouldn't do any heavy work. It made more sense to do
-it that way than embed more compaction awareness into vmscan.c
-
-> (if something we should increase
-> nr_to_reclaim to 512 and to call compaction less frequently). If the
-> interleaving of the caller isn't ok then fix it in the caller and also
-> update the nr_to_reclaim, but I think keeping those separated is way
-> cleaner and the mixture is unnecessary.
-> 
-
-I'll look closer at altering nr_to_reclaim instead of nr_to_scan. Thanks
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Krisztian, Balazs, could you please have a look at this? If the
+intention is to use NF_DEFRAG_IPV6 without conntrack, we probably
+need a couple of ifdefs.
