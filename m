@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932698Ab0KRR1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:27:54 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:59552 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755411Ab0KRR1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:27:53 -0500
-Date: Thu, 18 Nov 2010 17:27:39 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v3] factor out kswapd sleeping logic from kswapd()
-Message-ID: <20101118172738.GN8135@csn.ul.ie>
-References: <20101114180505.BEE2.A69D9226@jp.fujitsu.com> <20101115094239.GH27362@csn.ul.ie> <20101116144709.BF26.A69D9226@jp.fujitsu.com>
+	id S932737Ab0KRR2S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:28:18 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:60999 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755411Ab0KRR2R convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 12:28:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=tEw+4BH/9vMnYgNiWcJPWRUVL8FsBbznHeHc5wqkOcBqpEPcYAswpJIbRt9jGYrfxU
+         hQJB7D6q4d77ANLes+KA9O/7EyEBppaRZxPBtfGOm2wieP6A2zHOBtYaiXEKA++3Ufhd
+         oSHxK5UnMA9tCnL4N8YGIA/HGUm3QBfO86M+s=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [Regression] [2.6.37-rc2] WARNING: at drivers/pci/pci-sysfs.c:758 pci_mmap_resource+0x133/0x190()
+Date: Thu, 18 Nov 2010 18:28:11 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.4.5; i686; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, martin.wilck@ts.fujitsu.com
+References: <201011172153.11313.maciej.rutecki@gmail.com> <20101117130018.432b0ec8@jbarnes-desktop>
+In-Reply-To: <20101117130018.432b0ec8@jbarnes-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101116144709.BF26.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201011181828.11943.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 03:07:22PM +0900, KOSAKI Motohiro wrote:
-> > > +void kswapd_try_to_sleep(pg_data_t *pgdat, int order)
-> > > +{
-> > 
-> > As pointed out elsewhere, this should be static.
+On środa, 17 listopada 2010 o 22:00:18 Jesse Barnes wrote:
+> On Wed, 17 Nov 2010 21:53:10 +0100
 > 
-> Fixed.
+> Maciej Rutecki <maciej.rutecki@gmail.com> wrote:
+> > Last known good: 2.6.37-rc1
+> > Bad kernel: 2.6.37-rc2
+> > Hardware: VirtualBox
 > 
-> 
-> > > +	long remaining = 0;
-> > > +	DEFINE_WAIT(wait);
-> > > +
-> > > +	if (freezing(current) || kthread_should_stop())
-> > > +		return;
-> > > +
-> > > +	prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
-> > > +
-> > > +	/* Try to sleep for a short interval */
-> > > +	if (!sleeping_prematurely(pgdat, order, remaining)) {
-> > > +		remaining = schedule_timeout(HZ/10);
-> > > +		finish_wait(&pgdat->kswapd_wait, &wait);
-> > > +		prepare_to_wait(&pgdat->kswapd_wait, &wait, TASK_INTERRUPTIBLE);
-> > > +	}
-> > > +
-> > > +	/*
-> > > +	 * After a short sleep, check if it was a
-> > > +	 * premature sleep. If not, then go fully
-> > > +	 * to sleep until explicitly woken up
-> > > +	 */
-> > 
-> > Very minor but that comment should now fit on fewer lines.
-> 
-> Thanks, fixed.
-> 
-> 
-> > > +	if (!sleeping_prematurely(pgdat, order, remaining)) {
-> > > +		trace_mm_vmscan_kswapd_sleep(pgdat->node_id);
-> > > +		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
-> > > +		schedule();
-> > > +		set_pgdat_percpu_threshold(pgdat, calculate_pressure_threshold);
-> > 
-> > I posted a patch adding a comment on why set_pgdat_percpu_threshold() is
-> > called. I do not believe it has been picked up by Andrew but it if is,
-> > the patches will conflict. The resolution will be obvious but you may
-> > need to respin this patch if the comment patch gets picked up in mmotm.
-> > 
-> > Otherwise, I see no problems.
-> 
-> OK, I've rebased the patch on top your comment patch. 
-> 
-> 
-> 
-> From 1bd232713d55f033676f80cc7451ff83d4483884 Mon Sep 17 00:00:00 2001
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Date: Mon, 6 Dec 2010 20:44:27 +0900
-> Subject: [PATCH] factor out kswapd sleeping logic from kswapd()
-> 
-> Currently, kswapd() function has deeper nest and it slightly harder to
-> read. cleanup it.
-> 
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Should be fixed in master now, please re-test.
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+Yes, update to latest kernel tree, and kernel works OK.
 
+Thanks
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Maciej Rutecki
+http://www.maciek.unixy.pl
