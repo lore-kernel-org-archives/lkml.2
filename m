@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab0KRDZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 22:25:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58592 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850Ab0KRDZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 22:25:14 -0500
-Message-ID: <4CE49C8B.2050005@redhat.com>
-Date: Wed, 17 Nov 2010 22:24:59 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>,
+	id S1753825Ab0KRDjP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 22:39:15 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55792 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751371Ab0KRDjN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 22:39:13 -0500
+Date: Wed, 17 Nov 2010 19:34:31 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Ben Gamari <bgamari.foss@gmail.com>, linux-kernel@vger.kernel.org,
-        rsync@lists.samba.org, linux-mm@kvack.org,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: fadvise DONTNEED implementation (or lack thereof)
-References: <20101109162525.BC87.A69D9226@jp.fujitsu.com>	<877hgmr72o.fsf@gmail.com>	<20101114140920.E013.A69D9226@jp.fujitsu.com>	<AANLkTim59Qx6TsvXnTBL5Lg6JorbGaqx3KsdBDWO04X9@mail.gmail.com>	<1289810825.2109.469.camel@laptop>	<AANLkTikibS1fDuk67RHk4SU14pJ9nPdodWba1T3Z_pWE@mail.gmail.com>	<4CE14848.2060805@redhat.com>	<AANLkTi=6RtPDnZZa=jrcciB1zHQMiB3LnouBw3G2OyaK@mail.gmail.com>	<4CE40129.9060103@redhat.com> <AANLkTin2fXGOAdGNegDhijjo_kV7nOBJP_hagjgoYdtX@mail.gmail.com>
-In-Reply-To: <AANLkTin2fXGOAdGNegDhijjo_kV7nOBJP_hagjgoYdtX@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/13] IO-less dirty throttling v2
+Message-Id: <20101117193431.ec1f4547.akpm@linux-foundation.org>
+In-Reply-To: <20101118032141.GP13830@dastard>
+References: <20101117042720.033773013@intel.com>
+	<20101117150330.139251f9.akpm@linux-foundation.org>
+	<20101118020640.GS22876@dastard>
+	<20101117180912.38541ca4.akpm@linux-foundation.org>
+	<20101118032141.GP13830@dastard>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17/2010 09:47 PM, Minchan Kim wrote:
-> On Thu, Nov 18, 2010 at 1:22 AM, Rik van Riel<riel@redhat.com>  wrote:
->> On 11/17/2010 05:16 AM, Minchan Kim wrote:
->>
->>> Absolutely. But how about rsync's two touch?
->>> It can evict working set.
->>>
->>> I need the time for investigation.
->>> Thanks for the comment.
->>
->> Maybe we could exempt MADV_SEQUENTIAL and FADV_SEQUENTIAL
->> touches from promoting the page to the active list?
->>
->
-> The problem is non-mapped file page.
-> non-mapped file page promotion happens by only mark_page_accessed.
-> But it doesn't enough information to prevent promotion(ex, vma or file)
+On Thu, 18 Nov 2010 14:21:41 +1100 Dave Chinner <david@fromorbit.com> wrote:
 
-I believe we have enough information in filemap.c and can just
-pass that as a parameter to mark_page_accessed.
+> > But mainly because we're taking the work accounting away from the user
+> > who caused it and crediting it to the kernel thread instead, and that's
+> > an actively *bad* thing to do.
+> 
+> The current foreground writeback is doing work on behalf of the
+> system (i.e. doing background writeback) and therefore crediting it
+> to the user process. That seems wrong to me; it's hiding the
+> overhead of system tasks in user processes.
+> 
+> IMO, time spent doing background writeback should not be creditted
+> to user processes - writeback caching is a function of the OS and
+> it's overhead should be accounted as such.
 
-> Here is another idea.
-> Current problem is following as.
-> User can use fadivse with FADV_DONTNEED.
-> But problem is that it can't affect when it meet dirty pages.
-> So user have to sync dirty page before calling fadvise with FADV_DONTNEED.
-> It would lose performance.
->
-> Let's add some semantic of FADV_DONTNEED.
-> It invalidates only pages which are not dirty.
-> If it meets dirty page, let's move the page into inactive's tail or head.
-> If we move the page into tail, shrinker can move it into head again
-> for deferred write if it isn't written the backed device.
+bah, that's bunk.  Using this logic, _no_ time spent in the kernel
+should be accounted to the user process and we may as well do away with
+system-time accounting altogether.
 
-That sounds like a good idea.
+If userspace performs some action which causes the kernel to consume
+CPU resources, that consumption should be accounted to that process.
 
--- 
-All rights reversed
+Yes, writeback can be inaccurate because process A will write back
+process B's stuff, but that should even out on average, and it's more
+accurate than saying "zero".
+
+> Indeed, nobody has
+> realised (until now) just how inefficient it really is because of
+> the fact that the overhead is mostly hidden in user process system
+> time.
+
+"hidden"?  You do "time dd" and look at the output!
+
+_now_ it's hidden.  You do "time dd" and whee, no system time!  You
+need to do complex gymnastics with kernel thread accounting to work out
+the real cost of your dd.
