@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562Ab0KRRT7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:19:59 -0500
-Received: from cantor.suse.de ([195.135.220.2]:54775 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756877Ab0KRRT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:19:58 -0500
-Date: Thu, 18 Nov 2010 09:18:56 -0800
-From: Greg KH <gregkh@suse.de>
-To: Timur Tabi <timur@freescale.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>
-Subject: Re: How do I choose an arbitrary minor number for my tty device?
-Message-ID: <20101118171856.GA4283@suse.de>
-References: <20101117221903.GA4066@suse.de>
- <4CE45A4E.70308@freescale.com>
- <20101118022434.GA9833@suse.de>
- <4CE546C5.8060401@freescale.com>
- <20101118153912.GA1443@suse.de>
- <4CE54E40.9040503@freescale.com>
- <20101118163321.GA2723@suse.de>
- <4CE5562B.8080604@freescale.com>
- <20101118165136.GA3103@suse.de>
- <4CE55ACB.80207@freescale.com>
+	id S932552Ab0KRRWY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:22:24 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:46504 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755241Ab0KRRWX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 12:22:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=uoCsGa0hvqvVsg1r24P0SNYNRfne2bsr00Qpcms60Xv/naUlfhY+E1mj8ovnyDfuxF
+         Jw5tDpfQnygFn32TFKbx//ckQSf6Uq4rpplNuCkSizC8/hAmDu4xfR1za16HJQqDjguW
+         T+q+qVYRhEYdswtAK6UwFljK2Eqj9QiCAAmDg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE55ACB.80207@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1290094063.3187.41.camel@heimdal.trondhjem.org>
+References: <AANLkTimavN8px1k_Y65mFqsAsiLjgCh6vos22ZnZm+3Z@mail.gmail.com> <1290094063.3187.41.camel@heimdal.trondhjem.org>
+From: Peng Tao <lkml.bergwolf@gmail.com>
+Date: Fri, 19 Nov 2010 01:22:01 +0800
+X-Google-Sender-Auth: 1FjSIzTpduqr0CYoRu-9OzUpqjE
+Message-ID: <AANLkTik6cGbhyAPBKVoq49ePEfxgVaNL16ghXgztya1V@mail.gmail.com>
+Subject: Re: Question about nfs_page_async_flush assertion
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 10:56:43AM -0600, Timur Tabi wrote:
-> Greg KH wrote:
-> > Why?  Again, it doesn't matter, and no other tty driver does it.
-> > 
-> > Actually you do have control over it, if you really want it, but again,
-> > don't do that :)
-> 
-> Because the only way to know which byte channel tty you want is via the byte
-> channel handle.
-> 
-> Think of the situation where you have two serial ports on the back of your
-> computer.  One of them is /dev/ttyS0, and the other is /dev/ttyS1.  But which
-> one is which?  The only way to find out is try one and see if it works.
+On Thu, Nov 18, 2010 at 11:27 PM, Trond Myklebust
+<trond.myklebust@fys.uio.no> wrote:
+> On Thu, 2010-11-18 at 18:53 +0800, Peng Tao wrote:
+>> Hi, all,
+>>
+>> nfs_writepages calls into
+>> write_cache_pages()->nfs_writepages_callback()->nfs_do_writepage()->nfs_page_async_flush(),
+>> where it asserts BUG_ON(test_bit(PG_CLEAN, &req->wb_flags)).
+>> My question is: how do we guarantee the request has PG_CLEAN flag set?
+>
+> We don't. We guarantee that the request has PG_CLEAN cleared, and that
+> is done when we dirty the page (see nfs_try_to_update_request()).
+Ah, I missed. It is test_bit() other than !test_bit(). Thank you Trond
+for pointing it out.
+Sorry for the spam :)
 
-No, you can use the /dev/serial/ links to determine exactly which is
-which depending on the pci id, and other unique identifiers (serial
-numbers, etc.)
-
-> Now that might be acceptable for serial ports that are fixed physically.  But
-> byte channels handles are completely arbitrary and easily change with even the
-> slightest re-configuration of the partitions under the hypervisor.  I need to
-> have some way to tell userspace that /dev/ttybc0 is byte channel handle 73.
-
-Then again, just use the /dev/serial/ symlinks that are there for you.
-
-> > Sorry, I can't do code review, or accept code that is not allowed to be
-> > sent to the public, as, surprise, I'm public :)
-> 
-> Well, ok.  I didn't want to spam the mailing list with something that only you
-> asked for, but here it is:
-
-Is this somehow not public code?  What just changed in the past 15
-minutes?
-
-confused,
-
-greg k-h
+-- 
+Thanks,
+-Bergwolf
