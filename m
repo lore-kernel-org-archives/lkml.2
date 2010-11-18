@@ -1,45 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab0KRHNL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 02:13:11 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:53693 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023Ab0KRHNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 02:13:10 -0500
-Message-ID: <4CE4D306.6030707@cn.fujitsu.com>
-Date: Thu, 18 Nov 2010 15:17:26 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1755043Ab0KRHRt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 02:17:49 -0500
+Received: from smtp-vbr14.xs4all.nl ([194.109.24.34]:3530 "EHLO
+	smtp-vbr14.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754856Ab0KRHRs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 02:17:48 -0500
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Pavan Savoy <pavan_savoy@ti.com>
+Subject: Re: [PATCH v4 0/6] FM V4L2 drivers for WL128x
+Date: Thu, 18 Nov 2010 08:17:39 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-tschai; KDE/4.4.5; x86_64; ; )
+Cc: "Ohad Ben-Cohen" <ohad@wizery.com>, mchehab@infradead.org,
+        manjunatha_halli@ti.com, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org
+References: <1289913494-21590-1-git-send-email-manjunatha_halli@ti.com> <AANLkTi=ZT0E=A9ZYAM86qu4P8eStkF2PLep6-DofCX-s@mail.gmail.com> <AANLkTinyaZ07HBFNHNyR9eK6__QdZtG6O1gQX1F+YRB9@mail.gmail.com>
+In-Reply-To: <AANLkTinyaZ07HBFNHNyR9eK6__QdZtG6O1gQX1F+YRB9@mail.gmail.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 1/6] KVM: MMU: fix forgot flush vcpu tlbs
-References: <4CE355A0.6020907@cn.fujitsu.com> <20101117152943.GA18959@amt.cnet> <4CE4024B.4090600@redhat.com> <20101117173616.GG18959@amt.cnet>
-In-Reply-To: <20101117173616.GG18959@amt.cnet>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-18 15:13:29,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-18 15:13:29,
-	Serialize complete at 2010-11-18 15:13:29
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Message-Id: <201011180817.39801.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2010 01:36 AM, Marcelo Tosatti wrote:
-
->> I don't think we need to flush immediately; set a "tlb dirty" bit
->> somewhere that is cleareded when we flush the tlb.
->> kvm_mmu_notifier_invalidate_page() can consult the bit and force a
->> flush if set.
+On Thursday, November 18, 2010 06:54:16 Pavan Savoy wrote:
+> Hans, Mauro, Ohad,
 > 
-> Yep.
+> On Wed, Nov 17, 2010 at 6:32 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> > Hi Manjunatha,
+> >
+> > On Tue, Nov 16, 2010 at 3:18 PM,  <manjunatha_halli@ti.com> wrote:
+> >>  drivers/staging/ti-st/Kconfig        |   10 +
+> >>  drivers/staging/ti-st/Makefile       |    2 +
+> >>  drivers/staging/ti-st/fmdrv.h        |  259 ++++
+> >>  drivers/staging/ti-st/fmdrv_common.c | 2141 ++++++++++++++++++++++++++++++++++
+> >>  drivers/staging/ti-st/fmdrv_common.h |  458 ++++++++
+> >>  drivers/staging/ti-st/fmdrv_rx.c     |  979 ++++++++++++++++
+> >>  drivers/staging/ti-st/fmdrv_rx.h     |   59 +
+> >>  drivers/staging/ti-st/fmdrv_tx.c     |  461 ++++++++
+> >>  drivers/staging/ti-st/fmdrv_tx.h     |   37 +
+> >>  drivers/staging/ti-st/fmdrv_v4l2.c   |  757 ++++++++++++
+> >>  drivers/staging/ti-st/fmdrv_v4l2.h   |   32 +
+> >>  11 files changed, 5195 insertions(+), 0 deletions(-)
+> >
+> > Usually when a driver is added to staging, it should also have a TODO
+> > file specifying what needs to be done before the driver can be taken
+> > out of staging (at least as far as the author knows of today).
+> >
+> > It helps keeping track of the open issues in the driver, which is good
+> > for everyone - the author, the random contributor/observer, and
+> > probably even the staging maintainer.
+> >
+> > Can you please add such a TODO file ?
+> >
+> > Thanks,
+> > Ohad.
 > 
+> Thanks Ohad, for the comments, We do have an internal TODO.
+> In terms of functionality we have stuff like TX RDS which already has
+> few CIDs in the extended controls.
+> extend V4L2 for complete-scan, add in stop search during hw_seek .. etc...
+> But I just wanted to ask whether this is good enough to be staged.
+> Because as we begin to implement and add in the items in TODO - the
+> patch set will keep continuing to grow.
+> 
+> So Hans, Mauro, What do you think ?
+> It would be real helpful - if this can be staged, it is becoming
+> difficult to maintain for us.
 
-Great, i'll do it in the v3.
+I have no problem with it going to staging. It is not yet ready for the
+mainline. I'll try to do a quick review and point out what needs to be
+changed.
 
-Do we need a simple bug fix patch(which immediately flush tlbs) for
-backport first?
+Regards,
 
+	Hans
+
+-- 
+Hans Verkuil - video4linux developer - sponsored by Cisco
