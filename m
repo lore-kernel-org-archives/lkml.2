@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760746Ab0KRWHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 17:07:07 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:38304 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754952Ab0KRWHE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 17:07:04 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAJ4x5UxLd/sX/2dsb2JhbAAHgz3ONpBygSKDNnMEhFqLEA
-X-IronPort-AV: E=Sophos;i="4.59,219,1288584000"; 
-   d="scan'208";a="82910916"
-Message-ID: <4CE5A386.7000105@teksavvy.com>
-Date: Thu, 18 Nov 2010 17:07:02 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1760761Ab0KRWHa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 17:07:30 -0500
+Received: from kroah.org ([198.145.64.141]:42902 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760751Ab0KRWH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 17:07:28 -0500
+Date: Thu, 18 Nov 2010 14:06:39 -0800
+From: Greg KH <greg@kroah.com>
+To: =?utf-8?B?Uy7Dh2HEn2xhcg==?= Onur <caglar@CS.Princeton.EDU>
+Cc: Youquan Song <youquan.song@linux.intel.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Song, Youquan" <youquan.song@intel.com>
+Subject: Re: [stable] Boot failure with 2.6.27.46 on Xeon E5620 (Westmere
+ EP)
+Message-ID: <20101118220639.GA956@kroah.com>
+References: <000954C6-B4AC-4FD8-BA3B-C3B199C7607F@CS.Princeton.EDU>
+ <20100525155307.GA7453@kroah.com>
+ <620C3556-2708-4704-90F3-37DDEF1A404E@CS.Princeton.EDU>
+ <20100525205123.GA14993@kroah.com>
+ <1274833451.2892.574.camel@sbs-t61.sc.intel.com>
+ <DD6ACA75-527D-406D-971B-64F042E0ED26@CS.Princeton.EDU>
+ <20100526132357.GA26728@youquan-linux.bj.intel.com>
+ <E934EC71-FD1D-4750-818F-DDEBA2F68B4D@CS.Princeton.EDU>
+ <20101118215429.GA29243@kroah.com>
+ <42E89D5B-D2D6-42E5-A218-B538968FF6E5@CS.Princeton.EDU>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Greg Freemyer <greg.freemyer@gmail.com>, Jeff Moyer <jmoyer@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
-        tytso@mit.edu, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>	 <20101118130630.GJ6178@parisc-linux.org>	 <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>	 <20101118141957.GK6178@parisc-linux.org>	 <20101118142918.GA18510@infradead.org>	 <1290100750.3041.72.camel@mulgrave.site>	 <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>	 <1290102098.3041.77.camel@mulgrave.site>	 <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>	 <4CE59E57.2090009@teksavvy.com> <1290117009.11007.42.camel@mulgrave.site>
-In-Reply-To: <1290117009.11007.42.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <42E89D5B-D2D6-42E5-A218-B538968FF6E5@CS.Princeton.EDU>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-11-18 04:50 PM, James Bottomley wrote:
->
-> Before we go gung ho on this, there's no evidence that N discontiguous
-> ranges in one command are any better than the ranges sent N times ...
-> the same amount of erase overhead gets sent on SSDs.
+On Thu, Nov 18, 2010 at 04:59:12PM -0500, "S.Çağlar Onur" wrote:
+> Hi Greg,
+> 
+> On Nov 18, 2010, at 4:54 PM, Greg KH wrote:
+> 
+> > On Thu, Nov 18, 2010 at 04:24:40PM -0500, "S.Çağlar Onur" wrote:
+> >> Hi Youquan & Greg,
+> >> 
+> >> 
+> >> On May 26, 2010, at 9:23 AM, Youquan Song wrote:
+> >> 
+> >>>>> I can't think of any known issues in 2.6.27 that can lead to this kind
+> >>>>> of boot failure on WSM-EP. Caglar, It will be nice if you can do git
+> >>>>> bisect between working and non-working kernels.
+> >>>> 
+> >>>> Sure, I'll try to boot those with plain 2.6.27 to see but please note that it's going to be little time consuming. For each one I have to create a custom boot image for them to download and test (a.k.a. don't expect to hear from me soon :))
+> >>> 
+> >>> Hi Caglar,
+> >>> 
+> >>> What's the microcode version? Get by "dmesg | grep microcode" if you
+> >>> success boot other version of kernel.
+> >>> Can you try to disable C-state(C6) in BIOS before your boot 2.6.27?
+> >> 
+> >> First of all I'm really sorry that it took really long time to reply this mail as I was waiting Dell to send a loaner machine to us. This morning I've got the hardware and following patch solved the boot problem that I was observing, Greg could you consider adding that to 2.6.27-stable tree?
+> >> 
+> >> commit a0bf284bfedd6dc95bbee7ebf5ccf3b5f753a008
+> > 
+> > No problem, now queued up.
+> 
+> Umh please drop that patch for now, seems like I mixed my kernel
+> configs and compiled/tested a 64 bit one (by the way 64bit kernel
+> boots fine) but 32bit one still fails with the same error. I'll try to
+> bisect...
 
-No, we do have evidence:  execution time of the TRIM commands on the SSD.
+Heh, ok, I'll go drop it now :)
 
-The one-range-at-a-time is incredibly slow compared to multiple ranges at a time.
-That slowness comes from somewhere, with about 99.9% certainty that it is due
-to the drive performing slow flash erase cycles.
+that's what I get for trying to be quick...
 
-I think perhaps we should do the batching as much as possible,
-and then split them into single ranges for LLDs that cannot handle multi-ranges.
+thanks,
 
-Way more efficient that way.
-
-Cheers
+greg k-h
