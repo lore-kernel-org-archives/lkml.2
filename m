@@ -1,59 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758174Ab0KROFb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 09:05:31 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:51978 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758141Ab0KROF3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758156Ab0KROF3 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 18 Nov 2010 09:05:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=RtNRQcGWSw9MnWgT/ziPovseJK3htuz9Z0Fpz3fq841tCo9WIFDLWsMLgmsO3Sz8nL
-         r0DWrfP6av2WAB/kjfv9dXSL6YZ7KX7oAQlP2UQnCly3J/WmFTMDvAZzPp/bNlZgVwoZ
-         kUbn+eZl2M3VnraG1p4T0GBZlDoCRAawJ/aSA=
-Date: Thu, 18 Nov 2010 17:05:22 +0300
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: rklein@nvidia.com, broonie@opensource.wolfsonmicro.com, achew@nvidia.com,
-        olof@lixom.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] POWER: Add gpio charger driver
-Message-ID: <20101118140522.GD19527@oksana.dev.rtsoft.ru>
-References: <1287663957-30099-1-git-send-email-lars@metafoo.de>
- <1287676501-23254-1-git-send-email-lars@metafoo.de>
+Received: from hera.kernel.org ([140.211.167.34]:53418 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756877Ab0KROF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 09:05:26 -0500
+Date: Thu, 18 Nov 2010 14:05:04 GMT
+From: tip-bot for Steven Rostedt <srostedt@redhat.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        eric.dumazet@gmail.com, rostedt@goodmis.org, srostedt@redhat.com,
+        tglx@linutronix.de, jolsa@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        eric.dumazet@gmail.com, rostedt@goodmis.org, srostedt@redhat.com,
+        tglx@linutronix.de, jolsa@redhat.com
+In-Reply-To: <1289390172-9730-3-git-send-email-jolsa@redhat.com>
+References: <1289390172-9730-3-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing: Fix recursive user stack trace
+Message-ID: <tip-91e86e560d0b3ce4c5fc64fd2bbb99f856a30a4e@git.kernel.org>
+Git-Commit-ID: 91e86e560d0b3ce4c5fc64fd2bbb99f856a30a4e
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1287676501-23254-1-git-send-email-lars@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 18 Nov 2010 14:05:04 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 21, 2010 at 05:55:01PM +0200, Lars-Peter Clausen wrote:
-> This patch adds a simple driver for chargers indicating their online status
-> through a GPIO pin.
-> 
-> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> 
-> ---
-> Changes since v1
-> * Fix typo in Kconfig
-> * Fix whitespace issues
-> * Add missing includes in the header file
-> * Make the irq field of the driver struct unsigned and assume that 0 is not a
->   valid irq.
+Commit-ID:  91e86e560d0b3ce4c5fc64fd2bbb99f856a30a4e
+Gitweb:     http://git.kernel.org/tip/91e86e560d0b3ce4c5fc64fd2bbb99f856a30a4e
+Author:     Steven Rostedt <srostedt@redhat.com>
+AuthorDate: Wed, 10 Nov 2010 12:56:12 +0100
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Fri, 12 Nov 2010 21:20:08 -0500
 
-Applied, thanks!
+tracing: Fix recursive user stack trace
 
-But please, look at Mark Brown comments. If they are still
-applicable, the follow up patch would be great.
+The user stack trace can fault when examining the trace. Which
+would call the do_page_fault handler, which would trace again,
+which would do the user stack trace, which would fault and call
+do_page_fault again ...
 
-Thanks!
+Thus this is causing a recursive bug. We need to have a recursion
+detector here.
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+[ Resubmitted by Jiri Olsa ]
+
+[ Eric Dumazet recommended using __this_cpu_* instead of __get_cpu_* ]
+
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+LKML-Reference: <1289390172-9730-3-git-send-email-jolsa@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.c |   19 +++++++++++++++++++
+ 1 files changed, 19 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 82d9b81..ee6a733 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1284,6 +1284,8 @@ void trace_dump_stack(void)
+ 	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count());
+ }
+ 
++static DEFINE_PER_CPU(int, user_stack_count);
++
+ void
+ ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags, int pc)
+ {
+@@ -1302,6 +1304,18 @@ ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags, int pc)
+ 	if (unlikely(in_nmi()))
+ 		return;
+ 
++	/*
++	 * prevent recursion, since the user stack tracing may
++	 * trigger other kernel events.
++	 */
++	preempt_disable();
++	if (__this_cpu_read(user_stack_count))
++		goto out;
++
++	__this_cpu_inc(user_stack_count);
++
++
++
+ 	event = trace_buffer_lock_reserve(buffer, TRACE_USER_STACK,
+ 					  sizeof(*entry), flags, pc);
+ 	if (!event)
+@@ -1319,6 +1333,11 @@ ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags, int pc)
+ 	save_stack_trace_user(&trace);
+ 	if (!filter_check_discard(call, entry, buffer, event))
+ 		ring_buffer_unlock_commit(buffer, event);
++
++	__this_cpu_dec(user_stack_count);
++
++ out:
++	preempt_enable();
+ }
+ 
+ #ifdef UNUSED
