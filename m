@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933130Ab0KRX5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:57:31 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34887 "EHLO ogre.sisk.pl"
+	id S933284Ab0KRX5k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:57:40 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:34903 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933080Ab0KRX52 convert rfc822-to-8bit (ORCPT
+	id S933044Ab0KRX5g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:57:28 -0500
+	Thu, 18 Nov 2010 18:57:36 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Larry Finger" <Larry.Finger@lwfinger.net>
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Myron Stowe" <myron.stowe@hp.com>,
+        "Nikanth Karthikesan" <knikanth@suse.de>
 References: <sKkKYVppECN.A.KhC.Phb5MB@chimera>
 In-Reply-To: <sKkKYVppECN.A.KhC.Phb5MB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -19,8 +20,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <ATV3yiK8i4C.A.K9D.Bib5MB@chimera>
-Subject: [Bug #22672] Regression in 2.6.37-rc1 for Intel 945 Graphics Adapter - bisected to commit e9e331a
+Message-ID: <ATV3yiK8i4C.A._CE.Eib5MB@chimera>
+Subject: [Bug #22662] divide error in select_task_rq_fair()
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Fri, 19 Nov 2010 00:42:46 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,9 +36,10 @@ from 2.6.36.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22672
-Subject		: Regression in 2.6.37-rc1 for Intel 945 Graphics Adapter - bisected to commit e9e331a
-Submitter	: Larry Finger <Larry.Finger@lwfinger.net>
-Date		: 2010-11-11 01:56 (8 days old)
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22662
+Subject		: divide error in select_task_rq_fair()
+Submitter	: Myron Stowe <myron.stowe@hp.com>
+Date		: 2010-11-10 23:58 (9 days old)
+Patch		: http://lkml.org/lkml/2010/11/13/176
 
 
