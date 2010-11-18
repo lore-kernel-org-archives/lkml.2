@@ -1,63 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab0KRIaf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 03:30:35 -0500
-Received: from smtpauth.net4india.com ([118.67.248.47]:35331 "EHLO
-	smtpauth.net4india.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab0KRIae (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 03:30:34 -0500
-Message-ID: <4CE4E41C.7020202@xenontk.org>
-Date: Thu, 18 Nov 2010 14:00:20 +0530
-From: David John <davidjon@xenontk.org>
-Reply-To: davidjon@xenontk.org
-User-Agent: Mozilla/5.0 (X11; X; Linux x86_64; rv:1.9.2.12) Gecko/20101103 Thunderbird/3.1.6
+	id S1755503Ab0KRIbG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 03:31:06 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:34886 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750975Ab0KRIbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 03:31:04 -0500
+Date: Thu, 18 Nov 2010 09:30:45 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
+        yinghai@kernel.org
+Subject: Re: [PATCH 4/9 UPDATED-1] x86: Initialize 32bit logical apicid
+ mapping early during boot
+Message-ID: <20101118083045.GB26398@elte.hu>
+References: <1289473363-29440-1-git-send-email-tj@kernel.org>
+ <1289473363-29440-5-git-send-email-tj@kernel.org>
+ <4CDD17EC.8000507@kernel.org>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.37-rc1 / rc2 Regression] PCI: Kernel Hangs On Boot
-References: <4CE3F763.6080002@xenontk.org> <20101117192449.GA12191@helgaas.com>
-In-Reply-To: <20101117192449.GA12191@helgaas.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CDD17EC.8000507@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2010 12:54 AM, Bjorn Helgaas wrote:
-> On Wed, Nov 17, 2010 at 09:10:19PM +0530, David John wrote:
->> Commit dc9887dc ("x86/PCI: allocate space from the end of a region, not
->> the beginning") causes the kernel to hang on my Dell Inspiron 1545.
->> 2.6.36 and booting with pci=nocrs works fine. Reverting this commit also
->> works. I am attaching the kernel log and system iomem from the working
->> 2.6.36. It hangs at this location consistently:
->>
->> pci-stub: invalid id string ""
->> ACPI: AC Adapter [AC] (on-line)
->> input: Lid Switch as
->> /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0D:00/input/input0
->>
->> < hang >
->>
->> Let me know if you need any other info.
+
+* Tejun Heo <tj@kernel.org> wrote:
+
+> On x86_32, non-standard logical apicid mapping can be used by
+> different NUMA setups and the mapping is queried while bringing up
+> each CPU using apic->cpu_to_logical_apicid() to build
+> cpu_2_logical_apicid[] array.  The logical apicid is then used to
+> deliver IPIs and determine NUMA configuration.
 > 
-> Thanks a lot for this report.  I opened this bugzilla:
->     https://bugzilla.kernel.org/show_bug.cgi?id=23132
-> to track it.
+> Unfortunately, initializing at SMP bring up is too late for percpu
+> setup making static percpu variables setup w/o considering NUMA.  This
+> also is different from how x86_64 is configured making the code
+> difficult to follow and maintain.
 > 
-> Would you mind attaching the dmesg log from 2.6.37-rc2 with
-> commit dc9887dc reverted?  That should have a little more
-> information (PCI allocation closer to what fails, and also
-> more PNP resource information).
+> This patch updates logical apicid mapping handling such that,
+> 
+> * early_percpu variable x86_cpu_to_logical_apicid replaces
+>   cpu_2_logical_apicid[].
+> 
+> * apic->cpu_to_logical_apicid() is called once during get_smp_config()
+>   and the output is recorded in x86_cpu_to_logical_apicid.
+> 
+> * apic->cpu_to_logical_apicid() is allowed to return BAD_APICID if it
+>   can't determine the value that early during boot.  In this case, the
+>   mapping will be initialized during SMP bring up by reading APIC LDR
+>   as before.
+> 
+> - Brian Gerst spotted that setup_per_cpu_areas() was not copying the
+>   early x86_cpu_to_logical_apicid to the permanent percpu area and
+>   es7000_32 is using per_cpu() instead of early_per_cpu(), which in
+>   itself is not incorrect as they're never used before setup_per_cpu()
+>   but still confusing.  Both updated.
+> 
+> - Using local variable @cpu to cache smp_processor_id() in
+>   setup_local_APIC() separated out into a separate patch as suggested
+>   by Yinghai Lu.
 
-Attached in Bugzilla.
+This patch is still _WAY_ too large.
 
-> If you happen to have Windows on this box as well, an
-> Everest report (http://lavalys.com) would be interesting.
-> If not, no worries.
+Also, these:
 
-Nope, no Windows on this box, Sorry.
+> +#ifdef CONFIG_X86_32
+> +#endif
 
-Regards,
-David.
+> +#ifdef CONFIG_X86_32
+> +#endif
+
+> +#ifdef CONFIG_X86_32
+> +#endif
+
+> +#ifdef CONFIG_X86_32
+> +#endif
+
+Are rather ugly.
+
+	Ingo
