@@ -1,97 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760707Ab0KRW1v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 17:27:51 -0500
-Received: from waste.org ([173.11.57.241]:47296 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756092Ab0KRW1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 17:27:50 -0500
-Subject: Re: [PATCH] slub: operate cache name memory same to slab and slob
-From: Matt Mackall <mpm@selenic.com>
-To: David Rientjes <rientjes@google.com>
-Cc: b32542@freescale.com, linux-mm@kvack.org, cl@linux-foundation.org,
-        penberg@cs.helsinki.fi, tytso@mit.edu, linux-kernel@vger.kernel.org,
-        Zeng Zhaoming <zengzm.kernel@gmail.com>
-In-Reply-To: <alpine.DEB.2.00.1011181333160.26680@chino.kir.corp.google.com>
-References: <1290049259-20108-1-git-send-email-b32542@freescale.com>
-	 <1290114908.26343.721.camel@calx>
-	 <alpine.DEB.2.00.1011181333160.26680@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Nov 2010 16:27:45 -0600
-Message-ID: <1290119265.26343.814.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1760749Ab0KRW3j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 17:29:39 -0500
+Received: from cain.qlogic.com ([198.70.193.223]:60708 "EHLO cain.qlc.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756730Ab0KRW3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 17:29:38 -0500
+Date: Thu, 18 Nov 2010 14:17:14 -0800
+From: Ron Mercer <ron.mercer@qlogic.com>
+To: Sonny Rao <sonnyrao@us.ibm.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Milton Miller <miltonm@bga.com>,
+        Linux Driver <Linux-Driver@qlogic.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sonnyrao@linux.vnet.ibm.com" <sonnyrao@linux.vnet.ibm.com>
+Subject: Re: [PATCH] qlge: Fix incorrect usage of module parameters and
+	netdev msg level
+Message-ID: <20101118221713.GB14333@linux-ox1b.qlogic.org>
+Mail-Followup-To: Sonny Rao <sonnyrao@us.ibm.com>,
+	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+	Milton Miller <miltonm@bga.com>,
+	Linux Driver <Linux-Driver@qlogic.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"sonnyrao@linux.vnet.ibm.com" <sonnyrao@linux.vnet.ibm.com>
+References: <20101118215002.GS32203@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101118215002.GS32203@us.ibm.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 13:36 -0800, David Rientjes wrote:
-> On Thu, 18 Nov 2010, Matt Mackall wrote:
+On Thu, Nov 18, 2010 at 01:50:02PM -0800, Sonny Rao wrote:
+> Driver appears to be mistaking the permission field with default value
+> in the case of debug and qlge_irq_type.
 > 
-> > > Get a memory leak complaint about ext4:
-> > >   comm "mount", pid 1159, jiffies 4294904647 (age 6077.804s)
-> > >   hex dump (first 32 bytes):
-> > >     65 78 74 34 5f 67 72 6f 75 70 69 6e 66 6f 5f 31  ext4_groupinfo_1
-> > >     30 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  0.kkkkkkkkkkkkk.
-> > >   backtrace:
-> > >     [<c068ade3>] kmemleak_alloc+0x93/0xd0
-> > >     [<c024e54c>] __kmalloc_track_caller+0x30c/0x380
-> > >     [<c02269d3>] kstrdup+0x33/0x60
-> > >     [<c0318a70>] ext4_mb_init+0x4e0/0x550
-> > >     [<c0304e0e>] ext4_fill_super+0x1e6e/0x2f60
-> > >     [<c0261140>] mount_bdev+0x1c0/0x1f0
-> > >     [<c02fc00f>] ext4_mount+0x1f/0x30
-> > >     [<c02603d8>] vfs_kern_mount+0x78/0x250
-> > >     [<c026060e>] do_kern_mount+0x3e/0x100
-> > >     [<c027b4c2>] do_mount+0x2e2/0x780
-> > >     [<c027ba04>] sys_mount+0xa4/0xd0
-> > >     [<c010429f>] sysenter_do_call+0x12/0x38
-> > >     [<ffffffff>] 0xffffffff
-> > > 
-> > > It is cause by slub manage the cache name different from slab and slob.
-> > > In slab and slob, only reference to name, alloc and reclaim the memory
-> > > is the duty of the code that invoked kmem_cache_create().
-> > > 
-> > > In slub, cache name duplicated when create. This ambiguity will cause
-> > > some memory leaks and double free if kmem_cache_create() pass a
-> > > dynamic malloc cache name.
-> > 
-> > I don't get it.
-> > 
-> > Caller allocates X, passes X to slub, slub duplicates X as X', and
-> > properly frees X', then caller frees X. Yes, that's silly, but where's
-> > the leak?
-> > 
+> Driver is also passing debug as a bitmask into netif_msg_init()
+> which wants a number of bits.  Ron Mercer suggests we should
+> change this to pass in -1 so the defaults get used instead,
+> which makes the default much less verbose.
 > 
-> The leak in ext4_mb_init() above is because it is using kstrdup() to 
-> allocate the string itself and then on destroy uses kmem_cache_name() to 
-> attain the slub allocator's pointer to the name, not the memory the ext4 
-> layer allocated itself.
+> Signed-off-by: Milton Miller <miltonm@bga.com>
+> Signed-off-by: Sonny Rao <sonnyrao@linux.vnet.ibm.com>
 
-And Pekka says:
-
-> The kstrdup() is there because of SLUB cache merging. See commit 
-> 84c1cf62465e2fb0a692620dcfeb52323ab03d48 ("SLUB: Fix merged slab 
-> cache names") for details.
-
-I see. So we can either:
-
-- force anyone using dynamically-allocated names to track their own damn
-pointer
-- implement kstrdup in the other allocators and fix all callers (the
-bulk of which use static names!)
-- eliminate dynamically-allocated names (mostly useless when we start
-merging slabs!)
-- add an indirection layer for slub that holds the unmerged details
-- stop pretending we track slab names and show only generic names based
-on size in /proc
-
-kmem_cache_name() is also a highly suspect function in a
-post-merged-slabs kernel. As ext4 is the only user in the kernel, and it
-got it wrong, perhaps it's time to rip it out.
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
-
+Milton/Sonny,
+Did you happen to test this to see if the log output was the same? 
