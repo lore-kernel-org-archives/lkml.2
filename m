@@ -1,105 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758464Ab0KROjx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 09:39:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15419 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758154Ab0KROjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 09:39:51 -0500
-Date: Thu, 18 Nov 2010 16:39:45 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Gregory Haskins <ghaskins@novell.com>,
-        Chris Lalancette <clalance@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: fast-path msi injection with irqfd
-Message-ID: <20101118143945.GR7948@redhat.com>
-References: <20101117221254.GA8296@redhat.com>
- <20101118105741.GA31261@redhat.com>
- <4CE50810.3090502@redhat.com>
- <20101118111037.GB31261@redhat.com>
- <4CE51C17.4000108@redhat.com>
- <20101118130337.GA2254@redhat.com>
- <20101118131453.GO7948@redhat.com>
- <20101118132027.GB8247@redhat.com>
- <20101118133501.GQ7948@redhat.com>
- <20101118134843.GC8247@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101118134843.GC8247@redhat.com>
+	id S1758644Ab0KROmQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 09:42:16 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60210 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758430Ab0KROmO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 09:42:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=RcUM7G717zeJkFrsTD+4+cPPdTDdC46EsaLTml5o/MXKuox4ikveP/3PqfbH8vlSWE
+         LR/pIqDGac8sE4BIihCkdUVHnXi/eqlYJtf+nhtdSH5xFmr5mkMIMyKfnCuwPCsa556T
+         dwgNVBEKZZx7HbZTe+ggyRba2F3nwhmDAkFhY=
+Subject: [PATCH] cpu.c: remove unused variable
+From: Dhaval Giani <dhaval.giani@gmail.com>
+To: a.p.zijlstra@chello.nl, mingo@elte.hu, linux-kernel@vger.kernel.org,
+        akinobu.mita@gmail.com, oleg@redhat.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Nov 2010 15:41:59 +0100
+Message-ID: <1290091319.1145.2.camel@gondor.retis>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 03:48:43PM +0200, Michael S. Tsirkin wrote:
-> On Thu, Nov 18, 2010 at 03:35:01PM +0200, Gleb Natapov wrote:
-> > On Thu, Nov 18, 2010 at 03:20:27PM +0200, Michael S. Tsirkin wrote:
-> > > On Thu, Nov 18, 2010 at 03:14:53PM +0200, Gleb Natapov wrote:
-> > > > On Thu, Nov 18, 2010 at 03:03:37PM +0200, Michael S. Tsirkin wrote:
-> > > > > > >+static inline void kvm_irq_routing_update(struct kvm *kvm,
-> > > > > > >+					  struct kvm_irq_routing_table *irq_rt)
-> > > > > > >+{
-> > > > > > >+	rcu_assign_pointer(kvm->irq_routing, irq_rt);
-> > > > > > >+}
-> > > > > > >+
-> > > > > > >  static inline int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
-> > > > > > >  {
-> > > > > > >  	return -ENOSYS;
-> > > > > > 
-> > > > > > Apart from these minor issues, looks good.
-> > > > > 
-> > > > > 
-> > > > > Something we should consider improving is the loop over all VCPUs that
-> > > > > kvm_irq_delivery_to_apic invokes.  I think that (for non-broadcast
-> > > > > interrupts) it should be possible to precompute an store the CPU
-> > > > > in question as part of the routing entry.
-> > > > > 
-> > > > > Something for a separate patch ... comments?
-> > > > > 
-> > > > I do not think this info should be part of routing entry. Routing entry
-> > > > is more about describing wires on the board.
-> > > 
-> > > Not for msi. kvm_kernel_irq_routing_entry seems to just keep an
-> > > address/data pair in that case. So
-> > > 
-> > Yeah. Using routing_entry for MSI was miss design. We discussed that too :)
-> > 
-> > > 	union {
-> > > 		struct {
-> > > 			unsigned irqchip;
-> > > 			unsigned pin;
-> > > 		} irqchip;
-> > > 		struct msi_msg msi;
-> > > 	};
-> > > 
-> > > would become
-> > > 
-> > > 	union {
-> > > 		struct {
-> > > 			unsigned irqchip;
-> > > 			unsigned pin;
-> > > 		} irqchip;
-> > > 		struct {
-> > > 			struct msi_msg msi;
-> > > 			struct kvm_vpcu *dest;
-> > > 		} msi;
-> > > 	};
-> > > 
-> > > or something like this.
-> > Ah so you want to do it only for MSI? For MSI it makes sense. Remember
-> > though that sometimes destination depend on message itself (specifically
-> > on delivery mode).
-> 
-> Of course. We'll take message/data and precompute destination.
-> Set to NULL for e.g. broadcast and recompute at injection time
-> in that case.  BTW SELF doesn't work for MSI at the moment, not sure
-> whether it's relevant or when is it used.
-> 
-Yes, only lowest prio is defined for MSI. Self or all but self has
-not meaning for MSI.
+cpu.c: remove unused variable
 
---
-			Gleb.
+kernel/cpu.c: In function ‘take_cpu_down’:
+kernel/cpu.c:200:15: warning: unused variable ‘cpu’
+
+This variable is unused since param->hcpu is directly
+used later on in cpu_notify.
+
+Signed-off-by: Dhaval Giani <dhaval_giani@gmail.com>
+---
+ kernel/cpu.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+Index: linux-2.6/kernel/cpu.c
+===================================================================
+--- linux-2.6.orig/kernel/cpu.c
++++ linux-2.6/kernel/cpu.c
+@@ -197,7 +197,6 @@ struct take_cpu_down_param {
+ static int __ref take_cpu_down(void *_param)
+ {
+ 	struct take_cpu_down_param *param = _param;
+-	unsigned int cpu = (unsigned long)param->hcpu;
+ 	int err;
+ 
+ 	/* Ensure this CPU doesn't handle any more interrupts. */
+
+
