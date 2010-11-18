@@ -1,107 +1,364 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758879Ab0KRPZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 10:25:26 -0500
-Received: from daytona.panasas.com ([67.152.220.89]:45604 "EHLO
-	daytona.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751942Ab0KRPZY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 10:25:24 -0500
-Message-ID: <4CE54562.9030603@panasas.com>
-Date: Thu, 18 Nov 2010 17:25:22 +0200
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1758962Ab0KRP0o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 10:26:44 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:50778 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752555Ab0KRP0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 10:26:43 -0500
+Date: Thu, 18 Nov 2010 15:26:28 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 36 of 66] memcg compound
+Message-ID: <20101118152628.GY8135@csn.ul.ie>
+References: <patchbomb.1288798055@v2.random> <495ffee2d60adab4d18b.1288798091@v2.random>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for November 18
-References: <20101118134256.fe132215.sfr@canb.auug.org.au>
-In-Reply-To: <20101118134256.fe132215.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Nov 2010 15:25:23.0725 (UTC) FILETIME=[D1BFD3D0:01CB8734]
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <495ffee2d60adab4d18b.1288798091@v2.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2010 04:42 AM, Stephen Rothwell wrote:
-> Hi all,
+On Wed, Nov 03, 2010 at 04:28:11PM +0100, Andrea Arcangeli wrote:
+> From: Andrea Arcangeli <aarcange@redhat.com>
 > 
-> Changes since 20101117:
+> Teach memcg to charge/uncharge compound pages.
 > 
-> The ceph tree lost its build failure.
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> ---
 > 
-> The v4l-dvb tree still has its build failure, so I used the version from
-> next-20101112.
-> 
-> The wireless tree lost its build failure.
-> 
-> The bluetooth tree gained the build failure from yesterday's wireless
-> tree so I reverted the same commit.
-> 
-> The usb tree lost its build failure.
-> 
-> The bkl-config tree gained a conflict against Linus' tree.
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1019,6 +1019,10 @@ mem_cgroup_get_reclaim_stat_from_page(st
+>  {
+>  	struct page_cgroup *pc;
+>  	struct mem_cgroup_per_zone *mz;
+> +	int page_size = PAGE_SIZE;
+> +
+> +	if (PageTransHuge(page))
+> +		page_size <<= compound_order(page);
+>  
+>  	if (mem_cgroup_disabled())
+>  		return NULL;
+> @@ -1879,12 +1883,14 @@ static int __mem_cgroup_do_charge(struct
+>   * oom-killer can be invoked.
+>   */
+>  static int __mem_cgroup_try_charge(struct mm_struct *mm,
+> -		gfp_t gfp_mask, struct mem_cgroup **memcg, bool oom)
+> +				   gfp_t gfp_mask,
+> +				   struct mem_cgroup **memcg, bool oom,
+> +				   int page_size)
+
+Any concerns about page_size overflowing int? ppc64 has 16G pages for example
+although it will never be in this path. hmm, I see that charge size is already
+int so maybe this is more of a memcg issue than it is THP but hugetlbfs
+treats page sizes as unsigned long. For example see vma_kernel_pagesize()
+
+
+>  {
+>  	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+>  	struct mem_cgroup *mem = NULL;
+>  	int ret;
+> -	int csize = CHARGE_SIZE;
+> +	int csize = max(CHARGE_SIZE, (unsigned long) page_size);
+>  
+>  	/*
+>  	 * Unlike gloval-vm's OOM-kill, we're not in memory shortage
+> @@ -1909,7 +1915,7 @@ again:
+>  		VM_BUG_ON(css_is_removed(&mem->css));
+>  		if (mem_cgroup_is_root(mem))
+>  			goto done;
+> -		if (consume_stock(mem))
+> +		if (page_size == PAGE_SIZE && consume_stock(mem))
+>  			goto done;
+>  		css_get(&mem->css);
+>  	} else {
+> @@ -1933,7 +1939,7 @@ again:
+>  			rcu_read_unlock();
+>  			goto done;
+>  		}
+> -		if (consume_stock(mem)) {
+> +		if (page_size == PAGE_SIZE && consume_stock(mem)) {
+>  			/*
+>  			 * It seems dagerous to access memcg without css_get().
+>  			 * But considering how consume_stok works, it's not
+> @@ -1974,7 +1980,7 @@ again:
+>  		case CHARGE_OK:
+>  			break;
+>  		case CHARGE_RETRY: /* not in OOM situation but retry */
+> -			csize = PAGE_SIZE;
+> +			csize = page_size;
+>  			css_put(&mem->css);
+>  			mem = NULL;
+>  			goto again;
+> @@ -1995,8 +2001,8 @@ again:
+>  		}
+>  	} while (ret != CHARGE_OK);
+>  
+> -	if (csize > PAGE_SIZE)
+> -		refill_stock(mem, csize - PAGE_SIZE);
+> +	if (csize > page_size)
+> +		refill_stock(mem, csize - page_size);
+>  	css_put(&mem->css);
+>  done:
+>  	*memcg = mem;
+> @@ -2024,9 +2030,10 @@ static void __mem_cgroup_cancel_charge(s
+>  	}
+>  }
+>  
+> -static void mem_cgroup_cancel_charge(struct mem_cgroup *mem)
+> +static void mem_cgroup_cancel_charge(struct mem_cgroup *mem,
+> +				     int page_size)
+>  {
+> -	__mem_cgroup_cancel_charge(mem, 1);
+> +	__mem_cgroup_cancel_charge(mem, page_size >> PAGE_SHIFT);
+>  }
+>  
+>  /*
+> @@ -2082,8 +2089,9 @@ struct mem_cgroup *try_get_mem_cgroup_fr
+>   */
+>  
+>  static void __mem_cgroup_commit_charge(struct mem_cgroup *mem,
+> -				     struct page_cgroup *pc,
+> -				     enum charge_type ctype)
+> +				       struct page_cgroup *pc,
+> +				       enum charge_type ctype,
+> +				       int page_size)
+>  {
+>  	/* try_charge() can return NULL to *memcg, taking care of it. */
+>  	if (!mem)
+> @@ -2092,7 +2100,7 @@ static void __mem_cgroup_commit_charge(s
+>  	lock_page_cgroup(pc);
+>  	if (unlikely(PageCgroupUsed(pc))) {
+>  		unlock_page_cgroup(pc);
+> -		mem_cgroup_cancel_charge(mem);
+> +		mem_cgroup_cancel_charge(mem, page_size);
+>  		return;
+>  	}
+>  
+> @@ -2166,7 +2174,7 @@ static void __mem_cgroup_move_account(st
+>  	mem_cgroup_charge_statistics(from, pc, false);
+>  	if (uncharge)
+>  		/* This is not "cancel", but cancel_charge does all we need. */
+> -		mem_cgroup_cancel_charge(from);
+> +		mem_cgroup_cancel_charge(from, PAGE_SIZE);
+>  
+>  	/* caller should have done css_get */
+>  	pc->mem_cgroup = to;
+> @@ -2227,13 +2235,14 @@ static int mem_cgroup_move_parent(struct
+>  		goto put;
+>  
+>  	parent = mem_cgroup_from_cont(pcg);
+> -	ret = __mem_cgroup_try_charge(NULL, gfp_mask, &parent, false);
+> +	ret = __mem_cgroup_try_charge(NULL, gfp_mask, &parent, false,
+> +				      PAGE_SIZE);
+>  	if (ret || !parent)
+>  		goto put_back;
+>  
+>  	ret = mem_cgroup_move_account(pc, child, parent, true);
+>  	if (ret)
+> -		mem_cgroup_cancel_charge(parent);
+> +		mem_cgroup_cancel_charge(parent, PAGE_SIZE);
+>  put_back:
+>  	putback_lru_page(page);
+>  put:
+> @@ -2254,6 +2263,10 @@ static int mem_cgroup_charge_common(stru
+>  	struct mem_cgroup *mem = NULL;
+>  	struct page_cgroup *pc;
+>  	int ret;
+> +	int page_size = PAGE_SIZE;
+> +
+> +	if (PageTransHuge(page))
+> +		page_size <<= compound_order(page);
+>  
+>  	pc = lookup_page_cgroup(page);
+>  	/* can happen at boot */
+> @@ -2261,11 +2274,11 @@ static int mem_cgroup_charge_common(stru
+>  		return 0;
+>  	prefetchw(pc);
+>  
+> -	ret = __mem_cgroup_try_charge(mm, gfp_mask, &mem, true);
+> +	ret = __mem_cgroup_try_charge(mm, gfp_mask, &mem, true, page_size);
+>  	if (ret || !mem)
+>  		return ret;
+>  
+> -	__mem_cgroup_commit_charge(mem, pc, ctype);
+> +	__mem_cgroup_commit_charge(mem, pc, ctype, page_size);
+>  	return 0;
+>  }
+>  
+> @@ -2274,8 +2287,6 @@ int mem_cgroup_newpage_charge(struct pag
+>  {
+>  	if (mem_cgroup_disabled())
+>  		return 0;
+> -	if (PageCompound(page))
+> -		return 0;
+>  	/*
+>  	 * If already mapped, we don't have to account.
+>  	 * If page cache, page->mapping has address_space.
+> @@ -2381,13 +2392,13 @@ int mem_cgroup_try_charge_swapin(struct 
+>  	if (!mem)
+>  		goto charge_cur_mm;
+>  	*ptr = mem;
+> -	ret = __mem_cgroup_try_charge(NULL, mask, ptr, true);
+> +	ret = __mem_cgroup_try_charge(NULL, mask, ptr, true, PAGE_SIZE);
+>  	css_put(&mem->css);
+>  	return ret;
+>  charge_cur_mm:
+>  	if (unlikely(!mm))
+>  		mm = &init_mm;
+> -	return __mem_cgroup_try_charge(mm, mask, ptr, true);
+> +	return __mem_cgroup_try_charge(mm, mask, ptr, true, PAGE_SIZE);
+>  }
+>  
+>  static void
+> @@ -2403,7 +2414,7 @@ __mem_cgroup_commit_charge_swapin(struct
+>  	cgroup_exclude_rmdir(&ptr->css);
+>  	pc = lookup_page_cgroup(page);
+>  	mem_cgroup_lru_del_before_commit_swapcache(page);
+> -	__mem_cgroup_commit_charge(ptr, pc, ctype);
+> +	__mem_cgroup_commit_charge(ptr, pc, ctype, PAGE_SIZE);
+>  	mem_cgroup_lru_add_after_commit_swapcache(page);
+>  	/*
+>  	 * Now swap is on-memory. This means this page may be
+> @@ -2452,11 +2463,12 @@ void mem_cgroup_cancel_charge_swapin(str
+>  		return;
+>  	if (!mem)
+>  		return;
+> -	mem_cgroup_cancel_charge(mem);
+> +	mem_cgroup_cancel_charge(mem, PAGE_SIZE);
+>  }
+>  
+>  static void
+> -__do_uncharge(struct mem_cgroup *mem, const enum charge_type ctype)
+> +__do_uncharge(struct mem_cgroup *mem, const enum charge_type ctype,
+> +	      int page_size)
+>  {
+>  	struct memcg_batch_info *batch = NULL;
+>  	bool uncharge_memsw = true;
+> @@ -2491,14 +2503,14 @@ __do_uncharge(struct mem_cgroup *mem, co
+>  	if (batch->memcg != mem)
+>  		goto direct_uncharge;
+>  	/* remember freed charge and uncharge it later */
+> -	batch->bytes += PAGE_SIZE;
+> +	batch->bytes += page_size;
+>  	if (uncharge_memsw)
+> -		batch->memsw_bytes += PAGE_SIZE;
+> +		batch->memsw_bytes += page_size;
+>  	return;
+>  direct_uncharge:
+> -	res_counter_uncharge(&mem->res, PAGE_SIZE);
+> +	res_counter_uncharge(&mem->res, page_size);
+>  	if (uncharge_memsw)
+> -		res_counter_uncharge(&mem->memsw, PAGE_SIZE);
+> +		res_counter_uncharge(&mem->memsw, page_size);
+>  	if (unlikely(batch->memcg != mem))
+>  		memcg_oom_recover(mem);
+>  	return;
+> @@ -2512,6 +2524,7 @@ __mem_cgroup_uncharge_common(struct page
+>  {
+>  	struct page_cgroup *pc;
+>  	struct mem_cgroup *mem = NULL;
+> +	int page_size = PAGE_SIZE;
+>  
+>  	if (mem_cgroup_disabled())
+>  		return NULL;
+> @@ -2519,6 +2532,9 @@ __mem_cgroup_uncharge_common(struct page
+>  	if (PageSwapCache(page))
+>  		return NULL;
+>  
+> +	if (PageTransHuge(page))
+> +		page_size <<= compound_order(page);
+> +
+>  	/*
+>  	 * Check if our page_cgroup is valid
+>  	 */
+> @@ -2572,7 +2588,7 @@ __mem_cgroup_uncharge_common(struct page
+>  		mem_cgroup_get(mem);
+>  	}
+>  	if (!mem_cgroup_is_root(mem))
+> -		__do_uncharge(mem, ctype);
+> +		__do_uncharge(mem, ctype, page_size);
+>  
+>  	return mem;
+>  
+> @@ -2767,6 +2783,7 @@ int mem_cgroup_prepare_migration(struct 
+>  	enum charge_type ctype;
+>  	int ret = 0;
+>  
+> +	VM_BUG_ON(PageTransHuge(page));
+>  	if (mem_cgroup_disabled())
+>  		return 0;
+>  
+> @@ -2816,7 +2833,7 @@ int mem_cgroup_prepare_migration(struct 
+>  		return 0;
+>  
+>  	*ptr = mem;
+> -	ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, ptr, false);
+> +	ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, ptr, false, PAGE_SIZE);
+>  	css_put(&mem->css);/* drop extra refcnt */
+>  	if (ret || *ptr == NULL) {
+>  		if (PageAnon(page)) {
+> @@ -2843,7 +2860,7 @@ int mem_cgroup_prepare_migration(struct 
+>  		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
+>  	else
+>  		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+> -	__mem_cgroup_commit_charge(mem, pc, ctype);
+> +	__mem_cgroup_commit_charge(mem, pc, ctype, PAGE_SIZE);
+>  	return ret;
+>  }
+>  
+> @@ -4452,7 +4469,8 @@ one_by_one:
+>  			batch_count = PRECHARGE_COUNT_AT_ONCE;
+>  			cond_resched();
+>  		}
+> -		ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, &mem, false);
+> +		ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, &mem, false,
+> +					      PAGE_SIZE);
+>  		if (ret || !mem)
+>  			/* mem_cgroup_clear_mc() will do uncharge later */
+>  			return -ENOMEM;
+> @@ -4614,6 +4632,7 @@ static int mem_cgroup_count_precharge_pt
+>  	pte_t *pte;
+>  	spinlock_t *ptl;
+>  
+> +	VM_BUG_ON(pmd_trans_huge(*pmd));
+>  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+>  	for (; addr != end; pte++, addr += PAGE_SIZE)
+>  		if (is_target_pte_for_mc(vma, addr, *pte, NULL))
+> @@ -4765,6 +4784,7 @@ static int mem_cgroup_move_charge_pte_ra
+>  	spinlock_t *ptl;
+>  
+>  retry:
+> +	VM_BUG_ON(pmd_trans_huge(*pmd));
+>  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+>  	for (; addr != end; addr += PAGE_SIZE) {
+>  		pte_t ptent = *(pte++);
 > 
 
-Stephen Hi
-
-The uml build from:
-        http://kisskb.ellerman.id.au/kisskb/target/2979/
-
-is failing compilation like:
-  LD      .tmp_vmlinux1
-/opt/crosstool/gcc-4.2.3-glibc-2.3.6/i386-unknown-linux-gnu/lib/gcc/i386-unknown-linux-gnu/4.2.3/../../../../i386-unknown-linux-gnu/bin/ld:arch/um/kernel/vmlinux.lds:231: parse error
-collect2: ld returned 1 exit status
-  KSYM    .tmp_kallsyms1.S
-/opt/crosstool/gcc-4.2.3-glibc-2.3.6/i386-unknown-linux-gnu/bin/i386-unknown-linux-gnu-nm: '.tmp_vmlinux1': No such file
-No valid symbol.
-make[1]: *** [.tmp_kallsyms1.S] Error 1
-make: *** [sub-make] Error 2
-make failed, trying to bisect ..
-
-It looks like a build environment setup problem because it's fine here
-(for x86_64 at least.) Who is the person responsible for the above URL
-compilation please?
-
-Thanks in advance
-Boaz
-
-> ----------------------------------------------------------------------------
-> 
-> I have created today's linux-next tree at
-> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-> (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-> are tracking the linux-next tree using git, you should not use "git pull"
-> to do so as that will try to merge the new linux-next release with the
-> old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-> (see below).
-> 
-> You can see which trees have been included by looking in the Next/Trees
-> file in the source.  There are also quilt-import.log and merge.log files
-> in the Next directory.  Between each merge, the tree was built with
-> a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-> final fixups (if any), it is also built with powerpc allnoconfig (32 and
-> 64 bit), ppc44x_defconfig and allyesconfig (minus
-> CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-> and sparc64 defconfig. These builds also have
-> CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-> CONFIG_DEBUG_INFO disabled when necessary.
-> 
-> Below is a summary of the state of the merge.
-> 
-> We are up to 179 trees (counting Linus' and 26 trees of patches pending
-> for Linus' tree), more are welcome (even if they are currently empty).
-> Thanks to those who have contributed, and to those who haven't, please do.
-> 
-> Status of my local build tests will be at
-> http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-> advice about cross compilers/configs that work, we are always open to add
-> more builds.
-> 
-> Thanks to Randy Dunlap for doing many randconfig builds.
-> 
-> There is a wiki covering stuff to do with linux-next at
-> http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-> 
-
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
