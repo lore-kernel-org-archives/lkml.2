@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756062Ab0KRJ2r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 04:28:47 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47538 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754190Ab0KRJ2o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 04:28:44 -0500
-Subject: Re: [PATCH 5/5] MIPS/Perf-events: Use unsigned delta for right
- shift in event update
-From: Will Deacon <will.deacon@arm.com>
-To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-Cc: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com
-In-Reply-To: <1290063401-25440-6-git-send-email-dengcheng.zhu@gmail.com>
-References: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
-	 <1290063401-25440-6-git-send-email-dengcheng.zhu@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Nov 2010 09:27:38 +0000
-Message-ID: <1290072458.18450.1.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1756048Ab0KRJcJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 04:32:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49771 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751769Ab0KRJcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 04:32:08 -0500
+Message-ID: <4CE4F292.2060608@redhat.com>
+Date: Thu, 18 Nov 2010 11:32:02 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 1/6] KVM: MMU: fix forgot flush vcpu tlbs
+References: <4CE355A0.6020907@cn.fujitsu.com> <20101117152943.GA18959@amt.cnet> <4CE4024B.4090600@redhat.com> <20101117173616.GG18959@amt.cnet> <4CE4D306.6030707@cn.fujitsu.com>
+In-Reply-To: <4CE4D306.6030707@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Nov 2010 09:27:42.0299 (UTC) FILETIME=[D9BE1AB0:01CB8702]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 06:56 +0000, Deng-Cheng Zhu wrote:
-> Leverage the commit for ARM by Will Deacon:
-> 
-> 446a5a8b1eb91a6990e5c8fe29f14e7a95b69132
->         ARM: 6205/1: perf: ensure counter delta is treated as unsigned
-> 
-> Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-> ---
->  arch/mips/kernel/perf_event.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/mips/kernel/perf_event.c b/arch/mips/kernel/perf_event.c
-> index 345232a..0f1cdf5 100644
-> --- a/arch/mips/kernel/perf_event.c
-> +++ b/arch/mips/kernel/perf_event.c
-> @@ -169,7 +169,7 @@ static void mipspmu_event_update(struct perf_event *event,
->         unsigned long flags;
->         int shift = 64 - TOTAL_BITS;
->         s64 prev_raw_count, new_raw_count;
-> -       s64 delta;
-> +       u64 delta;
-> 
->  again:
->         prev_raw_count = local64_read(&hwc->prev_count);
-> --
-> 1.7.1
+On 11/18/2010 09:17 AM, Xiao Guangrong wrote:
+> On 11/18/2010 01:36 AM, Marcelo Tosatti wrote:
+>
+> >>  I don't think we need to flush immediately; set a "tlb dirty" bit
+> >>  somewhere that is cleareded when we flush the tlb.
+> >>  kvm_mmu_notifier_invalidate_page() can consult the bit and force a
+> >>  flush if set.
+> >
+> >  Yep.
+> >
+>
+> Great, i'll do it in the v3.
+>
+> Do we need a simple bug fix patch(which immediately flush tlbs) for
+> backport first?
 
-Acked-by: Will Deacon <will.deacon@arm.com>
+Oh yes.  Simple fix first, clever ideas later (which will likely need to 
+be fixed anyway).
 
-You might also want to look at commit 65b4711f if you based
-the MIPS port on the old ARM code.
 
-Thanks,
-
-Will
+-- 
+error compiling committee.c: too many arguments to function
 
