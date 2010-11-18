@@ -1,74 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab0KRLhX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 06:37:23 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55828 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750854Ab0KRLhV (ORCPT
+	id S1754040Ab0KRLlJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 06:41:09 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:44415 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016Ab0KRLlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 06:37:21 -0500
-Date: Thu, 18 Nov 2010 11:34:41 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Cc: linux-kernel@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, David Miller <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "Perez-Gonzalez, Inaky" <inaky.perez-gonzalez@intel.com>,
-        Charles Marker <Charles.Marker@atheros.com>,
-        Jouni Malinen <Jouni.Malinen@atheros.com>,
-        Kevin Hayes <kevin@atheros.com>, Zhifeng Cai <zhifeng.cai@atheros.com>,
-        "Luis R. Rodriguez" <mcgrof@gmail.com>,
-        Don Breslin <Don.Breslin@atheros.com>,
-        Doug Dahlby <Doug.Dahlby@atheros.com>, Julia Lawall <julia@diku.dk>
-Subject: Re: Challenges with doing hardware bring up with Linux first
-Message-ID: <20101118113441.74fcdc21@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTim4jVaZxYp8nSgJyy28iwxcxbPeNUzxTfoHAX4S@mail.gmail.com>
-References: <AANLkTim4jVaZxYp8nSgJyy28iwxcxbPeNUzxTfoHAX4S@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Nov 2010 06:41:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=message-id:from:date:to:reply-to:cc:subject;
+        b=KfS8Qr2KnxbFwXcu/ZWVWneWB3LQxLTCzER/kc2qZkyiJpXmjjZsT9z3mXZj2wSW55
+         wSzLrCz3Foj79F7z5vnA==
+Message-ID: <4ce510ce.5126e30a.1944.1308@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Thu, 18 Nov 2010 12:40:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        eranian@google.com, robert.richter@amd.com, acme@redhat.com,
+        lizf@cn.fujitsu.com
+Subject: [PATCH 0/2] perf_events: add support for per-cpu per-cgroup monitoring (v5)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I'd like to see hardware bring up at companies being done with Linux.
+This series of patches adds per-container (cgroup) filtering capability
+to per-cpu monitoring. In other words, we can monitor all threads belonging
+to a specific cgroup and running on a specific CPU. 
 
-I know several companies where it is sometimes used.
+This is useful to measure what is going on inside a cgroup. Something that
+cannot easily and cheaply be achieved with either per-thread or per-cpu mode.
+Cgroups can span multiple CPUs. CPUs can be shared between cgroups. Cgroups
+can have lots of threads. Threads can come and go during a measurement.
 
-> with this though. For starters hardware teams typically want to get
-> hardware brought up as fast as possible to be able to sell chipsets.
-> Its always a race. Proper Linux upstream support will get there but
-> depending on the company this may mean this gets done after the
-> proprietary driver approach is done first or simply until you have a
-> big enough customer to justify it.
+To measure per-cgroup today requires using per-thread mode and attaching to
+all the current threads inside a cgroup and tracking new threads. That would
+require scanning of /proc/PID, which is subject to race conditions, and
+creating an event for each thread, each event requiring kernel memory.
 
-I've seen the kind of code written to "get it up as fast as possible" and
-also to do validation. It's the sort of code that has to be written
-anyway, and which contains a multitude of fascinating stuff which doesn't
-ever want to go near upstream.
+The approach taken by this patch is to leverage the per-cpu mode by simply
+adding a filtering capability on context switch only when necessary. That
+way the amount of kernel memory used remains bound by the number of CPUs.
+We also do not have to scan /proc. We are only interested in cgroup level
+counts, samples and not thread level.
 
-> everything else can be independent code. For ath9k in particular this
-> means we keep ath9k_hw shared between our Operating Systems and that's
-> it. In addition to this I believe opening up the common drivers for
+The cgroup to monitor is designated by passing a file descriptor opened
+on the cgroup directory name in the cgroup filesystem. The cgroup mode
+is activated by passing a flag value in the perf_event syscall.
 
-The Linux copy needs to be GPL, but if you own every line of it then you
-can relicense it. In fact we have examples of big bits of code that are
-not Linux only - eg the ACPI stack which are managed in a non entirely
-unrelated way.
+The patch also includes changes to the perf tool to make use of cgroup
+filtering. Both perf stat and perf record have been extended to support
+cgroup via a new -G option. The cgroup is specified per event:
 
-> Can Linux help in any way? What if we used staging for a common driver
-> architecture for different OSes? 
+$ perf stat -B -a -e cycles:u,cycles:u,cycles:u -G test1,,test2 -- sleep 1
+ Performance counter stats for 'sleep 1':
 
-It's generally gone pear shaped in the past, although tools like spatch
-are more modern than many of those attempts.
+      2,368,667,414  cycles                   test1
+      2,369,661,459  cycles                  
+      <not counted>  cycles                   test2
 
-There is another way to do it which is instead of writing a glue layer
-for Linux write to the general Linux interfaces which have the virtue of
-being very simple for the most part, and keep the glue layer for the
-other obscure environments where you are doing the stack ?
+        1.001856890  seconds time elapsed
 
-Alan
+Here, we measure cycles in 3 different cgroups. When a cgroup is omitted,
+the "root" cgroup is used, i.e., all threads executing on the monitored
+CPUs are measured.
+
+In the second version, time tracking has been updated. In cgroup mode,
+time_enabled tracks the time during which the cgroup was active, i.e., threads
+from the cgroup executed on the monitored CPU. The meaning of time_running
+is unchanged. In non-cgroup mode, time_enabled still tracks wall-clock time
+for per-cpu events. Here is an example:
+
+In one shell, I do:
+$ echo $$ >/cgroup/test1/perf_events.perf
+$ taskset -c 1 noploop 600
+
+In another shell, I do:
+$ taskset -c 1 noploop 600
+
+Both noploops are competing on CPU1 (part of cgroup test1)
+
+$ perf stat -B -a -e cycles:u,cycles:u,cycles:u -G test1,,test2 -- sleep 1
+ Performance counter stats for 'sleep 1':
+
+      1,190,595,954  cycles                   test1
+      2,372,471,023  cycles                  
+      <not counted>  cycles                   test2
+
+        1.001845567  seconds time elapsed
+
+The second count reflects activity across all CPUs and cgroups.
+The first count reflects what happened inside cgroup test1. As shown,
+the noploop running inside test1, only got half the CPU cycles.
+
+In the third version, we have dropped dependency on NR_CPUS
+in favor of dynamic allocation with alloc_percpu(). We have
+also renamed get_event_time() to something more explicit:
+perf_event_time(). We cleaned the code so it compiles with
+CONFIG_CGROUPS disabled. We have also fixed a bug in the
+perf tool sampling module builtin-record.c
+
+In this fourth version, we have dropped changes to perf_event_attr.
+Instead we pass the cgroup file descriptor in the pid argument to
+the syscall and we active cgroup mode by passing PERF_FLAG_PID_CGROUP
+into flags.
+
+The fifth version updates the patch to 2.6.37-rc2 and contains improved
+time tracking support. Several bug fixes and cleanups. Context switch
+impact is also mitigated with dynamic jump labels.
+
+PATCH 0/2: introduction
+PATCH 1/2: kernel changes
+PATCH 2/2: perf tool changes
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
