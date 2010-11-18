@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760609Ab0KRXMS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:12:18 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49658 "EHLO e9.ny.us.ibm.com"
+	id S1760837Ab0KRXMb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:12:31 -0500
+Received: from solo.fdn.fr ([80.67.169.19]:48014 "EHLO solo.fdn.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758239Ab0KRXMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:12:15 -0500
-Date: Thu, 18 Nov 2010 17:12:12 -0600
-From: Sonny Rao <sonnyrao@us.ibm.com>
-To: ron.mercer@qlogic.com, "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Milton Miller <miltonm@bga.com>,
-        Linux Driver <Linux-Driver@qlogic.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sonnyrao@linux.vnet.ibm.com" <sonnyrao@linux.vnet.ibm.com>
-Subject: Re: [PATCH] qlge: Fix incorrect usage of module parameters and
-	netdev msg level
-Message-ID: <20101118231212.GU32203@us.ibm.com>
-References: <20101118215002.GS32203@us.ibm.com>
- <20101118221713.GB14333@linux-ox1b.qlogic.org>
+	id S1760801Ab0KRXM2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 18:12:28 -0500
+Date: Fri, 19 Nov 2010 00:12:18 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Hans-Peter Jansen <hpj@urpla.net>
+Cc: linux-kernel@vger.kernel.org, Lennart Poettering <mzxreary@0pointer.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101118231218.GX6024@const.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Hans-Peter Jansen <hpj@urpla.net>, linux-kernel@vger.kernel.org,
+	Lennart Poettering <mzxreary@0pointer.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
+	Dhaval Giani <dhaval.giani@gmail.com>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+	Oleg Nesterov <oleg@redhat.com>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+	Ingo Molnar <mingo@elte.hu>,
+	Balbir Singh <balbir@linux.vnet.ibm.com>
+References: <1289916171.5169.117.camel@maggy.simson.net> <AANLkTimC_TWzKET-aabYK0TPG6fUUW06HDej6iOzYtKo@mail.gmail.com> <20101116211431.GA15211@tango.0pointer.de> <201011182333.48281.hpj@urpla.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20101118221713.GB14333@linux-ox1b.qlogic.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201011182333.48281.hpj@urpla.net>
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 02:17:14PM -0800, Ron Mercer wrote:
-> On Thu, Nov 18, 2010 at 01:50:02PM -0800, Sonny Rao wrote:
-> > Driver appears to be mistaking the permission field with default value
-> > in the case of debug and qlge_irq_type.
-> > 
-> > Driver is also passing debug as a bitmask into netif_msg_init()
-> > which wants a number of bits.  Ron Mercer suggests we should
-> > change this to pass in -1 so the defaults get used instead,
-> > which makes the default much less verbose.
-> > 
-> > Signed-off-by: Milton Miller <miltonm@bga.com>
-> > Signed-off-by: Sonny Rao <sonnyrao@linux.vnet.ibm.com>
-> 
-> Milton/Sonny,
-> Did you happen to test this to see if the log output was the same? 
+Hans-Peter Jansen, le Thu 18 Nov 2010 23:33:46 +0100, a écrit :
+> As already mentioned countless times (and some of it was even renamed 
+> for this very fact): the grouping by tty is just a starter. There are 
+> plenty of other possibilities to group the scheduling. The hard part is 
+> to find the right grouping concepts, that are making sense in the 
+> usability department _and_ are easy enough to be picked up from our 
+> favorite system and desktop environments. That's where the generic 
+> cgroup concept seems to be lacking ATM..
 
-Well, I haven't tried the -1 but I suspect it is much more sane than
-the 15 I had before because that was excessively verbose and I always
-ended up turning it down.  I'll try it out and see.
+Actually, cgroups should probably be completely hierarchical: sessions
+contain process groups, which contain processes, which contain threads.
+You could also gather sessions with the same uid.
 
--- 
-Sonny Rao, LTC OzLabs, BML team
+Samuel
