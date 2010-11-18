@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab0KRDqC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 22:46:02 -0500
-Received: from ozlabs.org ([203.10.76.45]:47448 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751371Ab0KRDqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 22:46:00 -0500
-Date: Thu, 18 Nov 2010 14:41:45 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Jon Loeliger <jdl@jdl.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, glikely@secretlab.ca,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        John Bonesio <bones@secretlab.ca>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH 1/5] scripts: dtc: Merge in changes from the dtc
- repository
-Message-ID: <20101118034145.GB7256@yookeroo>
-Mail-Followup-To: David Gibson <david@gibson.dropbear.id.au>,
-	Jon Loeliger <jdl@jdl.com>,
-	Grant Likely <grant.likely@secretlab.ca>, glikely@secretlab.ca,
-	devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-	John Bonesio <bones@secretlab.ca>, linuxppc-dev@lists.ozlabs.org
-References: <20101116204917.12146.39851.stgit@riker>
- <20101116204951.12146.21084.stgit@riker>
- <20101117045935.GA12084@angua.secretlab.ca>
- <E1PIkEl-0006Zt-W7@jdl.com>
+	id S1754113Ab0KRDqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 22:46:47 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42129 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab0KRDqq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 22:46:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=h25C4OsLhRmjnvR0GAiBvCz1kqM5xi77IKgW525LWHWXzrvLMWo1zDtw1TjscTVgFe
+         +lpCtSGGpLjDkVTCUZLSQpIq+2jNOMEawmpGnzRmtvE72RQzFyOvmrtAhRnQGkkc2MLj
+         JvI5xIwv+PiPF6Vj25rja+scpeucWo10Fnpjc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1PIkEl-0006Zt-W7@jdl.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4CE49C8B.2050005@redhat.com>
+References: <20101109162525.BC87.A69D9226@jp.fujitsu.com>
+	<877hgmr72o.fsf@gmail.com>
+	<20101114140920.E013.A69D9226@jp.fujitsu.com>
+	<AANLkTim59Qx6TsvXnTBL5Lg6JorbGaqx3KsdBDWO04X9@mail.gmail.com>
+	<1289810825.2109.469.camel@laptop>
+	<AANLkTikibS1fDuk67RHk4SU14pJ9nPdodWba1T3Z_pWE@mail.gmail.com>
+	<4CE14848.2060805@redhat.com>
+	<AANLkTi=6RtPDnZZa=jrcciB1zHQMiB3LnouBw3G2OyaK@mail.gmail.com>
+	<4CE40129.9060103@redhat.com>
+	<AANLkTin2fXGOAdGNegDhijjo_kV7nOBJP_hagjgoYdtX@mail.gmail.com>
+	<4CE49C8B.2050005@redhat.com>
+Date: Thu, 18 Nov 2010 12:46:44 +0900
+Message-ID: <AANLkTi=4DbR8bX3VX=Wymo6Tk7yyR_=BEmJx+WY_0iRs@mail.gmail.com>
+Subject: Re: fadvise DONTNEED implementation (or lack thereof)
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ben Gamari <bgamari.foss@gmail.com>, linux-kernel@vger.kernel.org,
+        rsync@lists.samba.org, linux-mm@kvack.org,
+        Wu Fengguang <fengguang.wu@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 09:47:55AM -0600, Jon Loeliger wrote:
-> > On Tue, Nov 16, 2010 at 12:49:51PM -0800, John Bonesio wrote:
-> > > Pull in recent changes from the main dtc repository. These changes primarily
-> > > allow multiple device trees to be declared which are merged by dtc. This
-> > > feature allows us to include a basic dts file and then provide more informatio
-> > n
-> > > for the specific system through the merging functionality.
-> > > 
-> > > Signed-off-by: John Bonesio <bones@secretlab.ca>
-> > 
-> > Jon & David, I'll need your input on whether or not this is the best
-> > way to handle updating the dtc copy in the kernel tree.
-> > 
-> > g.
-> 
-> Grant,
-> 
-> Yeah, I wondered too. :-)  David added it and updated
-> in the kernel last round, so he may have some good notion
-> of what would be best there.
+On Thu, Nov 18, 2010 at 12:24 PM, Rik van Riel <riel@redhat.com> wrote:
+> On 11/17/2010 09:47 PM, Minchan Kim wrote:
+>>
+>> On Thu, Nov 18, 2010 at 1:22 AM, Rik van Riel<riel@redhat.com>  wrote:
+>>>
+>>> On 11/17/2010 05:16 AM, Minchan Kim wrote:
+>>>
+>>>> Absolutely. But how about rsync's two touch?
+>>>> It can evict working set.
+>>>>
+>>>> I need the time for investigation.
+>>>> Thanks for the comment.
+>>>
+>>> Maybe we could exempt MADV_SEQUENTIAL and FADV_SEQUENTIAL
+>>> touches from promoting the page to the active list?
+>>>
+>>
+>> The problem is non-mapped file page.
+>> non-mapped file page promotion happens by only mark_page_accessed.
+>> But it doesn't enough information to prevent promotion(ex, vma or file)
+>
+> I believe we have enough information in filemap.c and can just
+> pass that as a parameter to mark_page_accessed.
 
-For now I think just a direct diff updating the in-kernel dtc to
-current upstream is the simplest approach.  This is how I made the
-original commit.
+FADV_SEQUENTIAL is per file/vma semantic and It is used by many place.
+I think changing all those places isn't simple and I don't want to add
+new structure to propagate the information to mark_page_accessed.
 
-There may be better methods to directly arrange for pulling of the dtc
-git tree into the kernel git tree, but I have not had time to
-investigate and set up such a scheme.
+>
+>> Here is another idea.
+>> Current problem is following as.
+>> User can use fadivse with FADV_DONTNEED.
+>> But problem is that it can't affect when it meet dirty pages.
+>> So user have to sync dirty page before calling fadvise with FADV_DONTNEED.
+>> It would lose performance.
+>>
+>> Let's add some semantic of FADV_DONTNEED.
+>> It invalidates only pages which are not dirty.
+>> If it meets dirty page, let's move the page into inactive's tail or head.
+>> If we move the page into tail, shrinker can move it into head again
+>> for deferred write if it isn't written the backed device.
+>
+> That sounds like a good idea.
+
+I will implement it.
+Thanks, Rik.
+
+>
+> --
+> All rights reversed
+>
+
+
 
 -- 
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+Kind regards,
+Minchan Kim
