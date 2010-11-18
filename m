@@ -1,125 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab0KRBo0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 20:44:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33052 "EHLO mx1.redhat.com"
+	id S1753889Ab0KRBqn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 20:46:43 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:57174 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752621Ab0KRBoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 20:44:24 -0500
-Date: Wed, 17 Nov 2010 20:43:39 -0500
-From: Josef Bacik <josef@redhat.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Josef Bacik <josef@redhat.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias
-Message-ID: <20101118014339.GJ5618@dhcp231-156.rdu.redhat.com>
-References: <1290016263-1637-1-git-send-email-josef@redhat.com> <20101117191817.GA26575@fieldses.org> <20101117192822.GB3818@localhost.localdomain> <20101117202617.GA31009@fieldses.org> <1290031941.14282.101.camel@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290031941.14282.101.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1753071Ab0KRBql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 20:46:41 -0500
+Date: Thu, 18 Nov 2010 12:46:37 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the bkl-config tree with Linus' tree
+Message-Id: <20101118124637.15571689.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 05:12:21PM -0500, Eric Paris wrote:
-> On Wed, 2010-11-17 at 15:26 -0500, J. Bruce Fields wrote:
-> > On Wed, Nov 17, 2010 at 02:28:22PM -0500, Josef Bacik wrote:
-> > > On Wed, Nov 17, 2010 at 02:18:17PM -0500, J. Bruce Fields wrote:
-> > > > On Wed, Nov 17, 2010 at 12:51:03PM -0500, Josef Bacik wrote:
-> > > > > While trying to track down some NFS problems with BTRFS, I kept noticing I was
-> > > > > getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
-> > > > > figure out that it was SELinux that was giving me grief, with the following
-> > > > > denial
-> > > > > 
-> > > > > type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
-> > > > > comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
-> > > > > tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
-> > > > > 
-> > > > > Turns out this is because in d_obtain_alias if we can't find an alias we create
-> > > > > one and do all the normal instantiation stuff, but we don't do the
-> > > > > security_d_instantiate.  With this patch I'm no longer seeing these errant
-> > > > > -EACCESS return values.  Thanks,
-> > > > 
-> > > > Possibly dumb question: Is there still a small race here?  Is it
-> > > > possible for another nfsd thread to find the new alias on the list while
-> > > > this thread is still:
-> > > > 
-> > > > > 
-> > > > > Signed-off-by: Josef Bacik <josef@redhat.com>
-> > > > > ---
-> > > > >  fs/dcache.c |    1 +
-> > > > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > > > > 
-> > > > > diff --git a/fs/dcache.c b/fs/dcache.c
-> > > > > index 23702a9..890a59e 100644
-> > > > > --- a/fs/dcache.c
-> > > > > +++ b/fs/dcache.c
-> > > > > @@ -1201,6 +1201,7 @@ struct dentry *d_obtain_alias(struct inode *inode)
-> > > > >  	spin_unlock(&tmp->d_lock);
-> > > > >  
-> > > > >  	spin_unlock(&dcache_lock);
-> > > > 
-> > > > ... right here, so that that other nfsd thread still ends up trying to
-> > > > do something with a dentry that hasn't had security_d_instantiate called
-> > > > on it yet?
-> > > > 
-> > > > > +	security_d_instantiate(tmp, inode);
-> > > > >  	return tmp;
-> > > > >  
-> > > > >   out_iput:
-> > > > > -- 
-> > > > 
-> > > > Or does something else prevent that?
-> > > > 
-> > > 
-> > > That's a good question, I have no idea actually.  Every other consumer of
-> > > security_d_instantiate seems to hold the i_mutex of the parent directory inode,
-> > > tho I'm not sure if that is appropriate for d_obtain_alias, maybe somebody else
-> > > has an idea?  Thanks,
-> > 
-> > Actually, I don't get it:
-> > 
-> > 	- Why is selinux using a *dentry* operation to initialize an
-> > 	  *inode*?
-> > 	- Are security hooks necessarily prepared to handle a
-> > 	  disconnected dentry?  (Which has no real parent, name an empty
-> > 	  string, etc.)
-> > 	- What use is the dentry to the security module in this case
-> > 	  anyway?
-> 
-> I only know a bit from the SELinux world and can't speak at all for any
-> other LSMs.  SELinux however needs the dentry when an inode first enters
-> core for a couple of reasons.  (once the inode is in core it should have
-> already been initialized and we skip all this)
-> 
-> If you have persistent xattr support we need the dentry since the xattr
-> code requires a dentry.  I have no idea why but that's what
-> inode->i_op->getxattr() requires.
-> 
-> Then we come to procfs.  In that filesystem we actually label based on
-> the pathname.  oh no did I say SELinux uses pathnames?  yes, I did, but
-> we only use the part of the pathname relative to the procfs root, so
-> really it's a static identifier which is immutable.
-> 
-> From what I can see SELinux doesn't really care about the dentry, we
-> don't care about IS_ROOT() or the name or any of that crap (in the
-> non-procfs case).  All we really about is that if something can find an
-> inode and use it that security_d_instantiate() was called....
-> 
-> Calling security_d_instantiate() extra times is very low overhead and
-> not harmful.  the dirtiest (but easiest I guess) fix would be to add it
-> into the out_iput path as well.  I feel like there has to be an easier
-> solution, I'm just not sure what it is...
->
+Hi Arnd,
 
-So we're not worried about calling it multiple times, we're more worried about
-somebody finding the dentry before we have a chance to run
-security_d_instantiate.  Would it be ok to call security_d_instantiate() right
-before we do all the actual instantiation work?  That would solve this problem.
-Thanks,
+Today's linux-next merge of the bkl-config tree got a conflict in
+include/linux/smp_lock.h between commit
+7957f0a857754c555e07f58a3fb83ac29501478c ("Fix build failure due to
+hwirq.h needing smp_lock.h") from Linus' tree and commit
+69baedf9d18ea86cc3b9916f5eeac9d089d3a117 ("BKL: mark lock_kernel as
+deprecated") from the bkl-config tree.
 
-Josef 
+Just context changes.  If fixed it up (see below) and can carry the fix
+for as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc include/linux/smp_lock.h
+index 3a19882,9590a0c..0000000
+--- a/include/linux/smp_lock.h
++++ b/include/linux/smp_lock.h
+@@@ -55,7 -47,7 +45,6 @@@ __releases(kernel_lock)
+  #ifdef CONFIG_BKL /* provoke build bug if not set */
+  #define lock_kernel()
+  #define unlock_kernel()
+- #define cycle_kernel_lock()			do { } while(0)
+ -#define kernel_locked()				1
+  #endif /* CONFIG_BKL */
+  
+  #define release_kernel_lock(task)		do { } while(0)
