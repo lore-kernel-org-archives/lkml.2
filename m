@@ -1,332 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab0KRNBr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 08:01:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44083 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757087Ab0KRNB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 08:01:29 -0500
-From: Thomas Renninger <trenn@suse.de>
-To: j-pihet@ti.com, arjan@linux.intel.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, trenn@suse.de
-Cc: rjw@sisk.pl
-Subject: [PATCH 2/3] PERF(kernel): Cleanup power events
-Date: Thu, 18 Nov 2010 14:01:25 +0100
-Message-Id: <1290085286-9507-3-git-send-email-trenn@suse.de>
-X-Mailer: git-send-email 1.6.3
-In-Reply-To: <1290085286-9507-1-git-send-email-trenn@suse.de>
-References: <1290085286-9507-1-git-send-email-trenn@suse.de>
+	id S1757388Ab0KRNCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 08:02:18 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35238 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757246Ab0KRNCR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 08:02:17 -0500
+Date: Thu, 18 Nov 2010 13:01:05 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Greg KH <greg@kroah.com>, Valdis.Kletnieks@vt.edu,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Werner Fink <werner@suse.de>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
+Message-ID: <20101118130105.51063206@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTikRcw9cahHpWadmHMJ1A2jT9vztwfydzjaGp1zh@mail.gmail.com>
+References: <AANLkTimn7zyEjLhmOmUVQGnLDfM-A_uEgWETsM3nsyuY@mail.gmail.com>
+	<20101116171447.29336514@lxorguk.ukuu.org.uk>
+	<AANLkTi=ju4fON7Hz=j_tFtqFGD0b-c=-Ou+HQwfYDgOy@mail.gmail.com>
+	<20101116195538.7fa66b97@lxorguk.ukuu.org.uk>
+	<20101116213622.GA17824@tango.0pointer.de>
+	<20101116225619.5fa7ef8b@lxorguk.ukuu.org.uk>
+	<20101116231023.GB27594@tango.0pointer.de>
+	<25482.1290031268@localhost>
+	<AANLkTimV_zKK-Ubw3vJkDUtrYvB+W06cRR7Nz2vam6fP@mail.gmail.com>
+	<20101117235647.00766e32@lxorguk.ukuu.org.uk>
+	<20101118012734.GA8558@kroah.com>
+	<20101118101519.11729a74@lxorguk.ukuu.org.uk>
+	<AANLkTikRcw9cahHpWadmHMJ1A2jT9vztwfydzjaGp1zh@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent changes:
-  - Enable EVENT_POWER_TRACING_DEPRECATED by default
+> All this is just no real issue for us. This is not about security in
 
-New power trace events:
-power:cpu_idle
-power:cpu_frequency
-power:machine_suspend
+The kernel isn't "for us", it has to cleanly solve the general purpose
+cases for all the usage cases. That varies from home type desktops where
+security isn't so important to secure installations where you damned well
+better get a console switch right.
 
+> the sense of untrusted users being able to do something they couldn't
+> do already, it's about passing the currently active user _some_
+> additional rights.
 
-C-state/idle accounting events:
-  power:power_start
-  power:power_end
-are replaced with:
-  power:cpu_idle
+Except we've already shown that is false for the more security concious
+case, so we need the kernel ability to handle both.
 
-and
-  power:power_frequency
-is replaced with:
-  power:cpu_frequency
+> And if that user goes inactive there will always be a window where
+> this user keeps some rights it had while active. There is always some
+> kind of overlap, and even if we had revoke() we probably couldn't it
+> for many reasons. Soft hand-over is the expected behavior. But the
+> poll() will still show us that *something* has changed, and it's all
+> we need to know to switch to the new user.
 
-power:machine_suspend
-is newly introduced.
-Jean Pihet has a patch integrated into the generic layer
-(kernel/power/suspend.c) which will make use of it.
+Of course you could fix it, you make the desktop change in that case
+synchronous. Most of what is needed is already there.
 
-the type= field got removed from both, it was never
-used and the type is differed by the event type itself.
+Now I don't care whether your particularly desktop bothers to or not,
+but I do care that the interface in question is general purpose.
 
-perf timechart
-userspace tool gets adjusted in a separate patch.
+> Synchronous interface means we block the VT switch until we have
+> handled the event in userspace? We have several in-kernel VT switches
 
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-Acked-by: Arjan van de Ven <arjan@linux.intel.com>
-Acked-by: Jean Pihet <j-pihet@ti.com>
-CC: Jean Pihet <j-pihet@ti.com>
-CC: Arjan van de Ven <arjan@linux.intel.com>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: rjw@sisk.pl
----
- arch/x86/kernel/process.c    |    7 +++-
- arch/x86/kernel/process_32.c |    2 +-
- arch/x86/kernel/process_64.c |    2 +
- drivers/cpufreq/cpufreq.c    |    1 +
- drivers/cpuidle/cpuidle.c    |    1 +
- drivers/idle/intel_idle.c    |    1 +
- include/trace/events/power.h |   86 +++++++++++++++++++++++++++++++++++++----
- kernel/trace/Kconfig         |   15 +++++++
- kernel/trace/power-traces.c  |    3 +
- 9 files changed, 107 insertions(+), 11 deletions(-)
+It means you have the option to do so. Clearly at boot time it would get
+a bit silly to do that. So for your use case you'd not ask for
+synchronous switching.
 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 57d1868..155d975 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -374,6 +374,7 @@ void default_idle(void)
- {
- 	if (hlt_use_halt()) {
- 		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
-+		trace_cpu_idle(1, smp_processor_id());
- 		current_thread_info()->status &= ~TS_POLLING;
- 		/*
- 		 * TS_POLLING-cleared state must be visible before we
-@@ -444,6 +445,7 @@ EXPORT_SYMBOL_GPL(cpu_idle_wait);
- void mwait_idle_with_hints(unsigned long ax, unsigned long cx)
- {
- 	trace_power_start(POWER_CSTATE, (ax>>4)+1, smp_processor_id());
-+	trace_cpu_idle((ax>>4)+1, smp_processor_id());
- 	if (!need_resched()) {
- 		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
- 			clflush((void *)&current_thread_info()->flags);
-@@ -460,6 +462,7 @@ static void mwait_idle(void)
- {
- 	if (!need_resched()) {
- 		trace_power_start(POWER_CSTATE, 1, smp_processor_id());
-+		trace_cpu_idle(1, smp_processor_id());
- 		if (cpu_has(&current_cpu_data, X86_FEATURE_CLFLUSH_MONITOR))
- 			clflush((void *)&current_thread_info()->flags);
- 
-@@ -481,10 +484,12 @@ static void mwait_idle(void)
- static void poll_idle(void)
- {
- 	trace_power_start(POWER_CSTATE, 0, smp_processor_id());
-+	trace_cpu_idle(0, smp_processor_id());
- 	local_irq_enable();
- 	while (!need_resched())
- 		cpu_relax();
--	trace_power_end(0);
-+	trace_power_end(smp_processor_id());
-+	trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
- }
- 
- /*
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index 96586c3..4b9befa 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -113,8 +113,8 @@ void cpu_idle(void)
- 			stop_critical_timings();
- 			pm_idle();
- 			start_critical_timings();
--
- 			trace_power_end(smp_processor_id());
-+			trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
- 		}
- 		tick_nohz_restart_sched_tick();
- 		preempt_enable_no_resched();
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index b3d7a3a..4c818a7 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -142,6 +142,8 @@ void cpu_idle(void)
- 			start_critical_timings();
- 
- 			trace_power_end(smp_processor_id());
-+			trace_cpu_idle(PWR_EVENT_EXIT,
-+				       smp_processor_id());
- 
- 			/* In many cases the interrupt that ended idle
- 			   has already called exit_idle. But some idle
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index c63a438..1109f68 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -355,6 +355,7 @@ void cpufreq_notify_transition(struct cpufreq_freqs *freqs, unsigned int state)
- 		dprintk("FREQ: %lu - CPU: %lu", (unsigned long)freqs->new,
- 			(unsigned long)freqs->cpu);
- 		trace_power_frequency(POWER_PSTATE, freqs->new, freqs->cpu);
-+		trace_cpu_frequency(freqs->new, freqs->cpu);
- 		srcu_notifier_call_chain(&cpufreq_transition_notifier_list,
- 				CPUFREQ_POSTCHANGE, freqs);
- 		if (likely(policy) && likely(policy->cpu == freqs->cpu))
-diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
-index a507108..08d5f05 100644
---- a/drivers/cpuidle/cpuidle.c
-+++ b/drivers/cpuidle/cpuidle.c
-@@ -107,6 +107,7 @@ static void cpuidle_idle_call(void)
- 	if (cpuidle_curr_governor->reflect)
- 		cpuidle_curr_governor->reflect(dev);
- 	trace_power_end(smp_processor_id());
-+	trace_cpu_idle(PWR_EVENT_EXIT, smp_processor_id());
- }
- 
- /**
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 3c95325..ba5134f 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -221,6 +221,7 @@ static int intel_idle(struct cpuidle_device *dev, struct cpuidle_state *state)
- 
- 	stop_critical_timings();
- 	trace_power_start(POWER_CSTATE, (eax >> 4) + 1, cpu);
-+	trace_cpu_idle((eax >> 4) + 1, cpu);
- 	if (!need_resched()) {
- 
- 		__monitor((void *)&current_thread_info()->flags, 0, 0);
-diff --git a/include/trace/events/power.h b/include/trace/events/power.h
-index 286784d..00d9819 100644
---- a/include/trace/events/power.h
-+++ b/include/trace/events/power.h
-@@ -7,16 +7,67 @@
- #include <linux/ktime.h>
- #include <linux/tracepoint.h>
- 
--#ifndef _TRACE_POWER_ENUM_
--#define _TRACE_POWER_ENUM_
--enum {
--	POWER_NONE	= 0,
--	POWER_CSTATE	= 1,	/* C-State */
--	POWER_PSTATE	= 2,	/* Fequency change or DVFS */
--	POWER_SSTATE	= 3,	/* Suspend */
--};
-+DECLARE_EVENT_CLASS(cpu,
-+
-+	TP_PROTO(unsigned int state, unsigned int cpu_id),
-+
-+	TP_ARGS(state, cpu_id),
-+
-+	TP_STRUCT__entry(
-+		__field(	u32,		state		)
-+		__field(	u32,		cpu_id		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->state = state;
-+		__entry->cpu_id = cpu_id;
-+	),
-+
-+	TP_printk("state=%lu cpu_id=%lu", (unsigned long)__entry->state,
-+		  (unsigned long)__entry->cpu_id)
-+);
-+
-+DEFINE_EVENT(cpu, cpu_idle,
-+
-+	TP_PROTO(unsigned int state, unsigned int cpu_id),
-+
-+	TP_ARGS(state, cpu_id)
-+);
-+
-+/* This file can get included multiple times, TRACE_HEADER_MULTI_READ at top */
-+#ifndef _PWR_EVENT_AVOID_DOUBLE_DEFINING
-+#define _PWR_EVENT_AVOID_DOUBLE_DEFINING
-+
-+#define PWR_EVENT_EXIT -1
- #endif
- 
-+DEFINE_EVENT(cpu, cpu_frequency,
-+
-+	TP_PROTO(unsigned int frequency, unsigned int cpu_id),
-+
-+	TP_ARGS(frequency, cpu_id)
-+);
-+
-+TRACE_EVENT(machine_suspend,
-+
-+	TP_PROTO(unsigned int state),
-+
-+	TP_ARGS(state),
-+
-+	TP_STRUCT__entry(
-+		__field(	u32,		state		)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->state = state;
-+	),
-+
-+	TP_printk("state=%lu", (unsigned long)__entry->state)
-+);
-+
-+/* This code will be removed after deprecation time exceeded (2.6.41) */
-+#ifdef CONFIG_EVENT_POWER_TRACING_DEPRECATED
-+
- /*
-  * The power events are used for cpuidle & suspend (power_start, power_end)
-  *  and for cpufreq (power_frequency)
-@@ -75,6 +126,24 @@ TRACE_EVENT(power_end,
- 
- );
- 
-+/* Deprecated dummy functions must be protected against multi-declartion */
-+#ifndef _PWR_EVENT_AVOID_DOUBLE_DEFINING_DEPRECATED
-+#define _PWR_EVENT_AVOID_DOUBLE_DEFINING_DEPRECATED
-+
-+enum {
-+	POWER_NONE = 0,
-+	POWER_CSTATE = 1,
-+	POWER_PSTATE = 2,
-+};
-+#endif /* _PWR_EVENT_AVOID_DOUBLE_DEFINING_DEPRECATED */
-+#else
-+/* These dummy declaration have to be ripped out when the deprecated
-+   events get removed */
-+static inline void trace_power_start(u64 type, u64 state, u64 cpuid) {};
-+static inline void trace_power_end(u64 cpuid) {};
-+static inline void trace_power_frequency(u64 type, u64 state, u64 cpuid) {};
-+#endif /* CONFIG_EVENT_POWER_TRACING_DEPRECATED */
-+
- /*
-  * The clock events are used for clock enable/disable and for
-  *  clock rate change
-@@ -153,7 +222,6 @@ DEFINE_EVENT(power_domain, power_domain_target,
- 
- 	TP_ARGS(name, state, cpu_id)
- );
--
- #endif /* _TRACE_POWER_H */
- 
- /* This part must be outside protection */
-diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index e04b8bc..59b44a1 100644
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@ -69,6 +69,21 @@ config EVENT_TRACING
- 	select CONTEXT_SWITCH_TRACER
- 	bool
- 
-+config EVENT_POWER_TRACING_DEPRECATED
-+	depends on EVENT_TRACING
-+	bool "Deprecated power event trace API, to be removed"
-+	default y
-+	help
-+	  Provides old power event types:
-+	  C-state/idle accounting events:
-+	  power:power_start
-+	  power:power_end
-+	  and old cpufreq accounting event:
-+	  power:power_frequency
-+	  This is for userspace compatibility
-+	  and will vanish after 5 kernel iterations,
-+	  namely 2.6.41.
-+
- config CONTEXT_SWITCH_TRACER
- 	bool
- 
-diff --git a/kernel/trace/power-traces.c b/kernel/trace/power-traces.c
-index 0e0497d..f55fcf6 100644
---- a/kernel/trace/power-traces.c
-+++ b/kernel/trace/power-traces.c
-@@ -13,5 +13,8 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/power.h>
- 
-+#ifdef EVENT_POWER_TRACING_DEPRECATED
- EXPORT_TRACEPOINT_SYMBOL_GPL(power_start);
-+#endif
-+EXPORT_TRACEPOINT_SYMBOL_GPL(cpu_idle);
- 
--- 
-1.6.3
+> during suspend-resume and such. I really don't think this will want to
+> wait for userspace to do random crap in /dev? :)
 
+Of course I'd point out every X based VT switch is currently synchronous.
+I don't believe X has any hooks for doing stuff mid switch via helpers
+but I'd have to check with X hackers on that.
+
+> We also never want single-use interfaces again. It's a pain when we
+
+There are lots of interfaces where single opener makes total sense so
+that's not a good generalisation. I would agree the vt interface is one
+where you might want multiple users, but that is easy to do.
+
+> So if we have multiple subscribers, we need for all subscribers to
+> finish userspace handling and let all other block in the VT switch
+> ioctl()?
+
+Depending where you do the VT synchronous handling.
+
+> That all sounds nice to have for some tasks, sure no doubt, but it
+> sounds pretty complicated/fragile for what we need to do. We are fine
+> so far with the async behavior.
+
+Fine so don't choose to use it. Oh wait you already are as you use the X
+server.
+
+> > solve the problem properly, and if we are careful about the message
+> > formats cover the fact the KMS folks and others want multiple "live"
+> > virtual consoles at a time.
+> 
+> As far as I know, the future is VT-like stuff in Wayland-like things
+> using a pty, and not legacy kernel-based VTs at all. They even think
+> to leave all kernel VT stuff behind, because there are too many
+> assumptions about, and they don't fit into the modern world of
+> internationalization key/font-handling anyway.
+
+No - the problem you have is that the kernel VT layer is two things
+
+1.	It's a VT100 emulator
+2.	It's a display surface and set of input bindings.
+
+Plug two keyboards into a PC and right now we fail to support two
+keyboard/two mouse/two screens even though all the hardware can do it. In
+that situation the VT interface is in many ways a legacy element but it
+ought to work, and the blanking and screen switching create a nasty mess
+if you try and hack around it and the notion it keeps of the display
+surfaces.
+
+> I also see problems with a lot of compat stuff that is based on
+> fg_console, and ...
+
+That's relatively easy to transition we add a
+
+struct all_the_crap_i_need_to_round_up {}
+
+and reference off it, then allow multiple instances. Been there done that
+several times.
+
+> > If you have a /dev/vtmanager or similar and opening it allocates a kfifo
+> > of a page into which we stuff the events we currently post for waitevent
+> > then the code is trivial and it does what Kay needs as well as being able
+> > to cover the rest of the WAITEVENT interface and future multi-desktop
+> > stuff.
+> >
+> > So its trivial to do the job properly, which makes the existing patches
+> > all the wrong thing to do.
+> 
+> I'm not against this, it might be what others are looking for. We
+> could also use that, even when it's 100 times more complicated than
+> the simple poll()able text interface.
+
+I don't think it is looking at the code. If I thought otherwise I'd be
+less jumping up and down about it. We already have an abstraction which
+is an event (ie message) in the code and thanks to kfifo the rest is
+noddy too, kfifo even does all the locking needed.
+
+> As long as we can have multiple subscribers doing the same thing, and
+> have a way not to block VT switches, but receive all this
+> asynchronously.
+> 
+> I just expect a ton of problems if we now start making VT switches
+> block, which they never did before.
+
+An API that forces you to block VT switches when you don't want it is as
+broken as an API which only supports async.
+
+I don't for one minute intend to propose an API that forces synchronous
+on you, or in fact to propose anyone implements multi-way synchronous vt
+switch management first time around the implementation.
+
+Alan
