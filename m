@@ -1,57 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab0KRKiB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 05:38:01 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60487 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755876Ab0KRKiA (ORCPT
+	id S1756334Ab0KRKlH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 05:41:07 -0500
+Received: from casper.infradead.org ([85.118.1.10]:35140 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab0KRKlG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 05:38:00 -0500
-Date: Thu, 18 Nov 2010 10:37:58 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Joe Perches <joe@perches.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        linux-kernel@vger.kernel.org, bleong@codeaurora.org
-Subject: Re: [PATCH 1/2] drivers: regulator: core: use pr_fmt
-Message-ID: <20101118103758.GB7233@rakim.wolfsonmicro.main>
-References: <1290036628-9928-1-git-send-email-dwalker@codeaurora.org>
- <1290040194.28741.324.camel@Joe-Laptop>
- <1290040508.16344.532.camel@c-dwalke-linux.qualcomm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290040508.16344.532.camel@c-dwalke-linux.qualcomm.com>
-X-Cookie: Pass with care.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 18 Nov 2010 05:41:06 -0500
+Subject: Re: [RFC][PATCH 0/2] tracing: Have trace_printk()s in the events/
+ directory
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "jason.wessel" <jason.wessel@windriver.com>,
+        "Ted Ts'o" <tytso@mit.edu>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <20101118035803.453609353@goodmis.org>
+References: <20101118035803.453609353@goodmis.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 18 Nov 2010 11:41:06 +0100
+Message-ID: <1290076866.2109.1305.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 04:35:08PM -0800, Daniel Walker wrote:
-> On Wed, 2010-11-17 at 16:29 -0800, Joe Perches wrote:
+On Wed, 2010-11-17 at 22:58 -0500, Steven Rostedt wrote:
+> For example, I added a trace_printk() in kernel/sched.c at line 2180
+> and it creates:
+> 
+> # ls /debug/tracing/events/printk/kernel/sched.c/2180/
+> enable  format
+> 
+> The format is the printk format:
+> 
+> # cat /debug/tracing/events/printk/kernel/sched.c/2180/format 
+> "migrate task %s:%d"
 
-> > > +			pr_err("%s '%s' voltage constraints\n", "invalid",
-> > > +				name);
+*groan*, so you're creating a tracepoint per instance?
 
-> > Using a separate pointer for invalid and unsupportable
-> > doesn't save much text space and is very hard to grep.
-
-> > I think it's more intelligible as:
-
-> > 			pr_err("%s: Invalid voltage constraints\n", name);
-
-> I noticed that also, but I didn't feel like changing it when I did this.
-
-This is some stuff from David Brownell which slipped through in review
-and should be removed to just have the string.  His theory is that this
-allows the compiler to merge multiple versions of the format string,
-resulting in a space saving but given how trivial the saving is and the
-impact on legibility it's really not worth it.
-
->                         printk(KERN_WARNING "%s: could not add regulator_dev"
->                                 " load sysfs\n", __func__);
-
-> I'm not sure what this one was suppose to say.
-
-That's a different thing - someone's just split the string over multiple
-lines - the two strings will just be concatenated.
+That's going to be massive pain for perf.. I really don't see the point
+in splitting all that out.
