@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760757Ab0KRWJG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 17:09:06 -0500
-Received: from smtp-out-249.synserver.de ([212.40.180.249]:1053 "HELO
-	smtp-out-247.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1754397Ab0KRWJF (ORCPT
+	id S932869Ab0KRWJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 17:09:50 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:38091 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754056Ab0KRWJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 17:09:05 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 23983
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH] POWER: gpio-charger: Fix potential race between irq handler and probe/remove function
-Date: Thu, 18 Nov 2010 23:08:38 +0100
-Message-Id: <1290118119-16468-2-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1290118119-16468-1-git-send-email-lars@metafoo.de>
-References: <1290118119-16468-1-git-send-email-lars@metafoo.de>
+	Thu, 18 Nov 2010 17:09:48 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAAcz5UxLd/sX/2dsb2JhbAAHgz3OLpBygSKDNnMEhFqLEA
+X-IronPort-AV: E=Sophos;i="4.59,219,1288584000"; 
+   d="scan'208";a="82911240"
+Message-ID: <4CE5A42A.5080308@teksavvy.com>
+Date: Thu, 18 Nov 2010 17:09:46 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+CC: Jamie Lokier <jamie@shareable.org>, Jeff Moyer <jmoyer@redhat.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        tytso@mit.edu, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com> <20101118130630.GJ6178@parisc-linux.org> <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <x494obe4kd5.fsf@segfault.boston.devel.redhat.com> <20101118180557.GU22787@shareable.org> <20101118193255.GE1594@arch.trippelsdorf.de> <4CE59E86.1080603@teksavvy.com> <20101118215008.GA1556@arch.trippelsdorf.de>
+In-Reply-To: <20101118215008.GA1556@arch.trippelsdorf.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a potential race between the irq handler and the probe and
-remove functions.
-The irq should not be requested before the chargers power_supply has been
-registered and has to be freed before the power_supply is unregistered,
-otherwise it is possible that the irq fires while the power_supply is not
-initialized yet or has already been freed.
+On 10-11-18 04:50 PM, Markus Trippelsdorf wrote:
+> On 2010.11.18 at 16:45 -0500, Mark Lord wrote:
+>> On 10-11-18 02:32 PM, Markus Trippelsdorf wrote:
+>>> On 2010.11.18 at 18:05 +0000, Jamie Lokier wrote:
+>>>> Online trim may be slow, but offline would be awfully inconvenient
+>>>> when an fs is big and needed for a live system, or when it's your root fs.
+>>>
+>>> You can call FITRIM from a running system. Infact I run it once per week
+>>> as a cron job on my (mounted) root fs.
+>>
+>>
+>> Ditto for wiper.sh.
+>
+> But I always thought that wiper has no access to the filesystem
+> internals. So there is always a chance that you write to a sector that
+> wiper.sh is currently trimming. FITRIM should be safer in this regard.
 
-While we are at it replace request_irq with request_any_context_irq.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- drivers/power/gpio-charger.c |   28 +++++++++++++---------------
- 1 files changed, 13 insertions(+), 15 deletions(-)
+No, wiper.sh is very safe for online TRIM.
+It reserves the blocks before trimming them, so nothing else can write to them.
 
-diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
-index 8458caf..016d5c0 100644
---- a/drivers/power/gpio-charger.c
-+++ b/drivers/power/gpio-charger.c
-@@ -98,7 +98,7 @@ static int __devinit gpio_charger_probe(struct platform_device *pdev)
- 	charger->type = pdata->type;
- 	charger->properties = gpio_charger_properties;
- 	charger->num_properties = ARRAY_SIZE(gpio_charger_properties);
--	charger->get_property  = gpio_charger_get_property;
-+	charger->get_property = gpio_charger_get_property;
- 	charger->supplied_to = pdata->supplied_to;
- 	charger->num_supplicants = pdata->num_supplicants;
- 
-@@ -113,9 +113,17 @@ static int __devinit gpio_charger_probe(struct platform_device *pdev)
- 		goto err_gpio_free;
- 	}
- 
-+	gpio_charger->pdata = pdata;
-+
-+	ret = power_supply_register(&pdev->dev, charger);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Failed to register power supply: %d\n", ret);
-+		goto err_gpio_free;
-+	}
-+
- 	irq = gpio_to_irq(pdata->gpio);
- 	if (irq > 0) {
--		ret = request_irq(irq, gpio_charger_irq,
-+		ret = request_any_context_irq(irq, gpio_charger_irq,
- 				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
- 				dev_name(&pdev->dev), charger);
- 		if (ret)
-@@ -124,21 +132,10 @@ static int __devinit gpio_charger_probe(struct platform_device *pdev)
- 			gpio_charger->irq = irq;
- 	}
- 
--	gpio_charger->pdata = pdata;
--
--	ret = power_supply_register(&pdev->dev, charger);
--	if (ret < 0) {
--		dev_err(&pdev->dev, "Failed to register power supply: %d\n", ret);
--		goto err_irq_free;
--	}
--
- 	platform_set_drvdata(pdev, gpio_charger);
- 
- 	return 0;
- 
--err_irq_free:
--	if (gpio_charger->irq)
--		free_irq(gpio_charger->irq, charger);
- err_gpio_free:
- 	gpio_free(pdata->gpio);
- err_free:
-@@ -150,10 +147,11 @@ static int __devexit gpio_charger_remove(struct platform_device *pdev)
- {
- 	struct gpio_charger *gpio_charger = platform_get_drvdata(pdev);
- 
--	power_supply_unregister(&gpio_charger->charger);
--
- 	if (gpio_charger->irq)
- 		free_irq(gpio_charger->irq, &gpio_charger->charger);
-+
-+	power_supply_unregister(&gpio_charger->charger);
-+
- 	gpio_free(gpio_charger->pdata->gpio);
- 
- 	platform_set_drvdata(pdev, NULL);
--- 
-1.5.6.5
+The danger with wiper.sh, is that WHILE it is running, it reserves most
+of the free space of the filesystem.  So if there are other apps writing
+tons of new data to the drive, while not freeing up old data, the system
+can run low on diskspace for a moment.
 
+wiper.sh counters that by not reserving/trimming *everything* when run online,
+leaving a reasonable amount of scratch space available for other apps during the 
+run.
+
+This is where having a fully capable FITRIM, with multi-range TRIMs, would be 
+useful.
+
+Cheers
