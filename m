@@ -1,100 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366Ab0KRND2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 08:03:28 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:58666 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756980Ab0KRND1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 08:03:27 -0500
-Date: Thu, 18 Nov 2010 08:03:24 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "jason.wessel" <jason.wessel@windriver.com>,
-        "Ted Ts'o" <tytso@mit.edu>
-Subject: Re: [RFC][PATCH 0/2] tracing: Have trace_printk()s in the events/
-	directory
-Message-ID: <20101118130324.GB3741@Krystal>
-References: <20101118035803.453609353@goodmis.org> <1290076866.2109.1305.camel@laptop> <1290081203.30543.96.camel@gandalf.stny.rr.com> <20101118120626.GB27474@Krystal> <1290082454.30543.98.camel@gandalf.stny.rr.com>
+	id S1757460Ab0KRNDy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 08:03:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51318 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757261Ab0KRNDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 08:03:52 -0500
+Date: Thu, 18 Nov 2010 15:03:37 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Gregory Haskins <ghaskins@novell.com>,
+        Chris Lalancette <clalance@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] kvm: fast-path msi injection with irqfd
+Message-ID: <20101118130337.GA2254@redhat.com>
+References: <20101117221254.GA8296@redhat.com>
+ <20101118105741.GA31261@redhat.com>
+ <4CE50810.3090502@redhat.com>
+ <20101118111037.GB31261@redhat.com>
+ <4CE51C17.4000108@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1290082454.30543.98.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 08:01:52 up 56 days, 17:04,  1 user,  load average: 1.04, 1.22,
-	1.20
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4CE51C17.4000108@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Thu, 2010-11-18 at 07:06 -0500, Mathieu Desnoyers wrote:
-> > * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > > On Thu, 2010-11-18 at 11:41 +0100, Peter Zijlstra wrote:
-> > > > On Wed, 2010-11-17 at 22:58 -0500, Steven Rostedt wrote:
-> > > > > For example, I added a trace_printk() in kernel/sched.c at line 2180
-> > > > > and it creates:
-> > > > > 
-> > > > > # ls /debug/tracing/events/printk/kernel/sched.c/2180/
-> > > > > enable  format
-> > > > > 
-> > > > > The format is the printk format:
-> > > > > 
-> > > > > # cat /debug/tracing/events/printk/kernel/sched.c/2180/format 
-> > > > > "migrate task %s:%d"
-> > > > 
-> > > > *groan*, so you're creating a tracepoint per instance?
-> > > > 
-> > > > That's going to be massive pain for perf.. I really don't see the point
-> > > > in splitting all that out.
-> > > 
-> > > a) The file directory was what was asked about in the referenced email.
-> > > b) This is just an example of a way to display it to the user, which
-> > > seems to be very intuitive.
-> > > c) Perf can implement the details anyway it wants. It can make a single
-> > > tracepoint callback and have the enabling of the points as a special
-> > > filter.
-> > > d) This was just an RFC that Frederic asked if I would do. I thought it
-> > > would be a fun challenge and did it. Let it bit rot in hell for all I
-> > > care, I wasn't taking it any further anyway.
-> > 
-> > Hi Steven,
-> > 
-> > The LTTng tree still keeps the "trace_mark()" kernel markers, which are
-> > very very similar to ftrace_printk(). I'd be happy to combine the two
-> > eventually. This one file per line approach seems very good -- rather than
-> > explicitely naming each instance, as I did in trace_mark(), you end up
-> > automatically naming them by file/line number.
-> > 
-> > How does this behave from within static inlines called multiple times and
-> > unrolled loops ?
+On Thu, Nov 18, 2010 at 02:29:11PM +0200, Avi Kivity wrote:
+> On 11/18/2010 01:10 PM, Michael S. Tsirkin wrote:
+> >>  I guess I should create an empty Documentation/kvm/locking.txt and
+> >>  force everyone else to update it.
+> >
+> >Comments near the relevant fields not better?
+> >
 > 
-> Actually you mean macros:
+> Not an either/or.  You can't understand the system from random
+> source comments.
 > 
-> You'll get a 2181-1, 2181-2, 2181-3, etc.
-
-This is neat, great ! :)
-
+> >diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> >index a055742..d13ced3 100644
+> >--- a/include/linux/kvm_host.h
+> >+++ b/include/linux/kvm_host.h
+> >@@ -16,6 +16,7 @@
+> >  #include<linux/mm.h>
+> >  #include<linux/preempt.h>
+> >  #include<linux/msi.h>
+> >+#include<linux/rcupdate.h>
+> >  #include<asm/signal.h>
+> >
+> >  #include<linux/kvm.h>
+> >@@ -206,6 +207,8 @@ struct kvm {
+> >
+> >  	struct mutex irq_lock;
+> >  #ifdef CONFIG_HAVE_KVM_IRQCHIP
+> >+	/* Update side is protected by irq_lock and,
+> >+	 * if configured, irqfds.lock. */
 > 
-> Although a trace_printk() in a header static inline may be interesting.
+> /*
+>  * kernel style comment
+>  * here and elsewhere
+>  */
+> 
+> 
+> 
+> >  	struct kvm_irq_routing_table __rcu *irq_routing;
+> >  	struct hlist_head mask_notifier_list;
+> >  	struct hlist_head irq_ack_notifier_list;
+> >@@ -462,6 +465,8 @@ void kvm_get_intr_delivery_bitmask(struct kvm_ioapic *ioapic,
+> >  				   unsigned long *deliver_bitmask);
+> >  #endif
+> >  int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level);
+> >+int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
+> >+		int irq_source_id, int level);
+> 
+> No point in the level argument for an msi specific function.
 
-Yep, food for thoughts. ;-)
+This is an existing function I made non-static.
+We have per-gsi callbacks so level is required there to match.
+I could add a wrapper I guess:
 
-Thank you !
+int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
+		int irq_source_id, int level)
+{
+	if (!level)
+		return -1;
+	return kvm_send_msi(irq_entry, kvm, irq_source_id);
+}
 
-Mathieu
+This results in less code for irqfd but more code for ioctl injection
+... is it worth it?
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+> >
+> >  #else
+> >@@ -614,6 +620,12 @@ static inline int kvm_irqfd(struct kvm *kvm, int fd, int gsi, int flags)
+> >  }
+> >
+> >  static inline void kvm_irqfd_release(struct kvm *kvm) {}
+> 
+> blank line
+> 
+
+There's no line before kvm_eventfd_init either ...
+I added one.
+
+> >+static inline void kvm_irq_routing_update(struct kvm *kvm,
+> >+					  struct kvm_irq_routing_table *irq_rt)
+> >+{
+> >+	rcu_assign_pointer(kvm->irq_routing, irq_rt);
+> >+}
+> >+
+> >  static inline int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+> >  {
+> >  	return -ENOSYS;
+> 
+> Apart from these minor issues, looks good.
+
+
+Something we should consider improving is the loop over all VCPUs that
+kvm_irq_delivery_to_apic invokes.  I think that (for non-broadcast
+interrupts) it should be possible to precompute an store the CPU
+in question as part of the routing entry.
+
+Something for a separate patch ... comments?
+
+> -- 
+> error compiling committee.c: too many arguments to function
