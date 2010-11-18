@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932987Ab0KRXE1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:04:27 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34055 "EHLO
+	id S933021Ab0KRXE3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:04:29 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:34210 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932899Ab0KRXEZ (ORCPT
+	with ESMTP id S932996Ab0KRXE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:04:25 -0500
-Date: Thu, 18 Nov 2010 15:02:49 -0800
+	Thu, 18 Nov 2010 18:04:27 -0500
+Date: Thu, 18 Nov 2010 15:02:41 -0800
 From: Randy Dunlap <randy.dunlap@oracle.com>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH] fs: fix kernel-doc for dcache::prepend_path
-Message-Id: <20101118150249.459b40fe.randy.dunlap@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH] sched: fix kernel-doc for runqueue_is_locked
+Message-Id: <20101118150241.34f0ca15.randy.dunlap@oracle.com>
 Organization: Oracle Linux Eng.
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
@@ -24,25 +24,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Fix function kernel-doc warning for prepend_path():
+Fix kernel-doc warning for runqueue_is_locked():
 
-Warning(fs/dcache.c:1924): missing initial short description on line:
+Warning(kernel/sched.c:664): missing initial short description on line:
 
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Ingo Molnar <mingo@elte.hu>
 ---
- fs/dcache.c |    3 +--
+ kernel/sched.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
---- lnx-2637-r2g4-kerndoc.orig/fs/dcache.c
-+++ lnx-2637-r2g4-kerndoc/fs/dcache.c
-@@ -1921,8 +1921,7 @@ static int prepend_name(char **buffer, i
- }
+--- lnx-2637-r2g4-kerndoc.orig/kernel/sched.c
++++ lnx-2637-r2g4-kerndoc/kernel/sched.c
+@@ -664,10 +664,9 @@ inline void update_rq_clock(struct rq *r
+ #endif
  
  /**
-- * Prepend path string to a buffer
-- *
-+ * prepend_path - Prepend path string to a buffer
-  * @path: the dentry/vfsmount to report
-  * @root: root vfsmnt/dentry (may be modified by this function)
-  * @buffer: pointer to the end of the buffer
+- * runqueue_is_locked
++ * runqueue_is_locked - Returns true if the current cpu runqueue is locked
+  * @cpu: the processor in question.
+  *
+- * Returns true if the current cpu runqueue is locked.
+  * This interface allows printk to be called with the runqueue lock
+  * held and know whether or not it is OK to wake up the klogd.
+  */
+---
