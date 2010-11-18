@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758735Ab0KRXlg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:41:36 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48932 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755887Ab0KRXlf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:41:35 -0500
+	id S1760326Ab0KRXnW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:43:22 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50951 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769Ab0KRXnV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 18:43:21 -0500
+Date: Thu, 18 Nov 2010 15:42:16 -0800
+From: Joel Becker <Joel.Becker@oracle.com>
+To: David Sterba <dsterba@suse.cz>
+Cc: ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org, mfasheh@suse.com
+Subject: Re: fs/ocfs2/dlm: Use GFP_ATOMIC under spin_lock
+Message-ID: <20101118234216.GH19821@mail.oracle.com>
+Mail-Followup-To: David Sterba <dsterba@suse.cz>,
+	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
+	mfasheh@suse.com
+References: <20101102223601.GA27513@ds.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <20101118233439.GB5004@quack.suse.cz>
-References: <1290007619-5787-1-git-send-email-arnd@arndb.de> <20101118233439.GB5004@quack.suse.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 18 Nov 2010 15:40:56 -0800
-Message-ID: <AANLkTin0Gm8Xqm-ARGmd4T+fCM4mMA0=PbDA6eSsYUOG@mail.gmail.com>
-Subject: Re: [PATCH 0/7] BKL removal follow-up
-To: Jan Kara <jack@suse.cz>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Nathan Laredo <laredo@gnu.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        Alessio Igor Bogani <alessioigorbogani@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101102223601.GA27513@ds.suse.cz>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 3:34 PM, Jan Kara <jack@suse.cz> wrote:
->
->  Just for info, UDF BKL removal patches seem to work fine but I want to
-> give them some final SMP testing on Monday before pushing them to -next.
-> I'm not sure how much people hurry with disabling the lock so if I should
-> push them ASAP or whether the next merge window is fine...
+On Tue, Nov 02, 2010 at 11:36:02PM +0100, David Sterba wrote:
+> coccinelle check scripts/coccinelle/locks/call_kern.cocci found that
+> in fs/ocfs2/dlm/dlmdomain.c an allocation with GFP_KERNEL is done
+> with locks held:
+> 
+> dlm_query_region_handler
+>   spin_lock(dlm_domain_lock)
+>     dlm_match_regions
+>       kmalloc(GFP_KERNEL)
+> 
+> Change it to GFP_ATOMIC.
+> 
+> Signed-off-by: David Sterba <dsterba@suse.cz>
+> CC: Joel Becker <joel.becker@oracle.com>
+> CC: Mark Fasheh <mfasheh@suse.com>
+> CC: ocfs2-devel@oss.oracle.com
 
-I don't think I can reasonably do it in 37, we're late enough in the
--rc series. So UDF and really saying 'n' to BKL by default will have
-to be for the next merge window.
+	This patch is now in the fixes branch of ocfs2.git.
 
-I hate to do it, but I'd be too nervous about it any other way.
+Joel
 
-                   Linus
+-- 
+
+"Behind every successful man there's a lot of unsuccessful years."
+        - Bob Brown
+
+Joel Becker
+Senior Development Manager
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
