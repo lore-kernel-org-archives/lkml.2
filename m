@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab0KRN6Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 08:58:25 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45185 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757866Ab0KRN6X (ORCPT
+	id S1758058Ab0KRN7I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 08:59:08 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51214 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756852Ab0KRN7H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 08:58:23 -0500
+	Thu, 18 Nov 2010 08:59:07 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=jtB+GHb/xlhBeK3M1qFeX6cEpXoFuu1RqPzmLpP00b/xkrlZDB10SU9Mr3q7gzMHTX
-         jFB+4fb9AfiJx1A8yuxIRaYZcAiXJMbU2D+aqzYrJwCwNic4506R/r0CeqE7mTiLq/Ow
-         J5WmNKYhomHTh6ZOJf7BKXfr5QhmMNCMm+7g0=
-Date: Thu, 18 Nov 2010 16:58:17 +0300
+        b=kpS8LNEjHZEQ71Koyw00mzZPox9GsI4p55XlF8PfHN51gVTJswra00g4Is2wLLjm7N
+         ZSu+nZg28ml6/mJY7rBRu4vNAlQZG3AAxn8ZCCmNl4wqe0xevKHmZbiv0JGdW3BiIsQB
+         66PZEI2gFduhPtvQIxNfteuZzWfHCA6qiMWmI=
+Date: Thu, 18 Nov 2010 16:59:00 +0300
 From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Sven Neumann <s.neumann@raumfeld.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] ds2760_battery: fix calculation of time_to_empty_now
-Message-ID: <20101118135817.GA19527@oksana.dev.rtsoft.ru>
-References: <1289558182-28817-1-git-send-email-s.neumann@raumfeld.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH] POWER: jz4740-battery: Protect against concurrent
+ battery readings
+Message-ID: <20101118135900.GB19527@oksana.dev.rtsoft.ru>
+References: <1289498453-9938-1-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1289558182-28817-1-git-send-email-s.neumann@raumfeld.com>
+In-Reply-To: <1289498453-9938-1-git-send-email-lars@metafoo.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 11:36:22AM +0100, Sven Neumann wrote:
-> A check against division by zero was modified in commit b0525b48.
-> Since this change time_to_empty_now is always reported as zero
-> while the battery is discharging and as a negative value while
-> the battery is charging. This is because current is negative while
-> the battery is discharging.
+On Thu, Nov 11, 2010 at 07:00:52PM +0100, Lars-Peter Clausen wrote:
+> We can not handle more then one ADC request at a time to the battery. The patch
+> adds a mutex around the ADC read code to ensure this.
 > 
-> Fix the check introduced by commit b0525b48 so that time_to_empty_now
-> is reported correctly during discharge and as zero while charging.
-> 
-> Signed-off-by: Sven Neumann <s.neumann@raumfeld.com>
-> Acked-by: Daniel Mack <daniel@caiaq.de>
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> Cc: stable@kernel.org
+> ---
+>  drivers/power/jz4740-battery.c |    7 +++++++
+>  1 files changed, 7 insertions(+), 0 deletions(-)
+> ---
+> This patch should also go into the 2.6.36.x stable tree
 
-Applied (with Cc: stable@kernel.org [2.6.32..2.6.36]).
-
-Thanks!
+Applied, thanks!
 
 -- 
 Anton Vorontsov
