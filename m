@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759924Ab0KRW1J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 17:27:09 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:49583 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756092Ab0KRW1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 17:27:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=hFqcyGD6TEXzgCoAUopOUpFU98Zj5LQwWcv15HRG0VWoztM0V0goPT5VKYnJLZo0I/
-         9bsvQIkdd1CblbpgElJbUOtMhetD3dCp5Qv0KGT/8ZcqxyxH2/PyeFHNrybyVedWf/hI
-         j4XOi2usRsohwCTOSFf0h9lqARttSY9NBwnbM=
-Date: Fri, 19 Nov 2010 01:27:02 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Robert Richter <robert.richter@amd.com>,
-        ying.huang@intel.com, Andi Kleen <andi@firstfloor.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
-Message-ID: <20101118222702.GO6028@lenovo>
-References: <20101112172755.GR4823@redhat.com> <20101116184325.GB4823@redhat.com> <4CE2E3C3.6060800@windriver.com> <20101118080516.GJ32621@elte.hu> <4CE52048.5080802@windriver.com> <1290086232.2109.1507.camel@laptop> <20101118193247.GF18100@redhat.com> <20101118215650.GL6028@lenovo> <20101118221554.GA31253@lenovo> <4CE5A7AE.8070703@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE5A7AE.8070703@windriver.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1760707Ab0KRW1v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 17:27:51 -0500
+Received: from waste.org ([173.11.57.241]:47296 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756092Ab0KRW1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 17:27:50 -0500
+Subject: Re: [PATCH] slub: operate cache name memory same to slab and slob
+From: Matt Mackall <mpm@selenic.com>
+To: David Rientjes <rientjes@google.com>
+Cc: b32542@freescale.com, linux-mm@kvack.org, cl@linux-foundation.org,
+        penberg@cs.helsinki.fi, tytso@mit.edu, linux-kernel@vger.kernel.org,
+        Zeng Zhaoming <zengzm.kernel@gmail.com>
+In-Reply-To: <alpine.DEB.2.00.1011181333160.26680@chino.kir.corp.google.com>
+References: <1290049259-20108-1-git-send-email-b32542@freescale.com>
+	 <1290114908.26343.721.camel@calx>
+	 <alpine.DEB.2.00.1011181333160.26680@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Nov 2010 16:27:45 -0600
+Message-ID: <1290119265.26343.814.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 04:24:46PM -0600, Jason Wessel wrote:
-... 
-> It is retested and confirmed to work on real HW.   This no longer works
-> on qemu/kvm likely because the emulation is incorrect.
+On Thu, 2010-11-18 at 13:36 -0800, David Rientjes wrote:
+> On Thu, 18 Nov 2010, Matt Mackall wrote:
 > 
-> Thanks,
-> Jason.
+> > > Get a memory leak complaint about ext4:
+> > >   comm "mount", pid 1159, jiffies 4294904647 (age 6077.804s)
+> > >   hex dump (first 32 bytes):
+> > >     65 78 74 34 5f 67 72 6f 75 70 69 6e 66 6f 5f 31  ext4_groupinfo_1
+> > >     30 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  0.kkkkkkkkkkkkk.
+> > >   backtrace:
+> > >     [<c068ade3>] kmemleak_alloc+0x93/0xd0
+> > >     [<c024e54c>] __kmalloc_track_caller+0x30c/0x380
+> > >     [<c02269d3>] kstrdup+0x33/0x60
+> > >     [<c0318a70>] ext4_mb_init+0x4e0/0x550
+> > >     [<c0304e0e>] ext4_fill_super+0x1e6e/0x2f60
+> > >     [<c0261140>] mount_bdev+0x1c0/0x1f0
+> > >     [<c02fc00f>] ext4_mount+0x1f/0x30
+> > >     [<c02603d8>] vfs_kern_mount+0x78/0x250
+> > >     [<c026060e>] do_kern_mount+0x3e/0x100
+> > >     [<c027b4c2>] do_mount+0x2e2/0x780
+> > >     [<c027ba04>] sys_mount+0xa4/0xd0
+> > >     [<c010429f>] sysenter_do_call+0x12/0x38
+> > >     [<ffffffff>] 0xffffffff
+> > > 
+> > > It is cause by slub manage the cache name different from slab and slob.
+> > > In slab and slob, only reference to name, alloc and reclaim the memory
+> > > is the duty of the code that invoked kmem_cache_create().
+> > > 
+> > > In slub, cache name duplicated when create. This ambiguity will cause
+> > > some memory leaks and double free if kmem_cache_create() pass a
+> > > dynamic malloc cache name.
+> > 
+> > I don't get it.
+> > 
+> > Caller allocates X, passes X to slub, slub duplicates X as X', and
+> > properly frees X', then caller frees X. Yes, that's silly, but where's
+> > the leak?
+> > 
 > 
+> The leak in ext4_mb_init() above is because it is using kstrdup() to 
+> allocate the string itself and then on destroy uses kmem_cache_name() to 
+> attain the slub allocator's pointer to the name, not the memory the ext4 
+> layer allocated itself.
 
-ok, thanks a lot Jason!
+And Pekka says:
 
-  Cyrill
+> The kstrdup() is there because of SLUB cache merging. See commit 
+> 84c1cf62465e2fb0a692620dcfeb52323ab03d48 ("SLUB: Fix merged slab 
+> cache names") for details.
+
+I see. So we can either:
+
+- force anyone using dynamically-allocated names to track their own damn
+pointer
+- implement kstrdup in the other allocators and fix all callers (the
+bulk of which use static names!)
+- eliminate dynamically-allocated names (mostly useless when we start
+merging slabs!)
+- add an indirection layer for slub that holds the unmerged details
+- stop pretending we track slab names and show only generic names based
+on size in /proc
+
+kmem_cache_name() is also a highly suspect function in a
+post-merged-slabs kernel. As ext4 is the only user in the kernel, and it
+got it wrong, perhaps it's time to rip it out.
+
+-- 
+Mathematics is the supreme nostalgia of our time.
+
+
