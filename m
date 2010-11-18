@@ -1,70 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab0KRJtS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 04:49:18 -0500
-Received: from hera.kernel.org ([140.211.167.34]:59772 "EHLO hera.kernel.org"
+	id S1756393Ab0KRJti (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 04:49:38 -0500
+Received: from mail.sysgo.com ([195.145.229.155]:43436 "EHLO mail.sysgo.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751686Ab0KRJtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 04:49:13 -0500
-Message-ID: <4CE4F672.1030904@kernel.org>
-Date: Thu, 18 Nov 2010 10:48:34 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1756305Ab0KRJth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 04:49:37 -0500
+Date: Thu, 18 Nov 2010 10:50:15 +0100
+From: Pavel Machek <pma@sysgo.com>
+To: kernel list <linux-kernel@vger.kernel.org>, horms@verge.net.au,
+        vgoyal@redhat.com, akpm@linux-foundation.org
+Cc: randy.dunlap@oracle.com
+Subject: kexec documentation missing, bad links in kdump.txt
+Message-ID: <20101118095015.GA12071@pma.sysgo.com>
 MIME-Version: 1.0
-To: Pavel Emelyanov <xemul@parallels.com>
-CC: "Serge E. Hallyn" <serge@hallyn.com>, Oren Laadan <orenl@cs.columbia.edu>,
-        Kapil Arya <kapil@ccs.neu.edu>, Gene Cooperman <gene@ccs.neu.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Linux Containers <containers@lists.osdl.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com> <4CD26948.7050009@kernel.org> <20101104164401.GC10656@sundance.ccs.neu.edu> <4CD3CE29.2010105@kernel.org> <20101106053204.GB12449@count0.beaverton.ibm.com> <20101106204008.GA31077@sundance.ccs.neu.edu> <4CD5D99A.8000402@cs.columbia.edu> <20101107184927.GF31077@sundance.ccs.neu.edu> <4CD72150.9070705@cs.columbia.edu> <4CE3C334.9080401@kernel.org> <20101117153902.GA1155@hallyn.com> <4CE3F8D1.10003@kernel.org> <4CE4EE21.6050305@parallels.com>
-In-Reply-To: <4CE4EE21.6050305@parallels.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 18 Nov 2010 09:48:36 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Pavel.
+Hi!
 
-On 11/18/2010 10:13 AM, Pavel Emelyanov wrote:
->>> By this do you mean the very idea of having CR support in the kernel?
->>> Or our design of it in the kernel?
->>
->> The former, I'm afraid.
-> 
-> Can you elaborate on this please?
+Where can one get kexec documentation?
 
-I think I already did that several times in this thread but here's an
-attempt at summary.
+(In particular, we are trying to get it to boot on ARM board, and
+wonder if something like CONFIG_RELOCATABLE_KERNEL is needed.)
 
-* It adds a bunch of pseudo ABI when most of the same information is
-  available via already established ABI.
+Unfortunately, only pieces mentioning kexec are kdump pieces
+(Documentation/kdump/kdump.txt), and links there, such as
 
-* In a way which can only ever be used and tested by CR.  If possible,
-  kernel should provide generic mechanisms which can be used to
-  implement features in userland.  One of the reasons why we'd like to
-  export small basic building blocks instead of full end-to-end
-  solutions from the kernel is that we don't know how things will
-  change in the future.  In-kernel CR puts too much in the kernel in a
-  way too inflexible manner.
+http://www.kernel.org/pub/linux/kernel/people/horms/kexec-tools/kexec-tools.tar.gz
 
-* It essentially adds a separate complete set of entry/exit points for
-  a lot of things, which makes things more error prone and increases
-  maintenance overhead across the board.
+http://www.kernel.org/pub/linux/kernel/people/horms/kexec-tools/README.html
 
-* And, most of all, there are userland implementation and
-  virtualization, making the benefit to overhead ratio completely off.
-  Userland implementation _already_ achieves most of what's necessary
-  for the most important use case of HPC without any special help from
-  the kernel.  The only reasonable thing to do is taking a good look
-  at it and finding ways to improve it.
+http://www.kernel.org/git/?p=linux/kernel/git/horms/kexec-tools.git
 
-Thanks.
-
--- 
-tejun
+are no longer valid :-(.
+								Pavel
