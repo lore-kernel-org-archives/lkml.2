@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab0KRRWY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:22:24 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:46504 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755241Ab0KRRWX (ORCPT
+	id S932599Ab0KRRXI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:23:08 -0500
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:46991
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932576Ab0KRRXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:22:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=uoCsGa0hvqvVsg1r24P0SNYNRfne2bsr00Qpcms60Xv/naUlfhY+E1mj8ovnyDfuxF
-         Jw5tDpfQnygFn32TFKbx//ckQSf6Uq4rpplNuCkSizC8/hAmDu4xfR1za16HJQqDjguW
-         T+q+qVYRhEYdswtAK6UwFljK2Eqj9QiCAAmDg=
+	Thu, 18 Nov 2010 12:23:06 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz1432N98dNzz1202hzz8275bhz2dh2a8h668h67dh685h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw02.freescale.net;RD:az33egw02.freescale.net;EFVD:NLI
+Date: Thu, 18 Nov 2010 11:21:46 -0600
+From: Scott Wood <scottwood@freescale.com>
+To: Timur Tabi <timur@freescale.com>
+CC: Greg KH <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stuart Yoder <stuart.yoder@freescale.com>
+Subject: Re: How do I choose an arbitrary minor number for my tty device?
+Message-ID: <20101118112146.3275eb08@udp111988uds.am.freescale.net>
+In-Reply-To: <4CE54E40.9040503@freescale.com>
+References: <4CE44B1B.9040709@freescale.com>
+	<20101117215147.GA26792@suse.de>
+	<4CE452CD.3050001@freescale.com>
+	<20101117221903.GA4066@suse.de>
+	<4CE45A4E.70308@freescale.com>
+	<20101118022434.GA9833@suse.de>
+	<4CE546C5.8060401@freescale.com>
+	<20101118153912.GA1443@suse.de>
+	<4CE54E40.9040503@freescale.com>
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1290094063.3187.41.camel@heimdal.trondhjem.org>
-References: <AANLkTimavN8px1k_Y65mFqsAsiLjgCh6vos22ZnZm+3Z@mail.gmail.com> <1290094063.3187.41.camel@heimdal.trondhjem.org>
-From: Peng Tao <lkml.bergwolf@gmail.com>
-Date: Fri, 19 Nov 2010 01:22:01 +0800
-X-Google-Sender-Auth: 1FjSIzTpduqr0CYoRu-9OzUpqjE
-Message-ID: <AANLkTik6cGbhyAPBKVoq49ePEfxgVaNL16ghXgztya1V@mail.gmail.com>
-Subject: Re: Question about nfs_page_async_flush assertion
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Nov 2010 17:22:49.0844 (UTC) FILETIME=[39904340:01CB8745]
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 11:27 PM, Trond Myklebust
-<trond.myklebust@fys.uio.no> wrote:
-> On Thu, 2010-11-18 at 18:53 +0800, Peng Tao wrote:
->> Hi, all,
->>
->> nfs_writepages calls into
->> write_cache_pages()->nfs_writepages_callback()->nfs_do_writepage()->nfs_page_async_flush(),
->> where it asserts BUG_ON(test_bit(PG_CLEAN, &req->wb_flags)).
->> My question is: how do we guarantee the request has PG_CLEAN flag set?
->
-> We don't. We guarantee that the request has PG_CLEAN cleared, and that
-> is done when we dirty the page (see nfs_try_to_update_request()).
-Ah, I missed. It is test_bit() other than !test_bit(). Thank you Trond
-for pointing it out.
-Sorry for the spam :)
+On Thu, 18 Nov 2010 10:03:12 -0600
+Timur Tabi <timur@freescale.com> wrote:
 
--- 
-Thanks,
--Bergwolf
+> I'm not so sure.  Like I said, I still don't see where there's a bus.  I have a
+> single driver that has multiple devices.  It sounds to me like one call to
+> tty_register_driver() and multiple calls to tty_register_device() would be
+> sufficient.
+> 
+> For instance, there is no code in drivers/char/ that makes a call to
+> bus_register(), so I don't see any precedent for a tty driver to register a bus
+> first.
+
+The tty driver doesn't register the bus, but rather a driver for
+some type of device on that bus.  The code to create the bus goes
+elsewhere, and would not be specific to byte channels.
+
+> Also, this is an Open Firmware driver.  I already have a mechanism whereby I get
+> probed for each instance of a byte channel.  Isn't that my "bus"?
+
+It would be if you actually had it -- but it looks like you just loop
+over the nodes.
+
+We should add a proper bus for the "handles" node.  Then sysfs should
+show the link between the tty device and a device tree node -- which is
+really what we're after, the handle is just a means to that end.
+
+> I'm really trying to do the right thing here, Greg, but every time I try to
+> solve one problem, I'm being told that I need to make things way more
+> complicated first.
+
+s/make things way more complicated/use the existing infrastructure
+rather than reinvent the wheel/
+
+And getting rid of the redundant chardev driver would be a
+simplification...
+
+-Scott
+
