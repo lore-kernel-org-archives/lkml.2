@@ -1,165 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab0KRCDY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 21:03:24 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:19653 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753976Ab0KRCDX (ORCPT
+	id S1754435Ab0KRCDv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 21:03:51 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43623 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754277Ab0KRCDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 21:03:23 -0500
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=G6J1iyAKYYjnAYVTyJJxLhKtv8fvzlpKU0yNiBuJD9C9e7mY6DjKgle4BeK5hmkK9
-	HQyFP6kyyxI36/CNvE5Jw==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH v4 05/11] writeback: create dirty_info structure
-References: <1288336154-23256-1-git-send-email-gthelen@google.com>
-	<1288336154-23256-6-git-send-email-gthelen@google.com>
-	<20101117164924.25e6cc11.akpm@linux-foundation.org>
-Date: Wed, 17 Nov 2010 18:02:35 -0800
-In-Reply-To: <20101117164924.25e6cc11.akpm@linux-foundation.org> (Andrew
-	Morton's message of "Wed, 17 Nov 2010 16:49:24 -0800")
-Message-ID: <xr9362vvwfr8.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 17 Nov 2010 21:03:50 -0500
+Date: Wed, 17 Nov 2010 17:59:00 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/13] IO-less dirty throttling
+Message-Id: <20101117175900.0d7878e5.akpm@linux-foundation.org>
+In-Reply-To: <20101118014051.GR22876@dastard>
+References: <20101117035821.000579293@intel.com>
+	<20101117072538.GO22876@dastard>
+	<20101117100655.GA26501@localhost>
+	<20101118014051.GR22876@dastard>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton <akpm@linux-foundation.org> writes:
+On Thu, 18 Nov 2010 12:40:51 +1100 Dave Chinner <david@fromorbit.com> wrote:
 
-> On Fri, 29 Oct 2010 00:09:08 -0700
-> Greg Thelen <gthelen@google.com> wrote:
->
->> Bundle dirty limits and dirty memory usage metrics into a dirty_info
->> structure to simplify interfaces of routines that need all.
->
-> Problems...
->
-> These patches interact pretty badly with Fengguang's "IO-less dirty
-> throttling v2" patches.  I fixed up
-> writeback-create-dirty_info-structure.patch pretty mechanically but
-> when it got to memcg-check-memcg-dirty-limits-in-page-writeback.patch
-> things got sticky and I gave up.
->
-> As your stuff was merged first, I'd normally send the bad news to
-> Fengguang, but the memcg code is logically built upon the core
-> writeback code so I do think these patches should be staged after the
-> changes to core writeback.
->
-> Also, while I was there it seemed that the chosen members of the
-> dirty_info structure were a bit random.  Perhaps we should be putting
-> nr_dirty in there as well, perhaps other things.  Please have a think
-> about that.
->
-> Also, in ratelimit_pages() we call global_dirty_info() to return four
-> items, but that caller only actually uses two of them.  Wasted effort?
->
->
-> So I'm afraid I'm going to have to request that you redo and retest
-> these patches:
->
-> writeback-create-dirty_info-structure.patch
-> memcg-add-dirty-page-accounting-infrastructure.patch
-> memcg-add-kernel-calls-for-memcg-dirty-page-stats.patch
-> memcg-add-dirty-limits-to-mem_cgroup.patch
-> memcg-add-dirty-limits-to-mem_cgroup-use-native-word-to-represent-dirtyable-pages.patch
-> memcg-add-dirty-limits-to-mem_cgroup-catch-negative-per-cpu-sums-in-dirty-info.patch
-> memcg-add-dirty-limits-to-mem_cgroup-avoid-overflow-in-memcg_hierarchical_free_pages.patch
-> memcg-add-dirty-limits-to-mem_cgroup-correct-memcg_hierarchical_free_pages-return-type.patch
-> memcg-add-dirty-limits-to-mem_cgroup-avoid-free-overflow-in-memcg_hierarchical_free_pages.patch
-> memcg-cpu-hotplug-lockdep-warning-fix.patch
-> memcg-add-cgroupfs-interface-to-memcg-dirty-limits.patch
-> memcg-break-out-event-counters-from-other-stats.patch
-> memcg-check-memcg-dirty-limits-in-page-writeback.patch
-> memcg-use-native-word-page-statistics-counters.patch
-> memcg-use-native-word-page-statistics-counters-fix.patch
-> #
-> memcg-add-mem_cgroup-parameter-to-mem_cgroup_page_stat.patch
-> memcg-pass-mem_cgroup-to-mem_cgroup_dirty_info.patch
-> #memcg-make-throttle_vm_writeout-memcg-aware.patch: "troublesome": Kamezawa
-> memcg-make-throttle_vm_writeout-memcg-aware.patch
-> memcg-make-throttle_vm_writeout-memcg-aware-fix.patch
-> memcg-simplify-mem_cgroup_page_stat.patch
-> memcg-simplify-mem_cgroup_dirty_info.patch
-> memcg-make-mem_cgroup_page_stat-return-value-unsigned.patch
->
-> against the http://userweb.kernel.org/~akpm/mmotm/ which I just
-> uploaded, sorry.  I've uploaded my copy of all the above to
-> http://userweb.kernel.org/~akpm/stuff/gthelen.tar.gz.  I think only the
-> two patches need fixing and retesting.
->
-> Also, while wrangling the above patches, I stumbled across rejects such
-> as:
->
->
-> ***************
-> *** 99,106 ****
->                    "state:            %8lx\n",
->                    (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
->                    (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
-> -                  K(bdi_thresh), K(dirty_thresh),
-> -                  K(background_thresh), nr_dirty, nr_io, nr_more_io,
->                    !list_empty(&bdi->bdi_list), bdi->state);
->   #undef K
->   
-> --- 98,106 ----
->                    "state:            %8lx\n",
->                    (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
->                    (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
-> +                  K(bdi_thresh), K(dirty_info.dirty_thresh),
-> +                  K(dirty_info.background_thresh),
-> +                  nr_dirty, nr_io, nr_more_io,
->                    !list_empty(&bdi->bdi_list), bdi->state);
->
-> Please, if you discover crud like this, just fix it up.  One item per
-> line:
->
->                    "state:            %8lx\n",
->                    (unsigned long) K(bdi_stat(bdi, BDI_WRITEBACK)),
->                    (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
-> 		   K(bdi_thresh),
-> 		   K(dirty_info.dirty_thresh),
-> 		   K(dirty_info.background_thresh),
-> 		   nr_dirty,
-> 		   nr_io,
-> 		   nr_more_io,
->                    !list_empty(&bdi->bdi_list), bdi->state);
->
-> all very simple.  And while you're there, fix up the
-> tab-tab-space-space-space indenting - just use tabs.
->
->
-> The other area where code maintenance is harder than it needs to be is
-> in definitions of locals:
->
->         long nr_reclaimable;
->         long nr_dirty, bdi_dirty;  /* = file_dirty + writeback + unstable_nfs */
->         long bdi_prev_dirty = 0;
->
-> again, that's just dopey.  Change it to
->
->         long nr_reclaimable;
->         long nr_dirty;
-> 	long bdi_dirty;		/* = file_dirty + writeback + unstable_nfs */
->         long bdi_prev_dirty = 0;
->
-> All very simple.
->
-> Thanks.
+> 
+> There's no point
+> waking a dirtier if all they can do is write a single page before
+> they are throttled again - IO is most efficient when done in larger
+> batches...
 
-I am leaving on vacation until Mon.  Once I return, this will be one of
-the first things I get to.  I will resubmit patches based on whatever
-the latest mmotm on Mon.
+That assumes the process was about to do another write.  That's
+reasonable on average, but a bit sad for interactive/rtprio tasks.  At
+some stage those scheduler things should be brought into the equation.
+
+>
+> ...
+>
+> Yeah, sorry, should have posted them - I didn't because I snapped
+> the numbers before the run had finished. Without series:
+> 
+> 373.19user 14940.49system 41:42.17elapsed 612%CPU (0avgtext+0avgdata 82560maxresident)k
+> 0inputs+0outputs (403major+2599763minor)pagefaults 0swaps
+> 
+> With your series:
+> 
+> 359.64user 5559.32system 40:53.23elapsed 241%CPU (0avgtext+0avgdata 82496maxresident)k
+> 0inputs+0outputs (312major+2598798minor)pagefaults 0swaps
+> 
+> So the wall time with your series is lower, and system CPU time is
+> way down (as I've already noted) for this workload on XFS.
+
+How much of that benefit is an accounting artifact, moving work away
+from the calling process's CPU and into kernel threads?
+
