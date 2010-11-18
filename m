@@ -1,132 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395Ab0KRHtP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 02:49:15 -0500
-Received: from smtp-vbr14.xs4all.nl ([194.109.24.34]:3059 "EHLO
-	smtp-vbr14.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755280Ab0KRHtN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 02:49:13 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: manjunatha_halli@ti.com
-Subject: Re: [PATCH v4 2/6] drivers:staging: ti-st: fmdrv_v4l2 sources
-Date: Thu, 18 Nov 2010 08:49:07 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-tschai; KDE/4.4.5; x86_64; ; )
-Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-References: <1289913494-21590-1-git-send-email-manjunatha_halli@ti.com> <1289913494-21590-2-git-send-email-manjunatha_halli@ti.com> <1289913494-21590-3-git-send-email-manjunatha_halli@ti.com>
-In-Reply-To: <1289913494-21590-3-git-send-email-manjunatha_halli@ti.com>
+	id S1755334Ab0KRH5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 02:57:43 -0500
+Received: from arrakis.dune.hu ([78.24.191.176]:45943 "EHLO arrakis.dune.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754856Ab0KRH5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 02:57:42 -0500
+X-Greylist: delayed 348 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Nov 2010 02:57:41 EST
+X-Spam-Flag: NO
+X-Spam-Score: -3.489
+Content-Type: text/plain; charset=us-ascii; format=flowed; delsp=yes
+To: linux-kernel@vger.kernel.org, "Brian Walsh" <brian@walsh.ws>
+Cc: "Russell King" <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: ixp4xx export symbol dma_set_coherent_mask
+References: <201011172325.10894.brian@walsh.ws>
+Date: Thu, 18 Nov 2010 08:51:48 +0100
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201011180849.07405.hverkuil@xs4all.nl>
+Content-Transfer-Encoding: 8bit
+From: "Imre Kaloz" <kaloz@openwrt.org>
+Organization: OpenWrt - Wireless Freedom
+Message-ID: <op.vmcv4jpf2s3iss@ecaz>
+In-Reply-To: <201011172325.10894.brian@walsh.ws>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 16, 2010 14:18:10 manjunatha_halli@ti.com wrote:
-> From: Manjunatha Halli <manjunatha_halli@ti.com>
-> 
-> This module interfaces V4L2 subsystem and FM common
-> module. It registers itself with V4L2 as Radio module.
-> 
-> Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
-> ---
->  drivers/staging/ti-st/fmdrv_v4l2.c |  757 ++++++++++++++++++++++++++++++++++++
->  drivers/staging/ti-st/fmdrv_v4l2.h |   32 ++
->  2 files changed, 789 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.c
->  create mode 100644 drivers/staging/ti-st/fmdrv_v4l2.h
-> 
-> diff --git a/drivers/staging/ti-st/fmdrv_v4l2.c b/drivers/staging/ti-st/fmdrv_v4l2.c
-> new file mode 100644
-> index 0000000..687d10f
-> --- /dev/null
-> +++ b/drivers/staging/ti-st/fmdrv_v4l2.c
-> @@ -0,0 +1,757 @@
-> +/*
-> + *  FM Driver for Connectivity chip of Texas Instruments.
-> + *  This file provides interfaces to V4L2 subsystem.
-> + *
-> + *  This module registers with V4L2 subsystem as Radio
-> + *  data system interface (/dev/radio). During the registration,
-> + *  it will expose two set of function pointers.
-> + *
-> + *    1) File operation related API (open, close, read, write, poll...etc).
-> + *    2) Set of V4L2 IOCTL complaint API.
-> + *
-> + *  Copyright (C) 2010 Texas Instruments
-> + *  Author: Raja Mani <raja_mani@ti.com>
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License version 2 as
-> + *  published by the Free Software Foundation.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License
-> + *  along with this program; if not, write to the Free Software
-> + *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + *
-> + */
-> +
-> +#include "fmdrv.h"
-> +#include "fmdrv_v4l2.h"
-> +#include "fmdrv_common.h"
-> +#include "fmdrv_rx.h"
-> +#include "fmdrv_tx.h"
-> +
-> +static struct video_device *gradio_dev;
-> +static unsigned char radio_disconnected;
-> +
-> +/* Query control */
-> +static struct v4l2_queryctrl fmdrv_v4l2_queryctrl[] = {
-> +	{
-> +	 .id = V4L2_CID_AUDIO_VOLUME,
-> +	 .type = V4L2_CTRL_TYPE_INTEGER,
-> +	 .name = "Volume",
-> +	 .minimum = FM_RX_VOLUME_MIN,
-> +	 .maximum = FM_RX_VOLUME_MAX,
-> +	 .step = 1,
-> +	 .default_value = FM_DEFAULT_RX_VOLUME,
-> +	 },
-> +	{
-> +	 .id = V4L2_CID_AUDIO_BALANCE,
-> +	 .flags = V4L2_CTRL_FLAG_DISABLED,
-> +	 },
-> +	{
-> +	 .id = V4L2_CID_AUDIO_BASS,
-> +	 .flags = V4L2_CTRL_FLAG_DISABLED,
-> +	 },
-> +	{
-> +	 .id = V4L2_CID_AUDIO_TREBLE,
-> +	 .flags = V4L2_CTRL_FLAG_DISABLED,
-> +	 },
-> +	{
-> +	 .id = V4L2_CID_AUDIO_MUTE,
-> +	 .type = V4L2_CTRL_TYPE_BOOLEAN,
-> +	 .name = "Mute",
-> +	 .minimum = 0,
-> +	 .maximum = 2,
-> +	 .step = 1,
-> +	 .default_value = FM_MUTE_OFF,
-> +	 },
-> +	{
-> +	 .id = V4L2_CID_AUDIO_LOUDNESS,
-> +	 .flags = V4L2_CTRL_FLAG_DISABLED,
-> +	 },
-> +};
+On Thu, 18 Nov 2010 05:25:10 +0100, Brian Walsh <brian@walsh.ws> wrote:
 
-Please use the control framework. See Documentation/video4linux/v4l2-controls.txt.
-It's much easier to use and should be used for new drivers.
+> ARM ixp4xx module building has been broken since commit 710224fa2750.
+> arm: fix "arm: fix pci_set_consistent_dma_mask for dmabounce devices"
+>
+> Signed-off-by: Brian Walsh <brian@walsh.ws>
+>
+> diff --git a/arch/arm/mach-ixp4xx/common-pci.c b/arch/arm/mach-ixp4xx/common-pci.c
+> index 24498a9..d54b219 100644
+> --- a/arch/arm/mach-ixp4xx/common-pci.c
+> +++ b/arch/arm/mach-ixp4xx/common-pci.c
+> @@ -513,4 +513,5 @@ int dma_set_coherent_mask(struct device *dev, u64 mask)
+> EXPORT_SYMBOL(ixp4xx_pci_read);
+>  EXPORT_SYMBOL(ixp4xx_pci_write);
+> +EXPORT_SYMBOL(dma_set_coherent_mask);
+>
 
-Regards,
+Same reply as for http://lists.arm.linux.org.uk/lurker/message/20101108.104326.f5a6c7dd.en.html :
 
-	Hans
+http://lists.arm.linux.org.uk/lurker/message/20101102.114433.8822afb6.en.html
 
--- 
-Hans Verkuil - video4linux developer - sponsored by Cisco
+
+Russell, could you apply that patch?
+
+
+Thanks,
+
+Imre
