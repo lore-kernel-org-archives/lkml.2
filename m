@@ -1,60 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955Ab0KRLMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 06:12:03 -0500
-Received: from DMZ-MAILSEC-SCANNER-5.MIT.EDU ([18.7.68.34]:49930 "EHLO
-	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751408Ab0KRLMA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 06:12:00 -0500
-X-AuditID: 12074422-b7c3eae000000a70-54-4ce509ff0e9a
-Subject: Re: Challenges with doing hardware bring up with Linux first
-Mime-Version: 1.0 (Apple Message framework v1082)
-Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <AANLkTim4jVaZxYp8nSgJyy28iwxcxbPeNUzxTfoHAX4S@mail.gmail.com>
-Date: Thu, 18 Nov 2010 06:11:49 -0500
-Cc: linux-kernel@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Greg KH <greg@kroah.com>, David Miller <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "Perez-Gonzalez, Inaky" <inaky.perez-gonzalez@intel.com>,
-        Charles Marker <Charles.Marker@atheros.com>,
-        Jouni Malinen <Jouni.Malinen@atheros.com>,
-        Kevin Hayes <kevin@atheros.com>, Zhifeng Cai <zhifeng.cai@atheros.com>,
-        "Luis R. Rodriguez" <mcgrof@gmail.com>,
-        Don Breslin <Don.Breslin@atheros.com>,
-        Doug Dahlby <Doug.Dahlby@atheros.com>, Julia Lawall <julia@diku.dk>
+	id S1752105Ab0KRLMx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 06:12:53 -0500
+Received: from casper.infradead.org ([85.118.1.10]:37488 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab0KRLMw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 06:12:52 -0500
+Subject: Re: [PATCH 3/4] perf-events: Add support for supplementary event
+ registers v3
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: eranian@google.com, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <1290077254-12165-4-git-send-email-andi@firstfloor.org>
+References: <1290077254-12165-1-git-send-email-andi@firstfloor.org>
+	 <1290077254-12165-4-git-send-email-andi@firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <F46C52ED-8DB8-4347-957D-B9D84406D53F@mit.edu>
-References: <AANLkTim4jVaZxYp8nSgJyy28iwxcxbPeNUzxTfoHAX4S@mail.gmail.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-X-Mailer: Apple Mail (2.1082)
-X-Brightmail-Tracker: AAAAAA==
+Date: Thu, 18 Nov 2010 12:12:59 +0100
+Message-ID: <1290078779.2109.1341.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Luis,
+On Thu, 2010-11-18 at 11:47 +0100, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Intel Nehalem/Westmere have a special OFFCORE_RESPONSE event
+> that can be used to monitor any offcore accesses from a core.
+> This is a very useful event for various tunings, and it's
+> also needed to implement the generic LLC-* events correctly.
+> 
+> Unfortunately this event requires programming a mask in a separate
+> register. And worse this separate register is per core, not per
+> CPU thread.
+> 
+> This patch adds:
+> - Teaches perf_events that OFFCORE_RESPONSE needs extra parameters.
+> The extra parameters are passed by user space in the unused upper
+> 32bits of the config word.
+> - Add support to the Intel perf_event core to schedule per
+> core resources. This adds fairly generic infrastructure that
+> can be also used for other per core resources.
+> The basic code has is patterned after the similar AMD northbridge
+> constraints code.
+> 
+> Thanks to Stephane Eranian who pointed out some problems
+> in the original version and suggested improvements.
+> 
+> Full git tree:
+> git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc-2.6.git perf-offcore2
+> Cc: eranian@google.com
+> v2: Lots of updates based on review feedback. Also fixes some issues
+> v3: Fix hotplug. Handle multiple extra registers. Fix init order.
+> Various improvements.
 
-I'm having a little trouble understanding what it is your proposing.
+Stuff like that shouldn't be mixed in with the tags and usually goes
+below the --- separator since its not supposed to end up in the
+committed changelog.
 
-I *think* you are suggesting that
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c       |   70 ++++++++++++
+>  arch/x86/kernel/cpu/perf_event_intel.c |  192 ++++++++++++++++++++++++++++++++
+>  include/linux/perf_event.h             |    2 +
+>  3 files changed, 264 insertions(+), 0 deletions(-)
 
-a)  Some portion of the "OS agnostic crap" be relicensed under a BSD or Apache-style license.   And I think what you are suggesting would fall in that camp is the parts of the Linux 802.11 stack?
+> @@ -876,6 +944,8 @@ static inline void __x86_pmu_enable_event(struct hw_perf_event *hwc,
+>  					  u64 enable_mask)
+>  {
+>  	wrmsrl(hwc->config_base + hwc->idx, hwc->config | enable_mask);
+> +	if (hwc->extra_reg)
+> +		wrmsrl(hwc->extra_reg, hwc->extra_config);
+>  }
 
-b)  That the "OS agnostic crap" be moved into staging.
+Just wondering, shouldn't we program the extra msr _before_ we flip the
+enable bit?
 
-Can we ignore where the code lives for now?   I think (b) doesn't make any sense at all.
+> +static __init int init_intel_percore(void)
+> +{
+> +	int cpu;
+> +
+> +	if (!needs_percore)
+> +		return 0;
+> +
+> +	intel_percore = alloc_percpu(struct intel_percore);
+> +	if (!intel_percore)
+> +		return -ENOMEM;
+> +	for_each_possible_cpu(cpu)
+> +		raw_spin_lock_init(&per_cpu_ptr(intel_percore, cpu)->lock);
+> +
+> +	return 0;
+> +}
+> +/* 
+> + * Runs later because per cpu allocations don't work early on.
+> + */
+> +__initcall(init_intel_percore);
 
-And as far as (b) is concerned, I think what you are suggesting isn't so much about the code, but trying to somehow encourage, via the carrot of making ti easy to push vendors into agreeing that the Linux 802.11 wireless API should be considered the OS independent interface layer that random vendors creating 802.11 drivers can interface against.
-
-And to make that easy, you want to relicense the 802.11 stack under a BSD/Apache license so that it makes life easy for people who are creating drivers for Windows XP.   Do I have that right?
-
-Assuming I understand the motivations of your proposal and what it is you were proposing in the first place, might another course of action which might prove as efficient, if not more so in the long term, is for some volunteer (perhaps at Atheros) to create some freely licensed new code that creates a glue layer between the Linux interfaces that wireless drivers use to plug into Linux's 802.11 layer, and to the 802.11 layer for Windows 7 and Mac OS X.    Furthermore, to make this glue layer GPL with the exception clauses that allows the glue code to link into Windows 7 and Mac OS X.
-
-What this provides for is a wonderful leverage for hardware vendors.   If they provide GPL'ed code for their core hardware drivers that link against the Linux 802.11 layer, at one fell swoop they also get Windows 7 and Mac OS X drivers for free!   Better yet, it doesn't require getting permission from the Linux world, since what is necessary is the existence of new glue code that allows the hardware dependent code that previously was Linux specific, and which now allows it to plug into the glue code which then allows it to become hardware independent code for Windows 7 and Mac OS X.
-
--- Ted
-
+I've got a patch moving the whole pmu init to early_initcall(), which is
+after mm_init() so it would actually work.
