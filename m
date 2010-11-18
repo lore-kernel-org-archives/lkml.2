@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760034Ab0KRR5N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:57:13 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47824 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753019Ab0KRR5L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:57:11 -0500
-Date: Thu, 18 Nov 2010 09:52:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] Make swap accounting default behavior configurable v4
-Message-Id: <20101118095247.2445b092.akpm@linux-foundation.org>
-In-Reply-To: <20101118102349.GF15928@tiehlicka.suse.cz>
-References: <20101116101726.GA21296@tiehlicka.suse.cz>
-	<20101116124615.978ed940.akpm@linux-foundation.org>
-	<20101117092339.1b7c2d6d.nishimura@mxp.nes.nec.co.jp>
-	<20101116171225.274019cf.akpm@linux-foundation.org>
-	<20101117122801.e9850acf.nishimura@mxp.nes.nec.co.jp>
-	<20101118082332.GB15928@tiehlicka.suse.cz>
-	<20101118174654.8fa69aca.nishimura@mxp.nes.nec.co.jp>
-	<20101118175334.be00c8f2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101118095607.GD15928@tiehlicka.suse.cz>
-	<20101118191427.fd86db5c.nishimura@mxp.nes.nec.co.jp>
-	<20101118102349.GF15928@tiehlicka.suse.cz>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932634Ab0KRR71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:59:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53549 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932443Ab0KRR70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 12:59:26 -0500
+Date: Thu, 18 Nov 2010 09:58:32 -0800
+From: Greg KH <gregkh@suse.de>
+To: Timur Tabi <timur@freescale.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Scott Wood <scottwood@freescale.com>,
+        Stuart Yoder <stuart.yoder@freescale.com>
+Subject: Re: How do I choose an arbitrary minor number for my tty device?
+Message-ID: <20101118175832.GA4931@suse.de>
+References: <20101118022434.GA9833@suse.de>
+ <4CE546C5.8060401@freescale.com>
+ <20101118153912.GA1443@suse.de>
+ <4CE54E40.9040503@freescale.com>
+ <20101118163321.GA2723@suse.de>
+ <4CE5562B.8080604@freescale.com>
+ <20101118165136.GA3103@suse.de>
+ <4CE55ACB.80207@freescale.com>
+ <20101118171856.GA4283@suse.de>
+ <4CE5647F.5000203@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE5647F.5000203@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010 11:23:49 +0100 Michal Hocko <mhocko@suse.cz> wrote:
-
-> > I'm sorry again and again, but I think removing "noswapaccount" completely
-> > would be better, as Andrew said first:
+On Thu, Nov 18, 2010 at 11:38:07AM -0600, Timur Tabi wrote:
+> Greg KH wrote:
 > 
-> I read the above Andrew's statement that we really should stick with the
-> old parameter.
+> > No, you can use the /dev/serial/ links to determine exactly which is
+> > which depending on the pci id, and other unique identifiers (serial
+> > numbers, etc.)
+> 
+> I just booted a Linux kernel with the driver I just emailed you, and there's no
+> /dev/serial/ directory.  The only directories under /dev/ are 'shm' and 'pts',
+> both of which are empty.
 
-yup.  We shouldn't remove the existing parameter, which people might be
-using already.
+Then plug in a serial port device and see what happens.  You didn't hook
+everything up in your driver correctly it seems, do your devices show up
+under /sys/class/tty?
 
-> > > So we have swapaccount and noswapaccount.  Ho hum, "swapaccount=[1|0]"
-> > > would have been better.
+> I'm also running a Fedora 13 x86 system, just to see if I need a full modern OS
+> to see these files.  Again, there is no /dev/serial/, even though I have serial
+> ports.
 
-What I meant was that it was a mistake to add the "noswapaccount" in
-the first place.  We should have made it "swapaccount=0", because that
-would leave open the later option of reversing the default, and
-enabling "swapaccount=1".
+Dynamic ones like a usb to serial device?
 
-It also give us the option of adding "swapaccount=2"!  Perhaps to
-enable alternative swap accounting behaviour.
+> Also not that since I'm not registering the byte channels as serial devices, I
+> wouldn't expect anything in /dev/serial/ to reference them.
+> 
+> What does my driver need to do in order for these /dev/xxxx/ entries to contain
+> that information?
+
+See the udev rules for details.
+
+> > Is this somehow not public code?  What just changed in the past 15
+> > minutes?
+> 
+> Sorry, when I said "not public", I didn't mean it in a legal sense.  Now that I
+> think about it, I guess that doesn't make much sense.
+
+Yes, it didn't :)
