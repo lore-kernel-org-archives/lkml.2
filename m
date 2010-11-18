@@ -1,79 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759513Ab0KRQIc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:08:32 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:37456 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932200Ab0KRQHe (ORCPT
+	id S1759441Ab0KRQJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:09:29 -0500
+Received: from mail.windriver.com ([147.11.1.11]:57555 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753655Ab0KRQJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 11:07:34 -0500
-X-Spam-ASN: 
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: linux-kernel@vger.kernel.org
-Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-        Rodolfo Giometti <giometti@enneenne.com>,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>
-Subject: [PATCHv4 02/17] pps: declare variables where they are used in switch
-Date: Thu, 18 Nov 2010 19:00:55 +0300
-Message-Id: <035bc7cbf912350fa817c1328f4dcbc33e01b592.1290087476.git.lasaine@lvk.cs.msu.su>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
-References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
-X-AV-Checked: ClamAV using ClamSMTP
+	Thu, 18 Nov 2010 11:09:28 -0500
+Message-ID: <4CE54F9F.5000603@windriver.com>
+Date: Thu, 18 Nov 2010 10:09:03 -0600
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] perf,hw_breakpoint: Initialize hardware api earlier
+References: <1289684273-26770-1-git-send-regression-fweisbec@gmail.com> <1289684273-26770-3-git-send-regression-fweisbec@gmail.com> <1289684766.2109.326.camel@laptop>  <4CDFE516.3050006@windriver.com> <1289942654.2109.671.camel@laptop>
+In-Reply-To: <1289942654.2109.671.camel@laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Nov 2010 16:09:05.0389 (UTC) FILETIME=[EC6201D0:01CB873A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move variable declarations where they are used in pps_cdev_ioctl.
+On 11/16/2010 03:24 PM, Peter Zijlstra wrote:
+> On Sun, 2010-11-14 at 07:33 -0600, Jason Wessel wrote:
+>> This sounds to me like it would be early enough.  I could certainly run
+>> the simple test case in the patch to make sure it still works, if you
+>> point me to your patch(es).  I imagine I should also test the hand off
+>> procedure where the debugger uses the registers directly up until the
+>> point that perf is capable of handling reservations for the hw
+>> breakpoint slots.
+>
+> I had to actually write them -- I had some hacky things in my sysfs RFC.
+> Find attached.
 
-Acked-by: Rodolfo Giometti <giometti@linux.it>
-Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
----
- drivers/pps/pps.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+It is worth summarizing the out of band discussion for anyone following
+this thread.
 
-diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
-index ca5183b..c76afb9 100644
---- a/drivers/pps/pps.c
-+++ b/drivers/pps/pps.c
-@@ -61,8 +61,6 @@ static long pps_cdev_ioctl(struct file *file,
- {
- 	struct pps_device *pps = file->private_data;
- 	struct pps_kparams params;
--	struct pps_fdata fdata;
--	unsigned long ticks;
- 	void __user *uarg = (void __user *) arg;
- 	int __user *iuarg = (int __user *) arg;
- 	int err;
-@@ -136,7 +134,9 @@ static long pps_cdev_ioctl(struct file *file,
- 
- 		break;
- 
--	case PPS_FETCH:
-+	case PPS_FETCH: {
-+		struct pps_fdata fdata;
-+
- 		pr_debug("PPS_FETCH: source %d\n", pps->id);
- 
- 		err = copy_from_user(&fdata, uarg, sizeof(struct pps_fdata));
-@@ -149,6 +149,8 @@ static long pps_cdev_ioctl(struct file *file,
- 		if (fdata.timeout.flags & PPS_TIME_INVALID)
- 			err = wait_event_interruptible(pps->queue, pps->go);
- 		else {
-+			unsigned long ticks;
-+
- 			pr_debug("timeout %lld.%09d\n",
- 					(long long) fdata.timeout.sec,
- 					fdata.timeout.nsec);
-@@ -185,7 +187,7 @@ static long pps_cdev_ioctl(struct file *file,
- 			return -EFAULT;
- 
- 		break;
--
-+	}
- 	default:
- 		return -ENOTTY;
- 		break;
--- 
-1.7.2.3
+The patch set did not address the problem of initializing the
+hw_breakpoint api early enough to allow the breakpoint register hand
+off to work correctly.
 
+
+> Index: linux-2.6/kernel/hw_breakpoint.c
+> ===========================================================
+> --- linux-2.6.orig/kernel/hw_breakpoint.c
+> +++ linux-2.6/kernel/hw_breakpoint.c
+> @@ -655,6 +655,6 @@ static int __init init_hw_breakpoint(voi
+> 
+>         return -ENOMEM;
+>  }
+> -core_initcall(init_hw_breakpoint);
+> +early_initcall(init_hw_breakpoint);
+
+An early_initcall is still well after smp_init() and not early enough
+for the kgdb arch setup to succeed when transitioning from early
+debugging to late debugging.
+
+There is a patch pending in the tip tree which moves the
+hw_breakpoint_api registration to the same time the other perf
+callbacks register.  We will go with that for now.
+
+In the long term picture, at some point we should have a hand off
+function that tells an early user of the hw breakpoint registers to
+stop using them.  Presently there is a small window of overlap where
+perf and kgdb both might write to the hw break point registers up
+until the late kgdb initialization completes.  Presently there are no
+regression tests for this condition and it might be the case that no
+one ever has to debug this area with a hardware breakpoint, so we'll
+leave it as a TODO item for the time being.
+
+Thanks,
+Jason.
