@@ -1,94 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760843Ab0KRWny (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 17:43:54 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:44101 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760796Ab0KRWnL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 17:43:11 -0500
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-crypto@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Mimi Zohar <zohar@watson.ibm.com>
-Subject: [PATCH v1.4 3/5] key: add tpm_send command
-Date: Thu, 18 Nov 2010 17:42:44 -0500
-Message-Id: <1290120166-3132-4-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1290120166-3132-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1290120166-3132-1-git-send-email-zohar@linux.vnet.ibm.com>
+	id S1760409Ab0KRWsL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 17:48:11 -0500
+Received: from havoc.gtf.org ([69.61.125.42]:58858 "EHLO havoc.gtf.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756542Ab0KRWsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 17:48:10 -0500
+Date: Thu, 18 Nov 2010 17:48:02 -0500
+From: Jeff Garzik <jeff@garzik.org>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-scsi@vger.kernel.org
+Subject: [git patch] libata SCSI locking update
+Message-ID: <20101118224802.GA14271@havoc.gtf.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add internal kernel tpm_send() command used to seal/unseal keys.
 
-Changelog:
-- replaced module_put in tpm_send() with new tpm_chip_put() wrapper
-  (suggested by David Howells)
-- Make tpm_send() cmd argument a 'void *' (suggested by David Howells)
+Selfishly, I think this should go into 2.6.37 rather than 2.6.38, simply
+because it is so obviously better for a large number of Linux users.
 
-Signed-off-by: David Safford <safford@watson.ibm.com>
-Signed-off-by: Mimi Zohar <zohar@watson.ibm.com>
----
- drivers/char/tpm/tpm.c |   16 ++++++++++++++++
- include/linux/tpm.h    |    4 ++++
- 2 files changed, 20 insertions(+), 0 deletions(-)
+But I understand if you'd rather wait for 2.6.38.
 
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index 26c09f3..b737cf3 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -780,6 +780,22 @@ int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash)
- }
- EXPORT_SYMBOL_GPL(tpm_pcr_extend);
+Please pull from 'upstream-linus' branch of
+master.kernel.org:/pub/scm/linux/kernel/git/jgarzik/libata-dev.git upstream-linus
+
+to receive the following updates:
+
+ drivers/ata/libata-scsi.c |   21 +++++++++------------
+ 1 files changed, 9 insertions(+), 12 deletions(-)
+
+Jeff Garzik (1):
+      [libata] remove SCSI host lock and serial number usage from ata_scsi_queuecmd
+
+diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
+index 19835d3..66aa4be 100644
+--- a/drivers/ata/libata-scsi.c
++++ b/drivers/ata/libata-scsi.c
+@@ -3166,8 +3166,8 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
  
-+int tpm_send(u32 chip_num, void *cmd, int buflen)
-+{
-+	struct tpm_chip *chip;
-+	int rc;
-+
-+	chip = tpm_chip_find_get(chip_num);
-+	if (chip == NULL)
-+		return -ENODEV;
-+
-+	rc = transmit_cmd(chip, cmd, buflen, "attempting tpm_cmd");
-+
-+	tpm_chip_put(chip);
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(tpm_send);
-+
- ssize_t tpm_show_pcrs(struct device *dev, struct device_attribute *attr,
- 		      char *buf)
+ /**
+  *	ata_scsi_queuecmd - Issue SCSI cdb to libata-managed device
++ *	@shost: SCSI host of command to be sent
+  *	@cmd: SCSI command to be sent
+- *	@done: Completion function, called when command is complete
+  *
+  *	In some cases, this function translates SCSI commands into
+  *	ATA taskfiles, and queues the taskfiles to be sent to
+@@ -3177,42 +3177,39 @@ static inline int __ata_scsi_queuecmd(struct scsi_cmnd *scmd,
+  *	ATA and ATAPI devices appearing as SCSI devices.
+  *
+  *	LOCKING:
+- *	Releases scsi-layer-held lock, and obtains host lock.
++ *	ATA host lock
+  *
+  *	RETURNS:
+  *	Return value from __ata_scsi_queuecmd() if @cmd can be queued,
+  *	0 otherwise.
+  */
+-static int ata_scsi_queuecmd_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cmnd *))
++int ata_scsi_queuecmd(struct Scsi_Host *shost, struct scsi_cmnd *cmd)
  {
-diff --git a/include/linux/tpm.h b/include/linux/tpm.h
-index ac5d1c1..a25ab8f 100644
---- a/include/linux/tpm.h
-+++ b/include/linux/tpm.h
-@@ -31,6 +31,7 @@
+ 	struct ata_port *ap;
+ 	struct ata_device *dev;
+ 	struct scsi_device *scsidev = cmd->device;
+-	struct Scsi_Host *shost = scsidev->host;
+ 	int rc = 0;
++	unsigned long irq_flags;
  
- extern int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf);
- extern int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash);
-+extern int tpm_send(u32 chip_num, void *cmd, int buflen);
- #else
- static inline int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf) {
- 	return -ENODEV;
-@@ -38,5 +39,8 @@ static inline int tpm_pcr_read(u32 chip_num, int pcr_idx, u8 *res_buf) {
- static inline int tpm_pcr_extend(u32 chip_num, int pcr_idx, const u8 *hash) {
- 	return -ENODEV;
+ 	ap = ata_shost_to_port(shost);
+ 
+-	spin_unlock(shost->host_lock);
+-	spin_lock(ap->lock);
++	spin_lock_irqsave(ap->lock, irq_flags);
+ 
+ 	ata_scsi_dump_cdb(ap, cmd);
+ 
+ 	dev = ata_scsi_find_dev(ap, scsidev);
+ 	if (likely(dev))
+-		rc = __ata_scsi_queuecmd(cmd, done, dev);
++		rc = __ata_scsi_queuecmd(cmd, cmd->scsi_done, dev);
+ 	else {
+ 		cmd->result = (DID_BAD_TARGET << 16);
+-		done(cmd);
++		cmd->scsi_done(cmd);
+ 	}
+ 
+-	spin_unlock(ap->lock);
+-	spin_lock(shost->host_lock);
++	spin_unlock_irqrestore(ap->lock, irq_flags);
++
+ 	return rc;
  }
-+static inline int tpm_send(u32 chip_num, void *cmd, int buflen) {
-+	return -ENODEV;
-+}
- #endif
- #endif
--- 
-1.7.2.2
-
+ 
+-DEF_SCSI_QCMD(ata_scsi_queuecmd)
+-
+ /**
+  *	ata_scsi_simulate - simulate SCSI command on ATA device
+  *	@dev: the target device
