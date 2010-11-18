@@ -1,247 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759511Ab0KRQbm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:31:42 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:46302 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754854Ab0KRQbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 11:31:40 -0500
-Date: Thu, 18 Nov 2010 16:31:24 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
+	id S1759554Ab0KRQdR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:33:17 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39354 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756939Ab0KRQdQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 11:33:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gkfovm5KHQ/01A+BX9xFCqRmHOTyd39SRAHqeIfTWQPjKMzkT5IOrRvsq7TnCrC8q4
+         wWayWckpGL5ktiEVpM8gwg1eIruAstUUuiK1QaX4NvkRFdHvav6UKqkXMhD+mroHaS8u
+         OAoY8U7NSfeuPjn1wa8d/FIpbzQnmdLF2m4Co=
+Date: Thu, 18 Nov 2010 17:33:01 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Christoph Lameter <cl@linux.com>, John Stultz <johnstul@us.ibm.com>,
         Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 61 of 66] use compaction for GFP_ATOMIC order > 0
-Message-ID: <20101118163124.GG8135@csn.ul.ie>
-References: <patchbomb.1288798055@v2.random> <b540c09bfe5160120952.1288798116@v2.random>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH RFC 0/8] Dynamic clock devices
+Message-ID: <20101118163301.GA6087@riccoc20.at.omicron.at>
+References: <cover.1288897198.git.richard.cochran@omicron.at>
+ <20101115100150.GA25973@linux-sh.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <b540c09bfe5160120952.1288798116@v2.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20101115100150.GA25973@linux-sh.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 04:28:36PM +0100, Andrea Arcangeli wrote:
-> From: Andrea Arcangeli <aarcange@redhat.com>
+On Mon, Nov 15, 2010 at 07:01:50PM +0900, Paul Mundt wrote:
+> While I have no strong feelings on this series one way or the other, the
+> naming is a bit unfortunate. The clock device / clkdev naming is already
+> in use as an extension to the clock framework and is used by a wide
+> variety of embedded platforms already, with a pending patch to move it in
+> to the generic namespace (grepping for clkdev will give you an idea). The
+> idea behind that interface is similar in that it deals with the dynamic
+> creation and teardown of clocks, but is decoupled from timekeeping.
 > 
-> This takes advantage of memory compaction to properly generate pages of order >
-> 0 if regular page reclaim fails and priority level becomes more severe and we
-> don't reach the proper watermarks.
-> 
+> It's also reasonable to assume that devices with dynamic clocks tracked
+> through clkdev will wish to also use this interface in the timekeeping
+> case, so it would be good to settle on something less ambiguous in
+> advance.
 
-I don't think this is related to THP although I see what you're doing.
-It should be handled on its own. I'd also wonder if some of the tg3
-failures are due to MIGRATE_RESERVE not being set properly when
-min_free_kbytes is automatically resized.
+Okay, I will take a look at that and try to come up with a better name
+for the dynamic clock code.
 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> ---
-> 
-> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-> --- a/include/linux/compaction.h
-> +++ b/include/linux/compaction.h
-> @@ -11,6 +11,9 @@
->  /* The full zone was compacted */
->  #define COMPACT_COMPLETE	3
->  
-> +#define COMPACT_MODE_DIRECT_RECLAIM	0
-> +#define COMPACT_MODE_KSWAPD		1
-> +
->  #ifdef CONFIG_COMPACTION
->  extern int sysctl_compact_memory;
->  extern int sysctl_compaction_handler(struct ctl_table *table, int write,
-> @@ -20,6 +23,9 @@ extern int sysctl_extfrag_handler(struct
->  			void __user *buffer, size_t *length, loff_t *ppos);
->  
->  extern int fragmentation_index(struct zone *zone, unsigned int order);
-> +extern unsigned long compact_zone_order(struct zone *zone,
-> +					int order, gfp_t gfp_mask,
-> +					int compact_mode);
->  extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  			int order, gfp_t gfp_mask, nodemask_t *mask);
->  
-> @@ -59,6 +65,13 @@ static inline unsigned long try_to_compa
->  	return COMPACT_CONTINUE;
->  }
->  
-> +static inline unsigned long compact_zone_order(struct zone *zone,
-> +					       int order, gfp_t gfp_mask,
-> +					       int compact_mode)
-> +{
-> +	return COMPACT_CONTINUE;
-> +}
-> +
->  static inline void defer_compaction(struct zone *zone)
->  {
->  }
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -38,6 +38,8 @@ struct compact_control {
->  	unsigned int order;		/* order a direct compactor needs */
->  	int migratetype;		/* MOVABLE, RECLAIMABLE etc */
->  	struct zone *zone;
-> +
-> +	int compact_mode;
->  };
->  
->  static unsigned long release_freepages(struct list_head *freelist)
-> @@ -357,10 +359,10 @@ static void update_nr_listpages(struct c
->  }
->  
->  static int compact_finished(struct zone *zone,
-> -						struct compact_control *cc)
-> +			    struct compact_control *cc)
->  {
->  	unsigned int order;
-> -	unsigned long watermark = low_wmark_pages(zone) + (1 << cc->order);
-> +	unsigned long watermark;
->  
->  	if (fatal_signal_pending(current))
->  		return COMPACT_PARTIAL;
-> @@ -370,12 +372,27 @@ static int compact_finished(struct zone 
->  		return COMPACT_COMPLETE;
->  
->  	/* Compaction run is not finished if the watermark is not met */
-> +	if (cc->compact_mode != COMPACT_MODE_KSWAPD)
-> +		watermark = low_wmark_pages(zone);
-> +	else
-> +		watermark = high_wmark_pages(zone);
-> +	watermark += (1 << cc->order);
-> +
->  	if (!zone_watermark_ok(zone, cc->order, watermark, 0, 0))
->  		return COMPACT_CONTINUE;
->  
->  	if (cc->order == -1)
->  		return COMPACT_CONTINUE;
->  
-> +	/*
-> +	 * Generating only one page of the right order is not enough
-> +	 * for kswapd, we must continue until we're above the high
-> +	 * watermark as a pool for high order GFP_ATOMIC allocations
-> +	 * too.
-> +	 */
-> +	if (cc->compact_mode == COMPACT_MODE_KSWAPD)
-> +		return COMPACT_CONTINUE;
-> +
->  	/* Direct compactor: Is a suitable page free? */
->  	for (order = cc->order; order < MAX_ORDER; order++) {
->  		/* Job done if page is free of the right migratetype */
-> @@ -433,8 +450,9 @@ static int compact_zone(struct zone *zon
->  	return ret;
->  }
->  
-> -static unsigned long compact_zone_order(struct zone *zone,
-> -						int order, gfp_t gfp_mask)
-> +unsigned long compact_zone_order(struct zone *zone,
-> +				 int order, gfp_t gfp_mask,
-> +				 int compact_mode)
->  {
->  	struct compact_control cc = {
->  		.nr_freepages = 0,
-> @@ -442,6 +460,7 @@ static unsigned long compact_zone_order(
->  		.order = order,
->  		.migratetype = allocflags_to_migratetype(gfp_mask),
->  		.zone = zone,
-> +		.compact_mode = compact_mode,
->  	};
->  	INIT_LIST_HEAD(&cc.freepages);
->  	INIT_LIST_HEAD(&cc.migratepages);
-> @@ -476,7 +495,7 @@ unsigned long try_to_compact_pages(struc
->  	 * made because an assumption is made that the page allocator can satisfy
->  	 * the "cheaper" orders without taking special steps
->  	 */
-> -	if (order <= PAGE_ALLOC_COSTLY_ORDER || !may_enter_fs || !may_perform_io)
-> +	if (!order || !may_enter_fs || !may_perform_io)
->  		return rc;
->  
->  	count_vm_event(COMPACTSTALL);
-> @@ -517,7 +536,8 @@ unsigned long try_to_compact_pages(struc
->  			break;
->  		}
->  
-> -		status = compact_zone_order(zone, order, gfp_mask);
-> +		status = compact_zone_order(zone, order, gfp_mask,
-> +					    COMPACT_MODE_DIRECT_RECLAIM);
->  		rc = max(status, rc);
->  
->  		if (zone_watermark_ok(zone, order, watermark, 0, 0))
-> @@ -547,6 +567,7 @@ static int compact_node(int nid)
->  			.nr_freepages = 0,
->  			.nr_migratepages = 0,
->  			.order = -1,
-> +			.compact_mode = COMPACT_MODE_DIRECT_RECLAIM,
->  		};
->  
->  		zone = &pgdat->node_zones[zoneid];
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -40,6 +40,7 @@
->  #include <linux/memcontrol.h>
->  #include <linux/delayacct.h>
->  #include <linux/sysctl.h>
-> +#include <linux/compaction.h>
->  
->  #include <asm/tlbflush.h>
->  #include <asm/div64.h>
-> @@ -2254,6 +2255,7 @@ loop_again:
->  		 * cause too much scanning of the lower zones.
->  		 */
->  		for (i = 0; i <= end_zone; i++) {
-> +			int compaction;
->  			struct zone *zone = pgdat->node_zones + i;
->  			int nr_slab;
->  
-> @@ -2283,9 +2285,26 @@ loop_again:
->  						lru_pages);
->  			sc.nr_reclaimed += reclaim_state->reclaimed_slab;
->  			total_scanned += sc.nr_scanned;
-> +
-> +			compaction = 0;
-> +			if (order &&
-> +			    zone_watermark_ok(zone, 0,
-> +					       high_wmark_pages(zone),
-> +					      end_zone, 0) &&
-> +			    !zone_watermark_ok(zone, order,
-> +					       high_wmark_pages(zone),
-> +					       end_zone, 0)) {
-> +				compact_zone_order(zone,
-> +						   order,
-> +						   sc.gfp_mask,
-> +						   COMPACT_MODE_KSWAPD);
-> +				compaction = 1;
-> +			}
-> +
->  			if (zone->all_unreclaimable)
->  				continue;
-> -			if (nr_slab == 0 && !zone_reclaimable(zone))
-> +			if (!compaction && nr_slab == 0 &&
-> +			    !zone_reclaimable(zone))
->  				zone->all_unreclaimable = 1;
->  			/*
->  			 * If we've done a decent amount of scanning and
-> 
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Thanks,
+Richard
