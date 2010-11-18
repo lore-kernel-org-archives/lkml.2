@@ -1,86 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759956Ab0KRQ7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:59:17 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:46368 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759937Ab0KRQ7Q convert rfc822-to-8bit (ORCPT
+	id S932284Ab0KRQ77 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:59:59 -0500
+Received: from ns1.dataart.com ([195.206.224.40]:56781 "EHLO
+	relay1.dataart.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755154Ab0KRQ74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 11:59:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=MALSXPRgNKkU8ZQqVMPQ+lya/CnPnhjSa0/3ZUKjBid/weEDBGpZEscJGZOuOKhDlA
-         0KkZVtoUCmN9kEqL/g1Q==
+	Thu, 18 Nov 2010 11:59:56 -0500
+From: Anton Chikin <Anton.Chikin@dataart.com>
+To: Jiri Kosina <jkosina@suse.cz>
+CC: "chatty@enac.fr" <chatty@enac.fr>, "spbnick@gmail.com" <spbnick@gmail.com>,
+        "anisse@astier.eu" <anisse@astier.eu>,
+        "cascardo@holoscopio.com" <cascardo@holoscopio.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Gregory Burmistrov <grig@dataart.com>
+Date: Thu, 18 Nov 2010 19:59:50 +0300
+Subject: RE: [PATCH] hid: usbhid: New hid quirks for Panasonic Elite
+ Panaboard T-780 and T-880
+Thread-Topic: [PATCH] hid: usbhid: New hid quirks for Panasonic Elite
+ Panaboard T-780 and T-880
+Thread-Index: Act7WvmfZF46iFWGRBixAd5CWNfv5gL5N3yw
+Message-ID: <3BF066A8BAB61C43B779966CEE6D7FA018BC9E1C10@e6.universe.dart.spb>
+References: <1288169825-15422-1-git-send-email-Anton.Chikin@dataart.com>
+ <alpine.LNX.2.00.1010291453460.6879@pobox.suse.cz>
+ <3BF066A8BAB61C43B779966CEE6D7FA018BC9E19F2@e6.universe.dart.spb>
+ <alpine.LNX.2.00.1011011522120.15851@pobox.suse.cz>
+ <3BF066A8BAB61C43B779966CEE6D7FA018BC9E1A45@e6.universe.dart.spb>
+ <alpine.LNX.2.00.1011030925310.15851@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1011030925310.15851@pobox.suse.cz>
+Accept-Language: ru-RU
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: ru-RU
+Content-Type: multipart/mixed;
+	boundary="_003_3BF066A8BAB61C43B779966CEE6D7FA018BC9E1C10e6universedar_"
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1011171434320.22190@chino.kir.corp.google.com>
-References: <20101117020759.016741414@intel.com>
-	<20101117021000.916235444@intel.com>
-	<1290019807.9173.3789.camel@nimitz>
-	<alpine.DEB.2.00.1011171312590.10254@chino.kir.corp.google.com>
-	<1290030945.9173.4211.camel@nimitz>
-	<alpine.DEB.2.00.1011171434320.22190@chino.kir.corp.google.com>
-Date: Thu, 18 Nov 2010 08:59:11 -0800
-Message-ID: <AANLkTim3-+qDLbXS+Boa-ziNvKkyc-sXK5j0xVstt7tt@mail.gmail.com>
-Subject: Re: [7/8,v3] NUMA Hotplug Emulator: extend memory probe interface to
- support NUMA
-From: Aaron Durbin <adurbin@google.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>, shaohui.zheng@intel.com,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        Haicheng Li <haicheng.li@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 2:44 PM, David Rientjes <rientjes@google.com> wrote:
-> On Wed, 17 Nov 2010, Dave Hansen wrote:
->
->> > Then, export the amount of memory that is actually physically present in
->> > the e820 but was truncated by mem=
->>
->> I _think_ that's already effectively done in /sys/firmware/memmap.
->>
->
-> Ok.
->
-> It's a little complicated because we don't export each online node's
-> physical address range so you have to parse the dmesg to find what nodes
-> were allocated at boot and determine how much physically present memory
-> you have that's hidden but can be hotplugged using the probe files.
->
-> Adding Aaron Durbin <adurbin@google.com> to the cc because he has a patch
-> that exports the physical address range of each node in their sysfs
-> directories.
+--_003_3BF066A8BAB61C43B779966CEE6D7FA018BC9E1C10e6universedar_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Is this something that is needed upstream? I can post it if that is the case.
-Sorry, I don't have a lot of context w.r.t. this thread.
+Hello Jiri,
 
->
->> > and allow users to hot-add the memory
->> > via the probe interface.  Add a writeable 'node' file to offlined memory
->> > section directories and allow it to be changed prior to online.
->>
->> That would work, in theory.  But, in practice, we allocate the mem_map[]
->> at probe time.  So, we've already effectively picked a node at probe.
->> That was done because the probe is equivalent to the hardware "add"
->> event.  Once the hardware where in the address space the memory is, it
->> always also knows the node.
->>
->> But, I guess it also wouldn't be horrible if we just hot-removed and
->> hot-added an offline section if someone did write to a node file like
->> you're suggesting.  It might actually exercise some interesting code
->> paths.
->>
->
-> Since the pages are offline you should be able to modify the memmap when
-> the 'node' file is written and use populate_memnodemap() since that file
-> is only writeable in an offline state.
->
+Actually our driver is implemented as the fork of usbhid driver. I'm now tr=
+ying to move to HID bus. I think I need some help with this.=20
+I've copied /drivers/hid/hid-cando.c source code, changed device IDs in hid=
+_driver structure, added my device IDs to /drivers/hid/hid-core.c hid_black=
+list[] array, but my probe() method still never get called. Could you pleas=
+e help me with this?
+
+My driver code and Makefile are in attachment.
+
+Thank you.
+
+-----Original Message-----
+From: Jiri Kosina [mailto:jkosina@suse.cz]=20
+Sent: Wednesday, November 03, 2010 4:28 PM
+To: Anton Chikin
+Cc: chatty@enac.fr; spbnick@gmail.com; anisse@astier.eu; cascardo@holoscopi=
+o.com; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; linux-usb=
+@vger.kernel.org; Gregory Burmistrov; Paul Osborn
+Subject: RE: [PATCH] hid: usbhid: New hid quirks for Panasonic Elite Panabo=
+ard T-780 and T-880
+
+On Tue, 2 Nov 2010, Anton Chikin wrote:
+
+> Thank you for your feedback.
+>=20
+> With the generic hid driver device is working in mouse-mode, turning=20
+> it into the huge touchscreen, which is completely useless for the end-use=
+r.
+
+Still, at least some very basic and limited/crippled functionality is there=
+. So my preferred mode of operation now would be having the device being cl=
+aimed by generic driver and wait for your proper full-fledged driver.
+
+> On some Linux systems hid driver is loaded from init.rd image, so we=20
+> can't feed our quirks to it while boot process and we can't rebuild=20
+> init.rd image on the user's machine because some Linux distributives=20
+> doesn't have special tools preinstalled.
+>=20
+> We are going to submit our driver to the Linux kernel quickly, so=20
+> everyone can improve it.
+
+That would be great, I'll be happy to review and merge it. Are you planning=
+ to have it as a driver on HID bus, or completely separate USB driver?
+
+Thanks,
+
+--
+Jiri Kosina
+SUSE Labs, Novell Inc.
+
+--_003_3BF066A8BAB61C43B779966CEE6D7FA018BC9E1C10e6universedar_
+Content-Type: text/plain; name="hid-ubt780.c"
+Content-Description: hid-ubt780.c
+Content-Disposition: attachment; filename="hid-ubt780.c"; size=7006;
+	creation-date="Thu, 18 Nov 2010 19:58:23 GMT";
+	modification-date="Thu, 18 Nov 2010 19:58:23 GMT"
+Content-Transfer-Encoding: base64
+
+LyoKICogIEhJRCBkcml2ZXIgZm9yIENhbmRvIGR1YWwtdG91Y2ggcGFuZWxzCiAqCiAqICBDb3B5
+cmlnaHQgKGMpIDIwMTAgU3RlcGhhbmUgQ2hhdHR5IDxjaGF0dHlAZW5hYy5mcj4KICoKICovCgov
+KgogKiBUaGlzIHByb2dyYW0gaXMgZnJlZSBzb2Z0d2FyZTsgeW91IGNhbiByZWRpc3RyaWJ1dGUg
+aXQgYW5kL29yIG1vZGlmeSBpdAogKiB1bmRlciB0aGUgdGVybXMgb2YgdGhlIEdOVSBHZW5lcmFs
+IFB1YmxpYyBMaWNlbnNlIGFzIHB1Ymxpc2hlZCBieSB0aGUgRnJlZQogKiBTb2Z0d2FyZSBGb3Vu
+ZGF0aW9uOyBlaXRoZXIgdmVyc2lvbiAyIG9mIHRoZSBMaWNlbnNlLCBvciAoYXQgeW91ciBvcHRp
+b24pCiAqIGFueSBsYXRlciB2ZXJzaW9uLgogKi8KCiNpbmNsdWRlIDxsaW51eC9kZXZpY2UuaD4K
+I2luY2x1ZGUgPGxpbnV4L2hpZC5oPgojaW5jbHVkZSA8bGludXgvbW9kdWxlLmg+CiNpbmNsdWRl
+IDxsaW51eC9zbGFiLmg+CgoKI2luY2x1ZGUgImhpZC1pZHMuaCIKI2luY2x1ZGUgInVzYnVidC5o
+IgojZGVmaW5lIFVCVDc4MF9ERUJVRwoKI2lmZGVmIFVCVDc4MF9ERUJVRwojZGVmaW5lIFVCVF9E
+VU1NWV9ERUJVRyBpZih1YnRfZGVidWcpIHByaW50ayhLRVJOX0RFQlVHICJ1YnQ3ODA6ICVzOiVz
+IGxpbmUgJWlcbiIsIF9fRklMRV9fLF9fRlVOQ1RJT05fXyAsIF9fTElORV9fKTsKI2Vsc2UKI2Rl
+ZmluZSBVQlRfRFVNTVlfREVCVUcKI2VuZGlmCgpzdGF0aWMgaW50IHVidF9kZWJ1Zz0wOwptb2R1
+bGVfcGFyYW1fbmFtZWQoZGVidWdfZW5hYmxlZCwgdWJ0X2RlYnVnLCBpbnQsIDA2MDApOwpNT0RV
+TEVfUEFSTV9ERVNDKGRlYnVnX2VuYWJsZWQsICJ0b2dnbGUgVUJUIGRlYnVnZ2luZyBtZXNzYWdl
+cyIpOwoKc3RydWN0IHVidDc4MF9kYXRhIHsKCXN0cnVjdCB1YnQ3ODBfY2FsaWIgY2FsaWI7Cglz
+dHJ1Y3QgdWJ0NzgwX2RndHpyIHVidF9wYWNrZXQ7Cn07CgpzdGF0aWMgaW50IHVidDc4MF9pbnB1
+dF9tYXBwaW5nKHN0cnVjdCBoaWRfZGV2aWNlICpoZGV2LCBzdHJ1Y3QgaGlkX2lucHV0ICpoaSwK
+CQlzdHJ1Y3QgaGlkX2ZpZWxkICpmaWVsZCwgc3RydWN0IGhpZF91c2FnZSAqdXNhZ2UsCgkJdW5z
+aWduZWQgbG9uZyAqKmJpdCwgaW50ICptYXgpCnsKCVVCVF9EVU1NWV9ERUJVRwoJc3dpdGNoICh1
+c2FnZS0+aGlkICYgSElEX1VTQUdFX1BBR0UpIHsKCgljYXNlIEhJRF9VUF9HRU5ERVNLOgoJCXN3
+aXRjaCAodXNhZ2UtPmhpZCkgewoJCWNhc2UgSElEX0dEX1g6CgkJCWhpZF9tYXBfdXNhZ2UoaGks
+IHVzYWdlLCBiaXQsIG1heCwKCQkJCQlFVl9BQlMsIEFCU19NVF9QT1NJVElPTl9YKTsKCQkJLyog
+dG91Y2hzY3JlZW4gZW11bGF0aW9uICovCgkJCWlucHV0X3NldF9hYnNfcGFyYW1zKGhpLT5pbnB1
+dCwgQUJTX1gsCgkJCQkJCWZpZWxkLT5sb2dpY2FsX21pbmltdW0sCgkJCQkJCWZpZWxkLT5sb2dp
+Y2FsX21heGltdW0sIDAsIDApOwoJCQlyZXR1cm4gMTsKCQljYXNlIEhJRF9HRF9ZOgoJCQloaWRf
+bWFwX3VzYWdlKGhpLCB1c2FnZSwgYml0LCBtYXgsCgkJCQkJRVZfQUJTLCBBQlNfTVRfUE9TSVRJ
+T05fWSk7CgkJCS8qIHRvdWNoc2NyZWVuIGVtdWxhdGlvbiAqLwoJCQlpbnB1dF9zZXRfYWJzX3Bh
+cmFtcyhoaS0+aW5wdXQsIEFCU19ZLAoJCQkJCQlmaWVsZC0+bG9naWNhbF9taW5pbXVtLAoJCQkJ
+CQlmaWVsZC0+bG9naWNhbF9tYXhpbXVtLCAwLCAwKTsKCQkJcmV0dXJuIDE7CgkJfQoJCXJldHVy
+biAwOwoKCWNhc2UgSElEX1VQX0RJR0lUSVpFUjoKCQlzd2l0Y2ggKHVzYWdlLT5oaWQpIHsKCQlj
+YXNlIEhJRF9ER19USVBTV0lUQ0g6CgkJY2FzZSBISURfREdfQ09OVEFDVE1BWDoKCQkJcmV0dXJu
+IC0xOwoJCWNhc2UgSElEX0RHX0lOUkFOR0U6CgkJCS8qIHRvdWNoc2NyZWVuIGVtdWxhdGlvbiAq
+LwoJCQloaWRfbWFwX3VzYWdlKGhpLCB1c2FnZSwgYml0LCBtYXgsIEVWX0tFWSwgQlROX1RPVUNI
+KTsKCQkJcmV0dXJuIDE7CgkJY2FzZSBISURfREdfQ09OVEFDVElEOgoJCQloaWRfbWFwX3VzYWdl
+KGhpLCB1c2FnZSwgYml0LCBtYXgsCgkJCQkJRVZfQUJTLCBBQlNfTVRfVFJBQ0tJTkdfSUQpOwoJ
+CQlyZXR1cm4gMTsKCQl9CgkJcmV0dXJuIDA7Cgl9CgoJcmV0dXJuIDA7Cn0KCnN0YXRpYyBpbnQg
+dWJ0NzgwX2lucHV0X21hcHBlZChzdHJ1Y3QgaGlkX2RldmljZSAqaGRldiwgc3RydWN0IGhpZF9p
+bnB1dCAqaGksCgkJc3RydWN0IGhpZF9maWVsZCAqZmllbGQsIHN0cnVjdCBoaWRfdXNhZ2UgKnVz
+YWdlLAoJCXVuc2lnbmVkIGxvbmcgKipiaXQsIGludCAqbWF4KQp7CglVQlRfRFVNTVlfREVCVUcK
+CWlmICh1c2FnZS0+dHlwZSA9PSBFVl9LRVkgfHwgdXNhZ2UtPnR5cGUgPT0gRVZfQUJTKQoJCWNs
+ZWFyX2JpdCh1c2FnZS0+Y29kZSwgKmJpdCk7CgoJcmV0dXJuIDA7Cn0KCi8qCiAqIHRoaXMgZnVu
+Y3Rpb24gaXMgY2FsbGVkIHdoZW4gYSB3aG9sZSBmaW5nZXIgaGFzIGJlZW4gcGFyc2VkLAogKiBz
+byB0aGF0IGl0IGNhbiBkZWNpZGUgd2hhdCB0byBzZW5kIHRvIHRoZSBpbnB1dCBsYXllci4KICov
+CnN0YXRpYyB2b2lkIHVidDc4MF9maWx0ZXJfZXZlbnQoc3RydWN0IHVidDc4MF9kYXRhICp0ZCwg
+c3RydWN0IGlucHV0X2RldiAqaW5wdXQpCnsKCS8vdGQtPmZpcnN0ID0gIXRkLT5maXJzdDsgLyog
+dG91Y2hzY3JlZW4gZW11bGF0aW9uICovCgoJLy9pZiAoIXRkLT52YWxpZCkgewoJLy8JLyoKCS8v
+CSAqIHRvdWNoc2NyZWVuIGVtdWxhdGlvbjogaWYgdGhpcyBpcyB0aGUgc2Vjb25kIGZpbmdlciBh
+bmQKCS8vCSAqIHRoZSBmaXJzdCB3YXMgdmFsaWQsIHRoZSBmaXJzdCB3YXMgdGhlIG9sZGVzdDsg
+aWYgdGhlCgkvLwkgKiBmaXJzdCB3YXMgbm90IHZhbGlkIGFuZCB0aGVyZSB3YXMgYSB2YWxpZCBm
+aW5nZXIgaW4gdGhlCgkvLwkgKiBwcmV2aW91cyBmcmFtZSwgdGhpcyBpcyBhIHJlbGVhc2UuCgkv
+LwkgKi8KCS8vCWlmICh0ZC0+Zmlyc3QpIHsKCS8vCQl0ZC0+Zmlyc3RpZCA9IC0xOwoJLy8JfSBl
+bHNlIGlmICh0ZC0+Zmlyc3RpZCA+PSAwKSB7CgkvLwkJaW5wdXRfZXZlbnQoaW5wdXQsIEVWX0FC
+UywgQUJTX1gsIHRkLT5maXJzdHgpOwoJLy8JCWlucHV0X2V2ZW50KGlucHV0LCBFVl9BQlMsIEFC
+U19ZLCB0ZC0+Zmlyc3R5KTsKCS8vCQl0ZC0+b2xkZXN0ID0gdGQtPmZpcnN0aWQ7CgkvLwl9IGVs
+c2UgaWYgKHRkLT5vbGRlc3QgPj0gMCkgewoJLy8JCWlucHV0X2V2ZW50KGlucHV0LCBFVl9LRVks
+IEJUTl9UT1VDSCwgMCk7CgkvLwkJdGQtPm9sZGVzdCA9IC0xOwoJLy8JfQoKCS8vCXJldHVybjsK
+CS8vfQoJLy8KCS8vaW5wdXRfZXZlbnQoaW5wdXQsIEVWX0FCUywgQUJTX01UX1RSQUNLSU5HX0lE
+LCB0ZC0+aWQpOwoJLy9pbnB1dF9ldmVudChpbnB1dCwgRVZfQUJTLCBBQlNfTVRfUE9TSVRJT05f
+WCwgdGQtPngpOwoJLy9pbnB1dF9ldmVudChpbnB1dCwgRVZfQUJTLCBBQlNfTVRfUE9TSVRJT05f
+WSwgdGQtPnkpOwoKCS8vaW5wdXRfbXRfc3luYyhpbnB1dCk7CgoJLy8vKgoJLy8gKiB0b3VjaHNj
+cmVlbiBlbXVsYXRpb246IGlmIHRoZXJlIHdhcyBubyB0b3VjaGluZyBmaW5nZXIgcHJldmlvdXNs
+eSwKCS8vICogZW1pdCB0b3VjaCBldmVudAoJLy8gKi8KCS8vaWYgKHRkLT5vbGRlc3QgPCAwKSB7
+CgkvLwlpbnB1dF9ldmVudChpbnB1dCwgRVZfS0VZLCBCVE5fVE9VQ0gsIDEpOwoJLy8JdGQtPm9s
+ZGVzdCA9IHRkLT5pZDsKCS8vfQoKCS8vLyoKCS8vICogdG91Y2hzY3JlZW4gZW11bGF0aW9uOiBp
+ZiB0aGlzIGlzIHRoZSBmaXJzdCBmaW5nZXIsIHdhaXQgZm9yIHRoZQoJLy8gKiBzZWNvbmQ7IHRo
+ZSBvbGRlc3QgaXMgdGhlbiB0aGUgc2Vjb25kIGlmIGl0IHdhcyB0aGUgb2xkZXN0IGFscmVhZHkK
+CS8vICogb3IgaWYgdGhlcmUgd2FzIG5vIGZpcnN0LCB0aGUgZmlyc3Qgb3RoZXJ3aXNlLgoJLy8g
+Ki8KCS8vaWYgKHRkLT5maXJzdCkgewoJLy8JdGQtPmZpcnN0eCA9IHRkLT54OwoJLy8JdGQtPmZp
+cnN0eSA9IHRkLT55OwoJLy8JdGQtPmZpcnN0aWQgPSB0ZC0+aWQ7CgkvL30gZWxzZSB7CgkvLwlp
+bnQgeCwgeSwgb2xkZXN0OwoJLy8JaWYgKHRkLT5pZCA9PSB0ZC0+b2xkZXN0IHx8IHRkLT5maXJz
+dGlkIDwgMCkgewoJLy8JCXggPSB0ZC0+eDsKCS8vCQl5ID0gdGQtPnk7CgkvLwkJb2xkZXN0ID0g
+dGQtPmlkOwoJLy8JfSBlbHNlIHsKCS8vCQl4ID0gdGQtPmZpcnN0eDsKCS8vCQl5ID0gdGQtPmZp
+cnN0eTsKCS8vCQlvbGRlc3QgPSB0ZC0+Zmlyc3RpZDsKCS8vCX0KCS8vCWlucHV0X2V2ZW50KGlu
+cHV0LCBFVl9BQlMsIEFCU19YLCB4KTsKCS8vCWlucHV0X2V2ZW50KGlucHV0LCBFVl9BQlMsIEFC
+U19ZLCB5KTsKCS8vCXRkLT5vbGRlc3QgPSBvbGRlc3Q7CgkvL30KfQoKCnN0YXRpYyBpbnQgdWJ0
+NzgwX2V2ZW50KHN0cnVjdCBoaWRfZGV2aWNlICpoaWQsIHN0cnVjdCBoaWRfZmllbGQgKmZpZWxk
+LAoJCQkJc3RydWN0IGhpZF91c2FnZSAqdXNhZ2UsIF9fczMyIHZhbHVlKQp7CglzdHJ1Y3QgdWJ0
+NzgwX2RhdGEgKnRkID0gaGlkX2dldF9kcnZkYXRhKGhpZCk7CgoJVUJUX0RVTU1ZX0RFQlVHCgoJ
+aWYgKGhpZC0+Y2xhaW1lZCAmIEhJRF9DTEFJTUVEX0lOUFVUKSB7CgkJc3RydWN0IGlucHV0X2Rl
+diAqaW5wdXQgPSBmaWVsZC0+aGlkaW5wdXQtPmlucHV0OwoKCQlzd2l0Y2ggKHVzYWdlLT5oaWQp
+IHsKCQljYXNlIEhJRF9ER19JTlJBTkdFOgoJCQkvL3RkLT52YWxpZCA9IHZhbHVlOwoJICAgCQkg
+VUJUX0RVTU1ZX0RFQlVHCgkJCWJyZWFrOwoJCWNhc2UgSElEX0RHX0NPTlRBQ1RJRDoKCQkJLy90
+ZC0+aWQgPSB2YWx1ZTsKCQkJVUJUX0RVTU1ZX0RFQlVHCgkJCWJyZWFrOwoJCWNhc2UgSElEX0dE
+X1g6CgkJCS8vdGQtPnggPSB2YWx1ZTsKCQkJVUJUX0RVTU1ZX0RFQlVHCgkJCWJyZWFrOwoJCWNh
+c2UgSElEX0dEX1k6CgkJCS8vdGQtPnkgPSB2YWx1ZTsKCQkJVUJUX0RVTU1ZX0RFQlVHCgkJCS8v
+dWJ0NzgwX2ZpbHRlcl9ldmVudCh0ZCwgaW5wdXQpOwoJCQlicmVhazsKCQljYXNlIEhJRF9ER19U
+SVBTV0lUQ0g6CgkJCS8qIGF2b2lkIGludGVyZmVyZW5jZSBmcm9tIGdlbmVyaWMgaGlkaW5wdXQg
+aGFuZGxpbmcgKi8KCQkJVUJUX0RVTU1ZX0RFQlVHCgkJCWJyZWFrOwoKCQlkZWZhdWx0OgoJCQkv
+KiBmYWxsYmFjayB0byB0aGUgZ2VuZXJpYyBoaWRpbnB1dCBoYW5kbGluZyAqLwoJCQlyZXR1cm4g
+MDsKCQl9Cgl9CgoJLyogd2UgaGF2ZSBoYW5kbGVkIHRoZSBoaWRpbnB1dCBwYXJ0LCBub3cgcmVt
+YWlucyBoaWRkZXYgKi8KCWlmIChoaWQtPmNsYWltZWQgJiBISURfQ0xBSU1FRF9ISURERVYgJiYg
+aGlkLT5oaWRkZXZfaGlkX2V2ZW50KQoJCWhpZC0+aGlkZGV2X2hpZF9ldmVudChoaWQsIGZpZWxk
+LCB1c2FnZSwgdmFsdWUpOwoKCXJldHVybiAxOwp9CgpzdGF0aWMgaW50IHVidDc4MF9wcm9iZShz
+dHJ1Y3QgaGlkX2RldmljZSAqaGRldiwgY29uc3Qgc3RydWN0IGhpZF9kZXZpY2VfaWQgKmlkKQp7
+CglpbnQgcmV0OwoJc3RydWN0IHVidDc4MF9kYXRhICp0ZDsKCglVQlRfRFVNTVlfREVCVUcKCgl0
+ZCA9IGttYWxsb2Moc2l6ZW9mKHN0cnVjdCB1YnQ3ODBfZGF0YSksIEdGUF9LRVJORUwpOwoJaWYg
+KCF0ZCkgewoJCWRldl9lcnIoJmhkZXYtPmRldiwgImNhbm5vdCBhbGxvY2F0ZSBVQi1UNzgwIGRh
+dGFcbiIpOwoJCXJldHVybiAtRU5PTUVNOwoJfQoKCgloaWRfc2V0X2RydmRhdGEoaGRldiwgdGQp
+OwoJLyp0ZC0+Zmlyc3QgPSBmYWxzZTsKCXRkLT5vbGRlc3QgPSAtMTsKCXRkLT52YWxpZCA9IGZh
+bHNlOyovCgoJcmV0ID0gaGlkX3BhcnNlKGhkZXYpOwoJaWYgKCFyZXQpCgkJcmV0ID0gaGlkX2h3
+X3N0YXJ0KGhkZXYsIEhJRF9DT05ORUNUX0RFRkFVTFQpOwoKCWlmIChyZXQpCgkJa2ZyZWUodGQp
+OwoKCXJldHVybiByZXQ7Cn0KCnN0YXRpYyB2b2lkIHVidDc4MF9yZW1vdmUoc3RydWN0IGhpZF9k
+ZXZpY2UgKmhkZXYpCnsKCVVCVF9EVU1NWV9ERUJVRwoJaGlkX2h3X3N0b3AoaGRldik7CglrZnJl
+ZShoaWRfZ2V0X2RydmRhdGEoaGRldikpOwoJaGlkX3NldF9kcnZkYXRhKGhkZXYsIE5VTEwpOwp9
+CgpzdGF0aWMgc3RydWN0IGhpZF9kZXZpY2VfaWQgdWJ0NzgwX2RldmljZXNbXSA9IHsKCXsgSElE
+X1VTQl9ERVZJQ0UoMHgwNGRhLCAweDEwNDQpIH0sIAoJeyB9Cn07Ck1PRFVMRV9ERVZJQ0VfVEFC
+TEUoaGlkLCB1YnQ3ODBfZGV2aWNlcyk7CgpzdGF0aWMgY29uc3Qgc3RydWN0IGhpZF91c2FnZV9p
+ZCB1YnQ3ODBfZ3JhYmJlZF91c2FnZXNbXSA9IHsKCXsgSElEX0FOWV9JRCwgSElEX0FOWV9JRCwg
+SElEX0FOWV9JRCB9LAoJeyBISURfQU5ZX0lEIC0gMSwgSElEX0FOWV9JRCAtIDEsIEhJRF9BTllf
+SUQgLSAxfQp9OwoKc3RhdGljIHN0cnVjdCBoaWRfZHJpdmVyIHVidDc4MF9kcml2ZXIgPSB7Cgku
+bmFtZSA9ICJ1YnQ3ODAiLAoJLmlkX3RhYmxlID0gdWJ0NzgwX2RldmljZXMsCgkucHJvYmUgPSB1
+YnQ3ODBfcHJvYmUsCi8vCS5yZW1vdmUgPSB1YnQ3ODBfcmVtb3ZlLAovLwkuaW5wdXRfbWFwcGlu
+ZyA9IHVidDc4MF9pbnB1dF9tYXBwaW5nLAovLwkuaW5wdXRfbWFwcGVkID0gdWJ0NzgwX2lucHV0
+X21hcHBlZCwKLy8JLnVzYWdlX3RhYmxlID0gdWJ0NzgwX2dyYWJiZWRfdXNhZ2VzLAovLwkuZXZl
+bnQgPSB1YnQ3ODBfZXZlbnQsCn07CgpzdGF0aWMgaW50IF9faW5pdCB1YnQ3ODBfaW5pdCh2b2lk
+KQp7CglVQlRfRFVNTVlfREVCVUcKCWludCByZXR2YWwgPSBoaWRfcmVnaXN0ZXJfZHJpdmVyKCZ1
+YnQ3ODBfZHJpdmVyKTsKCglpZihyZXR2YWwpCgkJVUJUX0RVTU1ZX0RFQlVHCgoJcmV0dXJuIDA7
+IAp9CgpzdGF0aWMgdm9pZCBfX2V4aXQgdWJ0NzgwX2V4aXQodm9pZCkKewoJVUJUX0RVTU1ZX0RF
+QlVHCgloaWRfdW5yZWdpc3Rlcl9kcml2ZXIoJnVidDc4MF9kcml2ZXIpOwp9Cgptb2R1bGVfaW5p
+dCh1YnQ3ODBfaW5pdCk7Cm1vZHVsZV9leGl0KHVidDc4MF9leGl0KTsKCk1PRFVMRV9BVVRIT1Io
+IkFudG9uIENoaWtpbiA8a3ZlcmxvaW5AZ21haWwuY29tPiIpOwpNT0RVTEVfREVTQ1JJUFRJT04o
+IlBhbmFzb25pYyBVQi1UNzgwIGRyaXZlciIpOwpNT0RVTEVfTElDRU5TRSgiR1BMIik7Cg==
+
+--_003_3BF066A8BAB61C43B779966CEE6D7FA018BC9E1C10e6universedar_
+Content-Type: application/octet-stream; name="Makefile"
+Content-Description: Makefile
+Content-Disposition: attachment; filename="Makefile"; size=1891;
+	creation-date="Thu, 18 Nov 2010 19:58:15 GMT";
+	modification-date="Thu, 18 Nov 2010 19:58:15 GMT"
+Content-Transfer-Encoding: base64
+
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyAyLjYgdXNiaGlkIGtlcm5lbCBjb21waWxlICMj
+IyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMKCkNVUlJFTlQgPSAkKHNoZWxsIHVuYW1lIC1y
+KQppZm5lcSAoJChLRVJORUxSRUxFQVNFKSwpCiMgV2Ugd2VyZSBjYWxsZWQgYnkga2J1aWxkCiMg
+RG8gTk9UIGluZGVudCBzdHVmZiBpbiB0aGlzIHBhcnQhIEl0IGhhcyB0byBiZSBsaWtlIHRoaXMg
+dG8gbWFrZSB0aGUKIyAkKGVycm9yIC4uLiApIHN0dWZmIHdvcmsKCiMgb25seSBjb21waWxlIHRo
+b3NlIG1vZHVsZXMgd2hpY2ggYXJlIGVuYWJsZWQgYnkgZ2xvYmFsIGNvbmZpZ3VyZQppZmVxICgk
+KENWX09QVElPTl9ISUQpLHllcykKCiMgY2hlY2sgaWYga2VybmVsIHdhcyBjb25maWd1cmVkIHRv
+IGhhdmUgaGlkIGFzIGFuIG1vZHVsZQppZmVxICgkKENPTkZJR19VU0JfSElEKSxtKQoKdWJ0Nzgw
+LW9ianMgOj0gaGlkLXVidDc4MC5vCgojIGJlaGF2ZSBleGFjdGx5IGFzIGtlcm5lbCBjb25maWcg
+d2FudHMgdXMgdG8gYmVoYXZlCgpvYmotJChDT05GSUdfVVNCX0hJRCkgKz0gdWJ0NzgwLm8KCmVs
+c2UKaWZlcSAoJChDT05GSUdfVVNCX0hJRCkseSkKJChlcnJvciBZb3UgcmVxdWVzdGVkIHRvIGJ1
+aWxkIGhpZCB3aXRoIGNvbmZpZ3VyZSwgYnV0IGhpZCBpcyBjb25maWd1cmVkIGFzIGJ1aWx0LWlu
+IGluIHlvdXIga2VybmVsIGNvbmZpZykKZW5kaWYKCiQoZXJyb3IgWW91IHJlcXVlc3RlZCB0byBi
+dWlsZCBoaWQgd2l0aCBjb25maWd1cmUsIGJ1dCBoaWQgaXMgbm90IGNvbmZpZ3VyZWQgaW4geW91
+ciBrZXJuZWwgY29uZmlnKQplbmRpZiAjIENPTkZJR19VU0JfSElECmVuZGlmICMgQ1ZfT1BUSU9O
+X0hJRCBub3QKCmVsc2UgICMgV2Ugd2VyZSBjYWxsZWQgZnJvbSBjb21tYW5kIGxpbmUKUFdEICA6
+PSAkKHNoZWxsIHB3ZCkKCktESVIgPSAvbGliL21vZHVsZXMvJChDVVJSRU5UKS9idWlsZApNRElS
+ID0gZHJpdmVycy9taXNjCkRFU1QgPSAvbGliL21vZHVsZXMvJChDVVJSRU5UKS9rZXJuZWwvJChN
+RElSKQpSVUxTID0gL2V0Yy91ZGV2L3J1bGVzLmQKCkNWX09QVElPTl9ISUQgOj0geWVzCgpleHBv
+cnQgQ1ZfT1BUSU9OX0hJRAoKCgphbGw6CglAZWNobyAkKENGTEFHUykKCUBlY2hvICcgICAgQnVp
+bGRpbmcgZHJpdmVycyBmb3IgMi42IGtlcm5lbC4nCglAZWNobyAnKioqTm90ZTogRHJpdmVycyBu
+b3QgZW5hYmxlZCBhcyBtb2R1bGVzIGluIHlvdXIga2VybmVsIGNvbmZpZyBidXQgcmVxdWVzdGVk
+IHRocm91Z2ggY29uZmlndXJlIGFyZSBOT1QgYnVpbHQnCgkkKE1BS0UpIC1DICQoS0RJUikgTT0k
+KFBXRCkgbW9kdWxlcwoKZW5kaWYgICMgRW5kIGtidWlsZCBjaGVjawoKIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMjIyBWZXJzaW9uIGluZGVwZW5kZW50IHRhcmdldHMgIyMjIyMjIyMjIyMjIyMjIyMj
+IyMjIyMjIyMKCmNsZWFuOgoJcm0gLXJmICoubyAqLmtvICoubW9kLiogLnVidDc4MCogLnRtcCog
+IGNvcmUgKi5pICouc3ltdmVycyAqLm9yZGVyICouKn4gCgppbnN0YWxsOgoJc3UgLWMgImNwIC12
+IHVidDc4MC5rbyAkKERFU1QpICYmIC9zYmluL2RlcG1vZCAtYSAmJiBjcCAtdiB1YnQ3ODAucnVs
+ZXMgJChSVUxTKSIKCkVNUFRZX0FVVE9NQUtFX1RBUkdFVFMgPSBkaXN0ZGlyIGluc3RhbGwgaW5z
+dGFsbC1kYXRhIGluc3RhbGwtZXhlYyB1bmluc3RhbGwgaW5zdGFsbC1pbmZvCkVNUFRZX0FVVE9N
+QUtFX1RBUkdFVFMgKz0gaW5zdGFsbGRpcnMgY2hlY2sgZHZpIHBkZiBwcyBpbmZvIGh0bWwgdGFn
+cyBjdGFncyBtb3N0bHljbGVhbiBkaXN0Y2xlYW4gbWFpbnRhaW5lci1jbGVhbgouUEhPTlk6ICQo
+RU1QVFlfQVVUT01BS0VfVEFSR0VUUykKCSQoRU1QVFlfQVVUT01BS0VfVEFSR0VUUyk6CgoKCgoK
+CgoKCgoKCgoKCg==
+
+--_003_3BF066A8BAB61C43B779966CEE6D7FA018BC9E1C10e6universedar_--
