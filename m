@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757187Ab0KRNIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 08:08:48 -0500
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47134 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab0KRNIq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 08:08:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=UzBzoSRjb3uuHE6fKdPc4SbM9FCyfXolGfTE7qV6b6xa466MLzueJgnlSUufDt/tC2
-         tYtJ0FCTeynxrtGoaZ+hu7gEXubYHOuLScuDHED1z5HLjcLbASB+yixMx1Leu27hgi7G
-         idK2ltDBoJEJw56CK43ebjgg8k9i4Pf35ZPF0=
-Subject: Re: [PATCHv6 0/7] system time changes notification
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Davide Libenzi <davidel@xmailserver.org>
-Cc: Alexander Shishkin <virtuoso@slind.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kyle Moffett <kyle@moffetthome.net>, Valdis.Kletnieks@vt.edu,
-        LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-In-Reply-To: <alpine.DEB.2.00.1011171130210.1595@davide-lnx1>
-References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
-	 <22542.1289507293@localhost> <20101111205123.GC10585@shisha.kicks-ass.net>
-	 <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
-	 <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
-	 <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6>
-	 <20101117190659.GB26184@shisha.kicks-ass.net>
-	 <alpine.DEB.2.00.1011171130210.1595@davide-lnx1>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Nov 2010 15:08:20 +0200
-Message-ID: <1290085700.2270.7.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
-Content-Transfer-Encoding: 8bit
+	id S1757498Ab0KRNJX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 08:09:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8733 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751944Ab0KRNJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 08:09:22 -0500
+Message-ID: <4CE5257B.60206@redhat.com>
+Date: Thu, 18 Nov 2010 15:09:15 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Gregory Haskins <ghaskins@novell.com>,
+        Chris Lalancette <clalance@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] kvm: fast-path msi injection with irqfd
+References: <20101117221254.GA8296@redhat.com> <20101118105741.GA31261@redhat.com> <4CE50810.3090502@redhat.com> <20101118111037.GB31261@redhat.com> <4CE51C17.4000108@redhat.com> <20101118130337.GA2254@redhat.com>
+In-Reply-To: <20101118130337.GA2254@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 12:42 -0800, Davide Libenzi wrote:
-> On Wed, 17 Nov 2010, Alexander Shishkin wrote:
-> 
-> > > But what you folks really want for this stuff is an extension to
-> > > timerfd as you want to be able to poll, right?
-> > > 
-> > > So what about the following:
-> > > 
-> > > Add a new flag TDF_NOTIFY_CLOCK_WAS_SET to the timerfd flags. Now this
-> > > flag adds the timer to a separate list, which gets woken up when the
-> > > clock is set.
-> > > 
-> > > No new syscall, just a few lines of code in fs/timerfd.c and
-> > > clock_was_set().
-> > > 
-> > > Thoughts ?
-> > 
-> > Something like this (sans ugliness)?
-> 
-> Oh, gosh, please.  This is interface-multiplexing-a-palooza.
-> It should be decided if the feature makes sense, and then have proper 
-> interface, instead of multiplexing unrelated insterfaces.
-> This is a sort of system-event-report pattern.  What is wrong with using a 
-> netlink-based transport for those kind of things?
+On 11/18/2010 03:03 PM, Michael S. Tsirkin wrote:
+> >  >   int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level);
+> >  >+int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
+> >  >+		int irq_source_id, int level);
+> >
+> >  No point in the level argument for an msi specific function.
+>
+> This is an existing function I made non-static.
+> We have per-gsi callbacks so level is required there to match.
 
-Could you please explain in more details what is the problem?
+Right.
+
+> I could add a wrapper I guess:
+>
+> int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
+> 		int irq_source_id, int level)
+> {
+> 	if (!level)
+> 		return -1;
+> 	return kvm_send_msi(irq_entry, kvm, irq_source_id);
+> }
+>
+> This results in less code for irqfd but more code for ioctl injection
+> ... is it worth it?
+
+IMO not.
+
+> >
+> >  Apart from these minor issues, looks good.
+>
+>
+> Something we should consider improving is the loop over all VCPUs that
+> kvm_irq_delivery_to_apic invokes.  I think that (for non-broadcast
+> interrupts) it should be possible to precompute an store the CPU
+> in question as part of the routing entry.
+
+> Something for a separate patch ... comments?
+
+Yes.  Either precompute, or compute on first use and cache.  Precompute 
+is more realtime-friendly so I prefer it.
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+error compiling committee.c: too many arguments to function
 
