@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760486Ab0KRVhk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:37:40 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:60459 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755203Ab0KRVhi (ORCPT
+	id S1760626Ab0KRVlU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:41:20 -0500
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:46199 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757205Ab0KRVlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:37:38 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAKEq5UxLd/sX/2dsb2JhbAAHgz3OV5B2gSKDNnMEhFqLEA
-X-IronPort-AV: E=Sophos;i="4.59,218,1288584000"; 
-   d="scan'208";a="82907688"
-Message-ID: <4CE59C9E.6050902@teksavvy.com>
-Date: Thu, 18 Nov 2010 16:37:34 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Thu, 18 Nov 2010 16:41:19 -0500
+Message-ID: <4CE59D84.4050501@cs.helsinki.fi>
+Date: Thu, 18 Nov 2010 23:41:24 +0200
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
-        tytso@mit.edu, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>	 <20101118130630.GJ6178@parisc-linux.org>	 <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>	 <20101118141957.GK6178@parisc-linux.org>	 <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site>
-In-Reply-To: <1290100750.3041.72.camel@mulgrave.site>
+To: Matt Mackall <mpm@selenic.com>
+CC: b32542@freescale.com, linux-mm@kvack.org, cl@linux-foundation.org,
+        tytso@mit.edu, linux-kernel@vger.kernel.org,
+        Zeng Zhaoming <zengzm.kernel@gmail.com>
+Subject: Re: [PATCH] slub: operate cache name memory same to slab and slob
+References: <1290049259-20108-1-git-send-email-b32542@freescale.com> <1290114908.26343.721.camel@calx>
+In-Reply-To: <1290114908.26343.721.camel@calx>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-11-18 12:19 PM, James Bottomley wrote:
+On 18.11.2010 23.15, Matt Mackall wrote:
+> On Thu, 2010-11-18 at 11:00 +0800, b32542@freescale.com wrote:
+>> From: Zeng Zhaoming<zengzm.kernel@gmail.com>
+>>
+>> Get a memory leak complaint about ext4:
+>>    comm "mount", pid 1159, jiffies 4294904647 (age 6077.804s)
+>>    hex dump (first 32 bytes):
+>>      65 78 74 34 5f 67 72 6f 75 70 69 6e 66 6f 5f 31  ext4_groupinfo_1
+>>      30 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  0.kkkkkkkkkkkkk.
+>>    backtrace:
+>>      [<c068ade3>] kmemleak_alloc+0x93/0xd0
+>>      [<c024e54c>] __kmalloc_track_caller+0x30c/0x380
+>>      [<c02269d3>] kstrdup+0x33/0x60
+>>      [<c0318a70>] ext4_mb_init+0x4e0/0x550
+>>      [<c0304e0e>] ext4_fill_super+0x1e6e/0x2f60
+>>      [<c0261140>] mount_bdev+0x1c0/0x1f0
+>>      [<c02fc00f>] ext4_mount+0x1f/0x30
+>>      [<c02603d8>] vfs_kern_mount+0x78/0x250
+>>      [<c026060e>] do_kern_mount+0x3e/0x100
+>>      [<c027b4c2>] do_mount+0x2e2/0x780
+>>      [<c027ba04>] sys_mount+0xa4/0xd0
+>>      [<c010429f>] sysenter_do_call+0x12/0x38
+>>      [<ffffffff>] 0xffffffff
+>>
+>> It is cause by slub manage the cache name different from slab and slob.
+>> In slab and slob, only reference to name, alloc and reclaim the memory
+>> is the duty of the code that invoked kmem_cache_create().
+>>
+>> In slub, cache name duplicated when create. This ambiguity will cause
+>> some memory leaks and double free if kmem_cache_create() pass a
+>> dynamic malloc cache name.
 >
-> Not stepping into the debate: I'm happy to see punch go to the mapping
-> data and FITRIM pick it up later.
+> I don't get it.
 >
-> However, I think it's time to question whether we actually still want to
-> allow online discard at all.  Most of the benchmarks show it to be a net
-> lose to almost everything (either SSD or Thinly Provisioned arrays), so
-> it's become an "enable this to degrade performance" option with no
-> upside.
+> Caller allocates X, passes X to slub, slub duplicates X as X', and
+> properly frees X', then caller frees X. Yes, that's silly, but where's
+> the leak?
+>
+> But slub and slab should obviously both manage names in the same way,
+> namely the historical "caller allocates" way. So:
+>
+> Acked-by: Matt Mackall<mpm@selenic.com>
 
-I also suspect that online TRIM exerts significant premature wear on the SSDs.
-TRIM operations most likely trigger immediate copy/erase operations internal
-to most SSDs, often regardless of the amount of data being trimmed.
-
-Performing a 256KB erase because of a 1024-byte TRIM, over and over, is going
-to harm the expected lifetime of an SSD.  Sure, some SSDs may do things differently
-internally, but I don't see it working that way in much of the current crop of SSDs.
-
-Currently, I patch my kernels to remove the automatic online TRIMs.
-Is there a knob somewhere for this in the later kernels?
-
-Cheers
+The kstrdup() is there because of SLUB cache merging. See commit 
+84c1cf62465e2fb0a692620dcfeb52323ab03d48 ("SLUB: Fix merged slab cache 
+names") for details.
