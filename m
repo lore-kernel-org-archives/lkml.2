@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759434Ab0KRQGl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:06:41 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:37862 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759404Ab0KRQGj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 11:06:39 -0500
-Date: Thu, 18 Nov 2010 11:06:37 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Tatyana Brokhman <tlinder@codeaurora.org>
-cc: gregkh@suse.de, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v6] usb: Adding SuperSpeed support to dummy_hcd
-In-Reply-To: <1290085052-4977-1-git-send-email-tlinder@codeaurora.org>
-Message-ID: <Pine.LNX.4.44L0.1011181045430.1801-100000@iolanthe.rowland.org>
+	id S932167Ab0KRQHN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:07:13 -0500
+Received: from mga03.intel.com ([143.182.124.21]:59997 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754176Ab0KRQHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 11:07:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,217,1288594800"; 
+   d="scan'208";a="350432909"
+Date: Fri, 19 Nov 2010 00:06:52 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, "Li, Shaohua" <shaohua.li@intel.com>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] writeback: prevent bandwidth calculation overflow
+Message-ID: <20101118160652.GA19459@localhost>
+References: <20101118065725.GB8458@localhost>
+ <4CE537BE.6090103@redhat.com>
+ <20101118154408.GA18582@localhost>
+ <1290096121.2109.1525.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290096121.2109.1525.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010, Tatyana Brokhman wrote:
+On Fri, Nov 19, 2010 at 12:02:01AM +0800, Peter Zijlstra wrote:
+> On Thu, 2010-11-18 at 23:44 +0800, Wu Fengguang wrote:
+> > +               pause = HZ * pages_dirtied / (bw + 1);
+> 
+> Shouldn't that be using something like div64_u64 ?
 
-> USB 3.0 hub includes 2 hubs - HS and SS ones.
-> Thus, when dummy_hcd enabled it will register 2 root hubs (SS and HS).
+OK, but a dumb question: gcc cannot handle this implicitly?
 
-Hmm.  A quick comparison with the original source shows that you
-neglected to add code for SuperSpeed transfers to periodic_bytes() and
-show_urb().
-
-> @@ -1352,6 +1544,9 @@ static void dummy_timer (unsigned long _dum)
->  	case USB_SPEED_HIGH:
->  		total = 512/*bytes*/ * 13/*packets*/ * 8/*uframes*/;
->  		break;
-> +	case USB_SPEED_SUPER:
-> +		total = 400 << 20; /* 400MB = 400*(2^20) bytes */
-> +		break;
-
-Somehow I doubt that SuperSpeed USB, quick though it is, can transfer
-400 MB in one millisecond.  Where did you get that number from?
-
-I can't find the appropriate table in the USB-3.0 spec (it might not be
-there at all), but with a bus transfer rate of 500 million bytes/s it
-seems clear that you can't transfer more than 500000 bytes per frame.  
-The actual limit must be lower than that, maybe something like 1024
-bytes/packet * 60 packets/uframe * 8 uframes/frame = 491520 
-bytes/frame.
-
-Alan Stern
-
+Thanks,
+Fengguang
