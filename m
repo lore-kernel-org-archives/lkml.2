@@ -1,17 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933227Ab0KSAIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 19:08:36 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35141 "EHLO ogre.sisk.pl"
+	id S933310Ab0KSAIi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 19:08:38 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:35155 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761144Ab0KSAIc convert rfc822-to-8bit (ORCPT
+	id S933252Ab0KSAIg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 19:08:32 -0500
+	Thu, 18 Nov 2010 19:08:36 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Alan Stern" <stern@rowland.harvard.edu>,
-        "Stefan Richter" <stefanr@s5r6.in-berlin.de>
+        Florian Mickler <florian@mickler.org>, "Dave Jones" <davej@redhat.com>
 References: <tTUH_XeInOH.A.dMF.c3b5MB@chimera>
 In-Reply-To: <tTUH_XeInOH.A.dMF.c3b5MB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -19,8 +17,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <t78YtCSuOqN.A.F3G.m4b5MB@chimera>
-Subject: [Bug #20182] 2.6.36-rc7: NULL pointer dereference in ehci_clear_tt_buffer_complete
+Message-ID: <t78YtCSuOqN.A.wrG.c4b5MB@chimera>
+Subject: [Bug #20322] 2.6.36-rc7: inconsistent lock state: inconsistent {IN-RECLAIM_FS-R} -> {RECLAIM_FS-ON-W} usage.
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Fri, 19 Nov 2010 00:53:36 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,13 +33,11 @@ introduced between 2.6.35 and 2.6.36.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=20182
-Subject		: 2.6.36-rc7: NULL pointer dereference in ehci_clear_tt_buffer_complete
-Submitter	: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Date		: 2010-10-11 20:56 (39 days old)
-Message-ID	: <tkrat.9f585ea47331a2a2@s5r6.in-berlin.de>
-References	: http://marc.info/?l=linux-kernel&m=128683064431749&w=2
-Handled-By	: Alan Stern <stern@rowland.harvard.edu>
-Patch		: https://patchwork.kernel.org/patch/250761/
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=20322
+Subject		: 2.6.36-rc7: inconsistent lock state: inconsistent {IN-RECLAIM_FS-R} -> {RECLAIM_FS-ON-W} usage.
+Submitter	: Dave Jones <davej@redhat.com>
+Date		: 2010-10-11 20:10 (39 days old)
+Message-ID	: <20101011201007.GA29707@redhat.com>
+References	: http://marc.info/?l=linux-kernel&m=128682782828453&w=2
 
 
