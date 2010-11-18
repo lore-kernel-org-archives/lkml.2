@@ -1,57 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760116Ab0KRScQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 13:32:16 -0500
-Received: from stinky.trash.net ([213.144.137.162]:39526 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755539Ab0KRScO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 13:32:14 -0500
-Message-ID: <4CE5712B.2080909@trash.net>
-Date: Thu, 18 Nov 2010 19:32:11 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+	id S1760130Ab0KRSey (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 13:34:54 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:34238 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760103Ab0KRSex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 13:34:53 -0500
+Date: Thu, 18 Nov 2010 18:34:38 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/8] mm: migration: Allow migration to operate
+	asynchronously and avoid synchronous compaction in the faster path
+Message-ID: <20101118183437.GP8135@csn.ul.ie>
+References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie> <1290010969-26721-5-git-send-email-mel@csn.ul.ie> <20101118182105.GB30376@random.random>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, netfilter-devel@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, KOVACS Krisztian <hidden@balabit.hu>,
-        Balazs Scheidler <bazsi@balabit.hu>
-Subject: Re: linux-next: Tree for November 18 (netfilter)
-References: <20101118134256.fe132215.sfr@canb.auug.org.au> <20101118092520.6ad964c7.randy.dunlap@oracle.com>
-In-Reply-To: <20101118092520.6ad964c7.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20101118182105.GB30376@random.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 18.11.2010 18:25, schrieb Randy Dunlap:
-> On Thu, 18 Nov 2010 13:42:56 +1100 Stephen Rothwell wrote:
+On Thu, Nov 18, 2010 at 07:21:06PM +0100, Andrea Arcangeli wrote:
+> On Wed, Nov 17, 2010 at 04:22:45PM +0000, Mel Gorman wrote:
+> > @@ -484,6 +486,7 @@ static unsigned long compact_zone_order(struct zone *zone,
+> >  		.order = order,
+> >  		.migratetype = allocflags_to_migratetype(gfp_mask),
+> >  		.zone = zone,
+> > +		.sync = false,
+> >  	};
+> >  	INIT_LIST_HEAD(&cc.freepages);
+> >  	INIT_LIST_HEAD(&cc.migratepages);
 > 
->> Hi all,
->>
->> Changes since 20101117:
+> I like this because I'm very afraid to avoid wait-I/O latencies
+> introduced into hugepage allocations that I prefer to fail quickly and
+> be handled later by khugepaged ;).
 > 
-> 
-> include/net/netfilter/nf_conntrack.h:94: error: field 'ct_general' has incomplete type
-> include/net/netfilter/nf_conntrack.h:174: error: 'const struct sk_buff' has no member named 'nfct'
-> include/net/netfilter/nf_conntrack.h:181: error: implicit declaration of function 'nf_conntrack_put'
-> include/net/netfilter/nf_conntrack_ecache.h:35: error: 'struct net' has no member named 'ct'
-> include/net/netfilter/nf_conntrack_core.h:60: error: 'struct sk_buff' has no member named 'nfct'
-> net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:36: error: 'struct sk_buff' has no member named 'nfct'
-> net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:37: error: implicit declaration of function 'nf_ct_zone'
-> net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:37: error: 'struct sk_buff' has no member named 'nfct'
-> net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:60: error: 'struct sk_buff' has no member named 'nfct'
-> net/ipv6/netfilter/nf_defrag_ipv6_hooks.c:60: error: 'struct sk_buff' has no member named 'nfct'
-> net/ipv6/netfilter/nf_conntrack_reasm.c:598: error: implicit declaration of function 'nf_conntrack_put_reasm'
-> net/ipv6/netfilter/nf_conntrack_reasm.c:598: error: 'struct sk_buff' has no member named 'nfct_reasm'
-> net/ipv6/netfilter/nf_conntrack_reasm.c:599: error: implicit declaration of function 'nf_conntrack_get_reasm'
-> net/ipv6/netfilter/nf_conntrack_reasm.c:600: error: 'struct sk_buff' has no member named 'nfct_reasm'
-> 
-> 
-> randconfig file is attached.
 
-Krisztian, Balazs, could you please have a look at this? If the
-intention is to use NF_DEFRAG_IPV6 without conntrack, we probably
-need a couple of ifdefs.
+As you can see from the graphs in the leader, it makes a big difference to
+latency as well to avoid sync migration where possible.
+
+> But I could have khugepaged call this with sync=true... so I'd need a
+> __GFP_ flag that only khugepaged would use to notify compaction should
+> be synchronous for khugepaged (not for the regular allocations in page
+> faults). Can we do this through gfp_mask only?
+> 
+
+We could pass gfp flags in I guess and abuse __GFP_NO_KSWAPD (from the THP
+series obviously)?
+
+> > @@ -500,6 +503,7 @@ unsigned long reclaimcompact_zone_order(struct zone *zone,
+> >  		.order = order,
+> >  		.migratetype = allocflags_to_migratetype(gfp_mask),
+> >  		.zone = zone,
+> > +		.sync = true,
+> >  	};
+> >  	INIT_LIST_HEAD(&cc.freepages);
+> >  	INIT_LIST_HEAD(&cc.migratepages);
+> 
+> Is this intentional?
+
+Yes, it's the "slower" path where we've already reclaim pages and more
+willing to wait for the compaction to occur as the alternative is failing
+the allocation.
+
+> That inner compaction invocation is
+> equivalent to the one one interleaved with the shrinker tried before
+> invoking the shrinker. So I don't see why they should differ (one sync
+> and one async).
+> 
+
+The async one later in the series becomes very light with the heavier
+work being done within reclaim if necessary.
+
+> Anyway I'd prefer the inner invocation to be removed as a whole and to
+> keep only going with the interleaving and to keep the two jobs of
+> compaction and shrinking memory fully separated and to stick to the
+> interleaving. If this reclaimcompact_zone_order helps maybe it means
+> compact_zone_order isn't doing the right thing and we're hiding it by
+> randomly calling it more frequently...
+> 
+
+I'll think about it more. I could just leave it at try_to_compact_pages
+doing the zonelist scan although it's not immediately occuring to me how I
+should decide between sync and async other than "async the first time and
+sync after that". The allocator does not have the same "reclaim priority"
+awareness that reclaim does.
+
+> I can see a point however in doing:
+> 
+> compaction async
+> shrink (may wait) (scan 500 pages, freed 32 pages)
+> compaction sync (may wait)
+> 
+> to:
+> 
+> compaction async
+> shrink (scan 32 pages, freed 0 pages)
+> compaction sync (hugepage generated nobody noticed)
+> shrink (scan 32 pages, freed 0 pages)
+> compaction sync
+> shrink (scan 32 pages, freed 0 pages)
+> [..]
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
