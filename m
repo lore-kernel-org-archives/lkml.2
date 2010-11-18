@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760369Ab0KRUmT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 15:42:19 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42171 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760353Ab0KRUmQ (ORCPT
+	id S1760360Ab0KRUng (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 15:43:36 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:16364
+	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757902Ab0KRUnf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 15:42:16 -0500
+	Thu, 18 Nov 2010 15:43:35 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz1432N98dNzz1202hzzz2dh2a8h637h668h67dh685h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw01.freescale.net;RD:az33egw01.freescale.net;EFVD:NLI
+Message-ID: <4CE58FE5.3010502@freescale.com>
+Date: Thu, 18 Nov 2010 14:43:17 -0600
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101101 Fedora/2.0.10-1.fc13 SeaMonkey/2.0.10
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1011181957500.3651@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1011181957500.3651@swampdragon.chaosbits.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 18 Nov 2010 12:41:22 -0800
-Message-ID: <AANLkTi=McRJSHp8==o+=coK0_pK5s9dwUgLmrkohSmTX@mail.gmail.com>
-Subject: Re: [PATCH][resend][SCSI] Reduce number of sequential pointer derefs
- in scsi_error.c and reduce size as well
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-kernel@vger.kernel.org, Eric Youngdale <eric@andante.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Mike Anderson <andmike@us.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@suse.de>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Scott Wood <scottwood@freescale.com>,
+        Stuart Yoder <stuart.yoder@freescale.com>
+Subject: Re: How do I choose an arbitrary minor number for my tty device?
+References: <20101118163321.GA2723@suse.de> <4CE5562B.8080604@freescale.com> <20101118165136.GA3103@suse.de> <4CE55ACB.80207@freescale.com> <20101118171856.GA4283@suse.de> <4CE5647F.5000203@freescale.com> <20101118175832.GA4931@suse.de> <4CE58005.7040308@freescale.com> <20101118200230.GA25715@suse.de> <4CE58736.4090703@freescale.com> <20101118201035.GA26287@suse.de>
+In-Reply-To: <20101118201035.GA26287@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Nov 2010 20:44:20.0779 (UTC) FILETIME=[605287B0:01CB8761]
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 11:30 AM, Jesper Juhl <jj@chaosbits.net> wrote:
->
-> This is the fourth time I send this patch. For some reason it seems unable
-> to get any feedback at all. I'd really appreciate a clear ACK or NACK on
-> it and I'll keep resending it until it's either merged or I get a NACK
-> with a reason.
+Greg KH wrote:
+>> > One last question.  If I create multiple TTY devices, how do I tell the kernel
+>> > which one should be used for the console?
 
-The patch looks ok to me, but you've basically selected the least
-interesting file possible. No wonder people can't seem to care.
+> On the command line.
 
-Also, this is just ugly as hell, and doesn't help anything:
+Is there a way to do it in the driver itself?  Getting the boot loader to
+identify the specific byte channel for stdout isn't trivial.  It'd be nice if
+the driver could tell the tty layer, "BTW, this use this for the default console".
 
-+       int (*eh_abort_handler)(struct scsi_cmnd *) =
-+               scmd->device->host->hostt->eh_abort_handler;
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
 
-since the compiler will have optimized that double access away anyway
-(no writes in between). So you could have made it about a thousand
-times more readable with no downside by doing
-
-    struct scsi_host_template *hostt = scmd->device->host->hostt;
-
-    if (!hostt->eh_abort_handler)
-        return FAILED;
-    return hostt->eh_abort_handler(scmd);
-
-instead. Look ma, no long lines.
-
-Rule of thumb: if you need more than one line for an expression or
-variable definition, you're doing something wrong.
-
-                Linus
