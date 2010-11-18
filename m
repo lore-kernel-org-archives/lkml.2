@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760595Ab0KRVfx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:35:53 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57634 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757205Ab0KRVfw (ORCPT
+	id S1760638Ab0KRVgR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:36:17 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:43829 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757165Ab0KRVgP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:35:52 -0500
+	Thu, 18 Nov 2010 16:36:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:content-type;
-        b=LPEC3SKZtVsJaZzEIOj4FbMMxMVyyauy8nIG5lqw7qDWpguYrkZ7KDcObnFTOKEc9T
-         WXDPsxmN48NkLQLYdXWVE4jyk4/bqiwCTmDsZLmHrAH35tsmOrwTafTWJpdrE+MBhbJL
-         SbDV57aH8NK2V3PnVfo41uX5IMZzY/xRg2M/U=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=Sns60Kyw6UvCtzrk66jMaXW/bvetjNoTUUmHwBiD/egZZYx9SJ5i2EN/ksHQ7V2Xnm
+         CVRtd5CtNxfqZH36pzyg==
+Date: Thu, 18 Nov 2010 13:36:08 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Matt Mackall <mpm@selenic.com>
+cc: b32542@freescale.com, linux-mm@kvack.org, cl@linux-foundation.org,
+        penberg@cs.helsinki.fi, tytso@mit.edu, linux-kernel@vger.kernel.org,
+        Zeng Zhaoming <zengzm.kernel@gmail.com>
+Subject: Re: [PATCH] slub: operate cache name memory same to slab and slob
+In-Reply-To: <1290114908.26343.721.camel@calx>
+Message-ID: <alpine.DEB.2.00.1011181333160.26680@chino.kir.corp.google.com>
+References: <1290049259-20108-1-git-send-email-b32542@freescale.com> <1290114908.26343.721.camel@calx>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Thu, 18 Nov 2010 15:35:51 -0600
-X-Google-Sender-Auth: Z8GwCE63s89UG_jftt7XkuSQwk0
-Message-ID: <AANLkTin2zKWLLxsRn+T+U+NpAmbQiOTM_vrg_Z-8JZd-@mail.gmail.com>
-Subject: [PATCH] Enable jack sense for Thinkpad Edge 11
-From: Manoj Iyer <manoj.iyer@canonical.com>
-To: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables audio play back from external headphones on Thinkpad Edge 11.
+On Thu, 18 Nov 2010, Matt Mackall wrote:
 
-The following changes since commit 0c1c062266ecfeaebadadb780020a422f829284f:
-  Manoj Iyer (1):
-        Enable jack sense for Thinkpad Edge 11
+> > Get a memory leak complaint about ext4:
+> >   comm "mount", pid 1159, jiffies 4294904647 (age 6077.804s)
+> >   hex dump (first 32 bytes):
+> >     65 78 74 34 5f 67 72 6f 75 70 69 6e 66 6f 5f 31  ext4_groupinfo_1
+> >     30 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  0.kkkkkkkkkkkkk.
+> >   backtrace:
+> >     [<c068ade3>] kmemleak_alloc+0x93/0xd0
+> >     [<c024e54c>] __kmalloc_track_caller+0x30c/0x380
+> >     [<c02269d3>] kstrdup+0x33/0x60
+> >     [<c0318a70>] ext4_mb_init+0x4e0/0x550
+> >     [<c0304e0e>] ext4_fill_super+0x1e6e/0x2f60
+> >     [<c0261140>] mount_bdev+0x1c0/0x1f0
+> >     [<c02fc00f>] ext4_mount+0x1f/0x30
+> >     [<c02603d8>] vfs_kern_mount+0x78/0x250
+> >     [<c026060e>] do_kern_mount+0x3e/0x100
+> >     [<c027b4c2>] do_mount+0x2e2/0x780
+> >     [<c027ba04>] sys_mount+0xa4/0xd0
+> >     [<c010429f>] sysenter_do_call+0x12/0x38
+> >     [<ffffffff>] 0xffffffff
+> > 
+> > It is cause by slub manage the cache name different from slab and slob.
+> > In slab and slob, only reference to name, alloc and reclaim the memory
+> > is the duty of the code that invoked kmem_cache_create().
+> > 
+> > In slub, cache name duplicated when create. This ambiguity will cause
+> > some memory leaks and double free if kmem_cache_create() pass a
+> > dynamic malloc cache name.
+> 
+> I don't get it.
+> 
+> Caller allocates X, passes X to slub, slub duplicates X as X', and
+> properly frees X', then caller frees X. Yes, that's silly, but where's
+> the leak?
+> 
 
-are available in the git repository at:
-
-  git://kernel.ubuntu.com/git/manjo/linux-2.6.git thinpad11
-
->From 89796b0608f0c36cbd05d0426e95386766ff20b9 Mon Sep 17 00:00:00 2001
-From: Manoj Iyer <manoj.iyer@canonical.com>
-Date: Thu, 18 Nov 2010 21:24:42 +0000
-Subject: [PATCH] Enable jack sense for Thinkpad Edge 11
-
-Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
----
- sound/pci/hda/patch_conexant.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
-index 6361f75..b8d6554 100644
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -3108,6 +3108,7 @@ static struct snd_pci_quirk cxt5066_cfg_tbl[] = {
-        SND_PCI_QUIRK(0x152d, 0x0833, "OLPC XO-1.5", CXT5066_OLPC_XO_1_5),
-        SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400s", CXT5066_THINKPAD),
-        SND_PCI_QUIRK(0x17aa, 0x21b2, "Thinkpad X100e", CXT5066_IDEAPAD),
-+       SND_PCI_QUIRK(0x17aa, 0x21c8, "Thinkpad Edge 11", CXT5066_THINKPAD),
-        SND_PCI_QUIRK(0x17aa, 0x21b3, "Thinkpad Edge 13 (197)",
-CXT5066_IDEAPAD),
-        SND_PCI_QUIRK(0x17aa, 0x21b4, "Thinkpad Edge", CXT5066_IDEAPAD),
-        SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo Thinkpad", CXT5066_THINKPAD),
--- 
-1.7.0.4
-
----
-Manoj Iyer
+The leak in ext4_mb_init() above is because it is using kstrdup() to 
+allocate the string itself and then on destroy uses kmem_cache_name() to 
+attain the slub allocator's pointer to the name, not the memory the ext4 
+layer allocated itself.
