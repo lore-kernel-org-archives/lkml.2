@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247Ab0KRET3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 23:19:29 -0500
-Received: from slow3-v.mail.gandi.net ([217.70.178.89]:59966 "EHLO
-	slow3-v.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752713Ab0KRET2 (ORCPT
+	id S1754473Ab0KRETk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 23:19:40 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:52973 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754377Ab0KRETi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 23:19:28 -0500
-X-WhiteListed: mail was accepted with no delay
-X-WhiteListed: mail was accepted with no delay
-X-Originating-IP: 217.70.178.41
-X-Originating-IP: 80.4.117.127
-Subject: Re: [RESEND] [PATCH] Input: add appleir USB driver
-From: Bastien Nocera <hadess@hadess.net>
-To: Jarod Wilson <jarod@redhat.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 18 Nov 2010 04:18:03 +0000
-In-Reply-To: <20101008003940.GF31804@redhat.com>
-References: <1285844276.26405.26.camel@cookie.hadess.net>
-	 <201009300847.43090.dmitry.torokhov@gmail.com>
-	 <1285861890.26405.37.camel@cookie.hadess.net>
-	 <20101008003940.GF31804@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 2.91.2 (2.91.2-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1290053884.1435.10.camel@novo.hadess.net>
+	Wed, 17 Nov 2010 23:19:38 -0500
+X-Authority-Analysis: v=1.1 cv=NFUeGz0loTdi/T6hXKngYYtckjed7x3pKvNOqmBBK18= c=1 sm=0 a=v8ohC7cffDsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=GM6LFby-nNad8Qtw8jsA:9 a=oqJncb7p8KUg8Ww2l58A:7 a=qftujDxwlm3NX9FlNBou4BjmLbwA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 2/2] [PATCH 2/2] tracing: Make event based
+ trace_printk()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Darren Hart <dvhart@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "jason.wessel" <jason.wessel@windriver.com>,
+        "Ted Ts'o" <tytso@mit.edu>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+In-Reply-To: <20101118040949.782054673@goodmis.org>
+References: <20101118035803.453609353@goodmis.org>
+	 <20101118040949.782054673@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 17 Nov 2010 23:19:36 -0500
+Message-ID: <1290053976.30543.89.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-07 at 20:39 -0400, Jarod Wilson wrote:
-> On Thu, Sep 30, 2010 at 04:51:30PM +0100, Bastien Nocera wrote:
-> > On Thu, 2010-09-30 at 08:47 -0700, Dmitry Torokhov wrote:
-> > > Bastien,
-> ...
-> > >  I'll try
-> > > to get the driver in .37 but after that we should probably move it
-> > > over to the new IR infrastructure...
-> > 
-> > I'm not sure what that would bring us, nor do I have any experience in
-> > using the ir-core. From what I understood, it still needed fleshing out.
-> 
-> There are a few things that still need fleshing out, but nothing really
-> that should have any major impact on a potential port of this driver.
-> 
-> Off the top of my head, the main thing it would give you is the ability to
-> upload your own keymap for the receiver.
+On Wed, 2010-11-17 at 22:58 -0500, Steven Rostedt wrote:
 
-You could already change the keymap...
+> +static __init int event_printk_init(void)
+> +{
+> +	struct event_printk_struct *print;
+> +	struct dentry *d_events;
+> +	char *topdir;
+> +	char *p;
+> +	int len;
+> +	int ret = -1;
+> +
+> +	/*
+> +	 * Do nothing if we have no trace printks.
+> +	 * May change in the future when we support modules.
+> +	 */
+> +	if (__start_trace_printk == __stop_trace_printk)
+> +		return 0;
+> +
+> +	/*
+> +	 * Use this file to find the path for other
+> +	 * files. That is, __FILE__ returns the full path,
+> +	 * but we don't want the top dir path, so we must
+> +	 * chop it off. We know the path of this file as it
+> +	 * is (kernel/trace/event_printk.c), so we simply
+> +	 * cut that off and then we have the path to cut
+> +	 * off of other files.
+> +	 */
+> +	topdir = kstrdup(__FILE__, GFP_KERNEL);
+> +	if (WARN(!topdir, "failed to allocate printk info"))
+> +		return -1;
+> +
+> +	p = strstr(topdir, "kernel/trace/event_printk.c");
+> +	if (WARN(!p, "event_printk.c not found. Did the file move?"))
+> +		goto out;
+> +	*p = '\0';
+> +
+> +	d_events = event_trace_events_dir();
+> +
+> +	printk_root = debugfs_create_dir("printk", d_events);
+> +	if (WARN(!printk_root, "Could not create printk entry"))
+> +		goto out;
+> +
+> +	trace_create_file("enable", 0644, printk_root,
+> +			  NULL, &trace_printk_enable_fops);
+> +
+> +	len = strlen(topdir);
+> +	for_each_printk(print, __start_trace_printk, __stop_trace_printk)
+> +		add_event_printk(topdir, len, print);
 
->  Then someone wanting to use more
-> than 6 buttons
+Oops, I'm missing a:
 
-But only for the 6 buttons supported.
+	ret = 0;
 
->  or whatever it is might still be able to get the benefits
-> of in-kernel decoding with everything coming through the input layer,
-> rather than using lirc or the like.
+here.
 
-I see very little benefits myself (I mean, unless you're adamant that
-you want to use a remote that's not intended for that computer, but we
-already have lirc user-space driver for doing that), and it would remove
-metadata from the events, so we couldn't do "remote filtering" (each
-remote has a semi-random UID, which gets passed in with the events).
+-- Steve
 
-When the appleir patch was finally accepted (which means I need to get
-off my arse and do the changes Oliver mentioned), working on UID
-filtering is next on my list of TODOs.
+> +
+> + out:
+> +	kfree(topdir);
+> +	return ret;
+> +}
 
-Cheers
 
