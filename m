@@ -1,46 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760016Ab0KRRuX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:50:23 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55705
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755363Ab0KRRuV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:50:21 -0500
-Date: Thu, 18 Nov 2010 09:50:46 -0800 (PST)
-Message-Id: <20101118.095046.28818361.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: justinmattock@gmail.com, linux-net@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        horms@verge.net.au, netfilter-devel@vger.kernel.org, kaber@trash.net
-Subject: Re: error while building the kernel Mainline
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1290102497.2781.242.camel@edumazet-laptop>
-References: <1290093135.2781.167.camel@edumazet-laptop>
-	<4CE561A2.2020600@gmail.com>
-	<1290102497.2781.242.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1760026Ab0KRRuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:50:54 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44909 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755363Ab0KRRux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 12:50:53 -0500
+Message-ID: <4CE5670B.1060300@zytor.com>
+Date: Thu, 18 Nov 2010 09:48:59 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Andres Salomon <dilinger@queued.net>
+CC: michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Milton Miller <miltonm@bga.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3/3] x86: OLPC: speed up device tree creation during boot
+ (v2)
+References: <20101111214546.4e573cad@queued.net>	<reply-olpc-3-v2@mdm.bga.com>	<20101112002704.50c629e2@queued.net>	<20101114095013.GB24206@elte.hu>	<4CE0B54E.6000101@zytor.com>	<20101115070254.GA25243@elte.hu>	<4CE17133.2050101@zytor.com>	<20101118083420.GC26398@elte.hu>	<1290078135.22575.4.camel@concordia>	<4CE54064.6010702@zytor.com> <20101118094153.4515cbc2@queued.net>
+In-Reply-To: <20101118094153.4515cbc2@queued.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Thu, 18 Nov 2010 18:48:17 +0100
-
-> Let me guess...
+On 11/18/2010 09:41 AM, Andres Salomon wrote:
+>>
+>> No, sorry, this sounds like a personal preference that is well out of
+>> line with the vast majority of C programmers I've ever come across,
+>> not just in the Linux kernel world but outside of it.
 > 
-> net/netfilter/nf_conntrack_core is compiled as a module, and ip_vs
-> statically (in vmlinux) ?
 > 
-> CONFIG_NF_CONNTRACK=m
-> CONFIG_IP_VS=y
+> This is actually one of the reasons I specifically like initialized
+> static variables (inside of functions).  Take the following code:
 > 
-> We probably need some Kconfig magic ;)
+> int foo(void)
+> {
+> 	static char *frob = NULL;
+> 	int p;
+> 
+> 	if (frob) {
+> 		...
+> 	}
+> 
+> 
+> Upon seeing that and thinking "whoa, how could frob be
+> initialized and then checked?", I realize that it's either a bug or I
+> look back at the initialization and realize that frob is static.  It's
+> less obvious (to me) with non-explicit initialization.
 
-Randy Dunlap made a similar report today with a sample .config
-that triggers the problem.
+I have to agree with this one.  In general I dislike relying on an
+implicit (even well-defined) initialized value; unfortunately we ripped
+out explicit initializations across the Linux kernel, not due to
+readability but due to the fact that long-since-obsolete versions of gcc
+would put explicitly-initialized variables in data rather than bss even
+if the initial value is zero.
 
-I'll look into it after lunch.
+	-hpa
+
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
