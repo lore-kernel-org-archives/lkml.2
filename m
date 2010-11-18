@@ -1,67 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab0KRM22 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 07:28:28 -0500
-Received: from ozlabs.org ([203.10.76.45]:49638 "EHLO ozlabs.org"
+	id S1756597Ab0KRM3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 07:29:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55289 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756210Ab0KRM21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 07:28:27 -0500
-Subject: Re: Build regressions/improvements in v2.6.37-rc2
-From: Michael Ellerman <michael@ellerman.id.au>
-Reply-To: michael@ellerman.id.au
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTi=NTGOv+EF_y=__=+P1ud7vqjvoaELPNi6ZhqbE@mail.gmail.com>
-References: <alpine.DEB.2.00.1011172027440.14551@ayla.of.borg>
-	 <AANLkTi=NTGOv+EF_y=__=+P1ud7vqjvoaELPNi6ZhqbE@mail.gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-0lJbuUkcbdUK/N+KMnH+"
-Date: Thu, 18 Nov 2010 23:28:26 +1100
-Message-ID: <1290083306.22575.12.camel@concordia>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756210Ab0KRM3T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 07:29:19 -0500
+Message-ID: <4CE51C17.4000108@redhat.com>
+Date: Thu, 18 Nov 2010 14:29:11 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Gregory Haskins <ghaskins@novell.com>,
+        Chris Lalancette <clalance@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] kvm: fast-path msi injection with irqfd
+References: <20101117221254.GA8296@redhat.com> <20101118105741.GA31261@redhat.com> <4CE50810.3090502@redhat.com> <20101118111037.GB31261@redhat.com>
+In-Reply-To: <20101118111037.GB31261@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/18/2010 01:10 PM, Michael S. Tsirkin wrote:
+> >  I guess I should create an empty Documentation/kvm/locking.txt and
+> >  force everyone else to update it.
+>
+> Comments near the relevant fields not better?
+>
 
---=-0lJbuUkcbdUK/N+KMnH+
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Not an either/or.  You can't understand the system from random source 
+comments.
 
-On Wed, 2010-11-17 at 20:32 +0100, Geert Uytterhoeven wrote:
-> On Wed, Nov 17, 2010 at 20:28, Geert Uytterhoeven <geert@linux-m68k.org> =
-wrote:
-> > Below is the list of build error/warning regressions/improvements in
-> > v2.6.37-rc2[1] compared to v2.6.36[2].
->=20
-> > Thanks to the linux-next team for providing the build service.
-> >
-> > [1] http://kisskb.ellerman.id.au/kisskb/head/3363/ (97 out of 108 confi=
-gs)
-> > [2] http://kisskb.ellerman.id.au/kisskb/head/3461/ (75 out of 108 confi=
-gs)
->=20
-> Would it be possible to make sure tagged versions are always built for
-> all 108 configs?
-> Currently the coverage depends on how soon Linus pushes a new commit.
+> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> index a055742..d13ced3 100644
+> --- a/include/linux/kvm_host.h
+> +++ b/include/linux/kvm_host.h
+> @@ -16,6 +16,7 @@
+>   #include<linux/mm.h>
+>   #include<linux/preempt.h>
+>   #include<linux/msi.h>
+> +#include<linux/rcupdate.h>
+>   #include<asm/signal.h>
+>
+>   #include<linux/kvm.h>
+> @@ -206,6 +207,8 @@ struct kvm {
+>
+>   	struct mutex irq_lock;
+>   #ifdef CONFIG_HAVE_KVM_IRQCHIP
+> +	/* Update side is protected by irq_lock and,
+> +	 * if configured, irqfds.lock. */
 
-Hmm. Not in a five minute hack no. I'll think about it though.
+/*
+  * kernel style comment
+  * here and elsewhere
+  */
 
-cheers
 
 
---=-0lJbuUkcbdUK/N+KMnH+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+>   	struct kvm_irq_routing_table __rcu *irq_routing;
+>   	struct hlist_head mask_notifier_list;
+>   	struct hlist_head irq_ack_notifier_list;
+> @@ -462,6 +465,8 @@ void kvm_get_intr_delivery_bitmask(struct kvm_ioapic *ioapic,
+>   				   unsigned long *deliver_bitmask);
+>   #endif
+>   int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level);
+> +int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
+> +		int irq_source_id, int level);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+No point in the level argument for an msi specific function.
 
-iEYEABECAAYFAkzlG+oACgkQdSjSd0sB4dIDowCfSt3a+y1h0s5I6uzTMIOX29Ox
-eJcAn2R0OwF99HQu3lqbx/vT4l9q+rsg
-=ZCPl
------END PGP SIGNATURE-----
+>
+>   #else
+> @@ -614,6 +620,12 @@ static inline int kvm_irqfd(struct kvm *kvm, int fd, int gsi, int flags)
+>   }
+>
+>   static inline void kvm_irqfd_release(struct kvm *kvm) {}
 
---=-0lJbuUkcbdUK/N+KMnH+--
+blank line
+
+> +static inline void kvm_irq_routing_update(struct kvm *kvm,
+> +					  struct kvm_irq_routing_table *irq_rt)
+> +{
+> +	rcu_assign_pointer(kvm->irq_routing, irq_rt);
+> +}
+> +
+>   static inline int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
+>   {
+>   	return -ENOSYS;
+
+Apart from these minor issues, looks good.
+
+-- 
+error compiling committee.c: too many arguments to function
 
