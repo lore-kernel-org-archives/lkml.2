@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757940Ab0KRNjn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 08:39:43 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:43278 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757606Ab0KRNjm (ORCPT
+	id S1757971Ab0KRNki (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 08:40:38 -0500
+Received: from casper.infradead.org ([85.118.1.10]:37794 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757936Ab0KRNkg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 08:39:42 -0500
-Date: Thu, 18 Nov 2010 14:39:40 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andi Kleen <andi@firstfloor.org>, a.p.zijlstra@chello.nl,
-        eranian@google.com, linux-kernel@vger.kernel.org, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/4] x86: set cpu masks before calling CPU_STARTING
- notifiers
-Message-ID: <20101118133940.GD12667@basil.fritz.box>
-References: <1290077254-12165-1-git-send-email-andi@firstfloor.org>
- <1290077254-12165-2-git-send-email-andi@firstfloor.org>
- <alpine.LFD.2.00.1011181251370.2900@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011181251370.2900@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 18 Nov 2010 08:40:36 -0500
+Subject: Re: [PATCH 01/13] writeback: IO-less balance_dirty_pages()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Chris Mason <chris.mason@oracle.com>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
+        Christoph Hellwig <hch@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, tglx <tglx@linutronix.de>
+In-Reply-To: <20101118132617.GA9307@localhost>
+References: <20101117042720.033773013@intel.com>
+	 <20101117042849.410279291@intel.com> <1290085474.2109.1480.camel@laptop>
+	 <20101118132617.GA9307@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 18 Nov 2010 14:40:06 +0100
+Message-ID: <1290087606.2109.1518.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 12:52:33PM +0100, Thomas Gleixner wrote:
-> On Thu, 18 Nov 2010, Andi Kleen wrote:
+On Thu, 2010-11-18 at 21:26 +0800, Wu Fengguang wrote:
+> On Thu, Nov 18, 2010 at 09:04:34PM +0800, Peter Zijlstra wrote:
+> > On Wed, 2010-11-17 at 12:27 +0800, Wu Fengguang wrote:
+> > > - avoid useless (eg. zero pause time) balance_dirty_pages() calls
+> > > - avoid too small pause time (less than  10ms, which burns CPU power)
+> > > - avoid too large pause time (more than 100ms, which hurts responsiveness)
+> > > - avoid big fluctuations of pause times 
+> > 
+> > If you feel like playing with sub-jiffies timeouts (a way to avoid that
+> > HZ=>100 assumption), the below (totally untested) patch might be of
+> > help..
 > 
-> > From: Andi Kleen <ak@linux.intel.com>
-> > 
-> > When booting up a CPU set the various topology masks before
-> > calling the CPU_STARTING notifier. This way the notifier
-> > can actually use the masks.
-> > 
-> > This is needed for a perf change.
-> > 
-> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> > ---
-> >  arch/x86/kernel/smpboot.c |    8 ++++----
-> >  1 files changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-> > index 083e99d..9d2980e 100644
-> > --- a/arch/x86/kernel/smpboot.c
-> > +++ b/arch/x86/kernel/smpboot.c
-> > @@ -281,6 +281,10 @@ static void __cpuinit smp_callin(void)
-> >  	 */
-> >  	smp_store_cpu_info(cpuid);
-> >  
-> > +	/* This must be done before setting cpu_online_mask */
+> Assuming there are HZ=10 users.
 > 
-> Can we please fix up that comment to match that change ?
+> - when choosing such a coarse granularity, do they really care about
+>   responsiveness? :)
 
-Here's an updated patch.
+No of course not, they usually care about booting their system,.. I've
+been told booting Linux on a 10Mhz FPGA is 'fun' :-)
 
-x86: set cpu masks before calling CPU_STARTING notifiers
-    
-When booting up a CPU set the various topology masks before
-calling the CPU_STARTING notifier. This way the notifier
-can actually use the masks.
-    
-This is needed for a perf change.
-    
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> - will the use of hrtimer add a little code size and/or runtime
+>   overheads, and hence hurt the majority HZ=100 users?
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 083e99d..c019c03 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -281,6 +281,13 @@ static void __cpuinit smp_callin(void)
- 	 */
- 	smp_store_cpu_info(cpuid);
- 
-+	/* 
-+	 * This must be done before setting cpu_online_mask
-+	 * or calling notify_cpu_starting.
-+	 */
-+	set_cpu_sibling_map(raw_smp_processor_id());
-+	wmb();
-+
- 	notify_cpu_starting(cpuid);
- 
- 	/*
-@@ -322,10 +329,6 @@ notrace static void __cpuinit start_secondary(void *unused)
- 		legacy_pic->unmask(0);
- 	}
- 
--	/* This must be done before setting cpu_online_mask */
--	set_cpu_sibling_map(raw_smp_processor_id());
--	wmb();
--
- 	/*
- 	 * We need to hold call_lock, so there is no inconsistency
- 	 * between the time smp_call_function() determines number of
+Yes it will add code and runtime overhead, but it would allow you to
+have 1ms timeouts even on a HZ=100 system, as opposed to a 10ms minimum.
+
+Anyway, I'm not saying you should do it, I just wondered if we had the
+API, saw we didn't and thought it might be nice to offer it if desired.
+
+
