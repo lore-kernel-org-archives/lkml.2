@@ -1,74 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab0KRBdg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 20:33:36 -0500
-Received: from kroah.org ([198.145.64.141]:35503 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753678Ab0KRBc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 20:32:56 -0500
-Date: Wed, 17 Nov 2010 17:27:34 -0800
-From: Greg KH <greg@kroah.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Werner Fink <werner@suse.de>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
-Message-ID: <20101118012734.GA8558@kroah.com>
-References: <AANLkTimn7zyEjLhmOmUVQGnLDfM-A_uEgWETsM3nsyuY@mail.gmail.com> <20101116171447.29336514@lxorguk.ukuu.org.uk> <AANLkTi=ju4fON7Hz=j_tFtqFGD0b-c=-Ou+HQwfYDgOy@mail.gmail.com> <20101116195538.7fa66b97@lxorguk.ukuu.org.uk> <20101116213622.GA17824@tango.0pointer.de> <20101116225619.5fa7ef8b@lxorguk.ukuu.org.uk> <20101116231023.GB27594@tango.0pointer.de> <25482.1290031268@localhost> <AANLkTimV_zKK-Ubw3vJkDUtrYvB+W06cRR7Nz2vam6fP@mail.gmail.com> <20101117235647.00766e32@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117235647.00766e32@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1753586Ab0KRBcy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 20:32:54 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46469 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753239Ab0KRBcw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 20:32:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
+         :in-reply-to:references;
+        b=YbeVuN+h+ikXO5QvrHl+orNjObTPI/L1Yiyty8Z4T1T2uHxg/1vp8pT/Ecv8j8gG4U
+         6jBIcgwSaikxQ0ir4CIEpKusShjInI+GZkQlCcv/ZTiLbG3EVEPcJpPn3IKc0LT1cqRk
+         TJDik9bbdGapaeiPG7igAPjoNKSj1Pce2qwzY=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Jason Baron <jbaron@redhat.com>
+Subject: [PATCH 2/5] tracing: New macro to set up initial event flags value
+Date: Thu, 18 Nov 2010 02:32:40 +0100
+Message-Id: <1290043963-1480-3-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+In-Reply-To: <1290043963-1480-1-git-send-regression-fweisbec@gmail.com>
+References: <1290043963-1480-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 11:56:47PM +0000, Alan Cox wrote:
-> > Brilliant conclusion. If you have mounted it, you own it. But you can
-> > not make your inactive session mount another new one. It's like this
-> > since ages. Hint: try stuff before hitting reply too fast. :)
-> 
-> Except during the window when screen switching, or of course you could
-> just ssh in remotely and gdb or similar a process with it as controlling
-> tty running on your console and issue a vt switch back, then mount it.
-> Ironically the move from a root owned X server has made that much simpler
-> to automate, although it was always possible.
-> 
-> Given you can often guess from the idle data if the victim has gone away
-> from the box it's not ideal. Even better any mess will appear on my
-> display and get hidden when I flip it back.
-> 
-> The only way to stop that is to make use of the display locking facility
-> which takes us back where we began in saying that a usable interface is
-> going to need to lock the display.
-> 
-> At that point the current console owner has to choose to allow the
-> console to be switched which can be limited effectively to physical
-> console access and done synchronously. In turn that means to abuse it I
-> already have physical access to the other users key so could just as
-> easily steal it and the software security is therefore sufficient.
+This introduces the new TRACE_EVENT_FLAGS() macro in order
+to set up initial event flags value.
 
-Ok, we are way-off-topic here from the original points.
+This macro must simply follow the definition of a trace event
+and take the event name and the flag value as parameters:
 
-Which are:
-	- the existing ioctl is broken and no userspace program can use
-	  it properly, so it might as well be removed.
-	- Kay's patch is one proposed solution for what userspace is
-	  wanting to learn about ttys.  Werner's is another one.
+TRACE_EVENT(my_event, .....
+....
+);
 
-So, what to do?
+TRACE_EVENT_FLAGS(my_event, 1)
 
-I can do any one, or multiple things from the following options:
+This will set up 1 as the initial my_event->flags value.
 
-	- disable the existing ioctl to return an error so that no new
-	  userspace program starts to use it thinking it is valid
-	- accept Werner's patch for those who like proc files
-	- accept Kay's patch
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Jason Baron <jbaron@redhat.com>
+---
+ include/linux/tracepoint.h |    4 ++++
+ include/trace/ftrace.h     |   12 ++++++++++++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
 
-Any suggestions?
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index a4a90b6..5a6074f 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -234,6 +234,8 @@ do_trace:								\
+ 				PARAMS(void *__data, proto),		\
+ 				PARAMS(__data, args))
+ 
++#define TRACE_EVENT_FLAGS(event, flag)
++
+ #endif /* DECLARE_TRACE */
+ 
+ #ifndef TRACE_EVENT
+@@ -354,4 +356,6 @@ do_trace:								\
+ 		assign, print, reg, unreg)			\
+ 	DECLARE_TRACE(name, PARAMS(proto), PARAMS(args))
+ 
++#define TRACE_EVENT_FLAGS(event, flag)
++
+ #endif /* ifdef TRACE_EVENT (see note above) */
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index a9377c0..6f54012 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -82,6 +82,15 @@
+ 	TRACE_EVENT(name, PARAMS(proto), PARAMS(args),			\
+ 		PARAMS(tstruct), PARAMS(assign), PARAMS(print))		\
+ 
++#undef TRACE_EVENT_FLAGS
++#define TRACE_EVENT_FLAGS(name, value)					\
++	static int __init trace_init_flags_##name(void)			\
++	{								\
++		event_##name.flags = value;				\
++		return 0;						\
++	}								\
++	early_initcall(trace_init_flags_##name);
++
+ #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
+ 
+ 
+@@ -129,6 +138,9 @@
+ #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
+ 	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
+ 
++#undef TRACE_EVENT_FLAGS
++#define TRACE_EVENT_FLAGS(event, flag)
++
+ #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
+ 
+ /*
+-- 
+1.6.2.3
 
-thanks,
-
-greg k-h
