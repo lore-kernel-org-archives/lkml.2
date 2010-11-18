@@ -1,80 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758220Ab0KRTyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 14:54:47 -0500
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:51127 "EHLO
-	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757030Ab0KRTyq (ORCPT
+	id S1758466Ab0KRT4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 14:56:46 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46446 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758027Ab0KRT4o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 14:54:46 -0500
-Message-ID: <4CE58423.1030804@cs.columbia.edu>
-Date: Thu, 18 Nov 2010 14:53:07 -0500
-From: Oren Laadan <orenl@cs.columbia.edu>
-Organization: Columbia University
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
+	Thu, 18 Nov 2010 14:56:44 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fxuKJ4aSy5a9PUiDSPJ6rWW/gskLyQEfELUqRKlC5IXq5uAIUbrThOf2tzxA6Po10Q
+         2/h9bIFCdIfXzPunteRw9cvyLcYbBMV8moyzS43wOrW5XDRYFgr7Fp4nbLZBqpFTmdSt
+         xJE5Vaxi4apbS7N4ILJgJz2Y4xPljMGdt+2SY=
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "Serge E. Hallyn" <serge@hallyn.com>, Kapil Arya <kapil@ccs.neu.edu>,
-        Gene Cooperman <gene@ccs.neu.edu>, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Linux Containers <containers@lists.osdl.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, xemul@sw.ru
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com> <4CD26948.7050009@kernel.org> <20101104164401.GC10656@sundance.ccs.neu.edu> <4CD3CE29.2010105@kernel.org> <20101106053204.GB12449@count0.beaverton.ibm.com> <20101106204008.GA31077@sundance.ccs.neu.edu> <4CD5D99A.8000402@cs.columbia.edu> <20101107184927.GF31077@sundance.ccs.neu.edu> <4CD72150.9070705@cs.columbia.edu> <4CE3C334.9080401@kernel.org> <20101117153902.GA1155@hallyn.com> <4CE3F8D1.10003@kernel.org>
-In-Reply-To: <4CE3F8D1.10003@kernel.org>
+In-Reply-To: <1290109970-26752-1-git-send-email-gbean@codeaurora.org>
+References: <1290109970-26752-1-git-send-email-gbean@codeaurora.org>
+Date: Thu, 18 Nov 2010 11:56:41 -0800
+Message-ID: <AANLkTikdPLWH0d4ci89nzF_83=_qWAB+T6yRsuqXZf=m@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] msm: gpio: Add v2 gpio support to MSM SoCs.
+From: Janakiram Sistla <janakiram.sistla@gmail.com>
+To: Gregory Bean <gbean@codeaurora.org>
+Cc: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Baruch Siach <baruch@tkos.co.il>,
+        Pavan Kondeti <pkondeti@codeaurora.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-No-Spam-Score: Local
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 11/17/2010 10:46 AM, Tejun Heo wrote:
-> Hello, Serge.
-> 
-> On 11/17/2010 04:39 PM, Serge E. Hallyn wrote:
->>> I'm sorry but in-kernel CR already looks like a major misdesign to me.
->>
->> By this do you mean the very idea of having CR support in the kernel?
->> Or our design of it in the kernel?
-> 
-> The former, I'm afraid.
-> 
->> Let's go back to July 2008, at the containers mini-summit, where it
->> was unanimously agreed upon that the kernel was the right place
->> (Checkpoint/Resetart [CR] under
->> http://wiki.openvz.org/Containers/Mini-summit_2008_notes ), and that
->> we would start by supporting a single task with no resources.  Was
->> that whole discussion effectively misguided, in your opinion?  Or do
->> you feel that since the first steps outlined in that discussion
->> we've either "gone too far" or strayed in the subsequent design?
-> 
-> The conclusion doesn't seem like such a good idea, well, at least to
-> me for what it's worth.  Conclusions at summits don't carry decisive
-> weight.  It'll still have to prove its worthiness for mainline all the
-> same and in light of already working userland alternative and the
-> expanded area now covered by virtualization, the arguments in this
-> thread don't seem too strong.
-
-While it's your opinion that userland alternatives "already work",
-in reality they are unsuitable for several real use-cases. The
-userland approach has serious restrictions - which I will cover
-in a follow-up post to my discussion with Gene soon.
-
-Note that one important point of agreement was that DMTCP's ability
-to provide "glue" to restart applications without their original
-context is _orthogonal_ to how the core c/r is done. IOW - there
-exciting goodies from DMTCP are useful with either form of c/r.
-
-You also argue that "virtualization" (VMs?) covers everything else,
-implying that lightweight virtualization is useless. In reality it
-is an important technology, already in the kernel (surely you don't
-suggest to pull it out ?!) and for a reason. That is already a very
-good reason to provide, e.g. containers c/r and live-migration to
-keep it competitive and useful.
-
-Thanks,
-
-Oren.
+On Thu, Nov 18, 2010 at 11:52 AM, Gregory Bean <gbean@codeaurora.org> wrote:
+> Beginning with the MSM8x60, the hardware block responsible for gpio
+> support changes.  Provide gpiolib support for the new v2 architecture.
+>
+> Cc: Baruch Siach <baruch@tkos.co.il>
+> Cc: Pavan Kondeti <pkondeti@codeaurora.org>
+> Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+> ---
+>  v4 - miscellaneous cleanup, per pkondeti@codeaurora.org
+>  v3 - miscellaneous cleanup, per baruch@tkos.co.il
+>  v2 - miscellaneous cleanup, per baruch@tkos.co.il
+>
+>  arch/arm/mach-msm/Makefile  |    4 +-
+>  arch/arm/mach-msm/gpio-v2.c |  163 +++++++++++++++++++++++++++++++++++++++++++
+[Ram] Can you let me know how this naming convention gpio-v2??
+>  2 files changed, 166 insertions(+), 1 deletions(-)
+>  create mode 100644 arch/arm/mach-msm/gpio-v2.c
+>
+> diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+> index b5a7b07..4a1a7ea 100644
+> --- a/arch/arm/mach-msm/Makefile
+> +++ b/arch/arm/mach-msm/Makefile
+> @@ -28,6 +28,8 @@ obj-$(CONFIG_ARCH_MSM8X60) += board-msm8x60.o
+>  obj-$(CONFIG_ARCH_MSM7X30) += gpiomux-7x30.o gpiomux-v1.o gpiomux.o
+>  obj-$(CONFIG_ARCH_QSD8X50) += gpiomux-8x50.o gpiomux-v1.o gpiomux.o
+>  obj-$(CONFIG_ARCH_MSM8X60) += gpiomux-8x60.o gpiomux-v2.o gpiomux.o
+> -ifndef CONFIG_MSM_V2_TLMM
+> +ifdef CONFIG_MSM_V2_TLMM
+> +obj-y  += gpio-v2.o
+> +else
+>  obj-y  += gpio.o
+>  endif
+> diff --git a/arch/arm/mach-msm/gpio-v2.c b/arch/arm/mach-msm/gpio-v2.c
+> new file mode 100644
+> index 0000000..d907af6
+> --- /dev/null
+> +++ b/arch/arm/mach-msm/gpio-v2.c
+> @@ -0,0 +1,163 @@
+> +/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+> + * 02110-1301, USA.
+> + *
+> + */
+> +#include <linux/gpio.h>
+> +#include <linux/io.h>
+> +#include <linux/irq.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/spinlock.h>
+> +#include <mach/msm_iomap.h>
+> +#include "gpiomux.h"
+> +
+> +/* Bits of interest in the GPIO_IN_OUT register.
+> + */
+> +enum {
+> +       GPIO_IN_BIT  = 0,
+> +       GPIO_OUT_BIT = 1
+> +};
+> +
+> +/* Bits of interest in the GPIO_CFG register.
+> + */
+> +enum {
+> +       GPIO_OE_BIT = 9,
+> +};
+> +
+> +#define GPIO_CONFIG(gpio)         (MSM_TLMM_BASE + 0x1000 + (0x10 * (gpio)))
+> +#define GPIO_IN_OUT(gpio)         (MSM_TLMM_BASE + 0x1004 + (0x10 * (gpio)))
+> +
+> +static DEFINE_SPINLOCK(tlmm_lock);
+> +
+> +static int msm_gpio_get(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       return readl(GPIO_IN_OUT(offset)) & BIT(GPIO_IN_BIT);
+> +}
+> +
+> +static void msm_gpio_set(struct gpio_chip *chip, unsigned offset, int val)
+> +{
+> +       writel(val ? BIT(GPIO_OUT_BIT) : 0, GPIO_IN_OUT(offset));
+> +}
+> +
+> +static int msm_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       unsigned long irq_flags;
+> +
+> +       spin_lock_irqsave(&tlmm_lock, irq_flags);
+> +       writel(readl(GPIO_CONFIG(offset)) & ~BIT(GPIO_OE_BIT),
+> +               GPIO_CONFIG(offset));
+> +       spin_unlock_irqrestore(&tlmm_lock, irq_flags);
+> +       return 0;
+> +}
+> +
+> +static int msm_gpio_direction_output(struct gpio_chip *chip,
+> +                               unsigned offset,
+> +                               int val)
+> +{
+> +       unsigned long irq_flags;
+> +
+> +       spin_lock_irqsave(&tlmm_lock, irq_flags);
+> +       msm_gpio_set(chip, offset, val);
+> +       writel(readl(GPIO_CONFIG(offset)) | BIT(GPIO_OE_BIT),
+> +               GPIO_CONFIG(offset));
+> +       spin_unlock_irqrestore(&tlmm_lock, irq_flags);
+> +       return 0;
+> +}
+> +
+> +static int msm_gpio_request(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       return msm_gpiomux_get(chip->base + offset);
+> +}
+> +
+> +static void msm_gpio_free(struct gpio_chip *chip, unsigned offset)
+> +{
+> +       msm_gpiomux_put(chip->base + offset);
+> +}
+> +
+> +static struct gpio_chip msm_gpio = {
+> +       .base             = 0,
+> +       .ngpio            = NR_GPIO_IRQS,
+> +       .direction_input  = msm_gpio_direction_input,
+> +       .direction_output = msm_gpio_direction_output,
+> +       .get              = msm_gpio_get,
+> +       .set              = msm_gpio_set,
+> +       .request          = msm_gpio_request,
+> +       .free             = msm_gpio_free,
+> +};
+> +
+> +static int __devinit msm_gpio_probe(struct platform_device *dev)
+> +{
+> +       int ret;
+> +
+> +       msm_gpio.label = dev->name;
+> +       ret = gpiochip_add(&msm_gpio);
+> +
+> +       return ret;
+> +}
+> +
+> +static int __devexit msm_gpio_remove(struct platform_device *dev)
+> +{
+> +       int ret = gpiochip_remove(&msm_gpio);
+> +
+> +       if (ret < 0)
+> +               return ret;
+> +
+> +       set_irq_handler(TLMM_SCSS_SUMMARY_IRQ, NULL);
+> +
+> +       return 0;
+> +}
+> +
+> +static struct platform_driver msm_gpio_driver = {
+> +       .probe = msm_gpio_probe,
+> +       .remove = __devexit_p(msm_gpio_remove),
+> +       .driver = {
+> +               .name = "msmgpio",
+> +               .owner = THIS_MODULE,
+> +       },
+> +};
+> +
+> +static struct platform_device msm_device_gpio = {
+> +       .name = "msmgpio",
+> +       .id   = -1,
+> +};
+> +
+> +static int __init msm_gpio_init(void)
+> +{
+> +       int rc;
+> +
+> +       rc = platform_driver_register(&msm_gpio_driver);
+> +       if (!rc) {
+> +               rc = platform_device_register(&msm_device_gpio);
+> +               if (rc)
+> +                       platform_driver_unregister(&msm_gpio_driver);
+> +       }
+> +
+> +       return rc;
+> +}
+> +
+> +static void __exit msm_gpio_exit(void)
+> +{
+> +       platform_device_unregister(&msm_device_gpio);
+> +       platform_driver_unregister(&msm_gpio_driver);
+> +}
+> +
+> +postcore_initcall(msm_gpio_init);
+> +module_exit(msm_gpio_exit);
+> +
+> +MODULE_AUTHOR("Gregory Bean <gbean@codeaurora.org>");
+> +MODULE_DESCRIPTION("Driver for Qualcomm MSM TLMMv2 SoC GPIOs");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:msmgpio");
+> --
+> 1.7.0.4
+>
+> --
+> Employee of Qualcomm Innovation Center, Inc.
+> Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
