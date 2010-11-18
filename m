@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab0KRI6C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 03:58:02 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42601 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755016Ab0KRI6A convert rfc822-to-8bit (ORCPT
+	id S1753331Ab0KRI6l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 03:58:41 -0500
+Received: from mtagate3.de.ibm.com ([195.212.17.163]:35784 "EHLO
+	mtagate3.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab0KRI6k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 03:58:00 -0500
-Subject: Re: [PATCH -v4 1/2] lib, Make gen_pool memory allocator lockless
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: Huang Ying <ying.huang@intel.com>,
-        huang ying <huang.ying.caritas@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-In-Reply-To: <20101118084341.GA23766@linux-sh.org>
-References: <1289868791-16658-1-git-send-email-ying.huang@intel.com>
-	 <1289868791-16658-2-git-send-email-ying.huang@intel.com>
-	 <20101116135038.fcaa90ca.akpm@linux-foundation.org>
-	 <1289960281.8719.1218.camel@yhuang-dev> <1289990458.2109.675.camel@laptop>
-	 <AANLkTi=X2noJJwJwWh30-ac76f-pN5W0cD2c9w0F1EeK@mail.gmail.com>
-	 <1289994796.2109.722.camel@laptop> <1290042887.3122.5.camel@yhuang-dev>
-	 <1290069275.2109.1290.camel@laptop>  <20101118084341.GA23766@linux-sh.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 18 Nov 2010 09:57:54 +0100
-Message-ID: <1290070674.2109.1303.camel@laptop>
+	Thu, 18 Nov 2010 03:58:40 -0500
+Date: Thu, 18 Nov 2010 09:58:37 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        brueckner@linux.vnet.ibm.com
+Subject: Re: [S390] mm: add devmem_is_allowed() for STRICT_DEVMEM checking
+Message-ID: <20101118095837.4ef7c563@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <20101117180320.GA13441@redhat.com>
+References: <201011162359.oAGNx3UN011130@hera.kernel.org>
+	<20101117180320.GA13441@redhat.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 17:43 +0900, Paul Mundt wrote:
-> 
-> The only cause for concern really is SH-2A which supports hardware
-> breakpoints (and perf events by proxy) but doesn't contain a PMU, and
-> only uses an IRQs disabled cmpxchg for the moment. It also supports
-> ftrace. I suppose I'll need to come up with a hack for this case.. 
+On Wed, 17 Nov 2010 13:03:21 -0500
+Dave Jones <davej@redhat.com> wrote:
 
-Well, as long as it doesn't actually have NMIs it doesn't matter.. If it
-does and they're actually used by linux, then yes that needs fixing.
+> On Tue, Nov 16, 2010 at 11:59:03PM +0000, Linux Kernel wrote:
+>  > Gitweb:     http://git.kernel.org/linus/ec6743bb06510c7b629603ce35713d6ae9273579
+>  > Commit:     ec6743bb06510c7b629603ce35713d6ae9273579
+>  > Parent:     ca768b663131ca644689fcadc9ca092dcc96a758
+>  > Author:     Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+>  > AuthorDate: Wed Nov 10 10:05:55 2010 +0100
+>  > Committer:  Martin Schwidefsky <sky@mschwide.boeblingen.de.ibm.com>
+>  > CommitDate: Wed Nov 10 10:05:54 2010 +0100
+>  > 
+>  >     [S390] mm: add devmem_is_allowed() for STRICT_DEVMEM checking
+>  >     
+>  >     Provide the devmem_is_allowed() routine to restrict access to
+>  >     kernel memory from userspace.
+>  >     Set the CONFIG_STRICT_DEVMEM config option to switch on checking.
+>  >     
+>  >     Signed-off-by: Hendrik Brueckner <brueckner@linux.vnet.ibm.com>
+>  >     Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> 
+> [snip add kconfig]
+> 
+> ...
+> 
+>  > +static inline int devmem_is_allowed(unsigned long pfn)
+>  > +{
+>  > +	return 0;
+>  > +}
+> 
+> So you add the config option that promises security, but then you always
+> allow the access.  This seems pointless ?  Why bother having the option at all?
+
+It is the other way around, access is always disallowed. So it is very secure,
+access via /dev/mem is disabled if STRICT_DEVMEM=y.
+
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
