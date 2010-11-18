@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932589Ab0KRVeI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:34:08 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:12407 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757165Ab0KRVeH (ORCPT
+	id S1760595Ab0KRVfx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:35:53 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:57634 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757205Ab0KRVfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:34:07 -0500
-Date: Thu, 18 Nov 2010 22:21:24 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-kernel@vger.kernel.org, Eric Youngdale <eric@andante.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Mike Anderson <andmike@us.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH][resend][SCSI] Reduce number of sequential pointer derefs
- in scsi_error.c and reduce size as well
-In-Reply-To: <AANLkTim1MChiEa9rBL0ZfSCak6G2x4ivK47Svd6swEBS@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1011182218500.11697@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1011181957500.3651@swampdragon.chaosbits.net> <AANLkTi=McRJSHp8==o+=coK0_pK5s9dwUgLmrkohSmTX@mail.gmail.com> <alpine.LNX.2.00.1011182140510.8526@swampdragon.chaosbits.net>
- <AANLkTim1MChiEa9rBL0ZfSCak6G2x4ivK47Svd6swEBS@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Thu, 18 Nov 2010 16:35:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:content-type;
+        b=LPEC3SKZtVsJaZzEIOj4FbMMxMVyyauy8nIG5lqw7qDWpguYrkZ7KDcObnFTOKEc9T
+         WXDPsxmN48NkLQLYdXWVE4jyk4/bqiwCTmDsZLmHrAH35tsmOrwTafTWJpdrE+MBhbJL
+         SbDV57aH8NK2V3PnVfo41uX5IMZzY/xRg2M/U=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Thu, 18 Nov 2010 15:35:51 -0600
+X-Google-Sender-Auth: Z8GwCE63s89UG_jftt7XkuSQwk0
+Message-ID: <AANLkTin2zKWLLxsRn+T+U+NpAmbQiOTM_vrg_Z-8JZd-@mail.gmail.com>
+Subject: [PATCH] Enable jack sense for Thinkpad Edge 11
+From: Manoj Iyer <manoj.iyer@canonical.com>
+To: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010, Linus Torvalds wrote:
+This patch enables audio play back from external headphones on Thinkpad Edge 11.
 
-> On Thu, Nov 18, 2010 at 12:49 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> >
-> > Fair enough. Seeing your version of this and looking a second time at mine
-> > I have to agree completely.
-> > You are absolutely right in stating that the compiler will handle this
-> > just fine, so it's only a readabillity issue and your version is a *lot*
-> > more readable than what I came up with.
-> 
-> Btw, one thing to look out for is all those function calls: it really
-> looks like many of them would be better off not having to dereference
-> the thing inside each helper function, but just have it dereferenced
-> in the caller.
-> 
-> You might trying passing in "struct Scsi_Host *host" to a lot of those
-> helper functions in addition to the 'scmd' part. There's a lot of
-> "scmd->device->host" going on, and even if you remove some of them
-> _within_ a function, if you really want to get rid of them you should
-> probably do one of them in the caller.
-> 
-> That's why the queuecommand() function was changed to take
-> 
->     struct Scsi_Host *h, struct scsi_cmnd *
-> 
-> as its arguments, because that host is used so commonly. And passing
-> two arguments is usually free (ie almost all architectures pass it in
-> registers), and that host variable almost always already exists in the
-> caller because the caller already needed it.
-> 
-> So if you changed the functions that only take "scsi_cmnd *" as an
-> argument to match the new queuecommand() interface, I bet you'd get
-> more cleanups. And the interfaces would match.
-> 
+The following changes since commit 0c1c062266ecfeaebadadb780020a422f829284f:
+  Manoj Iyer (1):
+        Enable jack sense for Thinkpad Edge 11
 
-That's a good point.
+are available in the git repository at:
 
-I don't have time to look at that tonight, but I'll (hopefully) get around 
-to it over the weekend. I'll submit a new patch (or at least email) during 
-the weekend (or early next week) when I've had some time to look into 
-that.
+  git://kernel.ubuntu.com/git/manjo/linux-2.6.git thinpad11
 
-Thanks.
+>From 89796b0608f0c36cbd05d0426e95386766ff20b9 Mon Sep 17 00:00:00 2001
+From: Manoj Iyer <manoj.iyer@canonical.com>
+Date: Thu, 18 Nov 2010 21:24:42 +0000
+Subject: [PATCH] Enable jack sense for Thinkpad Edge 11
 
+Signed-off-by: Manoj Iyer <manoj.iyer@canonical.com>
+---
+ sound/pci/hda/patch_conexant.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index 6361f75..b8d6554 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -3108,6 +3108,7 @@ static struct snd_pci_quirk cxt5066_cfg_tbl[] = {
+        SND_PCI_QUIRK(0x152d, 0x0833, "OLPC XO-1.5", CXT5066_OLPC_XO_1_5),
+        SND_PCI_QUIRK(0x17aa, 0x20f2, "Lenovo T400s", CXT5066_THINKPAD),
+        SND_PCI_QUIRK(0x17aa, 0x21b2, "Thinkpad X100e", CXT5066_IDEAPAD),
++       SND_PCI_QUIRK(0x17aa, 0x21c8, "Thinkpad Edge 11", CXT5066_THINKPAD),
+        SND_PCI_QUIRK(0x17aa, 0x21b3, "Thinkpad Edge 13 (197)",
+CXT5066_IDEAPAD),
+        SND_PCI_QUIRK(0x17aa, 0x21b4, "Thinkpad Edge", CXT5066_IDEAPAD),
+        SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo Thinkpad", CXT5066_THINKPAD),
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.0.4
 
+---
+Manoj Iyer
