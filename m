@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759354Ab0KRQ3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:29:15 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42947 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754883Ab0KRQ3O convert rfc822-to-8bit (ORCPT
+	id S1759430Ab0KRQaS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:30:18 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53579 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932202Ab0KRQaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 11:29:14 -0500
-Subject: Re: [PATCH] writeback: prevent bandwidth calculation overflow
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, "Li, Shaohua" <shaohua.li@intel.com>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101118160652.GA19459@localhost>
-References: <20101118065725.GB8458@localhost> <4CE537BE.6090103@redhat.com>
-	 <20101118154408.GA18582@localhost> <1290096121.2109.1525.camel@laptop>
-	 <20101118160652.GA19459@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 18 Nov 2010 17:29:00 +0100
-Message-ID: <1290097740.2109.1527.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 18 Nov 2010 11:30:16 -0500
+Message-ID: <4CE55445.8040002@oracle.com>
+Date: Thu, 18 Nov 2010 08:28:53 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [build failure] Re: BKL: remove extraneous #include <smp_lock.h>
+References: <201011172159.oAHLx1tu001236@hera.kernel.org> <20101117140526.d532b373.randy.dunlap@oracle.com> <AANLkTimO6CN9wOQco_1bqRmwBS7KfWW1CvumKFuiOWGH@mail.gmail.com> <20101118094342.GA10382@elte.hu> <AANLkTi=Xoo90jiaQBMxchFkKXt0dgre0tWe-LnVR6aSD@mail.gmail.com> <AANLkTikV+KVmwKg4jS2KPG+9EFdd9qD-VUak4qOgFgr4@mail.gmail.com>
+In-Reply-To: <AANLkTikV+KVmwKg4jS2KPG+9EFdd9qD-VUak4qOgFgr4@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 00:06 +0800, Wu Fengguang wrote:
-> On Fri, Nov 19, 2010 at 12:02:01AM +0800, Peter Zijlstra wrote:
-> > On Thu, 2010-11-18 at 23:44 +0800, Wu Fengguang wrote:
-> > > +               pause = HZ * pages_dirtied / (bw + 1);
-> > 
-> > Shouldn't that be using something like div64_u64 ?
+On 11/18/10 08:02, Linus Torvalds wrote:
+> On Thu, Nov 18, 2010 at 7:57 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> How painful would it be to move lock_depth into thread_struct? I guess
+>> we don't have anything that cares about structure offsets in assembly
+>> for that thing.  I should just try.
 > 
-> OK, but a dumb question: gcc cannot handle this implicitly?
+> Gaah, the only generic field there is the restart_block, so we'd have
+> to hide it there, or then add it to each architecture. So scratch
+> that.
+> 
+> I guess this is the simplest approach.
 
-it could, but we chose not to implement the symbol it emits for these
-things so as to cause pain.. that was still assuming the world of 32bit
-computing was relevant and 64bit divides were expensive ;-)
+Yes, that builds.  Thanks.
+
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+
+-- 
+~Randy
