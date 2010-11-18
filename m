@@ -1,62 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab0KRKEk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 05:04:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51573 "EHLO mx1.redhat.com"
+	id S1756523Ab0KRKGi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 05:06:38 -0500
+Received: from hera.kernel.org ([140.211.167.34]:53374 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755482Ab0KRKEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 05:04:39 -0500
-Date: Thu, 18 Nov 2010 12:04:34 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Gregory Haskins <ghaskins@novell.com>,
-        Chris Lalancette <clalance@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: fast-path msi injection with irqfd
-Message-ID: <20101118100434.GB7948@redhat.com>
-References: <20101117221254.GA8296@redhat.com>
- <20101118090522.GX7948@redhat.com>
- <20101118093426.GH16832@redhat.com>
+	id S1755971Ab0KRKGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 05:06:37 -0500
+Message-ID: <4CE4FA9B.1060104@kernel.org>
+Date: Thu, 18 Nov 2010 11:06:19 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101118093426.GH16832@redhat.com>
+To: Matt Helsley <matthltc@us.ibm.com>
+CC: Oren Laadan <orenl@cs.columbia.edu>, Gene Cooperman <gene@ccs.neu.edu>,
+        Kapil Arya <kapil@ccs.neu.edu>,
+        ksummit-2010-discuss@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, hch@lst.de,
+        Linux Containers <containers@lists.osdl.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+References: <AANLkTinOg6n3ZA+0gHzw9LouRuUmJ7DJwHtABRy5c=gM@mail.gmail.com> <4CD26948.7050009@kernel.org> <20101104164401.GC10656@sundance.ccs.neu.edu> <4CD3CE29.2010105@kernel.org> <20101106053204.GB12449@count0.beaverton.ibm.com> <20101106204008.GA31077@sundance.ccs.neu.edu> <4CD5D99A.8000402@cs.columbia.edu> <20101107184927.GF31077@sundance.ccs.neu.edu> <4CD72150.9070705@cs.columbia.edu> <4CE3C334.9080401@kernel.org> <20101117221713.GA27736@count0.beaverton.ibm.com>
+In-Reply-To: <20101117221713.GA27736@count0.beaverton.ibm.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 18 Nov 2010 10:06:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 11:34:26AM +0200, Michael S. Tsirkin wrote:
-> > > @@ -125,10 +129,18 @@ irqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
-> > >  {
-> > >  	struct _irqfd *irqfd = container_of(wait, struct _irqfd, wait);
-> > >  	unsigned long flags = (unsigned long)key;
-> > > +	struct kvm_kernel_irq_routing_entry *irq;
-> > >  
-> > > -	if (flags & POLLIN)
-> > > +	if (flags & POLLIN) {
-> > > +		rcu_read_lock();
-> > > +		irq = irqfd->irq_entry;
-> > Why not rcu_dereference()?
-> 
-> Of course. Good catch, thanks.
-> 
-> > And why it can't be zero here?
-> 
-> It can, I check below.
-> 
-Yeah, missed that. Thanks.
+Hello, Matt.
 
-> > >  		/* An event has been signaled, inject an interrupt */
-> > > -		schedule_work(&irqfd->inject);
-> > > +		if (irq)
-> > > +			kvm_set_msi(irq, irqfd->kvm, KVM_USERSPACE_IRQ_SOURCE_ID, 1);
-> > > +		else
-> > > +			schedule_work(&irqfd->inject);
-> > > +		rcu_read_unlock();
-> > > +	}
-> > >  
+On 11/17/2010 11:17 PM, Matt Helsley wrote:
+>> It may be harder but those will be localized for specific features
+>> which would be useful for other purposes too.  With in-kernel CR,
+>> you're adding a bunch of intrusive changes which can't be tested or
+>> used apart from CR.
+> 
+> You seem to be arguing "Z is only testable/useful for doing the things Z
+> was made for". I couldn't agree more with that. CR is useful for:
 
---
-			Gleb.
+I'm saying it's way too narrow scoped and inflexible to be a kernel
+feature.  Kernel features should be like the basic tools, you know,
+hammers, saws, drills and stuff.  In-kernel CR is more like an over
+complicated food processor which usually sits in the top drawer after
+first several runs,
+
+> 	Fault-tolerance (typical HPC)
+> 	Load-balancing (less-typical HPC)
+> 	Debugging (simple [e.g. instead of coredumps] or complex
+> 		time-reversible)
+> 	Embedded devices that need to deal with persistent low-memory
+> 		situations.
+
+which can do all of the above, a lot of which can be achieved in
+less messy way than putting the whole thing inside the kernel.
+
+> My personal favorite idea (that hasn't been implemented yet) is an
+> application startup cache. I've been wondering if caching bash startup
+> after all the shared libraries have been searched, loaded, and linked
+> couldn't save a bunch of time spent in shell scripts. Post-link actually
+> seems like a checkpoint in application startup which would be generally
+> useful too. Of course you'd want to flush [portions of] the cache when
+> packages get upgraded/removed or shell PATHs change and the caches
+> would have to be per-user.
+
+What does that have anything to do with the kernel?  If you want
+post-link cache, implement it in ld.so where it belongs.  That's like
+using food processor to mix cement.
+
+> I'm less confident but still curious about caching after running rc
+> scripts (less confident because it would depend highly on the content
+> of the rc scripts). A scripted boot, for example, might be able to save
+> some time if the same rc scripts are run and they don't vary over time.
+> That in turn might be useful for carefully-tuned boots on embedded devices.
+> 
+> That said we don't currently have code for application caching. Yet we
+> can't be expected to write tools for every possible use of our API in
+> order to show just how true your tautology is.
+
+Continuing the same line of thought.  It _CAN_ be used to do that in a
+convoluted way but there are better ways to solve those problems.
+
+> Most of the time, in fact, the fields we output are there only because
+> they reflect the 'model' of how things work that the kernel presents to
+> userspace. That model also rarely changes (we've never gotten rid of the
+> POSIX concept of process groups in one extreme example). Perhaps the 
+> closest thing we have to wholly-kernel-internal data structures are the
+> signal/sighand structs which echo the way these fields are split from the
+> task struct and shared between tasks. Though I'd argue that gets back into
+> the 'model' presented to userspace (via fork/clone) anyway...
+
+Yeah, exactly, so just do it inside the established ABI extending
+where it makes sense.  No reason to add a whole separate set.
+
+Thanks.
+
+-- 
+tejun
