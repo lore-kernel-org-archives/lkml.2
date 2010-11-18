@@ -1,70 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758287Ab0KROJT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 09:09:19 -0500
-Received: from hera.kernel.org ([140.211.167.34]:41381 "EHLO hera.kernel.org"
+	id S1758257Ab0KROJH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 09:09:07 -0500
+Received: from hera.kernel.org ([140.211.167.34]:41366 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758262Ab0KROJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 09:09:16 -0500
-Date: Thu, 18 Nov 2010 14:08:40 GMT
-From: tip-bot for Alex Shi <alex.shi@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, ncrao@google.com, efault@gmx.de,
-        alex.shi@intel.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ncrao@google.com, a.p.zijlstra@chello.nl, efault@gmx.de,
-        alex.shi@intel.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1289928732.5169.211.camel@maggy.simson.net>
-References: <1289928732.5169.211.camel@maggy.simson.net>
+	id S1758104Ab0KROJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 09:09:05 -0500
+Date: Thu, 18 Nov 2010 14:08:01 GMT
+From: tip-bot for matthieu castet <castet.matthieu@free.fr>
+Cc: sliakh.lkml@gmail.com, mingo@redhat.com, torvalds@linux-foundation.org,
+        rusty@rustcorp.com.au, ak@muc.de, jiang@cs.ncsu.edu,
+        kees.cook@canonical.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        hpa@zytor.com, jmorris@namei.org, linux-kernel@vger.kernel.org,
+        davej@redhat.com, arjan@infradead.org, castet.matthieu@free.fr,
+        sfr@canb.auug.org.au, mingo@elte.hu
+Reply-To: mingo@redhat.com, sliakh.lkml@gmail.com, rusty@rustcorp.com.au,
+        torvalds@linux-foundation.org, ak@muc.de, jiang@cs.ncsu.edu,
+        kees.cook@canonical.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        hpa@zytor.com, jmorris@namei.org, linux-kernel@vger.kernel.org,
+        davej@redhat.com, arjan@infradead.org, castet.matthieu@free.fr,
+        sfr@canb.auug.org.au, mingo@elte.hu
+In-Reply-To: <4CE2F7F3.8030809@free.fr>
+References: <4CE2F7F3.8030809@free.fr>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Fix volanomark performance regression
-Message-ID: <tip-b5482cfa1c95a188b3054fa33274806add91bbe5@git.kernel.org>
-Git-Commit-ID: b5482cfa1c95a188b3054fa33274806add91bbe5
+Subject: [tip:x86/security] x86: Fix improper large page preservation
+Message-ID: <tip-64edc8ed5ffae999d8d413ba006850e9e34166cb@git.kernel.org>
+Git-Commit-ID: 64edc8ed5ffae999d8d413ba006850e9e34166cb
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 18 Nov 2010 14:08:41 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 18 Nov 2010 14:08:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b5482cfa1c95a188b3054fa33274806add91bbe5
-Gitweb:     http://git.kernel.org/tip/b5482cfa1c95a188b3054fa33274806add91bbe5
-Author:     Alex Shi <alex.shi@intel.com>
-AuthorDate: Tue, 16 Nov 2010 17:34:02 +0800
+Commit-ID:  64edc8ed5ffae999d8d413ba006850e9e34166cb
+Gitweb:     http://git.kernel.org/tip/64edc8ed5ffae999d8d413ba006850e9e34166cb
+Author:     matthieu castet <castet.matthieu@free.fr>
+AuthorDate: Tue, 16 Nov 2010 22:30:27 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 18 Nov 2010 13:11:43 +0100
+CommitDate: Thu, 18 Nov 2010 12:52:04 +0100
 
-sched: Fix volanomark performance regression
+x86: Fix improper large page preservation
 
-Commit fab4762 triggers excessive idle balancing, causing a ~30% loss in
-volanomark throughput. Remove idle balancing throttle reset.
+This patch fixes a bug in try_preserve_large_page() which may
+result in improper large page preservation and improper
+application of page attributes to the memory area outside of the
+original change request.
 
-Originally-by: Alex Shi <alex.shi@intel.com>
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Acked-by: Nikhil Rao <ncrao@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1289928732.5169.211.camel@maggy.simson.net>
+More specifically, the problem manifests itself when set_memory_*()
+is called for several pages at the beginning of the large page and
+try_preserve_large_page() erroneously concludes that the change can
+be applied to whole large page.
+
+The fix consists of 3 parts:
+
+  1. Addition of "required" protection attributes in
+     static_protections(), so .data and .bss can be guaranteed to
+     stay "RW"
+
+  2. static_protections() is now called for every small
+     page within large page to determine compatibility of new
+     protection attributes (instead of just small pages within the
+     requested range).
+
+  3. Large page can be preserved only if attribute change is
+     large-page-aligned and covers whole large page.
+
+ -v1: Try_preserve_large_page() patch for Linux 2.6.34-rc2
+ -v2: Replaced pfn check with address check for kernel rw-data
+
+Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
+Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
+Reviewed-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Cc: James Morris <jmorris@namei.org>
+Cc: Andi Kleen <ak@muc.de>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Kees Cook <kees.cook@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+LKML-Reference: <4CE2F7F3.8030809@free.fr>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched_fair.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ arch/x86/mm/pageattr.c |   28 ++++++++++++++++++----------
+ 1 files changed, 18 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 52ab113..ba0556d 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1758,10 +1758,6 @@ static void pull_task(struct rq *src_rq, struct task_struct *p,
- 	set_task_cpu(p, this_cpu);
- 	activate_task(this_rq, p, 0);
- 	check_preempt_curr(this_rq, p, 0);
--
--	/* re-arm NEWIDLE balancing when moving tasks */
--	src_rq->avg_idle = this_rq->avg_idle = 2*sysctl_sched_migration_cost;
--	this_rq->idle_stamp = 0;
- }
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index 532e793..6f2a6b6 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -255,6 +255,7 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 				   unsigned long pfn)
+ {
+ 	pgprot_t forbidden = __pgprot(0);
++	pgprot_t required = __pgprot(0);
  
- /*
+ 	/*
+ 	 * The BIOS area between 640k and 1Mb needs to be executable for
+@@ -278,6 +279,12 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 	if (within(pfn, __pa((unsigned long)__start_rodata) >> PAGE_SHIFT,
+ 		   __pa((unsigned long)__end_rodata) >> PAGE_SHIFT))
+ 		pgprot_val(forbidden) |= _PAGE_RW;
++	/*
++	 * .data and .bss should always be writable.
++	 */
++	if (within(address, (unsigned long)_sdata, (unsigned long)_edata) ||
++	    within(address, (unsigned long)__bss_start, (unsigned long)__bss_stop))
++		pgprot_val(required) |= _PAGE_RW;
+ 
+ #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
+ 	/*
+@@ -317,6 +324,7 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ #endif
+ 
+ 	prot = __pgprot(pgprot_val(prot) & ~pgprot_val(forbidden));
++	prot = __pgprot(pgprot_val(prot) | pgprot_val(required));
+ 
+ 	return prot;
+ }
+@@ -393,7 +401,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
+ {
+ 	unsigned long nextpage_addr, numpages, pmask, psize, flags, addr, pfn;
+ 	pte_t new_pte, old_pte, *tmp;
+-	pgprot_t old_prot, new_prot;
++	pgprot_t old_prot, new_prot, req_prot;
+ 	int i, do_split = 1;
+ 	unsigned int level;
+ 
+@@ -438,10 +446,10 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
+ 	 * We are safe now. Check whether the new pgprot is the same:
+ 	 */
+ 	old_pte = *kpte;
+-	old_prot = new_prot = pte_pgprot(old_pte);
++	old_prot = new_prot = req_prot = pte_pgprot(old_pte);
+ 
+-	pgprot_val(new_prot) &= ~pgprot_val(cpa->mask_clr);
+-	pgprot_val(new_prot) |= pgprot_val(cpa->mask_set);
++	pgprot_val(req_prot) &= ~pgprot_val(cpa->mask_clr);
++	pgprot_val(req_prot) |= pgprot_val(cpa->mask_set);
+ 
+ 	/*
+ 	 * old_pte points to the large page base address. So we need
+@@ -450,17 +458,17 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
+ 	pfn = pte_pfn(old_pte) + ((address & (psize - 1)) >> PAGE_SHIFT);
+ 	cpa->pfn = pfn;
+ 
+-	new_prot = static_protections(new_prot, address, pfn);
++	new_prot = static_protections(req_prot, address, pfn);
+ 
+ 	/*
+ 	 * We need to check the full range, whether
+ 	 * static_protection() requires a different pgprot for one of
+ 	 * the pages in the range we try to preserve:
+ 	 */
+-	addr = address + PAGE_SIZE;
+-	pfn++;
+-	for (i = 1; i < cpa->numpages; i++, addr += PAGE_SIZE, pfn++) {
+-		pgprot_t chk_prot = static_protections(new_prot, addr, pfn);
++	addr = address & pmask;
++	pfn = pte_pfn(old_pte);
++	for (i = 0; i < (psize >> PAGE_SHIFT); i++, addr += PAGE_SIZE, pfn++) {
++		pgprot_t chk_prot = static_protections(req_prot, addr, pfn);
+ 
+ 		if (pgprot_val(chk_prot) != pgprot_val(new_prot))
+ 			goto out_unlock;
+@@ -483,7 +491,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
+ 	 * that we limited the number of possible pages already to
+ 	 * the number of pages in the large page.
+ 	 */
+-	if (address == (nextpage_addr - psize) && cpa->numpages == numpages) {
++	if (address == (address & pmask) && cpa->numpages == (psize >> PAGE_SHIFT)) {
+ 		/*
+ 		 * The address is aligned and the number of pages
+ 		 * covers the full page.
