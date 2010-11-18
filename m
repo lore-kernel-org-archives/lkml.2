@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760093Ab0KRSRD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 13:17:03 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:63347 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758685Ab0KRSRA (ORCPT
+	id S1760108Ab0KRSRK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 13:17:10 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:46620 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760095Ab0KRSRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 13:17:00 -0500
+	Thu, 18 Nov 2010 13:17:05 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=i7kVDlQOLtr/OT7eqwGO1+mWLGwHR3eLxnlzy6UNPaPHc+H/8V4Q28/aJD6V/cyX8F
-         MKc4dm66BovShZXvvkfU74QXAWAiSkqYToCViVT8vvH9YjVJTaDVMMLNZ8EL7dIpwgjV
-         I0MB4izop1FawsNSAKgKqEc202iLE1iG8ndNM=
+        b=pHNaqvCHp4J8ezOQfjIzSbVSy5WLHDP82iZmzsCwZk3GBV8qFAtH8xP2FR5oBHByWx
+         g5aCzJhvF8DrSP2Czr0T8DpSupCgmRQ7vt8f3ituJMPI/nZcMGH6S6UBOuMNfSbO++FM
+         +xKtfgCWHWcy/SzpRSCbCfu22UnPA/AxpSrpI=
 From: Vasiliy Kulikov <segoon@openwall.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/4] x86: platform: olpc: fix potential NULL pointer dereference
-Date: Thu, 18 Nov 2010 21:16:54 +0300
-Message-Id: <1290104216-31326-1-git-send-email-segoon@openwall.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] leds: leds-lp5521: fix potential buffer overflow
+Date: Thu, 18 Nov 2010 21:17:00 +0300
+Message-Id: <1290104221-31375-1-git-send-email-segoon@openwall.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pdev is never NULL here, instead we should check pcidev as
-it is returned from pci_get_device() and may be NULL.
-This code dereferences NULL in pci_enable_device_io() call.
+The code doesn't check first sscanf() return value.
+If first sscanf() failed then c contains some garbage.
+It might lead to buffer overflow in second sscanf() call.
 
 Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 ---
  Compile tested.
 
- arch/x86/platform/olpc/olpc-xo1.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/leds/leds-lp5521.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/platform/olpc/olpc-xo1.c b/arch/x86/platform/olpc/olpc-xo1.c
-index f5442c0..c35d03a 100644
---- a/arch/x86/platform/olpc/olpc-xo1.c
-+++ b/arch/x86/platform/olpc/olpc-xo1.c
-@@ -94,7 +94,7 @@ static int __devinit olpc_xo1_probe(struct platform_device *pdev)
- 
- 	pcidev = pci_get_device(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA,
- 				NULL);
--	if (!pdev)
-+	if (!pcidev)
- 		return -ENODEV;
- 
- 	r = setup_bases(pcidev);
+diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+index 3782f31..939319d 100644
+--- a/drivers/leds/leds-lp5521.c
++++ b/drivers/leds/leds-lp5521.c
+@@ -362,6 +362,8 @@ static int lp5521_do_store_load(struct lp5521_engine *engine,
+ 	while ((offset < len - 1) && (i < LP5521_PROGRAM_LENGTH)) {
+ 		/* separate sscanfs because length is working only for %s */
+ 		ret = sscanf(buf + offset, "%2s%n ", c, &nrchars);
++		if (ret != 2)
++			goto fail;
+ 		ret = sscanf(c, "%2x", &cmd);
+ 		if (ret != 1)
+ 			goto fail;
 -- 
 1.7.0.4
 
