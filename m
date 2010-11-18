@@ -1,126 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753698Ab0KRCyu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 21:54:50 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:42933 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750850Ab0KRCyt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 21:54:49 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h67dh685h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw02.freescale.net;RD:az33egw02.freescale.net;EFVD:NLI
-From: <b32542@freescale.com>
-To: <linux-mm@kvack.org>
-CC: <cl@linux-foundation.org>, <penberg@cs.helsinki.fi>, <mpm@selenic.com>,
-        <tytso@mit.edu>, <linux-kernel@vger.kernel.org>,
-        Zeng Zhaoming <zengzm.kernel@gmail.com>
-Subject: [PATCH] slub: operate cache name memory same to slab and slob
-Date: Thu, 18 Nov 2010 11:00:59 +0800
-Message-ID: <1290049259-20108-1-git-send-email-b32542@freescale.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1753831Ab0KRDG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 22:06:29 -0500
+Received: from mga03.intel.com ([143.182.124.21]:40460 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753658Ab0KRDG0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 22:06:26 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,214,1288594800"; 
+   d="scan'208";a="350199712"
+Date: Thu, 18 Nov 2010 11:04:11 +0800
+From: Chuanxiao Dong <chuanxiao.dong@intel.com>
+To: cjb@laptop.org
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        arjan@linux.intel.com, alan@linux.intel.com
+Subject: [PATCH v3 0/2]MMC:implement eMMC4.4 standard HW reset feature
+Message-ID: <20101118030411.GA10621@intel.com>
+Reply-To: Chuanxiao Dong <chuanxiao.dong@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zeng Zhaoming <zengzm.kernel@gmail.com>
+Hello Chris,
+	  These are the version 3 of HW reset feature implementation. Since I
+	  didnot get any response from the version 2 and version1 patches, I am
+	  not sure whether I need to change. So just did a little change in
+	  form.
 
-Get a memory leak complaint about ext4:
-  comm "mount", pid 1159, jiffies 4294904647 (age 6077.804s)
-  hex dump (first 32 bytes):
-    65 78 74 34 5f 67 72 6f 75 70 69 6e 66 6f 5f 31  ext4_groupinfo_1
-    30 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  0.kkkkkkkkkkkkk.
-  backtrace:
-    [<c068ade3>] kmemleak_alloc+0x93/0xd0
-    [<c024e54c>] __kmalloc_track_caller+0x30c/0x380
-    [<c02269d3>] kstrdup+0x33/0x60
-    [<c0318a70>] ext4_mb_init+0x4e0/0x550
-    [<c0304e0e>] ext4_fill_super+0x1e6e/0x2f60
-    [<c0261140>] mount_bdev+0x1c0/0x1f0
-    [<c02fc00f>] ext4_mount+0x1f/0x30
-    [<c02603d8>] vfs_kern_mount+0x78/0x250
-    [<c026060e>] do_kern_mount+0x3e/0x100
-    [<c027b4c2>] do_mount+0x2e2/0x780
-    [<c027ba04>] sys_mount+0xa4/0xd0
-    [<c010429f>] sysenter_do_call+0x12/0x38
-    [<ffffffff>] 0xffffffff
+	  The 2 patches implemented eMMC4.4 hardware reset feature in core layer
+	  and sdhci host layer, but need each sdhci host controller to implement
+	  the real reset part specially.
 
-It is cause by slub manage the cache name different from slab and slob.
-In slab and slob, only reference to name, alloc and reclaim the memory
-is the duty of the code that invoked kmem_cache_create().
+	  patch 0001: implemented eMMC4.4 hardware reset feature in mmc core
+	  layer. Added reinit callback in mmc_bus_ops and hardware_reset
+	  callback in mmc_host_ops.
+	  patch 0002: implemented hardware reset callback in sdhci host layer.
+	  Added reset_emmc callback in sdhci_ops.
 
-In slub, cache name duplicated when create. This ambiguity will cause
-some memory leaks and double free if kmem_cache_create() pass a
-dynamic malloc cache name.
+	  changelog:
+	  patch 0001: add a error check when switch to enable HW reset bit
+	  failed. Also add some comment to explain the added 2 new callbacks.
+	  patch 0002: add some comment to explain the reset_emmc callback.
 
-Signed-off-by: Zeng Zhaoming <zengzm.kernel@gmail.com>
----
- mm/slub.c |   11 +----------
- 1 files changed, 1 insertions(+), 10 deletions(-)
- mode change 100644 => 100755 mm/slub.c
-
-diff --git a/mm/slub.c b/mm/slub.c
-old mode 100644
-new mode 100755
-index 981fb73..a223e08
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -209,7 +209,6 @@ static inline int sysfs_slab_alias(struct kmem_cache *s, const char *p)
- 							{ return 0; }
- static inline void sysfs_slab_remove(struct kmem_cache *s)
- {
--	kfree(s->name);
- 	kfree(s);
- }
- 
-@@ -3228,7 +3227,6 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
- 		size_t align, unsigned long flags, void (*ctor)(void *))
- {
- 	struct kmem_cache *s;
--	char *n;
- 
- 	if (WARN_ON(!name))
- 		return NULL;
-@@ -3252,25 +3250,19 @@ struct kmem_cache *kmem_cache_create(const char *name, size_t size,
- 		return s;
- 	}
- 
--	n = kstrdup(name, GFP_KERNEL);
--	if (!n)
--		goto err;
--
- 	s = kmalloc(kmem_size, GFP_KERNEL);
- 	if (s) {
--		if (kmem_cache_open(s, n,
-+		if (kmem_cache_open(s, name,
- 				size, align, flags, ctor)) {
- 			list_add(&s->list, &slab_caches);
- 			if (sysfs_slab_add(s)) {
- 				list_del(&s->list);
--				kfree(n);
- 				kfree(s);
- 				goto err;
- 			}
- 			up_write(&slub_lock);
- 			return s;
- 		}
--		kfree(n);
- 		kfree(s);
- 	}
- err:
-@@ -4421,7 +4413,6 @@ static void kmem_cache_release(struct kobject *kobj)
- {
- 	struct kmem_cache *s = to_slab(kobj);
- 
--	kfree(s->name);
- 	kfree(s);
- }
- 
--- 
-1.7.0.4
-
-
+Thanks
+Chuanxiao
