@@ -1,77 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760679Ab0KRVqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:46:55 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:48336 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757205Ab0KRVqx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:46:53 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        mm-commits@vger.kernel.org
-Subject: Re: mmotm 2010-11-17-17-03 uploaded
-In-Reply-To: Your message of "Thu, 18 Nov 2010 13:29:00 PST."
-             <20101118132900.2d7e2a11.randy.dunlap@oracle.com>
-From: Valdis.Kletnieks@vt.edu
-References: <201011180135.oAI1Znl3017273@imap1.linux-foundation.org> <73121.1290115539@localhost>
-            <20101118132900.2d7e2a11.randy.dunlap@oracle.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1290116802_6548P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 18 Nov 2010 16:46:42 -0500
-Message-ID: <83508.1290116802@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020201.4CE59EC3.0049,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	id S1760689Ab0KRVrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:47:15 -0500
+Received: from 8bytes.org ([88.198.83.132]:37281 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760324Ab0KRVrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 16:47:13 -0500
+From: Joerg Roedel <joro@8bytes.org>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joerg Roedel <joro@8bytes.org>
+Subject: [PATCH] ext4: Fix 'return 0' for error case in ext4_fill_super
+Date: Thu, 18 Nov 2010 22:47:12 +0100
+Message-Id: <1290116832-29443-1-git-send-email-joro@8bytes.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1290116802_6548P
-Content-Type: text/plain; charset=us-ascii
+The ext4_fill_super may return with value 0 in case of an error. The
+reason is that the ret variable is used to store the return value of a
+called function and is not set back to an error value later on.
+This issue caused a NULL pointer de-ref in vfs_kern_mount on one of my
+machines when it tried to mount a partition:
 
-On Thu, 18 Nov 2010 13:29:00 PST, Randy Dunlap said:
-> On Thu, 18 Nov 2010 16:25:39 -0500 Valdis.Kletnieks@vt.edu wrote:
-> 
-> > On Wed, 17 Nov 2010 17:03:30 PST, akpm@linux-foundation.org said:
-> > > The mm-of-the-moment snapshot 2010-11-17-17-03 has been uploaded to
-> > > 
-> > >    http://userweb.kernel.org/~akpm/mmotm/
-> > 
-> > Using my current .config and a 'make oldconfig' dies a horrid quick death:
-> 
-> 
-> Hi,
-> 
-> Yep, this has been fixed in mainline now.
+	BUG: unable to handle kernel NULL pointer dereference at 0000000000000090
+	IP: [<ffffffff8112e8dc>] vfs_kern_mount+0x7c/0x180
+	PGD 218480067 PUD 225323067 PMD 0
+	Oops: 0000 [#1] SMP
+	last sysfs file: /sys/devices/system/cpu/cpu5/cache/index2/shared_cpu_map
+	CPU 1
 
-Turns out I don't need CONFIG_BKL anymore for anything I actually use, and setting that =n
-worked around it just fine.
+	...
 
---==_Exmh_1290116802_6548P
-Content-Type: application/pgp-signature
+	Process mount (pid: 3591, threadinfo ffff8802258fc000, task ffff88022586dac0)
+	Stack:
+	 ffff8802258fde38 0000000000000000 ffff880225e299b0 ffff880200000001
+	 ffffffff81a230e0 ffff880225e2c818 ffff8802258fde88 ffffffff8112ea52
+	 ffff8802258fde98 0000000000000246 ffff88022586dac0 0000000000000060
+	Call Trace:
+	 [<ffffffff8112ea52>] do_kern_mount+0x52/0x130
+	 [<ffffffff811497ff>] do_mount+0x2bf/0x810
+	 [<ffffffff810face3>] ? strndup_user+0x53/0x70
+	 [<ffffffff81149de0>] sys_mount+0x90/0xe0
+	 [<ffffffff81002fdb>] system_call_fastpath+0x16/0x1b
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+This patch fixes the issue by using the 'err' variable instead of 'ret'
+for that function-call like it is done in for all other function-calls
+in ext4_fill_super too.
+If have seen this issue on 2.6.36 too, so this patch may be -stable
+material as well.
 
-iD8DBQFM5Z7CcC3lWbTT17ARAsyuAJ969obZFk/nnj2dOuS/YKI9pn8P0gCguCHz
-t46Sc6hjYaMWpsfUNTAr6kQ=
-=t6LT
------END PGP SIGNATURE-----
+Signed-off-by: Joerg Roedel <joro@8bytes.org>
+---
+ fs/ext4/super.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
---==_Exmh_1290116802_6548P--
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 61182fe..499cf5d 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3268,9 +3268,9 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 	 * Test whether we have more sectors than will fit in sector_t,
+ 	 * and whether the max offset is addressable by the page cache.
+ 	 */
+-	ret = generic_check_addressable(sb->s_blocksize_bits,
++	err = generic_check_addressable(sb->s_blocksize_bits,
+ 					ext4_blocks_count(es));
+-	if (ret) {
++	if (err) {
+ 		ext4_msg(sb, KERN_ERR, "filesystem"
+ 			 " too large to mount safely on this system");
+ 		if (sizeof(sector_t) < 8)
+-- 
+1.7.0.4
 
