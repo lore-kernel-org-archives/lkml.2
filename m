@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760360Ab0KRUng (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 15:43:36 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:16364
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757902Ab0KRUnf (ORCPT
+	id S1760387Ab0KRUoO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 15:44:14 -0500
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:55980 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760265Ab0KRUoN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 15:43:35 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz1432N98dNzz1202hzzz2dh2a8h637h668h67dh685h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw01.freescale.net;RD:az33egw01.freescale.net;EFVD:NLI
-Message-ID: <4CE58FE5.3010502@freescale.com>
-Date: Thu, 18 Nov 2010 14:43:17 -0600
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101101 Fedora/2.0.10-1.fc13 SeaMonkey/2.0.10
+	Thu, 18 Nov 2010 15:44:13 -0500
+Date: Thu, 18 Nov 2010 13:44:10 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: David Miller <davem@davemloft.net>
+Cc: ddaney@caviumnetworks.com, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 2/2] phylib: Add support for Marvell 88E1149R devices.
+Message-ID: <20101118204410.GB16908@angua.secretlab.ca>
+References: <1290038071-13296-1-git-send-email-ddaney@caviumnetworks.com>
+ <1290038071-13296-3-git-send-email-ddaney@caviumnetworks.com>
+ <20101118.114616.258106719.davem@davemloft.net>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>
-Subject: Re: How do I choose an arbitrary minor number for my tty device?
-References: <20101118163321.GA2723@suse.de> <4CE5562B.8080604@freescale.com> <20101118165136.GA3103@suse.de> <4CE55ACB.80207@freescale.com> <20101118171856.GA4283@suse.de> <4CE5647F.5000203@freescale.com> <20101118175832.GA4931@suse.de> <4CE58005.7040308@freescale.com> <20101118200230.GA25715@suse.de> <4CE58736.4090703@freescale.com> <20101118201035.GA26287@suse.de>
-In-Reply-To: <20101118201035.GA26287@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Nov 2010 20:44:20.0779 (UTC) FILETIME=[605287B0:01CB8761]
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101118.114616.258106719.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
->> > One last question.  If I create multiple TTY devices, how do I tell the kernel
->> > which one should be used for the console?
+On Thu, Nov 18, 2010 at 11:46:16AM -0800, David Miller wrote:
+> From: David Daney <ddaney@caviumnetworks.com>
+> Date: Wed, 17 Nov 2010 15:54:31 -0800
+> 
+> > The 88E1149R is 10/100/1000 quad-gigabit Ethernet PHY.  The
+> > .config_aneg function can be shared with 88E1118, but it needs its own
+> > .config_init.
+> > 
+> > Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+> 
+> Please resend this when you've respun patch #1 based upon the feedback
+> you've been given.
 
-> On the command line.
+It looks to me that this patch has no dependencies on the first patch.
+ddaney; what say you?
 
-Is there a way to do it in the driver itself?  Getting the boot loader to
-identify the specific byte channel for stdout isn't trivial.  It'd be nice if
-the driver could tell the tty layer, "BTW, this use this for the default console".
-
--- 
-Timur Tabi
-Linux kernel developer at Freescale
-
+g.
