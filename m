@@ -1,322 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab0KRHol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 02:44:41 -0500
-Received: from smtp-vbr5.xs4all.nl ([194.109.24.25]:1476 "EHLO
-	smtp-vbr5.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755023Ab0KRHoj (ORCPT
+	id S1755358Ab0KRHpV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 02:45:21 -0500
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:54017 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755023Ab0KRHpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 02:44:39 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: manjunatha_halli@ti.com
-Subject: Re: [PATCH v4 1/6] drivers:staging: ti-st: fmdrv common header file
-Date: Thu, 18 Nov 2010 08:44:28 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-tschai; KDE/4.4.5; x86_64; ; )
-Cc: mchehab@infradead.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-References: <1289913494-21590-1-git-send-email-manjunatha_halli@ti.com> <1289913494-21590-2-git-send-email-manjunatha_halli@ti.com>
-In-Reply-To: <1289913494-21590-2-git-send-email-manjunatha_halli@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	Thu, 18 Nov 2010 02:45:19 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 18 Nov 2010 16:39:36 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: akataria@vmware.com, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Petr Vandrovec <petr@vmware.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: [BUGFIX][PATCH] fix build_all_zonelist where percpu_alloc is
+ wrongly called under stop_machine_run (Was Re: (mem hotplug, pcpu_alloc)
+ BUG: sleeping function called from invalid context at kernel/mutex.c:94
+Message-Id: <20101118163936.2a533930.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4CDE63D3.4010608@kernel.org>
+References: <1289588178.7486.15.camel@ank32.eng.vmware.com>
+	<4CDE63D3.4010608@kernel.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011180844.28822.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, November 16, 2010 14:18:09 manjunatha_halli@ti.com wrote:
-> From: Manjunatha Halli <manjunatha_halli@ti.com>
+On Sat, 13 Nov 2010 11:09:23 +0100
+Tejun Heo <tj@kernel.org> wrote:
+
+> Meh... the percpu allocator required user context from the beginning.
+> The new allocator didn't change that.
 > 
-> These are common headers used in FM submodules (FM V4L2, FM common,
-> FM Rx,and FM TX).
-> 
-> Signed-off-by: Manjunatha Halli <manjunatha_halli@ti.com>
-> ---
->  drivers/staging/ti-st/fmdrv.h |  259 +++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 259 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/staging/ti-st/fmdrv.h
-> 
-> diff --git a/drivers/staging/ti-st/fmdrv.h b/drivers/staging/ti-st/fmdrv.h
-> new file mode 100644
-> index 0000000..68ed44c
-> --- /dev/null
-> +++ b/drivers/staging/ti-st/fmdrv.h
-> @@ -0,0 +1,259 @@
-> +/*
-> + *  FM Driver for Connectivity chip of Texas Instruments.
-> + *
-> + *  Common header for all FM driver sub-modules.
-> + *
-> + *  Copyright (C) 2009 Texas Instruments
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License version 2 as
-> + *  published by the Free Software Foundation.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License
-> + *  along with this program; if not, write to the Free Software
-> + *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + *
-> + */
-> +
-> +#ifndef _FM_DRV_H
-> +#define _FM_DRV_H
-> +
-> +#include <linux/skbuff.h>
-> +#include <linux/interrupt.h>
-> +#include <sound/core.h>
-> +#include <sound/initval.h>
-> +#include <linux/timer.h>
-> +#include <linux/version.h>
-> +
-> +#define FM_DRV_VERSION            "0.01"
-> +/* Should match with FM_DRV_VERSION */
-> +#define FM_DRV_RADIO_VERSION      KERNEL_VERSION(0, 0, 1)
-> +#define FM_DRV_NAME               "ti_fmdrv"
-> +#define FM_DRV_CARD_SHORT_NAME    "TI FM Radio"
-> +#define FM_DRV_CARD_LONG_NAME     "Texas Instruments FM Radio"
-> +
-> +/* Flag info */
-> +#define FM_INTTASK_RUNNING            0
-> +#define FM_INTTASK_SCHEDULE_PENDING   1
-> +#define FM_FIRMWARE_DW_INPROGRESS     2
-> +#define FM_CORE_READY                 3
-> +#define FM_CORE_TRANSPORT_READY       4
-> +#define FM_AF_SWITCH_INPROGRESS	      5
-> +#define FM_CORE_TX_XMITING	      6
-> +
-> +#define FM_TUNE_COMPLETE	      0x1
-> +#define FM_BAND_LIMIT		      0x2
-> +
-> +#define FM_DRV_TX_TIMEOUT      (5*HZ)	/* 5 seconds */
-> +#define FM_DRV_RX_SEEK_TIMEOUT (20*HZ)	/* 20 seconds */
-> +
-> +#define NO_OF_ENTRIES_IN_ARRAY(array) (sizeof(array) / sizeof(array[0]))
-> +
-> +enum {
-> +	FM_MODE_OFF,
-> +	FM_MODE_TX,
-> +	FM_MODE_RX,
-> +	FM_MODE_ENTRY_MAX
-> +};
-> +
-> +#define FM_RX_RDS_INFO_FIELD_MAX	8	/* 4 Group * 2 Bytes */
-> +
-> +/* TODO:
-> + * move the following CIDs to videodev2.h upon acceptance
-> + */
-> +#define V4L2_CTRL_CLASS_FM_RX 0x009c0000	/* FM Tuner control class */
-> +/* FM Tuner class control IDs */
-> +#define V4L2_CID_FM_RX_CLASS_BASE	(V4L2_CTRL_CLASS_FM_RX | 0x900)
-> +#define V4L2_CID_FM_RX_CLASS		(V4L2_CTRL_CLASS_FM_RX | 1)
-> +#define V4L2_CID_RSSI_THRESHOLD		(V4L2_CID_FM_RX_CLASS_BASE + 2)
-> +#define V4L2_CID_TUNE_AF		(V4L2_CID_FM_RX_CLASS_BASE + 3)
-
-Please post an RFC describing these new controls.
-
-> +enum v4l2_tune_af {
-> +	V4L2_FM_AF_OFF          = 0,
-> +	V4L2_FM_AF_ON           = 1
-> +};
-
-Huh? If it is an on/off type of controls, then it should be a boolean.
-
-> +#define V4L2_CID_FM_BAND		(V4L2_CID_FM_RX_CLASS_BASE + 1)
-> +enum v4l2_fm_band {
-> +	V4L2_FM_BAND_OTHER      = 0,
-> +	V4L2_FM_BAND_JAPAN      = 1,
-> +	V4L2_FM_BAND_OIRT       = 2
-
-This was proposed and rejected for the wl1273 driver. Instead the driver should
-hide this complexity. See the wl1273 driver.
-
-> +};
-> +
-> +/*
-> + * define private CIDs for V4L2
-> + */
-> +#define V4L2_CID_CHANNEL_SPACING (V4L2_CID_PRIVATE_BASE + 0)
-
-The wl1273 driver has defined a new standard channel spacing control. So that
-should be used.
-
-> +
-> +/* RX RDS data format */
-> +struct fm_rdsdata_format {
-> +	union {
-> +		struct {
-> +			unsigned char rdsbuff[FM_RX_RDS_INFO_FIELD_MAX];
-> +		} groupdatabuff;
-> +		struct {
-> +			unsigned short pidata;
-> +			unsigned char block_b_byte1;
-> +			unsigned char block_b_byte2;
-> +			unsigned char block_c_byte1;
-> +			unsigned char block_c_byte2;
-> +			unsigned char block_d_byte1;
-> +			unsigned char block_d_byte2;
-> +		} groupgeneral;
-> +		struct {
-> +			unsigned short pidata;
-> +			unsigned char block_b_byte1;
-> +			unsigned char block_b_byte2;
-> +			unsigned char firstaf;
-> +			unsigned char secondaf;
-> +			unsigned char firstpsbyte;
-> +			unsigned char secondpsbyte;
-> +		} group0A;
-> +
-> +		struct {
-> +			unsigned short pidata;
-> +			unsigned char block_b_byte1;
-> +			unsigned char block_b_byte2;
-> +			unsigned short pidata2;
-> +			unsigned char firstpsbyte;
-> +			unsigned char secondpsbyte;
-> +		} group0B;
-> +	} rdsdata;
-> +};
-> +
-> +/* FM region (Europe/US, Japan) info */
-> +struct region_info {
-> +	unsigned int channel_spacing;
-> +	unsigned int bottom_frequency;
-> +	unsigned int top_frequency;
-> +	unsigned char region_index;
-> +};
-> +
-> +typedef void (*int_handler_prototype) (void *);
-> +
-> +/* FM Interrupt processing related info */
-> +struct fm_irq {
-> +	unsigned char stage_index;
-> +	unsigned short flag;	/* FM interrupt flag */
-> +	unsigned short mask;	/* FM interrupt mask */
-> +	/* Interrupt process timeout handler */
-> +	struct timer_list int_timeout_timer;
-> +	unsigned char irq_service_timeout_retry;
-> +	int_handler_prototype *fm_int_handlers;
-> +};
-> +
-> +/* RDS info */
-> +struct fm_rds {
-> +	unsigned char flag;	/* RX RDS on/off status */
-> +	unsigned char last_block_index;	/* Last received RDS block */
-> +
-> +	/* RDS buffer */
-> +	wait_queue_head_t read_queue;
-> +	unsigned int buf_size;	/* Size is always multiple of 3 */
-> +	unsigned int wr_index;
-> +	unsigned int rd_index;
-> +	unsigned char *buffer;
-> +};
-> +
-> +#define FM_RDS_MAX_AF_LIST		25
-> +
-> +/*
-> + * Current RX channel Alternate Frequency cache.
-> + * This info is used to switch to other freq (AF)
-> + * when current channel signal strengh is below RSSI threshold.
-> + */
-> +struct tuned_station_info {
-> +	unsigned short picode;
-> +	unsigned int af_cache[FM_RDS_MAX_AF_LIST];
-> +	unsigned char no_of_items_in_afcache;
-> +	unsigned char af_list_max;
-> +};
-> +
-> +/* FM RX mode info */
-> +struct fm_rx {
-> +	struct region_info region;	/* Current selected band */
-> +	unsigned int curr_freq;	/* Current RX frquency */
-> +	unsigned char curr_mute_mode;	/* Current mute mode */
-> +	unsigned char curr_deemphasis_mode; /* Current deemphasis mode */
-> +	/* RF dependent soft mute mode */
-> +	unsigned char curr_rf_depend_mute;
-> +	unsigned short curr_volume;	/* Current volume level */
-> +	short curr_rssi_threshold;	/* Current RSSI threshold level */
-> +	/* Holds the index of the current AF jump */
-> +	unsigned char cur_afjump_index;
-> +	/* Will hold the frequency before the jump */
-> +	unsigned int freq_before_jump;
-> +	unsigned char rds_mode;	/* RDS operation mode (RDS/RDBS) */
-> +	unsigned char af_mode;	/* Alternate frequency on/off */
-> +	struct tuned_station_info cur_station_info;
-> +	struct fm_rds rds;
-> +};
-> +
-> +/*
-> + * FM TX RDS data
-> + *
-> + * @ text_type: is the text following PS or RT
-> + * @ text: radio text string which could either be PS or RT
-> + * @ af_freq: alternate frequency for Tx
-> + * TODO: to be declared in application
-> + */
-> +struct tx_rds {
-> +	unsigned char text_type;
-> +	unsigned char text[25];
-> +	unsigned char flag;
-> +	unsigned int af_freq;
-> +};
-> +/*
-> + * FM TX global data
-> + *
-> + * @ pwr_lvl: Power Level of the Transmission from mixer control
-> + * @ xmit_state: Transmission state = Updated locally upon Start/Stop
-> + * @ audio_io: i2S/Analog
-> + * @ tx_frq: Transmission frequency
-> + */
-> +struct fmtx_data {
-> +	unsigned char pwr_lvl;
-> +	unsigned char xmit_state;
-> +	unsigned char audio_io;
-> +	unsigned char region;
-> +	unsigned short aud_mode;
-> +	unsigned int preemph;
-> +	unsigned long tx_frq;
-> +	struct tx_rds rds;
-> +};
-> +
-> +/* FM driver operation structure */
-> +struct fmdrv_ops {
-> +	struct video_device *radio_dev;	/* V4L2 video device pointer */
-> +	struct snd_card *card;	/* Card which holds FM mixer controls */
-> +	unsigned short asci_id;
-> +	spinlock_t rds_buff_lock; /* To protect access to RDS buffer */
-> +	spinlock_t resp_skb_lock; /* To protect access to received SKB */
-> +
-> +	long flag;		/*  FM driver state machine info */
-> +	char streg_cbdata; /* status of ST registration */
-> +
-> +	struct sk_buff_head rx_q;	/* RX queue */
-> +	struct tasklet_struct rx_task;	/* RX Tasklet */
-> +
-> +	struct sk_buff_head tx_q;	/* TX queue */
-> +	struct tasklet_struct tx_task;	/* TX Tasklet */
-> +	unsigned long last_tx_jiffies;	/* Timestamp of last pkt sent */
-> +	atomic_t tx_cnt;	/* Number of packets can send at a time */
-> +
-> +	struct sk_buff *response_skb;	/* Response from the chip */
-> +	/* Main task completion handler */
-> +	struct completion maintask_completion;
-> +	/* Opcode of last command sent to the chip */
-> +	unsigned char last_sent_pkt_opcode;
-> +	/* Handler used for wakeup when response packet is received */
-> +	struct completion *response_completion;
-> +	struct fm_irq irq_info;
-> +	unsigned char curr_fmmode; /* Current FM chip mode (TX, RX, OFF) */
-> +	struct fm_rx rx;	/* FM receiver info */
-> +	struct fmtx_data tx_data;
-> +};
-> +#endif
+> Wouldn't it be possible to prepare hotplug outside of cpu_stop and use
+> stop_machine() only to make it available to the system.  In general,
+> it's a very bad idea to allocate memory from inside stop_machine.  The
+> whole machine is stopped, after all.  In general, it shouldn't be too
+> difficult to add new resource without stop_machine too unlike removing
+> one.  Pekka, Christoph, any ideas?
 > 
 
--- 
-Hans Verkuil - video4linux developer - sponsored by Cisco
+Fix here. I'm glad if someone test this.
+==
+
+At memory hotplug, build_allzonelists() may be called under stop_machine_run().
+In this function, setup_zone_pageset() is called. But it's bug because it
+will do page allocation under stop_machine_run().
+
+Here is a report from Alok Kataria.
+
+[  142.339267] BUG: sleeping function called from invalid context at kernel/mutex.c:94
+[  142.339276] in_atomic(): 0, irqs_disabled(): 1, pid: 4, name: migration/0
+[  142.339283] Pid: 4, comm: migration/0 Not tainted 2.6.35.6-45.fc14.x86_64 #1
+[  142.339288] Call Trace:
+[  142.339305]  [<ffffffff8103d12b>] __might_sleep+0xeb/0xf0
+[  142.339316]  [<ffffffff81468245>] mutex_lock+0x24/0x50
+[  142.339326]  [<ffffffff8110eaa6>] pcpu_alloc+0x6d/0x7ee
+[  142.339336]  [<ffffffff81048888>] ? load_balance+0xbe/0x60e
+[  142.339343]  [<ffffffff8103a1b3>] ? rt_se_boosted+0x21/0x2f
+[  142.339349]  [<ffffffff8103e1cf>] ? dequeue_rt_stack+0x18b/0x1ed
+[  142.339356]  [<ffffffff8110f237>] __alloc_percpu+0x10/0x12
+[  142.339362]  [<ffffffff81465e22>] setup_zone_pageset+0x38/0xbe
+[  142.339373]  [<ffffffff810d6d81>] ? build_zonelists_node.clone.58+0x79/0x8c
+[  142.339384]  [<ffffffff81452539>] __build_all_zonelists+0x419/0x46c
+[  142.339395]  [<ffffffff8108ef01>] ? cpu_stopper_thread+0xb2/0x198
+[  142.339401]  [<ffffffff8108f075>] stop_machine_cpu_stop+0x8e/0xc5
+[  142.339407]  [<ffffffff8108efe7>] ? stop_machine_cpu_stop+0x0/0xc5
+[  142.339414]  [<ffffffff8108ef57>] cpu_stopper_thread+0x108/0x198
+[  142.339420]  [<ffffffff81467a37>] ? schedule+0x5b2/0x5cc
+[  142.339426]  [<ffffffff8108ee4f>] ? cpu_stopper_thread+0x0/0x198
+[  142.339434]  [<ffffffff81065f29>] kthread+0x7f/0x87
+[  142.339443]  [<ffffffff8100aae4>] kernel_thread_helper+0x4/0x10
+[  142.339449]  [<ffffffff81065eaa>] ? kthread+0x0/0x87
+[  142.339455]  [<ffffffff8100aae0>] ? kernel_thread_helper+0x0/0x10
+[  142.340099] Built 5 zonelists in Node order, mobility grouping on.  Total pages: 289456
+[  142.340108] Policy zone: Normal
+
+This patch tries to fix the issue by moving setup_zone_pageset() out from
+stop_machine_run(). It's obviously not necessary to be called under
+stop_machine_run().
+
+Reported-by: Alok Kataria <akataria@vmware.com>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/page_alloc.c |   16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
+
+Index: mmotm-1117/mm/page_alloc.c
+===================================================================
+--- mmotm-1117.orig/mm/page_alloc.c
++++ mmotm-1117/mm/page_alloc.c
+@@ -3027,14 +3027,6 @@ static __init_refok int __build_all_zone
+ 		build_zonelist_cache(pgdat);
+ 	}
+ 
+-#ifdef CONFIG_MEMORY_HOTPLUG
+-	/* Setup real pagesets for the new zone */
+-	if (data) {
+-		struct zone *zone = data;
+-		setup_zone_pageset(zone);
+-	}
+-#endif
+-
+ 	/*
+ 	 * Initialize the boot_pagesets that are going to be used
+ 	 * for bootstrapping processors. The real pagesets for
+@@ -3083,7 +3075,13 @@ void build_all_zonelists(void *data)
+ 	} else {
+ 		/* we have to stop all cpus to guarantee there is no user
+ 		   of zonelist */
+-		stop_machine(__build_all_zonelists, data, NULL);
++#ifdef CONFIG_MEMORY_HOTPLUG
++		if (data) {
++			struct zone *zone = (struct zone *)data;
++			setup_zone_pageset(zone);
++		}
++#endif
++		stop_machine(__build_all_zonelists, NULL, NULL);
+ 		/* cpuset refresh routine should be here */
+ 	}
+ 	vm_total_pages = nr_free_pagecache_pages();
+
