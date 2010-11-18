@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757521Ab0KRNGl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 08:06:41 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:34773 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756985Ab0KRNGj (ORCPT
+	id S1757187Ab0KRNIs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 08:08:48 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47134 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab0KRNIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 08:06:39 -0500
-X-Authority-Analysis: v=1.1 cv=+c36koQ5Dcj/1qolKHjtkYAGXvrVJRRiKMp+84F5sLg= c=1 sm=0 a=AvpIYEOr2ZAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=kMQ7HcHWZslwXH8gQD4A:9 a=kEsxUruThz5qdmqYLzweFItIjp8A:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH 0/2] tracing: Have trace_printk()s in the events/
- directory
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Darren Hart <dvhart@linux.intel.com>,
+	Thu, 18 Nov 2010 08:08:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=UzBzoSRjb3uuHE6fKdPc4SbM9FCyfXolGfTE7qV6b6xa466MLzueJgnlSUufDt/tC2
+         tYtJ0FCTeynxrtGoaZ+hu7gEXubYHOuLScuDHED1z5HLjcLbASB+yixMx1Leu27hgi7G
+         idK2ltDBoJEJw56CK43ebjgg8k9i4Pf35ZPF0=
+Subject: Re: [PATCHv6 0/7] system time changes notification
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Davide Libenzi <davidel@xmailserver.org>
+Cc: Alexander Shishkin <virtuoso@slind.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Kyle Moffett <kyle@moffetthome.net>, Valdis.Kletnieks@vt.edu,
+        LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        Greg KH <gregkh@suse.de>, Chris Friesen <chris.friesen@genband.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        "jason.wessel" <jason.wessel@windriver.com>,
-        "Ted Ts'o" <tytso@mit.edu>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <20101118125307.GB5344@nowhere>
-References: <20101118035803.453609353@goodmis.org>
-	 <1290076866.2109.1305.camel@laptop>  <20101118125307.GB5344@nowhere>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 18 Nov 2010 08:06:36 -0500
-Message-ID: <1290085596.30543.112.camel@gandalf.stny.rr.com>
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+In-Reply-To: <alpine.DEB.2.00.1011171130210.1595@davide-lnx1>
+References: <1289503802-22444-1-git-send-email-virtuoso@slind.org>
+	 <22542.1289507293@localhost> <20101111205123.GC10585@shisha.kicks-ass.net>
+	 <alpine.LFD.2.00.1011112212460.2900@localhost6.localdomain6>
+	 <AANLkTik8FS5p_P_2ygh9qC2qg7wTDP+23LKbhJCKcMez@mail.gmail.com>
+	 <alpine.LFD.2.00.1011112322280.2900@localhost6.localdomain6>
+	 <20101117190659.GB26184@shisha.kicks-ass.net>
+	 <alpine.DEB.2.00.1011171130210.1595@davide-lnx1>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Nov 2010 15:08:20 +0200
+Message-ID: <1290085700.2270.7.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 13:53 +0100, Frederic Weisbecker wrote:
-> n other solution, which have been talking with Thomas yesterday, would be
-> to allow having a single fd for several perf_events at once. That would
-> solve some problems when you have hundreds of events opened (think about
-> wide tracing, or use of all individual syscalls).
+On Wed, 2010-11-17 at 12:42 -0800, Davide Libenzi wrote:
+> On Wed, 17 Nov 2010, Alexander Shishkin wrote:
+> 
+> > > But what you folks really want for this stuff is an extension to
+> > > timerfd as you want to be able to poll, right?
+> > > 
+> > > So what about the following:
+> > > 
+> > > Add a new flag TDF_NOTIFY_CLOCK_WAS_SET to the timerfd flags. Now this
+> > > flag adds the timer to a separate list, which gets woken up when the
+> > > clock is set.
+> > > 
+> > > No new syscall, just a few lines of code in fs/timerfd.c and
+> > > clock_was_set().
+> > > 
+> > > Thoughts ?
+> > 
+> > Something like this (sans ugliness)?
+> 
+> Oh, gosh, please.  This is interface-multiplexing-a-palooza.
+> It should be decided if the feature makes sense, and then have proper 
+> interface, instead of multiplexing unrelated insterfaces.
+> This is a sort of system-event-report pattern.  What is wrong with using a 
+> netlink-based transport for those kind of things?
 
-I would highly recommend this. One type of tracing I do all the time is
-to enable all events (over 600). I don't think that is currently
-possible with trace and/or perf.
+Could you please explain in more details what is the problem?
 
-Ftrace has no issue simple because it just stores all the events into a
-single buffer (per cpu though). It does not care if there's one event or
-1000.
-
-You need to figure out how to do this as well with the function tracer.
-Of course you can just have it as a single event and filter as needed.
-
--- Steve
-
-
-
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
