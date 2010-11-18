@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab0KRCHE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 21:07:04 -0500
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:36332 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754380Ab0KRCHC (ORCPT
+	id S1754634Ab0KRCLm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 21:11:42 -0500
+Received: from www.wytron.com.tw ([211.75.82.101]:36041 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754533Ab0KRCLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 21:07:02 -0500
-Date: Thu, 18 Nov 2010 13:06:40 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/13] IO-less dirty throttling v2
-Message-ID: <20101118020640.GS22876@dastard>
-References: <20101117042720.033773013@intel.com>
- <20101117150330.139251f9.akpm@linux-foundation.org>
+	Wed, 17 Nov 2010 21:11:40 -0500
+Message-ID: <4CE48C2E.5080502@wytron.com.tw>
+Date: Thu, 18 Nov 2010 10:15:10 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117150330.139251f9.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: lkml <linux-kernel@vger.kernel.org>, Baruch Siach <baruch@tkos.co.il>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
+        Alex Gershgorin <agersh@rambler.ru>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Jiri Slaby <jslaby@suse.cz>,
+        Nios2 development list <nios2-dev@sopc.et.ntust.edu.tw>
+Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
+References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il> <4CE373BC.30805@wytron.com.tw> <4CE42457.8090001@zytor.com>
+In-Reply-To: <4CE42457.8090001@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.15
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 03:03:30PM -0800, Andrew Morton wrote:
-> On Wed, 17 Nov 2010 12:27:20 +0800
-> Wu Fengguang <fengguang.wu@intel.com> wrote:
-> 
-> > On a simple test of 100 dd, it reduces the CPU %system time from 30% to 3%, and
-> > improves IO throughput from 38MB/s to 42MB/s.
-> 
-> The changes in CPU consumption are remarkable.  I've looked through the
-> changelogs but cannot find mention of where all that time was being
-> spent?
+Hi hpa,
 
-In the writeback path, mostly because every CPU is trying to run
-writeback at the same time and causing contention on locks and
-shared structures in the writeback path. That no longer happens
-because writeback is only happening from one thread instead of from
-all CPUs at once.
+On 11/18/2010 02:52 AM, H. Peter Anvin wrote:
+> Do you happen to have a sample STmicro part number?  Also, are you
+> saying that EPCS is *only* serial flash, or only for the purpose of
+> being programmed (as opposed to programming the FPGA afterwards)?  It
+> just seems a bit surprising to me, since Xilinx right now seem to have a
+> bit of an advantage over Altera in being able to boot from stock SPI
+> flash...
 
-This is one of the reasons why I want this series to be sorted out
-before we start to consider scalability of the writeback lists and
-locking - controlling the level of writeback parallelism provides a
-major reduction in writeback lock contention and indicates that the
-next bottleneck we really need to solve is bdi-flusher thread
-parallelism...
+EPCS16 = M25P16
+EPCS64 = M25P64
 
-> How well have these changes been tested with NFS?
+Yes, EPCS is ONLY serial flash. The Altera EPCS controller is only SPI 
+controller. It is well-known on Altera wiki and Altera forum.
 
-Next on my list (just doing some ext4 sanity testing).
+You may use any stock SPI flash to replace EPCS as long as the access 
+time met. Though Altera flash programming utility supports only limited 
+brands, more SPI flash can be programmed using u-boot or Linux MTD. We 
+often boot right out of SPI/EPCS, as it saves cost and space.
 
-> The changes are complex and will probably do Bad Things for some
-> people.  Does the code implement sufficient
-> debug/reporting/instrumentation to enable you to diagnose, understand
-> and fix people's problems in the minimum possible time?  If not, please
-> add that stuff.  Just go nuts with it.  Put it in debugfs, add /*
-> DELETEME */ comments and we can pull it all out again in half a year or
-> so.
-> 
-> Or perhaps litter the code with temporary tracepoints, provided we can
-> come up with a way for our testers to trivially gather their output.
-
-I think tracepoints are the way to go - I've been asking XFS users
-to send me trace dumps for anyhting non-trivial recently. I've been
-able to understand the cause of their problems without having to
-reproduce the problem locally, which has been a big help....
+There is no difference between Altera and Xilinx in this aspect, except 
+for their marketing approach.
 
 Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thomas
+http://sopc.et.ntust.edu.tw/
