@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760521Ab0KRVJB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:09:01 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:53019 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759474Ab0KRVI7 (ORCPT
+	id S1760563Ab0KRVJl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:09:41 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56784
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760348Ab0KRVJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:08:59 -0500
-Date: Thu, 18 Nov 2010 19:09:00 -0200
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree
- (wireless tree related)
-Message-ID: <20101118210900.GB3874@vigoh>
-References: <20101117134820.bca8d764.sfr@canb.auug.org.au>
- <4CE3FCB5.6030909@oracle.com>
- <20101118132724.f7d21899.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101118132724.f7d21899.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 18 Nov 2010 16:09:39 -0500
+Date: Thu, 18 Nov 2010 13:10:04 -0800 (PST)
+Message-Id: <20101118.131004.58430322.davem@davemloft.net>
+To: randy.dunlap@oracle.com
+Cc: kaber@trash.net, justinmattock@gmail.com, eric.dumazet@gmail.com,
+        linux-net@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, horms@verge.net.au,
+        netfilter-devel@vger.kernel.org
+Subject: Re: error while building the kernel Mainline
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101118130318.073f6beb.randy.dunlap@oracle.com>
+References: <4CE58D4B.6070105@trash.net>
+	<20101118.125451.98885354.davem@davemloft.net>
+	<20101118130318.073f6beb.randy.dunlap@oracle.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Rothwell <sfr@canb.auug.org.au> [2010-11-18 13:27:24 +1100]:
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Date: Thu, 18 Nov 2010 13:03:18 -0800
 
-> Hi all,
+> On Thu, 18 Nov 2010 12:54:51 -0800 (PST) David Miller wrote:
 > 
-> On Wed, 17 Nov 2010 08:03:01 -0800 Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> >
-> > On 11/16/10 18:48, Stephen Rothwell wrote:
-> > > 
-> > > After merging the final tree, today's linux-next build (powerpc allyesconfig)
-> > > failed like this:
-> > > 
-> > > drivers/net/wireless/iwlwifi/iwl3945.o: In function `iwl_legacy_mac_reset_tsf':
-> > > (.opd+0xf00): multiple definition of `iwl_legacy_mac_reset_tsf'
-> > > drivers/net/wireless/iwlwifi/iwlagn.o:(.opd+0x90): first defined here
-> 	.
-> 	.
-> > > I should have known when I reported the warning ...
-> > > 
-> > > Caused by commit dd0dd411f7178a20ea93a3cfa39123f078a07e25 ("iwlwifi: fix
-> > > modular legacy build errors").
-> > > 
-> > > I have reverted that commit for today.
-> > 
-> > Ack.  John, please drop/revert that patch.
-> > 
-> > Sorry about the problem.
+>> From: Patrick McHardy <kaber@trash.net>
+>> Date: Thu, 18 Nov 2010 21:32:11 +0100
+>> 
+>> > Thanks for testing. Dave, please apply directly, thanks!
 > 
-> Looks like John removed it but the bluetooth tree (which is based on top
-> of the wireless tree) brought it back in by rebasing on top of yesterday's
-> wireless tree. :-(
+> Dave,
 > 
-> I have reverted it again today.
+> This patch does not fix the config/build error that I posted for linux-next.
 
-Sorry about that, I wasn't aware of this problem. I'm going to redo my
-tree today to fix this issue.
+And it has bugs, now when NF_CONNTRACT is set to "m" IPVS isn't offered
+at all.
 
--- 
-Gustavo F. Padovan
-http://profusion.mobi
+So I'm reverting.
