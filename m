@@ -1,466 +1,425 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971Ab0KRLlX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 06:41:23 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:39349 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755059Ab0KRLlT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 06:41:19 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=message-id:from:date:to:reply-to:cc:subject;
-        b=ioOPYNrTIvsGys2fOejwz3uZFnJqfLv6dy2tKhPMkKL9gpghswDHAOlgT/FXQIHPQW
-         YYqjb27SY9pdfgPcu31w==
-Message-ID: <4ce510db.04e7d80a.1a5d.10cd@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Thu, 18 Nov 2010 12:40:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-        eranian@google.com, robert.richter@amd.com, acme@redhat.com,
-        lizf@cn.fujitsu.com
-Subject: [PATCH 2/2] perf: add support for per-cpu per-cgroup monitoring (v5)
-X-System-Of-Record: true
+	id S1756173Ab0KRLlc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 06:41:32 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:44324 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755565Ab0KRLlV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 06:41:21 -0500
+Date: Thu, 18 Nov 2010 11:41:05 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 03 of 66] transparent hugepage support documentation
+Message-ID: <20101118114105.GH8135@csn.ul.ie>
+References: <patchbomb.1288798055@v2.random> <93158196e1ddec19fc6b.1288798058@v2.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <93158196e1ddec19fc6b.1288798058@v2.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the ability to filter monitoring based on container groups
-(cgroups) for both perf stat and perf record. It is possible to monitor
-multiple cgroup in parallel. There is one cgroup per event. The cgroups to
-monitor are passed via a new -G option followed by a comma separated list of
-cgroup names.
+On Wed, Nov 03, 2010 at 04:27:38PM +0100, Andrea Arcangeli wrote:
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> Documentation/vm/transhuge.txt
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> ---
+> 
+> diff --git a/Documentation/vm/transhuge.txt b/Documentation/vm/transhuge.txt
+> new file mode 100644
+> --- /dev/null
+> +++ b/Documentation/vm/transhuge.txt
+> @@ -0,0 +1,283 @@
+> += Transparent Hugepage Support =
+> +
+> +== Objective ==
+> +
+> +Performance critical computing applications dealing with large memory
+> +working sets are already running on top of libhugetlbfs and in turn
+> +hugetlbfs. Transparent Hugepage Support is an alternative to
+> +libhugetlbfs that offers the same feature of libhugetlbfs but without
+> +the shortcomings of hugetlbfs (for KVM, JVM, HPC, even gcc etc..).
 
-The cgroup filesystem has to be mounted. Given a cgroup name, the perf tool
-finds the corresponding directory in the cgroup filesystem and opens it. It
-then passes that file descriptor to the kernel.
+libhugetlbfs can also automatically back shared memory, text and data
+with huge pages which THP cannot do. libhugetlbfs cannot demote and
+promote memory where THP can. They are not exactly like-with-like
+comparisons. How about;
 
-Example:
-$ perf stat -B -a -e cycles:u,cycles:u,cycles:u -G test1,,test2 -- sleep 1
- Performance counter stats for 'sleep 1':
+"Transparent Hugepage Support is an alternative means of using huge pages for
+the backing of anonymous memory with huge pages that supports the automatic
+promotion and demotion of page sizes."
 
-      2,368,667,414  cycles                   test1
-      2,369,661,459  cycles                  
-      <not counted>  cycles                   test2
+?
 
-        1.001856890  seconds time elapsed
+> +
+> +In the future it can expand over the pagecache layer starting with
+> +tmpfs to reduce even further the hugetlbfs usages.
+> +
+> +The reason applications are running faster is because of two
+> +factors. The first factor is almost completely irrelevant and it's not
+> +of significant interest because it'll also have the downside of
+> +requiring larger clear-page copy-page in page faults which is a
+> +potentially negative effect. The first factor consists in taking a
+> +single page fault for each 2M virtual region touched by userland (so
+> +reducing the enter/exit kernel frequency by a 512 times factor). This
+> +only matters the first time the memory is accessed for the lifetime of
+> +a memory mapping. The second long lasting and much more important
+> +factor will affect all subsequent accesses to the memory for the whole
+> +runtime of the application. The second factor consist of two
+> +components: 1) the TLB miss will run faster (especially with
+> +virtualization using nested pagetables but also on bare metal without
+> +virtualization)
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
+Careful on that first statement. It's not necessarily true for bare metal
+as some processors show that the TLB miss handler for huge pages is slower
+than base pages. Not sure why but it seemed to be the case on P4 anyway
+(at least the one I have). Maybe it was a measurement error but on chips
+with split TLBs for page sizes, there is no guarantee they are the same speed.
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index a91f9f9..7804d95 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -120,6 +120,12 @@ Do not update the builid cache. This saves some overhead in situations
- where the information in the perf.data file (which includes buildids)
- is sufficient.
- 
-+-G name::
-+--cgroup name::
-+monitor only in the container called "name". This option is available only in per-cpu
-+mode. The cgroup filesystem must be mounted. All threads belonging to container "name"
-+are monitored when they run on the monitored CPUs.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-list[1]
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 4b3a2d4..4115f77 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -53,6 +53,11 @@ comma-sperated list with no space: 0,1. Ranges of CPUs are specified with -: 0-2
- In per-thread mode, this option is ignored. The -a option is still necessary
- to activate system-wide monitoring. Default is to count on all CPUs.
- 
-+-G name::
-+--cgroup name::
-+monitor only in the container called "name". This option is available only in per-cpu
-+mode. The cgroup filesystem must be mounted. All threads belonging to container "name"
-+are monitored when they run on the monitored CPUs.
- EXAMPLES
- --------
- 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 1355bce..8179581 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -417,6 +417,7 @@ LIB_H += util/probe-finder.h
- LIB_H += util/probe-event.h
- LIB_H += util/pstack.h
- LIB_H += util/cpumap.h
-+LIB_H += util/cgroup.h
- 
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
-@@ -464,6 +465,7 @@ LIB_OBJS += $(OUTPUT)util/hist.o
- LIB_OBJS += $(OUTPUT)util/probe-event.o
- LIB_OBJS += $(OUTPUT)util/util.o
- LIB_OBJS += $(OUTPUT)util/cpumap.o
-+LIB_OBJS += $(OUTPUT)util/cgroup.o
- 
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
- 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 63a5ce3..bc8df51 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -23,6 +23,7 @@
- #include "util/session.h"
- #include "util/symbol.h"
- #include "util/cpumap.h"
-+#include "util/cgroup.h"
- 
- #include <unistd.h>
- #include <sched.h>
-@@ -230,6 +231,8 @@ static void create_counter(int counter, int cpu)
- 	char *filter = filters[counter];
- 	struct perf_event_attr *attr = attrs + counter;
- 	struct perf_header_attr *h_attr;
-+	unsigned long flags = 0;
-+	int pid;
- 	int track = !counter; /* only the first counter needs these */
- 	int thread_index;
- 	int ret;
-@@ -287,6 +290,9 @@ static void create_counter(int counter, int cpu)
- 		attr->sample_type	|= PERF_SAMPLE_CPU;
- 	}
- 
-+	if (cgroups[counter])
-+		flags = PERF_FLAG_PID_CGROUP;
-+
- 	attr->mmap		= track;
- 	attr->comm		= track;
- 	attr->inherit		= !no_inherit;
-@@ -297,8 +303,13 @@ static void create_counter(int counter, int cpu)
- 
- 	for (thread_index = 0; thread_index < thread_num; thread_index++) {
- try_again:
-+		if (cgroups[counter])
-+			pid = cgroups_fd[counter];
-+		else
-+			pid = all_tids[thread_index];
-+
- 		fd[nr_cpu][counter][thread_index] = sys_perf_event_open(attr,
--				all_tids[thread_index], cpu, group_fd, 0);
-+				pid, cpu, group_fd, flags);
- 
- 		if (fd[nr_cpu][counter][thread_index] < 0) {
- 			int err = errno;
-@@ -885,6 +896,9 @@ const struct option record_options[] = {
- 		    "don't sample"),
- 	OPT_BOOLEAN('N', "no-buildid-cache", &no_buildid,
- 		    "do not update the buildid cache"),
-+	OPT_CALLBACK('G', "cgroup", NULL, "name",
-+		     "monitor in cgroup name only",
-+		     parse_cgroups),
- 	OPT_END()
- };
- 
-@@ -908,6 +922,9 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 		write_mode = WRITE_FORCE;
- 	}
- 
-+	if (nr_cgroups && !system_wide)
-+		usage_with_options(record_usage, record_options);
-+
- 	symbol__init();
- 	if (no_buildid)
- 		disable_buildid_cache();
-@@ -918,6 +935,9 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 		attrs[0].config = PERF_COUNT_HW_CPU_CYCLES;
- 	}
- 
-+	if (open_cgroups())
-+		usage_with_options(record_usage, record_options);
-+
- 	if (target_pid != -1) {
- 		target_tid = target_pid;
- 		thread_num = find_all_tid(target_pid, &all_tids);
-@@ -927,6 +947,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
- 			usage_with_options(record_usage, record_options);
- 		}
- 	} else {
-+		err = -ENOMEM;
- 		all_tids=malloc(sizeof(pid_t));
- 		if (!all_tids)
- 			goto out_symbol_exit;
-@@ -978,5 +999,6 @@ out_free_fd:
- 	all_tids = NULL;
- out_symbol_exit:
- 	symbol__exit();
-+	close_cgroups();
- 	return err;
- }
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index a6b4d44..2907937 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -47,6 +47,7 @@
- #include "util/header.h"
- #include "util/cpumap.h"
- #include "util/thread.h"
-+#include "util/cgroup.h"
- 
- #include <sys/prctl.h>
- #include <math.h>
-@@ -151,6 +152,8 @@ struct stats			runtime_branches_stats;
- static int create_perf_stat_counter(int counter)
- {
- 	struct perf_event_attr *attr = attrs + counter;
-+	unsigned long flags = 0;
-+	int pid = -1;
- 	int thread;
- 	int ncreated = 0;
- 
-@@ -161,9 +164,13 @@ static int create_perf_stat_counter(int counter)
- 	if (system_wide) {
- 		int cpu;
- 
-+		if (cgroups[counter]) {
-+			flags = PERF_FLAG_PID_CGROUP;
-+			pid = cgroups_fd[counter];
-+		}
- 		for (cpu = 0; cpu < nr_cpus; cpu++) {
- 			fd[cpu][counter][0] = sys_perf_event_open(attr,
--					-1, cpumap[cpu], -1, 0);
-+					pid, cpumap[cpu], -1, flags);
- 			if (fd[cpu][counter][0] < 0)
- 				pr_debug(ERR_PERF_OPEN, counter,
- 					 fd[cpu][counter][0], strerror(errno));
-@@ -398,6 +405,9 @@ static void abs_printout(int counter, double avg)
- 	else
- 		fprintf(stderr, " %18.0f  %-24s", avg, event_name(counter));
- 
-+	if (cgroups[counter])
-+		fprintf(stderr, " %s", cgroups[counter]);
-+
- 	if (MATCH_EVENT(HARDWARE, HW_INSTRUCTIONS, counter)) {
- 		total = avg_stats(&runtime_cycles_stats);
- 
-@@ -433,8 +443,13 @@ static void print_counter(int counter)
- 	int scaled = event_scaled[counter];
- 
- 	if (scaled == -1) {
--		fprintf(stderr, " %18s  %-24s\n",
-+		fprintf(stderr, " %18s  %-24s",
- 			"<not counted>", event_name(counter));
-+
-+		if (cgroups[counter])
-+			fprintf(stderr, " %s", cgroups[counter]);
-+
-+		fprintf(stderr, "\n");
- 		return;
- 	}
- 
-@@ -454,7 +469,6 @@ static void print_counter(int counter)
- 		fprintf(stderr, "  (scaled from %.2f%%)",
- 				100 * avg_running / avg_enabled);
- 	}
--
- 	fprintf(stderr, "\n");
- }
- 
-@@ -545,6 +559,9 @@ static const struct option options[] = {
- 		    "print large numbers with thousands\' separators"),
- 	OPT_STRING('C', "cpu", &cpu_list, "cpu",
- 		    "list of cpus to monitor in system-wide"),
-+	OPT_CALLBACK('G', "cgroup", NULL, "name",
-+		     "monitor in cgroup name only",
-+		     parse_cgroups),
- 	OPT_END()
- };
- 
-@@ -562,10 +579,23 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	if (run_count <= 0)
- 		usage_with_options(stat_usage, options);
- 
-+	if (nr_cgroups && !system_wide)
-+		usage_with_options(stat_usage, options);
-+
- 	/* Set attrs and nr_counters if no event is selected and !null_run */
- 	if (!null_run && !nr_counters) {
- 		memcpy(attrs, default_attrs, sizeof(default_attrs));
- 		nr_counters = ARRAY_SIZE(default_attrs);
-+		if (nr_cgroups == 1) {
-+			for (i = 1; i < nr_counters; i++) {
-+				cgroups[i] = strdup(cgroups[0]);
-+				if (!cgroups[i]) {
-+					close_cgroups();
-+					return -ENOMEM;
-+				}
-+				nr_cgroups++;
-+			}
-+		}
- 	}
- 
- 	if (system_wide)
-@@ -612,6 +642,9 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	signal(SIGALRM, skip_signal);
- 	signal(SIGABRT, skip_signal);
- 
-+	if (open_cgroups())
-+		usage_with_options(stat_usage, options);
-+
- 	status = 0;
- 	for (run_idx = 0; run_idx < run_count; run_idx++) {
- 		if (run_count != 1 && verbose)
-@@ -622,5 +655,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	if (status != -1)
- 		print_stat(argc, argv);
- 
-+	close_cgroups();
-+
- 	return status;
- }
-diff --git a/tools/perf/util/cgroup.c b/tools/perf/util/cgroup.c
-new file mode 100644
-index 0000000..902f2c5
---- /dev/null
-+++ b/tools/perf/util/cgroup.c
-@@ -0,0 +1,123 @@
-+#include "util.h"
-+#include "../perf.h"
-+#include "parse-options.h"
-+#include "parse-events.h" /* for nr_counters */
-+#include "cgroup.h"
-+#include "debugfs.h" /* MAX_PATH, STR() */
-+
-+char *cgroups[MAX_COUNTERS];
-+int cgroups_fd[MAX_COUNTERS];
-+int nr_cgroups;
-+
-+static char cgroup_mountpoint[MAX_PATH+1];
-+
-+static const char *cgroupfs_find_mountpoint(void)
-+{
-+	FILE *fp;
-+	int found = 0;
-+	char type[64];
-+
-+	fp = fopen("/proc/mounts", "r");
-+	if (!fp)
-+		return NULL;
-+
-+	while (fscanf(fp, "%*s %"
-+				STR(MAX_PATH)
-+				"s %99s %*s %*d %*d\n",
-+				cgroup_mountpoint, type) == 2) {
-+
-+		if (!strcmp(type, "cgroup")) {
-+			found = 1;
-+			break;
-+		}
-+	}
-+	fclose(fp);
-+
-+	if (found == 0)
-+		return NULL;
-+
-+	return cgroup_mountpoint;
-+}
-+
-+int open_cgroups(void)
-+{
-+	char path[MAX_PATH+1];
-+	const char *mnt;
-+	int i;
-+
-+	if (!nr_cgroups)
-+		return 0;
-+
-+	mnt = cgroupfs_find_mountpoint();
-+	if (!mnt)
-+		return -1;
-+
-+	for (i = 0; i < nr_counters; i++) {
-+
-+		if (!cgroups[i])
-+			continue;
-+
-+		snprintf(path, MAX_PATH, "%s/%s",
-+				mnt, cgroups[i]);
-+
-+		cgroups_fd[i] = open(path, O_RDONLY);
-+		if (cgroups_fd[i] == -1) {
-+			fprintf(stderr, "no access to cgroup %s\n", path);
-+			return -1;
-+		}
-+	}
-+	return 0;
-+}
-+
-+void close_cgroups(void)
-+{
-+	int i;
-+
-+	if (!nr_cgroups)
-+		return;
-+
-+	for (i = 0; i < nr_counters; i++) {
-+		if (!cgroups[i])
-+			continue;
-+		if (cgroups_fd[i] != -1)
-+			close(cgroups_fd[i]);
-+		free(cgroups[i]);
-+		cgroups[i] = NULL; /* catch errors */
-+	}
-+}
-+
-+int parse_cgroups(const struct option *opt __used, const char *str,
-+		  int unset __used)
-+{
-+	const char *p, *e, *eos = str + strlen(str);
-+	int n = 0;
-+	for (;;) {
-+		p = strchr(str, ',');
-+		e = p ? p : eos;
-+
-+		if (n == MAX_COUNTERS)
-+			goto error;
-+		/* allow empty cgroups, i.e., skip */
-+		if (e - str) {
-+			/* termination added */
-+			cgroups[n] = strndup(str, e - str);
-+			if (!cgroups[n])
-+				goto error;
-+			nr_cgroups++;
-+		} else {
-+			cgroups[n] = NULL;
-+		}
-+		n++;
-+		if (!p)
-+			break;
-+		str = p+1;
-+	}
-+	for (n = 0; n < MAX_COUNTERS; n++)
-+		cgroups_fd[n] = -1;
-+	return 0;
-+error:
-+	while (--n >= 0)
-+		if (cgroups[n])
-+			free(cgroups[n]);
-+	return -1;
-+}
-diff --git a/tools/perf/util/cgroup.h b/tools/perf/util/cgroup.h
-new file mode 100644
-index 0000000..99a7426
---- /dev/null
-+++ b/tools/perf/util/cgroup.h
-@@ -0,0 +1,14 @@
-+#ifndef __CGROUP_H__
-+#define __CGROUP_H__
-+
-+struct option;
-+
-+extern char *cgroups[MAX_COUNTERS];
-+extern int cgroups_fd[MAX_COUNTERS];
-+extern int nr_cgroups; /* number of explicit cgroups defined */
-+
-+extern int open_cgroups(void);
-+extern void close_cgroups(void);
-+extern int parse_cgroups(const struct option *opt, const char *str, int unset);
-+
-+#endif /* __CGROUP_H__ */
+It's probably true for virtualisation though considering the vastly reduced
+number of cache lines required to translate an address.
+
+I'd weaken the language for bare metal to say "almost always" but it's
+not a big deal.
+
+> and 2) a single TLB entry will be mapping a much
+> +larger amount of virtual memory in turn reducing the number of TLB
+> +misses.
+
+This on the other hand is certainly true.
+
+> +With virtualization and nested pagetables the TLB can be
+> +mapped of larger size only if both KVM and the Linux guest are using
+> +hugepages but a significant speedup already happens if only one of the
+> +two is using hugepages just because of the fact the TLB miss is going
+> +to run faster.
+> +
+> +== Design ==
+> +
+> +- "graceful fallback": mm components which don't have transparent
+> +  hugepage knownledge fall back to breaking a transparent hugepage and
+
+%s/knownledge/knowledge/
+
+> +  working on the regular pages and their respective regular pmd/pte
+> +  mappings
+> +
+> +- if an hugepage allocation fails because of memory fragmentation,
+
+s/an/a/
+
+> +  regular pages should be gracefully allocated instead and mixed in
+> +  the same vma without any failure or significant delay and generally
+> +  without userland noticing
+> +
+
+why "generally"? At worst the application will see varying performance
+characteristics but that applies to a lot more than THP.
+
+> +- if some task quits and more hugepages become available (either
+> +  immediately in the buddy or through the VM), guest physical memory
+> +  backed by regular pages should be relocated on hugepages
+> +  automatically (with khugepaged)
+> +
+> +- it doesn't require boot-time memory reservation and in turn it uses
+
+neither does hugetlbfs.
+
+> +  hugepages whenever possible (the only possible reservation here is
+> +  kernelcore= to avoid unmovable pages to fragment all the memory but
+> +  such a tweak is not specific to transparent hugepage support and
+> +  it's a generic feature that applies to all dynamic high order
+> +  allocations in the kernel)
+> +
+> +- this initial support only offers the feature in the anonymous memory
+> +  regions but it'd be ideal to move it to tmpfs and the pagecache
+> +  later
+> +
+> +Transparent Hugepage Support maximizes the usefulness of free memory
+> +if compared to the reservation approach of hugetlbfs by allowing all
+> +unused memory to be used as cache or other movable (or even unmovable
+> +entities).
+
+hugetlbfs with memory overcommit offers something similar, particularly
+in combination with libhugetlbfs with can automatically fall back to base
+pages. I've run benchmarks comparing hugetlbfs using a static hugepage
+pool with hugetlbfs dynamically allocating hugepages as required with no
+discernable performance difference. So this statement is not strictly accurate.
+
+> +It doesn't require reservation to prevent hugepage
+> +allocation failures to be noticeable from userland. It allows paging
+> +and all other advanced VM features to be available on the
+> +hugepages. It requires no modifications for applications to take
+> +advantage of it.
+> +
+> +Applications however can be further optimized to take advantage of
+> +this feature, like for example they've been optimized before to avoid
+> +a flood of mmap system calls for every malloc(4k). Optimizing userland
+> +is by far not mandatory and khugepaged already can take care of long
+> +lived page allocations even for hugepage unaware applications that
+> +deals with large amounts of memory.
+> +
+> +In certain cases when hugepages are enabled system wide, application
+> +may end up allocating more memory resources. An application may mmap a
+> +large region but only touch 1 byte of it, in that case a 2M page might
+> +be allocated instead of a 4k page for no good. This is why it's
+> +possible to disable hugepages system-wide and to only have them inside
+> +MADV_HUGEPAGE madvise regions.
+> +
+> +Embedded systems should enable hugepages only inside madvise regions
+> +to eliminate any risk of wasting any precious byte of memory and to
+> +only run faster.
+> +
+> +Applications that gets a lot of benefit from hugepages and that don't
+> +risk to lose memory by using hugepages, should use
+> +madvise(MADV_HUGEPAGE) on their critical mmapped regions.
+> +
+> +== sysfs ==
+> +
+> +Transparent Hugepage Support can be entirely disabled (mostly for
+> +debugging purposes) or only enabled inside MADV_HUGEPAGE regions (to
+> +avoid the risk of consuming more memory resources) or enabled system
+> +wide. This can be achieved with one of:
+> +
+> +echo always >/sys/kernel/mm/transparent_hugepage/enabled
+> +echo madvise >/sys/kernel/mm/transparent_hugepage/enabled
+> +echo never >/sys/kernel/mm/transparent_hugepage/enabled
+> +
+> +It's also possible to limit defrag efforts in the VM to generate
+> +hugepages in case they're not immediately free to madvise regions or
+> +to never try to defrag memory and simply fallback to regular pages
+> +unless hugepages are immediately available.
+
+This is the first mention of defrag but hey, it's not a paper :)
+
+> Clearly if we spend CPU
+> +time to defrag memory, we would expect to gain even more by the fact
+> +we use hugepages later instead of regular pages. This isn't always
+> +guaranteed, but it may be more likely in case the allocation is for a
+> +MADV_HUGEPAGE region.
+> +
+> +echo always >/sys/kernel/mm/transparent_hugepage/defrag
+> +echo madvise >/sys/kernel/mm/transparent_hugepage/defrag
+> +echo never >/sys/kernel/mm/transparent_hugepage/defrag
+> +
+> +khugepaged will be automatically started when
+> +transparent_hugepage/enabled is set to "always" or "madvise, and it'll
+> +be automatically shutdown if it's set to "never".
+> +
+> +khugepaged runs usually at low frequency so while one may not want to
+> +invoke defrag algorithms synchronously during the page faults, it
+> +should be worth invoking defrag at least in khugepaged. However it's
+> +also possible to disable defrag in khugepaged:
+> +
+> +echo yes >/sys/kernel/mm/transparent_hugepage/khugepaged/defrag
+> +echo no >/sys/kernel/mm/transparent_hugepage/khugepaged/defrag
+> +
+> +You can also control how many pages khugepaged should scan at each
+> +pass:
+> +
+> +/sys/kernel/mm/transparent_hugepage/khugepaged/pages_to_scan
+> +
+> +and how many milliseconds to wait in khugepaged between each pass (you
+> +can se this to 0 to run khugepaged at 100% utilization of one core):
+
+s/se/set/
+
+> +
+> +/sys/kernel/mm/transparent_hugepage/khugepaged/scan_sleep_millisecs
+> +
+> +and how many milliseconds to wait in khugepaged if there's an hugepage
+> +allocation failure to throttle the next allocation attempt.
+> +
+> +/sys/kernel/mm/transparent_hugepage/khugepaged/alloc_sleep_millisecs
+> +
+> +The khugepaged progress can be seen in the number of pages collapsed:
+> +
+> +/sys/kernel/mm/transparent_hugepage/khugepaged/pages_collapsed
+> +
+> +for each pass:
+> +
+> +/sys/kernel/mm/transparent_hugepage/khugepaged/full_scans
+> +
+> +== Boot parameter ==
+> +
+> +You can change the sysfs boot time defaults of Transparent Hugepage
+> +Support by passing the parameter "transparent_hugepage=always" or
+> +"transparent_hugepage=madvise" or "transparent_hugepage=never"
+> +(without "") to the kernel command line.
+> +
+> +== Need of restart ==
+> +
+
+Need of application restart?
+
+A casual reader might otherwise interpret it as a system restart for
+some godawful reason of their own.
+
+
+> +The transparent_hugepage/enabled values only affect future
+> +behavior. So to make them effective you need to restart any
+
+s/behavior/behaviour/
+
+> +application that could have been using hugepages. This also applies to
+> +the regions registered in khugepaged.
+> +
+> +== get_user_pages and follow_page ==
+> +
+> +get_user_pages and follow_page if run on a hugepage, will return the
+> +head or tail pages as usual (exactly as they would do on
+> +hugetlbfs). Most gup users will only care about the actual physical
+> +address of the page and its temporary pinning to release after the I/O
+> +is complete, so they won't ever notice the fact the page is huge. But
+> +if any driver is going to mangle over the page structure of the tail
+> +page (like for checking page->mapping or other bits that are relevant
+> +for the head page and not the tail page), it should be updated to jump
+> +to check head page instead (while serializing properly against
+> +split_huge_page() to avoid the head and tail pages to disappear from
+> +under it, see the futex code to see an example of that, hugetlbfs also
+> +needed special handling in futex code for similar reasons).
+> +
+> +NOTE: these aren't new constraints to the GUP API, and they match the
+> +same constrains that applies to hugetlbfs too, so any driver capable
+> +of handling GUP on hugetlbfs will also work fine on transparent
+> +hugepage backed mappings.
+> +
+> +In case you can't handle compound pages if they're returned by
+> +follow_page, the FOLL_SPLIT bit can be specified as parameter to
+> +follow_page, so that it will split the hugepages before returning
+> +them. Migration for example passes FOLL_SPLIT as parameter to
+> +follow_page because it's not hugepage aware and in fact it can't work
+> +at all on hugetlbfs (but it instead works fine on transparent
+
+hugetlbfs pages can now migrate although it's only used by hwpoison.
+
+> +hugepages thanks to FOLL_SPLIT). migration simply can't deal with
+> +hugepages being returned (as it's not only checking the pfn of the
+> +page and pinning it during the copy but it pretends to migrate the
+> +memory in regular page sizes and with regular pte/pmd mappings).
+> +
+> +== Optimizing the applications ==
+> +
+> +To be guaranteed that the kernel will map a 2M page immediately in any
+> +memory region, the mmap region has to be hugepage naturally
+> +aligned. posix_memalign() can provide that guarantee.
+> +
+> +== Hugetlbfs ==
+> +
+> +You can use hugetlbfs on a kernel that has transparent hugepage
+> +support enabled just fine as always. No difference can be noted in
+> +hugetlbfs other than there will be less overall fragmentation. All
+> +usual features belonging to hugetlbfs are preserved and
+> +unaffected. libhugetlbfs will also work fine as usual.
+> +
+> +== Graceful fallback ==
+> +
+> +Code walking pagetables but unware about huge pmds can simply call
+> +split_huge_page_pmd(mm, pmd) where the pmd is the one returned by
+> +pmd_offset. It's trivial to make the code transparent hugepage aware
+> +by just grepping for "pmd_offset" and adding split_huge_page_pmd where
+> +missing after pmd_offset returns the pmd. Thanks to the graceful
+> +fallback design, with a one liner change, you can avoid to write
+> +hundred if not thousand of lines of complex code to make your code
+> +hugepage aware.
+> +
+
+It'd be nice if you could point to a specific example but by no means
+mandatory.
+
+> +If you're not walking pagetables but you run into a physical hugepage
+> +but you can't handle it natively in your code, you can split it by
+> +calling split_huge_page(page). This is what the Linux VM does before
+> +it tries to swapout the hugepage for example.
+> +
+> +== Locking in hugepage aware code ==
+> +
+> +We want as much code as possible hugepage aware, as calling
+> +split_huge_page() or split_huge_page_pmd() has a cost.
+> +
+> +To make pagetable walks huge pmd aware, all you need to do is to call
+> +pmd_trans_huge() on the pmd returned by pmd_offset. You must hold the
+> +mmap_sem in read (or write) mode to be sure an huge pmd cannot be
+> +created from under you by khugepaged (khugepaged collapse_huge_page
+> +takes the mmap_sem in write mode in addition to the anon_vma lock). If
+> +pmd_trans_huge returns false, you just fallback in the old code
+> +paths. If instead pmd_trans_huge returns true, you have to take the
+> +mm->page_table_lock and re-run pmd_trans_huge. Taking the
+> +page_table_lock will prevent the huge pmd to be converted into a
+> +regular pmd from under you (split_huge_page can run in parallel to the
+> +pagetable walk). If the second pmd_trans_huge returns false, you
+> +should just drop the page_table_lock and fallback to the old code as
+> +before. Otherwise you should run pmd_trans_splitting on the pmd. In
+> +case pmd_trans_splitting returns true, it means split_huge_page is
+> +already in the middle of splitting the page. So if pmd_trans_splitting
+> +returns true it's enough to drop the page_table_lock and call
+> +wait_split_huge_page and then fallback the old code paths. You are
+> +guaranteed by the time wait_split_huge_page returns, the pmd isn't
+> +huge anymore. If pmd_trans_splitting returns false, you can proceed to
+> +process the huge pmd and the hugepage natively. Once finished you can
+> +drop the page_table_lock.
+> +
+> +== compound_lock, get_user_pages and put_page ==
+> +
+> +split_huge_page internally has to distribute the refcounts in the head
+> +page to the tail pages before clearing all PG_head/tail bits from the
+> +page structures. It can do that easily for refcounts taken by huge pmd
+> +mappings. But the GUI API as created by hugetlbfs (that returns head
+> +and tail pages if running get_user_pages on an address backed by any
+> +hugepage), requires the refcount to be accounted on the tail pages and
+> +not only in the head pages, if we want to be able to run
+> +split_huge_page while there are gup pins established on any tail
+> +page. Failure to be able to run split_huge_page if there's any gup pin
+> +on any tail page, would mean having to split all hugepages upfront in
+> +get_user_pages which is unacceptable as too many gup users are
+> +performance critical and they must work natively on hugepages like
+> +they work natively on hugetlbfs already (hugetlbfs is simpler because
+> +hugetlbfs pages cannot be splitted so there wouldn't be requirement of
+> +accounting the pins on the tail pages for hugetlbfs). If we wouldn't
+> +account the gup refcounts on the tail pages during gup, we won't know
+> +anymore which tail page is pinned by gup and which is not while we run
+> +split_huge_page. But we still have to add the gup pin to the head page
+> +too, to know when we can free the compound page in case it's never
+> +splitted during its lifetime. That requires changing not just
+> +get_page, but put_page as well so that when put_page runs on a tail
+> +page (and only on a tail page) it will find its respective head page,
+> +and then it will decrease the head page refcount in addition to the
+> +tail page refcount. To obtain a head page reliably and to decrease its
+> +refcount without race conditions, put_page has to serialize against
+> +__split_huge_page_refcount using a special per-page lock called
+> +compound_lock.
+> 
+
+Ok, I'll need to read the rest of the series to verify if this is
+correct but by and large it looks good. I think some of the language is
+stronger than it should be and some of the comparisons with libhugetlbfs
+are a bit off but I'd be naturally defensive on that topic. Make the
+suggested changes if you like but if you don't, it shouldn't affect the
+series.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
