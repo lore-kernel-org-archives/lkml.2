@@ -1,75 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755118Ab0KRIF1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 03:05:27 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:40180 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331Ab0KRIF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 03:05:26 -0500
-Date: Thu, 18 Nov 2010 09:05:16 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
-Message-ID: <20101118080516.GJ32621@elte.hu>
-References: <1289573033-2889-1-git-send-email-dzickus@redhat.com>
- <4CDD579F.80009@windriver.com>
- <20101112154231.GN4823@redhat.com>
- <4CDD6389.2080206@windriver.com>
- <20101112161144.GP4823@redhat.com>
- <4CDD6CAD.30303@windriver.com>
- <20101112172755.GR4823@redhat.com>
- <20101116184325.GB4823@redhat.com>
- <4CE2E3C3.6060800@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE2E3C3.6060800@windriver.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1755416Ab0KRIFo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 03:05:44 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:35814 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755315Ab0KRIFn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 03:05:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=eOOXa9anJHTWSXZz/mILrhPMd6Tbf5X7Nt8fZWiuuwJYc0gktdQWNlXUchIAdoBpPr
+         SCWgMuiRy3M3Y5i4HsyqJZM4fZX64Qi//zUtR9fnnu87VPCJPLb3k1SxxAKMqGcs41fp
+         fS4T89nmB2MlGvVpaQ5/LLPkCTio1KKAcr6Tg=
+Subject: [PATCH] Select R4K timer lib for all MSP platforms
+From: Anoop P A <anoop.pa@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Nov 2010 13:42:28 +0530
+Message-ID: <1290067948.9091.14.camel@paanoop1-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>From c872cbbe5f475d3bb3cb7f821270cb466eead1f7 Mon Sep 17 00:00:00 2001
+From: Anoop P A <anoop.pa@gmail.com>
+Signed-off-by: Anoop P A <anoop.pa@gmail.com>
+Date: Thu, 18 Nov 2010 01:33:36 +0530
+Subject: [PATCH] Select R4K timer lib for all MSP platforms
 
-* Jason Wessel <jason.wessel@windriver.com> wrote:
+---
+ arch/mips/Kconfig                       |    2 ++
+ arch/mips/pmc-sierra/Kconfig            |    4 ----
+ arch/mips/pmc-sierra/msp71xx/msp_time.c |    2 +-
+ 3 files changed, 3 insertions(+), 5 deletions(-)
 
-> On 11/16/2010 12:43 PM, Don Zickus wrote:
-> > On Fri, Nov 12, 2010 at 12:27:55PM -0500, Don Zickus wrote:
-> >
-> > Hi Jason,
-> >
-> >   
-> >>> I tested 2.6.35 and it does not hard hang, but suffered from a different
-> >>> problem with a perf API change.   The kgdb tests appear to loop and loop
-> >>> emitting endless streams of output in 2.6.35 and I already have that
-> >>> problem patched.
-> >>>       
-> >
-> > I keep getting the following stack trace which is different than your
-> > hang.  Is this looping I am seeing something with the NMI or kgdb?
-> >
-> >   
-> 
-> That was also a regression due to changes in the perf API for which I
-> have a patch pending.
-> 
-> I can send you the patch which Frederic has already tested OR you can
-> turn off CONFIG_DEBUG_RODATA in the kernel config, which is the source
-> of that particular problem.  
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 7fc6bd1..168cdbe 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -316,6 +316,8 @@ config PNX8550_STB810
+ config PMC_MSP
+ 	bool "PMC-Sierra MSP chipsets"
+ 	depends on EXPERIMENTAL
++	select CEVT_R4K
++	select CSRC_R4K
+ 	select DMA_NONCOHERENT
+ 	select SWAP_IO_SPACE
+ 	select NO_EXCEPT_FILL
+diff --git a/arch/mips/pmc-sierra/Kconfig b/arch/mips/pmc-sierra/Kconfig
+index c139988..8d79849 100644
+--- a/arch/mips/pmc-sierra/Kconfig
++++ b/arch/mips/pmc-sierra/Kconfig
+@@ -4,15 +4,11 @@ choice
+ 
+ config PMC_MSP4200_EVAL
+ 	bool "PMC-Sierra MSP4200 Eval Board"
+-	select CEVT_R4K
+-	select CSRC_R4K
+ 	select IRQ_MSP_SLP
+ 	select HW_HAS_PCI
+ 
+ config PMC_MSP4200_GW
+ 	bool "PMC-Sierra MSP4200 VoIP Gateway"
+-	select CEVT_R4K
+-	select CSRC_R4K
+ 	select IRQ_MSP_SLP
+ 	select HW_HAS_PCI
+ 
+diff --git a/arch/mips/pmc-sierra/msp71xx/msp_time.c
+b/arch/mips/pmc-sierra/msp71xx/msp_time.c
+index cca64e1..01df84c 100644
+--- a/arch/mips/pmc-sierra/msp71xx/msp_time.c
++++ b/arch/mips/pmc-sierra/msp71xx/msp_time.c
+@@ -81,7 +81,7 @@ void __init plat_time_init(void)
+ 	mips_hpt_frequency = cpu_rate/2;
+ }
+ 
+-unsigned int __init get_c0_compare_int(void)
++unsigned int __cpuinit get_c0_compare_int(void)
+ {
+ 	return MSP_INT_VPE0_TIMER;
+ }
+-- 
+1.7.0.4
 
-Would be nice to know that Don's series does not introduce a regression for kgdb 
-before i can apply the patches.
 
-Thanks,
 
-	Ingo
