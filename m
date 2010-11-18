@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760026Ab0KRRuy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:50:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:44909 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755363Ab0KRRux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:50:53 -0500
-Message-ID: <4CE5670B.1060300@zytor.com>
-Date: Thu, 18 Nov 2010 09:48:59 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Andres Salomon <dilinger@queued.net>
-CC: michael@ellerman.id.au, Ingo Molnar <mingo@elte.hu>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Milton Miller <miltonm@bga.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/3] x86: OLPC: speed up device tree creation during boot
- (v2)
-References: <20101111214546.4e573cad@queued.net>	<reply-olpc-3-v2@mdm.bga.com>	<20101112002704.50c629e2@queued.net>	<20101114095013.GB24206@elte.hu>	<4CE0B54E.6000101@zytor.com>	<20101115070254.GA25243@elte.hu>	<4CE17133.2050101@zytor.com>	<20101118083420.GC26398@elte.hu>	<1290078135.22575.4.camel@concordia>	<4CE54064.6010702@zytor.com> <20101118094153.4515cbc2@queued.net>
-In-Reply-To: <20101118094153.4515cbc2@queued.net>
+	id S932750Ab0KRRwa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:52:30 -0500
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:37094 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755363Ab0KRRw3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 12:52:29 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=HM/WRXd67UjyP7u3HpUwGtLCnEt/+to3aI3Cwoq1lwWjr4NABgTQxcVKvbbD/m6q2R7tLQEn03g/5+mMzyc60oI+t3aFomz7cSp8E3ih5Ge6ooIJKR+D/sTZw4uCCgKk;
+Date: Thu, 18 Nov 2010 09:52:06 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: maciej.rutecki@gmail.com
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, martin.wilck@ts.fujitsu.com
+Subject: Re: [Regression] [2.6.37-rc2] WARNING: at
+ drivers/pci/pci-sysfs.c:758 pci_mmap_resource+0x133/0x190()
+Message-ID: <20101118095206.195bdbe3@jbarnes-desktop>
+In-Reply-To: <201011181828.11943.maciej.rutecki@gmail.com>
+References: <201011172153.11313.maciej.rutecki@gmail.com>
+	<20101117130018.432b0ec8@jbarnes-desktop>
+	<201011181828.11943.maciej.rutecki@gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2010 09:41 AM, Andres Salomon wrote:
->>
->> No, sorry, this sounds like a personal preference that is well out of
->> line with the vast majority of C programmers I've ever come across,
->> not just in the Linux kernel world but outside of it.
-> 
-> 
-> This is actually one of the reasons I specifically like initialized
-> static variables (inside of functions).  Take the following code:
-> 
-> int foo(void)
-> {
-> 	static char *frob = NULL;
-> 	int p;
-> 
-> 	if (frob) {
-> 		...
-> 	}
-> 
-> 
-> Upon seeing that and thinking "whoa, how could frob be
-> initialized and then checked?", I realize that it's either a bug or I
-> look back at the initialization and realize that frob is static.  It's
-> less obvious (to me) with non-explicit initialization.
+On Thu, 18 Nov 2010 18:28:11 +0100
+Maciej Rutecki <maciej.rutecki@gmail.com> wrote:
 
-I have to agree with this one.  In general I dislike relying on an
-implicit (even well-defined) initialized value; unfortunately we ripped
-out explicit initializations across the Linux kernel, not due to
-readability but due to the fact that long-since-obsolete versions of gcc
-would put explicitly-initialized variables in data rather than bss even
-if the initial value is zero.
+> On środa, 17 listopada 2010 o 22:00:18 Jesse Barnes wrote:
+> > On Wed, 17 Nov 2010 21:53:10 +0100
+> > 
+> > Maciej Rutecki <maciej.rutecki@gmail.com> wrote:
+> > > Last known good: 2.6.37-rc1
+> > > Bad kernel: 2.6.37-rc2
+> > > Hardware: VirtualBox
+> > 
+> > Should be fixed in master now, please re-test.
+> 
+> Yes, update to latest kernel tree, and kernel works OK.
 
-	-hpa
-
+Great, thanks for confirming.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Jesse Barnes, Intel Open Source Technology Center
