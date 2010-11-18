@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313Ab0KRQHk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:07:40 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:37453 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932190Ab0KRQHd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 11:07:33 -0500
-X-Spam-ASN: 
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: linux-kernel@vger.kernel.org
-Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-        Rodolfo Giometti <giometti@enneenne.com>,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>, Tejun Heo <tj@kernel.org>
-Subject: [PATCHv4 01/17] pps: trivial fixes
-Date: Thu, 18 Nov 2010 19:00:54 +0300
-Message-Id: <16bd98f4fdaf4fecae734a099d2d116f67622b21.1290087475.git.lasaine@lvk.cs.msu.su>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
-References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
-X-AV-Checked: ClamAV using ClamSMTP
+	id S1759492Ab0KRQIS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:08:18 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:55411 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759428Ab0KRQIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 11:08:15 -0500
+Date: Thu, 18 Nov 2010 16:08:01 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 45 of 66] remove PG_buddy
+Message-ID: <20101118160801.GA8135@csn.ul.ie>
+References: <patchbomb.1288798055@v2.random> <85c897773782cdde8b69.1288798100@v2.random>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <85c897773782cdde8b69.1288798100@v2.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are some very trivial fixes combined:
- * add macro definitions to protect header file from including several times
- * remove declaration for an unexistent array
- * fix typos
+On Wed, Nov 03, 2010 at 04:28:20PM +0100, Andrea Arcangeli wrote:
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> PG_buddy can be converted to _mapcount == -2. So the PG_compound_lock can be
+> added to page->flags without overflowing (because of the sparse section bits
+> increasing) with CONFIG_X86_PAE=y and CONFIG_X86_PAT=y. This also has to move
+> the memory hotplug code from _mapcount to lru.next to avoid any risk of
+> clashes. We can't use lru.next for PG_buddy removal, but memory hotplug can use
+> lru.next even more easily than the mapcount instead.
+> 
 
-Acked-by: Rodolfo Giometti <giometti@linux.it>
-Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
----
- drivers/pps/kapi.c         |    2 +-
- include/linux/pps_kernel.h |    7 ++++++-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+Does this make much of a difference? I confess I didn't read the patch closely
+because I didn't get the motivation.
 
-diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-index 1aa02db..55f3961 100644
---- a/drivers/pps/kapi.c
-+++ b/drivers/pps/kapi.c
-@@ -324,7 +324,7 @@ void pps_event(int source, struct pps_ktime *ts, int event, void *data)
- 		captured = ~0;
- 	}
- 
--	/* Wake up iif captured somthing */
-+	/* Wake up if captured something */
- 	if (captured) {
- 		pps->go = ~0;
- 		wake_up_interruptible(&pps->queue);
-diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
-index e0a193f..c930d11 100644
---- a/include/linux/pps_kernel.h
-+++ b/include/linux/pps_kernel.h
-@@ -18,6 +18,9 @@
-  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  */
- 
-+#ifndef LINUX_PPS_KERNEL_H
-+#define LINUX_PPS_KERNEL_H
-+
- #include <linux/pps.h>
- 
- #include <linux/cdev.h>
-@@ -71,7 +74,6 @@ struct pps_device {
- 
- extern spinlock_t pps_idr_lock;
- extern struct idr pps_idr;
--extern struct timespec pps_irq_ts[];
- 
- extern struct device_attribute pps_attrs[];
- 
-@@ -87,3 +89,6 @@ extern void pps_unregister_source(int source);
- extern int pps_register_cdev(struct pps_device *pps);
- extern void pps_unregister_cdev(struct pps_device *pps);
- extern void pps_event(int source, struct pps_ktime *ts, int event, void *data);
-+
-+#endif /* LINUX_PPS_KERNEL_H */
-+
 -- 
-1.7.2.3
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
