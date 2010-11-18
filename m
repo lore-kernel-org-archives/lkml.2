@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932722Ab0KRSVB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 13:21:01 -0500
-Received: from stinky.trash.net ([213.144.137.162]:39344 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408Ab0KRSU7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 13:20:59 -0500
-Message-ID: <4CE56E89.4000902@trash.net>
-Date: Thu, 18 Nov 2010 19:20:57 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+	id S1760090Ab0KRSVr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 13:21:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5058 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755598Ab0KRSVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 13:21:46 -0500
+Date: Thu, 18 Nov 2010 19:21:06 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/8] mm: migration: Allow migration to operate
+ asynchronously and avoid synchronous compaction in the faster path
+Message-ID: <20101118182105.GB30376@random.random>
+References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie>
+ <1290010969-26721-5-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: David Miller <davem@davemloft.net>, eric.dumazet@gmail.com,
-        linux-net@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, horms@verge.net.au,
-        netfilter-devel@vger.kernel.org
-Subject: Re: error while building the kernel Mainline
-References: <1290093135.2781.167.camel@edumazet-laptop>	<4CE561A2.2020600@gmail.com>	<1290102497.2781.242.camel@edumazet-laptop> <20101118.095046.28818361.davem@davemloft.net> <4CE56CC4.4020107@gmail.com>
-In-Reply-To: <4CE56CC4.4020107@gmail.com>
-Content-Type: multipart/mixed;
- boundary="------------060907090306050204040309"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290010969-26721-5-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060907090306050204040309
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+On Wed, Nov 17, 2010 at 04:22:45PM +0000, Mel Gorman wrote:
+> @@ -484,6 +486,7 @@ static unsigned long compact_zone_order(struct zone *zone,
+>  		.order = order,
+>  		.migratetype = allocflags_to_migratetype(gfp_mask),
+>  		.zone = zone,
+> +		.sync = false,
+>  	};
+>  	INIT_LIST_HEAD(&cc.freepages);
+>  	INIT_LIST_HEAD(&cc.migratepages);
 
-Am 18.11.2010 19:13, schrieb Justin P. Mattock:
-> On 11/18/2010 09:50 AM, David Miller wrote:
->> From: Eric Dumazet<eric.dumazet@gmail.com>
->> Date: Thu, 18 Nov 2010 18:48:17 +0100
->>
->>> Let me guess...
->>>
->>> net/netfilter/nf_conntrack_core is compiled as a module, and ip_vs
->>> statically (in vmlinux) ?
->>>
->>> CONFIG_NF_CONNTRACK=m
->>> CONFIG_IP_VS=y
->>>
->>> We probably need some Kconfig magic ;)
->>
+I like this because I'm very afraid to avoid wait-I/O latencies
+introduced into hugepage allocations that I prefer to fail quickly and
+be handled later by khugepaged ;).
 
-Please try whether this patch fixes the problem.
+But I could have khugepaged call this with sync=true... so I'd need a
+__GFP_ flag that only khugepaged would use to notify compaction should
+be synchronous for khugepaged (not for the regular allocations in page
+faults). Can we do this through gfp_mask only?
 
-netfilter: fix IP_VS dependencies
+> @@ -500,6 +503,7 @@ unsigned long reclaimcompact_zone_order(struct zone *zone,
+>  		.order = order,
+>  		.migratetype = allocflags_to_migratetype(gfp_mask),
+>  		.zone = zone,
+> +		.sync = true,
+>  	};
+>  	INIT_LIST_HEAD(&cc.freepages);
+>  	INIT_LIST_HEAD(&cc.migratepages);
 
-When NF_CONNTRACK is enabled, IP_VS uses conntrack symbols.
-Therefore IP_VS can't be linked statically when conntrack
-is built modular.
+Is this intentional? That inner compaction invocation is
+equivalent to the one one interleaved with the shrinker tried before
+invoking the shrinker. So I don't see why they should differ (one sync
+and one async).
 
-Reported-by: Justin P. Mattock <justinmattock@gmail.com>
-Signed-off-by: Patrick McHardy <kaber@trash.net>
+Anyway I'd prefer the inner invocation to be removed as a whole and to
+keep only going with the interleaving and to keep the two jobs of
+compaction and shrinking memory fully separated and to stick to the
+interleaving. If this reclaimcompact_zone_order helps maybe it means
+compact_zone_order isn't doing the right thing and we're hiding it by
+randomly calling it more frequently...
 
+I can see a point however in doing:
 
+compaction async
+shrink (may wait) (scan 500 pages, freed 32 pages)
+compaction sync (may wait)
 
---------------060907090306050204040309
-Content-Type: text/plain;
- name="x"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="x"
+to:
 
-diff --git a/net/netfilter/ipvs/Kconfig b/net/netfilter/ipvs/Kconfig
-index a22dac2..70bd1d0 100644
---- a/net/netfilter/ipvs/Kconfig
-+++ b/net/netfilter/ipvs/Kconfig
-@@ -4,6 +4,7 @@
- menuconfig IP_VS
- 	tristate "IP virtual server support"
- 	depends on NET && INET && NETFILTER
-+	depends on (NF_CONNTRACK || NF_CONNTRACK=n)
- 	---help---
- 	  IP Virtual Server support will let you build a high-performance
- 	  virtual server based on cluster of two or more real servers. This
-
---------------060907090306050204040309--
+compaction async
+shrink (scan 32 pages, freed 0 pages)
+compaction sync (hugepage generated nobody noticed)
+shrink (scan 32 pages, freed 0 pages)
+compaction sync
+shrink (scan 32 pages, freed 0 pages)
+[..]
