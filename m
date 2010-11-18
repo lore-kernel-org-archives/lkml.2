@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758656Ab0KRPON (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 10:14:13 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:37021 "EHLO gir.skynet.ie"
+	id S1758805Ab0KRPPf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 10:15:35 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:40526 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416Ab0KRPOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 10:14:12 -0500
-Date: Thu, 18 Nov 2010 15:13:58 +0000
+	id S1756542Ab0KRPPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 10:15:34 -0500
+Date: Thu, 18 Nov 2010 15:15:19 +0000
 From: Mel Gorman <mel@csn.ul.ie>
 To: Andrea Arcangeli <aarcange@redhat.com>
 Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
@@ -27,26 +27,26 @@ Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
         Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 31 of 66] split_huge_page anon_vma ordering dependency
-Message-ID: <20101118151358.GU8135@csn.ul.ie>
-References: <patchbomb.1288798055@v2.random> <804df7cc44c4e27bdad3.1288798086@v2.random>
+Subject: Re: [PATCH 32 of 66] verify pmd_trans_huge isn't leaking
+Message-ID: <20101118151519.GV8135@csn.ul.ie>
+References: <patchbomb.1288798055@v2.random> <72703601b72dc596d978.1288798087@v2.random>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <804df7cc44c4e27bdad3.1288798086@v2.random>
+In-Reply-To: <72703601b72dc596d978.1288798087@v2.random>
 User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 04:28:06PM +0100, Andrea Arcangeli wrote:
+On Wed, Nov 03, 2010 at 04:28:07PM +0100, Andrea Arcangeli wrote:
 > From: Andrea Arcangeli <aarcange@redhat.com>
 > 
-> This documents how split_huge_page is safe vs new vma inserctions into
-> the anon_vma that may have already released the anon_vma->lock but not
-> established pmds yet when split_huge_page starts.
+> pte_trans_huge must not leak in certain vmas like the mmio special pfn or
+> filebacked mappings.
 > 
 > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
 
 Acked-by: Mel Gorman <mel@csn.ul.ie>
 
