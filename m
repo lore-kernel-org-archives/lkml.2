@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933052Ab0KRXEf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:04:35 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34492 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932879Ab0KRXEd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:04:33 -0500
-Date: Thu, 18 Nov 2010 15:02:26 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: fix kernel-doc for set_consumer_device_supply
-Message-Id: <20101118150226.d0614b85.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760609Ab0KRXMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:12:18 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:49658 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758239Ab0KRXMP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 18:12:15 -0500
+Date: Thu, 18 Nov 2010 17:12:12 -0600
+From: Sonny Rao <sonnyrao@us.ibm.com>
+To: ron.mercer@qlogic.com, "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Milton Miller <miltonm@bga.com>,
+        Linux Driver <Linux-Driver@qlogic.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "sonnyrao@linux.vnet.ibm.com" <sonnyrao@linux.vnet.ibm.com>
+Subject: Re: [PATCH] qlge: Fix incorrect usage of module parameters and
+	netdev msg level
+Message-ID: <20101118231212.GU32203@us.ibm.com>
+References: <20101118215002.GS32203@us.ibm.com>
+ <20101118221713.GB14333@linux-ox1b.qlogic.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101118221713.GB14333@linux-ox1b.qlogic.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Thu, Nov 18, 2010 at 02:17:14PM -0800, Ron Mercer wrote:
+> On Thu, Nov 18, 2010 at 01:50:02PM -0800, Sonny Rao wrote:
+> > Driver appears to be mistaking the permission field with default value
+> > in the case of debug and qlge_irq_type.
+> > 
+> > Driver is also passing debug as a bitmask into netif_msg_init()
+> > which wants a number of bits.  Ron Mercer suggests we should
+> > change this to pass in -1 so the defaults get used instead,
+> > which makes the default much less verbose.
+> > 
+> > Signed-off-by: Milton Miller <miltonm@bga.com>
+> > Signed-off-by: Sonny Rao <sonnyrao@linux.vnet.ibm.com>
+> 
+> Milton/Sonny,
+> Did you happen to test this to see if the log output was the same? 
 
-Fix kernel-doc warning for set_consumer_device_supply():
+Well, I haven't tried the -1 but I suspect it is much more sane than
+the 15 I had before because that was excessively verbose and I always
+ended up turning it down.  I'll try it out and see.
 
-Warning(drivers/regulator/core.c:912): missing initial short description on line:
- * set_consumer_device_supply: Bind a regulator to a symbolic supply
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc:	Liam Girdwood <lrg@slimlogic.co.uk>
-Cc:	Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- lnx-2637-r2g4-kerndoc.orig/drivers/regulator/core.c
-+++ lnx-2637-r2g4-kerndoc/drivers/regulator/core.c
-@@ -911,7 +911,7 @@ out:
- }
- 
- /**
-- * set_consumer_device_supply: Bind a regulator to a symbolic supply
-+ * set_consumer_device_supply - Bind a regulator to a symbolic supply
-  * @rdev:         regulator source
-  * @consumer_dev: device the supply applies to
-  * @consumer_dev_name: dev_name() string for device supply applies to
+-- 
+Sonny Rao, LTC OzLabs, BML team
