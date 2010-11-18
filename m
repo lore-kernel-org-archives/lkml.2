@@ -1,82 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab0KRIzs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 03:55:48 -0500
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:36617 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755876Ab0KRIzq (ORCPT
+	id S1755933Ab0KRI4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 03:56:20 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42574 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482Ab0KRI4T convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 03:55:46 -0500
-Date: Thu, 18 Nov 2010 17:46:54 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
-        stable@kernel.org, Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH] Make swap accounting default behavior configurable
-Message-Id: <20101118174654.8fa69aca.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20101118082332.GB15928@tiehlicka.suse.cz>
-References: <20101116101726.GA21296@tiehlicka.suse.cz>
-	<20101116124615.978ed940.akpm@linux-foundation.org>
-	<20101117092339.1b7c2d6d.nishimura@mxp.nes.nec.co.jp>
-	<20101116171225.274019cf.akpm@linux-foundation.org>
-	<20101117122801.e9850acf.nishimura@mxp.nes.nec.co.jp>
-	<20101118082332.GB15928@tiehlicka.suse.cz>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 18 Nov 2010 03:56:19 -0500
+Subject: Re: [PATCH 0/5] Allow syscalls tracepoints to non privileged users
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Jason Baron <jbaron@redhat.com>
+In-Reply-To: <1290043963-1480-1-git-send-regression-fweisbec@gmail.com>
+References: <1290043963-1480-1-git-send-regression-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 18 Nov 2010 09:56:26 +0100
+Message-ID: <1290070586.2109.1302.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010 09:23:32 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
-
-> On Wed 17-11-10 12:28:01, Daisuke Nishimura wrote:
-> > On Tue, 16 Nov 2010 17:12:25 -0800
-> > Andrew Morton <akpm@linux-foundation.org> wrote:
-> > 
-> > > On Wed, 17 Nov 2010 09:23:39 +0900 Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> > > 
-> > > > > > 
-> > > > > > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-> > > > > > index ed45e98..14eafa5 100644
-> > > > > > --- a/Documentation/kernel-parameters.txt
-> > > > > > +++ b/Documentation/kernel-parameters.txt
-> > > > > > @@ -2385,6 +2385,9 @@ and is between 256 and 4096 characters. It is defined in the file
-> > > > > >  			improve throughput, but will also increase the
-> > > > > >  			amount of memory reserved for use by the client.
-> > > > > >  
-> > > > > > +	swapaccount	[KNL] Enable accounting of swap in memory resource
-> > > > > > +			controller. (See Documentation/cgroups/memory.txt)
-> > > > > 
-> > > > > So we have swapaccount and noswapaccount.  Ho hum, "swapaccount=[1|0]"
-> > > > > would have been better.
-> > > > > 
-> > > > I suggested to keep "noswapaccount" for compatibility.
-> > > > If you and other guys don't like having two parameters, I don't stick to
-> > > > the old parameter.
-> > > > 
-> > > 
-> > > Yes, we're stuck with the old one now.
-> > > 
-> > > But we should note that "foo=[0|1]" is superior to "foo" and "nofoo". 
-> > > Even if we didn't initially intend to add "nofoo".
-> > > 
-> > I see.
-> > 
-> > Michal-san, could you update your patch to use "swapaccount=[1|0]" ?
+On Thu, 2010-11-18 at 02:32 +0100, Frederic Weisbecker wrote:
+> Hi,
 > 
-> I have noticed that Andrew has already taken the last version of the
-> patch for -mm tree. Should I still rework it to change swapaccount to
-> swapaccount=0|1 resp. true|false?
-> 
-It's usual to update a patch into more sophisticated one while it is in -mm tree.
-So, I think you'd better to do it(btw, I prefer 0|1 to true|false.
-Reading kernel-parameters.txt, 0|1 is more commonly used.).
+> Tell me if you're fine with it, and if so I'll push it.
 
-Thanks,
-Daisuke Nishimura.
+Looks good to me, thanks!
