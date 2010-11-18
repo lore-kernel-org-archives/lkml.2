@@ -1,130 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755358Ab0KRHpV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 02:45:21 -0500
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:54017 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755023Ab0KRHpT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 02:45:19 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 18 Nov 2010 16:39:36 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: akataria@vmware.com, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Petr Vandrovec <petr@vmware.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: [BUGFIX][PATCH] fix build_all_zonelist where percpu_alloc is
- wrongly called under stop_machine_run (Was Re: (mem hotplug, pcpu_alloc)
- BUG: sleeping function called from invalid context at kernel/mutex.c:94
-Message-Id: <20101118163936.2a533930.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4CDE63D3.4010608@kernel.org>
-References: <1289588178.7486.15.camel@ank32.eng.vmware.com>
-	<4CDE63D3.4010608@kernel.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755223Ab0KRHtD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 02:49:03 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:47810 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753607Ab0KRHtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 02:49:01 -0500
+Date: Thu, 18 Nov 2010 08:48:04 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Kyle McMartin <kyle@mcmartin.ca>
+Cc: Marcus Meissner <meissner@suse.de>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, tj@kernel.org, akpm@osdl.org,
+        hpa@zytor.com, w@1wt.eu, alan@lxorguk.ukuu.org.uk,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
+ attacking
+Message-ID: <20101118074804.GC32621@elte.hu>
+References: <20101116104600.GA24015@suse.de>
+ <20101117050759.GE22651@bombadil.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101117050759.GE22651@bombadil.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 13 Nov 2010 11:09:23 +0100
-Tejun Heo <tj@kernel.org> wrote:
 
-> Meh... the percpu allocator required user context from the beginning.
-> The new allocator didn't change that.
+* Kyle McMartin <kyle@mcmartin.ca> wrote:
+
+> On Tue, Nov 16, 2010 at 11:46:03AM +0100, Marcus Meissner wrote:
+> > Target of this starter patch and follow ups is removing any kind of
+> > kernel space address information leak from the kernel.
+> > 
 > 
-> Wouldn't it be possible to prepare hotplug outside of cpu_stop and use
-> stop_machine() only to make it available to the system.  In general,
-> it's a very bad idea to allocate memory from inside stop_machine.  The
-> whole machine is stopped, after all.  In general, it shouldn't be too
-> difficult to add new resource without stop_machine too unlike removing
-> one.  Pekka, Christoph, any ideas?
-> 
+> Er. Should probably hit /proc/modules while you're at it.
 
-Fix here. I'm glad if someone test this.
-==
+Agreed. A few other kernel address things that should be hidden are:
 
-At memory hotplug, build_allzonelists() may be called under stop_machine_run().
-In this function, setup_zone_pageset() is called. But it's bug because it
-will do page allocation under stop_machine_run().
+1) /proc/<PID>/stack
 
-Here is a report from Alok Kataria.
+Gives out kernel addresses and is a partial /proc/kallsyms table in essence. This 
+got introduced recently. Useful to attackers.
 
-[  142.339267] BUG: sleeping function called from invalid context at kernel/mutex.c:94
-[  142.339276] in_atomic(): 0, irqs_disabled(): 1, pid: 4, name: migration/0
-[  142.339283] Pid: 4, comm: migration/0 Not tainted 2.6.35.6-45.fc14.x86_64 #1
-[  142.339288] Call Trace:
-[  142.339305]  [<ffffffff8103d12b>] __might_sleep+0xeb/0xf0
-[  142.339316]  [<ffffffff81468245>] mutex_lock+0x24/0x50
-[  142.339326]  [<ffffffff8110eaa6>] pcpu_alloc+0x6d/0x7ee
-[  142.339336]  [<ffffffff81048888>] ? load_balance+0xbe/0x60e
-[  142.339343]  [<ffffffff8103a1b3>] ? rt_se_boosted+0x21/0x2f
-[  142.339349]  [<ffffffff8103e1cf>] ? dequeue_rt_stack+0x18b/0x1ed
-[  142.339356]  [<ffffffff8110f237>] __alloc_percpu+0x10/0x12
-[  142.339362]  [<ffffffff81465e22>] setup_zone_pageset+0x38/0xbe
-[  142.339373]  [<ffffffff810d6d81>] ? build_zonelists_node.clone.58+0x79/0x8c
-[  142.339384]  [<ffffffff81452539>] __build_all_zonelists+0x419/0x46c
-[  142.339395]  [<ffffffff8108ef01>] ? cpu_stopper_thread+0xb2/0x198
-[  142.339401]  [<ffffffff8108f075>] stop_machine_cpu_stop+0x8e/0xc5
-[  142.339407]  [<ffffffff8108efe7>] ? stop_machine_cpu_stop+0x0/0xc5
-[  142.339414]  [<ffffffff8108ef57>] cpu_stopper_thread+0x108/0x198
-[  142.339420]  [<ffffffff81467a37>] ? schedule+0x5b2/0x5cc
-[  142.339426]  [<ffffffff8108ee4f>] ? cpu_stopper_thread+0x0/0x198
-[  142.339434]  [<ffffffff81065f29>] kthread+0x7f/0x87
-[  142.339443]  [<ffffffff8100aae4>] kernel_thread_helper+0x4/0x10
-[  142.339449]  [<ffffffff81065eaa>] ? kthread+0x0/0x87
-[  142.339455]  [<ffffffff8100aae0>] ? kernel_thread_helper+0x0/0x10
-[  142.340099] Built 5 zonelists in Node order, mobility grouping on.  Total pages: 289456
-[  142.340108] Policy zone: Normal
+Then there's a handful of physical address leaks - those are less useful but useful 
+in some situations:
 
-This patch tries to fix the issue by moving setup_zone_pageset() out from
-stop_machine_run(). It's obviously not necessary to be called under
-stop_machine_run().
+2) /proc/mtrr
 
-Reported-by: Alok Kataria <akataria@vmware.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/page_alloc.c |   16 +++++++---------
- 1 file changed, 7 insertions(+), 9 deletions(-)
+Gives some idea about the physical layout of the machine and can give information 
+about the location of certain physical devices as well. Limited but nonzero utility 
+to attackers.
 
-Index: mmotm-1117/mm/page_alloc.c
-===================================================================
---- mmotm-1117.orig/mm/page_alloc.c
-+++ mmotm-1117/mm/page_alloc.c
-@@ -3027,14 +3027,6 @@ static __init_refok int __build_all_zone
- 		build_zonelist_cache(pgdat);
- 	}
- 
--#ifdef CONFIG_MEMORY_HOTPLUG
--	/* Setup real pagesets for the new zone */
--	if (data) {
--		struct zone *zone = data;
--		setup_zone_pageset(zone);
--	}
--#endif
--
- 	/*
- 	 * Initialize the boot_pagesets that are going to be used
- 	 * for bootstrapping processors. The real pagesets for
-@@ -3083,7 +3075,13 @@ void build_all_zonelists(void *data)
- 	} else {
- 		/* we have to stop all cpus to guarantee there is no user
- 		   of zonelist */
--		stop_machine(__build_all_zonelists, data, NULL);
-+#ifdef CONFIG_MEMORY_HOTPLUG
-+		if (data) {
-+			struct zone *zone = (struct zone *)data;
-+			setup_zone_pageset(zone);
-+		}
-+#endif
-+		stop_machine(__build_all_zonelists, NULL, NULL);
- 		/* cpuset refresh routine should be here */
- 	}
- 	vm_total_pages = nr_free_pagecache_pages();
+3) /proc/asound/cards
 
+Can gives out the physical address of a device. Limited but nonzero utility to 
+attackers.
+
+4) /sys/devices/*/*/resources
+
+Shows physical addresses. Limited but nonzero utility to attackers.
+
+Plus there's some really limited fractional pieces of information - again, of 
+nonzero utility to attackers:
+
+5) /proc/net/ptype
+
+Shows the sizes of a few kernel functions in networking code. Very limited but 
+nonzero utility to attackers.
+
+6) /sys/kernel/slab/*/ctor
+
+Shows the sizes of a few kernel functions. Very limited but nonzero utility to 
+attackers.
+
+7) /sys/module/*/sections/*
+
+For example:
+
+ /sys/module/sunrpc/sections/__bug_table
+ /sys/module/sunrpc/sections/__ex_table
+ /sys/module/sunrpc/sections/__ksymtab
+ /sys/module/sunrpc/sections/__ksymtab_gpl
+ /sys/module/sunrpc/sections/__ksymtab_strings
+ /sys/module/sunrpc/sections/__mcount_loc
+ /sys/module/sunrpc/sections/__param
+
+Potentially useful to attackers.
+
+There's probably a few more i missed.
+
+	Ingo
