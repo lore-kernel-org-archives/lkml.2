@@ -1,106 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754532Ab0KRF5q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 00:57:46 -0500
-Received: from mga01.intel.com ([192.55.52.88]:5537 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754221Ab0KRF5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 00:57:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,216,1288594800"; 
-   d="scan'208";a="627928289"
-Date: Thu, 18 Nov 2010 12:36:41 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        Haicheng Li <haicheng.li@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Greg KH <greg@kroah.com>
-Subject: Re: [7/8,v3] NUMA Hotplug Emulator: extend memory probe interface
- to support NUMA
-Message-ID: <20101118043641.GB2408@shaohui>
-References: <20101117020759.016741414@intel.com>
- <20101117021000.916235444@intel.com>
- <1290019807.9173.3789.camel@nimitz>
+	id S1754554Ab0KRF6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 00:58:50 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:46591 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754390Ab0KRF6t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 00:58:49 -0500
+X-AuditID: b753bd60-a41a1ba000003e7d-13-4ce4c094e89d
+Message-ID: <4CE4C091.8060306@hitachi.com>
+Date: Thu, 18 Nov 2010 14:58:41 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290019807.9173.3789.camel@nimitz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        "Ted Ts'o" <tytso@mit.edu>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Tom Zanussi <tzanussi@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Jason Baron <jbaron@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Christoph Hellwig <hch@lst.de>, Pekka Enberg <penberg@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        2nddept-manager@sdl.hitachi.co.jp
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6> <20101117013700.GA3290@thunk.org> <20101117132404.GF27063@elte.hu> <1290001128.2109.785.camel@laptop> <20101117140002.GH27063@elte.hu> <1290003110.2109.822.camel@laptop> <1290006634.30543.61.camel@gandalf.stny.rr.com> <1290008637.2109.967.camel@laptop> <20101117182344.GD13717@Krystal>
+In-Reply-To: <20101117182344.GD13717@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 10:50:07AM -0800, Dave Hansen wrote:
-> On Wed, 2010-11-17 at 10:08 +0800, shaohui.zheng@intel.com wrote:
-> > And more we make it friendly, it is possible to add memory to do
-> > 
-> >         echo 3g > memory/probe
-> >         echo 1024m,3 > memory/probe
-> > 
-> > It maintains backwards compatibility.
-> > 
-> > Another format suggested by Dave Hansen:
-> > 
-> >         echo physical_address=0x40000000 numa_node=3 > memory/probe
-> > 
-> > it is more explicit to show meaning of the parameters.
+(2010/11/18 3:23), Mathieu Desnoyers wrote:
+> Amongst others, Ericsson rely on this kind of feature. The case where we're
+> filtering "out" should be really, really fast (even if it makes the recording
+> slightly slower). If there is a race modifying the data underneath between the
+> filter execution and the copy to the buffers, I really don't think it matters.
+> If the tracepoint caller context don't provide data consistency guarantees for
+> the parameters it passes, we should not expect 100% perfect consistency between
+> filter and what is actually saved in the trace. The trace analysis tools should
+> just be able to cope with that, but I really don't think anyone should care.
 > 
-> The other thing that Greg suggested was to use configfs.  Looking back
-> on it, that makes a lot of sense.  We can do better than these "probe"
-> files.
-> 
-> In your case, it might be useful to tell the kernel to be able to add
-> memory in a node and add the node all in one go.  That'll probably be
-> closer to what the hardware will do, and will exercise different code
-> paths that the separate "add node", "then add memory" steps that you're
-> using here.
-> 
-> For the emulator, I also have to wonder if using debugfs is the right
-> was since its ABI is a bit more, well, _flexible_ over time. :)
+> So I would recommend no copy, filter directly on the source data, stop the
+> filter chain as soon as a non-match is observed. Copy the data into the buffers
+> if the filter passes.
 
-First, the emulator is just for test purpose, and I believe that only very
-few people will use it, so we did not want to take so many modification.
-the more you changed, the more bugs you may get. the memory/probe interface
-is already enough to test memory hot-add.
+Indeed, so that we can eliminate memory write accesses. :)
 
-Second, if we want to use configfs and debugfs for cpu/memory probe interface,
-it should implemented in another series patch since it is not part of the emulator.
- We have 8 patches in this patchset now, it is should be very long patch if 
-want to add all in.
-
-> 
-> > +       depends on NUMA_HOTPLUG_EMU
-> > +       ---help---
-> > +         Enable memory hotplug emulation. Reserve memory with grub parameter
-> > +         "mem=N"(such as mem=1024M), where N is the initial memory size, the
-> > +         rest physical memory will be removed from e820 table; the memory probe
-> > +         interface is for memory hot-add to specified node in software method.
-> > +         This is for debuging and testing purpose
-> 
-> mem= actually sets the largest physical address that we're trying to
-> use.  If you have a 256MB hole at 768MB, then mem=1G will only get you
-> 768MB of memory.  We probably get this wrong in a number of other places
-> in the documentation, but we might as well get it right here.
-> 
-> Maybe something like:
->         
->         Enable emulation of hotplug of NUMA nodes.  To use this, you
->         must also boot with the kernel command-line parameter
->         "mem=N"(such as mem=1024M), where N is the highest physical
->         address you would like to use at boot.  The rest of physical
->         memory will be removed from firmware tables and may be then be
->         hotplugged with this feature. This is for debuging and testing
->         purposes.
->         
->         Note that you can still examine the original, non-modified
->         firmware tables in: /sys/firmware/memmap
->         
-> -- Dave
-I did not aware the memory hole here, good catching.
+Thanks,
 
 -- 
-Thanks & Regards,
-Shaohui
-
+Masami HIRAMATSU
+2nd Dept. Linux Technology Center
+Hitachi, Ltd., Systems Development Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
