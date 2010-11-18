@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932765Ab0KRRdi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:33:38 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51213 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932726Ab0KRRdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:33:37 -0500
+	id S932784Ab0KRRf5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:35:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47760 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755528Ab0KRRfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 12:35:55 -0500
+Date: Thu, 18 Nov 2010 18:35:44 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
+To: James Bottomley <James.Bottomley@suse.de>
+cc: Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        tytso@mit.edu, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
+ super_operation
+In-Reply-To: <1290100750.3041.72.camel@mulgrave.site>
+Message-ID: <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com>
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>  <20101118130630.GJ6178@parisc-linux.org>  <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>  <20101118141957.GK6178@parisc-linux.org>  <20101118142918.GA18510@infradead.org>
+ <1290100750.3041.72.camel@mulgrave.site>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20101118125249.GN8135@csn.ul.ie>
-References: <patchbomb.1288798055@v2.random> <6022613f956ee326d9b6.1288798072@v2.random>
- <20101118125249.GN8135@csn.ul.ie>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 18 Nov 2010 09:32:36 -0800
-Message-ID: <AANLkTikhXS9ot27gS9OpRWbU9zjXns_D96DarZ1jOcR6@mail.gmail.com>
-Subject: Re: [PATCH 17 of 66] add pmd mangling generic functions
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 4:52 AM, Mel Gorman <mel@csn.ul.ie> wrote:
-> On Wed, Nov 03, 2010 at 04:27:52PM +0100, Andrea Arcangeli wrote:
->> From: Andrea Arcangeli <aarcange@redhat.com>
->>
->> Some are needed to build but not actually used on archs not supporting
->> transparent hugepages. Others like pmdp_clear_flush are used by x86 too.
->>
->> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
->> Acked-by: Rik van Riel <riel@redhat.com>
->
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
+On Thu, 18 Nov 2010, James Bottomley wrote:
 
-I dunno. Those macros are _way_ too big and heavy to be macros or
-inline functions. Why aren't pmdp_splitting_flush() etc just
-functions?
+> On Thu, 2010-11-18 at 09:29 -0500, Christoph Hellwig wrote:
+> > On Thu, Nov 18, 2010 at 07:19:58AM -0700, Matthew Wilcox wrote:
+> > > I guess I was assuming that, on receiving a FALLOC_FL_PUNCH_HOLE, a
+> > > filesystem that was TRIM-aware would pass that information down to the
+> > > block device that it's mounted on.  I strongly feel that we shouldn't
+> > > have two interfaces to do essentially the same thing.
+> > > 
+> > > I guess I'm saying that you're going to have to learn about TRIM :-)
+> > 
+> > Did you actually look Lukas FITRIM code (not the slight reordering here,
+> > but the original one).  It's the ext4 version of the batched discard
+> > model, that is a userspace ioctl to discard free space in the
+> > filesystem.
+> > 
+> > hole punching will free the blocks into the free space pool.  If you do
+> > online discard it will also get discarded, but a filesystem that has
+> > online discard enabled doesn't need FITRIM.
+> 
+> Not stepping into the debate: I'm happy to see punch go to the mapping
+> data and FITRIM pick it up later.
+> 
+> However, I think it's time to question whether we actually still want to
+> allow online discard at all.  Most of the benchmarks show it to be a net
+> lose to almost everything (either SSD or Thinly Provisioned arrays), so
+> it's become an "enable this to degrade performance" option with no
+> upside.
+> 
+> James
+> 
 
-There is no performance advantage to inlining them - the TLB flush is
-going to be expensive enough that there's no point in avoiding a
-function call. And that header file really does end up being _really_
-ugly.
+This time began a long time ago :) that is why am I originally created
+batched discard for ext4 (ext3) accessible through FITRIM ioctl. Ext4
+performance with -o discard mount option goes down on the most of the
+SSD's and every Thinly-provisioned storage I have a chance to benchmark.
 
-                      Linus
+But, for example SSD's are getting better and as time goes by we might
+see devices that does not suffer terrible performance loss with discard
+enabled (discard on unlink in ext4 etc...), so this "online" discard
+probably still does make sense.
+
+-Lukas
