@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760749Ab0KRW3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 17:29:39 -0500
-Received: from cain.qlogic.com ([198.70.193.223]:60708 "EHLO cain.qlc.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756730Ab0KRW3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 17:29:38 -0500
-Date: Thu, 18 Nov 2010 14:17:14 -0800
-From: Ron Mercer <ron.mercer@qlogic.com>
-To: Sonny Rao <sonnyrao@us.ibm.com>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Milton Miller <miltonm@bga.com>,
-        Linux Driver <Linux-Driver@qlogic.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sonnyrao@linux.vnet.ibm.com" <sonnyrao@linux.vnet.ibm.com>
-Subject: Re: [PATCH] qlge: Fix incorrect usage of module parameters and
-	netdev msg level
-Message-ID: <20101118221713.GB14333@linux-ox1b.qlogic.org>
-Mail-Followup-To: Sonny Rao <sonnyrao@us.ibm.com>,
-	"netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-	Milton Miller <miltonm@bga.com>,
-	Linux Driver <Linux-Driver@qlogic.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"sonnyrao@linux.vnet.ibm.com" <sonnyrao@linux.vnet.ibm.com>
-References: <20101118215002.GS32203@us.ibm.com>
+	id S1760780Ab0KRW3n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 17:29:43 -0500
+Received: from mbox1.netikka.net ([213.250.81.202]:46485 "EHLO
+	mbox1.netikka.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756730Ab0KRW3m (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 17:29:42 -0500
+Message-ID: <4CE5A8D2.5050104@mandriva.org>
+Date: Fri, 19 Nov 2010 00:29:38 +0200
+From: Thomas Backlund <tmb@mandriva.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; sv-SE; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101118215002.GS32203@us.ibm.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Gene Heskett <gene.heskett@gmail.com>
+CC: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Galbraith patch
+References: <1290018947.4887.14.camel@note-311a> <4CE5731B.20807@mandriva.org> <1290110456.10702.12.camel@maggy.simson.net> <201011181628.13324.gene.heskett@gmail.com>
+In-Reply-To: <201011181628.13324.gene.heskett@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 01:50:02PM -0800, Sonny Rao wrote:
-> Driver appears to be mistaking the permission field with default value
-> in the case of debug and qlge_irq_type.
-> 
-> Driver is also passing debug as a bitmask into netif_msg_init()
-> which wants a number of bits.  Ron Mercer suggests we should
-> change this to pass in -1 so the defaults get used instead,
-> which makes the default much less verbose.
-> 
-> Signed-off-by: Milton Miller <miltonm@bga.com>
-> Signed-off-by: Sonny Rao <sonnyrao@linux.vnet.ibm.com>
+Gene Heskett skrev 18.11.2010 23:28:
+> On Thursday, November 18, 2010, Mike Galbraith wrote:
+>> On Thu, 2010-11-18 at 20:40 +0200, Thomas Backlund wrote:
+>>> and more importantly it misses theese:
+>> Heh.  Apply the attached, autogroup last.
+>
+> Still incomplete I'd guess.  From the make bzimage:
+> In file included from kernel/sched.c:1931:
+> kernel/sched_autogroup.c: In function ‘autogroup_create’:
+> kernel/sched_autogroup.c:56: error: ‘struct task_group’ has no member named
+> ‘autogroup’
+>
 
-Milton/Sonny,
-Did you happen to test this to see if the log output was the same? 
+Please recheck that you are using only the 2 patches Mike sent.
+With them applied to Mandriva 2.6.36 kernel it built fine with
+CONFIG_SCHED_AUTOGROUP=y
+
+--
+Thomas
