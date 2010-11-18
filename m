@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab0KRJhM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 04:37:12 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:36776 "EHLO mx3.mail.elte.hu"
+	id S1756138Ab0KRJjm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 04:39:42 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:44303 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754480Ab0KRJhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 04:37:09 -0500
-Date: Thu, 18 Nov 2010 10:36:56 +0100
+	id S1751769Ab0KRJjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 04:39:41 -0500
+Date: Thu, 18 Nov 2010 10:39:14 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Jean Pihet <jean.pihet@newoldbits.com>, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org, arjan@linux.intel.com
-Subject: Re: [PATCH 2/3] PERF(kernel): Cleanup power events
-Message-ID: <20101118093656.GD28467@elte.hu>
-References: <1289498595-25806-1-git-send-email-trenn@suse.de>
- <201011140734.07770.trenn@suse.de>
- <20101118080132.GH32621@elte.hu>
- <201011181027.09363.trenn@suse.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Michael Stefaniuc <mstefani@redhat.com>,
+        "Rafael J . Wysocki" <rjw@sisk.pl>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Alexandre Julliard <julliard@winehq.org>
+Subject: Re: [GIT PULL] hw-breakpoint fixes
+Message-ID: <20101118093914.GE28467@elte.hu>
+References: <1289684273-26770-1-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201011181027.09363.trenn@suse.de>
+In-Reply-To: <1289684273-26770-1-git-send-regression-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -34,21 +36,32 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Thomas Renninger <trenn@suse.de> wrote:
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> On Thursday 18 November 2010 09:01:32 Ingo Molnar wrote:
-> ...
-> > > @Ingo: If this does not go into x86/tip, but perf or whatever tree, it would
-> > > be great if you can ping me as soon as this stuff is in.
-> > 
-> > Mind sending the latest version which has been adjusted/fixed and all acks added?
-> Done.
-> This time with lkml excluded as there were only cleanups/fixes
-> due to a messed merge.
+> Ingo,
+> 
+> Please pull the perf/urgent branch that can be found at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	perf/urgent
+> 
+> Thanks,
+> 	Frederic
+> ---
+> 
+> Frederic Weisbecker (1):
+>       x86: Ignore trap bits on single step exceptions
+> 
+> Jason Wessel (1):
+>       perf,hw_breakpoint: Initialize hardware api earlier
+> 
+> 
+>  arch/x86/kernel/hw_breakpoint.c |    4 ++++
+>  include/linux/hw_breakpoint.h   |    4 ++++
+>  kernel/hw_breakpoint.c          |    3 +--
+>  kernel/perf_event.c             |    6 ++++++
+>  4 files changed, 15 insertions(+), 2 deletions(-)
 
-Please do not exclude lkml from such iterations of patches in the future - every 
-modification to patches is relevant - often pure resends get resent to lkml as well.
-
-Thanks,
+Pulled, thanks a lot Frederic!
 
 	Ingo
