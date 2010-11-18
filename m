@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759492Ab0KRQIS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:08:18 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:55411 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759428Ab0KRQIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 11:08:15 -0500
-Date: Thu, 18 Nov 2010 16:08:01 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 45 of 66] remove PG_buddy
-Message-ID: <20101118160801.GA8135@csn.ul.ie>
-References: <patchbomb.1288798055@v2.random> <85c897773782cdde8b69.1288798100@v2.random>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <85c897773782cdde8b69.1288798100@v2.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1759513Ab0KRQIc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:08:32 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:37456 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932200Ab0KRQHe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 11:07:34 -0500
+X-Spam-ASN: 
+From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+To: linux-kernel@vger.kernel.org
+Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
+        Rodolfo Giometti <giometti@enneenne.com>,
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Subject: [PATCHv4 02/17] pps: declare variables where they are used in switch
+Date: Thu, 18 Nov 2010 19:00:55 +0300
+Message-Id: <035bc7cbf912350fa817c1328f4dcbc33e01b592.1290087476.git.lasaine@lvk.cs.msu.su>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
+References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 04:28:20PM +0100, Andrea Arcangeli wrote:
-> From: Andrea Arcangeli <aarcange@redhat.com>
-> 
-> PG_buddy can be converted to _mapcount == -2. So the PG_compound_lock can be
-> added to page->flags without overflowing (because of the sparse section bits
-> increasing) with CONFIG_X86_PAE=y and CONFIG_X86_PAT=y. This also has to move
-> the memory hotplug code from _mapcount to lru.next to avoid any risk of
-> clashes. We can't use lru.next for PG_buddy removal, but memory hotplug can use
-> lru.next even more easily than the mapcount instead.
-> 
+Move variable declarations where they are used in pps_cdev_ioctl.
 
-Does this make much of a difference? I confess I didn't read the patch closely
-because I didn't get the motivation.
+Acked-by: Rodolfo Giometti <giometti@linux.it>
+Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+---
+ drivers/pps/pps.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
+index ca5183b..c76afb9 100644
+--- a/drivers/pps/pps.c
++++ b/drivers/pps/pps.c
+@@ -61,8 +61,6 @@ static long pps_cdev_ioctl(struct file *file,
+ {
+ 	struct pps_device *pps = file->private_data;
+ 	struct pps_kparams params;
+-	struct pps_fdata fdata;
+-	unsigned long ticks;
+ 	void __user *uarg = (void __user *) arg;
+ 	int __user *iuarg = (int __user *) arg;
+ 	int err;
+@@ -136,7 +134,9 @@ static long pps_cdev_ioctl(struct file *file,
+ 
+ 		break;
+ 
+-	case PPS_FETCH:
++	case PPS_FETCH: {
++		struct pps_fdata fdata;
++
+ 		pr_debug("PPS_FETCH: source %d\n", pps->id);
+ 
+ 		err = copy_from_user(&fdata, uarg, sizeof(struct pps_fdata));
+@@ -149,6 +149,8 @@ static long pps_cdev_ioctl(struct file *file,
+ 		if (fdata.timeout.flags & PPS_TIME_INVALID)
+ 			err = wait_event_interruptible(pps->queue, pps->go);
+ 		else {
++			unsigned long ticks;
++
+ 			pr_debug("timeout %lld.%09d\n",
+ 					(long long) fdata.timeout.sec,
+ 					fdata.timeout.nsec);
+@@ -185,7 +187,7 @@ static long pps_cdev_ioctl(struct file *file,
+ 			return -EFAULT;
+ 
+ 		break;
+-
++	}
+ 	default:
+ 		return -ENOTTY;
+ 		break;
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.7.2.3
+
