@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754285Ab0KRB4W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 20:56:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60864 "EHLO mx1.redhat.com"
+	id S1754175Ab0KRB4O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 20:56:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45547 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754188Ab0KRB4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 20:56:20 -0500
+	id S1753164Ab0KRB4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 20:56:12 -0500
 From: Josef Bacik <josef@redhat.com>
 To: david@fromorbit.com, linux-kernel@vger.kernel.org,
         linux-btrfs@vger.kernel.org, linux-ext4@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, xfs@oss.sgi.com, cmm@us.ibm.com,
         cluster-devel@redhat.com, joel.becker@oracle.com, jack@suse.cz
-Subject: [PATCH 1/6] fs: add hole punching to fallocate
-Date: Wed, 17 Nov 2010 20:46:15 -0500
-Message-Id: <1290044780-2902-2-git-send-email-josef@redhat.com>
+Subject: [PATCH 2/6] XFS: handle hole punching via fallocate properly
+Date: Wed, 17 Nov 2010 20:46:16 -0500
+Message-Id: <1290044780-2902-3-git-send-email-josef@redhat.com>
 In-Reply-To: <1290044780-2902-1-git-send-email-josef@redhat.com>
 References: <1290044780-2902-1-git-send-email-josef@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hole punching has already been implemented by XFS and OCFS2, and has the
-potential to be implemented on both BTRFS and EXT4 so we need a generic way to
-get to this feature.  The simplest way in my mind is to add FALLOC_FL_PUNCH_HOLE
-to fallocate() since it already looks like the normal fallocate() operation.
-I've tested this patch with XFS and BTRFS to make sure XFS did what it's
-supposed to do and that BTRFS failed like it was supposed to.  Thank you,
+This patch simply allows XFS to handle the hole punching flag in fallocate
+properly.  I've tested this with a little program that does a bunch of random
+hole punching with FL_KEEP_SIZE and without it to make sure it does the right
+thing.  Thanks,
 
 Signed-off-by: Josef Bacik <josef@redhat.com>
 ---
- fs/open.c              |    7 ++++++-
- include/linux/falloc.h |    1 +
- 2 files changed, 7 insertions(+), 1 deletions(-)
+ fs/xfs/linux-2.6/xfs_iops.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index 4197b9e..5b6ef7e 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -223,7 +223,12 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
- 		return -EINVAL;
+diff --git a/fs/xfs/linux-2.6/xfs_iops.c b/fs/xfs/linux-2.6/xfs_iops.c
+index 96107ef..07d2164 100644
+--- a/fs/xfs/linux-2.6/xfs_iops.c
++++ b/fs/xfs/linux-2.6/xfs_iops.c
+@@ -516,6 +516,7 @@ xfs_vn_fallocate(
+ 	loff_t		new_size = 0;
+ 	xfs_flock64_t	bf;
+ 	xfs_inode_t	*ip = XFS_I(inode);
++	int		cmd = XFS_IOC_RESVSP;
  
- 	/* Return error if mode is not supported */
--	if (mode && !(mode & FALLOC_FL_KEEP_SIZE))
-+	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
-+		return -EOPNOTSUPP;
+ 	/* preallocation on directories not yet supported */
+ 	error = -ENODEV;
+@@ -528,6 +529,9 @@ xfs_vn_fallocate(
+ 
+ 	xfs_ilock(ip, XFS_IOLOCK_EXCL);
+ 
++	if (mode & FALLOC_FL_PUNCH_HOLE)
++		cmd = XFS_IOC_UNRESVSP;
 +
-+	/* Punch hole must have keep size set */
-+	if ((mode & FALLOC_FL_PUNCH_HOLE) &&
-+	    !(mode & FALLOC_FL_KEEP_SIZE))
- 		return -EOPNOTSUPP;
+ 	/* check the new inode size is valid before allocating */
+ 	if (!(mode & FALLOC_FL_KEEP_SIZE) &&
+ 	    offset + len > i_size_read(inode)) {
+@@ -537,8 +541,7 @@ xfs_vn_fallocate(
+ 			goto out_unlock;
+ 	}
  
- 	if (!(file->f_mode & FMODE_WRITE))
-diff --git a/include/linux/falloc.h b/include/linux/falloc.h
-index 3c15510..73e0b62 100644
---- a/include/linux/falloc.h
-+++ b/include/linux/falloc.h
-@@ -2,6 +2,7 @@
- #define _FALLOC_H_
- 
- #define FALLOC_FL_KEEP_SIZE	0x01 /* default is extend size */
-+#define FALLOC_FL_PUNCH_HOLE	0x02 /* de-allocates range */
- 
- #ifdef __KERNEL__
+-	error = -xfs_change_file_space(ip, XFS_IOC_RESVSP, &bf,
+-				       0, XFS_ATTR_NOLOCK);
++	error = -xfs_change_file_space(ip, cmd, &bf, 0, XFS_ATTR_NOLOCK);
+ 	if (error)
+ 		goto out_unlock;
  
 -- 
 1.6.6.1
