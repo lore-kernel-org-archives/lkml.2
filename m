@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760706Ab0KRXaD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:30:03 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:50943 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754613Ab0KRXaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:30:01 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/pQSc9zSvpDWCpzSMwiBcZOfEw2h0x1NKjDLjYi1
-	hD2zL17A6lbrY4
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Hans-Peter Jansen <hpj@urpla.net>
-Cc: linux-kernel@vger.kernel.org, Lennart Poettering <mzxreary@0pointer.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <201011182333.48281.hpj@urpla.net>
-References: <1289916171.5169.117.camel@maggy.simson.net>
-	 <AANLkTimC_TWzKET-aabYK0TPG6fUUW06HDej6iOzYtKo@mail.gmail.com>
-	 <20101116211431.GA15211@tango.0pointer.de>
-	 <201011182333.48281.hpj@urpla.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Nov 2010 16:29:38 -0700
-Message-ID: <1290122978.18039.46.camel@maggy.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1760805Ab0KRXcI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:32:08 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52655 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754235Ab0KRXcF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 18:32:05 -0500
+MIME-Version: 1.0
+In-Reply-To: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 18 Nov 2010 15:31:10 -0800
+Message-ID: <AANLkTin9sYf99fQ_w7Bp4N6Gsm3PR0akpCU=4YEkOaez@mail.gmail.com>
+Subject: Re: [PATCH v1.2 0/5] IMA: making i_readcount a first class inode
+ citizen (reposting)
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, jmorris@namei.org,
+        akpm@linux-foundation.org, eparis@redhat.com, viro@zeniv.linux.org.uk,
+        Dave Chinner <david@fromorbit.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        David Safford <safford@watson.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 23:33 +0100, Hans-Peter Jansen wrote:
+On Thu, Nov 18, 2010 at 3:02 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+>
+> This patchset separates the incrementing/decrementing of the i_readcount, in
+> the VFS layer, from other IMA functionality, by replacing the current
+> ima_counts_get() call with i_readcount_inc(). Its unclear whether this call to
+> increment i_readcount should be made earlier, like i_writecount.  Currently the
+> call is situated immediately after the switch from put_filp() to fput() for
+> cleanup.
 
-> If you think, that systemd can solve this and probably other aspects of 
-> responsiveness, go for it, compete with it, and _prove_ it with real 
-> facts and numbers, not just hand waving.
+Well, it seems nicer than the situation we have now. So I'm certainly
+ok with seeing this merged for 2.6.38 (through the security tree?) if
+nobody has objections.
 
-Of course systemd can do it.  You don't even need systemd, autogroup or
-whatever else if you don't mind a little scripting.  There's nothing to
-prove, any numbers he generates will be identical with any numbers I
-generate... it's the same scheduler whether you configure it from
-userspace or kernelspace.
+It's a bit sad to have another atomic in the open path, but if the
+lease people want this and are ok with just the counter (no races?)
+then it seems worth it.
 
-> As already mentioned countless times (and some of it was even renamed 
-> for this very fact): the grouping by tty is just a starter. There are
-
-Actually, I switched to setsid alone for now at least, and the only
-thing in the root group is kernel threads. 
-
-	-Mike
-
+                      Linus
