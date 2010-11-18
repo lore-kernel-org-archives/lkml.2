@@ -1,94 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830Ab0KRLA1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 06:00:27 -0500
-Received: from cantor.suse.de ([195.135.220.2]:42552 "EHLO mx1.suse.de"
+	id S1756867Ab0KRLCS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 06:02:18 -0500
+Received: from ozlabs.org ([203.10.76.45]:47213 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756765Ab0KRLA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 06:00:26 -0500
-Date: Thu, 18 Nov 2010 12:00:21 +0100
-From: "Dr. Werner Fink" <werner@suse.de>
-To: Greg KH <greg@kroah.com>
-Cc: Lennart Poettering <mzxreary@0pointer.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
-Message-ID: <20101118110020.GA13871@boole.suse.de>
-Mail-Followup-To: Greg KH <greg@kroah.com>,
-	Lennart Poettering <mzxreary@0pointer.de>,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
-References: <20101116195538.7fa66b97@lxorguk.ukuu.org.uk>
- <20101116213622.GA17824@tango.0pointer.de>
- <20101116225619.5fa7ef8b@lxorguk.ukuu.org.uk>
- <20101116231023.GB27594@tango.0pointer.de>
- <25482.1290031268@localhost>
- <AANLkTimV_zKK-Ubw3vJkDUtrYvB+W06cRR7Nz2vam6fP@mail.gmail.com>
- <20101117235647.00766e32@lxorguk.ukuu.org.uk>
- <20101118012734.GA8558@kroah.com>
- <20101118014848.GA7873@tango.0pointer.de>
- <20101118015310.GA30480@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20101118015310.GA30480@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756808Ab0KRLCR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 06:02:17 -0500
+Subject: Re: [PATCH 3/3] x86: OLPC: speed up device tree creation during
+ boot (v2)
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, Milton Miller <miltonm@bga.com>,
+        Ingo Molnar <mingo@redhat.com>, Andres Salomon <dilinger@queued.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20101118083420.GC26398@elte.hu>
+References: <20101111214546.4e573cad@queued.net>
+	 <reply-olpc-3-v2@mdm.bga.com> <20101112002704.50c629e2@queued.net>
+	 <20101114095013.GB24206@elte.hu> <4CE0B54E.6000101@zytor.com>
+	 <20101115070254.GA25243@elte.hu> <4CE17133.2050101@zytor.com>
+	 <20101118083420.GC26398@elte.hu>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-TDsR970TqK/BnEdaUhgh"
+Date: Thu, 18 Nov 2010 22:02:15 +1100
+Message-ID: <1290078135.22575.4.camel@concordia>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 05:53:10PM -0800, Greg KH wrote:
-> On Thu, Nov 18, 2010 at 02:48:48AM +0100, Lennart Poettering wrote:
-> > On Wed, 17.11.10 17:27, Greg KH (greg@kroah.com) wrote:
-> > 
-> > > I can do any one, or multiple things from the following options:
-> > > 
-> > > 	- disable the existing ioctl to return an error so that no new
-> > > 	  userspace program starts to use it thinking it is valid
-> > > 	- accept Werner's patch for those who like proc files
-> > > 	- accept Kay's patch
-> > > 
-> > > Any suggestions?
-> > 
-> > Maybe this is not so surprising, but I definitely want item #3 from the
-> > list. 
-> > 
-> > I am against #2, since #1 is a much nicer solution, and having both
-> > would be needlessly redundant.
-> 
-> I think you mean s/1/3/ here, right?
-> 
-> And yes, having both will be redundant, and Werner seems to not be
-> responding anymore as to why he feels his patch is somehow still needed
-> given that Kay's patch accomplishes the same thing from what I can tell.
 
-I'm still reading and I'm wondering about this discussion.  The only
-thing I'd like to be able is to detect all ttys used for the system
-console even if not a VT (not having a VT but several other consoles
-is the most pressing case e.g. on s390 or zSeries) and this without
-forcing (and maybe stealing) the controlling tty on the system console
-to be able to detect the primary tty/console.
+--=-TDsR970TqK/BnEdaUhgh
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-The primary tty marked with CON_CONSDEV and normally the first in
-console_drivers.  This can be done with Kay's patch as well as with
-my approach.  And both approaches do have the advantage to become
-the full list of consoles which will help me to extend e.g. sulogin ...
+On Thu, 2010-11-18 at 09:34 +0100, Ingo Molnar wrote:
+> * H. Peter Anvin <hpa@zytor.com> wrote:
+>=20
+> > On 11/14/2010 11:02 PM, Ingo Molnar wrote:
+> > >=20
+> > > * H. Peter Anvin <hpa@zytor.com> wrote:
+> > >=20
+> > >> What?  What is wrong with static variables in functions?  It really =
+doesn't seem=20
+> > >> to be a good idea to make them file-scope if they don't need to be.
+> > >=20
+> > > They are very easy to overlook and mix up with regular stack variable=
+s and i've seen=20
+> > > (and introduced myself) a number of bugs due to them.
+> > >=20
+> > > They also often are used in buggy ways (with SMP not taken into consi=
+deration), so=20
+> > > overlooking them during review compounds their negative effects. Putt=
+ing them in=20
+> > > front of the function isnt a big deal in exchange.
+> > >=20
+> > > There are people who never overlook them (like yourself), but my brai=
+n is wired up=20
+> > > differently.
+> > >=20
+> >=20
+> > However, I have to vehemently object to putting them in a wider scope
+> > than is otherwise necessary.  I agree that static variables should be
+> > used sparsely if at all (there really are vary few uses of them that ar=
+e
+> > valid), but putting them in a larger scope screams "I'm used in more
+> > than one function", and that is *not* a good thing.
+>=20
+> That's why we sometimes use the (imperfect) compromise to put them in fro=
+nt of that=20
+> function, not at the top of the file.
+>=20
+> Look at the general balance of hardship: very little harm is done (it's n=
+ot a big=20
+> deal if a variable is only used in a single function) but having it with =
+local=20
+> variables can be _really_ harmful - for example i overlooked them when i =
+reviewed=20
+> this patch. I dont like important details obscured - i like them to be ap=
+parent.=20
+> Again, this is something that some people can parse immediately on the vi=
+sual level=20
+> - me and many others cannot.
 
-The only advantage of my approache in comparision to Kay's one is that
-the remaining console flags become visible for normal user space.
-This was an idea of Randy Dunlap otherwise my patch would provide
-the same information as the patch of Kay.
+What about:
 
-Maybe Kay could extend his patch in that way that the flags and the
-facilities (having device, read, write, and unblank) are also shown
-in the new file /sys/class/tty/console/active ... but maybe Randy
-could says a few words for what this is usable.
+int foo(void)
+{
+	static int bar;
 
-     Werner
+	struct thing_struct *thing;
+	int other_var;
+	char *p;
 
--- 
-System V style init programs - http://savannah.nongnu.org/projects/sysvinit/
+	...
+}
+
+I think the visual wrongness of that formatting would be enough for me
+to stop and look twice. Though I guess it doesn't work if you have few,
+or no other variables other than the statics to declare.
+
+cheers
+
+
+--=-TDsR970TqK/BnEdaUhgh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkzlB7MACgkQdSjSd0sB4dLRiwCePlCH9Mp4T5KVXKQ+4CLamUJ1
+PvEAoMnzw47YZ3Vo7s0qkh2QRNOZyGgQ
+=L99G
+-----END PGP SIGNATURE-----
+
+--=-TDsR970TqK/BnEdaUhgh--
+
