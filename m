@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760853Ab0KRXcp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:32:45 -0500
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:8456 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757983Ab0KRXco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:32:44 -0500
-Subject: Re: divide error in select_task_rq_fair()
-From: Myron Stowe <myron.stowe@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Nikanth Karthikesan <knikanth@suse.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>, Nikhil Rao <ncrao@google.com>,
-        Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, rjenties@google.com
-In-Reply-To: <AANLkTikUnLc8L_0+CQOwPgr-oifws=sqnFPxWz46MTCi@mail.gmail.com>
-References: <20101104041236.GA9389@helgaas.com>
-	 <1288937844.3234.1.camel@edumazet-laptop> <1289500084.2698.12.camel@zim>
-	 <201011121152.30204.knikanth@suse.de> <1289756161.2814.29.camel@zim>
-	 <AANLkTikUnLc8L_0+CQOwPgr-oifws=sqnFPxWz46MTCi@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Nov 2010 16:32:41 -0700
-Message-ID: <1290123161.2447.27.camel@zim>
+	id S1760863Ab0KRXdI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:33:08 -0500
+Received: from chilli.pcug.org.au ([203.10.76.44]:59668 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757720Ab0KRXdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 18:33:07 -0500
+Date: Fri, 19 Nov 2010 10:33:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for November 18
+Message-Id: <20101119103300.243b17c8.sfr@canb.auug.org.au>
+In-Reply-To: <4CE54562.9030603@panasas.com>
+References: <20101118134256.fe132215.sfr@canb.auug.org.au>
+	<4CE54562.9030603@panasas.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__19_Nov_2010_10_33_00_+1100_QC1JR4QL57UBmiNz"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-14 at 11:11 -0800, Yinghai Lu wrote:
-> On Sun, Nov 14, 2010 at 9:36 AM, Myron Stowe <myron.stowe@hp.com> wrote:
-> >
-> > I got the same divide error with this latest patch (see attachment).  If
-> > I revert commit 50f2d7f682f9, the platform boots successfully.
-> 
-> please check patch in
-> http://lkml.org/lkml/2010/11/13/181
+--Signature=_Fri__19_Nov_2010_10_33_00_+1100_QC1JR4QL57UBmiNz
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I was able to test this patch and with it applied the system did boot
-successfully.
+Hi Boaz,
 
-While I think you are on the correct path with respect to this issue I
-could not make any sense out of the patch heading and description.
-Worse - I'm thinking that it is even mis-leading as currently written
-(especially the patch heading).
+On Thu, 18 Nov 2010 17:25:22 +0200 Boaz Harrosh <bharrosh@panasas.com> wrot=
+e:
+>
+> The uml build from:
+>         http://kisskb.ellerman.id.au/kisskb/target/2979/
+>=20
+> is failing compilation like:
+>   LD      .tmp_vmlinux1
+> /opt/crosstool/gcc-4.2.3-glibc-2.3.6/i386-unknown-linux-gnu/lib/gcc/i386-=
+unknown-linux-gnu/4.2.3/../../../../i386-unknown-linux-gnu/bin/ld:arch/um/k=
+ernel/vmlinux.lds:231: parse error
+> collect2: ld returned 1 exit status
+>   KSYM    .tmp_kallsyms1.S
+> /opt/crosstool/gcc-4.2.3-glibc-2.3.6/i386-unknown-linux-gnu/bin/i386-unkn=
+own-linux-gnu-nm: '.tmp_vmlinux1': No such file
+> No valid symbol.
+> make[1]: *** [.tmp_kallsyms1.S] Error 1
+> make: *** [sub-make] Error 2
+> make failed, trying to bisect ..
+>=20
+> It looks like a build environment setup problem because it's fine here
+> (for x86_64 at least.) Who is the person responsible for the above URL
+> compilation please?
 
-Thanks,
+I am (at least partially) responsible for that build environment.
 
-Myron
-> 
-> BTW, you also need to ask your BIOS guys to fix the SRAT table.
-> If you only have 128 cpu entries in MADT, SRAT table should have 128
-> cpu entries instead of 256 cpu entries
-> otherwise, RHEL 5.5 could have problem. it will throw away last cpu
-> entry in SRAT,
->  (NR_CPUS is 255..., and last entry still could point the right cpu in MADT)
-> Also BIOS should keep cpu entries in SRAT have same order to that in MADT.
-> 
-> Thanks
-> 
-> Yinghai
-> 
+We only started getting that build failure with next-20101115 (it may
+have been present before then but masked by other build failures), and
+our build system hasn't changed in quite some time ...  In fact, before
+next-20100915, the um i386 build used to succeed.
 
+The build we are doing is 32 bit (not 64 bit).  We are in the process of
+getting a newer tool chain, but I am not sure when that will happen.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
--- 
-Myron Stowe                             Linux Kernel Developer
-Fort Collins, CO                        Office of Corporate Strategy and Technology
+--Signature=_Fri__19_Nov_2010_10_33_00_+1100_QC1JR4QL57UBmiNz
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJM5besAAoJEDMEi1NhKgbsgUcH/2S/OFXupKF6D6LOIN7s1vKK
+ARiKGIxWDZXozjdPANM+UIfep1fwfc7/2zhfFb+Zg7fFUcDC2clXeL4xcICNB1BS
+OuT8s1RzkpEQzFkj9LnNrOOlMCzS8o2B/HqNi+RKcpXg3Ts1syhaF3SEUqrDbPD3
+4nXAUvbi0YKRKbySGTVisOY4KESfdwjfSKlVTpOFjwqDUXIkuXXpbQSs0jeL4U2Y
+FzuDAXgx+97RQPNu0vMQrxn1GnDmSumEFW0XjPgkUvp0TbBYl2oNA0ZzWy8BUyD3
+2UhKEHMncWFZTPXfcBDcezW8pZTFZONy0VOo4guZIvqy7A5hPHtNzlmxf+mz6+E=
+=dFVr
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__19_Nov_2010_10_33_00_+1100_QC1JR4QL57UBmiNz--
