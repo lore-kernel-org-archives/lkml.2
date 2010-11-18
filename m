@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759926Ab0KRQwD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:52:03 -0500
-Received: from cantor.suse.de ([195.135.220.2]:53922 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759898Ab0KRQwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 11:52:01 -0500
-Date: Thu, 18 Nov 2010 08:51:36 -0800
-From: Greg KH <gregkh@suse.de>
-To: Timur Tabi <timur@freescale.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>
-Subject: Re: How do I choose an arbitrary minor number for my tty device?
-Message-ID: <20101118165136.GA3103@suse.de>
-References: <20101117215147.GA26792@suse.de>
- <4CE452CD.3050001@freescale.com>
- <20101117221903.GA4066@suse.de>
- <4CE45A4E.70308@freescale.com>
- <20101118022434.GA9833@suse.de>
- <4CE546C5.8060401@freescale.com>
- <20101118153912.GA1443@suse.de>
- <4CE54E40.9040503@freescale.com>
- <20101118163321.GA2723@suse.de>
- <4CE5562B.8080604@freescale.com>
+	id S1759940Ab0KRQwS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:52:18 -0500
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:58082 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759930Ab0KRQwO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 11:52:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=u29a6I4y+Zuoo5dSIgiSpO70fRCmpkTiD6UaPEGae2KMrzaUUwhjZQ5m0nQ5EnKrV+
+         l7JBN5FR9FH6EYmbtzDsnSQlMvcxXuM+Opv1L8x7E4OzQlb/RZSOrOcDpJJrO3VDuz+m
+         /PPEutYD0eGA+IPOf5FJPPEMSbdGOqax2ei3U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE5562B.8080604@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101118113441.74fcdc21@lxorguk.ukuu.org.uk>
+References: <AANLkTim4jVaZxYp8nSgJyy28iwxcxbPeNUzxTfoHAX4S@mail.gmail.com> <20101118113441.74fcdc21@lxorguk.ukuu.org.uk>
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Date: Thu, 18 Nov 2010 08:51:46 -0800
+X-Google-Sender-Auth: 5jwVdavNq2AKBF-nbbvziuL64sE
+Message-ID: <AANLkTikOZbtyhsk0OBb4OdUi6qj-7k_hU-aW_Pkhfpq0@mail.gmail.com>
+Subject: Re: Challenges with doing hardware bring up with Linux first
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        Greg KH <greg@kroah.com>, David Miller <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "Perez-Gonzalez, Inaky" <inaky.perez-gonzalez@intel.com>,
+        Charles Marker <Charles.Marker@atheros.com>,
+        Jouni Malinen <Jouni.Malinen@atheros.com>,
+        Kevin Hayes <kevin@atheros.com>, Zhifeng Cai <zhifeng.cai@atheros.com>,
+        Don Breslin <Don.Breslin@atheros.com>,
+        Doug Dahlby <Doug.Dahlby@atheros.com>, Julia Lawall <julia@diku.dk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 10:36:59AM -0600, Timur Tabi wrote:
-> Greg KH wrote:
-> > If all you want is a tty driver, then just write a tty driver.  No need
-> > for character device nodes or any of that other stuff.  Just assign
-> > minor numbers to the device, create it, attach it to the tty core, and
-> > away you go.
-> 
-> What I would like to do is have some control over the name or minor number of
-> the /dev entry.
+On Thu, Nov 18, 2010 at 3:34 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> I'd like to see hardware bring up at companies being done with Linux.
+>
+> I know several companies where it is sometimes used.
+>
+>> with this though. For starters hardware teams typically want to get
+>> hardware brought up as fast as possible to be able to sell chipsets.
+>> Its always a race. Proper Linux upstream support will get there but
+>> depending on the company this may mean this gets done after the
+>> proprietary driver approach is done first or simply until you have a
+>> big enough customer to justify it.
+>
+> I've seen the kind of code written to "get it up as fast as possible" and
+> also to do validation. It's the sort of code that has to be written
+> anyway, and which contains a multitude of fascinating stuff which doesn't
+> ever want to go near upstream.
 
-Why?  Again, it doesn't matter, and no other tty driver does it.
+:)
 
-Actually you do have control over it, if you really want it, but again,
-don't do that :)
+>> everything else can be independent code. For ath9k in particular this
+>> means we keep ath9k_hw shared between our Operating Systems and that's
+>> it. In addition to this I believe opening up the common drivers for
+>
+> The Linux copy needs to be GPL,
 
-> > I think you are going to have to show code here to get any kind of a
-> > better response out of me as I don't think we are understanding each
-> > other here, sorry.
-> 
-> I'll have to email it to you directly, since it's not authorized for public
-> distribution just quite yet.
+GPL-Compatible you mean, right. I mean we have ath9k_hw with
+permissive licensed files.
 
-Sorry, I can't do code review, or accept code that is not allowed to be
-sent to the public, as, surprise, I'm public :)
+> but if you own every line of it then you
+> can relicense it. In fact we have examples of big bits of code that are
+> not Linux only - eg the ACPI stack which are managed in a non entirely
+> unrelated way.
 
-So you just sent me an illegal file, great, should I expect to hear from
-your lawyers now?
+Right, which is why we worked on the permissive license approach to
+help OpenBSD back in the day with ath5k.
 
-{sigh}
+>> Can Linux help in any way? What if we used staging for a common driver
+>> architecture for different OSes?
+>
+> It's generally gone pear shaped in the past, although tools like spatch
+> are more modern than many of those attempts.
+>
+> There is another way to do it which is instead of writing a glue layer
+> for Linux write to the general Linux interfaces which have the virtue of
+> being very simple for the most part, and keep the glue layer for the
+> other obscure environments where you are doing the stack ?
 
-I deal enough with lawyers as it is, please don't do this...
+Not sure I got this last part can you clarify a bit ? One of the ideas
+I had was to make the OS agnostic stuff be defined by the Linux APIs
+and have the kmalloc() etc map to whatever OS call. While a good idea,
+the biggest hurdle was the difference in arguments required, and any
+new Linux API change would break the OS wrappers until updated
+respectively.
 
-greg k-h
+  Luis
