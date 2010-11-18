@@ -1,135 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932291Ab0KRQOF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:14:05 -0500
-Received: from mga14.intel.com ([143.182.124.37]:23184 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932202Ab0KRQOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 11:14:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,217,1288594800"; 
-   d="scan'208";a="350435805"
-Date: Fri, 19 Nov 2010 00:13:56 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kara <jack@suse.cz>, "Li, Shaohua" <shaohua.li@intel.com>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] writeback: prevent bandwidth calculation overflow
-Message-ID: <20101118161356.GA20569@localhost>
-References: <20101118065725.GB8458@localhost>
- <4CE537BE.6090103@redhat.com>
- <20101118154408.GA18582@localhost>
- <1290096121.2109.1525.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290096121.2109.1525.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932410Ab0KRQOL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:14:11 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49256
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932306Ab0KRQOH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 11:14:07 -0500
+Date: Thu, 18 Nov 2010 08:14:31 -0800 (PST)
+Message-Id: <20101118.081431.226772232.davem@davemloft.net>
+To: petkan@nucleusys.com
+Cc: joe@perches.com, trivial@kernel.org, petkan@users.sourceforge.net,
+        gregkh@suse.de, linux-usb@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/10] drivers/net/usb: Remove unnecessary casts of
+ netdev_priv
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.DEB.2.00.1011180918420.2169@bender.nucleusys.com>
+References: <alpine.DEB.2.00.1011161958320.1392@gabi>
+	<20101117.104555.246530412.davem@davemloft.net>
+	<alpine.DEB.2.00.1011180918420.2169@bender.nucleusys.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 12:02:01AM +0800, Peter Zijlstra wrote:
-> On Thu, 2010-11-18 at 23:44 +0800, Wu Fengguang wrote:
-> > +               pause = HZ * pages_dirtied / (bw + 1);
+From: Petko Manolov <petkan@nucleusys.com>
+Date: Thu, 18 Nov 2010 09:24:49 +0200 (EET)
+
+> On Wed, 17 Nov 2010, David Miller wrote:
 > 
-> Shouldn't that be using something like div64_u64 ?
+>> Also, please use a properly formed "Acked-by: " tag if you want
+>> your ACK to actually show up in the commit log message.
+> 
+> My "ack" was only a notification that i've checked the patch.  It was
+> not meant to go into the logs.
 
-Thanks for review. Here is the updated patch using div64_u64().
-
----
-Subject: writeback: prevent bandwidth calculation overflow
-Date: Thu Nov 18 12:55:42 CST 2010
-
-On 32bit kernel, bdi->write_bandwidth can express at most 4GB/s.
-
-However the current calculation code can overflow when disk bandwidth
-reaches 800MB/s.  Fix it by using "long long" and div64_u64() in the
-calculations.
-
-And further change its unit from bytes/second to pages/second.
-That allows up to 16TB/s bandwidth in 32bit kernel.
-
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/backing-dev.c    |    4 ++--
- mm/page-writeback.c |   11 +++++------
- 2 files changed, 7 insertions(+), 8 deletions(-)
-
---- linux-next.orig/mm/page-writeback.c	2010-11-18 12:42:58.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-11-19 00:08:23.000000000 +0800
-@@ -494,7 +494,7 @@ void bdi_update_write_bandwidth(struct b
- 	unsigned long written;
- 	unsigned long elapsed;
- 	unsigned long bw;
--	unsigned long w;
-+	unsigned long long w;
- 
- 	if (*bw_written == 0)
- 		goto snapshot;
-@@ -513,7 +513,7 @@ void bdi_update_write_bandwidth(struct b
- 		goto snapshot;
- 
- 	written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]) - *bw_written;
--	bw = (HZ * PAGE_CACHE_SIZE * written + elapsed/2) / elapsed;
-+	bw = (HZ * written + elapsed/2) / elapsed;
- 	w = min(elapsed / unit_time, 128UL);
- 	bdi->write_bandwidth = (bdi->write_bandwidth * (1024-w) + bw * w) >> 10;
- 	bdi->write_bandwidth_update_time = jiffies;
-@@ -539,7 +539,7 @@ static void balance_dirty_pages(struct a
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
- 	unsigned long task_thresh;
--	unsigned long bw;
-+	unsigned long long bw;
- 	unsigned long pause = 0;
- 	bool dirty_exceeded = false;
- 	struct backing_dev_info *bdi = mapping->backing_dev_info;
-@@ -602,8 +602,7 @@ static void balance_dirty_pages(struct a
- 		 * of dirty pages have been cleaned during our pause time.
- 		 */
- 		if (nr_dirty < dirty_thresh &&
--		    bdi_prev_dirty - bdi_dirty >
--		    bdi->write_bandwidth >> (PAGE_CACHE_SHIFT + 2))
-+		    bdi_prev_dirty - bdi_dirty > bdi->write_bandwidth / 4)
- 			break;
- 		bdi_prev_dirty = bdi_dirty;
- 
-@@ -626,7 +625,7 @@ static void balance_dirty_pages(struct a
- 		bw = bw * (task_thresh - bdi_dirty);
- 		bw = bw / (bdi_thresh / TASK_SOFT_DIRTY_LIMIT + 1);
- 
--		pause = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1);
-+		pause = div64_u64(HZ * pages_dirtied, bw + 1);
- 		pause = clamp_val(pause, 1, HZ/10);
- 
- pause:
---- linux-next.orig/mm/backing-dev.c	2010-11-18 14:24:45.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2010-11-18 14:27:00.000000000 +0800
-@@ -103,7 +103,7 @@ static int bdi_debug_stats_show(struct s
- 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
- 		   K(bdi_thresh), K(dirty_thresh), K(background_thresh),
- 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
--		   (unsigned long) bdi->write_bandwidth >> 10,
-+		   (unsigned long) K(bdi->write_bandwidth),
- 		   nr_dirty, nr_io, nr_more_io,
- 		   !list_empty(&bdi->bdi_list), bdi->state);
- #undef K
-@@ -662,7 +662,7 @@ int bdi_init(struct backing_dev_info *bd
- 			goto err;
- 	}
- 
--	bdi->write_bandwidth = 100 << 20;
-+	bdi->write_bandwidth = (100 << 20) / PAGE_CACHE_SIZE;
- 	bdi->dirty_exceeded = 0;
- 	err = prop_local_init_percpu(&bdi->completions);
- 
+The fact that a developer has checked the patch is important and
+useful information, so I find it strange that you would want to elide
+that record from the commit message. :-)
