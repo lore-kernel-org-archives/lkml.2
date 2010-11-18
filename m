@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab0KRIi5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 03:38:57 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:47104 "EHLO zene.cmpxchg.org"
+	id S1755669Ab0KRIjT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 03:39:19 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35101 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753519Ab0KRIi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 03:38:56 -0500
-Date: Thu, 18 Nov 2010 09:38:28 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] Use memory compaction instead of lumpy reclaim
- during high-order allocations
-Message-ID: <20101118083828.GA24635@cmpxchg.org>
-References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie>
- <20101117154641.51fd7ce5.akpm@linux-foundation.org>
- <20101118081254.GB8135@csn.ul.ie>
- <20101118172627.cf25b83a.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1755570Ab0KRIjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 03:39:18 -0500
+Date: Thu, 18 Nov 2010 09:39:05 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH][GIT PULL] tracing: Fix recursive user stack trace
+Message-ID: <20101118083905.GE26398@elte.hu>
+References: <1289617069.12418.575.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101118172627.cf25b83a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1289617069.12418.575.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 05:26:27PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu, 18 Nov 2010 08:12:54 +0000
-> Mel Gorman <mel@csn.ul.ie> wrote:
+
+* Steven Rostedt <rostedt@goodmis.org> wrote:
+
 > 
-> > > > I'm hoping that this series also removes the
-> > > > necessity for the "delete lumpy reclaim" patch from the THP tree.
-> > > 
-> > > Now I'm sad.  I read all that and was thinking "oh goody, we get to
-> > > delete something for once".  But no :(
-> > > 
-> > > If you can get this stuff to work nicely, why can't we remove lumpy
-> > > reclaim?
-> > 
-> > Ultimately we should be able to. Lumpy reclaim is still there for the
-> > !CONFIG_COMPACTION case and to have an option if we find that compaction
-> > behaves badly for some reason.
-> > 
+> Ingo,
 > 
-> Hmm. CONFIG_COMPACTION depends on CONFIG_MMU. lumpy reclaim will be for NOMMU,
-> finally ?
+> This also includes the two other patches I submitted previously.
+> I just rebased the third patch with Eric's recommendation.
+> 
+> Please pull the latest tip/perf/urgent-3 tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> tip/perf/urgent-3
+> 
+> 
+> Steven Rostedt (1):
+>       tracing: Fix recursive user stack trace
 
-It's because migration depends on MMU.  But we should be able to make
-a NOMMU version of migration that just does page cache, which is all
-that is reclaimable on NOMMU anyway.
+Pulled, thanks a lot Steve!
 
-At this point, the MMU dependency can go away, and so can lumpy
-reclaim.
-
-	Hannes
-
-PS: I'm recovering from a cold, will catch up with the backlog later
+	Ingo
