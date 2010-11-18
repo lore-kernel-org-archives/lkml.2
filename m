@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757498Ab0KRNJX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 08:09:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8733 "EHLO mx1.redhat.com"
+	id S1757445Ab0KRNLz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 08:11:55 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:52431 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751944Ab0KRNJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 08:09:22 -0500
-Message-ID: <4CE5257B.60206@redhat.com>
-Date: Thu, 18 Nov 2010 15:09:15 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1752644Ab0KRNLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 08:11:54 -0500
+Date: Thu, 18 Nov 2010 13:11:39 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 22 of 66] clear page compound
+Message-ID: <20101118131139.GP8135@csn.ul.ie>
+References: <patchbomb.1288798055@v2.random> <07e16ab3de7087625751.1288798077@v2.random>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Gregory Haskins <ghaskins@novell.com>,
-        Chris Lalancette <clalance@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: fast-path msi injection with irqfd
-References: <20101117221254.GA8296@redhat.com> <20101118105741.GA31261@redhat.com> <4CE50810.3090502@redhat.com> <20101118111037.GB31261@redhat.com> <4CE51C17.4000108@redhat.com> <20101118130337.GA2254@redhat.com>
-In-Reply-To: <20101118130337.GA2254@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <07e16ab3de7087625751.1288798077@v2.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2010 03:03 PM, Michael S. Tsirkin wrote:
-> >  >   int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level);
-> >  >+int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
-> >  >+		int irq_source_id, int level);
-> >
-> >  No point in the level argument for an msi specific function.
->
-> This is an existing function I made non-static.
-> We have per-gsi callbacks so level is required there to match.
+On Wed, Nov 03, 2010 at 04:27:57PM +0100, Andrea Arcangeli wrote:
+> From: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> split_huge_page must transform a compound page to a regular page and needs
+> ClearPageCompound.
+> 
+> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> Acked-by: Rik van Riel <riel@redhat.com>
+> Reviewed-by: Christoph Lameter <cl@linux-foundation.org>
 
-Right.
-
-> I could add a wrapper I guess:
->
-> int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
-> 		int irq_source_id, int level)
-> {
-> 	if (!level)
-> 		return -1;
-> 	return kvm_send_msi(irq_entry, kvm, irq_source_id);
-> }
->
-> This results in less code for irqfd but more code for ioctl injection
-> ... is it worth it?
-
-IMO not.
-
-> >
-> >  Apart from these minor issues, looks good.
->
->
-> Something we should consider improving is the loop over all VCPUs that
-> kvm_irq_delivery_to_apic invokes.  I think that (for non-broadcast
-> interrupts) it should be possible to precompute an store the CPU
-> in question as part of the routing entry.
-
-> Something for a separate patch ... comments?
-
-Yes.  Either precompute, or compute on first use and cache.  Precompute 
-is more realtime-friendly so I prefer it.
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
