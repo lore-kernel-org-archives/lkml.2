@@ -1,810 +1,761 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757024Ab0KRMsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 07:48:22 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:27611 "EHLO
+	id S1757049Ab0KRMsx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 07:48:53 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:29228 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756826Ab0KRMsU (ORCPT
+	with ESMTP id S1756809Ab0KRMsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 07:48:20 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6170"; a="63375636"
+	Thu, 18 Nov 2010 07:48:51 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6170"; a="63375702"
 From: Tatyana Brokhman <tlinder@codeaurora.org>
 To: gregkh@suse.de
 Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         Tatyana Brokhman <tlinder@codeaurora.org>,
         David Brownell <dbrownell@users.sourceforge.net>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v4 3/4] usb gagdet: Modify existing gadget drivers to use config_ep_by_speed() instead of ep_choose.
-Date: Thu, 18 Nov 2010 14:48:09 +0200
-Message-Id: <1290084490-30461-1-git-send-email-tlinder@codeaurora.org>
+Subject: [PATCH v4 4/4] usb gadget: Add SuperSpeed support to the Gadget Framework
+Date: Thu, 18 Nov 2010 14:48:40 +0200
+Message-Id: <1290084521-4927-1-git-send-email-tlinder@codeaurora.org>
 X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove obsolete functions:
-1. ep_choose()
-2. usb_find_endpoint()
+This patch adds the SuperSpeed functionality to the gadget framework.
+In order not to force all the gadget drivers to supply SuperSpeed
+descriptors when operating in SuperSpeed mode the following approach was
+taken:
+If we're operating in SuperSpeed mode and the gadget driver didn't supply
+SuperSpeed descriptors, the composite layer will automatically create
+SuperSpeed descriptors with default values.
+Support for new SuperSpeed BOS descriptor was added.
+Support for SET_FEATURE and GET_STATUS requests in SuperSpeed mode was
+added.
 
 Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
 ---
- drivers/usb/gadget/config.c       |   25 -------------------
- drivers/usb/gadget/f_acm.c        |   47 +++++++++++--------------------------
- drivers/usb/gadget/f_ecm.c        |   45 +++++++++++------------------------
- drivers/usb/gadget/f_eem.c        |   32 +++++++------------------
- drivers/usb/gadget/f_hid.c        |   19 ++++----------
- drivers/usb/gadget/f_loopback.c   |   11 +++++---
- drivers/usb/gadget/f_obex.c       |   32 +++++++------------------
- drivers/usb/gadget/f_phonet.c     |   12 ++++----
- drivers/usb/gadget/f_rndis.c      |   45 ++++++++++-------------------------
- drivers/usb/gadget/f_serial.c     |   32 ++++++-------------------
- drivers/usb/gadget/f_sourcesink.c |    8 ++++-
- drivers/usb/gadget/f_subset.c     |   29 ++++------------------
- include/linux/usb/composite.h     |   15 -----------
- include/linux/usb/gadget.h        |    6 ----
- 14 files changed, 98 insertions(+), 260 deletions(-)
+ drivers/usb/gadget/Kconfig     |   12 ++
+ drivers/usb/gadget/composite.c |  370 +++++++++++++++++++++++++++++++++++++---
+ include/linux/usb/composite.h  |   25 +++
+ include/linux/usb/gadget.h     |   29 +++
+ 4 files changed, 414 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/usb/gadget/config.c b/drivers/usb/gadget/config.c
-index 09084fd..b2c0013 100644
---- a/drivers/usb/gadget/config.c
-+++ b/drivers/usb/gadget/config.c
-@@ -165,28 +165,3 @@ usb_copy_descriptors(struct usb_descriptor_header **src)
- 	return ret;
+diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
+index b739ca8..66fe27d 100644
+--- a/drivers/usb/gadget/Kconfig
++++ b/drivers/usb/gadget/Kconfig
+@@ -542,6 +542,18 @@ config USB_GADGET_DUALSPEED
+ 	  Means that gadget drivers should include extra descriptors
+ 	  and code to handle dual-speed controllers.
+ 
++config USB_GADGET_SUPERSPEED
++	boolean "Gadget operating in Super Speed"
++	depends on USB_GADGET
++	depends on USB_GADGET_DUALSPEED
++	default n
++	help
++	  Enabling this feature enables Super Speed support in the Gadget
++	  driver. It means that gadget drivers should provide extra (SuperSpeed)
++	  descriptors to the host.
++	  For composite devices: if SuperSpeed descriptors weren't supplied by
++	  the FD, they will be automatically generated with default values.
++
+ #
+ # USB Gadget Drivers
+ #
+diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+index 99fb27d..6387baf 100644
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -73,6 +73,123 @@ MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
+ 
+ static char composite_manufacturer[50];
+ 
++/* Default endpoint companion descriptor */
++static struct usb_ss_ep_comp_descriptor default_ep_comp_desc = {
++		.bDescriptorType = USB_DT_SS_ENDPOINT_COMP,
++		.bLength = 0x06,
++		.bMaxBurst = 0, /* the default is we don't support bursting */
++		.bmAttributes = 0, /* 2^0 streams supported */
++		.wBytesPerInterval = 0,
++};
++
++/**
++ * create_ss_descriptors() - Generate SuperSpeed descriptors
++ * with default values
++ * @f: pointer to usb_function to generate the descriptors for
++ *
++ * This function receives a pointer to usb_function and adds
++ * missing super speed descriptors in the ss_descriptor field
++ * according to its hs_descriptors field.
++ *
++ * This function copies f->hs_descriptors while updating the
++ * endpoint descriptor and adding endpoint companion descriptor.
++ */
++static void create_ss_descriptors(struct usb_function *f)
++{
++	unsigned bytes;		/* number of bytes to allocate */
++	unsigned n_desc;	/* number of descriptors */
++	void *mem;		/* allocated memory to copy to */
++	struct usb_descriptor_header **tmp;
++	struct usb_endpoint_descriptor	*ep_desc ;
++	struct usb_ss_ep_comp_descriptor *ep_comp_desc;
++	struct usb_descriptor_header **src = f->hs_descriptors;
++
++	if (!f->hs_descriptors)
++		return;
++
++	/*
++	 * Count number of EPs (in order to know how many SS_EP_COMPANION
++	 * descriptors to add), the total number of descriptors and the sum of
++	 * each descriptor bLength field in order to know how much memory to
++	 * allocate.
++	 */
++	for (bytes = 0, n_desc = 0, tmp = src; *tmp; tmp++, n_desc++) {
++		if ((*tmp)->bDescriptorType == USB_DT_ENDPOINT) {
++			bytes += default_ep_comp_desc.bLength;
++			n_desc++;
++		}
++		bytes += (*tmp)->bLength;
++	}
++
++	bytes += (n_desc + 1) * sizeof(*tmp);
++	mem = kmalloc(bytes, GFP_KERNEL);
++	if (!mem)
++		return;
++
++	/*
++	 * Fill in pointers starting at "tmp", to descriptors copied starting
++	 * at "mem" and return "ret"
++	 */
++	tmp = mem;
++	f->ss_descriptors  = mem;
++	mem += (n_desc + 1) * sizeof(*tmp);
++	while (*src) {
++		/* Copy the original descriptor */
++		memcpy(mem, *src, (*src)->bLength);
++		switch ((*src)->bDescriptorType) {
++		case USB_DT_ENDPOINT:
++			/* update ep descriptor */
++			ep_desc = (struct usb_endpoint_descriptor *)mem;
++			switch (ep_desc->bmAttributes &
++				USB_ENDPOINT_XFERTYPE_MASK) {
++			case USB_ENDPOINT_XFER_CONTROL:
++				ep_desc->wMaxPacketSize = cpu_to_le16(512);
++				ep_desc->bInterval = 0;
++				break;
++			case USB_ENDPOINT_XFER_BULK:
++				ep_desc->wMaxPacketSize = cpu_to_le16(1024);
++				ep_desc->bInterval = 0;
++				break;
++			case USB_ENDPOINT_XFER_INT:
++			case USB_ENDPOINT_XFER_ISOC:
++				break;
++			}
++			*tmp = mem;
++			tmp++;
++			mem += (*src)->bLength;
++			/* add ep companion descriptor */
++			memcpy(mem, &default_ep_comp_desc,
++			       default_ep_comp_desc.bLength);
++			*tmp = mem;
++			tmp++;
++			/* Update wBytesPerInterval for periodic endpoints */
++			ep_comp_desc = (struct usb_ss_ep_comp_descriptor *)mem;
++			switch (ep_desc->bmAttributes &
++				USB_ENDPOINT_XFERTYPE_MASK) {
++			case USB_ENDPOINT_XFER_INT:
++			case USB_ENDPOINT_XFER_ISOC:
++				ep_comp_desc->wBytesPerInterval =
++					ep_desc->wMaxPacketSize;
++				break;
++			}
++			mem += default_ep_comp_desc.bLength;
++			break;
++		default:
++			*tmp = mem;
++			tmp++;
++			mem += (*src)->bLength;
++			break;
++		}
++		src++;
++	}
++	/*
++	 * The last (struct usb_descriptor_header *) in the descriptors
++	 * vector is NULL
++	 */
++	*tmp = NULL;
++	f->ss_desc_allocated = true;
++}
++
+ /*-------------------------------------------------------------------------*/
+ /**
+  * next_ep_desc() - advance to the next EP descriptor
+@@ -118,6 +235,9 @@ int config_ep_by_speed(struct usb_gadget *g,
+ 	struct usb_endpoint_descriptor *chosen_desc = NULL;
+ 	struct usb_descriptor_header **speed_desc = NULL;
+ 
++	struct usb_ss_ep_comp_descriptor *comp_desc = NULL;
++	int want_comp_desc = 0;
++
+ 	struct usb_descriptor_header **d_spd; /* cursor for speed desc */
+ 
+ 	if (!g || !f || !_ep)
+@@ -125,6 +245,13 @@ int config_ep_by_speed(struct usb_gadget *g,
+ 
+ 	/* select desired speed */
+ 	switch (g->speed) {
++	case USB_SPEED_SUPER:
++		if (gadget_is_superspeed(g)) {
++			speed_desc = f->ss_descriptors;
++			want_comp_desc = 1;
++			break;
++		}
++		/* else: Fall trough */
+ 	case USB_SPEED_HIGH:
+ 		if (gadget_is_dualspeed(g)) {
+ 			speed_desc = f->hs_descriptors;
+@@ -147,7 +274,18 @@ ep_found:
+ 	/* commit results */
+ 	_ep->maxpacket = le16_to_cpu(chosen_desc->wMaxPacketSize);
+ 	_ep->desc = chosen_desc;
+-
++	_ep->comp_desc = NULL;
++	if (want_comp_desc) {
++		/*
++		 * Companion descriptor should follow EP descriptor
++		 * USB 3.0 spec, #9.6.7
++		 */
++		comp_desc = (struct usb_ss_ep_comp_descriptor *)*(++d_spd);
++		if (!comp_desc ||
++		    (comp_desc->bDescriptorType != USB_DT_SS_ENDPOINT_COMP))
++			return -EIO;
++		_ep->comp_desc = comp_desc;
++	}
+ 	return 0;
  }
  
--/**
-- * usb_find_endpoint - find a copy of an endpoint descriptor
-- * @src: original vector of descriptors
-- * @copy: copy of @src
-- * @match: endpoint descriptor found in @src
-- *
-- * This returns the copy of the @match descriptor made for @copy.  Its
-- * intended use is to help remembering the endpoint descriptor to use
-- * when enabling a given endpoint.
-- */
--struct usb_endpoint_descriptor *
--usb_find_endpoint(
--	struct usb_descriptor_header **src,
--	struct usb_descriptor_header **copy,
--	struct usb_endpoint_descriptor *match
--)
--{
--	while (*src) {
--		if (*src == (void *) match)
--			return (void *)*copy;
--		src++;
--		copy++;
--	}
--	return NULL;
--}
-diff --git a/drivers/usb/gadget/f_acm.c b/drivers/usb/gadget/f_acm.c
-index d04b4a6..3f88493 100644
---- a/drivers/usb/gadget/f_acm.c
-+++ b/drivers/usb/gadget/f_acm.c
-@@ -39,12 +39,6 @@
-  * descriptors (roughly equivalent to CDC Unions) may sometimes help.
-  */
+@@ -187,6 +325,14 @@ int usb_add_function(struct usb_configuration *config,
+ 			list_del(&function->list);
+ 			function->config = NULL;
+ 		}
++		/*
++		 * Add SS descriptors if there are any. This has to be done
++		 * after the bind since we need the hs_descriptors to be set in
++		 * usb_function and some of the FDs does it in the bind.
++		 */
++		if ((gadget_is_superspeed(config->cdev->gadget)) &&
++		    (!function->ss_not_capable) && (!function->ss_descriptors))
++			create_ss_descriptors(function);
+ 	} else
+ 		value = 0;
  
--struct acm_ep_descs {
--	struct usb_endpoint_descriptor	*in;
--	struct usb_endpoint_descriptor	*out;
--	struct usb_endpoint_descriptor	*notify;
--};
+@@ -199,6 +345,8 @@ int usb_add_function(struct usb_configuration *config,
+ 		config->fullspeed = true;
+ 	if (!config->highspeed && function->hs_descriptors)
+ 		config->highspeed = true;
++	if (!config->superspeed && function->ss_descriptors)
++		config->superspeed = true;
+ 
+ done:
+ 	if (value)
+@@ -342,7 +490,9 @@ static int config_buf(struct usb_configuration *config,
+ 	list_for_each_entry(f, &config->functions, list) {
+ 		struct usb_descriptor_header **descriptors;
+ 
+-		if (speed == USB_SPEED_HIGH)
++		if (speed == USB_SPEED_SUPER)
++			descriptors = f->ss_descriptors;
++		else if (speed == USB_SPEED_HIGH)
+ 			descriptors = f->hs_descriptors;
+ 		else
+ 			descriptors = f->descriptors;
+@@ -368,9 +518,10 @@ static int config_desc(struct usb_composite_dev *cdev, unsigned w_value)
+ 	u8				type = w_value >> 8;
+ 	enum usb_device_speed		speed = USB_SPEED_UNKNOWN;
+ 
+-	if (gadget_is_dualspeed(gadget)) {
+-		int			hs = 0;
 -
- struct f_acm {
- 	struct gserial			port;
- 	u8				ctrl_id, data_id;
-@@ -58,9 +52,6 @@ struct f_acm {
- 	 */
- 	spinlock_t			lock;
- 
--	struct acm_ep_descs		fs;
--	struct acm_ep_descs		hs;
--
- 	struct usb_ep			*notify;
- 	struct usb_request		*notify_req;
- 
-@@ -404,9 +395,8 @@ static int acm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 			usb_ep_disable(acm->notify);
++	if (gadget->speed == USB_SPEED_SUPER)
++		speed = gadget->speed;
++	else if (gadget_is_dualspeed(gadget)) {
++		int	hs = 0;
+ 		if (gadget->speed == USB_SPEED_HIGH)
+ 			hs = 1;
+ 		if (type == USB_DT_OTHER_SPEED_CONFIG)
+@@ -384,7 +535,10 @@ static int config_desc(struct usb_composite_dev *cdev, unsigned w_value)
+ 	w_value &= 0xff;
+ 	list_for_each_entry(c, &cdev->configs, list) {
+ 		/* ignore configs that won't work at this speed */
+-		if (speed == USB_SPEED_HIGH) {
++		if (speed == USB_SPEED_SUPER) {
++			if (!c->superspeed)
++				continue;
++		} else if (speed == USB_SPEED_HIGH) {
+ 			if (!c->highspeed)
+ 				continue;
  		} else {
- 			VDBG(cdev, "init acm ctrl interface %d\n", intf);
--			acm->notify->desc = ep_choose(cdev->gadget,
--					acm->hs.notify,
--					acm->fs.notify);
-+			if (config_ep_by_speed(cdev->gadget, f, acm->notify))
-+				return -EINVAL;
- 		}
- 		usb_ep_enable(acm->notify);
- 		acm->notify->driver_data = acm;
-@@ -415,12 +405,17 @@ static int acm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 		if (acm->port.in->driver_data) {
- 			DBG(cdev, "reset acm ttyGS%d\n", acm->port_num);
- 			gserial_disconnect(&acm->port);
--		} else {
-+		}
-+		if (!acm->port.in->desc || !acm->port.out->desc) {
- 			DBG(cdev, "activate acm ttyGS%d\n", acm->port_num);
--			acm->port.in->desc = ep_choose(cdev->gadget,
--					acm->hs.in, acm->fs.in);
--			acm->port.out->desc = ep_choose(cdev->gadget,
--					acm->hs.out, acm->fs.out);
-+			if (config_ep_by_speed(cdev->gadget, f,
-+					       acm->port.in) ||
-+			    config_ep_by_speed(cdev->gadget, f,
-+					       acm->port.out)) {
-+				acm->port.in->desc = NULL;
-+				acm->port.out->desc = NULL;
-+				return -EINVAL;
-+			}
- 		}
- 		gserial_connect(&acm->port, acm->port_num);
+@@ -404,16 +558,22 @@ static int count_configs(struct usb_composite_dev *cdev, unsigned type)
+ 	struct usb_configuration	*c;
+ 	unsigned			count = 0;
+ 	int				hs = 0;
++	int				ss = 0;
  
-@@ -628,18 +623,11 @@ acm_bind(struct usb_configuration *c, struct usb_function *f)
- 	acm->notify_req->complete = acm_cdc_notify_complete;
- 	acm->notify_req->context = acm;
- 
--	/* copy descriptors, and track endpoint copies */
-+	/* copy descriptors */
- 	f->descriptors = usb_copy_descriptors(acm_fs_function);
- 	if (!f->descriptors)
- 		goto fail;
- 
--	acm->fs.in = usb_find_endpoint(acm_fs_function,
--			f->descriptors, &acm_fs_in_desc);
--	acm->fs.out = usb_find_endpoint(acm_fs_function,
--			f->descriptors, &acm_fs_out_desc);
--	acm->fs.notify = usb_find_endpoint(acm_fs_function,
--			f->descriptors, &acm_fs_notify_desc);
--
- 	/* support all relevant hardware speeds... we expect that when
- 	 * hardware is dual speed, all bulk-capable endpoints work at
- 	 * both speeds
-@@ -652,15 +640,8 @@ acm_bind(struct usb_configuration *c, struct usb_function *f)
- 		acm_hs_notify_desc.bEndpointAddress =
- 				acm_fs_notify_desc.bEndpointAddress;
- 
--		/* copy descriptors, and track endpoint copies */
-+		/* copy descriptors */
- 		f->hs_descriptors = usb_copy_descriptors(acm_hs_function);
--
--		acm->hs.in = usb_find_endpoint(acm_hs_function,
--				f->hs_descriptors, &acm_hs_in_desc);
--		acm->hs.out = usb_find_endpoint(acm_hs_function,
--				f->hs_descriptors, &acm_hs_out_desc);
--		acm->hs.notify = usb_find_endpoint(acm_hs_function,
--				f->hs_descriptors, &acm_hs_notify_desc);
+ 	if (gadget_is_dualspeed(gadget)) {
+ 		if (gadget->speed == USB_SPEED_HIGH)
+ 			hs = 1;
++		if (gadget->speed == USB_SPEED_SUPER)
++			ss = 1;
+ 		if (type == USB_DT_DEVICE_QUALIFIER)
+ 			hs = !hs;
  	}
+ 	list_for_each_entry(c, &cdev->configs, list) {
+ 		/* ignore configs that won't work at this speed */
+-		if (hs) {
++		if (ss) {
++			if (!c->superspeed)
++				continue;
++		} else if (hs) {
+ 			if (!c->highspeed)
+ 				continue;
+ 		} else {
+@@ -425,6 +585,73 @@ static int count_configs(struct usb_composite_dev *cdev, unsigned type)
+ 	return count;
+ }
  
- 	DBG(cdev, "acm ttyGS%d: %s speed IN/%s OUT/%s NOTIFY/%s\n",
-diff --git a/drivers/usb/gadget/f_ecm.c b/drivers/usb/gadget/f_ecm.c
-index 7c996f2..ddedbc8 100644
---- a/drivers/usb/gadget/f_ecm.c
-+++ b/drivers/usb/gadget/f_ecm.c
-@@ -46,11 +46,6 @@
-  * and also means that a get_alt() method is required.
-  */
- 
--struct ecm_ep_descs {
--	struct usb_endpoint_descriptor	*in;
--	struct usb_endpoint_descriptor	*out;
--	struct usb_endpoint_descriptor	*notify;
--};
- 
- enum ecm_notify_state {
- 	ECM_NOTIFY_NONE,		/* don't notify */
-@@ -64,9 +59,6 @@ struct f_ecm {
- 
- 	char				ethaddr[14];
- 
--	struct ecm_ep_descs		fs;
--	struct ecm_ep_descs		hs;
--
- 	struct usb_ep			*notify;
- 	struct usb_request		*notify_req;
- 	u8				notify_state;
-@@ -463,11 +455,11 @@ static int ecm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 		if (ecm->notify->driver_data) {
- 			VDBG(cdev, "reset ecm control %d\n", intf);
- 			usb_ep_disable(ecm->notify);
--		} else {
-+		}
-+		if (!(ecm->notify->desc)) {
- 			VDBG(cdev, "init ecm ctrl %d\n", intf);
--			ecm->notify->desc = ep_choose(cdev->gadget,
--					ecm->hs.notify,
--					ecm->fs.notify);
-+			if (config_ep_by_speed(cdev->gadget, f, ecm->notify))
-+				goto fail;
- 		}
- 		usb_ep_enable(ecm->notify);
- 		ecm->notify->driver_data = ecm;
-@@ -482,12 +474,17 @@ static int ecm_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 			gether_disconnect(&ecm->port);
- 		}
- 
--		if (!ecm->port.in_ep->desc) {
-+		if (!ecm->port.in_ep->desc ||
-+		    !ecm->port.out_ep->desc) {
- 			DBG(cdev, "init ecm\n");
--			ecm->port.in_ep->desc = ep_choose(cdev->gadget,
--					ecm->hs.in, ecm->fs.in);
--			ecm->port.out_ep->desc = ep_choose(cdev->gadget,
--					ecm->hs.out, ecm->fs.out);
-+			if (config_ep_by_speed(cdev->gadget, f,
-+					       ecm->port.in_ep) ||
-+			    config_ep_by_speed(cdev->gadget, f,
-+					       ecm->port.out_ep)) {
-+				ecm->port.in_ep->desc = NULL;
-+				ecm->port.out_ep->desc = NULL;
-+				goto fail;
-+			}
- 		}
- 
- 		/* CDC Ethernet only sends data in non-default altsettings.
-@@ -664,13 +661,6 @@ ecm_bind(struct usb_configuration *c, struct usb_function *f)
- 	if (!f->descriptors)
- 		goto fail;
- 
--	ecm->fs.in = usb_find_endpoint(ecm_fs_function,
--			f->descriptors, &fs_ecm_in_desc);
--	ecm->fs.out = usb_find_endpoint(ecm_fs_function,
--			f->descriptors, &fs_ecm_out_desc);
--	ecm->fs.notify = usb_find_endpoint(ecm_fs_function,
--			f->descriptors, &fs_ecm_notify_desc);
--
- 	/* support all relevant hardware speeds... we expect that when
- 	 * hardware is dual speed, all bulk-capable endpoints work at
- 	 * both speeds
-@@ -687,13 +677,6 @@ ecm_bind(struct usb_configuration *c, struct usb_function *f)
- 		f->hs_descriptors = usb_copy_descriptors(ecm_hs_function);
- 		if (!f->hs_descriptors)
- 			goto fail;
--
--		ecm->hs.in = usb_find_endpoint(ecm_hs_function,
--				f->hs_descriptors, &hs_ecm_in_desc);
--		ecm->hs.out = usb_find_endpoint(ecm_hs_function,
--				f->hs_descriptors, &hs_ecm_out_desc);
--		ecm->hs.notify = usb_find_endpoint(ecm_hs_function,
--				f->hs_descriptors, &hs_ecm_notify_desc);
- 	}
- 
- 	/* NOTE:  all that is done without knowing or caring about
-diff --git a/drivers/usb/gadget/f_eem.c b/drivers/usb/gadget/f_eem.c
-index 099f98f..d28e61f 100644
---- a/drivers/usb/gadget/f_eem.c
-+++ b/drivers/usb/gadget/f_eem.c
-@@ -35,17 +35,9 @@
-  * Ethernet link.
-  */
- 
--struct eem_ep_descs {
--	struct usb_endpoint_descriptor	*in;
--	struct usb_endpoint_descriptor	*out;
--};
--
- struct f_eem {
- 	struct gether			port;
- 	u8				ctrl_id;
--
--	struct eem_ep_descs		fs;
--	struct eem_ep_descs		hs;
- };
- 
- static inline struct f_eem *func_to_eem(struct usb_function *f)
-@@ -176,12 +168,16 @@ static int eem_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 			gether_disconnect(&eem->port);
- 		}
- 
--		if (!eem->port.in_ep->desc) {
-+		if (!eem->port.in_ep->desc || !eem->port.out_ep->desc) {
- 			DBG(cdev, "init eem\n");
--			eem->port.in_ep->desc = ep_choose(cdev->gadget,
--					eem->hs.in, eem->fs.in);
--			eem->port.out_ep->desc = ep_choose(cdev->gadget,
--					eem->hs.out, eem->fs.out);
-+			if (config_ep_by_speed(cdev->gadget, f,
-+					       eem->port.in_ep) ||
-+			    config_ep_by_speed(cdev->gadget, f,
-+					       eem->port.out_ep)) {
-+				eem->port.in_ep->desc = NULL;
-+				eem->port.out_ep->desc = NULL;
-+				goto fail;
-+			}
- 		}
- 
- 		/* zlps should not occur because zero-length EEM packets
-@@ -253,11 +249,6 @@ eem_bind(struct usb_configuration *c, struct usb_function *f)
- 	if (!f->descriptors)
- 		goto fail;
- 
--	eem->fs.in = usb_find_endpoint(eem_fs_function,
--			f->descriptors, &eem_fs_in_desc);
--	eem->fs.out = usb_find_endpoint(eem_fs_function,
--			f->descriptors, &eem_fs_out_desc);
--
- 	/* support all relevant hardware speeds... we expect that when
- 	 * hardware is dual speed, all bulk-capable endpoints work at
- 	 * both speeds
-@@ -272,11 +263,6 @@ eem_bind(struct usb_configuration *c, struct usb_function *f)
- 		f->hs_descriptors = usb_copy_descriptors(eem_hs_function);
- 		if (!f->hs_descriptors)
- 			goto fail;
--
--		eem->hs.in = usb_find_endpoint(eem_hs_function,
--				f->hs_descriptors, &eem_hs_in_desc);
--		eem->hs.out = usb_find_endpoint(eem_hs_function,
--				f->hs_descriptors, &eem_hs_out_desc);
- 	}
- 
- 	DBG(cdev, "CDC Ethernet (EEM): %s speed IN/%s OUT/%s\n",
-diff --git a/drivers/usb/gadget/f_hid.c b/drivers/usb/gadget/f_hid.c
-index c08a82c..13b923e 100644
---- a/drivers/usb/gadget/f_hid.c
-+++ b/drivers/usb/gadget/f_hid.c
-@@ -60,8 +60,6 @@ struct f_hidg {
- 	struct cdev			cdev;
- 	struct usb_function		func;
- 	struct usb_ep			*in_ep;
--	struct usb_endpoint_descriptor	*fs_in_ep_desc;
--	struct usb_endpoint_descriptor	*hs_in_ep_desc;
- };
- 
- static inline struct f_hidg *func_to_hidg(struct usb_function *f)
-@@ -426,8 +424,12 @@ static int hidg_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 		if (hidg->in_ep->driver_data != NULL)
- 			usb_ep_disable(hidg->in_ep);
- 
--		hidg->in_ep->desc = ep_choose(f->config->cdev->gadget,
--				hidg->hs_in_ep_desc, hidg->fs_in_ep_desc);
-+		status = config_ep_by_speed(f->config->cdev->gadget, f,
-+					    hidg->in_ep);
-+		if (status) {
-+			ERROR(cdev, "config_ep_by_speed FAILED!\n");
-+			goto fail;
-+		}
- 		status = usb_ep_enable(hidg->in_ep);
- 		if (status < 0) {
- 			ERROR(cdev, "Enable endpoint FAILED!\n");
-@@ -498,21 +500,12 @@ static int __init hidg_bind(struct usb_configuration *c, struct usb_function *f)
- 	if (!f->descriptors)
- 		goto fail;
- 
--	hidg->fs_in_ep_desc = usb_find_endpoint(hidg_fs_descriptors,
--						f->descriptors,
--						&hidg_fs_in_ep_desc);
--
- 	if (gadget_is_dualspeed(c->cdev->gadget)) {
- 		hidg_hs_in_ep_desc.bEndpointAddress =
- 			hidg_fs_in_ep_desc.bEndpointAddress;
- 		f->hs_descriptors = usb_copy_descriptors(hidg_hs_descriptors);
- 		if (!f->hs_descriptors)
- 			goto fail;
--		hidg->hs_in_ep_desc = usb_find_endpoint(hidg_hs_descriptors,
--							f->hs_descriptors,
--							&hidg_hs_in_ep_desc);
--	} else {
--		hidg->hs_in_ep_desc = NULL;
- 	}
- 
- 	mutex_init(&hidg->lock);
-diff --git a/drivers/usb/gadget/f_loopback.c b/drivers/usb/gadget/f_loopback.c
-index 34e3cca..3756326 100644
---- a/drivers/usb/gadget/f_loopback.c
-+++ b/drivers/usb/gadget/f_loopback.c
-@@ -256,8 +256,9 @@ enable_loopback(struct usb_composite_dev *cdev, struct f_loopback *loop)
- 
- 	/* one endpoint writes data back IN to the host */
- 	ep = loop->in_ep;
--	ep->desc = ep_choose(cdev->gadget,
--			&hs_loop_source_desc, &fs_loop_source_desc);
-+	result = config_ep_by_speed(cdev->gadget, &(loop->function), ep);
-+	if (result)
-+		return result;
- 	result = usb_ep_enable(ep);
- 	if (result < 0)
- 		return result;
-@@ -265,8 +266,10 @@ enable_loopback(struct usb_composite_dev *cdev, struct f_loopback *loop)
- 
- 	/* one endpoint just reads OUT packets */
- 	ep = loop->out_ep;
--	ep->desc = ep_choose(cdev->gadget,
--			&hs_loop_sink_desc, &fs_loop_sink_desc);
-+	result = config_ep_by_speed(cdev->gadget, &(loop->function), ep);
-+	if (result)
-+		goto fail0;
++/**
++ * bos() - prepares the BOS descriptor.
++ * @cdev: pointer to usb_composite device to generate the bos
++ *	descriptor for
++ *
++ * This function generates the BOS (Binary Device Object)
++ * descriptor and its device capabilities descriptors. The BOS
++ * descriptor should be supported by a SuperSpeed device.
++ */
++static int bos(struct usb_composite_dev *cdev)
++{
++	struct usb_bos_descriptor	*bos = cdev->req->buf;
++	struct usb_ext_cap_descriptor	*usb_ext = NULL;
++	struct usb_ss_cap_descriptor	*ss_cap = NULL;
 +
- 	result = usb_ep_enable(ep);
- 	if (result < 0) {
- fail0:
-diff --git a/drivers/usb/gadget/f_obex.c b/drivers/usb/gadget/f_obex.c
-index a6dbda0..394502a 100644
---- a/drivers/usb/gadget/f_obex.c
-+++ b/drivers/usb/gadget/f_obex.c
-@@ -39,20 +39,12 @@
-  * ready to handle the commands.
-  */
- 
--struct obex_ep_descs {
--	struct usb_endpoint_descriptor	*obex_in;
--	struct usb_endpoint_descriptor	*obex_out;
--};
--
- struct f_obex {
- 	struct gserial			port;
- 	u8				ctrl_id;
- 	u8				data_id;
- 	u8				port_num;
- 	u8				can_activate;
--
--	struct obex_ep_descs		fs;
--	struct obex_ep_descs		hs;
- };
- 
- static inline struct f_obex *func_to_obex(struct usb_function *f)
-@@ -227,12 +219,16 @@ static int obex_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 			gserial_disconnect(&obex->port);
- 		}
- 
--		if (!obex->port.in->desc) {
-+		if (!obex->port.in->desc || !obex->port.out->desc) {
- 			DBG(cdev, "init obex ttyGS%d\n", obex->port_num);
--			obex->port.in->desc = ep_choose(cdev->gadget,
--					obex->hs.obex_in, obex->fs.obex_in);
--			obex->port.out->desc = ep_choose(cdev->gadget,
--					obex->hs.obex_out, obex->fs.obex_out);
-+			if (config_ep_by_speed(cdev->gadget, f,
-+					       obex->port.in) ||
-+			    config_ep_by_speed(cdev->gadget, f,
-+					       obex->port.out)) {
-+				obex->port.out->desc = NULL;
-+				obex->port.in->desc = NULL;
-+				goto fail;
-+			}
- 		}
- 
- 		if (alt == 1) {
-@@ -346,11 +342,6 @@ obex_bind(struct usb_configuration *c, struct usb_function *f)
- 	/* copy descriptors, and track endpoint copies */
- 	f->descriptors = usb_copy_descriptors(fs_function);
- 
--	obex->fs.obex_in = usb_find_endpoint(fs_function,
--			f->descriptors, &obex_fs_ep_in_desc);
--	obex->fs.obex_out = usb_find_endpoint(fs_function,
--			f->descriptors, &obex_fs_ep_out_desc);
--
- 	/* support all relevant hardware speeds... we expect that when
- 	 * hardware is dual speed, all bulk-capable endpoints work at
- 	 * both speeds
-@@ -364,11 +355,6 @@ obex_bind(struct usb_configuration *c, struct usb_function *f)
- 
- 		/* copy descriptors, and track endpoint copies */
- 		f->hs_descriptors = usb_copy_descriptors(hs_function);
--
--		obex->hs.obex_in = usb_find_endpoint(hs_function,
--				f->hs_descriptors, &obex_hs_ep_in_desc);
--		obex->hs.obex_out = usb_find_endpoint(hs_function,
--				f->hs_descriptors, &obex_hs_ep_out_desc);
- 	}
- 
- 	/* Avoid letting this gadget enumerate until the userspace
-diff --git a/drivers/usb/gadget/f_phonet.c b/drivers/usb/gadget/f_phonet.c
-index c6c27df..c0dbf41 100644
---- a/drivers/usb/gadget/f_phonet.c
-+++ b/drivers/usb/gadget/f_phonet.c
-@@ -424,12 +424,12 @@ static int pn_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 		if (alt == 1) {
- 			int i;
- 
--			fp->out_ep->desc = ep_choose(gadget,
--					&pn_hs_sink_desc,
--					&pn_fs_sink_desc);
--			fp->in_ep->desc = ep_choose(gadget,
--					&pn_hs_source_desc,
--					&pn_fs_source_desc);
-+			if (config_ep_by_speed(gadget, f, fp->in_ep) ||
-+			    config_ep_by_speed(gadget, f, fp->out_ep)) {
-+				fp->in_ep->desc = NULL;
-+				fp->out_ep->desc = NULL;
-+				return -EINVAL;
-+			}
- 			usb_ep_enable(fp->out_ep);
- 			usb_ep_enable(fp->in_ep);
- 
-diff --git a/drivers/usb/gadget/f_rndis.c b/drivers/usb/gadget/f_rndis.c
-index 2066f7c..775a97d 100644
---- a/drivers/usb/gadget/f_rndis.c
-+++ b/drivers/usb/gadget/f_rndis.c
-@@ -76,21 +76,12 @@
-  *   - MS-Windows drivers sometimes emit undocumented requests.
-  */
- 
--struct rndis_ep_descs {
--	struct usb_endpoint_descriptor	*in;
--	struct usb_endpoint_descriptor	*out;
--	struct usb_endpoint_descriptor	*notify;
--};
--
- struct f_rndis {
- 	struct gether			port;
- 	u8				ctrl_id, data_id;
- 	u8				ethaddr[ETH_ALEN];
- 	int				config;
- 
--	struct rndis_ep_descs		fs;
--	struct rndis_ep_descs		hs;
--
- 	struct usb_ep			*notify;
- 	struct usb_request		*notify_req;
- 	atomic_t			notify_count;
-@@ -484,11 +475,11 @@ static int rndis_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 		if (rndis->notify->driver_data) {
- 			VDBG(cdev, "reset rndis control %d\n", intf);
- 			usb_ep_disable(rndis->notify);
--		} else {
-+		}
-+		if (!rndis->notify->desc) {
- 			VDBG(cdev, "init rndis ctrl %d\n", intf);
--			rndis->notify->desc = ep_choose(cdev->gadget,
--					rndis->hs.notify,
--					rndis->fs.notify);
-+			if (config_ep_by_speed(cdev->gadget, f, rndis->notify))
-+				goto fail;
- 		}
- 		usb_ep_enable(rndis->notify);
- 		rndis->notify->driver_data = rndis;
-@@ -501,12 +492,16 @@ static int rndis_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 			gether_disconnect(&rndis->port);
- 		}
- 
--		if (!rndis->port.in_ep->desc) {
-+		if (!rndis->port.in_ep->desc || !rndis->port.out_ep->desc) {
- 			DBG(cdev, "init rndis\n");
--			rndis->port.in_ep->desc = ep_choose(cdev->gadget,
--					rndis->hs.in, rndis->fs.in);
--			rndis->port.out_ep->desc = ep_choose(cdev->gadget,
--					rndis->hs.out, rndis->fs.out);
-+			if (config_ep_by_speed(cdev->gadget, f,
-+					       rndis->port.in_ep) ||
-+			    config_ep_by_speed(cdev->gadget, f,
-+					       rndis->port.out_ep)) {
-+				rndis->port.in_ep->desc = NULL;
-+				rndis->port.out_ep->desc = NULL;
-+				goto fail;
-+			}
- 		}
- 
- 		/* Avoid ZLPs; they can be troublesome. */
-@@ -662,13 +657,6 @@ rndis_bind(struct usb_configuration *c, struct usb_function *f)
- 	if (!f->descriptors)
- 		goto fail;
- 
--	rndis->fs.in = usb_find_endpoint(eth_fs_function,
--			f->descriptors, &fs_in_desc);
--	rndis->fs.out = usb_find_endpoint(eth_fs_function,
--			f->descriptors, &fs_out_desc);
--	rndis->fs.notify = usb_find_endpoint(eth_fs_function,
--			f->descriptors, &fs_notify_desc);
--
- 	/* support all relevant hardware speeds... we expect that when
- 	 * hardware is dual speed, all bulk-capable endpoints work at
- 	 * both speeds
-@@ -686,13 +674,6 @@ rndis_bind(struct usb_configuration *c, struct usb_function *f)
- 
- 		if (!f->hs_descriptors)
- 			goto fail;
--
--		rndis->hs.in = usb_find_endpoint(eth_hs_function,
--				f->hs_descriptors, &hs_in_desc);
--		rndis->hs.out = usb_find_endpoint(eth_hs_function,
--				f->hs_descriptors, &hs_out_desc);
--		rndis->hs.notify = usb_find_endpoint(eth_hs_function,
--				f->hs_descriptors, &hs_notify_desc);
- 	}
- 
- 	rndis->port.open = rndis_open;
-diff --git a/drivers/usb/gadget/f_serial.c b/drivers/usb/gadget/f_serial.c
-index a9ce626..91fdf79 100644
---- a/drivers/usb/gadget/f_serial.c
-+++ b/drivers/usb/gadget/f_serial.c
-@@ -27,18 +27,10 @@
-  * if you can arrange appropriate host side drivers.
-  */
- 
--struct gser_descs {
--	struct usb_endpoint_descriptor	*in;
--	struct usb_endpoint_descriptor	*out;
--};
--
- struct f_gser {
- 	struct gserial			port;
- 	u8				data_id;
- 	u8				port_num;
--
--	struct gser_descs		fs;
--	struct gser_descs		hs;
- };
- 
- static inline struct f_gser *func_to_gser(struct usb_function *f)
-@@ -136,12 +128,15 @@ static int gser_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 	if (gser->port.in->driver_data) {
- 		DBG(cdev, "reset generic ttyGS%d\n", gser->port_num);
- 		gserial_disconnect(&gser->port);
--	} else {
++	struct usb_dcd_config_params	dcd_config_params;
++
++	bos->bLength = USB_DT_BOS_SIZE;
++	bos->bDescriptorType = USB_DT_BOS;
++
++	bos->wTotalLength = USB_DT_BOS_SIZE;
++	bos->bNumDeviceCaps = 0;
++
++	/*
++	 * A SuperSpeed device shall include the USB2.0 extension descriptor
++	 * and shall support LPM when operating in USB2.0 HS mode.
++	 */
++	usb_ext = (struct usb_ext_cap_descriptor *)
++			(cdev->req->buf+bos->wTotalLength);
++	bos->bNumDeviceCaps++;
++	bos->wTotalLength += USB_DT_USB_EXT_CAP_SIZE;
++	usb_ext->bLength = USB_DT_USB_EXT_CAP_SIZE;
++	usb_ext->bDescriptorType = USB_DT_DEVICE_CAPABILITY;
++	usb_ext->bDevCapabilityType = USB_CAP_TYPE_EXT;
++	usb_ext->bmAttributes = USB_LPM_SUPPORT;
++
++	/*
++	 * The Superspeed USB Capability descriptor shall be implemented by all
++	 * SuperSpeed devices.
++	 */
++	ss_cap = (struct usb_ss_cap_descriptor *)
++		(cdev->req->buf+bos->wTotalLength);
++	bos->bNumDeviceCaps++;
++	bos->wTotalLength += USB_DT_USB_SS_CAP_SIZE;
++	ss_cap->bLength = USB_DT_USB_SS_CAP_SIZE;
++	ss_cap->bDescriptorType = USB_DT_DEVICE_CAPABILITY;
++	ss_cap->bDevCapabilityType = USB_SS_CAP_TYPE;
++	ss_cap->bmAttributes = 0; /* LTM is not supported yet */
++	ss_cap->wSpeedSupported = USB_LOW_SPEED_OPERATION |
++				USB_FULL_SPEED_OPERATION |
++				USB_HIGH_SPEED_OPERATION |
++				USB_5GBPS_OPERATION;
++	ss_cap->bFunctionalitySupport = USB_LOW_SPEED_OPERATION;
++
++	/* Get Controller configuration */
++	if (cdev->gadget->ops->get_config_params)
++		cdev->gadget->ops->get_config_params(&dcd_config_params);
++	else {
++		dcd_config_params.bU1devExitLat = USB_DEFULT_U1_DEV_EXIT_LAT;
++		dcd_config_params.bU2DevExitLat = USB_DEFULT_U2_DEV_EXIT_LAT;
 +	}
-+	if (!gser->port.in->desc || !gser->port.out->desc) {
- 		DBG(cdev, "activate generic ttyGS%d\n", gser->port_num);
--		gser->port.in->desc = ep_choose(cdev->gadget,
--				gser->hs.in, gser->fs.in);
--		gser->port.out->desc = ep_choose(cdev->gadget,
--				gser->hs.out, gser->fs.out);
-+		if (!config_ep_by_speed(cdev->gadget, f, gser->port.in) ||
-+		    !config_ep_by_speed(cdev->gadget, f, gser->port.out)) {
-+			gser->port.in->desc = NULL;
-+			gser->port.out->desc = NULL;
-+			return -EINVAL;
-+		}
- 	}
- 	gserial_connect(&gser->port, gser->port_num);
- 	return 0;
-@@ -193,12 +188,6 @@ gser_bind(struct usb_configuration *c, struct usb_function *f)
- 	/* copy descriptors, and track endpoint copies */
- 	f->descriptors = usb_copy_descriptors(gser_fs_function);
++	ss_cap->bU1devExitLat = dcd_config_params.bU1devExitLat;
++	ss_cap->bU2DevExitLat = dcd_config_params.bU2DevExitLat;
++
++	return bos->wTotalLength;
++}
++
+ static void device_qual(struct usb_composite_dev *cdev)
+ {
+ 	struct usb_qualifier_descriptor	*qual = cdev->req->buf;
+@@ -468,27 +695,42 @@ static int set_config(struct usb_composite_dev *cdev,
+ 	unsigned		power = gadget_is_otg(gadget) ? 8 : 100;
+ 	int			tmp;
  
--	gser->fs.in = usb_find_endpoint(gser_fs_function,
--			f->descriptors, &gser_fs_in_desc);
--	gser->fs.out = usb_find_endpoint(gser_fs_function,
--			f->descriptors, &gser_fs_out_desc);
+-	if (cdev->config)
+-		reset_config(cdev);
 -
--
- 	/* support all relevant hardware speeds... we expect that when
- 	 * hardware is dual speed, all bulk-capable endpoints work at
- 	 * both speeds
-@@ -211,11 +200,6 @@ gser_bind(struct usb_configuration *c, struct usb_function *f)
- 
- 		/* copy descriptors, and track endpoint copies */
- 		f->hs_descriptors = usb_copy_descriptors(gser_hs_function);
--
--		gser->hs.in = usb_find_endpoint(gser_hs_function,
--				f->hs_descriptors, &gser_hs_in_desc);
--		gser->hs.out = usb_find_endpoint(gser_hs_function,
--				f->hs_descriptors, &gser_hs_out_desc);
- 	}
- 
- 	DBG(cdev, "generic ttyGS%d: %s speed IN/%s OUT/%s\n",
-diff --git a/drivers/usb/gadget/f_sourcesink.c b/drivers/usb/gadget/f_sourcesink.c
-index 0ffddd3..caf2f95 100644
---- a/drivers/usb/gadget/f_sourcesink.c
-+++ b/drivers/usb/gadget/f_sourcesink.c
-@@ -347,7 +347,9 @@ enable_source_sink(struct usb_composite_dev *cdev, struct f_sourcesink *ss)
- 
- 	/* one endpoint writes (sources) zeroes IN (to the host) */
- 	ep = ss->in_ep;
--	ep->desc = ep_choose(cdev->gadget, &hs_source_desc, &fs_source_desc);
-+	result = config_ep_by_speed(cdev->gadget, &(ss->function), ep);
-+	if (result)
-+		return result;
- 	result = usb_ep_enable(ep);
- 	if (result < 0)
- 		return result;
-@@ -364,7 +366,9 @@ fail:
- 
- 	/* one endpoint reads (sinks) anything OUT (from the host) */
- 	ep = ss->out_ep;
--	ep->desc = ep_choose(cdev->gadget, &hs_sink_desc, &fs_sink_desc);
-+	result = config_ep_by_speed(cdev->gadget, &(ss->function), ep);
-+	if (result)
-+		goto fail;
- 	result = usb_ep_enable(ep);
- 	if (result < 0)
- 		goto fail;
-diff --git a/drivers/usb/gadget/f_subset.c b/drivers/usb/gadget/f_subset.c
-index aecaed1..93bf676 100644
---- a/drivers/usb/gadget/f_subset.c
-+++ b/drivers/usb/gadget/f_subset.c
-@@ -57,18 +57,10 @@
-  * caring about specific product and vendor IDs.
-  */
- 
--struct geth_descs {
--	struct usb_endpoint_descriptor	*in;
--	struct usb_endpoint_descriptor	*out;
--};
--
- struct f_gether {
- 	struct gether			port;
- 
- 	char				ethaddr[14];
--
--	struct geth_descs		fs;
--	struct geth_descs		hs;
- };
- 
- static inline struct f_gether *func_to_geth(struct usb_function *f)
-@@ -243,10 +235,12 @@ static int geth_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
- 	}
- 
- 	DBG(cdev, "init + activate cdc subset\n");
--	geth->port.in_ep->desc = ep_choose(cdev->gadget,
--			geth->hs.in, geth->fs.in);
--	geth->port.out_ep->desc = ep_choose(cdev->gadget,
--			geth->hs.out, geth->fs.out);
-+	if (config_ep_by_speed(cdev->gadget, f, geth->port.in_ep) ||
-+	    config_ep_by_speed(cdev->gadget, f, geth->port.out_ep)) {
-+		geth->port.in_ep->desc = NULL;
-+		geth->port.out_ep->desc = NULL;
-+		return -EINVAL;
+ 	if (number) {
+ 		list_for_each_entry(c, &cdev->configs, list) {
+ 			if (c->bConfigurationValue == number) {
++				/*
++				 * Need to disable the FDs of the previous
++				 * configuration
++				 */
++				if (cdev->config)
++					reset_config(cdev);
+ 				result = 0;
+ 				break;
+ 			}
+ 		}
+ 		if (result < 0)
+ 			goto done;
+-	} else
++	} else { /* Zero configuration value - need to reset the config */
++		if (cdev->config)
++			reset_config(cdev);
+ 		result = 0;
 +	}
  
- 	net = gether_connect(&geth->port);
- 	return IS_ERR(net) ? PTR_ERR(net) : 0;
-@@ -297,12 +291,6 @@ geth_bind(struct usb_configuration *c, struct usb_function *f)
- 	/* copy descriptors, and track endpoint copies */
- 	f->descriptors = usb_copy_descriptors(fs_eth_function);
+ 	INFO(cdev, "%s speed config #%d: %s\n",
+ 		({ char *speed;
+ 		switch (gadget->speed) {
+-		case USB_SPEED_LOW:	speed = "low"; break;
+-		case USB_SPEED_FULL:	speed = "full"; break;
+-		case USB_SPEED_HIGH:	speed = "high"; break;
++		case USB_SPEED_LOW:
++			speed = "low";
++			break;
++		case USB_SPEED_FULL:
++			speed = "full";
++			break;
++		case USB_SPEED_HIGH:
++			speed = "high";
++			break;
++		case USB_SPEED_SUPER:
++			speed = "super";
++			break;
+ 		default:		speed = "?"; break;
+ 		} ; speed; }), number, c ? c->label : "unconfigured");
  
--	geth->fs.in = usb_find_endpoint(fs_eth_function,
--			f->descriptors, &fs_subset_in_desc);
--	geth->fs.out = usb_find_endpoint(fs_eth_function,
--			f->descriptors, &fs_subset_out_desc);
--
--
- 	/* support all relevant hardware speeds... we expect that when
- 	 * hardware is dual speed, all bulk-capable endpoints work at
- 	 * both speeds
-@@ -315,11 +303,6 @@ geth_bind(struct usb_configuration *c, struct usb_function *f)
+@@ -511,7 +753,9 @@ static int set_config(struct usb_composite_dev *cdev,
+ 		 * function's setup callback instead of the current
+ 		 * configuration's setup callback.
+ 		 */
+-		if (gadget->speed == USB_SPEED_HIGH)
++		if (gadget->speed == USB_SPEED_SUPER)
++			descriptors = f->ss_descriptors;
++		else if (gadget->speed == USB_SPEED_HIGH)
+ 			descriptors = f->hs_descriptors;
+ 		else
+ 			descriptors = f->descriptors;
+@@ -596,14 +840,14 @@ int usb_add_config(struct usb_composite_dev *cdev,
+ 	} else {
+ 		unsigned	i;
  
- 		/* copy descriptors, and track endpoint copies */
- 		f->hs_descriptors = usb_copy_descriptors(hs_eth_function);
--
--		geth->hs.in = usb_find_endpoint(hs_eth_function,
--				f->hs_descriptors, &hs_subset_in_desc);
--		geth->hs.out = usb_find_endpoint(hs_eth_function,
--				f->hs_descriptors, &hs_subset_out_desc);
+-		DBG(cdev, "cfg %d/%p speeds:%s%s\n",
++		DBG(cdev, "cfg %d/%p speeds:%s%s%s\n",
+ 			config->bConfigurationValue, config,
++			config->superspeed ? " super" : "",
+ 			config->highspeed ? " high" : "",
+ 			config->fullspeed
+ 				? (gadget_is_dualspeed(cdev->gadget)
+ 					? " full"
+-					: " full/low")
+-				: "");
++					: " full/low") : "");
+ 
+ 		for (i = 0; i < MAX_CONFIG_INTERFACES; i++) {
+ 			struct usb_function	*f = config->interface[i];
+@@ -721,7 +965,8 @@ static int get_string(struct usb_composite_dev *cdev,
+ 		return s->bLength;
  	}
  
- 	/* NOTE:  all that is done without knowing or caring about
+-	/* Otherwise, look up and return a specified string.  First
++	/*
++	 * Otherwise, look up and return a specified string.  First
+ 	 * check if the string has not been overridden.
+ 	 */
+ 	if (cdev->manufacturer_override == id)
+@@ -876,6 +1121,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
+ 	struct usb_composite_dev	*cdev = get_gadget_data(gadget);
+ 	struct usb_request		*req = cdev->req;
+ 	int				value = -EOPNOTSUPP;
++	int				status = 0;
+ 	u16				w_index = le16_to_cpu(ctrl->wIndex);
+ 	u8				intf = w_index & 0xFF;
+ 	u16				w_value = le16_to_cpu(ctrl->wValue);
+@@ -903,18 +1149,28 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
+ 		case USB_DT_DEVICE:
+ 			cdev->desc.bNumConfigurations =
+ 				count_configs(cdev, USB_DT_DEVICE);
++			cdev->desc.bMaxPacketSize0 =
++				cdev->gadget->ep0->maxpacket;
++			if (gadget->speed >= USB_SPEED_SUPER)
++				cdev->desc.bcdUSB = cpu_to_le16(0x0300);
++			else if ((gadget_is_superspeed(gadget)) &&
++				 (gadget->speed <= USB_SPEED_HIGH))
++				cdev->desc.bcdUSB = cpu_to_le16(0x0210);
++
+ 			value = min(w_length, (u16) sizeof cdev->desc);
+ 			memcpy(req->buf, &cdev->desc, value);
+ 			break;
+ 		case USB_DT_DEVICE_QUALIFIER:
+-			if (!gadget_is_dualspeed(gadget))
++			if (!gadget_is_dualspeed(gadget) ||
++			    gadget->speed >= USB_SPEED_SUPER)
+ 				break;
+ 			device_qual(cdev);
+ 			value = min_t(int, w_length,
+ 				sizeof(struct usb_qualifier_descriptor));
+ 			break;
+ 		case USB_DT_OTHER_SPEED_CONFIG:
+-			if (!gadget_is_dualspeed(gadget))
++			if (!gadget_is_dualspeed(gadget) ||
++			    gadget->speed >= USB_SPEED_SUPER)
+ 				break;
+ 			/* FALLTHROUGH */
+ 		case USB_DT_CONFIG:
+@@ -928,6 +1184,12 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
+ 			if (value >= 0)
+ 				value = min(w_length, (u16) value);
+ 			break;
++		case USB_DT_BOS:
++			if (gadget_is_superspeed(gadget)) {
++				value = bos(cdev);
++				value = min(w_length, (u16) value);
++			}
++			break;
+ 		}
+ 		break;
+ 
+@@ -987,6 +1249,64 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
+ 		*((u8 *)req->buf) = value;
+ 		value = min(w_length, (u16) 1);
+ 		break;
++
++	/*
++	 * USB 3.0 additions:
++	 * Function driver should handle get_status request. If such cb
++	 * wasn't supplied we respond with default value = 0
++	 * Note: function driver should supply such cb only for the first
++	 * interface of the function
++	 */
++	case USB_REQ_GET_STATUS:
++		if (!gadget_is_superspeed(gadget))
++			goto unknown;
++		if (ctrl->bRequestType != (USB_DIR_IN | USB_RECIP_INTERFACE))
++			goto unknown;
++		value = 2;	/* This is the length of the get_status reply */
++		*((u16 *)req->buf) = 0;
++		if (!cdev->config || w_index >= MAX_CONFIG_INTERFACES)
++			break;
++		f = cdev->config->interface[intf];
++		if (!f)
++			break;
++		status = f->get_status ? f->get_status(f) : 0;
++		if (status < 0)
++			break;
++		*((u16 *)req->buf) = status & 0x0000ffff;
++		break;
++	/*
++	 * Function drivers should handle SetFeature/ClearFeature
++	 * (FUNCTION_SUSPEND) request. function_suspend cb should be supplied
++	 * only for the first interface of the function
++	 */
++	case USB_REQ_CLEAR_FEATURE:
++	case USB_REQ_SET_FEATURE:
++		if (!gadget_is_superspeed(gadget))
++			goto unknown;
++		if (ctrl->bRequestType != (USB_DIR_OUT | USB_RECIP_INTERFACE))
++			goto unknown;
++		switch (w_value) {
++		case USB_INTRF_FUNC_SUSPEND:
++			if (!cdev->config || w_index >= MAX_CONFIG_INTERFACES)
++				break;
++			f = cdev->config->interface[intf];
++			if (!f)
++				break;
++			value = f->func_suspend ?
++				f->func_suspend(f,
++					(u8)(w_index &
++					     USB_INTR_FUNC_SUSPEND_OPT_MASK)) :
++				0;
++			if (value < 0) {
++				ERROR(cdev, "func_suspend() returned "
++					    "error %d\n", value);
++				value = 0;
++			}
++			break;
++		default:
++			break;
++		}
++		break;
+ 	default:
+ unknown:
+ 		VDBG(cdev,
+@@ -1106,8 +1426,11 @@ composite_unbind(struct usb_gadget *gadget)
+ 				DBG(cdev, "unbind function '%s'/%p\n",
+ 						f->name, f);
+ 				f->unbind(c, f);
+-				/* may free memory for "f" */
+ 			}
++			/* Free memory allocated for ss descriptors */
++			if (f->ss_desc_allocated && f->ss_descriptors)
++				usb_free_descriptors(f->ss_descriptors);
++			/* may free memory for "f" */
+ 		}
+ 		list_del(&c->list);
+ 		if (c->unbind) {
+@@ -1337,6 +1660,9 @@ extern int usb_composite_probe(struct usb_composite_driver *driver,
+ 		driver->name = "composite";
+ 	composite_driver.function =  (char *) driver->name;
+ 	composite_driver.driver.name = driver->name;
++#ifdef CONFIG_USB_GADGET_SUPERSPEED
++	composite_driver.speed = USB_SPEED_SUPER;
++#endif /* CONFIG_USB_GADGET_SUPERSPEED */
+ 	composite = driver;
+ 	composite_gadget_bind = bind;
+ 
 diff --git a/include/linux/usb/composite.h b/include/linux/usb/composite.h
-index b0c78cd..4f56e44 100644
+index 4f56e44..e9fa7d8 100644
 --- a/include/linux/usb/composite.h
 +++ b/include/linux/usb/composite.h
-@@ -158,21 +158,6 @@ int usb_interface_id(struct usb_configuration *, struct usb_function *);
- int config_ep_by_speed(struct usb_gadget *g, struct usb_function *f,
- 			struct usb_ep *_ep);
+@@ -51,6 +51,18 @@ struct usb_configuration;
+  * @hs_descriptors: Table of high speed descriptors, using interface and
+  *	string identifiers assigned during @bind().  If this pointer is null,
+  *	the function will not be available at high speed.
++ * @ss_descriptors: Table of super speed descriptors. If
++ *	wasnt supplied by the FD during @bind() and
++ *	!ss_not_capble, will be generated automaticly with
++ *	default values while working in superspeed mode. If this
++ *	pointer is null after initiation, the function will not
++ *	be available at super speed.
++ * @ss_not_capable: This flag is used by the FD to indicate if
++ *	this function is SS capble. Meaning: if SS descriptors
++ *	weren't supplied by the FD, and the flag is set ss
++ *	descriptors will NOT be automatically generated
++ * @ss_desc_allocated: This flag indicates whether the ss descriptors were
++ *	dynamically allocated (and needs to be released).
+  * @config: assigned when @usb_add_function() is called; this is the
+  *	configuration with which this function is associated.
+  * @bind: Before the gadget can register, all of its functions bind() to the
+@@ -69,6 +81,10 @@ struct usb_configuration;
+  * @setup: Used for interface-specific control requests.
+  * @suspend: Notifies functions when the host stops sending USB traffic.
+  * @resume: Notifies functions when the host restarts USB traffic.
++ * @get_status: Returns function status as a reply to
++ *	GetStatus() request when the recepient is Interface.
++ * @func_suspend: callback to be called when
++ *	SetFeature(FUNCTION_SUSPEND) is reseived
+  *
+  * A single USB function uses one or more interfaces, and should in most
+  * cases support operation at both full and high speeds.  Each function is
+@@ -98,6 +114,10 @@ struct usb_function {
+ 	struct usb_gadget_strings	**strings;
+ 	struct usb_descriptor_header	**descriptors;
+ 	struct usb_descriptor_header	**hs_descriptors;
++	struct usb_descriptor_header	**ss_descriptors;
++
++	unsigned			ss_desc_allocated:1;
++	unsigned			ss_not_capable:1;
  
--/**
-- * ep_choose - select descriptor endpoint at current device speed
-- * @g: gadget, connected and running at some speed
-- * @hs: descriptor to use for high speed operation
-- * @fs: descriptor to use for full or low speed operation
-- */
--static inline struct usb_endpoint_descriptor *
--ep_choose(struct usb_gadget *g, struct usb_endpoint_descriptor *hs,
--		struct usb_endpoint_descriptor *fs)
--{
--	if (gadget_is_dualspeed(g) && g->speed == USB_SPEED_HIGH)
--		return hs;
--	return fs;
--}
--
- #define	MAX_CONFIG_INTERFACES		16	/* arbitrary; max 255 */
+ 	struct usb_configuration	*config;
  
- /**
+@@ -124,6 +144,10 @@ struct usb_function {
+ 	void			(*suspend)(struct usb_function *);
+ 	void			(*resume)(struct usb_function *);
+ 
++	/* USB 3.0 additions */
++	int			(*get_status)(struct usb_function *);
++	int			(*func_suspend)(struct usb_function *,
++						u8 suspend_opt);
+ 	/* private: */
+ 	/* internals */
+ 	struct list_head		list;
+@@ -229,6 +253,7 @@ struct usb_configuration {
+ 	struct list_head	list;
+ 	struct list_head	functions;
+ 	u8			next_interface_id;
++	unsigned		superspeed:1;
+ 	unsigned		highspeed:1;
+ 	unsigned		fullspeed:1;
+ 	struct usb_function	*interface[MAX_CONFIG_INTERFACES];
 diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-index f1c8256..9a7b411 100644
+index 9a7b411..af71ca1 100644
 --- a/include/linux/usb/gadget.h
 +++ b/include/linux/usb/gadget.h
-@@ -871,12 +871,6 @@ int usb_gadget_config_buf(const struct usb_config_descriptor *config,
- struct usb_descriptor_header **usb_copy_descriptors(
- 		struct usb_descriptor_header **);
+@@ -136,6 +136,8 @@ struct usb_ep_ops {
+  *	descriptor that matches connection speed
+  * @desc: endpoint descriptor.  This pointer is set before the endpoint is
+  *	enabled and remains valid until the endpoint is disabled.
++ * @comp_desc: In case of SuperSpeed support, this is the endpoint companion
++ *	descriptor that is used to configure the endpoint
+  *
+  * the bus controller driver lists all the general purpose endpoints in
+  * gadget->ep_list.  the control endpoint (gadget->ep0) is not in that list,
+@@ -150,6 +152,7 @@ struct usb_ep {
+ 	unsigned			maxpacket:16;
+ 	u8				bEndpointAddress;
+ 	const struct usb_endpoint_descriptor	*desc;
++	const struct usb_ss_ep_comp_descriptor	*comp_desc;
+ };
  
--/* return copy of endpoint descriptor given original descriptor set */
--struct usb_endpoint_descriptor *usb_find_endpoint(
--	struct usb_descriptor_header **src,
--	struct usb_descriptor_header **copy,
--	struct usb_endpoint_descriptor *match);
--
+ /*-------------------------------------------------------------------------*/
+@@ -417,6 +420,14 @@ static inline void usb_ep_fifo_flush(struct usb_ep *ep)
+ 
+ /*-------------------------------------------------------------------------*/
+ 
++struct usb_dcd_config_params {
++	__u8  bU1devExitLat;	/* U1 Device exit Latency */
++#define USB_DEFULT_U1_DEV_EXIT_LAT	0x01	/* Less then 1 microsec */
++	__u16 bU2DevExitLat;	/* U2 Device exit Latency */
++#define USB_DEFULT_U2_DEV_EXIT_LAT	0x1F4	/* Less then 500 microsec */
++};
++
++
+ struct usb_gadget;
+ 
+ /* the rest of the api to the controller hardware: device operations,
+@@ -431,6 +442,7 @@ struct usb_gadget_ops {
+ 	int	(*pullup) (struct usb_gadget *, int is_on);
+ 	int	(*ioctl)(struct usb_gadget *,
+ 				unsigned code, unsigned long param);
++	void	(*get_config_params)(struct usb_dcd_config_params *);
+ };
+ 
  /**
-  * usb_free_descriptors - free descriptors returned by usb_copy_descriptors()
-  * @v: vector of descriptors
+@@ -522,6 +534,23 @@ static inline int gadget_is_dualspeed(struct usb_gadget *g)
+ }
+ 
+ /**
++ * gadget_is_superspeed() - return true if the hardware handles
++ * supperspeed
++ * @g: controller that might support supper speed
++ */
++static inline int gadget_is_superspeed(struct usb_gadget *g)
++{
++#ifdef CONFIG_USB_GADGET_SUPERSPEED
++	/* runtime test would check "g->is_superspeed" ... that might be
++	 * useful to work around hardware bugs, but is mostly pointless
++	 */
++	return 1;
++#else
++	return 0;
++#endif
++}
++
++/**
+  * gadget_is_otg - return true iff the hardware is OTG-ready
+  * @g: controller that might have a Mini-AB connector
+  *
 -- 
 1.6.3.3
 
