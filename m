@@ -1,68 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760039Ab0KRSAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 13:00:22 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:23709 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759984Ab0KRSAU (ORCPT
+	id S932732Ab0KRSGf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 13:06:35 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46913 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932443Ab0KRSGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 13:00:20 -0500
+	Thu, 18 Nov 2010 13:06:33 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=oOvYCRp7m3PNAjSPcyYX1PqnohqF5Xe+8KDx0fl3PtQ8oABVTQnSIkftDnRhx8h+OC
-         pnHxNFUclX4dhuQdMAkw==
-Date: Thu, 18 Nov 2010 10:00:13 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: Christoph Hellwig <hch@infradead.org>
-cc: Theodore Tso <tytso@mit.edu>, Nick Piggin <npiggin@kernel.dk>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rTBqMpEXRZMB4PLNBMW9wHf7W0TEguMwkpKM6Pywplhed6Kgj2J3Bo3PUSeE+SXTD2
+         S2NBf+krTgPKIIWgRGgdDWp7sqco9qJffgEBlevFM9C/m6PFjyZrQ1dejWMNUhPmaxUA
+         TBI2jPtRJUhhPdIQxdt2tF1NZfE/t3tbfNxwI=
+Date: Thu, 18 Nov 2010 10:06:24 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mattia Dongili <malattia@linux.it>
+Cc: Norbert Preining <preining@logic.at>, Matthew Garrett <mjg@redhat.com>,
         linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering
- writeback
-In-Reply-To: <20101118133904.GB18834@infradead.org>
-Message-ID: <alpine.LSU.2.00.1011180941450.3210@tigran.mtv.corp.google.com>
-References: <1289996638-21439-1-git-send-email-walken@google.com> <1289996638-21439-4-git-send-email-walken@google.com> <20101117125756.GA5576@amd> <1290007734.2109.941.camel@laptop> <20101118054629.GA3339@amd> <2ADBEB7E-0EC8-4536-B556-0453A8E1D5FA@mit.edu>
- <20101118133904.GB18834@infradead.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-input@vger.kernel.org
+Subject: Re: regression since 2.6.36: backlight in sony-laptop not working
+Message-ID: <20101118180624.GA574@core.coreip.homeip.net>
+References: <20101111235000.GA6651@gamma.logic.tuwien.ac.at>
+ <20101112034423.GA7407@srcf.ucam.org>
+ <20101112035027.GD26742@gamma.logic.tuwien.ac.at>
+ <20101112035732.GB7574@srcf.ucam.org>
+ <20101112042243.GE2852@kamineko.org>
+ <20101117063006.GF29129@gamma.logic.tuwien.ac.at>
+ <20101117063338.GG29129@gamma.logic.tuwien.ac.at>
+ <20101117065252.GA7046@core.coreip.homeip.net>
+ <20101118110445.GB4107@kamineko.org>
+ <20101118133420.GA3177@kamineko.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101118133420.GA3177@kamineko.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010, Christoph Hellwig wrote:
-> On Thu, Nov 18, 2010 at 05:43:06AM -0500, Theodore Tso wrote:
-> > Why is it at all important that mlock() force block allocation for sparse blocks?    It's  not at all specified in the mlock() API definition that it does that.
+On Thu, Nov 18, 2010 at 10:34:20PM +0900, Mattia Dongili wrote:
+> On Thu, Nov 18, 2010 at 08:04:45PM +0900, Mattia Dongili wrote:
+> > On Tue, Nov 16, 2010 at 10:52:52PM -0800, Dmitry Torokhov wrote:
+> > > On Wed, Nov 17, 2010 at 03:33:38PM +0900, Norbert Preining wrote:
+> > > > > - recompiled a input-kbd binary with a relaxed version check
+> > > > > 	-	if (EV_VERSION != version) {
+> > > > > 	+	if (EV_VERSION > version) {
+> > > > >   in input.c, line 104 of input-utils.
+> > > > 
+> > > > Furthermore, although both of you referred to the fact that udev keymap
+> > > > is working, I checked that Debian/sid uses udev kbd rules, but it 
+> > > > stopped working ...
+> > > > 
+> > > 
+> > > Seems to be working here (I also verified that the keycodces are
+> > > actually emitted with evtest):
+> > > 
+> > > [root@dtor-d630 ~]# /lib/udev/keymap /dev/input/event3 0x87 wlan
+> > > setting scancode 0x87 to key code 238
+> > > [root@dtor-d630 ~]# /lib/udev/keymap /dev/input/event3 0x87 battery
+> > > setting scancode 0x87 to key code 236
+> > > [root@dtor-d630 ~]# uname -r
+> > > 2.6.37-rc1+
+> > > [root@dtor-d630 ~]# 
 > > 
-> > Are there really programs that assume that mlock() == fallocate()?!?
+> > ok I got the error. I'll see why the EVIOCSKEYCODE syscall is returning
+> > -EINVAL.
 > 
-> If there are programs that do they can't predate linux 2.6.15, and only
-> work on btrfs/ext4/xfs/etc, but not ext2/ext3/reiserfs.  Seems rather
-> unlikely to me.
+> there is a typo in the large scancode support patch. This patch makes 
+> /lib/udev/keymap work again here on 2.6.37-rc2.
+> 
 
-Yes, almost.  I'm very much on this side, that mlocking should not dirty
-all those pages; but better admit one argument for the opposition - it's
-possible that we'd find a case somewhere, which has always (i.e. even pre-
-page_mkwrite) relied upon mlock of an entirely sparse file to result in
-a nicely ordered allocation of blocks to the file (as would often have
-happened with pdflush, I think), to give good sequential read patterns
-ever after; but with this patch would now get much more random block
-ordering, according to where the real writes actually fall.
+Applied, thanks Mattia.
 
-It would be possible for a filesystem's ->fault(vma, &vmf) to observe
-that it's being called on a VM_LOCKED|VM_SHARED vma, and make sure that
-the page has backing in that case, to reproduce the old allocation behaviour
-without all the unnecessary writing.  But that would be extra work in every
-filesystem that cares.
+> commit a33950b5baa848ff7851b9efd4c5e2eaafd370f2
+> Author: Mattia Dongili <malattia@linux.it>
+> Date:   Thu Nov 18 22:20:36 2010 +0900
+> 
+>     Input: fix typo in keycode validation supporting large scancodes
+>     
+>     Check the input_keymap_entry keycode size (u32) instead of the device's
+>     (void*).
+>     Fixes: https://bugzilla.kernel.org/show_bug.cgi?id=22722
+>     
+>     Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+>     Cc: Dmitry Torokhov <dtor@mail.ru>
+>     Signed-off-by: Mattia Dongili <malattia@linux.it>
+> 
+> diff --git a/drivers/input/input.c b/drivers/input/input.c
+> index 7f26ca6..5edc41a 100644
+> --- a/drivers/input/input.c
+> +++ b/drivers/input/input.c
+> @@ -753,7 +753,7 @@ static int input_default_setkeycode(struct input_dev *dev,
+>  	if (index >= dev->keycodemax)
+>  		return -EINVAL;
+>  
+> -	if (dev->keycodesize < sizeof(dev->keycode) &&
+> +	if (dev->keycodesize < sizeof(ke->keycode) &&
+>  			(ke->keycode >> (dev->keycodesize * 8)))
+>  		return -EINVAL;
+>  
+> -- 
+> mattia
+> :wq!
 
-Hugh
+-- 
+Dmitry
