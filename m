@@ -1,62 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab0KRRTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:19:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52571 "EHLO mx2.suse.de"
+	id S932562Ab0KRRT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:19:59 -0500
+Received: from cantor.suse.de ([195.135.220.2]:54775 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756877Ab0KRRTQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:19:16 -0500
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
- super_operation
-From: James Bottomley <James.Bottomley@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
-        Lukas Czerner <lczerner@redhat.com>, tytso@mit.edu,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, sandeen@redhat.com
-In-Reply-To: <20101118142918.GA18510@infradead.org>
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
-	 <20101118130630.GJ6178@parisc-linux.org>
-	 <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
-	 <20101118141957.GK6178@parisc-linux.org>
-	 <20101118142918.GA18510@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Nov 2010 11:19:10 -0600
-Message-ID: <1290100750.3041.72.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1756877Ab0KRRT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 12:19:58 -0500
+Date: Thu, 18 Nov 2010 09:18:56 -0800
+From: Greg KH <gregkh@suse.de>
+To: Timur Tabi <timur@freescale.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Scott Wood <scottwood@freescale.com>,
+        Stuart Yoder <stuart.yoder@freescale.com>
+Subject: Re: How do I choose an arbitrary minor number for my tty device?
+Message-ID: <20101118171856.GA4283@suse.de>
+References: <20101117221903.GA4066@suse.de>
+ <4CE45A4E.70308@freescale.com>
+ <20101118022434.GA9833@suse.de>
+ <4CE546C5.8060401@freescale.com>
+ <20101118153912.GA1443@suse.de>
+ <4CE54E40.9040503@freescale.com>
+ <20101118163321.GA2723@suse.de>
+ <4CE5562B.8080604@freescale.com>
+ <20101118165136.GA3103@suse.de>
+ <4CE55ACB.80207@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE55ACB.80207@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 09:29 -0500, Christoph Hellwig wrote:
-> On Thu, Nov 18, 2010 at 07:19:58AM -0700, Matthew Wilcox wrote:
-> > I guess I was assuming that, on receiving a FALLOC_FL_PUNCH_HOLE, a
-> > filesystem that was TRIM-aware would pass that information down to the
-> > block device that it's mounted on.  I strongly feel that we shouldn't
-> > have two interfaces to do essentially the same thing.
+On Thu, Nov 18, 2010 at 10:56:43AM -0600, Timur Tabi wrote:
+> Greg KH wrote:
+> > Why?  Again, it doesn't matter, and no other tty driver does it.
 > > 
-> > I guess I'm saying that you're going to have to learn about TRIM :-)
+> > Actually you do have control over it, if you really want it, but again,
+> > don't do that :)
 > 
-> Did you actually look Lukas FITRIM code (not the slight reordering here,
-> but the original one).  It's the ext4 version of the batched discard
-> model, that is a userspace ioctl to discard free space in the
-> filesystem.
+> Because the only way to know which byte channel tty you want is via the byte
+> channel handle.
 > 
-> hole punching will free the blocks into the free space pool.  If you do
-> online discard it will also get discarded, but a filesystem that has
-> online discard enabled doesn't need FITRIM.
+> Think of the situation where you have two serial ports on the back of your
+> computer.  One of them is /dev/ttyS0, and the other is /dev/ttyS1.  But which
+> one is which?  The only way to find out is try one and see if it works.
 
-Not stepping into the debate: I'm happy to see punch go to the mapping
-data and FITRIM pick it up later.
+No, you can use the /dev/serial/ links to determine exactly which is
+which depending on the pci id, and other unique identifiers (serial
+numbers, etc.)
 
-However, I think it's time to question whether we actually still want to
-allow online discard at all.  Most of the benchmarks show it to be a net
-lose to almost everything (either SSD or Thinly Provisioned arrays), so
-it's become an "enable this to degrade performance" option with no
-upside.
+> Now that might be acceptable for serial ports that are fixed physically.  But
+> byte channels handles are completely arbitrary and easily change with even the
+> slightest re-configuration of the partitions under the hypervisor.  I need to
+> have some way to tell userspace that /dev/ttybc0 is byte channel handle 73.
 
-James
+Then again, just use the /dev/serial/ symlinks that are there for you.
 
+> > Sorry, I can't do code review, or accept code that is not allowed to be
+> > sent to the public, as, surprise, I'm public :)
+> 
+> Well, ok.  I didn't want to spam the mailing list with something that only you
+> asked for, but here it is:
 
+Is this somehow not public code?  What just changed in the past 15
+minutes?
+
+confused,
+
+greg k-h
