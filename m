@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760602Ab0KRVRD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:17:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63393 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757237Ab0KRVRB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:17:01 -0500
-Date: Thu, 18 Nov 2010 16:16:38 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
-Message-ID: <20101118211638.GA13139@redhat.com>
-References: <4CE2E3C3.6060800@windriver.com>
- <20101118080516.GJ32621@elte.hu>
- <4CE52048.5080802@windriver.com>
- <1290086232.2109.1507.camel@laptop>
- <20101118193247.GF18100@redhat.com>
- <4CE583D0.8050407@windriver.com>
- <20101118200807.GC8131@redhat.com>
- <20101118201118.GC6028@lenovo>
- <20101118205203.GA11445@redhat.com>
- <20101118210159.GF6028@lenovo>
+	id S1760550Ab0KRVTf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:19:35 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:33365 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910Ab0KRVTe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 16:19:34 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=ajm2yREwZuvw+b73dmvdwl6o7vtJQqynLYJc4oHyACixegnVcFpTklcAESB3YymlcN
+         OZfinIO2n3XaA4nWBJMw==
+Date: Thu, 18 Nov 2010 13:19:27 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Shaohui Zheng <shaohui.zheng@intel.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [2/8,v3] NUMA Hotplug Emulator: infrastructure of NUMA hotplug
+ emulation
+In-Reply-To: <20101118041407.GA2408@shaohui>
+Message-ID: <alpine.DEB.2.00.1011181316290.26680@chino.kir.corp.google.com>
+References: <20101117020759.016741414@intel.com> <20101117021000.568681101@intel.com> <alpine.DEB.2.00.1011162359160.17408@chino.kir.corp.google.com> <20101117075128.GA30254@shaohui> <alpine.DEB.2.00.1011171304060.10254@chino.kir.corp.google.com>
+ <20101118041407.GA2408@shaohui>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101118210159.GF6028@lenovo>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 12:01:59AM +0300, Cyrill Gorcunov wrote:
-> On Thu, Nov 18, 2010 at 03:52:03PM -0500, Don Zickus wrote:
-> ...
-> > > 
-> > > ok, Don, but you mentioned there are false alarms on real P4 machine, right?
-> > 
-> > Yeah, there are two problems.  One is using kgdb tests on kvm guests.  The
-> > other is using kgdb tests on a bare metal p4 machine.
-> > 
-> > Cheers,
-> > Don
-> >
-> 
->  ok, thanks, Jason just confirmed it too. I thing if we run with kgdb armed
-> it (kgdb) should obtain nmi handler first and perf only after.
-> 
->  actually I'm not sure why p4 hangs here while core passes the test, most
+On Thu, 18 Nov 2010, Shaohui Zheng wrote:
 
-because p4 reads the wrong high register which comes back zero.  This will
-always set overflow=1, thus swallowing all NMI if something like the nmi
-watchdog has perf active.
+> On Wed, Nov 17, 2010 at 01:10:50PM -0800, David Rientjes wrote:
+> > I don't understand why that's a requirement, NUMA emulation is a seperate 
+> > feature.  Although both are primarily used to test and instrument other VM 
+> > and kernel code, NUMA emulation is restricted to only being used at boot 
+> > to fake nodes on smaller machines and can be used to test things like the 
+> > slab allocator.  The NUMA hotplug emulator that you're developing here is 
+> > primarily used to test the hotplug callbacks; for that use-case, it seems 
+> > particularly helpful if nodes can be hotplugged of various sizes and node 
+> > ids rather than having static characteristics that cannot be changed with 
+> > a reboot.
+> > 
+> I agree with you. the early emulator do the same thing as you said, but there 
+> is already NUMA emulation to create fake node, our emulator also creates 
+> fake nodes. We worried about that we will suffer the critiques from the community,
+> so we drop the original degsin.
+> 
+> I did not know whether other engineers have the same attitude with you. I think 
+> that I can publish both codes, and let the community to decide which one is prefered.
+> 
+> In my personal opinion, both methods are acceptable for me.
+> 
 
-Cheers,
-Don
+The way that I've proposed it in my email to Dave was different: we use 
+the memory hotplug interface to add and online the memory only after an 
+interface has been added that will change the node mappings to 
+first_unset_node(node_online_map).  The memory hotplug interface may 
+create a new pgdat, so this is the node creation mechanism that should be 
+used as opposed to those in NUMA emulation.
