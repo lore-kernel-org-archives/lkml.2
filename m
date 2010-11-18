@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab0KRQlm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:41:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10827 "EHLO mx1.redhat.com"
+	id S1759836Ab0KRQoN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:44:13 -0500
+Received: from mail.perches.com ([173.55.12.10]:1532 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759473Ab0KRQll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 11:41:41 -0500
-Date: Thu, 18 Nov 2010 17:34:35 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [RFC][PATCH v2 5/7] taskstats: Improve cumulative CPU time
-	accounting
-Message-ID: <20101118163435.GA3249@redhat.com>
-References: <20101111170352.732381138@linux.vnet.ibm.com> <20101111170815.404670062@linux.vnet.ibm.com> <20101113183810.GA9021@redhat.com> <1289928880.1940.116.camel@holzheu-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1289928880.1940.116.camel@holzheu-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757269Ab0KRQoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 11:44:12 -0500
+Subject: Re: [PATCH 1/2] drivers: regulator: core: use pr_fmt
+From: Joe Perches <joe@perches.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Daniel Walker <dwalker@codeaurora.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        bleong@codeaurora.org
+In-Reply-To: <20101118103758.GB7233@rakim.wolfsonmicro.main>
+References: <1290036628-9928-1-git-send-email-dwalker@codeaurora.org>
+	 <1290040194.28741.324.camel@Joe-Laptop>
+	 <1290040508.16344.532.camel@c-dwalke-linux.qualcomm.com>
+	 <20101118103758.GB7233@rakim.wolfsonmicro.main>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Nov 2010 08:44:11 -0800
+Message-ID: <1290098651.1817.27.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/16, Michael Holzheu wrote:
->
-> On Sat, 2010-11-13 at 19:38 +0100, Oleg Nesterov wrote:
-> > I already asked you to split these changes, perhaps you can do this?
-> > Say, bacct_add_tsk() looks overcomplicated, the change in copy_process()
-> > shouldn't introduce the new CLONE_THREAD check, not sure I understand
-> > why release_task() was chosen for reparenting, other nits...
->
-> I want to establish the new hierarchy when a new process is forked and
-> not for new threads, therefore the check for CLONE_THREAD in
-> copy_process().
+On Thu, 2010-11-18 at 10:37 +0000, Mark Brown wrote:
+> On Wed, Nov 17, 2010 at 04:35:08PM -0800, Daniel Walker wrote:
+> >                         printk(KERN_WARNING "%s: could not add regulator_dev"
+> >                                 " load sysfs\n", __func__);
+> > I'm not sure what this one was suppose to say.
+> That's a different thing - someone's just split the string over multiple
+> lines - the two strings will just be concatenated.
 
-Yes, but copy_process() already checks CLONE_THREAD many times. No
-need to introduce the new check.
+I believe he's talking about the concatenated string
+content itself being unintelligible gibberish.
 
-> I do the reparenting with reparent_acct() when a process
-> dies, therefore the check for "group_dead" in exit_signal().
+It'd be more standard as "could not create sysfs file".
 
-And it is not clear to me why release_task() is better than
-exit_notify().
-
-
-That said, perhaps I'll understand this reading the next version.
-That is why I asked to split.
-
-Oleg.
 
