@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760892Ab0KRXiN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:38:13 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34787 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760880Ab0KRXiK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:38:10 -0500
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Miles Lane" <miles.lane@gmail.com>
-References: <sKkKYVppECN.A.KhC.Phb5MB@chimera>
-In-Reply-To: <sKkKYVppECN.A.KhC.Phb5MB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	id S1758735Ab0KRXlg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:41:36 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48932 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755887Ab0KRXlf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 18:41:35 -0500
 MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <20101118233439.GB5004@quack.suse.cz>
+References: <1290007619-5787-1-git-send-email-arnd@arndb.de> <20101118233439.GB5004@quack.suse.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 18 Nov 2010 15:40:56 -0800
+Message-ID: <AANLkTin0Gm8Xqm-ARGmd4T+fCM4mMA0=PbDA6eSsYUOG@mail.gmail.com>
+Subject: Re: [PATCH 0/7] BKL removal follow-up
+To: Jan Kara <jack@suse.cz>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Nathan Laredo <laredo@gnu.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        Alessio Igor Bogani <alessioigorbogani@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-ID: <ATV3yiK8i4C.A.IIF.lib5MB@chimera>
-Subject: [Bug #22082] 2.6.36-git11 -- kernel/pid.c:419 invoked rcu_dereference_check() without protection!
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 19 Nov 2010 00:24:03 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a summary report
-of recent regressions.
+On Thu, Nov 18, 2010 at 3:34 PM, Jan Kara <jack@suse.cz> wrote:
+>
+>  Just for info, UDF BKL removal patches seem to work fine but I want to
+> give them some final SMP testing on Monday before pushing them to -next.
+> I'm not sure how much people hurry with disabling the lock so if I should
+> push them ASAP or whether the next merge window is fine...
 
-The following bug entry is on the current list of known regressions
-from 2.6.36.  Please verify if it still should be listed and let the tracking team
-know (either way).
+I don't think I can reasonably do it in 37, we're late enough in the
+-rc series. So UDF and really saying 'n' to BKL by default will have
+to be for the next merge window.
 
+I hate to do it, but I'd be too nervous about it any other way.
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22082
-Subject		: 2.6.36-git11 -- kernel/pid.c:419 invoked rcu_dereference_check() without protection!
-Submitter	: Miles Lane <miles.lane@gmail.com>
-Date		: 2010-10-29 5:22 (21 days old)
-Message-ID	: <AANLkTimGgzOZb8EwUQO16cZcL+ycveKTYzg_AAX+D+Kw@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=128832975924288&w=2
-
-
+                   Linus
