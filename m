@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755700Ab0KRIpL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 03:45:11 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:40473 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755628Ab0KRIpK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 03:45:10 -0500
-Date: Thu, 18 Nov 2010 08:44:55 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] Use memory compaction instead of lumpy reclaim
-	during high-order allocations
-Message-ID: <20101118084455.GD8135@csn.ul.ie>
-References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie> <20101117154641.51fd7ce5.akpm@linux-foundation.org> <20101118081254.GB8135@csn.ul.ie> <20101118172627.cf25b83a.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1755864Ab0KRIrL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 03:47:11 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64234 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755828Ab0KRIrI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 03:47:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=iQR9MLa5wNx1uSuEe2vz3YPK/mkBoaXEuxibj+Ff2ybFVJ4Mic9T3WJLDRZpZT7kr3
+         yrUr5SzKo7WNMxO+dbYP72fdV8wZIeYOnP0vYtQywXITb3ILJ+NjOTVBsY/bq+n3AAYk
+         Wleali/gwgTM7yYKhffTYAE1tpBkG1tz/N9Po=
+From: Marek Belisko <marek.belisko@open-nandra.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Marek Belisko <marek.belisko@gmail.com>
+Subject: [PATCH resend] staging: ft1000: Fix compilation warning.
+Date: Thu, 18 Nov 2010 09:49:09 +0100
+Message-Id: <1290070149-12604-1-git-send-email-marek.belisko@open-nandra.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101118172627.cf25b83a.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 05:26:27PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Thu, 18 Nov 2010 08:12:54 +0000
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > > > I'm hoping that this series also removes the
-> > > > necessity for the "delete lumpy reclaim" patch from the THP tree.
-> > > 
-> > > Now I'm sad.  I read all that and was thinking "oh goody, we get to
-> > > delete something for once".  But no :(
-> > > 
-> > > If you can get this stuff to work nicely, why can't we remove lumpy
-> > > reclaim?
-> > 
-> > Ultimately we should be able to. Lumpy reclaim is still there for the
-> > !CONFIG_COMPACTION case and to have an option if we find that compaction
-> > behaves badly for some reason.
-> > 
-> 
-> Hmm. CONFIG_COMPACTION depends on CONFIG_MMU. lumpy reclaim will be for NOMMU,
-> finally ?
-> 
+From: Marek Belisko <marek.belisko@gmail.com>
 
-Also true. As it is, lumpy reclaim is still there but it's never called
-if CONFIG_COMPACTION is set so it's already side-lined.
+This patch fix following warning:
+drivers/staging/ft1000/ft1000-usb/ft1000_usb.c:67:22:
+warning: ‘pft1000info’ may be used uninitialized in this function
 
+Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
+---
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+index 1369f06..f88ff86 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
+@@ -64,7 +64,7 @@ static int ft1000_probe(struct usb_interface *interface,
+ 	int i, ret = 0, size;
+ 
+ 	struct ft1000_device *ft1000dev;
+-	struct ft1000_info *pft1000info;
++	struct ft1000_info *pft1000info = NULL;
+ 	const struct firmware *dsp_fw;
+ 
+ 	ft1000dev = kmalloc(sizeof(struct ft1000_device), GFP_KERNEL);
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.7.1
+
