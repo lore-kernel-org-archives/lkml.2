@@ -1,267 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756544Ab0KRMhX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 07:37:23 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:42769 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755557Ab0KRMhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 07:37:21 -0500
-Date: Thu, 18 Nov 2010 12:37:05 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1756415Ab0KRMjv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 07:39:51 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44739 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab0KRMjt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 07:39:49 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=tbZZCPKmlzEL7Gp8afNoVyqN/ZkUjYBptQpEfFDhVCWs2M2RTn3EMDUT5qyQ74UH7L
+         7Q3WdyjTdwZwdkjiTL/i4JStphtmHu7HHqEOZPz8qRDjf9tuqW+aY4Vykz7PQhVLAipz
+         KxZtKsC9nmFGl5lpvsUpzm95HVE6/X9vLoSwg=
+Date: Thu, 18 Nov 2010 13:39:43 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 06 of 66] alter compound get_page/put_page
-Message-ID: <20101118123705.GK8135@csn.ul.ie>
-References: <patchbomb.1288798055@v2.random> <a5372413f6faf8c52784.1288798061@v2.random>
+        Darren Hart <dvhart@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "jason.wessel" <jason.wessel@windriver.com>,
+        "Ted Ts'o" <tytso@mit.edu>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [RFC][PATCH 0/2] tracing: Have trace_printk()s in the events/
+	directory
+Message-ID: <20101118123940.GA5344@nowhere>
+References: <20101118035803.453609353@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <a5372413f6faf8c52784.1288798061@v2.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20101118035803.453609353@goodmis.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 04:27:41PM +0100, Andrea Arcangeli wrote:
-> From: Andrea Arcangeli <aarcange@redhat.com>
+On Wed, Nov 17, 2010 at 10:58:03PM -0500, Steven Rostedt wrote:
+> As suggested in:
 > 
-> Alter compound get_page/put_page to keep references on subpages too, in order
-> to allow __split_huge_page_refcount to split an hugepage even while subpages
-> have been pinned by one of the get_user_pages() variants.
+> LKML-Reference: <20101116221726.GB26243@nowhere>
+>   or
+> http://marc.info/?l=linux-kernel&m=128994587230629
 > 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> ---
+> To have trace_printks in the events directory.
+
+(Note, I don't remember who got that idea. Perhaps
+that was Ingo while discussing that with him like one year
+ago, or may be me, not sure, whatever)...
+
+
+> This patch set just does it for ftrace, although it can also lay the
+> ground work for both perf and trace (are they different tools?)
+
+The trace tool uses perf. But no worry about perf, I can handle the hook
+for it.
+
+
+> This patch set converts the current trace_printk() into ftrace_printk()
+> (back to it's original name) and that stays the same.
 > 
-> diff --git a/arch/powerpc/mm/gup.c b/arch/powerpc/mm/gup.c
-> --- a/arch/powerpc/mm/gup.c
-> +++ b/arch/powerpc/mm/gup.c
-> @@ -16,6 +16,16 @@
->  
->  #ifdef __HAVE_ARCH_PTE_SPECIAL
->  
-> +static inline void pin_huge_page_tail(struct page *page)
-> +{
+> The new trace_printk() is off by default (we can change that later
+> with a kernel command line option perhaps), but it can be enable now
+> with the events directory.
 
-Minor nit, but get_huge_page_tail?
+Cool. So disablement/re-enablement are nice features. That said it should
+be enabled by default I think, to keep the previous (and intuitive) behaviour.
 
-Even though "pin" is what it does, pin isn't used elsewhere in naming.
+ 
+> Each trace_printk() added will get a entry in the debugfs/tracing/events/
+> directory as  debugfs/tracing/entry/path/to/trace_printk/
+> 
+> For example, I added a trace_printk() in kernel/sched.c at line 2180
+> and it creates:
+> 
+> # ls /debug/tracing/events/printk/kernel/sched.c/2180/
+> enable  format
 
-> +	/*
-> +	 * __split_huge_page_refcount() cannot run
-> +	 * from under us.
-> +	 */
-> +	VM_BUG_ON(atomic_read(&page->_count) < 0);
-> +	atomic_inc(&page->_count);
-> +}
-> +
->  /*
->   * The performance critical leaf functions are made noinline otherwise gcc
->   * inlines everything into a single function which results in too much
-> @@ -47,6 +57,8 @@ static noinline int gup_pte_range(pmd_t 
->  			put_page(page);
->  			return 0;
->  		}
-> +		if (PageTail(page))
-> +			pin_huge_page_tail(page);
->  		pages[*nr] = page;
->  		(*nr)++;
->  
-> diff --git a/arch/x86/mm/gup.c b/arch/x86/mm/gup.c
-> --- a/arch/x86/mm/gup.c
-> +++ b/arch/x86/mm/gup.c
-> @@ -105,6 +105,16 @@ static inline void get_head_page_multipl
->  	atomic_add(nr, &page->_count);
->  }
->  
-> +static inline void pin_huge_page_tail(struct page *page)
-> +{
-> +	/*
-> +	 * __split_huge_page_refcount() cannot run
-> +	 * from under us.
-> +	 */
-> +	VM_BUG_ON(atomic_read(&page->_count) < 0);
-> +	atomic_inc(&page->_count);
-> +}
-> +
+Ok, we'll probably need to add the ID as well.
 
-This is identical to the x86 implementation. Any possibility they can be
-shared?
+ 
+> The format is the printk format:
+> 
+> # cat /debug/tracing/events/printk/kernel/sched.c/2180/format 
+> "migrate task %s:%d
+> "
 
->  static noinline int gup_huge_pmd(pmd_t pmd, unsigned long addr,
->  		unsigned long end, int write, struct page **pages, int *nr)
->  {
-> @@ -128,6 +138,8 @@ static noinline int gup_huge_pmd(pmd_t p
->  	do {
->  		VM_BUG_ON(compound_head(page) != head);
->  		pages[*nr] = page;
-> +		if (PageTail(page))
-> +			pin_huge_page_tail(page);
->  		(*nr)++;
->  		page++;
->  		refs++;
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -351,9 +351,17 @@ static inline int page_count(struct page
->  
->  static inline void get_page(struct page *page)
->  {
-> -	page = compound_head(page);
-> -	VM_BUG_ON(atomic_read(&page->_count) == 0);
-> +	VM_BUG_ON(atomic_read(&page->_count) < !PageTail(page));
+Do you think we can make it more compatible with the common pattern?
 
-Oof, this might need a comment. It's saying that getting a normal page or the
-head of a compound page must already have an elevated reference count. If
-we are getting a tail page, the reference count is stored in both the head
-and the tail so the BUG check does not apply.
+Like:
 
->  	atomic_inc(&page->_count);
-> +	if (unlikely(PageTail(page))) {
-> +		/*
-> +		 * This is safe only because
-> +		 * __split_huge_page_refcount can't run under
-> +		 * get_page().
-> +		 */
-> +		VM_BUG_ON(atomic_read(&page->first_page->_count) <= 0);
-> +		atomic_inc(&page->first_page->_count);
-> +	}
->  }
->  
->  static inline struct page *virt_to_head_page(const void *x)
-> diff --git a/mm/swap.c b/mm/swap.c
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -56,17 +56,83 @@ static void __page_cache_release(struct 
->  		del_page_from_lru(zone, page);
->  		spin_unlock_irqrestore(&zone->lru_lock, flags);
->  	}
-> +}
-> +
-> +static void __put_single_page(struct page *page)
-> +{
-> +	__page_cache_release(page);
->  	free_hot_cold_page(page, 0);
->  }
->  
-> +static void __put_compound_page(struct page *page)
-> +{
-> +	compound_page_dtor *dtor;
-> +
-> +	__page_cache_release(page);
-> +	dtor = get_compound_page_dtor(page);
-> +	(*dtor)(page);
-> +}
-> +
->  static void put_compound_page(struct page *page)
->  {
-> -	page = compound_head(page);
-> -	if (put_page_testzero(page)) {
-> -		compound_page_dtor *dtor;
-> -
-> -		dtor = get_compound_page_dtor(page);
-> -		(*dtor)(page);
-> +	if (unlikely(PageTail(page))) {
-> +		/* __split_huge_page_refcount can run under us */
+Name: sched.c:2180
+ID: 120
+format:
+	field:unsigned long ip;	offset:16;	size:8;	signed:0;
+	field:const char * fmt;	offset:24;	size:8;	signed:0; <-- can be retrieved from printk_format
+	field:u32 buf;	offset:32;	size:0;	signed:0;
 
-So what? The fact you check PageTail twice is a hint as to what is
-happening and that we are depending on the order of when the head and
-tails bits get cleared but it's hard to be certain of that.
+print fmt: "given format", REC->ip, REC->fm
 
-> +		struct page *page_head = page->first_page;
-> +		smp_rmb();
-> +		if (likely(PageTail(page) && get_page_unless_zero(page_head))) {
-> +			unsigned long flags;
-> +			if (unlikely(!PageHead(page_head))) {
-> +				/* PageHead is cleared after PageTail */
-> +				smp_rmb();
-> +				VM_BUG_ON(PageTail(page));
-> +				goto out_put_head;
-> +			}
-> +			/*
-> +			 * Only run compound_lock on a valid PageHead,
-> +			 * after having it pinned with
-> +			 * get_page_unless_zero() above.
-> +			 */
-> +			smp_mb();
-> +			/* page_head wasn't a dangling pointer */
-> +			compound_lock_irqsave(page_head, &flags);
-> +			if (unlikely(!PageTail(page))) {
-> +				/* __split_huge_page_refcount run before us */
-> +				compound_unlock_irqrestore(page_head, flags);
-> +				VM_BUG_ON(PageHead(page_head));
-> +			out_put_head:
-> +				if (put_page_testzero(page_head))
-> +					__put_single_page(page_head);
-> +			out_put_single:
-> +				if (put_page_testzero(page))
-> +					__put_single_page(page);
-> +				return;
-> +			}
-> +			VM_BUG_ON(page_head != page->first_page);
-> +			/*
-> +			 * We can release the refcount taken by
-> +			 * get_page_unless_zero now that
-> +			 * split_huge_page_refcount is blocked on the
-> +			 * compound_lock.
-> +			 */
-> +			if (put_page_testzero(page_head))
-> +				VM_BUG_ON(1);
-> +			/* __split_huge_page_refcount will wait now */
-> +			VM_BUG_ON(atomic_read(&page->_count) <= 0);
-> +			atomic_dec(&page->_count);
-> +			VM_BUG_ON(atomic_read(&page_head->_count) <= 0);
-> +			compound_unlock_irqrestore(page_head, flags);
-> +			if (put_page_testzero(page_head))
-> +				__put_compound_page(page_head);
-> +		} else {
-> +			/* page_head is a dangling pointer */
-> +			VM_BUG_ON(PageTail(page));
-> +			goto out_put_single;
-> +		}
-> +	} else if (put_page_testzero(page)) {
-> +		if (PageHead(page))
-> +			__put_compound_page(page);
-> +		else
-> +			__put_single_page(page);
->  	}
->  }
->  
-> @@ -75,7 +141,7 @@ void put_page(struct page *page)
->  	if (unlikely(PageCompound(page)))
->  		put_compound_page(page);
->  	else if (put_page_testzero(page))
-> -		__page_cache_release(page);
-> +		__put_single_page(page);
->  }
->  EXPORT_SYMBOL(put_page);
->  
 
-Functionally, I don't see a problem so
+Does that look possible to you or have you run into troubles?
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+I don't know how much that's possible given the bprintk format. May be
+we should first try with the already formatted trace_printk version.
 
-but some expansion on the leader and the comment, even if done as a
-follow-on patch, would be nice.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+> Every directory has an "enable" file. By echoing 0 or 1 into this
+> file, it will enable all the trace_printk's below it.
+> 
+> This also uses jump_label() to keep overhead down when disabled.
+> 
+> Note, modules are not (yet) supported.
+> 
+> This is just the ground work. I'm busy doing other things so
+> if you need more, feel free to take this and carry on.
+> 
+> -- Steve
+
+
+Thanks a lot!
+
+
+> 
+> The following patches are in:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> 
+>     branch: rfc/event-printk
+> 
+> 
+> Steven Rostedt (2):
+>       tracing: Rename trace_printk to ftrace_printk
+>       tracing: Make event based trace_printk()
+> 
+> ----
+>  include/asm-generic/vmlinux.lds.h |    7 +-
+>  include/linux/kernel.h            |   16 +-
+>  include/trace/event_printk.h      |   52 ++++++
+>  kernel/trace/Makefile             |    1 +
+>  kernel/trace/event_printk.c       |  365 +++++++++++++++++++++++++++++++++++++
+>  kernel/trace/trace.h              |    1 +
+>  kernel/trace/trace_events.c       |    2 +-
+>  7 files changed, 435 insertions(+), 9 deletions(-)
+
