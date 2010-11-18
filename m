@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214Ab0KRObp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 09:31:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8045 "EHLO mx1.redhat.com"
+	id S1758261Ab0KROdB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 09:33:01 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31275 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757513Ab0KRObo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 09:31:44 -0500
-Date: Thu, 18 Nov 2010 09:31:01 -0500
-From: Josef Bacik <josef@redhat.com>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
-        tytso@mit.edu, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        hch@infradead.org, sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
-	super_operation
-Message-ID: <20101118143101.GO5618@dhcp231-156.rdu.redhat.com>
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com> <20101118130630.GJ6178@parisc-linux.org> <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org>
+	id S1757894Ab0KROdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 09:33:00 -0500
+Date: Thu, 18 Nov 2010 09:32:32 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, gorcunov@gmail.com
+Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
+Message-ID: <20101118143232.GC18100@redhat.com>
+References: <20101112154231.GN4823@redhat.com>
+ <4CDD6389.2080206@windriver.com>
+ <20101112161144.GP4823@redhat.com>
+ <4CDD6CAD.30303@windriver.com>
+ <20101112172755.GR4823@redhat.com>
+ <20101116184325.GB4823@redhat.com>
+ <4CE2E3C3.6060800@windriver.com>
+ <20101118080516.GJ32621@elte.hu>
+ <4CE52048.5080802@windriver.com>
+ <1290086232.2109.1507.camel@laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101118141957.GK6178@parisc-linux.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1290086232.2109.1507.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 07:19:58AM -0700, Matthew Wilcox wrote:
-> On Thu, Nov 18, 2010 at 08:48:04AM -0500, Josef Bacik wrote:
-> > On Thu, Nov 18, 2010 at 06:06:30AM -0700, Matthew Wilcox wrote:
-> > > On Thu, Nov 18, 2010 at 08:36:48AM +0100, Lukas Czerner wrote:
-> > > > There was concern that FITRIM ioctl is not common enough to be included
-> > > > in core vfs ioctl, as Christoph Hellwig pointed out there's no real point
-> > > > in dispatching this out to a separate vector instead of just through
-> > > > ->ioctl.
-> > > 
-> > > Um, are you and Josef working independently of each other?  You don't
-> > > seem to be cc'ing each other on your patches, and you're basically doing
-> > > the same thing.
-> > >
-> > 
-> > I guess they are the same thing in that we're both dealing with free'ing up
-> > space, but thats about where the similarities end.  Lukas' work is in TRIM'ing
-> > already free'd space, mine is in creating free'd space.  Plus I don't know
-> > anything nor wish to ever know anything about TRIM ;).  Thanks,
+On Thu, Nov 18, 2010 at 02:17:12PM +0100, Peter Zijlstra wrote:
+> On Thu, 2010-11-18 at 06:47 -0600, Jason Wessel wrote:
+> > More specifically
+> > when another subsystem injects an NMI event the perf NMI code returns
+> > NOTIFY_STOP. 
 > 
-> I guess I was assuming that, on receiving a FALLOC_FL_PUNCH_HOLE, a
-> filesystem that was TRIM-aware would pass that information down to the
-> block device that it's mounted on.  I strongly feel that we shouldn't
-> have two interfaces to do essentially the same thing.
+> Not unconditionally, right? We only do so when the previous NMI was from
+> the PMU and nobody claimed this one (NOTIFY_STOP from DIE_NMIUNKNOWN).
+> 
+> Or are you hitting the other one, where !handled but pmu_nmi.handled >
+> 1 ?
 
-But they aren't doing the same thing, his is discarding already free'd space,
-I'm enabling people to de-allocate space in the middle of files, they are two
-seperate things.  Of course if the filesystem is TRIM aware the de-allocation
-would lead to a TRIM, but not if the filesystem isn't mounted with -o discard.
-Hole punching is useful independantly of the ability to do TRIM.  Thanks,
+On my Nehalem box, the kgdb tests work fine, no issues there.  On my P4
+box, the p4 handler really thinks the NMIs are from the perf counter and
+returns handled==1 and starves the kgdb tests.
 
-Josef
+I haven't gotten around to checking Jason's kvm setup to determine which
+handler his setup is calling.
+
+Jason, could you snip part of your dmesg log that shows the output with
+"Performance Events:" (or just send me the whole thing :-) ).
+
+Cheers,
+Don
+
