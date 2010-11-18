@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932599Ab0KRRXI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:23:08 -0500
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:46991
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932576Ab0KRRXG (ORCPT
+	id S932624Ab0KRRXo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:23:44 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:53034 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932468Ab0KRRXm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:23:06 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz1432N98dNzz1202hzz8275bhz2dh2a8h668h67dh685h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw02.freescale.net;RD:az33egw02.freescale.net;EFVD:NLI
-Date: Thu, 18 Nov 2010 11:21:46 -0600
-From: Scott Wood <scottwood@freescale.com>
-To: Timur Tabi <timur@freescale.com>
-CC: Greg KH <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Stuart Yoder <stuart.yoder@freescale.com>
-Subject: Re: How do I choose an arbitrary minor number for my tty device?
-Message-ID: <20101118112146.3275eb08@udp111988uds.am.freescale.net>
-In-Reply-To: <4CE54E40.9040503@freescale.com>
-References: <4CE44B1B.9040709@freescale.com>
-	<20101117215147.GA26792@suse.de>
-	<4CE452CD.3050001@freescale.com>
-	<20101117221903.GA4066@suse.de>
-	<4CE45A4E.70308@freescale.com>
-	<20101118022434.GA9833@suse.de>
-	<4CE546C5.8060401@freescale.com>
-	<20101118153912.GA1443@suse.de>
-	<4CE54E40.9040503@freescale.com>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Nov 2010 17:22:49.0844 (UTC) FILETIME=[39904340:01CB8745]
-X-OriginatorOrg: freescale.com
+	Thu, 18 Nov 2010 12:23:42 -0500
+Date: Thu, 18 Nov 2010 09:23:37 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Perez-Gonzalez, Inaky" <inaky.perez-gonzalez@intel.com>,
+        Charles Marker <Charles.Marker@atheros.com>,
+        Jouni Malinen <Jouni.Malinen@atheros.com>,
+        Kevin Hayes <kevin@atheros.com>, Zhifeng Cai <zhifeng.cai@atheros.com>,
+        Don Breslin <Don.Breslin@atheros.com>,
+        Doug Dahlby <Doug.Dahlby@atheros.com>, Julia Lawall <julia@diku.dk>
+Subject: Re: Challenges with doing hardware bring up with Linux first
+Message-ID: <20101118092337.370449e1@nehalam>
+In-Reply-To: <AANLkTing6JkfH=n2GfWtW+2=5oB40FDM-TYPvzd+PPkH@mail.gmail.com>
+References: <AANLkTim4jVaZxYp8nSgJyy28iwxcxbPeNUzxTfoHAX4S@mail.gmail.com>
+	<20101118164552.GC2855@kroah.com>
+	<AANLkTing6JkfH=n2GfWtW+2=5oB40FDM-TYPvzd+PPkH@mail.gmail.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010 10:03:12 -0600
-Timur Tabi <timur@freescale.com> wrote:
+On Thu, 18 Nov 2010 08:53:22 -0800
+"Luis R. Rodriguez" <lrodriguez@atheros.com> wrote:
 
-> I'm not so sure.  Like I said, I still don't see where there's a bus.  I have a
-> single driver that has multiple devices.  It sounds to me like one call to
-> tty_register_driver() and multiple calls to tty_register_device() would be
-> sufficient.
+> On Thu, Nov 18, 2010 at 8:45 AM, Greg KH <greg@kroah.com> wrote:
+> > On Thu, Nov 18, 2010 at 12:46:37AM -0800, Luis R. Rodriguez wrote:
+> >> Can Linux help in any way? What if we used staging for a common driver
+> >> architecture for different OSes? Most of those staging drivers already
+> >> have some sort of OS agnostic cruft, why not try to help hardware
+> >> vendors by providing them with a common OS agnostic solution they can
+> >> share? Is this not out turf? If its not, are we perfectly OK in being
+> >> second citizens so long as the driver eventually gets done on proper
+> >> upstream Linux ? I'm not OK with it and hence my e-mail. I'm looking
+> >> for ideas and thoughts on this. Please no trolls, would really just
+> >> like some constructive discussions on this. As I see it maybe we can
+> >> move some of this OS agnostic crap into staging, and then use spatch
+> >> to write tools to de-unwrap crap to Linux specific stuff and help
+> >> maintain it. What this does is it moves OS agnostic crap out as a
+> >> community effort to help aid proper development and porting for Linux.
+> >> Since we'd maintain the crap / scripts / de-wrappers, we'd likely be
+> >> able to get drivers quicker and can have a framework to help companies
+> >> who still [1] need to support other Operating Systems.
+> >
+> > No, staging is for gettingn code into, or out of, the kernel tree, not
+> > for anything else.
+> >
+> > I have allowed it to be used to hold drivers in that are not
+> > "acceptable", while another driver was written by others from scratch to
+> > work properly on that hardware, and then the original one is dropped.
+> > That's ok, as there is a time-limit on how long the code lives in the
+> > staging tree.
+> >
+> > But to try to use it to create a multi-os solution, no, that's not what
+> > staging is for.
 > 
-> For instance, there is no code in drivers/char/ that makes a call to
-> bus_register(), so I don't see any precedent for a tty driver to register a bus
-> first.
+> OK thanks!
+> 
+> > Also, please review the past multi-os driver initiatives that have
+> > sprung up over the years (about 1 every 10 years it seems).  Please
+> > learn from the past as to why those have failed every single time, and
+> > why we don't want to even try to do that again.
+> 
+> :-) thanks, just testing waters to see what's possible and what
+> direction to focus more on.
+> 
+>   Luis
 
-The tty driver doesn't register the bus, but rather a driver for
-some type of device on that bus.  The code to create the bus goes
-elsewhere, and would not be specific to byte channels.
+If you go back to the Mythical Man Month you will find:
+ "Plan on doing it twice; you are going to anyway"
 
-> Also, this is an Open Firmware driver.  I already have a mechanism whereby I get
-> probed for each instance of a byte channel.  Isn't that my "bus"?
+Therefore I wouldn't worry about whether the first development version
+is upstream.
 
-It would be if you actually had it -- but it looks like you just loop
-over the nodes.
-
-We should add a proper bus for the "handles" node.  Then sysfs should
-show the link between the tty device and a device tree node -- which is
-really what we're after, the handle is just a means to that end.
-
-> I'm really trying to do the right thing here, Greg, but every time I try to
-> solve one problem, I'm being told that I need to make things way more
-> complicated first.
-
-s/make things way more complicated/use the existing infrastructure
-rather than reinvent the wheel/
-
-And getting rid of the redundant chardev driver would be a
-simplification...
-
--Scott
-
+-- 
