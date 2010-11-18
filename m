@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760533Ab0KRVHj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:07:39 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35796 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759523Ab0KRVHi (ORCPT
+	id S1760521Ab0KRVJB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:09:01 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53019 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759474Ab0KRVI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:07:38 -0500
-Date: Thu, 18 Nov 2010 21:06:42 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-scsi@vger.kernel.org,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-kernel@vger.kernel.org, Eric Youngdale <eric@andante.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Mike Anderson <andmike@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH][resend][SCSI] Reduce number of sequential pointer
-	derefs in scsi_error.c and reduce size as well
-Message-ID: <20101118210642.GA24236@flint.arm.linux.org.uk>
-References: <alpine.LNX.2.00.1011181957500.3651@swampdragon.chaosbits.net> <AANLkTi=McRJSHp8==o+=coK0_pK5s9dwUgLmrkohSmTX@mail.gmail.com> <alpine.LNX.2.00.1011182140510.8526@swampdragon.chaosbits.net>
+	Thu, 18 Nov 2010 16:08:59 -0500
+Date: Thu, 18 Nov 2010 19:09:00 -0200
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree
+ (wireless tree related)
+Message-ID: <20101118210900.GB3874@vigoh>
+References: <20101117134820.bca8d764.sfr@canb.auug.org.au>
+ <4CE3FCB5.6030909@oracle.com>
+ <20101118132724.f7d21899.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1011182140510.8526@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101118132724.f7d21899.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 09:49:29PM +0100, Jesper Juhl wrote:
-> @@ -617,10 +623,10 @@ static int scsi_try_bus_device_reset(struct scsi_cmnd *scmd)
->  
->  static int __scsi_try_to_abort_cmd(struct scsi_cmnd *scmd)
->  {
-> -	if (!scmd->device->host->hostt->eh_abort_handler)
-> -		return FAILED;
-> -
-> -	return scmd->device->host->hostt->eh_abort_handler(scmd);
-> +    struct scsi_host_template *hostt = scmd->device->host->hostt;
-> +    if (!hostt->eh_abort_handler)
-> +        return FAILED;
-> +    return hostt->eh_abort_handler(scmd);
+* Stephen Rothwell <sfr@canb.auug.org.au> [2010-11-18 13:27:24 +1100]:
 
-Not that I have much to do with SCSI anymore... I spotted the above.
-Is there any particular reason for using spaces to indent here rather
-than our usual tabs?
+> Hi all,
+> 
+> On Wed, 17 Nov 2010 08:03:01 -0800 Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> >
+> > On 11/16/10 18:48, Stephen Rothwell wrote:
+> > > 
+> > > After merging the final tree, today's linux-next build (powerpc allyesconfig)
+> > > failed like this:
+> > > 
+> > > drivers/net/wireless/iwlwifi/iwl3945.o: In function `iwl_legacy_mac_reset_tsf':
+> > > (.opd+0xf00): multiple definition of `iwl_legacy_mac_reset_tsf'
+> > > drivers/net/wireless/iwlwifi/iwlagn.o:(.opd+0x90): first defined here
+> 	.
+> 	.
+> > > I should have known when I reported the warning ...
+> > > 
+> > > Caused by commit dd0dd411f7178a20ea93a3cfa39123f078a07e25 ("iwlwifi: fix
+> > > modular legacy build errors").
+> > > 
+> > > I have reverted that commit for today.
+> > 
+> > Ack.  John, please drop/revert that patch.
+> > 
+> > Sorry about the problem.
+> 
+> Looks like John removed it but the bluetooth tree (which is based on top
+> of the wireless tree) brought it back in by rebasing on top of yesterday's
+> wireless tree. :-(
+> 
+> I have reverted it again today.
+
+Sorry about that, I wasn't aware of this problem. I'm going to redo my
+tree today to fix this issue.
 
 -- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Gustavo F. Padovan
+http://profusion.mobi
