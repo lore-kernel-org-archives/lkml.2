@@ -1,198 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760849Ab0KRXDo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:03:44 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:41078 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760802Ab0KRXDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:03:40 -0500
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        jmorris@namei.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, eparis@redhat.com,
-        viro@zeniv.linux.org.uk, Dave Chinner <david@fromorbit.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v1.2 4/5] IMA: remove IMA imbalance checking
-Date: Thu, 18 Nov 2010 18:03:01 -0500
-Message-Id: <1290121382-4039-5-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
+	id S1760860Ab0KRXDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:03:55 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33370 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760801Ab0KRXDw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 18:03:52 -0500
+Date: Thu, 18 Nov 2010 15:02:45 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH] fs: fix kernel-doc for dcache::d_validate
+Message-Id: <20101118150245.f85f9603.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that i_readcount is maintained by the VFS layer, remove the
-imbalance checking in IMA. Cleans up the IMA code nicely.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-Acked-by: Eric Paris <eparis@redhat.com>
+Fix function parameter kernel-doc for d_validate():
+
+Warning(fs/dcache.c:1495): No description found for parameter 'parent'
+Warning(fs/dcache.c:1495): Excess function parameter 'dparent' description in 'd_validate'
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 ---
- security/integrity/ima/ima_iint.c |    4 --
- security/integrity/ima/ima_main.c |  104 ++-----------------------------------
- 2 files changed, 4 insertions(+), 104 deletions(-)
+ fs/dcache.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
-index 68efe3b..4ae7304 100644
---- a/security/integrity/ima/ima_iint.c
-+++ b/security/integrity/ima/ima_iint.c
-@@ -137,10 +137,6 @@ void ima_inode_free(struct inode *inode)
- {
- 	struct ima_iint_cache *iint;
- 
--	if (atomic_read(&inode->i_readcount))
--		printk(KERN_INFO "%s: readcount: %u\n", __func__,
--		       atomic_read(&inode->i_readcount));
--
- 	if (!IS_IMA(inode))
- 		return;
- 
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 69b4856..2df9021 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -36,55 +36,6 @@ static int __init hash_setup(char *str)
- }
- __setup("ima_hash=", hash_setup);
- 
--struct ima_imbalance {
--	struct hlist_node node;
--	unsigned long fsmagic;
--};
--
--/*
-- * ima_limit_imbalance - emit one imbalance message per filesystem type
-- *
-- * Maintain list of filesystem types that do not measure files properly.
-- * Return false if unknown, true if known.
-- */
--static bool ima_limit_imbalance(struct file *file)
--{
--	static DEFINE_SPINLOCK(ima_imbalance_lock);
--	static HLIST_HEAD(ima_imbalance_list);
--
--	struct super_block *sb = file->f_dentry->d_sb;
--	struct ima_imbalance *entry;
--	struct hlist_node *node;
--	bool found = false;
--
--	rcu_read_lock();
--	hlist_for_each_entry_rcu(entry, node, &ima_imbalance_list, node) {
--		if (entry->fsmagic == sb->s_magic) {
--			found = true;
--			break;
--		}
--	}
--	rcu_read_unlock();
--	if (found)
--		goto out;
--
--	entry = kmalloc(sizeof(*entry), GFP_NOFS);
--	if (!entry)
--		goto out;
--	entry->fsmagic = sb->s_magic;
--	spin_lock(&ima_imbalance_lock);
--	/*
--	 * we could have raced and something else might have added this fs
--	 * to the list, but we don't really care
--	 */
--	hlist_add_head_rcu(&entry->node, &ima_imbalance_list);
--	spin_unlock(&ima_imbalance_lock);
--	printk(KERN_INFO "IMA: unmeasured files on fsmagic: %lX\n",
--	       entry->fsmagic);
--out:
--	return found;
--}
--
- /*
-  * ima_rdwr_violation_check
-  *
-@@ -131,65 +82,20 @@ out:
- 				  "open_writers");
- }
- 
--/*
-- * Decrement ima counts
-- */
--static void ima_dec_counts(struct inode *inode, struct file *file)
--{
--	mode_t mode = file->f_mode;
--
--	assert_spin_locked(&inode->i_lock);
--
--	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ) {
--		if (unlikely(atomic_read(&inode->i_readcount) == 0)) {
--			if (!ima_limit_imbalance(file)) {
--				printk(KERN_INFO "%s: open/free imbalance (r:%u)\n",
--				       __func__,
--				       atomic_read(&inode->i_readcount));
--				dump_stack();
--			}
--			return;
--		}
--	}
--}
--
- static void ima_check_last_writer(struct ima_iint_cache *iint,
- 				  struct inode *inode,
- 				  struct file *file)
- {
- 	mode_t mode = file->f_mode;
- 
--	BUG_ON(!mutex_is_locked(&iint->mutex));
--	assert_spin_locked(&inode->i_lock);
--
-+	mutex_lock(&iint->mutex);
- 	if (mode & FMODE_WRITE &&
- 	    atomic_read(&inode->i_writecount) == 1 &&
- 	    iint->version != inode->i_version)
- 		iint->flags &= ~IMA_MEASURED;
--}
--
--static void ima_file_free_iint(struct ima_iint_cache *iint, struct inode *inode,
--			       struct file *file)
--{
--	mutex_lock(&iint->mutex);
--	spin_lock(&inode->i_lock);
--
--	ima_dec_counts(inode, file);
--	ima_check_last_writer(iint, inode, file);
--
--	spin_unlock(&inode->i_lock);
- 	mutex_unlock(&iint->mutex);
- }
- 
--static void ima_file_free_noiint(struct inode *inode, struct file *file)
--{
--	spin_lock(&inode->i_lock);
--
--	ima_dec_counts(inode, file);
--
--	spin_unlock(&inode->i_lock);
--}
--
+--- lnx-2637-r2g4-kerndoc.orig/fs/dcache.c
++++ lnx-2637-r2g4-kerndoc/fs/dcache.c
+@@ -1485,7 +1485,7 @@ out:
  /**
-  * ima_file_free - called on __fput()
-  * @file: pointer to file structure being freed
-@@ -205,12 +111,10 @@ void ima_file_free(struct file *file)
- 		return;
- 
- 	iint = ima_iint_find(inode);
-+	if (!iint)
-+		return;
- 
--	if (iint)
--		ima_file_free_iint(iint, inode, file);
--	else
--		ima_file_free_noiint(inode, file);
--
-+	ima_check_last_writer(iint, inode, file);
- }
- 
- static int process_measurement(struct file *file, const unsigned char *filename,
--- 
-1.7.2.2
-
+  * d_validate - verify dentry provided from insecure source
+  * @dentry: The dentry alleged to be valid child of @dparent
+- * @dparent: The parent dentry (known to be valid)
++ * @parent: The parent dentry (known to be valid)
+  *
+  * An insecure source has sent us a dentry, here we verify it and dget() it.
+  * This is used by ncpfs in its readdir implementation.
