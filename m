@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab0KRG1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 01:27:54 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:54623 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab0KRG1x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 01:27:53 -0500
-Date: Thu, 18 Nov 2010 15:27:15 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Shaohui Zheng <shaohui.zheng@intel.com>
-Cc: David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [2/8,v3] NUMA Hotplug Emulator: infrastructure of NUMA hotplug emulation
-Message-ID: <20101118062715.GD17539@linux-sh.org>
-References: <20101117020759.016741414@intel.com> <20101117021000.568681101@intel.com> <alpine.DEB.2.00.1011162359160.17408@chino.kir.corp.google.com> <20101117075128.GA30254@shaohui> <alpine.DEB.2.00.1011171304060.10254@chino.kir.corp.google.com> <20101118041407.GA2408@shaohui>
+	id S1754589Ab0KRGaO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 01:30:14 -0500
+Received: from gwu.lbox.cz ([62.245.111.132]:49864 "EHLO gwu.lbox.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750975Ab0KRGaM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 01:30:12 -0500
+Date: Thu, 18 Nov 2010 07:28:22 +0100
+From: Nikola Ciprich <extmaillist@linuxbox.cz>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: KVM list <kvm@vger.kernel.org>, netdev list <netdev@vger.kernel.org>,
+        nikola.ciprich@linuxbox.cz,
+        Linux kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.37-rc2 after KVM shutdown - unregister_netdevice: waiting
+	for vmtst01eth0 to become free. Usage count = 1
+Message-ID: <20101118062822.GB3781@pcnci.linuxbox.cz>
+References: <20101116084148.GA3781@pcnci.linuxbox.cz> <1289900812.5372.1.camel@edumazet-laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101118041407.GA2408@shaohui>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <1289900812.5372.1.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Antivirus: on lbxovapx by Kaspersky antivirus, 4069076 records (last update: 20101118)
+X-Spam-Score: N/A (trusted relay)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 12:14:07PM +0800, Shaohui Zheng wrote:
-> On Wed, Nov 17, 2010 at 01:10:50PM -0800, David Rientjes wrote:
-> > The idea that I've proposed (and you've apparently thought about and even 
-> > implemented at one point) is much more powerful than that.  We need not 
-> > query the state of hidden nodes that we've setup at boot but can rather 
-> > use the amount of hidden memory to setup the nodes in any way that we want 
-> > at runtime (various sizes, interleaved node ids, etc).
+> Yep, this is a known problem, thanks !
 > 
-> yes, if we select your proposal. we just mark all the nodes as POSSIBLE node.
-> there is no hidden nodes any more. the node will be created after add memory
-> to the node first time. 
+> fix is there : 
 > 
-This is roughly what I had in mind in my N_HIDDEN review, so I quite
-favour this approach.
+> http://patchwork.ozlabs.org/patch/71354/
+Thanks Eric, this indeed fixes the problem..
+I noticed the fix didn't make it to 2.6.37-rc2-git3 though,
+maybe it just got omited?
+anyways, thanks for help!
+n.
+
+
+
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+-- 
+-------------------------------------
+Ing. Nikola CIPRICH
+LinuxBox.cz, s.r.o.
+28. rijna 168, 709 01 Ostrava
+
+tel.:   +420 596 603 142
+fax:    +420 596 621 273
+mobil:  +420 777 093 799
+www.linuxbox.cz
+
+mobil servis: +420 737 238 656
+email servis: servis@linuxbox.cz
+-------------------------------------
