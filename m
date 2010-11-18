@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760665Ab0KRVmT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:42:19 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:48963 "EHLO
+	id S1760654Ab0KRVo7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:44:59 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:31910 "EHLO
 	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757165Ab0KRVmQ (ORCPT
+	with ESMTP id S1757205Ab0KRVo5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:42:16 -0500
+	Thu, 18 Nov 2010 16:44:57 -0500
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAMIr5UxLd/sX/2dsb2JhbAAHgz3OV5B2gSKDNnMEhFqLEA
+X-IronPort-Anti-Spam-Result: ApIBACot5UxLd/sX/2dsb2JhbAAHgz3OSJB2gSKDNnMEhFqLEA
 X-IronPort-AV: E=Sophos;i="4.59,218,1288584000"; 
-   d="scan'208";a="82908159"
-Message-ID: <4CE59DB6.9090304@teksavvy.com>
-Date: Thu, 18 Nov 2010 16:42:14 -0500
+   d="scan'208";a="82908397"
+Message-ID: <4CE59E57.2090009@teksavvy.com>
+Date: Thu, 18 Nov 2010 16:44:55 -0500
 From: Mark Lord <kernel@teksavvy.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
@@ -34,23 +34,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 10-11-18 03:04 PM, Greg Freemyer wrote:
 >
-> I'm a fan of wiper.sh, but afaik it still cannot address a
-> multi-spindle LVM setup, Nor a MDraid setup.  etc.
->
-> That's because it bypasses the block stack and talks directly to the
-> devices.  Thus it doesn't get the benefit of all the logical to
-> physical sector remapping handled via the block stack.
->
-> Mark, please correct me if I'm wrong.
+> 2) FITRIM doesn't leverage the fact the a TRIM command can handle
+> multiple ranges per TRIM command payload.  I haven't seen any FITRIM
+> vs. wiper.sh benchmarks, so I don't know what impact that has in
+> practice.  Mark Lord thought that this lacking feature would cause
+> FITRIM to take minutes or hours with some hardware.  Especially early
+> generation SSDs.
 
-I'm a big fan of FITRIM, especially as it should work on MD devices
-as well, which are problematic for wiper.sh today.   I originally proposed
-FITRIM (without the name, though) back when first implementing wiper.sh,
-and I really believe we should extend FITRIM to btrfs and xfs.
+If FITRIM is still issuing single-range-at-a-time TRIMs,
+then I'd call that a BUG that needs fixing.  Doing TRIM like that
+causes tons of unnecessary ERASE cycles, shortening the SSD lifetime.
+It really needs to batch them into groups of (up to) 64 ranges at a time
+(64 ranges fits into a single 512-byte parameter block).
 
-hdparm is picking up support for FITRIM in the next release,
-and wiper.sh will use it when it can in place of raw TRIMs.
+> 3) wiper.sh does leverage the multiple ranges per TRIM command, but it
+> really needs a new block layer interface that would allow it to push
+> discard commands into the kernel via the block layer, not just down at
+> the physical drive layer.  The interface should accept multiple ranges
+> per invocation and trigger TRIM commands to the SSD that have have a
+> multi-range discard payload.
 
-This remains my own preferred method for TRIM:  offline, that is.  :)
+I think FITRIM should be doing that, and it should work for more than just ext4.
 
-Cheers
+Cheers!
