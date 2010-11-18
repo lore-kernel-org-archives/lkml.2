@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758689Ab0KROze (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 09:55:34 -0500
-Received: from kroah.org ([198.145.64.141]:59987 "EHLO coco.kroah.org"
+	id S1758836Ab0KROzv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 09:55:51 -0500
+Received: from kroah.org ([198.145.64.141]:59992 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758255Ab0KROzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758307Ab0KROzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Nov 2010 09:55:33 -0500
-Date: Thu, 18 Nov 2010 06:51:37 -0800
+Date: Thu, 18 Nov 2010 06:56:23 -0800
 From: Greg KH <greg@kroah.com>
-To: Tanya Brokhman <tlinder@codeaurora.org>
+To: Tatyana Brokhman <tlinder@codeaurora.org>
 Cc: gregkh@suse.de, linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        "'David Brownell'" <dbrownell@users.sourceforge.net>,
+        David Brownell <dbrownell@users.sourceforge.net>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/1] usb: Adding SuperSpeed support to dummy_hcd
-Message-ID: <20101118145137.GA16565@kroah.com>
-References: <1289916492-28402-1-git-send-email-tlinder@codeaurora.org> <20101117213535.GD10541@kroah.com> <000001cb870f$efbc8600$cf359200$@org>
+Subject: Re: [PATCH v4 1/4] usb gadget: Add usb_endpoint_descriptor to be
+	part of the struct usb_ep
+Message-ID: <20101118145623.GB16565@kroah.com>
+References: <1290084400-25440-1-git-send-email-tlinder@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <000001cb870f$efbc8600$cf359200$@org>
+In-Reply-To: <1290084400-25440-1-git-send-email-tlinder@codeaurora.org>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 18, 2010 at 02:46:38PM +0200, Tatyana Brokhman wrote:
+> Change usb_ep_enable() prototype to use endpoint descriptor from usb_ep.
+> This optimization spares the FDs from saving the endpoint chosen
+> descriptor.
 
-A: No.
-Q: Should I include quotations after my reply?
+Why is this a good thing to do?
 
-http://daringfireball.net/2007/07/on_top
+> This optimization is not full though. To fully exploit this
+> change one needs to update all the UDCs as well since in the current
+> implementation each of them saves the endpoint descriptor in it's
+> internal (and extended) endpoint structure.
 
+Do you do that optimization later on in this patch series?
 
-On Thu, Nov 18, 2010 at 01:01:17PM +0200, Tanya Brokhman wrote:
-> Hi Greg
-> 
-> Thank you for your comments. Please see my answers inline.
+> diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
+> index 006412c..937c8fa 100644
+> --- a/include/linux/usb/gadget.h
+> +++ b/include/linux/usb/gadget.h
+> @@ -131,20 +131,22 @@ struct usb_ep_ops {
+>   * @maxpacket:The maximum packet size used on this endpoint.  The initial
+>   *	value can sometimes be reduced (hardware allowing), according to
+>   *      the endpoint descriptor used to configure the endpoint.
+> - * @driver_data:for use by the gadget driver.  all other fields are
+> - *	read-only to gadget drivers.
+> + * @driver_data:for use by the gadget driver.
 
-Please fix your email client (i.e. get one that works properly) so that
-it quotes things correctly.  If you are going to be able to keep up with
-kernel development, either install the outlook plugin that handles this
-type of thing, or switch to a sane email client please.
+Why did you change the "all other fields..." portion?
 
-> >   *
-> >   * Copyright (C) 2003 David Brownell
-> >   * Copyright (C) 2003-2005 Alan Stern
-> > + * Copyright (C) 2010 Code Aurora Forum. All rights reserved.
-> 
-> Does your lawyers agree that this is correct to add based on the size of
-> the file?  Hint, it doesn't pass the rule that some lawyers I work with
-> go by, so I would be surprised that it passes theirs.
-> 
-> Also, I didn't think that "Code Aurora Forum" was a "real" legal entity
-> last time I looked, so how can it own copyrights?  Who is the "real"
-> owner here?  (hint, who does your lawyers work for...)
-> [Brokhman, Tanya] I was following the instructions given to me by our legal
-> team but I'll forward your comment to them and ask them once more.
+> + * @desc: endpoint descriptor.  This pointer is set before the endpoint is
+> + *	enabled and remains valid until the endpoint is disabled.
+>   *
+>   * the bus controller driver lists all the general purpose endpoints in
+>   * gadget->ep_list.  the control endpoint (gadget->ep0) is not in that list,
+>   * and is accessed only in response to a driver setup() callback.
+>   */
+>  struct usb_ep {
+> -	void			*driver_data;
+> +	void				*driver_data;
+>  
+> -	const char		*name;
+> -	const struct usb_ep_ops	*ops;
+> -	struct list_head	ep_list;
+> -	unsigned		maxpacket:16;
+> +	const char			*name;
+> +	const struct usb_ep_ops		*ops;
+> +	struct list_head		ep_list;
+> +	unsigned			maxpacket:16;
+> +	const struct usb_endpoint_descriptor	*desc;
 
-I would need confirmation from them to be able to accept any such thing
-in the future.  Please have them contact me if they have any questions
-about this.
-
-> And finally, did you check that this code works properly and the
-> existing functionlity did not break?  How?
-> [Brokhman, Tanya] Of course I did. I've also uploaded a patch series that
-> implements SuperSpeed support in the Gadget Framework (still waiting on
-> inputs on it). I'll upload a new version of that series today, rebased on
-> top of rc1. 
-> I verified the dummy_hcd functionality using that patch series and of course
-> tested it both with a HS device and with a SS device. 
-> In order to test our development of SuperSpeed we implemented a set of
-> unittests (based on GoogleTest). It includes both tests for HS and for SS
-> devices. The code was verified using that test set. 
-
-Why did you not say this in your changelog comment?  Can you point to
-these unit tests for everyone to be able to verify in the future that
-nothing breaks?  Perhaps you should add them to the kernel tree itself
-to make it easier to keep them in sync?
+Please don't reformat, it's hard to see what really was changed here.
 
 thanks,
 
