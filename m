@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757645Ab0KRTpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 14:45:52 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59200
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754438Ab0KRTpv (ORCPT
+	id S1757417Ab0KRTuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 14:50:54 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42309 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754498Ab0KRTux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 14:45:51 -0500
-Date: Thu, 18 Nov 2010 11:46:16 -0800 (PST)
-Message-Id: <20101118.114616.258106719.davem@davemloft.net>
-To: ddaney@caviumnetworks.com
-Cc: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 2/2] phylib: Add support for Marvell 88E1149R devices.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1290038071-13296-3-git-send-email-ddaney@caviumnetworks.com>
-References: <1290038071-13296-1-git-send-email-ddaney@caviumnetworks.com>
-	<1290038071-13296-3-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 18 Nov 2010 14:50:53 -0500
+Date: Thu, 18 Nov 2010 11:49:28 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] Use memory compaction instead of lumpy reclaim
+ during high-order allocations
+Message-Id: <20101118114928.ecb2d6b0.akpm@linux-foundation.org>
+In-Reply-To: <20101118092044.GE8135@csn.ul.ie>
+References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie>
+	<20101117154641.51fd7ce5.akpm@linux-foundation.org>
+	<20101118081254.GB8135@csn.ul.ie>
+	<20101118172627.cf25b83a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101118083828.GA24635@cmpxchg.org>
+	<20101118092044.GE8135@csn.ul.ie>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Daney <ddaney@caviumnetworks.com>
-Date: Wed, 17 Nov 2010 15:54:31 -0800
+On Thu, 18 Nov 2010 09:20:44 +0000
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-> The 88E1149R is 10/100/1000 quad-gigabit Ethernet PHY.  The
-> .config_aneg function can be shared with 88E1118, but it needs its own
-> .config_init.
+> > It's because migration depends on MMU.  But we should be able to make
+> > a NOMMU version of migration that just does page cache, which is all
+> > that is reclaimable on NOMMU anyway.
+> > 
 > 
-> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+> Conceivably, but I see little problem leaving them with lumpy reclaim.
 
-Please resend this when you've respun patch #1 based upon the feedback
-you've been given.
+I see a really big problem: we'll need to maintain lumpy reclaim for
+ever!
 
-Thanks.
+We keep on piling in more and more stuff, we're getting less sure that
+the old stuff is still effective.  It's becoming more and more
+important to move some of our attention over to simplification, and
+to rejustification of earlier decisions.
+
