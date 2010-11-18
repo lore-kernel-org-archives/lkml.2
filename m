@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024Ab0KRJ23 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 04:28:29 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:60194 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754631Ab0KRJ21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 04:28:27 -0500
-Date: Thu, 18 Nov 2010 09:28:12 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/8] mm: compaction: Use the LRU to get a hint on where
-	compaction should start
-Message-ID: <20101118092812.GF8135@csn.ul.ie>
-References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie> <1290010969-26721-8-git-send-email-mel@csn.ul.ie> <20101118181048.7bdfbb38.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101118181048.7bdfbb38.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1756062Ab0KRJ2r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 04:28:47 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:47538 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754190Ab0KRJ2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 04:28:44 -0500
+Subject: Re: [PATCH 5/5] MIPS/Perf-events: Use unsigned delta for right
+ shift in event update
+From: Will Deacon <will.deacon@arm.com>
+To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+Cc: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com
+In-Reply-To: <1290063401-25440-6-git-send-email-dengcheng.zhu@gmail.com>
+References: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
+	 <1290063401-25440-6-git-send-email-dengcheng.zhu@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Nov 2010 09:27:38 +0000
+Message-ID: <1290072458.18450.1.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Nov 2010 09:27:42.0299 (UTC) FILETIME=[D9BE1AB0:01CB8702]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 06:10:48PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Wed, 17 Nov 2010 16:22:48 +0000
-> Mel Gorman <mel@csn.ul.ie> wrote:
+On Thu, 2010-11-18 at 06:56 +0000, Deng-Cheng Zhu wrote:
+> Leverage the commit for ARM by Will Deacon:
 > 
-> > The end of the LRU stores the oldest known page. Compaction on the other
-> > hand always starts scanning from the start of the zone. This patch uses
-> > the LRU to hint to compaction where it should start scanning from. This
-> > means that compaction will at least start with some old pages reducing
-> > the impact on running processes and reducing the amount of scanning. The
-> > check it makes is racy as the LRU lock is not taken but it should be
-> > harmless as we are not manipulating the lists without the lock.
-> > 
-> > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> 446a5a8b1eb91a6990e5c8fe29f14e7a95b69132
+>         ARM: 6205/1: perf: ensure counter delta is treated as unsigned
 > 
-> Hmm, does this patch make a noticable difference ?
-
-To scanning rates - yes.
-
-> Isn't it better to start scan from the biggest free chunk in a zone ?
+> Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+> ---
+>  arch/mips/kernel/perf_event.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
+> diff --git a/arch/mips/kernel/perf_event.c b/arch/mips/kernel/perf_event.c
+> index 345232a..0f1cdf5 100644
+> --- a/arch/mips/kernel/perf_event.c
+> +++ b/arch/mips/kernel/perf_event.c
+> @@ -169,7 +169,7 @@ static void mipspmu_event_update(struct perf_event *event,
+>         unsigned long flags;
+>         int shift = 64 - TOTAL_BITS;
+>         s64 prev_raw_count, new_raw_count;
+> -       s64 delta;
+> +       u64 delta;
+> 
+>  again:
+>         prev_raw_count = local64_read(&hwc->prev_count);
+> --
+> 1.7.1
 
-Not necessarily. The biggest free chunk does not necessarily contain old
-pages so one could stall a process by migrating a very active page. The same
-applies for selecting the pageblock with the oldest LRU page of course but
-it is less likely.
+Acked-by: Will Deacon <will.deacon@arm.com>
 
-I prototyped a a patch that constantly used the buddy lists to select the
-next pageblock to migrate from. The problem was that it was possible for it
-to infinite loop because it could migrate from the same block more than once
-in a migration cycle. To resolve that, I'd have to keep track of visited
-pageblocks but I didn't want to require additional memory unless it was
-absolutly necessary. I think the concept can be perfected and its impact
-would be a reduction of scanning rates but it's not something that is
-anywhere near merging yet.
+You might also want to look at commit 65b4711f if you based
+the MIPS port on the old ARM code.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Thanks,
+
+Will
+
