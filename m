@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab0KRAvF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 19:51:05 -0500
-Received: from lares.culture.fr ([143.126.211.20]:40209 "EHLO lares.culture.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752114Ab0KRAvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 19:51:03 -0500
-X-Greylist: delayed 2363 seconds by postgrey-1.27 at vger.kernel.org; Wed, 17 Nov 2010 19:51:03 EST
-Message-ID: <20101118005614.uusp4sbzco8w8ksc@messagerie.int.culture.fr>
-X-Priority: 3 (Normal)
-Date: Thu, 18 Nov 2010 00:56:14 +0100
-From: HATZFELD =?utf-8?b?aMOpbMOobmU=?= 
-	<helene.hatzfeld@culture.gouv.fr>
-Reply-to: moneygramservices02@pkuit.com
-To: undisclosed-recipients:;
-Subject: 
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=UTF-8;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
+	id S1753484Ab0KRAvS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 19:51:18 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56759 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753151Ab0KRAvE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 19:51:04 -0500
+Date: Wed, 17 Nov 2010 16:50:16 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg Thelen <gthelen@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH v4 05/11] writeback: create dirty_info structure
+Message-Id: <20101117165016.c5b89475.akpm@linux-foundation.org>
+In-Reply-To: <20101117164924.25e6cc11.akpm@linux-foundation.org>
+References: <1288336154-23256-1-git-send-email-gthelen@google.com>
+	<1288336154-23256-6-git-send-email-gthelen@google.com>
+	<20101117164924.25e6cc11.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
-X-Virus-Version: vendor=nai engine=5400 definitions=6170 signatures=648859
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 17 Nov 2010 16:49:24 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-The Central Bank of Nigeria, (CBN), working in relationship with
-HSBC London has concluded that our working
-partner has helped us to send you first payment of US$7,500 to you as
-instructed by Mr. David Cameron and will
-keep sending you $5000 twice a week until
-the payment of (US$820,000) is completed
-within six months and here is the information
+> against the http://userweb.kernel.org/~akpm/mmotm/ which I just
+> uploaded
 
-MONEY TRANSFER REFRENCE:2116-3297
-
-
-SENDER'S NAME: Mike Marx
-AMOUNT: US$5000
-
-To track your funds forward money gram
-Transfer agent your Full Names and
-Mobile Number via Email to:
-
-Mr Allen Davis
-E-mail:moneygramservices@pkuit.com
-D/L: Tel:+44 702 407 3631
-          +234-816-311-8957
-
-Please direct all enquiring to:
-moneygramservices02@pkuit.com
-
-Best Regards,
-Mr Allen Davis
-
-
-
-
-
+err, will upload Real Soon Now.
