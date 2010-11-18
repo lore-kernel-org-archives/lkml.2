@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab0KRRf5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:35:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47760 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755528Ab0KRRfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:35:55 -0500
-Date: Thu, 18 Nov 2010 18:35:44 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
-To: James Bottomley <James.Bottomley@suse.de>
-cc: Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
-        tytso@mit.edu, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
- super_operation
-In-Reply-To: <1290100750.3041.72.camel@mulgrave.site>
-Message-ID: <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com>
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>  <20101118130630.GJ6178@parisc-linux.org>  <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>  <20101118141957.GK6178@parisc-linux.org>  <20101118142918.GA18510@infradead.org>
- <1290100750.3041.72.camel@mulgrave.site>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1759964Ab0KRRiT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:38:19 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:3203 "EHLO
+	VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754101Ab0KRRiS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 12:38:18 -0500
+X-SpamScore: -6
+X-BigFish: VS-6(zz98dNzz1202hzzz2dh2a8h637h668h67dh685h62h)
+X-Spam-TCS-SCL: 1:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw02.freescale.net;RD:de01egw02.freescale.net;EFVD:NLI
+Message-ID: <4CE5647F.5000203@freescale.com>
+Date: Thu, 18 Nov 2010 11:38:07 -0600
+From: Timur Tabi <timur@freescale.com>
+Organization: Freescale
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101101 Fedora/2.0.10-1.fc13 SeaMonkey/2.0.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Greg KH <gregkh@suse.de>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Scott Wood <scottwood@freescale.com>,
+        Stuart Yoder <stuart.yoder@freescale.com>
+Subject: Re: How do I choose an arbitrary minor number for my tty device?
+References: <20101117221903.GA4066@suse.de> <4CE45A4E.70308@freescale.com> <20101118022434.GA9833@suse.de> <4CE546C5.8060401@freescale.com> <20101118153912.GA1443@suse.de> <4CE54E40.9040503@freescale.com> <20101118163321.GA2723@suse.de> <4CE5562B.8080604@freescale.com> <20101118165136.GA3103@suse.de> <4CE55ACB.80207@freescale.com> <20101118171856.GA4283@suse.de>
+In-Reply-To: <20101118171856.GA4283@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Nov 2010 17:39:10.0128 (UTC) FILETIME=[81DBBB00:01CB8747]
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010, James Bottomley wrote:
+Greg KH wrote:
 
-> On Thu, 2010-11-18 at 09:29 -0500, Christoph Hellwig wrote:
-> > On Thu, Nov 18, 2010 at 07:19:58AM -0700, Matthew Wilcox wrote:
-> > > I guess I was assuming that, on receiving a FALLOC_FL_PUNCH_HOLE, a
-> > > filesystem that was TRIM-aware would pass that information down to the
-> > > block device that it's mounted on.  I strongly feel that we shouldn't
-> > > have two interfaces to do essentially the same thing.
-> > > 
-> > > I guess I'm saying that you're going to have to learn about TRIM :-)
-> > 
-> > Did you actually look Lukas FITRIM code (not the slight reordering here,
-> > but the original one).  It's the ext4 version of the batched discard
-> > model, that is a userspace ioctl to discard free space in the
-> > filesystem.
-> > 
-> > hole punching will free the blocks into the free space pool.  If you do
-> > online discard it will also get discarded, but a filesystem that has
-> > online discard enabled doesn't need FITRIM.
-> 
-> Not stepping into the debate: I'm happy to see punch go to the mapping
-> data and FITRIM pick it up later.
-> 
-> However, I think it's time to question whether we actually still want to
-> allow online discard at all.  Most of the benchmarks show it to be a net
-> lose to almost everything (either SSD or Thinly Provisioned arrays), so
-> it's become an "enable this to degrade performance" option with no
-> upside.
-> 
-> James
-> 
+> No, you can use the /dev/serial/ links to determine exactly which is
+> which depending on the pci id, and other unique identifiers (serial
+> numbers, etc.)
 
-This time began a long time ago :) that is why am I originally created
-batched discard for ext4 (ext3) accessible through FITRIM ioctl. Ext4
-performance with -o discard mount option goes down on the most of the
-SSD's and every Thinly-provisioned storage I have a chance to benchmark.
+I just booted a Linux kernel with the driver I just emailed you, and there's no
+/dev/serial/ directory.  The only directories under /dev/ are 'shm' and 'pts',
+both of which are empty.
 
-But, for example SSD's are getting better and as time goes by we might
-see devices that does not suffer terrible performance loss with discard
-enabled (discard on unlink in ext4 etc...), so this "online" discard
-probably still does make sense.
+I'm also running a Fedora 13 x86 system, just to see if I need a full modern OS
+to see these files.  Again, there is no /dev/serial/, even though I have serial
+ports.
 
--Lukas
+Also not that since I'm not registering the byte channels as serial devices, I
+wouldn't expect anything in /dev/serial/ to reference them.
+
+What does my driver need to do in order for these /dev/xxxx/ entries to contain
+that information?
+
+> Is this somehow not public code?  What just changed in the past 15
+> minutes?
+
+Sorry, when I said "not public", I didn't mean it in a legal sense.  Now that I
+think about it, I guess that doesn't make much sense.
+
+-- 
+Timur Tabi
+Linux kernel developer at Freescale
+
