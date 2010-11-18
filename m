@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932105Ab0KRXDT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:03:19 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:48066 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759584Ab0KRXDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:03:14 -0500
+	id S932884Ab0KRXDa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:03:30 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:44325 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932468Ab0KRXD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 18:03:26 -0500
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -15,9 +16,9 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
         viro@zeniv.linux.org.uk, Dave Chinner <david@fromorbit.com>,
         "J. Bruce Fields" <bfields@fieldses.org>,
         David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v1.2 1/5] IMA: convert i_readcount to atomic
-Date: Thu, 18 Nov 2010 18:02:58 -0500
-Message-Id: <1290121382-4039-2-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH v1.2 2/5] IMA: define readcount functions
+Date: Thu, 18 Nov 2010 18:02:59 -0500
+Message-Id: <1290121382-4039-3-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -25,91 +26,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the inode's i_readcount from an unsigned int to atomic.
+Define i_readcount_inc/dec() functions to be called from the VFS layer.
+
+Changelog:
+- renamed iget/iput_readcount to i_readcount_inc/dec (Dave Chinner's suggestion)
+- removed i_lock in iput_readcount() (based on comments:Dave Chinner,Eric Paris)
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 Acked-by: Eric Paris <eparis@redhat.com>
 ---
- include/linux/fs.h                |    3 +--
- security/integrity/ima/ima_iint.c |    7 ++++---
- security/integrity/ima/ima_main.c |   11 ++++++-----
- 3 files changed, 11 insertions(+), 10 deletions(-)
+ include/linux/fs.h |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 334d68a..442fceb 100644
+index 442fceb..6b7e2fb 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -787,8 +787,7 @@ struct inode {
- 	unsigned int		i_flags;
- 
- #ifdef CONFIG_IMA
--	/* protected by i_lock */
--	unsigned int		i_readcount; /* struct files open RO */
-+	atomic_t		i_readcount; /* struct files open RO */
- #endif
- 	atomic_t		i_writecount;
- #ifdef CONFIG_SECURITY
-diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
-index c442e47..f005355 100644
---- a/security/integrity/ima/ima_iint.c
-+++ b/security/integrity/ima/ima_iint.c
-@@ -137,10 +137,11 @@ void ima_inode_free(struct inode *inode)
- {
- 	struct ima_iint_cache *iint;
- 
--	if (inode->i_readcount)
--		printk(KERN_INFO "%s: readcount: %u\n", __func__, inode->i_readcount);
-+	if (atomic_read(&inode->i_readcount))
-+		printk(KERN_INFO "%s: readcount: %u\n", __func__,
-+		       atomic_read(&inode->i_readcount));
- 
--	inode->i_readcount = 0;
-+	atomic_set(&inode->i_readcount, 0);
- 
- 	if (!IS_IMA(inode))
- 		return;
-diff --git a/security/integrity/ima/ima_main.c b/security/integrity/ima/ima_main.c
-index 203de97..6e8cb93 100644
---- a/security/integrity/ima/ima_main.c
-+++ b/security/integrity/ima/ima_main.c
-@@ -113,7 +113,7 @@ void ima_counts_get(struct file *file)
- 		goto out;
- 
- 	if (mode & FMODE_WRITE) {
--		if (inode->i_readcount && IS_IMA(inode))
-+		if (atomic_read(&inode->i_readcount) && IS_IMA(inode))
- 			send_tomtou = true;
- 		goto out;
- 	}
-@@ -127,7 +127,7 @@ void ima_counts_get(struct file *file)
- out:
- 	/* remember the vfs deals with i_writecount */
- 	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
--		inode->i_readcount++;
-+		atomic_inc(&inode->i_readcount);
- 
- 	spin_unlock(&inode->i_lock);
- 
-@@ -149,15 +149,16 @@ static void ima_dec_counts(struct inode *inode, struct file *file)
- 	assert_spin_locked(&inode->i_lock);
- 
- 	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ) {
--		if (unlikely(inode->i_readcount == 0)) {
-+		if (unlikely(atomic_read(&inode->i_readcount) == 0)) {
- 			if (!ima_limit_imbalance(file)) {
- 				printk(KERN_INFO "%s: open/free imbalance (r:%u)\n",
--				       __func__, inode->i_readcount);
-+				       __func__,
-+				       atomic_read(&inode->i_readcount));
- 				dump_stack();
- 			}
- 			return;
- 		}
--		inode->i_readcount--;
-+		atomic_dec(&inode->i_readcount);
- 	}
+@@ -2176,6 +2176,26 @@ static inline void allow_write_access(struct file *file)
+ 	if (file)
+ 		atomic_inc(&file->f_path.dentry->d_inode->i_writecount);
  }
- 
++#ifdef CONFIG_IMA
++static inline void i_readcount_dec(struct inode *inode)
++{
++	BUG_ON(!atomic_read(&inode->i_readcount));
++	atomic_dec(&inode->i_readcount);
++}
++static inline void i_readcount_inc(struct inode *inode)
++{
++	atomic_inc(&inode->i_readcount);
++}
++#else
++static inline void i_readcount_dec(struct inode *inode)
++{
++	return;
++}
++static inline void i_readcount_inc(struct inode *inode)
++{
++	return;
++}
++#endif
+ extern int do_pipe_flags(int *, int);
+ extern struct file *create_read_pipe(struct file *f, int flags);
+ extern struct file *create_write_pipe(int flags);
 -- 
 1.7.2.2
 
