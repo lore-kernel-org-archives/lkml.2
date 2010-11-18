@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932800Ab0KRSub (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 13:50:31 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:59508 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab0KRSua (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 13:50:30 -0500
-X-Greylist: delayed 2660 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Nov 2010 13:50:30 EST
-Date: Thu, 18 Nov 2010 18:05:57 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
-        tytso@mit.edu, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-Message-ID: <20101118180557.GU22787@shareable.org>
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com> <20101118130630.GJ6178@parisc-linux.org> <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
+	id S1756863Ab0KRSvD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 13:51:03 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:42559 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750917Ab0KRSvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 13:51:01 -0500
+Date: Thu, 18 Nov 2010 18:50:46 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/8] mm: compaction: Perform a faster scan in
+	try_to_compact_pages()
+Message-ID: <20101118185046.GQ8135@csn.ul.ie>
+References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie> <1290010969-26721-7-git-send-email-mel@csn.ul.ie> <20101118183448.GC30376@random.random>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <20101118183448.GC30376@random.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Moyer wrote:
-> James Bottomley <James.Bottomley@suse.de> writes:
+On Thu, Nov 18, 2010 at 07:34:48PM +0100, Andrea Arcangeli wrote:
+> On Wed, Nov 17, 2010 at 04:22:47PM +0000, Mel Gorman wrote:
+> > @@ -485,8 +500,8 @@ static unsigned long compact_zone_order(struct zone *zone,
+> >  		.nr_migratepages = 0,
+> >  		.order = order,
+> >  		.migratetype = allocflags_to_migratetype(gfp_mask),
+> > +		.migrate_fast_scan = true,
+> >  		.zone = zone,
+> > -		.sync = false,
+> >  	};
+> >  	INIT_LIST_HEAD(&cc.freepages);
+> >  	INIT_LIST_HEAD(&cc.migratepages);
+> > @@ -502,8 +517,8 @@ unsigned long reclaimcompact_zone_order(struct zone *zone,
+> >  		.nr_migratepages = 0,
+> >  		.order = order,
+> >  		.migratetype = allocflags_to_migratetype(gfp_mask),
+> > +		.migrate_fast_scan = false,
+> >  		.zone = zone,
+> > -		.sync = true,
+> >  	};
 > 
-> > Not stepping into the debate: I'm happy to see punch go to the mapping
-> > data and FITRIM pick it up later.
-> >
-> > However, I think it's time to question whether we actually still want to
-> > allow online discard at all.  Most of the benchmarks show it to be a net
+> Same as for the previous feature (sync/async migrate) I'd prefer if
+> this was a __GFP_ flag (khugepaged will do the no-fast-scan version,
+> page fault will only run compaction in fast scan mode) and if we
+
+For THP in general, I think we can abuse __GFP_NO_KSWAPD. For other callers,
+I'm not sure it's fair to push the responsibility of async/sync to them. We
+don't do it for reclaim for example and I'd worry the wrong decisions would
+be made or that they'd always select async for "performance" and then bitch
+about an allocation failure.
+
+> removed the reclaimcompact_zone_order and we stick with the
+> interleaving of shrinker and try_to_compact_pages from the alloc_pages
+> caller, with no nesting of compaction inside the shrinker.
 > 
-> Define online discard, please.
+> Another possibility would be to not have those as __GFP flags, and to
+> always do the first try_to_compact_pages with async+fast_scan, then
+> call the shrinker and then all next try_to_compact_pages would be
+> called with sync+no_fast_scan mode.
 > 
-> > lose to almost everything (either SSD or Thinly Provisioned arrays), so
-> > it's become an "enable this to degrade performance" option with no
-> > upside.
+
+I'll investigate this.
+
+> But I love if we can further decrease the risk of too long page
+> hugepage page fault before the normal page fallback, and to have a
+> __GFP_ flag for these two. Even the same __GFP flag could work for
+> both...
 > 
-> Some SSDs very much require TRIMming to perform well as they age.  If
-> you're suggesting that we move from doing discards in journal commits to
-> a batched discard, like the one Lukas implemented, then I think that's
-> fine.  If we need to reintroduce the finer-grained discards due to some
-> hardware changes in the future, we can always do that.
+> So my preference would be to nuke reclaimcompact_zone_order, only
+> stick to compact_zone_order and the current interleaving, and add a
+> __GFP_COMPACT_FAST used by the hugepmd page fault (that will enable
+> both async migrate and fast-scan). khugepaged and hugetlbfs won't use
+> __GFP_COMPACT_FAST.
 
-"Growable" virtual disks benefit from it too, if it frees up a lot of space.
+My only whinge about the lack of reclaimcompact_zone_order is that it
+makes it harder to even contemplate lumpy compaction in the future but
+it could always be reintroduced if absolutely necessary.
 
-Windows has some ability to trim unused space in NTFS on virtual disks
-for this reason; I'm not sure if it's an online or offline procedure.
+> 
+> I'm undecided if a __GFP_ flag is needed to differentiate the callers,
+> or if we should just run the first try_to_compact_pages in
+> "optimistic" mode by default.
+> 
 
-Online trim may be slow, but offline would be awfully inconvenient
-when an fs is big and needed for a live system, or when it's your root fs.
+GFP flags would be my last preference. 
 
--- Jamie
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
