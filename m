@@ -1,134 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757837Ab0KROMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 09:12:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53047 "EHLO mx1.redhat.com"
+	id S1758283Ab0KROMw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 09:12:52 -0500
+Received: from hera.kernel.org ([140.211.167.34]:52138 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757681Ab0KROMb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 09:12:31 -0500
-Date: Thu, 18 Nov 2010 15:05:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Raistlin <raistlin@linux.it>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Friesen <cfriesen@nortel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <darren@dvhart.com>, Johan Eker <johan.eker@ericsson.com>,
-        "p.faure" <p.faure@akatech.ch>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Claudio Scordino <claudio@evidence.eu.com>,
-        michael trimarchi <trimarchi@retis.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>,
-        Tommaso Cucinotta <cucinotta@sssup.it>,
-        Juri Lelli <juri.lelli@gmail.com>,
-        Nicola Manica <nicola.manica@disi.unitn.it>,
-        Luca Abeni <luca.abeni@unitn.it>, Dhaval Giani <dhaval@retis.sssup.it>,
-        Harald Gustafsson <hgu1972@gmail.com>,
-        paulmck <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH] sched: Simplify cpu-hot-unplug task migration
-Message-ID: <20101118140515.GA29303@redhat.com>
-References: <1289490202.2084.140.camel@laptop> <20101111163242.GA5697@redhat.com> <1289673355.2109.79.camel@laptop> <20101113195857.GA11411@redhat.com> <1289680291.2109.244.camel@laptop> <1289681497.2109.270.camel@laptop> <1289691081.2109.452.camel@laptop> <1289851597.2109.547.camel@laptop> <20101117192713.GA11910@redhat.com> <1290022954.2109.1217.camel@laptop>
+	id S1754022Ab0KROMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 09:12:50 -0500
+Date: Thu, 18 Nov 2010 14:12:18 GMT
+From: tip-bot for Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, pjt@google.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20101115234938.112173964@google.com>
+References: <20101115234938.112173964@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/core] sched: Add sysctl_sched_shares_window
+Message-ID: <tip-a7a4f8a752ec734b2eab904fc863d5dc873de338@git.kernel.org>
+Git-Commit-ID: a7a4f8a752ec734b2eab904fc863d5dc873de338
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1290022954.2109.1217.camel@laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 18 Nov 2010 14:12:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/17, Peter Zijlstra wrote:
->
-> On Wed, 2010-11-17 at 20:27 +0100, Oleg Nesterov wrote:
->
-> > > -static void migrate_dead_tasks(unsigned int dead_cpu)
-> > > -{
-> > > -	struct rq *rq = cpu_rq(dead_cpu);
-> > > -	struct task_struct *next;
-> > > +	rq->stop = NULL;
-> >
-> > (or we could do current->state = TASK_INTERRUPTIPLE, afaics)
->
-> Ah, you missed a patch that made pick_next_task_stop() look like:
->
-> static struct task_struct *pick_next_task_stop(struct rq *rq)
-> {
->         struct task_struct *stop = rq->stop;
->
->         if (stop && stop->se.on_rq)
+Commit-ID:  a7a4f8a752ec734b2eab904fc863d5dc873de338
+Gitweb:     http://git.kernel.org/tip/a7a4f8a752ec734b2eab904fc863d5dc873de338
+Author:     Paul Turner <pjt@google.com>
+AuthorDate: Mon, 15 Nov 2010 15:47:06 -0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 18 Nov 2010 13:27:49 +0100
 
-Yes, thanks.
+sched: Add sysctl_sched_shares_window
 
-> > >  	for ( ; ; ) {
-> > > -		if (!rq->nr_running)
-> > > +		/*
-> > > +		 * There's this thread running, bail when that's the only
-> > > +		 * remaining thread.
-> > > +		 */
-> > > +		if (rq->nr_running == 1)
-> > >  			break;
-> >
-> > I was very much confused, and I was going to say this is wrong.
-> > However, now I think this is correct, just the comment is not
-> > right.
-> >
-> > There is another running thread we should not migrate, rq->idle.
-> > If nothing else, dequeue_task_idle() should be never called.
->
-> In fact, dequeue_task_idle() will yell if you try that ;-)
->
-> > But, if I understand correctly, ->nr_running does not account
-> > the idle thread, and this is what makes this correct.
-> >
-> > Correct?
->
-> Right, I can add: (the idle thread is not counted in nr_running), if
-> that makes things clearer for you; however its a quite fundamental
-> property,
+Introduce a new sysctl for the shares window and disambiguate it from
+sched_time_avg.
 
-Yes, I see now.
+A 10ms window appears to be a good compromise between accuracy and performance.
 
-OK, this also explains my previous questions. I greatly misunderstood
-this "small detail", starting from your initial patch. Every time I
-thought you are trying to migrate rq->idle as well.
+Signed-off-by: Paul Turner <pjt@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20101115234938.112173964@google.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ include/linux/sched.h |    1 +
+ kernel/sched_fair.c   |    9 ++++++++-
+ kernel/sysctl.c       |    7 +++++++
+ 3 files changed, 16 insertions(+), 1 deletions(-)
 
-Thanks Peter. Only one question,
-
-> @@ -253,9 +246,12 @@ static int __ref _cpu_down(unsigned int
->  	}
->  	BUG_ON(cpu_online(cpu));
->
-> -	/* Wait for it to sleep (leaving idle task). */
-> -	while (!idle_cpu(cpu))
-> -		yield();
-> +	/*
-> +	 * The migration_call() CPU_DYING callback will have removed all
-> +	 * runnable tasks from the cpu, there's only the idle task left now
-> +	 * that the migration thread is done doing the stop_machine thing.
-> +	 */
-> +	BUG_ON(!idle_cpu(cpu));
-
-I am not sure.
-
-Yes, we know for sure rhat the only runnable task is rq->idle.
-But only after migration thread calls schedule() and switches to the
-idle thread.
-
-However, I see nothing which can guarantee this. Migration thread
-running on the dead cpu wakes up the caller of stop_cpus() before
-it calls schedule(), _cpu_down() can check rq->curr before it was
-changed.
-
-No?
-
-
-
-Hmm. In fact, I think it is possible that cpu_stopper_thread() can
-have more cpu_stop_work's queued when __stop_machine() returns.
-This has nothing to do with this patch, but I think it makes sense
-to clear stopper->enabled at CPU_DYING stage as well (of course,
-this needs a separate patch).
-
-Oleg.
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 8abb8aa..840f127 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1900,6 +1900,7 @@ extern unsigned int sysctl_sched_migration_cost;
+ extern unsigned int sysctl_sched_nr_migrate;
+ extern unsigned int sysctl_sched_time_avg;
+ extern unsigned int sysctl_timer_migration;
++extern unsigned int sysctl_sched_shares_window;
+ 
+ int sched_proc_update_handler(struct ctl_table *table, int write,
+ 		void __user *buffer, size_t *length,
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index b320753..6c84439 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -89,6 +89,13 @@ unsigned int normalized_sysctl_sched_wakeup_granularity = 1000000UL;
+ 
+ const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
+ 
++/*
++ * The exponential sliding  window over which load is averaged for shares
++ * distribution.
++ * (default: 10msec)
++ */
++unsigned int __read_mostly sysctl_sched_shares_window = 10000000UL;
++
+ static const struct sched_class fair_sched_class;
+ 
+ /**************************************************************
+@@ -688,7 +695,7 @@ account_entity_dequeue(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ #if defined CONFIG_SMP && defined CONFIG_FAIR_GROUP_SCHED
+ static void update_cfs_load(struct cfs_rq *cfs_rq)
+ {
+-	u64 period = sched_avg_period();
++	u64 period = sysctl_sched_shares_window;
+ 	u64 now, delta;
+ 	unsigned long load = cfs_rq->load.weight;
+ 
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 3132b25..9b520d7 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -333,6 +333,13 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_dointvec,
+ 	},
+ 	{
++		.procname	= "sched_shares_window",
++		.data		= &sysctl_sched_shares_window,
++		.maxlen		= sizeof(unsigned int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec,
++	},
++	{
+ 		.procname	= "timer_migration",
+ 		.data		= &sysctl_timer_migration,
+ 		.maxlen		= sizeof(unsigned int),
