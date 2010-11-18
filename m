@@ -1,268 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab0KRJQT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 04:16:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2543 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755021Ab0KRJQQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 04:16:16 -0500
-Date: Thu, 18 Nov 2010 11:16:02 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Gregory Haskins <ghaskins@novell.com>,
-        Chris Lalancette <clalance@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] kvm: fast-path msi injection with irqfd
-Message-ID: <20101118091601.GF16832@redhat.com>
-References: <20101117221254.GA8296@redhat.com>
- <20101118090522.GX7948@redhat.com>
+	id S1755942Ab0KRJQg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 04:16:36 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:53325 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755759Ab0KRJQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 04:16:31 -0500
+Message-ID: <4CE4EE74.2080404@cn.fujitsu.com>
+Date: Thu, 18 Nov 2010 17:14:28 +0800
+From: Shan Wei <shanwei@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13pre) Gecko/20101113 Shredder/3.1.7pre
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101118090522.GX7948@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <gregkh@suse.de>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: WARNING in tty_io.c
+References: <4CDA5291.4010802@cn.fujitsu.com> <20101118061415.GA14712@suse.de>
+In-Reply-To: <20101118061415.GA14712@suse.de>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-18 17:16:50,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-18 17:16:50,
+	Serialize complete at 2010-11-18 17:16:50
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 11:05:22AM +0200, Gleb Natapov wrote:
-> On Thu, Nov 18, 2010 at 12:12:54AM +0200, Michael S. Tsirkin wrote:
-> > Store irq routing table pointer in the irqfd object,
-> > and use that to inject MSI directly without bouncing out to
-> > a kernel thread.
-> > 
-> > While we touch this structure, rearrange irqfd fields to make fastpath
-> > better packed for better cache utilization.
-> > 
-> > Some notes on the design:
-> > - Use pointer into the rt instead of copying an entry,
-> >   to make it possible to use rcu, thus side-stepping
-> >   locking complexities.  We also save some memory this way.
-> What locking complexity is there with copying entry approach?
-
-Without RCU, we need two locks:
-	- irqfd lock to scan the list of irqfds
-	- eventfd wqh lock in the irqfd to update the entry
-To update all irqfds on list, wqh lock would be nested within irqfd lock.
-	lock(kvm->irqfds.lock)
-	list_for_each(irqfd, kvm->irqfds.list)
-		lock(irqfd->wqh)
-		update(irqfd)
-		unlock(irqfd->wqh)
-	unlock(kvm->irqfds.lock)
-Problem is, irqfd is nested within wqh for cleanup (POLLHUP) path.
-
-With RCU we do assign and let sync take care of flushing old entries out.
-
-> > - Old workqueue code is still used for level irqs.
-> >   I don't think we DTRT with level anyway, however,
-> >   it seems easier to keep the code around as
-> >   it has been thought through and debugged, and fix level later than
-> >   rip out and re-instate it later.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> > 
-> > The below is compile tested only.  Sending out for early
-> > flames/feedback.  Please review!
-> > 
-> >  include/linux/kvm_host.h |    4 ++
-> >  virt/kvm/eventfd.c       |   81 +++++++++++++++++++++++++++++++++++++++------
-> >  virt/kvm/irq_comm.c      |    6 ++-
-> >  3 files changed, 78 insertions(+), 13 deletions(-)
-> > 
-> > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> > index a055742..b6f7047 100644
-> > --- a/include/linux/kvm_host.h
-> > +++ b/include/linux/kvm_host.h
-> > @@ -462,6 +462,8 @@ void kvm_get_intr_delivery_bitmask(struct kvm_ioapic *ioapic,
-> >  				   unsigned long *deliver_bitmask);
-> >  #endif
-> >  int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level);
-> > +int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
-> > +		int irq_source_id, int level);
-> >  void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin);
-> >  void kvm_register_irq_ack_notifier(struct kvm *kvm,
-> >  				   struct kvm_irq_ack_notifier *kian);
-> > @@ -603,6 +605,7 @@ static inline void kvm_free_irq_routing(struct kvm *kvm) {}
-> >  void kvm_eventfd_init(struct kvm *kvm);
-> >  int kvm_irqfd(struct kvm *kvm, int fd, int gsi, int flags);
-> >  void kvm_irqfd_release(struct kvm *kvm);
-> > +void kvm_irqfd_update(struct kvm *kvm, struct kvm_irq_routing_table *irq_rt);
-> >  int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args);
-> >  
-> >  #else
-> > @@ -614,6 +617,7 @@ static inline int kvm_irqfd(struct kvm *kvm, int fd, int gsi, int flags)
-> >  }
-> >  
-> >  static inline void kvm_irqfd_release(struct kvm *kvm) {}
-> > +static inline void kvm_irqfd_update(struct kvm *kvm) {}
-> >  static inline int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
-> >  {
-> >  	return -ENOSYS;
-> > diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-> > index c1f1e3c..49c1864 100644
-> > --- a/virt/kvm/eventfd.c
-> > +++ b/virt/kvm/eventfd.c
-> > @@ -44,14 +44,18 @@
-> >   */
-> >  
-> >  struct _irqfd {
-> > -	struct kvm               *kvm;
-> > -	struct eventfd_ctx       *eventfd;
-> > -	int                       gsi;
-> > -	struct list_head          list;
-> > -	poll_table                pt;
-> > -	wait_queue_t              wait;
-> > -	struct work_struct        inject;
-> > -	struct work_struct        shutdown;
-> > +	/* Used for MSI fast-path */
-> > +	struct kvm *kvm;
-> > +	wait_queue_t wait;
-> > +	struct kvm_kernel_irq_routing_entry __rcu *irq_entry;
-> > +	/* Used for level IRQ fast-path */
-> > +	int gsi;
-> > +	struct work_struct inject;
-> > +	/* Used for setup/shutdown */
-> > +	struct eventfd_ctx *eventfd;
-> > +	struct list_head list;
-> > +	poll_table pt;
-> > +	struct work_struct shutdown;
-> >  };
-> >  
-> >  static struct workqueue_struct *irqfd_cleanup_wq;
-> > @@ -125,10 +129,18 @@ irqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
-> >  {
-> >  	struct _irqfd *irqfd = container_of(wait, struct _irqfd, wait);
-> >  	unsigned long flags = (unsigned long)key;
-> > +	struct kvm_kernel_irq_routing_entry *irq;
-> >  
-> > -	if (flags & POLLIN)
-> > +	if (flags & POLLIN) {
-> > +		rcu_read_lock();
-> > +		irq = irqfd->irq_entry;
-> Why not rcu_dereference()? And why it can't be zero here?
+Greg KH wrote, at 11/18/2010 02:14 PM:
+> On Wed, Nov 10, 2010 at 04:06:41PM +0800, Shan Wei wrote:
+>>
+>> Modify start-ttys.conf to add ttyS0 device on my Fedora13 with 2.6.37-rc1+ kernel.
+>> After rebooting system, got the following WARNING.
+>>
+>>
+>> ------------[ cut here ]------------
+>> WARNING: at drivers/char/tty_io.c:1331 tty_open+0x20e/0x3b2()
+>> Hardware name: Aspire SA80
+>> Modules linked in: ipv6 uinput snd_intel8x0 snd_ac97_codec ac97_bus r8169 ppdev parport_pc snd_seq snd_seq_device snd_pcm sis900 mii snd_timer snd soundcore parport snd_page_alloc pcspkr ata_generic pata_acpi sata_sis pata_sis [last unloaded: scsi_wait_scan]
+>> Pid: 117, comm: plymouthd Not tainted 2.6.37-rc1+ #4
 > 
-> >  		/* An event has been signaled, inject an interrupt */
-> > -		schedule_work(&irqfd->inject);
-> > +		if (irq)
-> > +			kvm_set_msi(irq, irqfd->kvm, KVM_USERSPACE_IRQ_SOURCE_ID, 1);
-> > +		else
-> > +			schedule_work(&irqfd->inject);
-> > +		rcu_read_unlock();
-> > +	}
-> >  
-> >  	if (flags & POLLHUP) {
-> >  		/* The eventfd is closing, detach from KVM */
-> > @@ -166,6 +178,7 @@ irqfd_ptable_queue_proc(struct file *file, wait_queue_head_t *wqh,
-> >  static int
-> >  kvm_irqfd_assign(struct kvm *kvm, int fd, int gsi)
-> >  {
-> > +	struct kvm_irq_routing_table *irq_rt;
-> >  	struct _irqfd *irqfd, *tmp;
-> >  	struct file *file = NULL;
-> >  	struct eventfd_ctx *eventfd = NULL;
-> > @@ -215,6 +228,10 @@ kvm_irqfd_assign(struct kvm *kvm, int fd, int gsi)
-> >  		goto fail;
-> >  	}
-> >  
-> > +	rcu_read_lock();
-> > +	irqfd_update(kvm, irqfd, rcu_dereference(kvm->irq_routing));
-> > +	rcu_read_unlock();
-> > +
-> >  	events = file->f_op->poll(file, &irqfd->pt);
-> >  
-> >  	list_add_tail(&irqfd->list, &kvm->irqfds.items);
-> > @@ -271,8 +288,15 @@ kvm_irqfd_deassign(struct kvm *kvm, int fd, int gsi)
-> >  	spin_lock_irq(&kvm->irqfds.lock);
-> >  
-> >  	list_for_each_entry_safe(irqfd, tmp, &kvm->irqfds.items, list) {
-> > -		if (irqfd->eventfd == eventfd && irqfd->gsi == gsi)
-> > +		if (irqfd->eventfd == eventfd && irqfd->gsi == gsi) {
-> > +			/* This rcu_assign_pointer is needed for when
-> > +			 * another thread calls kvm_irqfd_update before
-> > +			 * we flush workqueue below.
-> > +			 * It is paired with synchronize_rcu done by caller
-> > +			 * of that function. */
-> > +			rcu_assign_pointer(irqfd->irq_entry, NULL);
-> >  			irqfd_deactivate(irqfd);
-> > +		}
-> >  	}
-> >  
-> >  	spin_unlock_irq(&kvm->irqfds.lock);
-> > @@ -321,6 +345,41 @@ kvm_irqfd_release(struct kvm *kvm)
-> >  
-> >  }
-> >  
-> > +/* Must be called under irqfds.lock */
-> > +static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
-> > +			 struct kvm_irq_routing_table *irq_rt)
-> > +{
-> > +	struct kvm_kernel_irq_routing_entry *e;
-> > +	struct hlist_node *n;
-> > +
-> > +	if (irqfd->gsi >= irq_rt->nr_rt_entries) {
-> > +		rcu_assign_pointer(irqfd->irq_entry, NULL);
-> > +		return;
-> > +	}
-> > +
-> > +	hlist_for_each_entry(e, n, &irq_rt->map[irqfd->gsi], link) {
-> > +		/* Only fast-path MSI. */
-> > +		if (e->type == KVM_IRQ_ROUTING_MSI)
-> > +			rcu_assign_pointer(irqfd->irq_entry, e);
-> > +		else
-> > +			rcu_assign_pointer(irqfd->irq_entry, NULL);
-> > +	}
-> Shouldn't we flush workqueue if routing entry is gone?
+> Does this still happen in .37-rc2?
+
+Good news.
+It's not appreared in 2.6.37-rc2+ with top commit 59365d13.
+
+Thanks again.
+
+-- 
+Best Regards
+-----
+Shan Wei
+
+
 > 
-> > +}
-> > +
-> > +/* Update irqfd after a routing change.  Caller must invoke synchronize_rcu
-> > + * afterwards. */
-> > +void kvm_irqfd_update(struct kvm *kvm, struct kvm_irq_routing_table *irq_rt)
-> > +{
-> > +	struct _irqfd *irqfd;
-> > +
-> > +	spin_lock_irq(&kvm->irqfds.lock);
-> > +
-> > +	list_for_each_entry(irqfd, &kvm->irqfds.items, list)
-> > +		irqfd_update(kvm, irqfd, irq_rt);
-> > +
-> > +	spin_unlock_irq(&kvm->irqfds.lock);
-> > +}
-> > +
-> >  /*
-> >   * create a host-wide workqueue for issuing deferred shutdown requests
-> >   * aggregated from all vm* instances. We need our own isolated single-thread
-> > diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-> > index 8edca91..265ab72 100644
-> > --- a/virt/kvm/irq_comm.c
-> > +++ b/virt/kvm/irq_comm.c
-> > @@ -114,8 +114,8 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
-> >  	return r;
-> >  }
-> >  
-> > -static int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
-> > -		       struct kvm *kvm, int irq_source_id, int level)
-> > +int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
-> > +		struct kvm *kvm, int irq_source_id, int level)
-> >  {
-> >  	struct kvm_lapic_irq irq;
-> >  
-> > @@ -410,7 +410,9 @@ int kvm_set_irq_routing(struct kvm *kvm,
-> >  	mutex_lock(&kvm->irq_lock);
-> >  	old = kvm->irq_routing;
-> >  	rcu_assign_pointer(kvm->irq_routing, new);
-> > +	kvm_irqfd_update(kvm, new);
-> >  	mutex_unlock(&kvm->irq_lock);
-> > +
-> >  	synchronize_rcu();
-> >  
-> >  	new = old;
-> > -- 
-> > 1.7.3.2.91.g446ac
+> Alan, any ideas?
 > 
-> --
-> 			Gleb.
+>> Call Trace:
+>>  [<c044045c>] warn_slowpath_common+0x6a/0x7f
+>>  [<c062aff0>] ? tty_open+0x20e/0x3b2
+>>  [<c0440485>] warn_slowpath_null+0x14/0x18
+>>  [<c062aff0>] tty_open+0x20e/0x3b2
+>>  [<c04dc6c7>] chrdev_open+0xf3/0x110
+>>  [<c04d8688>] __dentry_open+0x141/0x237
+>>  [<c04d8833>] nameidata_to_filp+0x43/0x51
+>>  [<c04dc5d4>] ? chrdev_open+0x0/0x110
+>>  [<c04e25b8>] do_last+0x372/0x47f
+>>  [<c04e3b8d>] do_filp_open+0x19c/0x406
+>>  [<c04e5085>] ? do_vfs_ioctl+0x55e/0x5b4
+>>  [<c05b6232>] ? might_fault+0x1e/0x20
+>>  [<c04d8457>] do_sys_open+0x4d/0xcf
+>>  [<c0581f47>] ? selinux_file_ioctl+0x43/0x46
+>>  [<c04d8525>] sys_open+0x23/0x2b
+>>  [<c04097df>] sysenter_do_call+0x12/0x28
+>>  [<c07a0000>] ? init_intel_cacheinfo+0x6d/0x39e
+>> ---[ end trace eeb22dd7bedfb0b1 ]---
+>>  
+> 
+
