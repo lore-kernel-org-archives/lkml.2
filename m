@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab0KRINF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 03:13:05 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:45217 "EHLO mx3.mail.elte.hu"
+	id S1755459Ab0KRINT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 03:13:19 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:39696 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331Ab0KRIND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 03:13:03 -0500
-Date: Thu, 18 Nov 2010 09:12:41 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Marcus Meissner <meissner@suse.de>, rusty@rustcorp.com.au,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel/time: Make /proc/timer_list mode 0400
-Message-ID: <20101118081241.GA23481@elte.hu>
-References: <20101117170822.GW20727@suse.de>
- <1290014312.2109.1065.camel@laptop>
- <20101117123039.d975aa70.akpm@linux-foundation.org>
- <alpine.LFD.2.00.1011172137040.2900@localhost6.localdomain6>
+	id S1755373Ab0KRINK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 03:13:10 -0500
+Date: Thu, 18 Nov 2010 08:12:54 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/8] Use memory compaction instead of lumpy reclaim
+	during high-order allocations
+Message-ID: <20101118081254.GB8135@csn.ul.ie>
+References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie> <20101117154641.51fd7ce5.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011172137040.2900@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20101117154641.51fd7ce5.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Thomas Gleixner <tglx@linutronix.de> wrote:
-
-> On Wed, 17 Nov 2010, Andrew Morton wrote:
+On Wed, Nov 17, 2010 at 03:46:41PM -0800, Andrew Morton wrote:
+> On Wed, 17 Nov 2010 16:22:41 +0000
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> > On Wed, 17 Nov 2010 18:18:32 +0100
-> > Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > 
-> > > On Wed, 2010-11-17 at 18:08 +0100, Marcus Meissner wrote:
-> > > > Hi,
-> > > > 
-> > > > /proc/timer_list contains kernel addresses, like e.g.:
-> > > >  #0: <c000000001404158>, tick_sched_timer, S:01, .tick_nohz_restart_sched_tick, swapper/0
-> > > >  ...
-> > > > 
-> > > > Avoid leaking them to user space to make writing kernel exploits a bit harder.
-> > > > 
-> > > > (I currently cannot think of a userland tool that uses this, this is
-> > > > likely pretty much root-only.)
-> > > 
-> > > iirc powertop parses this..
-> > 
-> > I bet it doesn't look at the kernel address (why was that added in the
-> > first place, anyway?)
-> > 
-> > I'd suggest that the risk of breakage would be much less if we left the
-> > file permissions alone and arranged for those addresses to be
-> > 0000000000000000 for non-root readers.
+> > Huge page allocations are not expected to be cheap but lumpy reclaim
+> > is still very disruptive.
 > 
-> You beat me to it. Having the full information is quite helpful at
-> times.
+> Huge pages are boring.  Can we expect any benefit for the
+> stupid-nic-driver-which-does-order-4-GFP_ATOMIC-allocations problem?
+> 
 
-We should do something like:
+Yes. Specifically, while GFP_ATOMIC allocations still cannot enter compaction
+(although with asynchronous migration, it's closer), kswapd will react
+faster. As a result, it should be harder to trigger allocation failures.
 
-	if (!capable(CAP_SYS_ADMIN))
-		print_ptr = NULL;
+Huge pages are simply the worst case in terms of allocation latency which
+is why I tend to focus testing on them. That, and I don't have a suitable
+pair of machines with one of these order-4-atomic-stupid-nics.
 
-	sprintf(s, "%p", print_ptr);
+> > I haven't pushed hard on the concept of lumpy compaction yet and right
+> > now I don't intend to during this cycle. The initial prototypes did not
+> > behave as well as expected and this series improves the current situation
+> > a lot without introducing new algorithms. Hence, I'd like this series to
+> > be considered for merging.
+> 
+> Translation: "Andrew, wait for the next version"? :)
+> 
 
-Thanks,
+Preferably do not wait unless review reveals a major flaw. Lumpy compaction
+in its initial prototype versions simply did not work out as a good policy
+modification and requires much deeper thought. This series was effective
+at getting latencies down to the level I expected lumpy compaction to.
+If I do make lumpy compaction work properly, its effect will be to reduce
+scanning rates but the latencies are likely to be similar.
 
-	Ingo
+> > I'm hoping that this series also removes the
+> > necessity for the "delete lumpy reclaim" patch from the THP tree.
+> 
+> Now I'm sad.  I read all that and was thinking "oh goody, we get to
+> delete something for once".  But no :(
+> 
+> If you can get this stuff to work nicely, why can't we remove lumpy
+> reclaim?
+
+Ultimately we should be able to. Lumpy reclaim is still there for the
+!CONFIG_COMPACTION case and to have an option if we find that compaction
+behaves badly for some reason.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
