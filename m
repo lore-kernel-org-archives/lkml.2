@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755385Ab0KRI2q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 03:28:46 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48679 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975Ab0KRI2p (ORCPT
+	id S1755431Ab0KRIaf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 03:30:35 -0500
+Received: from smtpauth.net4india.com ([118.67.248.47]:35331 "EHLO
+	smtpauth.net4india.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab0KRIae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 03:28:45 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=InmmYVZFrEFwIoEtWJi/JEFqb5RuCkNUPja5K/sqFOJ6Ipw3TfTW7p4bnMnD0wo8US
-         AftWIAs9YxV7gKRABO/PS+Mw/wrPOpEkZENeBKcuMlMlUX3W7H6DCcZFFsNl4q/4zS+8
-         uljJNawa/oeYwZFi1cdN1u07MHduPF03a9OrA=
-Subject: Re: [PATCH] kernel/time: Make /proc/timer_list mode 0400
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Marcus Meissner <meissner@suse.de>, rusty@rustcorp.com.au,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101118081241.GA23481@elte.hu>
-References: <20101117170822.GW20727@suse.de>
-	 <1290014312.2109.1065.camel@laptop>
-	 <20101117123039.d975aa70.akpm@linux-foundation.org>
-	 <alpine.LFD.2.00.1011172137040.2900@localhost6.localdomain6>
-	 <20101118081241.GA23481@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Nov 2010 09:28:25 +0100
-Message-ID: <1290068905.6782.8.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 18 Nov 2010 03:30:34 -0500
+Message-ID: <4CE4E41C.7020202@xenontk.org>
+Date: Thu, 18 Nov 2010 14:00:20 +0530
+From: David John <davidjon@xenontk.org>
+Reply-To: davidjon@xenontk.org
+User-Agent: Mozilla/5.0 (X11; X; Linux x86_64; rv:1.9.2.12) Gecko/20101103 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [2.6.37-rc1 / rc2 Regression] PCI: Kernel Hangs On Boot
+References: <4CE3F763.6080002@xenontk.org> <20101117192449.GA12191@helgaas.com>
+In-Reply-To: <20101117192449.GA12191@helgaas.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 18 novembre 2010 à 09:12 +0100, Ingo Molnar a écrit :
-
-> We should do something like:
+On 11/18/2010 12:54 AM, Bjorn Helgaas wrote:
+> On Wed, Nov 17, 2010 at 09:10:19PM +0530, David John wrote:
+>> Commit dc9887dc ("x86/PCI: allocate space from the end of a region, not
+>> the beginning") causes the kernel to hang on my Dell Inspiron 1545.
+>> 2.6.36 and booting with pci=nocrs works fine. Reverting this commit also
+>> works. I am attaching the kernel log and system iomem from the working
+>> 2.6.36. It hangs at this location consistently:
+>>
+>> pci-stub: invalid id string ""
+>> ACPI: AC Adapter [AC] (on-line)
+>> input: Lid Switch as
+>> /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0D:00/input/input0
+>>
+>> < hang >
+>>
+>> Let me know if you need any other info.
 > 
-> 	if (!capable(CAP_SYS_ADMIN))
-> 		print_ptr = NULL;
+> Thanks a lot for this report.  I opened this bugzilla:
+>     https://bugzilla.kernel.org/show_bug.cgi?id=23132
+> to track it.
 > 
-> 	sprintf(s, "%p", print_ptr);
+> Would you mind attaching the dmesg log from 2.6.37-rc2 with
+> commit dc9887dc reverted?  That should have a little more
+> information (PCI allocation closer to what fails, and also
+> more PNP resource information).
 
-A while ago, Thomas suggested following idea :
+Attached in Bugzilla.
 
-<quote> 
+> If you happen to have Windows on this box as well, an
+> Everest report (http://lavalys.com) would be interesting.
+> If not, no worries.
 
-Considering the amount of duplication you are about to do, you may
-want to think about adding a new pointer format extension then. We
-already have special '%p' modes for IPv6 addresse, MAC addresses and
-various other pointer types. It wouldn't be hard to add one which
-does not print (null).
+Nope, no Windows on this box, Sorry.
 
-</quote>
-
-http://www.spinics.net/lists/netdev/msg146606.html
-
-So the if (!capable(CAP_SYS_ADMIN)) could be centralized in %pX handling
-(X being a new letter, not actually 'X')
-
-
-
+Regards,
+David.
