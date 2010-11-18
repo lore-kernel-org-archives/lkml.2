@@ -1,105 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760343Ab0KRUmJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 15:42:09 -0500
-Received: from serrano.cc.columbia.edu ([128.59.29.6]:63410 "EHLO
-	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758535Ab0KRUmH (ORCPT
+	id S1760369Ab0KRUmT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 15:42:19 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42171 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760353Ab0KRUmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 15:42:07 -0500
-Message-ID: <4CE58F70.5040407@cs.columbia.edu>
-Date: Thu, 18 Nov 2010 15:41:20 -0500
-From: Oren Laadan <orenl@cs.columbia.edu>
-Organization: Columbia University
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101027 Lightning/1.0b1 Thunderbird/3.0.10
+	Thu, 18 Nov 2010 15:42:16 -0500
 MIME-Version: 1.0
-To: david@lang.hm
-CC: Davide Libenzi <davidel@xmailserver.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Tejun Heo <tj@kernel.org>,
-        ksummit-2010-discuss@lists.linux-foundation.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-References: <Pine.LNX.4.64.1011021530470.12128@takamine.ncl.cs.columbia.edu> <4CD08419.5050803@kernel.org> <4CD23087.30900@cs.columbia.edu> <4CD28033.1000700@kernel.org> <20101106101209.GD11535@count0.beaverton.ibm.com> <alpine.DEB.2.00.1011071032001.29896@davide-lnx1> <alpine.DEB.2.00.1011071817560.24952@asgard.lang.hm>
-In-Reply-To: <alpine.DEB.2.00.1011071817560.24952@asgard.lang.hm>
+In-Reply-To: <alpine.LNX.2.00.1011181957500.3651@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1011181957500.3651@swampdragon.chaosbits.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 18 Nov 2010 12:41:22 -0800
+Message-ID: <AANLkTi=McRJSHp8==o+=coK0_pK5s9dwUgLmrkohSmTX@mail.gmail.com>
+Subject: Re: [PATCH][resend][SCSI] Reduce number of sequential pointer derefs
+ in scsi_error.c and reduce size as well
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-scsi@vger.kernel.org,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-kernel@vger.kernel.org, Eric Youngdale <eric@andante.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Mike Anderson <andmike@us.ibm.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Nov 18, 2010 at 11:30 AM, Jesper Juhl <jj@chaosbits.net> wrote:
+>
+> This is the fourth time I send this patch. For some reason it seems unable
+> to get any feedback at all. I'd really appreciate a clear ACK or NACK on
+> it and I'll keep resending it until it's either merged or I get a NACK
+> with a reason.
 
+The patch looks ok to me, but you've basically selected the least
+interesting file possible. No wonder people can't seem to care.
 
-On 11/07/2010 09:32 PM, david@lang.hm wrote:
-> On Sun, 7 Nov 2010, Davide Libenzi wrote:
-> 
->> Please, do not compare things like single file systems, drivers, or
->> otherwise fairly isolated components, with this "thing".
->> This thing touches a freaky-large number of subsystems, effectively
->> adding a glueage between them, which can might end up causing problems
->> (and/or restrict design choices) in the future.
-> 
-> I've got a question about the ABI that would be created
-> 
-> I see two possible areas that could be considered an ABI
-> 
-> 1. control of the C/R process
-> 
->   This is very clearly a userspace ABI, to be figured out and locked
-> down like any other ABI
-> 
-> 2. the details of how things are stored and added back into a system
-> 
->   This is not as clear. at one extreme, this could be like the module
-> interface, (the checkpointed image is only guaranteed to work on a new
-> system with a kernel compiled with the same config options as the system
-> it was checkpointed from). At the other extreme, this could be something
-> that allows you to ckeckpoint an image on 2.6.40 and restore it on
-> 2.6.80. Or it could be something in between.
-> 
-> I don't see any way that it is sane to make the C/R image defiition and
-> interface (#2) be an ABI that is guaranteed to never change without
-> hurting future kernel development (exactly the type of things that
-> Davide is worried about above), but what sort of guarantee are people
-> interested in?
+Also, this is just ugly as hell, and doesn't help anything:
 
-Agreed. The guarantee should be to specific kernels, in a sense (see
-Matt's post in this thread 11/17).
++       int (*eh_abort_handler)(struct scsi_cmnd *) =
++               scmd->device->host->hostt->eh_abort_handler;
 
-The image format is tied to "set of features supported" (which boils
-down to something like kernel version).  The format is constructed
-in a modular way such that most new features can be added without
-breaking old format. For the rare cases that they do, conversion
-can be done in userspace in a straightforward manner. (All you need
-is convert from N to N+1).
+since the compiler will have optimized that double access away anyway
+(no writes in between). So you could have made it about a thousand
+times more readable with no downside by doing
 
-> 
-> is it enough to sa that it must be the same kernel version compiled with
-> the same options? (or at least the same options for some list of things
-> that matter, most device drivers probably would not matter for example)
-> 
-> or would you need compatibility across all compile options for a kernel
-> release?
-> 
-> would you require compatibility between 2.6.x.y and 2.6.x.z?
-> 
-> would you require compatibility between 2.6.x and 2.6.x+n (for some
-> value of n)?
-> 
-> is this something that could go in with the weakest guarantee initially,
-> and then as everyone is more comfortable with it, start extending the
-> guarantee (and as-needed adding code to the kernel to maintain
-> compatibility with old images)?
-> 
-> would you require compatibility between 2.6.x and 2.6.x-n?
+    struct scsi_host_template *hostt = scmd->device->host->hostt;
 
-We don't "require" compatibility. The compatibility is defined per
-object (type) in the image format. New objects need not break
-compatibility. Changes to objects are very rare; and when they happen
-they "bump" the version. This can help avoid issues related to kernel
-configs/options. Restarting an image incompatible with a particular
-kernel will fail, adjustments should be done by userspace filtering.
+    if (!hostt->eh_abort_handler)
+        return FAILED;
+    return hostt->eh_abort_handler(scmd);
 
-Thanks,
+instead. Look ma, no long lines.
 
-Oren.
+Rule of thumb: if you need more than one line for an expression or
+variable definition, you're doing something wrong.
+
+                Linus
