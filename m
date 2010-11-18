@@ -1,91 +1,391 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760542Ab0KRVCy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:02:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26115 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760477Ab0KRVCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:02:52 -0500
-Date: Thu, 18 Nov 2010 16:02:31 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Robert Richter <robert.richter@amd.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        ying.huang@intel.com, Andi Kleen <andi@firstfloor.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
-Message-ID: <20101118210231.GB11445@redhat.com>
-References: <20101116184325.GB4823@redhat.com>
- <4CE2E3C3.6060800@windriver.com>
- <20101118080516.GJ32621@elte.hu>
- <4CE52048.5080802@windriver.com>
- <1290086232.2109.1507.camel@laptop>
- <20101118193247.GF18100@redhat.com>
- <4CE583D0.8050407@windriver.com>
- <20101118200807.GC8131@redhat.com>
- <20101118202850.GD6028@lenovo>
- <20101118203948.GE6028@lenovo>
+	id S1760518Ab0KRVCm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:02:42 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:44039 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757846Ab0KRVCj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 16:02:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=KJwQJm7YgcsvYird9+zYqkhdji8um0e6xh/oa2NXRM6f/AsX0rlEkqmtGdPYSHv5B/
+         pwg36BbpSDz1pLvxETXj5qhAdd32+UIw4Y/PCkZT5hwdcrxAnLYs0kZWbLvG+8q3FGGQ
+         FD2oVyQx024295YP6ALOeNjMZydVVfBm333+k=
+Message-ID: <4CE59482.3050002@gmail.com>
+Date: Fri, 19 Nov 2010 00:02:58 +0300
+From: Vladislav Bolkhovitin <vvvvvst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101118203948.GE6028@lenovo>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Greg KH <greg@kroah.com>
+CC: Richard Williams <richard@etechsoft.com>,
+        Bart Van Assche <bvanassche@acm.org>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        Hannes Reinecke <hare@suse.de>, Andy Yan <ayan@marvell.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vu Pham <vuhuong@mellanox.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joel Becker <joel.becker@oracle.com>
+Subject: Re: [Scst-devel] [PATCH 8/19]: SCST SYSFS interface implementation
+References: <20101109002829.GA22633@kroah.com> <4CD9A9B8.70708@vlnb.net> <4CDA6CD4.3010308@panasas.com> <4CDAFE6E.7050200@vlnb.net> <4CDBBE80.40908@panasas.com> <4CDC56F9.9040601@vlnb.net> <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <4CE1017E.4090409@panasas.com> <20101115161620.GB5981@kroah.com> <4CE16B8E.1000300@panasas.com> <AANLkTikPVXGJ5-5YDk1uqfqrqxGLpSiSdaX3h7qxo-ie@mail.gmail.com> <8985DEAF-4227-4629-B90A-938D2BA3534E@etechsoft.com> <4CE2846C.6070501@vlnb.net>
+In-Reply-To: <4CE2846C.6070501@vlnb.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 11:39:48PM +0300, Cyrill Gorcunov wrote:
-> On Thu, Nov 18, 2010 at 11:28:50PM +0300, Cyrill Gorcunov wrote:
-> > On Thu, Nov 18, 2010 at 03:08:07PM -0500, Don Zickus wrote:
-> > > On Thu, Nov 18, 2010 at 01:51:44PM -0600, Jason Wessel wrote:
-> > > > > So the problem is when the nmi watchdog is enabled, the perf event is
-> > > > > 'active' and thus tries to read the counter value.  Because it is always
-> > > > > zero, perf just assumes the counter overflowed and the NMI is his.
-> > > > >
-> > > > > Not sure how to fix it yet, other than include the logic that detects we
-> > > > > are on a guest and disable perf??
-> > > > >
-> > > > >   
-> > > > 
-> > > > I highly doubt we want to disable perf.   I would rather use the source
-> > > > and fix the nmi emulation in KVM/Qemu after we hear back the results
-> > > 
-> > > Well I think Peter does not have a positive opinion about emulating perf
-> > > inside a guest.  Nor are the KVM folks having much success in doing so.
-> > > 
-> > > Just to clarify, perf counter emulation is _not_ implemented in kvm.
-> > > Therefore disabling perf in the guest makes sense until someone gets
-> > > around to actually writing the emulation code for perf in a guest. :-)
-> > > 
-> > > Cheers,
-> > > Don
-> > 
-> >  Don, Robert,
-> > 
-> >  I still have suspicious on ours 'pending' nmi handler. Look what I mean --
-> > (keep in mind that p4 has a a way more counters than others).
-> > 
+Vladislav Bolkhovitin, on 11/16/2010 04:17 PM wrote:
+> Your questions are very good, so let's summarize what we need to serve
+> the needs of a SCSI target subsystem (not necessary SCST) and see what
+> can fit them.
 > 
->  To be precise -- it seems this scenario may force the back-to-back
-> nmi handler to eat unknown nmi.
+> So, the needs:
+> 
+> 1. Be capable to represent to user space internal configuration to let
+> user space be able to see and analyze it, including various statistics.
+> 
+> 2. Let user space manage the internal configuration.
+> 
+> 3. Desired: possibility to send to user space events about important
+> internal actions, like I/O failures, which may need user space
+> intervention to recover, like switching from active to passive role in a
+> cluster.
+> 
+> So, what can we do with ConfigFS:
+> 
+> (1): Only partially, because by design ConfigFS isn't supposed to
+> represent internal configuration, it can only manage it. Extending
+> ConfigFS to be capable to do that would be, in my understanding, a
+> strong violation of its purpose and, hence, design and if went this way
+> eventually ConfigFS would become just a duplication of the SYSFS
+> functionality.
+> 
+> (2): ConfigFS can do that. This is exactly for what it was designed and
+> implemented. But in this particular application it would have some
+> limitations derived from (1): to manage harware-related entries a user
+> should magically know from somewhen names of those entries to create
+> them by "mkdir" command.
+> 
+> For instance, consider a user has a Fibre Channel HBA and want to use it
+> in the target mode. Before he can configure it, he should somehow know
+> its ports names and for each of them run:
+> 
+> # mkdir /sys/kernel/config/.../50:50:00:00:00:00:00:11
+> # mkdir /sys/kernel/config/.../50:50:00:00:00:00:00:12
+> ...
+> 
+> where 50:50:00:00:00:00:00:1x are the ports' names. Only after that
+> those ports appear on the ConfigFS and can be managed.
+> 
+> (3): No events at all.
+> 
+> Now consider SYSFS:
+> 
+> (1): Easily. This is exactly for what it was designed and implemented.
+> 
+> (2): Possible without any limitations and side effects.
+> 
+> (3): Also possible.
+> 
+> So, why not use SYSFS if it suits all the needs _without_ any additional
+> effort and patches?
+> 
+> Other alternatives? A set of custom IOCTLs? One more configuration FS? I
+> believe, those would be quite disgusting for all.
+> 
+>> Maybe I misunderstand - But if both sides have merit then wouldn't a
+>> compromise be appropriate?
+>>
+>> Maybe the sensical compromise is to use sysfs code to create a new
+>> namespace that would fit this purpose?  It seems that I am also
+>> hearing that the alternatives to sysfs aren't always adequate - so
+>> why not use sysfs, but have a place where it's appropriate to use it?
+> 
+> This is exactly what we are proposing: to use SYSFS in additional
+> namespace /sys/kernel/scst_tgt.
+> 
+> As far as I can see, only Greg is against it. Greg keeps his reasons
+> private, so I can only guess that Greg is against extending usage of
+> SYSFS (note, _usage_, not implementation! Everything needed long ago
+> implemented.) beyond the scope it was originally designed around 10
+> years ago. But SYSFS is already widely used this way in the kernel, as
+> Joe illustrated, hence there is demand for it. People need it. So, why
+> not to just acknowledge this fact and go ahead the simplest and most
+> useful for both users and developers way?
 
-That was the point of the change to do exactly that.
+Since nobody objected, Greg, could you consider to ACK SCST SYSFS
+management interface in /sys/kernel/scst_tgt/, please? Please find the
+SCST SYSFS ABI documentation file you requested below.
 
-The problem is/was when you go to check to see if the period expired in
-x86_perf_event_set_period(), you refresh the perf counter.  The next step
-is to see if the event period has expired, if so disabled the 'active'
-bit.
+We are also preparing a new patch to free our objects in kobjects.release()
+without explicit x_initialized flags as you requested.
 
-However, there is a race between when you refresh the counter to when you
-actually disable it, such that you may cause the counter to overflow again
-and thus generate another NMI.  The whole ->running thing was implemented
-by Robert to try and check for that condition and eat the NMI as we have
-no intention of handling it (because it is bogus).
+Thank you for your effort,
+Vlad
 
-The alternative is to use another rdmsrl to actually see if we trigger
-another NMI.  This was deemed a performance hit for such a small case.
+Documentation/ABI/testing/sysfs-scst:
 
-Cheers,
-Don
+What:		/sys/kernel/scst_tgt/
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Contains SCST management interface entries.
+
+What:		/sys/kernel/scst_tgt/devices/
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Contains subdirectories for all SCST devices
+
+What:		/sys/kernel/scst_tgt/devices/<device>/exported/exportX
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Links to LUNs in the LUNs group where <device> exported, e.g. to
+		/sys/kernel/scst_tgt/targets/iscsi/iqn.2006-10.net.vlnb:tgt/luns/11
+
+What:		/sys/kernel/scst_tgt/devices/<device>/handler
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Link to dev handler of this device, if assigned, e.g. to
+		/sys/kernel/scst_tgt/handlers/dev_disk
+
+What:		/sys/kernel/scst_tgt/devices/<device>/type
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		SCSI type of this device as define by SAM.
+
+What:		/sys/kernel/scst_tgt/handlers/
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Contains all SCST dev handlers.
+
+What:		/sys/kernel/scst_tgt/handlers/<handler>/<device>
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Links to <device> managed by this dev handler, e.g.
+		ext3_disk1_4K -> /sys/kernel/scst_tgt/devices/ext3_disk1_4K
+
+What:		/sys/kernel/scst_tgt/handlers/<handler>/mgmt
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Management entry, which allows to create and delete
+		devices for this dev handler. See SysfsRules file for more
+		info.
+
+What:		/sys/kernel/scst_tgt/handlers/<handler>/type
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		SCSI type of this dev handler as define by SAM.
+
+What:		/sys/kernel/scst_tgt/sgv/
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Contains SCST SGV caches statistics.
+
+What:		/sys/kernel/scst_tgt/sgv/global_stats
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Contains global SGV cache statistics.
+
+What:		/sys/kernel/scst_tgt/sgv/<cache>/stats
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Contains statistics for SGV cache <cache>
+
+What:		/sys/kernel/scst_tgt/targets/
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Contains all SCST target drivers
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Contains all targets for <target_driver>
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/mgmt
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Optional management entry, which allows to create and
+		delete targets for this target driver. See SysfsRules
+		file for more info.
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/enable
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Optional attribute to enable <target_driver> and make it serve
+		incoming connections from initiators. Possible values:
+		1 - enable
+		0 - disable
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/ini_groups/
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Contains security groups for <target>
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/ini_groups/mgmt
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Allows to create and delete security groups for <target>.
+		See README.scst for more info.
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/ini_groups/<group>/initiators/mgmt
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Allows to add and delete initiators to/from <group>.
+		See README.scst for more info.
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/ini_groups/<group>/initiators/<initiator_name>
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		One or more initiators in <group>. Contains initiator's name.
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/ini_groups/<group>/luns/mgmt
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Allows to add and delete LUNs to/from <group>. See README.scst
+		for more info.
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/ini_groups/<group>/luns/<lun>/device
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Link to device for <lun>, e.g. to /sys/kernel/scst_tgt/devices/ext3_disk1_4K
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/ini_groups/<group>/luns/<lun>/read_only
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Sets if this LUN should be read only
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/ini_groups/<group>/addr_method
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Sets SCSI addressing method for <group>. See README.scst
+		for more info.
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/ini_groups/<group>/cpu_mask
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Sets CPU mask for threads serving initiators in <group>.
+		See README.scst for more info.
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/ini_groups/<group>/io_grouping_type
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Sets IO grouping types for threads serving initiators
+		in <group>. See README.scst for more info.
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/luns/mgmt
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Allows to add and delete LUNs to/from the <target>'s default
+		set of LUNs. See README.scst for more info.
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/luns/<lun>/device
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Link to device for <lun>, e.g. to /sys/kernel/scst_tgt/devices/ext3_disk1_4K
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/luns/<lun>/read_only
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Sets if this LUN should be read only
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/addr_method
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Sets SCSI addressing method for the <target>'s default
+		set of LUNs. See README.scst for more info.
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/cpu_mask
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Sets CPU mask for threads serving initiators in the
+		<target>'s default set of LUNs. See README.scst for more info.
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/io_grouping_type
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Sets IO grouping types for threads serving initiators
+		in the <target>'s default set of LUNs. See README.scst
+		for more info.
+
+What:		/sys/kernel/scst_tgt/targets/<target_driver>/<target>/enable
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Optional attribute to enable <target> and make it serve
+		incoming connections from initiators. Possible values:
+		1 - enable
+		0 - disable
+
+What:		/sys/kernel/scst_tgt/last_sysfs_mgmt_res
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Returning completion status of the last management
+		command. See README.scst for more info.
+
+What:		/sys/kernel/scst_tgt/setup_id
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Allows to read and write SCST setup ID. This ID can be
+		used in cases, when the same SCST configuration should
+		be installed on several targets, but exported from those
+		targets devices should have different IDs and SNs. For
+		instance, VDISK dev handler uses this ID to generate T10
+		vendor specific identifier and SN of the devices.
+
+What:		/sys/kernel/scst_tgt/threads
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Allows to read and set number of global SCST I/O
+		threads. Those threads used with async. dev handlers,
+		for instance, vdisk BLOCKIO or NULLIO
+
+What:		/sys/kernel/scst_tgt/version
+Date:		November 2010
+Contact:	Vladislav Bolkhovitin <vst@vlnb.net>
+Description:
+		Allows to see version of SCST and enabled optional features.
+
