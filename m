@@ -1,77 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184Ab0KRHcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 02:32:17 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:46927 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751331Ab0KRHcQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 02:32:16 -0500
-Date: Thu, 18 Nov 2010 08:31:26 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: Marcus Meissner <meissner@suse.de>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, tj@kernel.org, akpm@osdl.org,
-        hpa@zytor.com, w@1wt.eu, alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
- attacking
-Message-ID: <20101118073126.GB32621@elte.hu>
-References: <20101116104600.GA24015@suse.de>
- <AANLkTi=F1vbwpOzyN9o0nuRtsEUTQx2j3==kLu9j7Ccb@mail.gmail.com>
+	id S1755206Ab0KRHgA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 02:36:00 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:62328 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750975Ab0KRHf7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 02:35:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=L8EeDa5JBxfbqF/UW/pHFXto0SWE1E0EQgWLfOGJdlaB+M9JYIQMM0cPQ3mrKMiCqt
+         HbfFMGcwkLcWs50f3xkFlM16QZv6O3MN+UBAtLl6Kc1HTj7G39+S2IJeN8oJ1WYA1bEH
+         JVp1jB9Hcui2r//G0YfHUlOHOl71U/OrBL8xw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=F1vbwpOzyN9o0nuRtsEUTQx2j3==kLu9j7Ccb@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20101117212943.GA6661@core.coreip.homeip.net>
+References: <1289977165-14802-1-git-send-email-ike.pan@canonical.com>
+	<1289977238-15113-1-git-send-email-ike.pan@canonical.com>
+	<20101117212943.GA6661@core.coreip.homeip.net>
+Date: Thu, 18 Nov 2010 08:35:58 +0100
+Message-ID: <AANLkTim1DKZkCqB1mLg5=7UTd2szCoSS_DSO8v3jHTmy@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ideapad: add hotkey support
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Ike Panhc <ike.pan@canonical.com>, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Nov 17, 2010 at 10:29 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Wed, Nov 17, 2010 at 03:00:38PM +0800, Ike Panhc wrote:
+>> Hotkey enabled by this patch:
+>>   Fn+F3: Video mode switch
+>>   Fn+F5: software rfkill for wifi
+>>
+>> For some ideapad when push Fn+F3, hardware generates Super-P keys, those key
+>> will not be enabled by this patch.
+>>
+>> Signed-off-by: Ike Panhc <ike.pan@canonical.com>
+>> ---
+>>  drivers/platform/x86/ideapad-laptop.c |   74 +++++++++++++++++++++++++++++++++
+>>  1 files changed, 74 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
+>> index d75c21f..d397034 100644
+>> --- a/drivers/platform/x86/ideapad-laptop.c
+>> +++ b/drivers/platform/x86/ideapad-laptop.c
+>> @@ -28,6 +28,8 @@
+>>  #include <acpi/acpi_drivers.h>
+>>  #include <linux/rfkill.h>
+>>  #include <linux/platform_device.h>
+>> +#include <linux/input.h>
+>> +#include <linux/input/sparse-keymap.h>
+>>
+>>  #define IDEAPAD_DEV_CAMERA   0
+>>  #define IDEAPAD_DEV_WLAN     1
+>> @@ -39,6 +41,7 @@ struct ideapad_private {
+>>       acpi_handle handle;
+>>       struct rfkill *rfk[5];
+>>       struct platform_device *platform_device;
+>> +     struct input_dev *inputdev;
+>>  } *ideapad_priv;
+>>
+>>  static struct {
+>> @@ -325,6 +328,68 @@ static void ideapad_platform_exit(void)
+>>  }
+>>  /* the above is platform device */
+>>
+>> +/*
+>> + * input device
+>> + */
+>> +static const struct key_entry ideapad_keymap[] = {
+>> +     { KE_KEY, 0x06, { KEY_SWITCHVIDEOMODE } },
+>> +     { KE_KEY, 0x0D, { KEY_WLAN } },
+>> +     { KE_END, 0 },
+>> +};
+>> +
+>> +static int ideapad_input_init(void)
+>
+> __devinit?
+>
+>> +{
+>> +     struct input_dev *inputdev;
+>> +     int error;
+>> +
+>> +     inputdev = input_allocate_device();
+>> +     if (!inputdev) {
+>> +             pr_info("Unable to allocate input device\n");
+>> +             return -ENOMEM;
+>> +     }
+>> +
+>> +     inputdev->name = "Ideapad extra buttons";
+>> +     inputdev->phys = "ideapad/input0";
+>> +     inputdev->id.bustype = BUS_HOST;
+>> +     inputdev->dev.parent = &ideapad_priv->platform_device->dev;
+>> +
+>> +     error = sparse_keymap_setup(inputdev, ideapad_keymap, NULL);
+>> +     if (error) {
+>> +             pr_err("Unable to setup input device keymap\n");
+>> +             goto err_free_dev;
+>> +     }
+>> +
+>> +     error = input_register_device(inputdev);
+>> +     if (error) {
+>> +             pr_err("Unable to register input device\n");
+>> +             goto err_free_keymap;
+>> +     }
+>> +
+>> +     ideapad_priv->inputdev = inputdev;
+>
+> Why don't you pass ideapad_priv in as an argument instead of relying on
+> global. I know that there can only be one, but then why do you have a
+> structure?
 
-Putting aside the kallsyms patch (which is a tiny part of a fuller solution), i'd 
-like to reply to this particular point:
+That may allow to remove the global later, like we did on
+eeepc-laptop/asus-laptop.
 
-* Kyle Moffett <kyle@moffetthome.net> wrote:
+>> +     return 0;
+>> +
+>> +err_free_keymap:
+>> +     sparse_keymap_free(inputdev);
+>> +err_free_dev:
+>> +     input_free_device(inputdev);
+>> +     return error;
+>> +}
+>> +
+>> +static void ideapad_input_exit(void)
+>
+> __devexit? The rest of the driver might user these markups as well.
+>
+>> +{
+>> +     if (ideapad_priv->inputdev) {
+>> +             sparse_keymap_free(ideapad_priv->inputdev);
+>> +             input_unregister_device(ideapad_priv->inputdev);
+>> +     }
+>> +     ideapad_priv->inputdev = NULL;
+>
+> You fail driver initialization when ideapad_input_init() fails so there
+> is no point in checking whether ideapad_priv->inputdev is null or not.
+>
+> Otherwise looks good from input POV.
+>
+> Thanks.
 
->   (2) Most of the arguments about introducing "uncertainty" into the
-> hacking process are specious as well. [...]
 
-It is only specious if you ignore the arguments i made in the previous
-discussion. One argument i made was:
 
-  Future trends are also clear: eventually, as more and more of our lives
-  are lived on the network, home boxes are becoming more and more valuable.
-  So i think concentrating on the psychology of the skilled attacker would
-  not be unwise. YMMV.
-
->                                  [...]  If a kernel bug is truly a
-> "workable" vulnerability then 99%+ of the attempts to exploit it would
-> be completely automated virii and computer worms that don't really
-> care what happens if they fail to compromise the system.  Take a look
-> at the vast collection of sample code we have in the form of Windows
-> virii/trojans/worms/malware/etc; care to guess what portion of those
-> programs authors would shed a tear if their exploit horribly crashed
-> or generated vast amounts of audit spam for 70% of the computers it
-> executed on?
-
-( You'd be a fool to think that even windows malware authors do not care
-  whether they crash the target box. You do not get a botnet of 10 million PCs if
-  you crash 99% of them. There is an analogous concept for this in biology: if a
-  biological virus is _too_ deadly, it will never become a pandemic - because it has
-  no time/chance to spread, they are 'detected' and 'defended against'. Virii like
-  Ebola never spread widely, because they kill all their hosts. )
-
-More importantly, look forward and take a look at the really intelligent attacks, 
-which are used against high-value targets with good defenses. Those real examples 
-give us a glimpse into future techniques, even if you do not accept my arguments 
-that come to a similar conclusion. Those attacks are all about avoiding detection.
-
-Thanks,
-
-	Ingo
+-- 
+Corentin Chary
+http://xf.iksaif.net
