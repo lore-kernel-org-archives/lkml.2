@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933515Ab0KSAJU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 19:09:20 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:35192 "EHLO ogre.sisk.pl"
+	id S933548Ab0KSAJX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 19:09:23 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:35219 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933478Ab0KSAJP convert rfc822-to-8bit (ORCPT
+	id S933520Ab0KSAJU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 19:09:15 -0500
+	Thu, 18 Nov 2010 19:09:20 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, "Jan Kara" <jack@suse.cz>,
-        "" <markus.gapp@gmx.net>
+        Florian Mickler <florian@mickler.org>, "xudong" <xudong.hao@intel.com>
 References: <tTUH_XeInOH.A.dMF.c3b5MB@chimera>
 In-Reply-To: <tTUH_XeInOH.A.dMF.c3b5MB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <t78YtCSuOqN.A.pIG.K4b5MB@chimera>
-Subject: [Bug #21092] Kernel 2.6.36 Bug during quotaon on reiserfs
+Message-ID: <t78YtCSuOqN.A.29F.E4b5MB@chimera>
+Subject: [Bug #21402] [KVM] Noacpi Windows guest can not boot up on 32bit KVM host
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 19 Nov 2010 00:53:38 +0100 (CET)
+Date: Fri, 19 Nov 2010 00:53:39 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,11 +33,9 @@ introduced between 2.6.35 and 2.6.36.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=21092
-Subject		: Kernel 2.6.36 Bug during quotaon on reiserfs
-Submitter	:  <markus.gapp@gmx.net>
-Date		: 2010-10-24 16:57 (26 days old)
-Handled-By	: Jan Kara <jack@suse.cz>
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=35292
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=21402
+Subject		: [KVM] Noacpi Windows guest can not boot up on 32bit KVM host
+Submitter	: xudong <xudong.hao@intel.com>
+Date		: 2010-10-29 03:01 (21 days old)
 
 
