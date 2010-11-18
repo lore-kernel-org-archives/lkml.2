@@ -1,62 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760909Ab0KRXpt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:45:49 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53404 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab0KRXpt (ORCPT
+	id S1760898Ab0KRXqd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:46:33 -0500
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:53342 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754277Ab0KRXqc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:45:49 -0500
-Date: Thu, 18 Nov 2010 15:45:27 -0800
-From: Joel Becker <Joel.Becker@oracle.com>
-To: dann frazier <dann.frazier@canonical.com>
-Cc: ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [Ocfs2-devel] [PATCH] [OCFS2] ocfs2_connection_find() returns
- pointer to bad structure
-Message-ID: <20101118234527.GL19821@mail.oracle.com>
-Mail-Followup-To: dann frazier <dann.frazier@canonical.com>,
-	ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org
-References: <1290117789-3915-1-git-send-email-dann.frazier@canonical.com>
+	Thu, 18 Nov 2010 18:46:32 -0500
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h67dh685h)
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw01.freescale.net;RD:de01egw01.freescale.net;EFVD:NLI
+From: <Dinh.Nguyen@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCH] ARM: imx: Return the correct chip version instead of zero for mx51 and mx53
+Date: Thu, 18 Nov 2010 17:51:41 -0600
+Message-ID: <1290124301-6286-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290117789-3915-1-git-send-email-dann.frazier@canonical.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 03:03:09PM -0700, dann frazier wrote:
-> If ocfs2_live_connection_list is empty, ocfs2_connection_find() will return
-> a pointer to the LIST_HEAD, cast as a ocfs2_live_connection. This can cause
-> an oops when ocfs2_control_send_down() dereferences c->oc_conn:
-> 
-> Call Trace:
->   [<ffffffffa00c2a3c>] ocfs2_control_message+0x28c/0x2b0 [ocfs2_stack_user]
->   [<ffffffffa00c2a95>] ocfs2_control_write+0x35/0xb0 [ocfs2_stack_user]
->   [<ffffffff81143a88>] vfs_write+0xb8/0x1a0
->   [<ffffffff8155cc13>] ? do_page_fault+0x153/0x3b0
->   [<ffffffff811442f1>] sys_write+0x51/0x80
->   [<ffffffff810121b2>] system_call_fastpath+0x16/0x1b
-> 
-> Fix by explicitly returning NULL if no match is found.
-> 
-> Signed-off-by: dann frazier <dann.frazier@canonical.com>
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-	This patch is now in the fixes branch of ocfs2.git.
+get_mx51_srev() and get_mx53_srev() are returning zero so cpu_silicon_rev
+becomes zero instead of the correct chip version.
 
-Joel
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/mach-mx5/cpu.c |   10 ++++------
+ 1 files changed, 4 insertions(+), 6 deletions(-)
 
+diff --git a/arch/arm/mach-mx5/cpu.c b/arch/arm/mach-mx5/cpu.c
+index 974a22f..0949251 100644
+--- a/arch/arm/mach-mx5/cpu.c
++++ b/arch/arm/mach-mx5/cpu.c
+@@ -22,22 +22,20 @@ static int cpu_silicon_rev = -1;
+ 
+ #define SREV 0x24
+ 
+-static int get_mx51_srev(u32 rev)
++static void get_mx51_srev(u32 rev)
+ {
+ 	if (rev == 0x0)
+ 		cpu_silicon_rev = IMX_CHIP_REVISION_2_0;
+ 	else if (rev == 0x10)
+ 		cpu_silicon_rev = IMX_CHIP_REVISION_3_0;
+-	return 0;
+ }
+ 
+-static int get_mx53_srev(u32 rev)
++static void get_mx53_srev(u32 rev)
+ {
+ 	if (rev == 0x0)
+ 		cpu_silicon_rev = IMX_CHIP_REVISION_1_0;
+ 	else if (rev == 0x10)
+ 		cpu_silicon_rev = IMX_CHIP_REVISION_2_0;
+-	return 0;
+ }
+ 
+ static void query_silicon_parameter(void)
+@@ -54,9 +52,9 @@ static void query_silicon_parameter(void)
+ 
+ 	cpu_silicon_rev = 0;
+ 	if (cpu_is_mx51())
+-		cpu_silicon_rev = get_mx51_srev(rev);
++		get_mx51_srev(rev);
+ 	else if(cpu_is_mx53())
+-		cpu_silicon_rev = get_mx53_srev(rev);
++		get_mx53_srev(rev);
+ }
+ 
+ /*
 -- 
+1.6.0.4
 
-"I don't even butter my bread; I consider that cooking."
-         - Katherine Cebrian
 
-Joel Becker
-Senior Development Manager
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
