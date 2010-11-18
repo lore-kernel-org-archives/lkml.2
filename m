@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757717Ab0KRTEs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 14:04:48 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:19496 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753602Ab0KRTEr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 14:04:47 -0500
-Date: Thu, 18 Nov 2010 11:04:09 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [build failure] Re: BKL: remove extraneous #include
- <smp_lock.h>
-Message-Id: <20101118110409.f9c8d7d2.randy.dunlap@oracle.com>
-In-Reply-To: <20101118190205.GB10827@elte.hu>
-References: <201011172159.oAHLx1tu001236@hera.kernel.org>
-	<20101117140526.d532b373.randy.dunlap@oracle.com>
-	<AANLkTimO6CN9wOQco_1bqRmwBS7KfWW1CvumKFuiOWGH@mail.gmail.com>
-	<20101118094342.GA10382@elte.hu>
-	<AANLkTi=Xoo90jiaQBMxchFkKXt0dgre0tWe-LnVR6aSD@mail.gmail.com>
-	<AANLkTikV+KVmwKg4jS2KPG+9EFdd9qD-VUak4qOgFgr4@mail.gmail.com>
-	<20101118190205.GB10827@elte.hu>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752849Ab0KRTJR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 14:09:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32729 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750975Ab0KRTJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 14:09:16 -0500
+Date: Thu, 18 Nov 2010 20:08:39 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/8] mm: compaction: Perform a faster scan in
+ try_to_compact_pages()
+Message-ID: <20101118190839.GF30376@random.random>
+References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie>
+ <1290010969-26721-7-git-send-email-mel@csn.ul.ie>
+ <20101118183448.GC30376@random.random>
+ <20101118185046.GQ8135@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101118185046.GQ8135@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010 20:02:05 +0100 Ingo Molnar wrote:
+On Thu, Nov 18, 2010 at 06:50:46PM +0000, Mel Gorman wrote:
+> For THP in general, I think we can abuse __GFP_NO_KSWAPD. For other callers,
+> I'm not sure it's fair to push the responsibility of async/sync to them. We
+> don't do it for reclaim for example and I'd worry the wrong decisions would
+> be made or that they'd always select async for "performance" and then bitch
+> about an allocation failure.
 
-> 
-> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 
-> > On Thu, Nov 18, 2010 at 7:57 AM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> > >
-> > > How painful would it be to move lock_depth into thread_struct? I guess
-> > > we don't have anything that cares about structure offsets in assembly
-> > > for that thing.  I should just try.
-> > 
-> > Gaah, the only generic field there is the restart_block, so we'd have
-> > to hide it there, or then add it to each architecture. So scratch
-> > that.
-> > 
-> > I guess this is the simplest approach.
-> > 
-> >                          Linus
-> 
-> >  include/linux/hardirq.h |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-> > index 714da7e..32f9fd6 100644
-> > --- a/include/linux/hardirq.h
-> > +++ b/include/linux/hardirq.h
-> > @@ -94,6 +94,7 @@
-> >  #define in_nmi()	(preempt_count() & NMI_MASK)
-> >  
-> >  #if defined(CONFIG_PREEMPT) && defined(CONFIG_BKL)
-> > +# include <linux/sched.h>
-> >  # define PREEMPT_INATOMIC_BASE (current->lock_depth >= 0)
-> >  #else
-> >  # define PREEMPT_INATOMIC_BASE 0
-> 
-> Hey, i will quote this patch in the future, when you flame me about some ugly 
-> compatibility hack ;-)
-> 
-> I guess it will all go away with CONFIG_BKL so we dont really care so deeply. I'll 
-> test it.
+Ok, let's leave the __GFP and let's stick to the simplest for now
+without alloc_pages caller knowledge.
 
+> My only whinge about the lack of reclaimcompact_zone_order is that it
+> makes it harder to even contemplate lumpy compaction in the future but
+> it could always be reintroduced if absolutely necessary.
 
-Ingo, I built it with your posted config file.
+Ok. I don't know the plan of lumpy compaction and that's probably why
+I didn't appreciate it...
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+So my preference as usual would be to remove lumpy. BTW, everything up
+to patch 3 included should work fine with THP and solve my problem
+with lumpy, thanks!
+
+> GFP flags would be my last preference. 
+
+yep. I'm just probably too paranoid at being lowlatency in the
+hugepage allocation because I know it's the only spot where THP may
+actually introduce a regression for short lived tasks if we do too
+much work to create the hugepage. OTOH even for short lived allocation
+on my westmire a bzero(1g) runs 250% (not 50% faster like in the older
+hardware I was using) faster just thanks to the page being huge and
+I'm talking about super short lived allocation here (the troublesome
+one if we spend too much time in compaction and reclaim before
+failing). Plus it only makes a difference when hugepages are so spread
+across the whole system and it's still doing purely short lived
+allocations. So again let's worry about the GFP flag later if
+something... this is already an huge latency improvement (very
+appreciated) compared to current upstream even without GPF flag ;)
+like your .ps files show clearly.
