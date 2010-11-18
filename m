@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933074Ab0KRX5P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:57:15 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34882 "EHLO ogre.sisk.pl"
+	id S933181Ab0KRX5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:57:34 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:34891 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933007Ab0KRX5M convert rfc822-to-8bit (ORCPT
+	id S933080Ab0KRX5b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:57:12 -0500
+	Thu, 18 Nov 2010 18:57:31 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Thomas Meyer" <thomas@m3y3r.de>
+        Florian Mickler <florian@mickler.org>, "Tobias" <devnull@plzk.org>
 References: <sKkKYVppECN.A.KhC.Phb5MB@chimera>
 In-Reply-To: <sKkKYVppECN.A.KhC.Phb5MB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <ATV3yiK8i4C.A.3tE.Tib5MB@chimera>
-Subject: [Bug #22532] 2.6.37-rc1: BUG: scheduling while atomic (kvm_init)
+Message-ID: <ATV3yiK8i4C.A.0EE.Gib5MB@chimera>
+Subject: [Bug #22652] [drm:i915_gem_mmap_gtt_ioctl] *ERROR* Attempting to mmap a purgeable buffer
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 19 Nov 2010 00:42:44 +0100 (CET)
+Date: Fri, 19 Nov 2010 00:42:46 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,11 +33,9 @@ from 2.6.36.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22532
-Subject		: 2.6.37-rc1: BUG: scheduling while atomic (kvm_init)
-Submitter	: Thomas Meyer <thomas@m3y3r.de>
-Date		: 2010-11-02 19:06 (17 days old)
-Message-ID	: <50AA24C585B14210A44AB599605C7CBD@hugo>
-References	: http://marc.info/?l=linux-kernel&m=128872479921559&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22652
+Subject		: [drm:i915_gem_mmap_gtt_ioctl] *ERROR* Attempting to mmap a purgeable buffer
+Submitter	: Tobias <devnull@plzk.org>
+Date		: 2010-11-10 21:59 (9 days old)
 
 
