@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755682Ab0KRInE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 03:43:04 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:35842 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab0KRInD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 03:43:03 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Scmtdmy++6YjY2c3u6GeoAwGB7geOUj/gmgDgo/Lo3Bt3l+r8c0NhYCNdj7dCle4Gd
-         W4dpCU5nh2F1Ydv63UNLFEAiiqtJxD2ImElt6/GAKooZE2590ptQYGZGpfXlw1zjdXY/
-         jXf3zo0yMo0y3JkdKCWm3wjPNvdh+o5Cy6jSU=
+	id S1755710Ab0KRInH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 03:43:07 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:41645 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755540Ab0KRInF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 03:43:05 -0500
+Date: Thu, 18 Nov 2010 09:42:57 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
+        yinghai@kernel.org
+Subject: Re: [PATCH 4/9 UPDATED-1] x86: Initialize 32bit logical apicid
+ mapping early during boot
+Message-ID: <20101118084257.GF26398@elte.hu>
+References: <1289473363-29440-1-git-send-email-tj@kernel.org>
+ <1289473363-29440-5-git-send-email-tj@kernel.org>
+ <4CDD17EC.8000507@kernel.org>
+ <20101118083045.GB26398@elte.hu>
+ <4CE4E655.30207@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20101116193646.GB12492@kroah.com>
-References: <1289384128-19823-1-git-send-email-marek.belisko@gmail.com>
-	<1289384128-19823-2-git-send-email-marek.belisko@gmail.com>
-	<20101111002651.GA21632@kroah.com>
-	<AANLkTimteY1P_gU5+ArA8xg3FzS0m9kdQygXSptvhGuh@mail.gmail.com>
-	<20101116193646.GB12492@kroah.com>
-Date: Thu, 18 Nov 2010 09:43:00 +0100
-Message-ID: <AANLkTinEvAXRGdgoWfzRx3Q8xSfkuTLhn21AoV3iz0ih@mail.gmail.com>
-Subject: Re: [PATCH 2/3] staging: ft1000: Remove unused char dev inerface.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE4E655.30207@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
 
-On Tue, Nov 16, 2010 at 8:36 PM, Greg KH <greg@kroah.com> wrote:
-> On Sat, Nov 13, 2010 at 08:05:40PM +0100, Belisko Marek wrote:
->> Hi Greg,
->>
->> On Thu, Nov 11, 2010 at 1:26 AM, Greg KH <greg@kroah.com> wrote:
->> > On Wed, Nov 10, 2010 at 11:15:27AM +0100, Marek Belisko wrote:
->> >> This patch remove lot of code for character device. This
->> >> interface was used for getting network informations and
->> >> statistics which is currently exported via /proc filesystem.
->> >>
->> >> Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
->> >
->> > This patch does not apply :(
->> I'm trying to resend but need to wait till linux-next will sync with
->> linus kernel.
->> In mainline there is a patch (61241d97db02559bd83d21ffa783ab327945b925) which
->> is not in linux-next.
->>
->> I try to apply patch for mainline but it failed. I'll fix and resend then.
->> Hopefully this is correct if not forgive me ;)
->
-> Everything should be synced up now, please resync and resend.
-I'll change my mind and from this patch series I'll resend just 1/3 patch.
-Patch 2/3 (followed by 3/3) is maybe not correct because it completely
-remove access to
-device from user space through /dev interface (used for debugging and testing).
+* Tejun Heo <tj@kernel.org> wrote:
 
-My first idea was just remove it completely because we have a device which just
-connect to network and don't need to have some debug interface.
+> Hey, Ingo.
+> 
+> On 11/18/2010 09:30 AM, Ingo Molnar wrote:
+> > This patch is still _WAY_ too large.
+> 
+> Really?  Alright, I'll split it further.
 
-Anyway I'll change creation of device in kernel via kernel threads
-which is not from my
-point of view correct.
+This is a very sensitive area of code that tends to blow up in nasty ways. So when 
+we do changes here we want them super-finegrained. If you split it up into 30 
+reasonable patches - no problem at all. (here up to 5 would suffice i think)
 
->
-> thanks,
->
-> greg k-h
->
+Yinghai used to have this too big patches illness too.
 
-thanks,
+> > Also, these:
+> > 
+> >> +#ifdef CONFIG_X86_32
+> >> +#endif
+> > 
+> >> +#ifdef CONFIG_X86_32
+> >> +#endif
+> > 
+> >> +#ifdef CONFIG_X86_32
+> >> +#endif
+> > 
+> >> +#ifdef CONFIG_X86_32
+> >> +#endif
+> > 
+> > Are rather ugly.
+> 
+> Yeah, what they do is ugly.  It gets less uglier after the patchset.
+> I'll see if some of them can be dropped but I don't think putting them
+> inside ifdef'd inline functions necessarily improves things.  It often
+> just makes things more difficult to follow.
 
-marek
+Can we remove them? Or does it make any sense on the 64-bit side?
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+Thanks,
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-icq: 290551086
-web: http://open-nandra.com
+	Ingo
