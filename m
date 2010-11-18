@@ -1,238 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab0KRBlB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 20:41:01 -0500
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:58083 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751371Ab0KRBk7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 20:40:59 -0500
-Date: Thu, 18 Nov 2010 12:40:51 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/13] IO-less dirty throttling
-Message-ID: <20101118014051.GR22876@dastard>
-References: <20101117035821.000579293@intel.com>
- <20101117072538.GO22876@dastard>
- <20101117100655.GA26501@localhost>
+	id S1753550Ab0KRBo0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 20:44:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33052 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752621Ab0KRBoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 20:44:24 -0500
+Date: Wed, 17 Nov 2010 20:43:39 -0500
+From: Josef Bacik <josef@redhat.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Josef Bacik <josef@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias
+Message-ID: <20101118014339.GJ5618@dhcp231-156.rdu.redhat.com>
+References: <1290016263-1637-1-git-send-email-josef@redhat.com> <20101117191817.GA26575@fieldses.org> <20101117192822.GB3818@localhost.localdomain> <20101117202617.GA31009@fieldses.org> <1290031941.14282.101.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101117100655.GA26501@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1290031941.14282.101.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 06:06:55PM +0800, Wu Fengguang wrote:
-> On Wed, Nov 17, 2010 at 03:25:38PM +0800, Dave Chinner wrote:
-> > On Wed, Nov 17, 2010 at 11:58:21AM +0800, Wu Fengguang wrote:
-> > > Andrew,
-> > >
-> > > This is a revised subset of "[RFC] soft and dynamic dirty throttling limits"
-> > > <http://thread.gmane.org/gmane.linux.kernel.mm/52966>.
-> > >
-> > > The basic idea is to introduce a small region under the bdi dirty threshold.
-> > > The task will be throttled gently when stepping into the bottom of region,
-> > > and get throttled more and more aggressively as bdi dirty+writeback pages
-> > > goes up closer to the top of region. At some point the application will be
-> > > throttled at the right bandwidth that balances with the device write bandwidth.
-> > > (the first patch and documentation has more details)
-> > >
-> > > Changes from initial RFC:
-> > >
-> > > - adaptive ratelimiting, to reduce overheads when under throttle threshold
-> > > - prevent overrunning dirty limit on lots of concurrent dirtiers
-> > > - add Documentation/filesystems/writeback-throttling-design.txt
-> > > - lower max pause time from 200ms to 100ms; min pause time from 10ms to 1jiffy
-> > > - don't drop the laptop mode code
-> > > - update and comment the trace event
-> > > - benchmarks on concurrent dd and fs_mark covering both large and tiny files
-> > > - bdi->write_bandwidth updates should be rate limited on concurrent dirtiers,
-> > >   otherwise it will drift fast and fluctuate
-> > > - don't call balance_dirty_pages_ratelimit() when writing to already dirtied
-> > >   pages, otherwise the task will be throttled too much
-> > >
-> > > The patches are based on 2.6.37-rc2 and Jan's sync livelock patches. For easier
-> > > access I put them in
-> > >
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/wfg/writeback.git dirty-throttling-v2
+On Wed, Nov 17, 2010 at 05:12:21PM -0500, Eric Paris wrote:
+> On Wed, 2010-11-17 at 15:26 -0500, J. Bruce Fields wrote:
+> > On Wed, Nov 17, 2010 at 02:28:22PM -0500, Josef Bacik wrote:
+> > > On Wed, Nov 17, 2010 at 02:18:17PM -0500, J. Bruce Fields wrote:
+> > > > On Wed, Nov 17, 2010 at 12:51:03PM -0500, Josef Bacik wrote:
+> > > > > While trying to track down some NFS problems with BTRFS, I kept noticing I was
+> > > > > getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
+> > > > > figure out that it was SELinux that was giving me grief, with the following
+> > > > > denial
+> > > > > 
+> > > > > type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
+> > > > > comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
+> > > > > tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
+> > > > > 
+> > > > > Turns out this is because in d_obtain_alias if we can't find an alias we create
+> > > > > one and do all the normal instantiation stuff, but we don't do the
+> > > > > security_d_instantiate.  With this patch I'm no longer seeing these errant
+> > > > > -EACCESS return values.  Thanks,
+> > > > 
+> > > > Possibly dumb question: Is there still a small race here?  Is it
+> > > > possible for another nfsd thread to find the new alias on the list while
+> > > > this thread is still:
+> > > > 
+> > > > > 
+> > > > > Signed-off-by: Josef Bacik <josef@redhat.com>
+> > > > > ---
+> > > > >  fs/dcache.c |    1 +
+> > > > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > > > > 
+> > > > > diff --git a/fs/dcache.c b/fs/dcache.c
+> > > > > index 23702a9..890a59e 100644
+> > > > > --- a/fs/dcache.c
+> > > > > +++ b/fs/dcache.c
+> > > > > @@ -1201,6 +1201,7 @@ struct dentry *d_obtain_alias(struct inode *inode)
+> > > > >  	spin_unlock(&tmp->d_lock);
+> > > > >  
+> > > > >  	spin_unlock(&dcache_lock);
+> > > > 
+> > > > ... right here, so that that other nfsd thread still ends up trying to
+> > > > do something with a dentry that hasn't had security_d_instantiate called
+> > > > on it yet?
+> > > > 
+> > > > > +	security_d_instantiate(tmp, inode);
+> > > > >  	return tmp;
+> > > > >  
+> > > > >   out_iput:
+> > > > > -- 
+> > > > 
+> > > > Or does something else prevent that?
+> > > > 
+> > > 
+> > > That's a good question, I have no idea actually.  Every other consumer of
+> > > security_d_instantiate seems to hold the i_mutex of the parent directory inode,
+> > > tho I'm not sure if that is appropriate for d_obtain_alias, maybe somebody else
+> > > has an idea?  Thanks,
 > > 
-> > Great - just pulled it down and I'll start running some tests.
+> > Actually, I don't get it:
 > > 
-> > The tree that I'm testing has the vfs inode lock breakup in it, the
-> > inode cache SLAB_DESTROY_BY_RCU series, a large bunch of XFS lock
-> > breakup patches and now the above branch in it. It's here:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev.git working
-> > 
-> > > On a simple test of 100 dd, it reduces the CPU %system time from 30% to 3%, and
-> > > improves IO throughput from 38MB/s to 42MB/s.
-> > 
-> > Excellent - I suspect that the reduction in contention on the inode
-> > writeback locks is responsible for dropping the CPU usage right down.
-> > 
-> > I'm seeing throughput for a _single_ large dd (100GB) increase from ~650MB/s
-> > to 700MB/s with your series. For other numbers of dd's:
+> > 	- Why is selinux using a *dentry* operation to initialize an
+> > 	  *inode*?
+> > 	- Are security hooks necessarily prepared to handle a
+> > 	  disconnected dentry?  (Which has no real parent, name an empty
+> > 	  string, etc.)
+> > 	- What use is the dentry to the security module in this case
+> > 	  anyway?
 > 
-> Great! I didn't expect it to improve _throughput_ of single dd case.
-
-At 650MB/s without your series, the dd process is CPU bound. With
-your series the dd process now only consumes ~65% of the cpu, so I
-suspect that if I was running on a faster block device it'd go even
-faster. Removing the writeback path from the write() path certainly
-helps in this regard.
-
-> > # dd processes          total throughput         total        per proc
-> >    1                      700MB/s                   400/s       100/s
-> >    2                      700MB/s                   500/s       100/s
-> >    4                      700MB/s                   700/s       100/s
-> >    8                      690MB/s                 1,100/s       100/s
-> >   16                      675MB/s                 2,000/s       110/s
-> >   32                      675MB/s                 5,000/s       150/s
-> >  100                      650MB/s                22,000/s       210/s
-> > 1000                      600MB/s               160,000/s       160/s
-> > 
-> > A couple of things I noticed - firstly, the number of context
-> > switches scales roughly with the number of writing processes - is
-> > there any reason for waking every writer 100-200 times a second? At
-> > the thousand writer mark, we reach a context switch rate of more
-> > than one per page we complete IO on. Any idea on whether this can be
-> > improved at all?
+> I only know a bit from the SELinux world and can't speak at all for any
+> other LSMs.  SELinux however needs the dentry when an inode first enters
+> core for a couple of reasons.  (once the inode is in core it should have
+> already been initialized and we skip all this)
 > 
-> It's simple to have the pause time stabilize at larger values.  I can
-> even easily detect that there are lots of concurrent dirtiers, and in
-> such cases adaptively enlarge it to no more than 200ms. Does that
-> value sound reasonable?
-
-Certainly. I think that the more concurrent dirtiers, the less
-frequently each individual dirtier should be woken. There's no point
-waking a dirtier if all they can do is write a single page before
-they are throttled again - IO is most efficient when done in larger
-batches...
-
-> Precisely controlling pause time is the major capability pursued by
-> this implementation (comparing to the earlier attempts to wait on
-> write completions).
+> If you have persistent xattr support we need the dentry since the xattr
+> code requires a dentry.  I have no idea why but that's what
+> inode->i_op->getxattr() requires.
 > 
-> > Also, the system CPU usage while throttling stayed quite low but not
-> > constant. The more writing processes, the lower the system CPU usage
-> > (despite the increase in context switches). Further, if the dd's
-> > didn't all start at the same time, then system CPU usage would
-> > roughly double when the first dd's complete and cpu usage stayed
-> > high until all the writers completed. So there's some trigger when
-> > writers finish/exit there that is changing throttle behaviour.
-> > Increasing the number of writers does not seem to have any adverse
-> > affects.
+> Then we come to procfs.  In that filesystem we actually label based on
+> the pathname.  oh no did I say SELinux uses pathnames?  yes, I did, but
+> we only use the part of the pathname relative to the procfs root, so
+> really it's a static identifier which is immutable.
 > 
-> Depending on various conditions, the pause time will be stabilizing at
-> different point in the range [1 jiffy, 100 ms]. This is a very big
-> range and I made no attempt (although possible) to further control it.
+> From what I can see SELinux doesn't really care about the dentry, we
+> don't care about IS_ROOT() or the name or any of that crap (in the
+> non-procfs case).  All we really about is that if something can find an
+> inode and use it that security_d_instantiate() was called....
 > 
-> The smaller pause time, the more overheads in context switches _as
-> well as_ global_page_state() costs (mainly cacheline bouncing) in
-> balance_dirty_pages().
+> Calling security_d_instantiate() extra times is very low overhead and
+> not harmful.  the dirtiest (but easiest I guess) fix would be to add it
+> into the out_iput path as well.  I feel like there has to be an easier
+> solution, I'm just not sure what it is...
+>
 
-I didn't notice any change in context switches when the CPU usage
-changed, so perhaps it was more cacheline bouncing in
-global_page_state(). I think more investigation is needed, though.
+So we're not worried about calling it multiple times, we're more worried about
+somebody finding the dentry before we have a chance to run
+security_d_instantiate.  Would it be ok to call security_d_instantiate() right
+before we do all the actual instantiation work?  That would solve this problem.
+Thanks,
 
-> I wonder whether or not the majority context switches indicate a
-> corresponding invocation of balance_dirty_pages()?
-
-/me needs to run with writeback tracing turned on
-
-> > FWIW, I'd consider the throughput (1200 files/s) to quite low for 12
-> > disks and a number of CPUs being active. I'm not sure how you
-> > configured the storage/filesystem, but you should configure the
-> > filesystem with at least 2x as many AGs as there are CPUs, and run
-> > one create thread per CPU rather than one per disk.  Also, making
-> > sure you have a largish log (512MB in this case) is helpful, too.
-> 
-> The test machine has 16 CPUs and 12 disks. I used plain simple mkfs
-> commands. I don't have access to the test box now (it's running LKP
-> for the just released -rc2). I'll checkout the xfs configuration and
-> recreate it with more AGs and log.
-
-Cool.
-
-> And yeah it's a good idea to
-> increase the number of threads, with "-t 16"?
-
-No, that just increases the number of threads working on a specific
-directory. creates are serialised by the directory i_mutex, so
-there's no point running multiple threads per directory.
-
-That's why I use multiple "-d <dir>" options - you get a thread per
-directory that way, and they don't serialise with each other given
-enough AGs...
-
-> btw, is it a must to run
-> the test for one whole day? If not, which optarg can be decreased?
-> "-L 64"?
-
-Yeah, -L controls the number of iterations (there's one line of
-output per iteration). Generally, for sanity checking, I'll just run
-a few iterations. I only ever run the full 50M inode runs when I've
-got something I want to compare. Mind you, it generally only takes
-an hour on my system, so that's not so bad...
-
-> > Ok, so throughput is also down by ~5% from ~23k files/s to ~22k
-> > files/s.
-> 
-> Hmm. The bad thing is I have no idea on how to avoid that. It's not
-> doing IO any more, so what can I do to influence the IO throughput? ;)
-
-That's now a problem of writeback optimisation - where it should be
-dealt with ;)
-
-> Maybe there are unnecessary sleep points in the writeout path? 
-
-It sleeps on congestion, but otherwise shouldn't be blocking
-anywhere.
-
-> Or even one flusher thread is not enough _now_?
-
-It hasn't been enough for XFS on really large systems doing high
-bandwidth IO for a long time. It's only since 2.6.35 and the
-introduction of the delaylog mount option that XFS has really been
-able to drive small file IO this hard.
-
-> Anyway that seems not
-> the flaw of _this_ patchset, but problems exposed and unfortunately
-> made more imminent by it.
-
-Agreed.
-
-> btw, do you have the total elapsed time before/after patch? As you
-> said it's the final criterion :)
-
-Yeah, sorry, should have posted them - I didn't because I snapped
-the numbers before the run had finished. Without series:
-
-373.19user 14940.49system 41:42.17elapsed 612%CPU (0avgtext+0avgdata 82560maxresident)k
-0inputs+0outputs (403major+2599763minor)pagefaults 0swaps
-
-With your series:
-
-359.64user 5559.32system 40:53.23elapsed 241%CPU (0avgtext+0avgdata 82496maxresident)k
-0inputs+0outputs (312major+2598798minor)pagefaults 0swaps
-
-So the wall time with your series is lower, and system CPU time is
-way down (as I've already noted) for this workload on XFS.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Josef 
