@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab0KRLP4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 06:15:56 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:35568 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000Ab0KRLPz convert rfc822-to-8bit (ORCPT
+	id S1752870Ab0KRLQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 06:16:45 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:52513 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751369Ab0KRLQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 06:15:55 -0500
-Subject: Re: [PATCH 1/2] perf: Fix compilation on gcc 4.0.2
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@redhat.com, mingo@elte.hu, linux-kernel@vger.kernel.org,
+	Thu, 18 Nov 2010 06:16:44 -0500
+Date: Thu, 18 Nov 2010 12:16:36 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>, eranian@google.com,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
         Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <1290077461-12321-2-git-send-email-andi@firstfloor.org>
-References: <1290077461-12321-1-git-send-email-andi@firstfloor.org>
-	 <1290077461-12321-2-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 18 Nov 2010 12:15:37 +0100
-Message-ID: <1290078937.2109.1345.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Subject: Re: [PATCH 3/4] perf-events: Add support for supplementary event
+ registers v3
+Message-ID: <20101118111630.GB12667@basil.fritz.box>
+References: <1290077254-12165-1-git-send-email-andi@firstfloor.org>
+ <1290077254-12165-4-git-send-email-andi@firstfloor.org>
+ <1290078779.2109.1341.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290078779.2109.1341.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 11:51 +0100, Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
+On Thu, Nov 18, 2010 at 12:12:59PM +0100, Peter Zijlstra wrote:
+> >  					  u64 enable_mask)
+> >  {
+> >  	wrmsrl(hwc->config_base + hwc->idx, hwc->config | enable_mask);
+> > +	if (hwc->extra_reg)
+> > +		wrmsrl(hwc->extra_reg, hwc->extra_config);
+> >  }
 > 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  tools/perf/Makefile                    |    4 ++--
->  tools/perf/util/include/linux/bitops.h |    1 +
->  2 files changed, 3 insertions(+), 2 deletions(-)
+> Just wondering, shouldn't we program the extra msr _before_ we flip the
+> enable bit?
+
+Yes that makes sense.
+
+> > + * Runs later because per cpu allocations don't work early on.
+> > + */
+> > +__initcall(init_intel_percore);
 > 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index d1db0f6..f4f6478 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -201,13 +201,13 @@ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wshadow
->  EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Winit-self
->  EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wpacked
->  EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wredundant-decls
-> -EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstack-protector
-> +#EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstack-protector
+> I've got a patch moving the whole pmu init to early_initcall(), which is
+> after mm_init() so it would actually work.
 
-Should we be using more of the kernel makefile magic to detect this?
+So do you want to make  this patchkit depend on that patch?
+Or just integrate it and then change later?
 
+-Andi
 
+-- 
+ak@linux.intel.com -- Speaking for myself only.
