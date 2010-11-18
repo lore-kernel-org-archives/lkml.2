@@ -1,208 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757100Ab0KRTdV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 14:33:21 -0500
-Received: from avexcashub1.qlogic.com ([198.70.193.61]:24396 "EHLO
-	avexcashub1.qlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756527Ab0KRTdT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 14:33:19 -0500
-From: Joe Carnuccio <joe.carnuccio@qlogic.com>
-To: Sonny Rao <sonnyrao@linux.vnet.ibm.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
-CC: Milton Miller <miltonm@bga.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>,
-        Linux Driver <Linux-Driver@qlogic.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 18 Nov 2010 11:33:12 -0800
-Subject: RE: [PATCH] [RFC] qla2xxx: Change parameter permissions in sysfs
-Thread-Topic: [PATCH] [RFC] qla2xxx: Change parameter permissions in sysfs
-Thread-Index: AcuHEI6uPJGrEUYCR9OVNFr9t4aKKAARdhEg
-Message-ID: <5E4F49720D0BAD499EE1F01232234BA872242EF99D@AVEXMB1.qlogic.org>
-References: <1290078346-3521-1-git-send-email-sonnyrao@linux.vnet.ibm.com>
-In-Reply-To: <1290078346-3521-1-git-send-email-sonnyrao@linux.vnet.ibm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756399Ab0KRTdP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 14:33:15 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55673 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756063Ab0KRTdN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 14:33:13 -0500
+Message-ID: <4CE57F64.8040200@ti.com>
+Date: Thu, 18 Nov 2010 14:32:52 -0500
+From: Cyril Chemparathy <cyril@ti.com>
+Reply-To: cyril@ti.com
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.13pre) Gecko/20101113 Lightning/1.0b2 Shredder/3.1.7pre
 MIME-Version: 1.0
+To: David Daney <ddaney@caviumnetworks.com>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 1/2] of/phylib: Use device tree properties to initialize
+ Marvell PHYs.
+References: <1290038071-13296-1-git-send-email-ddaney@caviumnetworks.com> <1290038071-13296-2-git-send-email-ddaney@caviumnetworks.com>
+In-Reply-To: <1290038071-13296-2-git-send-email-ddaney@caviumnetworks.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sonny,
-
-The qla2xxx parameters that already had write permission do not require rebinding.
-
-The qla2xxx parameters that require rebinding have read only permission and do not require write persmission since these are the ones whose value can be set on driver load.
-
-The fact that some of the qla2xxx parameters had permission set to S_IRUGO|S_IRUSR was a "typo", it should have been S_IRUGO only, I have been in the process of addressing this in our drivers (here at QLogic).
-
-Thanks.
-
--Joe
-
-> -----Original Message-----
-> From: Sonny Rao [mailto:sonnyrao@linux.vnet.ibm.com]
-> Sent: Thursday, November 18, 2010 3:06 AM
-> To: linux-scsi@vger.kernel.org
-> Cc: Sonny Rao; Milton Miller; Andrew Vasquez; Linux Driver; James E.J.
-> Bottomley; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: [PATCH] [RFC] qla2xxx: Change parameter permissions in sysfs
+On 11/17/2010 06:54 PM, David Daney wrote:
+> Some aspects of PHY initialization are board dependent, things like
+> indicator LED connections and some clocking modes cannot be determined
+> by probing.  The dev_flags element of struct phy_device can be used to
+> control these things if an appropriate value can be passed from the
+> Ethernet driver.  We run into problems however if the PHY connections
+> are specified by the device tree.  There is no way for the Ethernet
+> driver to know what flags it should pass.
 > 
-> Many of the module parameter definitions in qla2xxx
-> look like S_IRUGO|S_IRUSR which is effectively doing 0400 | 0444
-> which is pointless. It seems like the intention is to allow a user
-> to change these parameters in sysfs.  So this patch changes it to
-> S_IRUGO|S_IWUSR to enable that.  Most of these copied into
-> a device-specific structure at init time, so the user would have to
-> re-probe or re-bind the adapters for these to take effect.
+> If we are using the device tree, the struct phy_device will be
+> populated with the device tree node corresponding to the PHY, and we
+> can extract extra configuration information from there.
 > 
-> Signed-off-by: Milton Miller <miltonm@bga.com>
-> Signed-off-by: Sonny Rao <sonnyrao@linux.vnet.ibm.com>
+> The next question is what should the format of that information be?
+> It is highly device specific, and the device tree representation
+> should not be tied to any arbitrary kernel defined constants.  A
+> straight forward representation is just to specify the exact bits that
+> should be set using the "marvell,reg-init" property:
+> 
+>       phy5: ethernet-phy@5 {
+> 	reg = <5>;
+> 	device_type = "ethernet-phy";
+> 	marvell,reg-init =
+> 		<0x00030010 0x5777>, /* Reg 3,16 <- 0x5777 */
+> 		<0x00030011 0x00aa>, /* Reg 3,17 <- 0x00aa */
+> 		<0x00030012 0x4105>, /* Reg 3,18 <- 0x4105 */
+> 		<0x00030013 0x0060>; /* Reg 3,19 <- 0x0060 */
+> 		<0x00020015 0x00300000>; /* clear bits 4..5 of Reg 2,21 */
+>       };
+> 
+> The Marvell PHYs have a page select register at register 22 (0x16), we
+> can specify any register by its page and register number.  These are
+> encoded in the high and low parts of the first word.  The second word
+> contains a mask and value to be ORed in its high and low parts.  The
+> new marvell_of_reg_init function leaves the page select register
+> unchanged, so a call to it can be dropped into the .config_init
+> functions without unduly affecting the state of the PHY.
+> 
+> If CONFIG_OF is not set, there is no of_node, or no "marvell,reg-init"
+> property, the PHY initialization is unchanged.
+> 
+> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Cyril Chemparathy <cyril@ti.com>
+> Cc: David Daney <ddaney@caviumnetworks.com>
+> Cc: Arnaud Patard <arnaud.patard@rtp-net.org>
+> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 > ---
->  drivers/scsi/qla2xxx/qla_os.c |   32 ++++++++++++++++----------------
->  1 files changed, 16 insertions(+), 16 deletions(-)
+>  drivers/net/phy/marvell.c |   91 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 91 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/scsi/qla2xxx/qla_os.c
-> b/drivers/scsi/qla2xxx/qla_os.c
-> index 1644eab..f949959 100644
-> --- a/drivers/scsi/qla2xxx/qla_os.c
-> +++ b/drivers/scsi/qla2xxx/qla_os.c
-> @@ -37,12 +37,12 @@ static struct kmem_cache *srb_cachep;
->  static struct kmem_cache *ctx_cachep;
-> 
->  int ql2xlogintimeout = 20;
-> -module_param(ql2xlogintimeout, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xlogintimeout, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xlogintimeout,
->  		"Login timeout value in seconds.");
-> 
->  int qlport_down_retry;
-> -module_param(qlport_down_retry, int, S_IRUGO|S_IRUSR);
-> +module_param(qlport_down_retry, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(qlport_down_retry,
->  		"Maximum number of command retries to a port that returns "
->  		"a PORT-DOWN status.");
-> @@ -55,12 +55,12 @@ MODULE_PARM_DESC(ql2xplogiabsentdevice,
->  		"Default is 0 - no PLOGI. 1 - perfom PLOGI.");
-> 
->  int ql2xloginretrycount = 0;
-> -module_param(ql2xloginretrycount, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xloginretrycount, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xloginretrycount,
->  		"Specify an alternate value for the NVRAM login retry
-> count.");
-> 
->  int ql2xallocfwdump = 1;
-> -module_param(ql2xallocfwdump, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xallocfwdump, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xallocfwdump,
->  		"Option to enable allocation of memory for a firmware dump "
->  		"during HBA initialization.  Memory allocation requirements "
-> @@ -73,7 +73,7 @@ MODULE_PARM_DESC(ql2xextended_error_logging,
->  		"Default is 0 - no logging. 1 - log errors.");
-> 
->  int ql2xshiftctondsd = 6;
-> -module_param(ql2xshiftctondsd, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xshiftctondsd, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xshiftctondsd,
->  		"Set to control shifting of command type processing "
->  		"based on total number of SG elements.");
-> @@ -81,7 +81,7 @@ MODULE_PARM_DESC(ql2xshiftctondsd,
->  static void qla2x00_free_device(scsi_qla_host_t *);
-> 
->  int ql2xfdmienable=1;
-> -module_param(ql2xfdmienable, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xfdmienable, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xfdmienable,
->  		"Enables FDMI registrations. "
->  		"0 - no FDMI. Default is 1 - perform FDMI.");
-> @@ -106,27 +106,27 @@ MODULE_PARM_DESC(ql2xenablehba_err_chk,
->  		" Default is 0 - Error isolation disabled, 1 - Enable it");
-> 
->  int ql2xiidmaenable=1;
-> -module_param(ql2xiidmaenable, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xiidmaenable, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xiidmaenable,
->  		"Enables iIDMA settings "
->  		"Default is 1 - perform iIDMA. 0 - no iIDMA.");
-> 
->  int ql2xmaxqueues = 1;
-> -module_param(ql2xmaxqueues, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xmaxqueues, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xmaxqueues,
->  		"Enables MQ settings "
->  		"Default is 1 for single queue. Set it to number "
->  		"of queues in MQ mode.");
-> 
->  int ql2xmultique_tag;
-> -module_param(ql2xmultique_tag, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xmultique_tag, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xmultique_tag,
->  		"Enables CPU affinity settings for the driver "
->  		"Default is 0 for no affinity of request and response IO. "
->  		"Set it to 1 to turn on the cpu affinity.");
-> 
->  int ql2xfwloadbin;
-> -module_param(ql2xfwloadbin, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xfwloadbin, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xfwloadbin,
->  		"Option to specify location from which to load ISP
-> firmware:\n"
->  		" 2 -- load firmware via the request_firmware() (hotplug)\n"
-> @@ -135,39 +135,39 @@ MODULE_PARM_DESC(ql2xfwloadbin,
->  		" 0 -- use default semantics.\n");
-> 
->  int ql2xetsenable;
-> -module_param(ql2xetsenable, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xetsenable, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xetsenable,
->  		"Enables firmware ETS burst."
->  		"Default is 0 - skip ETS enablement.");
-> 
->  int ql2xdbwr = 1;
-> -module_param(ql2xdbwr, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xdbwr, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xdbwr,
->  	"Option to specify scheme for request queue posting\n"
->  	" 0 -- Regular doorbell.\n"
->  	" 1 -- CAMRAM doorbell (faster).\n");
-> 
->  int ql2xdontresethba;
-> -module_param(ql2xdontresethba, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xdontresethba, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xdontresethba,
->  	"Option to specify reset behaviour\n"
->  	" 0 (Default) -- Reset on failure.\n"
->  	" 1 -- Do not reset on failure.\n");
-> 
->  int ql2xtargetreset = 1;
-> -module_param(ql2xtargetreset, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xtargetreset, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xtargetreset,
->  		 "Enable target reset."
->  		 "Default is 1 - use hw defaults.");
-> 
->  int ql2xgffidenable;
-> -module_param(ql2xgffidenable, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xgffidenable, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xgffidenable,
->  		"Enables GFF_ID checks of port type. "
->  		"Default is 0 - Do not use GFF_ID information.");
-> 
->  int ql2xasynctmfenable;
-> -module_param(ql2xasynctmfenable, int, S_IRUGO|S_IRUSR);
-> +module_param(ql2xasynctmfenable, int, S_IRUGO|S_IWUSR);
->  MODULE_PARM_DESC(ql2xasynctmfenable,
->  		"Enables issue of TM IOCBs asynchronously via IOCB mechanism"
->  		"Default is 0 - Issue TM IOCBs via mailbox mechanism.");
-> --
-> 1.5.6.5
-> 
+> diff --git a/drivers/net/phy/marvell.c b/drivers/net/phy/marvell.c
+> index f0bd1a1..33ad654 100644
+> --- a/drivers/net/phy/marvell.c
+> +++ b/drivers/net/phy/marvell.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/ethtool.h>
+>  #include <linux/phy.h>
+>  #include <linux/marvell_phy.h>
+> +#include <linux/of.h>
+>  
+>  #include <asm/io.h>
+>  #include <asm/irq.h>
+> @@ -186,6 +187,85 @@ static int marvell_config_aneg(struct phy_device *phydev)
+>  	return 0;
+>  }
+>  
+> +#ifndef CONFIG_OF
+> +static int marvell_of_reg_init(struct phy_device *phydev)
+> +{
+> +	return 0;
+> +}
+> +#else
+> +/*
+> + * Set and/or override some configuration registers based on the
+> + * marvell,reg-init property stored in the of_node for the phydev.
+> + *
+> + * marvell,reg-init = <reg-spec val-spec>,...;
+> + *
+> + * There may be one or more  pairs of <reg-spec val-spec>:
+> + * reg-spec [16..31]: Page address.
+> + * reg-spec [0..15]: Register address.
+> + *
+> + * val-spec [16..31]: Mask bits.
+> + * val-spec [0..15]: Register bits.
+> + */
+> +static int marvell_of_reg_init(struct phy_device *phydev)
+> +{
+> +	const __be32 *paddr;
+> +	int len, i, saved_page, current_page, page_changed, ret;
+> +
+> +	if (!phydev->dev.of_node)
+> +		return 0;
+> +
+> +	paddr = of_get_property(phydev->dev.of_node, "marvell,reg-init", &len);
+> +	if (!paddr || len < (2 * sizeof(u32)))
+> +		return 0;
+> +
+> +	saved_page = phy_read(phydev, 22);
 
+Please use MII_88E1121_PHY_PAGE (renamed if necessary) instead of 22 here.
+
+> +	if (saved_page < 0)
+> +		return saved_page;
+> +	page_changed = 0;
+> +	current_page = saved_page;
+> +
+> +	ret = 0;
+> +	len /= sizeof(u32);
+> +	for (i = 0; i < len / 2; i += 2) {
+> +		u32 reg_spec =  be32_to_cpup(&paddr[i]);
+> +		u32 val_spec =  be32_to_cpup(&paddr[i + 1]);
+> +		u16 reg = reg_spec & 0xffff;
+> +		u16 reg_page = reg_spec >> 16;
+> +		u16 val_bits = val_spec & 0xffff;
+> +		u16 mask = val_spec >> 16;
+> +		int val;
+> +
+> +		if (reg_page != current_page) {
+> +			ret = phy_write(phydev, 22, reg_page);
+> +			if (ret < 0)
+> +				goto err;
+> +			current_page = reg_page;
+> +			page_changed = 1;
+> +		}
+> +
+> +		val = 0;
+> +		if (mask) {
+> +			val = phy_read(phydev, reg);
+
+If this phy_read() were to fail...
+
+> +			if (val < 0) {
+> +				ret = val;
+> +				goto err;
+> +			}
+> +			val &= mask;
+> +		}
+> +		val |= val_bits;
+> +
+> +		ret = phy_write(phydev, reg, (u16)val);
+> +		if (ret < 0)
+> +			goto err;
+> +
+> +	}
+> +err:
+> +	if (page_changed)
+> +		ret = phy_write(phydev, 22, saved_page);
+> +	return ret;
+
+... this function may incorrectly return success if the phy_write()
+succeeds.
+
+Some mdio controllers verify turn around during read operations and
+return failure if the phy fails to drive the data line low.  On write
+transactions turn around is driven by the controller, and failures may
+go undetected.
+
+[...]
+
+Regards
+- Cyril.
