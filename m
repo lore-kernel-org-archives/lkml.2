@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933368Ab0KRX7e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:59:34 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34991 "EHLO ogre.sisk.pl"
+	id S933418Ab0KRX7g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:59:36 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:34994 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760970Ab0KRX6R convert rfc822-to-8bit (ORCPT
+	id S1760974Ab0KRX6R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Nov 2010 18:58:17 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Johannes Hirte" <johannes.hirte@fem.tu-ilmenau.de>
+        "Shan Wei" <shanwei@cn.fujitsu.com>
 References: <sKkKYVppECN.A.KhC.Phb5MB@chimera>
 In-Reply-To: <sKkKYVppECN.A.KhC.Phb5MB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <ATV3yiK8i4C.A.N1C.chb5MB@chimera>
-Subject: [Bug #23102] [bisected] i915 regression in post 2.6.36 kernels
+Message-ID: <ATV3yiK8i4C.A.O7C.ehb5MB@chimera>
+Subject: [Bug #23092] WARNING in tty_io.c
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 19 Nov 2010 00:42:51 +0100 (CET)
+Date: Fri, 19 Nov 2010 00:42:50 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,11 +34,11 @@ from 2.6.36.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23102
-Subject		: [bisected] i915 regression in post 2.6.36 kernels
-Submitter	: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-Date		: 2010-11-10 7:02 (9 days old)
-Message-ID	: <201011100802.20332.johannes.hirte@fem.tu-ilmenau.de>
-References	: http://marc.info/?l=linux-kernel&m=128937310017057&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23092
+Subject		: WARNING in tty_io.c
+Submitter	: Shan Wei <shanwei@cn.fujitsu.com>
+Date		: 2010-11-10 8:06 (9 days old)
+Message-ID	: <4CDA5291.4010802@cn.fujitsu.com>
+References	: http://marc.info/?l=linux-kernel&m=128937645120159&w=2
 
 
