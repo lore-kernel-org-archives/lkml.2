@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab0KRDjP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 17 Nov 2010 22:39:15 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55792 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751371Ab0KRDjN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 17 Nov 2010 22:39:13 -0500
-Date: Wed, 17 Nov 2010 19:34:31 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/13] IO-less dirty throttling v2
-Message-Id: <20101117193431.ec1f4547.akpm@linux-foundation.org>
-In-Reply-To: <20101118032141.GP13830@dastard>
-References: <20101117042720.033773013@intel.com>
-	<20101117150330.139251f9.akpm@linux-foundation.org>
-	<20101118020640.GS22876@dastard>
-	<20101117180912.38541ca4.akpm@linux-foundation.org>
-	<20101118032141.GP13830@dastard>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753516Ab0KRDqC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 17 Nov 2010 22:46:02 -0500
+Received: from ozlabs.org ([203.10.76.45]:47448 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751371Ab0KRDqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 17 Nov 2010 22:46:00 -0500
+Date: Thu, 18 Nov 2010 14:41:45 +1100
+From: David Gibson <david@gibson.dropbear.id.au>
+To: Jon Loeliger <jdl@jdl.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, glikely@secretlab.ca,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        John Bonesio <bones@secretlab.ca>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 1/5] scripts: dtc: Merge in changes from the dtc
+ repository
+Message-ID: <20101118034145.GB7256@yookeroo>
+Mail-Followup-To: David Gibson <david@gibson.dropbear.id.au>,
+	Jon Loeliger <jdl@jdl.com>,
+	Grant Likely <grant.likely@secretlab.ca>, glikely@secretlab.ca,
+	devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+	John Bonesio <bones@secretlab.ca>, linuxppc-dev@lists.ozlabs.org
+References: <20101116204917.12146.39851.stgit@riker>
+ <20101116204951.12146.21084.stgit@riker>
+ <20101117045935.GA12084@angua.secretlab.ca>
+ <E1PIkEl-0006Zt-W7@jdl.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1PIkEl-0006Zt-W7@jdl.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010 14:21:41 +1100 Dave Chinner <david@fromorbit.com> wrote:
-
-> > But mainly because we're taking the work accounting away from the user
-> > who caused it and crediting it to the kernel thread instead, and that's
-> > an actively *bad* thing to do.
+On Wed, Nov 17, 2010 at 09:47:55AM -0600, Jon Loeliger wrote:
+> > On Tue, Nov 16, 2010 at 12:49:51PM -0800, John Bonesio wrote:
+> > > Pull in recent changes from the main dtc repository. These changes primarily
+> > > allow multiple device trees to be declared which are merged by dtc. This
+> > > feature allows us to include a basic dts file and then provide more informatio
+> > n
+> > > for the specific system through the merging functionality.
+> > > 
+> > > Signed-off-by: John Bonesio <bones@secretlab.ca>
+> > 
+> > Jon & David, I'll need your input on whether or not this is the best
+> > way to handle updating the dtc copy in the kernel tree.
+> > 
+> > g.
 > 
-> The current foreground writeback is doing work on behalf of the
-> system (i.e. doing background writeback) and therefore crediting it
-> to the user process. That seems wrong to me; it's hiding the
-> overhead of system tasks in user processes.
+> Grant,
 > 
-> IMO, time spent doing background writeback should not be creditted
-> to user processes - writeback caching is a function of the OS and
-> it's overhead should be accounted as such.
+> Yeah, I wondered too. :-)  David added it and updated
+> in the kernel last round, so he may have some good notion
+> of what would be best there.
 
-bah, that's bunk.  Using this logic, _no_ time spent in the kernel
-should be accounted to the user process and we may as well do away with
-system-time accounting altogether.
+For now I think just a direct diff updating the in-kernel dtc to
+current upstream is the simplest approach.  This is how I made the
+original commit.
 
-If userspace performs some action which causes the kernel to consume
-CPU resources, that consumption should be accounted to that process.
+There may be better methods to directly arrange for pulling of the dtc
+git tree into the kernel git tree, but I have not had time to
+investigate and set up such a scheme.
 
-Yes, writeback can be inaccurate because process A will write back
-process B's stuff, but that should even out on average, and it's more
-accurate than saying "zero".
-
-> Indeed, nobody has
-> realised (until now) just how inefficient it really is because of
-> the fact that the overhead is mostly hidden in user process system
-> time.
-
-"hidden"?  You do "time dd" and look at the output!
-
-_now_ it's hidden.  You do "time dd" and whee, no system time!  You
-need to do complex gymnastics with kernel thread accounting to work out
-the real cost of your dd.
+-- 
+David Gibson			| I'll have my music baroque, and my code
+david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
+				| _way_ _around_!
+http://www.ozlabs.org/~dgibson
