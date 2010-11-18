@@ -1,272 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759783Ab0KRQNp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:13:45 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:36033 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759363Ab0KRQMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 11:12:35 -0500
-X-Spam-ASN: 
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: linux-kernel@vger.kernel.org
-Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-        Rodolfo Giometti <giometti@enneenne.com>,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Subject: [PATCHv4 06/17] pps: convert printk/pr_* to dev_*
-Date: Thu, 18 Nov 2010 19:00:59 +0300
-Message-Id: <ce13c55a2acb39be7ef5667467c765595df19835.1290087479.git.lasaine@lvk.cs.msu.su>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
-References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
-X-AV-Checked: ClamAV using ClamSMTP
+	id S932291Ab0KRQOF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:14:05 -0500
+Received: from mga14.intel.com ([143.182.124.37]:23184 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932202Ab0KRQOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 11:14:01 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,217,1288594800"; 
+   d="scan'208";a="350435805"
+Date: Fri, 19 Nov 2010 00:13:56 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Rik van Riel <riel@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kara <jack@suse.cz>, "Li, Shaohua" <shaohua.li@intel.com>,
+        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] writeback: prevent bandwidth calculation overflow
+Message-ID: <20101118161356.GA20569@localhost>
+References: <20101118065725.GB8458@localhost>
+ <4CE537BE.6090103@redhat.com>
+ <20101118154408.GA18582@localhost>
+ <1290096121.2109.1525.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290096121.2109.1525.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we now have direct pointers to struct pps_device everywhere it's
-easy to use dev_* functions to print messages instead of plain printks.
-Where dev_* cannot be used printks are converted to pr_*.
+On Fri, Nov 19, 2010 at 12:02:01AM +0800, Peter Zijlstra wrote:
+> On Thu, 2010-11-18 at 23:44 +0800, Wu Fengguang wrote:
+> > +               pause = HZ * pages_dirtied / (bw + 1);
+> 
+> Shouldn't that be using something like div64_u64 ?
 
-Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Thanks for review. Here is the updated patch using div64_u64().
+
 ---
- drivers/pps/clients/pps-ktimer.c |    5 +++--
- drivers/pps/clients/pps-ldisc.c  |    2 ++
- drivers/pps/kapi.c               |   15 ++++++++-------
- drivers/pps/pps.c                |   25 +++++++++++++------------
- 4 files changed, 26 insertions(+), 21 deletions(-)
+Subject: writeback: prevent bandwidth calculation overflow
+Date: Thu Nov 18 12:55:42 CST 2010
 
-diff --git a/drivers/pps/clients/pps-ktimer.c b/drivers/pps/clients/pps-ktimer.c
-index 966ead1..2728469 100644
---- a/drivers/pps/clients/pps-ktimer.c
-+++ b/drivers/pps/clients/pps-ktimer.c
-@@ -19,6 +19,7 @@
-  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
-@@ -45,7 +46,7 @@ static void pps_ktimer_event(unsigned long ptr)
- 	/* First of all we get the time stamp... */
- 	pps_get_ts(&ts);
- 
--	pr_info("PPS event at %lu\n", jiffies);
-+	dev_info(pps->dev, "PPS event at %lu\n", jiffies);
- 
- 	pps_event(pps, &ts, PPS_CAPTUREASSERT, NULL);
- 
-@@ -94,7 +95,7 @@ static int __init pps_ktimer_init(void)
- 	pps = pps_register_source(&pps_ktimer_info,
- 				PPS_CAPTUREASSERT | PPS_OFFSETASSERT);
- 	if (pps == NULL) {
--		printk(KERN_ERR "cannot register ktimer source\n");
-+		pr_err("cannot register PPS source\n");
- 		return -ENOMEM;
- 	}
- 
-diff --git a/drivers/pps/clients/pps-ldisc.c b/drivers/pps/clients/pps-ldisc.c
-index 1950b15..30789fa 100644
---- a/drivers/pps/clients/pps-ldisc.c
-+++ b/drivers/pps/clients/pps-ldisc.c
-@@ -19,6 +19,8 @@
-  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/serial_core.h>
- #include <linux/tty.h>
-diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-index 98d4012..fbb89c6 100644
---- a/drivers/pps/kapi.c
-+++ b/drivers/pps/kapi.c
-@@ -19,6 +19,7 @@
-  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
-@@ -80,20 +81,20 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
- 
- 	/* Sanity checks */
- 	if ((info->mode & default_params) != default_params) {
--		printk(KERN_ERR "pps: %s: unsupported default parameters\n",
-+		pr_err("pps: %s: unsupported default parameters\n",
- 					info->name);
- 		err = -EINVAL;
- 		goto pps_register_source_exit;
- 	}
- 	if ((info->mode & (PPS_ECHOASSERT | PPS_ECHOCLEAR)) != 0 &&
- 			info->echo == NULL) {
--		printk(KERN_ERR "pps: %s: echo function is not defined\n",
-+		pr_err("pps: %s: echo function is not defined\n",
- 					info->name);
- 		err = -EINVAL;
- 		goto pps_register_source_exit;
- 	}
- 	if ((info->mode & (PPS_TSFMT_TSPEC | PPS_TSFMT_NTPFP)) == 0) {
--		printk(KERN_ERR "pps: %s: unspecified time format\n",
-+		pr_err("pps: %s: unspecified time format\n",
- 					info->name);
- 		err = -EINVAL;
- 		goto pps_register_source_exit;
-@@ -138,7 +139,7 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
- 	if (id >= PPS_MAX_SOURCES) {
- 		spin_unlock_irq(&pps_idr_lock);
- 
--		printk(KERN_ERR "pps: %s: too many PPS sources in the system\n",
-+		pr_err("pps: %s: too many PPS sources in the system\n",
- 					info->name);
- 		err = -EBUSY;
- 		goto free_idr;
-@@ -150,12 +151,12 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
- 	/* Create the char device */
- 	err = pps_register_cdev(pps);
- 	if (err < 0) {
--		printk(KERN_ERR "pps: %s: unable to create char device\n",
-+		pr_err("%s: unable to create char device\n",
- 					info->name);
- 		goto free_idr;
- 	}
- 
--	pr_info("new PPS source %s at ID %d\n", info->name, id);
-+	dev_info(pps->dev, "new PPS source %s\n", info->name);
- 
- 	return pps;
- 
-@@ -168,7 +169,7 @@ kfree_pps:
- 	kfree(pps);
- 
- pps_register_source_exit:
--	printk(KERN_ERR "pps: %s: unable to register source\n", info->name);
-+	pr_err("%s: unable to register source\n", info->name);
- 
- 	return NULL;
- }
-diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
-index 1922f27..9f7c2e8 100644
---- a/drivers/pps/pps.c
-+++ b/drivers/pps/pps.c
-@@ -19,6 +19,7 @@
-  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
-@@ -67,7 +68,7 @@ static long pps_cdev_ioctl(struct file *file,
- 
- 	switch (cmd) {
- 	case PPS_GETPARAMS:
--		pr_debug("PPS_GETPARAMS: source %d\n", pps->id);
-+		dev_dbg(pps->dev, "PPS_GETPARAMS\n");
- 
- 		spin_lock_irq(&pps->lock);
- 
-@@ -83,7 +84,7 @@ static long pps_cdev_ioctl(struct file *file,
- 		break;
- 
- 	case PPS_SETPARAMS:
--		pr_debug("PPS_SETPARAMS: source %d\n", pps->id);
-+		dev_dbg(pps->dev, "PPS_SETPARAMS\n");
- 
- 		/* Check the capabilities */
- 		if (!capable(CAP_SYS_TIME))
-@@ -93,14 +94,14 @@ static long pps_cdev_ioctl(struct file *file,
- 		if (err)
- 			return -EFAULT;
- 		if (!(params.mode & (PPS_CAPTUREASSERT | PPS_CAPTURECLEAR))) {
--			pr_debug("capture mode unspecified (%x)\n",
-+			dev_dbg(pps->dev, "capture mode unspecified (%x)\n",
- 								params.mode);
- 			return -EINVAL;
- 		}
- 
- 		/* Check for supported capabilities */
- 		if ((params.mode & ~pps->info.mode) != 0) {
--			pr_debug("unsupported capabilities (%x)\n",
-+			dev_dbg(pps->dev, "unsupported capabilities (%x)\n",
- 								params.mode);
- 			return -EINVAL;
- 		}
-@@ -113,7 +114,7 @@ static long pps_cdev_ioctl(struct file *file,
- 		/* Restore the read only parameters */
- 		if ((params.mode & (PPS_TSFMT_TSPEC | PPS_TSFMT_NTPFP)) == 0) {
- 			/* section 3.3 of RFC 2783 interpreted */
--			pr_debug("time format unspecified (%x)\n",
-+			dev_dbg(pps->dev, "time format unspecified (%x)\n",
- 								params.mode);
- 			pps->params.mode |= PPS_TSFMT_TSPEC;
- 		}
-@@ -126,7 +127,7 @@ static long pps_cdev_ioctl(struct file *file,
- 		break;
- 
- 	case PPS_GETCAP:
--		pr_debug("PPS_GETCAP: source %d\n", pps->id);
-+		dev_dbg(pps->dev, "PPS_GETCAP\n");
- 
- 		err = put_user(pps->info.mode, iuarg);
- 		if (err)
-@@ -138,7 +139,7 @@ static long pps_cdev_ioctl(struct file *file,
- 		struct pps_fdata fdata;
- 		unsigned int ev;
- 
--		pr_debug("PPS_FETCH: source %d\n", pps->id);
-+		dev_dbg(pps->dev, "PPS_FETCH\n");
- 
- 		err = copy_from_user(&fdata, uarg, sizeof(struct pps_fdata));
- 		if (err)
-@@ -153,7 +154,7 @@ static long pps_cdev_ioctl(struct file *file,
- 		else {
- 			unsigned long ticks;
- 
--			pr_debug("timeout %lld.%09d\n",
-+			dev_dbg(pps->dev, "timeout %lld.%09d\n",
- 					(long long) fdata.timeout.sec,
- 					fdata.timeout.nsec);
- 			ticks = fdata.timeout.sec * HZ;
-@@ -171,7 +172,7 @@ static long pps_cdev_ioctl(struct file *file,
- 
- 		/* Check for pending signals */
- 		if (err == -ERESTARTSYS) {
--			pr_debug("pending signal caught\n");
-+			dev_dbg(pps->dev, "pending signal caught\n");
- 			return -EINTR;
- 		}
- 
-@@ -240,7 +241,7 @@ int pps_register_cdev(struct pps_device *pps)
- 
- 	err = cdev_add(&pps->cdev, devt, 1);
- 	if (err) {
--		printk(KERN_ERR "pps: %s: failed to add char device %d:%d\n",
-+		pr_err("%s: failed to add char device %d:%d\n",
- 				pps->info.name, MAJOR(pps_devt), pps->id);
- 		return err;
- 	}
-@@ -282,14 +283,14 @@ static int __init pps_init(void)
- 
- 	pps_class = class_create(THIS_MODULE, "pps");
- 	if (!pps_class) {
--		printk(KERN_ERR "pps: failed to allocate class\n");
-+		pr_err("failed to allocate class\n");
- 		return -ENOMEM;
- 	}
- 	pps_class->dev_attrs = pps_attrs;
- 
- 	err = alloc_chrdev_region(&pps_devt, 0, PPS_MAX_SOURCES, "pps");
- 	if (err < 0) {
--		printk(KERN_ERR "pps: failed to allocate char device region\n");
-+		pr_err("failed to allocate char device region\n");
- 		goto remove_class;
- 	}
- 
--- 
-1.7.2.3
+On 32bit kernel, bdi->write_bandwidth can express at most 4GB/s.
 
+However the current calculation code can overflow when disk bandwidth
+reaches 800MB/s.  Fix it by using "long long" and div64_u64() in the
+calculations.
+
+And further change its unit from bytes/second to pages/second.
+That allows up to 16TB/s bandwidth in 32bit kernel.
+
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ mm/backing-dev.c    |    4 ++--
+ mm/page-writeback.c |   11 +++++------
+ 2 files changed, 7 insertions(+), 8 deletions(-)
+
+--- linux-next.orig/mm/page-writeback.c	2010-11-18 12:42:58.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-11-19 00:08:23.000000000 +0800
+@@ -494,7 +494,7 @@ void bdi_update_write_bandwidth(struct b
+ 	unsigned long written;
+ 	unsigned long elapsed;
+ 	unsigned long bw;
+-	unsigned long w;
++	unsigned long long w;
+ 
+ 	if (*bw_written == 0)
+ 		goto snapshot;
+@@ -513,7 +513,7 @@ void bdi_update_write_bandwidth(struct b
+ 		goto snapshot;
+ 
+ 	written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]) - *bw_written;
+-	bw = (HZ * PAGE_CACHE_SIZE * written + elapsed/2) / elapsed;
++	bw = (HZ * written + elapsed/2) / elapsed;
+ 	w = min(elapsed / unit_time, 128UL);
+ 	bdi->write_bandwidth = (bdi->write_bandwidth * (1024-w) + bw * w) >> 10;
+ 	bdi->write_bandwidth_update_time = jiffies;
+@@ -539,7 +539,7 @@ static void balance_dirty_pages(struct a
+ 	unsigned long dirty_thresh;
+ 	unsigned long bdi_thresh;
+ 	unsigned long task_thresh;
+-	unsigned long bw;
++	unsigned long long bw;
+ 	unsigned long pause = 0;
+ 	bool dirty_exceeded = false;
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+@@ -602,8 +602,7 @@ static void balance_dirty_pages(struct a
+ 		 * of dirty pages have been cleaned during our pause time.
+ 		 */
+ 		if (nr_dirty < dirty_thresh &&
+-		    bdi_prev_dirty - bdi_dirty >
+-		    bdi->write_bandwidth >> (PAGE_CACHE_SHIFT + 2))
++		    bdi_prev_dirty - bdi_dirty > bdi->write_bandwidth / 4)
+ 			break;
+ 		bdi_prev_dirty = bdi_dirty;
+ 
+@@ -626,7 +625,7 @@ static void balance_dirty_pages(struct a
+ 		bw = bw * (task_thresh - bdi_dirty);
+ 		bw = bw / (bdi_thresh / TASK_SOFT_DIRTY_LIMIT + 1);
+ 
+-		pause = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1);
++		pause = div64_u64(HZ * pages_dirtied, bw + 1);
+ 		pause = clamp_val(pause, 1, HZ/10);
+ 
+ pause:
+--- linux-next.orig/mm/backing-dev.c	2010-11-18 14:24:45.000000000 +0800
++++ linux-next/mm/backing-dev.c	2010-11-18 14:27:00.000000000 +0800
+@@ -103,7 +103,7 @@ static int bdi_debug_stats_show(struct s
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
+ 		   K(bdi_thresh), K(dirty_thresh), K(background_thresh),
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
+-		   (unsigned long) bdi->write_bandwidth >> 10,
++		   (unsigned long) K(bdi->write_bandwidth),
+ 		   nr_dirty, nr_io, nr_more_io,
+ 		   !list_empty(&bdi->bdi_list), bdi->state);
+ #undef K
+@@ -662,7 +662,7 @@ int bdi_init(struct backing_dev_info *bd
+ 			goto err;
+ 	}
+ 
+-	bdi->write_bandwidth = 100 << 20;
++	bdi->write_bandwidth = (100 << 20) / PAGE_CACHE_SIZE;
+ 	bdi->dirty_exceeded = 0;
+ 	err = prop_local_init_percpu(&bdi->completions);
+ 
