@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758261Ab0KROdB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 09:33:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31275 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757894Ab0KROdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 09:33:00 -0500
-Date: Thu, 18 Nov 2010 09:32:32 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, gorcunov@gmail.com
-Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
-Message-ID: <20101118143232.GC18100@redhat.com>
-References: <20101112154231.GN4823@redhat.com>
- <4CDD6389.2080206@windriver.com>
- <20101112161144.GP4823@redhat.com>
- <4CDD6CAD.30303@windriver.com>
- <20101112172755.GR4823@redhat.com>
- <20101116184325.GB4823@redhat.com>
- <4CE2E3C3.6060800@windriver.com>
- <20101118080516.GJ32621@elte.hu>
- <4CE52048.5080802@windriver.com>
- <1290086232.2109.1507.camel@laptop>
+	id S1758281Ab0KROgX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 09:36:23 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:40320 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757948Ab0KROgV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 09:36:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=Ib2vuaTSBdp6PQfLeTuXPO9hW/M3UhGYlzBkL9jnbB1ILZ0FrSSdq9L5olF99hXM3b
+         e+wVNw6Ymf2g5A96oOhptjCx73tmS5jEo40lh0RArPZX7w+dF3LyWvtoTI0yjblcSKbR
+         n5yVcMDDwe4yNbuwQGHApMiMlDsTmx83CFjxc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290086232.2109.1507.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Date: Thu, 18 Nov 2010 06:36:18 -0800
+Message-ID: <AANLkTikToBjx-4go9mAFCcnTQ5X4Su+57ODoY9C5y_7f@mail.gmail.com>
+Subject: error while building the kernel Mainline
+From: Justin Mattock <justinmattock@gmail.com>
+To: linux-net@vger.kernel.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 02:17:12PM +0100, Peter Zijlstra wrote:
-> On Thu, 2010-11-18 at 06:47 -0600, Jason Wessel wrote:
-> > More specifically
-> > when another subsystem injects an NMI event the perf NMI code returns
-> > NOTIFY_STOP. 
-> 
-> Not unconditionally, right? We only do so when the previous NMI was from
-> the PMU and nobody claimed this one (NOTIFY_STOP from DIE_NMIUNKNOWN).
-> 
-> Or are you hitting the other one, where !handled but pmu_nmi.handled >
-> 1 ?
+hit this yesterday, and havent had time to look at it, to see if its a
+simple fix
 
-On my Nehalem box, the kgdb tests work fine, no issues there.  On my P4
-box, the p4 handler really thinks the NMIs are from the perf counter and
-returns handled==1 and starves the kgdb tests.
+  MODPOST vmlinux.o
+WARNING: modpost: Found 1 section mismatch(es).
+To see full details build your kernel with:
+'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+  GEN     .version
+  CHK     include/generated/compile.h
+  UPD     include/generated/compile.h
+  CC      init/version.o
+  LD      init/built-in.o
+  LD      .tmp_vmlinux1
+net/built-in.o: In function `handle_response_icmp':
+ip_vs_core.c:(.text+0x2b5c4): undefined reference to `nf_conntrack_untracked'
+net/built-in.o: In function `T.925':
+ip_vs_core.c:(.text+0x2cbbd): undefined reference to `nf_conntrack_untracked'
+net/built-in.o: In function `ip_vs_null_xmit':
+(.text+0x310da): undefined reference to `nf_conntrack_untracked'
+net/built-in.o: In function `ip_vs_tunnel_xmit':
+(.text+0x311e3): undefined reference to `nf_conntrack_untracked'
+net/built-in.o: In function `ip_vs_nat_xmit':
+(.text+0x3176f): undefined reference to `nf_conntrack_untracked'
+net/built-in.o:(.text+0x3199d): more undefined references to
+`nf_conntrack_untracked' follow
+make: *** [.tmp_vmlinux1] Error 1
 
-I haven't gotten around to checking Jason's kvm setup to determine which
-handler his setup is calling.
+has there been anything sent forward for this yet?
 
-Jason, could you snip part of your dmesg log that shows the output with
-"Performance Events:" (or just send me the whole thing :-) ).
-
-Cheers,
-Don
-
+-- 
+Justin P. Mattock
