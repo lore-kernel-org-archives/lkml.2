@@ -1,80 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758844Ab0KRPSx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 10:18:53 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57492 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458Ab0KRPSw (ORCPT
+	id S1758893Ab0KRPTK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 10:19:10 -0500
+Received: from mail.windriver.com ([147.11.1.11]:47139 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758858Ab0KRPTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 10:18:52 -0500
-Date: Thu, 18 Nov 2010 16:17:33 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "Rosenfeld, Hans" <Hans.Rosenfeld@amd.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Subject: [GIT PULL] amd-nb facelift for .38
-Message-ID: <20101118151733.GC11779@aftab>
-References: <1288365272-214117-1-git-send-email-hans.rosenfeld@amd.com>
- <1288365272-214117-3-git-send-email-hans.rosenfeld@amd.com>
- <20101116173340.GA9417@kryptos.osrc.amd.com>
+	Thu, 18 Nov 2010 10:19:08 -0500
+Message-ID: <4CE543BB.2010903@windriver.com>
+Date: Thu, 18 Nov 2010 09:18:19 -0600
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101116173340.GA9417@kryptos.osrc.amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Don Zickus <dzickus@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, gorcunov@gmail.com
+Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
+References: <20101112154231.GN4823@redhat.com> <4CDD6389.2080206@windriver.com> <20101112161144.GP4823@redhat.com> <4CDD6CAD.30303@windriver.com> <20101112172755.GR4823@redhat.com> <20101116184325.GB4823@redhat.com> <4CE2E3C3.6060800@windriver.com> <20101118080516.GJ32621@elte.hu> <4CE52048.5080802@windriver.com> <1290086232.2109.1507.camel@laptop> <20101118143232.GC18100@redhat.com>
+In-Reply-To: <20101118143232.GC18100@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Nov 2010 15:18:22.0378 (UTC) FILETIME=[D69B60A0:01CB8733]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On 11/18/2010 08:32 AM, Don Zickus wrote:
+> On Thu, Nov 18, 2010 at 02:17:12PM +0100, Peter Zijlstra wrote:
+>> On Thu, 2010-11-18 at 06:47 -0600, Jason Wessel wrote:
+>>> More specifically
+>>> when another subsystem injects an NMI event the perf NMI code returns
+>>> NOTIFY_STOP. 
+>> Not unconditionally, right? We only do so when the previous NMI was from
+>> the PMU and nobody claimed this one (NOTIFY_STOP from DIE_NMIUNKNOWN).
+>>
+>> Or are you hitting the other one, where !handled but pmu_nmi.handled >
+>> 1 ?
+> 
+> On my Nehalem box, the kgdb tests work fine, no issues there.  On my P4
+> box, the p4 handler really thinks the NMIs are from the perf counter and
+> returns handled==1 and starves the kgdb tests.
+> 
+> I haven't gotten around to checking Jason's kvm setup to determine which
+> handler his setup is calling.
+> 
+> Jason, could you snip part of your dmesg log that shows the output with
+> "Performance Events:" (or just send me the whole thing :-) ).
+> 
 
-the following basically does an initial facelift to the k8_nb stuff
-which we're going to use increasingly in the future - it representing
-the northbridges on a system. The patches look straight-forward to me,
-I've randconfig-built them for a while with no regressions but let's not
-hurry so yes, leave them for .38.
+I can see the hang in 3 of 4 qemu / kvm configurations running with
+"-smp 2".
 
-Also, I've fixed up the commit titles and rebased them ontop of 37-rc2.
+  qemu == Performance Events: p6 PMU driver.
 
-Please pull,
-thanks.
+  qemu-system-x86_64 == Performance Events: AMD PMU driver.
+
+  kvm on RHEL 5 == Performance Events: p6 PMU driver.
+
+kgdb tests pass with 64 bit kvm on unbutu 10.10 test system and it prints:
+
+  Performance Events: unsupported p6 CPU model 2 no PMU driver, software
+  events only.
+
+I suspect it works because of the "unsupported".  The real p4 system I
+have also duplicates the hang just like what you are seeing.
+
+I don't believe this is the right way to fix the problem, but it does
+work around the problem using the following patch (found below).  I
+made that patch simply so I could execute some more testing and fix
+some of the other regressions I did not know about.  The patch is
+merely a crude way to say this NMI here really doesn't belong to the
+perf call back.  The problem with this is that it would be exteremely
+racy if you are starting and stopping the debugger.  There would be
+the possibility for lost events etc...
+
+Jason.
 
 --
-The following changes since commit e53beacd23d9cb47590da6a7a7f6d417b941a994:
 
-  Linux 2.6.37-rc2 (2010-11-15 18:31:02 -0800)
+---
+ arch/x86/kernel/cpu/perf_event.c |    3 ++-
+ include/linux/kgdb.h             |    3 +++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tip-amd-nb
-
-Hans Rosenfeld (3):
-      x86, amd-nb: Complete the rename of AMD NB and related code
-      x86, amd-nb: Cleanup AMD northbridge caching code
-      x86, cacheinfo: Cleanup L3 cache index disable support
-
- arch/x86/Kconfig                                  |   12 +-
- arch/x86/include/asm/amd_nb.h                     |   49 +++++---
- arch/x86/kernel/amd_nb.c                          |  135 +++++++++++--------
- arch/x86/kernel/aperture_64.c                     |   10 +-
- arch/x86/kernel/cpu/intel_cacheinfo.c             |  147 +++++++++------------
- arch/x86/kernel/pci-gart_64.c                     |   34 +++---
- arch/x86/kernel/setup.c                           |    8 +-
- arch/x86/mm/Makefile                              |    2 +-
- arch/x86/mm/{k8topology_64.c => amdtopology_64.c} |   12 +-
- arch/x86/mm/numa_64.c                             |   22 ++--
- drivers/char/agp/amd64-agp.c                      |   33 +++---
- drivers/edac/amd64_edac.c                         |    4 +-
- 12 files changed, 244 insertions(+), 224 deletions(-)
- rename arch/x86/mm/{k8topology_64.c => amdtopology_64.c} (94%)
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -25,6 +25,7 @@
+ #include <linux/highmem.h>
+ #include <linux/cpu.h>
+ #include <linux/bitops.h>
++#include <linux/kgdb.h>
+ 
+ #include <asm/apic.h>
+ #include <asm/stacktrace.h>
+@@ -1221,7 +1222,7 @@ perf_event_nmi_handler(struct notifier_b
+ 	unsigned int this_nmi;
+ 	int handled;
+ 
+-	if (!atomic_read(&active_events))
++	if (!atomic_read(&active_events) || in_debug_core())
+ 		return NOTIFY_DONE;
+ 
+ 	switch (cmd) {
+--- a/include/linux/kgdb.h
++++ b/include/linux/kgdb.h
+@@ -307,12 +307,15 @@ extern int kgdb_nmicallback(int cpu, voi
+ 
+ extern int			kgdb_single_step;
+ extern atomic_t			kgdb_active;
++#define in_debug_core() \
++	(atomic_read(&kgdb_active) != -1)
+ #define in_dbg_master() \
+ 	(raw_smp_processor_id() == atomic_read(&kgdb_active))
+ extern bool dbg_is_early;
+ extern void __init dbg_late_init(void);
+ #else /* ! CONFIG_KGDB */
+ #define in_dbg_master() (0)
++#define in_debug_core() (0)
+ #define dbg_late_init()
+ #endif /* ! CONFIG_KGDB */
+ #endif /* _KGDB_H_ */
