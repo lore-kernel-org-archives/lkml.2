@@ -1,290 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932408Ab0KRRJZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:09:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10964 "EHLO mx1.redhat.com"
+	id S1759917Ab0KRRN4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:13:56 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:58408 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757870Ab0KRRJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:09:24 -0500
-Date: Thu, 18 Nov 2010 19:09:08 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+	id S1755198Ab0KRRNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 12:13:55 -0500
+Date: Thu, 18 Nov 2010 17:13:39 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
         "Michael S. Tsirkin" <mst@redhat.com>,
-        Gregory Haskins <ghaskins@novell.com>,
-        Chris Lalancette <clalance@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] kvm: fast-path msi injection with irqfd
-Message-ID: <20101118170907.GA14039@redhat.com>
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 02 of 66] mm, migration: Fix race between
+	shift_arg_pages and rmap_walk by guaranteeing rmap_walk finds PTEs
+	created within the temporary stack
+Message-ID: <20101118171339.GM8135@csn.ul.ie>
+References: <patchbomb.1288798055@v2.random> <ad7a334318ea379be733.1288798057@v2.random> <20101118111349.GG8135@csn.ul.ie>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101118111349.GG8135@csn.ul.ie>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Store irq routing table pointer in the irqfd object,
-and use that to inject MSI directly without bouncing out to
-a kernel thread.
+On Thu, Nov 18, 2010 at 11:13:49AM +0000, Mel Gorman wrote:
+> > This patch fixes the problem by using two VMAs - one which covers the temporary
+> > stack and the other which covers the new location. This guarantees that rmap
+> > can always find the migration PTE even if it is copied while rmap_walk is
+> > taking place.
+> > 
+> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+> 
+> This old chestnut. IIRC, this was the more complete solution to a fix that made
+> it into mainline. The patch still looks reasonable. It does add a kmalloc()
+> but I can't remember if we decided we were ok with it or not. Can you remind
+> me? More importantly, it appears to be surviving the original testcase that
+> this bug was about (20 minutes so far but will leave it a few hours). Assuming
+> the test does not crash;
+> 
 
-While we touch this structure, rearrange irqfd fields to make fastpath
-better packed for better cache utilization.
+Incidentally, after 6.5 hours this still hasn't crashed. Previously a
+worst case reproduction scenario for the bug was around 35 minutes.
 
-This also adds some comments about locking rules and rcu usage in code.
-
-Some notes on the design:
-- Use pointer into the rt instead of copying an entry,
-  to make it possible to use rcu, thus side-stepping
-  locking complexities.  We also save some memory this way.
-- Old workqueue code is still used for level irqs.
-  I don't think we DTRT with level anyway, however,
-  it seems easier to keep the code around as
-  it has been thought through and debugged, and fix level later than
-  rip out and re-instate it later.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
-
-OK, this seems to work fine for me. Tested with virtio-net in guest
-with and without vhost-net.  Pls review/apply if appropriate.
-
- include/linux/kvm_host.h |   16 ++++++++
- virt/kvm/eventfd.c       |   91 ++++++++++++++++++++++++++++++++++++++++------
- virt/kvm/irq_comm.c      |    7 ++--
- 3 files changed, 99 insertions(+), 15 deletions(-)
-
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index a055742..4393c1b 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -16,6 +16,7 @@
- #include <linux/mm.h>
- #include <linux/preempt.h>
- #include <linux/msi.h>
-+#include <linux/rcupdate.h>
- #include <asm/signal.h>
- 
- #include <linux/kvm.h>
-@@ -206,6 +207,10 @@ struct kvm {
- 
- 	struct mutex irq_lock;
- #ifdef CONFIG_HAVE_KVM_IRQCHIP
-+	/*
-+	 * Update side is protected by irq_lock and,
-+	 * if configured, irqfds.lock.
-+	 */
- 	struct kvm_irq_routing_table __rcu *irq_routing;
- 	struct hlist_head mask_notifier_list;
- 	struct hlist_head irq_ack_notifier_list;
-@@ -462,6 +467,8 @@ void kvm_get_intr_delivery_bitmask(struct kvm_ioapic *ioapic,
- 				   unsigned long *deliver_bitmask);
- #endif
- int kvm_set_irq(struct kvm *kvm, int irq_source_id, u32 irq, int level);
-+int kvm_set_msi(struct kvm_kernel_irq_routing_entry *irq_entry, struct kvm *kvm,
-+		int irq_source_id, int level);
- void kvm_notify_acked_irq(struct kvm *kvm, unsigned irqchip, unsigned pin);
- void kvm_register_irq_ack_notifier(struct kvm *kvm,
- 				   struct kvm_irq_ack_notifier *kian);
-@@ -603,17 +610,26 @@ static inline void kvm_free_irq_routing(struct kvm *kvm) {}
- void kvm_eventfd_init(struct kvm *kvm);
- int kvm_irqfd(struct kvm *kvm, int fd, int gsi, int flags);
- void kvm_irqfd_release(struct kvm *kvm);
-+void kvm_irq_routing_update(struct kvm *, struct kvm_irq_routing_table *);
- int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args);
- 
- #else
- 
- static inline void kvm_eventfd_init(struct kvm *kvm) {}
-+
- static inline int kvm_irqfd(struct kvm *kvm, int fd, int gsi, int flags)
- {
- 	return -EINVAL;
- }
- 
- static inline void kvm_irqfd_release(struct kvm *kvm) {}
-+
-+static inline void kvm_irq_routing_update(struct kvm *kvm,
-+					  struct kvm_irq_routing_table *irq_rt)
-+{
-+	rcu_assign_pointer(kvm->irq_routing, irq_rt);
-+}
-+
- static inline int kvm_ioeventfd(struct kvm *kvm, struct kvm_ioeventfd *args)
- {
- 	return -ENOSYS;
-diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
-index c1f1e3c..2ca4535 100644
---- a/virt/kvm/eventfd.c
-+++ b/virt/kvm/eventfd.c
-@@ -44,14 +44,19 @@
-  */
- 
- struct _irqfd {
--	struct kvm               *kvm;
--	struct eventfd_ctx       *eventfd;
--	int                       gsi;
--	struct list_head          list;
--	poll_table                pt;
--	wait_queue_t              wait;
--	struct work_struct        inject;
--	struct work_struct        shutdown;
-+	/* Used for MSI fast-path */
-+	struct kvm *kvm;
-+	wait_queue_t wait;
-+	/* Update side is protected by irqfds.lock */
-+	struct kvm_kernel_irq_routing_entry __rcu *irq_entry;
-+	/* Used for level IRQ fast-path */
-+	int gsi;
-+	struct work_struct inject;
-+	/* Used for setup/shutdown */
-+	struct eventfd_ctx *eventfd;
-+	struct list_head list;
-+	poll_table pt;
-+	struct work_struct shutdown;
- };
- 
- static struct workqueue_struct *irqfd_cleanup_wq;
-@@ -125,14 +130,22 @@ irqfd_wakeup(wait_queue_t *wait, unsigned mode, int sync, void *key)
- {
- 	struct _irqfd *irqfd = container_of(wait, struct _irqfd, wait);
- 	unsigned long flags = (unsigned long)key;
-+	struct kvm_kernel_irq_routing_entry *irq;
-+	struct kvm *kvm = irqfd->kvm;
- 
--	if (flags & POLLIN)
-+	if (flags & POLLIN) {
-+		rcu_read_lock();
-+		irq = rcu_dereference(irqfd->irq_entry);
- 		/* An event has been signaled, inject an interrupt */
--		schedule_work(&irqfd->inject);
-+		if (irq)
-+			kvm_set_msi(irq, kvm, KVM_USERSPACE_IRQ_SOURCE_ID, 1);
-+		else
-+			schedule_work(&irqfd->inject);
-+		rcu_read_unlock();
-+	}
- 
- 	if (flags & POLLHUP) {
- 		/* The eventfd is closing, detach from KVM */
--		struct kvm *kvm = irqfd->kvm;
- 		unsigned long flags;
- 
- 		spin_lock_irqsave(&kvm->irqfds.lock, flags);
-@@ -163,9 +176,31 @@ irqfd_ptable_queue_proc(struct file *file, wait_queue_head_t *wqh,
- 	add_wait_queue(wqh, &irqfd->wait);
- }
- 
-+/* Must be called under irqfds.lock */
-+static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
-+			 struct kvm_irq_routing_table *irq_rt)
-+{
-+	struct kvm_kernel_irq_routing_entry *e;
-+	struct hlist_node *n;
-+
-+	if (irqfd->gsi >= irq_rt->nr_rt_entries) {
-+		rcu_assign_pointer(irqfd->irq_entry, NULL);
-+		return;
-+	}
-+
-+	hlist_for_each_entry(e, n, &irq_rt->map[irqfd->gsi], link) {
-+		/* Only fast-path MSI. */
-+		if (e->type == KVM_IRQ_ROUTING_MSI)
-+			rcu_assign_pointer(irqfd->irq_entry, e);
-+		else
-+			rcu_assign_pointer(irqfd->irq_entry, NULL);
-+	}
-+}
-+
- static int
- kvm_irqfd_assign(struct kvm *kvm, int fd, int gsi)
- {
-+	struct kvm_irq_routing_table *irq_rt;
- 	struct _irqfd *irqfd, *tmp;
- 	struct file *file = NULL;
- 	struct eventfd_ctx *eventfd = NULL;
-@@ -215,6 +250,10 @@ kvm_irqfd_assign(struct kvm *kvm, int fd, int gsi)
- 		goto fail;
- 	}
- 
-+	irq_rt = rcu_dereference_protected(kvm->irq_routing,
-+					   lockdep_is_held(&kvm->irqfds.lock));
-+	irqfd_update(kvm, irqfd, irq_rt);
-+
- 	events = file->f_op->poll(file, &irqfd->pt);
- 
- 	list_add_tail(&irqfd->list, &kvm->irqfds.items);
-@@ -271,8 +310,17 @@ kvm_irqfd_deassign(struct kvm *kvm, int fd, int gsi)
- 	spin_lock_irq(&kvm->irqfds.lock);
- 
- 	list_for_each_entry_safe(irqfd, tmp, &kvm->irqfds.items, list) {
--		if (irqfd->eventfd == eventfd && irqfd->gsi == gsi)
-+		if (irqfd->eventfd == eventfd && irqfd->gsi == gsi) {
-+			/*
-+			 * This rcu_assign_pointer is needed for when
-+			 * another thread calls kvm_irqfd_update before
-+			 * we flush workqueue below.
-+			 * It is paired with synchronize_rcu done by caller
-+			 * of that function.
-+			 */
-+			rcu_assign_pointer(irqfd->irq_entry, NULL);
- 			irqfd_deactivate(irqfd);
-+		}
- 	}
- 
- 	spin_unlock_irq(&kvm->irqfds.lock);
-@@ -322,6 +370,25 @@ kvm_irqfd_release(struct kvm *kvm)
- }
- 
- /*
-+ * Change irq_routing and irqfd.
-+ * Caller must invoke synchronize_rcu afterwards.
-+ */
-+void kvm_irq_routing_update(struct kvm *kvm,
-+			    struct kvm_irq_routing_table *irq_rt)
-+{
-+	struct _irqfd *irqfd;
-+
-+	spin_lock_irq(&kvm->irqfds.lock);
-+
-+	rcu_assign_pointer(kvm->irq_routing, irq_rt);
-+
-+	list_for_each_entry(irqfd, &kvm->irqfds.items, list)
-+		irqfd_update(kvm, irqfd, irq_rt);
-+
-+	spin_unlock_irq(&kvm->irqfds.lock);
-+}
-+
-+/*
-  * create a host-wide workqueue for issuing deferred shutdown requests
-  * aggregated from all vm* instances. We need our own isolated single-thread
-  * queue to prevent deadlock against flushing the normal work-queue.
-diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-index 8edca91..9f614b4 100644
---- a/virt/kvm/irq_comm.c
-+++ b/virt/kvm/irq_comm.c
-@@ -114,8 +114,8 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
- 	return r;
- }
- 
--static int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
--		       struct kvm *kvm, int irq_source_id, int level)
-+int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
-+		struct kvm *kvm, int irq_source_id, int level)
- {
- 	struct kvm_lapic_irq irq;
- 
-@@ -409,8 +409,9 @@ int kvm_set_irq_routing(struct kvm *kvm,
- 
- 	mutex_lock(&kvm->irq_lock);
- 	old = kvm->irq_routing;
--	rcu_assign_pointer(kvm->irq_routing, new);
-+	kvm_irq_routing_update(kvm, new);
- 	mutex_unlock(&kvm->irq_lock);
-+
- 	synchronize_rcu();
- 
- 	new = old;
 -- 
-1.7.3.2.91.g446ac
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
