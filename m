@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760015Ab0KRSo3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 13:44:29 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:58148 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755959Ab0KRSo2 (ORCPT
+	id S1760152Ab0KRSrg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 13:47:36 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33091
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755887Ab0KRSrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 13:44:28 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GdfaX7bFUqqtNVB6PhPm6ulwKQ4nkOFpOBa4Q2prppwbrbs3uG3RnKxhAHEI/HwfNK
-         TjuQMD6W+5vYDiyYAEk00u21acxYdezouUyZw+elw1Mytq0LWMkBqxFXvHAe3uZa55QB
-         ndqcXtCXqv94sy+rTPhBnwQX1kdvuvkSZfiTk=
-Date: Thu, 18 Nov 2010 21:44:21 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: kernel-janitors@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Feng Tang <feng.tang@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] x86: platform: mrst: check
- platform_device_register() return code
-Message-ID: <20101118184419.GA31886@albatros>
-References: <1290104207-31279-1-git-send-email-segoon@openwall.com>
- <20101118181814.290811f0@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101118181814.290811f0@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 18 Nov 2010 13:47:35 -0500
+Date: Thu, 18 Nov 2010 10:48:00 -0800 (PST)
+Message-Id: <20101118.104800.70193768.davem@davemloft.net>
+To: randy.dunlap@oracle.com
+Cc: namhyung@gmail.com, klassert@mathematik.tu-chemnitz.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] 3c59x: fix build failure on !CONFIG_PCI
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4CE3FBAC.3030503@oracle.com>
+References: <20101116091408.abd36ec8.randy.dunlap@oracle.com>
+	<1289960532.1663.24.camel@leonhard>
+	<4CE3FBAC.3030503@oracle.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 18:18 +0000, Alan Cox wrote:
-> >  I cannot compile this driver in next-20101117, so it is not tested
-> > at all.
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Date: Wed, 17 Nov 2010 07:58:36 -0800
+
+> On 11/16/10 18:22, Namhyung Kim wrote:
+>> 2010-11-16 (ȭ), 09:14 -0800, Randy Dunlap:
+>>> Hi,
+>>>
+>> 
+>> Hi, Randy
+>> 
+>> 
+>>> Interesting patch.  I have reported this build error and looked
+>>> into fixing it, but did not come up with this solution.
+>>>
+>>> Looking at it more:  if CONFIG_PCI is not enabled, DEVICE_PCI() is NULL.
+>>> That makes VORTEX_PCI() (with or without your patch) have a value of NULL.
+>>>
+>>> Is the line with the reported syntax error (3211) executed in
+>>> function acpi_set_WOL() ?  If so, let's assume that vp->enable_wol is true.
+>>> Then what happens on line 3211 (or 3213 after your patch)?
+>>>
+>>> 		if (VORTEX_PCI(vp)->current_state < PCI_D3hot)
+>>> 			return;
+>>>
+>>> or if I am really confuzed this morning, please tell me how it works.
+>>>
+>> 
+>> At first glance, I've noticed that the code above could make a NULL
+>> dereference so I added NULL check prior to the line.
+>> 
+>> But after reading more code I realized that other pci-functions called
+>> in acpi_set_WOL() would not work with NULL pci_dev pointer also. And I
+>> found all callers of the acpi_set_WOL() already checked NULL pointer
+>> before the call. Finally I could remove the NULL check and leave the
+>> code as is. That's how it works. :)
 > 
-> Compile or test - if it bombs out compiling for you please send me (off
-> list the .config that fails so I can fix that
-> 
-> Otherwise NAK the patch because it needs to do the cleanup but thanks
-> for finding the bug - you've done the hard 99%
+> I see.  and concur.  Thanks for the explanation.
 
-make -C /home/vasya/linux arch/x86/platform/mrst/vrtc.o
-make: Entering directory `/home/vasya/dev/linux-next'
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-  CALL    scripts/checksyscalls.sh
-  CC      arch/x86/platform/mrst/vrtc.o
-arch/x86/platform/mrst/vrtc.c: In function 'mrst_rtc_init':
-arch/x86/platform/mrst/vrtc.c:113: error: 'FIX_LNW_VRTC' undeclared (first use in this function)
-arch/x86/platform/mrst/vrtc.c:113: error: (Each undeclared identifier is reported only once
-arch/x86/platform/mrst/vrtc.c:113: error: for each function it appears in.)
-make[1]: *** [arch/x86/platform/mrst/vrtc.o] Error 1
-
-Both with allyesconfig and allmodconfig, x86_64.
-
-These are not patched lines, though.
-
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Looks good to me too, applied, thanks!
