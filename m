@@ -1,194 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756909Ab0KRMrv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 07:47:51 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:47795 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756781Ab0KRMrt (ORCPT
+	id S1756951Ab0KRMrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 07:47:53 -0500
+Received: from mail.windriver.com ([147.11.1.11]:51818 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756781Ab0KRMrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 07:47:49 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6170"; a="63189839"
-From: Tatyana Brokhman <tlinder@codeaurora.org>
-To: gregkh@suse.de
-Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Tatyana Brokhman <tlinder@codeaurora.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4 2/4] usb gadget: Configure endpoint according to gadget speed.
-Date: Thu, 18 Nov 2010 14:47:36 +0200
-Message-Id: <1290084457-26422-1-git-send-email-tlinder@codeaurora.org>
-X-Mailer: git-send-email 1.6.3.3
+	Thu, 18 Nov 2010 07:47:52 -0500
+Message-ID: <4CE52048.5080802@windriver.com>
+Date: Thu, 18 Nov 2010 06:47:04 -0600
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
+References: <1289573033-2889-1-git-send-email-dzickus@redhat.com> <4CDD579F.80009@windriver.com> <20101112154231.GN4823@redhat.com> <4CDD6389.2080206@windriver.com> <20101112161144.GP4823@redhat.com> <4CDD6CAD.30303@windriver.com> <20101112172755.GR4823@redhat.com> <20101116184325.GB4823@redhat.com> <4CE2E3C3.6060800@windriver.com> <20101118080516.GJ32621@elte.hu>
+In-Reply-To: <20101118080516.GJ32621@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Nov 2010 12:47:07.0172 (UTC) FILETIME=[B55CD640:01CB871E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add config_ep_by_speed() to configure the endpoint according to the gadget
-speed. Using this function will spare the FDs from handling the endpoint
-chosen descriptor.
+On 11/18/2010 02:05 AM, Ingo Molnar wrote:
+> * Jason Wessel <jason.wessel@windriver.com> wrote:
+>
+>   
+>> On 11/16/2010 12:43 PM, Don Zickus wrote:
+>>     
+>>> On Fri, Nov 12, 2010 at 12:27:55PM -0500, Don Zickus wrote:
+>>>
+>>> Hi Jason,
+>>>
+>>>   
+>>>       
+>>>>> I tested 2.6.35 and it does not hard hang, but suffered from a different
+>>>>> problem with a perf API change.   The kgdb tests appear to loop and loop
+>>>>> emitting endless streams of output in 2.6.35 and I already have that
+>>>>> problem patched.
+>>>>>       
+>>>>>           
+>>> I keep getting the following stack trace which is different than your
+>>> hang.  Is this looping I am seeing something with the NMI or kgdb?
+>>>
+>>>   
+>>>       
+>> That was also a regression due to changes in the perf API for which I
+>> have a patch pending.
+>>
+>> I can send you the patch which Frederic has already tested OR you can
+>> turn off CONFIG_DEBUG_RODATA in the kernel config, which is the source
+>> of that particular problem.  
+>>     
+>
+> Would be nice to know that Don's series does not introduce a regression for kgdb 
+> before i can apply the patches.
+>   
 
-Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
----
- drivers/usb/gadget/composite.c  |   76 +++++++++++++++++++++++++++++++++++++++
- drivers/usb/gadget/epautoconf.c |    1 +
- include/linux/usb/composite.h   |   21 +++++++++++
- include/linux/usb/gadget.h      |    3 ++
- 4 files changed, 101 insertions(+), 0 deletions(-)
+The behavior was still broken in the exact same way before and after
+Don's series.
 
-diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index 7b5cc16..99fb27d 100644
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -74,6 +74,82 @@ MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
- static char composite_manufacturer[50];
- 
- /*-------------------------------------------------------------------------*/
-+/**
-+ * next_ep_desc() - advance to the next EP descriptor
-+ * @t: currect pointer within descriptor array
-+ *
-+ * Return: next EP descriptor or NULL
-+ *
-+ * Iterate over @t until either EP descriptor found or
-+ * NULL (that indicates end of list) encountered
-+ */
-+static struct usb_descriptor_header**
-+next_ep_desc(struct usb_descriptor_header **t)
-+{
-+	for (; *t; t++) {
-+		if ((*t)->bDescriptorType == USB_DT_ENDPOINT)
-+			return t;
-+	}
-+	return NULL;
-+}
-+
-+/**
-+ * config_ep_by_speed() - configures the given endpoint
-+ * according to gadget speed.
-+ * @g: pointer to the gadget
-+ * @f: usb function
-+ * @_ep: the endpoint to configure
-+ *
-+ * Return: error code, 0 on success
-+ *
-+ * This function chooses the right descriptors for a given
-+ * endpoint according to gadget speed and saves in in the
-+ * endpoint desc field. If the endpoint already has a descriptor
-+ * assigned to it - overwrites it with currently corresponding
-+ * descriptor. The endpoint maxpacket field is updated according
-+ * to the choosen descriptor.
-+ * Note: the supplied function should hold all the descriptors
-+ * for supported speeds
-+ */
-+int config_ep_by_speed(struct usb_gadget *g,
-+			struct usb_function *f,
-+			struct usb_ep *_ep)
-+{
-+	struct usb_endpoint_descriptor *chosen_desc = NULL;
-+	struct usb_descriptor_header **speed_desc = NULL;
-+
-+	struct usb_descriptor_header **d_spd; /* cursor for speed desc */
-+
-+	if (!g || !f || !_ep)
-+		return -EIO;
-+
-+	/* select desired speed */
-+	switch (g->speed) {
-+	case USB_SPEED_HIGH:
-+		if (gadget_is_dualspeed(g)) {
-+			speed_desc = f->hs_descriptors;
-+			break;
-+		}
-+		/* else: fall through */
-+	default:
-+		speed_desc = f->descriptors;
-+	}
-+	/* find descriptors */
-+	for (d_spd = next_ep_desc(speed_desc); d_spd;
-+	      d_spd = next_ep_desc(d_spd+1)) {
-+		chosen_desc = (struct usb_endpoint_descriptor *)*d_spd;
-+		if (chosen_desc->bEndpointAddress == _ep->bEndpointAddress)
-+			goto ep_found;
-+	}
-+	return -EIO;
-+
-+ep_found:
-+	/* commit results */
-+	_ep->maxpacket = le16_to_cpu(chosen_desc->wMaxPacketSize);
-+	_ep->desc = chosen_desc;
-+
-+	return 0;
-+}
- 
- /**
-  * usb_add_function() - add a function to a configuration
-diff --git a/drivers/usb/gadget/epautoconf.c b/drivers/usb/gadget/epautoconf.c
-index 8a83248..84ce0fa 100644
---- a/drivers/usb/gadget/epautoconf.c
-+++ b/drivers/usb/gadget/epautoconf.c
-@@ -184,6 +184,7 @@ ep_matches (
- 			size = 64;
- 		desc->wMaxPacketSize = cpu_to_le16(size);
- 	}
-+	ep->bEndpointAddress = desc->bEndpointAddress;
- 	return 1;
- }
- 
-diff --git a/include/linux/usb/composite.h b/include/linux/usb/composite.h
-index 3d29a7d..b0c78cd 100644
---- a/include/linux/usb/composite.h
-+++ b/include/linux/usb/composite.h
-@@ -138,6 +138,27 @@ int usb_function_activate(struct usb_function *);
- int usb_interface_id(struct usb_configuration *, struct usb_function *);
- 
- /**
-+ * config_ep_by_speed() - configures the given endpoint
-+ * according to gadget speed.
-+ * @g: pointer to the gadget
-+ * @f: usb function
-+ * @_ep: the endpoint to configure
-+ *
-+ * Return: error code, 0 on success
-+ *
-+ * This function chooses the right descriptors for a given
-+ * endpoint according to gadget speed and saves in in the
-+ * endpoint desc field. If the endpoint already has a descriptor
-+ * assigned to it - overwrites it with currently corresponding
-+ * descriptor. The endpoint maxpacket field is updated according
-+ * to the choosen descriptor.
-+ * Note: the supplied function should hold all the descriptors
-+ * for supported speeds
-+ */
-+int config_ep_by_speed(struct usb_gadget *g, struct usb_function *f,
-+			struct usb_ep *_ep);
-+
-+/**
-  * ep_choose - select descriptor endpoint at current device speed
-  * @g: gadget, connected and running at some speed
-  * @hs: descriptor to use for high speed operation
-diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-index 937c8fa..f1c8256 100644
---- a/include/linux/usb/gadget.h
-+++ b/include/linux/usb/gadget.h
-@@ -132,6 +132,8 @@ struct usb_ep_ops {
-  *	value can sometimes be reduced (hardware allowing), according to
-  *      the endpoint descriptor used to configure the endpoint.
-  * @driver_data:for use by the gadget driver.
-+ * @bEndpointAddress: used to identify the endpoint when finding
-+ *	descriptor that matches connection speed
-  * @desc: endpoint descriptor.  This pointer is set before the endpoint is
-  *	enabled and remains valid until the endpoint is disabled.
-  *
-@@ -146,6 +148,7 @@ struct usb_ep {
- 	const struct usb_ep_ops		*ops;
- 	struct list_head		ep_list;
- 	unsigned			maxpacket:16;
-+	u8				bEndpointAddress;
- 	const struct usb_endpoint_descriptor	*desc;
- };
- 
--- 
-1.6.3.3
+The real problem here is that the perf NMI handlers are consuming events
+that are not intended for a perf call back handler.   More specifically
+when another subsystem injects an NMI event the perf NMI code returns
+NOTIFY_STOP.
 
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+That being said, Don's series looks sane to me.
+
+Tested-by: Jason Wessel <jason.wessel@windriver.com>
+
+Thanks,
+Jason.
