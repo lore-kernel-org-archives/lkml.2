@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760117Ab0KRUEb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 15:04:31 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42916 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757681Ab0KRUE3 convert rfc822-to-8bit (ORCPT
+	id S1758988Ab0KRUFf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 15:05:35 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60281
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754345Ab0KRUFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 15:04:29 -0500
-Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <4CE583D0.8050407@windriver.com>
-References: <20101112154231.GN4823@redhat.com>
-	 <4CDD6389.2080206@windriver.com> <20101112161144.GP4823@redhat.com>
-	 <4CDD6CAD.30303@windriver.com> <20101112172755.GR4823@redhat.com>
-	 <20101116184325.GB4823@redhat.com> <4CE2E3C3.6060800@windriver.com>
-	 <20101118080516.GJ32621@elte.hu> <4CE52048.5080802@windriver.com>
-	 <1290086232.2109.1507.camel@laptop> <20101118193247.GF18100@redhat.com>
-	 <4CE583D0.8050407@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 18 Nov 2010 21:04:20 +0100
-Message-ID: <1290110660.2109.1529.camel@laptop>
+	Thu, 18 Nov 2010 15:05:34 -0500
+Date: Thu, 18 Nov 2010 12:05:59 -0800 (PST)
+Message-Id: <20101118.120559.68132582.davem@davemloft.net>
+To: tomoya-linux@dsn.okisemi.com
+Cc: wg@grandegger.com, w.sang@pengutronix.de, chripell@fsfe.org,
+        21cnbao@gmail.com, sameo@linux.intel.com,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: Re: [PATCH net-next-2.6 v2] can: EG20T PCH: add prefix to macro
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4CE3B8CC.5060208@dsn.okisemi.com>
+References: <4CE3B8CC.5060208@dsn.okisemi.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 13:51 -0600, Jason Wessel wrote:
-> I highly doubt we want to disable perf.   I would rather use the source
-> and fix the nmi emulation in KVM/Qemu after we hear back the results
-> from Cyril because it sounds as if the problem is nearly bottomed out.
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Date: Wed, 17 Nov 2010 20:13:16 +0900
 
-Problem is that p6/p4/amd don't have cpuid bits telling us if there is a
-PMU (virt should clear those if it doesn't emulate one).
+> For easy to readable/identifiable, add prefix "PCH_" to all of #define macros.
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> Acked-by: Marc Kleine-Budde <mkl@pengutronix.de>
 
-I guess the safest course is to write a pmu msr and see if that faults,
-if it does, disable the thing.
-
-
+Applied.
