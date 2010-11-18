@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760761Ab0KRWHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 17:07:30 -0500
-Received: from kroah.org ([198.145.64.141]:42902 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760751Ab0KRWH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 17:07:28 -0500
-Date: Thu, 18 Nov 2010 14:06:39 -0800
-From: Greg KH <greg@kroah.com>
-To: =?utf-8?B?Uy7Dh2HEn2xhcg==?= Onur <caglar@CS.Princeton.EDU>
-Cc: Youquan Song <youquan.song@linux.intel.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "stable@kernel.org" <stable@kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Song, Youquan" <youquan.song@intel.com>
-Subject: Re: [stable] Boot failure with 2.6.27.46 on Xeon E5620 (Westmere
- EP)
-Message-ID: <20101118220639.GA956@kroah.com>
-References: <000954C6-B4AC-4FD8-BA3B-C3B199C7607F@CS.Princeton.EDU>
- <20100525155307.GA7453@kroah.com>
- <620C3556-2708-4704-90F3-37DDEF1A404E@CS.Princeton.EDU>
- <20100525205123.GA14993@kroah.com>
- <1274833451.2892.574.camel@sbs-t61.sc.intel.com>
- <DD6ACA75-527D-406D-971B-64F042E0ED26@CS.Princeton.EDU>
- <20100526132357.GA26728@youquan-linux.bj.intel.com>
- <E934EC71-FD1D-4750-818F-DDEBA2F68B4D@CS.Princeton.EDU>
- <20101118215429.GA29243@kroah.com>
- <42E89D5B-D2D6-42E5-A218-B538968FF6E5@CS.Princeton.EDU>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <42E89D5B-D2D6-42E5-A218-B538968FF6E5@CS.Princeton.EDU>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932823Ab0KRWJI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 17:09:08 -0500
+Received: from smtp-out-249.synserver.de ([212.40.180.249]:1054 "HELO
+	smtp-out-247.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1756649Ab0KRWJF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 17:09:05 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 23983
+From: Lars-Peter Clausen <lars@metafoo.de>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Lars-Peter Clausen <lars@metafoo.de>
+Subject: [PATCH] POWER: gpio-chager: Provide default name for the power_supply
+Date: Thu, 18 Nov 2010 23:08:39 +0100
+Message-Id: <1290118119-16468-3-git-send-email-lars@metafoo.de>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1290118119-16468-1-git-send-email-lars@metafoo.de>
+References: <1290118119-16468-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 04:59:12PM -0500, "S.Çağlar Onur" wrote:
-> Hi Greg,
-> 
-> On Nov 18, 2010, at 4:54 PM, Greg KH wrote:
-> 
-> > On Thu, Nov 18, 2010 at 04:24:40PM -0500, "S.Çağlar Onur" wrote:
-> >> Hi Youquan & Greg,
-> >> 
-> >> 
-> >> On May 26, 2010, at 9:23 AM, Youquan Song wrote:
-> >> 
-> >>>>> I can't think of any known issues in 2.6.27 that can lead to this kind
-> >>>>> of boot failure on WSM-EP. Caglar, It will be nice if you can do git
-> >>>>> bisect between working and non-working kernels.
-> >>>> 
-> >>>> Sure, I'll try to boot those with plain 2.6.27 to see but please note that it's going to be little time consuming. For each one I have to create a custom boot image for them to download and test (a.k.a. don't expect to hear from me soon :))
-> >>> 
-> >>> Hi Caglar,
-> >>> 
-> >>> What's the microcode version? Get by "dmesg | grep microcode" if you
-> >>> success boot other version of kernel.
-> >>> Can you try to disable C-state(C6) in BIOS before your boot 2.6.27?
-> >> 
-> >> First of all I'm really sorry that it took really long time to reply this mail as I was waiting Dell to send a loaner machine to us. This morning I've got the hardware and following patch solved the boot problem that I was observing, Greg could you consider adding that to 2.6.27-stable tree?
-> >> 
-> >> commit a0bf284bfedd6dc95bbee7ebf5ccf3b5f753a008
-> > 
-> > No problem, now queued up.
-> 
-> Umh please drop that patch for now, seems like I mixed my kernel
-> configs and compiled/tested a 64 bit one (by the way 64bit kernel
-> boots fine) but 32bit one still fails with the same error. I'll try to
-> bisect...
+This patch sets a default name for the power_supply in case there was no name
+supplied through the platform_data.
 
-Heh, ok, I'll go drop it now :)
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ drivers/power/gpio-charger.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-that's what I get for trying to be quick...
+diff --git a/drivers/power/gpio-charger.c b/drivers/power/gpio-charger.c
+index 016d5c0..27b8520 100644
+--- a/drivers/power/gpio-charger.c
++++ b/drivers/power/gpio-charger.c
+@@ -94,7 +94,7 @@ static int __devinit gpio_charger_probe(struct platform_device *pdev)
+ 
+ 	charger = &gpio_charger->charger;
+ 
+-	charger->name = pdata->name;
++	charger->name = pdata->name ?: "gpio-charger";
+ 	charger->type = pdata->type;
+ 	charger->properties = gpio_charger_properties;
+ 	charger->num_properties = ARRAY_SIZE(gpio_charger_properties);
+-- 
+1.5.6.5
 
-thanks,
-
-greg k-h
