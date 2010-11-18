@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab0KRJQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 04:16:32 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49669 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291Ab0KRJQ1 (ORCPT
+	id S1755967Ab0KRJRP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 04:17:15 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58152 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab0KRJRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 04:16:27 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 18 Nov 2010 18:10:48 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/8] mm: compaction: Use the LRU to get a hint on where
- compaction should start
-Message-Id: <20101118181048.7bdfbb38.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1290010969-26721-8-git-send-email-mel@csn.ul.ie>
-References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie>
-	<1290010969-26721-8-git-send-email-mel@csn.ul.ie>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 18 Nov 2010 04:17:12 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=KitM0+XmJPMD7CLrKTyWOsZMaWK4olE1fgwjEkfwXT4VxaCh8Fjjdgb2xWEH2M4iPJ
+         0vDjnxKLnNex7nnntV3sMw1iGh3xoob8jfQDbByZ3CvPh/VjvjymvjS3ufuTn9EmbMaz
+         51GQf762oJws95P6MOlhx29UKV5jgwPfWba1Y=
+Subject: Re: 2.6.37-rc2 after KVM shutdown - unregister_netdevice: waiting
+ for vmtst01eth0 to become free. Usage count = 1
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nikola Ciprich <extmaillist@linuxbox.cz>
+Cc: KVM list <kvm@vger.kernel.org>, netdev list <netdev@vger.kernel.org>,
+        nikola.ciprich@linuxbox.cz,
+        Linux kernel list <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101118062822.GB3781@pcnci.linuxbox.cz>
+References: <20101116084148.GA3781@pcnci.linuxbox.cz>
+	 <1289900812.5372.1.camel@edumazet-laptop>
+	 <20101118062822.GB3781@pcnci.linuxbox.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Nov 2010 10:16:53 +0100
+Message-ID: <1290071813.2781.1.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010 16:22:48 +0000
-Mel Gorman <mel@csn.ul.ie> wrote:
+Le jeudi 18 novembre 2010 à 07:28 +0100, Nikola Ciprich a écrit :
+> > Yep, this is a known problem, thanks !
+> > 
+> > fix is there : 
+> > 
+> > http://patchwork.ozlabs.org/patch/71354/
+> Thanks Eric, this indeed fixes the problem..
+> I noticed the fix didn't make it to 2.6.37-rc2-git3 though,
+> maybe it just got omited?
+> anyways, thanks for help!
+> n.
 
-> The end of the LRU stores the oldest known page. Compaction on the other
-> hand always starts scanning from the start of the zone. This patch uses
-> the LRU to hint to compaction where it should start scanning from. This
-> means that compaction will at least start with some old pages reducing
-> the impact on running processes and reducing the amount of scanning. The
-> check it makes is racy as the LRU lock is not taken but it should be
-> harmless as we are not manipulating the lists without the lock.
-> 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+Its in David Miller net-2.6 tree (all pending network patches for
+current linux-2.6 version), so it'll be included next time David push
+its tree to Linus, dont worry ;)
 
-Hmm, does this patch make a noticable difference ?
-Isn't it better to start scan from the biggest free chunk in a zone ?
 
-Thanks,
--Kame
 
