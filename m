@@ -1,69 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494Ab0KRNFG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 08:05:06 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:59011 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756815Ab0KRNFE (ORCPT
+	id S1757526Ab0KRNFO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 08:05:14 -0500
+Received: from casper.infradead.org ([85.118.1.10]:51065 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757498Ab0KRNFM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 08:05:04 -0500
-Date: Thu, 18 Nov 2010 08:05:02 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@elte.hu>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>
-Subject: Re: [RFC][PATCH 1/5] [PATCH 1/5] events: Add EVENT_FS the event
-	filesystem
-Message-ID: <20101118130502.GC3741@Krystal>
-References: <20101117005357.024472450@goodmis.org> <20101117005939.600541101@goodmis.org> <20101117033242.GB31335@suse.de> <20101117103914.GA21976@elte.hu> <1289996753.30543.35.camel@gandalf.stny.rr.com> <20101117174652.GC13717@Krystal> <1290016354.30543.71.camel@gandalf.stny.rr.com> <20101117234833.GK3290@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117234833.GK3290@thunk.org>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 08:03:37 up 56 days, 17:05,  1 user,  load average: 1.61, 1.39,
-	1.26
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 18 Nov 2010 08:05:12 -0500
+Subject: Re: [PATCH 01/13] writeback: IO-less balance_dirty_pages()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Chris Mason <chris.mason@oracle.com>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
+        Christoph Hellwig <hch@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, tglx <tglx@linutronix.de>
+In-Reply-To: <20101117042849.410279291@intel.com>
+References: <20101117042720.033773013@intel.com>
+	 <20101117042849.410279291@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 18 Nov 2010 14:04:34 +0100
+Message-ID: <1290085474.2109.1480.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ted Ts'o (tytso@mit.edu) wrote:
-> On Wed, Nov 17, 2010 at 12:52:34PM -0500, Steven Rostedt wrote:
-> > 
-> > I still say no to stable tracepoints in modules. Once you open that
-> > door, everyone will have it.
-> 
-> What about having KVM define the stable tracepoints in the built-in
-> part of the kernel, if CONFIG_KVM is Y or M, and then export the
-> tracepoints, such that the tracepoints can be called from a module?
-> 
-> That way the tracepoints aren't being *defined* in a module, they are
-> just being *called* from the module.  Does that seem like a reasonable
-> compromise?
+On Wed, 2010-11-17 at 12:27 +0800, Wu Fengguang wrote:
+> - avoid useless (eg. zero pause time) balance_dirty_pages() calls
+> - avoid too small pause time (less than  10ms, which burns CPU power)
+> - avoid too large pause time (more than 100ms, which hurts responsiveness)
+> - avoid big fluctuations of pause times 
 
-As Avi replied separately, he does not seem to think stable ABI is needed for
-KVM, given that his tools can deal with tracepoint addition/removal pretty well.
-However, let's keep this idea in mind if we ever face this issue with other
-"core" modules.
+If you feel like playing with sub-jiffies timeouts (a way to avoid that
+HZ=>100 assumption), the below (totally untested) patch might be of
+help..
 
-Thanks Ted,
 
-Mathieu
+---
+Subject: hrtimer: Provide io_schedule_timeout*() functions
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ include/linux/hrtimer.h |    7 +++++++
+ kernel/hrtimer.c        |   15 +++++++++++++++
+ kernel/sched.c          |   17 +++++++++++++++++
+ 3 files changed, 39 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index dd9954b..9e0f67e 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -419,6 +419,13 @@ extern long hrtimer_nanosleep_restart(struct restart_block *restart_block);
+ extern void hrtimer_init_sleeper(struct hrtimer_sleeper *sl,
+ 				 struct task_struct *tsk);
+ 
++extern int io_schedule_hrtimeout_range(ktime_t *expires, unsigned long delta,
++						const enum hrtimer_mode mode);
++extern int io_schedule_hrtimeout_range_clock(ktime_t *expires,
++		unsigned long delta, const enum hrtimer_mode mode, int clock);
++extern int io_schedule_hrtimeout(ktime_t *expires, const enum hrtimer_mode mode);
++
++
+ extern int schedule_hrtimeout_range(ktime_t *expires, unsigned long delta,
+ 						const enum hrtimer_mode mode);
+ extern int schedule_hrtimeout_range_clock(ktime_t *expires,
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 72206cf..ef2d93c 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1838,6 +1838,14 @@ int __sched schedule_hrtimeout_range(ktime_t *expires, unsigned long delta,
+ }
+ EXPORT_SYMBOL_GPL(schedule_hrtimeout_range);
+ 
++int __sched io_schedule_hrtimeout_range(ktime_t *expires, unsigned long delta,
++				     const enum hrtimer_mode mode)
++{
++	return io_schedule_hrtimeout_range_clock(expires, delta, mode,
++					      CLOCK_MONOTONIC);
++}
++EXPORT_SYMBOL_GPL(io_schedule_hrtimeout_range);
++
+ /**
+  * schedule_hrtimeout - sleep until timeout
+  * @expires:	timeout value (ktime_t)
+@@ -1866,3 +1874,10 @@ int __sched schedule_hrtimeout(ktime_t *expires,
+ 	return schedule_hrtimeout_range(expires, 0, mode);
+ }
+ EXPORT_SYMBOL_GPL(schedule_hrtimeout);
++
++int __sched io_schedule_hrtimeout(ktime_t *expires,
++			       const enum hrtimer_mode mode)
++{
++	return io_schedule_hrtimeout_range(expires, 0, mode);
++}
++EXPORT_SYMBOL_GPL(io_schedule_hrtimeout);
+diff --git a/kernel/sched.c b/kernel/sched.c
+index d5564a8..ac84455 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -5303,6 +5303,23 @@ long __sched io_schedule_timeout(long timeout)
+ 	return ret;
+ }
+ 
++int __sched
++io_schedule_hrtimeout_range_clock(ktime_t *expires, unsigned long delta,
++			       const enum hrtimer_mode mode, int clock)
++{
++	struct rq *rq = raw_rq();
++	long ret;
++
++	delayacct_blkio_start();
++	atomic_inc(&rq->nr_iowait);
++	current->in_iowait = 1;
++	ret = schedule_hrtimeout_range_clock(expires, delta, mode, clock);
++	current->in_iowait = 0;
++	atomic_dec(&rq->nr_iowait);
++	delayacct_blkio_end();
++	return ret;
++}
++
+ /**
+  * sys_sched_get_priority_max - return maximum RT priority.
+  * @policy: scheduling class.
+
