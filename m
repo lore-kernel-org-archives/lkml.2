@@ -1,120 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150Ab0KRS5D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 13:57:03 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:33148 "EHLO mx3.mail.elte.hu"
+	id S1757195Ab0KRTAm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 14:00:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756160Ab0KRS5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 13:57:01 -0500
-Date: Thu, 18 Nov 2010 19:56:44 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: hp <hp.reichert@xse.de>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: Re: [patch] trace: Add user-space event tracing/injection
-Message-ID: <20101118185644.GA10827@elte.hu>
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
- <4CE38C53.8090606@kernel.org>
- <20101117120740.GA24972@elte.hu>
- <4CE47ED0.7080901@linux.intel.com>
- <20101118085513.GH26398@elte.hu>
- <loom.20101118T170856-336@post.gmane.org>
+	id S1751630Ab0KRTAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 14:00:41 -0500
+Date: Thu, 18 Nov 2010 20:00:23 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/8] mm: migration: Allow migration to operate
+ asynchronously and avoid synchronous compaction in the faster path
+Message-ID: <20101118190023.GE30376@random.random>
+References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie>
+ <1290010969-26721-5-git-send-email-mel@csn.ul.ie>
+ <20101118182105.GB30376@random.random>
+ <20101118183437.GP8135@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <loom.20101118T170856-336@post.gmane.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20101118183437.GP8135@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* hp <hp.reichert@xse.de> wrote:
-
-> Ingo Molnar <mingo <at> elte.hu> writes:
+On Thu, Nov 18, 2010 at 06:34:38PM +0000, Mel Gorman wrote:
+> On Thu, Nov 18, 2010 at 07:21:06PM +0100, Andrea Arcangeli wrote:
+> > On Wed, Nov 17, 2010 at 04:22:45PM +0000, Mel Gorman wrote:
+> > > @@ -484,6 +486,7 @@ static unsigned long compact_zone_order(struct zone *zone,
+> > >  		.order = order,
+> > >  		.migratetype = allocflags_to_migratetype(gfp_mask),
+> > >  		.zone = zone,
+> > > +		.sync = false,
+> > >  	};
+> > >  	INIT_LIST_HEAD(&cc.freepages);
+> > >  	INIT_LIST_HEAD(&cc.migratepages);
+> > 
+> > I like this because I'm very afraid to avoid wait-I/O latencies
+> > introduced into hugepage allocations that I prefer to fail quickly and
+> > be handled later by khugepaged ;).
+> > 
 > 
-> > 
-> > 
-> > * Darren Hart <dvhart <at> linux.intel.com> wrote:
-> > 
-> > > Ideally I would like to see something just like trace_printf()
-> > > without having to define it myself in each of my testcases. [...]
-> > 
-> > We can make the prctl a single-argument thing, at the cost of not allowing \0
-> in the 
-> > content. (which is probably sane anyway)
-> > 
-> > That way deployment is super-simple:
-> > 
-> > 	prctl(35, "My Trace Message");
-> > 	...
-> > 
-> > 	if (asprintf(&msg, "My Trace Message: %d\n", 1234) != -1) {
-> > 		prctl(35, *msg);
-> > 		free(*msg);
-> > 	}
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> > 
-> I like this approach - it is doing it nearly the same way I did it with an extra
-> k-mod (no patch needed) and a debugfs entry handled in that mod.
-> I only see one thing with the string only data - I am doing stuff where there
-> are long recording times with also a lot of user events,
-> in such an environment I need more semantics on the event contents.
-> In my k-mod solution there's an event ID and the opportunity to log binary data.
-> As prctl() has 4 additional args after the option, it would be possible to use
-> it in the following way:
-> prtctl( 35, int eventID, int data_type, int msglen, void *buf);
-> or without the data_type
-> prtctl( 35, int eventID, int msglen, void *buf);
-> decoding would be of more effort but it would be worth
-> 
-> The event definition would be like this (with data_type):
-> 
-> TRACE_EVENT(user,
->         TP_PROTO(int id, int dtype, int dlen, unsigned char *bytes),
->         TP_ARGS(id, dtype, dlen, bytes),
->         TP_STRUCT__entry(
->                 __field(int, ev_id)
->                 __field(int, ev_type)
->                 __dynamic_array(unsigned char, ev_data, dlen)
->         ),
->         TP_fast_assign(
->                 __entry->ev_id = id;
-> 		__entry->ev_type = dtype;
-> 		memcpy(__get_dynamic_array(ev_data), bytes, dlen);
->         ),
-> 
->         TP_printk("ID: %d type: %s data: %s", __entry->ev_id,
-> __print_symbolic(__entry->ev_type, {0,"V"}, {1,"I"}, {2,"S"}, {4,"B"}),
-> __entry->ev_type == 0 ? "n/a" : __get_str(ev_data))
-> );
-> 
-> 
-> What do you think about this?
+> As you can see from the graphs in the leader, it makes a big difference to
+> latency as well to avoid sync migration where possible.
 
-The transport was not limited to strings - it's a memory buffer of 'len' bytes.
+Yep, amazing benchmarking work you did! Great job indeed.
 
-In that sense 'ev_id' and 'ev_type' above is really just hardcoding something that 
-the app might not care about.
+I thought of this sync wait in migrate myself as being troublesome a
+few days ago as I was reviewing the btrfs migration bug that I helped
+track down this week (triggering only with THP because it exercises
+compaction and in turn migration more often than upstream, it's rare
+to get any order > 4 allocation with upstream that would exercise
+compaction and trip on the btrfs fs corruption, it really had nothing
+to do with THP as I expected).
 
-For example with the patch i sent one could send 1 byte messages - no other 
-overhead. (beyond the standard record header)
+> We could pass gfp flags in I guess and abuse __GFP_NO_KSWAPD (from the THP
+> series obviously)?
 
-While if an app does want to use an (ev_id, ev_type), it can still do so. Or if an 
-app wants to do some other message type, that can be done too - it's free-form.
+That would work for me... :)
 
-Thanks,
+> Yes, it's the "slower" path where we've already reclaim pages and more
+> willing to wait for the compaction to occur as the alternative is failing
+> the allocation.
 
-	Ingo
+I've noticed, which is why I think it's equivalent to invoking the
+second try_to_compact_pages with (fast_scan=false, sync=true) (and the
+first of course with (fast_scan=true, sync=false)).
+
+> I'll think about it more. I could just leave it at try_to_compact_pages
+> doing the zonelist scan although it's not immediately occuring to me how I
+> should decide between sync and async other than "async the first time and
+> sync after that". The allocator does not have the same "reclaim priority"
+> awareness that reclaim does.
+
+I think the "migrate async & fast scan first, migrate sync and full
+scan later" is a simpler heuristic we can do and I expect it to work
+fine and equivalent (if not better).
+
+I'm undecided if it worth to run the hugepage page fault with "async &
+fast scan always" by abusing __GFP_NO_KSWAPD or by adding a
+__GFP_COMPACT_FAST. Of course it would only make a difference mostly
+if the hugepage allocation has to fail often (like 95% of ram in
+hugepages with slab spread over 10% of ram) so that is a corner case
+that not everybody experiences... Probably not worth it.
+
+Increasing nr_to_reclaim to 1<<order only when the compaction_suitable
+checks are not satisfied and compaction becomes a noop, may also be
+worth investigating (as long as there are enough cond_resched() inside
+those loops ;). But hey I'm not sure if it's really needed...
