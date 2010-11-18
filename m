@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab0KRHB4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 02:01:56 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:55752 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755116Ab0KRHBx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 02:01:53 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=eBIHbH1YCNDrx9shIllKgL16OSE80GFDhs6uPgfkk1VhWHaF9A63MBbAe8EsN5DZ8U
-         AZHRTQvGTrXKv5B4W7ntdA6PFBssAYlESBPH/afnVyfI75OBwWlGboK+GlDLwdywABvx
-         F0eWA1L3wL7UkI//IcnB2Z+NlZcZvwUuTfmNI=
-From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-To: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        will.deacon@arm.com
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com,
-        dengcheng.zhu@gmail.com
-Subject: [PATCH 5/5] MIPS/Perf-events: Use unsigned delta for right shift in event update
-Date: Thu, 18 Nov 2010 14:56:41 +0800
-Message-Id: <1290063401-25440-6-git-send-email-dengcheng.zhu@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
-References: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
+	id S1754671Ab0KRHEx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 02:04:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13889 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751331Ab0KRHEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 02:04:52 -0500
+Subject: Re: [ANNOUNCE v2] ktest.pl: Easy and flexible testing script for
+ Linux Kernel Developers (now with config bisect)
+From: Jon Masters <jcm@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        corbet <corbet@lwn.net>, Jake Edge <jake@lwn.net>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>, lmr@redhat.com,
+        Greg Kroah-Hartman <gregkh@suse.de>, autotest@test.kernel.org,
+        Vivek Goyal <vgoyal@redhat.com>, Clark Williams <williams@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tim Bird <tim.bird@am.sony.com>
+In-Reply-To: <1289259910.12418.77.camel@gandalf.stny.rr.com>
+References: <1289259910.12418.77.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat, Inc.
+Date: Thu, 18 Nov 2010 02:03:05 -0500
+Message-ID: <1290063785.3916.1124.camel@constitution.bos.jonmasters.org>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Leverage the commit for ARM by Will Deacon:
+On Mon, 2010-11-08 at 18:45 -0500, Steven Rostedt wrote:
 
-446a5a8b1eb91a6990e5c8fe29f14e7a95b69132
-	ARM: 6205/1: perf: ensure counter delta is treated as unsigned
+> It compiles, and performs the type of test specified by the
+> CONFIG_BISECT_TYPE option (build, boot or test). If it passes, then all
+> the configs that were enabled in the .config are removed from the
+> configs to test and added to the good configs to always enable. This
+> allows for configs in the other half to be enabled if they depended on
+> these configs.
 
-Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
----
- arch/mips/kernel/perf_event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Haven't had time to play, but I was thinking about this when bisecting
+an i915 bug last week. In that case none of the kernels failed to boot,
+they just had busted modelines. Do you have support in this tool for
+testing some condition on the system after it boots? I would guess I
+probably would have needed something more heavyweight (that could run a
+script to look for busted modes on the target after booting).
 
-diff --git a/arch/mips/kernel/perf_event.c b/arch/mips/kernel/perf_event.c
-index 345232a..0f1cdf5 100644
---- a/arch/mips/kernel/perf_event.c
-+++ b/arch/mips/kernel/perf_event.c
-@@ -169,7 +169,7 @@ static void mipspmu_event_update(struct perf_event *event,
- 	unsigned long flags;
- 	int shift = 64 - TOTAL_BITS;
- 	s64 prev_raw_count, new_raw_count;
--	s64 delta;
-+	u64 delta;
- 
- again:
- 	prev_raw_count = local64_read(&hwc->prev_count);
--- 
-1.7.1
+Jon.
+
 
