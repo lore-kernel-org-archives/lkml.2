@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933021Ab0KRXE3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:04:29 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:34210 "EHLO
+	id S933052Ab0KRXEf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:04:35 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:34492 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932996Ab0KRXE1 (ORCPT
+	with ESMTP id S932879Ab0KRXEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:04:27 -0500
-Date: Thu, 18 Nov 2010 15:02:41 -0800
+	Thu, 18 Nov 2010 18:04:33 -0500
+Date: Thu, 18 Nov 2010 15:02:26 -0800
 From: Randy Dunlap <randy.dunlap@oracle.com>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH] sched: fix kernel-doc for runqueue_is_locked
-Message-Id: <20101118150241.34f0ca15.randy.dunlap@oracle.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: fix kernel-doc for set_consumer_device_supply
+Message-Id: <20101118150226.d0614b85.randy.dunlap@oracle.com>
 Organization: Oracle Linux Eng.
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
@@ -24,28 +25,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Fix kernel-doc warning for runqueue_is_locked():
+Fix kernel-doc warning for set_consumer_device_supply():
 
-Warning(kernel/sched.c:664): missing initial short description on line:
+Warning(drivers/regulator/core.c:912): missing initial short description on line:
+ * set_consumer_device_supply: Bind a regulator to a symbolic supply
 
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc:	Liam Girdwood <lrg@slimlogic.co.uk>
+Cc:	Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- kernel/sched.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/regulator/core.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- lnx-2637-r2g4-kerndoc.orig/kernel/sched.c
-+++ lnx-2637-r2g4-kerndoc/kernel/sched.c
-@@ -664,10 +664,9 @@ inline void update_rq_clock(struct rq *r
- #endif
+--- lnx-2637-r2g4-kerndoc.orig/drivers/regulator/core.c
++++ lnx-2637-r2g4-kerndoc/drivers/regulator/core.c
+@@ -911,7 +911,7 @@ out:
+ }
  
  /**
-- * runqueue_is_locked
-+ * runqueue_is_locked - Returns true if the current cpu runqueue is locked
-  * @cpu: the processor in question.
-  *
-- * Returns true if the current cpu runqueue is locked.
-  * This interface allows printk to be called with the runqueue lock
-  * held and know whether or not it is OK to wake up the klogd.
-  */
----
+- * set_consumer_device_supply: Bind a regulator to a symbolic supply
++ * set_consumer_device_supply - Bind a regulator to a symbolic supply
+  * @rdev:         regulator source
+  * @consumer_dev: device the supply applies to
+  * @consumer_dev_name: dev_name() string for device supply applies to
