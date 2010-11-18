@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759739Ab0KRQNm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:13:42 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:36036 "EHLO
+	id S932159Ab0KRQNq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:13:46 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:36034 "EHLO
 	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759483Ab0KRQMf (ORCPT
+	with ESMTP id S1759451Ab0KRQMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Nov 2010 11:12:35 -0500
-X-Spam-ASN: 
 From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 To: linux-kernel@vger.kernel.org
 Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
         Rodolfo Giometti <giometti@enneenne.com>,
         Alexander Gordeev <lasaine@lvk.cs.msu.su>,
+        Randy Dunlap <rdunlap@xenotime.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCHv4 13/17] ntp: add hardpps implementation
-Date: Thu, 18 Nov 2010 19:01:06 +0300
-Message-Id: <2783e9e632882e211abde03e9b4ad89a336fd167.1290087480.git.lasaine@lvk.cs.msu.su>
+        Thomas Weber <weber@corscience.de>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Jiri Kosina <jkosina@suse.cz>, John Stultz <johnstul@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, linux-doc@vger.kernel.org
+Subject: [PATCHv4 15/17] pps: add kernel consumer support
+Date: Thu, 18 Nov 2010 19:01:08 +0300
+Message-Id: <21889ed6073f8e22eabc729e21540db13761dd92.1290087480.git.lasaine@lvk.cs.msu.su>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
 References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
@@ -27,552 +30,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds hardpps() implementation based upon the original one
-from the NTPv4 reference kernel code from David Mills. However, it is
-highly optimized towards very fast syncronization and maximum stickness
-to PPS signal. The typical error is less then a microsecond.
-To make it sync faster I had to throw away exponential phase filter so
-that the full phase offset is corrected immediately. Then I also had to
-throw away median phase filter because it gives a bigger error itself
-if used without exponential filter.
-Maybe we will find an appropriate filtering scheme in the future but
-it's not necessary if the signal quality is ok.
+Add an optional feature of PPSAPI, kernel consumer support, which uses
+the added hardpps() function.
 
-Acked-by: John Stultz <johnstul@us.ibm.com>
 Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 ---
- drivers/pps/Kconfig   |    7 +
- include/linux/timex.h |    1 +
- kernel/time/ntp.c     |  425 +++++++++++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 418 insertions(+), 15 deletions(-)
+ Documentation/ioctl/ioctl-number.txt |    2 +-
+ drivers/pps/Kconfig                  |    1 +
+ drivers/pps/kapi.c                   |   23 ++++++++++++
+ drivers/pps/pps.c                    |   62 +++++++++++++++++++++++++++++++++-
+ include/linux/pps.h                  |    7 ++++
+ include/linux/pps_kernel.h           |    6 +++
+ 6 files changed, 99 insertions(+), 2 deletions(-)
 
+diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
+index 33223ff..de2b113 100644
+--- a/Documentation/ioctl/ioctl-number.txt
++++ b/Documentation/ioctl/ioctl-number.txt
+@@ -249,7 +249,7 @@ Code  Seq#(hex)	Include File		Comments
+ 'p'	40-7F	linux/nvram.h
+ 'p'	80-9F	linux/ppdev.h		user-space parport
+ 					<mailto:tim@cyberelk.net>
+-'p'	A1-A4	linux/pps.h		LinuxPPS
++'p'	A1-A5	linux/pps.h		LinuxPPS
+ 					<mailto:giometti@linux.it>
+ 'q'	00-1F	linux/serio.h
+ 'q'	80-FF	linux/telephony.h	Internet PhoneJACK, Internet LineJACK
 diff --git a/drivers/pps/Kconfig b/drivers/pps/Kconfig
-index 1afe4e0..33c9126 100644
+index 33c9126..4823e47 100644
 --- a/drivers/pps/Kconfig
 +++ b/drivers/pps/Kconfig
-@@ -30,6 +30,13 @@ config PPS_DEBUG
- 	  messages to the system log.  Select this if you are having a
- 	  problem with PPS support and want to see more of what is going on.
- 
-+config NTP_PPS
-+	bool "PPS kernel consumer support"
-+	depends on PPS
-+	help
-+	  This option adds support for direct in-kernel time
-+	  syncronization using an external PPS signal.
-+
- source drivers/pps/clients/Kconfig
- 
- endmenu
-diff --git a/include/linux/timex.h b/include/linux/timex.h
-index 32d852f..d23999f 100644
---- a/include/linux/timex.h
-+++ b/include/linux/timex.h
-@@ -268,6 +268,7 @@ extern u64 tick_length;
- extern void second_overflow(void);
- extern void update_ntp_one_tick(void);
- extern int do_adjtimex(struct timex *);
-+extern void hardpps(const struct timespec *, const struct timespec *);
- 
- int read_current_timer(unsigned long *timer_val);
- 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index c631168..d721ba7 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -14,6 +14,7 @@
- #include <linux/timex.h>
+@@ -7,6 +7,7 @@ menu "PPS support"
+ config PPS
+ 	tristate "PPS support"
+ 	depends on EXPERIMENTAL
++	select NTP_PPS
+ 	---help---
+ 	  PPS (Pulse Per Second) is a special pulse provided by some GPS
+ 	  antennae. Userland can use it to get a high-precision time
+diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
+index 2bdfbed..0026c99 100644
+--- a/drivers/pps/kapi.c
++++ b/drivers/pps/kapi.c
+@@ -26,6 +26,7 @@
+ #include <linux/init.h>
+ #include <linux/sched.h>
  #include <linux/time.h>
- #include <linux/mm.h>
-+#include <linux/module.h>
++#include <linux/timex.h>
+ #include <linux/spinlock.h>
+ #include <linux/fs.h>
+ #include <linux/pps_kernel.h>
+@@ -38,6 +39,12 @@
+ /* PPS event workqueue */
+ struct workqueue_struct *pps_event_workqueue;
  
- /*
-  * NTP timekeeping variables:
-@@ -74,6 +75,162 @@ static long			time_adjust;
- /* constant (boot-param configurable) NTP tick adjustment (upscaled)	*/
- static s64			ntp_tick_adj;
- 
-+#ifdef CONFIG_NTP_PPS
-+
-+/*
-+ * The following variables are used when a pulse-per-second (PPS) signal
-+ * is available. They establish the engineering parameters of the clock
-+ * discipline loop when controlled by the PPS signal.
-+ */
-+#define PPS_VALID	10	/* PPS signal watchdog max (s) */
-+#define PPS_POPCORN	4	/* popcorn spike threshold (shift) */
-+#define PPS_INTMIN	2	/* min freq interval (s) (shift) */
-+#define PPS_INTMAX	8	/* max freq interval (s) (shift) */
-+#define PPS_INTCOUNT	4	/* number of consecutive good intervals to
-+				   increase pps_shift or consecutive bad
-+				   intervals to decrease it */
-+#define PPS_MAXWANDER	100000	/* max PPS freq wander (ns/s) */
-+
-+static int pps_valid;		/* signal watchdog counter */
-+static long pps_tf[3];		/* phase median filter */
-+static long pps_jitter;		/* current jitter (ns) */
-+static struct timespec pps_fbase; /* beginning of the last freq interval */
-+static int pps_shift;		/* current interval duration (s) (shift) */
-+static int pps_intcnt;		/* interval counter */
-+static s64 pps_freq;		/* frequency offset (scaled ns/s) */
-+static long pps_stabil;		/* current stability (scaled ns/s) */
-+
-+/*
-+ * PPS signal quality monitors
-+ */
-+static long pps_calcnt;		/* calibration intervals */
-+static long pps_jitcnt;		/* jitter limit exceeded */
-+static long pps_stbcnt;		/* stability limit exceeded */
-+static long pps_errcnt;		/* calibration errors */
-+
-+
-+/* PPS kernel consumer compensates the whole phase error immediately.
-+ * Otherwise, reduce the offset by a fixed factor times the time constant.
-+ */
-+static inline s64 ntp_offset_chunk(s64 offset)
-+{
-+	if (time_status & STA_PPSTIME && time_status & STA_PPSSIGNAL)
-+		return offset;
-+	else
-+		return shift_right(offset, SHIFT_PLL + time_constant);
-+}
-+
-+static inline void pps_reset_freq_interval(void)
-+{
-+	/* the PPS calibration interval may end
-+	   surprisingly early */
-+	pps_shift = PPS_INTMIN;
-+	pps_intcnt = 0;
-+}
-+
-+/**
-+ * pps_clear - Clears the PPS state variables
-+ *
-+ * Must be called while holding a write on the xtime_lock
-+ */
-+static inline void pps_clear(void)
-+{
-+	pps_reset_freq_interval();
-+	pps_tf[0] = 0;
-+	pps_tf[1] = 0;
-+	pps_tf[2] = 0;
-+	pps_fbase.tv_sec = pps_fbase.tv_nsec = 0;
-+	pps_freq = 0;
-+}
-+
-+/* Decrease pps_valid to indicate that another second has passed since
-+ * the last PPS signal. When it reaches 0, indicate that PPS signal is
-+ * missing.
-+ *
-+ * Must be called while holding a write on the xtime_lock
-+ */
-+static inline void pps_dec_valid(void)
-+{
-+	if (pps_valid > 0)
-+		pps_valid--;
-+	else {
-+		time_status &= ~(STA_PPSSIGNAL | STA_PPSJITTER |
-+				 STA_PPSWANDER | STA_PPSERROR);
-+		pps_clear();
-+	}
-+}
-+
-+static inline void pps_set_freq(s64 freq)
-+{
-+	pps_freq = freq;
-+}
-+
-+static inline int is_error_status(int status)
-+{
-+	return (time_status & (STA_UNSYNC|STA_CLOCKERR))
-+		/* PPS signal lost when either PPS time or
-+		 * PPS frequency synchronization requested
-+		 */
-+		|| ((time_status & (STA_PPSFREQ|STA_PPSTIME))
-+			&& !(time_status & STA_PPSSIGNAL))
-+		/* PPS jitter exceeded when
-+		 * PPS time synchronization requested */
-+		|| ((time_status & (STA_PPSTIME|STA_PPSJITTER))
-+			== (STA_PPSTIME|STA_PPSJITTER))
-+		/* PPS wander exceeded or calibration error when
-+		 * PPS frequency synchronization requested
-+		 */
-+		|| ((time_status & STA_PPSFREQ)
-+			&& (time_status & (STA_PPSWANDER|STA_PPSERROR)));
-+}
-+
-+static inline void pps_fill_timex(struct timex *txc)
-+{
-+	txc->ppsfreq	   = shift_right((pps_freq >> PPM_SCALE_INV_SHIFT) *
-+					 PPM_SCALE_INV, NTP_SCALE_SHIFT);
-+	txc->jitter	   = pps_jitter;
-+	if (!(time_status & STA_NANO))
-+		txc->jitter /= NSEC_PER_USEC;
-+	txc->shift	   = pps_shift;
-+	txc->stabil	   = pps_stabil;
-+	txc->jitcnt	   = pps_jitcnt;
-+	txc->calcnt	   = pps_calcnt;
-+	txc->errcnt	   = pps_errcnt;
-+	txc->stbcnt	   = pps_stbcnt;
-+}
-+
-+#else /* !CONFIG_NTP_PPS */
-+
-+static inline s64 ntp_offset_chunk(s64 offset)
-+{
-+	return shift_right(offset, SHIFT_PLL + time_constant);
-+}
-+
-+static inline void pps_reset_freq_interval(void) {}
-+static inline void pps_clear(void) {}
-+static inline void pps_dec_valid(void) {}
-+static inline void pps_set_freq(s64 freq) {}
-+
-+static inline int is_error_status(int status)
-+{
-+	return status & (STA_UNSYNC|STA_CLOCKERR);
-+}
-+
-+static inline void pps_fill_timex(struct timex *txc)
-+{
-+	/* PPS is not implemented, so these are zero */
-+	txc->ppsfreq	   = 0;
-+	txc->jitter	   = 0;
-+	txc->shift	   = 0;
-+	txc->stabil	   = 0;
-+	txc->jitcnt	   = 0;
-+	txc->calcnt	   = 0;
-+	txc->errcnt	   = 0;
-+	txc->stbcnt	   = 0;
-+}
-+
-+#endif /* CONFIG_NTP_PPS */
++/* state variables to bind kernel consumer */
++/* PPS API (RFC 2783): current source and mode for ``kernel consumer'' */
++DEFINE_SPINLOCK(pps_kc_hardpps_lock);
++void	*pps_kc_hardpps_dev;	/* some unique pointer to device */
++int	pps_kc_hardpps_mode;	/* mode bits for kernel consumer */
 +
  /*
-  * NTP methods:
+  * Local functions
   */
-@@ -177,6 +334,9 @@ void ntp_clear(void)
+@@ -141,6 +148,16 @@ EXPORT_SYMBOL(pps_register_source);
  
- 	tick_length	= tick_length_base;
- 	time_offset	= 0;
+ void pps_unregister_source(struct pps_device *pps)
+ {
++	spin_lock(&pps_kc_hardpps_lock);
++	if (pps == pps_kc_hardpps_dev) {
++		pps_kc_hardpps_mode = 0;
++		pps_kc_hardpps_dev = NULL;
++		spin_unlock(&pps_kc_hardpps_lock);
++		dev_info(pps->dev, "unbound kernel consumer"
++				" on device removal\n");
++	} else
++		spin_unlock(&pps_kc_hardpps_lock);
 +
-+	/* Clear PPS state variables */
-+	pps_clear();
- }
+ 	pps_unregister_cdev(pps);
  
- /*
-@@ -242,16 +402,16 @@ void second_overflow(void)
- 		time_status |= STA_UNSYNC;
+ 	/* don't have to kfree(pps) here because it will be done on
+@@ -213,6 +230,12 @@ void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
+ 		captured = ~0;
  	}
  
--	/*
--	 * Compute the phase adjustment for the next second. The offset is
--	 * reduced by a fixed factor times the time constant.
--	 */
-+	/* Compute the phase adjustment for the next second */
- 	tick_length	 = tick_length_base;
- 
--	delta		 = shift_right(time_offset, SHIFT_PLL + time_constant);
-+	delta		 = ntp_offset_chunk(time_offset);
- 	time_offset	-= delta;
- 	tick_length	+= delta;
- 
-+	/* Check PPS signal */
-+	pps_dec_valid();
++	/* Pass some events to kernel consumer if activated */
++	spin_lock(&pps_kc_hardpps_lock);
++	if (pps == pps_kc_hardpps_dev && event & pps_kc_hardpps_mode)
++		hardpps(&ts->ts_real, &ts->ts_raw);
++	spin_unlock(&pps_kc_hardpps_lock);
 +
- 	if (!time_adjust)
- 		return;
+ 	/* Wake up if captured something */
+ 	if (captured) {
+ 		pps->last_ev++;
+diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
+index d3267f3..6cedb8b 100644
+--- a/drivers/pps/pps.c
++++ b/drivers/pps/pps.c
+@@ -197,9 +197,69 @@ static long pps_cdev_ioctl(struct file *file,
  
-@@ -361,6 +521,8 @@ static inline void process_adj_status(struct timex *txc, struct timespec *ts)
- 	if ((time_status & STA_PLL) && !(txc->status & STA_PLL)) {
- 		time_state = TIME_OK;
- 		time_status = STA_UNSYNC;
-+		/* restart PPS frequency calibration */
-+		pps_reset_freq_interval();
+ 		break;
  	}
- 
- 	/*
-@@ -410,6 +572,8 @@ static inline void process_adjtimex_modes(struct timex *txc, struct timespec *ts
- 		time_freq = txc->freq * PPM_SCALE;
- 		time_freq = min(time_freq, MAXFREQ_SCALED);
- 		time_freq = max(time_freq, -MAXFREQ_SCALED);
-+		/* update pps_freq */
-+		pps_set_freq(time_freq);
- 	}
- 
- 	if (txc->modes & ADJ_MAXERROR)
-@@ -500,7 +664,8 @@ int do_adjtimex(struct timex *txc)
- 	}
- 
- 	result = time_state;	/* mostly `TIME_OK' */
--	if (time_status & (STA_UNSYNC|STA_CLOCKERR))
-+	/* check for errors */
-+	if (is_error_status(time_status))
- 		result = TIME_ERROR;
- 
- 	txc->freq	   = shift_right((time_freq >> PPM_SCALE_INV_SHIFT) *
-@@ -514,15 +679,8 @@ int do_adjtimex(struct timex *txc)
- 	txc->tick	   = tick_usec;
- 	txc->tai	   = time_tai;
- 
--	/* PPS is not implemented, so these are zero */
--	txc->ppsfreq	   = 0;
--	txc->jitter	   = 0;
--	txc->shift	   = 0;
--	txc->stabil	   = 0;
--	txc->jitcnt	   = 0;
--	txc->calcnt	   = 0;
--	txc->errcnt	   = 0;
--	txc->stbcnt	   = 0;
-+	/* fill PPS status fields */
-+	pps_fill_timex(txc);
- 
- 	write_sequnlock_irq(&xtime_lock);
- 
-@@ -536,6 +694,243 @@ int do_adjtimex(struct timex *txc)
- 	return result;
- }
- 
-+#ifdef	CONFIG_NTP_PPS
++	case PPS_KC_BIND: {
++		struct pps_bind_args bind_args;
 +
-+/* actually struct pps_normtime is good old struct timespec, but it is
-+ * semantically different (and it is the reason why it was invented):
-+ * pps_normtime.nsec has a range of ( -NSEC_PER_SEC / 2, NSEC_PER_SEC / 2 ]
-+ * while timespec.tv_nsec has a range of [0, NSEC_PER_SEC) */
-+struct pps_normtime {
-+	__kernel_time_t	sec;	/* seconds */
-+	long		nsec;	/* nanoseconds */
++		dev_dbg(pps->dev, "PPS_KC_BIND\n");
++
++		/* Check the capabilities */
++		if (!capable(CAP_SYS_TIME))
++			return -EPERM;
++
++		if (copy_from_user(&bind_args, uarg,
++					sizeof(struct pps_bind_args)))
++			return -EFAULT;
++
++		/* Check for supported capabilities */
++		if ((bind_args.edge & ~pps->info.mode) != 0) {
++			dev_err(pps->dev, "unsupported capabilities (%x)\n",
++					bind_args.edge);
++			return -EINVAL;
++		}
++
++		/* Validate parameters roughly */
++		if (bind_args.tsformat != PPS_TSFMT_TSPEC ||
++				(bind_args.edge & ~PPS_CAPTUREBOTH) != 0 ||
++				bind_args.consumer != PPS_KC_HARDPPS) {
++			dev_err(pps->dev, "invalid kernel consumer bind"
++					" parameters (%x)\n", bind_args.edge);
++			return -EINVAL;
++		}
++
++		/* Check if another consumer is already bound */
++		spin_lock(&pps_kc_hardpps_lock);
++
++		if (bind_args.edge == 0)
++			if (pps_kc_hardpps_dev == pps) {
++				pps_kc_hardpps_mode = 0;
++				pps_kc_hardpps_dev = NULL;
++				spin_unlock(&pps_kc_hardpps_lock);
++				dev_info(pps->dev, "unbound kernel"
++						" consumer\n");
++			} else {
++				spin_unlock(&pps_kc_hardpps_lock);
++				dev_err(pps->dev, "selected kernel consumer"
++						" is not bound\n");
++				return -EINVAL;
++			}
++		else
++			if (pps_kc_hardpps_dev == NULL ||
++					pps_kc_hardpps_dev == pps) {
++				pps_kc_hardpps_mode = bind_args.edge;
++				pps_kc_hardpps_dev = pps;
++				spin_unlock(&pps_kc_hardpps_lock);
++				dev_info(pps->dev, "bound kernel consumer: "
++					"edge=0x%x\n", bind_args.edge);
++			} else {
++				spin_unlock(&pps_kc_hardpps_lock);
++				dev_err(pps->dev, "another kernel consumer"
++						" is already bound\n");
++				return -EINVAL;
++			}
++		break;
++	}
+ 	default:
+ 		return -ENOTTY;
+-		break;
+ 	}
+ 
+ 	return 0;
+diff --git a/include/linux/pps.h b/include/linux/pps.h
+index 0194ab0..a9bb1d9 100644
+--- a/include/linux/pps.h
++++ b/include/linux/pps.h
+@@ -114,11 +114,18 @@ struct pps_fdata {
+ 	struct pps_ktime timeout;
+ };
+ 
++struct pps_bind_args {
++	int tsformat;	/* format of time stamps */
++	int edge;	/* selected event type */
++	int consumer;	/* selected kernel consumer */
 +};
 +
-+/* normalize the timestamp so that nsec is in the
-+   ( -NSEC_PER_SEC / 2, NSEC_PER_SEC / 2 ] interval */
-+static inline struct pps_normtime pps_normalize_ts(struct timespec ts)
-+{
-+	struct pps_normtime norm = {
-+		.sec = ts.tv_sec,
-+		.nsec = ts.tv_nsec
-+	};
+ #include <linux/ioctl.h>
+ 
+ #define PPS_GETPARAMS		_IOR('p', 0xa1, struct pps_kparams *)
+ #define PPS_SETPARAMS		_IOW('p', 0xa2, struct pps_kparams *)
+ #define PPS_GETCAP		_IOR('p', 0xa3, int *)
+ #define PPS_FETCH		_IOWR('p', 0xa4, struct pps_fdata *)
++#define PPS_KC_BIND		_IOW('p', 0xa5, struct pps_bind_args *)
+ 
+ #endif /* _PPS_H_ */
+diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
+index 39fc7125..10e10c8 100644
+--- a/include/linux/pps_kernel.h
++++ b/include/linux/pps_kernel.h
+@@ -87,6 +87,12 @@ struct pps_device {
+ 
+ extern struct device_attribute pps_attrs[];
+ 
++/* state variables to bind kernel consumer */
++/* PPS API (RFC 2783): current source and mode for ``kernel consumer'' */
++extern spinlock_t pps_kc_hardpps_lock;
++extern void *pps_kc_hardpps_dev;	/* some unique pointer to device */
++extern int pps_kc_hardpps_mode;		/* mode bits for kernel consumer */
 +
-+	if (norm.nsec > (NSEC_PER_SEC >> 1)) {
-+		norm.nsec -= NSEC_PER_SEC;
-+		norm.sec++;
-+	}
-+
-+	return norm;
-+}
-+
-+/* get current phase correction and jitter */
-+static inline long pps_phase_filter_get(long *jitter)
-+{
-+	*jitter = pps_tf[0] - pps_tf[1];
-+	if (*jitter < 0)
-+		*jitter = -*jitter;
-+
-+	/* TODO: test various filters */
-+	return pps_tf[0];
-+}
-+
-+/* add the sample to the phase filter */
-+static inline void pps_phase_filter_add(long err)
-+{
-+	pps_tf[2] = pps_tf[1];
-+	pps_tf[1] = pps_tf[0];
-+	pps_tf[0] = err;
-+}
-+
-+/* decrease frequency calibration interval length.
-+ * It is halved after four consecutive unstable intervals.
-+ */
-+static inline void pps_dec_freq_interval(void)
-+{
-+	if (--pps_intcnt <= -PPS_INTCOUNT) {
-+		pps_intcnt = -PPS_INTCOUNT;
-+		if (pps_shift > PPS_INTMIN) {
-+			pps_shift--;
-+			pps_intcnt = 0;
-+		}
-+	}
-+}
-+
-+/* increase frequency calibration interval length.
-+ * It is doubled after four consecutive stable intervals.
-+ */
-+static inline void pps_inc_freq_interval(void)
-+{
-+	if (++pps_intcnt >= PPS_INTCOUNT) {
-+		pps_intcnt = PPS_INTCOUNT;
-+		if (pps_shift < PPS_INTMAX) {
-+			pps_shift++;
-+			pps_intcnt = 0;
-+		}
-+	}
-+}
-+
-+/* update clock frequency based on MONOTONIC_RAW clock PPS signal
-+ * timestamps
-+ *
-+ * At the end of the calibration interval the difference between the
-+ * first and last MONOTONIC_RAW clock timestamps divided by the length
-+ * of the interval becomes the frequency update. If the interval was
-+ * too long, the data are discarded.
-+ * Returns the difference between old and new frequency values.
-+ */
-+static long hardpps_update_freq(struct pps_normtime freq_norm)
-+{
-+	long delta, delta_mod;
-+	s64 ftemp;
-+
-+	/* check if the frequency interval was too long */
-+	if (freq_norm.sec > (2 << pps_shift)) {
-+		time_status |= STA_PPSERROR;
-+		pps_errcnt++;
-+		pps_dec_freq_interval();
-+		pr_err("hardpps: PPSERROR: interval too long - %ld s\n",
-+				freq_norm.sec);
-+		return 0;
-+	}
-+
-+	/* here the raw frequency offset and wander (stability) is
-+	 * calculated. If the wander is less than the wander threshold
-+	 * the interval is increased; otherwise it is decreased.
-+	 */
-+	ftemp = div_s64(((s64)(-freq_norm.nsec)) << NTP_SCALE_SHIFT,
-+			freq_norm.sec);
-+	delta = shift_right(ftemp - pps_freq, NTP_SCALE_SHIFT);
-+	pps_freq = ftemp;
-+	if (delta > PPS_MAXWANDER || delta < -PPS_MAXWANDER) {
-+		pr_warning("hardpps: PPSWANDER: change=%ld\n", delta);
-+		time_status |= STA_PPSWANDER;
-+		pps_stbcnt++;
-+		pps_dec_freq_interval();
-+	} else {	/* good sample */
-+		pps_inc_freq_interval();
-+	}
-+
-+	/* the stability metric is calculated as the average of recent
-+	 * frequency changes, but is used only for performance
-+	 * monitoring
-+	 */
-+	delta_mod = delta;
-+	if (delta_mod < 0)
-+		delta_mod = -delta_mod;
-+	pps_stabil += (div_s64(((s64)delta_mod) <<
-+				(NTP_SCALE_SHIFT - SHIFT_USEC),
-+				NSEC_PER_USEC) - pps_stabil) >> PPS_INTMIN;
-+
-+	/* if enabled, the system clock frequency is updated */
-+	if ((time_status & STA_PPSFREQ) != 0 &&
-+	    (time_status & STA_FREQHOLD) == 0) {
-+		time_freq = pps_freq;
-+		ntp_update_frequency();
-+	}
-+
-+	return delta;
-+}
-+
-+/* correct REALTIME clock phase error against PPS signal */
-+static void hardpps_update_phase(long error)
-+{
-+	long correction = -error;
-+	long jitter;
-+
-+	/* add the sample to the median filter */
-+	pps_phase_filter_add(correction);
-+	correction = pps_phase_filter_get(&jitter);
-+
-+	/* Nominal jitter is due to PPS signal noise. If it exceeds the
-+	 * threshold, the sample is discarded; otherwise, if so enabled,
-+	 * the time offset is updated.
-+	 */
-+	if (jitter > (pps_jitter << PPS_POPCORN)) {
-+		pr_warning("hardpps: PPSJITTER: jitter=%ld, limit=%ld\n",
-+		       jitter, (pps_jitter << PPS_POPCORN));
-+		time_status |= STA_PPSJITTER;
-+		pps_jitcnt++;
-+	} else if (time_status & STA_PPSTIME) {
-+		/* correct the time using the phase offset */
-+		time_offset = div_s64(((s64)correction) << NTP_SCALE_SHIFT,
-+				NTP_INTERVAL_FREQ);
-+		/* cancel running adjtime() */
-+		time_adjust = 0;
-+	}
-+	/* update jitter */
-+	pps_jitter += (jitter - pps_jitter) >> PPS_INTMIN;
-+}
-+
-+/*
-+ * hardpps() - discipline CPU clock oscillator to external PPS signal
-+ *
-+ * This routine is called at each PPS signal arrival in order to
-+ * discipline the CPU clock oscillator to the PPS signal. It takes two
-+ * parameters: REALTIME and MONOTONIC_RAW clock timestamps. The former
-+ * is used to correct clock phase error and the latter is used to
-+ * correct the frequency.
-+ *
-+ * This code is based on David Mills's reference nanokernel
-+ * implementation. It was mostly rewritten but keeps the same idea.
-+ */
-+void hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
-+{
-+	struct pps_normtime pts_norm, freq_norm;
-+	unsigned long flags;
-+
-+	pts_norm = pps_normalize_ts(*phase_ts);
-+
-+	write_seqlock_irqsave(&xtime_lock, flags);
-+
-+	/* clear the error bits, they will be set again if needed */
-+	time_status &= ~(STA_PPSJITTER | STA_PPSWANDER | STA_PPSERROR);
-+
-+	/* indicate signal presence */
-+	time_status |= STA_PPSSIGNAL;
-+	pps_valid = PPS_VALID;
-+
-+	/* when called for the first time,
-+	 * just start the frequency interval */
-+	if (unlikely(pps_fbase.tv_sec == 0)) {
-+		pps_fbase = *raw_ts;
-+		write_sequnlock_irqrestore(&xtime_lock, flags);
-+		return;
-+	}
-+
-+	/* ok, now we have a base for frequency calculation */
-+	freq_norm = pps_normalize_ts(timespec_sub(*raw_ts, pps_fbase));
-+
-+	/* check that the signal is in the range
-+	 * [1s - MAXFREQ us, 1s + MAXFREQ us], otherwise reject it */
-+	if ((freq_norm.sec == 0) ||
-+			(freq_norm.nsec > MAXFREQ * freq_norm.sec) ||
-+			(freq_norm.nsec < -MAXFREQ * freq_norm.sec)) {
-+		time_status |= STA_PPSJITTER;
-+		/* restart the frequency calibration interval */
-+		pps_fbase = *raw_ts;
-+		write_sequnlock_irqrestore(&xtime_lock, flags);
-+		pr_err("hardpps: PPSJITTER: bad pulse\n");
-+		return;
-+	}
-+
-+	/* signal is ok */
-+
-+	/* check if the current frequency interval is finished */
-+	if (freq_norm.sec >= (1 << pps_shift)) {
-+		pps_calcnt++;
-+		/* restart the frequency calibration interval */
-+		pps_fbase = *raw_ts;
-+		hardpps_update_freq(freq_norm);
-+	}
-+
-+	hardpps_update_phase(pts_norm.nsec);
-+
-+	write_sequnlock_irqrestore(&xtime_lock, flags);
-+}
-+EXPORT_SYMBOL(hardpps);
-+
-+#endif	/* CONFIG_NTP_PPS */
-+
- static int __init ntp_tick_adj_setup(char *str)
- {
- 	ntp_tick_adj = simple_strtol(str, NULL, 0);
+ extern struct workqueue_struct *pps_event_workqueue;
+ 
+ /*
 -- 
 1.7.2.3
 
