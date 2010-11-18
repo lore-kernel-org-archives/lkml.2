@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757661Ab0KRNif (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 08:38:35 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36007 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755023Ab0KRNie (ORCPT
+	id S1757860Ab0KRNjL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 08:39:11 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:46434 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757766Ab0KRNjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 08:38:34 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=WwdzUMkJ1YOMwJ9FUIoSl99FbHysCnXO6e51L3VDGLL+gm2YGaWyDjeeCBT+ngpbXI
-         T9xfCOwh0LtacPI11eFlGUTPsEZUM3SZ3HlBBCAIvGqnh0qBXcMCyy6J1o6OG86DfRYq
-         3eNC0jEKRUfirqbmMehaDSSd8b5nK0ganc+8U=
-Subject: Re: [PATCH 1/2] perf: Fix compilation on gcc 4.0.2
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, acme@redhat.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <20101118133112.GC12667@basil.fritz.box>
-References: <1290077461-12321-1-git-send-email-andi@firstfloor.org>
-	 <1290077461-12321-2-git-send-email-andi@firstfloor.org>
-	 <1290078937.2109.1345.camel@laptop>
-	 <20101118133112.GC12667@basil.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Nov 2010 14:38:09 +0100
-Message-ID: <1290087489.2781.121.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 18 Nov 2010 08:39:09 -0500
+Date: Thu, 18 Nov 2010 08:39:04 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Theodore Tso <tytso@MIT.EDU>
+Cc: Nick Piggin <npiggin@kernel.dk>, Peter Zijlstra <peterz@infradead.org>,
+        Michel Lespinasse <walken@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering writeback
+Message-ID: <20101118133904.GB18834@infradead.org>
+References: <1289996638-21439-1-git-send-email-walken@google.com>
+ <1289996638-21439-4-git-send-email-walken@google.com>
+ <20101117125756.GA5576@amd>
+ <1290007734.2109.941.camel@laptop>
+ <20101118054629.GA3339@amd>
+ <2ADBEB7E-0EC8-4536-B556-0453A8E1D5FA@mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2ADBEB7E-0EC8-4536-B556-0453A8E1D5FA@mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 18 novembre 2010 à 14:31 +0100, Andi Kleen a écrit :
-> > Should we be using more of the kernel makefile magic to detect this?
+On Thu, Nov 18, 2010 at 05:43:06AM -0500, Theodore Tso wrote:
+> Why is it at all important that mlock() force block allocation for sparse blocks?    It's  not at all specified in the mlock() API definition that it does that.
 > 
-> In theory yes, but the two warnings didn't seem to be too useful
-> to me so it's probably not worth it just for those two.
-> 
-> -Andi
-> 
+> Are there really programs that assume that mlock() == fallocate()?!?
 
-Is the second case because of the __always_inline in
-util/include/linux/bitops.h ?
-
-Not sure why its needed for test_bit() ?
-
-diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
-index bb4ac2e..a1459f2 100644
---- a/tools/perf/util/include/linux/bitops.h
-+++ b/tools/perf/util/include/linux/bitops.h
-@@ -13,7 +13,7 @@ static inline void set_bit(int nr, unsigned long *addr)
- 	addr[nr / BITS_PER_LONG] |= 1UL << (nr % BITS_PER_LONG);
- }
- 
--static __always_inline int test_bit(unsigned int nr, const unsigned long *addr)
-+static inline int test_bit(unsigned int nr, const unsigned long *addr)
- {
- 	return ((1UL << (nr % BITS_PER_LONG)) &
- 		(((unsigned long *)addr)[nr / BITS_PER_LONG])) != 0;
-
+If there are programs that do they can't predate linux 2.6.15, and only
+work on btrfs/ext4/xfs/etc, but not ext2/ext3/reiserfs.  Seems rather
+unlikely to me.
 
