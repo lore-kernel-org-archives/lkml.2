@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab0KRIbG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 03:31:06 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34886 "EHLO mx3.mail.elte.hu"
+	id S1755548Ab0KRIbH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 03:31:07 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:42187 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975Ab0KRIbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 03:31:04 -0500
-Date: Thu, 18 Nov 2010 09:30:45 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, tglx@linutronix.de,
-        hpa@zytor.com, x86@kernel.org, eric.dumazet@gmail.com,
-        yinghai@kernel.org
-Subject: Re: [PATCH 4/9 UPDATED-1] x86: Initialize 32bit logical apicid
- mapping early during boot
-Message-ID: <20101118083045.GB26398@elte.hu>
-References: <1289473363-29440-1-git-send-email-tj@kernel.org>
- <1289473363-29440-5-git-send-email-tj@kernel.org>
- <4CDD17EC.8000507@kernel.org>
+	id S1755025Ab0KRIbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 03:31:05 -0500
+Date: Thu, 18 Nov 2010 08:30:50 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Re: [PATCH 01 of 66] disable lumpy when compaction is enabled
+Message-ID: <20101118083049.GC8135@csn.ul.ie>
+References: <patchbomb.1288798055@v2.random> <ca2fea6527833aad8adc.1288798056@v2.random>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <4CDD17EC.8000507@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <ca2fea6527833aad8adc.1288798056@v2.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Tejun Heo <tj@kernel.org> wrote:
-
-> On x86_32, non-standard logical apicid mapping can be used by
-> different NUMA setups and the mapping is queried while bringing up
-> each CPU using apic->cpu_to_logical_apicid() to build
-> cpu_2_logical_apicid[] array.  The logical apicid is then used to
-> deliver IPIs and determine NUMA configuration.
+On Wed, Nov 03, 2010 at 04:27:36PM +0100, Andrea Arcangeli wrote:
+> From: Andrea Arcangeli <aarcange@redhat.com>
 > 
-> Unfortunately, initializing at SMP bring up is too late for percpu
-> setup making static percpu variables setup w/o considering NUMA.  This
-> also is different from how x86_64 is configured making the code
-> difficult to follow and maintain.
+> Compaction is more reliable than lumpy, and lumpy makes the system unusable
+> when it runs.
 > 
-> This patch updates logical apicid mapping handling such that,
-> 
-> * early_percpu variable x86_cpu_to_logical_apicid replaces
->   cpu_2_logical_apicid[].
-> 
-> * apic->cpu_to_logical_apicid() is called once during get_smp_config()
->   and the output is recorded in x86_cpu_to_logical_apicid.
-> 
-> * apic->cpu_to_logical_apicid() is allowed to return BAD_APICID if it
->   can't determine the value that early during boot.  In this case, the
->   mapping will be initialized during SMP bring up by reading APIC LDR
->   as before.
-> 
-> - Brian Gerst spotted that setup_per_cpu_areas() was not copying the
->   early x86_cpu_to_logical_apicid to the permanent percpu area and
->   es7000_32 is using per_cpu() instead of early_per_cpu(), which in
->   itself is not incorrect as they're never used before setup_per_cpu()
->   but still confusing.  Both updated.
-> 
-> - Using local variable @cpu to cache smp_processor_id() in
->   setup_local_APIC() separated out into a separate patch as suggested
->   by Yinghai Lu.
 
-This patch is still _WAY_ too large.
+It took me a while but is "[PATCH 0/8] Use memory compaction instead of
+lumpy reclaim during high-order allocations" a suitable replacement for
+this patch?
 
-Also, these:
-
-> +#ifdef CONFIG_X86_32
-> +#endif
-
-> +#ifdef CONFIG_X86_32
-> +#endif
-
-> +#ifdef CONFIG_X86_32
-> +#endif
-
-> +#ifdef CONFIG_X86_32
-> +#endif
-
-Are rather ugly.
-
-	Ingo
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
