@@ -1,50 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756334Ab0KRKlH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 05:41:07 -0500
-Received: from casper.infradead.org ([85.118.1.10]:35140 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab0KRKlG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 05:41:06 -0500
-Subject: Re: [RFC][PATCH 0/2] tracing: Have trace_printk()s in the events/
- directory
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Darren Hart <dvhart@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "jason.wessel" <jason.wessel@windriver.com>,
-        "Ted Ts'o" <tytso@mit.edu>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <20101118035803.453609353@goodmis.org>
-References: <20101118035803.453609353@goodmis.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 18 Nov 2010 11:41:06 +0100
-Message-ID: <1290076866.2109.1305.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756431Ab0KRKl6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 05:41:58 -0500
+Received: from mga11.intel.com ([192.55.52.93]:51964 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755832Ab0KRKl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 05:41:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,216,1288594800"; 
+   d="scan'208";a="627985361"
+Date: Thu, 18 Nov 2010 17:20:52 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [1/8,v3] NUMA Hotplug Emulator: add function to hide memory
+ region via e820 table.
+Message-ID: <20101118092052.GE2408@shaohui>
+References: <20101117020759.016741414@intel.com>
+ <20101117021000.479272928@intel.com>
+ <alpine.DEB.2.00.1011162354390.16875@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1011162354390.16875@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-11-17 at 22:58 -0500, Steven Rostedt wrote:
-> For example, I added a trace_printk() in kernel/sched.c at line 2180
-> and it creates:
+On Wed, Nov 17, 2010 at 12:16:34AM -0800, David Rientjes wrote:
+> On Wed, 17 Nov 2010, shaohui.zheng@intel.com wrote:
 > 
-> # ls /debug/tracing/events/printk/kernel/sched.c/2180/
-> enable  format
+> > Index: linux-hpe4/arch/x86/kernel/e820.c
+> > ===================================================================
+> > --- linux-hpe4.orig/arch/x86/kernel/e820.c	2010-11-15 17:13:02.483461667 +0800
+> > +++ linux-hpe4/arch/x86/kernel/e820.c	2010-11-15 17:13:07.083461581 +0800
+> > @@ -971,6 +971,7 @@
+> >  }
+> >  
+> >  static int userdef __initdata;
+> > +static u64 max_mem_size __initdata = ULLONG_MAX;
+> >  
+> >  /* "mem=nopentium" disables the 4MB page tables. */
+> >  static int __init parse_memopt(char *p)
+> > @@ -989,12 +990,28 @@
+> >  
+> >  	userdef = 1;
+> >  	mem_size = memparse(p, &p);
+> > -	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
+> > +	e820_remove_range(mem_size, max_mem_size - mem_size, E820_RAM, 1);
+> > +	max_mem_size = mem_size;
+> >  
+> >  	return 0;
+> >  }
 > 
-> The format is the printk format:
-> 
-> # cat /debug/tracing/events/printk/kernel/sched.c/2180/format 
-> "migrate task %s:%d"
+> This needs memmap= support as well, right?
+we did not do the testing after combine both memmap and numa=hide paramter, 
+I think that the result should similar with mem=XX, they both remove a memory
+region from the e820 table.
 
-*groan*, so you're creating a tracepoint per instance?
+> 
+> >  early_param("mem", parse_memopt);
+> >  
+> > +#ifdef CONFIG_NODE_HOTPLUG_EMU
+> > +u64 __init e820_hide_mem(u64 mem_size)
+> > +{
+> > +	u64 start, end_pfn;
+> > +
+> > +	userdef = 1;
+> > +	end_pfn = e820_end_of_ram_pfn();
+> > +	start = (end_pfn << PAGE_SHIFT) - mem_size;
+> > +	e820_remove_range(start, max_mem_size - start, E820_RAM, 1);
+> > +	max_mem_size = start;
+> > +
+> > +	return start;
+> > +}
+> > +#endif
+> 
+> This doesn't have any sanity checking for whether e820_remove_range() will 
+> leave any significant amount of memory behind so the kernel will even boot 
+> (probably should have a guaranteed FAKE_NODE_MIN_SIZE left behind?).
 
-That's going to be massive pain for perf.. I really don't see the point
-in splitting all that out.
+it should not be checked here, it should be checked by the function who call
+ e820_hide_mem, and truncate the mem_size with FAKE_NODE_MIN_SIZE.
+
+> 
+> > +
+> >  static int __init parse_memmap_opt(char *p)
+> >  {
+> >  	char *oldp;
+
+-- 
+Thanks & Regards,
+Shaohui
+
