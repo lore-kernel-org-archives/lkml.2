@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760860Ab0KRXDz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:03:55 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33370 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760801Ab0KRXDw (ORCPT
+	id S932954Ab0KRXEK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:04:10 -0500
+Received: from e37.co.us.ibm.com ([32.97.110.158]:42959 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932878Ab0KRXEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:03:52 -0500
-Date: Thu, 18 Nov 2010 15:02:45 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH] fs: fix kernel-doc for dcache::d_validate
-Message-Id: <20101118150245.f85f9603.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Nov 2010 18:04:06 -0500
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jmorris@namei.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, eparis@redhat.com,
+        viro@zeniv.linux.org.uk, Dave Chinner <david@fromorbit.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        David Safford <safford@watson.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+Subject: [PATCH v1.2 5/5] IMA: making i_readcount a first class inode citizen
+Date: Thu, 18 Nov 2010 18:03:02 -0500
+Message-Id: <1290121382-4039-6-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Finally, remove the ifdef's around i_readcount, making it a full
+inode citizen so that other subsystems, such as leases, could use it.
 
-Fix function parameter kernel-doc for d_validate():
-
-Warning(fs/dcache.c:1495): No description found for parameter 'parent'
-Warning(fs/dcache.c:1495): Excess function parameter 'dparent' description in 'd_validate'
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 ---
- fs/dcache.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/fs.h |   15 ++-------------
+ 1 files changed, 2 insertions(+), 13 deletions(-)
 
---- lnx-2637-r2g4-kerndoc.orig/fs/dcache.c
-+++ lnx-2637-r2g4-kerndoc/fs/dcache.c
-@@ -1485,7 +1485,7 @@ out:
- /**
-  * d_validate - verify dentry provided from insecure source
-  * @dentry: The dentry alleged to be valid child of @dparent
-- * @dparent: The parent dentry (known to be valid)
-+ * @parent: The parent dentry (known to be valid)
-  *
-  * An insecure source has sent us a dentry, here we verify it and dget() it.
-  * This is used by ncpfs in its readdir implementation.
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 6b7e2fb..1024da1 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -786,9 +786,7 @@ struct inode {
+ 
+ 	unsigned int		i_flags;
+ 
+-#ifdef CONFIG_IMA
+ 	atomic_t		i_readcount; /* struct files open RO */
+-#endif
+ 	atomic_t		i_writecount;
+ #ifdef CONFIG_SECURITY
+ 	void			*i_security;
+@@ -2176,7 +2174,7 @@ static inline void allow_write_access(struct file *file)
+ 	if (file)
+ 		atomic_inc(&file->f_path.dentry->d_inode->i_writecount);
+ }
+-#ifdef CONFIG_IMA
++
+ static inline void i_readcount_dec(struct inode *inode)
+ {
+ 	BUG_ON(!atomic_read(&inode->i_readcount));
+@@ -2186,16 +2184,7 @@ static inline void i_readcount_inc(struct inode *inode)
+ {
+ 	atomic_inc(&inode->i_readcount);
+ }
+-#else
+-static inline void i_readcount_dec(struct inode *inode)
+-{
+-	return;
+-}
+-static inline void i_readcount_inc(struct inode *inode)
+-{
+-	return;
+-}
+-#endif
++
+ extern int do_pipe_flags(int *, int);
+ extern struct file *create_read_pipe(struct file *f, int flags);
+ extern struct file *create_write_pipe(int flags);
+-- 
+1.7.2.2
+
