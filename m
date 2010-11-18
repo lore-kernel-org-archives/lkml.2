@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760633Ab0KRV16 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:27:58 -0500
-Received: from www.tglx.de ([62.245.132.106]:58464 "EHLO www.tglx.de"
+	id S1760643Ab0KRV2T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:28:19 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:37266 "EHLO mail.wdtv.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759943Ab0KRV15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:27:57 -0500
-Date: Thu, 18 Nov 2010 22:27:10 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alan Cox <alan@linux.intel.com>
-cc: Vasiliy Kulikov <segoon@openwall.com>, kernel-janitors@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Feng Tang <feng.tang@intel.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] x86: platform: mrst: check platform_device_register()
- return code
-In-Reply-To: <20101118201808.06731611@linux.intel.com>
-Message-ID: <alpine.LFD.2.00.1011182224590.2900@localhost6.localdomain6>
-References: <1290104207-31279-1-git-send-email-segoon@openwall.com> <20101118181814.290811f0@linux.intel.com> <20101118184419.GA31886@albatros> <20101118201808.06731611@linux.intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1759943Ab0KRV2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 16:28:18 -0500
+From: Gene Heskett <gene.heskett@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Subject: Re: Galbraith patch
+Date: Thu, 18 Nov 2010 16:28:13 -0500
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.3; i686; ; )
+Cc: Thomas Backlund <tmb@mandriva.org>, LKML <linux-kernel@vger.kernel.org>
+References: <1290018947.4887.14.camel@note-311a> <4CE5731B.20807@mandriva.org> <1290110456.10702.12.camel@maggy.simson.net>
+In-Reply-To: <1290110456.10702.12.camel@maggy.simson.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201011181628.13324.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010, Alan Cox wrote:
-> On Thu, 18 Nov 2010 21:44:21 +0300
-> Vasiliy Kulikov <segoon@openwall.com> wrote:
-> 
-> > On Thu, Nov 18, 2010 at 18:18 +0000, Alan Cox wrote:
-> > > >  I cannot compile this driver in next-20101117, so it is not
-> > > > tested at all.
-> > > 
-> > > Compile or test - if it bombs out compiling for you please send me
-> > > (off list the .config that fails so I can fix that
-> > > 
-> > > Otherwise NAK the patch because it needs to do the cleanup but
-> > > thanks for finding the bug - you've done the hard 99%
-> > 
-> > make -C /home/vasya/linux arch/x86/platform/mrst/vrtc.o
-> > make: Entering directory `/home/vasya/dev/linux-next'
-> >   CHK     include/linux/version.h
-> >   CHK     include/generated/utsrelease.h
-> >   CALL    scripts/checksyscalls.sh
-> >   CC      arch/x86/platform/mrst/vrtc.o
-> > arch/x86/platform/mrst/vrtc.c: In function 'mrst_rtc_init':
-> > arch/x86/platform/mrst/vrtc.c:113: error: 'FIX_LNW_VRTC' undeclared
-> > (first use in this function) arch/x86/platform/mrst/vrtc.c:113:
-> > error: (Each undeclared identifier is reported only once
-> > arch/x86/platform/mrst/vrtc.c:113: error: for each function it
-> > appears in.) make[1]: *** [arch/x86/platform/mrst/vrtc.o] Error 1
-> > 
-> > Both with allyesconfig and allmodconfig, x86_64.
-> 
-> I can't duplicate this.
-> 
-> It's defined if CONFIG_X86_MRST is defined, and the file in question is
-> only compiled if CONFIG_X86_MRST is defined
+On Thursday, November 18, 2010, Mike Galbraith wrote:
+>On Thu, 2010-11-18 at 20:40 +0200, Thomas Backlund wrote:
+>> and more importantly it misses theese:
+>Heh.  Apply the attached, autogroup last.
 
-Of course you can't duplicate this:
+Still incomplete I'd guess.  From the make bzimage:
+In file included from kernel/sched.c:1931:
+kernel/sched_autogroup.c: In function ‘autogroup_create’:
+kernel/sched_autogroup.c:56: error: ‘struct task_group’ has no member named 
+‘autogroup’
 
-> > make -C /home/vasya/linux arch/x86/platform/mrst/vrtc.o
 
-Vasiliy forced a manual compile of that file with a 64bit config which has
-CONFIG_X86_MRST=n. That's PEBKAC not a build failure :)
-
-Thanks,
-
-	tglx
+-- 
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+We gave you an atomic bomb, what do you want, mermaids?
+		-- I. I. Rabi to the Atomic Energy Commission
