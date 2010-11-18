@@ -1,344 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756500Ab0KRTnH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 14:43:07 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:35993 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756179Ab0KRTnE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 14:43:04 -0500
-Date: Thu, 18 Nov 2010 20:30:21 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-scsi@vger.kernel.org
-cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-kernel@vger.kernel.org, Eric Youngdale <eric@andante.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Mike Anderson <andmike@us.ibm.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH][resend][SCSI] Reduce number of sequential pointer derefs in
- scsi_error.c and reduce size as well
-Message-ID: <alpine.LNX.2.00.1011181957500.3651@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756135Ab0KRToN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 14:44:13 -0500
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:36389
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751145Ab0KRToL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 14:44:11 -0500
+X-SpamScore: -24
+X-BigFish: VS-24(zz542N1432N4015L9371Pzz1202hzz8275bh8275dhz2dh2a8h668h67dh685h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:az33egw02.freescale.net;RD:az33egw02.freescale.net;EFVD:NLI
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-Language: en-US
+X-OriginalArrivalTime: 18 Nov 2010 19:45:07.0066 (UTC) FILETIME=[1A24F5A0:01CB8759]
+Accept-Language: en-US
+acceptlanguage: en-US
+X-MS-Has-Attach: 
+Content-Class: urn:content-classes:message
+Subject: RE: [PATCHv3] ARM: imx: Add support for low power suspend on MX51.
+Date: Thu, 18 Nov 2010 12:45:04 -0700
+Message-ID: <56132A77AB93C141BF06E6B96CA6CFEACBB0@039-SN1MPN1-005.039d.mgd.msft.net>
+In-Reply-To: <1289419604-4103-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCHv3] ARM: imx: Add support for low power suspend on MX51.
+Thread-Index: AcuBElKptOnPSxXeQRSkTs6YEtEiPwGRqGVQ
+References: <1289419604-4103-1-git-send-email-Dinh.Nguyen@freescale.com>
+From: Nguyen Dinh-R00091 <R00091@freescale.com>
+To: Nguyen Dinh-R00091 <R00091@freescale.com>, <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        <amit.kucheria@canonical.com>, <eric@eukrea.com>
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+Hi Sascha/Uwe,
 
-This is the fourth time I send this patch. For some reason it seems unable 
-to get any feedback at all. I'd really appreciate a clear ACK or NACK on 
-it and I'll keep resending it until it's either merged or I get a NACK 
-with a reason.
-It is fairly trivial, so I'm naturally hoping for ACK+Merge (I really 
-would like to just get it out of my queue), but if that doesn't happen 
-please let me know why not.
+I was wondering if you had time to digest this patch?
 
-This time around I've chosen to broaden the Cc list quite a bit in the 
-hope of getting some sort of feedback from someone (previously it was 
-just submitted to linux-kernel, linux-scsi and the SCSI maintainer).
+Thanks,
+Dinh
 
-The patch was previously submitted on
-	24 April 2008
-	27 April 2008
-	14 November 2010
-
-
-This patch reduces the number of sequential pointer derefs in 
-drivers/scsi/scsi_error.c (and also removes a bit of trailing whitespace 
-this time around since I got fed up with it and thought that perhaps that 
-would help trigger a response - if nothing else then just a "do that in a 
-separate patch" would be an improvement).
-
-It's on top of Linus' git tree as of just now (HEAD is at 
-2d42dc3feb6649c0e08641b0a6f0e0bad22aeeb2)
-
-The bennefits are:
-
- - makes the code easier to read. Lots of sequential derefs of the same 
-   pointers is not easy on the eye.
-
- - theoretically at least, just dereferencing the pointers once can allow 
-   the compiler to generate slightly faster code, so in theory this could 
-   also be a micro speed optimization.
-
- - reduces size
-   before:
-   	   text    data     bss     dec     hex filename
-   	  11861       6       6   11873    2e61 drivers/scsi/scsi_error.o
-   after:
-   	   text    data     bss     dec     hex filename
-   	  11829       6       6   11841    2e41 drivers/scsi/scsi_error.o
-
- - gets rid of annoying trailing whitespace.
-
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- scsi_error.c |   86 ++++++++++++++++++++++++++++++-----------------------------
- 1 file changed, 45 insertions(+), 41 deletions(-)
-
-diff --git a/drivers/scsi/scsi_error.c b/drivers/scsi/scsi_error.c
-index 824b8fc..ee91327 100644
---- a/drivers/scsi/scsi_error.c
-+++ b/drivers/scsi/scsi_error.c
-@@ -3,14 +3,14 @@
-  *
-  *  SCSI error/timeout handling
-  *      Initial versions: Eric Youngdale.  Based upon conversations with
-- *                        Leonard Zubkoff and David Miller at Linux Expo, 
-+ *                        Leonard Zubkoff and David Miller at Linux Expo,
-  *                        ideas originating from all over the place.
-  *
-  *	Restructured scsi_unjam_host and associated functions.
-  *	September 04, 2002 Mike Anderson (andmike@us.ibm.com)
-  *
-  *	Forward port of Russell King's (rmk@arm.linux.org.uk) changes and
-- *	minor  cleanups.
-+ *	minor cleanups.
-  *	September 30, 2002 Mike Anderson (andmike@us.ibm.com)
-  */
- 
-@@ -129,14 +129,15 @@ enum blk_eh_timer_return scsi_times_out(struct request *req)
- {
- 	struct scsi_cmnd *scmd = req->special;
- 	enum blk_eh_timer_return rtn = BLK_EH_NOT_HANDLED;
-+	struct Scsi_Host *host = scmd->device->host;
- 
- 	trace_scsi_dispatch_cmd_timeout(scmd);
- 	scsi_log_completion(scmd, TIMEOUT_ERROR);
- 
--	if (scmd->device->host->transportt->eh_timed_out)
--		rtn = scmd->device->host->transportt->eh_timed_out(scmd);
--	else if (scmd->device->host->hostt->eh_timed_out)
--		rtn = scmd->device->host->hostt->eh_timed_out(scmd);
-+	if (host->transportt->eh_timed_out)
-+		rtn = host->transportt->eh_timed_out(scmd);
-+	else if (host->hostt->eh_timed_out)
-+		rtn = host->hostt->eh_timed_out(scmd);
- 
- 	if (unlikely(rtn == BLK_EH_NOT_HANDLED &&
- 		     !scsi_eh_scmd_add(scmd, SCSI_EH_CANCEL_CMD))) {
-@@ -195,7 +196,7 @@ static inline void scsi_eh_prt_fail_stats(struct Scsi_Host *shost,
- 				++total_failures;
- 				if (scmd->eh_eflags & SCSI_EH_CANCEL_CMD)
- 					++cmd_cancel;
--				else 
-+				else
- 					++cmd_failed;
- 			}
- 		}
-@@ -294,7 +295,7 @@ static int scsi_check_sense(struct scsi_cmnd *scmd)
- 			return NEEDS_RETRY;
- 		}
- 		/*
--		 * if the device is in the process of becoming ready, we 
-+		 * if the device is in the process of becoming ready, we
- 		 * should retry.
- 		 */
- 		if ((sshdr.asc == 0x04) && (sshdr.ascq == 0x01))
-@@ -507,22 +508,23 @@ static int scsi_try_host_reset(struct scsi_cmnd *scmd)
- {
- 	unsigned long flags;
- 	int rtn;
-+	struct Scsi_Host *host = scmd->device->host;
-+	struct scsi_host_template *hostt = host->hostt;
- 
- 	SCSI_LOG_ERROR_RECOVERY(3, printk("%s: Snd Host RST\n",
- 					  __func__));
- 
--	if (!scmd->device->host->hostt->eh_host_reset_handler)
-+	if (!hostt->eh_host_reset_handler)
- 		return FAILED;
- 
--	rtn = scmd->device->host->hostt->eh_host_reset_handler(scmd);
-+	rtn = hostt->eh_host_reset_handler(scmd);
- 
- 	if (rtn == SUCCESS) {
--		if (!scmd->device->host->hostt->skip_settle_delay)
-+		if (!hostt->skip_settle_delay)
- 			ssleep(HOST_RESET_SETTLE_TIME);
--		spin_lock_irqsave(scmd->device->host->host_lock, flags);
--		scsi_report_bus_reset(scmd->device->host,
--				      scmd_channel(scmd));
--		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
-+		spin_lock_irqsave(host->host_lock, flags);
-+		scsi_report_bus_reset(host, scmd_channel(scmd));
-+		spin_unlock_irqrestore(host->host_lock, flags);
- 	}
- 
- 	return rtn;
-@@ -536,22 +538,23 @@ static int scsi_try_bus_reset(struct scsi_cmnd *scmd)
- {
- 	unsigned long flags;
- 	int rtn;
-+	struct Scsi_Host *host = scmd->device->host;
-+	struct scsi_host_template *hostt = host->hostt;
- 
- 	SCSI_LOG_ERROR_RECOVERY(3, printk("%s: Snd Bus RST\n",
- 					  __func__));
- 
--	if (!scmd->device->host->hostt->eh_bus_reset_handler)
-+	if (!hostt->eh_bus_reset_handler)
- 		return FAILED;
- 
--	rtn = scmd->device->host->hostt->eh_bus_reset_handler(scmd);
-+	rtn = hostt->eh_bus_reset_handler(scmd);
- 
- 	if (rtn == SUCCESS) {
--		if (!scmd->device->host->hostt->skip_settle_delay)
-+		if (!hostt->skip_settle_delay)
- 			ssleep(BUS_RESET_SETTLE_TIME);
--		spin_lock_irqsave(scmd->device->host->host_lock, flags);
--		scsi_report_bus_reset(scmd->device->host,
--				      scmd_channel(scmd));
--		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
-+		spin_lock_irqsave(host->host_lock, flags);
-+		scsi_report_bus_reset(host, scmd_channel(scmd));
-+		spin_unlock_irqrestore(host->host_lock, flags);
- 	}
- 
- 	return rtn;
-@@ -577,16 +580,18 @@ static int scsi_try_target_reset(struct scsi_cmnd *scmd)
- {
- 	unsigned long flags;
- 	int rtn;
-+	struct Scsi_Host *host = scmd->device->host;
-+	struct scsi_host_template *hostt = host->hostt;
- 
--	if (!scmd->device->host->hostt->eh_target_reset_handler)
-+	if (!hostt->eh_target_reset_handler)
- 		return FAILED;
- 
--	rtn = scmd->device->host->hostt->eh_target_reset_handler(scmd);
-+	rtn = hostt->eh_target_reset_handler(scmd);
- 	if (rtn == SUCCESS) {
--		spin_lock_irqsave(scmd->device->host->host_lock, flags);
-+		spin_lock_irqsave(host->host_lock, flags);
- 		__starget_for_each_device(scsi_target(scmd->device), NULL,
- 					  __scsi_report_device_reset);
--		spin_unlock_irqrestore(scmd->device->host->host_lock, flags);
-+		spin_unlock_irqrestore(host->host_lock, flags);
- 	}
- 
- 	return rtn;
-@@ -605,11 +610,12 @@ static int scsi_try_target_reset(struct scsi_cmnd *scmd)
- static int scsi_try_bus_device_reset(struct scsi_cmnd *scmd)
- {
- 	int rtn;
-+	struct scsi_host_template *hostt = scmd->device->host->hostt;
- 
--	if (!scmd->device->host->hostt->eh_device_reset_handler)
-+	if (!hostt->eh_device_reset_handler)
- 		return FAILED;
- 
--	rtn = scmd->device->host->hostt->eh_device_reset_handler(scmd);
-+	rtn = hostt->eh_device_reset_handler(scmd);
- 	if (rtn == SUCCESS)
- 		__scsi_report_device_reset(scmd->device, NULL);
- 	return rtn;
-@@ -617,10 +623,9 @@ static int scsi_try_bus_device_reset(struct scsi_cmnd *scmd)
- 
- static int __scsi_try_to_abort_cmd(struct scsi_cmnd *scmd)
- {
--	if (!scmd->device->host->hostt->eh_abort_handler)
--		return FAILED;
--
--	return scmd->device->host->hostt->eh_abort_handler(scmd);
-+	int (*eh_abort_handler)(struct scsi_cmnd *) =
-+		scmd->device->host->hostt->eh_abort_handler;
-+	return eh_abort_handler ? eh_abort_handler(scmd) : FAILED;
- }
- 
- /**
-@@ -867,7 +872,7 @@ EXPORT_SYMBOL(scsi_eh_finish_cmd);
-  *
-  * Description:
-  *    See if we need to request sense information.  if so, then get it
-- *    now, so we have a better idea of what to do.  
-+ *    now, so we have a better idea of what to do.
-  *
-  * Notes:
-  *    This has the unfortunate side effect that if a shost adapter does
-@@ -987,7 +992,6 @@ static int scsi_eh_abort_cmds(struct list_head *work_q,
- 			    !scsi_eh_tur(scmd)) {
- 				scsi_eh_finish_cmd(scmd, done_q);
- 			}
--				
- 		} else
- 			SCSI_LOG_ERROR_RECOVERY(3, printk("%s: aborting"
- 							  " cmd failed:"
-@@ -1031,7 +1035,7 @@ static int scsi_eh_try_stu(struct scsi_cmnd *scmd)
-  *
-  * Notes:
-  *    If commands are failing due to not ready, initializing command required,
-- *	try revalidating the device, which will end up sending a start unit. 
-+ *	try revalidating the device, which will end up sending a start unit.
-  */
- static int scsi_eh_stu(struct Scsi_Host *shost,
- 			      struct list_head *work_q,
-@@ -1085,7 +1089,7 @@ static int scsi_eh_stu(struct Scsi_Host *shost,
-  *    Try a bus device reset.  Still, look to see whether we have multiple
-  *    devices that are jammed or not - if we have multiple devices, it
-  *    makes no sense to try bus_device_reset - we really would need to try
-- *    a bus_reset instead. 
-+ *    a bus_reset instead.
-  */
- static int scsi_eh_bus_device_reset(struct Scsi_Host *shost,
- 				    struct list_head *work_q,
-@@ -1196,7 +1200,7 @@ static int scsi_eh_target_reset(struct Scsi_Host *shost,
- }
- 
- /**
-- * scsi_eh_bus_reset - send a bus reset 
-+ * scsi_eh_bus_reset - send a bus reset
-  * @shost:	&scsi host being recovered.
-  * @work_q:     &list_head for pending commands.
-  * @done_q:	&list_head for processed commands.
-@@ -1213,7 +1217,7 @@ static int scsi_eh_bus_reset(struct Scsi_Host *shost,
- 	 * we really want to loop over the various channels, and do this on
- 	 * a channel by channel basis.  we should also check to see if any
- 	 * of the failed commands are on soft_reset devices, and if so, skip
--	 * the reset.  
-+	 * the reset.
- 	 */
- 
- 	for (channel = 0; channel <= shost->max_channel; channel++) {
-@@ -1255,7 +1259,7 @@ static int scsi_eh_bus_reset(struct Scsi_Host *shost,
- }
- 
- /**
-- * scsi_eh_host_reset - send a host reset 
-+ * scsi_eh_host_reset - send a host reset
-  * @work_q:	list_head for processed commands.
-  * @done_q:	list_head for processed commands.
-  */
-@@ -1408,7 +1412,7 @@ int scsi_decide_disposition(struct scsi_cmnd *scmd)
- 		return SUCCESS;
- 		/*
- 		 * when the low level driver returns did_soft_error,
--		 * it is responsible for keeping an internal retry counter 
-+		 * it is responsible for keeping an internal retry counter
- 		 * in order to avoid endless loops (db)
- 		 *
- 		 * actually this is a bug in this function here.  we should
-@@ -2005,7 +2009,7 @@ int scsi_normalize_sense(const u8 *sense_buffer, int sb_len,
- 		if (sb_len > 7)
- 			sshdr->additional_length = sense_buffer[7];
- 	} else {
--		/* 
-+		/*
- 		 * fixed format
- 		 */
- 		if (sb_len > 2)
+>-----Original Message-----
+>From: Nguyen Dinh-R00091
+>Sent: Wednesday, November 10, 2010 2:07 PM
+>To: linux-kernel@vger.kernel.org
+>Cc: linux-arm-kernel@lists.infradead.org; linux@arm.linux.org.uk;
+s.hauer@pengutronix.de; u.kleine-
+>koenig@pengutronix.de; amit.kucheria@canonical.com; eric@eukrea.com;
+Nguyen Dinh-R00091
+>Subject: [PATCHv3] ARM: imx: Add support for low power suspend on MX51.
+>
+>From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+>
+>Adds initial low power suspend functionality to MX51.
+>Supports "mem" and "standby" modes.
+>
+>Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+>---
+> arch/arm/mach-mx5/Makefile           |    1 +
+> arch/arm/mach-mx5/pm.c               |   70
+++++++++++++++++++++++++++++++++++
+> arch/arm/plat-mxc/include/mach/mxc.h |    1 +
+> 3 files changed, 72 insertions(+), 0 deletions(-)
+> create mode 100644 arch/arm/mach-mx5/pm.c
+>
+>diff --git a/arch/arm/mach-mx5/Makefile b/arch/arm/mach-mx5/Makefile
+>index 462f177..25b44d1 100644
+>--- a/arch/arm/mach-mx5/Makefile
+>+++ b/arch/arm/mach-mx5/Makefile
+>@@ -5,6 +5,7 @@
+> # Object file lists.
+> obj-y   := cpu.o mm.o clock-mx51.o devices.o
+>
+>+obj-$(CONFIG_PM) += pm.o
+> obj-$(CONFIG_CPU_FREQ_IMX)    += cpu_op-mx51.o
+> obj-$(CONFIG_MACH_MX51_BABBAGE) += board-mx51_babbage.o
+> obj-$(CONFIG_MACH_MX51_3DS) += board-mx51_3ds.o
+>diff --git a/arch/arm/mach-mx5/pm.c b/arch/arm/mach-mx5/pm.c
+>new file mode 100644
+>index 0000000..417cce1
+>--- /dev/null
+>+++ b/arch/arm/mach-mx5/pm.c
+>@@ -0,0 +1,70 @@
+>+/*
+>+ *  Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights
+Reserved.
+>+ *
+>+ * The code contained herein is licensed under the GNU General Public
+>+ * License. You may obtain a copy of the GNU General Public License
+>+ * Version 2 or later at the following locations:
+>+ *
+>+ * http://www.opensource.org/licenses/gpl-license.html
+>+ * http://www.gnu.org/copyleft/gpl.html
+>+ */
+>+#include <linux/suspend.h>
+>+#include <asm/mach/map.h>
+>+#include <mach/system.h>
+>+#include "crm_regs.h"
+>+
+>+static int mx5_suspend_enter(suspend_state_t state)
+>+{
+>+	u32 plat_lpc, arm_srpgcr, ccm_clpcr;
+>+
+>+	/* always allow platform to issue a deep sleep mode request */
+>+	ccm_clpcr = __raw_readl(MXC_CCM_CLPCR) &
+~(MXC_CCM_CLPCR_LPM_MASK);
+>+
+>+	switch (state) {
+>+	case PM_SUSPEND_MEM:
+>+		ccm_clpcr |= (0x2 << MXC_CCM_CLPCR_LPM_OFFSET);
+>+		ccm_clpcr |= (0x3 << MXC_CCM_CLPCR_STBY_COUNT_OFFSET);
+>+		ccm_clpcr |= MXC_CCM_CLPCR_VSTBY;
+>+		ccm_clpcr |= MXC_CCM_CLPCR_SBYOS;
+>+		break;
+>+	case PM_SUSPEND_STANDBY:
+>+		ccm_clpcr |= (0x1 << MXC_CCM_CLPCR_LPM_OFFSET);
+>+		ccm_clpcr &= ~MXC_CCM_CLPCR_VSTBY;
+>+		ccm_clpcr &= ~MXC_CCM_CLPCR_SBYOS;
+>+		break;
+>+	default:
+>+		return -EINVAL;
+>+	}
+>+
+>+	plat_lpc |= MXC_CORTEXA8_PLAT_LPC_DSM
+>+		    | MXC_CORTEXA8_PLAT_LPC_DBG_DSM;
+>+	arm_srpgcr |= MXC_SRPGCR_PCR;
+>+
+>+	__raw_writel(plat_lpc, MXC_CORTEXA8_PLAT_LPC);
+>+	__raw_writel(arm_srpgcr, MXC_SRPG_ARM_SRPGCR);
+>+	__raw_writel(ccm_clpcr, MXC_CCM_CLPCR);
+>+
+>+	if (tzic_enable_wake(0) != 0)
+>+		return -EAGAIN;
+>+
+>+	cpu_do_idle();
+>+	return 0;
+>+}
+>+
+>+static int mx5_pm_valid(suspend_state_t state)
+>+{
+>+	return (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX);
+>+}
+>+
+>+static const struct platform_suspend_ops mx5_suspend_ops = {
+>+	.valid = mx5_pm_valid,
+>+	.enter = mx5_suspend_enter,
+>+};
+>+
+>+static int __init mx5_pm_init(void)
+>+{
+>+	if (cpu_is_mx51())
+>+		suspend_set_ops(&mx5_suspend_ops);
+>+	return 0;
+>+}
+>+device_initcall(mx5_pm_init);
+>diff --git a/arch/arm/plat-mxc/include/mach/mxc.h
+b/arch/arm/plat-mxc/include/mach/mxc.h
+>index a42c720..dafacfd 100644
+>--- a/arch/arm/plat-mxc/include/mach/mxc.h
+>+++ b/arch/arm/plat-mxc/include/mach/mxc.h
+>@@ -37,6 +37,7 @@
+>
+> #ifndef __ASSEMBLY__
+> extern unsigned int __mxc_cpu_type;
+>+int tzic_enable_wake(int is_idle);
+> #endif
+>
+> #ifdef CONFIG_ARCH_MX1
+>--
+>1.6.0.4
 
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
 
