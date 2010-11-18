@@ -1,322 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab0KRTPN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 14:15:13 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:48886 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752023Ab0KRTPM (ORCPT
+	id S1754360Ab0KRTRp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 14:17:45 -0500
+Received: from smtprelay02.ispgateway.de ([80.67.31.29]:34695 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753676Ab0KRTRo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 14:15:12 -0500
-Date: Thu, 18 Nov 2010 13:41:16 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless-2.6 2010-11-18
-Message-ID: <20101118184116.GD2468@tuxdriver.com>
+	Thu, 18 Nov 2010 14:17:44 -0500
+X-Greylist: delayed 335 seconds by postgrey-1.27 at vger.kernel.org; Thu, 18 Nov 2010 14:17:43 EST
+From: "Reichert, Hans-Peter" <Hans-Peter.Reichert@xse.de>
+To: Ingo Molnar <mingo@elte.hu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>
+Subject: AW: [patch] trace: Add user-space event tracing/injection
+Thread-Topic: [patch] trace: Add user-space event tracing/injection
+Thread-Index: AQHLh1KuRWiBTVmM8UOufMHKdwvMZZN3lwQg
+Date: Thu, 18 Nov 2010 19:13:17 +0000
+Message-ID: <7DDD50084903ED4396A4BB627E87B7774DD2EBC2@XSRWWSEX01.xse.local>
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6>
+ <4CE38C53.8090606@kernel.org> <20101117120740.GA24972@elte.hu>
+ <4CE47ED0.7080901@linux.intel.com> <20101118085513.GH26398@elte.hu>
+ <loom.20101118T170856-336@post.gmane.org> <20101118185644.GA10827@elte.hu>
+In-Reply-To: <20101118185644.GA10827@elte.hu>
+Accept-Language: de-DE, en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-olx-disclaimer: Done
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Df-Sender: stern@xs-embedded.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
 
-This is a batch of wireless fixes intended for 2.6.37.
 
-Included is an build fix for b43legacy on ARM, a correction of a
-misnumbered WIPHY_FLAG_* value, a fix for the units passed to
-usb_wait_anchor_empty_timeout in carl9170, a relocation of ath9k's
-pm_qos request to avoid a warning about an unknown object, some device
-ID stuff for ath9k_htc, a corrected eeprom offset for AR9287 devices, a
-regulatory fix for extension channels, a fix on top of the regulatory
-fix that restores HT40 functionality, and an ath9k_htc fix for non-QoS
-frame handling that avoids "severe data loss with some APs".
 
-Please let me know if there are problems!
+XS Embedded GmbH
+Roggenbachstr. 6
+D-78050 Villingen - Schwenningen
+
+Telefon +49 (7721) 4060 - 450
+Fax     +49 (7721) 4060 - 499
+
+www.xse.de
+Hans-Peter.Reichert@xse.de
+
+:::::::::: based.on.visions ::::::::::
+
+
+XS Embedded GmbH
+Geschäftsführung: Michael Maier, Rainer Oder
+
+Handelsregister: Amtsgericht Freiburg i.Br., HRB 705237
+Sitz der Gesellschaft: Roggenbachstrasse 6, 78050 Villingen-Schwenningen
+USt-Id Nummer: DE268786819
+
+Confidentiality Notice: This e-mail message, including any attachments, is for the sole use of the intended recipient(s) and may contain confidential and privileged information. Any unauthorized review, use, disclosure or distribution is prohibited. If you are not the intended recipient, please contact the sender by return e-mail and destroy all copies of the original message.
+
+-----Ursprüngliche Nachricht-----
+Von: Ingo Molnar [mailto:mingo@elte.hu]
+Gesendet: Donnerstag, 18. November 2010 19:57
+An: Reichert, Hans-Peter
+Cc: linux-kernel@vger.kernel.org; Peter Zijlstra; Thomas Gleixner; Arnaldo Carvalho de Melo; Frédéric Weisbecker
+Betreff: Re: [patch] trace: Add user-space event tracing/injection
+
+
+* hp <hp.reichert@xse.de> wrote:
+
+> Ingo Molnar <mingo <at> elte.hu> writes:
+>
+> >
+> >
+> > * Darren Hart <dvhart <at> linux.intel.com> wrote:
+> >
+> > > Ideally I would like to see something just like trace_printf()
+> > > without having to define it myself in each of my testcases. [...]
+> >
+> > We can make the prctl a single-argument thing, at the cost of not allowing \0
+> in the
+> > content. (which is probably sane anyway)
+> >
+> > That way deployment is super-simple:
+> >
+> >     prctl(35, "My Trace Message");
+> >     ...
+> >
+> >     if (asprintf(&msg, "My Trace Message: %d\n", 1234) != -1) {
+> >             prctl(35, *msg);
+> >             free(*msg);
+> >     }
+> >
+> > Thanks,
+> >
+> >     Ingo
+> >
+> I like this approach - it is doing it nearly the same way I did it with an extra
+> k-mod (no patch needed) and a debugfs entry handled in that mod.
+> I only see one thing with the string only data - I am doing stuff where there
+> are long recording times with also a lot of user events,
+> in such an environment I need more semantics on the event contents.
+> In my k-mod solution there's an event ID and the opportunity to log binary data.
+> As prctl() has 4 additional args after the option, it would be possible to use
+> it in the following way:
+> prtctl( 35, int eventID, int data_type, int msglen, void *buf);
+> or without the data_type
+> prtctl( 35, int eventID, int msglen, void *buf);
+> decoding would be of more effort but it would be worth
+>
+> The event definition would be like this (with data_type):
+>
+> TRACE_EVENT(user,
+>         TP_PROTO(int id, int dtype, int dlen, unsigned char *bytes),
+>         TP_ARGS(id, dtype, dlen, bytes),
+>         TP_STRUCT__entry(
+>                 __field(int, ev_id)
+>                 __field(int, ev_type)
+>                 __dynamic_array(unsigned char, ev_data, dlen)
+>         ),
+>         TP_fast_assign(
+>                 __entry->ev_id = id;
+>               __entry->ev_type = dtype;
+>               memcpy(__get_dynamic_array(ev_data), bytes, dlen);
+>         ),
+>
+>         TP_printk("ID: %d type: %s data: %s", __entry->ev_id,
+> __print_symbolic(__entry->ev_type, {0,"V"}, {1,"I"}, {2,"S"}, {4,"B"}),
+> __entry->ev_type == 0 ? "n/a" : __get_str(ev_data))
+> );
+>
+>
+> What do you think about this?
+
+The transport was not limited to strings - it's a memory buffer of 'len' bytes.
+
+In that sense 'ev_id' and 'ev_type' above is really just hardcoding something that
+the app might not care about.
+
+For example with the patch i sent one could send 1 byte messages - no other
+overhead. (beyond the standard record header)
+
+While if an app does want to use an (ev_id, ev_type), it can still do so. Or if an
+app wants to do some other message type, that can be done too - it's free-form.
 
 Thanks,
 
-John
+        Ingo
 
----
+I agree.
+The reason for this was to have a format description that could be used within "trace-cmd report"
+without having the need to implement a separate decoder for (each) user land application.
+I did a lot of system tracing for the last 10years on a different 'NX system.
+>From an analysts sight it is more than just convenience that the tracing format is the same for every application,
+just think of a system that is build up of binaries of several suppliers - like it will be in automotive projects.
+Having a uniform format description would highly increase usage and acceptance.
 
-The following changes since commit 28cb6ccd2c7e86b3a4db94c7062cd27937bed424:
+Thanks
+/hp
 
-  gianfar: fix signedness issue (2010-11-17 12:39:54 -0800)
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
 
-Arnd Hannemann (1):
-      b43legacy: Fix compile on ARM architecture
 
-Christian Lamparter (1):
-      carl9170: fix usb anchor wait timeout
-
-Jussi Kivilinna (1):
-      cfg80211: fix WIPHY_FLAG_IBSS_RSN bit
-
-Luis R. Rodriguez (1):
-      cfg80211: fix extension channel checks to initiate communication
-
-Mark Mentovai (1):
-      cfg80211: fix can_beacon_sec_chan, reenable HT40
-
-Rajkumar Manoharan (4):
-      ath9k_htc: Update usb device ID list
-      ath9k_htc: Add new devices into AR7010
-      ath9k_hw: Set proper eeprom offset for AR9287 HTC devices
-      ath9k_htc: Avoid setting QoS control for non-QoS frames
-
-Vivek Natarajan (1):
-      ath9k: Remove pm_qos request after hw unregister.
-
- drivers/net/wireless/ath/ath9k/eeprom_9287.c  |    2 +-
- drivers/net/wireless/ath/ath9k/hif_usb.c      |    9 ++++
- drivers/net/wireless/ath/ath9k/htc_drv_init.c |    2 +
- drivers/net/wireless/ath/ath9k/htc_drv_txrx.c |    2 +-
- drivers/net/wireless/ath/ath9k/init.c         |    3 +-
- drivers/net/wireless/ath/ath9k/reg.h          |    8 +++-
- drivers/net/wireless/ath/carl9170/usb.c       |    4 +-
- include/net/cfg80211.h                        |    2 +-
- include/net/dst_ops.h                         |    1 +
- net/wireless/chan.c                           |   54 +++++++++++++++++++++++++
- 10 files changed, 79 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath9k/eeprom_9287.c b/drivers/net/wireless/ath/ath9k/eeprom_9287.c
-index 966b949..195406d 100644
---- a/drivers/net/wireless/ath/ath9k/eeprom_9287.c
-+++ b/drivers/net/wireless/ath/ath9k/eeprom_9287.c
-@@ -37,7 +37,7 @@ static bool ath9k_hw_ar9287_fill_eeprom(struct ath_hw *ah)
- 	int addr, eep_start_loc;
- 	eep_data = (u16 *)eep;
- 
--	if (ah->hw_version.devid == 0x7015)
-+	if (AR9287_HTC_DEVID(ah))
- 		eep_start_loc = AR9287_HTC_EEP_START_LOC;
- 	else
- 		eep_start_loc = AR9287_EEP_START_LOC;
-diff --git a/drivers/net/wireless/ath/ath9k/hif_usb.c b/drivers/net/wireless/ath/ath9k/hif_usb.c
-index f7ec31b..dfb6560 100644
---- a/drivers/net/wireless/ath/ath9k/hif_usb.c
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-@@ -36,8 +36,13 @@ static struct usb_device_id ath9k_hif_usb_ids[] = {
- 	{ USB_DEVICE(0x13D3, 0x3327) }, /* Azurewave */
- 	{ USB_DEVICE(0x13D3, 0x3328) }, /* Azurewave */
- 	{ USB_DEVICE(0x13D3, 0x3346) }, /* IMC Networks */
-+	{ USB_DEVICE(0x13D3, 0x3348) }, /* Azurewave */
-+	{ USB_DEVICE(0x13D3, 0x3349) }, /* Azurewave */
-+	{ USB_DEVICE(0x13D3, 0x3350) }, /* Azurewave */
- 	{ USB_DEVICE(0x04CA, 0x4605) }, /* Liteon */
- 	{ USB_DEVICE(0x083A, 0xA704) }, /* SMC Networks */
-+	{ USB_DEVICE(0x040D, 0x3801) }, /* VIA */
-+	{ USB_DEVICE(0x1668, 0x1200) }, /* Verizon */
- 	{ },
- };
- 
-@@ -806,6 +811,8 @@ static int ath9k_hif_usb_download_fw(struct hif_device_usb *hif_dev)
- 	case 0x7010:
- 	case 0x7015:
- 	case 0x9018:
-+	case 0xA704:
-+	case 0x1200:
- 		firm_offset = AR7010_FIRMWARE_TEXT;
- 		break;
- 	default:
-@@ -928,6 +935,8 @@ static int ath9k_hif_usb_probe(struct usb_interface *interface,
- 	case 0x7010:
- 	case 0x7015:
- 	case 0x9018:
-+	case 0xA704:
-+	case 0x1200:
- 		if (le16_to_cpu(udev->descriptor.bcdDevice) == 0x0202)
- 			hif_dev->fw_name = FIRMWARE_AR7010_1_1;
- 		else
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_init.c b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-index 3d7b97f..7c8a38d 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_init.c
-@@ -249,6 +249,8 @@ static int ath9k_init_htc_services(struct ath9k_htc_priv *priv, u16 devid)
- 	case 0x7010:
- 	case 0x7015:
- 	case 0x9018:
-+	case 0xA704:
-+	case 0x1200:
- 		priv->htc->credits = 45;
- 		break;
- 	default:
-diff --git a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-index 3d19b5b..29d80ca 100644
---- a/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-+++ b/drivers/net/wireless/ath/ath9k/htc_drv_txrx.c
-@@ -121,7 +121,7 @@ int ath9k_htc_tx_start(struct ath9k_htc_priv *priv, struct sk_buff *skb)
- 			tx_hdr.data_type = ATH9K_HTC_NORMAL;
- 		}
- 
--		if (ieee80211_is_data(fc)) {
-+		if (ieee80211_is_data_qos(fc)) {
- 			qc = ieee80211_get_qos_ctl(hdr);
- 			tx_hdr.tidno = qc[0] & IEEE80211_QOS_CTL_TID_MASK;
- 		}
-diff --git a/drivers/net/wireless/ath/ath9k/init.c b/drivers/net/wireless/ath/ath9k/init.c
-index 6a0d99e..92bc5c5 100644
---- a/drivers/net/wireless/ath/ath9k/init.c
-+++ b/drivers/net/wireless/ath/ath9k/init.c
-@@ -817,8 +817,6 @@ void ath9k_deinit_device(struct ath_softc *sc)
- 
- 	ath9k_ps_wakeup(sc);
- 
--	pm_qos_remove_request(&ath9k_pm_qos_req);
--
- 	wiphy_rfkill_stop_polling(sc->hw->wiphy);
- 	ath_deinit_leds(sc);
- 
-@@ -832,6 +830,7 @@ void ath9k_deinit_device(struct ath_softc *sc)
- 	}
- 
- 	ieee80211_unregister_hw(hw);
-+	pm_qos_remove_request(&ath9k_pm_qos_req);
- 	ath_rx_cleanup(sc);
- 	ath_tx_cleanup(sc);
- 	ath9k_deinit_softc(sc);
-diff --git a/drivers/net/wireless/ath/ath9k/reg.h b/drivers/net/wireless/ath/ath9k/reg.h
-index fa05b71..dddf579 100644
---- a/drivers/net/wireless/ath/ath9k/reg.h
-+++ b/drivers/net/wireless/ath/ath9k/reg.h
-@@ -866,7 +866,13 @@
- #define AR_DEVID_7010(_ah) \
- 	(((_ah)->hw_version.devid == 0x7010) || \
- 	 ((_ah)->hw_version.devid == 0x7015) || \
--	 ((_ah)->hw_version.devid == 0x9018))
-+	 ((_ah)->hw_version.devid == 0x9018) || \
-+	 ((_ah)->hw_version.devid == 0xA704) || \
-+	 ((_ah)->hw_version.devid == 0x1200))
-+
-+#define AR9287_HTC_DEVID(_ah) \
-+	(((_ah)->hw_version.devid == 0x7015) || \
-+	 ((_ah)->hw_version.devid == 0x1200))
- 
- #define AR_RADIO_SREV_MAJOR                   0xf0
- #define AR_RAD5133_SREV_MAJOR                 0xc0
-diff --git a/drivers/net/wireless/ath/carl9170/usb.c b/drivers/net/wireless/ath/carl9170/usb.c
-index 3317039..7504ed1 100644
---- a/drivers/net/wireless/ath/carl9170/usb.c
-+++ b/drivers/net/wireless/ath/carl9170/usb.c
-@@ -553,12 +553,12 @@ static int carl9170_usb_flush(struct ar9170 *ar)
- 		usb_free_urb(urb);
- 	}
- 
--	ret = usb_wait_anchor_empty_timeout(&ar->tx_cmd, HZ);
-+	ret = usb_wait_anchor_empty_timeout(&ar->tx_cmd, 1000);
- 	if (ret == 0)
- 		err = -ETIMEDOUT;
- 
- 	/* lets wait a while until the tx - queues are dried out */
--	ret = usb_wait_anchor_empty_timeout(&ar->tx_anch, HZ);
-+	ret = usb_wait_anchor_empty_timeout(&ar->tx_anch, 1000);
- 	if (ret == 0)
- 		err = -ETIMEDOUT;
- 
-diff --git a/include/net/cfg80211.h b/include/net/cfg80211.h
-index 2a7936d..97b8b7c 100644
---- a/include/net/cfg80211.h
-+++ b/include/net/cfg80211.h
-@@ -1355,7 +1355,7 @@ enum wiphy_flags {
- 	WIPHY_FLAG_4ADDR_AP			= BIT(5),
- 	WIPHY_FLAG_4ADDR_STATION		= BIT(6),
- 	WIPHY_FLAG_CONTROL_PORT_PROTOCOL	= BIT(7),
--	WIPHY_FLAG_IBSS_RSN			= BIT(7),
-+	WIPHY_FLAG_IBSS_RSN			= BIT(8),
- };
- 
- struct mac_address {
-diff --git a/include/net/dst_ops.h b/include/net/dst_ops.h
-index 1fa5306..51665b3 100644
---- a/include/net/dst_ops.h
-+++ b/include/net/dst_ops.h
-@@ -2,6 +2,7 @@
- #define _NET_DST_OPS_H
- #include <linux/types.h>
- #include <linux/percpu_counter.h>
-+#include <linux/cache.h>
- 
- struct dst_entry;
- struct kmem_cachep;
-diff --git a/net/wireless/chan.c b/net/wireless/chan.c
-index d0c92dd..17cd0c0 100644
---- a/net/wireless/chan.c
-+++ b/net/wireless/chan.c
-@@ -44,6 +44,38 @@ rdev_freq_to_chan(struct cfg80211_registered_device *rdev,
- 	return chan;
- }
- 
-+static bool can_beacon_sec_chan(struct wiphy *wiphy,
-+				struct ieee80211_channel *chan,
-+				enum nl80211_channel_type channel_type)
-+{
-+	struct ieee80211_channel *sec_chan;
-+	int diff;
-+
-+	switch (channel_type) {
-+	case NL80211_CHAN_HT40PLUS:
-+		diff = 20;
-+		break;
-+	case NL80211_CHAN_HT40MINUS:
-+		diff = -20;
-+		break;
-+	default:
-+		return false;
-+	}
-+
-+	sec_chan = ieee80211_get_channel(wiphy, chan->center_freq + diff);
-+	if (!sec_chan)
-+		return false;
-+
-+	/* we'll need a DFS capability later */
-+	if (sec_chan->flags & (IEEE80211_CHAN_DISABLED |
-+			       IEEE80211_CHAN_PASSIVE_SCAN |
-+			       IEEE80211_CHAN_NO_IBSS |
-+			       IEEE80211_CHAN_RADAR))
-+		return false;
-+
-+	return true;
-+}
-+
- int cfg80211_set_freq(struct cfg80211_registered_device *rdev,
- 		      struct wireless_dev *wdev, int freq,
- 		      enum nl80211_channel_type channel_type)
-@@ -68,6 +100,28 @@ int cfg80211_set_freq(struct cfg80211_registered_device *rdev,
- 	if (!chan)
- 		return -EINVAL;
- 
-+	/* Both channels should be able to initiate communication */
-+	if (wdev && (wdev->iftype == NL80211_IFTYPE_ADHOC ||
-+		     wdev->iftype == NL80211_IFTYPE_AP ||
-+		     wdev->iftype == NL80211_IFTYPE_AP_VLAN ||
-+		     wdev->iftype == NL80211_IFTYPE_MESH_POINT ||
-+		     wdev->iftype == NL80211_IFTYPE_P2P_GO)) {
-+		switch (channel_type) {
-+		case NL80211_CHAN_HT40PLUS:
-+		case NL80211_CHAN_HT40MINUS:
-+			if (!can_beacon_sec_chan(&rdev->wiphy, chan,
-+						 channel_type)) {
-+				printk(KERN_DEBUG
-+				       "cfg80211: Secondary channel not "
-+				       "allowed to initiate communication\n");
-+				return -EINVAL;
-+			}
-+			break;
-+		default:
-+			break;
-+		}
-+	}
-+
- 	result = rdev->ops->set_channel(&rdev->wiphy,
- 					wdev ? wdev->netdev : NULL,
- 					chan, channel_type);
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
