@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab0KRMkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 07:40:46 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:46303 "EHLO gir.skynet.ie"
+	id S1756718Ab0KRMn5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 07:43:57 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:60810 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751130Ab0KRMkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 07:40:45 -0500
-Date: Thu, 18 Nov 2010 12:40:30 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 08 of 66] fix bad_page to show the real reason the page
-	is bad
-Message-ID: <20101118124030.GL8135@csn.ul.ie>
-References: <patchbomb.1288798055@v2.random> <412c4bbbe7738978ce73.1288798063@v2.random>
+	id S1751130Ab0KRMn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 07:43:56 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: 2.6.37-rc1+: hibernate regression, claims not enough swap space
+Date: Thu, 18 Nov 2010 13:43:00 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: kernel list <linux-kernel@vger.kernel.org>,
+        "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+References: <20101114052138.GB2189@elf.ucw.cz> <201011180018.42858.rjw@sisk.pl> <20101117233859.GA23086@elf.ucw.cz>
+In-Reply-To: <20101117233859.GA23086@elf.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <412c4bbbe7738978ce73.1288798063@v2.random>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011181343.00978.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 03, 2010 at 04:27:43PM +0100, Andrea Arcangeli wrote:
-> From: Andrea Arcangeli <aarcange@redhat.com>
+On Thursday, November 18, 2010, Pavel Machek wrote:
+> Hi!
 > 
-> page_count shows the count of the head page, but the actual check is done on
-> the tail page, so show what is really being checked.
+> > > > This is not how it works now.  We preallocate memory to create memory pressure,
+> > > > so if image_size is 0, we need to preallocate until we run out of pages that
+> > > > can be freed, which means OOM.
+> > > 
+> > > That's bad, right? Instead of killing 
+> > 
+> > I'm not sure what you mean.
 > 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> I meant "instead of failing hibernation, you get OOM -- killing random
+> processes".
 
-This can be sent on its own as it's not really related to THP.
+That's not the case.  The OOM _killer_ is disabled during hibernation, but
+there's some more OOM code that's trying very hard to free whatever pages
+it can get without killing any processes.
 
-> ---
+> > > Anyway, it does not work at all.
+> > > 
+> > > root@amd:~# echo 300000000 > /sys/power/image_size
+> > > root@amd:~# echo disk > /sys/power/state 
+> > > -su: echo: write error: No space left on device
+> > > 
+> > > (And dmesg full of failed allocations).
+> > > 
+> > > I can write 400M there, and it fails, too.
+> > 
+> > Well, in that case your swap is smaller than the requested image size, isn't it?
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5564,7 +5564,7 @@ void dump_page(struct page *page)
->  {
->  	printk(KERN_ALERT
->  	       "page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
-> -		page, page_count(page), page_mapcount(page),
-> +		page, atomic_read(&page->_count), page_mapcount(page),
->  		page->mapping, page->index);
->  	dump_page_flags(page->flags);
->  }
+> No, swap is 
 > 
+> pavel@amd:~/misc$ cat /proc/swaps 
+> Filename				Type		Size	Used
+> Priority
+> /dev/sda1                               partition	779148	0
+> -1
+> 
+> ... 700M.
+> 
+> > There's a check in there that should catch that and it apparently doesn't work.
+> > 
+> > Do you have that dmesg by chance?
+> 
+> dmesg is useless -- it is full of backtraces :-(. ACPI allocations
+> fail.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+What about:
+
+# echo core > /sys/power/pm_test
+# echo disk > /sys/power/state
+
+Then the messages should be there in the logs.
+
+Thanks,
+Rafael
