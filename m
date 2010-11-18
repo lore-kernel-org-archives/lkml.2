@@ -1,79 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998Ab0KRTlq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 14:41:46 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:48041 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751174Ab0KRTlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 14:41:45 -0500
-Message-Id: <20101118194143.973971382@gulag1.americas.sgi.com>
-User-Agent: quilt/0.47-1
-Date: Thu, 18 Nov 2010 13:41:33 -0600
-From: Robin Holt <holt@sgi.com>
-To: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org
-Subject: [Patch] XPC fails to discover partitions with all nasids above 128.
-References: <20101118194132.866093909@gulag1.americas.sgi.com>
-Content-Disposition: inline; filename=uv_max_regions
+	id S1755559Ab0KRTm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 14:42:57 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:33648 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754056Ab0KRTm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 14:42:56 -0500
+Subject: Re: [PATCHv4 14/17] pps: capture MONOTONIC_RAW timestamps as well
+From: john stultz <johnstul@us.ibm.com>
+To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        David Howells <dhowells@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Magnus Damm <damm@opensource.se>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <06dbeb207a3e418077674a4d28f440ef3506b0e6.1290087480.git.lasaine@lvk.cs.msu.su>
+References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
+	 <06dbeb207a3e418077674a4d28f440ef3506b0e6.1290087480.git.lasaine@lvk.cs.msu.su>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Nov 2010 11:42:47 -0800
+Message-ID: <1290109367.12201.0.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UV hardware defines 256 memory protection regions versus the baseline
-64 with increasing size for the SN2 ia64.  This was overlooked when XPC
-was modified to accomodate both UV and SN2.
+On Thu, 2010-11-18 at 19:01 +0300, Alexander Gordeev wrote:
+> MONOTONIC_RAW clock timestamps are ideally suited for frequency
+> calculation and also fit well into the original NTP hardpps design. Now
+> phase and frequency can be adjusted separately: the former based on
+> REALTIME clock and the latter based on MONOTONIC_RAW clock.
+> A new function getnstime_raw_and_real is added to timekeeping subsystem
+> to capture both timestamps at the same time and atomically.
+> 
+> Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 
-Without this patch, a user could reconfigure their existing system and
-suddenly disable cross-partition communications with no indication of
-what has gone wrong.  It also prevents larger configurations from using
-cross-partition communication.
+Acked-by: John Stultz <johnstul@us.ibm.com>
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-Cc: stable@kernel.org
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
+> ---
+>  include/linux/pps_kernel.h |    3 ++-
+>  include/linux/time.h       |    2 ++
+>  kernel/time/timekeeping.c  |   38 ++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 42 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
+> index 5af0498..39fc7125 100644
+> --- a/include/linux/pps_kernel.h
+> +++ b/include/linux/pps_kernel.h
+> @@ -48,6 +48,7 @@ struct pps_source_info {
+>  };
+> 
+>  struct pps_event_time {
+> +	struct timespec ts_raw;
+>  	struct timespec ts_real;
+>  };
+> 
+> @@ -111,7 +112,7 @@ static inline void timespec_to_pps_ktime(struct pps_ktime *kt,
+> 
+>  static inline void pps_get_ts(struct pps_event_time *ts)
+>  {
+> -	getnstimeofday(&ts->ts_real);
+> +	getnstime_raw_and_real(&ts->ts_raw, &ts->ts_real);
+>  }
+> 
+>  #endif /* LINUX_PPS_KERNEL_H */
+> diff --git a/include/linux/time.h b/include/linux/time.h
+> index 9f15ac7..1e6d3b5 100644
+> --- a/include/linux/time.h
+> +++ b/include/linux/time.h
+> @@ -158,6 +158,8 @@ extern unsigned int alarm_setitimer(unsigned int seconds);
+>  extern int do_getitimer(int which, struct itimerval *value);
+>  extern void getnstimeofday(struct timespec *tv);
+>  extern void getrawmonotonic(struct timespec *ts);
+> +extern void getnstime_raw_and_real(struct timespec *ts_raw,
+> +		struct timespec *ts_real);
+>  extern void getboottime(struct timespec *ts);
+>  extern void monotonic_to_bootbased(struct timespec *ts);
+> 
+> diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> index 49010d8..947c7dc 100644
+> --- a/kernel/time/timekeeping.c
+> +++ b/kernel/time/timekeeping.c
+> @@ -285,6 +285,44 @@ void ktime_get_ts(struct timespec *ts)
+>  EXPORT_SYMBOL_GPL(ktime_get_ts);
+> 
+>  /**
+> + * getnstime_raw_and_real - Returns both the time of day an raw
+> + * monotonic time in a timespec format
+> + * @ts_mono_raw:	pointer to the timespec to be set to raw
+> + *			monotonic time
+> + * @ts_real:		pointer to the timespec to be set to the time
+> + *			of day
+> + */
+> +void getnstime_raw_and_real(struct timespec *ts_raw, struct timespec *ts_real)
+> +{
+> +	unsigned long seq;
+> +	s64 nsecs_raw, nsecs_real;
+> +
+> +	WARN_ON_ONCE(timekeeping_suspended);
+> +
+> +	do {
+> +		u32 arch_offset;
+> +
+> +		seq = read_seqbegin(&xtime_lock);
+> +
+> +		*ts_raw = raw_time;
+> +		*ts_real = xtime;
+> +
+> +		nsecs_raw = timekeeping_get_ns_raw();
+> +		nsecs_real = timekeeping_get_ns();
+> +
+> +		/* If arch requires, add in gettimeoffset() */
+> +		arch_offset = arch_gettimeoffset();
+> +		nsecs_raw += arch_offset;
+> +		nsecs_real += arch_offset;
+> +
+> +	} while (read_seqretry(&xtime_lock, seq));
+> +
+> +	timespec_add_ns(ts_raw, nsecs_raw);
+> +	timespec_add_ns(ts_real, nsecs_real);
+> +}
+> +EXPORT_SYMBOL(getnstime_raw_and_real);
+> +
+> +/**
+>   * do_gettimeofday - Returns the time of day in a timeval
+>   * @tv:		pointer to the timeval to be set
+>   *
 
----
-
- drivers/misc/sgi-xp/xpc_partition.c |   25 +++++++++++++++----------
- 1 file changed, 15 insertions(+), 10 deletions(-)
-
-Index: pv1012187/drivers/misc/sgi-xp/xpc_partition.c
-===================================================================
---- pv1012187.orig/drivers/misc/sgi-xp/xpc_partition.c	2010-11-11 15:03:16.384656975 -0600
-+++ pv1012187/drivers/misc/sgi-xp/xpc_partition.c	2010-11-11 15:03:17.783480143 -0600
-@@ -439,18 +439,23 @@ xpc_discovery(void)
- 	 * nodes that can comprise an access protection grouping. The access
- 	 * protection is in regards to memory, IOI and IPI.
- 	 */
--	max_regions = 64;
- 	region_size = xp_region_size;
- 
--	switch (region_size) {
--	case 128:
--		max_regions *= 2;
--	case 64:
--		max_regions *= 2;
--	case 32:
--		max_regions *= 2;
--		region_size = 16;
--		DBUG_ON(!is_shub2());
-+	if (is_uv())
-+		max_regions = 256;
-+	else {
-+		max_regions = 64;
-+
-+		switch (region_size) {
-+		case 128:
-+			max_regions *= 2;
-+		case 64:
-+			max_regions *= 2;
-+		case 32:
-+			max_regions *= 2;
-+			region_size = 16;
-+			DBUG_ON(!is_shub2());
-+		}
- 	}
- 
- 	for (region = 0; region < max_regions; region++) {
 
