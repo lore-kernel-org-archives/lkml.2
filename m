@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760701Ab0KRVtE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:49:04 -0500
-Received: from stinky.trash.net ([213.144.137.162]:42664 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757427Ab0KRVtA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:49:00 -0500
-Message-ID: <4CE59F3F.3080407@trash.net>
-Date: Thu, 18 Nov 2010 22:48:47 +0100
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Thunderbird/3.1.6
+	id S1760698Ab0KRVtz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:49:55 -0500
+Received: from hera.kernel.org ([140.211.167.34]:45211 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755887Ab0KRVtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 16:49:53 -0500
+Date: Thu, 18 Nov 2010 21:49:13 GMT
+From: tip-bot for Vasiliy Kulikov <segoon@openwall.com>
+Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, segoon@openwall.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        alan@linux.intel.com, segoon@openwall.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <1290104207-31279-1-git-send-email-segoon@openwall.com>
+References: <1290104207-31279-1-git-send-email-segoon@openwall.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86, mrst: Check platform_device_register() return code
+Message-ID: <tip-5ca9afdb9f6a5267927b54de3f42c756e8af7fcd@git.kernel.org>
+Git-Commit-ID: 5ca9afdb9f6a5267927b54de3f42c756e8af7fcd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: randy.dunlap@oracle.com, justinmattock@gmail.com, eric.dumazet@gmail.com,
-        linux-net@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, horms@verge.net.au,
-        netfilter-devel@vger.kernel.org
-Subject: Re: error while building the kernel Mainline
-References: <20101118.125451.98885354.davem@davemloft.net>	<20101118130318.073f6beb.randy.dunlap@oracle.com>	<20101118.131004.58430322.davem@davemloft.net> <20101118.131527.45904827.davem@davemloft.net>
-In-Reply-To: <20101118.131527.45904827.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 18 Nov 2010 21:49:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 18.11.2010 22:15, schrieb David Miller:
-> From: David Miller <davem@davemloft.net>
-> Date: Thu, 18 Nov 2010 13:10:04 -0800 (PST)
-> 
->> From: Randy Dunlap <randy.dunlap@oracle.com>
->> Date: Thu, 18 Nov 2010 13:03:18 -0800
->>
->>> On Thu, 18 Nov 2010 12:54:51 -0800 (PST) David Miller wrote:
->>>
->>>> From: Patrick McHardy <kaber@trash.net>
->>>> Date: Thu, 18 Nov 2010 21:32:11 +0100
->>>>
->>>>> Thanks for testing. Dave, please apply directly, thanks!
->>>
->>> Dave,
->>>
->>> This patch does not fix the config/build error that I posted for linux-next.
->>
->> And it has bugs, now when NF_CONNTRACT is set to "m" IPVS isn't offered
->> at all.
->>
->> So I'm reverting.
-> 
-> Ignore this, I was looking for "*_IPVS" in the config instead of
-> "*_IP_VS" for some stupid reason.
+Commit-ID:  5ca9afdb9f6a5267927b54de3f42c756e8af7fcd
+Gitweb:     http://git.kernel.org/tip/5ca9afdb9f6a5267927b54de3f42c756e8af7fcd
+Author:     Vasiliy Kulikov <segoon@openwall.com>
+AuthorDate: Thu, 18 Nov 2010 21:16:45 +0300
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 18 Nov 2010 13:45:46 -0800
 
-I always make the same mistake :)
+x86, mrst: Check platform_device_register() return code
 
-> Patch is sane and I'll look into Randy's problem when I get a chance.
-> :-)
+platform_device_register() may fail, if so propagate the return
+code from mrst_device_create().
 
-I've already asked the tproxy guys to look into this, it's a
-different problem that requires more tproxy knowledge than
-have.
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+LKML-Reference: <1290104207-31279-1-git-send-email-segoon@openwall.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/platform/mrst/vrtc.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/platform/mrst/vrtc.c b/arch/x86/platform/mrst/vrtc.c
+index 4d3f770..32cd7ed 100644
+--- a/arch/x86/platform/mrst/vrtc.c
++++ b/arch/x86/platform/mrst/vrtc.c
+@@ -159,8 +159,7 @@ static int __init mrst_device_create(void)
+ 	vrtc_resources[1].start = sfi_mrtc_array[0].irq;
+ 	vrtc_resources[1].end = sfi_mrtc_array[0].irq;
+ 
+-	platform_device_register(&vrtc_device);
+-	return 0;
++	return platform_device_register(&vrtc_device);
+ }
+ 
+ module_init(mrst_device_create);
