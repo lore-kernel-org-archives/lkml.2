@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159Ab0KRQNq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:13:46 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:36034 "EHLO
+	id S1759783Ab0KRQNp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:13:45 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:36033 "EHLO
 	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759451Ab0KRQMf (ORCPT
+	with ESMTP id S1759363Ab0KRQMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 18 Nov 2010 11:12:35 -0500
+X-Spam-ASN: 
 From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 To: linux-kernel@vger.kernel.org
 Cc: "Nikita V\. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
         Rodolfo Giometti <giometti@enneenne.com>,
         Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Weber <weber@corscience.de>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Jiri Kosina <jkosina@suse.cz>, John Stultz <johnstul@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, linux-doc@vger.kernel.org
-Subject: [PATCHv4 15/17] pps: add kernel consumer support
-Date: Thu, 18 Nov 2010 19:01:08 +0300
-Message-Id: <21889ed6073f8e22eabc729e21540db13761dd92.1290087480.git.lasaine@lvk.cs.msu.su>
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCHv4 06/17] pps: convert printk/pr_* to dev_*
+Date: Thu, 18 Nov 2010 19:00:59 +0300
+Message-Id: <ce13c55a2acb39be7ef5667467c765595df19835.1290087479.git.lasaine@lvk.cs.msu.su>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
 References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
@@ -30,214 +25,248 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an optional feature of PPSAPI, kernel consumer support, which uses
-the added hardpps() function.
+Since we now have direct pointers to struct pps_device everywhere it's
+easy to use dev_* functions to print messages instead of plain printks.
+Where dev_* cannot be used printks are converted to pr_*.
 
 Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 ---
- Documentation/ioctl/ioctl-number.txt |    2 +-
- drivers/pps/Kconfig                  |    1 +
- drivers/pps/kapi.c                   |   23 ++++++++++++
- drivers/pps/pps.c                    |   62 +++++++++++++++++++++++++++++++++-
- include/linux/pps.h                  |    7 ++++
- include/linux/pps_kernel.h           |    6 +++
- 6 files changed, 99 insertions(+), 2 deletions(-)
+ drivers/pps/clients/pps-ktimer.c |    5 +++--
+ drivers/pps/clients/pps-ldisc.c  |    2 ++
+ drivers/pps/kapi.c               |   15 ++++++++-------
+ drivers/pps/pps.c                |   25 +++++++++++++------------
+ 4 files changed, 26 insertions(+), 21 deletions(-)
 
-diff --git a/Documentation/ioctl/ioctl-number.txt b/Documentation/ioctl/ioctl-number.txt
-index 33223ff..de2b113 100644
---- a/Documentation/ioctl/ioctl-number.txt
-+++ b/Documentation/ioctl/ioctl-number.txt
-@@ -249,7 +249,7 @@ Code  Seq#(hex)	Include File		Comments
- 'p'	40-7F	linux/nvram.h
- 'p'	80-9F	linux/ppdev.h		user-space parport
- 					<mailto:tim@cyberelk.net>
--'p'	A1-A4	linux/pps.h		LinuxPPS
-+'p'	A1-A5	linux/pps.h		LinuxPPS
- 					<mailto:giometti@linux.it>
- 'q'	00-1F	linux/serio.h
- 'q'	80-FF	linux/telephony.h	Internet PhoneJACK, Internet LineJACK
-diff --git a/drivers/pps/Kconfig b/drivers/pps/Kconfig
-index 33c9126..4823e47 100644
---- a/drivers/pps/Kconfig
-+++ b/drivers/pps/Kconfig
-@@ -7,6 +7,7 @@ menu "PPS support"
- config PPS
- 	tristate "PPS support"
- 	depends on EXPERIMENTAL
-+	select NTP_PPS
- 	---help---
- 	  PPS (Pulse Per Second) is a special pulse provided by some GPS
- 	  antennae. Userland can use it to get a high-precision time
+diff --git a/drivers/pps/clients/pps-ktimer.c b/drivers/pps/clients/pps-ktimer.c
+index 966ead1..2728469 100644
+--- a/drivers/pps/clients/pps-ktimer.c
++++ b/drivers/pps/clients/pps-ktimer.c
+@@ -19,6 +19,7 @@
+  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+@@ -45,7 +46,7 @@ static void pps_ktimer_event(unsigned long ptr)
+ 	/* First of all we get the time stamp... */
+ 	pps_get_ts(&ts);
+ 
+-	pr_info("PPS event at %lu\n", jiffies);
++	dev_info(pps->dev, "PPS event at %lu\n", jiffies);
+ 
+ 	pps_event(pps, &ts, PPS_CAPTUREASSERT, NULL);
+ 
+@@ -94,7 +95,7 @@ static int __init pps_ktimer_init(void)
+ 	pps = pps_register_source(&pps_ktimer_info,
+ 				PPS_CAPTUREASSERT | PPS_OFFSETASSERT);
+ 	if (pps == NULL) {
+-		printk(KERN_ERR "cannot register ktimer source\n");
++		pr_err("cannot register PPS source\n");
+ 		return -ENOMEM;
+ 	}
+ 
+diff --git a/drivers/pps/clients/pps-ldisc.c b/drivers/pps/clients/pps-ldisc.c
+index 1950b15..30789fa 100644
+--- a/drivers/pps/clients/pps-ldisc.c
++++ b/drivers/pps/clients/pps-ldisc.c
+@@ -19,6 +19,8 @@
+  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/serial_core.h>
+ #include <linux/tty.h>
 diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-index 2bdfbed..0026c99 100644
+index 98d4012..fbb89c6 100644
 --- a/drivers/pps/kapi.c
 +++ b/drivers/pps/kapi.c
-@@ -26,6 +26,7 @@
- #include <linux/init.h>
- #include <linux/sched.h>
- #include <linux/time.h>
-+#include <linux/timex.h>
- #include <linux/spinlock.h>
- #include <linux/fs.h>
- #include <linux/pps_kernel.h>
-@@ -38,6 +39,12 @@
- /* PPS event workqueue */
- struct workqueue_struct *pps_event_workqueue;
- 
-+/* state variables to bind kernel consumer */
-+/* PPS API (RFC 2783): current source and mode for ``kernel consumer'' */
-+DEFINE_SPINLOCK(pps_kc_hardpps_lock);
-+void	*pps_kc_hardpps_dev;	/* some unique pointer to device */
-+int	pps_kc_hardpps_mode;	/* mode bits for kernel consumer */
-+
- /*
-  * Local functions
+@@ -19,6 +19,7 @@
+  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
   */
-@@ -141,6 +148,16 @@ EXPORT_SYMBOL(pps_register_source);
  
- void pps_unregister_source(struct pps_device *pps)
- {
-+	spin_lock(&pps_kc_hardpps_lock);
-+	if (pps == pps_kc_hardpps_dev) {
-+		pps_kc_hardpps_mode = 0;
-+		pps_kc_hardpps_dev = NULL;
-+		spin_unlock(&pps_kc_hardpps_lock);
-+		dev_info(pps->dev, "unbound kernel consumer"
-+				" on device removal\n");
-+	} else
-+		spin_unlock(&pps_kc_hardpps_lock);
-+
- 	pps_unregister_cdev(pps);
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
  
- 	/* don't have to kfree(pps) here because it will be done on
-@@ -213,6 +230,12 @@ void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
- 		captured = ~0;
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+@@ -80,20 +81,20 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
+ 
+ 	/* Sanity checks */
+ 	if ((info->mode & default_params) != default_params) {
+-		printk(KERN_ERR "pps: %s: unsupported default parameters\n",
++		pr_err("pps: %s: unsupported default parameters\n",
+ 					info->name);
+ 		err = -EINVAL;
+ 		goto pps_register_source_exit;
+ 	}
+ 	if ((info->mode & (PPS_ECHOASSERT | PPS_ECHOCLEAR)) != 0 &&
+ 			info->echo == NULL) {
+-		printk(KERN_ERR "pps: %s: echo function is not defined\n",
++		pr_err("pps: %s: echo function is not defined\n",
+ 					info->name);
+ 		err = -EINVAL;
+ 		goto pps_register_source_exit;
+ 	}
+ 	if ((info->mode & (PPS_TSFMT_TSPEC | PPS_TSFMT_NTPFP)) == 0) {
+-		printk(KERN_ERR "pps: %s: unspecified time format\n",
++		pr_err("pps: %s: unspecified time format\n",
+ 					info->name);
+ 		err = -EINVAL;
+ 		goto pps_register_source_exit;
+@@ -138,7 +139,7 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
+ 	if (id >= PPS_MAX_SOURCES) {
+ 		spin_unlock_irq(&pps_idr_lock);
+ 
+-		printk(KERN_ERR "pps: %s: too many PPS sources in the system\n",
++		pr_err("pps: %s: too many PPS sources in the system\n",
+ 					info->name);
+ 		err = -EBUSY;
+ 		goto free_idr;
+@@ -150,12 +151,12 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
+ 	/* Create the char device */
+ 	err = pps_register_cdev(pps);
+ 	if (err < 0) {
+-		printk(KERN_ERR "pps: %s: unable to create char device\n",
++		pr_err("%s: unable to create char device\n",
+ 					info->name);
+ 		goto free_idr;
  	}
  
-+	/* Pass some events to kernel consumer if activated */
-+	spin_lock(&pps_kc_hardpps_lock);
-+	if (pps == pps_kc_hardpps_dev && event & pps_kc_hardpps_mode)
-+		hardpps(&ts->ts_real, &ts->ts_raw);
-+	spin_unlock(&pps_kc_hardpps_lock);
-+
- 	/* Wake up if captured something */
- 	if (captured) {
- 		pps->last_ev++;
+-	pr_info("new PPS source %s at ID %d\n", info->name, id);
++	dev_info(pps->dev, "new PPS source %s\n", info->name);
+ 
+ 	return pps;
+ 
+@@ -168,7 +169,7 @@ kfree_pps:
+ 	kfree(pps);
+ 
+ pps_register_source_exit:
+-	printk(KERN_ERR "pps: %s: unable to register source\n", info->name);
++	pr_err("%s: unable to register source\n", info->name);
+ 
+ 	return NULL;
+ }
 diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
-index d3267f3..6cedb8b 100644
+index 1922f27..9f7c2e8 100644
 --- a/drivers/pps/pps.c
 +++ b/drivers/pps/pps.c
-@@ -197,9 +197,69 @@ static long pps_cdev_ioctl(struct file *file,
+@@ -19,6 +19,7 @@
+  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  */
  
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+@@ -67,7 +68,7 @@ static long pps_cdev_ioctl(struct file *file,
+ 
+ 	switch (cmd) {
+ 	case PPS_GETPARAMS:
+-		pr_debug("PPS_GETPARAMS: source %d\n", pps->id);
++		dev_dbg(pps->dev, "PPS_GETPARAMS\n");
+ 
+ 		spin_lock_irq(&pps->lock);
+ 
+@@ -83,7 +84,7 @@ static long pps_cdev_ioctl(struct file *file,
  		break;
+ 
+ 	case PPS_SETPARAMS:
+-		pr_debug("PPS_SETPARAMS: source %d\n", pps->id);
++		dev_dbg(pps->dev, "PPS_SETPARAMS\n");
+ 
+ 		/* Check the capabilities */
+ 		if (!capable(CAP_SYS_TIME))
+@@ -93,14 +94,14 @@ static long pps_cdev_ioctl(struct file *file,
+ 		if (err)
+ 			return -EFAULT;
+ 		if (!(params.mode & (PPS_CAPTUREASSERT | PPS_CAPTURECLEAR))) {
+-			pr_debug("capture mode unspecified (%x)\n",
++			dev_dbg(pps->dev, "capture mode unspecified (%x)\n",
+ 								params.mode);
+ 			return -EINVAL;
+ 		}
+ 
+ 		/* Check for supported capabilities */
+ 		if ((params.mode & ~pps->info.mode) != 0) {
+-			pr_debug("unsupported capabilities (%x)\n",
++			dev_dbg(pps->dev, "unsupported capabilities (%x)\n",
+ 								params.mode);
+ 			return -EINVAL;
+ 		}
+@@ -113,7 +114,7 @@ static long pps_cdev_ioctl(struct file *file,
+ 		/* Restore the read only parameters */
+ 		if ((params.mode & (PPS_TSFMT_TSPEC | PPS_TSFMT_NTPFP)) == 0) {
+ 			/* section 3.3 of RFC 2783 interpreted */
+-			pr_debug("time format unspecified (%x)\n",
++			dev_dbg(pps->dev, "time format unspecified (%x)\n",
+ 								params.mode);
+ 			pps->params.mode |= PPS_TSFMT_TSPEC;
+ 		}
+@@ -126,7 +127,7 @@ static long pps_cdev_ioctl(struct file *file,
+ 		break;
+ 
+ 	case PPS_GETCAP:
+-		pr_debug("PPS_GETCAP: source %d\n", pps->id);
++		dev_dbg(pps->dev, "PPS_GETCAP\n");
+ 
+ 		err = put_user(pps->info.mode, iuarg);
+ 		if (err)
+@@ -138,7 +139,7 @@ static long pps_cdev_ioctl(struct file *file,
+ 		struct pps_fdata fdata;
+ 		unsigned int ev;
+ 
+-		pr_debug("PPS_FETCH: source %d\n", pps->id);
++		dev_dbg(pps->dev, "PPS_FETCH\n");
+ 
+ 		err = copy_from_user(&fdata, uarg, sizeof(struct pps_fdata));
+ 		if (err)
+@@ -153,7 +154,7 @@ static long pps_cdev_ioctl(struct file *file,
+ 		else {
+ 			unsigned long ticks;
+ 
+-			pr_debug("timeout %lld.%09d\n",
++			dev_dbg(pps->dev, "timeout %lld.%09d\n",
+ 					(long long) fdata.timeout.sec,
+ 					fdata.timeout.nsec);
+ 			ticks = fdata.timeout.sec * HZ;
+@@ -171,7 +172,7 @@ static long pps_cdev_ioctl(struct file *file,
+ 
+ 		/* Check for pending signals */
+ 		if (err == -ERESTARTSYS) {
+-			pr_debug("pending signal caught\n");
++			dev_dbg(pps->dev, "pending signal caught\n");
+ 			return -EINTR;
+ 		}
+ 
+@@ -240,7 +241,7 @@ int pps_register_cdev(struct pps_device *pps)
+ 
+ 	err = cdev_add(&pps->cdev, devt, 1);
+ 	if (err) {
+-		printk(KERN_ERR "pps: %s: failed to add char device %d:%d\n",
++		pr_err("%s: failed to add char device %d:%d\n",
+ 				pps->info.name, MAJOR(pps_devt), pps->id);
+ 		return err;
  	}
-+	case PPS_KC_BIND: {
-+		struct pps_bind_args bind_args;
-+
-+		dev_dbg(pps->dev, "PPS_KC_BIND\n");
-+
-+		/* Check the capabilities */
-+		if (!capable(CAP_SYS_TIME))
-+			return -EPERM;
-+
-+		if (copy_from_user(&bind_args, uarg,
-+					sizeof(struct pps_bind_args)))
-+			return -EFAULT;
-+
-+		/* Check for supported capabilities */
-+		if ((bind_args.edge & ~pps->info.mode) != 0) {
-+			dev_err(pps->dev, "unsupported capabilities (%x)\n",
-+					bind_args.edge);
-+			return -EINVAL;
-+		}
-+
-+		/* Validate parameters roughly */
-+		if (bind_args.tsformat != PPS_TSFMT_TSPEC ||
-+				(bind_args.edge & ~PPS_CAPTUREBOTH) != 0 ||
-+				bind_args.consumer != PPS_KC_HARDPPS) {
-+			dev_err(pps->dev, "invalid kernel consumer bind"
-+					" parameters (%x)\n", bind_args.edge);
-+			return -EINVAL;
-+		}
-+
-+		/* Check if another consumer is already bound */
-+		spin_lock(&pps_kc_hardpps_lock);
-+
-+		if (bind_args.edge == 0)
-+			if (pps_kc_hardpps_dev == pps) {
-+				pps_kc_hardpps_mode = 0;
-+				pps_kc_hardpps_dev = NULL;
-+				spin_unlock(&pps_kc_hardpps_lock);
-+				dev_info(pps->dev, "unbound kernel"
-+						" consumer\n");
-+			} else {
-+				spin_unlock(&pps_kc_hardpps_lock);
-+				dev_err(pps->dev, "selected kernel consumer"
-+						" is not bound\n");
-+				return -EINVAL;
-+			}
-+		else
-+			if (pps_kc_hardpps_dev == NULL ||
-+					pps_kc_hardpps_dev == pps) {
-+				pps_kc_hardpps_mode = bind_args.edge;
-+				pps_kc_hardpps_dev = pps;
-+				spin_unlock(&pps_kc_hardpps_lock);
-+				dev_info(pps->dev, "bound kernel consumer: "
-+					"edge=0x%x\n", bind_args.edge);
-+			} else {
-+				spin_unlock(&pps_kc_hardpps_lock);
-+				dev_err(pps->dev, "another kernel consumer"
-+						" is already bound\n");
-+				return -EINVAL;
-+			}
-+		break;
-+	}
- 	default:
- 		return -ENOTTY;
--		break;
+@@ -282,14 +283,14 @@ static int __init pps_init(void)
+ 
+ 	pps_class = class_create(THIS_MODULE, "pps");
+ 	if (!pps_class) {
+-		printk(KERN_ERR "pps: failed to allocate class\n");
++		pr_err("failed to allocate class\n");
+ 		return -ENOMEM;
+ 	}
+ 	pps_class->dev_attrs = pps_attrs;
+ 
+ 	err = alloc_chrdev_region(&pps_devt, 0, PPS_MAX_SOURCES, "pps");
+ 	if (err < 0) {
+-		printk(KERN_ERR "pps: failed to allocate char device region\n");
++		pr_err("failed to allocate char device region\n");
+ 		goto remove_class;
  	}
  
- 	return 0;
-diff --git a/include/linux/pps.h b/include/linux/pps.h
-index 0194ab0..a9bb1d9 100644
---- a/include/linux/pps.h
-+++ b/include/linux/pps.h
-@@ -114,11 +114,18 @@ struct pps_fdata {
- 	struct pps_ktime timeout;
- };
- 
-+struct pps_bind_args {
-+	int tsformat;	/* format of time stamps */
-+	int edge;	/* selected event type */
-+	int consumer;	/* selected kernel consumer */
-+};
-+
- #include <linux/ioctl.h>
- 
- #define PPS_GETPARAMS		_IOR('p', 0xa1, struct pps_kparams *)
- #define PPS_SETPARAMS		_IOW('p', 0xa2, struct pps_kparams *)
- #define PPS_GETCAP		_IOR('p', 0xa3, int *)
- #define PPS_FETCH		_IOWR('p', 0xa4, struct pps_fdata *)
-+#define PPS_KC_BIND		_IOW('p', 0xa5, struct pps_bind_args *)
- 
- #endif /* _PPS_H_ */
-diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
-index 39fc7125..10e10c8 100644
---- a/include/linux/pps_kernel.h
-+++ b/include/linux/pps_kernel.h
-@@ -87,6 +87,12 @@ struct pps_device {
- 
- extern struct device_attribute pps_attrs[];
- 
-+/* state variables to bind kernel consumer */
-+/* PPS API (RFC 2783): current source and mode for ``kernel consumer'' */
-+extern spinlock_t pps_kc_hardpps_lock;
-+extern void *pps_kc_hardpps_dev;	/* some unique pointer to device */
-+extern int pps_kc_hardpps_mode;		/* mode bits for kernel consumer */
-+
- extern struct workqueue_struct *pps_event_workqueue;
- 
- /*
 -- 
 1.7.2.3
 
