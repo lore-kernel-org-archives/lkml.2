@@ -1,78 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932663Ab0KRR0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 12:26:00 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:33751 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932439Ab0KRRZ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 12:25:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Pj9jq7IiT43+B+Wcac15opJIWlcaQ0Z55jVodmCvPpOfbDHeh3UutY4r0PXVKT2/Sy
-         JxQa5ynzrYmt/KSZqg8rAirE3NKwPtzIxgeEMo0BhHQXLPTYIjUH8YZL3YQ3e5mRWP64
-         4cvnzIVtBAymWbLoAwscSXLHz9+ugDQxYPnH0=
-Message-ID: <4CE561A2.2020600@gmail.com>
-Date: Thu, 18 Nov 2010 09:25:54 -0800
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S932683Ab0KRR1U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 12:27:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31259 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932549Ab0KRR1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 12:27:19 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        tytso@mit.edu, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
+	<20101118130630.GJ6178@parisc-linux.org>
+	<20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
+	<20101118141957.GK6178@parisc-linux.org>
+	<20101118142918.GA18510@infradead.org>
+	<1290100750.3041.72.camel@mulgrave.site>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 18 Nov 2010 12:22:46 -0500
+In-Reply-To: <1290100750.3041.72.camel@mulgrave.site> (James Bottomley's
+	message of "Thu, 18 Nov 2010 11:19:10 -0600")
+Message-ID: <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-net@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: error while building the kernel Mainline
-References: <AANLkTikToBjx-4go9mAFCcnTQ5X4Su+57ODoY9C5y_7f@mail.gmail.com> <1290093135.2781.167.camel@edumazet-laptop>
-In-Reply-To: <1290093135.2781.167.camel@edumazet-laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2010 07:12 AM, Eric Dumazet wrote:
-> Le jeudi 18 novembre 2010 à 06:36 -0800, Justin Mattock a écrit :
->> hit this yesterday, and havent had time to look at it, to see if its a
->> simple fix
->>
->>    MODPOST vmlinux.o
->> WARNING: modpost: Found 1 section mismatch(es).
->> To see full details build your kernel with:
->> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
->>    GEN     .version
->>    CHK     include/generated/compile.h
->>    UPD     include/generated/compile.h
->>    CC      init/version.o
->>    LD      init/built-in.o
->>    LD      .tmp_vmlinux1
->> net/built-in.o: In function `handle_response_icmp':
->> ip_vs_core.c:(.text+0x2b5c4): undefined reference to `nf_conntrack_untracked'
->> net/built-in.o: In function `T.925':
->> ip_vs_core.c:(.text+0x2cbbd): undefined reference to `nf_conntrack_untracked'
->> net/built-in.o: In function `ip_vs_null_xmit':
->> (.text+0x310da): undefined reference to `nf_conntrack_untracked'
->> net/built-in.o: In function `ip_vs_tunnel_xmit':
->> (.text+0x311e3): undefined reference to `nf_conntrack_untracked'
->> net/built-in.o: In function `ip_vs_nat_xmit':
->> (.text+0x3176f): undefined reference to `nf_conntrack_untracked'
->> net/built-in.o:(.text+0x3199d): more undefined references to
->> `nf_conntrack_untracked' follow
->> make: *** [.tmp_vmlinux1] Error 1
->>
->> has there been anything sent forward for this yet?
->>
->
-> Try to find out why net/netfilter/nf_conntrack_core.c is not compiled ?
+James Bottomley <James.Bottomley@suse.de> writes:
 
-seems it is compiling, it's after the compiling when this breaks
+> Not stepping into the debate: I'm happy to see punch go to the mapping
+> data and FITRIM pick it up later.
+>
+> However, I think it's time to question whether we actually still want to
+> allow online discard at all.  Most of the benchmarks show it to be a net
 
->
-> ./net/netfilter/nf_conntrack_core.c:65:DEFINE_PER_CPU(struct nf_conn, nf_conntrack_untracked);
-> ./net/netfilter/nf_conntrack_core.c:66:EXPORT_PER_CPU_SYMBOL(nf_conntrack_untracked);
->
->
->
->
+Define online discard, please.
 
-Justin P. Mattock
+> lose to almost everything (either SSD or Thinly Provisioned arrays), so
+> it's become an "enable this to degrade performance" option with no
+> upside.
+
+Some SSDs very much require TRIMming to perform well as they age.  If
+you're suggesting that we move from doing discards in journal commits to
+a batched discard, like the one Lukas implemented, then I think that's
+fine.  If we need to reintroduce the finer-grained discards due to some
+hardware changes in the future, we can always do that.
+
+Cheers,
+Jeff
