@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760698Ab0KRVtz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 16:49:55 -0500
-Received: from hera.kernel.org ([140.211.167.34]:45211 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755887Ab0KRVtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 16:49:53 -0500
-Date: Thu, 18 Nov 2010 21:49:13 GMT
-From: tip-bot for Vasiliy Kulikov <segoon@openwall.com>
-Cc: alan@linux.intel.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@redhat.com, segoon@openwall.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        alan@linux.intel.com, segoon@openwall.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <1290104207-31279-1-git-send-email-segoon@openwall.com>
-References: <1290104207-31279-1-git-send-email-segoon@openwall.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86, mrst: Check platform_device_register() return code
-Message-ID: <tip-5ca9afdb9f6a5267927b54de3f42c756e8af7fcd@git.kernel.org>
-Git-Commit-ID: 5ca9afdb9f6a5267927b54de3f42c756e8af7fcd
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1760729Ab0KRVuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 16:50:15 -0500
+Received: from smtp-out-249.synserver.de ([212.40.180.249]:1049 "HELO
+	smtp-out-247.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1760707Ab0KRVuM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 16:50:12 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 7919
+Date: Thu, 18 Nov 2010 22:50:08 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Jamie Lokier <jamie@shareable.org>, Jeff Moyer <jmoyer@redhat.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        tytso@mit.edu, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
+ super_operation
+Message-ID: <20101118215008.GA1556@arch.trippelsdorf.de>
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
+ <20101118130630.GJ6178@parisc-linux.org>
+ <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
+ <20101118141957.GK6178@parisc-linux.org>
+ <20101118142918.GA18510@infradead.org>
+ <1290100750.3041.72.camel@mulgrave.site>
+ <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
+ <20101118180557.GU22787@shareable.org>
+ <20101118193255.GE1594@arch.trippelsdorf.de>
+ <4CE59E86.1080603@teksavvy.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 18 Nov 2010 21:49:14 +0000 (UTC)
+In-Reply-To: <4CE59E86.1080603@teksavvy.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5ca9afdb9f6a5267927b54de3f42c756e8af7fcd
-Gitweb:     http://git.kernel.org/tip/5ca9afdb9f6a5267927b54de3f42c756e8af7fcd
-Author:     Vasiliy Kulikov <segoon@openwall.com>
-AuthorDate: Thu, 18 Nov 2010 21:16:45 +0300
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 18 Nov 2010 13:45:46 -0800
+On 2010.11.18 at 16:45 -0500, Mark Lord wrote:
+> On 10-11-18 02:32 PM, Markus Trippelsdorf wrote:
+> >On 2010.11.18 at 18:05 +0000, Jamie Lokier wrote:
+> >>Online trim may be slow, but offline would be awfully inconvenient
+> >>when an fs is big and needed for a live system, or when it's your root fs.
+> >
+> >You can call FITRIM from a running system. Infact I run it once per week
+> >as a cron job on my (mounted) root fs.
+> 
+> 
+> Ditto for wiper.sh.
 
-x86, mrst: Check platform_device_register() return code
+But I always thought that wiper has no access to the filesystem
+internals. So there is always a chance that you write to a sector that
+wiper.sh is currently trimming. FITRIM should be safer in this regard.
 
-platform_device_register() may fail, if so propagate the return
-code from mrst_device_create().
-
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-LKML-Reference: <1290104207-31279-1-git-send-email-segoon@openwall.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/platform/mrst/vrtc.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/platform/mrst/vrtc.c b/arch/x86/platform/mrst/vrtc.c
-index 4d3f770..32cd7ed 100644
---- a/arch/x86/platform/mrst/vrtc.c
-+++ b/arch/x86/platform/mrst/vrtc.c
-@@ -159,8 +159,7 @@ static int __init mrst_device_create(void)
- 	vrtc_resources[1].start = sfi_mrtc_array[0].irq;
- 	vrtc_resources[1].end = sfi_mrtc_array[0].irq;
- 
--	platform_device_register(&vrtc_device);
--	return 0;
-+	return platform_device_register(&vrtc_device);
- }
- 
- module_init(mrst_device_create);
+-- 
+Markus
