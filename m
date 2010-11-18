@@ -1,114 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685Ab0KRG5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 01:57:32 -0500
-Received: from mga01.intel.com ([192.55.52.88]:55491 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975Ab0KRG5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 01:57:31 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,216,1288594800"; 
-   d="scan'208";a="858856696"
-Date: Thu, 18 Nov 2010 14:57:25 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, "Li, Shaohua" <shaohua.li@intel.com>,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] writeback: prevent bandwidth calculation overflow
-Message-ID: <20101118065725.GB8458@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754873Ab0KRHBe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 02:01:34 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:60464 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751331Ab0KRHBc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 02:01:32 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=EqmQhW4pKawkY1rkXoO+2GROQbANS76eK9lNt2lJ4iHXf5RcC/f12IS5Mxhyy7s8kB
+         H2kGiS2N5IVoKMgl3RiBku/+I/NdtIEsXC08ataSSK2Jjg/oh4sm052s0XO8XpV9JTlr
+         tG0bd8AbJVGCzXJDT6pdiBdwFMm2XVpJFCFQM=
+From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
+To: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
+        will.deacon@arm.com
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com,
+        dengcheng.zhu@gmail.com
+Subject: [PATCH 1/5] MIPS/Perf-events: Work with irq_work
+Date: Thu, 18 Nov 2010 14:56:37 +0800
+Message-Id: <1290063401-25440-2-git-send-email-dengcheng.zhu@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
+References: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 32bit kernel, bdi->write_bandwidth can express at most 4GB/s.
+This is the MIPS part of the following commit by Peter Zijlstra:
 
-However the current calculation code can overflow when disk bandwidth
-reaches 800MB/s.  Fix it by using "long long" and swapping the order of
-multiplication/division. And further, change its unit to pages/second
-rather than bytes/second. That allows up to 16TB/s bandwidth in 32bit
-kernel.
+e360adbe29241a0194e10e20595360dd7b98a2b3
+	irq_work: Add generic hardirq context callbacks
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
 ---
- mm/backing-dev.c    |    4 ++--
- mm/page-writeback.c |   13 ++++++-------
- 2 files changed, 8 insertions(+), 9 deletions(-)
+ arch/mips/Kconfig                    |    1 +
+ arch/mips/include/asm/perf_event.h   |   12 +-----------
+ arch/mips/kernel/perf_event_mipsxx.c |    2 +-
+ 3 files changed, 3 insertions(+), 12 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2010-11-18 12:42:58.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-11-18 14:30:10.000000000 +0800
-@@ -494,7 +494,7 @@ void bdi_update_write_bandwidth(struct b
- 	unsigned long written;
- 	unsigned long elapsed;
- 	unsigned long bw;
--	unsigned long w;
-+	unsigned long long w;
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 67a2fa2..c44c38d 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -4,6 +4,7 @@ config MIPS
+ 	select HAVE_GENERIC_DMA_COHERENT
+ 	select HAVE_IDE
+ 	select HAVE_OPROFILE
++	select HAVE_IRQ_WORK
+ 	select HAVE_PERF_EVENTS
+ 	select PERF_USE_VMALLOC
+ 	select HAVE_ARCH_KGDB
+diff --git a/arch/mips/include/asm/perf_event.h b/arch/mips/include/asm/perf_event.h
+index e00007c..d0c7749 100644
+--- a/arch/mips/include/asm/perf_event.h
++++ b/arch/mips/include/asm/perf_event.h
+@@ -11,15 +11,5 @@
  
- 	if (*bw_written == 0)
- 		goto snapshot;
-@@ -513,7 +513,7 @@ void bdi_update_write_bandwidth(struct b
- 		goto snapshot;
+ #ifndef __MIPS_PERF_EVENT_H__
+ #define __MIPS_PERF_EVENT_H__
+-
+-/*
+- * MIPS performance counters do not raise NMI upon overflow, a regular
+- * interrupt will be signaled. Hence we can do the pending perf event
+- * work at the tail of the irq handler.
+- */
+-static inline void
+-set_perf_event_pending(void)
+-{
+-}
+-
++/* Leave it empty here. The file is required by linux/perf_event.h */
+ #endif /* __MIPS_PERF_EVENT_H__ */
+diff --git a/arch/mips/kernel/perf_event_mipsxx.c b/arch/mips/kernel/perf_event_mipsxx.c
+index 5c7c6fc..fa00edc 100644
+--- a/arch/mips/kernel/perf_event_mipsxx.c
++++ b/arch/mips/kernel/perf_event_mipsxx.c
+@@ -696,7 +696,7 @@ static int mipsxx_pmu_handle_shared_irq(void)
+ 	 * interrupt, not NMI.
+ 	 */
+ 	if (handled == IRQ_HANDLED)
+-		perf_event_do_pending();
++		irq_work_run();
  
- 	written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]) - *bw_written;
--	bw = (HZ * PAGE_CACHE_SIZE * written + elapsed/2) / elapsed;
-+	bw = (HZ * written + elapsed/2) / elapsed;
- 	w = min(elapsed / unit_time, 128UL);
- 	bdi->write_bandwidth = (bdi->write_bandwidth * (1024-w) + bw * w) >> 10;
- 	bdi->write_bandwidth_update_time = jiffies;
-@@ -602,8 +602,7 @@ static void balance_dirty_pages(struct a
- 		 * of dirty pages have been cleaned during our pause time.
- 		 */
- 		if (nr_dirty < dirty_thresh &&
--		    bdi_prev_dirty - bdi_dirty >
--		    bdi->write_bandwidth >> (PAGE_CACHE_SHIFT + 2))
-+		    bdi_prev_dirty - bdi_dirty > bdi->write_bandwidth / 4)
- 			break;
- 		bdi_prev_dirty = bdi_dirty;
- 
-@@ -620,13 +619,13 @@ static void balance_dirty_pages(struct a
- 		 * time when there are lots of dirtiers.
- 		 */
- 		bw = bdi->write_bandwidth;
--		bw = bw * (bdi_thresh - bdi_dirty);
- 		bw = bw / (bdi_thresh / BDI_SOFT_DIRTY_LIMIT + 1);
-+		bw = bw * (bdi_thresh - bdi_dirty);
- 
--		bw = bw * (task_thresh - bdi_dirty);
- 		bw = bw / (bdi_thresh / TASK_SOFT_DIRTY_LIMIT + 1);
-+		bw = bw * (task_thresh - bdi_dirty);
- 
--		pause = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1);
-+		pause = HZ * pages_dirtied / (bw + 1);
- 		pause = clamp_val(pause, 1, HZ/10);
- 
- pause:
---- linux-next.orig/mm/backing-dev.c	2010-11-18 14:24:45.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2010-11-18 14:27:00.000000000 +0800
-@@ -103,7 +103,7 @@ static int bdi_debug_stats_show(struct s
- 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
- 		   K(bdi_thresh), K(dirty_thresh), K(background_thresh),
- 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
--		   (unsigned long) bdi->write_bandwidth >> 10,
-+		   (unsigned long) K(bdi->write_bandwidth),
- 		   nr_dirty, nr_io, nr_more_io,
- 		   !list_empty(&bdi->bdi_list), bdi->state);
- #undef K
-@@ -662,7 +662,7 @@ int bdi_init(struct backing_dev_info *bd
- 			goto err;
- 	}
- 
--	bdi->write_bandwidth = 100 << 20;
-+	bdi->write_bandwidth = (100 << 20) / PAGE_CACHE_SIZE;
- 	bdi->dirty_exceeded = 0;
- 	err = prop_local_init_percpu(&bdi->completions);
- 
+ #ifdef CONFIG_MIPS_MT_SMP
+ 	read_unlock(&pmuint_rwlock);
+-- 
+1.7.1
+
