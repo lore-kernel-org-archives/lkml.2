@@ -1,27 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab0KRGB4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 01:01:56 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57939 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751381Ab0KRGBz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 01:01:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=HRFereqokTRtB48h/Res4bDCv4K1sl6UYYSXynC6x8YUNjvwvYExxTtf0sE6XIb/Mq
-         cfMF79ieXwLajiuV5lY5T/3Byco+sm0WSFWcz8wkZTUiZmixJLGn9iPmiCW5tJZcYB7C
-         zio2RM2rfaoOm0wp5v/AOb/HjDKplMC8eWgI4=
+	id S1754810Ab0KRGJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 01:09:56 -0500
+Received: from mga11.intel.com ([192.55.52.93]:62309 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754458Ab0KRGJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 01:09:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,216,1288594800"; 
+   d="scan'208";a="858845400"
+Date: Thu, 18 Nov 2010 12:48:50 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        haicheng.li@linux.intel.com, lethal@linux-sh.org, ak@linux.intel.com,
+        shaohui.zheng@linux.intel.com, Haicheng Li <haicheng.li@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Greg KH <greg@kroah.com>
+Subject: Re: [7/8,v3] NUMA Hotplug Emulator: extend memory probe interface
+ to support NUMA
+Message-ID: <20101118044850.GC2408@shaohui>
+References: <20101117020759.016741414@intel.com>
+ <20101117021000.916235444@intel.com>
+ <1290019807.9173.3789.camel@nimitz>
+ <alpine.DEB.2.00.1011171312590.10254@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Date: Thu, 18 Nov 2010 14:01:50 +0800
-Message-ID: <AANLkTi=3pZ=n_ug0-_AN6QGmk97tXAfnK=dhTfzLzCJO@mail.gmail.com>
-Subject: 
-From: Chong Yang <fbfans@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1011171312590.10254@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-subscrible
+On Wed, Nov 17, 2010 at 01:18:50PM -0800, David Rientjes wrote:
+> On Wed, 17 Nov 2010, Dave Hansen wrote:
+> 
+> > The other thing that Greg suggested was to use configfs.  Looking back
+> > on it, that makes a lot of sense.  We can do better than these "probe"
+> > files.
+> > 
+> > In your case, it might be useful to tell the kernel to be able to add
+> > memory in a node and add the node all in one go.  That'll probably be
+> > closer to what the hardware will do, and will exercise different code
+> > paths that the separate "add node", "then add memory" steps that you're
+> > using here.
+> > 
+> 
+> That seems like a seperate issue of moving the memory hotplug interface 
+> over to configfs and that seems like it will cause a lot of userspace 
+> breakage.  The memory hotplug interface can already add memory to a node 
+> without using the ACPI notifier, so what does it have to do with this 
+> patchset?
+
+Agree with you, I do not suggest to implement it in this patchset.
+
+> 
+> I think what this patchset really wants to do is map offline hot-added 
+> memory to a different node id before it is onlined.  It needs no 
+> additional command-line interface or kconfig options, users just need to 
+> physically hot-add memory at runtime or use mem= when booting to reserve 
+> present memory from being used.
+
+I already send out the implementation in another email, you can help to do
+a review.
+
+> 
+> Then, export the amount of memory that is actually physically present in 
+> the e820 but was truncated by mem= and allow users to hot-add the memory 
+> via the probe interface.  Add a writeable 'node' file to offlined memory 
+> section directories and allow it to be changed prior to online.
+
+for memory offlining, it is a known diffcult thing, and it is not supported 
+well in current kernel, so I do not suggest to provide the offline interface
+in the emulator, it just take more pains. We can consider to add it when
+the memory offlining works well.
+
+-- 
+Thanks & Regards,
+Shaohui
+
