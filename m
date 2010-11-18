@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760960Ab0KRX6L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 18:58:11 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:34964 "EHLO ogre.sisk.pl"
+	id S1760997Ab0KRX6Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 18:58:24 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:34981 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752771Ab0KRX6J convert rfc822-to-8bit (ORCPT
+	id S1760964Ab0KRX6P convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 18:58:09 -0500
+	Thu, 18 Nov 2010 18:58:15 -0500
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Randy Dunlap" <randy.dunlap@oracle.com>
+        "Kevin Smith" <thirdwiggin@gmail.com>
 References: <sKkKYVppECN.A.KhC.Phb5MB@chimera>
 In-Reply-To: <sKkKYVppECN.A.KhC.Phb5MB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <ATV3yiK8i4C.A.ohD.whb5MB@chimera>
-Subject: [Bug #22882] (2.6.37-rc1) amd64-agp module crashed on second load
+Message-ID: <ATV3yiK8i4C.A.D9C.ghb5MB@chimera>
+Subject: [Bug #23012] ftdi_sio /dev/ttyUSB error:  "Resource Temporarily Unavailable"
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 19 Nov 2010 00:42:48 +0100 (CET)
+Date: Fri, 19 Nov 2010 00:42:50 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,11 +34,9 @@ from 2.6.36.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22882
-Subject		: (2.6.37-rc1) amd64-agp module crashed on second load
-Submitter	: Randy Dunlap <randy.dunlap@oracle.com>
-Date		: 2010-11-05 0:13 (14 days old)
-Message-ID	: <20101104171333.fea1f498.randy.dunlap@oracle.com>
-References	: http://marc.info/?l=linux-kernel&m=128891605213447&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23012
+Subject		: ftdi_sio /dev/ttyUSB error:  "Resource Temporarily Unavailable"
+Submitter	: Kevin Smith <thirdwiggin@gmail.com>
+Date		: 2010-11-16 06:25 (3 days old)
 
 
