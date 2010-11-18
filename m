@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758644Ab0KROmQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 09:42:16 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60210 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758430Ab0KROmO (ORCPT
+	id S1758670Ab0KROmY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 09:42:24 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:42623 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758563Ab0KROmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 09:42:14 -0500
+	Thu, 18 Nov 2010 09:42:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=RcUM7G717zeJkFrsTD+4+cPPdTDdC46EsaLTml5o/MXKuox4ikveP/3PqfbH8vlSWE
-         LR/pIqDGac8sE4BIihCkdUVHnXi/eqlYJtf+nhtdSH5xFmr5mkMIMyKfnCuwPCsa556T
-         dwgNVBEKZZx7HbZTe+ggyRba2F3nwhmDAkFhY=
-Subject: [PATCH] cpu.c: remove unused variable
-From: Dhaval Giani <dhaval.giani@gmail.com>
-To: a.p.zijlstra@chello.nl, mingo@elte.hu, linux-kernel@vger.kernel.org,
-        akinobu.mita@gmail.com, oleg@redhat.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Nov 2010 15:41:59 +0100
-Message-ID: <1290091319.1145.2.camel@gondor.retis>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
-Content-Transfer-Encoding: 8bit
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=b9/pJHTrR4yeubmNkJigKyhJ1IxM19QSWKYVJyVjucYgZqb0Pdvyrx4iVqK/JXc5rv
+         BSdsrTF4fWqWayoTOJUfmyo/AuHu6UAqCnOBd07FHKUk21h3vemf++L1Vsd1b7xhavi8
+         WrEKnpPLUQJt/hcWArA00Se422aQXDrFC7wvQ=
+Date: Thu, 18 Nov 2010 17:42:09 +0300
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: rklein@nvidia.com, broonie@opensource.wolfsonmicro.com, achew@nvidia.com,
+        olof@lixom.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] POWER: Add gpio charger driver
+Message-ID: <20101118144209.GA17323@oksana.dev.rtsoft.ru>
+References: <1287663957-30099-1-git-send-email-lars@metafoo.de>
+ <1287676501-23254-1-git-send-email-lars@metafoo.de>
+ <20101118140522.GD19527@oksana.dev.rtsoft.ru>
+ <4CE53871.6080004@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4CE53871.6080004@metafoo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpu.c: remove unused variable
+On Thu, Nov 18, 2010 at 03:30:09PM +0100, Lars-Peter Clausen wrote:
+[..]
+> > But please, look at Mark Brown comments. If they are still
+> > applicable, the follow up patch would be great.
+> 
+> Hi
+> 
+> I'll send a follow up patch later today. I think I had one or two other issues on my
+> list that need to be addressed.
+> I wanted to wait with v3 until it was clear whether the driver had a chance to be
+> merged at all.
+> Do you prefer a v3 of the original patch or an incremental one?
 
-kernel/cpu.c: In function ‘take_cpu_down’:
-kernel/cpu.c:200:15: warning: unused variable ‘cpu’
+Incremental would be fine, thanks!
 
-This variable is unused since param->hcpu is directly
-used later on in cpu_notify.
-
-Signed-off-by: Dhaval Giani <dhaval_giani@gmail.com>
----
- kernel/cpu.c |    1 -
- 1 file changed, 1 deletion(-)
-
-Index: linux-2.6/kernel/cpu.c
-===================================================================
---- linux-2.6.orig/kernel/cpu.c
-+++ linux-2.6/kernel/cpu.c
-@@ -197,7 +197,6 @@ struct take_cpu_down_param {
- static int __ref take_cpu_down(void *_param)
- {
- 	struct take_cpu_down_param *param = _param;
--	unsigned int cpu = (unsigned long)param->hcpu;
- 	int err;
- 
- 	/* Ensure this CPU doesn't handle any more interrupts. */
-
-
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
