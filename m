@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759757Ab0KRQhH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 11:37:07 -0500
-Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:46313
-	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757831Ab0KRQhF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 11:37:05 -0500
-X-SpamScore: -6
-X-BigFish: VS-6(zz98dNzz1202hzzz2dh2a8h637h668h67dh685h66h)
-X-Spam-TCS-SCL: 5:0
-X-Forefront-Antispam-Report: KIP:(null);UIP:(null);IPVD:NLI;H:de01egw01.freescale.net;RD:de01egw01.freescale.net;EFVD:NLI
-Message-ID: <4CE5562B.8080604@freescale.com>
-Date: Thu, 18 Nov 2010 10:36:59 -0600
-From: Timur Tabi <timur@freescale.com>
-Organization: Freescale
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101101 Fedora/2.0.10-1.fc13 SeaMonkey/2.0.10
+	id S1759844Ab0KRQha (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 11:37:30 -0500
+Received: from kroah.org ([198.145.64.141]:36748 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754471Ab0KRQh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 11:37:28 -0500
+Date: Thu, 18 Nov 2010 08:36:53 -0800
+From: Greg KH <greg@kroah.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, stable@kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        balbir@linux.vnet.ibm.com
+Subject: Re: [stable] [PATCH] Make swap accounting default behavior
+ configurable
+Message-ID: <20101118163653.GA2786@kroah.com>
+References: <20101116101726.GA21296@tiehlicka.suse.cz>
+ <20101116124615.978ed940.akpm@linux-foundation.org>
+ <20101116212157.GB9359@kroah.com>
+ <20101118082132.GA15928@tiehlicka.suse.cz>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Stuart Yoder <stuart.yoder@freescale.com>
-Subject: Re: How do I choose an arbitrary minor number for my tty device?
-References: <4CE44B1B.9040709@freescale.com> <20101117215147.GA26792@suse.de> <4CE452CD.3050001@freescale.com> <20101117221903.GA4066@suse.de> <4CE45A4E.70308@freescale.com> <20101118022434.GA9833@suse.de> <4CE546C5.8060401@freescale.com> <20101118153912.GA1443@suse.de> <4CE54E40.9040503@freescale.com> <20101118163321.GA2723@suse.de>
-In-Reply-To: <20101118163321.GA2723@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 18 Nov 2010 16:38:02.0339 (UTC) FILETIME=[F7AF8B30:01CB873E]
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101118082132.GA15928@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH wrote:
-> If all you want is a tty driver, then just write a tty driver.  No need
-> for character device nodes or any of that other stuff.  Just assign
-> minor numbers to the device, create it, attach it to the tty core, and
-> away you go.
+On Thu, Nov 18, 2010 at 09:21:32AM +0100, Michal Hocko wrote:
+> > Sorry, I really don't want to start backporting features to stable
+> > kernels if at all possible.  Distros can pick them up on their own if
+> > they determine it is needed.
+> 
+> I really do agree with the part about features. But isn't this patch
+> basically for distros (to help them to provide the swapaccounting feature
+> without the cost of higher memory consumption in default configuration)?
 
-What I would like to do is have some control over the name or minor number of
-the /dev entry.
+Then if the distros want it, they can pick it up themselves.
 
-> I think you are going to have to show code here to get any kind of a
-> better response out of me as I don't think we are understanding each
-> other here, sorry.
+> If this doesn't go to the stable then all (interested) of them would
+> need to maintain the patch. Otherwise the change would come directly
+> from the upstream.
 
-I'll have to email it to you directly, since it's not authorized for public
-distribution just quite yet.
+They can cherry-pick from upstream like they do for everything else, no
+real change here.
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+> Moreover, it is not a new feature it just consolidates the default
+> behavior of the already existing functionality.
 
+Again, it doesn't match up with the stable kernel rules, sorry, no, this
+is not a bugfix or regression.
+
+thanks,
+
+greg k-h
