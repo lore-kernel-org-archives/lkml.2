@@ -1,102 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab0KRHhH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 02:37:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38489 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100Ab0KRHhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 02:37:04 -0500
-From: Lukas Czerner <lczerner@redhat.com>
-To: tytso@mit.edu
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org, sandeen@redhat.com,
-        lczerner@redhat.com
-Subject: [PATCH 2/2] ext4: Add EXT4_IOC_TRIM ioctl to handle batched discard
-Date: Thu, 18 Nov 2010 08:36:49 +0100
-Message-Id: <1290065809-3976-2-git-send-email-lczerner@redhat.com>
-In-Reply-To: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
+	id S1755321Ab0KRHhp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 02:37:45 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:63833 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754850Ab0KRHhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 02:37:43 -0500
+Message-ID: <4CE4D8C9.90302@cn.fujitsu.com>
+Date: Thu, 18 Nov 2010 15:42:01 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 5/6] KVM: MMU: remove 'clear_unsync' parameter
+References: <4CE355A0.6020907@cn.fujitsu.com> <4CE3565D.4080004@cn.fujitsu.com> <20101117164903.GE18959@amt.cnet>
+In-Reply-To: <20101117164903.GE18959@amt.cnet>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-18 15:38:04,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2010-11-18 15:38:04,
+	Serialize complete at 2010-11-18 15:38:04
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Filesystem independent ioctl was rejected as not common enough to be in
-core vfs ioctl. Since we still need to access to this functionality this
-commit adds ext4 specific ioctl EXT4_IOC_TRIM to dispatch
-ext4_trim_fs().
+On 11/18/2010 12:49 AM, Marcelo Tosatti wrote:
+			    bool clear_unsync)
+>> +static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+>>  {
+>>  	int i, offset, nr_present;
+>>  	bool host_writable;
+>> @@ -781,7 +780,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+>>  			u64 nonpresent;
+>>  
+>>  			if (rsvd_bits_set || is_present_gpte(gpte) ||
+>> -			      !clear_unsync)
+>> +			      sp->unsync)
+>>  				nonpresent = shadow_trap_nonpresent_pte;
+>>  			else
+>>  				nonpresent = shadow_notrap_nonpresent_pte;
+> 
+> Its better to keep this explicit as a parameter. 
+> 
 
-It takes fstrim_range structure as an argument. fstrim_range is definec in
-the include/linux/fs.h and its definition is as follows.
-
-struct fstrim_range {
-	__u64 start;
-	__u64 len;
-	__u64 minlen;
-}
-
-start	- first Byte to trim
-len	- number of Bytes to trim from start
-minlen	- minimum extent length to trim, free extents shorter than this
-  number of Bytes will be ignored. This will be rounded up to fs
-  block size.
-
-After the FITRIM is done, the number of actually discarded Bytes is stored
-in fstrim_range.len to give the user better insight on how much storage
-space has been really released for wear-leveling.
-
-Signed-off-by: Lukas Czerner <lczerner@redhat.com>
----
- fs/ext4/ext4.h  |    1 +
- fs/ext4/ioctl.c |   24 ++++++++++++++++++++++++
- 2 files changed, 25 insertions(+), 0 deletions(-)
-
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 6a5edea..2af5042 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -541,6 +541,7 @@ struct ext4_new_group_data {
-  /* note ioctl 11 reserved for filesystem-independent FIEMAP ioctl */
- #define EXT4_IOC_ALLOC_DA_BLKS		_IO('f', 12)
- #define EXT4_IOC_MOVE_EXT		_IOWR('f', 15, struct move_extent)
-+#define EXT4_IOC_TRIM			FITRIM
- 
- #if defined(__KERNEL__) && defined(CONFIG_COMPAT)
- /*
-diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
-index bf5ae88..e07944a 100644
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -331,6 +331,30 @@ mext_out:
- 		return err;
- 	}
- 
-+	case EXT4_IOC_TRIM:
-+	{
-+		struct super_block *sb = inode->i_sb;
-+		struct fstrim_range range;
-+		int ret = 0;
-+
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EPERM;
-+
-+		if (copy_from_user(&range, (struct fstrim_range *)arg,
-+		    sizeof(range)))
-+			return -EFAULT;
-+
-+		ret = ext4_trim_fs(sb, &range);
-+		if (ret < 0)
-+			return ret;
-+
-+		if (copy_to_user((struct fstrim_range *)arg, &range,
-+		    sizeof(range)))
-+			return -EFAULT;
-+
-+		return 0;
-+	}
-+
- 	default:
- 		return -ENOTTY;
- 	}
--- 
-1.7.2.3
-
+But after patch 6 (KVM: MMU: cleanup update_pte, pte_prefetch and sync_page functions),
+this parameter is not used anymore... i don't have strong opinion on it :-)
