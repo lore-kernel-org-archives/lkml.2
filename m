@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757987Ab0KSWYn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:24:43 -0500
-Received: from kroah.org ([198.145.64.141]:45226 "EHLO coco.kroah.org"
+	id S1757699Ab0KSWY6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:24:58 -0500
+Received: from kroah.org ([198.145.64.141]:45202 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757513Ab0KSV6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:52 -0500
+	id S1757494Ab0KSV6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:50 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:43 2010
-Message-Id: <20101119215643.183636537@clark.site>
+Message-Id: <20101119215642.941382344@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:56:15 -0800
+Date: Fri, 19 Nov 2010 13:56:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [54/82] [SCSI] libsas: fix NCQ mixing with non-NCQ
+        Alan Stern <stern@rowland.harvard.edu>,
+        David Brownell <david-b@pacbell.net>
+Subject: [51/82] OHCI: work around for nVidia shutdown problem
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,32 +26,166 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Milburn <dmilburn@redhat.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit f0ad30d3d2dc924decc0e10b1ff6dc32525a5d99 upstream.
+commit 3df7169e73fc1d71a39cffeacc969f6840cdf52b upstream.
 
-Some cards (like mvsas) have issue troubles if non-NCQ commands are
-mixed with NCQ ones.  Fix this by using the libata default NCQ check
-routine which waits until all NCQ commands are complete before issuing
-a non-NCQ one.  The impact to cards (like aic94xx) which don't need
-this logic should be minimal
+This patch (as1417) fixes a problem affecting some (or all) nVidia
+chipsets.  When the computer is shut down, the OHCI controllers
+continue to power the USB buses and evidently they drive a Reset
+signal out all their ports.  This prevents attached devices from going
+to low power.  Mouse LEDs stay on, for example, which is disconcerting
+for users and a drain on laptop batteries.
 
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+The fix involves leaving each OHCI controller in the OPERATIONAL state
+during system shutdown rather than putting it in the RESET state.
+Although this nominally means the controller is running, in fact it's
+not doing very much since all the schedules are all disabled.  However
+there is ongoing DMA to the Host Controller Communications Area, so
+the patch also disables the bus-master capability of all PCI USB
+controllers after the shutdown routine runs.
+
+The fix is applied only to nVidia-based PCI OHCI controllers, so it
+shouldn't cause problems on systems using other hardware.  As an added
+safety measure, in case the kernel encounters one of these running
+controllers during boot, the patch changes quirk_usb_handoff_ohci()
+(which runs early on during PCI discovery) to reset the controller
+before anything bad can happen.
+
+Reported-by: Pali Rohár <pali.rohar@gmail.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: David Brownell <david-b@pacbell.net>
+Tested-by: Pali Rohár <pali.rohar@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/libsas/sas_ata.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/core/hcd-pci.c    |    4 +++-
+ drivers/usb/host/ohci-hcd.c   |    9 ++++++++-
+ drivers/usb/host/ohci-pci.c   |   18 ++++++++++++++++++
+ drivers/usb/host/ohci.h       |    1 +
+ drivers/usb/host/pci-quirks.c |   18 +++++++++++-------
+ 5 files changed, 41 insertions(+), 9 deletions(-)
 
---- a/drivers/scsi/libsas/sas_ata.c
-+++ b/drivers/scsi/libsas/sas_ata.c
-@@ -347,6 +347,7 @@ static int sas_ata_scr_read(struct ata_l
- static struct ata_port_operations sas_sata_ops = {
- 	.phy_reset		= sas_ata_phy_reset,
- 	.post_internal_cmd	= sas_ata_post_internal,
-+	.qc_defer               = ata_std_qc_defer,
- 	.qc_prep		= ata_noop_qc_prep,
- 	.qc_issue		= sas_ata_qc_issue,
- 	.qc_fill_rtf		= sas_ata_qc_fill_rtf,
+--- a/drivers/usb/core/hcd-pci.c
++++ b/drivers/usb/core/hcd-pci.c
+@@ -317,8 +317,10 @@ void usb_hcd_pci_shutdown(struct pci_dev
+ 	if (!hcd)
+ 		return;
+ 
+-	if (hcd->driver->shutdown)
++	if (hcd->driver->shutdown) {
+ 		hcd->driver->shutdown(hcd);
++		pci_disable_device(dev);
++	}
+ }
+ EXPORT_SYMBOL_GPL(usb_hcd_pci_shutdown);
+ 
+--- a/drivers/usb/host/ohci-hcd.c
++++ b/drivers/usb/host/ohci-hcd.c
+@@ -398,7 +398,14 @@ ohci_shutdown (struct usb_hcd *hcd)
+ 
+ 	ohci = hcd_to_ohci (hcd);
+ 	ohci_writel (ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
+-	ohci_usb_reset (ohci);
++	ohci->hc_control = ohci_readl(ohci, &ohci->regs->control);
++
++	/* If the SHUTDOWN quirk is set, don't put the controller in RESET */
++	ohci->hc_control &= (ohci->flags & OHCI_QUIRK_SHUTDOWN ?
++			OHCI_CTRL_RWC | OHCI_CTRL_HCFS :
++			OHCI_CTRL_RWC);
++	ohci_writel(ohci, ohci->hc_control, &ohci->regs->control);
++
+ 	/* flush the writes */
+ 	(void) ohci_readl (ohci, &ohci->regs->control);
+ }
+--- a/drivers/usb/host/ohci-pci.c
++++ b/drivers/usb/host/ohci-pci.c
+@@ -201,6 +201,20 @@ static int ohci_quirk_amd700(struct usb_
+ 	return 0;
+ }
+ 
++/* nVidia controllers continue to drive Reset signalling on the bus
++ * even after system shutdown, wasting power.  This flag tells the
++ * shutdown routine to leave the controller OPERATIONAL instead of RESET.
++ */
++static int ohci_quirk_nvidia_shutdown(struct usb_hcd *hcd)
++{
++	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
++
++	ohci->flags |= OHCI_QUIRK_SHUTDOWN;
++	ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
++
++	return 0;
++}
++
+ /*
+  * The hardware normally enables the A-link power management feature, which
+  * lets the system lower the power consumption in idle states.
+@@ -332,6 +346,10 @@ static const struct pci_device_id ohci_p
+ 		PCI_DEVICE(PCI_VENDOR_ID_ATI, 0x4399),
+ 		.driver_data = (unsigned long)ohci_quirk_amd700,
+ 	},
++	{
++		PCI_DEVICE(PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID),
++		.driver_data = (unsigned long) ohci_quirk_nvidia_shutdown,
++	},
+ 
+ 	/* FIXME for some of the early AMD 760 southbridges, OHCI
+ 	 * won't work at all.  blacklist them.
+--- a/drivers/usb/host/ohci.h
++++ b/drivers/usb/host/ohci.h
+@@ -403,6 +403,7 @@ struct ohci_hcd {
+ #define	OHCI_QUIRK_HUB_POWER	0x100			/* distrust firmware power/oc setup */
+ #define	OHCI_QUIRK_AMD_ISO	0x200			/* ISO transfers*/
+ #define	OHCI_QUIRK_AMD_PREFETCH	0x400			/* pre-fetch for ISO transfer */
++#define	OHCI_QUIRK_SHUTDOWN	0x800			/* nVidia power bug */
+ 	// there are also chip quirks/bugs in init logic
+ 
+ 	struct work_struct	nec_work;	/* Worker for NEC quirk */
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -169,6 +169,7 @@ static int __devinit mmio_resource_enabl
+ static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ {
+ 	void __iomem *base;
++	u32 control;
+ 
+ 	if (!mmio_resource_enabled(pdev, 0))
+ 		return;
+@@ -177,10 +178,14 @@ static void __devinit quirk_usb_handoff_
+ 	if (base == NULL)
+ 		return;
+ 
++	control = readl(base + OHCI_CONTROL);
++
+ /* On PA-RISC, PDC can leave IR set incorrectly; ignore it there. */
+-#ifndef __hppa__
+-{
+-	u32 control = readl(base + OHCI_CONTROL);
++#ifdef __hppa__
++#define	OHCI_CTRL_MASK		(OHCI_CTRL_RWC | OHCI_CTRL_IR)
++#else
++#define	OHCI_CTRL_MASK		OHCI_CTRL_RWC
++
+ 	if (control & OHCI_CTRL_IR) {
+ 		int wait_time = 500; /* arbitrary; 5 seconds */
+ 		writel(OHCI_INTR_OC, base + OHCI_INTRENABLE);
+@@ -194,13 +199,12 @@ static void __devinit quirk_usb_handoff_
+ 			dev_warn(&pdev->dev, "OHCI: BIOS handoff failed"
+ 					" (BIOS bug?) %08x\n",
+ 					readl(base + OHCI_CONTROL));
+-
+-		/* reset controller, preserving RWC */
+-		writel(control & OHCI_CTRL_RWC, base + OHCI_CONTROL);
+ 	}
+-}
+ #endif
+ 
++	/* reset controller, preserving RWC (and possibly IR) */
++	writel(control & OHCI_CTRL_MASK, base + OHCI_CONTROL);
++
+ 	/*
+ 	 * disable interrupts
+ 	 */
 
 
