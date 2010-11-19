@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736Ab0KSU11 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 15:27:27 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:44142 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754797Ab0KSU10 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 15:27:26 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6172"; a="63406156"
-Date: Fri, 19 Nov 2010 12:27:26 -0800 (PST)
-From: Gregory Bean <gbean@codeaurora.org>
-X-X-Sender: gbean@gbean-linux.qualcomm.com
-To: Janakiram Sistla <janakiram.sistla@gmail.com>
-cc: Gregory Bean <gbean@codeaurora.org>, dwalker@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 2/2] msm: gpio: Add irq support to v2 gpiolib.
-In-Reply-To: <AANLkTi=VGx1xR3f7_8-cMQAmaz6PQ-t=Xubk_Jtp911V@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1011191223570.10560@gbean-linux.qualcomm.com>
-References: <1290109970-26752-1-git-send-email-gbean@codeaurora.org> <1290109970-26752-2-git-send-email-gbean@codeaurora.org> <AANLkTimTsyhjHJZggFO31C-2RswpmKWn-V4pGEiQ3+_2@mail.gmail.com> <alpine.DEB.2.00.1011181229380.26784@gbean-linux.qualcomm.com>
- <AANLkTi=p02P=-JQ9+FynFyM1yxrAh3utKTD2uzqhnLxK@mail.gmail.com> <alpine.DEB.2.00.1011181256470.29924@gbean-linux.qualcomm.com> <AANLkTiknYmWOmiFXGp6h2dT==aMuGs3BtXi82b6Vdq5i@mail.gmail.com> <alpine.DEB.2.00.1011191035210.10052@gbean-linux.qualcomm.com>
- <AANLkTiknSudbo_j+nqBqmds49CWyqXf0jpvz+DTYH-zg@mail.gmail.com> <alpine.DEB.2.00.1011191053040.10560@gbean-linux.qualcomm.com> <AANLkTi=VGx1xR3f7_8-cMQAmaz6PQ-t=Xubk_Jtp911V@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932240Ab0KSU2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 15:28:32 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38121 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754797Ab0KSU23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 15:28:29 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jesse Gross <jesse@nicira.com>
+Subject: Re: 2.6.37-rc2-git4: Reported regressions 2.6.35 -> 2.6.36
+Date: Fri, 19 Nov 2010 21:27:30 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+References: <tTUH_XeInOH.A.dMF.c3b5MB@chimera> <AANLkTinzHyWcfS++R_d+yqR9JQu7W51h0XRr-ikd_6y1@mail.gmail.com>
+In-Reply-To: <AANLkTinzHyWcfS++R_d+yqR9JQu7W51h0XRr-ikd_6y1@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011192127.30556.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Since gpio.c is v1, we used gpio-v2.c for v2.
->
-> Greg, i agree your point ,but i think v2 differs from v1 with a new
-> features distinguished.Also there might be a intention behind going
-> for v2 that might resolve some hardware erratas in v1.
+On Friday, November 19, 2010, Jesse Gross wrote:
+> On Thu, Nov 18, 2010 at 3:50 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=20462
+> > Subject         : 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
+> > Submitter       : Nikola Ciprich <extmaillist@linuxbox.cz>
+> > Date            : 2010-10-15 7:10 (35 days old)
+> > Message-ID      : <20101015071008.GA8714@pcnci.linuxbox.cz>
+> > References      : http://marc.info/?l=linux-kernel&m=128712984831303&w=2
+> 
+> A fix for this has been sent to -stable:
+> http://www.spinics.net/lists/netdev/msg146227.html
 
-V2 is not an extension to or erratas to v1, it is almost
-completely different.  Any erratas to v1 would be released as v1.1 (I suspect).
+OK, status updated.
 
-> what if again a new generation comes then we will name it gpio-v3.c ??
-
-I assume so.
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks,
+Rafael
