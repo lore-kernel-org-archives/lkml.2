@@ -1,102 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab0KSQXp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:23:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22704 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755258Ab0KSQXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:23:44 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1290120166-3132-5-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1290120166-3132-5-git-send-email-zohar@linux.vnet.ibm.com> <1290120166-3132-1-git-send-email-zohar@linux.vnet.ibm.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-crypto@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: Re: [PATCH v1.4 4/5] keys: add new trusted key-type
-Date: Fri, 19 Nov 2010 16:23:21 +0000
-Message-ID: <10330.1290183801@redhat.com>
+	id S1755686Ab0KSQZI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:25:08 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37329 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755413Ab0KSQZH (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 19 Nov 2010 11:25:07 -0500
+Date: Fri, 19 Nov 2010 11:23:53 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: linux-kernel@vger.kernel.org,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        xen-devel@lists.xensource.com
+Subject: Re: [PATCH] xen: use PHYSDEVOP_get_free_pirq to implement
+ find_unbound_pirq
+Message-ID: <20101119162353.GA26747@dumpdata.com>
+References: <alpine.DEB.2.00.1011191350250.2373@kaball-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1011191350250.2373@kaball-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-
-> +keyctl print returns an ascii hex copy of the sealed key, which is in standard
-
-I'd quote 'keyctl print' just so it's obvious where the command ends and the
-descriptive text starts.
-
-> +Usage:
-> +  keyctl add encrypted name "new key-type:master-key-name keylen" ring
-> +  keyctl add encrypted name "load key-type:master-key-name keylen hex_blob" ring
-> +  keyctl update keyid "update key-type:master-key-name"
+On Fri, Nov 19, 2010 at 01:58:03PM +0000, Stefano Stabellini wrote:
+> Use PHYSDEVOP_get_free_pirq to implement find_unbound_pirq
+> 
+> Use the new hypercall PHYSDEVOP_get_free_pirq to ask Xen to allocate a
+> pirq. Remove the unsupported PHYSDEVOP_get_nr_pirqs hypercall to get the
+> amount of pirq available.
+> 
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> 
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 321a0c8..ffd286e 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -382,12 +382,17 @@ static int get_nr_hw_irqs(void)
+>  	return ret;
+>  }
+>  
+> -/* callers of this function should make sure that PHYSDEVOP_get_nr_pirqs
+> - * succeeded otherwise nr_pirqs won't hold the right value */
+> -static int find_unbound_pirq(void)
+> +static int find_unbound_pirq(int type)
+>  {
+> -	int i;
+> -	for (i = nr_pirqs-1; i >= 0; i--) {
+> +	int rc, i;
+> +	struct physdev_get_free_pirq op_get_free_pirq;
+> +	op_get_free_pirq.type = type;
 > +
-> +where 'key-type' is either 'trusted' or 'user'.
-
-I recommend adding some example commands with all the arguments substituted.
-Nothing helps get to grip with an API like knowing what a command is supposed
-to look like when it's actually used.
-
-> +static int trusted_tpm_send(u32 chip_num, unsigned char *cmd, int buflen)
-
-There are still a lot of places in here where you should probably be using
-const and size_t.
-
-> +static int my_get_random(unsigned char *buf, int len)
-> +{
-> +	struct tpm_buf *tb;
-> +	int ret;
+> +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_free_pirq, &op_get_free_pirq);
+> +	if (!rc)
+> +		return op_get_free_pirq.pirq;
 > +
-> +	tb = kzalloc(sizeof *tb, GFP_KERNEL);
-> +	if (!tb)
-> +		return -ENOMEM;
-> +	ret = tpm_get_random(tb, buf, len);
+> +	for (i = 16; i <= nr_pirqs-1; i++) {
 
-Using kzalloc() rather than kmalloc() is a waste of time, I'd've thought.
-It's a temporary buffer.  Does it really need to be precleared?
+16? No no. Why not re-use the old loop, like so:
 
-> +	ret = tpm_pcr_extend(TPM_ANY_NUM, pcrnum, hash);
-> +	return ret;
+ 	for (i = nr_pirqs-1; i >= 0; i--) {
 
-Merge.
+>  		if (pirq_to_irq[i] < 0)
+>  			return i;
+>  	}
+> @@ -669,7 +674,7 @@ void xen_allocate_pirq_msi(char *name, int *irq, int *pirq)
+>  	if (*irq == -1)
+>  		goto out;
+>  
+> -	*pirq = find_unbound_pirq();
+> +	*pirq = find_unbound_pirq(MAP_PIRQ_TYPE_MSI);
+>  	if (*pirq == -1)
+>  		goto out;
+>  
+> @@ -1504,23 +1509,12 @@ void xen_callback_vector(void) {}
+>  void __init xen_init_IRQ(void)
+>  {
+>  	int i, rc;
+> -	struct physdev_nr_pirqs op_nr_pirqs;
+>  
+>  	cpu_evtchn_mask_p = kcalloc(nr_cpu_ids, sizeof(struct cpu_evtchn_s),
+>  				    GFP_KERNEL);
+>  	irq_info = kcalloc(nr_irqs, sizeof(*irq_info), GFP_KERNEL);
+>  
+> -	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_nr_pirqs, &op_nr_pirqs);
+> -	if (rc < 0) {
+> -		nr_pirqs = nr_irqs;
+> -		if (rc != -ENOSYS)
+> -			printk(KERN_WARNING "PHYSDEVOP_get_nr_pirqs returned rc=%d\n", rc);
+> -	} else {
+> -		if (xen_pv_domain() && !xen_initial_domain())
+> -			nr_pirqs = max((int)op_nr_pirqs.nr_pirqs, nr_irqs);
+> -		else
+> -			nr_pirqs = op_nr_pirqs.nr_pirqs;
+> -	}
+> +	nr_pirqs = nr_irqs;
 
-> +static int trusted_update(struct key *key, const void *data, size_t datalen)
-> +{
-> ...
-> +	*(datablob + datalen) = '\0';
-
-That's what [] is for.
-
-> +	if (new_o)
-> +		kfree(new_o);
-
-kfree() can handle a NULL pointer.
-
-> +	if (new_o->pcrlock)
-> +		ret = pcrlock(new_o->pcrlock);
-> +	rcu_assign_pointer(key->payload.data, new_p);
-> +	call_rcu(&p->rcu, trusted_rcu_free);
-
-Should there be a check for pcrlock() failure?
-
-> +/* not already defined in tpm.h - specific to this use */
-> +#define TPM_TAG_RQU_COMMAND		193
-> +#define TPM_TAG_RQU_AUTH1_COMMAND	194
-> ...
-
-Values defined for TPM hardware access really ought to be in a separate file
-in include/linux/.  They aren't strictly specific to the trusted key
-implementation here; that may be the only user currently in the kernel, but
-that doesn't mean there can't be another user.
-
-David
+Why not just get rid of nr_pirgs altogether then? And use 'nr_irqs' instead?
