@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab0KSQez (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:34:55 -0500
-Received: from tango.0pointer.de ([85.214.72.216]:46920 "EHLO
-	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755309Ab0KSQey (ORCPT
+	id S1755315Ab0KSQgW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:36:22 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:58974 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190Ab0KSQgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:34:54 -0500
-Date: Fri, 19 Nov 2010 17:34:31 +0100
-From: Lennart Poettering <mzxreary@0pointer.de>
-To: David Miller <davem@davemloft.net>
-Cc: tytso@MIT.EDU, bgamari.foss@gmail.com, a.p.zijlstra@chello.nl,
-        debiandev@gmail.com, torvalds@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, dhaval.giani@gmail.com, efault@gmx.de,
-        vgoyal@redhat.com, oleg@redhat.com, markus@trippelsdorf.de,
-        mathieu.desnoyers@efficios.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101119163430.GA12353@tango.0pointer.de>
-References: <1290167993.2109.1562.camel@laptop>
- <8762vtsbx5.fsf@gmail.com>
- <C47257FC-498A-41B0-BC94-C81C72601D53@mit.edu>
- <20101119.082944.226775934.davem@davemloft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101119.082944.226775934.davem@davemloft.net>
-Organization: Red Hat, Inc.
-X-Campaign-1: ()  ASCII Ribbon Campaign
-X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
-User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
+	Fri, 19 Nov 2010 11:36:21 -0500
+Subject: Re: [7/8,v3] NUMA Hotplug Emulator: extend memory probe interface
+ to support NUMA
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Shaohui Zheng <shaohui.zheng@intel.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        Haicheng Li <haicheng.li@intel.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Greg KH <greg@kroah.com>
+In-Reply-To: <20101119075119.GD3327@shaohui>
+References: <20101117020759.016741414@intel.com>
+	 <20101117021000.916235444@intel.com> <1290019807.9173.3789.camel@nimitz>
+	 <20101119075119.GD3327@shaohui>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Fri, 19 Nov 2010 08:36:09 -0800
+Message-ID: <1290184569.32329.1986.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19.11.10 08:29, David Miller (davem@davemloft.net) wrote:
+On Fri, 2010-11-19 at 15:51 +0800, Shaohui Zheng wrote:
+> the purpose of hotplug emulator is providing a possible solution for cpu/memory
+> hotplug testing, the interface upgrading is not part of emulator. Let's forget
+> configfs here. 
 
-> Someone who argues and behaves in that way is not someone I put much
-> stock in as far as implementing things in a wise or well informed way,
-> it feels more like a mechanism which is being forced and rushed ahead
-> without enough research or consideration.
+If it's just for testing, you're right, we probably shouldn't go to the
+trouble of making a new interface.  At the same time, we shouldn't put
+something in /sys or configfs that we're not committed to, long-term.
 
-Wow, so much hate!
+So, not to replace the memory probe file, but _only_ to drive the new
+debug-only node hot-add, I think its appropriate place is debugfs.
 
-Love you too,
+-- Dave
 
-Lennart
-
--- 
-Lennart Poettering - Red Hat, Inc.
