@@ -1,148 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab0KSWVQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:21:16 -0500
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:58608 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757498Ab0KSV6z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758015Ab0KSWVT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:21:19 -0500
+Received: from kroah.org ([198.145.64.141]:45269 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757560Ab0KSV6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Nov 2010 16:58:55 -0500
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: thomas@winischhofer.net, aaro.koskinen@iki.fi
-Subject: [PATCH 6/9] sisfb: remove InPort/OutPort wrappers
-Date: Fri, 19 Nov 2010 23:58:48 +0200
-Message-Id: <1290203931-25188-7-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1290203931-25188-1-git-send-email-aaro.koskinen@iki.fi>
-References: <1290203931-25188-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:43 2010
+Message-Id: <20101119215643.593157144@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 19 Nov 2010 13:56:20 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Dan Carpenter <error27@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [59/82] gianfar: fix double lock typo
+In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove register IO wrappers.
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: Thomas Winischhofer <thomas@winischhofer.net>
+------------------
+
+
+From: Dan Carpenter <error27@gmail.com>
+
+[ Upstream commit 9756403b16cfeda85efe77e62832a2f6b5752fdf ]
+
+This should be a _restore() instead of a _save().
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/video/sis/init.c  |   20 ++++++++++----------
- drivers/video/sis/osdef.h |   30 ------------------------------
- 2 files changed, 10 insertions(+), 40 deletions(-)
+ drivers/net/gianfar_ethtool.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/video/sis/init.c b/drivers/video/sis/init.c
-index 8351151..bfc6a1a 100644
---- a/drivers/video/sis/init.c
-+++ b/drivers/video/sis/init.c
-@@ -882,51 +882,51 @@ SiS_GetModeID_VGA2(int VGAEngine, unsigned int VBFlags, int HDisplay, int VDispl
- void
- SiS_SetReg(SISIOADDRESS port, unsigned short index, unsigned short data)
- {
--   OutPortByte(port, index);
--   OutPortByte(port + 1, data);
-+	outb((u8)index, port);
-+	outb((u8)data, port + 1);
- }
+--- a/drivers/net/gianfar_ethtool.c
++++ b/drivers/net/gianfar_ethtool.c
+@@ -538,7 +538,7 @@ static int gfar_set_rx_csum(struct net_d
  
- void
- SiS_SetRegByte(SISIOADDRESS port, unsigned short data)
- {
--   OutPortByte(port, data);
-+	outb((u8)data, port);
- }
+ 		unlock_tx_qs(priv);
+ 		unlock_rx_qs(priv);
+-		local_irq_save(flags);
++		local_irq_restore(flags);
  
- void
- SiS_SetRegShort(SISIOADDRESS port, unsigned short data)
- {
--   OutPortWord(port, data);
-+	outw((u16)data, port);
- }
- 
- void
- SiS_SetRegLong(SISIOADDRESS port, unsigned int data)
- {
--   OutPortLong(port, data);
-+	outl((u32)data, port);
- }
- 
- unsigned char
- SiS_GetReg(SISIOADDRESS port, unsigned short index)
- {
--   OutPortByte(port, index);
--   return(InPortByte(port + 1));
-+	outb((u8)index, port);
-+	return inb(port + 1);
- }
- 
- unsigned char
- SiS_GetRegByte(SISIOADDRESS port)
- {
--   return(InPortByte(port));
-+	return inb(port);
- }
- 
- unsigned short
- SiS_GetRegShort(SISIOADDRESS port)
- {
--   return(InPortWord(port));
-+	return inw(port);
- }
- 
- unsigned int
- SiS_GetRegLong(SISIOADDRESS port)
- {
--   return(InPortLong(port));
-+	return inl(port);
- }
- 
- void
-diff --git a/drivers/video/sis/osdef.h b/drivers/video/sis/osdef.h
-index dae407c..be7f306 100644
---- a/drivers/video/sis/osdef.h
-+++ b/drivers/video/sis/osdef.h
-@@ -54,30 +54,6 @@
- #ifndef _SIS_OSDEF_H_
- #define _SIS_OSDEF_H_
- 
--#ifdef OutPortByte
--#undef OutPortByte
--#endif
--
--#ifdef OutPortWord
--#undef OutPortWord
--#endif
--
--#ifdef OutPortLong
--#undef OutPortLong
--#endif
--
--#ifdef InPortByte
--#undef InPortByte
--#endif
--
--#ifdef InPortWord
--#undef InPortWord
--#endif
--
--#ifdef InPortLong
--#undef InPortLong
--#endif
--
- /**********************************************************************/
- /*  LINUX KERNEL                                                      */
- /**********************************************************************/
-@@ -87,12 +63,6 @@
- #warning sisfb will not work!
- #endif
- 
--#define OutPortByte(p,v) outb((u8)(v),(SISIOADDRESS)(p))
--#define OutPortWord(p,v) outw((u16)(v),(SISIOADDRESS)(p))
--#define OutPortLong(p,v) outl((u32)(v),(SISIOADDRESS)(p))
--#define InPortByte(p)    inb((SISIOADDRESS)(p))
--#define InPortWord(p)    inw((SISIOADDRESS)(p))
--#define InPortLong(p)    inl((SISIOADDRESS)(p))
- #define SiS_SetMemory(MemoryAddress,MemorySize,value) memset_io(MemoryAddress, value, MemorySize)
- 
- #endif  /* _OSDEF_H_ */
--- 
-1.5.6.5
+ 		for (i = 0; i < priv->num_rx_queues; i++)
+ 			gfar_clean_rx_ring(priv->rx_queue[i],
+
 
