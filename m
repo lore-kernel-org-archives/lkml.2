@@ -1,64 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab0KSUCP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 15:02:15 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37026 "EHLO
+	id S1756667Ab0KSUFo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 15:05:44 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47124 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753421Ab0KSUCO (ORCPT
+	by vger.kernel.org with ESMTP id S1753281Ab0KSUFn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 15:02:14 -0500
-Date: Fri, 19 Nov 2010 12:01:12 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        linux-acpi@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 2/2] Hardware error record persistent support
-Message-Id: <20101119120112.77f2636f.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTikPTYLELKMLOeB868rW9cN40897TRg0dtuN=zQQ@mail.gmail.com>
-References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
-	<1290154233-28695-3-git-send-email-ying.huang@intel.com>
-	<AANLkTikPTYLELKMLOeB868rW9cN40897TRg0dtuN=zQQ@mail.gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Nov 2010 15:05:43 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1011191156470.19579@asgard.lang.hm>
+References: <20101116104600.GA24015@suse.de> <20101119191906.GA31760@xanatos>
+ <AANLkTi=OsWEdrfCOHKz+SAtqo7DmK0nNxku7Ev21f0Lh@mail.gmail.com> <alpine.DEB.2.00.1011191156470.19579@asgard.lang.hm>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 19 Nov 2010 12:04:47 -0800
+Message-ID: <AANLkTikP5MpT6-WBBfNsP2nK1Cdh=St+nWky_bU9FhSO@mail.gmail.com>
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
+To: david@lang.hm
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Marcus Meissner <meissner@suse.de>, linux-kernel@vger.kernel.org,
+        tj@kernel.org, akpm@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
+        w@1wt.eu, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Nov 2010 07:52:08 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Fri, Nov 19, 2010 at 11:58 AM,  <david@lang.hm> wrote:
+>
+> how far back do we need to maintain compatibility with userspace?
+>
+> Is this something that we can revisit in a few years and lock it down then?
 
-> On Fri, Nov 19, 2010 at 12:10 AM, Huang Ying <ying.huang@intel.com> wrote:
-> > Normally, corrected hardware error records will go through the kernel
-> > processing and be logged to disk or network finally. __But for
-> > uncorrected errors, system may go panic directly for better error
-> > containment, disk or network is not usable in this half-working
-> > system. __To avoid losing these valuable hardware error records, the
-> > error records are saved into some kind of simple persistent storage
-> > such as flash before panic, so that they can be read out after system
-> > reboot successfully.
-> 
-> I think this is totally the wrong thing to do. TOTALLY.
-> 
-> The fact is, concentrating about "hardware errors" makes this
-> something that I refuse to merge. It's such an idiotic approach that
-> it's disgusting.
-> 
-> Now, if this was designed to be a "hardware-backed persistent 'printk'
-> buffer", and was explicitly meant to save not just some special
-> hardware error, but catch all printk's (which may be due to hardware
-> errors or oopses or warnings or whatever), that would be useful.
-> 
-> But limiting it to just some special source of errors makes this
-> pointless and not ever worth merging.
-> 
+The rule is basically "we never break user space".
 
-yep.  We already have bits and pieces in place for this: kmsg_dump,
-ramoops, mtdoops, etc.  If your hardware has a non-volatile memory then
-just hook it up as a backend driver for kmsg_dump.
+But the "out" to that rule is that "if nobody notices, it's not
+broken". In a few years? Who knows?
 
+So breaking user space is a bit like trees falling in the forest. If
+there's nobody around to see it, did it really break?
+
+                   Linus
