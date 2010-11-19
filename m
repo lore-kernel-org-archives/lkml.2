@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab0KSVLn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:11:43 -0500
-Received: from cantor.suse.de ([195.135.220.2]:46564 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754277Ab0KSVLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:11:42 -0500
-Date: Fri, 19 Nov 2010 12:57:09 -0800
-From: Greg KH <gregkh@suse.de>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: base: core: do not put noninitialized devices
-Message-ID: <20101119205709.GA17531@suse.de>
-References: <1290192100-11451-1-git-send-email-segoon@openwall.com>
- <20101119190242.GA14328@suse.de>
- <20101119191424.GA12273@albatros>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101119191424.GA12273@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755737Ab0KSVOT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:14:19 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44799
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751544Ab0KSVOS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:14:18 -0500
+Date: Fri, 19 Nov 2010 13:14:43 -0800 (PST)
+Message-Id: <20101119.131443.35039425.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+Subject: Re: linux-next: manual merge of the net tree with the net-current
+ tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101119111706.d68efe13.sfr@canb.auug.org.au>
+References: <20101119111706.d68efe13.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 10:14:25PM +0300, Vasiliy Kulikov wrote:
-> Hi Greg,
-> 
-> On Fri, Nov 19, 2010 at 11:02 -0800, Greg KH wrote:
-> > On Fri, Nov 19, 2010 at 09:41:40PM +0300, Vasiliy Kulikov wrote:
-> > > If kobject_set_name_vargs() fails then put_device() frees
-> > > device with zero kobj->state_initialized.  This leads to WARN().
-> > 
-> > Have you seen this happen?
-> 
-> No, I've just analized the code.  Without device_initialize() ->kobj is
-> not initialized:
-> 
-> 	kobject_init(&dev->kobj, &device_ktype) calls
-> 
-> 	kobject_init_internal(kobj) calls
-> 
-> 	kobj->state_initialized = 1;
-> 
-> kobject_put() calls WARN if state_initialized == 0:
-> 
->     void kobject_put(struct kobject *kobj)
->     {
->         if (kobj) {
->             if (!kobj->state_initialized)
->                 WARN(1, KERN_WARNING "kobject: '%s' (%p): is not "
->                        "initialized, yet kobject_put() is being "
->                        "called.\n", kobject_name(kobj), kobj);
-> 
-> 
-> I got the stack dump with similar code:
-> 
->     struct device *dev = kzalloc(sizeof(*dev), GFP_KERNEL);
->     put_device(dev);
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 19 Nov 2010 11:17:06 +1100
 
-Sure, that's illegal code, and we want to warn about that.  So I would
-say, if an error happens, we want to see this message so the code should
-stay as-is.
+> Hi all,
+> 
+> Today's linux-next merge of the net tree got a conflict in
+> drivers/net/bonding/bond_main.c between commit
+> 3006bc38895895f1a0352c2e17e1a503f35f7e2f ("bonding: fix a race in IGMP
+> handling") from the net-current tree and commit
+> 866f3b25a2eb60d7529c227a0ecd80c3aba443fd ("bonding: IGMP handling
+> cleanup") from the net tree.
+> 
+> I just assumed that the latter is a better solution and used that.
 
-thanks,
+Yep, that's correct, and I'm doing the same as I merge things myself
+right now.
 
-greg k-h
+Thanks!
