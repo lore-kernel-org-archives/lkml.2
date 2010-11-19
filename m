@@ -1,421 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178Ab0KSSCl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 13:02:41 -0500
-Received: from ns1.cypress.com ([157.95.67.4]:38179 "EHLO ns1.cypress.com"
+	id S1756164Ab0KSSGl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:06:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23642 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754970Ab0KSSCj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 13:02:39 -0500
-X-Greylist: delayed 952 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Nov 2010 13:02:38 EST
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1755247Ab0KSSGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 13:06:39 -0500
+Date: Fri, 19 Nov 2010 19:06:16 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
+To: Christoph Hellwig <hch@infradead.org>
+cc: Greg Freemyer <greg.freemyer@gmail.com>, Mark Lord <kernel@teksavvy.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Moyer <jmoyer@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        tytso@mit.edu, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
+ super_operation
+In-Reply-To: <20101119163828.GA8023@infradead.org>
+Message-ID: <alpine.LFD.2.00.1011191853210.3238@dhcp-lab-213.englab.brq.redhat.com>
+References: <1290100750.3041.72.camel@mulgrave.site> <x494obe4kd5.fsf@segfault.boston.devel.redhat.com> <1290102098.3041.77.camel@mulgrave.site> <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com> <4CE59E57.2090009@teksavvy.com>
+ <yq1r5eiw5os.fsf@sermon.lab.mkp.net> <4CE5C616.7070706@teksavvy.com> <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com> <20101119115516.GA1152@infradead.org> <AANLkTimQZKLtKpKRUJ-KyCyo29F_Mnws8J54G3CeMkyc@mail.gmail.com>
+ <20101119163828.GA8023@infradead.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] touchscreen: Cypress TTSP G3 MTDEV Core Driver
-Date: Fri, 19 Nov 2010 09:39:42 -0800
-Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC090119784D@labamba.mis.cypress.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] touchscreen: Cypress TTSP G3 MTDEV Core Driver
-Thread-Index: AcuE5M9bPLRT89KmSKCVc8A8+5t7lQDKUJoQ
-References: <Kevin McNeely <kev@cypress.com> <1289327120-2612-1-git-send-email-kev@cypress.com> <4CE163CC.1060202@euromail.se>
-From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
-To: "Henrik Rydberg" <rydberg@euromail.se>
-Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        "David Brown" <davidb@codeaurora.org>,
-        "Trilok Soni" <tsoni@codeaurora.org>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Eric Miao" <eric.y.miao@gmail.com>,
-        "Simtec Linux Team" <linux@simtec.co.uk>,
-        "Luotao Fu" <l.fu@pengutronix.de>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 19 Nov 2010 17:39:43.0774 (UTC) FILETIME=[C05373E0:01CB8810]
-X-Brightmail-Tracker: AAAAAA==
-X-MailScanner: 
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Henrik,
+On Fri, 19 Nov 2010, Christoph Hellwig wrote:
 
-Thank you for reviewing this code submission.
+> On Fri, Nov 19, 2010 at 08:20:58AM -0800, Greg Freemyer wrote:
+> > The kernel team has been coding around some Utopian SSD TRIM
+> > implementation for at least 2 years with the basic assumption that
+> > SSDs can handle thousands of trims per second.  Just mix em in with
+> > the rest of the i/o.  No problem.  Intel swore to us its the right
+> > thing to do.
+> 
+> Thanks Greg, good that you told us what we've been doing.  I would have
+> forgot myself if you didn't remember me.
+> 
+> > I'm still waiting to see the first benchmark report from anywhere
+> > (SSD, Thin Provisioned SCSI) that the online approach used by mount -o
+> > discard is a win performance wise.  Linux has a history of designing
+> > for reality, but for some reason when it comes to SSDs reality seems
+> > not to be a big concern.
+> 
+> Both Lukas and I have done extensive benchmarks on various SSDs and
+> thinkly provisioned raids.  Unfortunately most of the hardware is only
+> available under NDA so we can't publish it.
+> 
+> For the XFS side which I've looked it I can summarize that we do have
+> arrays that do the online discard without measureable performance
+> penalty on various workloads, and we have devices (both SSDs and arrays)
+> where the overhead is incredibly huge.  I can also say that doing the
+> walk of the freespace btrees similar to the offline discard, but every
+> 30 seconds or at a similarly high interval is a sure way to completely
+> kill performance.
+> 
+> Or in short we haven't fund the holy grail yet.
+> 
 
-I have replied to each of your comments below.
-
-I would like to resubmit to include the changes.
-
-Thanks and best regards,
-Kevin
-
-
-> -----Original Message-----
-> From: Henrik Rydberg [mailto:rydberg@euromail.se]
-> Sent: Monday, November 15, 2010 8:46 AM
-> To: Kevin McNeely
-> Cc: Dmitry Torokhov; David Brown; Trilok Soni; Samuel Ortiz; Eric
-Miao;
-> Simtec Linux Team; Luotao Fu; linux-input@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH] touchscreen: Cypress TTSP G3 MTDEV Core Driver
-> 
-> On 11/09/2010 07:25 PM, Kevin McNeely wrote:
-> 
-> > Initial release of Cypress TTSP Gen3 Core Driver.
-> > Core Driver includes platform data definition file,
-> > core driver definition file, and core touchscreen
-> > touch handling of device data. Generates
-> > multi-touch input events.
-> >
-> > Signed-off-by: Kevin McNeely <kev@cypress.com>
-> 
-> > ---
-> 
-> 
-> Thanks for your submission. Please find comments on MT inline. On a
-> general
-> note, it is strongly recommended that this driver be converted to the
-> MT slots
-> (type B) protocol.
-
-I will resubmit with Protocol A only at this time.  I will remove the
-Tracking ID's.
-
-> 
-> > +
-> > +/* TrueTouch Standard Product Gen3 interface definition */
-> > +struct cyttsp_xydata {
-> > +	u8 hst_mode;
-> > +	u8 tt_mode;
-> > +	u8 tt_stat;
-> > +	struct cyttsp_touch tch1;
-> > +	u8 touch12_id;
-> > +	struct cyttsp_touch tch2;
-> > +	u8 gest_cnt;
-> > +	u8 gest_id;
-> > +	struct cyttsp_touch tch3;
-> > +	u8 touch34_id;
-> > +	struct cyttsp_touch tch4;
-> > +	u8 tt_undef[3];
-> > +	u8 gest_set;
-> 
-> 
-> I take it the gesture functionality is not in use in this driver?
-
-Correct, I will remove all instances and mentions of the gesture. The
-field of interest is the active distance for touches.
-
-> 
-> > +	u8 tt_reserved;
-> > +};
-> > +
-> > +
-> > +struct cyttsp_tch {
-> > +	struct cyttsp_touch *tch;
-> > +	u8 *id;
-> > +};
-> 
-> 
-> Given how this mapping is used, it could possibly be dropped
-> altogether. See
-> further comment on cyttsp_init_tch_map().
-
-The mapping is to allow number of touch growth with extra register
-information. The mapping is to allow looping on the touch processing.
-
-> 
-> > +
-> 
-> > +struct cyttsp_trk {
-> > +	u8 tch;
-> > +	u8 w;
-> 
-> 
-> It seems the device does not report contact width, so it is better not
-> reported
-> at all.
-
-The width will be removed.
-
-> 
-> > +	u16 x;
-> > +	u16 y;
-> > +	u8 z;
-> > +};
-> > +
-> > +struct cyttsp {
-> > +	struct device *dev;
-> > +	int irq;
-> > +	struct input_dev *input;
-> > +	struct mutex mutex;
-> > +	char phys[32];
-> > +	struct bus_type *bus_type;
-> > +	struct cyttsp_platform_data *platform_data;
-> > +	struct cyttsp_xydata xy_data;
-> > +	struct cyttsp_bootloader_data bl_data;
-> > +	struct cyttsp_sysinfo_data sysinfo_data;
-> > +	struct cyttsp_trk prv_trk[CY_NUM_TRK_ID];
-> 
-> 
-> Apart from the ids, what information is used from the previous frame?
-
-The previous X, Y.
-
-> 
-> > +static int cyttsp_gesture_setup(struct cyttsp *ts)
-> > +{
-> > +	int retval;
-> > +	u8 gesture_setup;
-> > +
-> > +	/* Init gesture; active distance setup */
-> > +	gesture_setup = ts->platform_data->gest_set;
-> > +	retval = ttsp_write_block_data(ts, CY_REG_GEST_SET,
-> > +		sizeof(gesture_setup), &gesture_setup);
-> > +
-> > +	return retval;
-> > +}
-> 
-> 
-> What does this initialization actually do?
-
-This will be replaced with an active distance setup function, which is
-the sole intent of the current gesture setup function.  We are really
-just initializing the active distance field.
-
-> 
-> > +
-> > +static void cyttsp_init_tch_map(struct cyttsp *ts)
-> > +{
-> > +	ts->tch_map[0].tch = &ts->xy_data.tch1;
-> > +	ts->tch_map[0].id = &ts->xy_data.touch12_id;
-> > +	ts->tch_map[1].tch = &ts->xy_data.tch2;
-> > +	ts->tch_map[1].id = &ts->xy_data.touch12_id;
-> > +	ts->tch_map[2].tch = &ts->xy_data.tch3;
-> > +	ts->tch_map[2].id = &ts->xy_data.touch34_id;
-> > +	ts->tch_map[3].tch = &ts->xy_data.tch4;
-> > +	ts->tch_map[3].id = &ts->xy_data.touch34_id;
-> > +}
-> 
-> 
-> Calling cyttsp_get_xydata() four times with special arguments would
-> make this
-> function unnecessary.
-
-The cyttsp_get_xydata() makes a single I2C read transaction which
-contains touch information for all touches currently tracked by the
-device.
-
-> 
-> > +
-> > +static void handle_multi_touch(struct cyttsp_track_data *t, struct
-> cyttsp *ts)
-> > +{
-> > +	u8 id;
-> > +	u8 cnt = 0;
-> > +
-> > +	/* terminate any previous touch where the track
-> > +	 * is missing from the current event
-> > +	 */
-> > +	for (id = 0; id < CY_NUM_TRK_ID; id++) {
-> > +		if (t->cur_trk[id].tch) {
-> > +			/* put active current track data */
-> > +			input_report_abs(ts->input,
-> > +				ABS_MT_TRACKING_ID, id);
-> 
-> > +			input_report_abs(ts->input,
-> > +				ABS_MT_WIDTH_MAJOR, t->cur_trk[id].w);
-> 
-> 
-> This value does not seem to be reported by the device and should be
-> dropped.
-
-This will be dropped.
-
-> 
-> > +			input_report_abs(ts->input,
-> > +				ABS_MT_POSITION_X, t->cur_trk[id].x);
-> > +			input_report_abs(ts->input,
-> > +				ABS_MT_POSITION_Y, t->cur_trk[id].y);
-> > +			input_report_abs(ts->input,
-> > +				ABS_MT_TOUCH_MAJOR, t->cur_trk[id].z);
-> > +			input_mt_sync(ts->input);
-> > +
-> > +			dev_dbg(ts->dev, "%s: MT1: X=%d Y=%d Z=%d\n",
-> > +				__func__,
-> > +				t->cur_trk[id].x,
-> > +				t->cur_trk[id].y,
-> > +				t->cur_trk[id].z);
-> > +			/* save current track data into previous track
-data
-> */
-> > +			ts->prv_trk[id] = t->cur_trk[id];
-> > +			cnt++;
-> > +		} else if (ts->prv_trk[id].tch) {
-> > +			/* put lift-off previous track data */
-> > +			input_report_abs(ts->input,
-> > +				ABS_MT_TRACKING_ID, id);
-> 
-> 
-> Reporting tracking id here unfortunately does not work very well. With
-> the type
-> A protocol, ids not reported will automatically be removed, and
-
-This will be Protocol A only. The Track Id reporting will be removed.
-
-> 
-> > +			input_report_abs(ts->input,
-> > +				ABS_MT_WIDTH_MAJOR, ts->prv_trk[id].w);
-> > +			input_report_abs(ts->input,
-> > +				ABS_MT_POSITION_X, ts->prv_trk[id].x);
-> > +			input_report_abs(ts->input,
-> > +				ABS_MT_POSITION_Y, ts->prv_trk[id].y);
-> > +			input_report_abs(ts->input,
-> > +				ABS_MT_TOUCH_MAJOR, CY_NTCH);
-> 
-> 
-> checking for zero touch like this only applies for drivers not
-> reporting
-> tracking id.
-
-This will now be necessary for Protocol A only.
-
-> 
-> > +			input_mt_sync(ts->input);
-> > +
-> > +			dev_dbg(ts->dev, "%s: MT1: X=%d Y=%d Z=%d lift-
-> off\n",
-> > +				__func__,
-> > +				ts->prv_trk[id].x,
-> > +				ts->prv_trk[id].y,
-> > +				CY_NTCH);
-> > +			ts->prv_trk[id].tch = CY_NTCH;
-> > +			cnt++;
-> > +		}
-> > +	}
-> > +
-> > +	/* signal the view motion event */
-> > +	if (cnt)
-> > +		input_sync(ts->input);
-> > +}
-> 
-> 
-> Since the device does its own tracking, the driver would benefit
-> greatly from
-> using the type B protocol.
-
-Current requests are for Protocol A only.  Cypress will followup with a
-Protocol B driver submission.
-
-> 
-> > +static int cyttsp_xy_worker(struct cyttsp *ts)
-> > +{
-> > +	u8 cur_tch = 0;
-> > +	u8 tch;
-> > +	struct cyttsp_track_data trk;
-> > +
-> > +	/* get event data from CYTTSP device */
-> > +	if (ttsp_read_block_data(ts,
-> > +		CY_REG_BASE, sizeof(struct cyttsp_xydata),
-&ts->xy_data))
-> > +		return 0;
-> > +
-> > +	/* touch extension handling */
-> > +	if (ttsp_tch_ext(ts, &ts->xy_data))
-> > +		return 0;
-> > +
-> > +	/* provide flow control handshake */
-> > +	if (ts->platform_data->use_hndshk)
-> > +		if (cyttsp_hndshk(ts, ts->xy_data.hst_mode))
-> > +			return 0;
-> > +
-> > +	cur_tch = GET_NUM_TOUCHES(ts->xy_data.tt_stat);
-> > +
-> > +	if (ts->bus_ops->power_state == CY_IDLE_STATE)
-> > +		return 0;
-> > +	else if (GET_BOOTLOADERMODE(ts->xy_data.tt_mode)) {
-> > +		return -1;
-> > +	} else if (IS_LARGE_AREA(ts->xy_data.tt_stat) == 1) {
-> > +		/* terminate all active tracks */
-> > +		cur_tch = CY_NTCH;
-> > +		dev_dbg(ts->dev, "%s: Large area detected\n", __func__);
-> > +	} else if (cur_tch > CY_NUM_TCH_ID) {
-> > +		/* terminate all active tracks */
-> > +		cur_tch = CY_NTCH;
-> > +		dev_dbg(ts->dev, "%s: Num touch error detected\n",
-> __func__);
-> > +	} else if (IS_BAD_PKT(ts->xy_data.tt_mode)) {
-> > +		/* terminate all active tracks */
-> > +		cur_tch = CY_NTCH;
-> > +		dev_dbg(ts->dev, "%s: Invalid buffer detected\n",
-> __func__);
-> > +	}
-> > +
-> > +	/* process the touches */
-> > +	cyttsp_init_cur_trks(&trk);
-> > +
-> > +	for (tch = 0; tch < cur_tch; tch++) {
-> > +		cyttsp_get_xydata(ts, &trk,
-> > +			tch & 0x01 ?
-> > +			(*(ts->tch_map[tch].id) & 0x0F) :
-> > +			(*(ts->tch_map[tch].id) & 0xF0) >> 4,
-> > +			CY_SMALL_TOOL_WIDTH,
-> 
-> > +			be16_to_cpu((ts->tch_map[tch].tch)->x),
-> > +			be16_to_cpu((ts->tch_map[tch].tch)->y),
-> > +			(ts->tch_map[tch].tch)->z);
-> > +	}
-> 
-> 
-> How about expanding this loop with special arguments instead?
-
-The mapping method is intended to hide the offset information in the
-current registry and be extensible for future updates for more touches.
-
-> 
-> > +/*
-> > + * Active distance in pixels for a gesture to be reported
-> > + * if set to 0, then all gesture movements are reported
-> > + * Valid range is 0 - 15
-> > + */
-> > +#define CY_ACT_DIST_DFLT 8
-> > +#define CY_ACT_DIST CY_ACT_DIST_DFLT
-> 
-> 
-> These do not seem to be used anywhere.
-
-This will be refined and added to the code which checks for valid
-operational mode.
-
-> 
-> > +
-> > +enum cyttsp_gest {
-> > +	CY_GEST_GRP_NONE = 0,
-> > +	CY_GEST_GRP1 =	0x10,
-> > +	CY_GEST_GRP2 = 0x20,
-> > +	CY_GEST_GRP3 = 0x40,
-> > +	CY_GEST_GRP4 = 0x80,
-> > +};
-> 
-> 
-> Neither do these.
-
-These will be removed.
-
-> 
-> Thanks,
-> Henrik
-
-Thanks again for your review.
-Best regards,
-Kevin
+Indeed we have not. But speaking of benchmarks I have just finished
+quick run (well, not so quick:)) of my discard-kit for btrfs filesystem
+and here are results. Note that tool used for this benchmark is
+postmark, hence it might not be the realest use-case, but it provides
+nice comparison between ext4 (below) and btrfs online discard
+implementation (FITRIM is NOT involved).
 
 
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
+(Sadly the table is too wide so you have to...well, you guys can manage
+it somehow, right?).
 
+BTRFS
+-----
+
+                                   |          BUFFERING ENABLED         |       BUFFERING DISABLED           |
+--------------------------------------------------------------------------------------------------------------
+Type                               |NODISCARD    DISCARD      DIFF      |NODISCARD    DISCARD      DIFF      |
+==============================================================================================================
+Total_duration                     |230.90       336.20       45.60%    |232.00       335.00       44.40%    |
+Duration_of_transactions           |159.60       266.10       66.73%    |158.90       264.60       66.52%    |
+Transactions/s                     |313.32       188.01       -39.99%   |314.70       189.07       -39.92%   |
+Files_created/s                    |323.84       222.48       -31.30%   |322.28       223.28       -30.72%   |
+Creation_alone/s                   |778.08       796.37       2.35%     |756.66       787.68       4.10%     |
+Creation_mixed_with_transaction/s  |155.16       93.11        -39.99%   |155.84       93.63        -39.92%   |
+Read/s                             |156.50       93.91        -39.99%   |157.18       94.44        -39.92%   |
+Append/s                           |156.82       94.10        -39.99%   |157.50       94.63        -39.92%   |
+Deleted/s                          |323.84       222.48       -31.30%   |322.28       223.28       -30.72%   |
+Deletion_alone/s                   |770.64       788.75       2.35%     |749.42       780.15       4.10%     |
+Deletion_mixed_with_transaction/s  |158.16       94.90        -40.00%   |158.85       95.44        -39.92%   |
+Read_B/s                           |11925050.90  8192800.35   -31.30%   |11867797.20  8221997.40   -30.72%   |
+Write_B/s                          |37318466.00  25638695.00  -31.30%   |37139294.00  25730064.60  -30.72%   |
+==============================================================================================================
+
+EXT4
+----
+                                   |          BUFFERING ENABLED         |       BUFFERING DISABLED           |
+--------------------------------------------------------------------------------------------------------------
+Type                               |NODISCARD    DISCARD      DIFF      |NODISCARD    DISCARD      DIFF      |
+==============================================================================================================
+Total_duration                     |306.10       512.70       67.49%    |301.60       516.10       71.12%    |
+Duration_of_transactions           |243.50       449.80       84.72%    |239.00       453.90       89.92%    |
+Transactions/s                     |205.43       111.19       -45.87%   |209.32       110.17       -47.37%   |
+Files_created/s                    |244.30       145.85       -40.30%   |247.97       144.87       -41.58%   |
+Creation_alone/s                   |834.88       830.60       -0.51%    |830.60       833.42       0.34%     |
+Creation_mixed_with_transaction/s  |101.73       55.06        -45.88%   |103.66       54.55        -47.38%   |
+Read/s                             |102.61       55.54        -45.87%   |104.55       55.03        -47.36%   |
+Append/s                           |102.82       55.65        -45.88%   |104.76       55.14        -47.37%   |
+Deleted/s                          |244.30       145.85       -40.30%   |247.97       144.87       -41.58%   |
+Deletion_alone/s                   |826.90       822.66       -0.51%    |822.66       825.46       0.34%     |
+Deletion_mixed_with_transaction/s  |103.70       56.13        -45.87%   |105.66       55.61        -47.37%   |
+Read_B/s                           |8996110.60   5370694.40   -40.30%   |9131349.20   5334560.40   -41.58%   |
+Write_B/s                          |28152588.40  16807146.60  -40.30%   |28575806.40  16694068.00  -41.58%   |
+==============================================================================================================
+
+
+(Buffering means that C library function like fopen, fread, fwrite are
+used instead of open, read, write. I have used the word buffering in the
+same way as it is used in the postmark test)
+
+So, you can see that Btrfs handles online discard quite better than ext4
+(cca 20% difference), but it is still pretty massive performance loss on
+not-so-good-but-I-have-seen-worse SSD. So, I would say that you guys
+(Josef?) should at least consider the possibility of using FITRIM as well.
+
+Thanks!
+
+-Lukas
