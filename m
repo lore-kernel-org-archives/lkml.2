@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752558Ab0KSC2p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 21:28:45 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:59101 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752207Ab0KSC2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 21:28:44 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+g5JoTTH2gIOF/YdluDNcZKMd/SKJhTYrNzpsP2S
-	9AtexKEJ6y7i+j
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hans-Peter Jansen <hpj@urpla.net>, linux-kernel@vger.kernel.org,
-        Lennart Poettering <mzxreary@0pointer.de>, david@lang.hm,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <20101119012348.GM6024@const.famille.thibault.fr>
-References: <20101116211431.GA15211@tango.0pointer.de>
-	 <201011182333.48281.hpj@urpla.net>
-	 <20101118231218.GX6024@const.famille.thibault.fr>
-	 <1290123351.18039.49.camel@maggy.simson.net>
-	 <20101118234339.GA6024@const.famille.thibault.fr>
-	 <AANLkTimTNxLYGLgnS9TUT_YiMnmDVrqseByGGogj+A4Z@mail.gmail.com>
-	 <20101119000204.GE6024@const.famille.thibault.fr>
-	 <AANLkTi=n4r9STKsx76t--HbK7EiUWaaPm7tUN2nXtqxA@mail.gmail.com>
-	 <20101119005942.GL6024@const.famille.thibault.fr>
-	 <1290129157.18039.70.camel@maggy.simson.net>
-	 <20101119012348.GM6024@const.famille.thibault.fr>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Nov 2010 19:28:21 -0700
-Message-ID: <1290133701.18039.105.camel@maggy.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1751957Ab0KSCcM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 21:32:12 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:52740 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab0KSCcL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 21:32:11 -0500
+Content-Type: text/plain; charset=UTF-8
+Cc: Avantika Mathur <mathur@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Jason Baron <jbaron@redhat.com>
+In-reply-to: <20101118151141.GA3368@redhat.com>
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6> <1290041086-sup-5766@au1.ibm.com> <20101118151141.GA3368@redhat.com>
+Date: Fri, 19 Nov 2010 13:32:08 +1100
+Message-Id: <1290133618-sup-2278@au1.ibm.com>
+User-Agent: Sup/0.11
 Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 02:23 +0100, Samuel Thibault wrote:
-> Mike Galbraith, le Thu 18 Nov 2010 18:12:37 -0700, a écrit :
-> > I think that could be done with a fork flag with the same semantics as
-> > reset on fork.  Once your task launcher (ala kdeinit) is tagged, it
-> > launches task groups, the children lose that ability.
-> 
-> Mmm, even if always creating groups can have a slight overhead, you
-> should probably not prevent userspace from deciding to do so when it
-> knows it's appropriate.
+Hi Jason,
 
-I think you may have misunderstood.  The flag would be a hint that
-userland can set to say "I want to fork off task groups", just as
-SCHED_RESET_ON_FORK asks the kernel to reset a child's sched class and
-nice level on fork.
+I'm adding Avantika to the CC list as she recently contacted me
+regarding syscall tracepoints on PowerPC.
 
-	-Mike
+Excerpts from Jason Baron's message of Fri Nov 19 02:11:42 +1100 2010:
+> I was wondering what the status of those patches were...last I remember
+> they looked pretty good to me...I'd be more than happy to help review
+> those.
 
+Yeah there isn't much left to do on them - the main delay has just been
+finding some time to work on them.
+
+I did want to revisit the naming of the events and the subtle
+differences for syscalls with a single implementation for both the
+native and compat versions versus those that have separate
+implementations - I don't want userspace to have to care about that
+distinction.
+
+I recall there were a few comments on some of your patches in the series
+- if I rebase the patches on the current tip tree and publish the tree
+somewhere would you be willing to take a look at those?
+
+
+Cheers,
+-Ian
