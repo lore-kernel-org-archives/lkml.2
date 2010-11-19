@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932102Ab0KSTzR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 14:55:17 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44823 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756494Ab0KSTzQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 14:55:16 -0500
+	id S932110Ab0KST5O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 14:57:14 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42873 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752598Ab0KST5N (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 14:57:13 -0500
+Date: Fri, 19 Nov 2010 19:56:35 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: "Kanigeri, Hari" <h-kanigeri2@ti.com>
+Cc: Kyungmin Park <kmpark@infradead.org>, linux-arm-kernel@lists.infradead.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: [PATCH] ARM: l2x0: Check the correct address range
+Message-ID: <20101119195635.GB10722@n2100.arm.linux.org.uk>
+References: <20101119014029.GA26429@july> <AANLkTikpAPLSTAzm2iPSV1_LL=B+zPbWzTPdhne3XFVc@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20101119191906.GA31760@xanatos>
-References: <20101116104600.GA24015@suse.de> <20101119191906.GA31760@xanatos>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 19 Nov 2010 11:54:26 -0800
-Message-ID: <AANLkTi=OsWEdrfCOHKz+SAtqo7DmK0nNxku7Ev21f0Lh@mail.gmail.com>
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: Marcus Meissner <meissner@suse.de>, linux-kernel@vger.kernel.org,
-        tj@kernel.org, akpm@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
-        w@1wt.eu, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikpAPLSTAzm2iPSV1_LL=B+zPbWzTPdhne3XFVc@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 11:19 AM, Sarah Sharp
-<sarah.a.sharp@linux.intel.com> wrote:
->
-> .config and dmesg are attached.  The box is running klogd 1.5.5ubuntu3
-> (from Jaunty).  Yes, I know that's old.  I read the bit in the commit
-> about changing the permissions of kallsyms after boot, but if I can't
-> boot that doesn't help.  Perhaps this can be made a configuration
-> option?
+On Fri, Nov 19, 2010 at 05:30:14AM -0600, Kanigeri, Hari wrote:
+> > diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
+> > index 170c9bb..50599d9 100644
+> > --- a/arch/arm/mm/cache-l2x0.c
+> > +++ b/arch/arm/mm/cache-l2x0.c
+> > @@ -195,7 +195,7 @@ static void l2x0_clean_range(unsigned long start, unsigned long end)
+> >        void __iomem *base = l2x0_base;
+> >        unsigned long flags;
+> >
+> > -       if ((end - start) >= l2x0_size) {
+> > +       if ((end - start + 1) >= l2x0_size) {
+> 
+> nitpick: probably will look more obvious if it is coded as  if ((end +
+> 1) - start) >= l2x0_size)
 
-It's not worth a config option.
+Start defines the first byte of the object to perform the cache
+maintainence on.  End defines the first subsequent byte not in the
+object.  So, (end - start) is the number of bytes in the object,
+and therefore the original code _is_ correct.
 
-If it actually breaks user-space, I think we should just revert it.
-It's kind of sad to default to the world-visible thing, but as I
-mentioned in the commit, this is something where a sysadmin or distro
-can trivially just fix it at boot-time too, with just a
+If you have an object which is 1MB in size, then (end - start) will
+be 1048576 bytes.  If your cache is 1MB, then we'll use the xxx_all()
+version of the function.
 
-   chmod og-r /proc/kallsyms
+However, things get more murky when you consider that we have the
+granularity of cache lines to deal with.
 
-in your bootup scripts.
+If start is mid-way in a cache line, then that cache line has to be
+operated on.  If end is mid-way or at the end of a cache line, that
+cache line also has to be operated on.  However, if end is at the
+very first byte of the cache line, it must not be operated on.
 
-And if somebody has taken control of the machine _before_ the bootup
-scripts get to run, you have bigger problems than a /proc/kallsyms
-file.
-
-So I guess I'll revert it.
-
-Thanks for testing and bisecting.
-
-                      Linus
+So, it is possible for start = mid-cache line, end = start + 1048575,
+that you will end up not doing the xxx_all() optimization, despite
+operating on over 1MB of cached data - but this is only true for the
+corner case up to 1MB + cache line size - 1.
