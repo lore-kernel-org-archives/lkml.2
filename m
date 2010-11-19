@@ -1,35 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab0KSLWG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 06:22:06 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35242 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752929Ab0KSLWF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 06:22:05 -0500
-Date: Fri, 19 Nov 2010 11:22:03 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Christian Pellegrin <chripell@evolware.org>
-Subject: Re: [PATCH] ASoC: uda134x - set reg_cache_default to uda134x_reg
-Message-ID: <20101119112203.GH7233@rakim.wolfsonmicro.main>
-References: <1290152886.10001.2.camel@mola>
+	id S1753550Ab0KSLWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 06:22:31 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:37342 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752929Ab0KSLWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 06:22:30 -0500
+Date: Fri, 19 Nov 2010 12:22:16 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] memcg: simplify mem_cgroup_page_stat()
+Message-ID: <20101119112216.GC24635@cmpxchg.org>
+References: <1289294671-6865-1-git-send-email-gthelen@google.com>
+ <1289294671-6865-5-git-send-email-gthelen@google.com>
+ <20101112081957.GF9131@cmpxchg.org>
+ <xr93pquaxoll.fsf@ninji.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1290152886.10001.2.camel@mola>
-X-Cookie: Pass with care.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <xr93pquaxoll.fsf@ninji.mtv.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 03:48:06PM +0800, Axel Lin wrote:
-> After checking the code in 2.6.36,
-> I found this is missing during multi-component conversion.
+On Fri, Nov 12, 2010 at 12:40:22PM -0800, Greg Thelen wrote:
+> Johannes Weiner <hannes@cmpxchg.org> writes:
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> > On Tue, Nov 09, 2010 at 01:24:29AM -0800, Greg Thelen wrote:
+> >> The cgroup given to mem_cgroup_page_stat() is no allowed to be
+> >> NULL or the root cgroup.  So there is no need to complicate the code
+> >> handling those cases.
+> >> 
+> >> Signed-off-by: Greg Thelen <gthelen@google.com>
+> >> ---
+> >>  mm/memcontrol.c |   48 ++++++++++++++++++++++--------------------------
+> >>  1 files changed, 22 insertions(+), 26 deletions(-)
+> >> 
+> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> >> index eb621ee..f8df350 100644
+> >> --- a/mm/memcontrol.c
+> >> +++ b/mm/memcontrol.c
+> >> @@ -1364,12 +1364,10 @@ memcg_hierarchical_free_pages(struct mem_cgroup *mem)
+> >>  
+> >>  /*
+> >>   * mem_cgroup_page_stat() - get memory cgroup file cache statistics
+> >> - * @mem:	optional memory cgroup to query.  If NULL, use current task's
+> >> - *		cgroup.
+> >> + * @mem:	memory cgroup to query
+> >>   * @item:	memory statistic item exported to the kernel
+> >>   *
+> >> - * Return the accounted statistic value or negative value if current task is
+> >> - * root cgroup.
+> >> + * Return the accounted statistic value.
+> >>   */
+> >>  long mem_cgroup_page_stat(struct mem_cgroup *mem,
+> >>  			  enum mem_cgroup_nr_pages_item item)
+> >> @@ -1377,29 +1375,27 @@ long mem_cgroup_page_stat(struct mem_cgroup *mem,
+> >>  	struct mem_cgroup *iter;
+> >>  	long value;
+> >>  
+> >> +	VM_BUG_ON(!mem);
+> >> +	VM_BUG_ON(mem_cgroup_is_root(mem));
+> >> +
+> >>  	get_online_cpus();
+> >> -	rcu_read_lock();
+> >> -	if (!mem)
+> >> -		mem = mem_cgroup_from_task(current);
+> >> -	if (__mem_cgroup_has_dirty_limit(mem)) {
+> >
+> > What about mem->use_hierarchy that is checked in
+> > __mem_cgroup_has_dirty_limit()?  Is it no longer needed?
+> 
+> It is no longer needed because the callers of mem_cgroup_page_stat()
+> call __mem_cgroup_has_dirty_limit().  In the current implementation, if
+> use_hierarchy=1 then the cgroup does not have dirty limits, so calls
+> into mem_cgroup_page_stat() are avoided.  Specifically the callers of
+> mem_cgroup_page_stat() are:
+> 
+> 1. mem_cgroup_dirty_info() which calls __mem_cgroup_has_dirty_limit()
+>    and returns false if use_hierarchy=1.
+> 
+> 2. throttle_vm_writeout() which calls mem_dirty_info() ->
+>    mem_cgroup_dirty_info() -> __mem_cgroup_has_dirty_limit() will fall
+>    back to global limits if use_hierarchy=1.
 
-Applied, thanks.
+Thanks for the clarification.
+
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
