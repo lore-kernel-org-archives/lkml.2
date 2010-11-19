@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab0KSOCQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 09:02:16 -0500
-Received: from THUNK.ORG ([69.25.196.29]:46680 "EHLO thunker.thunk.org"
+	id S1754501Ab0KSOD2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 09:03:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54541 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752895Ab0KSOCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 09:02:14 -0500
-Date: Fri, 19 Nov 2010 09:02:03 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
+	id S1752819Ab0KSODY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 09:03:24 -0500
+From: Jeff Moyer <jmoyer@redhat.com>
 To: Mark Lord <kernel@teksavvy.com>
-Cc: Steven Whitehouse <swhiteho@redhat.com>,
-        Lukas Czerner <lczerner@redhat.com>,
-        James Bottomley <James.Bottomley@suse.de>,
+Cc: "Ted Ts'o" <tytso@mit.edu>, James Bottomley <James.Bottomley@suse.de>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
         Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
- super_operation
-Message-ID: <20101119140203.GC10039@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Mark Lord <kernel@teksavvy.com>,
-	Steven Whitehouse <swhiteho@redhat.com>,
-	Lukas Czerner <lczerner@redhat.com>,
-	James Bottomley <James.Bottomley@suse.de>,
-	Christoph Hellwig <hch@infradead.org>,
-	Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org, sandeen@redhat.com
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
- <20101118130630.GJ6178@parisc-linux.org>
- <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
- <20101118141957.GK6178@parisc-linux.org>
- <20101118142918.GA18510@infradead.org>
- <1290100750.3041.72.camel@mulgrave.site>
- <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com>
- <1290168976.2570.45.camel@dolmen>
- <4CE68155.50705@teksavvy.com>
+        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+References: <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
+	<20101118141957.GK6178@parisc-linux.org>
+	<20101118142918.GA18510@infradead.org>
+	<1290100750.3041.72.camel@mulgrave.site>
+	<x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
+	<1290102098.3041.77.camel@mulgrave.site>
+	<AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>
+	<4CE59E57.2090009@teksavvy.com>
+	<1290117009.11007.42.camel@mulgrave.site>
+	<4CE5A386.7000105@teksavvy.com> <20101119013301.GU3290@thunk.org>
+	<4CE5F2A1.2000009@teksavvy.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 19 Nov 2010 08:58:44 -0500
+In-Reply-To: <4CE5F2A1.2000009@teksavvy.com> (Mark Lord's message of "Thu, 18
+	Nov 2010 22:44:33 -0500")
+Message-ID: <x49wro9za7f.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE68155.50705@teksavvy.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 08:53:25AM -0500, Mark Lord wrote:
-> There is a very good reason why faster implementations may be *difficult*
-> (if not impossible) in many cases:  DETERMINISTIC trim.  This requires
-> that the drive guarantee the block ranges will return a constant known
-> value after TRIM.  Which means they MUST write to flash during the trim.
-> And any WRITE to flash means a potential ERASE operation may be needed.
+Mark Lord <kernel@teksavvy.com> writes:
 
-Deterministic TRIM is an option.  It doesn't have to be implemented.
-And as you even pointed out, there are ways of doing this
-intelligently.  Whether "intelligently" and "drive firmware authors"
-are two phrases that should be used in the same sentence is a concern
-that I will grant, but that's why mount -o discard is not the default.
+> On 10-11-18 08:33 PM, Ted Ts'o wrote:
+>>>>
+>>>> Before we go gung ho on this, there's no evidence that N discontiguous
+>>>> ranges in one command are any better than the ranges sent N times ...
+>>>> the same amount of erase overhead gets sent on SSDs.
+>>>
+>>> No, we do have evidence:  execution time of the TRIM commands on the SSD.
+>>>
+>>> The one-range-at-a-time is incredibly slow compared to multiple
+>>> ranges at a time.  That slowness comes from somewhere, with about
+>>> 99.9% certainty that it is due to the drive performing slow flash
+>>> erase cycles.
+>>
+>> Mark, I think you are over-generalizing here.  You have observed with
+>> some number of flash drives --- maybe only one, but I don't know that
+>> for sure --- that TRIM is slow.  Even if we grant that you are correct
+>> in your conclusion that it is because the drive is doing slow flash
+>> erase cycles (and I don't completely accept that; I haven't seen your
+>> your measurements since we know that any kind of command that requires
+>> a queue drain/flush before it can execute is going to be slow, and I
+>> don't know what kind of _slow_ you are observing).
+>
+> I do this stuff on modest hardware:  ata_piix.
+> There is NO QUEUE TO FLUSH.
+>
+> So one might expect TRIM to operate at the same speed as ordinary WRITEs.
+> But it doesn't.  When I measured this in detail (and things have not changed
+> much since then), we were talking 10s of milliseconds to 100s of milliseconds
+> per TRIM command.
+>
+> The only possible explanation for that would be waiting on flash erase commands.
 
-> Non-deterministic TRIM should also try to ensure that the original data
-> is no longer there (for security reasons), so it may have the same issues.
+If you guys want to test how long trims take, Lukas wrote a test program
+that does this.  It can be found here:
+  http://sourceforge.net/projects/test-discard/
 
-Says who?  We've deleted files on hard drives for a long time without
-scrubbing data blocks.  Why should a non-deterministic trim be any
-different.  If the goal is a better performing SSD, and not security,
-then non-deterministic trim should definitely _not_ ensure that the
-original data is no longer accessible.
+It will even spit out nice graphs that show you b/w, average trim
+duration, maximum duration, etc.
 
-						- Ted
+Some devices are better than others.  We've definitely seen trims take a
+lot of time compared to regular I/O.  However, using the batched discard
+ioctl in a cron job, I don't think we have to worry about this
+particular problem.  And I don't buy the argument that users want to do
+this by hand.  Most users want things to Just Work(TM).
+
+Cheers,
+Jeff
