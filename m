@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab0KSLiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 06:38:09 -0500
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:54518 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753091Ab0KSLiH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 06:38:07 -0500
-X-Greylist: delayed 472 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Nov 2010 06:38:07 EST
+	id S1753587Ab0KSLj3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 06:39:29 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:56136 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753098Ab0KSLj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 06:39:28 -0500
+Date: Fri, 19 Nov 2010 12:39:10 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] memcg: make mem_cgroup_page_stat() return value
+ unsigned
+Message-ID: <20101119113910.GD24635@cmpxchg.org>
+References: <1289294671-6865-1-git-send-email-gthelen@google.com>
+ <1289294671-6865-7-git-send-email-gthelen@google.com>
+ <20101112082921.GH9131@cmpxchg.org>
+ <xr937hgixok4.fsf@ninji.mtv.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <20101119014029.GA26429@july>
-References: <20101119014029.GA26429@july>
-Date: Fri, 19 Nov 2010 05:30:14 -0600
-Message-ID: <AANLkTikpAPLSTAzm2iPSV1_LL=B+zPbWzTPdhne3XFVc@mail.gmail.com>
-Subject: Re: [PATCH] ARM: l2x0: Check the correct address range
-From: "Kanigeri, Hari" <h-kanigeri2@ti.com>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <xr937hgixok4.fsf@ninji.mtv.corp.google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Boojin Kim <boojin.kim@samsung.com>
->
-> When flush or clean the 1MiB, it doesn't flush or clean all since it doesn't check the correct address. So Check the correct address range.
+On Fri, Nov 12, 2010 at 12:41:15PM -0800, Greg Thelen wrote:
+> >> mem_cgroup_page_stat() has changed so it never returns
+> >> error so convert the return value to the traditional page
+> >> count type (unsigned long).
+> >
+> > This changelog feels a bit beside the point.
+> >
+> > What's really interesting is that we now don't consider negative sums
+> > to be invalid anymore, but just assume zero!  There is a real
+> > semantical change here.
+> 
+> Prior to this patch series mem_cgroup_page_stat() returned a negative
+> value (specifically -EINVAL) to indicate that the current task was in
+> the root_cgroup and thus the per-cgroup usage and limit counter were
+> invalid.  Callers treated all negative values as an indication of
+> root-cgroup message.
+> 
+> Unfortunately there was another way that mem_cgroup_page_stat() could
+> return a negative value even when current was not in the root cgroup.
+> Negative sums were a possibility due to summing of unsynchronized
+> per-cpu counters.  These occasional negative sums would fool callers
+> into thinking that the current task was in the root cgroup.
+> 
+> Would adding this description to the commit message address your
+> concerns?
 
-I saw this before but then I thought that the individual callers of
-cache functions have to call with  +1 to the end address.
+I'd just describe that summing per-cpu counters is racy, that we can
+end up with negative results, and the only sensible handling of that
+is to assume zero.
 
->
-> Signed-off-by: Boojin Kim <boojin.kim@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-> index 170c9bb..50599d9 100644
-> --- a/arch/arm/mm/cache-l2x0.c
-> +++ b/arch/arm/mm/cache-l2x0.c
-> @@ -195,7 +195,7 @@ static void l2x0_clean_range(unsigned long start, unsigned long end)
->        void __iomem *base = l2x0_base;
->        unsigned long flags;
->
-> -       if ((end - start) >= l2x0_size) {
-> +       if ((end - start + 1) >= l2x0_size) {
+> > That the return type can then be changed to unsigned long is a nice
+> > follow-up cleanup that happens to be folded into this patch.
+> 
+> Good point.  I can separate the change into two sub-patches:
+> 1. use zero for a min-value (as described above)
+> 2. change return value to unsigned
 
-nitpick: probably will look more obvious if it is coded as  if ((end +
-1) - start) >= l2x0_size)
-
->                l2x0_clean_all();
->                return;
->        }
-> @@ -225,7 +225,7 @@ static void l2x0_flush_range(unsigned long start, unsigned long end)
->        void __iomem *base = l2x0_base;
->        unsigned long flags;
->
-> -       if ((end - start) >= l2x0_size) {
-> +       if ((end - start + 1) >= l2x0_size) {
-
-same as above.
-
-
-Thank you,
-Best regards,
-Hari Kanigeri
+Sounds good.  You can just fold the previous patch (adjusting the
+callsites) into 2, which should take care of the ordering problem.
