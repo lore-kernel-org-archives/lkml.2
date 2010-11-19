@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080Ab0KSXCf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 18:02:35 -0500
-Received: from casper.infradead.org ([85.118.1.10]:51427 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932330Ab0KSXCe convert rfc822-to-8bit (ORCPT
+	id S933096Ab0KSXCo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 18:02:44 -0500
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63929 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932508Ab0KSXCf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 18:02:34 -0500
-Subject: Re: [PATCH v7 3/3] nl80211/mac80211: Report signal average
-From: Peter Zijlstra <peterz@infradead.org>
-To: Bob Copeland <me@bobcopeland.com>
-Cc: Bruno Randolf <br1@einfach.org>, Johannes Berg <johannes@sipsolutions.net>,
-        Jouni Malinen <j@w1.fi>, linville@tuxdriver.com,
-        randy.dunlap@oracle.com, blp@cs.stanford.edu,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars_Ericsson@telia.com, stefanr@s5r6.in-berlin.de,
-        kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
-        kevin.granade@gmail.com
-In-Reply-To: <20101119222846.GA26592@hash.localnet>
-References: <20101112024901.28522.21895.stgit@localhost6.localdomain6>
-	 <1290010595.3777.0.camel@jlt3.sipsolutions.net>
-	 <AANLkTimoogSLAipNy=njGtHypqBQSk=usDmXut=KN9TM@mail.gmail.com>
-	 <201011191807.06013.br1@einfach.org> <20101119222846.GA26592@hash.localnet>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 19 Nov 2010 18:02:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=OyKdUM9AnYw4CNf7zub6b26c+RC8T0p/fvsSWnuLZANlLrFsH49MemQ4mplcGif///
+         tbPFAzYnfelJ0PEFwA+3tfQv0u0oGer16jsNkI8BWS9vqAoy/XNM2H7YtTopUh0XkYz3
+         tbfnV2dClVAZtOTQw4MOnq9R4PNswY3hesARM=
+MIME-Version: 1.0
+In-Reply-To: <1290204798-28569-1-git-send-email-ddaney@caviumnetworks.com>
+References: <1290204798-28569-1-git-send-email-ddaney@caviumnetworks.com>
+Date: Fri, 19 Nov 2010 17:02:08 -0600
+Message-ID: <AANLkTikuikWgLbW67m1Ov0dt13A=DTSF150aTOs=PybT@mail.gmail.com>
+Subject: Re: [PATCH v2] of/phylib: Use device tree properties to initialize
+ Marvell PHYs.
+From: Andy Fleming <afleming@gmail.com>
+To: David Daney <ddaney@caviumnetworks.com>
+Cc: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Cyril Chemparathy <cyril@ti.com>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Sat, 20 Nov 2010 00:01:55 +0100
-Message-ID: <1290207715.2114.10.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 17:28 -0500, Bob Copeland wrote:
-> On Fri, Nov 19, 2010 at 06:07:05PM +0900, Bruno Randolf wrote:
-> > Hmm, maybe I suck in mathemathics, but I don't see a way to do that given the 
-> > formula:
-> > 
-> > (((internal * (weight - 1)) + (val * factor)) / weight
-> 
-> I was thinking something along the lines of:
-> 
-> round = (1 << n) - 1;
-> (((internal * (weight - 1) + round) >> n) + val) * ((1 << n) / weight)
-> 
-> where (1 << n) is the factor and ((1 << n) / weight) can be precomputed.
-> If you think about it, this is just reciprocal multiplication in fixed-
-> point math with n bits of decimal resolution. 
-> 
-> The problem is the shift of the older terms introduces roundoff error, but
-> there are some tricks you can do to maintain bounded error, e.g. shifting
-> by some smaller factor of n and scaling other terms -- in the limit you
-> reinvent floating point and then it's slower than division :)
+On Fri, Nov 19, 2010 at 4:13 PM, David Daney <ddaney@caviumnetworks.com> wrote:
+> Some aspects of PHY initialization are board dependent, things like
+> indicator LED connections and some clocking modes cannot be determined
+> by probing.  The dev_flags element of struct phy_device can be used to
+> control these things if an appropriate value can be passed from the
+> Ethernet driver.  We run into problems however if the PHY connections
+> are specified by the device tree.  There is no way for the Ethernet
+> driver to know what flags it should pass.
+>
+> If we are using the device tree, the struct phy_device will be
+> populated with the device tree node corresponding to the PHY, and we
+> can extract extra configuration information from there.
+>
+> The next question is what should the format of that information be?
+> It is highly device specific, and the device tree representation
+> should not be tied to any arbitrary kernel defined constants.  A
+> straight forward representation is just to specify the exact bits that
+> should be set using the "marvell,reg-init" property:
+>
+>      phy5: ethernet-phy@5 {
+>        reg = <5>;
+>        compatible = "marvell,88e1149r";
+>        marvell,reg-init =
+>                /* led[0]:1000, led[1]:100, led[2]:10, led[3]:tx */
+>                <3 0x10 0 0x5777>, /* Reg 3,16 <- 0x5777 */
+>                /* mix %:0, led[0123]:drive low off hiZ */
+>                <3 0x11 0 0x00aa>, /* Reg 3,17 <- 0x00aa */
+>                /* default blink periods. */
+>                <3 0x12 0 0x4105>, /* Reg 3,18 <- 0x4105 */
+>                /* led[4]:rx, led[5]:dplx, led[45]:drive low off hiZ */
+>                <3 0x13 0 0x0a60>; /* Reg 3,19 <- 0x0a60 */
 
-Sure, x/y := x/z * z/y, and by picking z := 2^n, we can pre-compute z/y
-and write x/z using a shift. The problem however is always range vs
-granularity, you chose to first /z and then *z/y, this avoids some
-overflow issues but truncates the lower n bits of x.
 
-If you first *z/y and then /z you keep your low bits but risk loosing
-the top bits to an overflow.
+My inclination is to shy away from such hard-coded values.  I agreed
+with Grant's comment about separating into separate cells, but I think
+specification of hard-coded register writes is too rigid.  I think a
+better approach would be to specify configuration attributes, like:
 
-I guess the question is do we really need weights outside of 2^n? If
-not, you can use the weight := 2^n version. If you do, you get to pick
-either of the previously mentioned options.
+marvell,blink-periods = <blah>;
+marvell,led-config = <[drive type] [indicates]>;
 
-Sadly gcc doesn't sanely support a u128 type, which would be very useful
-to avoid some of these overflow issues (like we used to use u64 mults
-for u32 fixed points mults).
+For one, I always advocate making the DTS human-readable.  For
+another, I think that there are a number of configuration sequences
+that require read-modify-write, or write-wait-write.  In other words,
+I think that there are enough cases where actual software will be
+needed, that an attempt to generically specify a register
+initialization sequence will be impossible, and leave us with the same
+problems to solve later on.  For third...ly... allowing
+device-tree-specified register initializations might encourage
+developers to put all of their register initializations in the device
+tree.  Especially when they realize that the LED initialization for
+*their* PHY has to come between two standard initialization steps in
+the driver.  Or before.  Or after.
+
+By specifying actual functionality, the driver can work around those
+problems, while being aware of the functional goal.  However, I'm
+aware that such a path is more difficult, and perhaps just as futile,
+as PHY vendors frequently don't want to document what their magic
+sequences mean.
+
+Andy
