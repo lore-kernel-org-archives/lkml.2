@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab0KSO6H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 09:58:07 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:50349 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754507Ab0KSO6F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 09:58:05 -0500
-Date: Fri, 19 Nov 2010 09:57:48 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        James Bottomley <james.bottomley@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
-        tytso <tytso@mit.edu>, linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        sandeen <sandeen@redhat.com>
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
- super_operation
-Message-ID: <20101119145748.GB27919@infradead.org>
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
- <20101118130630.GJ6178@parisc-linux.org>
- <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
- <20101118141957.GK6178@parisc-linux.org>
- <20101118142918.GA18510@infradead.org>
- <1290100750.3041.72.camel@mulgrave.site>
- <4CE59C9E.6050902@teksavvy.com>
- <1290177488-sup-6540@think>
- <4CE68F80.7000607@teksavvy.com>
+	id S1754719Ab0KSPFS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 10:05:18 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:52692 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754481Ab0KSPFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 10:05:16 -0500
+From: Gene Heskett <gene.heskett@gmail.com>
+To: Jordi Pujol <jordipujolp@gmail.com>
+Subject: Re: Galbraith patch
+Date: Fri, 19 Nov 2010 10:05:12 -0500
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.3; i686; ; )
+Cc: Mike Galbraith <efault@gmx.de>, LKML <linux-kernel@vger.kernel.org>
+References: <201011191509.49586.jordipujolp@gmail.com>
+In-Reply-To: <201011191509.49586.jordipujolp@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE68F80.7000607@teksavvy.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011191005.12189.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 09:53:52AM -0500, Mark Lord wrote:
-> On 10-11-19 09:40 AM, Chris Mason wrote:
-> >
-> >We've been told that online and constant trimming is the default in
-> >windows7.   The ssds are most likely to just start ignoring the trims
-> >they can't service efficiently.
-> 
-> Win7 collects multiple TRIM ranges over time and batches them as single TRIMs
-> (as reported to me by an SSD vendor who traced it with a SATA analyzer,
->  and who also apparently has "inside info").
+On Friday, November 19, 2010, Jordi Pujol wrote:
+>Hello,
+>
+>it requires a little modification,
+>
+>CONFIG_SCHED_DEBUG should not be a condition to create autogroup in
+>structure task_group
+>
+>remove
+>    && defined(CONFIG_SCHED_DEBUG)
+>in the following conditional:
+>
+>+++ linux-2.6.36/kernel/sched.c
+>@@ -78,6 +78,7 @@
+>
+> #include "sched_cpupri.h"
+> #include "workqueue_sched.h"
+>+#include "sched_autogroup.h"
+>
+> #define CREATE_TRACE_POINTS
+> #include <trace/events/sched.h>
+>@@ -268,6 +269,10 @@ struct task_group {
+> 	struct task_group *parent;
+> 	struct list_head siblings;
+> 	struct list_head children;
+>+
+>+#if (defined(CONFIG_SCHED_AUTOGROUP) && defined(CONFIG_SCHED_DEBUG))
+>+	struct autogroup *autogroup;
+>+#endif
+> };
+>
+>Kind,
+>
+>Jordi Pujol
 
-I really hate to rely on this third party hearsay (from all sides), and
-have implement TRIM support in qemu now.  I'll soon install win7 and
-will check out the TRIM patters myself.
+Thanks Jordi, but my last attempted build, using only the last 2 patches 
+that Mike posted on a fresh unpack of 2.6.36, couldn't get past stage 2 of 
+the modules build, it kept squawking about all the IR control stuff that is 
+not even configured to be built.
 
+I wonder how long it will take to get work this into mainline?
+
+Along the same line, how does this compare to CK's bfs patch?
+
+>Live never ending Tale
+>GNU/Linux Live forever!
+>http://livenet.selfip.com
+
+
+-- 
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+"What's the use of a good quotation if you can't change it?"
+		-- The Doctor
