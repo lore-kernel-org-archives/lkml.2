@@ -1,117 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab0KSN6F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 08:58:05 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:30836 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753722Ab0KSN6D (ORCPT
+	id S1754429Ab0KSOBG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 09:01:06 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:28003 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752915Ab0KSOBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 08:58:03 -0500
-X-IronPort-AV: E=Sophos;i="4.59,223,1288569600"; 
-   d="scan'208";a="2954494"
-Date: Fri, 19 Nov 2010 13:58:03 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: linux-kernel@vger.kernel.org
-CC: Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        xen-devel@lists.xensource.com
-Subject: [PATCH] xen: use PHYSDEVOP_get_free_pirq to implement
- find_unbound_pirq
-Message-ID: <alpine.DEB.2.00.1011191350250.2373@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 19 Nov 2010 09:01:05 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAHMR5kxLd/sX/2dsb2JhbAAHgz3MLJELgSKDNnMEhFqLEw
+X-IronPort-AV: E=Sophos;i="4.59,223,1288584000"; 
+   d="scan'208";a="82977305"
+Message-ID: <4CE6831E.4020606@teksavvy.com>
+Date: Fri, 19 Nov 2010 09:01:02 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Christoph Hellwig <hch@infradead.org>
+CC: Greg Freemyer <greg.freemyer@gmail.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Moyer <jmoyer@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        tytso@mit.edu, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+References: <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <x494obe4kd5.fsf@segfault.boston.devel.redhat.com> <1290102098.3041.77.camel@mulgrave.site> <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com> <4CE59E57.2090009@teksavvy.com> <yq1r5eiw5os.fsf@sermon.lab.mkp.net> <4CE5C616.7070706@teksavvy.com> <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com> <20101119115516.GA1152@infradead.org>
+In-Reply-To: <20101119115516.GA1152@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use PHYSDEVOP_get_free_pirq to implement find_unbound_pirq
+On 10-11-19 06:55 AM, Christoph Hellwig wrote:
+> On Thu, Nov 18, 2010 at 05:16:36PM -0800, Greg Freemyer wrote:
+>> I agree with Mark.  When you say "make coalescing work" it sounds like
+>> major overkill.
+>>
+>> FITRIM should be able to lock a group of non-contiguous free ranges,
+>> send them down to the block layer as a single pre-coalesced set, and
+>> the block layer just needs to pass it on in a synchronous way.  Then
+>> when that group of ranges is discarded, FITRIM releases the locks.
+>
+> Given that you know the Linux I/O stack and hardware so well may I
+> volunteer you to implement it?
 
-Use the new hypercall PHYSDEVOP_get_free_pirq to ask Xen to allocate a
-pirq. Remove the unsupported PHYSDEVOP_get_nr_pirqs hypercall to get the
-amount of pirq available.
+That is my intent already, thanks.  Just needs time, perhaps this winter.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+I think a reasonable approach would be to modify the existing interfaces
+so that the LLD can report a "max discard ranges per command" back up
+the stack.
 
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 321a0c8..ffd286e 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -382,12 +382,17 @@ static int get_nr_hw_irqs(void)
- 	return ret;
- }
- 
--/* callers of this function should make sure that PHYSDEVOP_get_nr_pirqs
-- * succeeded otherwise nr_pirqs won't hold the right value */
--static int find_unbound_pirq(void)
-+static int find_unbound_pirq(int type)
- {
--	int i;
--	for (i = nr_pirqs-1; i >= 0; i--) {
-+	int rc, i;
-+	struct physdev_get_free_pirq op_get_free_pirq;
-+	op_get_free_pirq.type = type;
-+
-+	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_free_pirq, &op_get_free_pirq);
-+	if (!rc)
-+		return op_get_free_pirq.pirq;
-+
-+	for (i = 16; i <= nr_pirqs-1; i++) {
- 		if (pirq_to_irq[i] < 0)
- 			return i;
- 	}
-@@ -669,7 +674,7 @@ void xen_allocate_pirq_msi(char *name, int *irq, int *pirq)
- 	if (*irq == -1)
- 		goto out;
- 
--	*pirq = find_unbound_pirq();
-+	*pirq = find_unbound_pirq(MAP_PIRQ_TYPE_MSI);
- 	if (*pirq == -1)
- 		goto out;
- 
-@@ -1504,23 +1509,12 @@ void xen_callback_vector(void) {}
- void __init xen_init_IRQ(void)
- {
- 	int i, rc;
--	struct physdev_nr_pirqs op_nr_pirqs;
- 
- 	cpu_evtchn_mask_p = kcalloc(nr_cpu_ids, sizeof(struct cpu_evtchn_s),
- 				    GFP_KERNEL);
- 	irq_info = kcalloc(nr_irqs, sizeof(*irq_info), GFP_KERNEL);
- 
--	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_nr_pirqs, &op_nr_pirqs);
--	if (rc < 0) {
--		nr_pirqs = nr_irqs;
--		if (rc != -ENOSYS)
--			printk(KERN_WARNING "PHYSDEVOP_get_nr_pirqs returned rc=%d\n", rc);
--	} else {
--		if (xen_pv_domain() && !xen_initial_domain())
--			nr_pirqs = max((int)op_nr_pirqs.nr_pirqs, nr_irqs);
--		else
--			nr_pirqs = op_nr_pirqs.nr_pirqs;
--	}
-+	nr_pirqs = nr_irqs;
- 	pirq_to_irq = kcalloc(nr_pirqs, sizeof(*pirq_to_irq), GFP_KERNEL);
- 	for (i = 0; i < nr_pirqs; i++)
- 		pirq_to_irq[i] = -1;
-diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
-index 2b2c66c..534cac8 100644
---- a/include/xen/interface/physdev.h
-+++ b/include/xen/interface/physdev.h
-@@ -188,6 +188,16 @@ struct physdev_nr_pirqs {
-     uint32_t nr_pirqs;
- };
- 
-+/* type is MAP_PIRQ_TYPE_GSI or MAP_PIRQ_TYPE_MSI
-+ * the hypercall returns a free pirq */
-+#define PHYSDEVOP_get_free_pirq    23
-+struct physdev_get_free_pirq {
-+    /* IN */ 
-+    int type;
-+    /* OUT */
-+    uint32_t pirq;
-+};
-+
- /*
-  * Notify that some PIRQ-bound event channels have been unmasked.
-  * ** This command is obsolete since interface version 0x00030202 and is **
+This way, libata could report a max of say, 64 ranges per "discard" (trim),
+and DM/RAID could simply (for now) report a max of one range per discard.
+
+Way up at the FITRIM level, code could interrogate the "discard" limit
+for the device holding the fs, and construct the discard commands such that
+they respect that limit.  For a filesystem on DM/RAID, we would (for now)
+end up with single-range discards, no change from the present.
+
+For the much more common case of end-user SATA SSDs, though, we would
+suddenly get multi-range trims working with probably very little effort.
+
+That's the plan.  Feel free to beat me to it -- you've been working on
+the I/O stack nearly as long as I have (since 1992), and I expect you
+know it far better by now, too!  ;)
+
+Cheers
