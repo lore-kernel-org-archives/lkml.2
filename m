@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758488Ab0KSWJl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:09:41 -0500
-Received: from kroah.org ([198.145.64.141]:53026 "EHLO coco.kroah.org"
+	id S932683Ab0KSWKs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:10:48 -0500
+Received: from kroah.org ([198.145.64.141]:52993 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758153Ab0KSWE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:04:28 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:26 2010
-Message-Id: <20101119220125.971234012@clark.site>
+	id S1757639Ab0KSWEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:24 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:25 2010
+Message-Id: <20101119220125.466487435@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:01:17 -0800
+Date: Fri, 19 Nov 2010 14:01:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anders Larsen <al@alarsen.net>
-Subject: [46/66] USB: cp210x: Add WAGO 750-923 Service Cable device ID
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>, Felipe Balbi <balbi@ti.com>
+Subject: [40/66] USB: MUSB: fix kernel WARNING/oops when unloading module in OTG mode
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +25,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anders Larsen <al@alarsen.net>
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
-commit 93ad03d60b5b18897030038234aa2ebae8234748 upstream.
+commit f405387435a85a440d1ce16f3ca36e042281643a upstream.
 
-The WAGO 750-923 USB Service Cable is used for configuration and firmware
-updates of several industrial automation products from WAGO Kontakttechnik GmbH.
+Since commit 461972d8a4c94bc44f11a13046041c78a7cf18dd (musb_core: don't call
+musb_platform_exit() twice), unloading the driver module results in a WARNING
+"kobject: '(null)' (c73de788): is not initialized, yet kobject_put() is being
+called." (or even kernel oops) on e.g. DaVincis, though only in the OTG mode.
+There exists dubious and unbalanced put_device() call in musb_free() which
+takes place only in the OTG mode.  As this commit caused musb_platform_exit()
+to be called (and so unregister the NOP transceiver) before this put_device()
+call, this function references already freed memory.
 
-Bus 004 Device 002: ID 1be3:07a6
-Device Descriptor:
-  bLength                18
-  bDescriptorType         1
-  bcdUSB               1.10
-  bDeviceClass            0 (Defined at Interface level)
-  bDeviceSubClass         0
-  bDeviceProtocol         0
-  bMaxPacketSize0        64
-  idVendor           0x1be3
-  idProduct          0x07a6
-  bcdDevice            1.00
-  iManufacturer           1 Silicon Labs
-  iProduct                2 WAGO USB Service Cable
-  iSerial                 3 1277796751
-  . . .
+On the other hand, all the glue layers miss the otg_put_transceiver() call,
+complementary to the otg_get_transceiver() call that they do.  So, I think
+the solution is to get rid of the strange put_device() call, and instead
+call otg_put_transceiver() in the glue layers...
 
-Signed-off-by: Anders Larsen <al@alarsen.net>
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/musb/blackfin.c  |    1 +
+ drivers/usb/musb/davinci.c   |    2 ++
+ drivers/usb/musb/musb_core.c |    4 ----
+ drivers/usb/musb/omap2430.c  |    1 +
+ drivers/usb/musb/tusb6010.c  |    4 ++++
+ 5 files changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -133,6 +133,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
-+	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
- 	{ } /* Terminating Entry */
- };
+--- a/drivers/usb/musb/blackfin.c
++++ b/drivers/usb/musb/blackfin.c
+@@ -397,5 +397,6 @@ int musb_platform_exit(struct musb *musb
+ 
+ 	gpio_free(musb->config->gpio_vrsel);
+ 
++	otg_put_transceiver(musb->xceiv);
+ 	return 0;
+ }
+--- a/drivers/usb/musb/davinci.c
++++ b/drivers/usb/musb/davinci.c
+@@ -446,6 +446,7 @@ int __init musb_platform_init(struct mus
+ fail:
+ 	clk_disable(musb->clock);
+ 
++	otg_put_transceiver(musb->xceiv);
+ 	usb_nop_xceiv_unregister();
+ 	return -ENODEV;
+ }
+@@ -496,6 +497,7 @@ int musb_platform_exit(struct musb *musb
+ 
+ 	clk_disable(musb->clock);
+ 
++	otg_put_transceiver(musb->xceiv);
+ 	usb_nop_xceiv_unregister();
+ 
+ 	return 0;
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1921,10 +1921,6 @@ static void musb_free(struct musb *musb)
+ 		dma_controller_destroy(c);
+ 	}
+ 
+-#ifdef CONFIG_USB_MUSB_OTG
+-	put_device(musb->xceiv->dev);
+-#endif
+-
+ #ifdef CONFIG_USB_MUSB_HDRC_HCD
+ 	usb_put_hcd(musb_to_hcd(musb));
+ #else
+--- a/drivers/usb/musb/omap2430.c
++++ b/drivers/usb/musb/omap2430.c
+@@ -320,5 +320,6 @@ int musb_platform_exit(struct musb *musb
+ 
+ 	musb_platform_suspend(musb);
+ 
++	otg_put_transceiver(musb->xceiv);
+ 	return 0;
+ }
+--- a/drivers/usb/musb/tusb6010.c
++++ b/drivers/usb/musb/tusb6010.c
+@@ -1152,6 +1152,8 @@ done:
+ 	if (ret < 0) {
+ 		if (sync)
+ 			iounmap(sync);
++
++		otg_put_transceiver(musb->xceiv);
+ 		usb_nop_xceiv_unregister();
+ 	}
+ 	return ret;
+@@ -1166,6 +1168,8 @@ int musb_platform_exit(struct musb *musb
+ 		musb->board_set_power(0);
+ 
+ 	iounmap(musb->sync_va);
++
++	otg_put_transceiver(musb->xceiv);
+ 	usb_nop_xceiv_unregister();
+ 	return 0;
+ }
 
 
