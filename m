@@ -1,97 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757004Ab0KSVfX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:35:23 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57182 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756758Ab0KSVfV convert rfc822-to-8bit (ORCPT
+	id S1757057Ab0KSVhd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:37:33 -0500
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:48887 "HELO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756905Ab0KSVhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:35:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rfXfjiW7Edolu5WNqUrE9XOdqWXQdgz8wutLxC0240L/FMtqmgLjP+13yvNjzZRM7n
-         sCXEOOcPSQv0mLtqJTWoJB2ii8sHZ+EOLzgMhOQQqN+fcAOlmdS+gGbFDUPsayt8EOyE
-         a4YhF2HQO17H2OsvLL5+ffeeJhiPpK0thYTuA=
-MIME-Version: 1.0
-In-Reply-To: <20101119130329.675ebf0b@jbarnes-desktop>
-References: <AANLkTi=emVB3kqR322Man01sDd0DFecxzDENVCS6B1jj@mail.gmail.com>
-	<AANLkTik4Bj2_D_oz8jWxzKSKz16S=Yv6884iHA072bJe@mail.gmail.com>
-	<20101119130329.675ebf0b@jbarnes-desktop>
-Date: Fri, 19 Nov 2010 22:35:19 +0100
-Message-ID: <AANLkTimQQ62MKEs1WkuCMHqMQejC40rLBFc2KGF=SDHF@mail.gmail.com>
-Subject: Re: Regressions in resume on intel graphics
-From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        airlied@redhat.com, intel-gfx@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 19 Nov 2010 16:37:31 -0500
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: Kevin Hilman <khilman@deeprootsystems.com>,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-input@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Chris Cordahi <christophercordahi@nanometrics.ca>,
+        Paul Mundt <lethal@linux-sh.org>, Sekhar Nori <nsekhar@ti.com>,
+        "Govindarajan, Sriramakrishnan" <srk@ti.com>
+Subject: [PATCH v3 2/4] da850-evm: add UI Expander pushbuttons
+Date: Fri, 19 Nov 2010 16:37:21 -0500
+Message-Id: <bec98f4fde9dc7e2eb549eb9d88da9f7a551b2e1.1290201713.git.bengardiner@nanometrics.ca>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <cover.1290201713.git.bengardiner@nanometrics.ca>
+References: <cover.1289935504.git.bengardiner@nanometrics.ca> <cover.1290201713.git.bengardiner@nanometrics.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/19 Jesse Barnes <jbarnes@virtuousgeek.org>:
-> On Fri, 12 Nov 2010 10:17:07 +0100
-> Zdenek Kabelac <zdenek.kabelac@gmail.com> wrote:
->
->> 2010/11/12 Zdenek Kabelac <zdenek.kabelac@gmail.com>:
->> > Hi
->> >
->> > I've noticed that after resume  with 2.6.36 kernel I need to switch
->> > between console and back to Xorg to get usable Xsession again.
->> > (my hw - T61, gma965, 4GB)
->> >
->> > I've played bisect game -  and this is the first broken kernel:
->> >
->> > ---
->> > commit 8fd4bd22350784d5b2fe9274f6790ba353976415
->> > Author: Jesse Barnes <jbarnes@virtuousgeek.org>
->> > Date:   Wed Jun 23 12:56:12 2010 -0700
->> >
->> >    vt/console: try harder to print output when panicing
->> > ---
->>
->> I've been able to boot and test with 2.6.37-rc1-00170-gf6614b7
->> - and this problem seems to be fixed in this version (vt.c file seems
->> to be gone?).
->
-> This is really weird; there was one issue Dave tracked down related to
-> lockdep and the new oops code, but I think it's been fixed.  And it
-> should manifest as something other than a GPU hang...
->
+This patch adds EV_KEYs for each of the 8 pushbuttons on the UI board via a
+gpio-key device.
 
-Well - unsure - how this worked ok - for 2.6.37-rc1-00170-gf6614b7 (I
-could try few more times - though this kernel seems to be crashing for
-various other reasons - so I've had quite few testruns before I've
-been able to test this in some very limited X environment - so maybe
-it was just some lucky case - but I still keep it on my disk)
+The expander is a tca6416; it controls the SEL_{A,B,C} lines which enable and
+disable the peripherals found on the UI board in addition to the 8 pushbuttons
+mentioned above. The reason the existing tca6416-keypad driver is not employed
+is because there was no aparent way to keep the gpio lines used as
+SEL_{A,B,C} registered while simultaneously registering the pushbuttons as a
+tca6416-keypad instance.
 
-Anyway - as an update - I'm now regularly using 2.6.37-rc2 - and it
-has exactly same problems - as in my original report -  so the problem
-has not magically disappeared and it is still there.  Is there
-anything I should try ?
+Some experimentation with the polling interval was performed; we were searching
+for the largest polling interval that did not affect the feel of the
+responsiveness of the buttons. It is very subjective but 200ms seems to be a
+good value that accepts firm pushes but rejects very light ones. The key values
+assigned to the buttons were arbitrarily chosen to be F1-F8.
 
-Basically every time after resume from suspend I have to switch from X
-to console and back to get usable screen back. Without this I seen
-only black screen with mouse over it - is there some way for reverting
-of this patch - or maybe just disabling some part of it ?
+Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
+Reviewed-by: Chris Cordahi <christophercordahi@nanometrics.ca>
+CC: Govindarajan, Sriramakrishnan <srk@ti.com>
+Reviewed-by: Sekhar Nori <nsekhar@ti.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 
+---
 
-To have reliable resume I still have to keep drm_kms_help thread
-disable - otherwise I observe GPU errors.
-Switch between consoles is 'relatively' easy to overcome.
+Changes since v2:
+ * rebased to 083eae3e28643e0eefc5243719f8b1572cf98299 of
+   git://git.kernel.org/pub/scm/linux/kernel/git/khilman/linux-davinci.git
+ * remove the "TODO : populate at runtime using" in this patch instead of 4/4
+   (Nori, Sekhar)
+ * integrated the static array initialization patch of Sekhar Nori
+ * use static array initialization ranges
+ * rename DA850_PB_POLL_MS to DA850_GPIO_KEYS_POLL_MS
+ * use shorter names prefixed with da850_evm
 
-And another thing which might help -  during suspend/resume  I could
-usually see weird switch to console with some special text on the
-whole console screen -
+Changes since v1:
+ * set INPUT_POLLDEV default for DA850_EVM machine, but don't select it
+   unconditionally
+ * adding note to description about why tca6416-keypad was not used
+ * adding Govindarajan, Sriramakrishnan, the author of the tca6416-keypad
+   driver
 
-[ ###.... ]
-[ ###.... ]
+---
+ arch/arm/mach-davinci/Kconfig           |    3 +
+ arch/arm/mach-davinci/board-da850-evm.c |   98 ++++++++++++++++++++++++++++++-
+ 2 files changed, 100 insertions(+), 1 deletions(-)
 
-where  '###' is some changing number - and it seems to be different
-between resumes.
-Also I should add I'm using  'no-console-suspend'  kernel boot option.
+diff --git a/arch/arm/mach-davinci/Kconfig b/arch/arm/mach-davinci/Kconfig
+index 84066e8..1fbf73f 100644
+--- a/arch/arm/mach-davinci/Kconfig
++++ b/arch/arm/mach-davinci/Kconfig
+@@ -180,6 +180,9 @@ endchoice
+ config GPIO_PCA953X
+ 	default MACH_DAVINCI_DA850_EVM
+ 
++config INPUT_POLLDEV
++	default MACH_DAVINCI_DA850_EVM
++
+ config MACH_TNETV107X
+ 	bool "TI TNETV107X Reference Platform"
+ 	default ARCH_DAVINCI_TNETV107X
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index f89b0b7..b0763f7 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -17,8 +17,10 @@
+ #include <linux/i2c.h>
+ #include <linux/i2c/at24.h>
+ #include <linux/i2c/pca953x.h>
++#include <linux/input.h>
+ #include <linux/mfd/tps6507x.h>
+ #include <linux/gpio.h>
++#include <linux/gpio_keys.h>
+ #include <linux/platform_device.h>
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/nand.h>
+@@ -272,6 +274,88 @@ static inline void da850_evm_setup_emac_rmii(int rmii_sel)
+ static inline void da850_evm_setup_emac_rmii(int rmii_sel) { }
+ #endif
+ 
++
++#define DA850_KEYS_DEBOUNCE_MS	10
++/*
++ * At 200ms polling interval it is possible to miss an
++ * event by tapping very lightly on the push button but most
++ * pushes do result in an event; longer intervals require the
++ * user to hold the button whereas shorter intervals require
++ * more CPU time for polling.
++ */
++#define DA850_GPIO_KEYS_POLL_MS	200
++
++enum da850_evm_ui_exp_pins {
++	DA850_EVM_UI_EXP_SEL_C = 5,
++	DA850_EVM_UI_EXP_SEL_B,
++	DA850_EVM_UI_EXP_SEL_A,
++	DA850_EVM_UI_EXP_PB8,
++	DA850_EVM_UI_EXP_PB7,
++	DA850_EVM_UI_EXP_PB6,
++	DA850_EVM_UI_EXP_PB5,
++	DA850_EVM_UI_EXP_PB4,
++	DA850_EVM_UI_EXP_PB3,
++	DA850_EVM_UI_EXP_PB2,
++	DA850_EVM_UI_EXP_PB1,
++};
++
++static const char const *da850_evm_ui_exp[] = {
++	[DA850_EVM_UI_EXP_SEL_C]        = "sel_c",
++	[DA850_EVM_UI_EXP_SEL_B]        = "sel_b",
++	[DA850_EVM_UI_EXP_SEL_A]        = "sel_a",
++	[DA850_EVM_UI_EXP_PB8]          = "pb8",
++	[DA850_EVM_UI_EXP_PB7]          = "pb7",
++	[DA850_EVM_UI_EXP_PB6]          = "pb6",
++	[DA850_EVM_UI_EXP_PB5]          = "pb5",
++	[DA850_EVM_UI_EXP_PB4]          = "pb4",
++	[DA850_EVM_UI_EXP_PB3]          = "pb3",
++	[DA850_EVM_UI_EXP_PB2]          = "pb2",
++	[DA850_EVM_UI_EXP_PB1]          = "pb1",
++};
++
++#define DA850_N_UI_PB		8
++
++static struct gpio_keys_button da850_evm_ui_keys[] = {
++	[0 ... DA850_N_UI_PB - 1] = {
++		.type			= EV_KEY,
++		.active_low		= 1,
++		.wakeup			= 0,
++		.debounce_interval	= DA850_KEYS_DEBOUNCE_MS,
++		.code			= -1, /* assigned at runtime */
++		.gpio			= -1, /* assigned at runtime */
++		.desc			= NULL, /* assigned at runtime */
++	},
++};
++
++static struct gpio_keys_platform_data da850_evm_ui_keys_pdata = {
++	.buttons = da850_evm_ui_keys,
++	.nbuttons = ARRAY_SIZE(da850_evm_ui_keys),
++	.rep = 0, /* disable auto-repeat */
++	.poll_interval = DA850_GPIO_KEYS_POLL_MS,
++};
++
++static struct platform_device da850_evm_ui_keys_device = {
++	.name = "gpio-keys",
++	.id = 0,
++	.dev = {
++		.platform_data = &da850_evm_ui_keys_pdata
++	},
++};
++
++static void da850_evm_ui_keys_init(unsigned gpio)
++{
++	int i;
++	struct gpio_keys_button *button;
++
++	for (i = 0; i < DA850_N_UI_PB; i++) {
++		button = &da850_evm_ui_keys[i];
++		button->code = KEY_F8 - i;
++		button->desc = (char *)
++				da850_evm_ui_exp[DA850_EVM_UI_EXP_PB8 + i];
++		button->gpio = gpio + DA850_EVM_UI_EXP_PB8 + i;
++       }
++}
++
+ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
+ 						unsigned ngpio, void *c)
+ {
+@@ -304,15 +388,24 @@ static int da850_evm_ui_expander_setup(struct i2c_client *client, unsigned gpio,
+ 	gpio_direction_output(sel_b, 1);
+ 	gpio_direction_output(sel_c, 1);
+ 
++	da850_evm_ui_keys_init(gpio);
++	ret = platform_device_register(&da850_evm_ui_keys_device);
++	if (ret) {
++		pr_warning("Could not register UI GPIO expander push-buttons"
++				" device\n");
++		goto exp_setup_keys_fail;
++	}
++
+ 	ui_card_detected = 1;
+ 	pr_info("DA850/OMAP-L138 EVM UI card detected\n");
+ 
+ 	da850_evm_setup_nor_nand();
+-
+ 	da850_evm_setup_emac_rmii(sel_a);
+ 
+ 	return 0;
+ 
++exp_setup_keys_fail:
++	gpio_free(sel_c);
+ exp_setup_selc_fail:
+ 	gpio_free(sel_b);
+ exp_setup_selb_fail:
+@@ -324,6 +417,8 @@ exp_setup_sela_fail:
+ static int da850_evm_ui_expander_teardown(struct i2c_client *client,
+ 					unsigned gpio, unsigned ngpio, void *c)
+ {
++	platform_device_unregister(&da850_evm_ui_keys_device);
++
+ 	/* deselect all functionalities */
+ 	gpio_set_value_cansleep(gpio + 5, 1);
+ 	gpio_set_value_cansleep(gpio + 6, 1);
+@@ -340,6 +435,7 @@ static struct pca953x_platform_data da850_evm_ui_expander_info = {
+ 	.gpio_base	= DAVINCI_N_GPIO,
+ 	.setup		= da850_evm_ui_expander_setup,
+ 	.teardown	= da850_evm_ui_expander_teardown,
++	.names		= da850_evm_ui_exp,
+ };
+ 
+ static struct i2c_board_info __initdata da850_evm_i2c_devices[] = {
+-- 
+1.7.0.4
 
-Zdenek
