@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab0KSXUN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 18:20:13 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51644 "EHLO
+	id S1757106Ab0KSXWY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 18:22:24 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45701 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932372Ab0KSXUL (ORCPT
+	by vger.kernel.org with ESMTP id S1756159Ab0KSXWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 18:20:11 -0500
-Date: Fri, 19 Nov 2010 15:19:49 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: michalj@gmail.com, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>, linux-kernel@vger.kernel.org,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
-Subject: Re: abs() vs. abs64() (was: Re: [PATCH] fbdev: fix nearest mode
- search)
-Message-Id: <20101119151949.b7e514f7.akpm@linux-foundation.org>
-In-Reply-To: <20101119150411.81092e94.akpm@linux-foundation.org>
-References: <AANLkTimYDAJr9x00sjGGnDF2vOVXU12qmbnmfuzA5_0h@mail.gmail.com>
-	<20101119140721.33576c61.akpm@linux-foundation.org>
-	<20101119222823.GA28797@quadria>
-	<20101119150411.81092e94.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Nov 2010 18:22:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <1290201154.2116.29.camel@morgan.silverblock.net>
+References: <1290201154.2116.29.camel@morgan.silverblock.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 19 Nov 2010 15:22:00 -0800
+Message-ID: <AANLkTi=fnFhznMz2bTRSJDrfeDwsVUTyqiKDATPzEjhq@mail.gmail.com>
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
+To: Andy Walls <andy@silverblocksystems.net>
+Cc: linux-kernel@vger.kernel.org, sarah.a.sharp@linux.intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Nov 2010 15:04:11 -0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On Fri, Nov 19, 2010 at 1:12 PM, Andy Walls <andy@silverblocksystems.net> wrote:
+>>
+>> If it actually breaks user-space, I think we should just revert it.
+>
+> User space klogd is what's broken in this case:
 
-> > Looks good to me.  I posted essentially the same thing some 3 months ago
-> > (http://marc.info/?l=linux-kernel&m=128033094822201&w=2) but it then
-> > failed to get any traction.  At any rate, I like your version better as
-> > it seems more readable.
-> > 
-> 
-> I spose we should document it.   Does this look complete and accurate?
-> 
-> --- a/include/linux/kernel.h~include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit-fix
-> +++ a/include/linux/kernel.h
-> @@ -143,6 +143,13 @@ extern int _cond_resched(void);
->  
->  #define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
->  
-> +/*
-> + * abs() handles unsigned and signed longs, ints, shorts and chars.  For long
-> + * types it returns a signed long.  For int, short and char types it returns a
-> + * signed int.
-> + * abs() should not be used for 64-bit types (s64, u64, long long) - use abs64()
-> + * for those.
-> + */
->  #define abs(x) ({						\
->  		long ret;					\
->  		if (sizeof(x) == sizeof(long)) {		\
+Sure. I'm not surprised. I didn't really expect the /proc/kallsyms
+mode change to trigger anything like what Sarah reported, and
+user-space just being buggy because the error case had never even been
+tested is quite understandable.
 
-Well that was a load of bollocks.  2nd attempt:
+But the thing is, it doesn't even matter.
 
---- a/include/linux/kernel.h~include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit-fix
-+++ a/include/linux/kernel.h
-@@ -143,6 +143,12 @@ extern int _cond_resched(void);
- 
- #define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
- 
-+/*
-+ * abs() handles unsigned and signed longs, ints, shorts and chars.  For all
-+ * input types abs() returns a signed long.
-+ * abs() should not be used for 64-bit types (s64, u64, long long) - use abs64()
-+ * for those.
-+ */
- #define abs(x) ({						\
- 		long ret;					\
- 		if (sizeof(x) == sizeof(long)) {		\
-_
+The rule is not "we don't break non-buggy user space" or "we don't
+break reasonable user-space". The rule is simply "we don't break
+user-space".
 
+Even if the breakage is totally incidental, that doesn't help the
+_user_. It's still breakage.
+
+We still have magic scheduler debug options to run children before
+parents after fork, simply because that used to _hide_ a race
+condition in some older "bash" versions (or maybe it was the other way
+around, whatever).
+
+The thing is, bugs happen. And if they never had test coverage, we
+can't blame people for them. Saying "tough luck, we changed it, and
+you did something wrong" may be manly, but it's also unacceptable. The
+developer may fix his bug, but there's still users out there.
+
+Now, there _are_ exceptions. There are always exceptions. Intelligent
+people don't run things off a script, and it's obviously always to
+some degree a judgment call. The breakage has to be balanced against
+the upsides. If the kernel behavior change is due to some fundamental
+security issue or a major redesign that we _had_ to do to make
+progress, and the user-level breakage is reasonably well-contained,
+we'll just say "sorry, we had to do it".
+
+In this case, the upside just wasn't big enough to accept _any_
+breakage, especially since people and distributions can just do the
+"chmod" themselves if they want to. There was a lot of discussion
+whether the patch should even go in in the first place. So this time,
+the "let's just revert it" was a very easy decision for me.
+
+              Linus
