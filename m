@@ -1,73 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab0KSKtN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 05:49:13 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:34879 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750831Ab0KSKtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 05:49:12 -0500
-Date: Fri, 19 Nov 2010 10:48:56 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+	id S1752999Ab0KSKyI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 05:54:08 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50230 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846Ab0KSKyG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 05:54:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=ZWU1MnsMV/LA4x5KFf17C6acG4dXXD+ZBR0FqkrdF4tvKjcugnQ8/bEpm2FWIORheS
+         5F/A0lnuRZbkMDstXxhfzV1P0tAuq+6Y8cStgdd/JMstOWHjLqB2orIsbi6wdpXUAA0d
+         IJecn7RXTuoSPIqo6ZeTpQZt6gu8Voehdt48A=
+From: Vasily Khoruzhick <anarsoul@gmail.com>
+To: "Lars-Peter Clausen" <lars@metafoo.de>
+Subject: Re: [PATCH] ARM: s3x24xx: Fix gpiochip_add complaining.
+Date: Fri, 19 Nov 2010 12:53:58 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r1-anarsoul; KDE/4.5.3; i686; ; )
+Cc: linux-arm-kernel@lists.infradead.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Ben Dooks <ben-linux@fluff.org>,
+        Marek Belisko <marek.belisko@open-nandra.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] Use memory compaction instead of lumpy reclaim
-	during high-order allocations
-Message-ID: <20101119104856.GB28613@csn.ul.ie>
-References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie> <20101117154641.51fd7ce5.akpm@linux-foundation.org> <20101118081254.GB8135@csn.ul.ie> <20101118172627.cf25b83a.kamezawa.hiroyu@jp.fujitsu.com> <20101118083828.GA24635@cmpxchg.org> <20101118092044.GE8135@csn.ul.ie> <20101118114928.ecb2d6b0.akpm@linux-foundation.org>
+References: <1290158139-16105-1-git-send-email-marek.belisko@open-nandra.com> <201011191123.22255.anarsoul@gmail.com> <4CE6547A.9070309@metafoo.de>
+In-Reply-To: <4CE6547A.9070309@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101118114928.ecb2d6b0.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011191253.58812.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 11:49:28AM -0800, Andrew Morton wrote:
-> On Thu, 18 Nov 2010 09:20:44 +0000
-> Mel Gorman <mel@csn.ul.ie> wrote:
+On Friday 19 November 2010 12:42:02 Lars-Peter Clausen wrote:
+> Hi
 > 
-> > > It's because migration depends on MMU.  But we should be able to make
-> > > a NOMMU version of migration that just does page cache, which is all
-> > > that is reclaimable on NOMMU anyway.
-> > > 
-> > 
-> > Conceivably, but I see little problem leaving them with lumpy reclaim.
-> 
-> I see a really big problem: we'll need to maintain lumpy reclaim for
-> ever!
-> 
+> Well it actually causes problems on systems with external gpio expanders,
+> because now the additional banks will take up the space which was meant
+> for the gpio expander chip and peripherals connected to it wont be
+> accessible.
 
-At least as long as !CONFIG_COMPACTION exists. That will be a while because
-bear in mind CONFIG_COMPACTION is disabled by default (although I believe
-some distros are enabling it at least). Maybe we should choose to deprecate
-it in 2.6.40 and delete it at the infamous time of 2.6.42? That would give
-ample time to iron out any issues that crop up with reclaim/compaction
-(what this series has turned into).
+Ok, but it would be nice to see some runtime soc-type detection for gpiolib. 
+s3c2410/s3c2440/s3c2442 doesn't differ too much (actually, they're same in 
+gpiopart, s3c2410 lacks some gpiobanks that s3c244[0,2] have, and difference 
+in pull-up/pull-down on s3c2440 and s3c2442).
+I think it's not good to make artificial restrictions for building single 
+binary kernel for these socs.
+ 
+> I sent a patch[1] about this some time ago, but I guess it was never
+> applied...
 
-Bear in mind that lumpy reclaim is heavily isolated these days. The logic
-is almost entirely contained in isolate_lru_pages() in the block starting
-with the comment "Attempt to take all pages in the order aligned region
-surrounding the tag page". As disruptive as lumpy reclaim is, it's basically
-just a linear scanner at the end of the day and there are a few examples of
-that in the kernel. If we break it, it'll be obvious.
+Try pinging Ben or Kukjin :)
 
-> We keep on piling in more and more stuff, we're getting less sure that
-> the old stuff is still effective. It's becoming more and more
-> important to move some of our attention over to simplification, and
-> to rejustification of earlier decisions.
-> 
-
-I'm open to its ultimate deletion but think it's rash to do on day 1 of
-reclaim/compaction. I do recognise that I might be entirely on my own with
-this opinion though :)
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Regards
+Vasily
