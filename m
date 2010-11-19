@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755659Ab0KSQV1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:21:27 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:41068 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1755605Ab0KSQVZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:21:25 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1//F+QX/lH/+xSLrFfd0FNHSNIu9DE9nfg5x2oCRc
-	H6yNCTf9LS5EZ9
-Subject: Re: Galbraith patch
-From: Mike Galbraith <efault@gmx.de>
-To: Gene Heskett <gene.heskett@gmail.com>
-Cc: Jordi Pujol <jordipujolp@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <201011191005.12189.gene.heskett@gmail.com>
-References: <201011191509.49586.jordipujolp@gmail.com>
-	 <201011191005.12189.gene.heskett@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Nov 2010 09:21:08 -0700
-Message-ID: <1290183668.24581.16.camel@maggy.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1755611Ab0KSQXp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:23:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755258Ab0KSQXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 11:23:44 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1290120166-3132-5-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1290120166-3132-5-git-send-email-zohar@linux.vnet.ibm.com> <1290120166-3132-1-git-send-email-zohar@linux.vnet.ibm.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-crypto@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH v1.4 4/5] keys: add new trusted key-type
+Date: Fri, 19 Nov 2010 16:23:21 +0000
+Message-ID: <10330.1290183801@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 10:05 -0500, Gene Heskett wrote:
-> On Friday, November 19, 2010, Jordi Pujol wrote:
-> >Hello,
-> >
-> >it requires a little modification,
-> >
-> >CONFIG_SCHED_DEBUG should not be a condition to create autogroup in
-> >structure task_group
-> >
-> >remove
-> >    && defined(CONFIG_SCHED_DEBUG)
-> >in the following conditional:
-> >
-> >+++ linux-2.6.36/kernel/sched.c
-> >@@ -78,6 +78,7 @@
-> >
-> > #include "sched_cpupri.h"
-> > #include "workqueue_sched.h"
-> >+#include "sched_autogroup.h"
-> >
-> > #define CREATE_TRACE_POINTS
-> > #include <trace/events/sched.h>
-> >@@ -268,6 +269,10 @@ struct task_group {
-> > 	struct task_group *parent;
-> > 	struct list_head siblings;
-> > 	struct list_head children;
-> >+
-> >+#if (defined(CONFIG_SCHED_AUTOGROUP) && defined(CONFIG_SCHED_DEBUG))
-> >+	struct autogroup *autogroup;
-> >+#endif
-> > };
-> >
-> >Kind,
-> >
-> >Jordi Pujol
-> 
-> Thanks Jordi, but my last attempted build, using only the last 2 patches 
-> that Mike posted on a fresh unpack of 2.6.36, couldn't get past stage 2 of 
-> the modules build, it kept squawking about all the IR control stuff that is 
-> not even configured to be built.
+Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 
-No idea what's going on with that.  Maybe you should wait until I get
-the /proc display/tweak interface cobbled together and post a checked
-over patch instead of hasty WIP snapshot.
+> +keyctl print returns an ascii hex copy of the sealed key, which is in standard
 
-> I wonder how long it will take to get work this into mainline?
+I'd quote 'keyctl print' just so it's obvious where the command ends and the
+descriptive text starts.
 
-If it goes in at all, it won't be before .38.
+> +Usage:
+> +  keyctl add encrypted name "new key-type:master-key-name keylen" ring
+> +  keyctl add encrypted name "load key-type:master-key-name keylen hex_blob" ring
+> +  keyctl update keyid "update key-type:master-key-name"
+> +
+> +where 'key-type' is either 'trusted' or 'user'.
 
-> Along the same line, how does this compare to CK's bfs patch?
+I recommend adding some example commands with all the arguments substituted.
+Nothing helps get to grip with an API like knowing what a command is supposed
+to look like when it's actually used.
 
-Like apple vs orange.
+> +static int trusted_tpm_send(u32 chip_num, unsigned char *cmd, int buflen)
 
-	-Mike
+There are still a lot of places in here where you should probably be using
+const and size_t.
 
+> +static int my_get_random(unsigned char *buf, int len)
+> +{
+> +	struct tpm_buf *tb;
+> +	int ret;
+> +
+> +	tb = kzalloc(sizeof *tb, GFP_KERNEL);
+> +	if (!tb)
+> +		return -ENOMEM;
+> +	ret = tpm_get_random(tb, buf, len);
+
+Using kzalloc() rather than kmalloc() is a waste of time, I'd've thought.
+It's a temporary buffer.  Does it really need to be precleared?
+
+> +	ret = tpm_pcr_extend(TPM_ANY_NUM, pcrnum, hash);
+> +	return ret;
+
+Merge.
+
+> +static int trusted_update(struct key *key, const void *data, size_t datalen)
+> +{
+> ...
+> +	*(datablob + datalen) = '\0';
+
+That's what [] is for.
+
+> +	if (new_o)
+> +		kfree(new_o);
+
+kfree() can handle a NULL pointer.
+
+> +	if (new_o->pcrlock)
+> +		ret = pcrlock(new_o->pcrlock);
+> +	rcu_assign_pointer(key->payload.data, new_p);
+> +	call_rcu(&p->rcu, trusted_rcu_free);
+
+Should there be a check for pcrlock() failure?
+
+> +/* not already defined in tpm.h - specific to this use */
+> +#define TPM_TAG_RQU_COMMAND		193
+> +#define TPM_TAG_RQU_AUTH1_COMMAND	194
+> ...
+
+Values defined for TPM hardware access really ought to be in a separate file
+in include/linux/.  They aren't strictly specific to the trusted key
+implementation here; that may be the only user currently in the kernel, but
+that doesn't mean there can't be another user.
+
+David
