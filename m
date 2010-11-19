@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756102Ab0KSRvk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 12:51:40 -0500
-Received: from he.sipsolutions.net ([78.46.109.217]:33011 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755989Ab0KSRvi (ORCPT
+	id S1756114Ab0KSRwJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 12:52:09 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43158 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755989Ab0KSRwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 12:51:38 -0500
-Subject: Re: [PATCH v7 3/3] nl80211/mac80211: Report signal average
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Bruno Randolf <br1@einfach.org>
-Cc: Bob Copeland <me@bobcopeland.com>, Jouni Malinen <j@w1.fi>,
-        linville@tuxdriver.com, randy.dunlap@oracle.com, peterz@infradead.org,
-        blp@cs.stanford.edu, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
-        stefanr@s5r6.in-berlin.de, kosaki.motohiro@jp.fujitsu.com,
-        akpm@linux-foundation.org, kevin.granade@gmail.com
-In-Reply-To: <201011191749.31974.br1@einfach.org>
-References: <20101112024901.28522.21895.stgit@localhost6.localdomain6>
-	 <1290010595.3777.0.camel@jlt3.sipsolutions.net>
-	 <AANLkTimoogSLAipNy=njGtHypqBQSk=usDmXut=KN9TM@mail.gmail.com>
-	 <201011191749.31974.br1@einfach.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Nov 2010 09:52:31 -0800
-Message-ID: <1290189151.3768.0.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Nov 2010 12:52:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <20101119.084302.71115175.davem@davemloft.net>
+References: <C47257FC-498A-41B0-BC94-C81C72601D53@mit.edu> <20101119.082944.226775934.davem@davemloft.net>
+ <20101119163430.GA12353@tango.0pointer.de> <20101119.084302.71115175.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 19 Nov 2010 09:51:14 -0800
+Message-ID: <AANLkTiksmvcLKGx7-u5CnTnZU6dgOgg7wem6qf384zUg@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+To: David Miller <davem@davemloft.net>
+Cc: mzxreary@0pointer.de, tytso@mit.edu, bgamari.foss@gmail.com,
+        a.p.zijlstra@chello.nl, debiandev@gmail.com, alan@lxorguk.ukuu.org.uk,
+        dhaval.giani@gmail.com, efault@gmx.de, vgoyal@redhat.com,
+        oleg@redhat.com, markus@trippelsdorf.de,
+        mathieu.desnoyers@efficios.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 17:49 +0900, Bruno Randolf wrote:
+Guys, calm down. It's really not -that- much of a deal.
 
-> OK, I have done tests with a 266MHz x86 board, pushing 30Mbps UDP thru it. It 
-> can handle maximum around 18Mbps thuput in both cases, with and without the 
+We can do both. There is basically zero cost in the kernel: you can
+disabled the feature, and it's not like it's a maintenance headache
+(all the complexity that matters is the group scheduling itself, not
+the autogroup code that is well separated). And the kernel approach is
+useful to just take an otherwise unmodified system and just make it
+have nice default behavior.
 
-That sounds like you're limited by 11g, not by the CPU ...
+And the user level approach? I think it's fine too. If you run systemd
+for other reasons (or if the gnome people add it to the task launcher
+or whatever), doing it there isn't wrong. I personally think it's
+somewhat disgusting to have a user-level callback with processes etc
+just to clean up a group, but whatever.  As long as it's not common,
+who cares?
 
-johannes
+And you really _can_ combine them. As mentioned, I'd be nervous about
+AIM benchmarks. I keep mentioning AIM, but that's because it has shown
+odd tty issues before. Back when the RT guys wanted to do that crazy
+blocking BKL thing (replace the spinlock with a semaphore), AIM7
+plummeted by 40%. And people were looking all over the place (file
+locking etc), and the tty layer was the biggest reason iirc.
 
+Now, I don't know if AIM7 actually uses setsid() heavily etc, and it's
+possible it never hits it at all and only does read/write/kill. And
+it's not like AIM7 is the main thing we should look at regardless. But
+the point is that we know that there are some tty-heavy loads that are
+relevant, and it's very possible that a hybrid approach with "tty's
+handled automatically by the kernel, window manager does others in
+user space" would be a good way to avoid the (potential) nasty side of
+something that has a lot of short-lived tty connections.
+
+So guys, calm down. We don't need to hate each other.
+
+                        Linus
