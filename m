@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921Ab0KSWEE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:04:04 -0500
-Received: from kroah.org ([198.145.64.141]:52791 "EHLO coco.kroah.org"
+	id S1757998Ab0KSWSx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:18:53 -0500
+Received: from kroah.org ([198.145.64.141]:52834 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757858Ab0KSWEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:04:00 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:22 2010
-Message-Id: <20101119220122.280910380@clark.site>
+	id S1757934Ab0KSWEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:05 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:23 2010
+Message-Id: <20101119220122.926099663@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:00:32 -0800
+Date: Fri, 19 Nov 2010 14:00:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Max Vozeler <mvz@vozeler.com>
-Subject: [01/66] staging: usbip: Notify usb core of port status changes
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Tony Lindgren <tony@atomide.com>, Ingo Molnar <mingo@elte.hu>
+Subject: [09/66] sched: Fix string comparison in /proc/sched_features
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,36 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Vozeler <mvz@vozeler.com>
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 
-commit 0c9a32f0192e656daa2ff3c9149f6d71b4a1b873 upstream.
+commit 7740191cd909b75d75685fb08a5d1f54b8a9d28b upstream.
 
-This patch changes vhci to behave like dummy and
-other hcds when disconnecting a device.
+Fix incorrect handling of the following case:
 
-Previously detaching a device from the root hub
-did not notify the usb core of the disconnect and
-left the device visible.
+ INTERACTIVE
+ INTERACTIVE_SOMETHING_ELSE
 
-Signed-off-by: Max Vozeler <mvz@vozeler.com>
-Reported-by: Marco Lancione <marco@optikam.com>
-Tested-by: Luc Jalbert <ljalbert@optikam.com>
+The comparison only checks up to each element's length.
+
+Changelog since v1:
+ - Embellish using some Rostedtisms.
+  [ mingo:                 ^^ == smaller and cleaner ]
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Tony Lindgren <tony@atomide.com>
+LKML-Reference: <20100913214700.GB16118@Krystal>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/usbip/vhci_hcd.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/sched.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/staging/usbip/vhci_hcd.c
-+++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -164,6 +164,8 @@ void rh_port_disconnect(int rhport)
- 	 * spin_unlock(&vdev->ud.lock); */
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -723,7 +723,7 @@ sched_feat_write(struct file *filp, cons
+ 		size_t cnt, loff_t *ppos)
+ {
+ 	char buf[64];
+-	char *cmp = buf;
++	char *cmp;
+ 	int neg = 0;
+ 	int i;
  
- 	spin_unlock_irqrestore(&the_controller->lock, flags);
-+
-+	usb_hcd_poll_rh_status(vhci_to_hcd(the_controller));
- }
+@@ -734,6 +734,7 @@ sched_feat_write(struct file *filp, cons
+ 		return -EFAULT;
  
+ 	buf[cnt] = 0;
++	cmp = strstrip(buf);
  
+ 	if (strncmp(buf, "NO_", 3) == 0) {
+ 		neg = 1;
+@@ -741,9 +742,7 @@ sched_feat_write(struct file *filp, cons
+ 	}
+ 
+ 	for (i = 0; sched_feat_names[i]; i++) {
+-		int len = strlen(sched_feat_names[i]);
+-
+-		if (strncmp(cmp, sched_feat_names[i], len) == 0) {
++		if (strcmp(cmp, sched_feat_names[i]) == 0) {
+ 			if (neg)
+ 				sysctl_sched_features &= ~(1UL << i);
+ 			else
 
 
