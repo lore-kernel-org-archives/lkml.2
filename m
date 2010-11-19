@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab0KSFu4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 00:50:56 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:15100 "EHLO
+	id S1752289Ab0KSFv3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 00:51:29 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:15215 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751482Ab0KSFuy (ORCPT
+	by vger.kernel.org with ESMTP id S1751998Ab0KSFv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 00:50:54 -0500
-Message-ID: <4CE6102B.9000505@dsn.okisemi.com>
-Date: Fri, 19 Nov 2010 14:50:35 +0900
+	Fri, 19 Nov 2010 00:51:27 -0500
+Message-ID: <4CE6104C.3090401@dsn.okisemi.com>
+Date: Fri, 19 Nov 2010 14:51:08 +0900
 From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
 MIME-Version: 1.0
@@ -20,73 +20,66 @@ To: Wolfgang Grandegger <wg@grandegger.com>,
         linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
 CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
         joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 14/17] can: EG20T PCH: Comment optimization
+Subject: [PATCH net-next-2.6 16/17] can: EG20T PCH: Fix incorrect return processing
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Comment optimization
+Fix incorrect return processing
 
 Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
- drivers/net/can/pch_can.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/net/can/pch_can.c |   20 ++++++++++++--------
+ 1 files changed, 12 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 610cf3b..df14569 100644
+index c612a99..48f4a2e 100644
 --- a/drivers/net/can/pch_can.c
 +++ b/drivers/net/can/pch_can.c
-@@ -292,7 +292,7 @@ static void pch_can_set_rxtx(struct pch_can_priv *priv, u32 buff_num,
- 	else
- 		ie = PCH_IF_MCONT_RXIE;
+@@ -589,10 +589,12 @@ static irqreturn_t pch_can_interrupt(int irq, void *dev_id)
+ 	struct net_device *ndev = (struct net_device *)dev_id;
+ 	struct pch_can_priv *priv = netdev_priv(ndev);
  
--	/* Reading the receive buffer data from RAM to Interface1/2 registers */
-+	/* Reading the Msg buffer from Message RAM to IF1/2 registers. */
- 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[dir].cmask);
- 	pch_can_rw_msg_obj(&priv->regs->ifregs[dir].creq, buff_num);
+-	pch_can_set_int_enables(priv, PCH_CAN_NONE);
+-	napi_schedule(&priv->napi);
+-
+-	return IRQ_HANDLED;
++	if ((pch_can_int_pending(priv) > 0) && (dev_id != NULL)) {
++		pch_can_set_int_enables(priv, PCH_CAN_NONE);
++		napi_schedule(&priv->napi);
++		return IRQ_HANDLED;
++	}
++	return IRQ_NONE;
+ }
  
-@@ -868,7 +868,7 @@ static int pch_can_open(struct net_device *ndev)
- 		priv->use_msi = 1;
- 	}
+ static void pch_fifo_thresh(struct pch_can_priv *priv, int obj_id)
+@@ -674,7 +676,7 @@ static int pch_can_rx_normal(struct net_device *ndev, u32 obj_num, int quota)
+ 		if (reg & PCH_IF_MCONT_MSGLOST) {
+ 			rtn = pch_can_rx_msg_lost(ndev, obj_num);
+ 			if (!rtn)
+-				return rtn;
++				return rcv_pkts;
+ 			rcv_pkts++;
+ 			quota--;
+ 			obj_num++;
+@@ -777,10 +779,12 @@ static int pch_can_poll(struct napi_struct *napi, int quota)
+ 		goto end;
  
--	/* Regsitering the interrupt. */
-+	/* Regstering the interrupt. */
- 	retval = request_irq(priv->dev->irq, pch_can_interrupt, IRQF_SHARED,
- 			     ndev->name, ndev);
- 	if (retval) {
-@@ -972,7 +972,7 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
- 
- 	can_put_echo_skb(skb, ndev, tx_obj_no - PCH_RX_OBJ_END - 1);
- 
--	/* Updating the size of the data. */
-+	/* Set the size of the data. Update if2_mcont */
- 	iowrite32(cf->can_dlc | PCH_IF_MCONT_NEWDAT | PCH_IF_MCONT_TXRQXT |
- 		  PCH_IF_MCONT_TXIE, &priv->regs->ifregs[1].mcont);
- 
-@@ -1072,8 +1072,8 @@ static u32 pch_can_get_rx_buffer_link(struct pch_can_priv *priv, u32 buffer_num)
- 
- static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
- {
--	int i;			/* Counter variable. */
--	int retval;		/* Return value. */
-+	int i;
-+	int retval;
- 	u32 buf_stat;	/* Variable for reading the transmit buffer status. */
- 	int counter = PCH_COUNTER_LIMIT;
- 
-@@ -1130,8 +1130,8 @@ static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
- 
- static int pch_can_resume(struct pci_dev *pdev)
- {
--	int i;			/* Counter variable. */
--	int retval;		/* Return variable. */
-+	int i;
-+	int retval;
- 	struct net_device *dev = pci_get_drvdata(pdev);
- 	struct pch_can_priv *priv = netdev_priv(dev);
- 
+ 	if ((int_stat >= PCH_RX_OBJ_START) && (int_stat <= PCH_RX_OBJ_END)) {
+-		rcv_pkts += pch_can_rx_normal(ndev, int_stat, quota);
+-		quota -= rcv_pkts;
+-		if (quota < 0)
++		rcv_pkts = pch_can_rx_normal(ndev, int_stat, quota);
++		if (rcv_pkts < 0) {
++			rcv_pkts = 0;
+ 			goto end;
++		}
++		quota -= rcv_pkts;
+ 	} else if ((int_stat >= PCH_TX_OBJ_START) &&
+ 		   (int_stat <= PCH_TX_OBJ_END)) {
+ 		/* Handle transmission interrupt */
 -- 
 1.6.0.6
 
