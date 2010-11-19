@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758471Ab0KSWJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:09:29 -0500
-Received: from kroah.org ([198.145.64.141]:53032 "EHLO coco.kroah.org"
+	id S1758148Ab0KSWE0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:04:26 -0500
+Received: from kroah.org ([198.145.64.141]:52979 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758161Ab0KSWE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:04:28 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:26 2010
-Message-Id: <20101119220126.057034229@clark.site>
+	id S1758117Ab0KSWEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:22 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:25 2010
+Message-Id: <20101119220125.216899705@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:01:18 -0800
+Date: Fri, 19 Nov 2010 14:01:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [47/66] USB: atmel_usba_udc: force vbus_pin at -EINVAL when gpio_request failled
+        Rainer Keller <mail@rainerkeller.de>
+Subject: [37/66] USB: add PID for FTDI based OpenDCC hardware
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +25,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+From: Rainer Keller <mail@rainerkeller.de>
 
-commit 969affff54702785330de553b790372e261e93f9 upstream.
+commit 99c1e4f89d1033444ce4d0c064bd2826e81c3775 upstream.
 
-to ensure gpio_is_valid return false
+The OpenDCC project is developing a new hardware. This patch adds its
+PID to the list of known FTDI devices. The PID can be found at
+http://www.opendcc.de/elektronik/usb/opendcc_usb.html
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Signed-off-by: Rainer Keller <mail@rainerkeller.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/gadget/atmel_usba_udc.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/usb/gadget/atmel_usba_udc.c
-+++ b/drivers/usb/gadget/atmel_usba_udc.c
-@@ -2014,6 +2014,9 @@ static int __init usba_udc_probe(struct
- 			} else {
- 				disable_irq(gpio_to_irq(udc->vbus_pin));
- 			}
-+		} else {
-+			/* gpio_request fail so use -EINVAL for gpio_is_valid */
-+			ubc->vbus_pin = -EINVAL;
- 		}
- 	}
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -177,6 +177,7 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_SNIFFER_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_THROTTLE_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GATEWAY_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -61,6 +61,7 @@
+ #define FTDI_OPENDCC_SNIFFER_PID	0xBFD9
+ #define FTDI_OPENDCC_THROTTLE_PID	0xBFDA
+ #define FTDI_OPENDCC_GATEWAY_PID	0xBFDB
++#define FTDI_OPENDCC_GBM_PID	0xBFDC
  
+ /*
+  * RR-CirKits LocoBuffer USB (http://www.rr-cirkits.com)
 
 
