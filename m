@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878Ab0KSEuE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 23:50:04 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37854 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274Ab0KSEuB (ORCPT
+	id S1750933Ab0KSFBN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 00:01:13 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:14653 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750724Ab0KSFBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 23:50:01 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=DicMfWJ45D8ydhsIaXOUmYD2fEbV4BoFQCsvHHiJ1zJgoCslaQk2tOx+HWvCVnXDwA
-         WFtmAmmyqib9xTbyXLFmHMdbwoPkEZKBmpSbCiv42bKsCebBtjBhsXB4GWyw05w2SoWq
-         WJAHkz8bo5vrKu0dHPlV+jQvIpc4yXABtD1s8=
+	Fri, 19 Nov 2010 00:01:12 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAJWQ5Ux5LdBa/2dsb2JhbACiVnK9JYVLBI9q
+Date: Fri, 19 Nov 2010 16:01:08 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: David Miller <davem@davemloft.net>
+Cc: npiggin@kernel.dk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 01/28] fs: d_validate fixes
+Message-ID: <20101119050108.GB3284@amd>
+References: <20101116140900.039761100@kernel.dk>
+ <20101116142028.254946611@kernel.dk>
+ <20101118.125123.241932424.davem@davemloft.net>
 MIME-Version: 1.0
-Date: Fri, 19 Nov 2010 13:50:00 +0900
-Message-ID: <AANLkTinRBv00zo-=DWbZYZi7YQTvuF-t61_mk9txO-Bb@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the bkl-llseek tree with the wireless tree
-From: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>, gregkh@suse.de
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>, Linus <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101118.125123.241932424.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Thu, Nov 18, 2010 at 12:51:23PM -0800, David Miller wrote:
+> From: Nick Piggin <npiggin@kernel.dk>
+> Date: Wed, 17 Nov 2010 01:09:01 +1100
+> 
+> > d_validate has been broken for a long time.
+> > 
+> > kmem_ptr_validate does not guarantee that a pointer can be dereferenced
+> > if it can go away at any time. Even rcu_read_lock doesn't help, because
+> > the pointer might be queued in RCU callbacks but not executed yet.
+> > 
+> > So the parent cannot be checked, nor the name hashed. The dentry pointer
+> > can not be touched until it can be verified under lock. Hashing simply
+> > cannot be used.
+> > 
+> > Instead, verify the parent/child relationship by traversing parent's
+> > d_child list. It's slow, but only ncpfs and the destaged smbfs care
+> > about it, at this point.
+> > 
+> > Signed-off-by: Nick Piggin <npiggin@kernel.dk>
+> 
+> This won't apply because is conflicts with Christoph Hellwig's
+> RCU conversion of d_validate().
+> 
+> Which is a change that went in more than a month ago.
 
-On 2010-10-23 09:27:35, Arnd Bergmann wrote:
-> On Saturday 23 October 2010, Stephen Rothwell wrote:
->> Hi John, Dave,
->>
->> On Mon, 18 Oct 2010 17:35:43 +1100 Stephen Rothwell<sfr@canb.auug.org.au>  wrote:
->>>
->>> Today's linux-next merge of the bkl-llseek tree got a conflict in
->>> drivers/net/wireless/ath/ath9k/debug.c between commit
->>> 772d5515635fef5bc7a9d0efee785b58b0181ee5 ("ath9k: make rate control
->>> debugfs stats per station") from the wireless tree and commit
->>> 6038f373a3dc1f1c26496e60b6c40b164716f07e ("llseek: automatically
->>> add .llseek fop") from the bkl-llseek tree.
-<snip>
->> This patch (reproduced below) will now be needed if the wireless or net
->> tree is merged with Linus' tree.  I also think I have missed a similar
->> needed fix in drivers/net/wireless/ath/ath5k/debug.c ...
->
-> There are also new drivers for speakup, intel_sst and yurex that introduce
-> additional file_operations in next, the patch below is what I had planned
-> to submit once everything is in. I also expect the occasional driver that
-> did not see linux-next, so I'll rerun my scripts after -rc1 to see what
-> we got.
+Sorry yeah I had a local revert that I didn't send out, otherwise
+it should be a vanilla upstream kernel.
 
-Is your patch that adds .llseek fops planned to be merged to -rc?
+ 
+> Thus I'd really appreciate if you mentioned what tree your patches are
+> against in your "0/N" posting, always.
 
-The driver for yurex needs your patch that adds .llseek fop
-(the hunk below) to work correctly. (tested in 2.6.36-rc2)
-
-diff --git a/drivers/usb/misc/yurex.c b/drivers/usb/misc/yurex.c
-index 719c618..ac5bfd6 100644
---- a/drivers/usb/misc/yurex.c
-+++ b/drivers/usb/misc/yurex.c
-@@ -536,6 +536,7 @@  static const struct file_operations yurex_fops = {
-  	.open =		yurex_open,
-  	.release =	yurex_release,
-  	.fasync	=	yurex_fasync,
-+	.llseek =	default_llseek,
-  };
-
+Try to remember. I'll put some time into polishing up a git tree
+and submitting the more interesting patches as well, this weekend.
 
 Thanks,
--- 
-Tomoki Sekiyama
+Nick
