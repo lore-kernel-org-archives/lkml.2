@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412Ab0KSIN6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 03:13:58 -0500
-Received: from mga02.intel.com ([134.134.136.20]:55814 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750951Ab0KSIN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 03:13:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,221,1288594800"; 
-   d="scan'208";a="679039996"
-Subject: Re: [PATCH 0/2] Generic hardware error reporting support
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
+	id S1751373Ab0KSIQP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 03:16:15 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47041 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab0KSIQO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 03:16:14 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 19 Nov 2010 17:10:33 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
 Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
-References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Nov 2010 16:13:53 +0800
-Message-ID: <1290154433.2903.50.camel@yhuang-dev>
+        minchan.kim@gmail.com, Bob Liu <lliubbo@gmail.com>,
+        fujita.tomonori@lab.ntt.co.jp, m.nazarewicz@samsung.com,
+        pawel@osciak.com, andi.kleen@intel.com, felipe.contreras@gmail.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Subject: [PATCH 0/4] big chunk memory allocator v4
+Message-Id: <20101119171033.a8d9dc8f.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 16:10 +0800, Huang, Ying wrote:
-> Hi, Len,
-> 
-> This is used by APEI ERST and GEHS. But it is a generic hardware
-> error reporting mechanism and can be used by other hardware error
-> reporting mechanisms such as EDAC, PCIe AER, Machine Check, etc.
-> 
-> The patchset is split from the original APEI patchset to make it
-> explicit that this is a generic mechanism, not APEI specific bits.
-> 
-> [PATCH 1/2] Generic hardware error reporting mechanism
-> [PATCH 2/2] Hardware error record persistent support
+Hi, this is an updated version. 
 
-This patchset depends on version 5 of the lockless memory allocator
-and list patchset as follow.
+No major changes from the last one except for page allocation function.
+removed RFC.
 
-[PATCH -v5 0/3] Lockless memory allocator and list
+Order of patches is
 
-Best Regards,
-Huang Ying
+[1/4] move some functions from memory_hotplug.c to page_isolation.c
+[2/4] search physically contiguous range suitable for big chunk alloc.
+[3/4] allocate big chunk memory based on memory hotplug(migration) technique
+[4/4] modify page allocation function.
+
+For what:
+
+  I hear there is requirements to allocate a chunk of page which is larger than
+  MAX_ORDER. Now, some (embeded) device use a big memory chunk. To use memory,
+  they hide some memory range by boot option (mem=) and use hidden memory
+  for its own purpose. But this seems a lack of feature in memory management.
+
+  This patch adds 
+	alloc_contig_pages(start, end, nr_pages, gfp_mask)
+  to allocate a chunk of page whose length is nr_pages from [start, end)
+  phys address. This uses similar logic of memory-unplug, which tries to
+  offline [start, end) pages. By this, drivers can allocate 30M or 128M or
+  much bigger memory chunk on demand. (I allocated 1G chunk in my test).
+
+  But yes, because of fragmentation, this cannot guarantee 100% alloc.
+  If alloc_contig_pages() is called in system boot up or movable_zone is used,
+  this allocation succeeds at high rate.
+
+  I tested this on x86-64, and it seems to work as expected. But feedback from
+  embeded guys are appreciated because I think they are main user of this
+  function.
+
+Thanks,
+-Kame
+
+
+  
 
 
