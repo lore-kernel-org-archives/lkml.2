@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab0KSQTd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:19:33 -0500
-Received: from THUNK.ORG ([69.25.196.29]:49292 "EHLO thunker.thunk.org"
+	id S1755548Ab0KSQUQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:20:16 -0500
+Received: from hera.kernel.org ([140.211.167.34]:53577 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754621Ab0KSQTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:19:32 -0500
-Date: Fri, 19 Nov 2010 11:19:29 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Lukas Czerner <lczerner@redhat.com>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, hch@infradead.org, sandeen@redhat.com
-Subject: Re: [PATCH 2/2] ext4: Add EXT4_IOC_TRIM ioctl to handle batched
- discard
-Message-ID: <20101119161929.GI10039@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	hch@infradead.org, sandeen@redhat.com
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
- <1290065809-3976-2-git-send-email-lczerner@redhat.com>
+	id S1755155Ab0KSQUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 11:20:15 -0500
+Message-ID: <4CE6A397.6010105@kernel.org>
+Date: Fri, 19 Nov 2010 17:19:35 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290065809-3976-2-git-send-email-lczerner@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Kirill Korotaev <dev@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kapil Arya <kapil@ccs.neu.edu>, Gene Cooperman <gene@ccs.neu.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Containers <containers@lists.osdl.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+References: <20101104164401.GC10656@sundance.ccs.neu.edu>	<4CD3CE29.2010105@kernel.org>	<20101106053204.GB12449@count0.beaverton.ibm.com>	<20101106204008.GA31077@sundance.ccs.neu.edu>	<4CD5D99A.8000402@cs.columbia.edu>	<20101107184927.GF31077@sundance.ccs.neu.edu>	<4CD72150.9070705@cs.columbia.edu>	<4CE3C334.9080401@kernel.org>	<20101117153902.GA1155@hallyn.com>	<4CE3F8D1.10003@kernel.org>	<20101119041045.GC24031@hallyn.com>	<4CE683E1.6010500@kernel.org>	<04F4899E-B5C7-4BAF-8F2F-05D507A91408@parallels.com>	<4CE698C5.5060806@kernel.org>	<AANLkTikRHuaCpaROtty6X_Oe6JixzgcbVsxHxvtsu+UV@mail.gmail.com>	<4CE6A076.2020807@kernel.org> <AANLkTikz++4_SvqU_Wvx5CjcpKJhPsD7q470swdqwn94@mail.gmail.com>
+In-Reply-To: <AANLkTikz++4_SvqU_Wvx5CjcpKJhPsD7q470swdqwn94@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 19 Nov 2010 16:19:37 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 08:36:49AM +0100, Lukas Czerner wrote:
-> @@ -541,6 +541,7 @@ struct ext4_new_group_data {
->   /* note ioctl 11 reserved for filesystem-independent FIEMAP ioctl */
->  #define EXT4_IOC_ALLOC_DA_BLKS		_IO('f', 12)
->  #define EXT4_IOC_MOVE_EXT		_IOWR('f', 15, struct move_extent)
-> +#define EXT4_IOC_TRIM			FITRIM
+On 11/19/2010 05:16 PM, Alexey Dobriyan wrote:
+> On Fri, Nov 19, 2010 at 6:06 PM, Tejun Heo <tj@kernel.org> wrote:
+>>>>> - setting different statistics counters (like netdev stats etc.)
+>>>>> and so on...
+>>>>
+>>>> Why would this matter?
+>>>
+>>> Because you'll introduce million stupid interfaces not interesting to
+>>> anyone but C/R.
+>>
+>> In this thread, how many have you guys come up with?  Not even a dozen
+>> and most can be sovled almost trivially.  Seriously, what the hell..
+> 
+> I do not count them.
+> 
+> The paragon of absurdity is struct task_struct::did_exec .
 
-If we're going to keep FITRIM defined in include/fs.h, then we should
-just dispatch off of FITRIM below, and not define EXT4_IOC_TRIM.
+Yeah, then go and figure how to do that in a way which would be useful
+for other purposes too instead of trying to shove the whole
+checkpointer inside the kernel.  It sure would be harder but hey
+that's the way it is.
 
-> +	case EXT4_IOC_TRIM:
-> +	{
-
-Agreed?
-
-There's no point making this look like an EXT4-specific interface; if
-other file systems want to implement FITRIM as an ioctl, they are free
-to do so.
-
-						- Ted
+-- 
+tejun
