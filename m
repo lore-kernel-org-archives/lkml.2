@@ -1,61 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab0KSTMW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 14:12:22 -0500
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:58722 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754861Ab0KSTMV (ORCPT
+	id S1756151Ab0KSTOe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 14:14:34 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:36122 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754332Ab0KSTOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 14:12:21 -0500
+	Fri, 19 Nov 2010 14:14:33 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:in-reply-to:references:user-agent:date
-         :message-id:mime-version:content-type;
-        b=FfrxQ1Etx3rUp0L4bA6owl6FrM1+WinuEia8y3/+UokWCIEAJibbQvV3hV0siN1LjZ
-         dUMO9wXmsJU3aPv5pj3YD/FRxQKycgtaoyKOlXDsbqsL9Poo7VSNJJFHFlUYKoIkntzO
-         86+QEGK+xFjPJ+Pm3xExo37Thck0uh6UUQkBY=
-From: Ben Gamari <bgamari.foss@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Miller <davem@davemloft.net>
-Cc: mzxreary@0pointer.de, tytso@mit.edu, a.p.zijlstra@chello.nl,
-        debiandev@gmail.com, alan@lxorguk.ukuu.org.uk, dhaval.giani@gmail.com,
-        efault@gmx.de, vgoyal@redhat.com, oleg@redhat.com,
-        markus@trippelsdorf.de, mathieu.desnoyers@efficios.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-In-Reply-To: <AANLkTiksmvcLKGx7-u5CnTnZU6dgOgg7wem6qf384zUg@mail.gmail.com>
-References: <C47257FC-498A-41B0-BC94-C81C72601D53@mit.edu> <20101119.082944.226775934.davem@davemloft.net> <20101119163430.GA12353@tango.0pointer.de> <20101119.084302.71115175.davem@davemloft.net> <AANLkTiksmvcLKGx7-u5CnTnZU6dgOgg7wem6qf384zUg@mail.gmail.com>
-User-Agent: Notmuch/0.5-3-g22aadfc (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
-Date: Fri, 19 Nov 2010 14:12:17 -0500
-Message-ID: <87mxp53z72.fsf@gmail.com>
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GXlpSVEXr/g7K+HYerUW8szZ7j5ztBsBLpDJtaTGd0WYBvpSOVtuuq9g/KxJbRSzNR
+         R15uKUDY4kGzVO/1oYECqKpTY7RnL11uJC+R8MPkrWOw66Cz6VTmm5qlsrbhKRoGEnl3
+         KxbffqwP6FwiSBU6SNAY2Xp1pfeJuGOeikIq8=
+Date: Fri, 19 Nov 2010 22:14:25 +0300
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Greg KH <gregkh@suse.de>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: base: core: do not put noninitialized devices
+Message-ID: <20101119191424.GA12273@albatros>
+References: <1290192100-11451-1-git-send-email-segoon@openwall.com>
+ <20101119190242.GA14328@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101119190242.GA14328@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Nov 2010 09:51:14 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> And the user level approach? I think it's fine too. If you run systemd
-> for other reasons (or if the gnome people add it to the task launcher
-> or whatever), doing it there isn't wrong. I personally think it's
-> somewhat disgusting to have a user-level callback with processes etc
-> just to clean up a group, but whatever.  As long as it's not common,
-> who cares?
+Hi Greg,
+
+On Fri, Nov 19, 2010 at 11:02 -0800, Greg KH wrote:
+> On Fri, Nov 19, 2010 at 09:41:40PM +0300, Vasiliy Kulikov wrote:
+> > If kobject_set_name_vargs() fails then put_device() frees
+> > device with zero kobj->state_initialized.  This leads to WARN().
 > 
-On that note, is there a good reason why the notify_on_release interface
-works the way it does? Wouldn't it be simpler if the cgroup simply
-provided a file on which a process (e.g. systemd) could block?
+> Have you seen this happen?
 
-I guess it's a little too late at this point considering the old
-mechanism will still need to be supported, but it seems like this would
-provide a slightly cheaper cleanup path. Just my (perhaps flawed) two
-pence.
+No, I've just analized the code.  Without device_initialize() ->kobj is
+not initialized:
 
+	kobject_init(&dev->kobj, &device_ktype) calls
+
+	kobject_init_internal(kobj) calls
+
+	kobj->state_initialized = 1;
+
+kobject_put() calls WARN if state_initialized == 0:
+
+    void kobject_put(struct kobject *kobj)
+    {
+        if (kobj) {
+            if (!kobj->state_initialized)
+                WARN(1, KERN_WARNING "kobject: '%s' (%p): is not "
+                       "initialized, yet kobject_put() is being "
+                       "called.\n", kobject_name(kobj), kobj);
+
+
+I got the stack dump with similar code:
+
+    struct device *dev = kzalloc(sizeof(*dev), GFP_KERNEL);
+    put_device(dev);
+
+> I'd prefer not to change this unless you are seeing problems with the
+> current code.
 > 
-> So guys, calm down. We don't need to hate each other.
->
-Thanks for the nudge back to sanity.
+> How did kobject_set_name_vargs() fail for you?
 
-Cheers,
+int kobject_set_name_vargs(struct kobject *kobj, const char *fmt,
+				  va_list vargs)
+{
+    [...]
+	kobj->name = kvasprintf(GFP_KERNEL, fmt, vargs);
+	if (!kobj->name)
+		return -ENOMEM;
 
-- Ben
+
+char *kvasprintf(gfp_t gfp, const char *fmt, va_list ap)
+{
+    [...]
+	p = kmalloc(len+1, gfp);
+	if (!p)
+		return NULL;
+
+Unlikely, but may fail in OOM situation.
+
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
