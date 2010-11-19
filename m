@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab0KSUpP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 15:45:15 -0500
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:48250 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755452Ab0KSUpO (ORCPT
+	id S1755757Ab0KSUsO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 15:48:14 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53790
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754206Ab0KSUsM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 15:45:14 -0500
-Date: Fri, 19 Nov 2010 21:42:40 +0100
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Jarod Wilson <jarod@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/media: nuvoton: fix chip id probe v2
-Message-ID: <20101119214240.6b87dad7@absol.kitzblitz>
-In-Reply-To: <20101119191644.GF5022@redhat.com>
-References: <20101116211953.238012db@absol.kitzblitz>
-	<20101116215408.GA17140@redhat.com>
-	<4CE33527.8090800@infradead.org>
-	<20101117113525.1ded029c@absol.kitzblitz>
-	<20101119191644.GF5022@redhat.com>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
+	Fri, 19 Nov 2010 15:48:12 -0500
+Date: Fri, 19 Nov 2010 12:48:37 -0800 (PST)
+Message-Id: <20101119.124837.70196623.davem@davemloft.net>
+To: tomoya-linux@dsn.okisemi.com
+Cc: wg@grandegger.com, w.sang@pengutronix.de, chripell@fsfe.org,
+        21cnbao@gmail.com, sameo@linux.intel.com,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, qi.wang@intel.com, yong.y.wang@intel.com,
+        andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: Re: [PATCH net-next-2.6 8/17] can: EG20T PCH: Change Copyright and
+ module description
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4CE60F6E.6090205@dsn.okisemi.com>
+References: <4CE60F6E.6090205@dsn.okisemi.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sure we have a matching chip id high and one or the other
-of the chip id low values.
-Print the values if the probe fails.
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Date: Fri, 19 Nov 2010 14:47:26 +0900
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- drivers/media/IR/nuvoton-cir.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+> Currently, Copyright and module description are not formal.
+> 
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 
-diff --git a/drivers/media/IR/nuvoton-cir.c b/drivers/media/IR/nuvoton-cir.c
-index 301be53..e3274ef 100644
---- a/drivers/media/IR/nuvoton-cir.c
-+++ b/drivers/media/IR/nuvoton-cir.c
-@@ -249,9 +249,12 @@ static int nvt_hw_detect(struct nvt_dev *nvt)
- 	chip_minor = nvt_cr_read(nvt, CR_CHIP_ID_LO);
- 	nvt_dbg("%s: chip id: 0x%02x 0x%02x", chip_id, chip_major, chip_minor);
- 
--	if (chip_major != CHIP_ID_HIGH &&
--	    (chip_minor != CHIP_ID_LOW || chip_minor != CHIP_ID_LOW2))
-+	if (chip_major != CHIP_ID_HIGH ||
-+	    (chip_minor != CHIP_ID_LOW && chip_minor != CHIP_ID_LOW2)) {
-+		nvt_pr(KERN_ERR, "%s: unsupported chip, id: 0x%02x 0x%02x",
-+		       chip_id, chip_major, chip_minor);
- 		ret = -ENODEV;
-+	}
- 
- 	nvt_efm_disable(nvt);
- 
--- 
-1.7.2.2
+This patch is changing more than the copyright and module description.
+
+It is also changing function names, the types of members of pch_can_priv,
+etc.
+
+This is pretty careless.
+
+So would you please go over this patch series and make sure that each
+patch does what it says, and that the commit message matches the
+patch?
+
+Then resubmit the series.
+
+Thank you.
