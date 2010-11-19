@@ -1,152 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab0KSHJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 02:09:57 -0500
-Received: from adelie.canonical.com ([91.189.90.139]:60464 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750899Ab0KSHJ4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 02:09:56 -0500
-Message-ID: <4CE622BB.4070607@canonical.com>
-Date: Fri, 19 Nov 2010 15:09:47 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1751447Ab0KSHPW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 02:15:22 -0500
+Received: from mga09.intel.com ([134.134.136.24]:61156 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751198Ab0KSHPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 02:15:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,221,1288594800"; 
+   d="scan'208";a="575422853"
+Date: Fri, 19 Nov 2010 13:54:14 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        ak@linux.intel.com, shaohui.zheng@linux.intel.com
+Subject: Re: [0/8,v3] NUMA Hotplug Emulator - Introduction & Feedbacks
+Message-ID: <20101119055414.GC3327@shaohui>
+References: <20101117020759.016741414@intel.com>
+ <20101117052213.GA10671@linux-sh.org>
 MIME-Version: 1.0
-To: Corentin Chary <corentin.chary@gmail.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH 3/3] ideapad: add hotkey support
-References: <1289977165-14802-1-git-send-email-ike.pan@canonical.com>	<1289977238-15113-1-git-send-email-ike.pan@canonical.com>	<20101117212943.GA6661@core.coreip.homeip.net> <AANLkTim1DKZkCqB1mLg5=7UTd2szCoSS_DSO8v3jHTmy@mail.gmail.com>
-In-Reply-To: <AANLkTim1DKZkCqB1mLg5=7UTd2szCoSS_DSO8v3jHTmy@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101117052213.GA10671@linux-sh.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2010 03:35 PM, Corentin Chary wrote:
-> On Wed, Nov 17, 2010 at 10:29 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
->> On Wed, Nov 17, 2010 at 03:00:38PM +0800, Ike Panhc wrote:
->>> Hotkey enabled by this patch:
->>>   Fn+F3: Video mode switch
->>>   Fn+F5: software rfkill for wifi
->>>
->>> For some ideapad when push Fn+F3, hardware generates Super-P keys, those key
->>> will not be enabled by this patch.
->>>
->>> Signed-off-by: Ike Panhc <ike.pan@canonical.com>
->>> ---
->>>  drivers/platform/x86/ideapad-laptop.c |   74 +++++++++++++++++++++++++++++++++
->>>  1 files changed, 74 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
->>> index d75c21f..d397034 100644
->>> --- a/drivers/platform/x86/ideapad-laptop.c
->>> +++ b/drivers/platform/x86/ideapad-laptop.c
->>> @@ -28,6 +28,8 @@
->>>  #include <acpi/acpi_drivers.h>
->>>  #include <linux/rfkill.h>
->>>  #include <linux/platform_device.h>
->>> +#include <linux/input.h>
->>> +#include <linux/input/sparse-keymap.h>
->>>
->>>  #define IDEAPAD_DEV_CAMERA   0
->>>  #define IDEAPAD_DEV_WLAN     1
->>> @@ -39,6 +41,7 @@ struct ideapad_private {
->>>       acpi_handle handle;
->>>       struct rfkill *rfk[5];
->>>       struct platform_device *platform_device;
->>> +     struct input_dev *inputdev;
->>>  } *ideapad_priv;
->>>
->>>  static struct {
->>> @@ -325,6 +328,68 @@ static void ideapad_platform_exit(void)
->>>  }
->>>  /* the above is platform device */
->>>
->>> +/*
->>> + * input device
->>> + */
->>> +static const struct key_entry ideapad_keymap[] = {
->>> +     { KE_KEY, 0x06, { KEY_SWITCHVIDEOMODE } },
->>> +     { KE_KEY, 0x0D, { KEY_WLAN } },
->>> +     { KE_END, 0 },
->>> +};
->>> +
->>> +static int ideapad_input_init(void)
->>
->> __devinit?
->>
->>> +{
->>> +     struct input_dev *inputdev;
->>> +     int error;
->>> +
->>> +     inputdev = input_allocate_device();
->>> +     if (!inputdev) {
->>> +             pr_info("Unable to allocate input device\n");
->>> +             return -ENOMEM;
->>> +     }
->>> +
->>> +     inputdev->name = "Ideapad extra buttons";
->>> +     inputdev->phys = "ideapad/input0";
->>> +     inputdev->id.bustype = BUS_HOST;
->>> +     inputdev->dev.parent = &ideapad_priv->platform_device->dev;
->>> +
->>> +     error = sparse_keymap_setup(inputdev, ideapad_keymap, NULL);
->>> +     if (error) {
->>> +             pr_err("Unable to setup input device keymap\n");
->>> +             goto err_free_dev;
->>> +     }
->>> +
->>> +     error = input_register_device(inputdev);
->>> +     if (error) {
->>> +             pr_err("Unable to register input device\n");
->>> +             goto err_free_keymap;
->>> +     }
->>> +
->>> +     ideapad_priv->inputdev = inputdev;
->>
->> Why don't you pass ideapad_priv in as an argument instead of relying on
->> global. I know that there can only be one, but then why do you have a
->> structure?
+On Wed, Nov 17, 2010 at 02:22:13PM +0900, Paul Mundt wrote:
+> On Wed, Nov 17, 2010 at 10:07:59AM +0800, shaohui.zheng@intel.com wrote:
+> > * PATCHSET INTRODUCTION
+> > 
+> > patch 1: Add function to hide memory region via e820 table. Then emulator will
+> > 	     use these memory regions to fake offlined numa nodes.
+> > patch 2: Infrastructure of NUMA hotplug emulation, introduce "hide node".
+> > patch 3: Provide an userland interface to hotplug-add fake offlined nodes.
+> > patch 4: Abstract cpu register functions, make these interface friend for cpu
+> > 		 hotplug emulation
+> > patch 5: Support cpu probe/release in x86, it provide a software method to hot
+> > 		 add/remove cpu with sysfs interface.
+> > patch 6: Fake CPU socket with logical CPU on x86, to prevent the scheduling
+> > 		 domain to build the incorrect hierarchy.
+> > patch 7: extend memory probe interface to support NUMA, we can add the memory to
+> > 		 a specified node with the interface.
+> > patch 8: Documentations
+> > 
+> > * FEEDBACKS & RESPONSES
+> > 
+> I had some comments on the other patches in the series that possibly got
+> missed because of the mail-followup-to confusion:
 > 
-> That may allow to remove the global later, like we did on
-> eeepc-laptop/asus-laptop.
+> http://lkml.org/lkml/2010/11/15/11
+About memblock API, it is a good APIs list to manage memory region. If all the
+e820 wrapper function use memblock API, the code should be very clean. currently,
+no body use memblock in e820 wrapper, so we should still keep this status, unless
+we decide rewrite these e820 wrapper.
 
-I am ok to go though the driver and try to avoid using global variable.
+Anyway, we already select other way to hide memory, we will not add wrapper on
+e820 table anymore.
 
-Other feedbacks is easy done, so I will fix them first..
+> http://lkml.org/lkml/2010/11/15/14
+
+I understand, the MACROs are not functions, it will not comsume memory after
+compile it. the IFDEF should be removed
+
+> http://lkml.org/lkml/2010/11/15/15
+I think that you want to say ARCH_ENABLE_NUMA_HOTPLUG_EMU here, not
+ARCH_ENABLE_NUMA_EMU.  the option NUMA_HOTPLUG_EMU is a dummy item, it does not
+control any codes, it just try to maintain the node/memory/cpu hotplug
+emulation option together, it provides convenience when use want to enable them.
+
 
 > 
->>> +     return 0;
->>> +
->>> +err_free_keymap:
->>> +     sparse_keymap_free(inputdev);
->>> +err_free_dev:
->>> +     input_free_device(inputdev);
->>> +     return error;
->>> +}
->>> +
->>> +static void ideapad_input_exit(void)
->>
->> __devexit? The rest of the driver might user these markups as well.
->>
->>> +{
->>> +     if (ideapad_priv->inputdev) {
->>> +             sparse_keymap_free(ideapad_priv->inputdev);
->>> +             input_unregister_device(ideapad_priv->inputdev);
->>> +     }
->>> +     ideapad_priv->inputdev = NULL;
->>
->> You fail driver initialization when ideapad_input_init() fails so there
->> is no point in checking whether ideapad_priv->inputdev is null or not.
->>
->> Otherwise looks good from input POV.
->>
->> Thanks.
-> 
-> 
-> 
+> The other one you've already dealt with.
+
+-- 
+Thanks & Regards,
+Shaohui
 
