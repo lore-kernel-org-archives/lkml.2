@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab0KSQmi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:42:38 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37219
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755024Ab0KSQmh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:42:37 -0500
-Date: Fri, 19 Nov 2010 08:43:02 -0800 (PST)
-Message-Id: <20101119.084302.71115175.davem@davemloft.net>
-To: mzxreary@0pointer.de
-Cc: tytso@MIT.EDU, bgamari.foss@gmail.com, a.p.zijlstra@chello.nl,
-        debiandev@gmail.com, torvalds@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, dhaval.giani@gmail.com, efault@gmx.de,
-        vgoyal@redhat.com, oleg@redhat.com, markus@trippelsdorf.de,
-        mathieu.desnoyers@efficios.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101119163430.GA12353@tango.0pointer.de>
-References: <C47257FC-498A-41B0-BC94-C81C72601D53@mit.edu>
-	<20101119.082944.226775934.davem@davemloft.net>
-	<20101119163430.GA12353@tango.0pointer.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755860Ab0KSQmn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:42:43 -0500
+Received: from fieldses.org ([174.143.236.118]:34577 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755685Ab0KSQmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 11:42:40 -0500
+Date: Fri, 19 Nov 2010 11:42:36 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: David Quigley <merlin@countercultured.net>
+Cc: Eric Paris <eparis@redhat.com>, Josef Bacik <josef@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
+        linux-security-module@vger.kernel.org,
+        Miklos Szeredi <miklos@szeredi.hu>, Steve French <sfrench@samba.org>
+Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias
+Message-ID: <20101119164236.GA29148@fieldses.org>
+References: <1290016263-1637-1-git-send-email-josef@redhat.com>
+ <20101117191817.GA26575@fieldses.org>
+ <20101117192822.GB3818@localhost.localdomain>
+ <20101117202617.GA31009@fieldses.org>
+ <1290031941.14282.101.camel@localhost.localdomain>
+ <4CE60AE9.2070101@countercultured.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE60AE9.2070101@countercultured.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lennart Poettering <mzxreary@0pointer.de>
-Date: Fri, 19 Nov 2010 17:34:31 +0100
-
-> On Fri, 19.11.10 08:29, David Miller (davem@davemloft.net) wrote:
+On Fri, Nov 19, 2010 at 12:28:09AM -0500, David Quigley wrote:
+> [snip]
+> >If you have persistent xattr support we need the dentry since the xattr
+> >code requires a dentry.  I have no idea why but that's what
+> >inode->i_op->getxattr() requires.
+> >
 > 
->> Someone who argues and behaves in that way is not someone I put much
->> stock in as far as implementing things in a wise or well informed way,
->> it feels more like a mechanism which is being forced and rushed ahead
->> without enough research or consideration.
-> 
-> Wow, so much hate!
+> The original reason that the xattr operations take dentries is
+> because of p9fs and CIFS. CIFS uses the name of the file to grab the
+> extended attributes and so does p9fs. I had tried to remove this a
+> while ago but couldn't find a way around that.
 
-Thanks for not addressing my technical arguments at all, which
-serves only to further my reservations.
+Both CIFS and FUSE are NFS-exportable, so both allow lookup by
+filehandle, so neither can count on getting a filename at this point.
+
+So, out of curiosity, do we know what will happen when selinux asks one
+of them for an xattr on a DCACHE_DISCONNECTED dentry?
+
+> When trying to find a
+> solution I also got push back from Miklos (FUSE) as he views a
+> filesystem being able to make xattr decisions based on the path name
+> being a valid use-case.
+
+So selinux may initialize an inode differently depending on which
+pathname it happened to be looked up under first?
+
+Factoring the name into the xattr return sounds scary to me.
+
+--b.
