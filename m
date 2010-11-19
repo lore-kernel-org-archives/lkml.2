@@ -1,62 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab0KSSmi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 13:42:38 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34392 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756412Ab0KSSmg (ORCPT
+	id S1756448Ab0KSSoD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:44:03 -0500
+Received: from casper.infradead.org ([85.118.1.10]:42320 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756313Ab0KSSoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 13:42:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=CSAKR2XeWTtKzTgR75YdnSNvdKSZihWHB6RqHE5GHfeAboLTtco4dTMYEjIohi6nIu
-         hXd1mX/ChTK8kmqwiqrZoA6B8CTKi7yX/ytbtEW7EjEtAd+dpuVd1KqFLh9oY/nc6zwg
-         0yS7pMQib6j40q7zSylu54FmSQ5VOuvVBcEhA=
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Russ Gorby <richardx.r.gorby@intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] serial: ifx6x60: free IRQ on error
-Date: Fri, 19 Nov 2010 21:42:03 +0300
-Message-Id: <1290192123-11747-1-git-send-email-segoon@openwall.com>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 19 Nov 2010 13:44:00 -0500
+Date: Fri, 19 Nov 2010 16:43:50 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Dave Martin <dave.martin@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH v3] perf symbols: fix symbol offset breakage with
+	separated debug
+Message-ID: <20101119184350.GA23996@ghostprotocols.net>
+References: <1289914556-11744-1-git-send-email-dave.martin@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1289914556-11744-1-git-send-email-dave.martin@linaro.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If second request_irq() failed then the first IRQ must be freed in
-error handling code.
+Em Tue, Nov 16, 2010 at 01:35:56PM +0000, Dave Martin escreveu:
+> +	for (scn = NULL; (scn = elf_nextscn(elf, scn)); ) {
+> +		size_t j;
+> +
+> +		/*
+> +		 * Just assuming we get section 0, 1, ... in sequence may lead
+> +		 * to wrong section indices.  Check the index explicitly:
+> +		 */
+> +		j = elf_ndxscn(scn);
+> +		assert(j < ehdr->e_shnum);
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- Compile tested only.
 
- drivers/serial/ifx6x60.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+please repost after removing the assert calls, this is a library, we
+better return NULL here, i.e. goto error, than stopping the whole
+session that otherwiser could continue with the other symtabs producing
+useful output.
 
-diff --git a/drivers/serial/ifx6x60.c b/drivers/serial/ifx6x60.c
-index 803264a..3f8d5ee 100644
---- a/drivers/serial/ifx6x60.c
-+++ b/drivers/serial/ifx6x60.c
-@@ -1133,7 +1133,7 @@ static int ifx_spi_spi_probe(struct spi_device *spi)
- 	if (ret) {
- 		dev_err(&spi->dev, "Unable to get irq %x",
- 			gpio_to_irq(ifx_dev->gpio.srdy));
--		goto error_ret6;
-+		goto error_ret7;
- 	}
- 
- 	/* set pm runtime power state and register with power system */
-@@ -1153,6 +1153,8 @@ static int ifx_spi_spi_probe(struct spi_device *spi)
- 		mrdy_set_low(ifx_dev);
- 	return 0;
- 
-+error_ret7:
-+	free_irq(gpio_to_irq(ifx_dev->gpio.reset_out), (void *)ifx_dev);
- error_ret6:
- 	gpio_free(ifx_dev->gpio.srdy);
- error_ret5:
--- 
-1.7.0.4
+Use pr_err if you think its warranted.
 
+Thanks,
+
+- Arnaldo
+
+> +		if (j > max_index)
+> +			max_index = j;
+> +
+> +		if (!gelf_getshdr(scn, &shdrs[j]))
+> +			goto error;
+> +	}
+> +
+> +	*count = max_index + 1;
+> +	return shdrs;
+> +
+> +error:
+> +	free(shdrs);
+> +	return NULL;
+> +}
+> +
+> +/**
+> + * Check that the section headers @shdrs reflect accurately the file data
+> + * layout of the image that was loaded during perf record.  This is generally
+> + * not true for separated debug images generated with e.g.,
+> + * objcopy --only-keep-debug.
+> + *
+> + * We identify invalid files by checking for non-empty sections which are
+> + * declared as having no file data (SHT_NOBITS) but are not writable.
+> + *
+> + * @shdrs: the full set of section headers, as loaded by elf_get_all_shdrs().
+> + * @count: the number of headers present in @shdrs.
+> + *
+> + * Returns 1 for valid headers, 0 otherwise.
+> + */
+> +static int elf_check_shdrs_valid(GElf_Shdr const *shdrs, unsigned count)
+> +{
+> +	unsigned i;
+> +
+> +	for (i = 0; i < count; i++) {
+> +		if (shdrs[i].sh_type == SHT_NOBITS &&
+> +		    !(shdrs[i].sh_flags & SHF_WRITE) &&
+> +		    shdrs[i].sh_size != 0)
+> +			return 0;
+> +	}
+> +
+> +	return 1;
+> +}
+> +
+> +/*
+> + * Notes:
+> + *
+> + * If saved_shdrs is non-NULL, the section headers will be read if found, and
+> + * will be used for address fixups.  saved_shdrs_count must also be non-NULL in
+> + * this case.  This may be needed for separated debug images, since the section
+> + * headers and symbols may need to come from separate images in that case.
+> + *
+> + * Note: irrespective of whether this function returns successfully,
+> + * *saved_shdrs may get initialised if saved_shdrs is non-NULL.  It is the
+> + * caller's responsibility to free() it when non longer needed.
+> + *
+> + * If want_symtab == 1, this function will only load symbols from .symtab
+> + * sections.  Otherwise (want_symtab == 0), .dynsym or .symtab symbols are
+> + * loaded.  This feature is used by dso__load() to search for the best image
+> + * to load.
+> + */
+>  static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+>  			 int fd, symbol_filter_t filter, int kmodule,
+> +			 GElf_Shdr **saved_shdrs, unsigned *saved_shdrs_count,
+>  			 int want_symtab)
+>  {
+>  	struct kmap *kmap = self->kernel ? map__kmap(map) : NULL;
+> @@ -1012,6 +1111,9 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+>  	int nr = 0;
+>  	size_t opdidx = 0;
+>  
+> +	if (saved_shdrs != NULL)
+> +		assert(saved_shdrs_count != NULL);
+> +
+>  	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
+>  	if (elf == NULL) {
+>  		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
+> @@ -1035,6 +1137,34 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+>  			goto out_elf_end;
+>  	}
+>  
+> +	/*
+> +	 * Copy all section headers from the image if requested and if not
+> +	 * already loaded.
+> +	 */
+> +	if (saved_shdrs != NULL && *saved_shdrs == NULL) {
+> +		GElf_Shdr *shdrs;
+> +		unsigned count;
+> +
+> +		shdrs = elf_get_all_shdrs(elf, &ehdr, &count);
+> +		if (shdrs == NULL)
+> +			goto out_elf_end;
+> +
+> +		/*
+> +		 * Only keep the headers if they reflect the actual run-time
+> +		 * image's file layout:
+> +		 */
+> +		if (elf_check_shdrs_valid(shdrs, count)) {
+> +			*saved_shdrs = shdrs;
+> +			*saved_shdrs_count = count;
+> +		} else
+> +			free(shdrs);
+> +	}
+> +
+> +	/* If no genuine ELF headers are available yet, give up: we can't
+> +	 * adjust symbols correctly in that case: */
+> +	if (saved_shdrs != NULL && *saved_shdrs == NULL)
+> +		goto out_elf_end;
+> +
+>  	sec = elf_section_by_name(elf, &ehdr, &shdr, ".symtab", NULL);
+>  	if (sec == NULL) {
+>  		if (want_symtab)
+> @@ -1167,12 +1297,25 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+>  			goto new_symbol;
+>  		}
+>  
+> +		/*
+> +		 * Currently, symbols for shared objects and PIE executables
+> +		 * (i.e., ET_DYN) do not seem to get adjusted.  This might need
+> +		 * to change if file offset == virtual address is not actually
+> +		 * guaranteed for these images.  ELF doesn't provide this
+> +		 * guarantee natively.
+> +		 */
+>  		if (curr_dso->adjust_symbols) {
+>  			pr_debug4("%s: adjusting symbol: st_value: %#Lx "
+>  				  "sh_addr: %#Lx sh_offset: %#Lx\n", __func__,
+>  				  (u64)sym.st_value, (u64)shdr.sh_addr,
+>  				  (u64)shdr.sh_offset);
+> -			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+> +			if (saved_shdrs && *saved_shdrs &&
+> +			    sym.st_shndx < *saved_shdrs_count)
+> +				sym.st_value -=
+> +					(*saved_shdrs)[sym.st_shndx].sh_addr -
+> +					(*saved_shdrs)[sym.st_shndx].sh_offset;
+> +			else
+> +				sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+>  		}
+>  		/*
+>  		 * We need to figure out if the object was created from C++ sources
+> @@ -1409,6 +1552,8 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>  	struct machine *machine;
+>  	const char *root_dir;
+>  	int want_symtab;
+> +	GElf_Shdr *saved_shdrs = NULL;
+> +	unsigned saved_shdrs_count;
+>  
+>  	dso__set_loaded(self, map->type);
+>  
+> @@ -1439,13 +1584,13 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>  	 * On the first pass, only load images if they have a full symtab.
+>  	 * Failing that, do a second pass where we accept .dynsym also
+>  	 */
+> -	for (self->origin = DSO__ORIG_BUILD_ID_CACHE, want_symtab = 1;
+> -	     self->origin != DSO__ORIG_NOT_FOUND;
+> -	     self->origin++) {
+> +	self->origin = DSO__ORIG_BUILD_ID_CACHE;
+> +	want_symtab = 1;
+> +	while (1) {
+>  		switch (self->origin) {
+>  		case DSO__ORIG_BUILD_ID_CACHE:
+>  			if (dso__build_id_filename(self, name, size) == NULL)
+> -				continue;
+> +				goto continue_next;
+>  			break;
+>  		case DSO__ORIG_FEDORA:
+>  			snprintf(name, size, "/usr/lib/debug%s.debug",
+> @@ -1459,7 +1604,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>  			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
+>  
+>  			if (!self->has_build_id)
+> -				continue;
+> +				goto continue_next;
+>  
+>  			build_id__sprintf(self->build_id,
+>  					  sizeof(self->build_id),
+> @@ -1483,21 +1628,24 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>  		default:
+>  			/*
+>  			 * If we wanted a full symtab but no image had one,
+> -			 * relax our requirements and repeat the search.
+> +			 * relax our requirements and repeat the search,
+> +			 * providing we saw some valid section headers:
+>  			 */
+> -			if (want_symtab) {
+> +			if (want_symtab && saved_shdrs != NULL) {
+>  				want_symtab = 0;
+>  				self->origin = DSO__ORIG_BUILD_ID_CACHE;
+> -			} else
+>  				continue;
+> +			} else
+> +				goto done;
+>  		}
+>  
+>  		/* Name is now the name of the next image to try */
+>  		fd = open(name, O_RDONLY);
+>  		if (fd < 0)
+> -			continue;
+> +			goto continue_next;
+>  
+>  		ret = dso__load_sym(self, map, name, fd, filter, 0,
+> +				    &saved_shdrs, &saved_shdrs_count,
+>  				    want_symtab);
+>  		close(fd);
+>  
+> @@ -1506,7 +1654,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>  		 * info!?!?
+>  		 */
+>  		if (!ret)
+> -			continue;
+> +			goto continue_next;
+>  
+>  		if (ret > 0) {
+>  			int nr_plt = dso__synthesize_plt_symbols(self, map, filter);
+> @@ -1514,9 +1662,18 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+>  				ret += nr_plt;
+>  			break;
+>  		}
+> +
+> +continue_next:
+> +		self->origin++;
+> +		continue;
+>  	}
+>  
+> +done:
+>  	free(name);
+> +
+> +	if (saved_shdrs)
+> +		free(saved_shdrs);
+> +
+>  	if (ret < 0 && strstr(self->name, " (deleted)") != NULL)
+>  		return 0;
+>  	return ret;
+> @@ -1782,7 +1939,8 @@ static int dso__load_vmlinux(struct dso *self, struct map *map,
+>  		return -1;
+>  
+>  	dso__set_loaded(self, map->type);
+> -	err = dso__load_sym(self, map, vmlinux, fd, filter, 0, 0);
+> +	err = dso__load_sym(self, map, vmlinux, fd, filter, 0,
+> +			    NULL, NULL, 0);
+>  	close(fd);
+>  
+>  	if (err > 0)
+> -- 
+> 1.7.1
