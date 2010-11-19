@@ -1,41 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920Ab0KSRSb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 12:18:31 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40519 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755465Ab0KSRS3 (ORCPT
+	id S1755942Ab0KSRSy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 12:18:54 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59133 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755360Ab0KSRSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 12:18:29 -0500
-Date: Fri, 19 Nov 2010 09:16:29 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for November 19 (rtmutex)
-Message-Id: <20101119091629.ddf35bec.randy.dunlap@oracle.com>
-In-Reply-To: <20101119143207.b2d5731e.sfr@canb.auug.org.au>
-References: <20101119143207.b2d5731e.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Nov 2010 12:18:52 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=neYmj1uCG/sIO+VWCumslX6NQ01dppYN1/nuMkNo4oX6PpR5gilHRLlRlKICHwwFdA
+         QoT7SoS+ougJ3cmY34CF4D/lqOovHpozl5tsdBypysh9gvqkheLWsoix9B93Ugsqy/T7
+         xE9Ni6/PGocKp4XD/Yuer9+AVj25zIyjM8E+U=
+Date: Fri, 19 Nov 2010 09:18:43 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 2.6.37-rc1
+Message-ID: <20101119171843.GD6236@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Nov 2010 14:32:07 +1100 Stephen Rothwell wrote:
+Hi Linus,
 
-> Hi all,
-> 
-> Changes since 20101118:
+Please pull from:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive updates for the input subsystem.
+
+There is a fix for keycode mapping regression affecting mostly
+sony-laptop users; fix for regression in SysRq handling code causing it
+to swallow lone Alt+SysRq (without any follow up action) so that print
+screen shortcuts stopped working, and a patch that tightens security on
+Aiptek sysfs attributes.
+
+Changelog:
+---------
+
+Dmitry Torokhov (2):
+      Input: sysrq - pass along lone Alt + SysRq
+      Input: aiptek - tighten up permissions on sysfs attributes
+
+Mattia Dongili (1):
+      Input: fix typo in keycode validation supporting large scancodes
 
 
-when CONFIG_RT_MUTEXES is not enabled:
+Diffstat:
+--------
 
-kernel/rtmutex_common.h:81: error: 'struct task_struct' has no member named 'pi_waiters'
-kernel/rtmutex_common.h:87: error: 'struct task_struct' has no member named 'pi_waiters'
+ drivers/input/input.c         |    2 +-
+ drivers/input/tablet/aiptek.c |   28 ++++----
+ drivers/tty/sysrq.c           |  169 ++++++++++++++++++++++++++++++-----------
+ 3 files changed, 139 insertions(+), 60 deletions(-)
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Dmitry
+
