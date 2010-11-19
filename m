@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab0KSVpc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:45:32 -0500
-Received: from kroah.org ([198.145.64.141]:51721 "EHLO coco.kroah.org"
+	id S932148Ab0KSVuS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:50:18 -0500
+Received: from kroah.org ([198.145.64.141]:51803 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757161Ab0KSVpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:45:22 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:10 2010
-Message-Id: <20101119214410.168583248@clark.site>
+	id S1757344Ab0KSVpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:45:32 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:11 2010
+Message-Id: <20101119214411.313325212@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:42:49 -0800
+Date: Fri, 19 Nov 2010 13:43:03 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andre Przywara <andre.przywara@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [09/45] x86, cpu: Fix renamed, not-yet-shipping AMD CPUID feature bit
+        Nicolas Kaiser <nikai@nikai.net>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [23/45] pipe: fix failure to return error code on ->confirm()
 In-Reply-To: <20101119214439.GA26350@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Przywara <andre.przywara@amd.com>
+From: Nicolas Kaiser <nikai@nikai.net>
 
-commit 7ef8aa72ab176e0288f363d1247079732c5d5792 upstream.
+commit e5953cbdff26f7cbae7eff30cd9b18c4e19b7594 upstream.
 
-The AMD SSE5 feature set as-it has been replaced by some extensions
-to the AVX instruction set. Thus the bit formerly advertised as SSE5
-is re-used for one of these extensions (XOP).
-Although this changes the /proc/cpuinfo output, it is not user visible, as
-there are no CPUs (yet) having this feature.
-To avoid confusion this should be added to the stable series, too.
+The arguments were transposed, we want to assign the error code to
+'ret', which is being returned.
 
-Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-LKML-Reference: <1283778860-26843-2-git-send-email-andre.przywara@amd.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/cpufeature.h |    2 +-
- arch/x86/kvm/x86.c                |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ fs/pipe.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -150,7 +150,7 @@
- #define X86_FEATURE_3DNOWPREFETCH (6*32+ 8) /* 3DNow prefetch instructions */
- #define X86_FEATURE_OSVW	(6*32+ 9) /* OS Visible Workaround */
- #define X86_FEATURE_IBS		(6*32+10) /* Instruction Based Sampling */
--#define X86_FEATURE_SSE5	(6*32+11) /* SSE-5 */
-+#define X86_FEATURE_XOP		(6*32+11) /* extended AVX instructions */
- #define X86_FEATURE_SKINIT	(6*32+12) /* SKINIT/STGI instructions */
- #define X86_FEATURE_WDT		(6*32+13) /* Watchdog timer */
- #define X86_FEATURE_NODEID_MSR	(6*32+19) /* NodeId MSR */
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1485,7 +1485,7 @@ static void do_cpuid_ent(struct kvm_cpui
- 	const u32 kvm_supported_word6_x86_features =
- 		F(LAHF_LM) | F(CMP_LEGACY) | F(SVM) | 0 /* ExtApicSpace */ |
- 		F(CR8_LEGACY) | F(ABM) | F(SSE4A) | F(MISALIGNSSE) |
--		F(3DNOWPREFETCH) | 0 /* OSVW */ | 0 /* IBS */ | F(SSE5) |
-+		F(3DNOWPREFETCH) | 0 /* OSVW */ | 0 /* IBS */ | F(XOP) |
- 		0 /* SKINIT */ | 0 /* WDT */;
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -363,7 +363,7 @@ pipe_read(struct kiocb *iocb, const stru
+ 			error = ops->confirm(pipe, buf);
+ 			if (error) {
+ 				if (!ret)
+-					error = ret;
++					ret = error;
+ 				break;
+ 			}
  
- 	/* all calls to cpuid_count() should be made on the same cpu */
 
 
