@@ -1,67 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881Ab0KSQnO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:43:14 -0500
-Received: from novprvoes0310.provo.novell.com ([137.65.248.74]:58756 "EHLO
-	novprvoes0310.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754621Ab0KSQnN convert rfc822-to-8bit
-	(ORCPT <rfc822;groupwise-ghaskins@novell.com:3:2>);
-	Fri, 19 Nov 2010 11:43:13 -0500
-X-Greylist: delayed 1202 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Nov 2010 11:43:12 EST
-Message-Id: <4CE65E1B0200005A00076E72@novprvoes0310.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Fri, 19 Nov 2010 09:23:07 -0700
-From: "Gregory Haskins" <ghaskins@novell.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>,
-        "Marcelo Tosatti" <mtosatti@redhat.com>
-Cc: "Xiao Guangrong" <xiaoguangrong@cn.fujitsu.com>,
-        "Avi Kivity" <avi@redhat.com>,
-        "Chris Lalancette" <clalance@redhat.com>,
-        "Gleb Natapov" <gleb@redhat.com>, <kvm@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kvm: fast-path msi injection with irqfd
-References: <20101118170907.GA14039@redhat.com>
- <20101119155427.GA20279@amt.cnet>
-In-Reply-To: <20101119155427.GA20279@amt.cnet>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755897Ab0KSQnl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:43:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754621Ab0KSQnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 11:43:39 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1290120166-3132-6-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1290120166-3132-6-git-send-email-zohar@linux.vnet.ibm.com> <1290120166-3132-1-git-send-email-zohar@linux.vnet.ibm.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-crypto@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH v1.4 5/5] keys: add new key-type encrypted
+Date: Fri, 19 Nov 2010 16:43:20 +0000
+Message-ID: <10563.1290185000@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 11/19/2010 at 10:54 AM, in message <20101119155427.GA20279@amt.cnet>,
-Marcelo Tosatti <mtosatti@redhat.com> wrote: 
-> On Thu, Nov 18, 2010 at 07:09:08PM +0200, Michael S. Tsirkin wrote:
->> Store irq routing table pointer in the irqfd object,
->> and use that to inject MSI directly without bouncing out to
->> a kernel thread.
->> 
->> While we touch this structure, rearrange irqfd fields to make fastpath
->> better packed for better cache utilization.
->> 
->> This also adds some comments about locking rules and rcu usage in code.
->> 
->> Some notes on the design:
->> - Use pointer into the rt instead of copying an entry,
->>   to make it possible to use rcu, thus side-stepping
->>   locking complexities.  We also save some memory this way.
->> - Old workqueue code is still used for level irqs.
->>   I don't think we DTRT with level anyway, however,
->>   it seems easier to keep the code around as
->>   it has been thought through and debugged, and fix level later than
->>   rip out and re-instate it later.
->> 
->> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
->> ---
->> 
->> OK, this seems to work fine for me. Tested with virtio-net in guest
->> with and without vhost-net.  Pls review/apply if appropriate.
-> 
-> Acked-by: Marcelo Tosatti <mtosatti@redhat.com>
+Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 
-Acked-by: Gregory Haskins <ghaskins@novell.com>
+> +static int datablob_format(char __user *buffer,
+> +			   struct encrypted_key_payload *epayload,
+> +			   int asciiblob_len)
 
+size_t?  There are other instances where you should be using size_t too.
 
+> +	index = strcspn(epayload->master_desc, ":");
+> +	if (index == strlen(epayload->master_desc))
+> +		goto out;
 
+For single chars, use strchr() rather than strcspn(), and if you happen to
+know the length too, use memchr().  This also means you don't need to do the
+strlen() again to check the result.
+
+> +	memset(derived_key, 0, sizeof derived_key);
+> +	ret = get_derived_key(derived_key, AUTH_KEY, master_key, master_keylen)
+
+Is the memset() actually necessary?
+
+> +	decrypted_datalen = (unsigned short)dlen;
+
+Unnecessary cast.
+
+> +	*(datablob + datalen) = 0;
+> +	*(buf + datalen) = 0;
+
+Use [].
+
+> +	if (index == strlen(new_master_desc)
+> +	    || (strncmp(new_master_desc, epayload->master_desc, index) != 0)) {
+
+Superfluous brackets.
+
+Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+
+> +	mkey = request_master_key(epayload, &master_key, &master_keylen);
+> +	if (IS_ERR(mkey))
+> +		return PTR_ERR(mkey);
+> +
+> +	memset(derived_key, 0, sizeof derived_key);
+> +	ret = get_derived_key(derived_key, ENC_KEY, master_key, master_keylen);
+> +	if (ret < 0)
+> +		goto out;
+> +
+> +	ret = derived_key_encrypt(epayload, derived_key, sizeof derived_key);
+> +	if (ret < 0)
+> +		goto out;
+> +
+> +	ret = datablob_hmac_append(epayload, master_key, master_keylen);
+> +	if (ret < 0)
+> +		goto out;
+> +
+> +	ret = datablob_format(buffer, epayload, asciiblob_len);
+> +	if (ret < 0)
+> +		goto out;
+> +
+> +	rcu_read_unlock();
+
+NAK!  This is not safe.  You may not sleep whilst you hold the RCU read lock
+on the master key.  At the very least, datablob_format() may sleep as it
+writes to userspace.
+
+I think what you should do is ignore RCU entirely and read lock the master
+key's semaphore.
+
+> +	ret = aes_get_sizes();
+> +	return ret;
+
+Merge.
+
+David
