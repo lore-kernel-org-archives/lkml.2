@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab0KSRLf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 12:11:35 -0500
-Received: from mail.selbetti.com.br ([201.67.157.50]:42731 "EHLO
-	mail.selbetti.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194Ab0KSRLe (ORCPT
+	id S1755719Ab0KSRPe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 12:15:34 -0500
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:60458 "HELO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755069Ab0KSRPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 12:11:34 -0500
-Subject: Re: Galbraith patch
-From: Gilberto Nunes <gilberto.nunes@selbetti.com.br>
-Reply-To: gilberto.nunes@selbetti.com.br
-To: Jordi Pujol <jordipujolp@gmail.com>
-Cc: Gene Heskett <gene.heskett@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <201011191749.14781.jordipujolp@gmail.com>
-References: <201011191509.49586.jordipujolp@gmail.com>
-	 <201011191005.12189.gene.heskett@gmail.com>
-	 <201011191749.14781.jordipujolp@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Selbetti =?ISO-8859-1?Q?Gest=E3o?= de Documentos
-Date: Fri, 19 Nov 2010 15:11:24 -0200
-Message-ID: <1290186684.3189.5.camel@note-311a>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 19 Nov 2010 12:15:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <20101119170232.GB6236@core.coreip.homeip.net>
+References: <cover.1289835508.git.bengardiner@nanometrics.ca>
+	<cover.1289935504.git.bengardiner@nanometrics.ca>
+	<d6d59b4a3c34149008f3681e0d6106efa15f354d.1289935504.git.bengardiner@nanometrics.ca>
+	<B85A65D85D7EB246BE421B3FB0FBB59302477EAA89@dbde02.ent.ti.com>
+	<AANLkTike4sRvptEe9PXLT2u+SrFMOpNC6pvLPSzBfVOX@mail.gmail.com>
+	<20101119170232.GB6236@core.coreip.homeip.net>
+Date: Fri, 19 Nov 2010 12:15:32 -0500
+Message-ID: <AANLkTiniSAbRUkDROyaa9jD28iBd423e3=hqP4+R4uB4@mail.gmail.com>
+Subject: Re: [PATCH v2 4/4] da850-evm: add baseboard UI expander buttons,
+ switches and LEDs
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: "Nori, Sekhar" <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "Govindarajan, Sriramakrishnan" <srk@ti.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexander Clouter <alex@digriz.org.uk>,
+        Chris Cordahi <christophercordahi@nanometrics.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HI...
+Hi Dmitry,
 
-I have compile a kernel 2.6.36 with autogroup but I don't see
-any /proc/sys/kernel/sched_autogroup_enabled
+On Fri, Nov 19, 2010 at 12:02 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> Another question is why do you want to poll the same device at
+> different intervals? The processor is already woken up so it makes sense
+> to do as much as possible instead of going to sleep. In your case
+> 200/700 for every 1400ms interval you wake an extra time to poll
+> switches so unless polling switches takes very long time it is better to
+> combine them together (and into one input device, probably).
 
-Also, I tried with noautogroup and autogroup on kernel line boot, but it
-doesn't work...
+I see. That is a good question :)
 
-Maybe I do samething wrong...
+I didn't realize that splitting into two separate input devices with
+different polling intervals would have the opposite effect than what I
+intended. Thank you for pointing this out. I will definitely integrate
+them into one input device polled at 200ms.
 
+Best Regards,
+Ben Gardiner
 
-
-
-Em Sex, 2010-11-19 às 17:49 +0100, Jordi Pujol escreveu:
-> A Divendres 19 Novembre 2010 16:05:12, Gene Heskett va escriure:
-> > Thanks Jordi, but my last attempted build, using only the last 2 patches 
-> > that Mike posted on a fresh unpack of 2.6.36, couldn't get past stage 2 of 
-> > the modules build, it kept squawking about all the IR control stuff that
-> > is  not even configured to be built.
-> > 
-> > I wonder how long it will take to get work this into mainline?
-> > 
-> > Along the same line, how does this compare to CK's bfs patch?
-> 
-> the autogroup-sched patch works well, right now writing this message from a 
-> computer that runs that kernel.
-> 
-> this patch is much simpler than CK2, so I suppose that the implementation 
-> should be more easy,
-> I am trying both and observe, from my user's point of view, that they give a 
-> similar result.
-> 
-> Gene, if that may help to do your own kernel implementation, the Debian kernel 
-> sources I've used are available at:
-> http://livenet.selfip.com/ftp/debian/linux-2.6/
-> 
-> 2.6.36 + CK2, in the subdirectory
->    linux-2.6.36-0.jpp.10-lnet/
-> 2.6.36 + autogroup_sched, in the subdirectory
->    linux-2.6.36-0.jpp.11-lnet/
-> 
-> Jordi Pujol
-> 
-> Live never ending Tale
-> GNU/Linux Live forever!
-> http://livenet.selfip.com
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
--- 
---
-Gilberto Nunes
-Departamento de TI
-Selbetti Gestão de Documentos
-Fone: (47) 3441-6004
-Celular (47) 8861-6672
-
-
-<><
-
+---
+Nanometrics Inc.
+http://www.nanometrics.ca
