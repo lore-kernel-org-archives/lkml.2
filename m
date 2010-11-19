@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760078Ab0KSBlg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 20:41:36 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:62289 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab0KSBle (ORCPT
+	id S1758099Ab0KSBrM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 20:47:12 -0500
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:42839 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754730Ab0KSBrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 20:41:34 -0500
-X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=T9ZRXmIXaAQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=knx9HKqwbM99dawkhRAA:9 a=UkXUt4oP3n7D1Nqyj9pnS60dX5kA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Benchmarks of kernel tracing options (ftrace and ktrace)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Michael Rubin <mrubin@google.com>
-Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <AANLkTimrgXbZxQKjapXkDgYRZqdZkfe1eUdFTAu=+Q8f@mail.gmail.com>
-References: <AANLkTikfYy-kYb1=KbsYwHd0_vcf20d2nPSfFynugz8z@mail.gmail.com>
-	 <AANLkTikKwx6okpX4pxVzTvrVNm=KhUvLQGs0_ziwo6fX@mail.gmail.com>
-	 <AANLkTimnjun98phJ_KmwFG_ce3YGpmVGf5rufqPStWR-@mail.gmail.com>
-	 <1287013830.3673.224.camel@frodo>
-	 <AANLkTi=Y2X5EuqiCncPeNefgHs6vvGmnZpsyyddRR2g_@mail.gmail.com>
-	 <1289950335.30543.8.camel@gandalf.stny.rr.com>
-	 <AANLkTimrgXbZxQKjapXkDgYRZqdZkfe1eUdFTAu=+Q8f@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 18 Nov 2010 20:41:31 -0500
-Message-ID: <1290130891.30543.127.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Nov 2010 20:47:10 -0500
+Date: Fri, 19 Nov 2010 12:46:05 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering
+ writeback
+Message-ID: <20101119014605.GA13830@dastard>
+References: <1289996638-21439-1-git-send-email-walken@google.com>
+ <1289996638-21439-4-git-send-email-walken@google.com>
+ <20101117125756.GA5576@amd>
+ <1290007734.2109.941.camel@laptop>
+ <AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
+ <20101117231143.GQ22876@dastard>
+ <AANLkTimE1KecXQhcxsKLSLug-7XpmGbmvsfSmG7kWDNn@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimE1KecXQhcxsKLSLug-7XpmGbmvsfSmG7kWDNn@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 17:11 -0800, Michael Rubin wrote:
-
-> > I did tell him that some ring buffer improvements did make it into the
-> > kernel. You might want to try the latest mainline again.
+On Wed, Nov 17, 2010 at 03:31:37PM -0800, Michel Lespinasse wrote:
+> On Wed, Nov 17, 2010 at 3:11 PM, Dave Chinner <david@fromorbit.com> wrote:
+> >> Really, my understanding is that not pre-allocating filesystem blocks
+> >> is just fine. This is, after all, what happens with ext3 and it's
+> >> never been reported as a bug (that I know of).
+> >
+> > It's not ext3 you have to worry about - it's the filesystems that
+> > need special state set up on their pages/buffers for ->writepage to
+> > work correctly that are the problem. You need to call
+> > ->write_begin/->write_end to get the state set up properly.
+> >
+> > If this state is not set up properly, silent data loss will occur
+> > during mmap writes either by ENOSPC or failing to set up writes into
+> > unwritten extents correctly (i.e. we'll be back to where we were in
+> > 2.6.15).
+> >
+> > I don't think ->page_mkwrite can be worked around - we need that to
+> > be called on the first write fault of any mmap()d page to ensure it
+> > is set up correctly for writeback.  If we don't get write faults
+> > after the page is mlock()d, then we need the ->page_mkwrite() call
+> > during the mlock() call.
 > 
-> You told me that you had patches (in 2.6.37) I think that would allow
-> us to specifically improve the syscall tracing performance.
-> 
-> Can you point us at em?
+> Just to be clear - I'm proposing to skip the entire do_wp_page() call
+> by doing a read fault rather than a write fault. If the page wasn't
+> dirty already, it will stay clean and with a non-writable PTE until it
+> gets actually written to, at which point we'll get a write fault and
+> do_wp_page will be invoked as usual.
 
-Look at commits:
+I have no problem with that - I'm surprised that mlock didn't work
+that way in the first place.
 
-afcc5c6872f0215d515a637041bb51f8691a8ea7
-69d1b839f7eee347e357b3f6cce7f630cc6ff93d
-140ff89127c74b1b1c1b0152a36ea3720ccf6bc3
-d9abde2138e0a00a0d7e44676928efa0ef629d48
-b8b2663bd7c9da04ac804659b9f617c199d0252c
+> I am not proposing to skip the page_mkwrite() while upgrading the PTE
+> permissions, which I think is what you were arguing against ?
 
--- Steve
+I wasn't arguing against anything, merely pointing out that the
+->page_mkwrite call is aboslutely necessary. You've made clarified
+that it still occurs, so I'm happy...
 
+FWIW, what I was responding to was the assumption that "this is
+alright for ext3, so it must be OK" extrapolation about
+->page_mkwrite behaviour. Especially as ext3 does not even implement
+the ->page_mkwrite operation (which means mmap writes into holes
+can't detect ENOSPC correctly)...
 
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
