@@ -1,296 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756448Ab0KSSoD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 13:44:03 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42320 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756313Ab0KSSoA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 13:44:00 -0500
-Date: Fri, 19 Nov 2010 16:43:50 -0200
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Dave Martin <dave.martin@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH v3] perf symbols: fix symbol offset breakage with
-	separated debug
-Message-ID: <20101119184350.GA23996@ghostprotocols.net>
-References: <1289914556-11744-1-git-send-email-dave.martin@linaro.org>
+	id S1756523Ab0KSSoQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:44:16 -0500
+Received: from mga01.intel.com ([192.55.52.88]:29047 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756478Ab0KSSoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 13:44:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,224,1288594800"; 
+   d="scan'208";a="859481438"
+Date: Sat, 20 Nov 2010 02:44:08 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        "Li, Shaohua" <shaohua.li@intel.com>, Christoph Hellwig <hch@lst.de>,
+        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] writeback: prevent bandwidth calculation overflow
+Message-ID: <20101119184408.GA31113@localhost>
+References: <20101118065725.GB8458@localhost>
+ <4CE537BE.6090103@redhat.com>
+ <20101118154408.GA18582@localhost>
+ <1290096121.2109.1525.camel@laptop>
+ <20101118161356.GA20569@localhost>
+ <20101119160653.GB3871@tiehlicka.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1289914556-11744-1-git-send-email-dave.martin@linaro.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20101119160653.GB3871@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Nov 16, 2010 at 01:35:56PM +0000, Dave Martin escreveu:
-> +	for (scn = NULL; (scn = elf_nextscn(elf, scn)); ) {
-> +		size_t j;
-> +
-> +		/*
-> +		 * Just assuming we get section 0, 1, ... in sequence may lead
-> +		 * to wrong section indices.  Check the index explicitly:
-> +		 */
-> +		j = elf_ndxscn(scn);
-> +		assert(j < ehdr->e_shnum);
+On Sat, Nov 20, 2010 at 12:06:53AM +0800, Michal Hocko wrote:
+> On Fri 19-11-10 00:13:56, Wu Fengguang wrote:
+> > On Fri, Nov 19, 2010 at 12:02:01AM +0800, Peter Zijlstra wrote:
+> > > On Thu, 2010-11-18 at 23:44 +0800, Wu Fengguang wrote:
+> > > > +               pause = HZ * pages_dirtied / (bw + 1);
+> > > 
+> > > Shouldn't that be using something like div64_u64 ?
+> > 
+> > Thanks for review. Here is the updated patch using div64_u64().
+> > 
+> > ---
+> > Subject: writeback: prevent bandwidth calculation overflow
+> > Date: Thu Nov 18 12:55:42 CST 2010
+> > 
+> > On 32bit kernel, bdi->write_bandwidth can express at most 4GB/s.
+> > 
+> > However the current calculation code can overflow when disk bandwidth
+> > reaches 800MB/s.  Fix it by using "long long" and div64_u64() in the
+> > calculations.
+> > 
+> > And further change its unit from bytes/second to pages/second.
+> > That allows up to 16TB/s bandwidth in 32bit kernel.
+> > 
+> > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Acked-by: Rik van Riel <riel@redhat.com>
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > ---
+> >  mm/backing-dev.c    |    4 ++--
+> >  mm/page-writeback.c |   11 +++++------
+> >  2 files changed, 7 insertions(+), 8 deletions(-)
+> > 
+> > --- linux-next.orig/mm/page-writeback.c	2010-11-18 12:42:58.000000000 +0800
+> > +++ linux-next/mm/page-writeback.c	2010-11-19 00:08:23.000000000 +0800
+> > @@ -494,7 +494,7 @@ void bdi_update_write_bandwidth(struct b
+> >  	unsigned long written;
+> >  	unsigned long elapsed;
+> >  	unsigned long bw;
+> > -	unsigned long w;
+> > +	unsigned long long w;
+> >  
+> >  	if (*bw_written == 0)
+> >  		goto snapshot;
+> > @@ -513,7 +513,7 @@ void bdi_update_write_bandwidth(struct b
+> >  		goto snapshot;
+> >  
+> >  	written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]) - *bw_written;
+> > -	bw = (HZ * PAGE_CACHE_SIZE * written + elapsed/2) / elapsed;
+> > +	bw = (HZ * written + elapsed/2) / elapsed;
+> 
+> Sorry for a dumb question, but where did PAGE_CACHE_SIZE part go?
 
+Because write_bandwidth's unit is bumped from bytes/s to pages/s,
+so that it can express much higher bandwidth.
 
-please repost after removing the assert calls, this is a library, we
-better return NULL here, i.e. goto error, than stopping the whole
-session that otherwiser could continue with the other symtabs producing
-useful output.
-
-Use pr_err if you think its warranted.
+I've updated the patch again, and will submit more fixes tomorrow.
 
 Thanks,
+Fengguang
+---
+Subject: writeback: prevent bandwidth calculation overflow
+Date: Thu Nov 18 12:55:42 CST 2010
 
-- Arnaldo
+On 32bit kernel, bdi->write_bandwidth can express at most 4GB/s.
 
-> +		if (j > max_index)
-> +			max_index = j;
-> +
-> +		if (!gelf_getshdr(scn, &shdrs[j]))
-> +			goto error;
-> +	}
-> +
-> +	*count = max_index + 1;
-> +	return shdrs;
-> +
-> +error:
-> +	free(shdrs);
-> +	return NULL;
-> +}
-> +
-> +/**
-> + * Check that the section headers @shdrs reflect accurately the file data
-> + * layout of the image that was loaded during perf record.  This is generally
-> + * not true for separated debug images generated with e.g.,
-> + * objcopy --only-keep-debug.
-> + *
-> + * We identify invalid files by checking for non-empty sections which are
-> + * declared as having no file data (SHT_NOBITS) but are not writable.
-> + *
-> + * @shdrs: the full set of section headers, as loaded by elf_get_all_shdrs().
-> + * @count: the number of headers present in @shdrs.
-> + *
-> + * Returns 1 for valid headers, 0 otherwise.
-> + */
-> +static int elf_check_shdrs_valid(GElf_Shdr const *shdrs, unsigned count)
-> +{
-> +	unsigned i;
-> +
-> +	for (i = 0; i < count; i++) {
-> +		if (shdrs[i].sh_type == SHT_NOBITS &&
-> +		    !(shdrs[i].sh_flags & SHF_WRITE) &&
-> +		    shdrs[i].sh_size != 0)
-> +			return 0;
-> +	}
-> +
-> +	return 1;
-> +}
-> +
-> +/*
-> + * Notes:
-> + *
-> + * If saved_shdrs is non-NULL, the section headers will be read if found, and
-> + * will be used for address fixups.  saved_shdrs_count must also be non-NULL in
-> + * this case.  This may be needed for separated debug images, since the section
-> + * headers and symbols may need to come from separate images in that case.
-> + *
-> + * Note: irrespective of whether this function returns successfully,
-> + * *saved_shdrs may get initialised if saved_shdrs is non-NULL.  It is the
-> + * caller's responsibility to free() it when non longer needed.
-> + *
-> + * If want_symtab == 1, this function will only load symbols from .symtab
-> + * sections.  Otherwise (want_symtab == 0), .dynsym or .symtab symbols are
-> + * loaded.  This feature is used by dso__load() to search for the best image
-> + * to load.
-> + */
->  static int dso__load_sym(struct dso *self, struct map *map, const char *name,
->  			 int fd, symbol_filter_t filter, int kmodule,
-> +			 GElf_Shdr **saved_shdrs, unsigned *saved_shdrs_count,
->  			 int want_symtab)
->  {
->  	struct kmap *kmap = self->kernel ? map__kmap(map) : NULL;
-> @@ -1012,6 +1111,9 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
->  	int nr = 0;
->  	size_t opdidx = 0;
->  
-> +	if (saved_shdrs != NULL)
-> +		assert(saved_shdrs_count != NULL);
-> +
->  	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
->  	if (elf == NULL) {
->  		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
-> @@ -1035,6 +1137,34 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
->  			goto out_elf_end;
->  	}
->  
-> +	/*
-> +	 * Copy all section headers from the image if requested and if not
-> +	 * already loaded.
-> +	 */
-> +	if (saved_shdrs != NULL && *saved_shdrs == NULL) {
-> +		GElf_Shdr *shdrs;
-> +		unsigned count;
-> +
-> +		shdrs = elf_get_all_shdrs(elf, &ehdr, &count);
-> +		if (shdrs == NULL)
-> +			goto out_elf_end;
-> +
-> +		/*
-> +		 * Only keep the headers if they reflect the actual run-time
-> +		 * image's file layout:
-> +		 */
-> +		if (elf_check_shdrs_valid(shdrs, count)) {
-> +			*saved_shdrs = shdrs;
-> +			*saved_shdrs_count = count;
-> +		} else
-> +			free(shdrs);
-> +	}
-> +
-> +	/* If no genuine ELF headers are available yet, give up: we can't
-> +	 * adjust symbols correctly in that case: */
-> +	if (saved_shdrs != NULL && *saved_shdrs == NULL)
-> +		goto out_elf_end;
-> +
->  	sec = elf_section_by_name(elf, &ehdr, &shdr, ".symtab", NULL);
->  	if (sec == NULL) {
->  		if (want_symtab)
-> @@ -1167,12 +1297,25 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
->  			goto new_symbol;
->  		}
->  
-> +		/*
-> +		 * Currently, symbols for shared objects and PIE executables
-> +		 * (i.e., ET_DYN) do not seem to get adjusted.  This might need
-> +		 * to change if file offset == virtual address is not actually
-> +		 * guaranteed for these images.  ELF doesn't provide this
-> +		 * guarantee natively.
-> +		 */
->  		if (curr_dso->adjust_symbols) {
->  			pr_debug4("%s: adjusting symbol: st_value: %#Lx "
->  				  "sh_addr: %#Lx sh_offset: %#Lx\n", __func__,
->  				  (u64)sym.st_value, (u64)shdr.sh_addr,
->  				  (u64)shdr.sh_offset);
-> -			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
-> +			if (saved_shdrs && *saved_shdrs &&
-> +			    sym.st_shndx < *saved_shdrs_count)
-> +				sym.st_value -=
-> +					(*saved_shdrs)[sym.st_shndx].sh_addr -
-> +					(*saved_shdrs)[sym.st_shndx].sh_offset;
-> +			else
-> +				sym.st_value -= shdr.sh_addr - shdr.sh_offset;
->  		}
->  		/*
->  		 * We need to figure out if the object was created from C++ sources
-> @@ -1409,6 +1552,8 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
->  	struct machine *machine;
->  	const char *root_dir;
->  	int want_symtab;
-> +	GElf_Shdr *saved_shdrs = NULL;
-> +	unsigned saved_shdrs_count;
->  
->  	dso__set_loaded(self, map->type);
->  
-> @@ -1439,13 +1584,13 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
->  	 * On the first pass, only load images if they have a full symtab.
->  	 * Failing that, do a second pass where we accept .dynsym also
->  	 */
-> -	for (self->origin = DSO__ORIG_BUILD_ID_CACHE, want_symtab = 1;
-> -	     self->origin != DSO__ORIG_NOT_FOUND;
-> -	     self->origin++) {
-> +	self->origin = DSO__ORIG_BUILD_ID_CACHE;
-> +	want_symtab = 1;
-> +	while (1) {
->  		switch (self->origin) {
->  		case DSO__ORIG_BUILD_ID_CACHE:
->  			if (dso__build_id_filename(self, name, size) == NULL)
-> -				continue;
-> +				goto continue_next;
->  			break;
->  		case DSO__ORIG_FEDORA:
->  			snprintf(name, size, "/usr/lib/debug%s.debug",
-> @@ -1459,7 +1604,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
->  			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
->  
->  			if (!self->has_build_id)
-> -				continue;
-> +				goto continue_next;
->  
->  			build_id__sprintf(self->build_id,
->  					  sizeof(self->build_id),
-> @@ -1483,21 +1628,24 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
->  		default:
->  			/*
->  			 * If we wanted a full symtab but no image had one,
-> -			 * relax our requirements and repeat the search.
-> +			 * relax our requirements and repeat the search,
-> +			 * providing we saw some valid section headers:
->  			 */
-> -			if (want_symtab) {
-> +			if (want_symtab && saved_shdrs != NULL) {
->  				want_symtab = 0;
->  				self->origin = DSO__ORIG_BUILD_ID_CACHE;
-> -			} else
->  				continue;
-> +			} else
-> +				goto done;
->  		}
->  
->  		/* Name is now the name of the next image to try */
->  		fd = open(name, O_RDONLY);
->  		if (fd < 0)
-> -			continue;
-> +			goto continue_next;
->  
->  		ret = dso__load_sym(self, map, name, fd, filter, 0,
-> +				    &saved_shdrs, &saved_shdrs_count,
->  				    want_symtab);
->  		close(fd);
->  
-> @@ -1506,7 +1654,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
->  		 * info!?!?
->  		 */
->  		if (!ret)
-> -			continue;
-> +			goto continue_next;
->  
->  		if (ret > 0) {
->  			int nr_plt = dso__synthesize_plt_symbols(self, map, filter);
-> @@ -1514,9 +1662,18 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
->  				ret += nr_plt;
->  			break;
->  		}
-> +
-> +continue_next:
-> +		self->origin++;
-> +		continue;
->  	}
->  
-> +done:
->  	free(name);
-> +
-> +	if (saved_shdrs)
-> +		free(saved_shdrs);
-> +
->  	if (ret < 0 && strstr(self->name, " (deleted)") != NULL)
->  		return 0;
->  	return ret;
-> @@ -1782,7 +1939,8 @@ static int dso__load_vmlinux(struct dso *self, struct map *map,
->  		return -1;
->  
->  	dso__set_loaded(self, map->type);
-> -	err = dso__load_sym(self, map, vmlinux, fd, filter, 0, 0);
-> +	err = dso__load_sym(self, map, vmlinux, fd, filter, 0,
-> +			    NULL, NULL, 0);
->  	close(fd);
->  
->  	if (err > 0)
-> -- 
-> 1.7.1
+However the current calculation code can overflow when disk bandwidth
+reaches 800MB/s.  Fix it by using "long long" and div64_u64() in the
+calculations.
+
+And further change its unit from bytes/second to pages/second.
+That allows up to 16TB/s bandwidth in 32bit kernel.
+
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ include/linux/backing-dev.h |    5 +++--
+ mm/backing-dev.c            |    4 ++--
+ mm/page-writeback.c         |   14 +++++++-------
+ 3 files changed, 12 insertions(+), 11 deletions(-)
+
+--- linux-next.orig/mm/page-writeback.c	2010-11-19 09:56:14.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-11-19 22:18:57.000000000 +0800
+@@ -494,7 +494,7 @@ void bdi_update_write_bandwidth(struct b
+ 	unsigned long written;
+ 	unsigned long elapsed;
+ 	unsigned long bw;
+-	unsigned long w;
++	unsigned long long w;
+ 
+ 	if (*bw_written == 0)
+ 		goto snapshot;
+@@ -513,9 +513,10 @@ void bdi_update_write_bandwidth(struct b
+ 		goto snapshot;
+ 
+ 	written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]) - *bw_written;
+-	bw = (HZ * PAGE_CACHE_SIZE * written + elapsed/2) / elapsed;
++	bw = (HZ * written + elapsed / 2) / elapsed;
+ 	w = min(elapsed / unit_time, 128UL);
+-	bdi->write_bandwidth = (bdi->write_bandwidth * (1024-w) + bw * w) >> 10;
++	bdi->write_bandwidth = (bdi->write_bandwidth * (1024-w) +
++				bw * w + 1023) >> 10;
+ 	bdi->write_bandwidth_update_time = jiffies;
+ snapshot:
+ 	*bw_written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]);
+@@ -539,7 +540,7 @@ static void balance_dirty_pages(struct a
+ 	unsigned long dirty_thresh;
+ 	unsigned long bdi_thresh;
+ 	unsigned long task_thresh;
+-	unsigned long bw;
++	unsigned long long bw;
+ 	unsigned long pause = 0;
+ 	bool dirty_exceeded = false;
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+@@ -602,8 +603,7 @@ static void balance_dirty_pages(struct a
+ 		 * of dirty pages have been cleaned during our pause time.
+ 		 */
+ 		if (nr_dirty < dirty_thresh &&
+-		    bdi_prev_dirty - bdi_dirty >
+-		    bdi->write_bandwidth >> (PAGE_CACHE_SHIFT + 2))
++		    bdi_prev_dirty - bdi_dirty > (long)bdi->write_bandwidth / 4)
+ 			break;
+ 		bdi_prev_dirty = bdi_dirty;
+ 
+@@ -626,7 +626,7 @@ static void balance_dirty_pages(struct a
+ 		bw = bw * (task_thresh - bdi_dirty);
+ 		bw = bw / (bdi_thresh / TASK_SOFT_DIRTY_LIMIT + 1);
+ 
+-		pause = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1);
++		pause = HZ * pages_dirtied / ((unsigned long)bw + 1);
+ 		pause = clamp_val(pause, 1, HZ/10);
+ 
+ pause:
+--- linux-next.orig/mm/backing-dev.c	2010-11-19 09:56:14.000000000 +0800
++++ linux-next/mm/backing-dev.c	2010-11-19 22:18:19.000000000 +0800
+@@ -103,7 +103,7 @@ static int bdi_debug_stats_show(struct s
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
+ 		   K(bdi_thresh), K(dirty_thresh), K(background_thresh),
+ 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
+-		   (unsigned long) bdi->write_bandwidth >> 10,
++		   (unsigned long) K(bdi->write_bandwidth),
+ 		   nr_dirty, nr_io, nr_more_io,
+ 		   !list_empty(&bdi->bdi_list), bdi->state);
+ #undef K
+@@ -662,7 +662,7 @@ int bdi_init(struct backing_dev_info *bd
+ 			goto err;
+ 	}
+ 
+-	bdi->write_bandwidth = 100 << 20;
++	bdi->write_bandwidth = (100 << 20) / PAGE_CACHE_SIZE;
+ 	bdi->dirty_exceeded = 0;
+ 	err = prop_local_init_percpu(&bdi->completions);
+ 
+--- linux-next.orig/include/linux/backing-dev.h	2010-11-19 19:43:05.000000000 +0800
++++ linux-next/include/linux/backing-dev.h	2010-11-19 22:18:19.000000000 +0800
+@@ -74,9 +74,10 @@ struct backing_dev_info {
+ 
+ 	struct percpu_counter bdi_stat[NR_BDI_STAT_ITEMS];
+ 
+-	struct prop_local_percpu completions;
++	unsigned long write_bandwidth;
+ 	unsigned long write_bandwidth_update_time;
+-	int write_bandwidth;
++
++	struct prop_local_percpu completions;
+ 	int dirty_exceeded;
+ 
+ 	unsigned int min_ratio;
