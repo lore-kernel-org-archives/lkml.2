@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759972Ab0KSBkg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 20:40:36 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:10718 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751944Ab0KSBkf (ORCPT
+	id S1760078Ab0KSBlg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 20:41:36 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:62289 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751944Ab0KSBle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 20:40:35 -0500
-Date: Fri, 19 Nov 2010 10:40:29 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-Subject: [PATCH] ARM: l2x0: Check the correct address range
-To: linux-arm-kernel@lists.infradead.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Tony Lindgren <tony@atomide.com>
-Message-id: <20101119014029.GA26429@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7BIT
-Content-disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-OriginalArrivalTime: 19 Nov 2010 01:40:32.0739 (UTC)
- FILETIME=[C13C6B30:01CB878A]
+	Thu, 18 Nov 2010 20:41:34 -0500
+X-Authority-Analysis: v=1.1 cv=kXGwZUU/u1JTMRv8Axk4W0omja+vfTT+sGlOkodD8F8= c=1 sm=0 a=T9ZRXmIXaAQA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=knx9HKqwbM99dawkhRAA:9 a=UkXUt4oP3n7D1Nqyj9pnS60dX5kA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Benchmarks of kernel tracing options (ftrace and ktrace)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Michael Rubin <mrubin@google.com>
+Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <AANLkTimrgXbZxQKjapXkDgYRZqdZkfe1eUdFTAu=+Q8f@mail.gmail.com>
+References: <AANLkTikfYy-kYb1=KbsYwHd0_vcf20d2nPSfFynugz8z@mail.gmail.com>
+	 <AANLkTikKwx6okpX4pxVzTvrVNm=KhUvLQGs0_ziwo6fX@mail.gmail.com>
+	 <AANLkTimnjun98phJ_KmwFG_ce3YGpmVGf5rufqPStWR-@mail.gmail.com>
+	 <1287013830.3673.224.camel@frodo>
+	 <AANLkTi=Y2X5EuqiCncPeNefgHs6vvGmnZpsyyddRR2g_@mail.gmail.com>
+	 <1289950335.30543.8.camel@gandalf.stny.rr.com>
+	 <AANLkTimrgXbZxQKjapXkDgYRZqdZkfe1eUdFTAu=+Q8f@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 18 Nov 2010 20:41:31 -0500
+Message-ID: <1290130891.30543.127.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Boojin Kim <boojin.kim@samsung.com>
+On Thu, 2010-11-18 at 17:11 -0800, Michael Rubin wrote:
 
-When flush or clean the 1MiB, it doesn't flush or clean all since it doesn't check the correct address. So Check the correct address range.
+> > I did tell him that some ring buffer improvements did make it into the
+> > kernel. You might want to try the latest mainline again.
+> 
+> You told me that you had patches (in 2.6.37) I think that would allow
+> us to specifically improve the syscall tracing performance.
+> 
+> Can you point us at em?
 
-Signed-off-by: Boojin Kim <boojin.kim@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-diff --git a/arch/arm/mm/cache-l2x0.c b/arch/arm/mm/cache-l2x0.c
-index 170c9bb..50599d9 100644
---- a/arch/arm/mm/cache-l2x0.c
-+++ b/arch/arm/mm/cache-l2x0.c
-@@ -195,7 +195,7 @@ static void l2x0_clean_range(unsigned long start, unsigned long end)
- 	void __iomem *base = l2x0_base;
- 	unsigned long flags;
- 
--	if ((end - start) >= l2x0_size) {
-+	if ((end - start + 1) >= l2x0_size) {
- 		l2x0_clean_all();
- 		return;
- 	}
-@@ -225,7 +225,7 @@ static void l2x0_flush_range(unsigned long start, unsigned long end)
- 	void __iomem *base = l2x0_base;
- 	unsigned long flags;
- 
--	if ((end - start) >= l2x0_size) {
-+	if ((end - start + 1) >= l2x0_size) {
- 		l2x0_flush_all();
- 		return;
- 	}
+Look at commits:
+
+afcc5c6872f0215d515a637041bb51f8691a8ea7
+69d1b839f7eee347e357b3f6cce7f630cc6ff93d
+140ff89127c74b1b1c1b0152a36ea3720ccf6bc3
+d9abde2138e0a00a0d7e44676928efa0ef629d48
+b8b2663bd7c9da04ac804659b9f617c199d0252c
+
+-- Steve
+
+
