@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab0KSOFs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 09:05:48 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:51828 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754358Ab0KSOFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 09:05:47 -0500
-Date: Fri, 19 Nov 2010 14:05:32 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] Use memory compaction instead of lumpy reclaim
-	during high-order allocations
-Message-ID: <20101119140532.GH28613@csn.ul.ie>
-References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie> <20101117154641.51fd7ce5.akpm@linux-foundation.org> <20101118081254.GB8135@csn.ul.ie> <20101118172627.cf25b83a.kamezawa.hiroyu@jp.fujitsu.com> <20101118083828.GA24635@cmpxchg.org> <20101118092044.GE8135@csn.ul.ie> <20101118114928.ecb2d6b0.akpm@linux-foundation.org> <20101119104856.GB28613@csn.ul.ie> <4B8266CB-F658-4CC8-BCA3-677C22BAFAE0@mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4B8266CB-F658-4CC8-BCA3-677C22BAFAE0@mit.edu>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1754606Ab0KSOGB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 09:06:01 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:33490 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754478Ab0KSOF7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 09:05:59 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Fri, 19 Nov 2010 15:04:51 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Bruno Randolf <br1@einfach.org>
+Cc: Bob Copeland <me@bobcopeland.com>,
+        Johannes Berg <johannes@sipsolutions.net>, Jouni Malinen <j@w1.fi>,
+        linville@tuxdriver.com, randy.dunlap@oracle.com, peterz@infradead.org,
+        blp@cs.stanford.edu, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
+        kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+        kevin.granade@gmail.com
+Subject: Re: [PATCH v7 3/3] nl80211/mac80211: Report signal average
+Message-ID: <20101119150451.1c0d273f@stein>
+In-Reply-To: <201011191749.31974.br1@einfach.org>
+References: <20101112024901.28522.21895.stgit@localhost6.localdomain6>
+	<1290010595.3777.0.camel@jlt3.sipsolutions.net>
+	<AANLkTimoogSLAipNy=njGtHypqBQSk=usDmXut=KN9TM@mail.gmail.com>
+	<201011191749.31974.br1@einfach.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 07:43:02AM -0500, Theodore Tso wrote:
-> 
-> On Nov 19, 2010, at 5:48 AM, Mel Gorman wrote:
-> 
-> > At least as long as !CONFIG_COMPACTION exists. That will be a while because
-> > bear in mind CONFIG_COMPACTION is disabled by default (although I believe
-> > some distros are enabling it at least). Maybe we should choose to deprecate
-> > it in 2.6.40 and delete it at the infamous time of 2.6.42? That would give
-> > ample time to iron out any issues that crop up with reclaim/compaction
-> > (what this series has turned into).
-> 
-> How about making the default before 2.6.40, as an initial step?
-> 
+On Nov 19 Bruno Randolf wrote:
+> Here are the results of iperf -u -c IP -b 30M -t 120
 
-It'd be a reasonable way of ensuring it's being tested everywhere
-and not by those that are interested or using distro kernel configs.
-I guess we'd set to "default y" in the same patch that adds the note to
-feature-removal-schedule.txt.
-
+You only showed that CPU utilization is not so high that an effect on
+network throughput can be seen.  You did not measure what the increase
+in CPU utilization actually was. :-)
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Stefan Richter
+-=====-==-=- =-== =--==
+http://arcgraph.de/sr/
