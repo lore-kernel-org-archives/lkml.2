@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933152Ab0KSAUK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 19:20:10 -0500
-Received: from kirsty.vergenet.net ([202.4.237.240]:47616 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755398Ab0KSAUH (ORCPT
+	id S933540Ab0KSAUU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 19:20:20 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:59590 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933356Ab0KSAUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 19:20:07 -0500
-Date: Fri, 19 Nov 2010 09:20:03 +0900
-From: Simon Horman <horms@verge.net.au>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>, David Miller <davem@davemloft.net>,
-        randy.dunlap@oracle.com, eric.dumazet@gmail.com,
-        linux-net@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: error while building the kernel Mainline
-Message-ID: <20101119002003.GA4511@verge.net.au>
-References: <20101118.125451.98885354.davem@davemloft.net>
- <20101118130318.073f6beb.randy.dunlap@oracle.com>
- <20101118.131004.58430322.davem@davemloft.net>
- <20101118.131527.45904827.davem@davemloft.net>
- <4CE59F3F.3080407@trash.net>
- <4CE5BB30.5080209@gmail.com>
+	Thu, 18 Nov 2010 19:20:16 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=p2sk18NpjwxeVzqX9sNaP8PjU6iBklvBIhaJW9zldjujugN0NovAKIm2YVuZtMW3wN
+         WWN7wRquOUq0WGUd229+HAiLr7It+RAa084u/1FtydzIcSen9sEUwTtcq49MAoxrCxKz
+         VgxMzxgoOUIEljwW7Eaz1XKg//2jpNdhGESiY=
+Message-ID: <4CE5C2B3.2070906@lwfinger.net>
+Date: Thu, 18 Nov 2010 18:20:03 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE5BB30.5080209@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [Bug #22562] Regression in 2.6.37-rc1 - logs spammed with "unable
+ to enumerate USB port" - bisected to commit 3df7169e
+References: <sKkKYVppECN.A.KhC.Phb5MB@chimera> <ATV3yiK8i4C.A.wXE.Nib5MB@chimera>
+In-Reply-To: <ATV3yiK8i4C.A.wXE.Nib5MB@chimera>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 03:48:00PM -0800, Justin P. Mattock wrote:
-> On 11/18/2010 01:48 PM, Patrick McHardy wrote:
-> >Am 18.11.2010 22:15, schrieb David Miller:
-> >>From: David Miller<davem@davemloft.net>
-> >>Date: Thu, 18 Nov 2010 13:10:04 -0800 (PST)
-> >>
-> >>>From: Randy Dunlap<randy.dunlap@oracle.com>
-> >>>Date: Thu, 18 Nov 2010 13:03:18 -0800
-> >>>
-> >>>>On Thu, 18 Nov 2010 12:54:51 -0800 (PST) David Miller wrote:
-> >>>>
-> >>>>>From: Patrick McHardy<kaber@trash.net>
-> >>>>>Date: Thu, 18 Nov 2010 21:32:11 +0100
-> >>>>>
-> >>>>>>Thanks for testing. Dave, please apply directly, thanks!
-> >>>>
-> >>>>Dave,
-> >>>>
-> >>>>This patch does not fix the config/build error that I posted for linux-next.
-> >>>
-> >>>And it has bugs, now when NF_CONNTRACT is set to "m" IPVS isn't offered
-> >>>at all.
-> >>>
-> >>>So I'm reverting.
-> >>
-> >>Ignore this, I was looking for "*_IPVS" in the config instead of
-> >>"*_IP_VS" for some stupid reason.
-> >
-> >I always make the same mistake :)
-> >
-> >>Patch is sane and I'll look into Randy's problem when I get a chance.
-> >>:-)
-> >
-> >I've already asked the tproxy guys to look into this, it's a
-> >different problem that requires more tproxy knowledge than
-> >have.
-> >
+On 11/18/2010 05:42 PM, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+> 
+> The following bug entry is on the current list of known regressions
+> from 2.6.36.  Please verify if it still should be listed and let the tracking team
+> know (either way).
 > 
 > 
-> go outside to clean the garage, and put up the christmas lights up,
-> come back and am freaking for a second that the problems not
-> fixed...
-> 
-> tripping me out man!!
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22562
+> Subject		: Regression in 2.6.37-rc1 - logs spammed with "unable to enumerate USB port" - bisected to commit 3df7169e
+> Submitter	: Larry Finger <Larry.Finger@lwfinger.net>
+> Date		: 2010-11-02 22:32 (17 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/3df7169e73fc1d71a39cffeacc969f6840cdf52b
+> Message-ID	: <4CD09166.4060202@lwfinger.net>
+> References	: http://marc.info/?l=linux-kernel&m=128873713207906&w=2
 
-On a similar note, sorry for not participating in the IPVS portion of
-this thread, it was all over by the time that I woke up this morning.
+This bug has not yet been fixed.
+
+Larry
