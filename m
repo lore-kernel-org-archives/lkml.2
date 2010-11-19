@@ -1,121 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932416Ab0KSXiY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 18:38:24 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:15775 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300Ab0KSXiW (ORCPT
+	id S1756080Ab0KSXzQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 18:55:16 -0500
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:51426 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753190Ab0KSXzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 18:38:22 -0500
-Message-ID: <4CE70A67.9010203@caviumnetworks.com>
-Date: Fri, 19 Nov 2010 15:38:15 -0800
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Fri, 19 Nov 2010 18:55:14 -0500
+Date: Sat, 20 Nov 2010 10:54:24 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering
+ writeback
+Message-ID: <20101119235424.GD13830@dastard>
+References: <1289996638-21439-1-git-send-email-walken@google.com>
+ <1289996638-21439-4-git-send-email-walken@google.com>
+ <20101117125756.GA5576@amd>
+ <1290007734.2109.941.camel@laptop>
+ <AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
+ <20101117231143.GQ22876@dastard>
+ <20101118133702.GA18834@infradead.org>
+ <alpine.LSU.2.00.1011180934400.3210@tigran.mtv.corp.google.com>
+ <20101119072316.GA14388@google.com>
 MIME-Version: 1.0
-To: Andy Fleming <afleming@gmail.com>
-CC: devicetree-discuss@lists.ozlabs.org, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Cyril Chemparathy <cyril@ti.com>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH v2] of/phylib: Use device tree properties to initialize
- Marvell PHYs.
-References: <1290204798-28569-1-git-send-email-ddaney@caviumnetworks.com> <AANLkTikuikWgLbW67m1Ov0dt13A=DTSF150aTOs=PybT@mail.gmail.com>
-In-Reply-To: <AANLkTikuikWgLbW67m1Ov0dt13A=DTSF150aTOs=PybT@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Nov 2010 23:39:11.0988 (UTC) FILETIME=[F7FBBB40:01CB8842]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101119072316.GA14388@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2010 03:02 PM, Andy Fleming wrote:
-> On Fri, Nov 19, 2010 at 4:13 PM, David Daney<ddaney@caviumnetworks.com>  wrote:
->> Some aspects of PHY initialization are board dependent, things like
->> indicator LED connections and some clocking modes cannot be determined
->> by probing.  The dev_flags element of struct phy_device can be used to
->> control these things if an appropriate value can be passed from the
->> Ethernet driver.  We run into problems however if the PHY connections
->> are specified by the device tree.  There is no way for the Ethernet
->> driver to know what flags it should pass.
->>
->> If we are using the device tree, the struct phy_device will be
->> populated with the device tree node corresponding to the PHY, and we
->> can extract extra configuration information from there.
->>
->> The next question is what should the format of that information be?
->> It is highly device specific, and the device tree representation
->> should not be tied to any arbitrary kernel defined constants.  A
->> straight forward representation is just to specify the exact bits that
->> should be set using the "marvell,reg-init" property:
->>
->>       phy5: ethernet-phy@5 {
->>         reg =<5>;
->>         compatible = "marvell,88e1149r";
->>         marvell,reg-init =
->>                 /* led[0]:1000, led[1]:100, led[2]:10, led[3]:tx */
->>                 <3 0x10 0 0x5777>, /* Reg 3,16<- 0x5777 */
->>                 /* mix %:0, led[0123]:drive low off hiZ */
->>                 <3 0x11 0 0x00aa>, /* Reg 3,17<- 0x00aa */
->>                 /* default blink periods. */
->>                 <3 0x12 0 0x4105>, /* Reg 3,18<- 0x4105 */
->>                 /* led[4]:rx, led[5]:dplx, led[45]:drive low off hiZ */
->>                 <3 0x13 0 0x0a60>; /* Reg 3,19<- 0x0a60 */
->
->
-> My inclination is to shy away from such hard-coded values.  I agreed
-> with Grant's comment about separating into separate cells, but I think
-> specification of hard-coded register writes is too rigid.  I think a
-> better approach would be to specify configuration attributes, like:
->
-> marvell,blink-periods =<blah>;
-> marvell,led-config =<[drive type] [indicates]>;
+On Thu, Nov 18, 2010 at 11:23:16PM -0800, Michel Lespinasse wrote:
+> On Thu, Nov 18, 2010 at 09:41:22AM -0800, Hugh Dickins wrote:
+> > On Thu, 18 Nov 2010, Christoph Hellwig wrote:
+> > > On Thu, Nov 18, 2010 at 10:11:43AM +1100, Dave Chinner wrote:
+> > > > Hence I think that avoiding ->page_mkwrite callouts is likely to
+> > > > break some filesystems in subtle, undetected ways.  IMO, regardless
+> > > > of what is done, it would be really good to start by writing a new
+> > > > regression test to exercise and encode the expected the mlock
+> > > > behaviour so we can detect regressions later on....
+> > > 
+> > > I think it would help if we could drink a bit of the test driven design
+> > > coolaid here. Michel, can you write some testcases where pages on a
+> > > shared mapping are mlocked, then dirtied and then munlocked, and then
+> > > written out using msync/fsync.  Anything that fails this test on
+> > > btrfs/ext4/gfs/xfs/etc obviously doesn't work.
+> 
+> I think it's still under debate what's an acceptable result for this test
+> (i.e. what's supposed to happen during mlock of a shared mapping of
+> a sparsely allocated file - is a fallocate equivalent supposed to happen ?)
+> But I agree discussing based on test results will make things more concrete.
+> 
+> > Whilst it's hard to argue against a request for testing, Dave's worries
+> > just sprang from a misunderstanding of all the talk about "avoiding ->
+> > page_mkwrite".  There's nothing strange or risky about Michel's patch,
+> > it does not avoid ->page_mkwrite when there is a write: it just stops
+> > pretending that there was a write when locking down the shared area.
+> 
+> So, I decided to test this using memtoy. /data is a separate partition
+> where I had just 10GB free space, and /data/hole20G was created using
+> dd if=/dev/zero of=/data/hole20G bs=1M seek=20480 count=0.
+> 
+> memtoy>file /data/hole20G shared
+> memtoy>map hole20G
+> 
+> At this point the file is mapped using a writable, shared VMA.
+> 
+> memtoy>touch hole20G
+> memtoy:  touched 5242880 pages in 30.595 secs
+> 
+> At this point memtoy's address space is populated with zeroed
+> pages. The pages are distinct (meminfo does show 20G of allocated pages),
+> are classified as file pages, not anon, and are associated with the
+> struct address_space for /data/hole20G. That file still does not have
+> blocks allocated, as can be seen with du /data/hole20G.
+> 
+> memtoy>lock hole20G
+> 
+> memtoy tries to mlock the hole20G VMA.
+> This is where things get interesting.
+> 
+> Using ext2, without my patch (ext3 should be similar):
+>   - first, mlock does fast progress going though file pages, marking them
+>     as dirty. Eventually, it hits the dirty limit and gets throttled.
+>   - then, mlock does slow progress as it needs to wait for writeback.
+>     writeback occurs and allocates blocks for the /data/hole20G.
+>     Eventually, the /data partition gets full.
+>   - then, mlock does no progress as it's at the dirty limit and nothing
+>     gets written back.
+>   - mlock never terminates.
 
-I considered doing that, but rejected the idea because it is so complex. 
-  There are literally probably a hundred different register fields with 
-widths varying between 1 and 16 bits.  The number of settings that the 
-driver might want to deal with are astronomical.  For any given PHY 
-model there could be 30 different settings that you might want to tweak. 
-  In the example above I configure 5 LEDs with two parameters each, and 
-about 4 or 5 more blink settings, that is something like 15 register fields.
+That's the typical result of ENOSPC during mmap writes into holes on
+filesystems that don't implement ->page_mkwrite() - this effectively
+overcommits the filesystem free space with more dirty pages than can
+fit in the free space, and then the system will get stuck on ENOSPC
+errors when trying to allocate in the writeback path, leaving you
+with dirty pages that can't be cleaned...
 
-Take the marvell.c file.  It currently supports nine different PHY 
-models, each would have a bunch of model specific settings, the 
-complexity of decoding all that is formidable (and would be a lot more 
-code) also there would invariably be settings that were not implemented 
-in the first version, so people would have to repeatedly extend it.
+> Using ext2, with my patch (ext3 should be similar):
+....
+>   - i.e. this is essentially the same lockup as without my patch, except that
+>     it occurs when the application tries to dirty the shared file rather than
+>     during mlock itself.
 
-My patch adds 550 bytes (not including the string storage) of code on 
-MIPS64, and can handle many cases without any changes.
+Same thing - your patch just moves the trigger.
 
->
-> For one, I always advocate making the DTS human-readable.  For
-> another, I think that there are a number of configuration sequences
-> that require read-modify-write, or write-wait-write.  In other words,
-> I think that there are enough cases where actual software will be
-> needed, that an attempt to generically specify a register
-> initialization sequence will be impossible, and leave us with the same
-> problems to solve later on.
+> Using ext4, without my patch:
+>   - first, mlock does fast progress going though file pages, marking them
+>     as dirty. Eventually, it hits the dirty limit and gets throttled.
+>   - then, mlock does slow progress as it needs to wait for writeback.
+>     writeback occurs and allocates blocks for the /data/hole20G.
+>     Eventually, the /data partition gets full.
+>   - then, mlock returns an error.
 
-We can always add more properties as you suggest, if the existing code 
-does not prove to be sufficiently flexible.
+Yup, ext4 implements page_mkwrite(), so can detect ENOSPC during the
+write page fault.
 
->  For third...ly... allowing
-> device-tree-specified register initializations might encourage
-> developers to put all of their register initializations in the device
-> tree.  Especially when they realize that the LED initialization for
-> *their* PHY has to come between two standard initialization steps in
-> the driver.  Or before.  Or after.
->
-> By specifying actual functionality, the driver can work around those
-> problems, while being aware of the functional goal.  However, I'm
-> aware that such a path is more difficult, and perhaps just as futile,
-> as PHY vendors frequently don't want to document what their magic
-> sequences mean.
->
+> Using ext4, with my patch:
+>   - mlock goes through all pages in ~5 seconds, marking them as mlocked
+>     (but still not dirty)
+>   - mlock completes. /data/hole20G still does not have blocks allocated.
+>   - if memtoy is then instructed to dirty all the pages
+>     (using 'touch hole20G write'):
+>     - first, memtoy does fast progress faulting through file pages, marking
+>       them as dirty. Eventually, it hits the dirty limit and gets throttled.
+>     - then, memtoy does slow progress as it needs to wait for writeback.
+>       writeback occurs and allocates blocks for the /data/hole20G.
+>       Eventually, the /data partition gets full.
+>     - at that point, memtoy dies of SIGBUS.
+>   - i.e. for filesystems that define the page_mkwrite callback, the mlock
+>     behavior when running out of space writing to sparse files is clearly
+>     nicer without my patch than with it.
 
-I certainly understand your desire to make the dts readable, but I think 
-it has to be balanced against the complexity and chance for bugs in the 
-drivers as well as churn in the bindings specifications.
+Which is how all filesystems _should_ behave. Any filesystem that does
+not implement ->page_mkwrite will break under this test, regardless
+of your patch. It is exercising the exact problem that page_mkwrite
+was introduced to solve....
 
-David Daney
+> Not 100% sure what to make of these results.
+> 
+> Approaching the problem the other way - would there be any objection to
+> adding code to do an fallocate() equivalent at the start of mlock ?
+
+IMO, you do not need fallocate or any form of preallocation at all
+during mlock(). As I've already pointed out, this still requires
+filesystems to implement ->page_mkwrite to ensure mmap writes into
+preallocated regions work correctly.
+
+Fundamentally, filesystems need to implement ->page-mkwrite() to do
+the right thing w.r.t. mmap writes and ENOSPC, and any filesystem
+that doesn't is plain broken. You don't need to try to fix this
+problem by making mlock() jump through hoops - it'll be fixed by
+people implementing a working ->page_mkwrite function for their
+filesystem.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
