@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932281Ab0KSVwd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:52:33 -0500
-Received: from kroah.org ([198.145.64.141]:51764 "EHLO coco.kroah.org"
+	id S1757268Ab0KSVp0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:45:26 -0500
+Received: from kroah.org ([198.145.64.141]:51739 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757242Ab0KSVp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:45:28 -0500
+	id S1757243Ab0KSVpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:45:23 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:10 2010
-Message-Id: <20101119214410.741293356@clark.site>
+Message-Id: <20101119214410.408837220@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:42:56 -0800
+Date: Fri, 19 Nov 2010 13:42:52 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, greg@kroah.com
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [16/45] KVM: MMU: fix direct sps access corrupted
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [12/45] x86, mtrr: Assume SYS_CFG[Tom2ForceMemTypeWB] exists on all future AMD CPUs
 In-Reply-To: <20101119214439.GA26350@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,63 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit 9e7b0e7fba45ca3c6357aeb7091ebc281f1de365 upstream.
+commit 3fdbf004c1706480a7c7fac3c9d836fa6df20d7d upstream.
 
-If the mapping is writable but the dirty flag is not set, we will find
-the read-only direct sp and setup the mapping, then if the write #PF
-occur, we will mark this mapping writable in the read-only direct sp,
-now, other real read-only mapping will happily write it without #PF.
+Instead of adapting the CPU family check in amd_special_default_mtrr()
+for each new CPU family assume that all new AMD CPUs support the
+necessary bits in SYS_CFG MSR.
 
-It may hurt guest's COW
+Tom2Enabled is architectural (defined in APM Vol.2).
+Tom2ForceMemTypeWB is defined in all BKDGs starting with K8 NPT.
+In pre K8-NPT BKDG this bit is reserved (read as zero).
 
-Fixed by re-install the mapping when write #PF occur.
+W/o this adaption Linux would unnecessarily complain about bad MTRR
+settings on every new AMD CPU family, e.g.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+[    0.000000] WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 4863MB of RAM.
+
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+LKML-Reference: <20100930123235.GB20545@loge.amd.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kvm/paging_tmpl.h |   28 ++++++++++++++++++++++++++--
- 1 file changed, 26 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/mtrr/cleanup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -318,8 +318,32 @@ static u64 *FNAME(fetch)(struct kvm_vcpu
- 			break;
- 		}
+--- a/arch/x86/kernel/cpu/mtrr/cleanup.c
++++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+@@ -948,7 +948,7 @@ int __init amd_special_default_mtrr(void
  
--		if (is_shadow_present_pte(*sptep) && !is_large_pte(*sptep))
--			continue;
-+		if (is_shadow_present_pte(*sptep) && !is_large_pte(*sptep)) {
-+			struct kvm_mmu_page *child;
-+			unsigned direct_access;
-+
-+			if (level != gw->level)
-+				continue;
-+
-+			/*
-+			 * For the direct sp, if the guest pte's dirty bit
-+			 * changed form clean to dirty, it will corrupt the
-+			 * sp's access: allow writable in the read-only sp,
-+			 * so we should update the spte at this point to get
-+			 * a new sp with the correct access.
-+			 */
-+			direct_access = gw->pt_access & gw->pte_access;
-+			if (!is_dirty_gpte(gw->ptes[gw->level - 1]))
-+				direct_access &= ~ACC_WRITE_MASK;
-+
-+			child = page_header(*sptep & PT64_BASE_ADDR_MASK);
-+			if (child->role.access == direct_access)
-+				continue;
-+
-+			mmu_page_remove_parent_pte(child, sptep);
-+			__set_spte(sptep, shadow_trap_nonpresent_pte);
-+			kvm_flush_remote_tlbs(vcpu->kvm);
-+		}
- 
- 		if (is_large_pte(*sptep)) {
- 			rmap_remove(vcpu->kvm, sptep);
+ 	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
+ 		return 0;
+-	if (boot_cpu_data.x86 < 0xf || boot_cpu_data.x86 > 0x11)
++	if (boot_cpu_data.x86 < 0xf)
+ 		return 0;
+ 	/* In case some hypervisor doesn't pass SYSCFG through: */
+ 	if (rdmsr_safe(MSR_K8_SYSCFG, &l, &h) < 0)
 
 
