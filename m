@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334Ab0KSVpk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:45:40 -0500
-Received: from kroah.org ([198.145.64.141]:51862 "EHLO coco.kroah.org"
+	id S932441Ab0KSVrr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:47:47 -0500
+Received: from kroah.org ([198.145.64.141]:51875 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932273Ab0KSVpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:45:39 -0500
+	id S932273Ab0KSVpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:45:40 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:12 2010
-Message-Id: <20101119214412.227758764@clark.site>
+Message-Id: <20101119214412.471207712@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:43:14 -0800
+Date: Fri, 19 Nov 2010 13:43:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Anders Larsen <al@alarsen.net>
-Subject: [34/45] USB: cp210x: Add WAGO 750-923 Service Cable device ID
+        Alon Ziv <alon-git@nolaviz.org>
+Subject: [37/45] USB: opticon: Fix long-standing bugs in opticon driver
 In-Reply-To: <20101119214439.GA26350@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anders Larsen <al@alarsen.net>
+From: Alon Ziv <alon+git@nolaviz.org>
 
-commit 93ad03d60b5b18897030038234aa2ebae8234748 upstream.
+commit 97cd8dc4ca9a1a5efb2cc38758e01492e3b013e2 upstream.
 
-The WAGO 750-923 USB Service Cable is used for configuration and firmware
-updates of several industrial automation products from WAGO Kontakttechnik GmbH.
+The bulk-read callback had two bugs:
+a) The bulk-in packet's leading two zeros were returned (and the two last
+   bytes truncated)
+b) The wrong URB was transmitted for the second (and later) read requests,
+   causing further reads to return the entire packet (including leading
+   zeros)
 
-Bus 004 Device 002: ID 1be3:07a6
-Device Descriptor:
-  bLength                18
-  bDescriptorType         1
-  bcdUSB               1.10
-  bDeviceClass            0 (Defined at Interface level)
-  bDeviceSubClass         0
-  bDeviceProtocol         0
-  bMaxPacketSize0        64
-  idVendor           0x1be3
-  idProduct          0x07a6
-  bcdDevice            1.00
-  iManufacturer           1 Silicon Labs
-  iProduct                2 WAGO USB Service Cable
-  iSerial                 3 1277796751
-  . . .
-
-Signed-off-by: Anders Larsen <al@alarsen.net>
+Signed-off-by: Alon Ziv <alon-git@nolaviz.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/opticon.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -134,6 +134,7 @@ static struct usb_device_id id_table []
- 	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
-+	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
- 	{ } /* Terminating Entry */
- };
+--- a/drivers/usb/serial/opticon.c
++++ b/drivers/usb/serial/opticon.c
+@@ -99,8 +99,8 @@ static void opticon_bulk_callback(struct
+ 				available_room = tty_buffer_request_room(tty,
+ 								data_length);
+ 				if (available_room) {
+-					tty_insert_flip_string(tty, data,
+-							       available_room);
++					tty_insert_flip_string(tty, data + 2,
++							       data_length);
+ 					tty_flip_buffer_push(tty);
+ 				}
+ 				tty_kref_put(tty);
+@@ -134,7 +134,7 @@ exit:
+ 						  priv->bulk_address),
+ 				  priv->bulk_in_buffer, priv->buffer_size,
+ 				  opticon_bulk_callback, priv);
+-		result = usb_submit_urb(port->read_urb, GFP_ATOMIC);
++		result = usb_submit_urb(priv->bulk_read_urb, GFP_ATOMIC);
+ 		if (result)
+ 			dev_err(&port->dev,
+ 			    "%s - failed resubmitting read urb, error %d\n",
 
 
