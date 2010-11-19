@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124Ab0KSC2c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 21:28:32 -0500
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:40993 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751173Ab0KSC2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 21:28:31 -0500
-Date: Fri, 19 Nov 2010 13:28:24 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
-        Christoph Hellwig <hch@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/13] IO-less dirty throttling
-Message-ID: <20101119022824.GB13830@dastard>
-References: <20101117035821.000579293@intel.com>
- <20101117072538.GO22876@dastard>
- <20101117100655.GA26501@localhost>
- <20101118014051.GR22876@dastard>
- <20101117175900.0d7878e5.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117175900.0d7878e5.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752558Ab0KSC2p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 21:28:45 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:59101 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752207Ab0KSC2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 21:28:44 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+g5JoTTH2gIOF/YdluDNcZKMd/SKJhTYrNzpsP2S
+	9AtexKEJ6y7i+j
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+From: Mike Galbraith <efault@gmx.de>
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hans-Peter Jansen <hpj@urpla.net>, linux-kernel@vger.kernel.org,
+        Lennart Poettering <mzxreary@0pointer.de>, david@lang.hm,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
+In-Reply-To: <20101119012348.GM6024@const.famille.thibault.fr>
+References: <20101116211431.GA15211@tango.0pointer.de>
+	 <201011182333.48281.hpj@urpla.net>
+	 <20101118231218.GX6024@const.famille.thibault.fr>
+	 <1290123351.18039.49.camel@maggy.simson.net>
+	 <20101118234339.GA6024@const.famille.thibault.fr>
+	 <AANLkTimTNxLYGLgnS9TUT_YiMnmDVrqseByGGogj+A4Z@mail.gmail.com>
+	 <20101119000204.GE6024@const.famille.thibault.fr>
+	 <AANLkTi=n4r9STKsx76t--HbK7EiUWaaPm7tUN2nXtqxA@mail.gmail.com>
+	 <20101119005942.GL6024@const.famille.thibault.fr>
+	 <1290129157.18039.70.camel@maggy.simson.net>
+	 <20101119012348.GM6024@const.famille.thibault.fr>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Nov 2010 19:28:21 -0700
+Message-ID: <1290133701.18039.105.camel@maggy.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 05:59:00PM -0800, Andrew Morton wrote:
-> On Thu, 18 Nov 2010 12:40:51 +1100 Dave Chinner <david@fromorbit.com> wrote:
-> > Yeah, sorry, should have posted them - I didn't because I snapped
-> > the numbers before the run had finished. Without series:
-> > 
-> > 373.19user 14940.49system 41:42.17elapsed 612%CPU (0avgtext+0avgdata 82560maxresident)k
-> > 0inputs+0outputs (403major+2599763minor)pagefaults 0swaps
-> > 
-> > With your series:
-> > 
-> > 359.64user 5559.32system 40:53.23elapsed 241%CPU (0avgtext+0avgdata 82496maxresident)k
-> > 0inputs+0outputs (312major+2598798minor)pagefaults 0swaps
-> > 
-> > So the wall time with your series is lower, and system CPU time is
-> > way down (as I've already noted) for this workload on XFS.
+On Fri, 2010-11-19 at 02:23 +0100, Samuel Thibault wrote:
+> Mike Galbraith, le Thu 18 Nov 2010 18:12:37 -0700, a écrit :
+> > I think that could be done with a fork flag with the same semantics as
+> > reset on fork.  Once your task launcher (ala kdeinit) is tagged, it
+> > launches task groups, the children lose that ability.
 > 
-> How much of that benefit is an accounting artifact, moving work away
-> from the calling process's CPU and into kernel threads?
+> Mmm, even if always creating groups can have a slight overhead, you
+> should probably not prevent userspace from deciding to do so when it
+> knows it's appropriate.
 
-As I spelled out in my original results, the sustained CPU usage for
-the unmodified kernel is ~780% - 620% fs_mark, 80% bdi-flusher, 80%
-kswapd (i.e. completely CPU bound on the 8p test VM).  With this
-series, the sustained CPU usage is about 380% - 250% fs_mark, 80%
-bdi-flusher, 50% kswapd.
+I think you may have misunderstood.  The flag would be a hint that
+userland can set to say "I want to fork off task groups", just as
+SCHED_RESET_ON_FORK asks the kernel to reset a child's sched class and
+nice level on fork.
 
-IOWs, this series _halved_ the total sustained CPU usage even after
-taking into account all the kernel threads. With wall time also
-being reduced and the number of IOs issued dropping by 25%, I find
-it hard to classify the result as anything other than spectacular...
+	-Mike
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
