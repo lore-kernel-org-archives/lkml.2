@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab0KSTns (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 14:43:48 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:38380 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755917Ab0KSTnr (ORCPT
+	id S1756586Ab0KSTqb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 14:46:31 -0500
+Received: from mtagate4.uk.ibm.com ([194.196.100.164]:41366 "EHLO
+	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab0KSTqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 14:43:47 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=ttFt6BBeUIKaqxsOM8pGfhisyeDuA8SJY3OHSzDGSpyv296Ultkw6pbQ8iFiNNAmns
-         negHLYc3koyQKPVvhzbXJAyIBnoGMjsFllrL7+2KzKzFLO4PTQ7o1lbbie/Jz04FB0ae
-         lY3B/BHdnXXC//y7fLX9Jm+QgIpeEvm4MxkVg=
-MIME-Version: 1.0
-In-Reply-To: <20101116140900.039761100@kernel.dk>
-References: <20101116140900.039761100@kernel.dk>
-Date: Fri, 19 Nov 2010 11:43:45 -0800
-X-Google-Sender-Auth: Tk8c6iHOXBFgVTD2YrHPjEMWZNg
-Message-ID: <AANLkTikzWK-cedm7QPK-jhi=xJRAwufbgxjPEdQxx=VQ@mail.gmail.com>
-Subject: Re: [patch 00/28] [rfc] dcache scaling part 1
-From: Tim Pepper <lnxninja@linux.vnet.ibm.com>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 19 Nov 2010 14:46:30 -0500
+Subject: Re: [RFC][PATCH v2 5/7] taskstats: Improve cumulative CPU time
+ accounting
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org
+In-Reply-To: <20101118171001.GB3249@redhat.com>
+References: <20101111170352.732381138@linux.vnet.ibm.com>
+	 <20101111170815.404670062@linux.vnet.ibm.com>
+	 <20101113183810.GA9021@redhat.com>
+	 <1289926635.1940.100.camel@holzheu-laptop>
+	 <20101118171001.GB3249@redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Organization: IBM
+Date: Fri, 19 Nov 2010 20:46:25 +0100
+Message-ID: <1290195985.2000.18.camel@holzheu-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 16, 2010 at 6:09 AM, Nick Piggin <npiggin@kernel.dk> wrote:
-> There are 3 main parts to dcache scaling. This one primarily adds new locks
-> to take over dcache_lock, and some pre/post prep and streamlining patches.
->
-> The second implements fine grained locking, and is rather trivial after
-> part 1.
->
-> The third implements rcu-walk. rcu-walk depends on the first part, because it
-> relies on using d_lock to protect the state of the dentry (when converting from
-> rcu-walk to refcounted walk). Without the fine grained locing, we'd need to use
-> dcache_lock for that, which would be a step backwards to put into path walking
-> again.
+Hello Oleg,
 
-Reviewed-by: Tim Pepper <lnxninja@linux.vnet.ibm.com>
+On Thu, 2010-11-18 at 18:10 +0100, Oleg Nesterov wrote:
+> > 2. Because of reparent to init, there are situations where it is
+> >    not clear to which tasks the CPU time of dead tasks between
+> >    two snapshots has been accounted. This is a problem for example 2.
+> 
+> Yes, I see.
+> 
+> But I must admit, _personally_ I am not sure this problem worth the
+> trouble.
+
+I think you are right...
+
+For that function, the introduced overhead, additional code and
+especially the possible confusion with two process hierarchies is not
+worth the effort. Maybe we have a chance to solve the reparent problem
+by introducing task exit event filters (e.g. give me all exit events for
+processes that have init as parent).
+
+So I will send no more patches with the parallel hierarchy:
+Good news for you :-)
+
+But for the second problem with the forgotten CPU time, I would like
+send you a new patch set, separated as you have requested. Although I
+personally think that also there we probably have no good chances to get
+them accepted upstream, because the signal_struct size is increased and
+some cycles are added to the task exit processing.
+
+It would be nice, if you find some time to look at the patches,
+but no hurry!
+
+Michael
+
+
+
+
+
