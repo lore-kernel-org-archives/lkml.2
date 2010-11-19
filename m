@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756930Ab0KSVaR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:30:17 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45795 "EHLO
+	id S1756965Ab0KSVa1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:30:27 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45800 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751865Ab0KSVaO (ORCPT
+	with ESMTP id S1756944Ab0KSVaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:30:14 -0500
+	Fri, 19 Nov 2010 16:30:22 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt@console-pimps.org>,
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@felicio.ghostprotocols.net>
-Subject: [PATCH 1/4] perf record: Remove newline character from perror() argument
-Date: Fri, 19 Nov 2010 19:29:40 -0200
-Message-Id: <1290202186-25352-2-git-send-email-acme@infradead.org>
+        Robert Richter <robert.richter@amd.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/3] perf stat: Add no-aggregation mode to -a
+Date: Fri, 19 Nov 2010 19:29:41 -0200
+Message-Id: <1290202186-25352-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1290202186-25352-1-git-send-email-acme@infradead.org>
 References: <1290202186-25352-1-git-send-email-acme@infradead.org>
@@ -27,52 +28,370 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Fleming <matt@console-pimps.org>
+From: Stephane Eranian <eranian@google.com>
 
-If we include a newline character in the string argument to perror()
-then the output will be split across two lines like so,
+This patch adds a new -A option to perf stat. If specified then perf stat does
+not aggregate counts across all monitored CPUs in system-wide mode, i.e., when
+using -a. This option is not supported in per-thread mode.
 
-    Unable to read perf file descriptor
-    : No space left on device
+Being able to get a per-cpu breakdown is useful to detect imbalances between
+CPUs when running a uniform workload than spans all monitored CPUs.
 
-Deleting the newline character prints a much more readable error,
+The second version corrects the missing cpumap[] support, so that it works when
+the -C option is used.
 
-    Unable to read perf file descriptor: No space left on device
+The third version fixes a missing cpumap[] in print_counter() and removes a
+stray patch in builtin-trace.c.
 
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
+Examples on a 4-way system:
+
+# perf stat -a   -e cycles,instructions -- sleep 1
+ Performance counter stats for 'sleep 1':
+         9592808135  cycles
+         3490380006  instructions             #      0.364 IPC
+        1.001584632  seconds time elapsed
+
+# perf stat -a -A -e cycles,instructions -- sleep 1
+ Performance counter stats for 'sleep 1':
+CPU0            2398163767  cycles
+CPU1            2398180817  cycles
+CPU2            2398217115  cycles
+CPU3            2398247483  cycles
+CPU0             872282046  instructions             #      0.364 IPC
+CPU1             873481776  instructions             #      0.364 IPC
+CPU2             872638127  instructions             #      0.364 IPC
+CPU3             872437789  instructions             #      0.364 IPC
+        1.001556052  seconds time elapsed
+
+Cc: David S. Miller <davem@davemloft.net>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <89e77b54659bc3798b23a5596c2debb7f6f4cf27.1283010281.git.matt@console-pimps.org>
-Signed-off-by: Matt Fleming <matt@console-pimps.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@felicio.ghostprotocols.net>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <robert.richter@amd.com>
+LKML-Reference: <4ce257b5.1e07e30a.7b6b.3aa9@mx.google.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-record.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/Documentation/perf-stat.txt |    5 +
+ tools/perf/builtin-stat.c              |  169 +++++++++++++++++++++++++++-----
+ 2 files changed, 149 insertions(+), 25 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index ff77b80..b530bee 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -353,7 +353,7 @@ try_again:
- 		}
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 4b3a2d4..c405bca 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -53,6 +53,11 @@ comma-sperated list with no space: 0,1. Ranges of CPUs are specified with -: 0-2
+ In per-thread mode, this option is ignored. The -a option is still necessary
+ to activate system-wide monitoring. Default is to count on all CPUs.
  
- 		if (read(fd[nr_cpu][counter][thread_index], &read_data, sizeof(read_data)) == -1) {
--			perror("Unable to read perf file descriptor\n");
-+			perror("Unable to read perf file descriptor");
- 			exit(-1);
- 		}
++-A::
++--no-aggr::
++Do not aggregate counts across all monitored CPUs in system-wide mode (-a).
++This option is only valid in system-wide mode.
++
+ EXAMPLES
+ --------
  
-@@ -626,7 +626,7 @@ static int __cmd_record(int argc, const char **argv)
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index a6b4d44..b3e568f 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -75,6 +75,7 @@ static int			run_idx				=  0;
+ static int			run_count			=  1;
+ static bool			no_inherit			= false;
+ static bool			scale				=  true;
++static bool			no_aggr				= false;
+ static pid_t			target_pid			= -1;
+ static pid_t			target_tid			= -1;
+ static pid_t			*all_tids			=  NULL;
+@@ -89,6 +90,12 @@ static int			*fd[MAX_NR_CPUS][MAX_COUNTERS];
  
- 	nr_cpus = read_cpu_map(cpu_list);
- 	if (nr_cpus < 1) {
--		perror("failed to collect number of CPUs\n");
-+		perror("failed to collect number of CPUs");
- 		return -1;
+ static int			event_scaled[MAX_COUNTERS];
+ 
++static struct {
++	u64 val;
++	u64 ena;
++	u64 run;
++} cpu_counts[MAX_NR_CPUS][MAX_COUNTERS];
++
+ static volatile int done = 0;
+ 
+ struct stats
+@@ -136,10 +143,10 @@ static double stddev_stats(struct stats *stats)
+ }
+ 
+ struct stats			event_res_stats[MAX_COUNTERS][3];
+-struct stats			runtime_nsecs_stats;
++struct stats			runtime_nsecs_stats[MAX_NR_CPUS];
++struct stats			runtime_cycles_stats[MAX_NR_CPUS];
++struct stats			runtime_branches_stats[MAX_NR_CPUS];
+ struct stats			walltime_nsecs_stats;
+-struct stats			runtime_cycles_stats;
+-struct stats			runtime_branches_stats;
+ 
+ #define MATCH_EVENT(t, c, counter)			\
+ 	(attrs[counter].type == PERF_TYPE_##t &&	\
+@@ -205,8 +212,9 @@ static inline int nsec_counter(int counter)
+ 
+ /*
+  * Read out the results of a single counter:
++ * aggregate counts across CPUs in system-wide mode
+  */
+-static void read_counter(int counter)
++static void read_counter_aggr(int counter)
+ {
+ 	u64 count[3], single_count[3];
+ 	int cpu;
+@@ -264,11 +272,58 @@ static void read_counter(int counter)
+ 	 * Save the full runtime - to allow normalization during printout:
+ 	 */
+ 	if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter))
+-		update_stats(&runtime_nsecs_stats, count[0]);
++		update_stats(&runtime_nsecs_stats[0], count[0]);
+ 	if (MATCH_EVENT(HARDWARE, HW_CPU_CYCLES, counter))
+-		update_stats(&runtime_cycles_stats, count[0]);
++		update_stats(&runtime_cycles_stats[0], count[0]);
+ 	if (MATCH_EVENT(HARDWARE, HW_BRANCH_INSTRUCTIONS, counter))
+-		update_stats(&runtime_branches_stats, count[0]);
++		update_stats(&runtime_branches_stats[0], count[0]);
++}
++
++/*
++ * Read out the results of a single counter:
++ * do not aggregate counts across CPUs in system-wide mode
++ */
++static void read_counter(int counter)
++{
++	u64 count[3];
++	int cpu;
++	size_t res, nv;
++
++	count[0] = count[1] = count[2] = 0;
++
++	nv = scale ? 3 : 1;
++
++	for (cpu = 0; cpu < nr_cpus; cpu++) {
++
++		if (fd[cpu][counter][0] < 0)
++			continue;
++
++		res = read(fd[cpu][counter][0], count, nv * sizeof(u64));
++
++		assert(res == nv * sizeof(u64));
++
++		close(fd[cpu][counter][0]);
++		fd[cpu][counter][0] = -1;
++
++		if (scale) {
++			if (count[2] == 0) {
++				count[0] = 0;
++			} else if (count[2] < count[1]) {
++				count[0] = (unsigned long long)
++				((double)count[0] * count[1] / count[2] + 0.5);
++			}
++		}
++		cpu_counts[cpu][counter].val = count[0]; /* scaled count */
++		cpu_counts[cpu][counter].ena = count[1];
++		cpu_counts[cpu][counter].run = count[2];
++
++		if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter))
++			update_stats(&runtime_nsecs_stats[cpu], count[0]);
++		if (MATCH_EVENT(HARDWARE, HW_CPU_CYCLES, counter))
++			update_stats(&runtime_cycles_stats[cpu], count[0]);
++		if (MATCH_EVENT(HARDWARE, HW_BRANCH_INSTRUCTIONS, counter))
++			update_stats(&runtime_branches_stats[cpu], count[0]);
++	}
+ }
+ 
+ static int run_perf_stat(int argc __used, const char **argv)
+@@ -362,9 +417,13 @@ static int run_perf_stat(int argc __used, const char **argv)
+ 
+ 	update_stats(&walltime_nsecs_stats, t1 - t0);
+ 
+-	for (counter = 0; counter < nr_counters; counter++)
+-		read_counter(counter);
+-
++	if (no_aggr) {
++		for (counter = 0; counter < nr_counters; counter++)
++			read_counter(counter);
++	} else {
++		for (counter = 0; counter < nr_counters; counter++)
++			read_counter_aggr(counter);
++	}
+ 	return WEXITSTATUS(status);
+ }
+ 
+@@ -377,11 +436,15 @@ static void print_noise(int counter, double avg)
+ 			100 * stddev_stats(&event_res_stats[counter][0]) / avg);
+ }
+ 
+-static void nsec_printout(int counter, double avg)
++static void nsec_printout(int cpu, int counter, double avg)
+ {
+ 	double msecs = avg / 1e6;
+ 
+-	fprintf(stderr, " %18.6f  %-24s", msecs, event_name(counter));
++	if (no_aggr)
++		fprintf(stderr, "CPU%-4d %18.6f  %-24s",
++			cpumap[cpu], msecs, event_name(counter));
++	else
++		fprintf(stderr, " %18.6f  %-24s", msecs, event_name(counter));
+ 
+ 	if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter)) {
+ 		fprintf(stderr, " # %10.3f CPUs ",
+@@ -389,33 +452,41 @@ static void nsec_printout(int counter, double avg)
+ 	}
+ }
+ 
+-static void abs_printout(int counter, double avg)
++static void abs_printout(int cpu, int counter, double avg)
+ {
+ 	double total, ratio = 0.0;
++	char cpustr[16] = { '\0', };
++
++	if (no_aggr)
++		sprintf(cpustr, "CPU%-4d", cpumap[cpu]);
++	else
++		cpu = 0;
+ 
+ 	if (big_num)
+-		fprintf(stderr, " %'18.0f  %-24s", avg, event_name(counter));
++		fprintf(stderr, "%s %'18.0f  %-24s",
++			cpustr, avg, event_name(counter));
+ 	else
+-		fprintf(stderr, " %18.0f  %-24s", avg, event_name(counter));
++		fprintf(stderr, "%s %18.0f  %-24s",
++			cpustr, avg, event_name(counter));
+ 
+ 	if (MATCH_EVENT(HARDWARE, HW_INSTRUCTIONS, counter)) {
+-		total = avg_stats(&runtime_cycles_stats);
++		total = avg_stats(&runtime_cycles_stats[cpu]);
+ 
+ 		if (total)
+ 			ratio = avg / total;
+ 
+ 		fprintf(stderr, " # %10.3f IPC  ", ratio);
+ 	} else if (MATCH_EVENT(HARDWARE, HW_BRANCH_MISSES, counter) &&
+-			runtime_branches_stats.n != 0) {
+-		total = avg_stats(&runtime_branches_stats);
++			runtime_branches_stats[cpu].n != 0) {
++		total = avg_stats(&runtime_branches_stats[cpu]);
+ 
+ 		if (total)
+ 			ratio = avg * 100 / total;
+ 
+ 		fprintf(stderr, " # %10.3f %%    ", ratio);
+ 
+-	} else if (runtime_nsecs_stats.n != 0) {
+-		total = avg_stats(&runtime_nsecs_stats);
++	} else if (runtime_nsecs_stats[cpu].n != 0) {
++		total = avg_stats(&runtime_nsecs_stats[cpu]);
+ 
+ 		if (total)
+ 			ratio = 1000.0 * avg / total;
+@@ -426,8 +497,9 @@ static void abs_printout(int counter, double avg)
+ 
+ /*
+  * Print out the results of a single counter:
++ * aggregated counts in system-wide mode
+  */
+-static void print_counter(int counter)
++static void print_counter_aggr(int counter)
+ {
+ 	double avg = avg_stats(&event_res_stats[counter][0]);
+ 	int scaled = event_scaled[counter];
+@@ -439,9 +511,9 @@ static void print_counter(int counter)
  	}
  
+ 	if (nsec_counter(counter))
+-		nsec_printout(counter, avg);
++		nsec_printout(-1, counter, avg);
+ 	else
+-		abs_printout(counter, avg);
++		abs_printout(-1, counter, avg);
+ 
+ 	print_noise(counter, avg);
+ 
+@@ -458,6 +530,42 @@ static void print_counter(int counter)
+ 	fprintf(stderr, "\n");
+ }
+ 
++/*
++ * Print out the results of a single counter:
++ * does not use aggregated count in system-wide
++ */
++static void print_counter(int counter)
++{
++	u64 ena, run, val;
++	int cpu;
++
++	for (cpu = 0; cpu < nr_cpus; cpu++) {
++		val = cpu_counts[cpu][counter].val;
++		ena = cpu_counts[cpu][counter].ena;
++		run = cpu_counts[cpu][counter].run;
++		if (run == 0 || ena == 0) {
++			fprintf(stderr, "CPU%-4d %18s  %-24s", cpumap[cpu],
++					"<not counted>", event_name(counter));
++
++			fprintf(stderr, "\n");
++			continue;
++		}
++
++		if (nsec_counter(counter))
++			nsec_printout(cpu, counter, val);
++		else
++			abs_printout(cpu, counter, val);
++
++		print_noise(counter, 1.0);
++
++		if (run != ena) {
++			fprintf(stderr, "  (scaled from %.2f%%)",
++					100.0 * run / ena);
++		}
++		fprintf(stderr, "\n");
++	}
++}
++
+ static void print_stat(int argc, const char **argv)
+ {
+ 	int i, counter;
+@@ -480,8 +588,13 @@ static void print_stat(int argc, const char **argv)
+ 		fprintf(stderr, " (%d runs)", run_count);
+ 	fprintf(stderr, ":\n\n");
+ 
+-	for (counter = 0; counter < nr_counters; counter++)
+-		print_counter(counter);
++	if (no_aggr) {
++		for (counter = 0; counter < nr_counters; counter++)
++			print_counter(counter);
++	} else {
++		for (counter = 0; counter < nr_counters; counter++)
++			print_counter_aggr(counter);
++	}
+ 
+ 	fprintf(stderr, "\n");
+ 	fprintf(stderr, " %18.9f  seconds time elapsed",
+@@ -545,6 +658,8 @@ static const struct option options[] = {
+ 		    "print large numbers with thousands\' separators"),
+ 	OPT_STRING('C', "cpu", &cpu_list, "cpu",
+ 		    "list of cpus to monitor in system-wide"),
++	OPT_BOOLEAN('A', "no-aggr", &no_aggr,
++		    "disable CPU count aggregation"),
+ 	OPT_END()
+ };
+ 
+@@ -562,6 +677,10 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	if (run_count <= 0)
+ 		usage_with_options(stat_usage, options);
+ 
++	/* no_aggr is for system-wide only */
++	if (no_aggr && !system_wide)
++		usage_with_options(stat_usage, options);
++
+ 	/* Set attrs and nr_counters if no event is selected and !null_run */
+ 	if (!null_run && !nr_counters) {
+ 		memcpy(attrs, default_attrs, sizeof(default_attrs));
 -- 
 1.6.2.5
 
