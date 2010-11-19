@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab0KSPqX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 10:46:23 -0500
-Received: from THUNK.ORG ([69.25.196.29]:56041 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754059Ab0KSPqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 10:46:21 -0500
-Date: Fri, 19 Nov 2010 10:45:40 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/8] Use memory compaction instead of lumpy reclaim
- during high-order allocations
-Message-ID: <20101119154540.GG10039@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Mel Gorman <mel@csn.ul.ie>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Johannes Weiner <hannes@cmpxchg.org>,
-	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
-	linux-kernel@vger.kernel.org
-References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie>
- <20101117154641.51fd7ce5.akpm@linux-foundation.org>
- <20101118081254.GB8135@csn.ul.ie>
- <20101118172627.cf25b83a.kamezawa.hiroyu@jp.fujitsu.com>
- <20101118083828.GA24635@cmpxchg.org>
- <20101118092044.GE8135@csn.ul.ie>
- <20101118114928.ecb2d6b0.akpm@linux-foundation.org>
- <20101119104856.GB28613@csn.ul.ie>
- <4B8266CB-F658-4CC8-BCA3-677C22BAFAE0@mit.edu>
- <20101119140532.GH28613@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101119140532.GH28613@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1755167Ab0KSPsS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 10:48:18 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44363 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753054Ab0KSPsS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 10:48:18 -0500
+Date: Fri, 19 Nov 2010 15:47:05 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Dr. Werner Fink" <werner@suse.de>
+Cc: Greg KH <greg@kroah.com>, Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
+Message-ID: <20101119154705.7829487a@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101119132145.GA22883@boole.suse.de>
+References: <20101117235647.00766e32@lxorguk.ukuu.org.uk>
+	<20101118012734.GA8558@kroah.com>
+	<20101118014848.GA7873@tango.0pointer.de>
+	<20101118015310.GA30480@kroah.com>
+	<20101118110020.GA13871@boole.suse.de>
+	<20101118112335.434de53a@lxorguk.ukuu.org.uk>
+	<20101118121256.GA19884@boole.suse.de>
+	<20101118125822.16718289@lxorguk.ukuu.org.uk>
+	<20101118131420.GA23872@boole.suse.de>
+	<20101118144123.5417ccbd@lxorguk.ukuu.org.uk>
+	<20101119132145.GA22883@boole.suse.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 02:05:32PM +0000, Mel Gorman wrote:
-> > 
-> > How about making the default before 2.6.40, as an initial step?
-> > 
-> 
-> It'd be a reasonable way of ensuring it's being tested everywhere
-> and not by those that are interested or using distro kernel configs.
-> I guess we'd set to "default y" in the same patch that adds the note to
-> feature-removal-schedule.txt.
+> Currently the bootlogd(8) or blogd(8) parse the kernels command line
+> and if available do an ioctl TIOCGDEV (not supported by the upstream
+> kernel), then create a pty/tty pair, do an ioctl TIOCCONS to forward
 
-I'd suggest doing it now (or soon, before 2.6.40), just to make sure
-there aren't massive complaints about performance regressions, etc.,
-and then deprecating it at say 2.6.42, and then waiting 6-9 months
-before removing it.  But, I'm a bit more conservative about making
-such changes.
+So perhaps the vendors using TIOCGDEV could get off their collective
+backsides and submit it upstream ?
 
-(Said the person who has reluctantly agreed to keep the minixdf mount
-option after we found users when we tried deprecating it.  :-)
-
-       	     	      	    	    	  - Ted
+Alan
