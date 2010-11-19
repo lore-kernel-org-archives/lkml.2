@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab0KSHn1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 02:43:27 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:39663 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab0KSHn0 (ORCPT
+	id S1752203Ab0KSHyL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 02:54:11 -0500
+Received: from eazy.amigager.de ([213.239.192.238]:53838 "EHLO
+	eazy.amigager.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751957Ab0KSHyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 02:43:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=n41YX9F4YJF7iPZ1Hsb7DF1IpmZZcL3T5bnErhDa1G0zsUSqH4KTRovJD8Hvzm/kdI
-         pIBNX7poAzEaQ0E/0HV0VBuksUaM3XOjl1Pa5/1wYQjW84T1t3FeBbezBiXa0pmF6d5g
-         oMp9wQgadkwqIlHb68xul9KxcsbQHTGk+peFE=
-Subject: [PATCH] ASoC: uda134x - set reg_cache_default to uda134x_reg
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Christian Pellegrin <chripell@evolware.org>
-Content-Type: text/plain
-Date: Fri, 19 Nov 2010 15:48:06 +0800
-Message-Id: <1290152886.10001.2.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Nov 2010 02:54:09 -0500
+Date: Fri, 19 Nov 2010 08:54:27 +0100
+From: Tino Keitel <tino.keitel@tikei.de>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: DVI/EDID broken with Intel i945 graphics and 2.6.37-rc2
+Message-ID: <20101119075427.GA7002@mac.home>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	linux-kernel@vger.kernel.org
+References: <20101116184914.GA15794@mac.home>
+ <b9dded$h40vqf@orsmga002.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <b9dded$h40vqf@orsmga002.jf.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After checking the code in 2.6.36,
-I found this is missing during multi-component conversion.
+On Wed, Nov 17, 2010 at 10:20:09 +0000, Chris Wilson wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/uda134x.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+[...]
 
-diff --git a/sound/soc/codecs/uda134x.c b/sound/soc/codecs/uda134x.c
-index 8ea81d4..6b6c0d2 100644
---- a/sound/soc/codecs/uda134x.c
-+++ b/sound/soc/codecs/uda134x.c
-@@ -597,6 +597,7 @@ static struct snd_soc_codec_driver soc_codec_dev_uda134x = {
- 	.resume =       uda134x_soc_resume,
- 	.reg_cache_size = sizeof(uda134x_reg),
- 	.reg_word_size = sizeof(u8),
-+	.reg_cache_default = uda134x_reg,
- 	.reg_cache_step = 1,
- 	.read = uda134x_read_reg_cache,
- 	.write = uda134x_write,
--- 
-1.7.2
+> An alternative is to force detection, ie change the detect(analog, false)
+> to true.
 
+Hi,
 
+this didn't help either.
 
+Regards,
+Tino
