@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756252Ab0KSSOp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 13:14:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14072 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755607Ab0KSSOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 13:14:44 -0500
-Date: Fri, 19 Nov 2010 19:14:21 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
-To: Lukas Czerner <lczerner@redhat.com>
-cc: Christoph Hellwig <hch@infradead.org>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Mark Lord <kernel@teksavvy.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jeff Moyer <jmoyer@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, tytso@mit.edu,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
- super_operation
-In-Reply-To: <alpine.LFD.2.00.1011191907250.3238@dhcp-lab-213.englab.brq.redhat.com>
-Message-ID: <alpine.LFD.2.00.1011191913260.3238@dhcp-lab-213.englab.brq.redhat.com>
-References: <1290100750.3041.72.camel@mulgrave.site> <x494obe4kd5.fsf@segfault.boston.devel.redhat.com> <1290102098.3041.77.camel@mulgrave.site> <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com> <4CE59E57.2090009@teksavvy.com>
- <yq1r5eiw5os.fsf@sermon.lab.mkp.net> <4CE5C616.7070706@teksavvy.com> <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com> <20101119115516.GA1152@infradead.org> <AANLkTimQZKLtKpKRUJ-KyCyo29F_Mnws8J54G3CeMkyc@mail.gmail.com> <20101119163828.GA8023@infradead.org>
- <alpine.LFD.2.00.1011191853210.3238@dhcp-lab-213.englab.brq.redhat.com> <alpine.LFD.2.00.1011191907250.3238@dhcp-lab-213.englab.brq.redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756249Ab0KSSZJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:25:09 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40265 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756042Ab0KSSZI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 13:25:08 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20101119173817.GE24450@random.random>
+References: <patchbomb.1288798055@v2.random> <ad7a334318ea379be733.1288798057@v2.random>
+ <20101118111349.GG8135@csn.ul.ie> <20101119173817.GE24450@random.random>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 19 Nov 2010 09:54:27 -0800
+Message-ID: <AANLkTin76ajKd5Dc1fYwibqmL9yd6MtEvCWxCYYwnqOU@mail.gmail.com>
+Subject: Re: [PATCH 02 of 66] mm, migration: Fix race between shift_arg_pages
+ and rmap_walk by guaranteeing rmap_walk finds PTEs created within the
+ temporary stack
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Nov 2010, Lukas Czerner wrote:
-> 
-> 1. mkfs
-> 2. mount -o (nodiscard|discard)
-> 3. ./postmark
-> 4. umount
-> 5. repeat 1. - 4. ten times for each mnt option
-> 
-> -snip-
+On Fri, Nov 19, 2010 at 9:38 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+>
+> We decided the kmalloc was ok, but Linus didn't like this approach. I
+> kept it in my tree because I didn't want to remember when/if to add the
+> special check in the accurate rmap walks. I find it simpler if all
+> rmap walks are accurate by default.
 
-Done on 2.6.37-rc2 kernel.
+Why isn't the existing cheap solution sufficient?
 
--Lukas
+My opinion is still that we shouldn't add the expense to the common
+case, and it's the uncommon case (migration) that should just handle
+it.
+
+                Linus
