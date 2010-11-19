@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab0KSPfd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 10:35:33 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:44184 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755019Ab0KSPfb (ORCPT
+	id S1755093Ab0KSPii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 10:38:38 -0500
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:43746 "HELO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752531Ab0KSPig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 10:35:31 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBALcn5kxLd/sX/2dsb2JhbAAHgz3MNpENgSKBU4FjcwSEWosThgg
-X-IronPort-AV: E=Sophos;i="4.59,223,1288584000"; 
-   d="scan'208";a="82987302"
-Message-ID: <4CE69940.6040908@teksavvy.com>
-Date: Fri, 19 Nov 2010 10:35:28 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Fri, 19 Nov 2010 10:38:36 -0500
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Steven Whitehouse <swhiteho@redhat.com>,
-        Lukas Czerner <lczerner@redhat.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com> <20101118130630.GJ6178@parisc-linux.org> <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com> <1290168976.2570.45.camel@dolmen> <4CE68155.50705@teksavvy.com> <20101119140203.GC10039@thunk.org>
-In-Reply-To: <20101119140203.GC10039@thunk.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB59302477EA9EE@dbde02.ent.ti.com>
+References: <cover.1289835508.git.bengardiner@nanometrics.ca>
+	<cover.1289935504.git.bengardiner@nanometrics.ca>
+	<aa85c5d83111add3a2ed3495ac13bffe5e6b885d.1289935504.git.bengardiner@nanometrics.ca>
+	<B85A65D85D7EB246BE421B3FB0FBB59302477EA9EE@dbde02.ent.ti.com>
+Date: Fri, 19 Nov 2010 10:38:34 -0500
+Message-ID: <AANLkTikqdWmD6ze7x3ABqqwOLSuuSbJmKSWJrAgkXemZ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4] da850-evm: extract defines for SEL{A, B, C} pins
+ in UI expander
+From: Ben Gardiner <bengardiner@nanometrics.ca>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexander Clouter <alex@digriz.org.uk>,
+        Chris Cordahi <christophercordahi@nanometrics.ca>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-11-19 09:02 AM, Ted Ts'o wrote:
->but that's why mount -o discard is not the default.
+Hi Sehkar,
 
+On Fri, Nov 19, 2010 at 6:19 AM, Nori, Sekhar <nsekhar@ti.com> wrote:
+> [...]
+> In this case, I think in this case indexed array initialization
+> will help keep the offsets and names matched. Here is an untested
+> patch on your patch, please consider using it.
 
-But, oddly, it _is_ the default for mke2fs -t ext4,
-which really threw me for a loop recently.
+I love it. I'll post a re-spin with this patch integrated and you SOB
+added. Thank you, Sehkar.
 
-I though my system had locked up when suddenly everything
-went dead for a very long time (many minutes) while installing a new system.
+Best Regards,
+Ben Gardiner
 
-Then I figured out what was going on.
-I really believe that "-K" should be the _default_ for mke2fs,
-as otherwise lots of other people probably also wonder
-if Linux is killing their SSD at system install time..
-
-Cheers
+---
+Nanometrics Inc.
+http://www.nanometrics.ca
