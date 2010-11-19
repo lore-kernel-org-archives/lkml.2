@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab0KSCCi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 21:02:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6140 "EHLO mx1.redhat.com"
+	id S1759319Ab0KSCDQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 21:03:16 -0500
+Received: from mga02.intel.com ([134.134.136.20]:63005 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753708Ab0KSCCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 21:02:37 -0500
-From: Josef Bacik <josef@redhat.com>
-To: linux-fsdevel@vger.kernel.org, eparis@redhat.com,
-        linux-kernel@vger.kernel.org, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
-        bfields@fieldses.org
-Subject: [PATCH] fs: call security_d_instantiate in d_obtain_alias V2
-Date: Thu, 18 Nov 2010 20:52:55 -0500
-Message-Id: <1290131575-2489-1-git-send-email-josef@redhat.com>
+	id S1754860Ab0KSCDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 21:03:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,220,1288594800"; 
+   d="scan'208";a="678964248"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH -v5 0/3] Lockless memory allocator and list
+Date: Fri, 19 Nov 2010 10:02:11 +0800
+Message-Id: <1290132134-21217-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While trying to track down some NFS problems with BTRFS, I kept noticing I was
-getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
-figure out that it was SELinux that was giving me grief, with the following
-denial
+This patchset adds a lockless memory allocator and a lock-less
+list.
 
-type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
-comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
-tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
+v5:
 
-Turns out this is because in d_obtain_alias if we can't find an alias we create
-one and do all the normal instantiation stuff, but we don't do the
-security_d_instantiate.
+- Add ARCH_HAVE_NMI_SAFE_CMPXCHG
+- Add spin_trylock_irqsave based fallback in lockless memory allocator
+  if ARCH_HAVE_NMI_SAFE_CMPXCHG=n
+- Make lockless list depends on ARCH_HAVE_NMI_SAFE_CMPXCHG
 
-Usually we are protected from getting a hashed dentry that hasn't yet run
-security_d_instantiate() by the parent's i_mutex, but obviously this isn't an
-option there, so in order to deal with the case that a second thread comes in
-and finds our new dentry before we get to run security_d_instantiate(), we go
-ahead and call it if we find a dentry already.  Eric assures me that this is ok
-as the code checks to see if the dentry has been initialized already so calling
-security_d_instantiate() against the same dentry multiple times is ok.  With
-this patch I'm no longer getting errant -EACCESS values.
+v4:
 
-Signed-off-by: Josef Bacik <josef@redhat.com>
----
-V1->V2:
--added second security_d_instantiate() call
+- Split from APEI patchset
+- Update patch description and comments according to ML comments
 
- fs/dcache.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+v3:
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 23702a9..119d489 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -1201,9 +1201,12 @@ struct dentry *d_obtain_alias(struct inode *inode)
- 	spin_unlock(&tmp->d_lock);
- 
- 	spin_unlock(&dcache_lock);
-+	security_d_instantiate(tmp, inode);
- 	return tmp;
- 
-  out_iput:
-+	if (res && !IS_ERR(res))
-+		security_d_instantiate(res, inode);
- 	iput(inode);
- 	return res;
- }
--- 
-1.6.6.1
+- Rework lockless memory allocator and list according to ML comments
 
+[PATCH -v5 1/3] Add Kconfig option ARCH_HAVE_NMI_SAFE_CMPXCHG
+[PATCH -v5 2/3] lib, Make gen_pool memory allocator lockless
+[PATCH -v5 3/3] lib, Add lock-less NULL terminated single list
