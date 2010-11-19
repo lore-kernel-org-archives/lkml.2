@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757718Ab0KSV7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:59:13 -0500
-Received: from kroah.org ([198.145.64.141]:45319 "EHLO coco.kroah.org"
+	id S1757689Ab0KSV7K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:59:10 -0500
+Received: from kroah.org ([198.145.64.141]:45362 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757628Ab0KSV7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:59:02 -0500
+	id S1757368Ab0KSV7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:59:03 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:44 2010
-Message-Id: <20101119215644.664495015@clark.site>
+Message-Id: <20101119215644.745223293@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:56:33 -0800
+Date: Fri, 19 Nov 2010 13:56:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Damian Lukowski <damian@tvk.rwth-aachen.de>,
+        Neil Horman <nhorman@tuxdriver.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [72/82] net-2.6: SYN retransmits: Add new parameter to retransmits_timed_out()
+Subject: [73/82] Revert c6537d6742985da1fbf12ae26cde6a096fd35b5c
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,106 +27,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Damian Lukowski <damian@tvk.rwth-aachen.de>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-[ Upstream commit 4d22f7d372f5769c6c0149e427ed6353e2dcfe61 ]
+[ Upstream commit 8c974438085d2c81b006daeaab8801eedbd19758 ]
 
-Fixes kernel Bugzilla Bug 18952
+Backout the tipc changes to the flags int he subscription message.  These
+changees, while reasonable on the surface, interefere with user space ABI
+compatibility which is a no-no.  This was part of the changes to fix the
+endianess issues in the TIPC protocol, which would be really nice to do but we
+need to do so in a way that is backwards compatible with user space.
 
-This patch adds a syn_set parameter to the retransmits_timed_out()
-routine and updates its callers. If not set, TCP_RTO_MIN is taken
-as the calculation basis as before. If set, TCP_TIMEOUT_INIT is
-used instead, so that sysctl_syn_retries represents the actual
-amount of SYN retransmissions in case no SYNACKs are received when
-establishing a new connection.
-
-Signed-off-by: Damian Lukowski <damian@tvk.rwth-aachen.de>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/tcp_timer.c |   24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
+ include/linux/tipc.h |   30 ++++++++++++++++++------------
+ net/tipc/subscr.c    |   15 +++++----------
+ 2 files changed, 23 insertions(+), 22 deletions(-)
 
---- a/net/ipv4/tcp_timer.c
-+++ b/net/ipv4/tcp_timer.c
-@@ -136,13 +136,16 @@ static void tcp_mtu_probing(struct inet_
- 
- /* This function calculates a "timeout" which is equivalent to the timeout of a
-  * TCP connection after "boundary" unsuccessful, exponentially backed-off
-- * retransmissions with an initial RTO of TCP_RTO_MIN.
-+ * retransmissions with an initial RTO of TCP_RTO_MIN or TCP_TIMEOUT_INIT if
-+ * syn_set flag is set.
+--- a/include/linux/tipc.h
++++ b/include/linux/tipc.h
+@@ -127,17 +127,23 @@ static inline unsigned int tipc_node(__u
+  * TIPC topology subscription service definitions
   */
- static bool retransmits_timed_out(struct sock *sk,
--				  unsigned int boundary)
-+				  unsigned int boundary,
-+				  bool syn_set)
+ 
+-#define TIPC_SUB_SERVICE     	0x00  	/* Filter for service availability    */
+-#define TIPC_SUB_PORTS     	0x01  	/* Filter for port availability  */
+-#define TIPC_SUB_CANCEL         0x04    /* Cancel a subscription         */
++#define TIPC_SUB_PORTS     	0x01  	/* filter for port availability */
++#define TIPC_SUB_SERVICE     	0x02  	/* filter for service availability */
++#define TIPC_SUB_CANCEL         0x04    /* cancel a subscription */
++#if 0
++/* The following filter options are not currently implemented */
++#define TIPC_SUB_NO_BIND_EVTS	0x04	/* filter out "publish" events */
++#define TIPC_SUB_NO_UNBIND_EVTS	0x08	/* filter out "withdraw" events */
++#define TIPC_SUB_SINGLE_EVT	0x10	/* expire after first event */
++#endif
+ 
+ #define TIPC_WAIT_FOREVER	~0	/* timeout for permanent subscription */
+ 
+ struct tipc_subscr {
+-	struct tipc_name_seq seq;	/* NBO. Name sequence of interest */
+-	__u32 timeout;			/* NBO. Subscription duration (in ms) */
+-        __u32 filter;   		/* NBO. Bitmask of filter options */
+-	char usr_handle[8];		/* Opaque. Available for subscriber use */
++	struct tipc_name_seq seq;	/* name sequence of interest */
++	__u32 timeout;			/* subscription duration (in ms) */
++        __u32 filter;   		/* bitmask of filter options */
++	char usr_handle[8];		/* available for subscriber use */
+ };
+ 
+ #define TIPC_PUBLISHED		1	/* publication event */
+@@ -145,11 +151,11 @@ struct tipc_subscr {
+ #define TIPC_SUBSCR_TIMEOUT	3	/* subscription timeout event */
+ 
+ struct tipc_event {
+-	__u32 event;			/* NBO. Event type, as defined above */
+-	__u32 found_lower;		/* NBO. Matching name seq instances  */
+-	__u32 found_upper;		/*  "      "       "   "    "        */
+-	struct tipc_portid port;	/* NBO. Associated port              */
+-	struct tipc_subscr s;		/* Original, associated subscription */
++	__u32 event;			/* event type */
++	__u32 found_lower;		/* matching name seq instances */
++	__u32 found_upper;		/*    "      "    "     "      */
++	struct tipc_portid port;	/* associated port */
++	struct tipc_subscr s;		/* associated subscription */
+ };
+ 
+ /*
+--- a/net/tipc/subscr.c
++++ b/net/tipc/subscr.c
+@@ -274,7 +274,7 @@ static void subscr_cancel(struct tipc_su
  {
- 	unsigned int timeout, linear_backoff_thresh;
- 	unsigned int start_ts;
-+	unsigned int rto_base = syn_set ? TCP_TIMEOUT_INIT : TCP_RTO_MIN;
+ 	struct subscription *sub;
+ 	struct subscription *sub_temp;
+-	__u32 type, lower, upper, timeout, filter;
++	__u32 type, lower, upper;
+ 	int found = 0;
  
- 	if (!inet_csk(sk)->icsk_retransmits)
- 		return false;
-@@ -152,12 +155,12 @@ static bool retransmits_timed_out(struct
- 	else
- 		start_ts = tcp_sk(sk)->retrans_stamp;
+ 	/* Find first matching subscription, exit if not found */
+@@ -282,18 +282,12 @@ static void subscr_cancel(struct tipc_su
+ 	type = ntohl(s->seq.type);
+ 	lower = ntohl(s->seq.lower);
+ 	upper = ntohl(s->seq.upper);
+-	timeout = ntohl(s->timeout);
+-	filter = ntohl(s->filter) & ~TIPC_SUB_CANCEL;
  
--	linear_backoff_thresh = ilog2(TCP_RTO_MAX/TCP_RTO_MIN);
-+	linear_backoff_thresh = ilog2(TCP_RTO_MAX/rto_base);
- 
- 	if (boundary <= linear_backoff_thresh)
--		timeout = ((2 << boundary) - 1) * TCP_RTO_MIN;
-+		timeout = ((2 << boundary) - 1) * rto_base;
- 	else
--		timeout = ((2 << linear_backoff_thresh) - 1) * TCP_RTO_MIN +
-+		timeout = ((2 << linear_backoff_thresh) - 1) * rto_base +
- 			  (boundary - linear_backoff_thresh) * TCP_RTO_MAX;
- 
- 	return (tcp_time_stamp - start_ts) >= timeout;
-@@ -168,14 +171,15 @@ static int tcp_write_timeout(struct sock
- {
- 	struct inet_connection_sock *icsk = inet_csk(sk);
- 	int retry_until;
--	bool do_reset;
-+	bool do_reset, syn_set = 0;
- 
- 	if ((1 << sk->sk_state) & (TCPF_SYN_SENT | TCPF_SYN_RECV)) {
- 		if (icsk->icsk_retransmits)
- 			dst_negative_advice(sk);
- 		retry_until = icsk->icsk_syn_retries ? : sysctl_tcp_syn_retries;
-+		syn_set = 1;
- 	} else {
--		if (retransmits_timed_out(sk, sysctl_tcp_retries1)) {
-+		if (retransmits_timed_out(sk, sysctl_tcp_retries1, 0)) {
- 			/* Black hole detection */
- 			tcp_mtu_probing(icsk, sk);
- 
-@@ -188,14 +192,14 @@ static int tcp_write_timeout(struct sock
- 
- 			retry_until = tcp_orphan_retries(sk, alive);
- 			do_reset = alive ||
--				   !retransmits_timed_out(sk, retry_until);
-+				   !retransmits_timed_out(sk, retry_until, 0);
- 
- 			if (tcp_out_of_resources(sk, do_reset))
- 				return 1;
- 		}
+ 	list_for_each_entry_safe(sub, sub_temp, &subscriber->subscription_list,
+ 				 subscription_list) {
+ 			if ((type == sub->seq.type) &&
+ 			    (lower == sub->seq.lower) &&
+-			    (upper == sub->seq.upper) &&
+-			    (timeout == sub->timeout) &&
+-                            (filter == sub->filter) &&
+-                             !memcmp(s->usr_handle,sub->evt.s.usr_handle,
+-				     sizeof(s->usr_handle)) ){
++			    (upper == sub->seq.upper)) {
+ 				found = 1;
+ 				break;
+ 			}
+@@ -310,7 +304,7 @@ static void subscr_cancel(struct tipc_su
+ 		k_term_timer(&sub->timer);
+ 		spin_lock_bh(subscriber->lock);
  	}
- 
--	if (retransmits_timed_out(sk, retry_until)) {
-+	if (retransmits_timed_out(sk, retry_until, syn_set)) {
- 		/* Has it gone just too far? */
- 		tcp_write_err(sk);
- 		return 1;
-@@ -437,7 +441,7 @@ out_reset_timer:
- 		icsk->icsk_rto = min(icsk->icsk_rto << 1, TCP_RTO_MAX);
- 	}
- 	inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS, icsk->icsk_rto, TCP_RTO_MAX);
--	if (retransmits_timed_out(sk, sysctl_tcp_retries1 + 1))
-+	if (retransmits_timed_out(sk, sysctl_tcp_retries1 + 1, 0))
- 		__sk_dst_reset(sk);
- 
- out:;
+-	dbg("Cancel: removing sub %u,%u,%u from subscriber %p list\n",
++	dbg("Cancel: removing sub %u,%u,%u from subscriber %x list\n",
+ 	    sub->seq.type, sub->seq.lower, sub->seq.upper, subscriber);
+ 	subscr_del(sub);
+ }
+@@ -358,7 +352,8 @@ static struct subscription *subscr_subsc
+ 	sub->seq.upper = ntohl(s->seq.upper);
+ 	sub->timeout = ntohl(s->timeout);
+ 	sub->filter = ntohl(s->filter);
+-	if ((sub->filter && (sub->filter != TIPC_SUB_PORTS)) ||
++	if ((!(sub->filter & TIPC_SUB_PORTS) ==
++	     !(sub->filter & TIPC_SUB_SERVICE)) ||
+ 	    (sub->seq.lower > sub->seq.upper)) {
+ 		warn("Subscription rejected, illegal request\n");
+ 		kfree(sub);
 
 
