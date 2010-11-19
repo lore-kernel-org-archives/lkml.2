@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757505Ab0KSWYE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:24:04 -0500
-Received: from filtteri6.pp.htv.fi ([213.243.153.189]:59191 "EHLO
-	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757511Ab0KSV6w (ORCPT
+	id S1757573Ab0KSWYR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:24:17 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55946
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757543Ab0KSWYO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:52 -0500
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: thomas@winischhofer.net, aaro.koskinen@iki.fi
-Subject: [PATCH 0/9] sisfb: remove cruft code
-Date: Fri, 19 Nov 2010 23:58:42 +0200
-Message-Id: <1290203931-25188-1-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.5.6.5
+	Fri, 19 Nov 2010 17:24:14 -0500
+Date: Fri, 19 Nov 2010 14:24:39 -0800 (PST)
+Message-Id: <20101119.142439.116367673.davem@davemloft.net>
+To: sbhatewara@vmware.com
+Cc: bhutchings@solarflare.com, shemminger@vyatta.com, netdev@vger.kernel.org,
+        pv-drivers@vmware.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.37-rc1] net-next: Add multiqueue support to vmxnet3
+ driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LRH.2.00.1011191252070.22641@sbhatewara-dev1.eng.vmware.com>
+References: <alpine.LRH.2.00.1011191023500.8304@sbhatewara-dev1.eng.vmware.com>
+	<20101119.123735.246535099.davem@davemloft.net>
+	<alpine.LRH.2.00.1011191252070.22641@sbhatewara-dev1.eng.vmware.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series deletes unused/unneeded code from sisfb, while not changing
-the functionality.
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+Date: Fri, 19 Nov 2010 12:55:24 -0800 (PST)
 
-Aaro Koskinen (9):
-  sisfb: delete obsolete PCI ROM bug workaround
-  sisfb: delete fallback code for pci_map_rom()
-  sisfb: delete dead SIS_XORG_XF86 code
-  sisfb: delete redudant #define SIS_LINUX_KERNEL
-  sisfb: use CONFIG_FB_SIS_301/315 instead of SIS301/315H
-  sisfb: remove InPort/OutPort wrappers
-  sisfb: replace SiS_SetMemory with memset_io
-  sisfb: move the CONFIG warning to sis_main.c
-  sisfb: delete osdef.h
+> From: Shreyas Bhatewara <sbhatewara@vmware.com>
+> 
+> Add multiqueue support to vmxnet3 driver
+> 
+> This change adds multiqueue and thus receive side scaling support
+> to vmxnet3 device driver. Number of rx queues is limited to 1 in cases
+> where MSI is not configured or one MSIx vector is not available per rx
+> queue
+> 
+> Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+> Reviewed-by: Bhavesh Davda <bhavesh@vmware.com>
 
- drivers/video/sis/init.c       |  685 +++-------------------------------------
- drivers/video/sis/init.h       |   63 +----
- drivers/video/sis/init301.c    |  467 ++++++++-------------------
- drivers/video/sis/init301.h    |   43 +--
- drivers/video/sis/initextlfb.c |    7 +-
- drivers/video/sis/osdef.h      |  133 --------
- drivers/video/sis/sis.h        |    1 -
- drivers/video/sis/sis_main.c   |   30 +--
- drivers/video/sis/vgatypes.h   |   11 -
- drivers/video/sis/vstruct.h    |   12 -
- 10 files changed, 209 insertions(+), 1243 deletions(-)
- delete mode 100644 drivers/video/sis/osdef.h
+Applied, but I still had to fix something up:
 
+> @@ -2726,3 +3277,5 @@ MODULE_AUTHOR("VMware, Inc.");
+>  MODULE_DESCRIPTION(VMXNET3_DRIVER_DESC);
+>  MODULE_LICENSE("GPL v2");
+>  MODULE_VERSION(VMXNET3_DRIVER_VERSION_STRING);
+> +
+> +
+
+Extraneous blank lines added to the end of a file are considered
+errors by GIT, so I removed this hunk.
