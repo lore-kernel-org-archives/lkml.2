@@ -1,131 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304Ab0KSVue (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:50:34 -0500
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:58066 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932289Ab0KSVu2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:50:28 -0500
-Content-Type: multipart/mixed;
-	boundary="_000_CEE6BB42CAD6E947908279175AF8470A074DE04727EXDCVYMBSTM00_"
-From: Linus WALLEIJ <linus.walleij@stericsson.com>
-To: "catalin.marinas@arm.com" <catalin.marinas@arm.com>,
-        "kmpark@infradead.org" <kmpark@infradead.org>
-Cc: Robert FEKETE <robert.fekete@stericsson.com>,
-        Johan MOSSBERG <johan.xx.mossberg@stericsson.com>,
-        Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tony@atomide.com" <tony@atomide.com>
-Date: Fri, 19 Nov 2010 22:49:50 +0100
-Subject: Re: Re: [PATCH] ARM: l2x0: Check the correct address range
-Thread-Topic: Re: [PATCH] ARM: l2x0: Check the correct address range
-Thread-Index: AcuIM7FaQsMPBJXkTUScdj9Qb9Vyeg==
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A074DE04727@EXDCVYMBSTM006.EQ1STM.local>
-References: <20101119014029.GA26429@july>
- <AANLkTinqvbPB5ijJnMGB1FP08WUMSUKFY_qZhgZaVUci@mail.gmail.com>
-In-Reply-To: <AANLkTinqvbPB5ijJnMGB1FP08WUMSUKFY_qZhgZaVUci@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: <CEE6BB42CAD6E947908279175AF8470A074DE04727@EXDCVYMBSTM006.EQ1STM.local>
-acceptlanguage: en-US
-MIME-Version: 1.0
+	id S1757164Ab0KSVpb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:45:31 -0500
+Received: from kroah.org ([198.145.64.141]:51746 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757246Ab0KSVpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:45:25 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:10 2010
+Message-Id: <20101119214410.493954790@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 19 Nov 2010 13:42:53 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Weidong Han <weidong.han@intel.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [13/45] x86, intr-remap: Set redirection hint in the IRTE
+In-Reply-To: <20101119214439.GA26350@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_000_CEE6BB42CAD6E947908279175AF8470A074DE04727EXDCVYMBSTM00_
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: base64
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-T24gRnJpLCAyMDEwLTExLTE5IGF0IDExOjA4ICswMDAwLCBDYXRhbGluIE1hcmluYXMgd3JvdGU6
-Cj4gT24gMTkgTm92ZW1iZXIgMjAxMCAwMTo0MCwgS3l1bmdtaW4gUGFyayA8a21wYXJrQGluZnJh
-ZGVhZC5vcmc+IHdyb3RlOgo+ID4gRnJvbTogQm9vamluIEtpbSA8Ym9vamluLmtpbUBzYW1zdW5n
-LmNvbT4KPiA+Cj4gPiBXaGVuIGZsdXNoIG9yIGNsZWFuIHRoZSAxTWlCLCBpdCBkb2Vzbid0IGZs
-dXNoIG9yIGNsZWFuIGFsbCBzaW5jZSBpdCBkb2Vzbid0IGNoZWNrIHRoZSBjb3JyZWN0IGFkZHJl
-c3MuIFNvIENoZWNrIHRoZSBjb3JyZWN0IGFkZHJlc3MgcmFuZ2UuCj4gCj4gVGhpcyBsaW5lIGlz
-IHZlcnkgbG9uZy4KPiAKPiBUaGUgcGF0Y2ggbG9va3MgZmluZSBvdGhlcndpc2UuIEkgdGhpbmsg
-dGhlIG9wdGltYWwgdmFsdWUgd291bGQgYmUKPiBzbWFsbGVyIHRoYW4gdGhlIHdob2xlIGNhY2hl
-IHNpemUgYnV0IGl0IGRlcGVuZHMgb24gbWFueSB0aGluZ3MuCgpXb3VsZCBpdCBiZSBhIGdvb2Qg
-aWRlYSB0byBraWNrIGluIGEgcGVyLVNvQyB0aHJlc2hvbGQgdmFsdWUgaW50bwp0aGUgbDJ4MCBy
-YW5nZSBjbGVhbiBmdW5jdGlvbiwgc3VjaCB0aGF0IGlmIHRoZSByYW5nZSBleGNlZWQgdGhpcwpz
-cGVjaWZpYyB0aHJlc2hvbGQgaXQgY2xlYW5zIGFsbCBvZiBpdD8gVGhhdCB3YXkgaXQnZCBiZSBw
-b3NzaWJsZQp0byBvcHRpbWl6ZSBmb3IgZWFjaCBTb0MgcXVpdGUgZWFzaWx5LgoKSSd2ZSBoZWFy
-ZCB0aGF0IHRoZXNlIHRoaW5ncyBtYXkgZXZlbiBkZXBlbmQgb24gT1BQcyBldGMgc28gaXQgbWF5
-CmV2ZW4gYmUgc29tZSBkeW5hbWljIHZhbHVlLi4uCgpZb3VycywKTGludXMgV2FsbGVpago=
+------------------
 
---_000_CEE6BB42CAD6E947908279175AF8470A074DE04727EXDCVYMBSTM00_
-Content-Disposition: attachment; filename="winmail.dat"
-Content-Transfer-Encoding: base64
-Content-Type: application/ms-tnef; name="winmail.dat"
+From: Suresh Siddha <suresh.b.siddha@intel.com>
 
-eJ8+IngeAQaQCAAEAAAAAAABAAEAAQeQBgAIAAAA5AQAAAAAAADoAAEJgAEAIQAAAEJBRjIzRjVF
-MzZDRkE1NDRCMzlGQjI3NjQyREEyNzJDAFwHAQ2ABAACAAAAAgACAAEFgAMADgAAANoHCwATABUA
-MQAyAAUAfAEBIIADAA4AAADaBwsAEwAVADEAMwAFAH0BAQiABwAYAAAASVBNLk1pY3Jvc29mdCBN
-YWlsLk5vdGUAMQgBBIABADsAAABSZTogUmU6IFtQQVRDSF0gQVJNOiBsMngwOiBDaGVjayB0aGUg
-Y29ycmVjdCBhZGRyZXNzIHJhbmdlAMgSAQOQBgDUDAAALAAAAAIBfwABAAAASQAAADxDRUU2QkI0
-MkNBRDZFOTQ3OTA4Mjc5MTc1QUY4NDcwQTA3NERFMDQ3MjdARVhEQ1ZZTUJTVE0wMDYuRVExU1RN
-LmxvY2FsPgAAAAACAQkQAQAAAKwDAACoAwAAHwUAAExaRnXHseHuYQAKZmJpZAQAAGNjwHBnMTI1
-MgD+A0PwdGV4dAH3AqQD4wIABGNoCsBzZXQwIO8HbQKDAFARTTIKgAa0AoCWfQqACMg7CWIxOQ7A
-vwnDFnIKMhZxAoAVYioJsHMJ8ASQYXQFsg5QA2Bzom8BgCBFeBHBbhgwXQZSdgSQF7YCEHIAwHR9
-CFBuGjEQIAXABaAbZGSaIANSIBAiF7JcdgiQ5HdrC4BkNR1TBPAHQA0XcDAKcRfyYmttawZzAZAA
-ICBCTV9C4EVHSU59CvsL8gEwlHtPA6BGBRAsIAHQkR6QLTExIlA5IBiAgiAiYDowOCArHqD7HqAh
-8EMYgAdAC4AF0ArANQuAYQQgdwNgECA6XGUkAWUKgD4gIZEikU5ebxowBtAbsSISICIgOqI0I5FL
-eXUZwG0kEWJQCsBrIDwfMAqxa7ZAC4ADUGEBACkALgWwvmclkCTNJZAhwANwOh+w6G9vaiQRSwdw
-KDAG4AUrQi4doG1Ac2FtynMngS4FoG0+KhgqGRxXaAnwHHAKQHNoIO0FsWMecAORdC6wIuAY0EpC
-IfBpBUBkbweQbj4nBUAu/QdAAyAAkG5j/xngMIkRwAWQKCAv4gWhCXC2YwVAKQBkCXAEEC4GAG5v
-I7AzjzSVIBhwGcEu0yUnJSdUaAQAICUyMHD7BCAaMXk4sAIgLPA3Xzhh2xngCrB0EcA5gW8fUBxw
-NzjSJOAusHID8TcwIEn3L9ELgDWUbwUwB3AHQDkw7wdAClAksAhgbBxgJmAlJz5zPgEecAXAL+Av
-tXdoXwbwNdEA0C/xAJB6GeBipnUFQDCCZXAJ8GQEIN0CICADgTlwPSJnNPAlJT0lJVc+szCBJmAi
-sCBn/yswRNEpERzANTAdoDWBJBHTRVBCYHItNSBDL9E0wX9A0RxgPkQLgBiQJSUv4mzcMngSMDbz
-L3VmJ4A0YH5pAiAh8CzAO3FAMUHxZv8v00mkEDAykBxRPSEOACU0+nNCYGMGkA5QR1kwgS+DbwQg
-MiIZMDBxPzhhIsF39mE5cDCAJz7iOzAZEACQ/wJgPxZGET3DQZIa4UxgQTHzNRFHQHF1MIBMUSSQ
-AxDSeUOtSScaMCAusAsRv0tEL+ESAEM1QuE5cGUaMMcDoEJEQrJPUFAEIBIQ/04AGSAwclchJSVX
-Y0UhGSB7B4AwoHkkgCewTgA+Qy5LW4BDvFkIYXMsJSVMzwuALxAukD/SaWolJRVCAV7gHwBCAAEA
-AAAcAAAATABpAG4AdQBzACAAVwBBAEwATABFAEkASgAAAB8AZQABAAAAOgAAAGwAaQBuAHUAcwAu
-AHcAYQBsAGwAZQBpAGoAQABzAHQAZQByAGkAYwBzAHMAbwBuAC4AYwBvAG0AAAAAAB8AZAABAAAA
-CgAAAFMATQBUAFAAAAAAAAIBQQABAAAAeAAAAAAAAACBKx+kvqMQGZ1uAN0BD1QCAAAAgEwAaQBu
-AHUAcwAgAFcAQQBMAEwARQBJAEoAAABTAE0AVABQAAAAbABpAG4AdQBzAC4AdwBhAGwAbABlAGkA
-agBAAHMAdABlAHIAaQBjAHMAcwBvAG4ALgBjAG8AbQAAAB8AGgwBAAAAHAAAAEwAaQBuAHUAcwAg
-AFcAQQBMAEwARQBJAEoAAAAfAB8MAQAAADoAAABsAGkAbgB1AHMALgB3AGEAbABsAGUAaQBqAEAA
-cwB0AGUAcgBpAGMAcwBzAG8AbgAuAGMAbwBtAAAAAAAfAB4MAQAAAAoAAABTAE0AVABQAAAAAAAC
-ARkMAQAAAHgAAAAAAAAAgSsfpL6jEBmdbgDdAQ9UAgAAAIBMAGkAbgB1AHMAIABXAEEATABMAEUA
-SQBKAAAAUwBNAFQAUAAAAGwAaQBuAHUAcwAuAHcAYQBsAGwAZQBpAGoAQABzAHQAZQByAGkAYwBz
-AHMAbwBuAC4AYwBvAG0AAAALAEA6AQAAAB8AGgABAAAAEgAAAEkAUABNAC4ATgBvAHQAZQAAAAAA
-AwDxPwkEAAALAEA6AQAAAAMA/T/kBAAAAgELMAEAAAAQAAAAuvI/XjbPpUSzn7J2QtonLAMAFwAB
-AAAAQAA5AADTu7AziMsBQAAIMI9fWrEziMsBAwA2AAAAAAAfAHAAAQAAAG4AAABSAGUAOgAgAFsA
-UABBAFQAQwBIAF0AIABBAFIATQA6ACAAbAAyAHgAMAA6ACAAQwBoAGUAYwBrACAAdABoAGUAIABj
-AG8AcgByAGUAYwB0ACAAYQBkAGQAcgBlAHMAcwAgAHIAYQBuAGcAZQAAAAAAAgFxAAEAAAAWAAAA
-AcuIM7FaQsMPBJXkTUScdj9Qb9VyegAAHwA1EAEAAACSAAAAPABDAEUARQA2AEIAQgA0ADIAQwBB
-AEQANgBFADkANAA3ADkAMAA4ADIANwA5ADEANwA1AEEARgA4ADQANwAwAEEAMAA3ADQARABFADAA
-NAA3ADIANwBAAEUAWABEAEMAVgBZAE0AQgBTAFQATQAwADAANgAuAEUAUQAxAFMAVABNAC4AbABv
-AGMAYQBsAD4AAAAAAB8AORABAAAAugAAADwAMgAwADEAMAAxADEAMQA5ADAAMQA0ADAAMgA5AC4A
-RwBBADIANgA0ADIAOQBAAGoAdQBsAHkAPgAgADwAQQBBAE4ATABrAFQAaQBuAHEAdgBiAFAAQgA1
-AGkAagBKAG4ATQBHAEIAMQBGAFAAMAA4AFcAVQBNAFMAVQBLAEYAWQBfAHEAWgBoAGcAWgBhAFYA
-VQBjAGkAQABtAGEAaQBsAC4AZwBtAGEAaQBsAC4AYwBvAG0APgAAAAAAHwBCEAEAAAB+AAAAPABB
-AEEATgBMAGsAVABpAG4AcQB2AGIAUABCADUAaQBqAEoAbgBNAEcAQgAxAEYAUAAwADgAVwBVAE0A
-UwBVAEsARgBZAF8AcQBaAGgAZwBaAGEAVgBVAGMAaQBAAG0AYQBpAGwALgBnAG0AYQBpAGwALgBj
-AG8AbQA+AAAAAAALAPIQAQAAAB8A8xABAAAAjgAAAFIAZQAlADMAQQAgAFIAZQAlADMAQQAgAFsA
-UABBAFQAQwBIAF0AIABBAFIATQAlADMAQQAgAGwAMgB4ADAAJQAzAEEAIABDAGgAZQBjAGsAIAB0
-AGgAZQAgAGMAbwByAHIAZQBjAHQAIABhAGQAZAByAGUAcwBzACAAcgBhAG4AZwBlAC4ARQBNAEwA
-AAAAAAsA9BAAAAAACwD1EAAAAAALAPYQAAAAAEAABzDETSixM4jLAQMA3j/p/QAAHwD4PwEAAAAc
-AAAATABpAG4AdQBzACAAVwBBAEwATABFAEkASgAAAAIB+T8BAAAAeAAAAAAAAADcp0DIwEIQGrS5
-CAArL+GCAQAAAAAAAAAvTz1PUkdBTklaQVRJT04vT1U9RVhDSEFOR0UgQURNSU5JU1RSQVRJVkUg
-R1JPVVAgKEZZRElCT0hGMjNTUERMVCkvQ049UkVDSVBJRU5UUy9DTj1FTElOV0FMAB8A+j8BAAAA
-HAAAAEwAaQBuAHUAcwAgAFcAQQBMAEwARQBJAEoAAAACAfs/AQAAAHgAAAAAAAAA3KdAyMBCEBq0
-uQgAKy/hggEAAAAAAAAAL089T1JHQU5JWkFUSU9OL09VPUVYQ0hBTkdFIEFETUlOSVNUUkFUSVZF
-IEdST1VQIChGWURJQk9IRjIzU1BETFQpL0NOPVJFQ0lQSUVOVFMvQ049RUxJTldBTAADABlAAAAA
-AAMAGkAAAAAAAwANNPk/AAACARQ0AQAAABAAAABUlKHAKX8QG6WHCAArKiUXHwA9AAEAAAAKAAAA
-UgBlADoAIAAAAAAAHwA3AAEAAAB2AAAAUgBlADoAIABSAGUAOgAgAFsAUABBAFQAQwBIAF0AIABB
-AFIATQA6ACAAbAAyAHgAMAA6ACAAQwBoAGUAYwBrACAAdABoAGUAIABjAG8AcgByAGUAYwB0ACAA
-YQBkAGQAcgBlAHMAcwAgAHIAYQBuAGcAZQAAAAAAHwAAgIYDAgAAAAAAwAAAAAAAAEYBAAAAHgAA
-AGEAYwBjAGUAcAB0AGwAYQBuAGcAdQBhAGcAZQAAAAAAAQAAAAwAAABlAG4ALQBVAFMAAAAfAACA
-hgMCAAAAAADAAAAAAAAARgEAAAAgAAAAeAAtAG0AcwAtAGgAYQBzAC0AYQB0AHQAYQBjAGgAAAAB
-AAAAAgAAAAAAAADGrg==
+commit 75e3cfbed6f71a8f151dc6e413b6ce3c390030cb upstream.
 
---_000_CEE6BB42CAD6E947908279175AF8470A074DE04727EXDCVYMBSTM00_--
+Currently the redirection hint in the interrupt-remapping table entry
+is set to 0, which means the remapped interrupt is directed to the
+processors listed in the destination. So in logical flat mode
+in the presence of intr-remapping, this results in a single
+interrupt multi-casted to multiple cpu's as specified by the destination
+bit mask. But what we really want is to send that interrupt to one of the cpus
+based on the lowest priority delivery mode.
+
+Set the redirection hint in the IRTE to '1' to indicate that we want
+the remapped interrupt to be directed to only one of the processors
+listed in the destination.
+
+This fixes the issue of same interrupt getting delivered to multiple cpu's
+in the logical flat mode in the presence of interrupt-remapping. While
+there is no functional issue observed with this behavior, this will
+impact performance of such configurations (<=8 cpu's using logical flat
+mode in the presence of interrupt-remapping)
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+LKML-Reference: <20100827181049.013051492@sbsiddha-MOBL3.sc.intel.com>
+Cc: Weidong Han <weidong.han@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/x86/kernel/apic/io_apic.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1410,6 +1410,7 @@ int setup_ioapic_entry(int apic_id, int
+ 		irte.dlvry_mode = apic->irq_delivery_mode;
+ 		irte.vector = vector;
+ 		irte.dest_id = IRTE_DEST(destination);
++		irte.redir_hint = 1;
+ 
+ 		/* Set source-id of interrupt request */
+ 		set_ioapic_sid(&irte, apic_id);
+@@ -3289,6 +3290,7 @@ static int msi_compose_msg(struct pci_de
+ 		irte.dlvry_mode = apic->irq_delivery_mode;
+ 		irte.vector = cfg->vector;
+ 		irte.dest_id = IRTE_DEST(dest);
++		irte.redir_hint = 1;
+ 
+ 		/* Set source-id of interrupt request */
+ 		set_msi_sid(&irte, pdev);
+
+
