@@ -1,164 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760154Ab0KSBZZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 20:25:25 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56941 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755160Ab0KSBZY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 20:25:24 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 19 Nov 2010 10:19:38 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 39 of 66] memcg huge memory
-Message-Id: <20101119101938.2edf889f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <877d2f205026b0463450.1288798094@v2.random>
-References: <patchbomb.1288798055@v2.random>
-	<877d2f205026b0463450.1288798094@v2.random>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756896Ab0KSBdL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 20:33:11 -0500
+Received: from thunk.org ([69.25.196.29]:60121 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750982Ab0KSBdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 20:33:09 -0500
+Date: Thu, 18 Nov 2010 20:33:01 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
+ super_operation
+Message-ID: <20101119013301.GU3290@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Mark Lord <kernel@teksavvy.com>,
+	James Bottomley <James.Bottomley@suse.de>,
+	Greg Freemyer <greg.freemyer@gmail.com>,
+	Jeff Moyer <jmoyer@redhat.com>,
+	Christoph Hellwig <hch@infradead.org>,
+	Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
+	Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
+	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	sandeen@redhat.com
+References: <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
+ <20101118141957.GK6178@parisc-linux.org>
+ <20101118142918.GA18510@infradead.org>
+ <1290100750.3041.72.camel@mulgrave.site>
+ <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
+ <1290102098.3041.77.camel@mulgrave.site>
+ <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>
+ <4CE59E57.2090009@teksavvy.com>
+ <1290117009.11007.42.camel@mulgrave.site>
+ <4CE5A386.7000105@teksavvy.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE5A386.7000105@teksavvy.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 03 Nov 2010 16:28:14 +0100
-Andrea Arcangeli <aarcange@redhat.com> wrote:
-
-> From: Andrea Arcangeli <aarcange@redhat.com>
+> >
+> >Before we go gung ho on this, there's no evidence that N discontiguous
+> >ranges in one command are any better than the ranges sent N times ...
+> >the same amount of erase overhead gets sent on SSDs.
 > 
-> Add memcg charge/uncharge to hugepage faults in huge_memory.c.
+> No, we do have evidence:  execution time of the TRIM commands on the SSD.
 > 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> ---
-> 
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -233,6 +233,7 @@ static int __do_huge_pmd_anonymous_page(
->  	VM_BUG_ON(!PageCompound(page));
->  	pgtable = pte_alloc_one(mm, haddr);
->  	if (unlikely(!pgtable)) {
-> +		mem_cgroup_uncharge_page(page);
->  		put_page(page);
->  		return VM_FAULT_OOM;
->  	}
-> @@ -243,6 +244,7 @@ static int __do_huge_pmd_anonymous_page(
->  	spin_lock(&mm->page_table_lock);
->  	if (unlikely(!pmd_none(*pmd))) {
->  		spin_unlock(&mm->page_table_lock);
-> +		mem_cgroup_uncharge_page(page);
->  		put_page(page);
->  		pte_free(mm, pgtable);
->  	} else {
-> @@ -286,6 +288,10 @@ int do_huge_pmd_anonymous_page(struct mm
->  		page = alloc_hugepage(transparent_hugepage_defrag(vma));
->  		if (unlikely(!page))
->  			goto out;
-> +		if (unlikely(mem_cgroup_newpage_charge(page, mm, GFP_KERNEL))) {
-> +			put_page(page);
-> +			goto out;
-> +		}
->  
->  		return __do_huge_pmd_anonymous_page(mm, vma, haddr, pmd, page);
->  	}
-> @@ -402,9 +408,15 @@ static int do_huge_pmd_wp_page_fallback(
->  	for (i = 0; i < HPAGE_PMD_NR; i++) {
->  		pages[i] = alloc_page_vma(GFP_HIGHUSER_MOVABLE,
->  					  vma, address);
-> -		if (unlikely(!pages[i])) {
-> -			while (--i >= 0)
-> +		if (unlikely(!pages[i] ||
-> +			     mem_cgroup_newpage_charge(pages[i], mm,
-> +						       GFP_KERNEL))) {
-> +			if (pages[i])
->  				put_page(pages[i]);
-> +			while (--i >= 0) {
-> +				mem_cgroup_uncharge_page(pages[i]);
-> +				put_page(pages[i]);
-> +			}
+> The one-range-at-a-time is incredibly slow compared to multiple
+> ranges at a time.  That slowness comes from somewhere, with about
+> 99.9% certainty that it is due to the drive performing slow flash
+> erase cycles.
 
-Maybe you can use batched-uncharge here.
-==
-mem_cgroup_uncharge_start()
-{
-	do loop;
-}
-mem_cgroup_uncharge_end();
-==
-Then, many atomic ops can be reduced.
+Mark, I think you are over-generalizing here.  You have observed with
+some number of flash drives --- maybe only one, but I don't know that
+for sure --- that TRIM is slow.  Even if we grant that you are correct
+in your conclusion that it is because the drive is doing slow flash
+erase cycles (and I don't completely accept that; I haven't seen your
+your measurements since we know that any kind of command that requires
+a queue drain/flush before it can execute is going to be slow, and I
+don't know what kind of _slow_ you are observing).
 
+But even if we *do* grant that you've seen one disk, or even a lot of
+disks which is doing something stupid, that just means that their
+manufacturer has some idiotic engineers.  It does not follow that all
+SSD's, or thin-provisioned drives, or other devices implementing the
+the ATA TRIM command, will do so in an incompetent way.
 
->  			kfree(pages);
->  			ret |= VM_FAULT_OOM;
->  			goto out;
-> @@ -455,8 +467,10 @@ out:
->  
->  out_free_pages:
->  	spin_unlock(&mm->page_table_lock);
-> -	for (i = 0; i < HPAGE_PMD_NR; i++)
-> +	for (i = 0; i < HPAGE_PMD_NR; i++) {
-> +		mem_cgroup_uncharge_page(pages[i]);
->  		put_page(pages[i]);
-> +	}
+If you look a the the T13 definition of TRIM, it is just a hint that
+the contents of the block range do not _have_ to be preserved.  It
+does not say that they *must* be erased.  This is not a security erase
+command.  In fact, it is perfectly reasonable for the TRIM command to
+store state in volatile storage, and the information of which blocks
+have been TRIM gets discarded on a power failure.
 
-here, too.
+So if SSD's are doing a full flash erase cycle for each TRIM, that may
+not necessarily be a good idea.  I accept that there may be some
+incompetent implementations out there.  But I don't think this means
+we should assume that _all_ implementations are incompetent.  It does
+mean, though, that we can't turn any of these features on by default.
+But that's something we know already.
 
->  	kfree(pages);
->  	goto out;
->  }
-> @@ -501,14 +515,22 @@ int do_huge_pmd_wp_page(struct mm_struct
->  		goto out;
->  	}
->  
-> +	if (unlikely(mem_cgroup_newpage_charge(new_page, mm, GFP_KERNEL))) {
-> +		put_page(new_page);
-> +		put_page(page);
-> +		ret |= VM_FAULT_OOM;
-> +		goto out;
-> +	}
-> +
->  	copy_user_huge_page(new_page, page, haddr, vma, HPAGE_PMD_NR);
->  	__SetPageUptodate(new_page);
->  
->  	spin_lock(&mm->page_table_lock);
->  	put_page(page);
-> -	if (unlikely(!pmd_same(*pmd, orig_pmd)))
-> +	if (unlikely(!pmd_same(*pmd, orig_pmd))) {
-> +		mem_cgroup_uncharge_page(new_page);
->  		put_page(new_page);
-> -	else {
-> +	} else {
->  		pmd_t entry;
->  		VM_BUG_ON(!PageHead(page));
->  		entry = mk_pmd(new_page, vma->vm_page_prot);
-
-
-Hmm...it seems there are no codes for move_account() hugepage in series.
-I think it needs some complicated work to walk page table.
-
-Thanks,
--Kame
+					- Ted
 
