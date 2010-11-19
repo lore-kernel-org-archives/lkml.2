@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293Ab0KSIGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 03:06:17 -0500
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:33660 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab0KSIGQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 03:06:16 -0500
-Date: Fri, 19 Nov 2010 17:05:36 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, g.liakhovetski@gmx.de,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH 00/05] fbdev: SH-Mobile MIPI-DSI Update
-Message-ID: <20101119080536.GC28165@linux-sh.org>
-References: <20101117064405.18139.57035.sendpatchset@t400s>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101117064405.18139.57035.sendpatchset@t400s>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	id S1751213Ab0KSIKp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 03:10:45 -0500
+Received: from mga03.intel.com ([143.182.124.21]:59974 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750933Ab0KSIKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 03:10:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,221,1288594800"; 
+   d="scan'208";a="350764260"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        ying.huang@intel.com, linux-acpi@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 0/2] Generic hardware error reporting support
+Date: Fri, 19 Nov 2010 16:10:31 +0800
+Message-Id: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 17, 2010 at 03:44:05PM +0900, Magnus Damm wrote:
-> fbdev: SH-Mobile MIPI-DSI Update
-> 
-> [PATCH 01/05] fbdev: sh_mipi_dsi: Remove request/release mem region
-> [PATCH 02/05] fbdev: sh_mipi_dsi: Make use of register names
-> [PATCH 03/05] ARM: mach-shmobile: Extend AP4EVB MIPI-DSI resources
-> [PATCH 04/05] fbdev: sh_mipi_dsi: Require two I/O resources
-> [PATCH 05/05] fbdev: sh_mipi_dsi: Allow LCDC board callbacks
-> 
-Ok, I've applied the updated version of this with 01/05 dropped and 04/05
-replaced with the V2 version. In the future make sure to Cc the
-linux-fbdev list, too.
+Hi, Len,
+
+This is used by APEI ERST and GEHS. But it is a generic hardware
+error reporting mechanism and can be used by other hardware error
+reporting mechanisms such as EDAC, PCIe AER, Machine Check, etc.
+
+The patchset is split from the original APEI patchset to make it
+explicit that this is a generic mechanism, not APEI specific bits.
+
+[PATCH 1/2] Generic hardware error reporting mechanism
+[PATCH 2/2] Hardware error record persistent support
+
+Best Regards,
+Huang Ying
