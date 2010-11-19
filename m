@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757040Ab0KSXPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 18:15:04 -0500
-Received: from mail.deathmatch.net ([72.66.92.28]:2512 "EHLO
-	mail.deathmatch.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756806Ab0KSXPD (ORCPT
+	id S932344Ab0KSXQY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 18:16:24 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:7798 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756907Ab0KSXQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 18:15:03 -0500
-X-Greylist: delayed 1853 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Nov 2010 18:15:03 EST
-Date: Fri, 19 Nov 2010 17:28:46 -0500
-From: Bob Copeland <me@bobcopeland.com>
-To: Bruno Randolf <br1@einfach.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>, Jouni Malinen <j@w1.fi>,
-        linville@tuxdriver.com, randy.dunlap@oracle.com, peterz@infradead.org,
-        blp@cs.stanford.edu, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
-        stefanr@s5r6.in-berlin.de, kosaki.motohiro@jp.fujitsu.com,
-        akpm@linux-foundation.org, kevin.granade@gmail.com
-Subject: Re: [PATCH v7 3/3] nl80211/mac80211: Report signal average
-Message-ID: <20101119222846.GA26592@hash.localnet>
-References: <20101112024901.28522.21895.stgit@localhost6.localdomain6> <1290010595.3777.0.camel@jlt3.sipsolutions.net> <AANLkTimoogSLAipNy=njGtHypqBQSk=usDmXut=KN9TM@mail.gmail.com> <201011191807.06013.br1@einfach.org>
+	Fri, 19 Nov 2010 18:16:22 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAMOT5kxLd/sX/2dsb2JhbAAHgz3MRpEBgSKDNnMEhFo
+X-IronPort-AV: E=Sophos;i="4.59,226,1288584000"; 
+   d="scan'208";a="83026306"
+Message-ID: <4CE70543.2000206@teksavvy.com>
+Date: Fri, 19 Nov 2010 18:16:19 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201011191807.06013.br1@einfach.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Alex Deucher <alexdeucher@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: 2.6.37-rc2-git4: Reported regressions 2.6.35 -> 2.6.36
+References: <tTUH_XeInOH.A.dMF.c3b5MB@chimera>	<4CE5C919.7090504@teksavvy.com>	<AANLkTi=8G7pNA7QTxaXDWKrWrCERPfmKU+nLJWCA=JUH@mail.gmail.com>	<4CE7006E.4040102@teksavvy.com> <AANLkTim9aXi1_EJyh2f-+X4HnNWJ3uk2z=P6m1hQso5a@mail.gmail.com>
+In-Reply-To: <AANLkTim9aXi1_EJyh2f-+X4HnNWJ3uk2z=P6m1hQso5a@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 06:07:05PM +0900, Bruno Randolf wrote:
-> Hmm, maybe I suck in mathemathics, but I don't see a way to do that given the 
-> formula:
-> 
-> (((internal * (weight - 1)) + (val * factor)) / weight
+On 10-11-19 05:58 PM, Alex Deucher wrote:
+> On Fri, Nov 19, 2010 at 5:55 PM, Mark Lord<kernel@teksavvy.com>  wrote:
+>
+>> It now comes back at resume time.
+>
+> So that patch helped?
 
-I was thinking something along the lines of:
+I think so.  It didn't used to resume from suspend with 2.6.36, and now it does.
 
-round = (1 << n) - 1;
-(((internal * (weight - 1) + round) >> n) + val) * ((1 << n) / weight)
+>> But suffers long delays (also sometimes with 2.6.35) doing this:
+>>
+>> [drm:atom_op_jump] *ERROR* atombios stuck in loop for more than 5secs
+>> aborting
+>> [drm:atom_execute_table_locked] *ERROR* atombios stuck executing E576 (len
+>> 105, WS 12, PS 8) @ 0xE5C4
+>> [drm:atom_op_jump] *ERROR* atombios stuck in loop for more than 5secs
+>> aborting
+>> [drm:atom_execute_table_locked] *ERROR* atombios stuck executing ECD2 (len
+>> 86, WS 4, PS 0) @ 0xED05
+>> [drm:atom_op_jump] *ERROR* atombios stuck in loop for more than 5secs
+>> aborting
+>> [drm:atom_execute_table_locked] *ERROR* atombios stuck executing E576 (len
+>> 105, WS 12, PS 8) @ 0xE5C4
+>> PM: resume of devices complete after 15718.253 msecs
+>>
+>
+> It's be nice if you could bisect to track down when those started.
 
-where (1 << n) is the factor and ((1 << n) / weight) can be precomputed.
-If you think about it, this is just reciprocal multiplication in fixed-
-point math with n bits of decimal resolution. 
+It'd be even nicer if they hadn't started.  :)
 
-The problem is the shift of the older terms introduces roundoff error, but
-there are some tricks you can do to maintain bounded error, e.g. shifting
-by some smaller factor of n and scaling other terms -- in the limit you
-reinvent floating point and then it's slower than division :)
-
--- 
-Bob Copeland %% www.bobcopeland.com
-
+What kernel release first had that atom/ops table in it?  I'll try that.
