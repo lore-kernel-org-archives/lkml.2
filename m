@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757333Ab0KSXb1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 18:31:27 -0500
-Received: from mail.windriver.com ([147.11.1.11]:53071 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756989Ab0KSXb0 (ORCPT
+	id S932381Ab0KSXbr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 18:31:47 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:8149 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757447Ab0KSXbq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 18:31:26 -0500
-Message-ID: <4CE708AA.7030405@windriver.com>
-Date: Fri, 19 Nov 2010 17:30:50 -0600
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20101027)
+	Fri, 19 Nov 2010 18:31:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=XFZ+T9Q+zkebzkR7hAI/VO3rg5MA/bhrTrTuBEXWLVwT/6Uo5S3bPEEUj/q8P7aElE
+         GnGuDK4YaavKJBqIH5OA==
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
-References: <4CE2E3C3.6060800@windriver.com> <20101118080516.GJ32621@elte.hu> <4CE52048.5080802@windriver.com> <1290086232.2109.1507.camel@laptop> <20101118193247.GF18100@redhat.com> <4CE583D0.8050407@windriver.com> <20101118200807.GC8131@redhat.com> <1290112234.2109.1534.camel@laptop> <20101119165952.GJ18100@redhat.com> <1290191158.2109.1614.camel@laptop>  <20101119225902.GQ18100@redhat.com> <1290208179.2114.13.camel@laptop>
-In-Reply-To: <1290208179.2114.13.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Nov 2010 23:30:53.0470 (UTC) FILETIME=[CED7EBE0:01CB8841]
+In-Reply-To: <20101119145442.ddf0c0e8.akpm@linux-foundation.org>
+References: <1289996638-21439-1-git-send-email-walken@google.com>
+	<1289996638-21439-4-git-send-email-walken@google.com>
+	<20101117125756.GA5576@amd>
+	<1290007734.2109.941.camel@laptop>
+	<AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
+	<20101117231143.GQ22876@dastard>
+	<20101118133702.GA18834@infradead.org>
+	<alpine.LSU.2.00.1011180934400.3210@tigran.mtv.corp.google.com>
+	<20101119072316.GA14388@google.com>
+	<20101119145442.ddf0c0e8.akpm@linux-foundation.org>
+Date: Fri, 19 Nov 2010 15:31:42 -0800
+Message-ID: <AANLkTi=N=+hLd7bJZ87mgp0bGnyvT=43yQHBaDFZGTjY@mail.gmail.com>
+Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering writeback
+From: Michel Lespinasse <walken@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2010 05:09 PM, Peter Zijlstra wrote:
-> On Fri, 2010-11-19 at 17:59 -0500, Don Zickus wrote:
->> 
->> @@ -1371,6 +1385,12 @@ void __init init_hw_perf_events(void)
->> 
->>         pmu_check_apic();
->> 
->> +       /* sanity check that the hardware exists or is emulated */
->> +       if (!check_hw_exists()) {
->> +               pr_cont("no PMU driver, software events only.\n");
->> +               return;
->> +       }
+On Fri, Nov 19, 2010 at 2:54 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Thu, 18 Nov 2010 23:23:16 -0800
+> Michel Lespinasse <walken@google.com> wrote:
 >
-> Maybe report something like this:
->   "Broken PMU hardware detected, software events only."
+>> On Thu, Nov 18, 2010 at 09:41:22AM -0800, Hugh Dickins wrote:
+>> > On Thu, 18 Nov 2010, Christoph Hellwig wrote:
+>> > > I think it would help if we could drink a bit of the test driven design
+>> > > coolaid here. Michel, can you write some testcases where pages on a
+>> > > shared mapping are mlocked, then dirtied and then munlocked, and then
+>> > > written out using msync/fsync.  Anything that fails this test on
+>> > > btrfs/ext4/gfs/xfs/etc obviously doesn't work.
+>> > Whilst it's hard to argue against a request for testing, Dave's worries
+>> > just sprang from a misunderstanding of all the talk about "avoiding ->
+>> > page_mkwrite".  There's nothing strange or risky about Michel's patch,
+>> > it does not avoid ->page_mkwrite when there is a write: it just stops
+>> > pretending that there was a write when locking down the shared area.
+>>
+>> So, I decided to test this using memtoy.
 >
-> Because this is really not something that's supposed to happen.
+> Wait.  You *tested* the kernel?
+>
+> I dunno, kids these days...
 
-The kgdb test suite is passing with Don's perf detect logic, so we are
-back to good.  I am in agreement with Peter about the message
-indicating that it is broken hardware.  We don't in any way shape or
-form want leave the illusion this works in the VM.
+Not guilty - I mean, Christoph made me do it !
 
-# dmesg |grep Per
-<6>Performance Events: no PMU driver, software events only.
+> Dirtying all that memory at mlock() time is pretty obnoxious.
+>
+> I'm inclined to agree that your patch implements the desirable
+> behaviour: don't dirty the page, don't do block allocation.  Take a
+> fault at first-dirtying and do it then.  This does degrade mlock a bit:
+> the user will find that the first touch of an mlocked page can cause
+> synchronous physical I/O, which isn't mlocky behaviour *at all*.  But
+> we have to be able to do this anyway - whenever the kupdate function
+> writes back the dirty pages it has to mark them read-only again so the
+> kernel knows when they get redirtied.
 
+Glad to see that we seem to be coming to an agreement here.
 
-Tested on qemu and kvm, several revisions worth, because it is all
-automated.
+> So all that leaves me thinking that we merge your patches as-is.  Then
+> work out why users can fairly trivially use mlock to hang the kernel on
+> ext2 and ext3 (and others?)
 
-Tested-by: Jason Wessel <jason.wessel@windriver.com>
+I would say the hang is not even mlock related - you see without it
+also. All you need is mmap a large file with holes and write fault
+pages until you run out of disk space. At that point additional write
+faults wait for a writeback that can never complete. Sysadmin can
+however kill -9 such processes and/or free some space, though.
 
-Thanks,
-Jason.
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
