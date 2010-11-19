@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab0KSDog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 22:44:36 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:60745 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751823Ab0KSDof (ORCPT
+	id S1752187Ab0KSDyN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 22:54:13 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:56624 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345Ab0KSDyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 22:44:35 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAIuB5UxLd/sX/2dsb2JhbAAHgz3MZJEDgSKDNnMEhFqLEIYI
-X-IronPort-AV: E=Sophos;i="4.59,221,1288584000"; 
-   d="scan'208";a="82946115"
-Message-ID: <4CE5F2A1.2000009@teksavvy.com>
-Date: Thu, 18 Nov 2010 22:44:33 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Thu, 18 Nov 2010 22:54:12 -0500
+Date: Thu, 18 Nov 2010 21:54:03 -0600
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Pavel Emelyanov <xemul@parallels.com>, Kapil Arya <kapil@ccs.neu.edu>,
+        Gene Cooperman <gene@ccs.neu.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Containers <containers@lists.osdl.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+Message-ID: <20101119035403.GA24031@hallyn.com>
+References: <20101106053204.GB12449@count0.beaverton.ibm.com>
+ <20101106204008.GA31077@sundance.ccs.neu.edu>
+ <4CD5D99A.8000402@cs.columbia.edu>
+ <20101107184927.GF31077@sundance.ccs.neu.edu>
+ <4CD72150.9070705@cs.columbia.edu>
+ <4CE3C334.9080401@kernel.org>
+ <20101117153902.GA1155@hallyn.com>
+ <4CE3F8D1.10003@kernel.org>
+ <4CE4EE21.6050305@parallels.com>
+ <4CE4F672.1030904@kernel.org>
 MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, James Bottomley <James.Bottomley@suse.de>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
-        Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-References: <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <x494obe4kd5.fsf@segfault.boston.devel.redhat.com> <1290102098.3041.77.camel@mulgrave.site> <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com> <4CE59E57.2090009@teksavvy.com> <1290117009.11007.42.camel@mulgrave.site> <4CE5A386.7000105@teksavvy.com> <20101119013301.GU3290@thunk.org>
-In-Reply-To: <20101119013301.GU3290@thunk.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE4F672.1030904@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-11-18 08:33 PM, Ted Ts'o wrote:
->>>
->>> Before we go gung ho on this, there's no evidence that N discontiguous
->>> ranges in one command are any better than the ranges sent N times ...
->>> the same amount of erase overhead gets sent on SSDs.
->>
->> No, we do have evidence:  execution time of the TRIM commands on the SSD.
->>
->> The one-range-at-a-time is incredibly slow compared to multiple
->> ranges at a time.  That slowness comes from somewhere, with about
->> 99.9% certainty that it is due to the drive performing slow flash
->> erase cycles.
->
-> Mark, I think you are over-generalizing here.  You have observed with
-> some number of flash drives --- maybe only one, but I don't know that
-> for sure --- that TRIM is slow.  Even if we grant that you are correct
-> in your conclusion that it is because the drive is doing slow flash
-> erase cycles (and I don't completely accept that; I haven't seen your
-> your measurements since we know that any kind of command that requires
-> a queue drain/flush before it can execute is going to be slow, and I
-> don't know what kind of _slow_ you are observing).
+Quoting Tejun Heo (tj@kernel.org):
+> * And, most of all, there are userland implementation and
+>   virtualization, making the benefit to overhead ratio completely off.
+>   Userland implementation _already_ achieves most of what's necessary
 
-I do this stuff on modest hardware:  ata_piix.
-There is NO QUEUE TO FLUSH.
+Guess I'll just be offensive here and say, straight-out:  I don't
+believe it.  Can I see the userspace implementation of c/r?
 
-So one might expect TRIM to operate at the same speed as ordinary WRITEs.
-But it doesn't.  When I measured this in detail (and things have not changed
-much since then), we were talking 10s of milliseconds to 100s of milliseconds
-per TRIM command.
+If it's as good as the kernel level c/r, then aweseome - we don't
+need the kernel patches.
 
-The only possible explanation for that would be waiting on flash erase commands.
+If it's not as good, then the thing is, we're not drawing arbitrary
+lines saying "is this good enough", rather we want completely
+reliable and transparent c/r.  IOW, the running task and the other
+end can't tell that a migration happened, and, if checkpoint says
+it worked, then restart must succeed.
 
-Cheers
+-serge
