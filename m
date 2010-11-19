@@ -1,16 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755465Ab0KSP6f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 10:58:35 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:25566 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755424Ab0KSP6c (ORCPT
+	id S1755518Ab0KSP7N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 10:59:13 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:31934 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755451Ab0KSP6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 10:58:32 -0500
-Date: Fri, 19 Nov 2010 16:58:11 +0100
+	Fri, 19 Nov 2010 10:58:33 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Fri, 19 Nov 2010 16:58:08 +0100
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [RFCv6 13/13] ARM: cma: Added CMA to Aquila,
- Goni and c210 universal boards
+Subject: [RFCv6 10/13] mm: MIGRATE_CMA migration type added
 In-reply-to: <cover.1290172312.git.m.nazarewicz@samsung.com>
 To: mina86@mina86.com
 Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
@@ -31,167 +33,300 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
         Zach Pfeffer <zpfeffer@codeaurora.org>, dipankar@in.ibm.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org
-Message-id: <c5e5580e35e1a8edf211228c4b5aea83830a7ee6.1290172312.git.m.nazarewicz@samsung.com>
-MIME-version: 1.0
+Message-id: <3ce957fd990a221ee9e9e3047bb564d2ed11eebf.1290172312.git.m.nazarewicz@samsung.com>
 X-Mailer: git-send-email 1.7.2.3
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
 References: <cover.1290172312.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds CMA memory reservation code to Aquila, Goni and c210
-universal boards.
+The MIGRATE_CMA migration type has two main characteristics:
+(i) only movable and reclaimable pages can be allocated from
+MIGRATE_CMA page blocks and (ii) page allocator will never
+change migration type of MIGRATE_CMA page blocks.
+
+This guarantees that page in a MIGRATE_CMA page block can
+always be freed (by reclaiming it or moving somewhere else).
+
+It is designed to be used with Contiguous Memory Allocator
+(CMA) for allocating big chunks (eg. 10MiB) of physically
+contiguous memory.  Once driver requests contiguous memory,
+CMA will migrate or reclaim pages from MIGRATE_CMA page block.
+
+To minimise number of migrations, MIGRATE_CMA migration type
+is the last type tried when page allocator falls back to other
+migration types then requested.
+
+To use this new migration type one can use
+__free_pageblock_cma() function which moves frees a whole page
+block to a buddy allocator marking it (and thus all pages in
+it) as MIGRATE_CMA.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/mach-s5pv210/mach-aquila.c         |   26 ++++++++++++++++++++++++++
- arch/arm/mach-s5pv210/mach-goni.c           |   26 ++++++++++++++++++++++++++
- arch/arm/mach-s5pv310/mach-universal_c210.c |   17 +++++++++++++++++
- 3 files changed, 69 insertions(+), 0 deletions(-)
+ include/linux/mmzone.h |   30 +++++++++++++----
+ mm/Kconfig             |    9 +++++
+ mm/compaction.c        |   10 ++++++
+ mm/internal.h          |    3 ++
+ mm/page_alloc.c        |   83 +++++++++++++++++++++++++++++++++++++++---------
+ 5 files changed, 113 insertions(+), 22 deletions(-)
 
-diff --git a/arch/arm/mach-s5pv210/mach-aquila.c b/arch/arm/mach-s5pv210/mach-aquila.c
-index 28677ca..f1feb73 100644
---- a/arch/arm/mach-s5pv210/mach-aquila.c
-+++ b/arch/arm/mach-s5pv210/mach-aquila.c
-@@ -21,6 +21,7 @@
- #include <linux/gpio_keys.h>
- #include <linux/input.h>
- #include <linux/gpio.h>
-+#include <linux/cma.h>
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index 39c24eb..317da6b 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -35,13 +35,24 @@
+  */
+ #define PAGE_ALLOC_COSTLY_ORDER 3
  
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-@@ -650,6 +651,30 @@ static void __init aquila_sound_init(void)
- 	__raw_writel(__raw_readl(S5P_OTHERS) | (0x3 << 8), S5P_OTHERS);
+-#define MIGRATE_UNMOVABLE     0
+-#define MIGRATE_RECLAIMABLE   1
+-#define MIGRATE_MOVABLE       2
+-#define MIGRATE_PCPTYPES      3 /* the number of types on the pcp lists */
+-#define MIGRATE_RESERVE       3
+-#define MIGRATE_ISOLATE       4 /* can't allocate from here */
+-#define MIGRATE_TYPES         5
++enum {
++	MIGRATE_UNMOVABLE,
++	MIGRATE_RECLAIMABLE,
++	MIGRATE_MOVABLE,
++	MIGRATE_PCPTYPES,	/* the number of types on the pcp lists */
++	MIGRATE_RESERVE = MIGRATE_PCPTYPES,
++	MIGRATE_ISOLATE,	/* can't allocate from here */
++#ifdef CONFIG_MIGRATE_CMA
++	MIGRATE_CMA,		/* only movable & reclaimable */
++#endif
++	MIGRATE_TYPES
++};
++
++#ifdef CONFIG_MIGRATE_CMA
++#  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
++#else
++#  define is_migrate_cma(migratetype) false
++#endif
+ 
+ #define for_each_migratetype_order(order, type) \
+ 	for (order = 0; order < MAX_ORDER; order++) \
+@@ -54,6 +65,11 @@ static inline int get_pageblock_migratetype(struct page *page)
+ 	return get_pageblock_flags_group(page, PB_migrate, PB_migrate_end);
  }
  
-+#ifdef CONFIG_CMA
-+
-+static void __init aquila_reserve(void)
++static inline bool is_pageblock_cma(struct page *page)
 +{
-+	static struct cma_region regions[] = {
-+		CMA_REGION("fw",  1 << 20, 128 << 10, 0x32000000),
-+		CMA_REGION("b1", 32 << 20,         0, 0x33000000),
-+		CMA_REGION("b2", 16 << 20,         0, 0x44000000),
-+		{ }
-+	};
-+
-+	static const char map[] __initconst =
-+		"s5p-mfc5/f=fw;s5p-mfc5/a=b1;s5p-mfc5/b=b2;*=b1,b2";
-+
-+	cma_set_defaults(regions, map);
-+	cma_early_regions_reserve(NULL);
++	return is_migrate_cma(get_pageblock_migratetype(page));
 +}
 +
-+#else
+ struct free_area {
+ 	struct list_head	free_list[MIGRATE_TYPES];
+ 	unsigned long		nr_free;
+diff --git a/mm/Kconfig b/mm/Kconfig
+index 5ad2471..4aee3c5 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -1,3 +1,12 @@
++config MIGRATE_CMA
++	bool
++	help
++	  This option should be selected by code that requires MIGRATE_CMA
++	  migration type to be present.  Once a page block has this
++	  migration type, only movable and reclaimable pages can be
++	  allocated from it and the page block never changes it's
++	  migration type.
 +
-+#define aquila_reserve NULL
+ config SELECT_MEMORY_MODEL
+ 	def_bool y
+ 	depends on EXPERIMENTAL || ARCH_SELECT_MEMORY_MODEL
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 4d709ee..c5e404b 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -113,6 +113,16 @@ static bool suitable_migration_target(struct page *page)
+ 	if (migratetype == MIGRATE_ISOLATE || migratetype == MIGRATE_RESERVE)
+ 		return false;
+ 
++	/* Keep MIGRATE_CMA alone as well. */
++	/*
++	 * XXX Revisit.  We currently cannot let compaction touch CMA
++	 * pages since compaction insists on changing their migration
++	 * type to MIGRATE_MOVABLE (see split_free_page() called from
++	 * isolate_freepages_block() above).
++	 */
++	if (is_migrate_cma(migratetype))
++		return false;
++
+ 	/* If the page is a large free page, then allow migration */
+ 	if (PageBuddy(page) && page_order(page) >= pageblock_order)
+ 		return true;
+diff --git a/mm/internal.h b/mm/internal.h
+index dedb0af..cc24e74 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -49,6 +49,9 @@ extern void putback_lru_page(struct page *page);
+  * in mm/page_alloc.c
+  */
+ extern void __free_pages_bootmem(struct page *page, unsigned int order);
++#ifdef CONFIG_MIGRATE_CMA
++extern void __free_pageblock_cma(struct page *page);
++#endif
+ extern void prep_compound_page(struct page *page, unsigned long order);
+ #ifdef CONFIG_MEMORY_FAILURE
+ extern bool is_free_buddy_page(struct page *page);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 6dd2854..91daf22 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -712,6 +712,30 @@ void __meminit __free_pages_bootmem(struct page *page, unsigned int order)
+ 	}
+ }
+ 
++#ifdef CONFIG_MIGRATE_CMA
++
++/*
++ * Free whole pageblock and set it's migration type to MIGRATE_CMA.
++ */
++void __init __free_pageblock_cma(struct page *page)
++{
++	struct page *p = page;
++	unsigned i = pageblock_nr_pages;
++
++	prefetchw(p);
++	do {
++		if (--i)
++			prefetchw(p + 1);
++		__ClearPageReserved(p);
++		set_page_count(p, 0);
++	} while (++p, i);
++
++	set_page_refcounted(page);
++	set_pageblock_migratetype(page, MIGRATE_CMA);
++	__free_pages(page, pageblock_order);
++}
 +
 +#endif
-+
- static void __init aquila_map_io(void)
- {
- 	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
-@@ -690,4 +715,5 @@ MACHINE_START(AQUILA, "Aquila")
- 	.map_io		= aquila_map_io,
- 	.init_machine	= aquila_machine_init,
- 	.timer		= &s3c24xx_timer,
-+	.reserve	= aquila_reserve,
- MACHINE_END
-diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
-index b1dcf96..0bda14f 100644
---- a/arch/arm/mach-s5pv210/mach-goni.c
-+++ b/arch/arm/mach-s5pv210/mach-goni.c
-@@ -25,6 +25,7 @@
- #include <linux/gpio_keys.h>
- #include <linux/input.h>
- #include <linux/gpio.h>
-+#include <linux/cma.h>
  
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
-@@ -809,6 +810,30 @@ static void __init goni_sound_init(void)
- 	__raw_writel(__raw_readl(S5P_OTHERS) | (0x3 << 8), S5P_OTHERS);
- }
- 
-+#ifdef CONFIG_CMA
-+
-+static void __init goni_reserve(void)
-+{
-+	static struct cma_region regions[] = {
-+		CMA_REGION("fw",  1 << 20, 128 << 10, 0x32000000),
-+		CMA_REGION("b1", 32 << 20,         0, 0x33000000),
-+		CMA_REGION("b2", 16 << 20,         0, 0x44000000),
-+		{ }
-+	};
-+
-+	static const char map[] __initconst =
-+		"s5p-mfc5/f=fw;s5p-mfc5/a=b1;s5p-mfc5/b=b2;*=b1,b2";
-+
-+	cma_set_defaults(regions, map);
-+	cma_early_regions_reserve(NULL);
-+}
-+
+ /*
+  * The order of subdivision here is critical for the IO subsystem.
+@@ -819,11 +843,16 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+  * This array describes the order lists are fallen back to when
+  * the free lists for the desirable migrate type are depleted
+  */
+-static int fallbacks[MIGRATE_TYPES][MIGRATE_TYPES-1] = {
++static int fallbacks[MIGRATE_TYPES][4] = {
+ 	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,   MIGRATE_RESERVE },
++#ifdef CONFIG_MIGRATE_CMA
++	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,   MIGRATE_CMA    , MIGRATE_RESERVE },
++	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_CMA    , MIGRATE_RESERVE },
 +#else
-+
-+#define goni_reserve NULL
-+
+ 	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,   MIGRATE_RESERVE },
+ 	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
+-	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE,     MIGRATE_RESERVE,   MIGRATE_RESERVE }, /* Never used */
 +#endif
-+
- static void __init goni_map_io(void)
- {
- 	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
-@@ -865,4 +890,5 @@ MACHINE_START(GONI, "GONI")
- 	.map_io		= goni_map_io,
- 	.init_machine	= goni_machine_init,
- 	.timer		= &s3c24xx_timer,
-+	.reserve	= goni_reserve,
- MACHINE_END
-diff --git a/arch/arm/mach-s5pv310/mach-universal_c210.c b/arch/arm/mach-s5pv310/mach-universal_c210.c
-index 16d8fc0..90a2296 100644
---- a/arch/arm/mach-s5pv310/mach-universal_c210.c
-+++ b/arch/arm/mach-s5pv310/mach-universal_c210.c
-@@ -13,6 +13,7 @@
- #include <linux/i2c.h>
- #include <linux/gpio_keys.h>
- #include <linux/gpio.h>
-+#include <linux/cma.h>
++	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE }, /* Never used */
+ };
  
- #include <asm/mach/arch.h>
- #include <asm/mach-types.h>
-@@ -138,6 +139,21 @@ static void __init universal_map_io(void)
- 	s3c24xx_init_uarts(universal_uartcfgs, ARRAY_SIZE(universal_uartcfgs));
- }
+ /*
+@@ -919,12 +948,12 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 	/* Find the largest possible block of pages in the other list */
+ 	for (current_order = MAX_ORDER-1; current_order >= order;
+ 						--current_order) {
+-		for (i = 0; i < MIGRATE_TYPES - 1; i++) {
++		for (i = 0; i < ARRAY_SIZE(fallbacks[0]); i++) {
+ 			migratetype = fallbacks[start_migratetype][i];
  
-+static void __init universal_reserve(void)
-+{
-+	static struct cma_region regions[] = {
-+		CMA_REGION("r" , 64 << 20, 0, 0),
-+		CMA_REGION("fw",  1 << 20, 128 << 10),
-+		{ }
-+	};
-+
-+	static const char map[] __initconst =
-+		"s3c-mfc5/f=fw;*=r";
-+
-+	cma_set_defaults(regions, map);
-+	cma_early_regions_reserve(NULL);
-+}
-+
- static void __init universal_machine_init(void)
- {
- 	i2c_register_board_info(0, i2c0_devs, ARRAY_SIZE(i2c0_devs));
-@@ -152,6 +168,7 @@ MACHINE_START(UNIVERSAL_C210, "UNIVERSAL_C210")
- 	.boot_params	= S5P_PA_SDRAM + 0x100,
- 	.init_irq	= s5pv310_init_irq,
- 	.map_io		= universal_map_io,
-+	.reserve	= universal_reserve,
- 	.init_machine	= universal_machine_init,
- 	.timer		= &s5pv310_timer,
- MACHINE_END
+ 			/* MIGRATE_RESERVE handled later if necessary */
+ 			if (migratetype == MIGRATE_RESERVE)
+-				continue;
++				break;
+ 
+ 			area = &(zone->free_area[current_order]);
+ 			if (list_empty(&area->free_list[migratetype]))
+@@ -941,17 +970,28 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 			 * agressive about taking ownership of free pages
+ 			 */
+ 			if (unlikely(current_order >= (pageblock_order >> 1)) ||
+-					start_migratetype == MIGRATE_RECLAIMABLE ||
+-					page_group_by_mobility_disabled) {
+-				unsigned long pages;
++			    start_migratetype == MIGRATE_RECLAIMABLE ||
++			    page_group_by_mobility_disabled) {
++				int pages;
+ 				pages = move_freepages_block(zone, page,
+-								start_migratetype);
++							     start_migratetype);
+ 
+-				/* Claim the whole block if over half of it is free */
+-				if (pages >= (1 << (pageblock_order-1)) ||
+-						page_group_by_mobility_disabled)
++				/*
++				 * Claim the whole block if over half
++				 * of it is free
++				 *
++				 * On the other hand, never change
++				 * migration type of MIGRATE_CMA
++				 * pageblockss.  We don't want
++				 * unmovable or unreclaimable pages to
++				 * be allocated from MIGRATE_CMA
++				 * areas.
++				 */
++				if (!is_pageblock_cma(page) &&
++				    (pages >= (1 << (pageblock_order-1)) ||
++				     page_group_by_mobility_disabled))
+ 					set_pageblock_migratetype(page,
+-								start_migratetype);
++							start_migratetype);
+ 
+ 				migratetype = start_migratetype;
+ 			}
+@@ -961,7 +1001,8 @@ __rmqueue_fallback(struct zone *zone, int order, int start_migratetype)
+ 			rmv_page_order(page);
+ 
+ 			/* Take ownership for orders >= pageblock_order */
+-			if (current_order >= pageblock_order)
++			if (current_order >= pageblock_order &&
++			    !is_pageblock_cma(page))
+ 				change_pageblock_range(page, current_order,
+ 							start_migratetype);
+ 
+@@ -1176,9 +1217,16 @@ void free_hot_cold_page(struct page *page, int cold)
+ 	 * offlined but treat RESERVE as movable pages so we can get those
+ 	 * areas back if necessary. Otherwise, we may have to free
+ 	 * excessively into the page allocator
++	 *
++	 * Still, do not change migration type of MIGRATE_CMA pages (if
++	 * they'd be recorded as MIGRATE_MOVABLE an unmovable page could
++	 * be allocated from MIGRATE_CMA block and we don't want to allow
++	 * that).  In this respect, treat MIGRATE_CMA like
++	 * MIGRATE_ISOLATE.
+ 	 */
+ 	if (migratetype >= MIGRATE_PCPTYPES) {
+-		if (unlikely(migratetype == MIGRATE_ISOLATE)) {
++		if (unlikely(migratetype == MIGRATE_ISOLATE
++			  || is_migrate_cma(migratetype))) {
+ 			free_one_page(zone, page, 0, migratetype);
+ 			goto out;
+ 		}
+@@ -1267,7 +1315,8 @@ int split_free_page(struct page *page)
+ 	if (order >= pageblock_order - 1) {
+ 		struct page *endpage = page + (1 << order) - 1;
+ 		for (; page < endpage; page += pageblock_nr_pages)
+-			set_pageblock_migratetype(page, MIGRATE_MOVABLE);
++			if (!is_pageblock_cma(page))
++				set_pageblock_migratetype(page, MIGRATE_MOVABLE);
+ 	}
+ 
+ 	return 1 << order;
+@@ -5365,6 +5414,10 @@ int set_migratetype_isolate(struct page *page)
+ 	zone_idx = zone_idx(zone);
+ 
+ 	spin_lock_irqsave(&zone->lock, flags);
++	if (is_pageblock_cma(page)) {
++		ret = 0;
++		goto out;
++	}
+ 
+ 	pfn = page_to_pfn(page);
+ 	arg.start_pfn = pfn;
 -- 
 1.7.2.3
 
