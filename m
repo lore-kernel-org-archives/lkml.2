@@ -1,45 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab0KSVOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:14:19 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44799
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751544Ab0KSVOS (ORCPT
+	id S1756706Ab0KSVSj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:18:39 -0500
+Received: from p3plsmtpa01-06.prod.phx3.secureserver.net ([72.167.82.86]:42882
+	"HELO p3plsmtpa01-06.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755339Ab0KSVSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:14:18 -0500
-Date: Fri, 19 Nov 2010 13:14:43 -0800 (PST)
-Message-Id: <20101119.131443.35039425.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
-Subject: Re: linux-next: manual merge of the net tree with the net-current
- tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101119111706.d68efe13.sfr@canb.auug.org.au>
-References: <20101119111706.d68efe13.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 19 Nov 2010 16:18:38 -0500
+X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Nov 2010 16:18:38 EST
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
+ attacking
+From: Andy Walls <andy@silverblocksystems.net>
+To: linux-kernel@vger.kernel.org
+Cc: sarah.a.sharp@linux.intel.com, torvalds@linux-foundation.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 19 Nov 2010 16:12:34 -0500
+Message-ID: <1290201154.2116.29.camel@morgan.silverblock.net>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 19 Nov 2010 11:17:06 +1100
 
-> Hi all,
+> On Fri, Nov 19, 2010 at 11:19 AM, Sarah Sharp
+> <sarah.a.sharp@linux.intel.com> wrote:
+> >
+> > .config and dmesg are attached.  The box is running klogd 1.5.5ubuntu3
+> > (from Jaunty).  Yes, I know that's old.  I read the bit in the commit
+> > about changing the permissions of kallsyms after boot, but if I can't
+> > boot that doesn't help.  Perhaps this can be made a configuration
+> > option?
 > 
-> Today's linux-next merge of the net tree got a conflict in
-> drivers/net/bonding/bond_main.c between commit
-> 3006bc38895895f1a0352c2e17e1a503f35f7e2f ("bonding: fix a race in IGMP
-> handling") from the net-current tree and commit
-> 866f3b25a2eb60d7529c227a0ecd80c3aba443fd ("bonding: IGMP handling
-> cleanup") from the net tree.
+> It's not worth a config option.
 > 
-> I just assumed that the latter is a better solution and used that.
+> If it actually breaks user-space, I think we should just revert it.
 
-Yep, that's correct, and I'm doing the same as I merge things myself
-right now.
+User space klogd is what's broken in this case:
 
-Thanks!
+        ksyms = fopen(KSYMS, "r");
+
+        if ( ksyms == NULL )
+        {
+                if ( errno == ENOENT )
+                        Syslog(LOG_INFO, "No module symbols loaded - "
+                               "kernel modules not enabled.\n");
+                else
+                        Syslog(LOG_ERR, "Error loading kernel symbols " \
+                               "- %s\n", strerror(errno));
+                fclose(ksyms);
+                return(0);
+        }
+
+The fclose(NULL) is a bug, as I don't think the standards require
+that to be handled gracefully.
+
+
+> It's kind of sad to default to the world-visible thing,
+
+klogd also gets symbols from System.map, so /proc/kallsyms access
+is not a strict requirement.
+
+I haven't checked to see if klogd can work without a symbol source
+at all, but I'll wager it can.
+
+Regards,
+Andy
+
+
