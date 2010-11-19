@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758674Ab0KSBxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 20:53:31 -0500
-Received: from mga01.intel.com ([192.55.52.88]:56603 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754730Ab0KSBxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 20:53:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,220,1288594800"; 
-   d="scan'208";a="628259872"
-Date: Fri, 19 Nov 2010 08:32:25 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [2/8,v3] NUMA Hotplug Emulator: infrastructure of NUMA hotplug
- emulation
-Message-ID: <20101119003225.GB3327@shaohui>
-References: <20101117020759.016741414@intel.com>
- <20101117021000.568681101@intel.com>
- <alpine.DEB.2.00.1011162359160.17408@chino.kir.corp.google.com>
- <20101117075128.GA30254@shaohui>
- <alpine.DEB.2.00.1011171304060.10254@chino.kir.corp.google.com>
- <20101118041407.GA2408@shaohui>
- <20101118062715.GD17539@linux-sh.org>
- <20101118052750.GD2408@shaohui>
- <alpine.DEB.2.00.1011181321470.26680@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1011181321470.26680@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1760355Ab0KSB4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 20:56:09 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55589 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753976Ab0KSB4H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 20:56:07 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=qcp4KzMVYJiL6msjSmC/adiv8J8nsyAyB/i96piIxH6viwX1ip5W86j+H6/y6pAlbh
+         2aAWmfoNZZI8jcAZWas3rHl8cvvUiNrYND6c63JvKFV2lQIqSge6ETdYyRM5HUFBGaLo
+         kUHWNpOE92b5ssE5f5d+kRNckpUlUDre+A1ro=
+From: Ping Cheng <pinglinux@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: dmitry.torokhov@gmail.com, Ping Cheng <pinglinux@gmail.com>,
+        Ping Cheng <pingc@wacom.com>
+Subject: [PATCH] input: wacom - Bring Bamboo in sync with other models
+Date: Thu, 18 Nov 2010 17:56:09 -0800
+Message-Id: <1290131769-18380-1-git-send-email-pinglinux@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 01:24:52PM -0800, David Rientjes wrote:
-> On Thu, 18 Nov 2010, Shaohui Zheng wrote:
-> 
-> > in our draft patch, we re-setup nr_node_ids when CONFIG_ARCH_MEMORY_PROBE enabled 
-> > and mem=XXX was specified in grub. we set nr_node_ids as MAX_NUMNODES + 1, because
-> >  we do not know how many nodes will be hot-added through memory/probe interface. 
-> >  it might be a little wasting of memory.
-> > 
-> 
-> nr_node_ids need not be set to anything different at boot, the 
-> MEM_GOING_ONLINE callback should be used for anything (like the slab 
-> allocators) where a new node is introduced and needs to be dealt with 
-> accordingly; this is how regular memory hotplug works, we need no 
-> additional code in this regard because it's emulated.  If a subsystem 
-> needs to change in response to a new node going online and doesn't as a 
-> result of using your emulator, that's a bug and either needs to be fixed 
-> or prohibited from use with CONFIG_MEMORY_HOTPLUG.
-> 
-> (See the MEM_GOING_ONLINE callback in mm/slub.c, for instance, which deals 
-> only with the case of node hotplug.)
+Tablet buttons are considered as a separate tool in the user land.
+All existing tablet models, wacom and hanwang, send PAD_DEVICE_ID
+and MSC_SERIAL events. Add them to Bamboo so clients can process
+them consistently accross models.
 
-nr_node_ids is the possible node number. when we do regular memory online,
-it is oline to a possible node, and it is already counted in to nr_node_ids.
+Signed-off-by: Ping Cheng <pingc@wacom.com>
+---
+ drivers/input/tablet/wacom_wac.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-if you increment nr_node_ids dynamically when node online, it causes a lot of
-problems. Many data are initialized according to nr_node_ids. That is our
-experience when we debug the emulator.
-
-mm/page_alloc.c:
-/*
- * Figure out the number of possible node ids.
- */
-static void __init setup_nr_node_ids(void)
-{
-	unsigned int node;
-	unsigned int highest = 0;
-
-	for_each_node_mask(node, node_possible_map)
-		highest = node;
-	nr_node_ids = highest + 1;
-}
-
-There is no conflict between emulator and CONFIG_MEMORY_HOTPLUG. A real node can be
- onlined because we already set it as _possible_; if emulator is enabled, all the 
-nodes were marked as _possbile_ node, the real ndoe is also included in.
-
+diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
+index 360ce4a..e4da526 100644
+--- a/drivers/input/tablet/wacom_wac.c
++++ b/drivers/input/tablet/wacom_wac.c
+@@ -901,11 +901,15 @@ static int wacom_bpt_touch(struct wacom_wac *wacom)
+ 	input_report_abs(input, ABS_PRESSURE, sp);
+ 	input_report_abs(input, ABS_X, sx);
+ 	input_report_abs(input, ABS_Y, sy);
++	input_sync(input);
+ 
+ 	input_report_key(input, BTN_LEFT, (data[1] & 0x08) != 0);
+ 	input_report_key(input, BTN_FORWARD, (data[1] & 0x04) != 0);
+ 	input_report_key(input, BTN_BACK, (data[1] & 0x02) != 0);
+ 	input_report_key(input, BTN_RIGHT, (data[1] & 0x01) != 0);
++	input_report_key(input, BTN_TOOL_BUTTONS, 0xf0);
++	input_report_abs(input, ABS_MISC, PAD_DEVICE_ID);
++	input_event(input, EV_MSC, MSC_SERIAL, 0xf0);
+ 
+ 	input_sync(input);
+ 
+@@ -1261,9 +1265,8 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
+ 		break;
+ 
+ 	case BAMBOO_PT:
+-		__clear_bit(ABS_MISC, input_dev->absbit);
+-
+ 		if (features->device_type == BTN_TOOL_TRIPLETAP) {
++			__set_bit(BTN_TOOL_BUTTONS, input_dev->keybit);
+ 			__set_bit(BTN_LEFT, input_dev->keybit);
+ 			__set_bit(BTN_FORWARD, input_dev->keybit);
+ 			__set_bit(BTN_BACK, input_dev->keybit);
+@@ -1284,7 +1287,9 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
+ 					     features->pressure_fuzz, 0);
+ 			input_set_abs_params(input_dev, ABS_MT_TRACKING_ID, 0,
+ 					     MAX_TRACKING_ID, 0, 0);
+-		} else if (features->device_type == BTN_TOOL_PEN) {
++		} 
++
++		if (features->device_type == BTN_TOOL_PEN) {
+ 			__set_bit(BTN_TOOL_RUBBER, input_dev->keybit);
+ 			__set_bit(BTN_TOOL_PEN, input_dev->keybit);
+ 			__set_bit(BTN_STYLUS, input_dev->keybit);
 -- 
-Thanks & Regards,
-Shaohui
+1.7.2.3
 
