@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab0KSAg7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 19:36:59 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33889 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619Ab0KSAg5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 19:36:57 -0500
+	id S1755307Ab0KSAgx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 19:36:53 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41660 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752619Ab0KSAgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 19:36:52 -0500
+Message-ID: <4CE5C66F.3050300@zytor.com>
+Date: Thu, 18 Nov 2010 16:35:59 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <tTUH_XeInOH.A.dMF.c3b5MB@chimera>
-References: <tTUH_XeInOH.A.dMF.c3b5MB@chimera>
-Date: Thu, 18 Nov 2010 16:36:54 -0800
-Message-ID: <AANLkTinzHyWcfS++R_d+yqR9JQu7W51h0XRr-ikd_6y1@mail.gmail.com>
-Subject: Re: 2.6.37-rc2-git4: Reported regressions 2.6.35 -> 2.6.36
-From: Jesse Gross <jesse@nicira.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+To: Lennart Poettering <mzxreary@0pointer.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+References: <1289820766.16406.45.camel@maggy.simson.net> <1289821590.16406.47.camel@maggy.simson.net> <20101115125716.GA22422@redhat.com> <1289856350.14719.135.camel@maggy.simson.net> <20101116015648.GA11534@redhat.com> <1289916171.5169.117.camel@maggy.simson.net> <1289916683.2109.625.camel@laptop> <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com> <20101116170312.GA19327@tango.0pointer.de> <1289930934.2109.644.camel@laptop> <20101116200546.GB27235@tango.0pointer.de>
+In-Reply-To: <20101116200546.GB27235@tango.0pointer.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 3:50 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=20462
-> Subject         : 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
-> Submitter       : Nikola Ciprich <extmaillist@linuxbox.cz>
-> Date            : 2010-10-15 7:10 (35 days old)
-> Message-ID      : <20101015071008.GA8714@pcnci.linuxbox.cz>
-> References      : http://marc.info/?l=linux-kernel&m=128712984831303&w=2
+On 11/16/2010 12:05 PM, Lennart Poettering wrote:
+> On Tue, 16.11.10 19:08, Peter Zijlstra (a.p.zijlstra@chello.nl) wrote:
+> 
+>>
+>> On Tue, 2010-11-16 at 18:03 +0100, Lennart Poettering wrote:
+>>> Binding something like this to TTYs is just backwards. No graphical
+>>> session has a TTY attached anymore. And there might be multiple TTYs
+>>> used in the same session. 
+>>
+>> Using a group per tty makes sense for us console jockeys..
+> 
+> Well, then maybe you shouldn't claim this was relevant for anybody but
+> yourself. Because it is irrelevant for most users if it is bound to the TTY.
+> 
 
-A fix for this has been sent to -stable:
-http://www.spinics.net/lists/netdev/msg146227.html
+For what it's worth, I suspect that the object that should be bound to
+is probably not the tty, but rather the session ID of the process (which
+generally is 1:1 with controlling TTY for console processes.)
+
+	-hpa
