@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab0KSPOm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 10:14:42 -0500
-Received: from smtp5.freeserve.com ([193.252.22.128]:15577 "EHLO
-	smtp5.freeserve.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754617Ab0KSPOk (ORCPT
+	id S1754861Ab0KSPVj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 10:21:39 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:44305 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754778Ab0KSPVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 10:14:40 -0500
-X-Greylist: delayed 474 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Nov 2010 10:14:40 EST
-X-ME-UUID: 20101119150639759.B954C1C000A1@mwinf3411.me.freeserve.com
-Date: Fri, 19 Nov 2010 15:06:32 +0000
-From: Chris Vine <chris@cvine.freeserve.co.uk>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #20172] 2.6.36-rc7 boot stalls unless nolapic_timer -
- Lenovo S12
-Message-ID: <20101119150632.23e4b4af@boulder.homenet>
-In-Reply-To: <t78YtCSuOqN.A.L-G.r4b5MB@chimera>
-References: <tTUH_XeInOH.A.dMF.c3b5MB@chimera>
-	<t78YtCSuOqN.A.L-G.r4b5MB@chimera>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 19 Nov 2010 10:21:37 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAG8k5kxLd/sX/2dsb2JhbAAHgz3MOpEOgSKDNnMEhFqLEw
+X-IronPort-AV: E=Sophos;i="4.59,223,1288584000"; 
+   d="scan'208";a="82986022"
+Message-ID: <4CE695FF.20601@teksavvy.com>
+Date: Fri, 19 Nov 2010 10:21:35 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: Chris Mason <chris.mason@oracle.com>,
+        James Bottomley <james.bottomley@suse.de>,
+        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>, tytso <tytso@mit.edu>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        sandeen <sandeen@redhat.com>
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com> <20101118130630.GJ6178@parisc-linux.org> <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <4CE59C9E.6050902@teksavvy.com> <1290177488-sup-6540@think> <4CE68F80.7000607@teksavvy.com> <20101119145748.GB27919@infradead.org>
+In-Reply-To: <20101119145748.GB27919@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Nov 2010 00:53:35 +0100 (CET)
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.35 and 2.6.36.
-> 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.35 and 2.6.36.  Please verify if it still
-> should be listed and let the tracking team know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=20172
-> Subject		: 2.6.36-rc7 boot stalls unless nolapic_timer
-> - Lenovo S12 Submitter	: Chris Vine
-> <chris@cvine.freeserve.co.uk> Date		: 2010-10-10 12:59
-> (40 days old) Message-ID	:
-> <<20101010135912.76eb61b7@boulder.homenet>> References	:
-> http://marc.info/?l=linux-kernel&m=128671620721712&w=2
+On 10-11-19 09:57 AM, Christoph Hellwig wrote:
+> On Fri, Nov 19, 2010 at 09:53:52AM -0500, Mark Lord wrote:
+>> On 10-11-19 09:40 AM, Chris Mason wrote:
+>>>
+>>> We've been told that online and constant trimming is the default in
+>>> windows7.   The ssds are most likely to just start ignoring the trims
+>>> they can't service efficiently.
+>>
+>> Win7 collects multiple TRIM ranges over time and batches them as single TRIMs
+>> (as reported to me by an SSD vendor who traced it with a SATA analyzer,
+>>   and who also apparently has "inside info").
+>
+> I really hate to rely on this third party hearsay (from all sides), and
+> have implement TRIM support in qemu now.  I'll soon install win7 and
+> will check out the TRIM patters myself.
 
-This bug is still present in 2.6.37-rc2, but (as the original reporter)
-I now doubt it should be classified as a regression.  It looked as if
-it was a regression because in the 2.6.35 kernel (the first kernel to
-include intel idle), intel idle was available as a kernel module and
-that module never in fact loaded on my hardware and so never caused a
-hang. In 2.6.36 onwards, intel idle is only available directly compiled
-into the kernel and that is when the hang became apparent: subsequent
-testing shows that the hang also occurs with 2.6.35 if intel idle is
-compiled in rather than as a module.
-
-So it is a bug, which is still present, but not necessarily a
-regression.
-
-Chris
-
-
+Excellent!
