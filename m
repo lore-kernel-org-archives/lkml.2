@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362Ab0KSSlx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 13:41:53 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:37517 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756326Ab0KSSlv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 13:41:51 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=QVEPB2ZEDZeKtbnKOSte42CikfblWFpAS1XUbhHqE9QiX24EWmTdFgdQK5VFyypxpb
-         v6qXk4RnZzd7ERp5gi8qJp1XlgoYQ8SJESEk4r6+RPHjpCDRim6Q6eNP/05FNZkJTtlK
-         jJov5Av/Ww7jmbvb/w0RjWLknQrVtRxwArTZI=
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Russ Gorby <richardx.r.gorby@intel.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] serial: ifx6x60: fix memory leak
-Date: Fri, 19 Nov 2010 21:41:45 +0300
-Message-Id: <1290192105-11494-1-git-send-email-segoon@openwall.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756416Ab0KSSmA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:42:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36228 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756374Ab0KSSl4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 13:41:56 -0500
+Date: Fri, 19 Nov 2010 19:41:50 +0100
+From: "Dr. Werner Fink" <werner@suse.de>
+To: Greg KH <greg@kroah.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
+Message-ID: <20101119184150.GA8997@boole.suse.de>
+Mail-Followup-To: Greg KH <greg@kroah.com>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Lennart Poettering <mzxreary@0pointer.de>,
+	Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
+References: <20101118015310.GA30480@kroah.com>
+ <20101118110020.GA13871@boole.suse.de>
+ <20101118112335.434de53a@lxorguk.ukuu.org.uk>
+ <20101118121256.GA19884@boole.suse.de>
+ <20101118125822.16718289@lxorguk.ukuu.org.uk>
+ <20101118131420.GA23872@boole.suse.de>
+ <20101118144123.5417ccbd@lxorguk.ukuu.org.uk>
+ <20101119132145.GA22883@boole.suse.de>
+ <20101119154705.7829487a@lxorguk.ukuu.org.uk>
+ <20101119180258.GA6745@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20101119180258.GA6745@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If tty_register_driver() failed then tty_driver is still alive.
-Free it with put_tty_driver().
+On Fri, Nov 19, 2010 at 10:02:58AM -0800, Greg KH wrote:
+> On Fri, Nov 19, 2010 at 03:47:05PM +0000, Alan Cox wrote:
+> > > Currently the bootlogd(8) or blogd(8) parse the kernels command line
+> > > and if available do an ioctl TIOCGDEV (not supported by the upstream
+> > > kernel), then create a pty/tty pair, do an ioctl TIOCCONS to forward
+> > 
+> > So perhaps the vendors using TIOCGDEV could get off their collective
+> > backsides and submit it upstream ?
+> 
+> Heh, that's what started this whole thing :)
+> 
+> I objected to TIOCGDEV going in as it seemed that only suse needed it
+> for their boot sequence, and no other distro did which implied that it
+> really wasn't necessary.
+> 
+> I'm still not convinced it is needed, and the many thousands of booting
+> systems out there without it seem to confirm it...
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- Compile tested only.
+Uhmm ... just to say it: I've been asked by Fedorea people and also
+by Debian people why I had not submitted this patch and I've told
+them that I had it done long time ago ;)
 
- drivers/serial/ifx6x60.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+It seems to me that there is some demand but most user space
+monitoring applications uses workarounds (AFAICR plymouth
+uses hard coded VT for boot and shutdown).
 
-diff --git a/drivers/serial/ifx6x60.c b/drivers/serial/ifx6x60.c
-index 3f8d5ee..ab93763 100644
---- a/drivers/serial/ifx6x60.c
-+++ b/drivers/serial/ifx6x60.c
-@@ -1384,6 +1384,7 @@ static int __init ifx_spi_init(void)
- 	if (result) {
- 		pr_err("%s: tty_register_driver failed(%d)",
- 			DRVNAME, result);
-+		put_tty_driver(tty_drv);
- 		return result;
- 	}
- 
+
+  Werner
+
 -- 
-1.7.0.4
-
+System V style init programs - http://savannah.nongnu.org/projects/sysvinit/
