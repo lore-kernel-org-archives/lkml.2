@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932395Ab0KSVpn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:45:43 -0500
-Received: from kroah.org ([198.145.64.141]:51879 "EHLO coco.kroah.org"
+	id S932417Ab0KSVpr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:45:47 -0500
+Received: from kroah.org ([198.145.64.141]:51904 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932350Ab0KSVpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:45:41 -0500
+	id S932393Ab0KSVpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:45:43 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:12 2010
-Message-Id: <20101119214412.552838355@clark.site>
+Message-Id: <20101119214412.882240243@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:43:18 -0800
+Date: Fri, 19 Nov 2010 13:43:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [38/45] USB: accept some invalid ep0-maxpacket values
+        Dan Carpenter <error27@gmail.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [42/45] [SCSI] gdth: integer overflow in ioctl
 In-Reply-To: <20101119214439.GA26350@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,49 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Dan Carpenter <error27@gmail.com>
 
-commit 56626a72a47bf3e50875d960d6b5f17b9bee0ab2 upstream.
+commit f63ae56e4e97fb12053590e41a4fa59e7daa74a4 upstream.
 
-A few devices (such as the RCA VR5220 voice recorder) are so
-non-compliant with the USB spec that they have invalid maxpacket sizes
-for endpoint 0.  Nevertheless, as long as we can safely use them, we
-may as well do so.
+gdth_ioctl_alloc() takes the size variable as an int.
+copy_from_user() takes the size variable as an unsigned long.
+gen.data_len and gen.sense_len are unsigned longs.
+On x86_64 longs are 64 bit and ints are 32 bit.
 
-This patch (as1432) softens our acceptance criterion by allowing
-high-speed devices to have ep0-maxpacket sizes other than 64.  A
-warning is printed in the system log when this happens, and the
-existing error message is clarified.
+We could pass in a very large number and the allocation would truncate
+the size to 32 bits and allocate a small buffer.  Then when we do the
+copy_from_user(), it would result in a memory corruption.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: James <bjlockie@lockie.ca>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/hub.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/scsi/gdth.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/core/hub.c
-+++ b/drivers/usb/core/hub.c
-@@ -2821,13 +2821,16 @@ hub_port_init (struct usb_hub *hub, stru
- 	else
- 		i = udev->descriptor.bMaxPacketSize0;
- 	if (le16_to_cpu(udev->ep0.desc.wMaxPacketSize) != i) {
--		if (udev->speed != USB_SPEED_FULL ||
-+		if (udev->speed == USB_SPEED_LOW ||
- 				!(i == 8 || i == 16 || i == 32 || i == 64)) {
--			dev_err(&udev->dev, "ep0 maxpacket = %d\n", i);
-+			dev_err(&udev->dev, "Invalid ep0 maxpacket: %d\n", i);
- 			retval = -EMSGSIZE;
- 			goto fail;
- 		}
--		dev_dbg(&udev->dev, "ep0 maxpacket = %d\n", i);
-+		if (udev->speed == USB_SPEED_FULL)
-+			dev_dbg(&udev->dev, "ep0 maxpacket = %d\n", i);
-+		else
-+			dev_warn(&udev->dev, "Using ep0 maxpacket: %d\n", i);
- 		udev->ep0.desc.wMaxPacketSize = cpu_to_le16(i);
- 		usb_ep0_reinit(udev);
- 	}
+--- a/drivers/scsi/gdth.c
++++ b/drivers/scsi/gdth.c
+@@ -4174,6 +4174,14 @@ static int ioc_general(void __user *arg,
+     ha = gdth_find_ha(gen.ionode);
+     if (!ha)
+         return -EFAULT;
++
++    if (gen.data_len > INT_MAX)
++        return -EINVAL;
++    if (gen.sense_len > INT_MAX)
++        return -EINVAL;
++    if (gen.data_len + gen.sense_len > INT_MAX)
++        return -EINVAL;
++
+     if (gen.data_len + gen.sense_len != 0) {
+         if (!(buf = gdth_ioctl_alloc(ha, gen.data_len + gen.sense_len,
+                                      FALSE, &paddr)))
 
 
