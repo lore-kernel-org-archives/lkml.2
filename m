@@ -1,70 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab0KSL1v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 06:27:51 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46874 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242Ab0KSL1u convert rfc822-to-8bit (ORCPT
+	id S1753700Ab0KSL24 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 06:28:56 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49309 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753529Ab0KSL2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 06:27:50 -0500
-Subject: Re: [PATCH 3/5] MIPS/Perf-events: Check event state in
- validate_event()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>, ralf@linux-mips.org,
-        fweisbec@gmail.com, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, wuzhangjin@gmail.com, paulus@samba.org,
-        mingo@elte.hu, acme@redhat.com
-In-Reply-To: <1290159806.9342.7.camel@e102144-lin.cambridge.arm.com>
-References: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
-	 <1290063401-25440-4-git-send-email-dengcheng.zhu@gmail.com>
-	 <1290159806.9342.7.camel@e102144-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 19 Nov 2010 12:27:31 +0100
-Message-ID: <1290166051.2109.1539.camel@laptop>
+	Fri, 19 Nov 2010 06:28:55 -0500
+Date: Fri, 19 Nov 2010 11:27:49 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: parveen jain <parveenj16@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Unknown error 513 in pthread_create after several hours of
+ running a Gstreamer based application
+Message-ID: <20101119112749.69c19a69@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTikU_HUXEoXuRAn0zoRmVke_32AWdqwC8fhkK0tZ@mail.gmail.com>
+References: <AANLkTikK9f0xzVUmO7g0ztq+wtEVX3y7ntq7zXgD5kqa@mail.gmail.com>
+	<AANLkTikU_HUXEoXuRAn0zoRmVke_32AWdqwC8fhkK0tZ@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 09:43 +0000, Will Deacon wrote:
-> Hi Deng-Cheng,
-> 
-> On Thu, 2010-11-18 at 06:56 +0000, Deng-Cheng Zhu wrote:
-> > Ignore events that are not for this PMU or are in off/error state.
-> > 
-> Sorry I didn't see this before, thanks for pointing out that you
-> had included it for MIPS.
-> 
-> > Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-> > ---
-> >  arch/mips/kernel/perf_event.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/arch/mips/kernel/perf_event.c b/arch/mips/kernel/perf_event.c
-> > index 1ee44a3..9c6442a 100644
-> > --- a/arch/mips/kernel/perf_event.c
-> > +++ b/arch/mips/kernel/perf_event.c
-> > @@ -486,7 +486,7 @@ static int validate_event(struct cpu_hw_events *cpuc,
-> >  {
-> >         struct hw_perf_event fake_hwc = event->hw;
-> > 
-> > -       if (event->pmu && event->pmu != &pmu)
-> > +       if (event->pmu != &pmu || event->state <= PERF_EVENT_STATE_OFF)
-> >                 return 0;
-> > 
-> >         return mipspmu->alloc_counter(cpuc, &fake_hwc) >= 0;
-> 
-> So this is the opposite of what we're doing on ARM. Our
-> approach is to ignore events that are OFF (or in the ERROR
-> state) or that belong to a different PMU. We do this by
-> allowing them to *pass* validation (i.e. by returning 1 above).
-> This means that we won't unconditionally fail a mixed event group.
-> 
-> x86 does something similar in the collect_events function.
+> 1536 KB as my stack size for each of these threads. I have one
+> Quadcore(intel Xeon) system of around 8 GB of RAM(64 bit) with RHEL
+> 5.5(kernel - 2.6.18-92.el5).
 
-Right, note that the generic code only allows mixing with software
-events, so simply accepting them is ok as software events give the
-guarantee they're always schedulable.
+RHEL is a very old and customised kernel, it's not a standard current
+Linux kernel. You should contact your Red Hat support.
+
