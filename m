@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758368Ab0KSWGL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:06:11 -0500
-Received: from kroah.org ([198.145.64.141]:53127 "EHLO coco.kroah.org"
+	id S932661Ab0KSWG0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:06:26 -0500
+Received: from kroah.org ([198.145.64.141]:53121 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757844Ab0KSWEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758245Ab0KSWEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Nov 2010 17:04:37 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:27 2010
-Message-Id: <20101119220127.280006455@clark.site>
+Message-Id: <20101119220127.201782880@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:01:33 -0800
+Date: Fri, 19 Nov 2010 14:01:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steve Dickson <steved@redhat.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [62/66] Fixed Regression in NFS Direct I/O path
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [61/66] [SCSI] Fix regressions in scsi_internal_device_block
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Dickson <steved@redhat.com>
+From: Mike Christie <michaelc@cs.wisc.edu>
 
-commit 568a810d7edd58bd505222dd1c7e48895532290b upstream.
+commit 986fe6c7f50974e871b8ab5a800f5310ea25b361 upstream.
 
-A typo, introduced by commit f11ac8db, in the nfs_direct_write()
-routine causes writes with O_DIRECT set to fail with a ENOMEM error.
+Deleting a SCSI device on a blocked fc_remote_port (before
+fast_io_fail_tmo fires) results in a hanging thread:
 
-Found-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve Dickson <steved@redhat.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+  STACK:
+  0 schedule+1108 [0x5cac48]
+  1 schedule_timeout+528 [0x5cb7fc]
+  2 wait_for_common+266 [0x5ca6be]
+  3 blk_execute_rq+160 [0x354054]
+  4 scsi_execute+324 [0x3b7ef4]
+  5 scsi_execute_req+162 [0x3b80ca]
+  6 sd_sync_cache+138 [0x3cf662]
+  7 sd_shutdown+138 [0x3cf91a]
+  8 sd_remove+112 [0x3cfe4c]
+  9 __device_release_driver+124 [0x3a08b8]
+10 device_release_driver+60 [0x3a0a5c]
+11 bus_remove_device+266 [0x39fa76]
+12 device_del+340 [0x39d818]
+13 __scsi_remove_device+204 [0x3bcc48]
+14 scsi_remove_device+66 [0x3bcc8e]
+15 sysfs_schedule_callback_work+50 [0x260d66]
+16 worker_thread+622 [0x162326]
+17 kthread+160 [0x1680b0]
+18 kernel_thread_starter+6 [0x10aaea]
+
+During the delete, the SCSI device is in moved to SDEV_CANCEL.  When
+the FC transport class later calls scsi_target_unblock, this has no
+effect, since scsi_internal_device_unblock ignores SCSI devics in this
+state.
+
+It looks like all these are regressions caused by:
+5c10e63c943b4c67561ddc6bf61e01d4141f881f
+[SCSI] limit state transitions in scsi_internal_device_unblock
+
+Fix by rejecting offline and cancel in the state transition.
+
+Signed-off-by: Christof Schmitt <christof.schmitt@de.ibm.com>
+[jejb: Original patch by Christof Schmitt, modified by Mike Christie]
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/direct.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/scsi_lib.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/direct.c
-+++ b/fs/nfs/direct.c
-@@ -873,7 +873,7 @@ static ssize_t nfs_direct_write(struct k
- 	dreq->inode = inode;
- 	dreq->ctx = get_nfs_open_context(nfs_file_open_context(iocb->ki_filp));
- 	dreq->l_ctx = nfs_get_lock_context(dreq->ctx);
--	if (dreq->l_ctx != NULL)
-+	if (dreq->l_ctx == NULL)
- 		goto out_release;
- 	if (!is_sync_kiocb(iocb))
- 		dreq->iocb = iocb;
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -2428,7 +2428,8 @@ scsi_internal_device_unblock(struct scsi
+ 		sdev->sdev_state = SDEV_RUNNING;
+ 	else if (sdev->sdev_state == SDEV_CREATED_BLOCK)
+ 		sdev->sdev_state = SDEV_CREATED;
+-	else
++	else if (sdev->sdev_state != SDEV_CANCEL &&
++		 sdev->sdev_state != SDEV_OFFLINE)
+ 		return -EINVAL;
+ 
+ 	spin_lock_irqsave(q->queue_lock, flags);
 
 
