@@ -1,99 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab0KSPlh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 10:41:37 -0500
-Received: from THUNK.ORG ([69.25.196.29]:56239 "EHLO thunker.thunk.org"
+	id S1752628Ab0KSPnX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 10:43:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54753 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755063Ab0KSPl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 10:41:26 -0500
-Date: Fri, 19 Nov 2010 10:37:48 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Mark Lord <kernel@teksavvy.com>, Steven Whitehouse <swhiteho@redhat.com>,
-        Lukas Czerner <lczerner@redhat.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
- super_operation
-Message-ID: <20101119153748.GE10039@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Christoph Hellwig <hch@infradead.org>,
-	Mark Lord <kernel@teksavvy.com>,
-	Steven Whitehouse <swhiteho@redhat.com>,
-	Lukas Czerner <lczerner@redhat.com>,
-	James Bottomley <James.Bottomley@suse.de>,
-	Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org, sandeen@redhat.com
-References: <20101118130630.GJ6178@parisc-linux.org>
- <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
- <20101118141957.GK6178@parisc-linux.org>
- <20101118142918.GA18510@infradead.org>
- <1290100750.3041.72.camel@mulgrave.site>
- <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com>
- <1290168976.2570.45.camel@dolmen>
- <4CE68155.50705@teksavvy.com>
- <20101119140203.GC10039@thunk.org>
- <20101119141007.GB25488@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101119141007.GB25488@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1751132Ab0KSPnV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 10:43:21 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1290120166-3132-2-git-send-email-zohar@linux.vnet.ibm.com>
+References: <1290120166-3132-2-git-send-email-zohar@linux.vnet.ibm.com> <1290120166-3132-1-git-send-email-zohar@linux.vnet.ibm.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-crypto@vger.kernel.org,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Mimi Zohar <zohar@us.ibm.com>
+Subject: Re: [PATCH v1.4 1/5] lib: hex2bin converts ascii hexadecimal string to binary
+Date: Fri, 19 Nov 2010 15:43:03 +0000
+Message-ID: <9780.1290181383@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 09:10:07AM -0500, Christoph Hellwig wrote:
-> On Fri, Nov 19, 2010 at 09:02:03AM -0500, Ted Ts'o wrote:
-> > Deterministic TRIM is an option.  It doesn't have to be implemented.
+Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+
+> Similar to the kgdb_hex2mem() code, hex2bin converts a string
+> to binary using the hex_to_bin() library call.
 > 
-> For reasonable use it has to.  That rationale for it is pretty clearly
-> outline in ftp://ftp.t10.org/t10/document.08/08-347r1.pdf.
+> Changelog:
+> - Replace parameter names with src/dst (based on David Howell's comment)
+> - Add 'const' where needed (based on David Howell's comment)
+> - Replace int with size_t (based on David Howell's comment)
 > 
+> Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+> Acked-by: Serge E. Hallyn <serge@hallyn.com>
 
-I think the author of that slide deck was being a little hysterical.
-In nearly all of these cases, if the file system is comptently
-implemented (i.e., you don't do a trim on anything but a deleted file
-block, and _only_ when you know the deleted is committed, and only the
-filesystem --- not non-privileged users --- are allowed to use the
-TRIM command), there's no issue.
-
-One case where I'll admit he may have a point is where you are using
-software RAID, where if the TRIM is not determinstic, the only thing
-which is safe to do is a TRIM of an entire RAID stripe.  If the file
-system doesn't know about the RAID geometry, then yes, in that case
-determinstic TRIM is better --- although even then, it implies that
-you have to rebuild the raid strip after you do a TRIM, which a
-RAID-oblivious file system wouldn't do, and so you would still be
-toast.
-
-In the case of incompetently implemented, or buggy file systems, I'll
-agree that non-determinstic trim offers a bunch of pitfalls --- but so
-does deterministic trim in many of these cases.  For example, one of
-their disaster scenarios was where you do a trim on an allocated
-block, and then proceed to read from that allocated block.  That could
-only happen if the trim happened but the delete didn't commit.  But in
-that case, the fact that data blocks would disappear for a non-deleted
-file is also a disaster, and means the file system wasn't implemented
-correctly.
-
-The other case where non-determinstic trim could get you in trouble is
-if (a) you give a user direct read access to a partition of the disk,
-without any file system as an intermediary, and (b) you allow that
-non-privileged user to issue TRIM commands to that partition.  In that
-case, it's possible that non-deterministic trim might allow you access
-to non-deleted blocks in other partitions.  But this goes back to my
-observation that you're totally safe so long as TRIM is a privileged
-operation and/or only allowed to be executed by the file system.
-
-So yeah, deterministic trim is tricker, and you have to be more
-careful, especially if you're using RAID, but it's not inherently a
-disaster...
-
-						- Ted
+Acked-by: David Howells <dhowells@redhat.com>
