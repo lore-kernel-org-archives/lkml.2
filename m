@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933045Ab0KSWaZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:30:25 -0500
-Received: from kroah.org ([198.145.64.141]:45074 "EHLO coco.kroah.org"
+	id S932603Ab0KSV6a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:58:30 -0500
+Received: from kroah.org ([198.145.64.141]:44966 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757215Ab0KSV6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:37 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:41 2010
-Message-Id: <20101119215641.145149290@clark.site>
+	id S1756820Ab0KSV61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:27 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:39 2010
+Message-Id: <20101119215639.740480040@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:55:50 -0800
+Date: Fri, 19 Nov 2010 13:55:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Julia Lawall <julia@diku.dk>,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [29/82] drivers/net/wireless/p54/eeprom.c: Return -ENOMEM on memory allocation failure
+        Suresh Jayaraman <sjayaraman@suse.de>,
+        Steve French <sfrench@us.ibm.com>
+Subject: [12/82] cifs: fix broken oplock handling
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,53 +26,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lawall <julia@diku.dk>
+From: Suresh Jayaraman <sjayaraman@suse.de>
 
-commit 0d91f22b75347d9503b17a42b6c74d3f7750acd6 upstream.
+commit aa91c7e4ab9b0842b7d7a7cbf8cca18b20df89b5 upstream.
 
-In this code, 0 is returned on memory allocation failure, even though other
-failures return -ENOMEM or other similar values.
+cifs_new_fileinfo() does not use the 'oplock' value from the callers. Instead,
+it sets it to REQ_OPLOCK which seems wrong. We should be using the oplock value
+obtained from the Server to set the inode's clientCanCacheAll or
+clientCanCacheRead flags. Fix this by passing oplock from the callers to
+cifs_new_fileinfo().
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+This change dates back to commit a6ce4932 (2.6.30-rc3). So, all the affected
+versions will need this fix. Please Cc stable once reviewed and accepted.
 
-// <smpl>
-@@
-expression ret;
-expression x,e1,e2,e3;
-@@
-
-ret = 0
-... when != ret = e1
-*x = \(kmalloc\|kcalloc\|kzalloc\)(...)
-... when != ret = e2
-if (x == NULL) { ... when != ret = e3
-  return ret;
-}
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Acked-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reviewed-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/p54/eeprom.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/cifs/cifsproto.h |    3 ++-
+ fs/cifs/dir.c       |   12 +++++-------
+ fs/cifs/file.c      |    4 ++--
+ 3 files changed, 9 insertions(+), 10 deletions(-)
 
---- a/drivers/net/wireless/p54/eeprom.c
-+++ b/drivers/net/wireless/p54/eeprom.c
-@@ -262,8 +262,10 @@ static int p54_generate_channel_lists(st
- 	list->max_entries = max_channel_num;
- 	list->channels = kzalloc(sizeof(struct p54_channel_entry) *
- 				 max_channel_num, GFP_KERNEL);
--	if (!list->channels)
-+	if (!list->channels) {
-+		ret = -ENOMEM;
- 		goto free;
-+	}
+--- a/fs/cifs/cifsproto.h
++++ b/fs/cifs/cifsproto.h
+@@ -104,7 +104,8 @@ extern struct timespec cnvrtDosUnixTm(__
  
- 	for (i = 0; i < max_channel_num; i++) {
- 		if (i < priv->iq_autocal_len) {
+ extern struct cifsFileInfo *cifs_new_fileinfo(struct inode *newinode,
+ 				__u16 fileHandle, struct file *file,
+-				struct vfsmount *mnt, unsigned int oflags);
++				struct vfsmount *mnt, unsigned int oflags,
++				__u32 oplock);
+ extern int cifs_posix_open(char *full_path, struct inode **pinode,
+ 				struct super_block *sb,
+ 				int mode, int oflags,
+--- a/fs/cifs/dir.c
++++ b/fs/cifs/dir.c
+@@ -138,9 +138,9 @@ cifs_bp_rename_retry:
+  */
+ struct cifsFileInfo *
+ cifs_new_fileinfo(struct inode *newinode, __u16 fileHandle,
+-		  struct file *file, struct vfsmount *mnt, unsigned int oflags)
++		  struct file *file, struct vfsmount *mnt, unsigned int oflags,
++		  __u32 oplock)
+ {
+-	int oplock = 0;
+ 	struct cifsFileInfo *pCifsFile;
+ 	struct cifsInodeInfo *pCifsInode;
+ 	struct cifs_sb_info *cifs_sb = CIFS_SB(mnt->mnt_sb);
+@@ -149,9 +149,6 @@ cifs_new_fileinfo(struct inode *newinode
+ 	if (pCifsFile == NULL)
+ 		return pCifsFile;
+ 
+-	if (oplockEnabled)
+-		oplock = REQ_OPLOCK;
+-
+ 	pCifsFile->netfid = fileHandle;
+ 	pCifsFile->pid = current->tgid;
+ 	pCifsFile->pInode = igrab(newinode);
+@@ -476,7 +473,7 @@ cifs_create_set_dentry:
+ 		}
+ 
+ 		pfile_info = cifs_new_fileinfo(newinode, fileHandle, filp,
+-					       nd->path.mnt, oflags);
++					       nd->path.mnt, oflags, oplock);
+ 		if (pfile_info == NULL) {
+ 			fput(filp);
+ 			CIFSSMBClose(xid, tcon, fileHandle);
+@@ -738,7 +735,8 @@ cifs_lookup(struct inode *parent_dir_ino
+ 
+ 			cfile = cifs_new_fileinfo(newInode, fileHandle, filp,
+ 						  nd->path.mnt,
+-						  nd->intent.open.flags);
++						  nd->intent.open.flags,
++						  oplock);
+ 			if (cfile == NULL) {
+ 				fput(filp);
+ 				CIFSSMBClose(xid, pTcon, fileHandle);
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -277,7 +277,7 @@ int cifs_open(struct inode *inode, struc
+ 
+ 			pCifsFile = cifs_new_fileinfo(inode, netfid, file,
+ 							file->f_path.mnt,
+-							oflags);
++							oflags, oplock);
+ 			if (pCifsFile == NULL) {
+ 				CIFSSMBClose(xid, tcon, netfid);
+ 				rc = -ENOMEM;
+@@ -367,7 +367,7 @@ int cifs_open(struct inode *inode, struc
+ 		goto out;
+ 
+ 	pCifsFile = cifs_new_fileinfo(inode, netfid, file, file->f_path.mnt,
+-					file->f_flags);
++					file->f_flags, oplock);
+ 	if (pCifsFile == NULL) {
+ 		rc = -ENOMEM;
+ 		goto out;
 
 
