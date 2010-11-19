@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966Ab0KSWDF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:03:05 -0500
-Received: from kroah.org ([198.145.64.141]:45377 "EHLO coco.kroah.org"
+	id S1757766Ab0KSWDD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:03:03 -0500
+Received: from kroah.org ([198.145.64.141]:45294 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757602Ab0KSV67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757605Ab0KSV67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Nov 2010 16:58:59 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:44 2010
-Message-Id: <20101119215644.168170468@clark.site>
+Message-Id: <20101119215644.251167721@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:56:27 -0800
+Date: Fri, 19 Nov 2010 13:56:28 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kumar Sanghvi <kumar.sanghvi@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        =?ISO-8859-15?q?R=C3=A9mi=20Denis-Courmont?= 
-	<remi.denis-courmont@nokia.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [66/82] Phonet: Correct header retrieval after pskb_may_pull
+Subject: [67/82] r6040: Fix multicast filter some more
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,42 +27,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Kumar Sanghvi <kumar.sanghvi@stericsson.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-[ Upstream commit a91e7d471e2e384035b9746ea707ccdcd353f5dd ]
+[ Upstream commit e2269308359d5863b6aa1fcb95a425a2ab255f1f ]
 
-Retrieve the header after doing pskb_may_pull since, pskb_may_pull
-could change the buffer structure.
+This code has been broken forever, but in several different and
+creative ways.
 
-This is based on the comment given by Eric Dumazet on Phonet
-Pipe controller patch for a similar problem.
+So far as I can work out, the R6040 MAC filter has 4 exact-match
+entries, the first of which the driver uses for its assigned unicast
+address, plus a 64-entry hash-based filter for multicast addresses
+(maybe unicast as well?).
 
-Signed-off-by: Kumar Sanghvi <kumar.sanghvi@stericsson.com>
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: Rémi Denis-Courmont <remi.denis-courmont@nokia.com>
+The original version of this code would write the first 4 multicast
+addresses as exact-match entries from offset 1 (bug #1: there is no
+entry 4 so this could write to some PHY registers).  It would fill the
+remainder of the exact-match entries with the broadcast address (bug #2:
+this would overwrite the last used entry).  If more than 4 multicast
+addresses were configured, it would set up the hash table, write some
+random crap to the MAC control register (bug #3) and finally walk off
+the end of the list when filling the exact-match entries (bug #4).
+
+All of this seems to be pointless, since it sets the promiscuous bit
+when the interface is made promiscuous or if >4 multicast addresses
+are enabled, and never clears it (bug #5, masking bug #2).
+
+The recent(ish) changes to the multicast list fixed bug #4, but
+completely removed the limit on iteration over the exact-match entries
+(bug #6).
+
+Bug #4 was reported as
+<https://bugzilla.kernel.org/show_bug.cgi?id=15355> and more recently
+as <http://bugs.debian.org/600155>.  Florian Fainelli attempted to fix
+these in commit 3bcf8229a8c49769e48d3e0bd1e20d8e003f8106, but that
+actually dealt with bugs #1-3, bug #4 having been fixed in mainline at
+that point.
+
+That commit fixes the most important current bug #6.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/phonet/pep.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/r6040.c |   22 ++++++++++++----------
+ 1 file changed, 12 insertions(+), 10 deletions(-)
 
---- a/net/phonet/pep.c
-+++ b/net/phonet/pep.c
-@@ -225,12 +225,13 @@ static void pipe_grant_credits(struct so
- static int pipe_rcv_status(struct sock *sk, struct sk_buff *skb)
- {
- 	struct pep_sock *pn = pep_sk(sk);
--	struct pnpipehdr *hdr = pnp_hdr(skb);
-+	struct pnpipehdr *hdr;
- 	int wake = 0;
- 
- 	if (!pskb_may_pull(skb, sizeof(*hdr) + 4))
- 		return -EINVAL;
- 
-+	hdr = pnp_hdr(skb);
- 	if (hdr->data[0] != PN_PEP_TYPE_COMMON) {
- 		LIMIT_NETDEBUG(KERN_DEBUG"Phonet unknown PEP type: %u\n",
- 				(unsigned)hdr->data[0]);
+--- a/drivers/net/r6040.c
++++ b/drivers/net/r6040.c
+@@ -988,16 +988,18 @@ static void r6040_multicast_list(struct
+ 	/* Multicast Address 1~4 case */
+ 	i = 0;
+ 	netdev_for_each_mc_addr(ha, dev) {
+-		if (i < MCAST_MAX) {
+-			adrp = (u16 *) ha->addr;
+-			iowrite16(adrp[0], ioaddr + MID_1L + 8 * i);
+-			iowrite16(adrp[1], ioaddr + MID_1M + 8 * i);
+-			iowrite16(adrp[2], ioaddr + MID_1H + 8 * i);
+-		} else {
+-			iowrite16(0xffff, ioaddr + MID_1L + 8 * i);
+-			iowrite16(0xffff, ioaddr + MID_1M + 8 * i);
+-			iowrite16(0xffff, ioaddr + MID_1H + 8 * i);
+-		}
++		if (i >= MCAST_MAX)
++			break;
++		adrp = (u16 *) ha->addr;
++		iowrite16(adrp[0], ioaddr + MID_1L + 8 * i);
++		iowrite16(adrp[1], ioaddr + MID_1M + 8 * i);
++		iowrite16(adrp[2], ioaddr + MID_1H + 8 * i);
++		i++;
++	}
++	while (i < MCAST_MAX) {
++		iowrite16(0xffff, ioaddr + MID_1L + 8 * i);
++		iowrite16(0xffff, ioaddr + MID_1M + 8 * i);
++		iowrite16(0xffff, ioaddr + MID_1H + 8 * i);
+ 		i++;
+ 	}
+ }
 
 
