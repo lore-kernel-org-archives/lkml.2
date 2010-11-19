@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752288Ab0KSDBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 22:01:08 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64404 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab0KSDBH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 22:01:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=tbQbn9g+5P35UiAK7qEdyizqxuxIMGOAoNKTMjQvCr1TtoF8MGXC8n57nqjPcraflC
-         oxQp7oODiWD1ug6m7rogm/N1EfQB672siNBEp4MgkiqGcGJCjDGjXSDQpORYZyATHaww
-         jgablUmjF/9k+aj3uaq3kMBcgN2S0p50ZoPys=
-Subject: [PATCH] EDAC, MCE: Fix edac_init_mce_inject error handling
-From: Axel Lin <axel.lin@gmail.com>
-To: Borislav Petkov <borislav.petkov@amd.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain
-Date: Fri, 19 Nov 2010 11:05:43 +0800
-Message-Id: <1290135943.23599.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S1752385Ab0KSDIL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 22:08:11 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:39410 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751211Ab0KSDIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 22:08:09 -0500
+From: Gene Heskett <gene.heskett@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Missing nvidia.ko, cannot install nvidia driver
+Date: Thu, 18 Nov 2010 22:07:59 -0500
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.3; i686; ; )
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201011182208.00077.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise, variable i will be -1 inside the latest iteration of the while loop.
+Greetings;
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/edac/mce_amd_inj.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+All of a sudden it seems I cannot find the option that makes a kernel build 
+include the build and install of 
+/lib/modules/2.6.36/kernel/drivers/video/nvidia.ko
 
-diff --git a/drivers/edac/mce_amd_inj.c b/drivers/edac/mce_amd_inj.c
-index 6db494f..733a7e7 100644
---- a/drivers/edac/mce_amd_inj.c
-+++ b/drivers/edac/mce_amd_inj.c
-@@ -140,7 +140,7 @@ static int __init edac_init_mce_inject(void)
- 	return 0;
- 
- err_sysfs_create:
--	while (i-- >= 0)
-+	while (--i >= 0)
- 		sysfs_remove_file(mce_kobj, &sysfs_attrs[i]->attr);
- 
- 	kobject_del(mce_kobj);
+It built for 2.6.33.7-pclos with this config grep for NVIDIA
+[root@coyote src]# grep NVIDIA linux-2.6.33.7-pclos1/.config
+CONFIG_AGP_NVIDIA=y
+CONFIG_FB_NVIDIA=m
+CONFIG_FB_NVIDIA_I2C=y
+# CONFIG_FB_NVIDIA_DEBUG is not set
+CONFIG_FB_NVIDIA_BACKLIGHT=y
+CONFIG_BACKLIGHT_MBP_NVIDIA=m
+
+But not for this:
+[root@coyote src]# grep NVIDIA linux-2.6.36/.config
+CONFIG_AGP_NVIDIA=y
+CONFIG_FB_NVIDIA=m
+CONFIG_FB_NVIDIA_I2C=y
+# CONFIG_FB_NVIDIA_DEBUG is not set
+CONFIG_FB_NVIDIA_BACKLIGHT=y
+# CONFIG_BACKLIGHT_MBP_NVIDIA is not set
+
+Anyone have a clue they can spare?
+
+Thanks.
+
 -- 
-1.7.2
-
-
-
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Q:	How many IBM CPU's does it take to do a logical right shift?
+A:	33.  1 to hold the bits and 32 to push the register.
