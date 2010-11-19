@@ -1,55 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758015Ab0KSWVT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:21:19 -0500
-Received: from kroah.org ([198.145.64.141]:45269 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757560Ab0KSV6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757881Ab0KSWVN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:21:13 -0500
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:58614 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757556Ab0KSV6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Nov 2010 16:58:55 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:43 2010
-Message-Id: <20101119215643.593157144@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:56:20 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <error27@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [59/82] gianfar: fix double lock typo
-In-Reply-To: <20101119215658.GA7804@kroah.com
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: thomas@winischhofer.net, aaro.koskinen@iki.fi
+Subject: [PATCH 9/9] sisfb: delete osdef.h
+Date: Fri, 19 Nov 2010 23:58:51 +0200
+Message-Id: <1290203931-25188-10-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1290203931-25188-1-git-send-email-aaro.koskinen@iki.fi>
+References: <1290203931-25188-1-git-send-email-aaro.koskinen@iki.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+The file is not needed.
 
-------------------
-
-
-From: Dan Carpenter <error27@gmail.com>
-
-[ Upstream commit 9756403b16cfeda85efe77e62832a2f6b5752fdf ]
-
-This should be a _restore() instead of a _save().
-
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Thomas Winischhofer <thomas@winischhofer.net>
 ---
- drivers/net/gianfar_ethtool.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/video/sis/init.h       |    1 -
+ drivers/video/sis/init301.h    |    1 -
+ drivers/video/sis/initextlfb.c |    1 -
+ drivers/video/sis/osdef.h      |   61 ----------------------------------------
+ drivers/video/sis/sis.h        |    1 -
+ 5 files changed, 0 insertions(+), 65 deletions(-)
+ delete mode 100644 drivers/video/sis/osdef.h
 
---- a/drivers/net/gianfar_ethtool.c
-+++ b/drivers/net/gianfar_ethtool.c
-@@ -538,7 +538,7 @@ static int gfar_set_rx_csum(struct net_d
+diff --git a/drivers/video/sis/init.h b/drivers/video/sis/init.h
+index 79aec28..ee8ed3c 100644
+--- a/drivers/video/sis/init.h
++++ b/drivers/video/sis/init.h
+@@ -53,7 +53,6 @@
+ #ifndef _INIT_H_
+ #define _INIT_H_
  
- 		unlock_tx_qs(priv);
- 		unlock_rx_qs(priv);
--		local_irq_save(flags);
-+		local_irq_restore(flags);
+-#include "osdef.h"
+ #include "initdef.h"
  
- 		for (i = 0; i < priv->num_rx_queues; i++)
- 			gfar_clean_rx_ring(priv->rx_queue[i],
-
+ #include "vgatypes.h"
+diff --git a/drivers/video/sis/init301.h b/drivers/video/sis/init301.h
+index 2677152..e1fd31d 100644
+--- a/drivers/video/sis/init301.h
++++ b/drivers/video/sis/init301.h
+@@ -53,7 +53,6 @@
+ #ifndef  _INIT301_H_
+ #define  _INIT301_H_
+ 
+-#include "osdef.h"
+ #include "initdef.h"
+ 
+ #include "vgatypes.h"
+diff --git a/drivers/video/sis/initextlfb.c b/drivers/video/sis/initextlfb.c
+index 1975308..9dec64d 100644
+--- a/drivers/video/sis/initextlfb.c
++++ b/drivers/video/sis/initextlfb.c
+@@ -25,7 +25,6 @@
+  * Author:	Thomas Winischhofer <thomas@winischhofer.net>
+  */
+ 
+-#include "osdef.h"
+ #include "initdef.h"
+ #include "vgatypes.h"
+ #include "vstruct.h"
+diff --git a/drivers/video/sis/osdef.h b/drivers/video/sis/osdef.h
+deleted file mode 100644
+index 5baaa79..0000000
+--- a/drivers/video/sis/osdef.h
++++ /dev/null
+@@ -1,61 +0,0 @@
+-/* $XFree86$ */
+-/* $XdotOrg$ */
+-/*
+- * OS depending defines
+- *
+- * Copyright (C) 2001-2005 by Thomas Winischhofer, Vienna, Austria
+- *
+- * If distributed as part of the Linux kernel, the following license terms
+- * apply:
+- *
+- * * This program is free software; you can redistribute it and/or modify
+- * * it under the terms of the GNU General Public License as published by
+- * * the Free Software Foundation; either version 2 of the named License,
+- * * or any later version.
+- * *
+- * * This program is distributed in the hope that it will be useful,
+- * * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+- * * GNU General Public License for more details.
+- * *
+- * * You should have received a copy of the GNU General Public License
+- * * along with this program; if not, write to the Free Software
+- * * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA
+- *
+- * Otherwise, the following license terms apply:
+- *
+- * * Redistribution and use in source and binary forms, with or without
+- * * modification, are permitted provided that the following conditions
+- * * are met:
+- * * 1) Redistributions of source code must retain the above copyright
+- * *    notice, this list of conditions and the following disclaimer.
+- * * 2) Redistributions in binary form must reproduce the above copyright
+- * *    notice, this list of conditions and the following disclaimer in the
+- * *    documentation and/or other materials provided with the distribution.
+- * * 3) The name of the author may not be used to endorse or promote products
+- * *    derived from this software without specific prior written permission.
+- * *
+- * * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+- * * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+- * * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+- * * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+- * * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+- * * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+- * * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+- * * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+- * * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+- * * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- *
+- * Author: 	Thomas Winischhofer <thomas@winischhofer.net>
+- *		Silicon Integrated Systems, Inc. (used by permission)
+- *
+- */
+-
+-#ifndef _SIS_OSDEF_H_
+-#define _SIS_OSDEF_H_
+-
+-/**********************************************************************/
+-/*  LINUX KERNEL                                                      */
+-/**********************************************************************/
+-
+-#endif  /* _OSDEF_H_ */
+diff --git a/drivers/video/sis/sis.h b/drivers/video/sis/sis.h
+index 7c5710e..80d89d3 100644
+--- a/drivers/video/sis/sis.h
++++ b/drivers/video/sis/sis.h
+@@ -24,7 +24,6 @@
+ #ifndef _SIS_H_
+ #define _SIS_H_
+ 
+-#include "osdef.h"
+ #include <video/sisfb.h>
+ 
+ #include "vgatypes.h"
+-- 
+1.5.6.5
 
