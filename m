@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572Ab0KSEsi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 23:48:38 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:49873 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750955Ab0KSEsg (ORCPT
+	id S1751878Ab0KSEuE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 23:50:04 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:37854 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274Ab0KSEuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 23:48:36 -0500
-Date: Fri, 19 Nov 2010 05:48:15 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [Bug #22552] AMD boot freeze bisected to
- b126b4703afa4010b161784a43650337676dd03b
-Message-ID: <20101119044815.GA16472@aftab>
-References: <sKkKYVppECN.A.KhC.Phb5MB@chimera>
- <ATV3yiK8i4C.A.xhE.Pib5MB@chimera>
+	Thu, 18 Nov 2010 23:50:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=DicMfWJ45D8ydhsIaXOUmYD2fEbV4BoFQCsvHHiJ1zJgoCslaQk2tOx+HWvCVnXDwA
+         WFtmAmmyqib9xTbyXLFmHMdbwoPkEZKBmpSbCiv42bKsCebBtjBhsXB4GWyw05w2SoWq
+         WJAHkz8bo5vrKu0dHPlV+jQvIpc4yXABtD1s8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ATV3yiK8i4C.A.xhE.Pib5MB@chimera>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Fri, 19 Nov 2010 13:50:00 +0900
+Message-ID: <AANLkTinRBv00zo-=DWbZYZi7YQTvuF-t61_mk9txO-Bb@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the bkl-llseek tree with the wireless tree
+From: Tomoki Sekiyama <tomoki.sekiyama@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>, gregkh@suse.de
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Felix Fietkau <nbd@openwrt.org>, Linus <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 06:42:45PM -0500, Rafael J. Wysocki wrote:
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22552
-> Subject		: AMD boot freeze bisected to b126b4703afa4010b161784a43650337676dd03b
-> Submitter	: Borislav Petkov <bp@amd64.org>
-> Date		: 2010-11-02 17:03 (17 days old)
-> First-Bad-Commit: http://git.kernel.org/linus/b126b4703afa4010b161784a43650337676dd03b
-> Message-ID	: <20101102170335.GC24927@aftab>
-> References	: http://marc.info/?l=linux-kernel&m=128871752109913&w=2
+Hi Arnd,
 
-Also-tracked-by	: https://bugzilla.kernel.org/show_bug.cgi?id=22062
-Fixed-by	: 82e3e767c21fef2b1b38868e20eb4e470a1e38e3
+On 2010-10-23 09:27:35, Arnd Bergmann wrote:
+> On Saturday 23 October 2010, Stephen Rothwell wrote:
+>> Hi John, Dave,
+>>
+>> On Mon, 18 Oct 2010 17:35:43 +1100 Stephen Rothwell<sfr@canb.auug.org.au>  wrote:
+>>>
+>>> Today's linux-next merge of the bkl-llseek tree got a conflict in
+>>> drivers/net/wireless/ath/ath9k/debug.c between commit
+>>> 772d5515635fef5bc7a9d0efee785b58b0181ee5 ("ath9k: make rate control
+>>> debugfs stats per station") from the wireless tree and commit
+>>> 6038f373a3dc1f1c26496e60b6c40b164716f07e ("llseek: automatically
+>>> add .llseek fop") from the bkl-llseek tree.
+<snip>
+>> This patch (reproduced below) will now be needed if the wireless or net
+>> tree is merged with Linus' tree.  I also think I have missed a similar
+>> needed fix in drivers/net/wireless/ath/ath5k/debug.c ...
+>
+> There are also new drivers for speakup, intel_sst and yurex that introduce
+> additional file_operations in next, the patch below is what I had planned
+> to submit once everything is in. I also expect the occasional driver that
+> did not see linux-next, so I'll rerun my scripts after -rc1 to see what
+> we got.
 
-:-)
+Is your patch that adds .llseek fops planned to be merged to -rc?
 
+The driver for yurex needs your patch that adds .llseek fop
+(the hunk below) to work correctly. (tested in 2.6.36-rc2)
+
+diff --git a/drivers/usb/misc/yurex.c b/drivers/usb/misc/yurex.c
+index 719c618..ac5bfd6 100644
+--- a/drivers/usb/misc/yurex.c
++++ b/drivers/usb/misc/yurex.c
+@@ -536,6 +536,7 @@  static const struct file_operations yurex_fops = {
+  	.open =		yurex_open,
+  	.release =	yurex_release,
+  	.fasync	=	yurex_fasync,
++	.llseek =	default_llseek,
+  };
+
+
+Thanks,
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Tomoki Sekiyama
