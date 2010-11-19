@@ -1,104 +1,421 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab0KSSBm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 13:01:42 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:32998 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756054Ab0KSSBk convert rfc822-to-8bit (ORCPT
+	id S1756178Ab0KSSCl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:02:41 -0500
+Received: from ns1.cypress.com ([157.95.67.4]:38179 "EHLO ns1.cypress.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754970Ab0KSSCj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 13:01:40 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=h+isFOdDnLBqq8JECG7wRrgBwdzbxG5KwNVdryRM35DIk9NeVHXtifjXfQiehDuPeq
-         zpk6B60k0wZw6c2I59JVzQOs5vNq07WIARrijZjHUHeD/ivOpK7lqRKucFDnSa/qv4QF
-         ixeDzq/H4ib0gyo7WOt7gECXVLMlkvbFzFwtY=
+	Fri, 19 Nov 2010 13:02:39 -0500
+X-Greylist: delayed 952 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Nov 2010 13:02:38 EST
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-In-Reply-To: <20101118214619.GA29097@kroah.com>
-References: <20101112012315.GE17097@core.coreip.homeip.net>
- <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com>
- <4CE1017E.4090409@panasas.com> <20101115161620.GB5981@kroah.com>
- <4CE16B8E.1000300@panasas.com> <AANLkTikPVXGJ5-5YDk1uqfqrqxGLpSiSdaX3h7qxo-ie@mail.gmail.com>
- <8985DEAF-4227-4629-B90A-938D2BA3534E@etechsoft.com> <4CE2846C.6070501@vlnb.net>
- <4CE59482.3050002@gmail.com> <20101118214619.GA29097@kroah.com>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Fri, 19 Nov 2010 19:01:18 +0100
-X-Google-Sender-Auth: kTpOYcLCNRnStobRCLuykkEHZeg
-Message-ID: <AANLkTi=j_DPpRfKUYGG6oe2c6qKryyceoSFTN=pCtpqC@mail.gmail.com>
-Subject: Re: [Scst-devel] [PATCH 8/19]: SCST SYSFS interface implementation
-To: Greg KH <greg@kroah.com>
-Cc: Vladislav Bolkhovitin <vvvvvst@gmail.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] touchscreen: Cypress TTSP G3 MTDEV Core Driver
+Date: Fri, 19 Nov 2010 09:39:42 -0800
+Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC090119784D@labamba.mis.cypress.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] touchscreen: Cypress TTSP G3 MTDEV Core Driver
+Thread-Index: AcuE5M9bPLRT89KmSKCVc8A8+5t7lQDKUJoQ
+References: <Kevin McNeely <kev@cypress.com> <1289327120-2612-1-git-send-email-kev@cypress.com> <4CE163CC.1060202@euromail.se>
+From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
+To: "Henrik Rydberg" <rydberg@euromail.se>
+Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "David Brown" <davidb@codeaurora.org>,
+        "Trilok Soni" <tsoni@codeaurora.org>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Eric Miao" <eric.y.miao@gmail.com>,
+        "Simtec Linux Team" <linux@simtec.co.uk>,
+        "Luotao Fu" <l.fu@pengutronix.de>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 19 Nov 2010 17:39:43.0774 (UTC) FILETIME=[C05373E0:01CB8810]
+X-Brightmail-Tracker: AAAAAA==
+X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 10:46 PM, Greg KH <greg@kroah.com> wrote:
-> On Fri, Nov 19, 2010 at 12:02:58AM +0300, Vladislav Bolkhovitin wrote:
->> Since nobody objected, Greg, could you consider to ACK SCST SYSFS
->> management interface in /sys/kernel/scst_tgt/, please? Please find the
->> SCST SYSFS ABI documentation file you requested below.
->
-> No, sorry, again, you should not be using kobjects, and do not pollute
-> the main /sys/kernel/ namespace with this.
->
-> Use 'struct device' please, that is what it is there for, and is what
-> the rest of the kernel is using.  And use the rest of the
-> driver/bus/device infrastructure as your model will work with it just
-> fine.
->
-> Yes, I know you said you didn't think you could use it, and that your
-> code was different than everyone elses, but I still do not believe it,
-> sorry.
+Hello Henrik,
 
-Hello Greg,
+Thank you for reviewing this code submission.
 
-As you can see in recent messages (e.g.
-http://lkml.org/lkml/2010/11/18/578 or
-http://lkml.org/lkml/2010/11/15/296), the abstractions represented in
-SCST are:
-* Target templates (scst_tgt_template), e.g. scst_local or ib_srpt.
-These are drivers that implement a storage protocol.
-* Target ports (scst_tgt), e.g. ib_srpt_target_0, which represent a
-communication interface controlled by a storage protocol driver.
-* Sessions (scst_session), e.g. 0x00000000000000000002c9030005f34b. A
-session corresponds to a single initiator-target nexus.
-* Device handlers (scst_dev_type), e.g. scst_disk or scst_vdisk, which
-are drivers that allow SCST to export storage.
-* Target devices (scst_device), e.g. disk01, which represent exported
-storage. Each instance is controlled by a single device handler. This
-concept includes e.g. block devices and files. Some but not all target
-devices have a corresponding device node in /dev.
-* Access control groups (scst_acg), which allow e.g. to implement LUN masking.
-* Device-specific information such as the SCSI LUN (scst_acg_dev).
+I have replied to each of your comments below.
 
-As we all know the driver, bus and device abstractions were invented
-to model how peripheral devices are connected to a system. What a
-storage target does is the converse - define devices and make it
-possible for other systems to use these devices. As a result,
-unfortunately, the driver, bus and device abstractions do not map
-one-to-one on all of the concepts used in a storage target. So I'm
-still not sure whether it is a good idea to use the driver, bus and
-or/device concepts for all of the above concepts.
+I would like to resubmit to include the changes.
 
-Also, using the driver, bus or device concept for one or more of the
-storage target concepts would open up a potential for naming
-conflicts. There is already e.g. the well-known null device. SCST e.g.
-defines a vdisk_nullio target template. Having these all as device
-nodes under /dev might not only confuse users but also creates a huge
-potential for naming conflicts. That's why we prefer separate
-namespaces instead of reusing one of the existing concepts.
+Thanks and best regards,
+Kevin
 
-In case you are still convinced that we should use the existing
-driver, bus and device abstractions, which concept should we map to
-which abstraction ?
 
-Bart.
+> -----Original Message-----
+> From: Henrik Rydberg [mailto:rydberg@euromail.se]
+> Sent: Monday, November 15, 2010 8:46 AM
+> To: Kevin McNeely
+> Cc: Dmitry Torokhov; David Brown; Trilok Soni; Samuel Ortiz; Eric
+Miao;
+> Simtec Linux Team; Luotao Fu; linux-input@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH] touchscreen: Cypress TTSP G3 MTDEV Core Driver
+> 
+> On 11/09/2010 07:25 PM, Kevin McNeely wrote:
+> 
+> > Initial release of Cypress TTSP Gen3 Core Driver.
+> > Core Driver includes platform data definition file,
+> > core driver definition file, and core touchscreen
+> > touch handling of device data. Generates
+> > multi-touch input events.
+> >
+> > Signed-off-by: Kevin McNeely <kev@cypress.com>
+> 
+> > ---
+> 
+> 
+> Thanks for your submission. Please find comments on MT inline. On a
+> general
+> note, it is strongly recommended that this driver be converted to the
+> MT slots
+> (type B) protocol.
+
+I will resubmit with Protocol A only at this time.  I will remove the
+Tracking ID's.
+
+> 
+> > +
+> > +/* TrueTouch Standard Product Gen3 interface definition */
+> > +struct cyttsp_xydata {
+> > +	u8 hst_mode;
+> > +	u8 tt_mode;
+> > +	u8 tt_stat;
+> > +	struct cyttsp_touch tch1;
+> > +	u8 touch12_id;
+> > +	struct cyttsp_touch tch2;
+> > +	u8 gest_cnt;
+> > +	u8 gest_id;
+> > +	struct cyttsp_touch tch3;
+> > +	u8 touch34_id;
+> > +	struct cyttsp_touch tch4;
+> > +	u8 tt_undef[3];
+> > +	u8 gest_set;
+> 
+> 
+> I take it the gesture functionality is not in use in this driver?
+
+Correct, I will remove all instances and mentions of the gesture. The
+field of interest is the active distance for touches.
+
+> 
+> > +	u8 tt_reserved;
+> > +};
+> > +
+> > +
+> > +struct cyttsp_tch {
+> > +	struct cyttsp_touch *tch;
+> > +	u8 *id;
+> > +};
+> 
+> 
+> Given how this mapping is used, it could possibly be dropped
+> altogether. See
+> further comment on cyttsp_init_tch_map().
+
+The mapping is to allow number of touch growth with extra register
+information. The mapping is to allow looping on the touch processing.
+
+> 
+> > +
+> 
+> > +struct cyttsp_trk {
+> > +	u8 tch;
+> > +	u8 w;
+> 
+> 
+> It seems the device does not report contact width, so it is better not
+> reported
+> at all.
+
+The width will be removed.
+
+> 
+> > +	u16 x;
+> > +	u16 y;
+> > +	u8 z;
+> > +};
+> > +
+> > +struct cyttsp {
+> > +	struct device *dev;
+> > +	int irq;
+> > +	struct input_dev *input;
+> > +	struct mutex mutex;
+> > +	char phys[32];
+> > +	struct bus_type *bus_type;
+> > +	struct cyttsp_platform_data *platform_data;
+> > +	struct cyttsp_xydata xy_data;
+> > +	struct cyttsp_bootloader_data bl_data;
+> > +	struct cyttsp_sysinfo_data sysinfo_data;
+> > +	struct cyttsp_trk prv_trk[CY_NUM_TRK_ID];
+> 
+> 
+> Apart from the ids, what information is used from the previous frame?
+
+The previous X, Y.
+
+> 
+> > +static int cyttsp_gesture_setup(struct cyttsp *ts)
+> > +{
+> > +	int retval;
+> > +	u8 gesture_setup;
+> > +
+> > +	/* Init gesture; active distance setup */
+> > +	gesture_setup = ts->platform_data->gest_set;
+> > +	retval = ttsp_write_block_data(ts, CY_REG_GEST_SET,
+> > +		sizeof(gesture_setup), &gesture_setup);
+> > +
+> > +	return retval;
+> > +}
+> 
+> 
+> What does this initialization actually do?
+
+This will be replaced with an active distance setup function, which is
+the sole intent of the current gesture setup function.  We are really
+just initializing the active distance field.
+
+> 
+> > +
+> > +static void cyttsp_init_tch_map(struct cyttsp *ts)
+> > +{
+> > +	ts->tch_map[0].tch = &ts->xy_data.tch1;
+> > +	ts->tch_map[0].id = &ts->xy_data.touch12_id;
+> > +	ts->tch_map[1].tch = &ts->xy_data.tch2;
+> > +	ts->tch_map[1].id = &ts->xy_data.touch12_id;
+> > +	ts->tch_map[2].tch = &ts->xy_data.tch3;
+> > +	ts->tch_map[2].id = &ts->xy_data.touch34_id;
+> > +	ts->tch_map[3].tch = &ts->xy_data.tch4;
+> > +	ts->tch_map[3].id = &ts->xy_data.touch34_id;
+> > +}
+> 
+> 
+> Calling cyttsp_get_xydata() four times with special arguments would
+> make this
+> function unnecessary.
+
+The cyttsp_get_xydata() makes a single I2C read transaction which
+contains touch information for all touches currently tracked by the
+device.
+
+> 
+> > +
+> > +static void handle_multi_touch(struct cyttsp_track_data *t, struct
+> cyttsp *ts)
+> > +{
+> > +	u8 id;
+> > +	u8 cnt = 0;
+> > +
+> > +	/* terminate any previous touch where the track
+> > +	 * is missing from the current event
+> > +	 */
+> > +	for (id = 0; id < CY_NUM_TRK_ID; id++) {
+> > +		if (t->cur_trk[id].tch) {
+> > +			/* put active current track data */
+> > +			input_report_abs(ts->input,
+> > +				ABS_MT_TRACKING_ID, id);
+> 
+> > +			input_report_abs(ts->input,
+> > +				ABS_MT_WIDTH_MAJOR, t->cur_trk[id].w);
+> 
+> 
+> This value does not seem to be reported by the device and should be
+> dropped.
+
+This will be dropped.
+
+> 
+> > +			input_report_abs(ts->input,
+> > +				ABS_MT_POSITION_X, t->cur_trk[id].x);
+> > +			input_report_abs(ts->input,
+> > +				ABS_MT_POSITION_Y, t->cur_trk[id].y);
+> > +			input_report_abs(ts->input,
+> > +				ABS_MT_TOUCH_MAJOR, t->cur_trk[id].z);
+> > +			input_mt_sync(ts->input);
+> > +
+> > +			dev_dbg(ts->dev, "%s: MT1: X=%d Y=%d Z=%d\n",
+> > +				__func__,
+> > +				t->cur_trk[id].x,
+> > +				t->cur_trk[id].y,
+> > +				t->cur_trk[id].z);
+> > +			/* save current track data into previous track
+data
+> */
+> > +			ts->prv_trk[id] = t->cur_trk[id];
+> > +			cnt++;
+> > +		} else if (ts->prv_trk[id].tch) {
+> > +			/* put lift-off previous track data */
+> > +			input_report_abs(ts->input,
+> > +				ABS_MT_TRACKING_ID, id);
+> 
+> 
+> Reporting tracking id here unfortunately does not work very well. With
+> the type
+> A protocol, ids not reported will automatically be removed, and
+
+This will be Protocol A only. The Track Id reporting will be removed.
+
+> 
+> > +			input_report_abs(ts->input,
+> > +				ABS_MT_WIDTH_MAJOR, ts->prv_trk[id].w);
+> > +			input_report_abs(ts->input,
+> > +				ABS_MT_POSITION_X, ts->prv_trk[id].x);
+> > +			input_report_abs(ts->input,
+> > +				ABS_MT_POSITION_Y, ts->prv_trk[id].y);
+> > +			input_report_abs(ts->input,
+> > +				ABS_MT_TOUCH_MAJOR, CY_NTCH);
+> 
+> 
+> checking for zero touch like this only applies for drivers not
+> reporting
+> tracking id.
+
+This will now be necessary for Protocol A only.
+
+> 
+> > +			input_mt_sync(ts->input);
+> > +
+> > +			dev_dbg(ts->dev, "%s: MT1: X=%d Y=%d Z=%d lift-
+> off\n",
+> > +				__func__,
+> > +				ts->prv_trk[id].x,
+> > +				ts->prv_trk[id].y,
+> > +				CY_NTCH);
+> > +			ts->prv_trk[id].tch = CY_NTCH;
+> > +			cnt++;
+> > +		}
+> > +	}
+> > +
+> > +	/* signal the view motion event */
+> > +	if (cnt)
+> > +		input_sync(ts->input);
+> > +}
+> 
+> 
+> Since the device does its own tracking, the driver would benefit
+> greatly from
+> using the type B protocol.
+
+Current requests are for Protocol A only.  Cypress will followup with a
+Protocol B driver submission.
+
+> 
+> > +static int cyttsp_xy_worker(struct cyttsp *ts)
+> > +{
+> > +	u8 cur_tch = 0;
+> > +	u8 tch;
+> > +	struct cyttsp_track_data trk;
+> > +
+> > +	/* get event data from CYTTSP device */
+> > +	if (ttsp_read_block_data(ts,
+> > +		CY_REG_BASE, sizeof(struct cyttsp_xydata),
+&ts->xy_data))
+> > +		return 0;
+> > +
+> > +	/* touch extension handling */
+> > +	if (ttsp_tch_ext(ts, &ts->xy_data))
+> > +		return 0;
+> > +
+> > +	/* provide flow control handshake */
+> > +	if (ts->platform_data->use_hndshk)
+> > +		if (cyttsp_hndshk(ts, ts->xy_data.hst_mode))
+> > +			return 0;
+> > +
+> > +	cur_tch = GET_NUM_TOUCHES(ts->xy_data.tt_stat);
+> > +
+> > +	if (ts->bus_ops->power_state == CY_IDLE_STATE)
+> > +		return 0;
+> > +	else if (GET_BOOTLOADERMODE(ts->xy_data.tt_mode)) {
+> > +		return -1;
+> > +	} else if (IS_LARGE_AREA(ts->xy_data.tt_stat) == 1) {
+> > +		/* terminate all active tracks */
+> > +		cur_tch = CY_NTCH;
+> > +		dev_dbg(ts->dev, "%s: Large area detected\n", __func__);
+> > +	} else if (cur_tch > CY_NUM_TCH_ID) {
+> > +		/* terminate all active tracks */
+> > +		cur_tch = CY_NTCH;
+> > +		dev_dbg(ts->dev, "%s: Num touch error detected\n",
+> __func__);
+> > +	} else if (IS_BAD_PKT(ts->xy_data.tt_mode)) {
+> > +		/* terminate all active tracks */
+> > +		cur_tch = CY_NTCH;
+> > +		dev_dbg(ts->dev, "%s: Invalid buffer detected\n",
+> __func__);
+> > +	}
+> > +
+> > +	/* process the touches */
+> > +	cyttsp_init_cur_trks(&trk);
+> > +
+> > +	for (tch = 0; tch < cur_tch; tch++) {
+> > +		cyttsp_get_xydata(ts, &trk,
+> > +			tch & 0x01 ?
+> > +			(*(ts->tch_map[tch].id) & 0x0F) :
+> > +			(*(ts->tch_map[tch].id) & 0xF0) >> 4,
+> > +			CY_SMALL_TOOL_WIDTH,
+> 
+> > +			be16_to_cpu((ts->tch_map[tch].tch)->x),
+> > +			be16_to_cpu((ts->tch_map[tch].tch)->y),
+> > +			(ts->tch_map[tch].tch)->z);
+> > +	}
+> 
+> 
+> How about expanding this loop with special arguments instead?
+
+The mapping method is intended to hide the offset information in the
+current registry and be extensible for future updates for more touches.
+
+> 
+> > +/*
+> > + * Active distance in pixels for a gesture to be reported
+> > + * if set to 0, then all gesture movements are reported
+> > + * Valid range is 0 - 15
+> > + */
+> > +#define CY_ACT_DIST_DFLT 8
+> > +#define CY_ACT_DIST CY_ACT_DIST_DFLT
+> 
+> 
+> These do not seem to be used anywhere.
+
+This will be refined and added to the code which checks for valid
+operational mode.
+
+> 
+> > +
+> > +enum cyttsp_gest {
+> > +	CY_GEST_GRP_NONE = 0,
+> > +	CY_GEST_GRP1 =	0x10,
+> > +	CY_GEST_GRP2 = 0x20,
+> > +	CY_GEST_GRP3 = 0x40,
+> > +	CY_GEST_GRP4 = 0x80,
+> > +};
+> 
+> 
+> Neither do these.
+
+These will be removed.
+
+> 
+> Thanks,
+> Henrik
+
+Thanks again for your review.
+Best regards,
+Kevin
+
+
+---------------------------------------------------------------
+This message and any attachments may contain Cypress (or its
+subsidiaries) confidential information. If it has been received
+in error, please advise the sender and immediately delete this
+message.
+---------------------------------------------------------------
+
