@@ -1,46 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab0KSQgW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:36:22 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:58974 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190Ab0KSQgV (ORCPT
+	id S1755407Ab0KSQis (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:38:48 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:49521 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190Ab0KSQiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:36:21 -0500
-Subject: Re: [7/8,v3] NUMA Hotplug Emulator: extend memory probe interface
- to support NUMA
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Shaohui Zheng <shaohui.zheng@intel.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
-        Haicheng Li <haicheng.li@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Greg KH <greg@kroah.com>
-In-Reply-To: <20101119075119.GD3327@shaohui>
-References: <20101117020759.016741414@intel.com>
-	 <20101117021000.916235444@intel.com> <1290019807.9173.3789.camel@nimitz>
-	 <20101119075119.GD3327@shaohui>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Fri, 19 Nov 2010 08:36:09 -0800
-Message-ID: <1290184569.32329.1986.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Nov 2010 11:38:46 -0500
+Date: Fri, 19 Nov 2010 11:38:28 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Greg Freemyer <greg.freemyer@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Mark Lord <kernel@teksavvy.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Moyer <jmoyer@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        tytso@mit.edu, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
+ super_operation
+Message-ID: <20101119163828.GA8023@infradead.org>
+References: <1290100750.3041.72.camel@mulgrave.site>
+ <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
+ <1290102098.3041.77.camel@mulgrave.site>
+ <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>
+ <4CE59E57.2090009@teksavvy.com>
+ <yq1r5eiw5os.fsf@sermon.lab.mkp.net>
+ <4CE5C616.7070706@teksavvy.com>
+ <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com>
+ <20101119115516.GA1152@infradead.org>
+ <AANLkTimQZKLtKpKRUJ-KyCyo29F_Mnws8J54G3CeMkyc@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimQZKLtKpKRUJ-KyCyo29F_Mnws8J54G3CeMkyc@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 15:51 +0800, Shaohui Zheng wrote:
-> the purpose of hotplug emulator is providing a possible solution for cpu/memory
-> hotplug testing, the interface upgrading is not part of emulator. Let's forget
-> configfs here. 
+On Fri, Nov 19, 2010 at 08:20:58AM -0800, Greg Freemyer wrote:
+> The kernel team has been coding around some Utopian SSD TRIM
+> implementation for at least 2 years with the basic assumption that
+> SSDs can handle thousands of trims per second.  Just mix em in with
+> the rest of the i/o.  No problem.  Intel swore to us its the right
+> thing to do.
 
-If it's just for testing, you're right, we probably shouldn't go to the
-trouble of making a new interface.  At the same time, we shouldn't put
-something in /sys or configfs that we're not committed to, long-term.
+Thanks Greg, good that you told us what we've been doing.  I would have
+forgot myself if you didn't remember me.
 
-So, not to replace the memory probe file, but _only_ to drive the new
-debug-only node hot-add, I think its appropriate place is debugfs.
+> I'm still waiting to see the first benchmark report from anywhere
+> (SSD, Thin Provisioned SCSI) that the online approach used by mount -o
+> discard is a win performance wise.  Linux has a history of designing
+> for reality, but for some reason when it comes to SSDs reality seems
+> not to be a big concern.
 
--- Dave
+Both Lukas and I have done extensive benchmarks on various SSDs and
+thinkly provisioned raids.  Unfortunately most of the hardware is only
+available under NDA so we can't publish it.
+
+For the XFS side which I've looked it I can summarize that we do have
+arrays that do the online discard without measureable performance
+penalty on various workloads, and we have devices (both SSDs and arrays)
+where the overhead is incredibly huge.  I can also say that doing the
+walk of the freespace btrees similar to the offline discard, but every
+30 seconds or at a similarly high interval is a sure way to completely
+kill performance.
+
+Or in short we haven't fund the holy grail yet.
 
