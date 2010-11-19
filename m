@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751060Ab0KSFJn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 00:09:43 -0500
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:48640 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756Ab0KSFJm (ORCPT
+	id S1751171Ab0KSFUr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 00:20:47 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:63047 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832Ab0KSFUq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 00:09:42 -0500
-Date: Fri, 19 Nov 2010 06:09:30 +0100
-From: Borislav Petkov <bp@amd64.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: "Petkov, Borislav" <Borislav.Petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] EDAC, MCE: Fix edac_init_mce_inject error handling
-Message-ID: <20101119050930.GB16472@aftab>
-References: <1290135943.23599.1.camel@mola>
+	Fri, 19 Nov 2010 00:20:46 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=VOdgoTkuJN73EVe4HrNtfOMcDplyviLEtfedeGZBk2bOdWZ2B3knVqlFLDTJEn7hrf
+         b6ppU7T0+BI7M3cXkFPHe8YaJCeeNsnojeefj0z/FoaTgd48Eq647wpQ3CKyVl2Un/hy
+         0DtwbYGHrd5j/Lqb3P/ufLaI2nrGZvjxAI5so=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290135943.23599.1.camel@mola>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101117020626.GB3290@thunk.org>
+References: <20101116170312.GA19327@tango.0pointer.de>
+	<AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
+	<20101116181603.GC19327@tango.0pointer.de>
+	<AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
+	<20101116202839.GC27235@tango.0pointer.de>
+	<20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
+	<AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
+	<20101116211909.GB16589@tango.0pointer.de>
+	<20101116233934.GC1568@thunk.org>
+	<20101117002159.GA3184@tango.0pointer.de>
+	<20101117020626.GB3290@thunk.org>
+Date: Fri, 19 Nov 2010 00:20:45 -0500
+Message-ID: <AANLkTikLjQZiDcQx7HfgznPgFmYOfaN9of2ZtWLEvno8@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+From: Andev <debiandev@gmail.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Lennart Poettering <mzxreary@0pointer.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 10:05:43PM -0500, Axel Lin wrote:
-> Otherwise, variable i will be -1 inside the latest iteration of the while loop.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Tue, Nov 16, 2010 at 9:06 PM, Ted Ts'o <tytso@mit.edu> wrote:
 
-Good catch.
+>
+> That works for me.  One suggestion is that in addition to "opt-out",
+> it should be also possible for an application launcher file to specify
+> a specific cgroup name that should be used.  That would allow multiple
+> applications in a group to assigned to the same cgroup.
 
-Applied,
-thanks.
++1 for implementing this in systemd than in the kernel.
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+The userspace has much more info about which process needs to go into
+which group.
