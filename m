@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932562Ab0KSV62 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:58:28 -0500
-Received: from kroah.org ([198.145.64.141]:44961 "EHLO coco.kroah.org"
+	id S932619Ab0KSWde (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:33:34 -0500
+Received: from kroah.org ([198.145.64.141]:44992 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932545Ab0KSV60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:26 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:39 2010
-Message-Id: <20101119215639.655313700@clark.site>
+	id S932545Ab0KSV62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:28 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:40 2010
+Message-Id: <20101119215639.983226733@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:55:32 -0800
+Date: Fri, 19 Nov 2010 13:55:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Darren Hart <dvhart@linux.intel.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [11/82] futex: Fix errors in nested key ref-counting
+        Cliff Wickman <cpw@sgi.com>, kexec@lists.infradead.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [15/82] mm, x86: Saving vmcore with non-lazy freeing of vmas
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,139 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Darren Hart <dvhart@linux.intel.com>
+From: Cliff Wickman <cpw@sgi.com>
 
-commit 7ada876a8703f23befbb20a7465a702ee39b1704 upstream.
+commit 3ee48b6af49cf534ca2f481ecc484b156a41451d upstream.
 
-futex_wait() is leaking key references due to futex_wait_setup()
-acquiring an additional reference via the queue_lock() routine. The
-nested key ref-counting has been masking bugs and complicating code
-analysis. queue_lock() is only called with a previously ref-counted
-key, so remove the additional ref-counting from the queue_(un)lock()
-functions.
+During the reading of /proc/vmcore the kernel is doing
+ioremap()/iounmap() repeatedly. And the buildup of un-flushed
+vm_area_struct's is causing a great deal of overhead. (rb_next()
+is chewing up most of that time).
 
-Also futex_wait_requeue_pi() drops one key reference too many in
-unqueue_me_pi(). Remove the key reference handling from
-unqueue_me_pi(). This was paired with a queue_lock() in
-futex_lock_pi(), so the count remains unchanged.
+This solution is to provide function set_iounmap_nonlazy(). It
+causes a subsequent call to iounmap() to immediately purge the
+vma area (with try_purge_vmap_area_lazy()).
 
-Document remaining nested key ref-counting sites.
+With this patch we have seen the time for writing a 250MB
+compressed dump drop from 71 seconds to 44 seconds.
 
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-Reported-and-tested-by: Matthieu Fertré<matthieu.fertre@kerlabs.com>
-Reported-by: Louis Rilling<louis.rilling@kerlabs.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: John Kacur <jkacur@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-LKML-Reference: <4CBB17A8.70401@linux.intel.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: kexec@lists.infradead.org
+LKML-Reference: <E1OwHZ4-0005WK-Tw@eag09.americas.sgi.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/futex.c |   31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+ arch/x86/include/asm/io.h       |    1 +
+ arch/x86/kernel/crash_dump_64.c |    1 +
+ mm/vmalloc.c                    |    9 +++++++++
+ 3 files changed, 11 insertions(+)
 
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1363,7 +1363,6 @@ static inline struct futex_hash_bucket *
- {
- 	struct futex_hash_bucket *hb;
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -206,6 +206,7 @@ static inline void __iomem *ioremap(reso
  
--	get_futex_key_refs(&q->key);
- 	hb = hash_futex(&q->key);
- 	q->lock_ptr = &hb->lock;
+ extern void iounmap(volatile void __iomem *addr);
  
-@@ -1375,7 +1374,6 @@ static inline void
- queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
- {
- 	spin_unlock(&hb->lock);
--	drop_futex_key_refs(&q->key);
++extern void set_iounmap_nonlazy(void);
+ 
+ #ifdef __KERNEL__
+ 
+--- a/arch/x86/kernel/crash_dump_64.c
++++ b/arch/x86/kernel/crash_dump_64.c
+@@ -46,6 +46,7 @@ ssize_t copy_oldmem_page(unsigned long p
+ 	} else
+ 		memcpy(buf, vaddr + offset, csize);
+ 
++	set_iounmap_nonlazy();
+ 	iounmap(vaddr);
+ 	return csize;
  }
- 
- /**
-@@ -1480,8 +1478,6 @@ static void unqueue_me_pi(struct futex_q
- 	q->pi_state = NULL;
- 
- 	spin_unlock(q->lock_ptr);
--
--	drop_futex_key_refs(&q->key);
- }
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -513,6 +513,15 @@ static atomic_t vmap_lazy_nr = ATOMIC_IN
+ static void purge_fragmented_blocks_allcpus(void);
  
  /*
-@@ -1812,7 +1808,10 @@ static int futex_wait(u32 __user *uaddr,
- 	}
- 
- retry:
--	/* Prepare to wait on uaddr. */
-+	/*
-+	 * Prepare to wait on uaddr. On success, holds hb lock and increments
-+	 * q.key refs.
-+	 */
- 	ret = futex_wait_setup(uaddr, val, fshared, &q, &hb);
- 	if (ret)
- 		goto out;
-@@ -1822,24 +1821,23 @@ retry:
- 
- 	/* If we were woken (and unqueued), we succeeded, whatever. */
- 	ret = 0;
-+	/* unqueue_me() drops q.key ref */
- 	if (!unqueue_me(&q))
--		goto out_put_key;
-+		goto out;
- 	ret = -ETIMEDOUT;
- 	if (to && !to->task)
--		goto out_put_key;
-+		goto out;
- 
- 	/*
- 	 * We expect signal_pending(current), but we might be the
- 	 * victim of a spurious wakeup as well.
- 	 */
--	if (!signal_pending(current)) {
--		put_futex_key(fshared, &q.key);
-+	if (!signal_pending(current))
- 		goto retry;
--	}
- 
- 	ret = -ERESTARTSYS;
- 	if (!abs_time)
--		goto out_put_key;
-+		goto out;
- 
- 	restart = &current_thread_info()->restart_block;
- 	restart->fn = futex_wait_restart;
-@@ -1856,8 +1854,6 @@ retry:
- 
- 	ret = -ERESTART_RESTARTBLOCK;
- 
--out_put_key:
--	put_futex_key(fshared, &q.key);
- out:
- 	if (to) {
- 		hrtimer_cancel(&to->timer);
-@@ -2236,7 +2232,10 @@ static int futex_wait_requeue_pi(u32 __u
- 	q.rt_waiter = &rt_waiter;
- 	q.requeue_pi_key = &key2;
- 
--	/* Prepare to wait on uaddr. */
-+	/*
-+	 * Prepare to wait on uaddr. On success, increments q.key (key1) ref
-+	 * count.
-+	 */
- 	ret = futex_wait_setup(uaddr, val, fshared, &q, &hb);
- 	if (ret)
- 		goto out_key2;
-@@ -2254,7 +2253,9 @@ static int futex_wait_requeue_pi(u32 __u
- 	 * In order for us to be here, we know our q.key == key2, and since
- 	 * we took the hb->lock above, we also know that futex_requeue() has
- 	 * completed and we no longer have to concern ourselves with a wakeup
--	 * race with the atomic proxy lock acquition by the requeue code.
-+	 * race with the atomic proxy lock acquisition by the requeue code. The
-+	 * futex_requeue dropped our key1 reference and incremented our key2
-+	 * reference count.
- 	 */
- 
- 	/* Check if the requeue code acquired the second futex for us. */
++ * called before a call to iounmap() if the caller wants vm_area_struct's
++ * immediately freed.
++ */
++void set_iounmap_nonlazy(void)
++{
++	atomic_set(&vmap_lazy_nr, lazy_max_pages()+1);
++}
++
++/*
+  * Purges all lazily-freed vmap areas.
+  *
+  * If sync is 0 then don't purge if there is already a purge in progress.
 
 
