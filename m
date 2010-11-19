@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932683Ab0KSWKs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:10:48 -0500
-Received: from kroah.org ([198.145.64.141]:52993 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757639Ab0KSWEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758129Ab0KSWEY (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 19 Nov 2010 17:04:24 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:25 2010
-Message-Id: <20101119220125.466487435@clark.site>
+Received: from kroah.org ([198.145.64.141]:52934 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758065Ab0KSWEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:16 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:24 2010
+Message-Id: <20101119220124.389582020@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:01:11 -0800
+Date: Fri, 19 Nov 2010 14:00:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>, Felipe Balbi <balbi@ti.com>
-Subject: [40/66] USB: MUSB: fix kernel WARNING/oops when unloading module in OTG mode
+        Johan Hovold <jhovold@gmail.com>
+Subject: [27/66] USB: mct_u232: fix broken close
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,104 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit f405387435a85a440d1ce16f3ca36e042281643a upstream.
+commit 92ca0dc5ee022e4c0e488177e1d8865a0778c6c2 upstream.
 
-Since commit 461972d8a4c94bc44f11a13046041c78a7cf18dd (musb_core: don't call
-musb_platform_exit() twice), unloading the driver module results in a WARNING
-"kobject: '(null)' (c73de788): is not initialized, yet kobject_put() is being
-called." (or even kernel oops) on e.g. DaVincis, though only in the OTG mode.
-There exists dubious and unbalanced put_device() call in musb_free() which
-takes place only in the OTG mode.  As this commit caused musb_platform_exit()
-to be called (and so unregister the NOP transceiver) before this put_device()
-call, this function references already freed memory.
+Fix regression introduced by commit
+f26788da3b342099d2b02d99ba1cb7f154d6ef7b (USB: serial: refactor generic
+close) which broke driver close().
 
-On the other hand, all the glue layers miss the otg_put_transceiver() call,
-complementary to the otg_get_transceiver() call that they do.  So, I think
-the solution is to get rid of the strange put_device() call, and instead
-call otg_put_transceiver() in the glue layers...
+This driver uses non-standard semantics for the read urb which makes the
+generic close function fail to kill it (the read urb is actually an
+interrupt urb and therefore bulk_in size is zero).
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Reported-by: Eric Shattow "Eprecocious" <lucent@gmail.com>
+Tested-by: Eric Shattow "Eprecocious" <lucent@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/musb/blackfin.c  |    1 +
- drivers/usb/musb/davinci.c   |    2 ++
- drivers/usb/musb/musb_core.c |    4 ----
- drivers/usb/musb/omap2430.c  |    1 +
- drivers/usb/musb/tusb6010.c  |    4 ++++
- 5 files changed, 8 insertions(+), 4 deletions(-)
+ drivers/usb/serial/mct_u232.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/musb/blackfin.c
-+++ b/drivers/usb/musb/blackfin.c
-@@ -397,5 +397,6 @@ int musb_platform_exit(struct musb *musb
+--- a/drivers/usb/serial/mct_u232.c
++++ b/drivers/usb/serial/mct_u232.c
+@@ -549,9 +549,12 @@ static void mct_u232_close(struct usb_se
+ {
+ 	dbg("%s port %d", __func__, port->number);
  
- 	gpio_free(musb->config->gpio_vrsel);
+-	usb_serial_generic_close(port);
+-	if (port->serial->dev)
++	if (port->serial->dev) {
++		/* shutdown our urbs */
++		usb_kill_urb(port->write_urb);
++		usb_kill_urb(port->read_urb);
+ 		usb_kill_urb(port->interrupt_in_urb);
++	}
+ } /* mct_u232_close */
  
-+	otg_put_transceiver(musb->xceiv);
- 	return 0;
- }
---- a/drivers/usb/musb/davinci.c
-+++ b/drivers/usb/musb/davinci.c
-@@ -446,6 +446,7 @@ int __init musb_platform_init(struct mus
- fail:
- 	clk_disable(musb->clock);
  
-+	otg_put_transceiver(musb->xceiv);
- 	usb_nop_xceiv_unregister();
- 	return -ENODEV;
- }
-@@ -496,6 +497,7 @@ int musb_platform_exit(struct musb *musb
- 
- 	clk_disable(musb->clock);
- 
-+	otg_put_transceiver(musb->xceiv);
- 	usb_nop_xceiv_unregister();
- 
- 	return 0;
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -1921,10 +1921,6 @@ static void musb_free(struct musb *musb)
- 		dma_controller_destroy(c);
- 	}
- 
--#ifdef CONFIG_USB_MUSB_OTG
--	put_device(musb->xceiv->dev);
--#endif
--
- #ifdef CONFIG_USB_MUSB_HDRC_HCD
- 	usb_put_hcd(musb_to_hcd(musb));
- #else
---- a/drivers/usb/musb/omap2430.c
-+++ b/drivers/usb/musb/omap2430.c
-@@ -320,5 +320,6 @@ int musb_platform_exit(struct musb *musb
- 
- 	musb_platform_suspend(musb);
- 
-+	otg_put_transceiver(musb->xceiv);
- 	return 0;
- }
---- a/drivers/usb/musb/tusb6010.c
-+++ b/drivers/usb/musb/tusb6010.c
-@@ -1152,6 +1152,8 @@ done:
- 	if (ret < 0) {
- 		if (sync)
- 			iounmap(sync);
-+
-+		otg_put_transceiver(musb->xceiv);
- 		usb_nop_xceiv_unregister();
- 	}
- 	return ret;
-@@ -1166,6 +1168,8 @@ int musb_platform_exit(struct musb *musb
- 		musb->board_set_power(0);
- 
- 	iounmap(musb->sync_va);
-+
-+	otg_put_transceiver(musb->xceiv);
- 	usb_nop_xceiv_unregister();
- 	return 0;
- }
 
 
