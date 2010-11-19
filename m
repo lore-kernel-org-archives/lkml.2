@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab0KSTqb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 14:46:31 -0500
-Received: from mtagate4.uk.ibm.com ([194.196.100.164]:41366 "EHLO
-	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab0KSTqa (ORCPT
+	id S1756634Ab0KSTtv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 14:49:51 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36114 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab0KSTtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 14:46:30 -0500
-Subject: Re: [RFC][PATCH v2 5/7] taskstats: Improve cumulative CPU time
- accounting
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Reply-To: holzheu@linux.vnet.ibm.com
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-In-Reply-To: <20101118171001.GB3249@redhat.com>
-References: <20101111170352.732381138@linux.vnet.ibm.com>
-	 <20101111170815.404670062@linux.vnet.ibm.com>
-	 <20101113183810.GA9021@redhat.com>
-	 <1289926635.1940.100.camel@holzheu-laptop>
-	 <20101118171001.GB3249@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Organization: IBM
-Date: Fri, 19 Nov 2010 20:46:25 +0100
-Message-ID: <1290195985.2000.18.camel@holzheu-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Nov 2010 14:49:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=QQe17snB0etUqNyYnWa5MVowoYIXwaTklSGc4LIqXIeNwkO84GVcoXQjwFW3xmSV2z
+         D6Su/L8BSiJJ+nuZ8z9DkgIix03IkbSdOzzOjo0LIxCHHX9TyI1IpM44cJtIJVI4WIe/
+         v+P2g/jxORu441XWcXP5ndUCJTiv5OBr3uqLQ=
+Date: Fri, 19 Nov 2010 20:49:31 +0100
+From: Lutz Ballaschke <vegan.grindcore@googlemail.com>
+To: wim@iguana.be
+Cc: me@mortis.eu, linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv3 0/3] watchdog: add f71862fg support
+Message-ID: <20101119194931.GA28587@kreios.titan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Oleg,
+On Sat, Oct 02, 2010 at 14:33 +0200, Wim Van Sebroeck wrote:
 
-On Thu, 2010-11-18 at 18:10 +0100, Oleg Nesterov wrote:
-> > 2. Because of reparent to init, there are situations where it is
-> >    not clear to which tasks the CPU time of dead tasks between
-> >    two snapshots has been accounted. This is a problem for example 2.
+> On Sun, Sep 26, 2010 at 04:06:29PM +0200, Lutz Ballaschke wrote:
+> > > Furthermore i was thinking about modifying the WDIOC_GETTIMELEFT
+> ...
+> > and gets 6 minutes returned by ioctl. But imho it's not very accurate to
+> > > return a value of seconds if the wdt doesn't count in seconds. That might
+> > > be even more confusing. This inconsistency on the part of the hardware 
+> > > maybe can't get satisfyingly compensated by the driver. So i'd prefer the 
+> > > most simple solution.
+> ...
+> The return value should be the seconds before the watchdog will reboot.
+> So value should be seconds, not minutes and is best the safest value
+> (so (minutes - 1) * 60 + 1 in this case ).
+> Secondly: the WDIOC_GETTIMELEFT should only be a DEBUGging ioctl.
+> The reason I created it, is to check if certain drivers are working
+> or not. We should not use it in normal operations imho.
 > 
-> Yes, I see.
-> 
-> But I must admit, _personally_ I am not sure this problem worth the
-> trouble.
+I noticed the patches for f71862fg support in f71808e driver are still
+missing in the recent pull request. This might be due to the ioctl
+implementation 	(PATCHv3 2/3) mentioned above which wasn't clarified.
+Since i missed to reply at your remarks this was my fault. Now i hope
+the PATCHv3 1/3 and 3/3 to get through as they already were signed-off
+by the author of that driver. Since the patch in question isn't
+essential for driver operation i suggest to drop that issue.
+Sorry for the inconvenience.
 
-I think you are right...
+With kind regards,
 
-For that function, the introduced overhead, additional code and
-especially the possible confusion with two process hierarchies is not
-worth the effort. Maybe we have a chance to solve the reparent problem
-by introducing task exit event filters (e.g. give me all exit events for
-processes that have init as parent).
-
-So I will send no more patches with the parallel hierarchy:
-Good news for you :-)
-
-But for the second problem with the forgotten CPU time, I would like
-send you a new patch set, separated as you have requested. Although I
-personally think that also there we probably have no good chances to get
-them accepted upstream, because the signal_struct size is increased and
-some cycles are added to the task exit processing.
-
-It would be nice, if you find some time to look at the patches,
-but no hurry!
-
-Michael
-
-
-
-
+Lutz Ballaschke
 
