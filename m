@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab0KSLWb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 06:22:31 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:37342 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752929Ab0KSLWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 06:22:30 -0500
-Date: Fri, 19 Nov 2010 12:22:16 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Minchan Kim <minchan.kim@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] memcg: simplify mem_cgroup_page_stat()
-Message-ID: <20101119112216.GC24635@cmpxchg.org>
-References: <1289294671-6865-1-git-send-email-gthelen@google.com>
- <1289294671-6865-5-git-send-email-gthelen@google.com>
- <20101112081957.GF9131@cmpxchg.org>
- <xr93pquaxoll.fsf@ninji.mtv.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <xr93pquaxoll.fsf@ninji.mtv.corp.google.com>
+	id S1753589Ab0KSLWx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 06:22:53 -0500
+Received: from casper.infradead.org ([85.118.1.10]:54195 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753394Ab0KSLWw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 06:22:52 -0500
+Subject: Re: [PATCH 0/2] Generic hardware error reporting support
+From: Peter Zijlstra <peterz@infradead.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, linux-acpi@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Tony Luck <tony.luck@intel.com>
+In-Reply-To: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
+References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 19 Nov 2010 12:22:48 +0100
+Message-ID: <1290165768.2109.1537.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 12, 2010 at 12:40:22PM -0800, Greg Thelen wrote:
-> Johannes Weiner <hannes@cmpxchg.org> writes:
+On Fri, 2010-11-19 at 16:10 +0800, Huang Ying wrote:
+> Hi, Len,
 > 
-> > On Tue, Nov 09, 2010 at 01:24:29AM -0800, Greg Thelen wrote:
-> >> The cgroup given to mem_cgroup_page_stat() is no allowed to be
-> >> NULL or the root cgroup.  So there is no need to complicate the code
-> >> handling those cases.
-> >> 
-> >> Signed-off-by: Greg Thelen <gthelen@google.com>
-> >> ---
-> >>  mm/memcontrol.c |   48 ++++++++++++++++++++++--------------------------
-> >>  1 files changed, 22 insertions(+), 26 deletions(-)
-> >> 
-> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> >> index eb621ee..f8df350 100644
-> >> --- a/mm/memcontrol.c
-> >> +++ b/mm/memcontrol.c
-> >> @@ -1364,12 +1364,10 @@ memcg_hierarchical_free_pages(struct mem_cgroup *mem)
-> >>  
-> >>  /*
-> >>   * mem_cgroup_page_stat() - get memory cgroup file cache statistics
-> >> - * @mem:	optional memory cgroup to query.  If NULL, use current task's
-> >> - *		cgroup.
-> >> + * @mem:	memory cgroup to query
-> >>   * @item:	memory statistic item exported to the kernel
-> >>   *
-> >> - * Return the accounted statistic value or negative value if current task is
-> >> - * root cgroup.
-> >> + * Return the accounted statistic value.
-> >>   */
-> >>  long mem_cgroup_page_stat(struct mem_cgroup *mem,
-> >>  			  enum mem_cgroup_nr_pages_item item)
-> >> @@ -1377,29 +1375,27 @@ long mem_cgroup_page_stat(struct mem_cgroup *mem,
-> >>  	struct mem_cgroup *iter;
-> >>  	long value;
-> >>  
-> >> +	VM_BUG_ON(!mem);
-> >> +	VM_BUG_ON(mem_cgroup_is_root(mem));
-> >> +
-> >>  	get_online_cpus();
-> >> -	rcu_read_lock();
-> >> -	if (!mem)
-> >> -		mem = mem_cgroup_from_task(current);
-> >> -	if (__mem_cgroup_has_dirty_limit(mem)) {
-> >
-> > What about mem->use_hierarchy that is checked in
-> > __mem_cgroup_has_dirty_limit()?  Is it no longer needed?
+> This is used by APEI ERST and GEHS. But it is a generic hardware
+> error reporting mechanism and can be used by other hardware error
+> reporting mechanisms such as EDAC, PCIe AER, Machine Check, etc.
 > 
-> It is no longer needed because the callers of mem_cgroup_page_stat()
-> call __mem_cgroup_has_dirty_limit().  In the current implementation, if
-> use_hierarchy=1 then the cgroup does not have dirty limits, so calls
-> into mem_cgroup_page_stat() are avoided.  Specifically the callers of
-> mem_cgroup_page_stat() are:
+> The patchset is split from the original APEI patchset to make it
+> explicit that this is a generic mechanism, not APEI specific bits.
 > 
-> 1. mem_cgroup_dirty_info() which calls __mem_cgroup_has_dirty_limit()
->    and returns false if use_hierarchy=1.
-> 
-> 2. throttle_vm_writeout() which calls mem_dirty_info() ->
->    mem_cgroup_dirty_info() -> __mem_cgroup_has_dirty_limit() will fall
->    back to global limits if use_hierarchy=1.
+> [PATCH 1/2] Generic hardware error reporting mechanism
+> [PATCH 2/2] Hardware error record persistent support
 
-Thanks for the clarification.
+You call it generic, does that mean the EDAC guys agree, does it work on
+AMD and IA64?
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+If not, Tony could you please apply a cluebat? I thought Intel was going
+to sit around the table with all hardware error people and come up with
+a unified thing at LPC?
+
+
