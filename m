@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab0KSMHu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 07:07:50 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58732 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751892Ab0KSMHt (ORCPT
+	id S1754032Ab0KSMJv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 07:09:51 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:33495 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096Ab0KSMJu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 07:07:49 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] regulator: Fix prototype for MAX8998 buck set_voltage()
-Date: Fri, 19 Nov 2010 12:07:44 +0000
-Message-Id: <1290168464-15133-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 19 Nov 2010 07:09:50 -0500
+Subject: Re: [PATCH 3/5] MIPS/Perf-events: Check event state in
+ validate_event()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>, ralf@linux-mips.org,
+        fweisbec@gmail.com, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, wuzhangjin@gmail.com, paulus@samba.org,
+        mingo@elte.hu, acme@redhat.com
+In-Reply-To: <1290168207.8175.6.camel@e102144-lin.cambridge.arm.com>
+References: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
+	 <1290063401-25440-4-git-send-email-dengcheng.zhu@gmail.com>
+	 <1290159806.9342.7.camel@e102144-lin.cambridge.arm.com>
+	 <1290166051.2109.1539.camel@laptop>
+	 <1290168207.8175.6.camel@e102144-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 19 Nov 2010 13:09:59 +0100
+Message-ID: <1290168599.2109.1567.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/regulator/max8998.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Fri, 2010-11-19 at 12:03 +0000, Will Deacon wrote:
+> On Fri, 2010-11-19 at 11:27 +0000, Peter Zijlstra wrote:
+> > > So this is the opposite of what we're doing on ARM. Our
+> > > approach is to ignore events that are OFF (or in the ERROR
+> > > state) or that belong to a different PMU. We do this by
+> > > allowing them to *pass* validation (i.e. by returning 1 above).
+> > > This means that we won't unconditionally fail a mixed event group.
+> > >
+> > > x86 does something similar in the collect_events function.
+> > 
+> > Right, note that the generic code only allows mixing with software
+> > events, so simply accepting them is ok as software events give the
+> > guarantee they're always schedulable.
+> > 
+> > 
+> 
+> Ok. Initially it was software events that I had in mind, but does
+> this constraint prevent you from grouping CPU events with events
+> for other PMUs within the system? For external L2 cache controllers
+> with their own PMUs, it would be desirable to group some L2 events
+> with L1 events on a different PMU.
+> 
+> If each PMU can validate its own events and ignore others then it
+> sounds like it should be straightforward...
 
-diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
-index cb28cf8..7568df6 100644
---- a/drivers/regulator/max8998.c
-+++ b/drivers/regulator/max8998.c
-@@ -354,7 +354,7 @@ static inline void buck2_gpio_set(int gpio, int v)
- }
- 
- static int max8998_set_voltage_buck(struct regulator_dev *rdev,
--				    int min_uV, int max_uV, int *selector)
-+				    int min_uV, int max_uV, unsigned *selector)
- {
- 	struct max8998_data *max8998 = rdev_get_drvdata(rdev);
- 	struct max8998_platform_data *pdata =
--- 
-1.7.1
-
+Getting them all scheduled on the hardware at the same time will be
+'interesting'.. therefore we currently don't allow for this. The current
+code would pretty much result in such a group being starved if there
+were other contenders.
