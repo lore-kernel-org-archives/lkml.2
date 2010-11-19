@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab0KSWEL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:04:11 -0500
-Received: from kroah.org ([198.145.64.141]:52796 "EHLO coco.kroah.org"
+	id S1758039Ab0KSWEO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:04:14 -0500
+Received: from kroah.org ([198.145.64.141]:52814 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757863Ab0KSWEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:04:01 -0500
+	id S1756850Ab0KSWED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:03 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:22 2010
-Message-Id: <20101119220122.360480409@clark.site>
+Message-Id: <20101119220122.605394981@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:00:33 -0800
+Date: Fri, 19 Nov 2010 14:00:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Max Vozeler <mvz@vozeler.com>
-Subject: [02/66] staging: usbip: Process event flags without delay
+        Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [05/66] perf_events: Fix bogus context time tracking
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,97 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Vozeler <mvz@vozeler.com>
+From: Stephane Eranian <eranian@google.com>
 
-commit 584c5b7cf06194464240280483ee0376cdddbbae upstream.
+commit c530ccd9a1864a44a7ff35826681229ce9f2357a upstream.
 
-The way the event handler works can cause it to delay
-events until eventual wakeup for another event.
+You can only call update_context_time() when the context
+is active, i.e., the thread it is attached to is still running.
 
-For example, on device detach (vhci):
+However, perf_event_read() can be called even when the context
+is inactive, e.g., user read() the counters. The call to
+update_context_time() must be conditioned on the status of
+the context, otherwise, bogus time_enabled, time_running may
+be returned. Here is an example on AMD64. The task program
+is an example from libpfm4. The -p prints deltas every 1s.
 
- - Write to sysfs detach file
-    -> usbip_event_add(VDEV_EVENT_DOWN)
-      -> wakeup()
+$ task -p -e cpu_clk_unhalted sleep 5
+    2,266,610 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+	    0 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+	    0 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+	    0 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+	    0 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+5,242,358,071 cpu_clk_unhalted (99.95% scaling, ena=5,000,359,984, run=2,319,270)
 
-#define VDEV_EVENT_DOWN (USBIP_EH_SHUTDOWN | USBIP_EH_RESET).
+Whereas if you don't read deltas, e.g., no call to perf_event_read() until
+the process terminates:
 
- - Event thread wakes up and passes the event to
-   event_handler() to process.
+$ task -e cpu_clk_unhalted sleep 5
+    2,497,783 cpu_clk_unhalted (0.00% scaling, ena=2,376,899, run=2,376,899)
 
- - It processes and clears the USBIP_EH_SHUTDOWN
-   flag then returns.
+Notice that time_enable, time_running are bogus in the first example
+causing bogus scaling.
 
- - The outer event loop (event_handler_loop()) calls
-   wait_event_interruptible().
+This patch fixes the problem, by conditionally calling update_context_time()
+in perf_event_read().
 
-The processing of the second flag which is part of
-VDEV_EVENT_DOWN (USBIP_EH_RESET) did not happen yet.
-It is delayed until the next event.
-
-This means the ->reset callback may not happen for
-a long time (if ever), leaving the usbip port in a
-weird state which prevents its reuse.
-
-This patch changes the handler to process all flags
-before waiting for another wakeup.
-
-I have verified this change to fix a problem which
-prevented reattach of a usbip device. It also helps
-for socket errors which missed the RESET as well.
-
-The delayed event processing also affects the stub
-side of usbip and the error handling there.
-
-Signed-off-by: Max Vozeler <mvz@vozeler.com>
-Reported-by: Marco Lancione <marco@optikam.com>
-Tested-by: Luc Jalbert <ljalbert@optikam.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <4cb856dc.51edd80a.5ae0.38fb@mx.google.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/usbip/usbip_event.c |   16 +++-------------
- 1 file changed, 3 insertions(+), 13 deletions(-)
+ kernel/perf_event.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/usbip/usbip_event.c
-+++ b/drivers/staging/usbip/usbip_event.c
-@@ -38,21 +38,13 @@ static int event_handler(struct usbip_de
- 			ud->eh_ops.shutdown(ud);
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1773,7 +1773,13 @@ static u64 perf_event_read(struct perf_e
+ 		unsigned long flags;
  
- 			ud->event &= ~USBIP_EH_SHUTDOWN;
--
--			break;
- 		}
- 
--		/* Stop the error handler. */
--		if (ud->event & USBIP_EH_BYE)
--			return -1;
--
- 		/* Reset the device. */
- 		if (ud->event & USBIP_EH_RESET) {
- 			ud->eh_ops.reset(ud);
- 
- 			ud->event &= ~USBIP_EH_RESET;
--
--			break;
- 		}
- 
- 		/* Mark the device as unusable. */
-@@ -60,13 +52,11 @@ static int event_handler(struct usbip_de
- 			ud->eh_ops.unusable(ud);
- 
- 			ud->event &= ~USBIP_EH_UNUSABLE;
--
--			break;
- 		}
- 
--		/* NOTREACHED */
--		printk(KERN_ERR "%s: unknown event\n", __func__);
--		return -1;
-+		/* Stop the error handler. */
-+		if (ud->event & USBIP_EH_BYE)
-+			return -1;
+ 		raw_spin_lock_irqsave(&ctx->lock, flags);
+-		update_context_time(ctx);
++		/*
++		 * may read while context is not active
++		 * (e.g., thread is blocked), in that case
++		 * we cannot update context time
++		 */
++		if (ctx->is_active)
++			update_context_time(ctx);
+ 		update_event_times(event);
+ 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
  	}
- 
- 	return 0;
 
 
