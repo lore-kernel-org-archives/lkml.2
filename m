@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753791Ab0KSNUl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 08:20:41 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:44094 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752393Ab0KSNUk (ORCPT
+	id S1754066Ab0KSNVg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 08:21:36 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60443 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270Ab0KSNVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 08:20:40 -0500
-Date: Fri, 19 Nov 2010 08:20:37 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Mike Galbraith <efault@gmx.de>, Hans-Peter Jansen <hpj@urpla.net>,
-        linux-kernel@vger.kernel.org,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
-        Dhaval Giani <dhaval.giani@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101119132037.GA18589@Krystal>
-References: <AANLkTimC_TWzKET-aabYK0TPG6fUUW06HDej6iOzYtKo@mail.gmail.com> <20101116211431.GA15211@tango.0pointer.de> <201011182333.48281.hpj@urpla.net> <20101118231218.GX6024@const.famille.thibault.fr> <1290123351.18039.49.camel@maggy.simson.net> <20101118234339.GA6024@const.famille.thibault.fr> <1290167376.2109.1553.camel@laptop> <1290169178.2109.1573.camel@laptop> <20101119125548.GC24411@Krystal> <1290171648.2109.1580.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290171648.2109.1580.camel@laptop>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 08:13:48 up 57 days, 17:15,  3 users,  load average: 1.09, 1.22,
-	1.19
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 19 Nov 2010 08:21:35 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=WiSerhUAnUL/tGRi8PqwwkXymz8N1Uf58rludUDWzSk+L3KSJqGtAvdv8xYqW8x4PQ
+         Vla/qoLPjcqQQmaLgLKtDvGIL9BFQ86dXrgokJhcrT1qSs2xN3VKGdhm49MOd/HrYZ/F
+         v4wespzjVohrMt2tOP38nOKZpPeu4t1wUJYOQ=
+Subject: Re: [PATCH 37/44] fs/ubifs: Remove unnecessary semicolons
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>, Adrian Hunter <adrian.hunter@nokia.com>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <902d76520da2f65e5dc44339dccb07159947f23d.1289789605.git.joe@perches.com>
+References: <cover.1289789604.git.joe@perches.com>
+	 <902d76520da2f65e5dc44339dccb07159947f23d.1289789605.git.joe@perches.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 19 Nov 2010 15:21:08 +0200
+Message-ID: <1290172868.4768.2.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Fri, 2010-11-19 at 07:55 -0500, Mathieu Desnoyers wrote:
-[...]
-> > Yep, this looks like one of these perpetual throughput vs latency trade-offs.
-> > 
-> Trade-off sure, throughput vs latency only in a specific use-case, its
-> more a feature vs cost thing, just like all them trace people want lower
-> cost tracing but want more features at the same time..
+On Sun, 2010-11-14 at 19:04 -0800, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  fs/ubifs/scan.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 
-Yep, agreed for "feature vs cost", given that the kind of latency that is fixed
-in this case really boils down to a sluggish system under a relatively common
-workload -- so making this work might be called a "feature". ;)
-
-FWIW, about tracing, well, we should distinguish between features that add cost
-to the fast-path and slow-path only.
-
-But I really don't care anymore, since Ingo, Linus, Thomas and yourself made it
-very clear that you don't care. So let's not even start this discussion --
-it's going nowhere.
-
-Thanks,
-
-Mathieu
+Thanks, I'll pick this up.
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
