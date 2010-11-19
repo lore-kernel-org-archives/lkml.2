@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab0KSW0P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:26:15 -0500
-Received: from kroah.org ([198.145.64.141]:45155 "EHLO coco.kroah.org"
+	id S1757589Ab0KSW0S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:26:18 -0500
+Received: from kroah.org ([198.145.64.141]:45152 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757457Ab0KSV6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:47 -0500
+	id S1757449Ab0KSV6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:46 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:42 2010
-Message-Id: <20101119215642.457272086@clark.site>
+Message-Id: <20101119215642.372996763@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:56:06 -0800
+Date: Fri, 19 Nov 2010 13:56:05 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: [45/82] USB: atmel_usba_udc: force vbus_pin at -EINVAL when gpio_request failled
+        Anders Larsen <al@alarsen.net>
+Subject: [44/82] USB: cp210x: Add WAGO 750-923 Service Cable device ID
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+From: Anders Larsen <al@alarsen.net>
 
-commit 969affff54702785330de553b790372e261e93f9 upstream.
+commit 93ad03d60b5b18897030038234aa2ebae8234748 upstream.
 
-to ensure gpio_is_valid return false
+The WAGO 750-923 USB Service Cable is used for configuration and firmware
+updates of several industrial automation products from WAGO Kontakttechnik GmbH.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Bus 004 Device 002: ID 1be3:07a6
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               1.10
+  bDeviceClass            0 (Defined at Interface level)
+  bDeviceSubClass         0
+  bDeviceProtocol         0
+  bMaxPacketSize0        64
+  idVendor           0x1be3
+  idProduct          0x07a6
+  bcdDevice            1.00
+  iManufacturer           1 Silicon Labs
+  iProduct                2 WAGO USB Service Cable
+  iSerial                 3 1277796751
+  . . .
+
+Signed-off-by: Anders Larsen <al@alarsen.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/gadget/atmel_usba_udc.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/gadget/atmel_usba_udc.c
-+++ b/drivers/usb/gadget/atmel_usba_udc.c
-@@ -2014,6 +2014,9 @@ static int __init usba_udc_probe(struct
- 			} else {
- 				disable_irq(gpio_to_irq(udc->vbus_pin));
- 			}
-+		} else {
-+			/* gpio_request fail so use -EINVAL for gpio_is_valid */
-+			ubc->vbus_pin = -EINVAL;
- 		}
- 	}
- 
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -132,6 +132,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
+ 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
++	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
+ 	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
+ 	{ } /* Terminating Entry */
+ };
 
 
