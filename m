@@ -1,50 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab0KSVS6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:18:58 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50470 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756804Ab0KSVS4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:18:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=sMRCZWIUHPdQUKUNi1Zclq4ckj4mK9IkRCbJIsAKYRVLbJEs1d24mdljYBQX3EMlQG
-         M1P8meDBzMd0RzP6Z725vc3D54J8QYAOWDDXV1wV0SK7XFpu2YJ+ZTtfIy1iU5RMvKW9
-         8pIHRMNbWr4NS31lodBxcnfKB8k1LK1ys4ECQ=
-Message-ID: <4CE6E9B2.1040005@gmail.com>
-Date: Fri, 19 Nov 2010 22:18:42 +0100
-From: =?ISO-8859-9?Q?Niccol=F2_Belli?= <darkbasic4@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101102 Lightning/1.0b3pre Thunderbird/3.1.6
+	id S1756882Ab0KSVTR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:19:17 -0500
+Received: from kroah.org ([198.145.64.141]:57725 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755648Ab0KSVTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:19:11 -0500
+Date: Fri, 19 Nov 2010 13:16:49 -0800
+From: Greg KH <greg@kroah.com>
+To: Vladislav Bolkhovitin <vvvvvst@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Richard Williams <richard@etechsoft.com>,
+        Bart Van Assche <bvanassche@acm.org>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        Hannes Reinecke <hare@suse.de>, Andy Yan <ayan@marvell.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vu Pham <vuhuong@mellanox.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joel Becker <joel.becker@oracle.com>
+Subject: Re: [Scst-devel] [PATCH 8/19]: SCST SYSFS interface implementation
+Message-ID: <20101119211649.GA28606@kroah.com>
+References: <20101115161620.GB5981@kroah.com>
+ <4CE16B8E.1000300@panasas.com>
+ <AANLkTikPVXGJ5-5YDk1uqfqrqxGLpSiSdaX3h7qxo-ie@mail.gmail.com>
+ <8985DEAF-4227-4629-B90A-938D2BA3534E@etechsoft.com>
+ <4CE2846C.6070501@vlnb.net>
+ <4CE59482.3050002@gmail.com>
+ <20101118214619.GA29097@kroah.com>
+ <4CE6BB4A.5060606@gmail.com>
+ <20101119202202.GB6323@core.coreip.homeip.net>
+ <4CE6E323.8080703@gmail.com>
 MIME-Version: 1.0
-To: Ng Oon-Ee <ngoonee@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>,
-        linux-kernel@vger.kernel.org,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        johnstul@us.ibm.com, rostedt@goodmis.org, npiggin@suse.de
-Subject: Re: 2.6.3x-rty where x > 3 and y >= 1?
-References: <4CDAF425.4050800@ccrma.stanford.edu>	 <alpine.LFD.2.00.1011102154330.2900@localhost6.localdomain6>	 <4CDC0429.8090506@gmail.com> <1289515742.14141.0.camel@localhost.localdomain>
-In-Reply-To: <1289515742.14141.0.camel@localhost.localdomain>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-9
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE6E323.8080703@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/11/2010 23:49, Ng Oon-Ee ha scritto:
->> Glad to hear that, I can't use 2.6.33-rt anymore because of problems
->> with my intel video card and my band is starting to blame because of xruns.
->>
->> Darkbasic
-> 
-> In the meantime, the -bfs kernel does improve the situation somewhat.
+On Fri, Nov 19, 2010 at 11:50:43PM +0300, Vladislav Bolkhovitin wrote:
+> Dmitry Torokhov, on 11/19/2010 11:22 PM wrote:
+> >> None of the SCST objects are Linux devices. None of them has entries in
+> >> /dev, none of them needs to send any events to udev and none of them
+> >> sends or receives data from DMA, hence has any DMA parameters or
+> >> restrictions. So, how can them fit into the driver/bus/device model you
+> >> are enforcing?
+> > 
+> > Note that the entities in /sys/devices/... tree and not necessarily
+> > physical devices bit rather interface abstractionss. Consider, for
+> > example, /sys/class/input/*. None of the "devices" there talk directly
+> > to hardware, do DMA or other things. Some of them don't even talk to
+> > usrespace directly but rather through additional interfaces (evdev.
+> > mousedev, ect). Still they are represented there and even have suspend
+> > and resume methods (because even for logical devices it makes sense to
+> > save and restore some state).
 
-I just compiled 2.6.36-bfs, but unfortunately alsa git does not compile
-against it (I need alsa git because of M-Audio Fast Track Ultra support).
+This is correct.
 
-Darkbasic
+> SCST devices are not even logical devices. As I wrote, "devices" word is
+> misleading. SCST devices are converse of what Linux means under this
+> word. SCST devices are like NFS exports: a place where those events
+> generated and those requests received.
+
+No, that's fine.
+
+> Think of SCST device as if it sits on the opposite side of the PCI bus
+> of the corresponding SCSI device Linux sees in /sys/class and /sys/bus.
+
+Again, that's fine, look at usb gadgets, it's the same thing.
+
+> So, if we need Linux devices for SCST devices, we create them using
+> scst_local driver. And then, of course, all them have their place in
+> /sys/class/ and /sys/bus.
+
+No, just /sys/bus/ which will cause them to become part of the big
+device tree in /sys/devices/
+
+Again, use this interface, it is what it is there for, to not use it is
+just wrong.
+
+good luck,
+
+greg k-h
