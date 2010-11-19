@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab0KSFte (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 00:49:34 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:30853 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750754Ab0KSFtd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 00:49:33 -0500
-Message-ID: <4CE60FDA.4040802@dsn.okisemi.com>
-Date: Fri, 19 Nov 2010 14:49:14 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
+	id S1751868Ab0KSFuR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 00:50:17 -0500
+Received: from ebb05.tieto.com ([131.207.168.36]:53270 "EHLO ebb05.tieto.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751677Ab0KSFuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 00:50:16 -0500
+X-AuditID: 83cfa824-b7c8aae000005f9b-6f-4ce610169e57
+Message-ID: <4CE6111F.5070303@tieto.com>
+Date: Fri, 19 Nov 2010 13:54:39 +0800
+From: Yang Rui Rui <ruirui.r.yang@tieto.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 13/17] can: EG20T PCH: Fix miss-setting status
- issue
-Content-Type: text/plain; charset=ISO-2022-JP
+To: David Woodhouse <dwmw2@infradead.org>, Randy Dunlap <rdunlap@xenotime.net>
+CC: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] docs: INSTALL_HDR_PATH fix
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify miss-setting status issue at suspend.
+INSTALL_HDR_PATH example in documentation is wrong.
+it should be a prefix like /usr
 
-
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Signed-off-by: Yang Ruirui<ruirui.r.yang@tieto.com>
 ---
- drivers/net/can/pch_can.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+  Documentation/make/headers_install.txt |    4 ++--
+  1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 466f011..610cf3b 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -1084,7 +1084,7 @@ static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
- 	pch_can_set_run_mode(priv, PCH_CAN_STOP);
- 
- 	/* Indicate that we are aboutto/in suspend */
--	priv->can.state = CAN_STATE_SLEEPING;
-+	priv->can.state = CAN_STATE_STOPPED;
- 
- 	/* Waiting for all transmission to complete. */
- 	while (counter) {
+--- linux-2.6.37-rc2.orig/Documentation/make/headers_install.txt	2010-11-16 10:31:02.000000000 +0800
++++ linux-2.6.37-rc2/Documentation/make/headers_install.txt	2010-11-19 12:30:09.000000000 +0800
+@@ -24,7 +24,7 @@ The "make headers_install" command can b
+  kernel source code (or using a standard out-of-tree build).  It takes two
+  optional arguments:
+  
+-  make headers_install ARCH=i386 INSTALL_HDR_PATH=/usr/include
++  make headers_install ARCH=i386 INSTALL_HDR_PATH=/usr
+  
+  ARCH indicates which architecture to produce headers for, and defaults to the
+  current architecture.  The linux/asm directory of the exported kernel headers
+@@ -34,7 +34,7 @@ the command:
+    ls -d include/asm-* | sed 's/.*-//'
+  
+  INSTALL_HDR_PATH indicates where to install the headers.  It defaults to
+-"./usr/include".
++"./usr".
+  
+  The command "make headers_install_all" exports headers for all architectures
+  simultaneously.  (This is mostly of interest to distribution maintainers,
+
 -- 
-1.6.0.6
-
+To adhere means to yield. To yield means to adhere.
