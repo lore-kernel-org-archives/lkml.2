@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab0KSWap (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:30:45 -0500
-Received: from kroah.org ([198.145.64.141]:45070 "EHLO coco.kroah.org"
+	id S1757253Ab0KSV6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:58:35 -0500
+Received: from kroah.org ([198.145.64.141]:45051 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757347Ab0KSV6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:36 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:41 2010
-Message-Id: <20101119215641.057369050@clark.site>
+	id S1757217Ab0KSV6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:34 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:40 2010
+Message-Id: <20101119215640.726280777@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:55:49 -0800
+Date: Fri, 19 Nov 2010 13:55:45 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [28/82] p54usb: add five more USBIDs
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [24/82] KVM: SVM: Restore correct registers after sel_cr0 intercept emulation
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,66 +26,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit 1a92795dac419128eb511dce30a6aad672064b88 upstream.
+commit cda0008299a06f0d7218c6037c3c02d7a865e954 upstream.
 
-Source:
-http://www.wikidevi.com/wiki/Intersil/p54/usb/windows
+This patch implements restoring of the correct rip, rsp, and
+rax after the svm emulation in KVM injected a selective_cr0
+write intercept into the guest hypervisor. The problem was
+that the vmexit is emulated in the instruction emulation
+which later commits the registers right after the write-cr0
+instruction. So the l1 guest will continue to run with the
+l2 rip, rsp and rax resulting in unpredictable behavior.
 
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch is not the final word, it is just an easy patch
+to fix the issue. The real fix will be done when the
+instruction emulator is made aware of nested virtualization.
+Until this is done this patch fixes the issue and provides
+an easy way to fix this in -stable too.
+
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/p54/p54usb.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ arch/x86/kvm/svm.c |   33 +++++++++++++++++++++++++++++++--
+ 1 file changed, 31 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/p54/p54usb.c
-+++ b/drivers/net/wireless/p54/p54usb.c
-@@ -33,8 +33,17 @@ MODULE_ALIAS("prism54usb");
- MODULE_FIRMWARE("isl3886usb");
- MODULE_FIRMWARE("isl3887usb");
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -87,6 +87,14 @@ struct nested_state {
+ 	/* A VMEXIT is required but not yet emulated */
+ 	bool exit_required;
  
-+/*
-+ * Note:
-+ *
-+ * Always update our wiki's device list (located at:
-+ * http://wireless.kernel.org/en/users/Drivers/p54/devices ),
-+ * whenever you add a new device.
-+ */
++	/*
++	 * If we vmexit during an instruction emulation we need this to restore
++	 * the l1 guest rip after the emulation
++	 */
++	unsigned long vmexit_rip;
++	unsigned long vmexit_rsp;
++	unsigned long vmexit_rax;
 +
- static struct usb_device_id p54u_table[] __devinitdata = {
- 	/* Version 1 devices (pci chip + net2280) */
-+	{USB_DEVICE(0x045e, 0x00c2)},	/* Microsoft MN-710 */
- 	{USB_DEVICE(0x0506, 0x0a11)},	/* 3COM 3CRWE254G72 */
- 	{USB_DEVICE(0x06b9, 0x0120)},	/* Thomson SpeedTouch 120g */
- 	{USB_DEVICE(0x0707, 0xee06)},	/* SMC 2862W-G */
-@@ -47,7 +56,9 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x0846, 0x4220)},	/* Netgear WG111 */
- 	{USB_DEVICE(0x09aa, 0x1000)},	/* Spinnaker Proto board */
- 	{USB_DEVICE(0x0cde, 0x0006)},	/* Medion 40900, Roper Europe */
-+	{USB_DEVICE(0x107b, 0x55f2)},	/* Gateway WGU-210 (Gemtek) */
- 	{USB_DEVICE(0x124a, 0x4023)},	/* Shuttle PN15, Airvast WM168g, IOGear GWU513 */
-+	{USB_DEVICE(0x1630, 0x0005)},	/* 2Wire 802.11g USB (v1) / Z-Com */
- 	{USB_DEVICE(0x1915, 0x2234)},	/* Linksys WUSB54G OEM */
- 	{USB_DEVICE(0x1915, 0x2235)},	/* Linksys WUSB54G Portable OEM */
- 	{USB_DEVICE(0x2001, 0x3701)},	/* DLink DWL-G120 Spinnaker */
-@@ -60,6 +71,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x050d, 0x7050)},	/* Belkin F5D7050 ver 1000 */
- 	{USB_DEVICE(0x0572, 0x2000)},	/* Cohiba Proto board */
- 	{USB_DEVICE(0x0572, 0x2002)},	/* Cohiba Proto board */
-+	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
- 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
- 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
- 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
-@@ -79,6 +91,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x13B1, 0x000C)},	/* Linksys WUSB54AG */
- 	{USB_DEVICE(0x1413, 0x5400)},   /* Telsey 802.11g USB2.0 Adapter */
- 	{USB_DEVICE(0x1435, 0x0427)},	/* Inventel UR054G */
-+	{USB_DEVICE(0x1668, 0x1050)},	/* Actiontec 802UIG-1 */
- 	{USB_DEVICE(0x2001, 0x3704)},	/* DLink DWL-G122 rev A2 */
- 	{USB_DEVICE(0x413c, 0x5513)},	/* Dell WLA3310 USB Wireless Adapter */
- 	{USB_DEVICE(0x413c, 0x8102)},	/* Spinnaker DUT */
+ 	/* cache for intercepts of the guest */
+ 	u16 intercept_cr_read;
+ 	u16 intercept_cr_write;
+@@ -1201,8 +1209,12 @@ static void svm_set_cr0(struct kvm_vcpu
+ 		if (old == new) {
+ 			/* cr0 write with ts and mp unchanged */
+ 			svm->vmcb->control.exit_code = SVM_EXIT_CR0_SEL_WRITE;
+-			if (nested_svm_exit_handled(svm) == NESTED_EXIT_DONE)
++			if (nested_svm_exit_handled(svm) == NESTED_EXIT_DONE) {
++				svm->nested.vmexit_rip = kvm_rip_read(vcpu);
++				svm->nested.vmexit_rsp = kvm_register_read(vcpu, VCPU_REGS_RSP);
++				svm->nested.vmexit_rax = kvm_register_read(vcpu, VCPU_REGS_RAX);
+ 				return;
++			}
+ 		}
+ 	}
+ 
+@@ -2398,6 +2410,23 @@ static int emulate_on_interception(struc
+ 	return 1;
+ }
+ 
++static int cr0_write_interception(struct vcpu_svm *svm)
++{
++	struct kvm_vcpu *vcpu = &svm->vcpu;
++	int r;
++
++	r = emulate_instruction(&svm->vcpu, 0, 0, 0);
++
++	if (svm->nested.vmexit_rip) {
++		kvm_register_write(vcpu, VCPU_REGS_RIP, svm->nested.vmexit_rip);
++		kvm_register_write(vcpu, VCPU_REGS_RSP, svm->nested.vmexit_rsp);
++		kvm_register_write(vcpu, VCPU_REGS_RAX, svm->nested.vmexit_rax);
++		svm->nested.vmexit_rip = 0;
++	}
++
++	return r == EMULATE_DONE;
++}
++
+ static int cr8_write_interception(struct vcpu_svm *svm)
+ {
+ 	struct kvm_run *kvm_run = svm->vcpu.run;
+@@ -2671,7 +2700,7 @@ static int (*svm_exit_handlers[])(struct
+ 	[SVM_EXIT_READ_CR4]			= emulate_on_interception,
+ 	[SVM_EXIT_READ_CR8]			= emulate_on_interception,
+ 	[SVM_EXIT_CR0_SEL_WRITE]		= emulate_on_interception,
+-	[SVM_EXIT_WRITE_CR0]			= emulate_on_interception,
++	[SVM_EXIT_WRITE_CR0]			= cr0_write_interception,
+ 	[SVM_EXIT_WRITE_CR3]			= emulate_on_interception,
+ 	[SVM_EXIT_WRITE_CR4]			= emulate_on_interception,
+ 	[SVM_EXIT_WRITE_CR8]			= cr8_write_interception,
 
 
