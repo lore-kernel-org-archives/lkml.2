@@ -1,183 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555Ab0KSWz5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:55:57 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34955 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757481Ab0KSWzz (ORCPT
+	id S932646Ab0KSW7G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:59:06 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64759 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755518Ab0KSW7B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:55:55 -0500
-Date: Fri, 19 Nov 2010 14:54:42 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering
- writeback
-Message-Id: <20101119145442.ddf0c0e8.akpm@linux-foundation.org>
-In-Reply-To: <20101119072316.GA14388@google.com>
-References: <1289996638-21439-1-git-send-email-walken@google.com>
-	<1289996638-21439-4-git-send-email-walken@google.com>
-	<20101117125756.GA5576@amd>
-	<1290007734.2109.941.camel@laptop>
-	<AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
-	<20101117231143.GQ22876@dastard>
-	<20101118133702.GA18834@infradead.org>
-	<alpine.LSU.2.00.1011180934400.3210@tigran.mtv.corp.google.com>
-	<20101119072316.GA14388@google.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Nov 2010 17:59:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dwGxpHBh6gUjB/FGIlCoaNsl55ajvzoPGTK5DSwBzQvBFHqU4NCRPJxMFnyJPI0+TG
+         /RdILjdMukLMdXlipPe1Zk7iaJKc2YnNEkLfO/QU1lTm0yVNEod1DyWJDdCFji/juBH3
+         vo3ytdJeQci8Zb77DQOFUu5CSito5Yz2S+KYw=
+MIME-Version: 1.0
+In-Reply-To: <4CE7006E.4040102@teksavvy.com>
+References: <tTUH_XeInOH.A.dMF.c3b5MB@chimera>
+	<4CE5C919.7090504@teksavvy.com>
+	<AANLkTi=8G7pNA7QTxaXDWKrWrCERPfmKU+nLJWCA=JUH@mail.gmail.com>
+	<4CE7006E.4040102@teksavvy.com>
+Date: Fri, 19 Nov 2010 17:58:59 -0500
+Message-ID: <AANLkTim9aXi1_EJyh2f-+X4HnNWJ3uk2z=P6m1hQso5a@mail.gmail.com>
+Subject: Re: 2.6.37-rc2-git4: Reported regressions 2.6.35 -> 2.6.36
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010 23:23:16 -0800
-Michel Lespinasse <walken@google.com> wrote:
+On Fri, Nov 19, 2010 at 5:55 PM, Mark Lord <kernel@teksavvy.com> wrote:
+> On 10-11-19 11:39 AM, Alex Deucher wrote:
+>>
+>> On Thu, Nov 18, 2010 at 7:47 PM, Mark Lord<kernel@teksavvy.com>  wrote:
+>>
+>>> My non-Intel graphics notebook (has ATI X1400 graphics) also has a resume
+>>> regression with 2.6.36.  But it does work fine with 2.6.35 (and earlier,
+>>> back many years).  As a result, I'm stuck with 2.6.35 for the time being,
+>>> and lack the time for a concerted debug effort on 2.6.36+ right now.
+>>>
+>>
+>> Can you bisect?  Does this patch help?
+>>
+>> diff --git a/drivers/gpu/drm/radeon/atom.c b/drivers/gpu/drm/radeon/atom.c
+>> index 8e421f6..05efb5b 100644
+>> --- a/drivers/gpu/drm/radeon/atom.c
+>> +++ b/drivers/gpu/drm/radeon/atom.c
+>> @@ -112,6 +112,7 @@ static uint32_t atom_iio_execute(struct
+>> atom_context *ctx, int base,
+>>                         base += 3;
+>>                         break;
+>>                 case ATOM_IIO_WRITE:
+>> +                       (void)ctx->card->ioreg_read(ctx->card, CU16(base +
+>> 1));
+>>                         ctx->card->ioreg_write(ctx->card, CU16(base + 1),
+>> temp);
+>>                         base += 3;
+>>                         break;
+>
+> It now comes back at resume time.
 
-> On Thu, Nov 18, 2010 at 09:41:22AM -0800, Hugh Dickins wrote:
-> > On Thu, 18 Nov 2010, Christoph Hellwig wrote:
-> > > On Thu, Nov 18, 2010 at 10:11:43AM +1100, Dave Chinner wrote:
-> > > > Hence I think that avoiding ->page_mkwrite callouts is likely to
-> > > > break some filesystems in subtle, undetected ways.  IMO, regardless
-> > > > of what is done, it would be really good to start by writing a new
-> > > > regression test to exercise and encode the expected the mlock
-> > > > behaviour so we can detect regressions later on....
-> > > 
-> > > I think it would help if we could drink a bit of the test driven design
-> > > coolaid here. Michel, can you write some testcases where pages on a
-> > > shared mapping are mlocked, then dirtied and then munlocked, and then
-> > > written out using msync/fsync.  Anything that fails this test on
-> > > btrfs/ext4/gfs/xfs/etc obviously doesn't work.
-> 
-> I think it's still under debate what's an acceptable result for this test
-> (i.e. what's supposed to happen during mlock of a shared mapping of
-> a sparsely allocated file - is a fallocate equivalent supposed to happen ?)
-> But I agree discussing based on test results will make things more concrete.
-> 
-> > Whilst it's hard to argue against a request for testing, Dave's worries
-> > just sprang from a misunderstanding of all the talk about "avoiding ->
-> > page_mkwrite".  There's nothing strange or risky about Michel's patch,
-> > it does not avoid ->page_mkwrite when there is a write: it just stops
-> > pretending that there was a write when locking down the shared area.
-> 
-> So, I decided to test this using memtoy.
+So that patch helped?
 
-Wait.  You *tested* the kernel?
+>
+> But suffers long delays (also sometimes with 2.6.35) doing this:
+>
+> [drm:atom_op_jump] *ERROR* atombios stuck in loop for more than 5secs
+> aborting
+> [drm:atom_execute_table_locked] *ERROR* atombios stuck executing E576 (len
+> 105, WS 12, PS 8) @ 0xE5C4
+> [drm:atom_op_jump] *ERROR* atombios stuck in loop for more than 5secs
+> aborting
+> [drm:atom_execute_table_locked] *ERROR* atombios stuck executing ECD2 (len
+> 86, WS 4, PS 0) @ 0xED05
+> [drm:atom_op_jump] *ERROR* atombios stuck in loop for more than 5secs
+> aborting
+> [drm:atom_execute_table_locked] *ERROR* atombios stuck executing E576 (len
+> 105, WS 12, PS 8) @ 0xE5C4
+> PM: resume of devices complete after 15718.253 msecs
+>
 
-I dunno, kids these days...
+It's be nice if you could bisect to track down when those started.
 
-> /data is a separate partition
-> where I had just 10GB free space, and /data/hole20G was created using
-> dd if=/dev/zero of=/data/hole20G bs=1M seek=20480 count=0.
-> 
-> memtoy>file /data/hole20G shared
-> memtoy>map hole20G
-> 
-> At this point the file is mapped using a writable, shared VMA.
-> 
-> memtoy>touch hole20G
-> memtoy:  touched 5242880 pages in 30.595 secs
-> 
-> At this point memtoy's address space is populated with zeroed
-> pages. The pages are distinct (meminfo does show 20G of allocated pages),
-> are classified as file pages, not anon, and are associated with the
-> struct address_space for /data/hole20G. That file still does not have
-> blocks allocated, as can be seen with du /data/hole20G.
-> 
-> memtoy>lock hole20G
-> 
-> memtoy tries to mlock the hole20G VMA.
-> This is where things get interesting.
-> 
-> Using ext2, without my patch (ext3 should be similar):
->   - first, mlock does fast progress going though file pages, marking them
->     as dirty. Eventually, it hits the dirty limit and gets throttled.
->   - then, mlock does slow progress as it needs to wait for writeback.
->     writeback occurs and allocates blocks for the /data/hole20G.
->     Eventually, the /data partition gets full.
->   - then, mlock does no progress as it's at the dirty limit and nothing
->     gets written back.
->   - mlock never terminates.
-> 
-> Using ext2, with my patch (ext3 should be similar):
->   - mlock goes through all pages in ~5 seconds, marking them as mlocked
->     (but still not dirty)
->   - mlock completes. /data/hole20G still does not have blocks allocated.
->   - if memtoy is then instructed to dirty all the pages
->     (using 'touch hole20G write'):
->     - first, memtoy does fast progress faulting through file pages, marking
->       them as dirty. Eventually, it hits the dirty limit and gets throttled.
->     - then, memtoy does slow progress as it needs to wait for writeback.
->       writeback occurs and allocates blocks for the /data/hole20G.
->       Eventually, the /data partition gets full.
->     - then, memtoy does no progress as it's at the dirty limit and nothing
->       gets written back. It gets stuck into a write fault that never
->       completes.
->   - i.e. this is essentially the same lockup as without my patch, except that
->     it occurs when the application tries to dirty the shared file rather than
->     during mlock itself.
-
-Seems to me that this bug is the first thing we should be looking at.
-
-> Using ext4, without my patch:
->   - first, mlock does fast progress going though file pages, marking them
->     as dirty. Eventually, it hits the dirty limit and gets throttled.
->   - then, mlock does slow progress as it needs to wait for writeback.
->     writeback occurs and allocates blocks for the /data/hole20G.
->     Eventually, the /data partition gets full.
->   - then, mlock returns an error.
-> 
-> Using ext4, with my patch:
->   - mlock goes through all pages in ~5 seconds, marking them as mlocked
->     (but still not dirty)
->   - mlock completes. /data/hole20G still does not have blocks allocated.
->   - if memtoy is then instructed to dirty all the pages
->     (using 'touch hole20G write'):
->     - first, memtoy does fast progress faulting through file pages, marking
->       them as dirty. Eventually, it hits the dirty limit and gets throttled.
->     - then, memtoy does slow progress as it needs to wait for writeback.
->       writeback occurs and allocates blocks for the /data/hole20G.
->       Eventually, the /data partition gets full.
->     - at that point, memtoy dies of SIGBUS.
->   - i.e. for filesystems that define the page_mkwrite callback, the mlock
->     behavior when running out of space writing to sparse files is clearly
->     nicer without my patch than with it.
-> 
-> 
-> Not 100% sure what to make of these results.
-> 
-> Approaching the problem the other way - would there be any objection to
-> adding code to do an fallocate() equivalent at the start of mlock ?
-> This would be a no-op when the file is fully allocated on disk, and would
-> allow mlock to return an error if the file can't get fully allocated
-> (no idea what errno should be for such case, though).
-
-Dirtying all that memory at mlock() time is pretty obnoxious.
-
-I'm inclined to agree that your patch implements the desirable
-behaviour: don't dirty the page, don't do block allocation.  Take a
-fault at first-dirtying and do it then.  This does degrade mlock a bit:
-the user will find that the first touch of an mlocked page can cause
-synchronous physical I/O, which isn't mlocky behaviour *at all*.  But
-we have to be able to do this anyway - whenever the kupdate function
-writes back the dirty pages it has to mark them read-only again so the
-kernel knows when they get redirtied.
-
-I do agree that this will result in worse file layout for some
-reasonable userspace code patterns.  But it was always that way, except
-for the eleven-release window where we kinda accidentally fixed that up
-in-kernel.  Hopefully most apps which care are already ensuring that
-the file is well laid-out.
-
-
-So all that leaves me thinking that we merge your patches as-is.  Then
-work out why users can fairly trivially use mlock to hang the kernel on
-ext2 and ext3 (and others?) 
+> So I did this (local hack only, obviously NOT for mainline) to work around
+> that issue:
+>
+> --- linux-2.6.36/drivers/gpu/drm/radeon/atom.c  2010-10-20
+> 16:30:22.000000000 -0400
+> +++ linux/drivers/gpu/drm/radeon/atom.c 2010-11-19 17:14:21.141807003 -0500
+> @@ -1150,6 +1151,7 @@
+>
+>        if (!base)
+>                return -EINVAL;
+> +       if (base == 0xe576 || base == 0xecd2) return 0;  /* prevent freezes
+> on Dell i9400 w/X1400 */
+>
+>        len = CU16(base + ATOM_CT_SIZE_PTR);
+>        ws = CU8(base + ATOM_CT_WS_PTR);
+>
