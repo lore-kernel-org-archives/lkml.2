@@ -1,46 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab0KSLIG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 06:08:06 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55227 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032Ab0KSLIE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 06:08:04 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=nNkMkfvO9j6OPTzrpWqlPJcOz49pahsGWTk1IULa7mdK8J3GtYhJXHv/OCBXZSE2t5
-         mfXB5YW9PHXfwjsnVfX9b8xA68XV1HfKhY57AkwyyCb/tRp63hHPPQrvI4UymKwm95BS
-         hcQe+t/I4sOll0rhqq6kpKL+X6maNwAliXGm0=
+	id S1753273Ab0KSLIY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 06:08:24 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:38562 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753180Ab0KSLIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 06:08:23 -0500
+Date: Fri, 19 Nov 2010 11:08:08 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/8] mm: compaction: Use the LRU to get a hint on where
+	compaction should start
+Message-ID: <20101119110808.GD28613@csn.ul.ie>
+References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie> <1290010969-26721-8-git-send-email-mel@csn.ul.ie> <20101118184659.GD30376@random.random>
 MIME-Version: 1.0
-In-Reply-To: <20101119014029.GA26429@july>
-References: <20101119014029.GA26429@july>
-Date: Fri, 19 Nov 2010 11:08:02 +0000
-X-Google-Sender-Auth: nGY6gpMi-2mEcHTMyPdPlMynUWY
-Message-ID: <AANLkTinqvbPB5ijJnMGB1FP08WUMSUKFY_qZhgZaVUci@mail.gmail.com>
-Subject: Re: [PATCH] ARM: l2x0: Check the correct address range
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20101118184659.GD30376@random.random>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 November 2010 01:40, Kyungmin Park <kmpark@infradead.org> wrote:
-> From: Boojin Kim <boojin.kim@samsung.com>
->
-> When flush or clean the 1MiB, it doesn't flush or clean all since it doesn't check the correct address. So Check the correct address range.
+On Thu, Nov 18, 2010 at 07:46:59PM +0100, Andrea Arcangeli wrote:
+> On Wed, Nov 17, 2010 at 04:22:48PM +0000, Mel Gorman wrote:
+> > +	if (!cc->migrate_pfn)
+> > +		cc->migrate_pfn = zone->zone_start_pfn;
+> 
+> wouldn't it remove a branch if the caller always set migrate_pfn?
+> 
 
-This line is very long.
+If try_to_compact_pages() used it, it would migrate old pages and then
+later enter direct reclaim where it reclaimed the pages it just
+migrated. It was double work. That said, I neglected to check if
+migration affects the age of pages. Offhand, I think it does so the
+problem wouldn't apply so it was flawed reasoning.
 
-The patch looks fine otherwise. I think the optimal value would be
-smaller than the whole cache size but it depends on many things.
+> > +	if (!cc->free_pfn) {
+> > +		cc->free_pfn = zone->zone_start_pfn + zone->spanned_pages;
+> > +		cc->free_pfn &= ~(pageblock_nr_pages-1);
+> > +	}
+> 
+> Who sets free_pfn to zero? Previously this was always initialized.
+> 
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Initialised on stack.
+
+> > @@ -523,7 +539,23 @@ unsigned long reclaimcompact_zone_order(struct zone *zone,
+> >  	INIT_LIST_HEAD(&cc.freepages);
+> >  	INIT_LIST_HEAD(&cc.migratepages);
+> >  
+> > -	return compact_zone(zone, &cc);
+> > +	/* Get a hint on where to start compacting from the LRU */
+> > +	anon_page = lru_to_page(&zone->lru[LRU_BASE + LRU_INACTIVE_ANON].list);
+> > +	file_page = lru_to_page(&zone->lru[LRU_BASE + LRU_INACTIVE_FILE].list);
+> > +	cc.migrate_pfn = min(page_to_pfn(anon_page), page_to_pfn(file_page));
+> > +	cc.migrate_pfn = ALIGN(cc.migrate_pfn, pageblock_nr_pages);
+> > +	start_migrate_pfn = cc.migrate_pfn;
+> > +
+> > +	ret = compact_zone(zone, &cc);
+> > +
+> > +	/* Restart migration from the start of zone if the hint did not work */
+> > +	if (!zone_watermark_ok(zone, cc.order, low_wmark_pages(zone), 0, 0)) {
+> > +		cc.migrate_pfn = 0;
+> > +		cc.abort_migrate_pfn = start_migrate_pfn;
+> > +		ret = compact_zone(zone, &cc);
+> > +	}
+> > +
+> 
+> I doubt it works ok if the list is empty... Maybe it's safer to
+> validate the migrate_pfn against the zone pfn start/end before
+> setting it in the migrate_pfn.
+> 
+
+You're right, this could be unsafe.
+
+> Interesting this heuristic slowed down the benchmark, it should lead
+> to the exact opposite thanks to saving some cpu. So I guess maybe it's
+> not worth it. I see it increases the ratio of compaction of a tiny
+> bit, but if a tiny bit of better compaction comes at the expenses of
+> an increased runtime I don't like it and I'd drop it... It's not
+> making enough difference, further we could extend it to check the
+> "second" page in the list and so on... so we can just go blind. All it
+> matters is that we use a clock algorithm and I guess this screwes it
+> and this is why it leads to increased time.
+> 
+
+The variation was within the noise but yes, maybe this is not such a great
+idea and the figures are not very compelling. I'm going to drop it from the
+series.
+
+Thanks
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
