@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758287Ab0KSWRI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:17:08 -0500
-Received: from kroah.org ([198.145.64.141]:52882 "EHLO coco.kroah.org"
+	id S1758465Ab0KSWR0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:17:26 -0500
+Received: from kroah.org ([198.145.64.141]:52878 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754856Ab0KSWEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758007Ab0KSWEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Nov 2010 17:04:10 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:23 2010
-Message-Id: <20101119220123.569743127@clark.site>
+Message-Id: <20101119220123.488019055@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:00:48 -0800
+Date: Fri, 19 Nov 2010 14:00:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andre Przywara <andre.przywara@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [17/66] x86, cpu: Fix renamed, not-yet-shipping AMD CPUID feature bit
+        Cliff Wickman <cpw@sgi.com>, kexec@lists.infradead.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [16/66] mm, x86: Saving vmcore with non-lazy freeing of vmas
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,48 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andre Przywara <andre.przywara@amd.com>
+From: Cliff Wickman <cpw@sgi.com>
 
-commit 7ef8aa72ab176e0288f363d1247079732c5d5792 upstream.
+commit 3ee48b6af49cf534ca2f481ecc484b156a41451d upstream.
 
-The AMD SSE5 feature set as-it has been replaced by some extensions
-to the AVX instruction set. Thus the bit formerly advertised as SSE5
-is re-used for one of these extensions (XOP).
-Although this changes the /proc/cpuinfo output, it is not user visible, as
-there are no CPUs (yet) having this feature.
-To avoid confusion this should be added to the stable series, too.
+During the reading of /proc/vmcore the kernel is doing
+ioremap()/iounmap() repeatedly. And the buildup of un-flushed
+vm_area_struct's is causing a great deal of overhead. (rb_next()
+is chewing up most of that time).
 
-Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-LKML-Reference: <1283778860-26843-2-git-send-email-andre.przywara@amd.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+This solution is to provide function set_iounmap_nonlazy(). It
+causes a subsequent call to iounmap() to immediately purge the
+vma area (with try_purge_vmap_area_lazy()).
+
+With this patch we have seen the time for writing a 250MB
+compressed dump drop from 71 seconds to 44 seconds.
+
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: kexec@lists.infradead.org
+LKML-Reference: <E1OwHZ4-0005WK-Tw@eag09.americas.sgi.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/cpufeature.h |    2 +-
- arch/x86/kvm/x86.c                |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/io.h       |    1 +
+ arch/x86/kernel/crash_dump_64.c |    1 +
+ mm/vmalloc.c                    |    9 +++++++++
+ 3 files changed, 11 insertions(+)
 
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -152,7 +152,7 @@
- #define X86_FEATURE_3DNOWPREFETCH (6*32+ 8) /* 3DNow prefetch instructions */
- #define X86_FEATURE_OSVW	(6*32+ 9) /* OS Visible Workaround */
- #define X86_FEATURE_IBS		(6*32+10) /* Instruction Based Sampling */
--#define X86_FEATURE_SSE5	(6*32+11) /* SSE-5 */
-+#define X86_FEATURE_XOP		(6*32+11) /* extended AVX instructions */
- #define X86_FEATURE_SKINIT	(6*32+12) /* SKINIT/STGI instructions */
- #define X86_FEATURE_WDT		(6*32+13) /* Watchdog timer */
- #define X86_FEATURE_NODEID_MSR	(6*32+19) /* NodeId MSR */
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1996,7 +1996,7 @@ static void do_cpuid_ent(struct kvm_cpui
- 	const u32 kvm_supported_word6_x86_features =
- 		F(LAHF_LM) | F(CMP_LEGACY) | F(SVM) | 0 /* ExtApicSpace */ |
- 		F(CR8_LEGACY) | F(ABM) | F(SSE4A) | F(MISALIGNSSE) |
--		F(3DNOWPREFETCH) | 0 /* OSVW */ | 0 /* IBS */ | F(SSE5) |
-+		F(3DNOWPREFETCH) | 0 /* OSVW */ | 0 /* IBS */ | F(XOP) |
- 		0 /* SKINIT */ | 0 /* WDT */;
+--- a/arch/x86/include/asm/io.h
++++ b/arch/x86/include/asm/io.h
+@@ -206,6 +206,7 @@ static inline void __iomem *ioremap(reso
  
- 	/* all calls to cpuid_count() should be made on the same cpu */
+ extern void iounmap(volatile void __iomem *addr);
+ 
++extern void set_iounmap_nonlazy(void);
+ 
+ #ifdef __KERNEL__
+ 
+--- a/arch/x86/kernel/crash_dump_64.c
++++ b/arch/x86/kernel/crash_dump_64.c
+@@ -46,6 +46,7 @@ ssize_t copy_oldmem_page(unsigned long p
+ 	} else
+ 		memcpy(buf, vaddr + offset, csize);
+ 
++	set_iounmap_nonlazy();
+ 	iounmap(vaddr);
+ 	return csize;
+ }
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -517,6 +517,15 @@ static atomic_t vmap_lazy_nr = ATOMIC_IN
+ static void purge_fragmented_blocks_allcpus(void);
+ 
+ /*
++ * called before a call to iounmap() if the caller wants vm_area_struct's
++ * immediately freed.
++ */
++void set_iounmap_nonlazy(void)
++{
++	atomic_set(&vmap_lazy_nr, lazy_max_pages()+1);
++}
++
++/*
+  * Purges all lazily-freed vmap areas.
+  *
+  * If sync is 0 then don't purge if there is already a purge in progress.
 
 
