@@ -1,49 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756121Ab0KSRzo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 12:55:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34970 "EHLO mx2.suse.de"
+	id S1756153Ab0KSR4e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 12:56:34 -0500
+Received: from fieldses.org ([174.143.236.118]:60795 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755999Ab0KSRzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 12:55:43 -0500
-Date: Fri, 19 Nov 2010 09:54:43 -0800
-From: Greg KH <gregkh@suse.de>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Pavel Machek <pavel@ucw.cz>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -next] staging: fix winbond build, needs delay.h
-Message-ID: <20101119175443.GA6326@suse.de>
-References: <20101119143207.b2d5731e.sfr@canb.auug.org.au>
- <20101119093018.340dab03.randy.dunlap@oracle.com>
- <20101119173831.GA6098@suse.de>
- <4CE6B87C.2010203@oracle.com>
+	id S1754970Ab0KSR4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 12:56:33 -0500
+Date: Fri, 19 Nov 2010 12:56:28 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jmorris@namei.org, akpm@linux-foundation.org, eparis@redhat.com,
+        viro@zeniv.linux.org.uk, Dave Chinner <david@fromorbit.com>,
+        David Safford <safford@watson.ibm.com>
+Subject: Re: [PATCH v1.2 0/5] IMA: making i_readcount a first class inode
+ citizen (reposting)
+Message-ID: <20101119175628.GD29148@fieldses.org>
+References: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <AANLkTin9sYf99fQ_w7Bp4N6Gsm3PR0akpCU=4YEkOaez@mail.gmail.com>
+ <20101119175053.GC29148@fieldses.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4CE6B87C.2010203@oracle.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101119175053.GC29148@fieldses.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 09:48:44AM -0800, Randy Dunlap wrote:
-> On 11/19/10 09:38, Greg KH wrote:
-> > On Fri, Nov 19, 2010 at 09:30:18AM -0800, Randy Dunlap wrote:
-> >> From: Randy Dunlap <randy.dunlap@oracle.com>
-> >>
-> >> winbond drivers use msleep() and delay(), so include linux/delay.h
-> >> in a common header file to prevent build errors.
-> >>
-> >> drivers/staging/winbond/phy_calibration.c:987: error: implicit declaration of function 'msleep'
-> >> drivers/staging/winbond/phy_calibration.c:1556: error: implicit declaration of function 'udelay'
-> >> drivers/staging/winbond/reg.c:894: error: implicit declaration of function 'msleep'
-> >> drivers/staging/winbond/reg.c:1178: error: implicit declaration of function 'udelay'
+On Fri, Nov 19, 2010 at 12:50:53PM -0500, J. Bruce Fields wrote:
+> On Thu, Nov 18, 2010 at 03:31:10PM -0800, Linus Torvalds wrote:
+> > On Thu, Nov 18, 2010 at 3:02 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > >
+> > > This patchset separates the incrementing/decrementing of the i_readcount, in
+> > > the VFS layer, from other IMA functionality, by replacing the current
+> > > ima_counts_get() call with i_readcount_inc(). Its unclear whether this call to
+> > > increment i_readcount should be made earlier, like i_writecount.  Currently the
+> > > call is situated immediately after the switch from put_filp() to fput() for
+> > > cleanup.
 > > 
-> > Is this error showing up in Linus's tree, or only in linux-next?
+> > Well, it seems nicer than the situation we have now. So I'm certainly
+> > ok with seeing this merged for 2.6.38 (through the security tree?) if
+> > nobody has objections.
+> > 
+> > It's a bit sad to have another atomic in the open path, but if the
+> > lease people want this and are ok with just the counter (no races?)
+> > then it seems worth it.
 > 
-> I saw it in linux-next, but it looks like it should also be a build error
-> in mainline.
+> Having thought about it more, I'm no longer convinced it will be useful
+> for leases.
+> 
+> It seems attractive to replace the current d_count/i_count checks by an
+> i_readcount check, but:
+> 
+> 	1) as long as break_lease() is called before i_readcount_inc(),
+> 	   there's a window between the two where setlease has no way to
+> 	   tell whether a read open is about to happen;
+> 
+> 	2) more importantly, it won't help file servers, which need more
+> 	   than mutual exclusion between opens and leases.
+> 
+> Number 2 in more detail:
+> 
+> Write leases exist to let a file server (nfsd or Samba) tell a client
+> that it has exclusive access to a file, so that the client can delay
+> writes, knowing that it will be notified on lease break (and given a
+> chance to write back dirty data) before someone else can look at the
+> file.
+> 
+> But say someone modifies a file on a client and then runs "make" on the
+> server.  The "make" needs to know about the modifications.  But make only
+> stat's the file, doesn't open it....
+> 
+> We can break leases on stat, but on its own that's racy--setlease needs
+> some way to determine whether a lease is in progress.  And i_readlease()
 
-Ok, thanks, I'll queue it up for Linus's tree then.
+(err, I meant i_readcount).
 
-greg k-h
+> doesn't help there, unless we decide we're going to temporarily
+> increment that around every stat.  (But if another atomic in the open
+> path is bad, another in the stat path sounds worse--and it's probably
+> not the semantics ima needs anyway.)
+
+Anyway, so I've got nothing against i_readlease, but I don't see how to
+use them for the write lease implementation--it looks to me like we're
+better off living with d_count/i_count checks.  They give false
+positives, but I don't think some false positives are really a problem.
+
+--b.
