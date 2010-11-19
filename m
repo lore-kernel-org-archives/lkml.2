@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932954Ab0KSWZt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:25:49 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:58769 "HELO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757464Ab0KSWZq convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:25:46 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimOByqsZjCYoz=pjwT7jcgN76Sgi4W6SFJ9+N-d@mail.gmail.com>
-References: <cover.1289935504.git.bengardiner@nanometrics.ca>
-	<cover.1290201713.git.bengardiner@nanometrics.ca>
-	<a367bea7c1bdc198b5540b7fe3c02d10ad59cf16.1290201713.git.bengardiner@nanometrics.ca>
-	<AANLkTimOByqsZjCYoz=pjwT7jcgN76Sgi4W6SFJ9+N-d@mail.gmail.com>
-Date: Fri, 19 Nov 2010 17:25:40 -0500
-Message-ID: <AANLkTinRXDZBaDArzTOYex+T3KP2KivcLD+Be1Kexznz@mail.gmail.com>
-Subject: Re: [PATCH v3 3/4] da850-evm: extract defines for SEL{A, B, C} pins
- in UI expander
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: Victor Rodriguez <vm.rod25@gmail.com>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-input@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>, linux-kernel@vger.kernel.org,
-        Chris Cordahi <christophercordahi@nanometrics.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757458Ab0KSV6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:58:47 -0500
+Received: from kroah.org ([198.145.64.141]:45141 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932659Ab0KSV6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:44 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:42 2010
+Message-Id: <20101119215642.137282088@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 19 Nov 2010 13:56:02 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Praveena Nadahally <praveen.nadahally@stericsson.com>
+Subject: [41/82] USB: Change acm_iad_descriptor bFunctionProtocol to USB_CDC_ACM_PROTO_AT_V25TER
+In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Victor,
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
-On Fri, Nov 19, 2010 at 4:41 PM, Victor Rodriguez <vm.rod25@gmail.com> wrote:
-[...]
->> ---
->
-> I think that ther must be just one   --- , This is extra
+------------------
 
-Sorry, that is my bad habit. I believe that the patch should still be
-usable as-is.
+From: Praveena Nadahally <praveen.nadahally@stericsson.com>
 
-Best Regards,
-Ben Gardiner
+commit 5c8db070b4480c43394680d9dfd2ddb06b97d2ae upstream.
+
+The protocol code is set 00 in IAD and it's set to 01 in ACM control
+interface descriptor in f_acm.c file. Due to this, windows is unable to
+install the modem(ACM) driver based on class-subclass-protocol matching.
+
+This patch corrects the protocol code in ACM IAD to the same as in
+acm_control_interface_desc protocol code.
+
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Signed-off-by: Praveena Nadahally <praveen.nadahally@stericsson.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
-Nanometrics Inc.
-http://www.nanometrics.ca
+ drivers/usb/gadget/f_acm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/usb/gadget/f_acm.c
++++ b/drivers/usb/gadget/f_acm.c
+@@ -111,7 +111,7 @@ acm_iad_descriptor = {
+ 	.bInterfaceCount = 	2,	// control + data
+ 	.bFunctionClass =	USB_CLASS_COMM,
+ 	.bFunctionSubClass =	USB_CDC_SUBCLASS_ACM,
+-	.bFunctionProtocol =	USB_CDC_PROTO_NONE,
++	.bFunctionProtocol =	USB_CDC_ACM_PROTO_AT_V25TER,
+ 	/* .iFunction =		DYNAMIC */
+ };
+ 
+
+
