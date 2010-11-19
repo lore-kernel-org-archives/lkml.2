@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab0KSPXs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 10:23:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12378 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754595Ab0KSPXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 10:23:47 -0500
-Date: Fri, 19 Nov 2010 10:23:30 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Ian Munsie <imunsie@au1.ibm.com>
-Cc: Avantika Mathur <mathur@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [ANNOUNCE] New utility: 'trace'
-Message-ID: <20101119152330.GA2890@redhat.com>
-References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6> <1290041086-sup-5766@au1.ibm.com> <20101118151141.GA3368@redhat.com> <1290133618-sup-2278@au1.ibm.com>
+	id S1754902Ab0KSPYz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 10:24:55 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:36150 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754847Ab0KSPYy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 10:24:54 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAJsl5kxLd/sX/2dsb2JhbAAHgz3MN5EOgSKDNnMEhFqLEw
+X-IronPort-AV: E=Sophos;i="4.59,223,1288584000"; 
+   d="scan'208";a="82986229"
+Message-ID: <4CE696C4.4030309@teksavvy.com>
+Date: Fri, 19 Nov 2010 10:24:52 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290133618-sup-2278@au1.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Christoph Hellwig <hch@infradead.org>
+CC: Greg Freemyer <greg.freemyer@gmail.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Moyer <jmoyer@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        tytso@mit.edu, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+References: <1290102098.3041.77.camel@mulgrave.site> <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com> <4CE59E57.2090009@teksavvy.com> <yq1r5eiw5os.fsf@sermon.lab.mkp.net> <4CE5C616.7070706@teksavvy.com> <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com> <20101119115516.GA1152@infradead.org> <4CE6831E.4020606@teksavvy.com> <20101119140639.GA25488@infradead.org> <4CE68E2C.9070101@teksavvy.com> <20101119145423.GA27919@infradead.org>
+In-Reply-To: <20101119145423.GA27919@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 01:32:08PM +1100, Ian Munsie wrote:
-> Hi Jason,
-> 
-> I'm adding Avantika to the CC list as she recently contacted me
-> regarding syscall tracepoints on PowerPC.
-> 
-> Excerpts from Jason Baron's message of Fri Nov 19 02:11:42 +1100 2010:
-> > I was wondering what the status of those patches were...last I remember
-> > they looked pretty good to me...I'd be more than happy to help review
-> > those.
-> 
-> Yeah there isn't much left to do on them - the main delay has just been
-> finding some time to work on them.
-> 
-> I did want to revisit the naming of the events and the subtle
-> differences for syscalls with a single implementation for both the
-> native and compat versions versus those that have separate
-> implementations - I don't want userspace to have to care about that
-> distinction.
-> 
-> I recall there were a few comments on some of your patches in the series
-> - if I rebase the patches on the current tip tree and publish the tree
-> somewhere would you be willing to take a look at those?
-> 
+On 10-11-19 09:54 AM, Christoph Hellwig wrote:
+> On Fri, Nov 19, 2010 at 09:48:12AM -0500, Mark Lord wrote:
+>> I'm not sure about the issues on "adapting the block layer" ?
+>> For FITRIM, the blocks being trimmed would be reserved at the fs level,
+>> before issuing the discard for them.  So ordering through the block layer
+>> shouldn't matter much for it.  Does that simplify things?
+>>
+>> I see FITRIM just allocating a page to hold the ranges (for the>1 case)
+>> and passing that page down through the layers to libata (or any other
+>> LLD that supports>1 ranges).
+>
+> Ordering should not be an issue.  What were problems when I tried this
+> before is that we currently assume in the block layer that discard
+> bios have a valid bi_sector/bi_size, which is already needed e.g. for
+> the trivial remapping use for partitions and that they don't have
+> a payload.  You'd need to teach various places that discard payloads
+> may have a payload, which contains multiple ranges that have a
+> sector/len tuple that needs to be remapped and checked in various
+> places.
 
-sure. the remaining issue was to combine the enabled/disabled flags into
-the 'int nb_args' field since we are only using 3 bits of it. that
-shouldn't be too bad...
+I wonder if this can be treated more like how SG_IO does things?
+The SG_IO mechanism seems to have no issues passing through stuff
+like this, so perhaps we could implement something in a similar fashion?
 
-thanks,
-
--Jason
-
+-ml
