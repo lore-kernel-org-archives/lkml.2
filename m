@@ -1,85 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab0KSU5I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 15:57:08 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52820 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754059Ab0KSU5G (ORCPT
+	id S1756770Ab0KSU7q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 15:59:46 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49851
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754059Ab0KSU7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 15:57:06 -0500
-Date: Fri, 19 Nov 2010 12:56:53 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        minchan.kim@gmail.com, Bob Liu <lliubbo@gmail.com>,
-        fujita.tomonori@lab.ntt.co.jp, m.nazarewicz@samsung.com,
-        pawel@osciak.com, andi.kleen@intel.com, felipe.contreras@gmail.com,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 0/4] big chunk memory allocator v4
-Message-Id: <20101119125653.16dd5452.akpm@linux-foundation.org>
-In-Reply-To: <20101119171033.a8d9dc8f.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20101119171033.a8d9dc8f.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Fri, 19 Nov 2010 15:59:45 -0500
+Date: Fri, 19 Nov 2010 13:00:10 -0800 (PST)
+Message-Id: <20101119.130010.232750285.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Nov 2010 17:10:33 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-> Hi, this is an updated version. 
-> 
-> No major changes from the last one except for page allocation function.
-> removed RFC.
-> 
-> Order of patches is
-> 
-> [1/4] move some functions from memory_hotplug.c to page_isolation.c
-> [2/4] search physically contiguous range suitable for big chunk alloc.
-> [3/4] allocate big chunk memory based on memory hotplug(migration) technique
-> [4/4] modify page allocation function.
-> 
-> For what:
-> 
->   I hear there is requirements to allocate a chunk of page which is larger than
->   MAX_ORDER. Now, some (embeded) device use a big memory chunk. To use memory,
->   they hide some memory range by boot option (mem=) and use hidden memory
->   for its own purpose. But this seems a lack of feature in memory management.
-> 
->   This patch adds 
-> 	alloc_contig_pages(start, end, nr_pages, gfp_mask)
->   to allocate a chunk of page whose length is nr_pages from [start, end)
->   phys address. This uses similar logic of memory-unplug, which tries to
->   offline [start, end) pages. By this, drivers can allocate 30M or 128M or
->   much bigger memory chunk on demand. (I allocated 1G chunk in my test).
-> 
->   But yes, because of fragmentation, this cannot guarantee 100% alloc.
->   If alloc_contig_pages() is called in system boot up or movable_zone is used,
->   this allocation succeeds at high rate.
+Some small fixes:
 
-So this is an alternatve implementation for the functionality offered
-by Michal's "The Contiguous Memory Allocator framework".
+1) If the number of RX queues is increased then decreased we get an
+   OOPS in the kobject code because we do not clean up no longer used
+   kobjects properly on the decrease.  Fix from John Fastabend.
 
->   I tested this on x86-64, and it seems to work as expected. But feedback from
->   embeded guys are appreciated because I think they are main user of this
->   function.
+2) IGMP handling race fix in bonding from Eric Dumazet.
 
->From where I sit, feedback from the embedded guys is *vital*, because
-they are indeed the main users.
+3) Userland build fix, rtnetlink.h needs to hide some kernel internal
+   includes in __KERNEL__, from Andy Whitcroft.
 
-Michal, I haven't made a note of all the people who are interested in
-and who are potential users of this code.  Your patch series has a
-billion cc's and is up to version 6.  Could I ask that you review and
-test this code, and also hunt down other people (probably at other
-organisations) who can do likewise for us?  Because until we hear from
-those people that this work satisfies their needs, we can't really
-proceed much further.
+4) bnx2x returns postitive errors codes by accident, from Vasiliy Kulikov.
 
-Thanks.
+5) ICMP code needs to fill in flow source address properly, otherwise
+   wrong IPSEC rule will be matched, fix from Ulrich Weber.
 
+6) IPV6 interface properties mistakenly exposed as jiffies instead of
+   msecs.  In some cases sysfs got it right, but netlink got it wrong.
+   Fix from Thomas Graf.
 
+7) SCTP checksums handled wrong in 8169 and 8139 chips, from Shan Wei.
 
+8) Fix IP_VS kbuild deps, from Patrick McHardy.
+
+9) Fix HT40 support in mac80211, from Luis R. Rodriguez and Mark Mentovai
+
+10) iovec len overflow fix in rds from Dan Rosenberg.
+
+11) IRDA should accept zero length writes, from Wolfram Sang.
+
+Please pull, thanks a lot!
+
+The following changes since commit 9457b24a0955bbdd2e89220a75de69fe09501bba:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6 (2010-11-12 17:17:55 -0800)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Andy Whitcroft (1):
+      net: rtnetlink.h -- only include linux/netdevice.h when used by the kernel
+
+Arnd Hannemann (1):
+      b43legacy: Fix compile on ARM architecture
+
+Christian Lamparter (1):
+      carl9170: fix usb anchor wait timeout
+
+Dan Rosenberg (1):
+      rds: Integer overflow in RDS cmsg handling
+
+David S. Miller (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
+
+Eric Dumazet (1):
+      bonding: fix a race in IGMP handling
+
+Giuseppe Cavallaro (1):
+      MAINTAINERS: Add stmmac maintainer
+
+John Fastabend (1):
+      net: zero kobject in rx_queue_release
+
+Jussi Kivilinna (1):
+      cfg80211: fix WIPHY_FLAG_IBSS_RSN bit
+
+Ken Kawasaki (1):
+      ipg.c: remove id [SUNDANCE, 0x1021]
+
+Luis R. Rodriguez (1):
+      cfg80211: fix extension channel checks to initiate communication
+
+Mark Mentovai (1):
+      cfg80211: fix can_beacon_sec_chan, reenable HT40
+
+Namhyung Kim (1):
+      3c59x: fix build failure on !CONFIG_PCI
+
+Nicolas Kaiser (1):
+      gianfar: fix signedness issue
+
+Patrick McHardy (1):
+      netfilter: fix IP_VS dependencies
+
+Rajkumar Manoharan (4):
+      ath9k_htc: Update usb device ID list
+      ath9k_htc: Add new devices into AR7010
+      ath9k_hw: Set proper eeprom offset for AR9287 HTC devices
+      ath9k_htc: Avoid setting QoS control for non-QoS frames
+
+Randy Dunlap (1):
+      net: fix kernel-doc for sk_filter_rcu_release
+
+Sarveshwar Bandi (1):
+      be2net: Fix to avoid firmware update when interface is not open.
+
+Shan Wei (2):
+      r8169: fix checksum broken
+      8139cp: fix checksum broken
+
+Tetsuo Handa (1):
+      net: Fix duplicate volatile warning.
+
+Thomas Graf (2):
+      ipv6: Expose IFLA_PROTINFO timer values in msecs instead of jiffies
+      ipv6: Expose reachable and retrans timer values as msecs
+
+Ulrich Weber (1):
+      xfrm: update flowi saddr in icmp_send if unset
+
+Vasiliy Kulikov (2):
+      net: bnx2x: fix error value sign
+      net: caif: spi: fix potential NULL dereference
+
+Vivek Natarajan (1):
+      ath9k: Remove pm_qos request after hw unregister.
+
+Wolfram Sang (2):
+      irda: irttp: allow zero byte packets
+      net: irda: irttp: sync error paths of data- and udata-requests
+
+ MAINTAINERS                                   |    7 +++
+ drivers/net/3c59x.c                           |    6 ++-
+ drivers/net/8139cp.c                          |   10 ++---
+ drivers/net/benet/be_main.c                   |    6 +++
+ drivers/net/bnx2x/bnx2x_main.c                |    2 +-
+ drivers/net/bonding/bond_main.c               |    2 +
+ drivers/net/caif/caif_spi.c                   |    4 +-
+ drivers/net/gianfar.c                         |    7 +--
+ drivers/net/ipg.c                             |    6 +--
+ drivers/net/r8169.c                           |    3 +-
+ drivers/net/wireless/ath/ath9k/eeprom_9287.c  |    2 +-
+ drivers/net/wireless/ath/ath9k/hif_usb.c      |    9 ++++
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c |    2 +
+ drivers/net/wireless/ath/ath9k/htc_drv_txrx.c |    2 +-
+ drivers/net/wireless/ath/ath9k/init.c         |    3 +-
+ drivers/net/wireless/ath/ath9k/reg.h          |    8 +++-
+ drivers/net/wireless/ath/carl9170/usb.c       |    4 +-
+ include/linux/rtnetlink.h                     |    2 +-
+ include/net/cfg80211.h                        |    2 +-
+ include/net/neighbour.h                       |    2 +-
+ net/core/filter.c                             |    2 +-
+ net/core/net-sysfs.c                          |   10 ++++-
+ net/ipv4/icmp.c                               |    3 +
+ net/ipv6/addrconf.c                           |   28 +++++++-----
+ net/irda/irttp.c                              |   30 ++++++++++----
+ net/netfilter/ipvs/Kconfig                    |    1 +
+ net/rds/rdma.c                                |    2 +-
+ net/wireless/chan.c                           |   54 +++++++++++++++++++++++++
+ 28 files changed, 164 insertions(+), 55 deletions(-)
