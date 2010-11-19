@@ -1,107 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757560Ab0KSXEd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 18:04:33 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49721 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757006Ab0KSXEc (ORCPT
+	id S1757660Ab0KSXFp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 18:05:45 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48845 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757161Ab0KSXFn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 18:04:32 -0500
-Date: Fri, 19 Nov 2010 15:04:11 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: michalj@gmail.com
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>, linux-kernel@vger.kernel.org,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
-Subject: Re: abs() vs. abs64() (was: Re: [PATCH] fbdev: fix nearest mode
- search)
-Message-Id: <20101119150411.81092e94.akpm@linux-foundation.org>
-In-Reply-To: <20101119222823.GA28797@quadria>
-References: <AANLkTimYDAJr9x00sjGGnDF2vOVXU12qmbnmfuzA5_0h@mail.gmail.com>
-	<20101119140721.33576c61.akpm@linux-foundation.org>
-	<20101119222823.GA28797@quadria>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 19 Nov 2010 18:05:43 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dOqIV/H+qFNKiLlakTw1vI+0z8JxW0OCax7RmsbcaMS2T1pOIqoMJlGyLdVRcWTX3s
+         cBBTToKTznmwkGJ0lG61lAnnqnnq6ofb/d8hBC5swa7kaO9oC1bp/ZpDYZFP34+uRTDd
+         rw71DOHajNRmUZD0jHarsIkcgjklVKGIAdzlM=
+MIME-Version: 1.0
+In-Reply-To: <1290204313.9884.1.camel@t60prh>
+References: <AANLkTi=emVB3kqR322Man01sDd0DFecxzDENVCS6B1jj@mail.gmail.com>
+	<AANLkTik4Bj2_D_oz8jWxzKSKz16S=Yv6884iHA072bJe@mail.gmail.com>
+	<20101119130329.675ebf0b@jbarnes-desktop>
+	<AANLkTimQQ62MKEs1WkuCMHqMQejC40rLBFc2KGF=SDHF@mail.gmail.com>
+	<1290204313.9884.1.camel@t60prh>
+Date: Sat, 20 Nov 2010 00:05:42 +0100
+Message-ID: <AANLkTikZNAxsm8p=Nq2mqgcoxs+epqOPOeykAY34bT5q@mail.gmail.com>
+Subject: Re: Regressions in resume on intel graphics
+From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+To: Dave Airlie <airlied@redhat.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Nov 2010 23:28:23 +0100
-Michal Januszewski <michalj@gmail.com> wrote:
+2010/11/19 Dave Airlie <airlied@redhat.com>:
+> On Fri, 2010-11-19 at 22:35 +0100, Zdenek Kabelac wrote:
+>> 2010/11/19 Jesse Barnes <jbarnes@virtuousgeek.org>:
+>> > On Fri, 12 Nov 2010 10:17:07 +0100
+>> > Zdenek Kabelac <zdenek.kabelac@gmail.com> wrote:
+>> >
+>> >> 2010/11/12 Zdenek Kabelac <zdenek.kabelac@gmail.com>:
+>> >> > Hi
+>> >> >
+>> >> > I've noticed that after resume  with 2.6.36 kernel I need to switch
+>> >> > between console and back to Xorg to get usable Xsession again.
+>> >> > (my hw - T61, gma965, 4GB)
+>> >> >
+>> >> > I've played bisect game -  and this is the first broken kernel:
+>> >> >
+>> >> > ---
+>> >> > commit 8fd4bd22350784d5b2fe9274f6790ba353976415
+>> >> > Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+>> >> > Date:   Wed Jun 23 12:56:12 2010 -0700
+>> >> >
+>> >> >    vt/console: try harder to print output when panicing
+>> >> > ---
+>> >>
+>> >> I've been able to boot and test with 2.6.37-rc1-00170-gf6614b7
+>> >> - and this problem seems to be fixed in this version (vt.c file seems
+>> >> to be gone?).
+>> >
+>> > This is really weird; there was one issue Dave tracked down related to
+>> > lockdep and the new oops code, but I think it's been fixed.  And it
+>> > should manifest as something other than a GPU hang...
+>> >
+>>
+>> Well - unsure - how this worked ok - for 2.6.37-rc1-00170-gf6614b7 (I
+>> could try few more times - though this kernel seems to be crashing for
+>> various other reasons - so I've had quite few testruns before I've
+>> been able to test this in some very limited X environment - so maybe
+>> it was just some lucky case - but I still keep it on my disk)
+>>
+>> Anyway - as an update - I'm now regularly using 2.6.37-rc2 - and it
+>> has exactly same problems - as in my original report -  so the problem
+>> has not magically disappeared and it is still there.  Is there
+>> anything I should try ?
+>>
+>> Basically every time after resume from suspend I have to switch from X
+>> to console and back to get usable screen back. Without this I seen
+>> only black screen with mouse over it - is there some way for reverting
+>> of this patch - or maybe just disabling some part of it ?
+>>
+>>
+>> To have reliable resume I still have to keep drm_kms_help thread
+>> disable - otherwise I observe GPU errors.
+>> Switch between consoles is 'relatively' easy to overcome.
+>>
+>> And another thing which might help -  during suspend/resume  I could
+>> usually see weird switch to console with some special text on the
+>> whole console screen -
+>>
+>> [ ###.... ]
+>> [ ###.... ]
+>>
+>> where  '###' is some changing number - and it seems to be different
+>> between resumes.
+>> Also I should add I'm using  'no-console-suspend'  kernel boot option.
+>
+> Can you see if e0fdace10e75dac67d906213b780ff1b1a4cc360 reverts cleanly?
+> and fixes it?
+>
+> The problem is I think you are getting a lockdep splat or rcu issue
+> before suspending, which sets oops_in_progress and never unsets it,
+> which means on resume the fb resume path kicks in to show you the oops
+> that is happening when there isn't actually anything to show. I've
+> gotten acks to have this reverted I just need to send the patch.
+>
 
-> On Fri, Nov 19, 2010 at 02:07:21PM -0800, Andrew Morton wrote:
-> > On Thu, 18 Nov 2010 07:40:19 +0100
-> > Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> 
-> > > > 'c' will end up with a value of 0xffffffff instead of the expected 0x1.
-> > > 
-> > > This happens on 64-bit only, right?
-> 
-> Absolutely, I should have mentioned it in the patch description.
-> 
-> > How does this look?
-> >
-> > [..]
-> > 
-> > Reported-by: Michal Januszewski <michalj@gmail.com>
-> > Cc: Rolf Eike Beer <eike-kernel@sf-tec.de
-> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> > Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> > ---
-> > 
-> >  include/linux/kernel.h |   13 ++++++++++---
-> >  1 file changed, 10 insertions(+), 3 deletions(-)
-> > 
-> > diff -puN include/linux/kernel.h~include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit include/linux/kernel.h
-> > --- a/include/linux/kernel.h~include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit
-> > +++ a/include/linux/kernel.h
-> > @@ -143,9 +143,16 @@ extern int _cond_resched(void);
-> >  
-> >  #define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
-> >  
-> > -#define abs(x) ({				\
-> > -		long __x = (x);			\
-> > -		(__x < 0) ? -__x : __x;		\
-> > +#define abs(x) ({						\
-> > +		long ret;					\
-> > +		if (sizeof(x) == sizeof(long)) {		\
-> > +			long __x = (x);				\
-> > +			ret = (__x < 0) ? -__x : __x;		\
-> > +		} else {					\
-> > +			int __x = (x);				\
-> > +			ret = (__x < 0) ? -__x : __x;		\
-> > +		}						\
-> > +		ret;						\
-> >  	})
-> >  
-> >  #define abs64(x) ({				\
-> > _
-> 
-> Looks good to me.  I posted essentially the same thing some 3 months ago
-> (http://marc.info/?l=linux-kernel&m=128033094822201&w=2) but it then
-> failed to get any traction.  At any rate, I like your version better as
-> it seems more readable.
-> 
 
-I spose we should document it.   Does this look complete and accurate?
+Ok - tested  currentl 6656b3fc8aba2eb7ca00c06c7fe4917938b0b652 vanilla kernel
+with reverted commit e0fdace10e75da - and it seems Xorg screen after
+resume is again properly working.
+So this was quick - now the remaining problem -
+https://bugzilla.kernel.org/show_bug.cgi?id=19052
 
---- a/include/linux/kernel.h~include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit-fix
-+++ a/include/linux/kernel.h
-@@ -143,6 +143,13 @@ extern int _cond_resched(void);
- 
- #define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
- 
-+/*
-+ * abs() handles unsigned and signed longs, ints, shorts and chars.  For long
-+ * types it returns a signed long.  For int, short and char types it returns a
-+ * signed int.
-+ * abs() should not be used for 64-bit types (s64, u64, long long) - use abs64()
-+ * for those.
-+ */
- #define abs(x) ({						\
- 		long ret;					\
- 		if (sizeof(x) == sizeof(long)) {		\
-_
-
+Zdenek
