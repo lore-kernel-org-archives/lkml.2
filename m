@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755802Ab0KSBFL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 20:05:11 -0500
-Received: from mail.perches.com ([173.55.12.10]:1560 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752023Ab0KSBFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 20:05:10 -0500
-Subject: Re: [PATCH] SuperH IrDA: correct Baud rate error correction
-From: Joe Perches <joe@perches.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Nicolas Kaiser <nikai@nikai.net>, Samuel Ortiz <samuel@sortiz.org>,
-        Kuninori Morimoto <morimoto.kuninori@renesas.com>,
-        irda-users@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101118164150.22aa7e16@nehalam>
-References: <20101119012402.43e9aa61@absol.kitzblitz>
-	 <20101118164150.22aa7e16@nehalam>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 18 Nov 2010 17:05:04 -0800
-Message-ID: <1290128704.1817.56.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1756950Ab0KSBLj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 20:11:39 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:29781 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753708Ab0KSBLi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 20:11:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=DSZ/uKb9tL4Bv3u1UApPu+/tAUNBP3ozPoErN1Zce2E8N9ufuPDXOEsG9ILyDJBiaq
+         CALPEkmMBKVTto/mUJeg==
+MIME-Version: 1.0
+In-Reply-To: <1289950335.30543.8.camel@gandalf.stny.rr.com>
+References: <AANLkTikfYy-kYb1=KbsYwHd0_vcf20d2nPSfFynugz8z@mail.gmail.com>
+ <AANLkTikKwx6okpX4pxVzTvrVNm=KhUvLQGs0_ziwo6fX@mail.gmail.com>
+ <AANLkTimnjun98phJ_KmwFG_ce3YGpmVGf5rufqPStWR-@mail.gmail.com>
+ <1287013830.3673.224.camel@frodo> <AANLkTi=Y2X5EuqiCncPeNefgHs6vvGmnZpsyyddRR2g_@mail.gmail.com>
+ <1289950335.30543.8.camel@gandalf.stny.rr.com>
+From: Michael Rubin <mrubin@google.com>
+Date: Thu, 18 Nov 2010 17:11:14 -0800
+Message-ID: <AANLkTimrgXbZxQKjapXkDgYRZqdZkfe1eUdFTAu=+Q8f@mail.gmail.com>
+Subject: Re: Benchmarks of kernel tracing options (ftrace and ktrace)
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-11-18 at 16:41 -0800, Stephen Hemminger wrote:
-> On Fri, 19 Nov 2010 01:24:02 +0100
-> Nicolas Kaiser <nikai@nikai.net> wrote:
-> >  	u32 rate_err_array[] = {
-> > -		0000, 0625, 1250, 1875,
-> > +		   0,  625, 1250, 1875,
-> >  		2500, 3125, 3750, 4375,
-> >  		5000, 5625, 6250, 6875,
-> >  		7500, 8125, 8750, 9375,
-> While you are at it make that table const.
+On Tue, Nov 16, 2010 at 3:32 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> Mike may have been confused ;-)
 
-Good find Nicolas.
+I am always confused.
 
-static const might be better still.
+> I did tell him that some ring buffer improvements did make it into the
+> kernel. You might want to try the latest mainline again.
 
+You told me that you had patches (in 2.6.37) I think that would allow
+us to specifically improve the syscall tracing performance.
 
+Can you point us at em?
+
+mrubin
