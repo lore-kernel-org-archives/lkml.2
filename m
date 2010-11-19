@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752243Ab0KSJoU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 04:44:20 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:56312 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751804Ab0KSJoT (ORCPT
+	id S1752394Ab0KSJvJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 04:51:09 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:40653 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab0KSJvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 04:44:19 -0500
-Subject: Re: [PATCH 3/5] MIPS/Perf-events: Check event state in
- validate_event()
-From: Will Deacon <will.deacon@arm.com>
-To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-Cc: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com
-In-Reply-To: <1290063401-25440-4-git-send-email-dengcheng.zhu@gmail.com>
-References: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
-	 <1290063401-25440-4-git-send-email-dengcheng.zhu@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Nov 2010 09:43:26 +0000
-Message-ID: <1290159806.9342.7.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Nov 2010 09:43:30.0259 (UTC) FILETIME=[392F1230:01CB87CE]
+	Fri, 19 Nov 2010 04:51:08 -0500
+Date: Fri, 19 Nov 2010 10:51:03 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Andi Kleen <andi@firstfloor.org>, acme@redhat.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 1/2] perf: Fix compilation on gcc 4.0.2 v2
+Message-ID: <20101119095103.GB23515@basil.fritz.box>
+References: <1290077461-12321-1-git-send-email-andi@firstfloor.org>
+ <1290077461-12321-2-git-send-email-andi@firstfloor.org>
+ <1290078937.2109.1345.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290078937.2109.1345.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Deng-Cheng,
+[Updated version, this time using the try-cc command.
+I remove the useless -Wvolatile-register-var warning.
+I don't think any kernel coder will really do such
+a thing in the first place.]
 
-On Thu, 2010-11-18 at 06:56 +0000, Deng-Cheng Zhu wrote:
-> Ignore events that are not for this PMU or are in off/error state.
-> 
-Sorry I didn't see this before, thanks for pointing out that you
-had included it for MIPS.
+- Fix includes
+- Remove useless -Wvolatile-register-var
+- Move -Wstack-protector into stack protector test
 
-> Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-> ---
->  arch/mips/kernel/perf_event.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/mips/kernel/perf_event.c b/arch/mips/kernel/perf_event.c
-> index 1ee44a3..9c6442a 100644
-> --- a/arch/mips/kernel/perf_event.c
-> +++ b/arch/mips/kernel/perf_event.c
-> @@ -486,7 +486,7 @@ static int validate_event(struct cpu_hw_events *cpuc,
->  {
->         struct hw_perf_event fake_hwc = event->hw;
-> 
-> -       if (event->pmu && event->pmu != &pmu)
-> +       if (event->pmu != &pmu || event->state <= PERF_EVENT_STATE_OFF)
->                 return 0;
-> 
->         return mipspmu->alloc_counter(cpuc, &fake_hwc) >= 0;
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
-So this is the opposite of what we're doing on ARM. Our
-approach is to ignore events that are OFF (or in the ERROR
-state) or that belong to a different PMU. We do this by
-allowing them to *pass* validation (i.e. by returning 1 above).
-This means that we won't unconditionally fail a mixed event group.
-
-x86 does something similar in the collect_events function.
-
-Will
-
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index d1db0f6..993ecdb 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -201,13 +201,11 @@ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wshadow
+ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Winit-self
+ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wpacked
+ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wredundant-decls
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstack-protector
+ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-aliasing=3
+ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-default
+ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-enum
+ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wno-system-headers
+ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wundef
+-EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wvolatile-register-var
+ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wwrite-strings
+ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wbad-function-cast
+ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-declarations
+@@ -287,8 +285,8 @@ endif
+ 
+ -include feature-tests.mak
+ 
+-ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -fstack-protector-all),y)
+-	CFLAGS := $(CFLAGS) -fstack-protector-all
++ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -fstack-protector-all -Wstack-protector),y)
++	CFLAGS := $(CFLAGS) -fstack-protector-all -Wstack-protector
+ endif
+ 
+ 
+diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
+index bb4ac2e..50ce182 100644
+--- a/tools/perf/util/include/linux/bitops.h
++++ b/tools/perf/util/include/linux/bitops.h
+@@ -1,6 +1,7 @@
+ #ifndef _PERF_LINUX_BITOPS_H_
+ #define _PERF_LINUX_BITOPS_H_
+ 
++#include <linux/compiler.h>
+ #include <linux/kernel.h>
+ #include <asm/hweight.h>
+ 
+-- 
+ak@linux.intel.com -- Speaking for myself only.
