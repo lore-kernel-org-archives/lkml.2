@@ -1,397 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756965Ab0KSVa1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:30:27 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45800 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756944Ab0KSVaW (ORCPT
+	id S932283Ab0KSVaN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:30:13 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:59359 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932076Ab0KSVaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:30:22 -0500
+	Fri, 19 Nov 2010 16:30:07 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/3] perf stat: Add no-aggregation mode to -a
-Date: Fri, 19 Nov 2010 19:29:41 -0200
-Message-Id: <1290202186-25352-3-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Stephane Eranian <eranian@google.com>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 4/4] perf python scripting: Add futex-contention script
+Date: Fri, 19 Nov 2010 19:29:46 -0200
+Message-Id: <1290202186-25352-8-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1290202186-25352-1-git-send-email-acme@infradead.org>
 References: <1290202186-25352-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-This patch adds a new -A option to perf stat. If specified then perf stat does
-not aggregate counts across all monitored CPUs in system-wide mode, i.e., when
-using -a. This option is not supported in per-thread mode.
+The equivalent to this SystemTAP script:
 
-Being able to get a per-cpu breakdown is useful to detect imbalances between
-CPUs when running a uniform workload than spans all monitored CPUs.
+http://sourceware.org/systemtap/wiki/WSFutexContention
 
-The second version corrects the missing cpumap[] support, so that it works when
-the -C option is used.
+[root@doppio ~]# perf trace futex-contention
+Press control+C to stop and show the summary
+^Cnpviewer.bin[15242] lock 7f0a8be19104 contended 29 times, 72806 avg ns
+npviewer.bin[15242] lock 7f0a8be19130 contended 2 times, 1355 avg ns
+synergyc[17245] lock f127f4 contended 1 times, 1830569 avg ns
+firefox[15116] lock 7f2b7238af0c contended 168 times, 1230390 avg ns
+synergyc[17245] lock f2fc20 contended 1 times, 33149 avg ns
+npviewer.bin[15255] lock 7f0a8be19074 contended 155 times, 73047 avg ns
+npviewer.bin[15255] lock 7f0a8be190a0 contended 127 times, 7088 avg ns
+synergyc[17247] lock f12854 contended 1 times, 46741 avg ns
+synergyc[17245] lock f12610 contended 1 times, 7358 avg ns
+[root@doppio ~]#
 
-The third version fixes a missing cpumap[] in print_counter() and removes a
-stray patch in builtin-trace.c.
-
-Examples on a 4-way system:
-
-# perf stat -a   -e cycles,instructions -- sleep 1
- Performance counter stats for 'sleep 1':
-         9592808135  cycles
-         3490380006  instructions             #      0.364 IPC
-        1.001584632  seconds time elapsed
-
-# perf stat -a -A -e cycles,instructions -- sleep 1
- Performance counter stats for 'sleep 1':
-CPU0            2398163767  cycles
-CPU1            2398180817  cycles
-CPU2            2398217115  cycles
-CPU3            2398247483  cycles
-CPU0             872282046  instructions             #      0.364 IPC
-CPU1             873481776  instructions             #      0.364 IPC
-CPU2             872638127  instructions             #      0.364 IPC
-CPU3             872437789  instructions             #      0.364 IPC
-        1.001556052  seconds time elapsed
-
-Cc: David S. Miller <davem@davemloft.net>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Robert Richter <robert.richter@amd.com>
-LKML-Reference: <4ce257b5.1e07e30a.7b6b.3aa9@mx.google.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-stat.txt |    5 +
- tools/perf/builtin-stat.c              |  169 +++++++++++++++++++++++++++-----
- 2 files changed, 149 insertions(+), 25 deletions(-)
+ .../python/Perf-Trace-Util/lib/Perf/Trace/Util.py  |   18 +++++++
+ .../scripts/python/bin/futex-contention-record     |    2 +
+ .../scripts/python/bin/futex-contention-report     |    4 ++
+ tools/perf/scripts/python/futex-contention.py      |   50 ++++++++++++++++++++
+ 4 files changed, 74 insertions(+), 0 deletions(-)
+ create mode 100644 tools/perf/scripts/python/bin/futex-contention-record
+ create mode 100644 tools/perf/scripts/python/bin/futex-contention-report
+ create mode 100644 tools/perf/scripts/python/futex-contention.py
 
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 4b3a2d4..c405bca 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -53,6 +53,11 @@ comma-sperated list with no space: 0,1. Ranges of CPUs are specified with -: 0-2
- In per-thread mode, this option is ignored. The -a option is still necessary
- to activate system-wide monitoring. Default is to count on all CPUs.
+diff --git a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/Util.py b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/Util.py
+index 99ff1b7..13cc02b 100644
+--- a/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/Util.py
++++ b/tools/perf/scripts/python/Perf-Trace-Util/lib/Perf/Trace/Util.py
+@@ -8,6 +8,12 @@
  
-+-A::
-+--no-aggr::
-+Do not aggregate counts across all monitored CPUs in system-wide mode (-a).
-+This option is only valid in system-wide mode.
+ import errno, os
+ 
++FUTEX_WAIT = 0
++FUTEX_WAKE = 1
++FUTEX_PRIVATE_FLAG = 128
++FUTEX_CLOCK_REALTIME = 256
++FUTEX_CMD_MASK = ~(FUTEX_PRIVATE_FLAG | FUTEX_CLOCK_REALTIME)
 +
- EXAMPLES
- --------
+ NSECS_PER_SEC    = 1000000000
  
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index a6b4d44..b3e568f 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -75,6 +75,7 @@ static int			run_idx				=  0;
- static int			run_count			=  1;
- static bool			no_inherit			= false;
- static bool			scale				=  true;
-+static bool			no_aggr				= false;
- static pid_t			target_pid			= -1;
- static pid_t			target_tid			= -1;
- static pid_t			*all_tids			=  NULL;
-@@ -89,6 +90,12 @@ static int			*fd[MAX_NR_CPUS][MAX_COUNTERS];
+ def avg(total, n):
+@@ -26,6 +32,18 @@ def nsecs_str(nsecs):
+     str = "%5u.%09u" % (nsecs_secs(nsecs), nsecs_nsecs(nsecs)),
+     return str
  
- static int			event_scaled[MAX_COUNTERS];
- 
-+static struct {
-+	u64 val;
-+	u64 ena;
-+	u64 run;
-+} cpu_counts[MAX_NR_CPUS][MAX_COUNTERS];
++def add_stats(dict, key, value):
++	if not dict.has_key(key):
++		dict[key] = (value, value, value, 1)
++	else:
++		min, max, avg, count = dict[key]
++		if value < min:
++			min = value
++		if value > max:
++			max = value
++		avg = (avg + value) / 2
++		dict[key] = (min, max, avg, count + 1)
 +
- static volatile int done = 0;
+ def clear_term():
+     print("\x1b[H\x1b[2J")
  
- struct stats
-@@ -136,10 +143,10 @@ static double stddev_stats(struct stats *stats)
- }
- 
- struct stats			event_res_stats[MAX_COUNTERS][3];
--struct stats			runtime_nsecs_stats;
-+struct stats			runtime_nsecs_stats[MAX_NR_CPUS];
-+struct stats			runtime_cycles_stats[MAX_NR_CPUS];
-+struct stats			runtime_branches_stats[MAX_NR_CPUS];
- struct stats			walltime_nsecs_stats;
--struct stats			runtime_cycles_stats;
--struct stats			runtime_branches_stats;
- 
- #define MATCH_EVENT(t, c, counter)			\
- 	(attrs[counter].type == PERF_TYPE_##t &&	\
-@@ -205,8 +212,9 @@ static inline int nsec_counter(int counter)
- 
- /*
-  * Read out the results of a single counter:
-+ * aggregate counts across CPUs in system-wide mode
-  */
--static void read_counter(int counter)
-+static void read_counter_aggr(int counter)
- {
- 	u64 count[3], single_count[3];
- 	int cpu;
-@@ -264,11 +272,58 @@ static void read_counter(int counter)
- 	 * Save the full runtime - to allow normalization during printout:
- 	 */
- 	if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter))
--		update_stats(&runtime_nsecs_stats, count[0]);
-+		update_stats(&runtime_nsecs_stats[0], count[0]);
- 	if (MATCH_EVENT(HARDWARE, HW_CPU_CYCLES, counter))
--		update_stats(&runtime_cycles_stats, count[0]);
-+		update_stats(&runtime_cycles_stats[0], count[0]);
- 	if (MATCH_EVENT(HARDWARE, HW_BRANCH_INSTRUCTIONS, counter))
--		update_stats(&runtime_branches_stats, count[0]);
-+		update_stats(&runtime_branches_stats[0], count[0]);
-+}
+diff --git a/tools/perf/scripts/python/bin/futex-contention-record b/tools/perf/scripts/python/bin/futex-contention-record
+new file mode 100644
+index 0000000..5ecbb43
+--- /dev/null
++++ b/tools/perf/scripts/python/bin/futex-contention-record
+@@ -0,0 +1,2 @@
++#!/bin/bash
++perf record -a -e syscalls:sys_enter_futex -e syscalls:sys_exit_futex $@
+diff --git a/tools/perf/scripts/python/bin/futex-contention-report b/tools/perf/scripts/python/bin/futex-contention-report
+new file mode 100644
+index 0000000..c826813
+--- /dev/null
++++ b/tools/perf/scripts/python/bin/futex-contention-report
+@@ -0,0 +1,4 @@
++#!/bin/bash
++# description: futext contention measurement
 +
-+/*
-+ * Read out the results of a single counter:
-+ * do not aggregate counts across CPUs in system-wide mode
-+ */
-+static void read_counter(int counter)
-+{
-+	u64 count[3];
-+	int cpu;
-+	size_t res, nv;
++perf trace $@ -s "$PERF_EXEC_PATH"/scripts/python/futex-contention.py
+diff --git a/tools/perf/scripts/python/futex-contention.py b/tools/perf/scripts/python/futex-contention.py
+new file mode 100644
+index 0000000..11e70a3
+--- /dev/null
++++ b/tools/perf/scripts/python/futex-contention.py
+@@ -0,0 +1,50 @@
++# futex contention
++# (c) 2010, Arnaldo Carvalho de Melo <acme@redhat.com>
++# Licensed under the terms of the GNU GPL License version 2
++#
++# Translation of:
++#
++# http://sourceware.org/systemtap/wiki/WSFutexContention
++#
++# to perf python scripting.
++#
++# Measures futex contention
 +
-+	count[0] = count[1] = count[2] = 0;
++import os, sys
++sys.path.append(os.environ['PERF_EXEC_PATH'] + '/scripts/python/Perf-Trace-Util/lib/Perf/Trace')
++from Util import *
 +
-+	nv = scale ? 3 : 1;
++process_names = {}
++thread_thislock = {}
++thread_blocktime = {}
 +
-+	for (cpu = 0; cpu < nr_cpus; cpu++) {
++lock_waits = {} # long-lived stats on (tid,lock) blockage elapsed time
++process_names = {} # long-lived pid-to-execname mapping
 +
-+		if (fd[cpu][counter][0] < 0)
-+			continue;
++def syscalls__sys_enter_futex(event, ctxt, cpu, s, ns, tid, comm,
++			      nr, uaddr, op, val, utime, uaddr2, val3):
++	cmd = op & FUTEX_CMD_MASK
++	if cmd != FUTEX_WAIT:
++		return # we don't care about originators of WAKE events
 +
-+		res = read(fd[cpu][counter][0], count, nv * sizeof(u64));
++	process_names[tid] = comm
++	thread_thislock[tid] = uaddr
++	thread_blocktime[tid] = nsecs(s, ns)
 +
-+		assert(res == nv * sizeof(u64));
++def syscalls__sys_exit_futex(event, ctxt, cpu, s, ns, tid, comm,
++			     nr, ret):
++	if thread_blocktime.has_key(tid):
++		elapsed = nsecs(s, ns) - thread_blocktime[tid]
++		add_stats(lock_waits, (tid, thread_thislock[tid]), elapsed)
++		del thread_blocktime[tid]
++		del thread_thislock[tid]
 +
-+		close(fd[cpu][counter][0]);
-+		fd[cpu][counter][0] = -1;
++def trace_begin():
++	print "Press control+C to stop and show the summary"
 +
-+		if (scale) {
-+			if (count[2] == 0) {
-+				count[0] = 0;
-+			} else if (count[2] < count[1]) {
-+				count[0] = (unsigned long long)
-+				((double)count[0] * count[1] / count[2] + 0.5);
-+			}
-+		}
-+		cpu_counts[cpu][counter].val = count[0]; /* scaled count */
-+		cpu_counts[cpu][counter].ena = count[1];
-+		cpu_counts[cpu][counter].run = count[2];
++def trace_end():
++	for (tid, lock) in lock_waits:
++		min, max, avg, count = lock_waits[tid, lock]
++		print "%s[%d] lock %x contended %d times, %d avg ns" % \
++		      (process_names[tid], tid, lock, count, avg)
 +
-+		if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter))
-+			update_stats(&runtime_nsecs_stats[cpu], count[0]);
-+		if (MATCH_EVENT(HARDWARE, HW_CPU_CYCLES, counter))
-+			update_stats(&runtime_cycles_stats[cpu], count[0]);
-+		if (MATCH_EVENT(HARDWARE, HW_BRANCH_INSTRUCTIONS, counter))
-+			update_stats(&runtime_branches_stats[cpu], count[0]);
-+	}
- }
- 
- static int run_perf_stat(int argc __used, const char **argv)
-@@ -362,9 +417,13 @@ static int run_perf_stat(int argc __used, const char **argv)
- 
- 	update_stats(&walltime_nsecs_stats, t1 - t0);
- 
--	for (counter = 0; counter < nr_counters; counter++)
--		read_counter(counter);
--
-+	if (no_aggr) {
-+		for (counter = 0; counter < nr_counters; counter++)
-+			read_counter(counter);
-+	} else {
-+		for (counter = 0; counter < nr_counters; counter++)
-+			read_counter_aggr(counter);
-+	}
- 	return WEXITSTATUS(status);
- }
- 
-@@ -377,11 +436,15 @@ static void print_noise(int counter, double avg)
- 			100 * stddev_stats(&event_res_stats[counter][0]) / avg);
- }
- 
--static void nsec_printout(int counter, double avg)
-+static void nsec_printout(int cpu, int counter, double avg)
- {
- 	double msecs = avg / 1e6;
- 
--	fprintf(stderr, " %18.6f  %-24s", msecs, event_name(counter));
-+	if (no_aggr)
-+		fprintf(stderr, "CPU%-4d %18.6f  %-24s",
-+			cpumap[cpu], msecs, event_name(counter));
-+	else
-+		fprintf(stderr, " %18.6f  %-24s", msecs, event_name(counter));
- 
- 	if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter)) {
- 		fprintf(stderr, " # %10.3f CPUs ",
-@@ -389,33 +452,41 @@ static void nsec_printout(int counter, double avg)
- 	}
- }
- 
--static void abs_printout(int counter, double avg)
-+static void abs_printout(int cpu, int counter, double avg)
- {
- 	double total, ratio = 0.0;
-+	char cpustr[16] = { '\0', };
-+
-+	if (no_aggr)
-+		sprintf(cpustr, "CPU%-4d", cpumap[cpu]);
-+	else
-+		cpu = 0;
- 
- 	if (big_num)
--		fprintf(stderr, " %'18.0f  %-24s", avg, event_name(counter));
-+		fprintf(stderr, "%s %'18.0f  %-24s",
-+			cpustr, avg, event_name(counter));
- 	else
--		fprintf(stderr, " %18.0f  %-24s", avg, event_name(counter));
-+		fprintf(stderr, "%s %18.0f  %-24s",
-+			cpustr, avg, event_name(counter));
- 
- 	if (MATCH_EVENT(HARDWARE, HW_INSTRUCTIONS, counter)) {
--		total = avg_stats(&runtime_cycles_stats);
-+		total = avg_stats(&runtime_cycles_stats[cpu]);
- 
- 		if (total)
- 			ratio = avg / total;
- 
- 		fprintf(stderr, " # %10.3f IPC  ", ratio);
- 	} else if (MATCH_EVENT(HARDWARE, HW_BRANCH_MISSES, counter) &&
--			runtime_branches_stats.n != 0) {
--		total = avg_stats(&runtime_branches_stats);
-+			runtime_branches_stats[cpu].n != 0) {
-+		total = avg_stats(&runtime_branches_stats[cpu]);
- 
- 		if (total)
- 			ratio = avg * 100 / total;
- 
- 		fprintf(stderr, " # %10.3f %%    ", ratio);
- 
--	} else if (runtime_nsecs_stats.n != 0) {
--		total = avg_stats(&runtime_nsecs_stats);
-+	} else if (runtime_nsecs_stats[cpu].n != 0) {
-+		total = avg_stats(&runtime_nsecs_stats[cpu]);
- 
- 		if (total)
- 			ratio = 1000.0 * avg / total;
-@@ -426,8 +497,9 @@ static void abs_printout(int counter, double avg)
- 
- /*
-  * Print out the results of a single counter:
-+ * aggregated counts in system-wide mode
-  */
--static void print_counter(int counter)
-+static void print_counter_aggr(int counter)
- {
- 	double avg = avg_stats(&event_res_stats[counter][0]);
- 	int scaled = event_scaled[counter];
-@@ -439,9 +511,9 @@ static void print_counter(int counter)
- 	}
- 
- 	if (nsec_counter(counter))
--		nsec_printout(counter, avg);
-+		nsec_printout(-1, counter, avg);
- 	else
--		abs_printout(counter, avg);
-+		abs_printout(-1, counter, avg);
- 
- 	print_noise(counter, avg);
- 
-@@ -458,6 +530,42 @@ static void print_counter(int counter)
- 	fprintf(stderr, "\n");
- }
- 
-+/*
-+ * Print out the results of a single counter:
-+ * does not use aggregated count in system-wide
-+ */
-+static void print_counter(int counter)
-+{
-+	u64 ena, run, val;
-+	int cpu;
-+
-+	for (cpu = 0; cpu < nr_cpus; cpu++) {
-+		val = cpu_counts[cpu][counter].val;
-+		ena = cpu_counts[cpu][counter].ena;
-+		run = cpu_counts[cpu][counter].run;
-+		if (run == 0 || ena == 0) {
-+			fprintf(stderr, "CPU%-4d %18s  %-24s", cpumap[cpu],
-+					"<not counted>", event_name(counter));
-+
-+			fprintf(stderr, "\n");
-+			continue;
-+		}
-+
-+		if (nsec_counter(counter))
-+			nsec_printout(cpu, counter, val);
-+		else
-+			abs_printout(cpu, counter, val);
-+
-+		print_noise(counter, 1.0);
-+
-+		if (run != ena) {
-+			fprintf(stderr, "  (scaled from %.2f%%)",
-+					100.0 * run / ena);
-+		}
-+		fprintf(stderr, "\n");
-+	}
-+}
-+
- static void print_stat(int argc, const char **argv)
- {
- 	int i, counter;
-@@ -480,8 +588,13 @@ static void print_stat(int argc, const char **argv)
- 		fprintf(stderr, " (%d runs)", run_count);
- 	fprintf(stderr, ":\n\n");
- 
--	for (counter = 0; counter < nr_counters; counter++)
--		print_counter(counter);
-+	if (no_aggr) {
-+		for (counter = 0; counter < nr_counters; counter++)
-+			print_counter(counter);
-+	} else {
-+		for (counter = 0; counter < nr_counters; counter++)
-+			print_counter_aggr(counter);
-+	}
- 
- 	fprintf(stderr, "\n");
- 	fprintf(stderr, " %18.9f  seconds time elapsed",
-@@ -545,6 +658,8 @@ static const struct option options[] = {
- 		    "print large numbers with thousands\' separators"),
- 	OPT_STRING('C', "cpu", &cpu_list, "cpu",
- 		    "list of cpus to monitor in system-wide"),
-+	OPT_BOOLEAN('A', "no-aggr", &no_aggr,
-+		    "disable CPU count aggregation"),
- 	OPT_END()
- };
- 
-@@ -562,6 +677,10 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	if (run_count <= 0)
- 		usage_with_options(stat_usage, options);
- 
-+	/* no_aggr is for system-wide only */
-+	if (no_aggr && !system_wide)
-+		usage_with_options(stat_usage, options);
-+
- 	/* Set attrs and nr_counters if no event is selected and !null_run */
- 	if (!null_run && !nr_counters) {
- 		memcpy(attrs, default_attrs, sizeof(default_attrs));
 -- 
 1.6.2.5
 
