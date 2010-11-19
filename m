@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384Ab0KSDc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 22:32:56 -0500
-Received: from mail-px0-f174.google.com ([209.85.212.174]:52012 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab0KSDcy (ORCPT
+	id S1752442Ab0KSDmc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 22:42:32 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:35819 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751209Ab0KSDmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 22:32:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=OCz0NKzXDrDuq/sxxdy10MbOoBuiFtaIJGjH3qP1tW6MIkEY/t+Tg1Bw74JGZlWw3z
-         rEJ/GFkYEnqfColOzBJkuMvNfiLc4Q5QLUjGSv+Wpr/PrsxOUHdI/hBhkjucPAhVOevf
-         riBfUCIQ0+QKjHqWmyCMyXlMNtlShwgP18PC4=
-Message-ID: <4CE5EFE0.8050604@gmail.com>
-Date: Thu, 18 Nov 2010 19:32:48 -0800
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Thu, 18 Nov 2010 22:42:31 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBACOA5UxLd/sX/2dsb2JhbAAHgz3MYJECgSKDNnMEhFqLEA
+X-IronPort-AV: E=Sophos;i="4.59,221,1288584000"; 
+   d="scan'208";a="82945886"
+Message-ID: <4CE5F21F.7010806@teksavvy.com>
+Date: Thu, 18 Nov 2010 22:42:23 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [Bug #19392] WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475
- ath5k_bss_info_changed+0x44/0x168 [ath5k]()
-References: <tTUH_XeInOH.A.dMF.c3b5MB@chimera> <t78YtCSuOqN.A.IiH.F5b5MB@chimera>
-In-Reply-To: <t78YtCSuOqN.A.IiH.F5b5MB@chimera>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Greg Freemyer <greg.freemyer@gmail.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>, tytso@mit.edu,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>	<20101118130630.GJ6178@parisc-linux.org>	<20101118134804.GN5618@dhcp231-156.rdu.redhat.com>	<20101118141957.GK6178@parisc-linux.org>	<20101118142918.GA18510@infradead.org>	<1290100750.3041.72.camel@mulgrave.site>	<x494obe4kd5.fsf@segfault.boston.devel.redhat.com>	<1290102098.3041.77.camel@mulgrave.site>	<AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>	<4CE59E57.2090009@teksavvy.com> <yq1r5eiw5os.fsf@sermon.lab.mkp.net>	<4CE5C616.7070706@teksavvy.com> <yq1eiaiw0a7.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1eiaiw0a7.fsf@sermon.lab.mkp.net>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2010 03:53 PM, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.35 and 2.6.36.
+On 10-11-18 08:49 PM, Martin K. Petersen wrote:
+> So assuming we walk the filesystem to reclaim space on ATA SSDs on a
+> weekly basis (since that's the only sane approach):
 >
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
-> be listed and let the tracking team know (either way).
->
->
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19392
-> Subject		: WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475 ath5k_bss_info_changed+0x44/0x168 [ath5k]()
-> Submitter	: Justin Mattock<justinmattock@gmail.com>
-> Date		: 2010-09-28 22:30 (52 days old)
-> Message-ID	:<AANLkTim5WCGKPvEkOkO_YnMF9pg8mvLfQoFBNUFpfa_k@mail.gmail.com>
-> References	: http://marc.info/?l=linux-kernel&m=128571307018635&w=2
->
->
->
+>         What is the performance impact of not coalescing discontiguous
+>         block ranges when cron scrubs your /home at 4am Sunday morning?
 
+In the case of FITRIM, you're right: the performance impact
+probably doesn't matter much for a 4am cronjob.
 
-yep still there..
+But a lot of people currently (at least) prefer to run it manually,
+and they don't want it to take forever.
 
-Justin P. Mattock
+Though that's still not the primary worry:  each TRIM seems to trigger
+a flash erase cycle (or cycles) on the most common SSDs on the market,
+including anything Indilinx-based and as far as I can tell also for
+anything SandForce based.  That's probably 70% of the SSDs out there today.
+
+And I'm very concerned about premature wear -- MLC is only for 10000 cycles (avg).
+
+Also, the current one-range-at-a-time interface is just not correct
+for the majority of devices out there:  they are SATA, not some obscure
+enterprise-only one-range-at-a-time thing.  We need an implementation
+that reflects real-life for uses other than data centres.
+
+If nobody else does it, I'll probably implement it correctly this winter.
+But it would really be better for a real filesystem/DM person to do it.
+
+Thanks for hanging in there this far, though!
+
+Cheers
