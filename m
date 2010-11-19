@@ -1,95 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab0KSBdL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 20:33:11 -0500
-Received: from thunk.org ([69.25.196.29]:60121 "EHLO thunker.thunk.org"
+	id S1760202Ab0KSBdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 20:33:25 -0500
+Received: from mga02.intel.com ([134.134.136.20]:13477 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750982Ab0KSBdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 20:33:09 -0500
-Date: Thu, 18 Nov 2010 20:33:01 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
-        Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
- super_operation
-Message-ID: <20101119013301.GU3290@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Mark Lord <kernel@teksavvy.com>,
-	James Bottomley <James.Bottomley@suse.de>,
-	Greg Freemyer <greg.freemyer@gmail.com>,
-	Jeff Moyer <jmoyer@redhat.com>,
-	Christoph Hellwig <hch@infradead.org>,
-	Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
-	Lukas Czerner <lczerner@redhat.com>, linux-ext4@vger.kernel.org,
-	linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	sandeen@redhat.com
-References: <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
- <20101118141957.GK6178@parisc-linux.org>
- <20101118142918.GA18510@infradead.org>
- <1290100750.3041.72.camel@mulgrave.site>
- <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
- <1290102098.3041.77.camel@mulgrave.site>
- <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>
- <4CE59E57.2090009@teksavvy.com>
- <1290117009.11007.42.camel@mulgrave.site>
- <4CE5A386.7000105@teksavvy.com>
+	id S1758363Ab0KSBdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 20:33:23 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,220,1288594800"; 
+   d="scan'208";a="575348203"
+Date: Fri, 19 Nov 2010 08:12:18 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        lethal@linux-sh.org, ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [1/8,v3] NUMA Hotplug Emulator: add function to hide memory
+ region via e820 table.
+Message-ID: <20101119001218.GA3327@shaohui>
+References: <20101117020759.016741414@intel.com>
+ <20101117021000.479272928@intel.com>
+ <alpine.DEB.2.00.1011162354390.16875@chino.kir.corp.google.com>
+ <20101118092052.GE2408@shaohui>
+ <alpine.DEB.2.00.1011181313140.26680@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CE5A386.7000105@teksavvy.com>
+In-Reply-To: <alpine.DEB.2.00.1011181313140.26680@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >
-> >Before we go gung ho on this, there's no evidence that N discontiguous
-> >ranges in one command are any better than the ranges sent N times ...
-> >the same amount of erase overhead gets sent on SSDs.
+On Thu, Nov 18, 2010 at 01:16:07PM -0800, David Rientjes wrote:
+> On Thu, 18 Nov 2010, Shaohui Zheng wrote:
 > 
-> No, we do have evidence:  execution time of the TRIM commands on the SSD.
+> > > > Index: linux-hpe4/arch/x86/kernel/e820.c
+> > > > ===================================================================
+> > > > --- linux-hpe4.orig/arch/x86/kernel/e820.c	2010-11-15 17:13:02.483461667 +0800
+> > > > +++ linux-hpe4/arch/x86/kernel/e820.c	2010-11-15 17:13:07.083461581 +0800
+> > > > @@ -971,6 +971,7 @@
+> > > >  }
+> > > >  
+> > > >  static int userdef __initdata;
+> > > > +static u64 max_mem_size __initdata = ULLONG_MAX;
+> > > >  
+> > > >  /* "mem=nopentium" disables the 4MB page tables. */
+> > > >  static int __init parse_memopt(char *p)
+> > > > @@ -989,12 +990,28 @@
+> > > >  
+> > > >  	userdef = 1;
+> > > >  	mem_size = memparse(p, &p);
+> > > > -	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
+> > > > +	e820_remove_range(mem_size, max_mem_size - mem_size, E820_RAM, 1);
+> > > > +	max_mem_size = mem_size;
+> > > >  
+> > > >  	return 0;
+> > > >  }
+> > > 
+> > > This needs memmap= support as well, right?
+> > we did not do the testing after combine both memmap and numa=hide paramter, 
+> > I think that the result should similar with mem=XX, they both remove a memory
+> > region from the e820 table.
+> > 
 > 
-> The one-range-at-a-time is incredibly slow compared to multiple
-> ranges at a time.  That slowness comes from somewhere, with about
-> 99.9% certainty that it is due to the drive performing slow flash
-> erase cycles.
+> You've modified the parser for mem= but not memmap= so the change needs 
+> additional support for the latter.
+> 
 
-Mark, I think you are over-generalizing here.  You have observed with
-some number of flash drives --- maybe only one, but I don't know that
-for sure --- that TRIM is slow.  Even if we grant that you are correct
-in your conclusion that it is because the drive is doing slow flash
-erase cycles (and I don't completely accept that; I haven't seen your
-your measurements since we know that any kind of command that requires
-a queue drain/flush before it can execute is going to be slow, and I
-don't know what kind of _slow_ you are observing).
+the parser for mem= is not modified, the changed parser is numa=, I add a addtional
+option numa=hide=.
 
-But even if we *do* grant that you've seen one disk, or even a lot of
-disks which is doing something stupid, that just means that their
-manufacturer has some idiotic engineers.  It does not follow that all
-SSD's, or thin-provisioned drives, or other devices implementing the
-the ATA TRIM command, will do so in an incompetent way.
+>From current discussion, numa=hide= interface should be removed, we will use mem=
+to hide memory.
 
-If you look a the the T13 definition of TRIM, it is just a hint that
-the contents of the block range do not _have_ to be preserved.  It
-does not say that they *must* be erased.  This is not a security erase
-command.  In fact, it is perfectly reasonable for the TRIM command to
-store state in volatile storage, and the information of which blocks
-have been TRIM gets discarded on a power failure.
+> > > >  early_param("mem", parse_memopt);
+> > > >  
+> > > > +#ifdef CONFIG_NODE_HOTPLUG_EMU
+> > > > +u64 __init e820_hide_mem(u64 mem_size)
+> > > > +{
+> > > > +	u64 start, end_pfn;
+> > > > +
+> > > > +	userdef = 1;
+> > > > +	end_pfn = e820_end_of_ram_pfn();
+> > > > +	start = (end_pfn << PAGE_SHIFT) - mem_size;
+> > > > +	e820_remove_range(start, max_mem_size - start, E820_RAM, 1);
+> > > > +	max_mem_size = start;
+> > > > +
+> > > > +	return start;
+> > > > +}
+> > > > +#endif
+> > > 
+> > > This doesn't have any sanity checking for whether e820_remove_range() will 
+> > > leave any significant amount of memory behind so the kernel will even boot 
+> > > (probably should have a guaranteed FAKE_NODE_MIN_SIZE left behind?).
+> > 
+> > it should not be checked here, it should be checked by the function who call
+> >  e820_hide_mem, and truncate the mem_size with FAKE_NODE_MIN_SIZE.
+> > 
+> 
+> Your patchset doesn't do that, I'm talking specifically about the amount 
+> of memory left behind so that the kernel at least still boots.  That seems 
+> to be a function of e820_hide_mem() to do some sanity checking so we 
+> actually still get a kernel rather than the responsibility of the 
+> command-line parser.
 
-So if SSD's are doing a full flash erase cycle for each TRIM, that may
-not necessarily be a good idea.  I accept that there may be some
-incompetent implementations out there.  But I don't think this means
-we should assume that _all_ implementations are incompetent.  It does
-mean, though, that we can't turn any of these features on by default.
-But that's something we know already.
+How much memory is enough to make sure the kernel can still boot, it is very 
+hard to measure. it is almost impossible to get the exact data. I try to leave very 
+few memory to kernel(hide most memory with numa=hide), it cause a panic directly.
 
-					- Ted
+I have no idea about it, do you have any suggestions?
 
+Another example,  
+I try to add paramter "mem=1M", it compains "Select item can not fit into memory", 
+and I did not find where the error message comes from, I guess that it should 
+be printed by grub.
