@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab0KSUcV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 15:32:21 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38161 "EHLO ogre.sisk.pl"
+	id S1755510Ab0KSUdI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 15:33:08 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:38178 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752953Ab0KSUcU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 15:32:20 -0500
+	id S1753301Ab0KSUdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 15:33:06 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Borislav Petkov <bp@amd64.org>
-Subject: Re: [Bug #22552] AMD boot freeze bisected to b126b4703afa4010b161784a43650337676dd03b
-Date: Fri, 19 Nov 2010 21:31:33 +0100
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [Bug #22562] Regression in 2.6.37-rc1 - logs spammed with "unable to enumerate USB port" - bisected to commit 3df7169e
+Date: Fri, 19 Nov 2010 21:32:27 +0100
 User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-rjw+; KDE/4.4.4; x86_64; ; )
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        Bjorn Helgaas <bjorn.helgaas@hp.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-References: <sKkKYVppECN.A.KhC.Phb5MB@chimera> <ATV3yiK8i4C.A.xhE.Pib5MB@chimera> <20101119044815.GA16472@aftab>
-In-Reply-To: <20101119044815.GA16472@aftab>
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>
+References: <sKkKYVppECN.A.KhC.Phb5MB@chimera> <ATV3yiK8i4C.A.wXE.Nib5MB@chimera> <4CE5C2B3.2070906@lwfinger.net>
+In-Reply-To: <4CE5C2B3.2070906@lwfinger.net>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011192131.34178.rjw@sisk.pl>
+Message-Id: <201011192132.27249.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 19, 2010, Borislav Petkov wrote:
-> On Thu, Nov 18, 2010 at 06:42:45PM -0500, Rafael J. Wysocki wrote:
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22552
-> > Subject		: AMD boot freeze bisected to b126b4703afa4010b161784a43650337676dd03b
-> > Submitter	: Borislav Petkov <bp@amd64.org>
-> > Date		: 2010-11-02 17:03 (17 days old)
-> > First-Bad-Commit: http://git.kernel.org/linus/b126b4703afa4010b161784a43650337676dd03b
-> > Message-ID	: <20101102170335.GC24927@aftab>
-> > References	: http://marc.info/?l=linux-kernel&m=128871752109913&w=2
+On Friday, November 19, 2010, Larry Finger wrote:
+> On 11/18/2010 05:42 PM, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.36.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=22562
+> > Subject		: Regression in 2.6.37-rc1 - logs spammed with "unable to enumerate USB port" - bisected to commit 3df7169e
+> > Submitter	: Larry Finger <Larry.Finger@lwfinger.net>
+> > Date		: 2010-11-02 22:32 (17 days old)
+> > First-Bad-Commit: http://git.kernel.org/linus/3df7169e73fc1d71a39cffeacc969f6840cdf52b
+> > Message-ID	: <4CD09166.4060202@lwfinger.net>
+> > References	: http://marc.info/?l=linux-kernel&m=128873713207906&w=2
 > 
-> Also-tracked-by	: https://bugzilla.kernel.org/show_bug.cgi?id=22062
-> Fixed-by	: 82e3e767c21fef2b1b38868e20eb4e470a1e38e3
-> 
-> :-)
+> This bug has not yet been fixed.
 
-Thanks, closed.
+Thanks for the update.
 
 Rafael
