@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755696Ab0KSQCC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:02:02 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52741 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755345Ab0KSQB7 (ORCPT
+	id S1755384Ab0KSP63 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 10:58:29 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:31934 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755321Ab0KSP60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:01:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=QOo6zpPA3C82OtUQqUwnXG991NE8zLIZXsi/XBoVzcA9pdcEyxKEnGMX3L31XQHPuB
-         s0zNLUPUUx0VDgSqFnDzEMo++IRZuwW6+yvKKUobLTRI938bXXpUeO2IpIBWnbm6eO+5
-         D+23NjmYHJ3vew7tJoG35Eeq6leGs6ssOugnk=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikRHuaCpaROtty6X_Oe6JixzgcbVsxHxvtsu+UV@mail.gmail.com>
-References: <20101104164401.GC10656@sundance.ccs.neu.edu>
-	<4CD3CE29.2010105@kernel.org>
-	<20101106053204.GB12449@count0.beaverton.ibm.com>
-	<20101106204008.GA31077@sundance.ccs.neu.edu>
-	<4CD5D99A.8000402@cs.columbia.edu>
-	<20101107184927.GF31077@sundance.ccs.neu.edu>
-	<4CD72150.9070705@cs.columbia.edu>
-	<4CE3C334.9080401@kernel.org>
-	<20101117153902.GA1155@hallyn.com>
-	<4CE3F8D1.10003@kernel.org>
-	<20101119041045.GC24031@hallyn.com>
-	<4CE683E1.6010500@kernel.org>
-	<04F4899E-B5C7-4BAF-8F2F-05D507A91408@parallels.com>
-	<4CE698C5.5060806@kernel.org>
-	<AANLkTikRHuaCpaROtty6X_Oe6JixzgcbVsxHxvtsu+UV@mail.gmail.com>
-Date: Fri, 19 Nov 2010 18:01:57 +0200
-Message-ID: <AANLkTikqpv8j-H15qjyhy7RJ92wNsWzeFykVMFKypt13@mail.gmail.com>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kirill Korotaev <dev@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Kapil Arya <kapil@ccs.neu.edu>, Gene Cooperman <gene@ccs.neu.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Containers <containers@lists.osdl.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 19 Nov 2010 10:58:26 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Fri, 19 Nov 2010 16:57:59 +0100
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [RFCv6 01/13] lib: rbtree: rb_root_init() function added
+In-reply-to: <cover.1290172312.git.m.nazarewicz@samsung.com>
+To: mina86@mina86.com
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Johan Mossberg <johan.xx.mossberg@stericsson.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Marcus LORENTZON <marcus.xm.lorentzon@stericsson.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <pawel@osciak.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>, dipankar@in.ibm.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org
+Message-id: <e4b403b4d7ab381f1c7bc4ac6bbb6266115b7c88.1290172312.git.m.nazarewicz@samsung.com>
+X-Mailer: git-send-email 1.7.2.3
+References: <cover.1290172312.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 6:00 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
->>> - setting different statistics counters (like netdev stats etc.)
->>> and so on...
->>
->> Why would this matter?
->
-> Because you'll introduce million stupid interfaces not interesting to
-> anyone but C/R.
+Added a rb_root_init() function which initialises a rb_root
+structure as a red-black tree with at most one element.  The
+rationale is that using rb_root_init(root, node) is more
+straightforward and cleaner then first initialising and
+empty tree followed by an insert operation.
 
-Just like CLONE_SET_PID.
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ include/linux/rbtree.h |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/rbtree.h b/include/linux/rbtree.h
+index 7066acb..5b6dc66 100644
+--- a/include/linux/rbtree.h
++++ b/include/linux/rbtree.h
+@@ -130,6 +130,17 @@ static inline void rb_set_color(struct rb_node *rb, int color)
+ }
+ 
+ #define RB_ROOT	(struct rb_root) { NULL, }
++
++static inline void rb_root_init(struct rb_root *root, struct rb_node *node)
++{
++	root->rb_node = node;
++	if (node) {
++		node->rb_parent_color = RB_BLACK; /* black, no parent */
++		node->rb_left  = NULL;
++		node->rb_right = NULL;
++	}
++}
++
+ #define	rb_entry(ptr, type, member) container_of(ptr, type, member)
+ 
+ #define RB_EMPTY_ROOT(root)	((root)->rb_node == NULL)
+-- 
+1.7.2.3
+
