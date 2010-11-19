@@ -1,124 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752285Ab0KSI7J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 03:59:09 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:58990 "EHLO song.cn.fujitsu.com"
+	id S1752370Ab0KSI7v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 03:59:51 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:61122 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751998Ab0KSI7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 03:59:06 -0500
-Message-ID: <4CE63D5A.20000@cn.fujitsu.com>
-Date: Fri, 19 Nov 2010 17:03:22 +0800
+	id S1751625Ab0KSI7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 03:59:49 -0500
+Message-ID: <4CE63D83.5010507@cn.fujitsu.com>
+Date: Fri, 19 Nov 2010 17:04:03 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 3/6] KVM: MMU: rename 'reset_host_protection' to 'host_writable'
+Subject: [PATCH v3 4/6] KVM: MMU: remove 'clear_unsync' parameter
 References: <4CE63CF4.80502@cn.fujitsu.com>
 In-Reply-To: <4CE63CF4.80502@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-19 16:59:25,
+ 2010-11-19 17:00:06,
 	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2010-11-19 16:59:26,
-	Serialize complete at 2010-11-19 16:59:26
+ 2010-11-19 17:00:07,
+	Serialize complete at 2010-11-19 17:00:07
 Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Remove it since we can jude it by using sp->unsync
 
-Rename it to fit its sense better 
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/mmu.c         |    8 ++++----
- arch/x86/kvm/paging_tmpl.h |   10 +++++-----
- 2 files changed, 9 insertions(+), 9 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    2 +-
+ arch/x86/kvm/mmu.c              |    8 ++++----
+ arch/x86/kvm/paging_tmpl.h      |    5 ++---
+ 3 files changed, 7 insertions(+), 8 deletions(-)
 
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index b04c0fa..ce8c1e4 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -250,7 +250,7 @@ struct kvm_mmu {
+ 	void (*prefetch_page)(struct kvm_vcpu *vcpu,
+ 			      struct kvm_mmu_page *page);
+ 	int (*sync_page)(struct kvm_vcpu *vcpu,
+-			 struct kvm_mmu_page *sp, bool clear_unsync);
++			 struct kvm_mmu_page *sp);
+ 	void (*invlpg)(struct kvm_vcpu *vcpu, gva_t gva);
+ 	hpa_t root_hpa;
+ 	int root_level;
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 59b5bd2..dc64cd6 100644
+index dc64cd6..d878dd1 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1958,7 +1958,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 		    unsigned pte_access, int user_fault,
- 		    int write_fault, int dirty, int level,
- 		    gfn_t gfn, pfn_t pfn, bool speculative,
--		    bool can_unsync, bool reset_host_protection)
-+		    bool can_unsync, bool host_writable)
+@@ -1156,7 +1156,7 @@ static void nonpaging_prefetch_page(struct kvm_vcpu *vcpu,
+ }
+ 
+ static int nonpaging_sync_page(struct kvm_vcpu *vcpu,
+-			       struct kvm_mmu_page *sp, bool clear_unsync)
++			       struct kvm_mmu_page *sp)
  {
- 	u64 spte, entry = *sptep;
- 	int ret = 0;
-@@ -1985,7 +1985,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 		spte |= kvm_x86_ops->get_mt_mask(vcpu, gfn,
- 			kvm_is_mmio_pfn(pfn));
+ 	return 1;
+ }
+@@ -1286,7 +1286,7 @@ static int __kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 	if (clear_unsync)
+ 		kvm_unlink_unsync_page(vcpu->kvm, sp);
  
--	if (reset_host_protection)
-+	if (host_writable)
- 		spte |= SPTE_HOST_WRITEABLE;
+-	if (vcpu->arch.mmu.sync_page(vcpu, sp, clear_unsync)) {
++	if (vcpu->arch.mmu.sync_page(vcpu, sp)) {
+ 		kvm_mmu_prepare_zap_page(vcpu->kvm, sp, invalid_list);
+ 		return 1;
+ 	}
+@@ -1327,12 +1327,12 @@ static void kvm_sync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
+ 			continue;
  
- 	spte |= (u64)pfn << PAGE_SHIFT;
-@@ -2048,7 +2048,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 			 int user_fault, int write_fault, int dirty,
- 			 int *ptwrite, int level, gfn_t gfn,
- 			 pfn_t pfn, bool speculative,
--			 bool reset_host_protection)
-+			 bool host_writable)
- {
- 	int was_rmapped = 0;
- 	int rmap_count;
-@@ -2083,7 +2083,7 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 
- 	if (set_spte(vcpu, sptep, pte_access, user_fault, write_fault,
- 		      dirty, level, gfn, pfn, speculative, true,
--		      reset_host_protection)) {
-+		      host_writable)) {
- 		if (write_fault)
- 			*ptwrite = 1;
- 		kvm_mmu_flush_tlb(vcpu);
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index ca0e5e8..57619ed 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -329,7 +329,7 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 		return;
- 	kvm_get_pfn(pfn);
- 	/*
--	 * we call mmu_set_spte() with reset_host_protection = true beacuse that
-+	 * we call mmu_set_spte() with host_writable = true beacuse that
- 	 * vcpu->arch.update_pte.pfn was fetched from get_user_pages(write = 1).
- 	 */
- 	mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
-@@ -744,7 +744,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 			    bool clear_unsync)
- {
- 	int i, offset, nr_present;
--	bool reset_host_protection;
-+	bool host_writable;
- 	gpa_t first_pte_gpa;
- 
- 	offset = nr_present = 0;
-@@ -794,14 +794,14 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 		pte_access = sp->role.access & FNAME(gpte_access)(vcpu, gpte);
- 		if (!(sp->spt[i] & SPTE_HOST_WRITEABLE)) {
- 			pte_access &= ~ACC_WRITE_MASK;
--			reset_host_protection = 0;
-+			host_writable = 0;
- 		} else {
--			reset_host_protection = 1;
-+			host_writable = 1;
+ 		WARN_ON(s->role.level != PT_PAGE_TABLE_LEVEL);
++		kvm_unlink_unsync_page(vcpu->kvm, s);
+ 		if ((s->role.cr4_pae != !!is_pae(vcpu)) ||
+-			(vcpu->arch.mmu.sync_page(vcpu, s, true))) {
++			(vcpu->arch.mmu.sync_page(vcpu, s))) {
+ 			kvm_mmu_prepare_zap_page(vcpu->kvm, s, &invalid_list);
+ 			continue;
  		}
- 		set_spte(vcpu, &sp->spt[i], pte_access, 0, 0,
- 			 is_dirty_gpte(gpte), PT_PAGE_TABLE_LEVEL, gfn,
- 			 spte_to_pfn(sp->spt[i]), true, false,
--			 reset_host_protection);
-+			 host_writable);
+-		kvm_unlink_unsync_page(vcpu->kvm, s);
+ 		flush = true;
  	}
  
- 	return !nr_present;
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 57619ed..60f00db 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -740,8 +740,7 @@ static void FNAME(prefetch_page)(struct kvm_vcpu *vcpu,
+  * - The spte has a reference to the struct page, so the pfn for a given gfn
+  *   can't change unless all sptes pointing to it are nuked first.
+  */
+-static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+-			    bool clear_unsync)
++static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ {
+ 	int i, offset, nr_present;
+ 	bool host_writable;
+@@ -781,7 +780,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 			u64 nonpresent;
+ 
+ 			if (rsvd_bits_set || is_present_gpte(gpte) ||
+-			      !clear_unsync)
++			      sp->unsync)
+ 				nonpresent = shadow_trap_nonpresent_pte;
+ 			else
+ 				nonpresent = shadow_notrap_nonpresent_pte;
 -- 
 1.7.0.4
 
