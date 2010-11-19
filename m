@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab0KSVyh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:54:37 -0500
-Received: from kroah.org ([198.145.64.141]:51675 "EHLO coco.kroah.org"
+	id S932586Ab0KSV63 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:58:29 -0500
+Received: from kroah.org ([198.145.64.141]:44954 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757176Ab0KSVpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:45:15 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:09 2010
-Message-Id: <20101119214409.685942021@clark.site>
+	id S932540Ab0KSV60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:26 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:39 2010
+Message-Id: <20101119215639.571274458@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:42:43 -0800
+Date: Fri, 19 Nov 2010 13:55:31 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [03/45] powerpc/perf: Fix sampling enable for PPC970
-In-Reply-To: <20101119214439.GA26350@kroah.com>
+        Alan Cox <alan@linux.intel.com>
+Subject: [10/82] bluetooth: Fix missing NULL check
+In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Alan Cox <alan@linux.intel.com>
 
-commit 9f5f9ffe50e90ed73040d2100db8bfc341cee352 upstream.
+commit c19483cc5e56ac5e22dd19cf25ba210ab1537773 upstream.
 
-The logic to distinguish marked instruction events from ordinary events
-on PPC970 and derivatives was flawed.  The result is that instruction
-sampling didn't get enabled in the PMU for some marked instruction
-events, so they would never trigger.  This fixes it by adding the
-appropriate break statements in the switch statement.
+Fortunately this is only exploitable on very unusual hardware.
 
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+[Reported a while ago but nothing happened so just fixing it]
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/ppc970-pmu.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/bluetooth/hci_ldisc.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/arch/powerpc/kernel/ppc970-pmu.c
-+++ b/arch/powerpc/kernel/ppc970-pmu.c
-@@ -173,9 +173,11 @@ static int p970_marked_instr_event(u64 e
- 	switch (unit) {
- 	case PM_VPU:
- 		mask = 0x4c;		/* byte 0 bits 2,3,6 */
-+		break;
- 	case PM_LSU0:
- 		/* byte 2 bits 0,2,3,4,6; all of byte 1 */
- 		mask = 0x085dff00;
-+		break;
- 	case PM_LSU1L:
- 		mask = 0x50 << 24;	/* byte 3 bits 4,6 */
- 		break;
+--- a/drivers/bluetooth/hci_ldisc.c
++++ b/drivers/bluetooth/hci_ldisc.c
+@@ -258,9 +258,16 @@ static int hci_uart_tty_open(struct tty_
+ 
+ 	BT_DBG("tty %p", tty);
+ 
++	/* FIXME: This btw is bogus, nothing requires the old ldisc to clear
++	   the pointer */
+ 	if (hu)
+ 		return -EEXIST;
+ 
++	/* Error if the tty has no write op instead of leaving an exploitable
++	   hole */
++	if (tty->ops->write == NULL)
++		return -EOPNOTSUPP;
++
+ 	if (!(hu = kzalloc(sizeof(struct hci_uart), GFP_KERNEL))) {
+ 		BT_ERR("Can't allocate control structure");
+ 		return -ENFILE;
 
 
