@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab0KSWf4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:35:56 -0500
-Received: from fieldses.org ([174.143.236.118]:48034 "EHLO fieldses.org"
+	id S932567Ab0KSWgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:36:13 -0500
+Received: from kroah.org ([198.145.64.141]:44907 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932302Ab0KSWfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:35:53 -0500
-Date: Fri, 19 Nov 2010 17:35:52 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, eparis@redhat.com,
-        linux-kernel@vger.kernel.org, sds@tycho.nsa.gov, selinux@tycho.nsa.gov
-Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias V2
-Message-ID: <20101119223552.GB12783@fieldses.org>
-References: <1290131575-2489-1-git-send-email-josef@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290131575-2489-1-git-send-email-josef@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757179Ab0KSV6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:21 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:39 2010
+Message-Id: <20101119215638.987052148@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 19 Nov 2010 13:55:24 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [03/82] Staging: phison: fix problem caused by libata change
+In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 08:52:55PM -0500, Josef Bacik wrote:
-> While trying to track down some NFS problems with BTRFS, I kept noticing I was
-> getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
-> figure out that it was SELinux that was giving me grief, with the following
-> denial
-> 
-> type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
-> comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
-> tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
-> 
-> Turns out this is because in d_obtain_alias if we can't find an alias we create
-> one and do all the normal instantiation stuff, but we don't do the
-> security_d_instantiate.
-> 
-> Usually we are protected from getting a hashed dentry that hasn't yet run
-> security_d_instantiate() by the parent's i_mutex, but obviously this isn't an
-> option there, so in order to deal with the case that a second thread comes in
-> and finds our new dentry before we get to run security_d_instantiate(), we go
-> ahead and call it if we find a dentry already.  Eric assures me that this is ok
-> as the code checks to see if the dentry has been initialized already so calling
-> security_d_instantiate() against the same dentry multiple times is ok.  With
-> this patch I'm no longer getting errant -EACCESS values.
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
-Thanks, I can't see any reason that wouldn't work.
+------------------
 
---b.
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
-> 
-> Signed-off-by: Josef Bacik <josef@redhat.com>
-> ---
-> V1->V2:
-> -added second security_d_instantiate() call
-> 
->  fs/dcache.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 23702a9..119d489 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -1201,9 +1201,12 @@ struct dentry *d_obtain_alias(struct inode *inode)
->  	spin_unlock(&tmp->d_lock);
->  
->  	spin_unlock(&dcache_lock);
-> +	security_d_instantiate(tmp, inode);
->  	return tmp;
->  
->   out_iput:
-> +	if (res && !IS_ERR(res))
-> +		security_d_instantiate(res, inode);
->  	iput(inode);
->  	return res;
->  }
-> -- 
-> 1.6.6.1
-> 
+commit cf10700bf8047f0668dd874b607f89516612e6c7 upstream.
+
+The libata core changed this function so it needed to call a different
+one.
+
+See https://bugzilla.kernel.org/show_bug.cgi?id=19872 for details.
+
+Reported-by: Heinz Wiesinger <HMWiesinger@gmx.at>
+Tested-by: Heinz Wiesinger <HMWiesinger@gmx.at>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/staging/phison/phison.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/staging/phison/phison.c
++++ b/drivers/staging/phison/phison.c
+@@ -62,7 +62,7 @@ static int phison_init_one(struct pci_de
+ 	};
+ 	const struct ata_port_info *ppi[] = { &info, NULL };
+ 
+-	ret = ata_pci_sff_init_one(pdev, ppi, &phison_sht, NULL, 0);
++	ret = ata_pci_bmdma_init_one(pdev, ppi, &phison_sht, NULL, 0);
+ 
+ 	dev_dbg(&pdev->dev, "phison_init_one(), ret = %x\n", ret);
+ 
+
+
