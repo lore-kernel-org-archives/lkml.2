@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab0KSWfX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:35:23 -0500
-Received: from kroah.org ([198.145.64.141]:44928 "EHLO coco.kroah.org"
+	id S932645Ab0KSWfl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:35:41 -0500
+Received: from kroah.org ([198.145.64.141]:44920 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932276Ab0KSV6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:23 -0500
+	id S1757196Ab0KSV6W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:22 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:39 2010
-Message-Id: <20101119215639.237258651@clark.site>
+Message-Id: <20101119215639.150248565@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:55:27 -0800
+Date: Fri, 19 Nov 2010 13:55:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Mackerras <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [06/82] powerpc/perf: Fix sampling enable for PPC970
+        Stephane Eranian <eranian@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [05/82] perf_events: Fix bogus context time tracking
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: Stephane Eranian <eranian@google.com>
 
-commit 9f5f9ffe50e90ed73040d2100db8bfc341cee352 upstream.
+commit c530ccd9a1864a44a7ff35826681229ce9f2357a upstream.
 
-The logic to distinguish marked instruction events from ordinary events
-on PPC970 and derivatives was flawed.  The result is that instruction
-sampling didn't get enabled in the PMU for some marked instruction
-events, so they would never trigger.  This fixes it by adding the
-appropriate break statements in the switch statement.
+You can only call update_context_time() when the context
+is active, i.e., the thread it is attached to is still running.
 
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+However, perf_event_read() can be called even when the context
+is inactive, e.g., user read() the counters. The call to
+update_context_time() must be conditioned on the status of
+the context, otherwise, bogus time_enabled, time_running may
+be returned. Here is an example on AMD64. The task program
+is an example from libpfm4. The -p prints deltas every 1s.
+
+$ task -p -e cpu_clk_unhalted sleep 5
+    2,266,610 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+	    0 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+	    0 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+	    0 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+	    0 cpu_clk_unhalted (0.00% scaling, ena=2,158,982, run=2,158,982)
+5,242,358,071 cpu_clk_unhalted (99.95% scaling, ena=5,000,359,984, run=2,319,270)
+
+Whereas if you don't read deltas, e.g., no call to perf_event_read() until
+the process terminates:
+
+$ task -e cpu_clk_unhalted sleep 5
+    2,497,783 cpu_clk_unhalted (0.00% scaling, ena=2,376,899, run=2,376,899)
+
+Notice that time_enable, time_running are bogus in the first example
+causing bogus scaling.
+
+This patch fixes the problem, by conditionally calling update_context_time()
+in perf_event_read().
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <4cb856dc.51edd80a.5ae0.38fb@mx.google.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/ppc970-pmu.c |    2 ++
- 1 file changed, 2 insertions(+)
+ kernel/perf_event.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/ppc970-pmu.c
-+++ b/arch/powerpc/kernel/ppc970-pmu.c
-@@ -169,9 +169,11 @@ static int p970_marked_instr_event(u64 e
- 	switch (unit) {
- 	case PM_VPU:
- 		mask = 0x4c;		/* byte 0 bits 2,3,6 */
-+		break;
- 	case PM_LSU0:
- 		/* byte 2 bits 0,2,3,4,6; all of byte 1 */
- 		mask = 0x085dff00;
-+		break;
- 	case PM_LSU1L:
- 		mask = 0x50 << 24;	/* byte 3 bits 4,6 */
- 		break;
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1757,7 +1757,13 @@ static u64 perf_event_read(struct perf_e
+ 		unsigned long flags;
+ 
+ 		raw_spin_lock_irqsave(&ctx->lock, flags);
+-		update_context_time(ctx);
++		/*
++		 * may read while context is not active
++		 * (e.g., thread is blocked), in that case
++		 * we cannot update context time
++		 */
++		if (ctx->is_active)
++			update_context_time(ctx);
+ 		update_event_times(event);
+ 		raw_spin_unlock_irqrestore(&ctx->lock, flags);
+ 	}
 
 
