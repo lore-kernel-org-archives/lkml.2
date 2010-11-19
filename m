@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255Ab0KSWcR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:32:17 -0500
-Received: from kroah.org ([198.145.64.141]:45020 "EHLO coco.kroah.org"
+	id S933045Ab0KSWaZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:30:25 -0500
+Received: from kroah.org ([198.145.64.141]:45074 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932622Ab0KSV6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:31 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:40 2010
-Message-Id: <20101119215640.390112915@clark.site>
+	id S1757215Ab0KSV6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:37 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:41 2010
+Message-Id: <20101119215641.145149290@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:55:41 -0800
+Date: Fri, 19 Nov 2010 13:55:50 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Weidong Han <weidong.han@intel.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [20/82] x86, intr-remap: Set redirection hint in the IRTE
+        Julia Lawall <julia@diku.dk>,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [29/82] drivers/net/wireless/p54/eeprom.c: Return -ENOMEM on memory allocation failure
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,55 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Julia Lawall <julia@diku.dk>
 
-commit 75e3cfbed6f71a8f151dc6e413b6ce3c390030cb upstream.
+commit 0d91f22b75347d9503b17a42b6c74d3f7750acd6 upstream.
 
-Currently the redirection hint in the interrupt-remapping table entry
-is set to 0, which means the remapped interrupt is directed to the
-processors listed in the destination. So in logical flat mode
-in the presence of intr-remapping, this results in a single
-interrupt multi-casted to multiple cpu's as specified by the destination
-bit mask. But what we really want is to send that interrupt to one of the cpus
-based on the lowest priority delivery mode.
+In this code, 0 is returned on memory allocation failure, even though other
+failures return -ENOMEM or other similar values.
 
-Set the redirection hint in the IRTE to '1' to indicate that we want
-the remapped interrupt to be directed to only one of the processors
-listed in the destination.
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-This fixes the issue of same interrupt getting delivered to multiple cpu's
-in the logical flat mode in the presence of interrupt-remapping. While
-there is no functional issue observed with this behavior, this will
-impact performance of such configurations (<=8 cpu's using logical flat
-mode in the presence of interrupt-remapping)
+// <smpl>
+@@
+expression ret;
+expression x,e1,e2,e3;
+@@
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <20100827181049.013051492@sbsiddha-MOBL3.sc.intel.com>
-Cc: Weidong Han <weidong.han@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+ret = 0
+... when != ret = e1
+*x = \(kmalloc\|kcalloc\|kzalloc\)(...)
+... when != ret = e2
+if (x == NULL) { ... when != ret = e3
+  return ret;
+}
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+Acked-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/apic/io_apic.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/net/wireless/p54/eeprom.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1397,6 +1397,7 @@ int setup_ioapic_entry(int apic_id, int
- 		irte.dlvry_mode = apic->irq_delivery_mode;
- 		irte.vector = vector;
- 		irte.dest_id = IRTE_DEST(destination);
-+		irte.redir_hint = 1;
+--- a/drivers/net/wireless/p54/eeprom.c
++++ b/drivers/net/wireless/p54/eeprom.c
+@@ -262,8 +262,10 @@ static int p54_generate_channel_lists(st
+ 	list->max_entries = max_channel_num;
+ 	list->channels = kzalloc(sizeof(struct p54_channel_entry) *
+ 				 max_channel_num, GFP_KERNEL);
+-	if (!list->channels)
++	if (!list->channels) {
++		ret = -ENOMEM;
+ 		goto free;
++	}
  
- 		/* Set source-id of interrupt request */
- 		set_ioapic_sid(&irte, apic_id);
-@@ -3348,6 +3349,7 @@ static int msi_compose_msg(struct pci_de
- 		irte.dlvry_mode = apic->irq_delivery_mode;
- 		irte.vector = cfg->vector;
- 		irte.dest_id = IRTE_DEST(dest);
-+		irte.redir_hint = 1;
- 
- 		/* Set source-id of interrupt request */
- 		if (pdev)
+ 	for (i = 0; i < max_channel_num; i++) {
+ 		if (i < priv->iq_autocal_len) {
 
 
