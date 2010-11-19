@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932729Ab0KSWLT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:11:19 -0500
-Received: from kroah.org ([198.145.64.141]:52982 "EHLO coco.kroah.org"
+	id S932732Ab0KSWLp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:11:45 -0500
+Received: from kroah.org ([198.145.64.141]:52972 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758124Ab0KSWEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:04:23 -0500
+	id S1758114Ab0KSWEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:22 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:25 2010
-Message-Id: <20101119220125.298127428@clark.site>
+Message-Id: <20101119220125.136960716@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:01:09 -0800
+Date: Fri, 19 Nov 2010 14:01:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Daniel Suchy <danny@danysek.cz>
-Subject: [38/66] USB: ftdi_sio: new VID/PIDs for various Papouch devices
+        Johan Hovold <jhovold@gmail.com>
+Subject: [36/66] USB: ftdi_sio: revert "USB: ftdi_sio: fix DTR/RTS line modes"
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,109 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Suchy <danny@danysek.cz>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 59c6ccd9f9aecfa59c99ceba6d4d34b180547a05 upstream.
+commit 677aeafe19e88c282af74564048243ccabb1c590 upstream.
 
-This patch for FTDI USB serial driver ads new VID/PIDs used on various
-devices manufactured by Papouch (http://www.papouch.com). These devices
-have their own VID/PID, although they're using standard FTDI chip. In
-ftdi_sio.c, I also made small cleanup to have declarations for all
-Papouch devices together.
+This reverts commit 6a1a82df91fa0eb1cc76069a9efe5714d087eccd.
 
-Signed-off-by: Daniel Suchy <danny@danysek.cz>
+RTS and DTR should not be modified based on CRTSCTS when calling
+set_termios.
+
+Modem control lines are raised at port open by the tty layer and should stay
+raised regardless of whether hardware flow control is enabled or not.
+
+This is in conformance with the way serial ports work today and many
+applications depend on this behaviour to be able to talk to hardware
+implementing hardware flow control (without the applications actually using
+it).
+
+Hardware which expects different behaviour on these lines can always
+use TIOCMSET/TIOCMBI[SC] after port open to change them.
+
+Reported-by: Daniel Mack <daniel@caiaq.de>
+Reported-by: Dave Mielke <dave@mielke.cc>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |   30 +++++++++++++++++++++++++++++-
- drivers/usb/serial/ftdi_sio_ids.h |   27 ++++++++++++++++++++++++++-
- 2 files changed, 55 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
 --- a/drivers/usb/serial/ftdi_sio.c
 +++ b/drivers/usb/serial/ftdi_sio.c
-@@ -675,7 +675,6 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_RRCIRKITS_LOCOBUFFER_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ASK_RDR400_PID) },
- 	{ USB_DEVICE(ICOM_ID1_VID, ICOM_ID1_PID) },
--	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_TMU_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
-@@ -716,8 +715,37 @@ static struct usb_device_id id_table_com
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(RATOC_VENDOR_ID, RATOC_PRODUCT_ID_USB60F) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_REU_TINY_PID) },
-+
-+	/* Papouch devices based on FTDI chip */
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AP485_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB422_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485_2_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AP485_2_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB422_2_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485S_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485C_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_LEC_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB232_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_TMU_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_IRAMP_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_DRAK5_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO8x8_PID) },
- 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO4x4_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO2x2_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO10x1_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO30x3_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO60x3_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO2x16_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO3x32_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_DRAK6_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_UPSUSB_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_MU_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SIMUKEY_PID) },
- 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AD4USB_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMUX_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMSR_PID) },
-+
- 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DGQG_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DUSB_PID) },
- 	{ USB_DEVICE(ALTI2_VID, ALTI2_N3_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1023,9 +1023,34 @@
-  */
+@@ -2029,8 +2029,6 @@ static void ftdi_set_termios(struct tty_
+ 				"urb failed to set to rts/cts flow control\n");
+ 		}
  
- #define PAPOUCH_VID			0x5050	/* Vendor ID */
-+#define PAPOUCH_SB485_PID		0x0100	/* Papouch SB485 USB-485/422 Converter */
-+#define PAPOUCH_AP485_PID		0x0101	/* AP485 USB-RS485 Converter */
-+#define PAPOUCH_SB422_PID		0x0102	/* Papouch SB422 USB-RS422 Converter  */
-+#define PAPOUCH_SB485_2_PID		0x0103	/* Papouch SB485 USB-485/422 Converter */
-+#define PAPOUCH_AP485_2_PID		0x0104	/* AP485 USB-RS485 Converter */
-+#define PAPOUCH_SB422_2_PID		0x0105	/* Papouch SB422 USB-RS422 Converter  */
-+#define PAPOUCH_SB485S_PID		0x0106	/* Papouch SB485S USB-485/422 Converter */
-+#define PAPOUCH_SB485C_PID		0x0107	/* Papouch SB485C USB-485/422 Converter */
-+#define PAPOUCH_LEC_PID			0x0300	/* LEC USB Converter */
-+#define PAPOUCH_SB232_PID		0x0301	/* Papouch SB232 USB-RS232 Converter */
- #define PAPOUCH_TMU_PID			0x0400	/* TMU USB Thermometer */
--#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Quido 4/4 Module */
-+#define PAPOUCH_IRAMP_PID		0x0500	/* Papouch IRAmp Duplex */
-+#define PAPOUCH_DRAK5_PID		0x0700	/* Papouch DRAK5 */
-+#define PAPOUCH_QUIDO8x8_PID		0x0800	/* Papouch Quido 8/8 Module */
-+#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Papouch Quido 4/4 Module */
-+#define PAPOUCH_QUIDO2x2_PID		0x0a00	/* Papouch Quido 2/2 Module */
-+#define PAPOUCH_QUIDO10x1_PID		0x0b00	/* Papouch Quido 10/1 Module */
-+#define PAPOUCH_QUIDO30x3_PID		0x0c00	/* Papouch Quido 30/3 Module */
-+#define PAPOUCH_QUIDO60x3_PID		0x0d00	/* Papouch Quido 60(100)/3 Module */
-+#define PAPOUCH_QUIDO2x16_PID		0x0e00	/* Papouch Quido 2/16 Module */
-+#define PAPOUCH_QUIDO3x32_PID		0x0f00	/* Papouch Quido 3/32 Module */
-+#define PAPOUCH_DRAK6_PID		0x1000	/* Papouch DRAK6 */
-+#define PAPOUCH_UPSUSB_PID		0x8000	/* Papouch UPS-USB adapter */
-+#define PAPOUCH_MU_PID			0x8001	/* MU controller */
-+#define PAPOUCH_SIMUKEY_PID		0x8002	/* Papouch SimuKey */
- #define PAPOUCH_AD4USB_PID		0x8003	/* AD4USB Measurement Module */
-+#define PAPOUCH_GMUX_PID		0x8004	/* Papouch GOLIATH MUX */
-+#define PAPOUCH_GMSR_PID		0x8005	/* Papouch GOLIATH MSR */
+-		/* raise DTR/RTS */
+-		set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	} else {
+ 		/*
+ 		 * Xon/Xoff code
+@@ -2078,8 +2076,6 @@ static void ftdi_set_termios(struct tty_
+ 			}
+ 		}
  
- /*
-  * Marvell SheevaPlug
+-		/* lower DTR/RTS */
+-		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	}
+ 	return;
+ }
 
 
