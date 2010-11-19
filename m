@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab0KSVp0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:45:26 -0500
-Received: from kroah.org ([198.145.64.141]:51739 "EHLO coco.kroah.org"
+	id S932308Ab0KSVxQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:53:16 -0500
+Received: from kroah.org ([198.145.64.141]:51753 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757243Ab0KSVpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:45:23 -0500
+	id S1757250Ab0KSVp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:45:26 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:10 2010
-Message-Id: <20101119214410.408837220@clark.site>
+Message-Id: <20101119214410.572906410@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:42:52 -0800
+Date: Fri, 19 Nov 2010 13:42:54 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [12/45] x86, mtrr: Assume SYS_CFG[Tom2ForceMemTypeWB] exists on all future AMD CPUs
+        Cliff Wickman <cpw@sgi.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, kexec@lists.infradead.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [14/45] x86, kdump: Change copy_oldmem_page() to use cached addressing
 In-Reply-To: <20101119214439.GA26350@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Cliff Wickman <cpw@sgi.com>
 
-commit 3fdbf004c1706480a7c7fac3c9d836fa6df20d7d upstream.
+commit 37a2f9f30a360fb03522d15c85c78265ccd80287 upstream.
 
-Instead of adapting the CPU family check in amd_special_default_mtrr()
-for each new CPU family assume that all new AMD CPUs support the
-necessary bits in SYS_CFG MSR.
+The copy of /proc/vmcore to a user buffer proceeds much faster
+if the kernel addresses memory as cached.
 
-Tom2Enabled is architectural (defined in APM Vol.2).
-Tom2ForceMemTypeWB is defined in all BKDGs starting with K8 NPT.
-In pre K8-NPT BKDG this bit is reserved (read as zero).
+With this patch we have seen an increase in transfer rate from
+less than 15MB/s to 80-460MB/s, depending on size of the
+transfer. This makes a big difference in time needed to save a
+system dump.
 
-W/o this adaption Linux would unnecessarily complain about bad MTRR
-settings on every new AMD CPU family, e.g.
-
-[    0.000000] WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 4863MB of RAM.
-
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-LKML-Reference: <20100930123235.GB20545@loge.amd.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: kexec@lists.infradead.org
+LKML-Reference: <E1OtMLz-0001yp-Ia@eag09.americas.sgi.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/mtrr/cleanup.c |    2 +-
+ arch/x86/kernel/crash_dump_64.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/kernel/cpu/mtrr/cleanup.c
-+++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
-@@ -948,7 +948,7 @@ int __init amd_special_default_mtrr(void
+--- a/arch/x86/kernel/crash_dump_64.c
++++ b/arch/x86/kernel/crash_dump_64.c
+@@ -34,7 +34,7 @@ ssize_t copy_oldmem_page(unsigned long p
+ 	if (!csize)
+ 		return 0;
  
- 	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
- 		return 0;
--	if (boot_cpu_data.x86 < 0xf || boot_cpu_data.x86 > 0x11)
-+	if (boot_cpu_data.x86 < 0xf)
- 		return 0;
- 	/* In case some hypervisor doesn't pass SYSCFG through: */
- 	if (rdmsr_safe(MSR_K8_SYSCFG, &l, &h) < 0)
+-	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
++	vaddr = ioremap_cache(pfn << PAGE_SHIFT, PAGE_SIZE);
+ 	if (!vaddr)
+ 		return -ENOMEM;
+ 
 
 
