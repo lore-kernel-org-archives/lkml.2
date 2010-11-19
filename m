@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab0KSOzJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 09:55:09 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:7899 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753548Ab0KSOzH (ORCPT
+	id S1754690Ab0KSO5B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 09:57:01 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45661 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab0KSO47 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 09:55:07 -0500
-X-IronPort-AV: E=Sophos;i="4.59,223,1288566000"; 
-   d="scan'208";a="88747481"
-Date: Fri, 19 Nov 2010 15:55:05 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mike Galbraith <efault@gmx.de>, Hans-Peter Jansen <hpj@urpla.net>,
-        linux-kernel@vger.kernel.org,
-        Lennart Poettering <mzxreary@0pointer.de>, david@lang.hm,
-        Dhaval Giani <dhaval.giani@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101119145505.GO6554@const.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Mike Galbraith <efault@gmx.de>, Hans-Peter Jansen <hpj@urpla.net>,
-	linux-kernel@vger.kernel.org,
-	Lennart Poettering <mzxreary@0pointer.de>, david@lang.hm,
-	Dhaval Giani <dhaval.giani@gmail.com>,
-	Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-	Ingo Molnar <mingo@elte.hu>,
-	Balbir Singh <balbir@linux.vnet.ibm.com>
-References: <201011182333.48281.hpj@urpla.net> <20101118231218.GX6024@const.famille.thibault.fr> <1290123351.18039.49.camel@maggy.simson.net> <20101118234339.GA6024@const.famille.thibault.fr> <AANLkTimTNxLYGLgnS9TUT_YiMnmDVrqseByGGogj+A4Z@mail.gmail.com> <20101119000204.GE6024@const.famille.thibault.fr> <20101119000720.GF6024@const.famille.thibault.fr> <1290167844.2109.1560.camel@laptop> <20101119142418.GN6554@const.bordeaux.inria.fr> <1290177793.2109.1612.camel@laptop>
+	Fri, 19 Nov 2010 09:56:59 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uqHcVqGFkY4Ylfgx4YmEylul4UReNjIBz39xqtbhV6gUYqko2zKgjSdOm5Hvjbykne
+         E+JW5uLqn0MNzhAIpMtDCc6DkkbmHElWWeQnYDX8YqdLro29lLwoySkH6jFJUT0xi8fe
+         aUhw7JZ7i8euc/sOqXmeRoKpQ9vBzsXpbCVR4=
+Date: Fri, 19 Nov 2010 15:56:54 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Michael Stefaniuc <mstefani@redhat.com>
+Subject: Re: [Bug #21332] Regression in single stepping over hardware
+	breakpoint (Wine)
+Message-ID: <20101119145651.GB5558@nowhere>
+References: <tTUH_XeInOH.A.dMF.c3b5MB@chimera> <t78YtCSuOqN.A.gEG.I4b5MB@chimera>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1290177793.2109.1612.camel@laptop>
-User-Agent: Mutt/1.5.12-2006-07-14
+In-Reply-To: <t78YtCSuOqN.A.gEG.I4b5MB@chimera>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra, le Fri 19 Nov 2010 15:43:13 +0100, a écrit :
-> > MPI jobs typically communicate with each other. Keeping them on the same
-> > socket permits to keep shared-memory MPI drivers to mostly remain in
-> > e.g. the L3 cache. That typically gives benefits.
+On Fri, Nov 19, 2010 at 12:53:38AM +0100, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.35 and 2.6.36.
 > 
-> Pushing them away permits them to use a larger part of that same L3
-> cache allowing them to work on larger data sets.
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=21332
+> Subject		: Regression in single stepping over hardware breakpoint (Wine)
+> Submitter	: Michael Stefaniuc <mstefani@redhat.com>
+> Date		: 2010-10-27 23:41 (23 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/0c4519e825c9e2b6a8310deff8582f8c35bfbba9
 
-But then you are not benefitting from all CPU cores.
 
-> Most of the MPI apps
-> have a large compute to communication ratio because that is what allows
-> them to run in parallel so well (traditionally the interconnects were
-> terribly slow to boot), that suggests that working on larger data sets
-> is a good thing and running on the same node really doesn't matter since
-> communication is assumes slow anyway.
+The fix is in:
 
-Err, if the compute to communication ratio is big, then you should use
-all CPU cores, up to the point where communication becomes a matter
-again, and making sure that related MPI processes end up on the same
-socket will permit to got a it further.
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git
+	perf/urgent
 
-> There really is no simple solution to his.
+6c0aca288e726405b01dacb12cac556454d34b2a
+("x86: Ignore trap bits on single step exceptions")
 
-I never said there was even a solution, actually (in particular any kind
-of generic solution), but that there are a a few simple ways exist to
-make things better.
+And should reach mainline soon.
 
-Samuel
+Thanks.
+
