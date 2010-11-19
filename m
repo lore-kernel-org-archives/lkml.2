@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757415Ab0KSV6j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:58:39 -0500
-Received: from kroah.org ([198.145.64.141]:45054 "EHLO coco.kroah.org"
+	id S1757439Ab0KSV6m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:58:42 -0500
+Received: from kroah.org ([198.145.64.141]:45096 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757224Ab0KSV6e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:34 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:40 2010
-Message-Id: <20101119215640.810378408@clark.site>
+	id S1757224Ab0KSV6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:40 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:41 2010
+Message-Id: <20101119215641.562533438@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:55:46 -0800
+Date: Fri, 19 Nov 2010 13:55:55 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Johan Hovold <jhovold@gmail.com>
-Subject: [25/82] USB: mct_u232: fix broken close
+Subject: [34/82] USB: ftdi_sio: revert "USB: ftdi_sio: fix DTR/RTS line modes"
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,41 +27,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johan Hovold <jhovold@gmail.com>
 
-commit 92ca0dc5ee022e4c0e488177e1d8865a0778c6c2 upstream.
+commit 677aeafe19e88c282af74564048243ccabb1c590 upstream.
 
-Fix regression introduced by commit
-f26788da3b342099d2b02d99ba1cb7f154d6ef7b (USB: serial: refactor generic
-close) which broke driver close().
+This reverts commit 6a1a82df91fa0eb1cc76069a9efe5714d087eccd.
 
-This driver uses non-standard semantics for the read urb which makes the
-generic close function fail to kill it (the read urb is actually an
-interrupt urb and therefore bulk_in size is zero).
+RTS and DTR should not be modified based on CRTSCTS when calling
+set_termios.
 
-Reported-by: Eric Shattow "Eprecocious" <lucent@gmail.com>
-Tested-by: Eric Shattow "Eprecocious" <lucent@gmail.com>
+Modem control lines are raised at port open by the tty layer and should stay
+raised regardless of whether hardware flow control is enabled or not.
+
+This is in conformance with the way serial ports work today and many
+applications depend on this behaviour to be able to talk to hardware
+implementing hardware flow control (without the applications actually using
+it).
+
+Hardware which expects different behaviour on these lines can always
+use TIOCMSET/TIOCMBI[SC] after port open to change them.
+
+Reported-by: Daniel Mack <daniel@caiaq.de>
+Reported-by: Dave Mielke <dave@mielke.cc>
 Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/mct_u232.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
---- a/drivers/usb/serial/mct_u232.c
-+++ b/drivers/usb/serial/mct_u232.c
-@@ -549,9 +549,12 @@ static void mct_u232_close(struct usb_se
- {
- 	dbg("%s port %d", __func__, port->number);
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2029,8 +2029,6 @@ static void ftdi_set_termios(struct tty_
+ 				"urb failed to set to rts/cts flow control\n");
+ 		}
  
--	usb_serial_generic_close(port);
--	if (port->serial->dev)
-+	if (port->serial->dev) {
-+		/* shutdown our urbs */
-+		usb_kill_urb(port->write_urb);
-+		usb_kill_urb(port->read_urb);
- 		usb_kill_urb(port->interrupt_in_urb);
-+	}
- } /* mct_u232_close */
+-		/* raise DTR/RTS */
+-		set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	} else {
+ 		/*
+ 		 * Xon/Xoff code
+@@ -2078,8 +2076,6 @@ static void ftdi_set_termios(struct tty_
+ 			}
+ 		}
  
- 
+-		/* lower DTR/RTS */
+-		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	}
+ 	return;
+ }
 
 
