@@ -1,72 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754206Ab0KSNtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 08:49:41 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59297 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911Ab0KSNti (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 08:49:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=jn0fTbvzzc+7kN8Me/oVum3L1TjrfW1u2xXB3sVGJy1GTJBBcFrETWu0KOxOfSmpsw
-         5CB2EGNWygf8fDjTCDeTLDVCILYe16ym/oCpOH/H2dvo1X/pvf+Bqk4emASz+ylQX8wR
-         OEWD59fe8tCod+0EHSSSGFZv/tKEQWyCw0r1M=
+	id S1754277Ab0KSNvv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 08:51:51 -0500
+Received: from wiems06002.ceu.heidelberg.com ([193.99.214.201]:54566 "EHLO
+	wiems06002.ceu.heidelberg.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753108Ab0KSNvt convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 08:51:49 -0500
+X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Nov 2010 08:51:49 EST
+X-AuditID: c163d6c8-b7b3aae00000131a-89-4ce67d694465
+From: "Husterer, Thomas RD-6.2.3" <Thomas.Husterer@heidelberg.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 19 Nov 2010 14:36:33 +0100
+Subject: [PATCH] tracing: missing information in trace binary format
+Thread-Topic: [PATCH] tracing: missing information in trace binary format
+Thread-Index: AcuH7sgOIcffZAmpSemHS8IaxIRTpA==
+Message-ID: <BA096D1AF8AE9F408CA552890F7C14010ACD1A43E1@wiems02002.ceu.corp.heidelberg.com>
+Accept-Language: en-US
+Content-Language: de-DE
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1290173874.2109.1597.camel@laptop>
-References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
-	<1290165768.2109.1537.camel@laptop>
-	<AANLkTik3ujs7-tMNUuk33wuMXFm+iusspMcR=yjPXtn_@mail.gmail.com>
-	<1290168173.2109.1565.camel@laptop>
-	<AANLkTinrk8XN9XQeM-pmqhiz=tSw4x01JaGMjdRG52dF@mail.gmail.com>
-	<1290171315.2109.1577.camel@laptop>
-	<AANLkTikRwZzyCcNGoi0JWeDkCP71qgzUi=UvqYvdffR6@mail.gmail.com>
-	<1290172713.2109.1587.camel@laptop>
-	<AANLkTim0mq8Pyyi+9cAmHBct5OXH+PG7G1mQ5aneEwZV@mail.gmail.com>
-	<1290173874.2109.1597.camel@laptop>
-Date: Fri, 19 Nov 2010 21:49:37 +0800
-Message-ID: <AANLkTikeVk5F1sFmdYKjyFggrCsgNRQ0Vebm7GVQL-EK@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Generic hardware error reporting support
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=UTF-8
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 9:37 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2010-11-19 at 21:28 +0800, huang ying wrote:
->>
->> > Instead you present your work as a fait accompli, not a work in flux and
->> > subject to change. You ask for it to be merged -- this does not come
->> > across like a discussion, much less a request for co-operation.
->>
->> I heard about that LKML likes talk with code instead of idea. Am I wrong?
->
-> No, its your presentation of said code that's wrong.
->
-> You're missing the [RFC] tags and open questions in your Changelogs
-> like: EDAC could use it like so and so, does that sound acceptable
-> Mauro?
 
-Maybe. We can not talk with code without that tag?
+i am working with the latest patch of linux-rt (linux-2.6.33.7-rt29) and try to use
+the tracer functionality with some userspace tools.
+This works great when i use the ascii output of the trace file.
+But parsing is not very easy due to dynamic field width and different types and length of seperators.
+Additionaly this parser is not very stable over the time.
 
-> There is no mention you actually did talk to Mauro and Tony and what its
-> outcome was.
 
-The main outcome is that we need a generic hardware error reporting
-interface, that can be used by all hardware error reporting
-mechanisms.
+Fortunately there is a binary format (with trace_option 'bin') which can be
+interpeted very fast and easy. But it is missing some data in this format.
 
-Best Regards,
-Huang Ying
+1. There is a field value 'next_cpu' which is not written to the output.
+2. There are two different event types (ctx and wake) which cannot be differentiated.
+3. The Trace Output contains an ascii header and the binary body which cannot be
+   separated very well.
+
+Now I have implemented some proposals in the patch below.
+1. Added the missing value 'next_cpu' (4Bytes)
+2. Added one Byte which defines the event-type ctx:'>', wake:'+'
+3. Insertet a uniq Sting betwen the ascii header and the binary body
+   '#BinaryStart: Typ: 2 Reclen: 33\n'
+   The Sting contains some info about the binary type (for future usage)
+   and the length of one entry in Bytes
+   and one terminating linefeed at the end.
+   Behind this linefeed starts the binary data.
+
+The patch works in linux-2.6.33.7-rt29 and linux-2.6.33.7.
+Would it be possible to add this or a similar solution to the mainline kernel ?
+I am not a kernel developer, and i am curently not subscribed to the kernel mailing
+list but i think the solution described here could be useful for many other users.
+
+Please CC: replies also to thomas.husterer@heidelberg.com
+
+best regards
+Thomas Husterer (thus)
+
+diff -ur linux-2.6.33.7-rt29.orig/kernel/trace/trace.c linux-2.6.33.7-rt29/kernel/trace/trace.c
+--- linux-2.6.33.7-rt29.orig/kernel/trace/trace.c       2010-11-19 11:02:34.000000000 +0100
++++ linux-2.6.33.7-rt29/kernel/trace/trace.c    2010-11-19 12:08:14.000000000 +0100
+@@ -2066,6 +2066,10 @@
+                        if (!(trace_flags & TRACE_ITER_VERBOSE))
+                                print_func_help_header(m);
+                }
++                if (trace_flags & TRACE_ITER_BIN) {
++                       seq_puts(m, "#BinaryStart: Typ: 2 Reclen: 33\n");
++                }
++
+        } else if (iter->leftover) {
+                /*
+                 * If we filled the seq_file buffer earlier, we
+diff -ur linux-2.6.33.7-rt29.orig/kernel/trace/trace_output.c linux-2.6.33.7-rt29/kernel/trace/trace_output.c
+--- linux-2.6.33.7-rt29.orig/kernel/trace/trace_output.c        2010-08-02 19:27:18.000000000 +0200
++++ linux-2.6.33.7-rt29/kernel/trace/trace_output.c     2010-11-19 11:24:24.000000000 +0100
+@@ -995,7 +995,7 @@
+ }
+
+ static enum print_line_t trace_ctxwake_bin(struct trace_iterator *iter,
+-                                          int flags)
++                                          char S)
+ {
+        struct ctx_switch_entry *field;
+        struct trace_seq *s = &iter->seq;
+@@ -1008,16 +1008,30 @@
+        SEQ_PUT_FIELD_RET(s, field->next_pid);
+        SEQ_PUT_FIELD_RET(s, field->next_prio);
+        SEQ_PUT_FIELD_RET(s, field->next_state);
++       SEQ_PUT_FIELD_RET(s, field->next_cpu);
++       SEQ_PUT_FIELD_RET(s, S);
+
+        return TRACE_TYPE_HANDLED;
+ }
+
++static enum print_line_t trace_ctx_bin(struct trace_iterator *iter,
++                                          int flags)
++{
++        return trace_ctxwake_bin(iter,'>');
++}
++
++static enum print_line_t trace_wake_bin(struct trace_iterator *iter,
++                                          int flags)
++{
++        return trace_ctxwake_bin(iter,'+');
++}
++
+ static struct trace_event trace_ctx_event = {
+        .type           = TRACE_CTX,
+        .trace          = trace_ctx_print,
+        .raw            = trace_ctx_raw,
+        .hex            = trace_ctx_hex,
+-       .binary         = trace_ctxwake_bin,
++       .binary         = trace_ctx_bin,
+ };
+
+ static struct trace_event trace_wake_event = {
+@@ -1025,7 +1039,7 @@
+        .trace          = trace_wake_print,
+        .raw            = trace_wake_raw,
+        .hex            = trace_wake_hex,
+-       .binary         = trace_ctxwake_bin,
++       .binary         = trace_wake_bin,
+ };
+
+ /* TRACE_SPECIAL */
+
+Confidentiality note:
+The information in this email and any attachment may contain confidential and proprietary information of Heidelberger Druckmaschinen AG and/or its affiliates and may be privileged or otherwise protected from disclosure. If you are not the intended recipient, you are hereby notified that any review, reliance or distribution by others or forwarding without express permission is strictly prohibited and may cause liability. In case you have received this message due to an error in transmission, we kindly ask you to notify the sender immediately and to delete this email and any attachment from your system.
