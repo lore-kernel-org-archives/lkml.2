@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab0KSO5B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 09:57:01 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45661 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab0KSO47 (ORCPT
+	id S1754743Ab0KSO6H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 09:58:07 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:50349 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754507Ab0KSO6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 09:56:59 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=uqHcVqGFkY4Ylfgx4YmEylul4UReNjIBz39xqtbhV6gUYqko2zKgjSdOm5Hvjbykne
-         E+JW5uLqn0MNzhAIpMtDCc6DkkbmHElWWeQnYDX8YqdLro29lLwoySkH6jFJUT0xi8fe
-         aUhw7JZ7i8euc/sOqXmeRoKpQ9vBzsXpbCVR4=
-Date: Fri, 19 Nov 2010 15:56:54 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Michael Stefaniuc <mstefani@redhat.com>
-Subject: Re: [Bug #21332] Regression in single stepping over hardware
-	breakpoint (Wine)
-Message-ID: <20101119145651.GB5558@nowhere>
-References: <tTUH_XeInOH.A.dMF.c3b5MB@chimera> <t78YtCSuOqN.A.gEG.I4b5MB@chimera>
+	Fri, 19 Nov 2010 09:58:05 -0500
+Date: Fri, 19 Nov 2010 09:57:48 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Mark Lord <kernel@teksavvy.com>
+Cc: Chris Mason <chris.mason@oracle.com>,
+        James Bottomley <james.bottomley@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        tytso <tytso@mit.edu>, linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        sandeen <sandeen@redhat.com>
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
+ super_operation
+Message-ID: <20101119145748.GB27919@infradead.org>
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
+ <20101118130630.GJ6178@parisc-linux.org>
+ <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
+ <20101118141957.GK6178@parisc-linux.org>
+ <20101118142918.GA18510@infradead.org>
+ <1290100750.3041.72.camel@mulgrave.site>
+ <4CE59C9E.6050902@teksavvy.com>
+ <1290177488-sup-6540@think>
+ <4CE68F80.7000607@teksavvy.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <t78YtCSuOqN.A.gEG.I4b5MB@chimera>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4CE68F80.7000607@teksavvy.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 12:53:38AM +0100, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.35 and 2.6.36.
+On Fri, Nov 19, 2010 at 09:53:52AM -0500, Mark Lord wrote:
+> On 10-11-19 09:40 AM, Chris Mason wrote:
+> >
+> >We've been told that online and constant trimming is the default in
+> >windows7.   The ssds are most likely to just start ignoring the trims
+> >they can't service efficiently.
 > 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.35 and 2.6.36.  Please verify if it still should
-> be listed and let the tracking team know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=21332
-> Subject		: Regression in single stepping over hardware breakpoint (Wine)
-> Submitter	: Michael Stefaniuc <mstefani@redhat.com>
-> Date		: 2010-10-27 23:41 (23 days old)
-> First-Bad-Commit: http://git.kernel.org/linus/0c4519e825c9e2b6a8310deff8582f8c35bfbba9
+> Win7 collects multiple TRIM ranges over time and batches them as single TRIMs
+> (as reported to me by an SSD vendor who traced it with a SATA analyzer,
+>  and who also apparently has "inside info").
 
-
-The fix is in:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git
-	perf/urgent
-
-6c0aca288e726405b01dacb12cac556454d34b2a
-("x86: Ignore trap bits on single step exceptions")
-
-And should reach mainline soon.
-
-Thanks.
+I really hate to rely on this third party hearsay (from all sides), and
+have implement TRIM support in qemu now.  I'll soon install win7 and
+will check out the TRIM patters myself.
 
