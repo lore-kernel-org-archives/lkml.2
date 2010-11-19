@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753826Ab0KSMTo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 07:19:44 -0500
-Received: from service87.mimecast.com ([94.185.240.25]:34420 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753314Ab0KSMTn convert rfc822-to-8bit (ORCPT
+	id S1754065Ab0KSMTq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 07:19:46 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44801 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753314Ab0KSMTp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 07:19:43 -0500
-X-Greylist: delayed 959 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Nov 2010 07:19:43 EST
-Subject: Re: [PATCH 3/5] MIPS/Perf-events: Check event state in
- validate_event()
-From: Will Deacon <will.deacon@arm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>, ralf@linux-mips.org,
-        fweisbec@gmail.com, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, wuzhangjin@gmail.com, paulus@samba.org,
-        mingo@elte.hu, acme@redhat.com
-In-Reply-To: <1290166051.2109.1539.camel@laptop>
-References: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
-	 <1290063401-25440-4-git-send-email-dengcheng.zhu@gmail.com>
-	 <1290159806.9342.7.camel@e102144-lin.cambridge.arm.com>
-	 <1290166051.2109.1539.camel@laptop>
-Date: Fri, 19 Nov 2010 12:03:27 +0000
-Message-ID: <1290168207.8175.6.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 19 Nov 2010 12:03:30.0603 (UTC) FILETIME=[C82DD7B0:01CB87E1]
-X-MC-Unique: 110111912033201301
-Content-Type: text/plain; charset=UTF-8
+	Fri, 19 Nov 2010 07:19:45 -0500
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+From: Peter Zijlstra <peterz@infradead.org>
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Cc: Mike Galbraith <efault@gmx.de>, Hans-Peter Jansen <hpj@urpla.net>,
+        linux-kernel@vger.kernel.org,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
+        Dhaval Giani <dhaval.giani@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
+In-Reply-To: <1290167376.2109.1553.camel@laptop>
+References: <1289916171.5169.117.camel@maggy.simson.net>
+	 <AANLkTimC_TWzKET-aabYK0TPG6fUUW06HDej6iOzYtKo@mail.gmail.com>
+	 <20101116211431.GA15211@tango.0pointer.de>
+	 <201011182333.48281.hpj@urpla.net>
+	 <20101118231218.GX6024@const.famille.thibault.fr>
+	 <1290123351.18039.49.camel@maggy.simson.net>
+	 <20101118234339.GA6024@const.famille.thibault.fr>
+	 <1290167376.2109.1553.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Fri, 19 Nov 2010 13:19:38 +0100
+Message-ID: <1290169178.2109.1573.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 11:27 +0000, Peter Zijlstra wrote:
-> > So this is the opposite of what we're doing on ARM. Our
-> > approach is to ignore events that are OFF (or in the ERROR
-> > state) or that belong to a different PMU. We do this by
-> > allowing them to *pass* validation (i.e. by returning 1 above).
-> > This means that we won't unconditionally fail a mixed event group.
-> >
-> > x86 does something similar in the collect_events function.
+On Fri, 2010-11-19 at 12:49 +0100, Peter Zijlstra wrote:
+> On Fri, 2010-11-19 at 00:43 +0100, Samuel Thibault wrote:
+> > What overhead? The implementation of cgroups is actually already
+> > hierarchical. 
 > 
-> Right, note that the generic code only allows mixing with software
-> events, so simply accepting them is ok as software events give the
-> guarantee they're always schedulable.
+> It must be nice to be that ignorant ;-) Speaking for the scheduler
+> cgroup controller (that being the only one I actually know), most all
+> the load-balance operations are O(n) in the number of active cgroups,
+> and a lot of the cpu local schedule operations are O(d) where d is the
+> depth of the cgroup tree.
 > 
+> [ and that's with the .38 targeted code, current mainline is O(n ln(n))
+> for load balancing and truly sucks on multi-socket ]
 > 
+> You add a lot of pointer chasing to all the scheduler fast paths and
+> there is quite significant data size bloat for even compiling with the
+> controller enabled, let alone actually using the stuff.
+> 
+> But sure, treat them as if they were free to use, I guess your machine
+> is fast enough.
 
-Ok. Initially it was software events that I had in mind, but does
-this constraint prevent you from grouping CPU events with events
-for other PMUs within the system? For external L2 cache controllers
-with their own PMUs, it would be desirable to group some L2 events
-with L1 events on a different PMU.
-
-If each PMU can validate its own events and ignore others then it
-sounds like it should be straightforward...
-
-Will
-
+In general though, I think you can say that: cgroups ass overhead.
+Simply because you add constraints, this means you need to 1) account
+more, 2) enforce constraints. Both have definite non-zero cost in both
+data and time.
 
