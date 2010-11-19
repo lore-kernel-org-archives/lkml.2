@@ -1,18 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab0KSP6c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 10:58:32 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:31934 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755370Ab0KSP63 (ORCPT
+	id S1755482Ab0KSP7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 10:59:47 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:25212 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755414Ab0KSP6b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 10:58:29 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Fri, 19 Nov 2010 16:58:03 +0100
+	Fri, 19 Nov 2010 10:58:31 -0500
+Date: Fri, 19 Nov 2010 16:58:10 +0100
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [RFCv6 05/13] mm: cma: debugfs support added
+Subject: [RFCv6 12/13] mm: cma: Migration support added [wip]
 In-reply-to: <cover.1290172312.git.m.nazarewicz@samsung.com>
 To: mina86@mina86.com
 Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
@@ -33,675 +30,451 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
         Zach Pfeffer <zpfeffer@codeaurora.org>, dipankar@in.ibm.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org
-Message-id: <5b4b5dc196968bb3c4c28e3f91b0b9feab6a1c37.1290172312.git.m.nazarewicz@samsung.com>
+Message-id: <1e9146802598487745b442efb0b129a417972b3d.1290172312.git.m.nazarewicz@samsung.com>
+MIME-version: 1.0
 X-Mailer: git-send-email 1.7.2.3
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
 References: <cover.1290172312.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The debugfs development interface lets one change the map attribute
-at run time as well as observe what regions have been reserved.
+This commits adds cma_early_grab_pageblocks() function as well
+as makes cma_early_region_reserve() function use the former if
+some conditions are met.
+
+Grabbed pageblocks are later given back to page allocator with
+migration type set to MIGRATE_CMA.  This guarantees that only
+movable and reclaimable pages are allocated from those page
+blocks.
+
+* * * THIS COMMIT IS NOT YET FINISHED * * *
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- Documentation/contiguous-memory.txt |    4 +
- include/linux/cma.h                 |   11 +
- mm/Kconfig                          |   25 ++-
- mm/cma.c                            |  501 ++++++++++++++++++++++++++++++++++-
- 4 files changed, 537 insertions(+), 4 deletions(-)
+ include/linux/cma.h |   38 +++++++-
+ mm/Kconfig          |   15 +++
+ mm/cma-best-fit.c   |   12 +++-
+ mm/cma.c            |  239 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 299 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/contiguous-memory.txt b/Documentation/contiguous-memory.txt
-index f1715ba..ec09d8e 100644
---- a/Documentation/contiguous-memory.txt
-+++ b/Documentation/contiguous-memory.txt
-@@ -258,6 +258,10 @@
-      iff it matched in previous pattern.  If the second part is
-      omitted it will mach any type of memory requested by device.
- 
-+     If debugfs support is enabled, this attribute is accessible via
-+     debugfs and can be changed at run-time by writing to
-+     contiguous/map.
-+
-      Some examples (whitespace added for better readability):
- 
-          cma_map = foo/quaz = r1;
 diff --git a/include/linux/cma.h b/include/linux/cma.h
-index a6031a7..8437104 100644
+index 56ed021..6a56e2a 100644
 --- a/include/linux/cma.h
 +++ b/include/linux/cma.h
-@@ -24,6 +24,7 @@
+@@ -310,10 +310,6 @@ struct cma_region {
+ 	const char *alloc_name;
+ 	void *private_data;
  
- struct device;
- struct cma_info;
-+struct dentry;
- 
- /**
-  * struct cma - an allocated contiguous chunk of memory.
-@@ -276,6 +277,11 @@ struct cma_region {
+-#ifdef CONFIG_CMA_USE_MIGRATE_CMA
+-	unsigned short *isolation_map;
+-#endif
+-
  	unsigned users;
  	struct list_head list;
  
-+#if defined CONFIG_CMA_DEBUGFS
-+	const char *to_alloc_link, *from_alloc_link;
-+	struct dentry *dir, *to_alloc, *from_alloc;
-+#endif
-+
- 	unsigned used:1;
- 	unsigned registered:1;
+@@ -327,7 +323,9 @@ struct cma_region {
  	unsigned reserved:1;
-@@ -382,6 +388,11 @@ struct cma_allocator {
- 	void (*unpin)(struct cma *chunk);
- 
- 	struct list_head list;
-+
-+#if defined CONFIG_CMA_DEBUGFS
-+	const char *dir_name;
-+	struct dentry *regs_dir;
+ 	unsigned copy_name:1;
+ 	unsigned free_alloc_name:1;
++#ifdef CONFIG_CMA_USE_MIGRATE_CMA
+ 	unsigned use_isolate:1;
 +#endif
  };
  
  /**
+@@ -449,6 +447,38 @@ struct cma_allocator {
+  */
+ int cma_allocator_register(struct cma_allocator *alloc);
+ 
++/**
++ * __cma_grab() - migrates all pages from range and reserves them for CMA
++ * @reg:	Region this call is made in context of.  If the region is
++ *		not marked needing grabbing the function does nothing.
++ * @start:	Address in bytes of the first byte to free.
++ * @size:	Size of the region to free.
++ *
++ * This function should be used when allocator wants to allocate some
++ * physical memory to make sure that it is not used for any movable or
++ * reclaimable pages (eg. page cache).
++ *
++ * In essence, this function migrates all movable and reclaimable
++ * pages from the range and then removes them from buddy system so
++ * page allocator won't consider them when allocating space.
++ *
++ * The allocator may assume that it is unlikely for this function to fail so
++ * if it fails allocator should just recover and return error.
++ */
++int __cma_grab(struct cma_region *reg, phys_addr_t start, size_t size);
++
++/**
++ * cma_ungrab_range() - frees pages from range back to buddy system.
++ * @reg:	Region this call is made in context of.  If the region is
++ *		not marked needing grabbing the function does nothing.
++ * @start:	Address in bytes of the first byte to free.
++ * @size:	Size of the region to free.
++ *
++ * This is reverse of cma_grab_range().  Allocator should use it when
++ * physical memory is no longer used.
++ */
++void __cma_ungrab(struct cma_region *reg, phys_addr_t start, size_t size);
++
+ 
+ /**************************** Initialisation API ****************************/
+ 
 diff --git a/mm/Kconfig b/mm/Kconfig
-index c7eb1bc..a5480ea 100644
+index 4aee3c5..80fd6bd 100644
 --- a/mm/Kconfig
 +++ b/mm/Kconfig
-@@ -351,16 +351,35 @@ config CMA
+@@ -363,6 +363,21 @@ config CMA
  	  For more information see <Documentation/contiguous-memory.txt>.
  	  If unsure, say "n".
  
--config CMA_DEBUG
--	bool "CMA debug messages (DEVELOPEMENT)"
-+config CMA_DEVELOPEMENT
-+	bool "Include CMA developement features"
++config CMA_USE_MIGRATE_CMA
++	bool "Use MIGRATE_CMA"
++	depends on CMA
++	default y
++	select MIGRATION
++	select MIGRATE_CMA
++	help
++	  This makes CMA use MIGRATE_CMA migration type for regions
++	  maintained by CMA.  This makes it possible for standard page
++	  allocator to use pages from such regions.  This in turn may
++	  make the whole system run faster as there will be more space
++	  for page caches, etc.
++
++	  If unsure, say "y".
++
+ config CMA_DEVELOPEMENT
+ 	bool "Include CMA developement features"
  	depends on CMA
- 	help
-+	  This lets you enable some developement features of the CMA
-+	  framework.  It does not add any code to the kernel.
-+
-+	  Those options are mostly usable during development and testing.
-+	  If unsure, say "n".
-+
-+config CMA_DEBUG
-+	bool "CMA debug messages"
-+	depends on CMA_DEVELOPEMENT
-+	help
- 	  Turns on debug messages in CMA.  This produces KERN_DEBUG
- 	  messages for every CMA call as well as various messages while
- 	  processing calls such as cma_alloc().  This option does not
- 	  affect warning and error messages.
+diff --git a/mm/cma-best-fit.c b/mm/cma-best-fit.c
+index 5ed1168..15f4206 100644
+--- a/mm/cma-best-fit.c
++++ b/mm/cma-best-fit.c
+@@ -145,6 +145,8 @@ static void cma_bf_cleanup(struct cma_region *reg)
+ 	kfree(prv);
+ }
  
--	  This is mostly used during development.  If unsure, say "n".
-+config CMA_DEBUGFS
-+	bool "CMA debugfs interface support"
-+	depends on CMA_DEVELOPEMENT && DEBUG_FS
-+	help
-+	  Enable support for debugfs interface.  It is available under the
-+	  "contiguous" directory in the debugfs root directory.  Each
-+	  region and allocator is represented there.
++static void __cma_bf_free(struct cma_region *reg, union cma_bf_item *chunk);
 +
-+	  For more information consult
-+	  <Documentation/contiguous-memory.txt>.
+ struct cma *cma_bf_alloc(struct cma_region *reg,
+ 			 size_t size, unsigned long alignment)
+ {
+@@ -281,10 +283,17 @@ case_2:
  
- config CMA_GENERIC_ALLOCATOR
- 	bool "CMA generic allocator"
+ 	item->chunk.phys = start;
+ 	item->chunk.size = size;
++
++	ret = __cma_grab(reg, start, size);
++	if (ret) {
++		__cma_bf_free(reg, item);
++		return ERR_PTR(ret);
++	}
++
+ 	return &item->chunk;
+ }
+ 
+-static void cma_bf_free(struct cma_chunk *chunk)
++static void __cma_bf_free(struct cma_region *reg, union cma_bf_item *item)
+ {
+ 	struct cma_bf_private *prv = reg->private_data;
+ 	union cma_bf_item *prev;
+@@ -350,6 +359,7 @@ next:
+ 	}
+ }
+ 
++static void cma_bf_free(struct cma *chunk)
+ {
+ 	__cma_ungrab(chunk->reg, chunk->phys, chunk->size);
+ 	__cma_bf_free(chunk->reg, 
 diff --git a/mm/cma.c b/mm/cma.c
-index 17276b3..dfdeeb7 100644
+index dfdeeb7..510181a 100644
 --- a/mm/cma.c
 +++ b/mm/cma.c
-@@ -34,11 +34,16 @@
- #include <linux/slab.h>        /* kmalloc() */
- #include <linux/string.h>      /* str*() */
- #include <linux/genalloc.h>    /* gen_pool_*() */
-+#include <linux/debugfs.h>     /* debugfs stuff */
-+#include <linux/uaccess.h>     /* copy_{to,from}_user */
+@@ -39,6 +39,13 @@
  
  #include <linux/cma.h>
  
- 
--/* Protects cma_regions, cma_allocators, cma_map and cma_map_length. */
-+/*
-+ * Protects cma_regions, cma_allocators, cma_map, cma_map_length,
-+ * cma_dfs_regions and cma_dfs_allocators.
-+ */
- static DEFINE_MUTEX(cma_mutex);
- 
- 
-@@ -139,7 +144,13 @@ int __init __must_check cma_early_region_register(struct cma_region *reg)
- 
- /************************* Regions & Allocators *************************/
- 
-+static void __cma_dfs_region_add(struct cma_region *reg);
-+static void __cma_dfs_region_alloc_update(struct cma_region *reg);
-+static void __cma_dfs_allocator_add(struct cma_allocator *alloc);
++#ifdef CONFIG_CMA_USE_MIGRATE_CMA
++#include <linux/page-isolation.h>
 +
- static int __cma_region_attach_alloc(struct cma_region *reg);
-+static void __maybe_unused __cma_region_detach_alloc(struct cma_region *reg);
++#include <asm/page.h>
 +
++#include "internal.h"          /* __free_pageblock_cma() */
++#endif
  
- /* List of all regions.  Named regions are kept before unnamed. */
- static LIST_HEAD(cma_regions);
-@@ -222,6 +233,8 @@ int __must_check cma_region_register(struct cma_region *reg)
- 	else
- 		list_add_tail(&reg->list, &cma_regions);
+ /*
+  * Protects cma_regions, cma_allocators, cma_map, cma_map_length,
+@@ -410,6 +417,222 @@ __cma_early_reserve(struct cma_region *reg)
+ 	return tried ? -ENOMEM : -EOPNOTSUPP;
+ }
  
-+	__cma_dfs_region_add(reg);
++#ifdef CONFIG_CMA_USE_MIGRATE_CMA
 +
- done:
- 	mutex_unlock(&cma_mutex);
- 
-@@ -298,6 +311,8 @@ int cma_allocator_register(struct cma_allocator *alloc)
- 		__cma_region_attach_alloc(reg);
- 	}
- 
-+	__cma_dfs_allocator_add(alloc);
++static struct cma_grabbed_early {
++	phys_addr_t start;
++	size_t size;
++} cma_grabbed_early[16] __initdata;
++static unsigned cma_grabbed_early_count __initdata;
 +
- 	mutex_unlock(&cma_mutex);
- 
- 	pr_debug("%s: allocator registered\n", alloc->name ?: "(unnamed)");
-@@ -481,6 +496,476 @@ static int __init cma_init(void)
- subsys_initcall(cma_init);
- 
- 
-+/************************* Debugfs *************************/
-+
-+#if defined CONFIG_CMA_DEBUGFS
-+
-+static struct dentry *cma_dfs_regions, *cma_dfs_allocators;
-+
-+struct cma_dfs_file {
-+	const char *name;
-+	const struct file_operations *ops;
-+};
-+
-+static struct dentry *
-+cma_dfs_create_file(const char *name, struct dentry *parent,
-+		    void *priv, const struct file_operations *ops)
++/* XXX Revisit */
++#ifdef phys_to_pfn
++/* nothing to do */
++#elif defined __phys_to_pfn
++#  define phys_to_pfn __phys_to_pfn
++#else
++#  warning correct phys_to_pfn implementation needed
++static unsigned long phys_to_pfn(phys_addr_t phys)
 +{
-+	struct dentry *d;
-+	d = debugfs_create_file(name, ops->write ? 0644 : 0444,
-+				parent, priv, ops);
-+	if (IS_ERR_OR_NULL(d)) {
-+		pr_err("debugfs: %s: %s: unable to create\n",
-+		       parent->d_iname, name);
-+		return NULL;
++	return virt_to_pfn(phys_to_virt(phys));
++}
++#endif
++
++static unsigned long pfn_to_maxpage(unsigned long pfn)
++{
++	return pfn & ~(MAX_ORDER_NR_PAGES - 1);
++}
++
++static unsigned long pfn_to_maxpage_up(unsigned long pfn)
++{
++	return ALIGN(pfn, MAX_ORDER_NR_PAGES);
++}
++
++static int __init cma_free_grabbed(void)
++{
++	struct cma_grabbed_early *r = cma_grabbed_early;
++	unsigned i = cma_grabbed_early_count;
++
++	for (; i; --i, ++r) {
++		struct page *p = phys_to_page(r->start);
++		unsigned j = r->size >> (PAGE_SHIFT + pageblock_order);
++
++		pr_debug("feeding buddy with: %p + %u * %luM\n",
++			 (void *)r->start,
++			 j, 1ul << (PAGE_SHIFT + pageblock_order - 20));
++
++		do {
++			__free_pageblock_cma(p);
++			p += pageblock_nr_pages;
++		} while (--j);
 +	}
 +
-+	return d;
-+}
-+
-+static void cma_dfs_create_files(const struct cma_dfs_file *files,
-+				 struct dentry *parent, void *priv)
-+{
-+	while (files->name
-+	    && cma_dfs_create_file(files->name, parent, priv, files->ops))
-+		++files;
-+}
-+
-+static struct dentry *
-+cma_dfs_create_dir(const char *name, struct dentry *parent)
-+{
-+	struct dentry *d = debugfs_create_dir(name, parent);
-+
-+	if (IS_ERR_OR_NULL(d)) {
-+		pr_err("debugfs: %s: %s: unable to create\n",
-+		       parent ? (const char *)parent->d_iname : "<root>", name);
-+		return NULL;
-+	}
-+
-+	return d;
-+}
-+
-+static struct dentry *
-+cma_dfs_create_lnk(const char *name, struct dentry *parent, const char *target)
-+{
-+	struct dentry *d = debugfs_create_symlink(name, parent, target);
-+
-+	if (IS_ERR_OR_NULL(d)) {
-+		pr_err("debugfs: %s: %s: unable to create\n",
-+		       parent->d_iname, name);
-+		return NULL;
-+	}
-+
-+	return d;
-+}
-+
-+static int cma_dfs_open(struct inode *inode, struct file *file)
-+{
-+	file->private_data = inode->i_private;
 +	return 0;
 +}
++module_init(cma_free_grabbed);
 +
-+static ssize_t cma_dfs_map_read(struct file *file, char __user *buf,
-+				size_t size, loff_t *offp)
++static phys_addr_t
++__cma_early_region_reserve_try_migrate_cma(struct cma_region *reg)
 +{
-+	ssize_t len;
++	int ret;
 +
-+	if (!cma_map_length || *offp)
-+		return 0;
++	if (((reg->start | reg->size) & ((PAGE_SIZE << MAX_ORDER) - 1)))
++		return -EOPNOTSUPP;
 +
-+	mutex_lock(&cma_mutex);
++	/*
++	 * XXX Revisit: Do we need to check if the region is
++	 * consistent?  For instance, are all pages valid and part of
++	 * the same zone?
++	 */
 +
-+	/* may have changed */
-+	len = cma_map_length;
-+	if (!len)
-+		goto done;
-+
-+	len = min_t(size_t, size, len);
-+	if (copy_to_user(buf, cma_map, len))
-+		len = -EFAULT;
-+	else if ((size_t)len < size && put_user('\n', buf + len++))
-+		len = -EFAULT;
-+
-+done:
-+	mutex_unlock(&cma_mutex);
-+
-+	if (len > 0)
-+		*offp = len;
-+
-+	return len;
-+}
-+
-+static ssize_t cma_dfs_map_write(struct file *file, const char __user *buf,
-+				 size_t size, loff_t *offp)
-+{
-+	char *val, *v;
-+	ssize_t len;
-+
-+	if (size >= PAGE_SIZE || *offp)
-+		return -ENOSPC;
-+
-+	val = kmalloc(size + 1, GFP_KERNEL);
-+	if (!val)
-+		return -ENOMEM;
-+
-+	if (copy_from_user(val, buf, size)) {
-+		len = -EFAULT;
-+		goto done;
-+	}
-+	val[size] = '\0';
-+
-+	len = cma_map_validate(val);
-+	if (len < 0)
-+		goto done;
-+	val[len] = '\0';
-+
-+	mutex_lock(&cma_mutex);
-+	v = (char *)cma_map;
-+	cma_map = val;
-+	val = v;
-+	cma_map_length = len;
-+	mutex_unlock(&cma_mutex);
-+
-+done:
-+	kfree(val);
-+
-+	if (len > 0)
-+		*offp = len;
-+
-+	return len;
-+}
-+
-+static int __init cma_dfs_init(void)
-+{
-+	static const struct file_operations map_ops = {
-+		.read = cma_dfs_map_read,
-+		.write = cma_dfs_map_write,
-+	};
-+
-+	struct dentry *root, *a, *r;
-+
-+	root = cma_dfs_create_dir("contiguous", NULL);
-+	if (!root)
-+		return 0;
-+
-+	if (!cma_dfs_create_file("map", root, NULL, &map_ops))
-+		goto error;
-+
-+	a = cma_dfs_create_dir("allocators", root);
-+	if (!a)
-+		goto error;
-+
-+	r = cma_dfs_create_dir("regions", root);
-+	if (!r)
-+		goto error;
-+
-+	mutex_lock(&cma_mutex);
-+	{
-+		struct cma_allocator *alloc;
-+		cma_dfs_allocators = a;
-+		cma_foreach_allocator(alloc)
-+			__cma_dfs_allocator_add(alloc);
-+	}
-+
-+	{
-+		struct cma_region *reg;
-+		cma_dfs_regions = r;
-+		cma_foreach_region(reg)
-+			__cma_dfs_region_add(reg);
-+	}
-+	mutex_unlock(&cma_mutex);
-+
-+	return 0;
-+
-+error:
-+	debugfs_remove_recursive(root);
-+	return 0;
-+}
-+device_initcall(cma_dfs_init);
-+
-+static ssize_t cma_dfs_region_name_read(struct file *file, char __user *buf,
-+					size_t size, loff_t *offp)
-+{
-+	struct cma_region *reg = file->private_data;
-+	size_t len;
-+
-+	if (!reg->name || *offp)
-+		return 0;
-+
-+	len = min(strlen(reg->name), size);
-+	if (copy_to_user(buf, reg->name, len))
-+		return -EFAULT;
-+	if (len < size && put_user('\n', buf + len++))
-+		return -EFAULT;
-+
-+	*offp = len;
-+	return len;
-+}
-+
-+static ssize_t cma_dfs_region_info_read(struct file *file, char __user *buf,
-+					size_t size, loff_t *offp)
-+{
-+	struct cma_region *reg = file->private_data;
-+	char str[min((size_t)63, size) + 1];
-+	int len;
-+
-+	if (*offp)
-+		return 0;
-+
-+	len = snprintf(str, sizeof str, "%p %p %p\n",
-+		       (void *)reg->start, (void *)reg->size,
-+		       (void *)reg->free_space);
-+
-+	if (copy_to_user(buf, str, len))
-+		return -EFAULT;
-+
-+	*offp = len;
-+	return len;
-+}
-+
-+static ssize_t cma_dfs_region_alloc_read(struct file *file, char __user *buf,
-+					 size_t size, loff_t *offp)
-+{
-+	struct cma_region *reg = file->private_data;
-+	char str[min((size_t)63, size) + 1];
-+	const char *fmt;
-+	const void *arg;
-+	int len = 0;
-+
-+	if (*offp)
-+		return 0;
-+
-+	mutex_lock(&cma_mutex);
-+
-+	if (reg->alloc) {
-+		if (reg->alloc->name) {
-+			fmt = "%s\n";
-+			arg = reg->alloc->name;
-+		} else {
-+			fmt = "0x%p\n";
-+			arg = (void *)reg->alloc;
++	if (cma_grabbed_early_count >= ARRAY_SIZE(cma_grabbed_early)) {
++		static bool once = true;
++		if (once) {
++			pr_warn("grabbed too many ranges, not all will be MIGRATE_CMA");
++			once = false;
 +		}
-+	} else if (reg->alloc_name) {
-+		fmt = "[%s]\n";
-+		arg = reg->alloc_name;
-+	} else {
-+		goto done;
++		return -EOPNOTSUPP;
 +	}
 +
-+	len = snprintf(str, sizeof str, fmt, arg);
++	pr_debug("init: reserving region as MIGRATE_CMA\n");
 +
-+done:
-+	mutex_unlock(&cma_mutex);
++	reg->alignment = max(reg->alignment,
++			     (unsigned long)PAGE_SHIFT << MAX_ORDER);
 +
-+	if (len) {
-+		if (copy_to_user(buf, str, len))
-+			return -EFAULT;
-+		*offp = len;
-+	}
-+	return len;
++	ret = __cma_early_reserve(reg);
++	if (ret)
++		return ret;
++
++	cma_grabbed_early[cma_grabbed_early_count].start = reg->start;
++	cma_grabbed_early[cma_grabbed_early_count].size  = reg->size;
++	++cma_grabbed_early_count;
++
++	reg->use_isolate = 1;
++
++	return 0;
 +}
 +
-+static ssize_t
-+cma_dfs_region_alloc_write(struct file *file, const char __user *buf,
-+			   size_t size, loff_t *offp)
++int __cma_grab(struct cma_region *reg, phys_addr_t start_addr, size_t size)
 +{
-+	struct cma_region *reg = file->private_data;
-+	ssize_t ret;
-+	char *s, *t;
++	unsigned long start, end, _start, _end;
++	int ret;
 +
-+	if (size > 64 || *offp)
-+		return -ENOSPC;
++	if (!reg->use_isolate)
++		return 0;
 +
-+	if (reg->alloc && reg->users)
-+		return -EBUSY;
++	pr_debug("%s\n", __func__);
 +
-+	s = kmalloc(size + 1, GFP_KERNEL);
-+	if (!s)
-+		return -ENOMEM;
++	/*
++	 * What we do here is we mark all pageblocks in range as
++	 * MIGRATE_ISOLATE.  Because of the way page allocator work, we
++	 * align the range to MAX_ORDER pages so that page allocator
++	 * won't try to merge buddies from different pageblocks and
++	 * change MIGRATE_ISOLATE to some other migration type.
++	 *
++	 * Once the pageblocks are marked as MIGRATE_ISOLATE, we
++	 * migrate the pages from an unaligned range (ie. pages that
++	 * we are interested in).  This will put all the pages in
++	 * range back to page allocator as MIGRATE_ISOLATE.
++	 *
++	 * When this is done, we take the pages in range from page
++	 * allocator removing them from the buddy system.  This way
++	 * page allocator will never consider using them.
++	 *
++	 * This lets us mark the pageblocks back as MIGRATE_CMA so
++	 * that free pages in the MAX_ORDER aligned range but not in
++	 * the unaligned, original range are put back to page
++	 * allocator so that buddy can use them.
++	 */
 +
-+	if (copy_from_user(s, buf, size)) {
-+		ret = -EFAULT;
-+		goto done_free;
-+	}
++	start = phys_to_pfn(start_addr);
++	end   = start + (size >> PAGE_SHIFT);
 +
-+	s[size] = '\0';
-+	t = strchr(s, '\n');
-+	if (t == s) {
-+		kfree(s);
-+		s = NULL;
-+	}
-+	if (t)
-+		*t = '\0';
++	pr_debug("\tisolate range(%lx, %lx)\n",
++		 pfn_to_maxpage(start), pfn_to_maxpage_up(end));
++	ret = __start_isolate_page_range(pfn_to_maxpage(start),
++					 pfn_to_maxpage_up(end), MIGRATE_CMA);
++	if (ret)
++		goto done;
 +
-+	mutex_lock(&cma_mutex);
++	pr_debug("\tmigrate range(%lx, %lx)\n", start, end);
++	ret = do_migrate_range(start, end);
++	if (ret)
++		goto done;
 +
-+	/* things may have changed while we were acquiring lock */
-+	if (reg->alloc && reg->users) {
-+		ret = -EBUSY;
-+	} else {
-+		if (reg->alloc)
-+			__cma_region_detach_alloc(reg);
++	/*
++	 * Pages from [start, end) are within a MAX_ORDER aligned
++	 * blocks that are marked as MIGRATE_ISOLATE.  What's more,
++	 * all pages in [start, end) are free in page allocator.  What
++	 * we are going to do is to allocate all pages from [start,
++	 * end) (that is remove them from page allocater).
++	 *
++	 * The only problem is that pages at the beginning and at the
++	 * end of interesting range may be not aligned with pages that
++	 * page allocator holds, ie. they can be part of higher order
++	 * pages.  Because of this, we reserve the bigger range and
++	 * once this is done free the pages we are not interested in.
++	 */
 +
-+		t = s;
-+		s = reg->free_alloc_name ? (char *)reg->alloc_name : NULL;
++	pr_debug("\tfinding buddy\n");
++	ret = 0;
++	while (!PageBuddy(pfn_to_page(start & (~0UL << ret))))
++		if (WARN_ON(++ret > MAX_ORDER))
++			return -EINVAL;
 +
-+		reg->alloc_name = t;
-+		reg->free_alloc_name = 1;
++	_start = start & (~0UL << ret);
++	pr_debug("\talloc freed(%lx, %lx)\n", _start, end);
++	_end   = alloc_contig_freed_pages(_start, end, 0);
 +
-+		ret = size;
-+	}
++	/* Free head and tail (if any) */
++	pr_debug("\tfree contig(%lx, %lx)\n", _start, start);
++	free_contig_pages(pfn_to_page(_start), start - _start);
++	pr_debug("\tfree contig(%lx, %lx)\n", end, _end);
++	free_contig_pages(pfn_to_page(end), _end - end);
 +
-+	mutex_unlock(&cma_mutex);
++	ret = 0;
 +
-+done_free:
-+	kfree(s);
++done:
++	pr_debug("\tundo isolate range(%lx, %lx)\n",
++		 pfn_to_maxpage(start), pfn_to_maxpage_up(end));
++	__undo_isolate_page_range(pfn_to_maxpage(start),
++				  pfn_to_maxpage_up(end), MIGRATE_CMA);
 +
-+	if (ret > 0)
-+		*offp = ret;
++	pr_debug("ret = %d\n", ret);
 +	return ret;
 +}
++EXPORT_SYMBOL_GPL(__cma_grab);
 +
-+static const struct cma_dfs_file __cma_dfs_region_files[] = {
-+	{
-+		"name", &(const struct file_operations){
-+			.open = cma_dfs_open,
-+			.read = cma_dfs_region_name_read,
-+		},
-+	},
-+	{
-+		"info", &(const struct file_operations){
-+			.open = cma_dfs_open,
-+			.read = cma_dfs_region_info_read,
-+		},
-+	},
-+	{
-+		"alloc", &(const struct file_operations){
-+			.open = cma_dfs_open,
-+			.read = cma_dfs_region_alloc_read,
-+			.write = cma_dfs_region_alloc_write,
-+		},
-+	},
-+	{ }
-+};
-+
-+static void __cma_dfs_region_add(struct cma_region *reg)
++void __cma_ungrab(struct cma_region *reg, phys_addr_t start, size_t size)
 +{
-+	struct dentry *d;
-+
-+	if (!cma_dfs_regions || reg->dir)
-+		return;
-+
-+	/* Region's directory */
-+	reg->from_alloc_link = kasprintf(GFP_KERNEL, "../../regions/0x%p",
-+					 (void *)reg->start);
-+	if (!reg->from_alloc_link)
-+		return;
-+
-+	d = cma_dfs_create_dir(reg->from_alloc_link + 14, cma_dfs_regions);
-+	if (!d) {
-+		kfree(reg->from_alloc_link);
-+		return;
-+	}
-+
-+	if (reg->name)
-+		cma_dfs_create_lnk(reg->name, cma_dfs_regions,
-+				   reg->from_alloc_link + 14);
-+
-+	reg->dir = d;
-+
-+	/* Files */
-+	cma_dfs_create_files(__cma_dfs_region_files, d, reg);
-+
-+	/* Link to allocator */
-+	__cma_dfs_region_alloc_update(reg);
++	if (reg->use_isolate)
++		free_contig_pages(pfn_to_page(phys_to_pfn(start)),
++				  size >> PAGE_SHIFT);
 +}
-+
-+static void __cma_dfs_region_alloc_update(struct cma_region *reg)
-+{
-+	if (!cma_dfs_regions || !cma_dfs_allocators || !reg->dir)
-+		return;
-+
-+	/* Remove stall links */
-+	if (reg->to_alloc) {
-+		debugfs_remove(reg->to_alloc);
-+		reg->to_alloc = NULL;
-+	}
-+
-+	if (reg->from_alloc) {
-+		debugfs_remove(reg->from_alloc);
-+		reg->from_alloc = NULL;
-+	}
-+
-+	if (reg->to_alloc_link) {
-+		kfree(reg->to_alloc_link);
-+		reg->to_alloc_link = NULL;
-+	}
-+
-+	if (!reg->alloc)
-+		return;
-+
-+	/* Create new links */
-+	if (reg->alloc->regs_dir)
-+		reg->from_alloc =
-+			cma_dfs_create_lnk(reg->from_alloc_link + 14,
-+					   reg->alloc->regs_dir,
-+					   reg->from_alloc_link);
-+
-+	if (!reg->alloc->dir_name)
-+		return;
-+
-+	reg->to_alloc_link = kasprintf(GFP_KERNEL, "../allocators/%s",
-+				       reg->alloc->dir_name);
-+	if (reg->to_alloc_link &&
-+	    !cma_dfs_create_lnk("allocator", reg->dir, reg->to_alloc_link)) {
-+		kfree(reg->to_alloc_link);
-+		reg->to_alloc_link = NULL;
-+	}
-+}
-+
-+static inline void __cma_dfs_allocator_add(struct cma_allocator *alloc)
-+{
-+	struct dentry *d;
-+
-+	if (!cma_dfs_allocators || alloc->dir_name)
-+		return;
-+
-+	alloc->dir_name = alloc->name ?:
-+		kasprintf(GFP_KERNEL, "0x%p", (void *)alloc);
-+	if (!alloc->dir_name)
-+		return;
-+
-+	d = cma_dfs_create_dir(alloc->dir_name, cma_dfs_allocators);
-+	if (!d) {
-+		if (!alloc->name)
-+			kfree(alloc->dir_name);
-+		alloc->dir_name = NULL;
-+		return;
-+	}
-+
-+	alloc->regs_dir = cma_dfs_create_dir("regions", d);
-+}
++EXPORT_SYMBOL_GPL(__cma_ungrab);
 +
 +#else
 +
-+static inline void __cma_dfs_region_add(struct cma_region *reg)
++static inline phys_addr_t
++__cma_early_region_reserve_try_migrate_cma(struct cma_region *reg)
 +{
-+	/* nop */
++	return -EOPNOTSUPP;
 +}
 +
-+static inline void __cma_dfs_allocator_add(struct cma_allocator *alloc)
++int __cma_grab(struct cma_region *reg, phys_addr_t start, size_t size)
 +{
-+	/* nop */
++	(void)reg; (void)start; (void)size;
++	return 0;
 +}
++EXPORT_SYMBOL_GPL(__cma_grab);
 +
-+static inline void __cma_dfs_region_alloc_update(struct cma_region *reg)
++void __cma_ungrab(struct cma_region *reg, phys_addr_t start, size_t size)
 +{
-+	/* nop */
++	(void)reg; (void)start; (void)size;
 +}
++EXPORT_SYMBOL_GPL(__cma_ungrab);
 +
 +#endif
 +
-+
- /************************* The Device API *************************/
+ int __init cma_early_region_reserve(struct cma_region *reg)
+ {
+ 	int ret;
+@@ -420,6 +643,13 @@ int __init cma_early_region_reserve(struct cma_region *reg)
+ 	    reg->reserved)
+ 		return -EINVAL;
  
- static const char *__must_check
-@@ -731,10 +1216,24 @@ static int __cma_region_attach_alloc(struct cma_region *reg)
- 		reg->alloc = alloc;
- 		pr_debug("init: %s: %s: initialised allocator\n",
- 			 reg->name ?: "(private)", alloc->name ?: "(unnamed)");
-+		__cma_dfs_region_alloc_update(reg);
++	/*
++	 * Try using cma_early_grab_maxpages() if the requested
++	 * region's start is aligned to PAGE_SIZE << MAX_ORDER and
++	 * its size is PAGE_SIZE << MAX_ORDER multiple.
++	 */
++	ret = __cma_early_region_reserve_try_migrate_cma(reg);
++	if (ret ==-EOPNOTSUPP)
+ 	ret = __cma_early_reserve(reg);
+ 	if (!ret)
+ 		reg->reserved = 1;
+@@ -1393,6 +1623,7 @@ struct cma *cma_gen_alloc(struct cma_region *reg,
+ {
+ 	unsigned long start;
+ 	struct cma *chunk;
++	int ret;
+ 
+ 	chunk = kmalloc(sizeof *chunk, GFP_KERNEL);
+ 	if (unlikely(!chunk))
+@@ -1405,6 +1636,13 @@ struct cma *cma_gen_alloc(struct cma_region *reg,
+ 		return ERR_PTR(-ENOMEM);
  	}
- 	return ret;
+ 
++	ret = __cma_grab(reg, start, size);
++	if (ret) {
++		gen_pool_free(reg->private_data, start, size);
++		kfree(chunk);
++		return ERR_PTR(ret);
++	}
++
+ 	chunk->phys = start;
+ 	chunk->size = size;
+ 	return chunk;
+@@ -1413,6 +1651,7 @@ struct cma *cma_gen_alloc(struct cma_region *reg,
+ static void cma_gen_free(struct cma *chunk)
+ {
+ 	gen_pool_free(chunk->reg->private_data, chunk->phys, chunk->size);
++	__cma_ungrab(chunk->reg, chunk->phys, chunk->size);
+ 	kfree(chunk);
  }
  
-+static void __cma_region_detach_alloc(struct cma_region *reg)
-+{
-+	if (!reg->alloc)
-+		return;
-+
-+	if (reg->alloc->cleanup)
-+		reg->alloc->cleanup(reg);
-+
-+	reg->alloc = NULL;
-+	reg->used = 1;
-+	__cma_dfs_region_alloc_update(reg);
-+}
-+
- 
- /*
-  * s            ::= rules
 -- 
 1.7.2.3
 
