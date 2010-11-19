@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab0KSVp3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:45:29 -0500
-Received: from kroah.org ([198.145.64.141]:51725 "EHLO coco.kroah.org"
+	id S1757291Ab0KSVp2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:45:28 -0500
+Received: from kroah.org ([198.145.64.141]:51731 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757241Ab0KSVpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:45:22 -0500
+	id S1757242Ab0KSVpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:45:23 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:10 2010
-Message-Id: <20101119214410.246527596@clark.site>
+Message-Id: <20101119214410.328367869@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:42:50 -0800
+Date: Fri, 19 Nov 2010 13:42:51 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alok N Kataria <akataria@vmware.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [10/45] x86, kexec: Make sure to stop all CPUs before exiting the kernel
+        Daniel Drake <dsd@laptop.org>, dilinger@queued.net,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [11/45] x86, olpc: Dont retry EC commands forever
 In-Reply-To: <20101119214439.GA26350@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,145 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alok Kataria <akataria@vmware.com>
+From: Paul Fox <pgf@laptop.org>
 
-commit 76fac077db6b34e2c6383a7b4f3f4f7b7d06d8ce upstream.
+commit 286e5b97eb22baab9d9a41ca76c6b933a484252c upstream.
 
-x86 smp_ops now has a new op, stop_other_cpus which takes a parameter
-"wait" this allows the caller to specify if it wants to stop until all
-the cpus have processed the stop IPI.  This is required specifically
-for the kexec case where we should wait for all the cpus to be stopped
-before starting the new kernel.  We now wait for the cpus to stop in
-all cases except for panic/kdump where we expect things to be broken
-and we are doing our best to make things work anyway.
+Avoids a potential infinite loop.
 
-This patch fixes a legitimate regression, which was introduced during
-2.6.30, by commit id 4ef702c10b5df18ab04921fc252c26421d4d6c75.
+It was observed once, during an EC hacking/debugging
+session - not in regular operation.
 
-Signed-off-by: Alok N Kataria <akataria@vmware.com>
-LKML-Reference: <1286833028.1372.20.camel@ank32.eng.vmware.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Jeremy Fitzhardinge <jeremy@xensource.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+Cc: dilinger@queued.net
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/include/asm/smp.h |    9 +++++++--
- arch/x86/kernel/reboot.c   |    2 +-
- arch/x86/kernel/smp.c      |   15 +++++++++------
- arch/x86/xen/enlighten.c   |    2 +-
- arch/x86/xen/smp.c         |    6 +++---
- 5 files changed, 21 insertions(+), 13 deletions(-)
+ arch/x86/kernel/olpc.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -50,7 +50,7 @@ struct smp_ops {
- 	void (*smp_prepare_cpus)(unsigned max_cpus);
- 	void (*smp_cpus_done)(unsigned max_cpus);
- 
--	void (*smp_send_stop)(void);
-+	void (*stop_other_cpus)(int wait);
- 	void (*smp_send_reschedule)(int cpu);
- 
- 	int (*cpu_up)(unsigned cpu);
-@@ -73,7 +73,12 @@ extern struct smp_ops smp_ops;
- 
- static inline void smp_send_stop(void)
- {
--	smp_ops.smp_send_stop();
-+	smp_ops.stop_other_cpus(0);
-+}
-+
-+static inline void stop_other_cpus(void)
-+{
-+	smp_ops.stop_other_cpus(1);
- }
- 
- static inline void smp_prepare_boot_cpu(void)
---- a/arch/x86/kernel/reboot.c
-+++ b/arch/x86/kernel/reboot.c
-@@ -633,7 +633,7 @@ void native_machine_shutdown(void)
- 	/* O.K Now that I'm on the appropriate processor,
- 	 * stop all of the others.
- 	 */
--	smp_send_stop();
-+	stop_other_cpus();
- #endif
- 
- 	lapic_shutdown();
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -158,10 +158,10 @@ asmlinkage void smp_reboot_interrupt(voi
- 	irq_exit();
- }
- 
--static void native_smp_send_stop(void)
-+static void native_stop_other_cpus(int wait)
- {
+--- a/arch/x86/kernel/olpc.c
++++ b/arch/x86/kernel/olpc.c
+@@ -115,6 +115,7 @@ int olpc_ec_cmd(unsigned char cmd, unsig
  	unsigned long flags;
--	unsigned long wait;
-+	unsigned long timeout;
+ 	int ret = -EIO;
+ 	int i;
++	int restarts = 0;
  
- 	if (reboot_force)
- 		return;
-@@ -178,9 +178,12 @@ static void native_smp_send_stop(void)
- 	if (num_online_cpus() > 1) {
- 		apic->send_IPI_allbutself(REBOOT_VECTOR);
+ 	spin_lock_irqsave(&ec_lock, flags);
  
--		/* Don't wait longer than a second */
--		wait = USEC_PER_SEC;
--		while (num_online_cpus() > 1 && wait--)
-+		/*
-+		 * Don't wait longer than a second if the caller
-+		 * didn't ask us to wait.
-+		 */
-+		timeout = USEC_PER_SEC;
-+		while (num_online_cpus() > 1 && (wait || timeout--))
- 			udelay(1);
- 	}
- 
-@@ -226,7 +229,7 @@ struct smp_ops smp_ops = {
- 	.smp_prepare_cpus	= native_smp_prepare_cpus,
- 	.smp_cpus_done		= native_smp_cpus_done,
- 
--	.smp_send_stop		= native_smp_send_stop,
-+	.stop_other_cpus	= native_stop_other_cpus,
- 	.smp_send_reschedule	= native_smp_send_reschedule,
- 
- 	.cpu_up			= native_cpu_up,
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -998,7 +998,7 @@ static void xen_reboot(int reason)
- 	struct sched_shutdown r = { .reason = reason };
- 
- #ifdef CONFIG_SMP
--	smp_send_stop();
-+	stop_other_cpus();
- #endif
- 
- 	if (HYPERVISOR_sched_op(SCHEDOP_shutdown, &r))
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -396,9 +396,9 @@ static void stop_self(void *v)
- 	BUG();
- }
- 
--static void xen_smp_send_stop(void)
-+static void xen_stop_other_cpus(int wait)
- {
--	smp_call_function(stop_self, NULL, 0);
-+	smp_call_function(stop_self, NULL, wait);
- }
- 
- static void xen_smp_send_reschedule(int cpu)
-@@ -466,7 +466,7 @@ static const struct smp_ops xen_smp_ops
- 	.cpu_disable = xen_cpu_disable,
- 	.play_dead = xen_play_dead,
- 
--	.smp_send_stop = xen_smp_send_stop,
-+	.stop_other_cpus = xen_stop_other_cpus,
- 	.smp_send_reschedule = xen_smp_send_reschedule,
- 
- 	.send_call_func_ipi = xen_smp_send_call_function_ipi,
+@@ -171,7 +172,9 @@ restart:
+ 			if (wait_on_obf(0x6c, 1)) {
+ 				printk(KERN_ERR "olpc-ec:  timeout waiting for"
+ 						" EC to provide data!\n");
+-				goto restart;
++				if (restarts++ < 10)
++					goto restart;
++				goto err;
+ 			}
+ 			outbuf[i] = inb(0x68);
+ 			printk(KERN_DEBUG "olpc-ec:  received 0x%x\n",
 
 
