@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab0KSPVj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 10:21:39 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:44305 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754778Ab0KSPVh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 10:21:37 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAG8k5kxLd/sX/2dsb2JhbAAHgz3MOpEOgSKDNnMEhFqLEw
-X-IronPort-AV: E=Sophos;i="4.59,223,1288584000"; 
-   d="scan'208";a="82986022"
-Message-ID: <4CE695FF.20601@teksavvy.com>
-Date: Fri, 19 Nov 2010 10:21:35 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	id S1754870Ab0KSPXs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 10:23:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12378 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754595Ab0KSPXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 10:23:47 -0500
+Date: Fri, 19 Nov 2010 10:23:30 -0500
+From: Jason Baron <jbaron@redhat.com>
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: Avantika Mathur <mathur@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] New utility: 'trace'
+Message-ID: <20101119152330.GA2890@redhat.com>
+References: <alpine.LFD.2.00.1011162103580.2900@localhost6.localdomain6> <1290041086-sup-5766@au1.ibm.com> <20101118151141.GA3368@redhat.com> <1290133618-sup-2278@au1.ibm.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Chris Mason <chris.mason@oracle.com>,
-        James Bottomley <james.bottomley@suse.de>,
-        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
-        Lukas Czerner <lczerner@redhat.com>, tytso <tytso@mit.edu>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        sandeen <sandeen@redhat.com>
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com> <20101118130630.GJ6178@parisc-linux.org> <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org> <1290100750.3041.72.camel@mulgrave.site> <4CE59C9E.6050902@teksavvy.com> <1290177488-sup-6540@think> <4CE68F80.7000607@teksavvy.com> <20101119145748.GB27919@infradead.org>
-In-Reply-To: <20101119145748.GB27919@infradead.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290133618-sup-2278@au1.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-11-19 09:57 AM, Christoph Hellwig wrote:
-> On Fri, Nov 19, 2010 at 09:53:52AM -0500, Mark Lord wrote:
->> On 10-11-19 09:40 AM, Chris Mason wrote:
->>>
->>> We've been told that online and constant trimming is the default in
->>> windows7.   The ssds are most likely to just start ignoring the trims
->>> they can't service efficiently.
->>
->> Win7 collects multiple TRIM ranges over time and batches them as single TRIMs
->> (as reported to me by an SSD vendor who traced it with a SATA analyzer,
->>   and who also apparently has "inside info").
->
-> I really hate to rely on this third party hearsay (from all sides), and
-> have implement TRIM support in qemu now.  I'll soon install win7 and
-> will check out the TRIM patters myself.
+On Fri, Nov 19, 2010 at 01:32:08PM +1100, Ian Munsie wrote:
+> Hi Jason,
+> 
+> I'm adding Avantika to the CC list as she recently contacted me
+> regarding syscall tracepoints on PowerPC.
+> 
+> Excerpts from Jason Baron's message of Fri Nov 19 02:11:42 +1100 2010:
+> > I was wondering what the status of those patches were...last I remember
+> > they looked pretty good to me...I'd be more than happy to help review
+> > those.
+> 
+> Yeah there isn't much left to do on them - the main delay has just been
+> finding some time to work on them.
+> 
+> I did want to revisit the naming of the events and the subtle
+> differences for syscalls with a single implementation for both the
+> native and compat versions versus those that have separate
+> implementations - I don't want userspace to have to care about that
+> distinction.
+> 
+> I recall there were a few comments on some of your patches in the series
+> - if I rebase the patches on the current tip tree and publish the tree
+> somewhere would you be willing to take a look at those?
+> 
 
-Excellent!
+sure. the remaining issue was to combine the enabled/disabled flags into
+the 'int nb_args' field since we are only using 3 bits of it. that
+shouldn't be too bad...
+
+thanks,
+
+-Jason
+
