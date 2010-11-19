@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab0KSUgS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 15:36:18 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:38222 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756743Ab0KSUgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 15:36:15 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Shan Wei <shanwei@cn.fujitsu.com>
-Subject: Re: [Bug #23092] WARNING in tty_io.c
-Date: Fri, 19 Nov 2010 21:35:30 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-References: <sKkKYVppECN.A.KhC.Phb5MB@chimera> <ATV3yiK8i4C.A.O7C.ehb5MB@chimera> <4CE5E3EE.1080104@cn.fujitsu.com>
-In-Reply-To: <4CE5E3EE.1080104@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1756760Ab0KSUhM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 15:37:12 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33543
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753301Ab0KSUhK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 15:37:10 -0500
+Date: Fri, 19 Nov 2010 12:37:35 -0800 (PST)
+Message-Id: <20101119.123735.246535099.davem@davemloft.net>
+To: sbhatewara@vmware.com
+Cc: bhutchings@solarflare.com, shemminger@vyatta.com, netdev@vger.kernel.org,
+        pv-drivers@vmware.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.37-rc1] net-next: Add multiqueue support to vmxnet3
+ driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LRH.2.00.1011191023500.8304@sbhatewara-dev1.eng.vmware.com>
+References: <alpine.LRH.2.00.1011191023500.8304@sbhatewara-dev1.eng.vmware.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011192135.30477.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 19, 2010, Shan Wei wrote:
-> Rafael J. Wysocki wrote, at 11/19/2010 07:42 AM:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.36.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23092
-> > Subject		: WARNING in tty_io.c
-> > Submitter	: Shan Wei <shanwei@cn.fujitsu.com>
-> > Date		: 2010-11-10 8:06 (9 days old)
-> > Message-ID	: <4CDA5291.4010802@cn.fujitsu.com>
-> > References	: http://marc.info/?l=linux-kernel&m=128937645120159&w=2
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+Date: Fri, 19 Nov 2010 10:46:59 -0800 (PST)
+
 > 
-> It's not appreared in 2.6.37-rc2+ with top commit 59365d13.
-> I don't know which patch/commit fix it.
+> From: Shreyas Bhatewara <sbhatewara@vmware.com>
+> 
+> Add multiqueue support to vmxnet3 driver
+> 
+> This change adds multiqueue and thus receive side scaling support
+> to vmxnet3 device driver. Number of rx queues is limited to 1 in cases
+> where MSI is not configured or one MSIx vector is not available per rx 
+> queue
+> 
+> Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+> Reviewed-by: Bhavesh Davda <bhavesh@vmware.com>
 
-OK, closed.
+Your patch is corrupted:
 
-Rafael
+> @@ -107,7 +110,7 @@ static void
+>  vmxnet3_tq_start(struct vmxnet3_tx_queue *tq, struct vmxnet3_adapter *adapter)
+>  {
+>  	tq->stopped = false;
+> -	netif_start_queue(adapter->netdev);
+> +	netif_start_subqueue(adapter->netdev, tq - adapter->tx_queue);
+>  }
+>  
+>  
+
+This hunk has an incorrect header, the hunk header states that
+both before and after the change there should be 7 lines in the
+code block, but there are 8.
+
+One way this can happen is if you edit the patch in emacs since
+it has a patch editing mode which kicks which tries to "fix up"
+the hunk headers, but most of the time it actually corrupts them.
