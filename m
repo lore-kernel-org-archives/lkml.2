@@ -1,91 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932982Ab0KSW2d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:28:33 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44513 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932527Ab0KSW2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:28:31 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CMUSBNayOE3YLX4PR2wuyE5Ff070xANonDlNHRVQs8k8dCOt66TW4HbIsAMHADNEqk
-         EQ/nTwdRDu2oUOhPGuxqKhy4uL3WhdWITeoLrZQ3ZN6jiT58giBWHAstV+N09dDsJGaf
-         VRdTK2ZD94jvvoWg78ILxN5AUWD79vNti+zkQ=
-Date: Fri, 19 Nov 2010 23:28:23 +0100
-From: Michal Januszewski <michalj@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Rolf Eike Beer <eike-kernel@sf-tec.de>, linux-kernel@vger.kernel.org,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
-Subject: Re: abs() vs. abs64() (was: Re: [PATCH] fbdev: fix nearest mode
- search)
-Message-ID: <20101119222823.GA28797@quadria>
-Reply-To: michalj@gmail.com
-References: <AANLkTimYDAJr9x00sjGGnDF2vOVXU12qmbnmfuzA5_0h@mail.gmail.com>
- <20101119140721.33576c61.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20101119140721.33576c61.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933011Ab0KSW2q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:28:46 -0500
+Received: from kroah.org ([198.145.64.141]:45108 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757418Ab0KSV6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:41 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:41 2010
+Message-Id: <20101119215641.728717867@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 19 Nov 2010 13:55:57 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Daniel Suchy <danny@danysek.cz>
+Subject: [36/82] USB: ftdi_sio: new VID/PIDs for various Papouch devices
+In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 02:07:21PM -0800, Andrew Morton wrote:
-> On Thu, 18 Nov 2010 07:40:19 +0100
-> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
-> > > 'c' will end up with a value of 0xffffffff instead of the expected 0x1.
-> > 
-> > This happens on 64-bit only, right?
+------------------
 
-Absolutely, I should have mentioned it in the patch description.
+From: Daniel Suchy <danny@danysek.cz>
 
-> How does this look?
->
-> [..]
-> 
-> Reported-by: Michal Januszewski <michalj@gmail.com>
-> Cc: Rolf Eike Beer <eike-kernel@sf-tec.de
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  include/linux/kernel.h |   13 ++++++++++---
->  1 file changed, 10 insertions(+), 3 deletions(-)
-> 
-> diff -puN include/linux/kernel.h~include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit include/linux/kernel.h
-> --- a/include/linux/kernel.h~include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit
-> +++ a/include/linux/kernel.h
-> @@ -143,9 +143,16 @@ extern int _cond_resched(void);
->  
->  #define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
->  
-> -#define abs(x) ({				\
-> -		long __x = (x);			\
-> -		(__x < 0) ? -__x : __x;		\
-> +#define abs(x) ({						\
-> +		long ret;					\
-> +		if (sizeof(x) == sizeof(long)) {		\
-> +			long __x = (x);				\
-> +			ret = (__x < 0) ? -__x : __x;		\
-> +		} else {					\
-> +			int __x = (x);				\
-> +			ret = (__x < 0) ? -__x : __x;		\
-> +		}						\
-> +		ret;						\
->  	})
->  
->  #define abs64(x) ({				\
-> _
+commit 59c6ccd9f9aecfa59c99ceba6d4d34b180547a05 upstream.
 
-Looks good to me.  I posted essentially the same thing some 3 months ago
-(http://marc.info/?l=linux-kernel&m=128033094822201&w=2) but it then
-failed to get any traction.  At any rate, I like your version better as
-it seems more readable.
+This patch for FTDI USB serial driver ads new VID/PIDs used on various
+devices manufactured by Papouch (http://www.papouch.com). These devices
+have their own VID/PID, although they're using standard FTDI chip. In
+ftdi_sio.c, I also made small cleanup to have declarations for all
+Papouch devices together.
 
-Michal
+Signed-off-by: Daniel Suchy <danny@danysek.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/usb/serial/ftdi_sio.c     |   30 +++++++++++++++++++++++++++++-
+ drivers/usb/serial/ftdi_sio_ids.h |   27 ++++++++++++++++++++++++++-
+ 2 files changed, 55 insertions(+), 2 deletions(-)
+
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -675,7 +675,6 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RRCIRKITS_LOCOBUFFER_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ASK_RDR400_PID) },
+ 	{ USB_DEVICE(ICOM_ID1_VID, ICOM_ID1_PID) },
+-	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_TMU_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
+@@ -716,8 +715,37 @@ static struct usb_device_id id_table_com
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(RATOC_VENDOR_ID, RATOC_PRODUCT_ID_USB60F) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_REU_TINY_PID) },
++
++	/* Papouch devices based on FTDI chip */
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AP485_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB422_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485_2_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AP485_2_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB422_2_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485S_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485C_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_LEC_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB232_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_TMU_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_IRAMP_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_DRAK5_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO8x8_PID) },
+ 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO4x4_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO2x2_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO10x1_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO30x3_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO60x3_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO2x16_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO3x32_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_DRAK6_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_UPSUSB_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_MU_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SIMUKEY_PID) },
+ 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AD4USB_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMUX_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMSR_PID) },
++
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DGQG_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DUSB_PID) },
+ 	{ USB_DEVICE(ALTI2_VID, ALTI2_N3_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1023,9 +1023,34 @@
+  */
+ 
+ #define PAPOUCH_VID			0x5050	/* Vendor ID */
++#define PAPOUCH_SB485_PID		0x0100	/* Papouch SB485 USB-485/422 Converter */
++#define PAPOUCH_AP485_PID		0x0101	/* AP485 USB-RS485 Converter */
++#define PAPOUCH_SB422_PID		0x0102	/* Papouch SB422 USB-RS422 Converter  */
++#define PAPOUCH_SB485_2_PID		0x0103	/* Papouch SB485 USB-485/422 Converter */
++#define PAPOUCH_AP485_2_PID		0x0104	/* AP485 USB-RS485 Converter */
++#define PAPOUCH_SB422_2_PID		0x0105	/* Papouch SB422 USB-RS422 Converter  */
++#define PAPOUCH_SB485S_PID		0x0106	/* Papouch SB485S USB-485/422 Converter */
++#define PAPOUCH_SB485C_PID		0x0107	/* Papouch SB485C USB-485/422 Converter */
++#define PAPOUCH_LEC_PID			0x0300	/* LEC USB Converter */
++#define PAPOUCH_SB232_PID		0x0301	/* Papouch SB232 USB-RS232 Converter */
+ #define PAPOUCH_TMU_PID			0x0400	/* TMU USB Thermometer */
+-#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Quido 4/4 Module */
++#define PAPOUCH_IRAMP_PID		0x0500	/* Papouch IRAmp Duplex */
++#define PAPOUCH_DRAK5_PID		0x0700	/* Papouch DRAK5 */
++#define PAPOUCH_QUIDO8x8_PID		0x0800	/* Papouch Quido 8/8 Module */
++#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Papouch Quido 4/4 Module */
++#define PAPOUCH_QUIDO2x2_PID		0x0a00	/* Papouch Quido 2/2 Module */
++#define PAPOUCH_QUIDO10x1_PID		0x0b00	/* Papouch Quido 10/1 Module */
++#define PAPOUCH_QUIDO30x3_PID		0x0c00	/* Papouch Quido 30/3 Module */
++#define PAPOUCH_QUIDO60x3_PID		0x0d00	/* Papouch Quido 60(100)/3 Module */
++#define PAPOUCH_QUIDO2x16_PID		0x0e00	/* Papouch Quido 2/16 Module */
++#define PAPOUCH_QUIDO3x32_PID		0x0f00	/* Papouch Quido 3/32 Module */
++#define PAPOUCH_DRAK6_PID		0x1000	/* Papouch DRAK6 */
++#define PAPOUCH_UPSUSB_PID		0x8000	/* Papouch UPS-USB adapter */
++#define PAPOUCH_MU_PID			0x8001	/* MU controller */
++#define PAPOUCH_SIMUKEY_PID		0x8002	/* Papouch SimuKey */
+ #define PAPOUCH_AD4USB_PID		0x8003	/* AD4USB Measurement Module */
++#define PAPOUCH_GMUX_PID		0x8004	/* Papouch GOLIATH MUX */
++#define PAPOUCH_GMSR_PID		0x8005	/* Papouch GOLIATH MSR */
+ 
+ /*
+  * Marvell SheevaPlug
+
+
