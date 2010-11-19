@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256Ab0KSWEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:04:38 -0500
-Received: from kroah.org ([198.145.64.141]:53099 "EHLO coco.kroah.org"
+	id S1758300Ab0KSWEt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:04:49 -0500
+Received: from kroah.org ([198.145.64.141]:53143 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758217Ab0KSWEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:04:34 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:26 2010
-Message-Id: <20101119220126.877730717@clark.site>
+	id S1758263Ab0KSWEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:40 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:27 2010
+Message-Id: <20101119220127.615616029@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:01:28 -0800
+Date: Fri, 19 Nov 2010 14:01:37 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>,
-        Vikas Chaudhary <vikas.chaudhary@qlogic.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [57/66] [SCSI] qla4xxx: fix build on PPC
+        Robin Holt <holt@sgi.com>
+Subject: [66/66] sgi-xp: incoming XPC channel messages can come in after the channels partition structures have been torn down
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,31 +25,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Robin Holt <holt@sgi.com>
 
-commit a6751ccb9ba85180c84135cc921eea11d83d5689 upstream.
+commit 09358972bff5ce99de496bbba97c85d417b3c054 upstream.
 
-We use read/write[bslq] but do not include linux/io.h. This causes
-build failures on PPC. Include that file.
+Under some workloads, some channel messages have been observed being
+delayed on the sending side past the point where the receiving side has
+been able to tear down its partition structures.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Acked-by: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+This condition is already detected in xpc_handle_activate_IRQ_uv(), but
+that information is not given to xpc_handle_activate_mq_msg_uv().  As a
+result, xpc_handle_activate_mq_msg_uv() assumes the structures still exist
+and references them, causing a NULL-pointer deref.
+
+Signed-off-by: Robin Holt <holt@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/qla4xxx/ql4_nx.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/misc/sgi-xp/xpc_uv.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
---- a/drivers/scsi/qla4xxx/ql4_nx.c
-+++ b/drivers/scsi/qla4xxx/ql4_nx.c
-@@ -5,6 +5,7 @@
-  * See LICENSE.qla4xxx for copyright and licensing details.
-  */
- #include <linux/delay.h>
-+#include <linux/io.h>
- #include <linux/pci.h>
- #include "ql4_def.h"
- #include "ql4_glbl.h"
+--- a/drivers/misc/sgi-xp/xpc_uv.c
++++ b/drivers/misc/sgi-xp/xpc_uv.c
+@@ -417,6 +417,7 @@ xpc_process_activate_IRQ_rcvd_uv(void)
+ static void
+ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
+ 			      struct xpc_activate_mq_msghdr_uv *msg_hdr,
++			      int part_setup,
+ 			      int *wakeup_hb_checker)
+ {
+ 	unsigned long irq_flags;
+@@ -481,6 +482,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREQUEST_UV: {
+ 		struct xpc_activate_mq_msg_chctl_closerequest_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				   xpc_activate_mq_msg_chctl_closerequest_uv,
+ 				   hdr);
+@@ -497,6 +501,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREPLY_UV: {
+ 		struct xpc_activate_mq_msg_chctl_closereply_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				   xpc_activate_mq_msg_chctl_closereply_uv,
+ 				   hdr);
+@@ -511,6 +518,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREQUEST_UV: {
+ 		struct xpc_activate_mq_msg_chctl_openrequest_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				   xpc_activate_mq_msg_chctl_openrequest_uv,
+ 				   hdr);
+@@ -528,6 +538,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREPLY_UV: {
+ 		struct xpc_activate_mq_msg_chctl_openreply_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				   xpc_activate_mq_msg_chctl_openreply_uv, hdr);
+ 		args = &part->remote_openclose_args[msg->ch_number];
+@@ -545,6 +558,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENCOMPLETE_UV: {
+ 		struct xpc_activate_mq_msg_chctl_opencomplete_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				xpc_activate_mq_msg_chctl_opencomplete_uv, hdr);
+ 		spin_lock_irqsave(&part->chctl_lock, irq_flags);
+@@ -621,6 +637,7 @@ xpc_handle_activate_IRQ_uv(int irq, void
+ 
+ 			part_referenced = xpc_part_ref(part);
+ 			xpc_handle_activate_mq_msg_uv(part, msg_hdr,
++						      part_referenced,
+ 						      &wakeup_hb_checker);
+ 			if (part_referenced)
+ 				xpc_part_deref(part);
 
 
