@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab0KSVpS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:45:18 -0500
-Received: from kroah.org ([198.145.64.141]:51668 "EHLO coco.kroah.org"
+	id S932406Ab0KSVxh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:53:37 -0500
+Received: from kroah.org ([198.145.64.141]:51701 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757168Ab0KSVpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:45:14 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:09 2010
-Message-Id: <20101119214409.602140863@clark.site>
+	id S1757224Ab0KSVpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:45:18 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:10 2010
+Message-Id: <20101119214410.006468386@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:42:42 -0800
+Date: Fri, 19 Nov 2010 13:42:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Max Vozeler <mvz@vozeler.com>
-Subject: [02/45] staging: usbip: Process event flags without delay
+        Darren Hart <dvhart@linux.intel.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [07/45] futex: Fix errors in nested key ref-counting
 In-Reply-To: <20101119214439.GA26350@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,97 +29,139 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Max Vozeler <mvz@vozeler.com>
+From: Darren Hart <dvhart@linux.intel.com>
 
-commit 584c5b7cf06194464240280483ee0376cdddbbae upstream.
+commit 7ada876a8703f23befbb20a7465a702ee39b1704 upstream.
 
-The way the event handler works can cause it to delay
-events until eventual wakeup for another event.
+futex_wait() is leaking key references due to futex_wait_setup()
+acquiring an additional reference via the queue_lock() routine. The
+nested key ref-counting has been masking bugs and complicating code
+analysis. queue_lock() is only called with a previously ref-counted
+key, so remove the additional ref-counting from the queue_(un)lock()
+functions.
 
-For example, on device detach (vhci):
+Also futex_wait_requeue_pi() drops one key reference too many in
+unqueue_me_pi(). Remove the key reference handling from
+unqueue_me_pi(). This was paired with a queue_lock() in
+futex_lock_pi(), so the count remains unchanged.
 
- - Write to sysfs detach file
-    -> usbip_event_add(VDEV_EVENT_DOWN)
-      -> wakeup()
+Document remaining nested key ref-counting sites.
 
-#define VDEV_EVENT_DOWN (USBIP_EH_SHUTDOWN | USBIP_EH_RESET).
-
- - Event thread wakes up and passes the event to
-   event_handler() to process.
-
- - It processes and clears the USBIP_EH_SHUTDOWN
-   flag then returns.
-
- - The outer event loop (event_handler_loop()) calls
-   wait_event_interruptible().
-
-The processing of the second flag which is part of
-VDEV_EVENT_DOWN (USBIP_EH_RESET) did not happen yet.
-It is delayed until the next event.
-
-This means the ->reset callback may not happen for
-a long time (if ever), leaving the usbip port in a
-weird state which prevents its reuse.
-
-This patch changes the handler to process all flags
-before waiting for another wakeup.
-
-I have verified this change to fix a problem which
-prevented reattach of a usbip device. It also helps
-for socket errors which missed the RESET as well.
-
-The delayed event processing also affects the stub
-side of usbip and the error handling there.
-
-Signed-off-by: Max Vozeler <mvz@vozeler.com>
-Reported-by: Marco Lancione <marco@optikam.com>
-Tested-by: Luc Jalbert <ljalbert@optikam.com>
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+Reported-and-tested-by: Matthieu Fertré<matthieu.fertre@kerlabs.com>
+Reported-by: Louis Rilling<louis.rilling@kerlabs.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+LKML-Reference: <4CBB17A8.70401@linux.intel.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/usbip/usbip_event.c |   16 +++-------------
- 1 file changed, 3 insertions(+), 13 deletions(-)
+ kernel/futex.c |   31 ++++++++++++++++---------------
+ 1 file changed, 16 insertions(+), 15 deletions(-)
 
---- a/drivers/staging/usbip/usbip_event.c
-+++ b/drivers/staging/usbip/usbip_event.c
-@@ -38,21 +38,13 @@ static int event_handler(struct usbip_de
- 			ud->eh_ops.shutdown(ud);
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1363,7 +1363,6 @@ static inline struct futex_hash_bucket *
+ {
+ 	struct futex_hash_bucket *hb;
  
- 			ud->event &= ~USBIP_EH_SHUTDOWN;
+-	get_futex_key_refs(&q->key);
+ 	hb = hash_futex(&q->key);
+ 	q->lock_ptr = &hb->lock;
+ 
+@@ -1375,7 +1374,6 @@ static inline void
+ queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
+ {
+ 	spin_unlock(&hb->lock);
+-	drop_futex_key_refs(&q->key);
+ }
+ 
+ /**
+@@ -1480,8 +1478,6 @@ static void unqueue_me_pi(struct futex_q
+ 	q->pi_state = NULL;
+ 
+ 	spin_unlock(q->lock_ptr);
 -
--			break;
- 		}
+-	drop_futex_key_refs(&q->key);
+ }
  
--		/* Stop the error handler. */
--		if (ud->event & USBIP_EH_BYE)
--			return -1;
--
- 		/* Reset the device. */
- 		if (ud->event & USBIP_EH_RESET) {
- 			ud->eh_ops.reset(ud);
- 
- 			ud->event &= ~USBIP_EH_RESET;
--
--			break;
- 		}
- 
- 		/* Mark the device as unusable. */
-@@ -60,13 +52,11 @@ static int event_handler(struct usbip_de
- 			ud->eh_ops.unusable(ud);
- 
- 			ud->event &= ~USBIP_EH_UNUSABLE;
--
--			break;
- 		}
- 
--		/* NOTREACHED */
--		printk(KERN_ERR "%s: unknown event\n", __func__);
--		return -1;
-+		/* Stop the error handler. */
-+		if (ud->event & USBIP_EH_BYE)
-+			return -1;
+ /*
+@@ -1812,7 +1808,10 @@ static int futex_wait(u32 __user *uaddr,
  	}
  
- 	return 0;
+ retry:
+-	/* Prepare to wait on uaddr. */
++	/*
++	 * Prepare to wait on uaddr. On success, holds hb lock and increments
++	 * q.key refs.
++	 */
+ 	ret = futex_wait_setup(uaddr, val, fshared, &q, &hb);
+ 	if (ret)
+ 		goto out;
+@@ -1822,24 +1821,23 @@ retry:
+ 
+ 	/* If we were woken (and unqueued), we succeeded, whatever. */
+ 	ret = 0;
++	/* unqueue_me() drops q.key ref */
+ 	if (!unqueue_me(&q))
+-		goto out_put_key;
++		goto out;
+ 	ret = -ETIMEDOUT;
+ 	if (to && !to->task)
+-		goto out_put_key;
++		goto out;
+ 
+ 	/*
+ 	 * We expect signal_pending(current), but we might be the
+ 	 * victim of a spurious wakeup as well.
+ 	 */
+-	if (!signal_pending(current)) {
+-		put_futex_key(fshared, &q.key);
++	if (!signal_pending(current))
+ 		goto retry;
+-	}
+ 
+ 	ret = -ERESTARTSYS;
+ 	if (!abs_time)
+-		goto out_put_key;
++		goto out;
+ 
+ 	restart = &current_thread_info()->restart_block;
+ 	restart->fn = futex_wait_restart;
+@@ -1856,8 +1854,6 @@ retry:
+ 
+ 	ret = -ERESTART_RESTARTBLOCK;
+ 
+-out_put_key:
+-	put_futex_key(fshared, &q.key);
+ out:
+ 	if (to) {
+ 		hrtimer_cancel(&to->timer);
+@@ -2236,7 +2232,10 @@ static int futex_wait_requeue_pi(u32 __u
+ 	q.rt_waiter = &rt_waiter;
+ 	q.requeue_pi_key = &key2;
+ 
+-	/* Prepare to wait on uaddr. */
++	/*
++	 * Prepare to wait on uaddr. On success, increments q.key (key1) ref
++	 * count.
++	 */
+ 	ret = futex_wait_setup(uaddr, val, fshared, &q, &hb);
+ 	if (ret)
+ 		goto out_key2;
+@@ -2254,7 +2253,9 @@ static int futex_wait_requeue_pi(u32 __u
+ 	 * In order for us to be here, we know our q.key == key2, and since
+ 	 * we took the hb->lock above, we also know that futex_requeue() has
+ 	 * completed and we no longer have to concern ourselves with a wakeup
+-	 * race with the atomic proxy lock acquition by the requeue code.
++	 * race with the atomic proxy lock acquisition by the requeue code. The
++	 * futex_requeue dropped our key1 reference and incremented our key2
++	 * reference count.
+ 	 */
+ 
+ 	/* Check if the requeue code acquired the second futex for us. */
 
 
