@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758058Ab0KSWEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:04:15 -0500
-Received: from kroah.org ([198.145.64.141]:52854 "EHLO coco.kroah.org"
+	id S1758080Ab0KSWPO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:15:14 -0500
+Received: from kroah.org ([198.145.64.141]:52927 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757951Ab0KSWEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:04:08 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:23 2010
-Message-Id: <20101119220123.245226305@clark.site>
+	id S1758047Ab0KSWEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:15 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:24 2010
+Message-Id: <20101119220124.226331895@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:00:44 -0800
+Date: Fri, 19 Nov 2010 14:00:56 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Suresh Jayaraman <sjayaraman@suse.de>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [13/66] cifs: fix broken oplock handling
+        Joerg Roedel <joerg.roedel@amd.com>, Avi Kivity <avi@redhat.com>
+Subject: [25/66] KVM: X86: Report SVM bit to userspace only when supported
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,104 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Jayaraman <sjayaraman@suse.de>
+From: Joerg Roedel <joerg.roedel@amd.com>
 
-commit aa91c7e4ab9b0842b7d7a7cbf8cca18b20df89b5 upstream.
+commit 4c62a2dc92518c5adf434df8e5c2283c6762672a upstream.
 
-cifs_new_fileinfo() does not use the 'oplock' value from the callers. Instead,
-it sets it to REQ_OPLOCK which seems wrong. We should be using the oplock value
-obtained from the Server to set the inode's clientCanCacheAll or
-clientCanCacheRead flags. Fix this by passing oplock from the callers to
-cifs_new_fileinfo().
+This patch fixes a bug in KVM where it _always_ reports the
+support of the SVM feature to userspace. But KVM only
+supports SVM on AMD hardware and only when it is enabled in
+the kernel module. This patch fixes the wrong reporting.
 
-This change dates back to commit a6ce4932 (2.6.30-rc3). So, all the affected
-versions will need this fix. Please Cc stable once reviewed and accepted.
-
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/cifsproto.h |    3 ++-
- fs/cifs/dir.c       |   12 +++++-------
- fs/cifs/file.c      |    4 ++--
- 3 files changed, 9 insertions(+), 10 deletions(-)
+ arch/x86/kvm/svm.c |    4 ++++
+ arch/x86/kvm/x86.c |    2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/cifs/cifsproto.h
-+++ b/fs/cifs/cifsproto.h
-@@ -107,7 +107,8 @@ extern struct timespec cnvrtDosUnixTm(__
- 
- extern struct cifsFileInfo *cifs_new_fileinfo(struct inode *newinode,
- 				__u16 fileHandle, struct file *file,
--				struct vfsmount *mnt, unsigned int oflags);
-+				struct vfsmount *mnt, unsigned int oflags,
-+				__u32 oplock);
- extern int cifs_posix_open(char *full_path, struct inode **pinode,
- 				struct super_block *sb,
- 				int mode, int oflags,
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -132,9 +132,9 @@ cifs_bp_rename_retry:
- 
- struct cifsFileInfo *
- cifs_new_fileinfo(struct inode *newinode, __u16 fileHandle,
--		  struct file *file, struct vfsmount *mnt, unsigned int oflags)
-+		  struct file *file, struct vfsmount *mnt, unsigned int oflags,
-+		  __u32 oplock)
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -3354,6 +3354,10 @@ static void svm_cpuid_update(struct kvm_
+ static void svm_set_supported_cpuid(u32 func, struct kvm_cpuid_entry2 *entry)
  {
--	int oplock = 0;
- 	struct cifsFileInfo *pCifsFile;
- 	struct cifsInodeInfo *pCifsInode;
- 	struct cifs_sb_info *cifs_sb = CIFS_SB(mnt->mnt_sb);
-@@ -143,9 +143,6 @@ cifs_new_fileinfo(struct inode *newinode
- 	if (pCifsFile == NULL)
- 		return pCifsFile;
- 
--	if (oplockEnabled)
--		oplock = REQ_OPLOCK;
--
- 	pCifsFile->netfid = fileHandle;
- 	pCifsFile->pid = current->tgid;
- 	pCifsFile->pInode = igrab(newinode);
-@@ -468,7 +465,7 @@ cifs_create_set_dentry:
- 		}
- 
- 		pfile_info = cifs_new_fileinfo(newinode, fileHandle, filp,
--					       nd->path.mnt, oflags);
-+					       nd->path.mnt, oflags, oplock);
- 		if (pfile_info == NULL) {
- 			fput(filp);
- 			CIFSSMBClose(xid, tcon, fileHandle);
-@@ -729,7 +726,8 @@ cifs_lookup(struct inode *parent_dir_ino
- 
- 			cfile = cifs_new_fileinfo(newInode, fileHandle, filp,
- 						  nd->path.mnt,
--						  nd->intent.open.flags);
-+						  nd->intent.open.flags,
-+						  oplock);
- 			if (cfile == NULL) {
- 				fput(filp);
- 				CIFSSMBClose(xid, pTcon, fileHandle);
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -277,7 +277,7 @@ int cifs_open(struct inode *inode, struc
- 
- 			pCifsFile = cifs_new_fileinfo(inode, netfid, file,
- 							file->f_path.mnt,
--							oflags);
-+							oflags, oplock);
- 			if (pCifsFile == NULL) {
- 				CIFSSMBClose(xid, tcon, netfid);
- 				rc = -ENOMEM;
-@@ -370,7 +370,7 @@ int cifs_open(struct inode *inode, struc
- 		goto out;
- 
- 	pCifsFile = cifs_new_fileinfo(inode, netfid, file, file->f_path.mnt,
--					file->f_flags);
-+					file->f_flags, oplock);
- 	if (pCifsFile == NULL) {
- 		rc = -ENOMEM;
- 		goto out;
+ 	switch (func) {
++	case 0x80000001:
++		if (nested)
++			entry->ecx |= (1 << 2); /* Set SVM bit */
++		break;
+ 	case 0x8000000A:
+ 		entry->eax = 1; /* SVM revision 1 */
+ 		entry->ebx = 8; /* Lets support 8 ASIDs in case we add proper
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1994,7 +1994,7 @@ static void do_cpuid_ent(struct kvm_cpui
+ 		0 /* Reserved, AES */ | F(XSAVE) | 0 /* OSXSAVE */ | F(AVX);
+ 	/* cpuid 0x80000001.ecx */
+ 	const u32 kvm_supported_word6_x86_features =
+-		F(LAHF_LM) | F(CMP_LEGACY) | F(SVM) | 0 /* ExtApicSpace */ |
++		F(LAHF_LM) | F(CMP_LEGACY) | 0 /*SVM*/ | 0 /* ExtApicSpace */ |
+ 		F(CR8_LEGACY) | F(ABM) | F(SSE4A) | F(MISALIGNSSE) |
+ 		F(3DNOWPREFETCH) | 0 /* OSVW */ | 0 /* IBS */ | F(XOP) |
+ 		0 /* SKINIT */ | 0 /* WDT */;
 
 
