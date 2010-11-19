@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757176Ab0KSV6d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:58:33 -0500
-Received: from kroah.org ([198.145.64.141]:44998 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932580Ab0KSV63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:29 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:40 2010
-Message-Id: <20101119215640.067218264@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:55:37 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andre Przywara <andre.przywara@amd.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [16/82] x86, cpu: Fix renamed, not-yet-shipping AMD CPUID feature bit
-In-Reply-To: <20101119215658.GA7804@kroah.com
+	id S1757428Ab0KSWb2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:31:28 -0500
+Received: from cobra.newdream.net ([66.33.216.30]:47119 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757084Ab0KSWbX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:31:23 -0500
+Date: Fri, 19 Nov 2010 14:35:32 -0800 (PST)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] Ceph updates for 2.6.37-rc3
+Message-ID: <Pine.LNX.4.64.1011191429530.1019@cobra.newdream.net>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+Hi Linus,
 
-------------------
+Please pull the following Ceph updates from
 
-From: Andre Przywara <andre.przywara@amd.com>
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-commit 7ef8aa72ab176e0288f363d1247079732c5d5792 upstream.
+It's an unfortunately rather big pile of bug fixes.  There's a revert to 
+fix a regression from 2.6.36, a problem with network reconnects, a 
+potential null deref, a series of small fixes that came up with clustered 
+MDS testing, a fix for non-page aligned direct IO, and a readdir fix that 
+turns up on 32bit arches.
 
-The AMD SSE5 feature set as-it has been replaced by some extensions
-to the AVX instruction set. Thus the bit formerly advertised as SSE5
-is re-used for one of these extensions (XOP).
-Although this changes the /proc/cpuinfo output, it is not user visible, as
-there are no CPUs (yet) having this feature.
-To avoid confusion this should be added to the stable series, too.
-
-Signed-off-by: Andre Przywara <andre.przywara@amd.com>
-LKML-Reference: <1283778860-26843-2-git-send-email-andre.przywara@amd.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/x86/include/asm/cpufeature.h |    2 +-
- arch/x86/kvm/x86.c                |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -150,7 +150,7 @@
- #define X86_FEATURE_3DNOWPREFETCH (6*32+ 8) /* 3DNow prefetch instructions */
- #define X86_FEATURE_OSVW	(6*32+ 9) /* OS Visible Workaround */
- #define X86_FEATURE_IBS		(6*32+10) /* Instruction Based Sampling */
--#define X86_FEATURE_SSE5	(6*32+11) /* SSE-5 */
-+#define X86_FEATURE_XOP		(6*32+11) /* extended AVX instructions */
- #define X86_FEATURE_SKINIT	(6*32+12) /* SKINIT/STGI instructions */
- #define X86_FEATURE_WDT		(6*32+13) /* Watchdog timer */
- #define X86_FEATURE_NODEID_MSR	(6*32+19) /* NodeId MSR */
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1912,7 +1912,7 @@ static void do_cpuid_ent(struct kvm_cpui
- 	const u32 kvm_supported_word6_x86_features =
- 		F(LAHF_LM) | F(CMP_LEGACY) | F(SVM) | 0 /* ExtApicSpace */ |
- 		F(CR8_LEGACY) | F(ABM) | F(SSE4A) | F(MISALIGNSSE) |
--		F(3DNOWPREFETCH) | 0 /* OSVW */ | 0 /* IBS */ | F(SSE5) |
-+		F(3DNOWPREFETCH) | 0 /* OSVW */ | 0 /* IBS */ | F(XOP) |
- 		0 /* SKINIT */ | 0 /* WDT */;
- 
- 	/* all calls to cpuid_count() should be made on the same cpu */
+Thanks!
+sage
 
 
+Sage Weil (16):
+      Revert "ceph: update issue_seq on cap grant"
+      ceph: fix small seq message skipping
+      ceph: fix bad pointer dereference in ceph_fill_trace
+      ceph: fix open for write on clustered mds
+      ceph: only let auth caps update max_size
+      ceph: re-request max_size if cap auth changes
+      ceph: fix rdcache_gen usage and invalidate
+      ceph: fix uid/gid on resent mds requests
+      ceph: fix version check on racing inode updates
+      ceph: fix update of ctime from MDS
+      ceph: fix comment, remove extraneous args
+      ceph: make page alignment explicit in osd interface
+      ceph: explicitly specify page alignment in network messages
+      ceph: fix dangling pointer
+      ceph: fix frag offset for non-leftmost frags
+      ceph: fix readdir EOVERFLOW on 32-bit archs
+
+ fs/ceph/addr.c                  |    6 ++--
+ fs/ceph/caps.c                  |   17 +++++++-----
+ fs/ceph/dir.c                   |   16 +++++++++---
+ fs/ceph/file.c                  |   52 +++++++++++++++++++++++++-------------
+ fs/ceph/inode.c                 |   49 +++++++++++++++++++++++-------------
+ fs/ceph/mds_client.c            |    7 +++-
+ fs/ceph/mds_client.h            |    2 +
+ fs/ceph/super.h                 |    4 +--
+ include/linux/ceph/libceph.h    |    3 +-
+ include/linux/ceph/messenger.h  |    1 +
+ include/linux/ceph/osd_client.h |    7 +++-
+ net/ceph/messenger.c            |   13 ++++-----
+ net/ceph/osd_client.c           |   25 ++++++++++++------
+ net/ceph/pagevec.c              |    3 +-
+ 14 files changed, 129 insertions(+), 76 deletions(-)
