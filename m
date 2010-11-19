@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949Ab0KSRfj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 12:35:39 -0500
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:57394 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754194Ab0KSRfi (ORCPT
+	id S1755961Ab0KSRhR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 12:37:17 -0500
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:41997 "EHLO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754127Ab0KSRhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 12:35:38 -0500
-Date: Fri, 19 Nov 2010 18:37:32 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -next] staging: fix winbond build, needs delay.h
-Message-ID: <20101119173731.GA25098@elf.ucw.cz>
-References: <20101119143207.b2d5731e.sfr@canb.auug.org.au>
- <20101119093018.340dab03.randy.dunlap@oracle.com>
+	Fri, 19 Nov 2010 12:37:15 -0500
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>,
+        "'James.Bottomley@HansenPartnership.com'" 
+	<James.Bottomley@HansenPartnership.com>,
+        "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
+CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+        "'akpm@osdl.org'" <akpm@osdl.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        Tomas Henzl <thenzl@redhat.com>
+Date: Fri, 19 Nov 2010 10:37:02 -0700
+Subject: [PATCH 7/9] scsi: megaraid_sas - Driver created the self work queue
+ for OCR 
+Thread-Topic: [PATCH 7/9] scsi: megaraid_sas - Driver created the self work
+ queue for OCR 
+Thread-Index: AcsIRXwfwbieNXNUR6GBvdSy0cxVCQskSL/AFMvf1xAAAOfyYAAAMuKQAABVOuAAAICF8AAALm3AAAA2ZVA=
+Message-ID: <4B6A08C587958942AA3002690DD4F8C30106A9621E@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3DBD67F68@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C30106A961BD@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C30106A961D6@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C30106A961E4@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C30106A961F2@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C30106A96213@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C30106A96218@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C30106A96218@cosmail02.lsi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: multipart/mixed;
+	boundary="_002_4B6A08C587958942AA3002690DD4F8C30106A9621Ecosmail02lsic_"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101119093018.340dab03.randy.dunlap@oracle.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 2010-11-19 09:30:18, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> winbond drivers use msleep() and delay(), so include linux/delay.h
-> in a common header file to prevent build errors.
-> 
-> drivers/staging/winbond/phy_calibration.c:987: error: implicit declaration of function 'msleep'
-> drivers/staging/winbond/phy_calibration.c:1556: error: implicit declaration of function 'udelay'
-> drivers/staging/winbond/reg.c:894: error: implicit declaration of function 'msleep'
-> drivers/staging/winbond/reg.c:1178: error: implicit declaration of function 'udelay'
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+--_002_4B6A08C587958942AA3002690DD4F8C30106A9621Ecosmail02lsic_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Ack.
+Driver created the owner work queue (don't use global work queue). This que=
+ue will be used for online controller reset routine.
 
-> ---
->  drivers/staging/winbond/sysdef.h |    3 +++
->  1 file changed, 3 insertions(+)
-> 
-> --- linux-next-20101119.orig/drivers/staging/winbond/sysdef.h
-> +++ linux-next-20101119/drivers/staging/winbond/sysdef.h
-> @@ -2,6 +2,9 @@
->  
->  #ifndef SYS_DEF_H
->  #define SYS_DEF_H
-> +
-> +#include <linux/delay.h>
-> +
->  #define WB_LINUX
->  #define WB_LINUX_WPA_PSK
->  
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+---
+drivers/scsi/megaraid/megaraid_sas.c |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+--_002_4B6A08C587958942AA3002690DD4F8C30106A9621Ecosmail02lsic_
+Content-Type: application/octet-stream; name="megasas-p7-workqueue.patch"
+Content-Description: megasas-p7-workqueue.patch
+Content-Disposition: attachment; filename="megasas-p7-workqueue.patch";
+	size=1593; creation-date="Thu, 18 Nov 2010 20:37:02 GMT";
+	modification-date="Wed, 17 Nov 2010 13:09:12 GMT"
+Content-Transfer-Encoding: base64
+
+ZGlmZiAtcnVwTiBvbGQvZHJpdmVycy9zY3NpL21lZ2FyYWlkL21lZ2FyYWlkX3Nhcy5jIG5ldy9k
+cml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMKLS0tIG9sZC9kcml2ZXJzL3Njc2kv
+bWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMJMjAxMC0xMS0xNyAxMzo0NjoxMS4wMDAwMDAwMDAgLTA1
+MDAKKysrIG5ldy9kcml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMJMjAxMC0xMS0x
+NyAxMzo0Nzo0Ni4wMDAwMDAwMDAgLTA1MDAKQEAgLTEwOCw2ICsxMDgsNyBAQCBzdGF0aWMgc3Ry
+dWN0IG1lZ2FzYXNfbWdtdF9pbmZvIG1lZ2FzYXNfCiBzdGF0aWMgc3RydWN0IGZhc3luY19zdHJ1
+Y3QgKm1lZ2FzYXNfYXN5bmNfcXVldWU7CiBzdGF0aWMgREVGSU5FX01VVEVYKG1lZ2FzYXNfYXN5
+bmNfcXVldWVfbXV0ZXgpOwogCitzdGF0aWMgc3RydWN0IHdvcmtxdWV1ZV9zdHJ1Y3QgKm1lZ2Fz
+YXNfb2NyX3dxOwogc3RhdGljIGludCBtZWdhc2FzX3BvbGxfd2FpdF9hZW47CiBzdGF0aWMgREVD
+TEFSRV9XQUlUX1FVRVVFX0hFQUQobWVnYXNhc19wb2xsX3dhaXQpOwogc3RhdGljIHUzMiBzdXBw
+b3J0X3BvbGxfZm9yX2V2ZW50OwpAQCAtMjQzNSw3ICsyNDM2LDcgQEAgbWVnYXNhc19kZXBsZXRl
+X3JlcGx5X3F1ZXVlKHN0cnVjdCBtZWdhcwogCQkJcHJpbnRrKEtFUk5fTk9USUNFICJtZWdhc2Fz
+OiBmd1N0YXRlPSV4LCBzdGFnZTolZFxuIiwKIAkJCQkJZndfc3RhdGUsIGluc3RhbmNlLT5hZHBy
+ZWNvdmVyeSk7CiAKLQkJCXNjaGVkdWxlX3dvcmsoJmluc3RhbmNlLT53b3JrX2luaXQpOworCQkJ
+cXVldWVfd29yayhtZWdhc2FzX29jcl93cSwgJmluc3RhbmNlLT53b3JrX2luaXQpOwogCQkJcmV0
+dXJuIElSUV9IQU5ETEVEOwogCiAJCX0gZWxzZSB7CkBAIC01MTU3LDYgKzUxNTgsMTEgQEAgc3Rh
+dGljIGludCBfX2luaXQgbWVnYXNhc19pbml0KHZvaWQpCiAJCWdvdG8gZXJyX3BjaWRydjsKIAl9
+CiAKKwltZWdhc2FzX29jcl93cSA9IGNyZWF0ZV93b3JrcXVldWUoIm1lZ2FzYXNfb2NyIik7CisK
+KwlpZiAoICFtZWdhc2FzX29jcl93cSApCisJCXByaW50ayhLRVJOX0RFQlVHICJtZWdhc2FzOiBG
+YWlsZWQgdG8gY3JlYXRlIHdvcmtxdWV1ZS5cbiIpOworCiAJcnZhbCA9IGRyaXZlcl9jcmVhdGVf
+ZmlsZSgmbWVnYXNhc19wY2lfZHJpdmVyLmRyaXZlciwKIAkJCQkgICZkcml2ZXJfYXR0cl92ZXJz
+aW9uKTsKIAlpZiAocnZhbCkKQEAgLTUyMjgsNiArNTIzNCwxMSBAQCBzdGF0aWMgdm9pZCBfX2V4
+aXQgbWVnYXNhc19leGl0KHZvaWQpCiAJCQkgICAmZHJpdmVyX2F0dHJfcmVsZWFzZV9kYXRlKTsK
+IAlkcml2ZXJfcmVtb3ZlX2ZpbGUoJm1lZ2FzYXNfcGNpX2RyaXZlci5kcml2ZXIsICZkcml2ZXJf
+YXR0cl92ZXJzaW9uKTsKIAorCWlmIChtZWdhc2FzX29jcl93cSkgeworCQlkZXN0cm95X3dvcmtx
+dWV1ZShtZWdhc2FzX29jcl93cSk7CisJCW1lZ2FzYXNfb2NyX3dxID0gTlVMTDsKKwl9CisKIAlw
+Y2lfdW5yZWdpc3Rlcl9kcml2ZXIoJm1lZ2FzYXNfcGNpX2RyaXZlcik7CiAJdW5yZWdpc3Rlcl9j
+aHJkZXYobWVnYXNhc19tZ210X21ham9ybm8sICJtZWdhcmFpZF9zYXNfaW9jdGwiKTsKIH0K
+
+--_002_4B6A08C587958942AA3002690DD4F8C30106A9621Ecosmail02lsic_--
