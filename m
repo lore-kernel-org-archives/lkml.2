@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758350Ab0KSWF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:05:56 -0500
-Received: from kroah.org ([198.145.64.141]:53121 "EHLO coco.kroah.org"
+	id S1758368Ab0KSWGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:06:11 -0500
+Received: from kroah.org ([198.145.64.141]:53127 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758062Ab0KSWEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:04:38 -0500
+	id S1757844Ab0KSWEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:37 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:27 2010
-Message-Id: <20101119220127.364093886@clark.site>
+Message-Id: <20101119220127.280006455@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:01:34 -0800
+Date: Fri, 19 Nov 2010 14:01:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Paris <eparis@redhat.com>, Paul Moore <paul.moore@hp.com>,
-        James Morris <jmorris@namei.org>
-Subject: [63/66] secmark: do not return early if there was no error
+        Steve Dickson <steved@redhat.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [62/66] Fixed Regression in NFS Direct I/O path
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,34 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+From: Steve Dickson <steved@redhat.com>
 
-commit 15714f7b58011cf3948cab2988abea560240c74f upstream.
+commit 568a810d7edd58bd505222dd1c7e48895532290b upstream.
 
-Commit 4a5a5c73 attempted to pass decent error messages back to userspace for
-netfilter errors.  In xt_SECMARK.c however the patch screwed up and returned
-on 0 (aka no error) early and didn't finish setting up secmark.  This results
-in a kernel BUG if you use SECMARK.
+A typo, introduced by commit f11ac8db, in the nfs_direct_write()
+routine causes writes with O_DIRECT set to fail with a ENOMEM error.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Acked-by: Paul Moore <paul.moore@hp.com>
-Signed-off-by: James Morris <jmorris@namei.org>
+Found-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve Dickson <steved@redhat.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/netfilter/xt_SECMARK.c |    2 +-
+ fs/nfs/direct.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/netfilter/xt_SECMARK.c
-+++ b/net/netfilter/xt_SECMARK.c
-@@ -101,7 +101,7 @@ static int secmark_tg_check(const struct
- 	switch (info->mode) {
- 	case SECMARK_MODE_SEL:
- 		err = checkentry_selinux(info);
--		if (err <= 0)
-+		if (err)
- 			return err;
- 		break;
- 
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@ -873,7 +873,7 @@ static ssize_t nfs_direct_write(struct k
+ 	dreq->inode = inode;
+ 	dreq->ctx = get_nfs_open_context(nfs_file_open_context(iocb->ki_filp));
+ 	dreq->l_ctx = nfs_get_lock_context(dreq->ctx);
+-	if (dreq->l_ctx != NULL)
++	if (dreq->l_ctx == NULL)
+ 		goto out_release;
+ 	if (!is_sync_kiocb(iocb))
+ 		dreq->iocb = iocb;
 
 
