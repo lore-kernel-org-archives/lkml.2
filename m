@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711Ab0KSLuB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 06:50:01 -0500
-Received: from casper.infradead.org ([85.118.1.10]:58378 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138Ab0KSLuA convert rfc822-to-8bit (ORCPT
+	id S1753807Ab0KSLyJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 06:54:09 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:53747 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab0KSLyI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 06:50:00 -0500
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>
-Cc: Mike Galbraith <efault@gmx.de>, Hans-Peter Jansen <hpj@urpla.net>,
-        linux-kernel@vger.kernel.org,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
-        Dhaval Giani <dhaval.giani@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <20101118234339.GA6024@const.famille.thibault.fr>
-References: <1289916171.5169.117.camel@maggy.simson.net>
-	 <AANLkTimC_TWzKET-aabYK0TPG6fUUW06HDej6iOzYtKo@mail.gmail.com>
-	 <20101116211431.GA15211@tango.0pointer.de>
-	 <201011182333.48281.hpj@urpla.net>
-	 <20101118231218.GX6024@const.famille.thibault.fr>
-	 <1290123351.18039.49.camel@maggy.simson.net>
-	 <20101118234339.GA6024@const.famille.thibault.fr>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 19 Nov 2010 12:49:36 +0100
-Message-ID: <1290167376.2109.1553.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 19 Nov 2010 06:54:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=PBNqCVLmIBrZ9+3Z5jQBebdTzZ0ztG/sBM97PdTnfqwwUK72sSMJPVHzTxjb/GDPPJ
+         eKQRcY1sm//zT6BDa1SEkrq03HSM/D8EKAXGVjv4c/koBAcG+GHsX8KxX1p/9wBWZ/mK
+         IYfpkA9kIQ8AUNRGBht3h82eP74La8teaktfQ=
+MIME-Version: 1.0
+In-Reply-To: <1290165768.2109.1537.camel@laptop>
+References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
+	<1290165768.2109.1537.camel@laptop>
+Date: Fri, 19 Nov 2010 19:54:07 +0800
+Message-ID: <AANLkTik3ujs7-tMNUuk33wuMXFm+iusspMcR=yjPXtn_@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Generic hardware error reporting support
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Tony Luck <tony.luck@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 00:43 +0100, Samuel Thibault wrote:
-> What overhead? The implementation of cgroups is actually already
-> hierarchical. 
+On Fri, Nov 19, 2010 at 7:22 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2010-11-19 at 16:10 +0800, Huang Ying wrote:
+>> Hi, Len,
+>>
+>> This is used by APEI ERST and GEHS. But it is a generic hardware
+>> error reporting mechanism and can be used by other hardware error
+>> reporting mechanisms such as EDAC, PCIe AER, Machine Check, etc.
+>>
+>> The patchset is split from the original APEI patchset to make it
+>> explicit that this is a generic mechanism, not APEI specific bits.
+>>
+>> [PATCH 1/2] Generic hardware error reporting mechanism
+>> [PATCH 2/2] Hardware error record persistent support
+>
+> You call it generic, does that mean the EDAC guys agree, does it work on
+> AMD and IA64?
 
-It must be nice to be that ignorant ;-) Speaking for the scheduler
-cgroup controller (that being the only one I actually know), most all
-the load-balance operations are O(n) in the number of active cgroups,
-and a lot of the cpu local schedule operations are O(d) where d is the
-depth of the cgroup tree.
+I call it "generic", because it can be used by EDAC, PCIe AER, Machine
+Check, etc to report hardware errors, and it can work on  AMD and
+IA64.
 
-[ and that's with the .38 targeted code, current mainline is O(n ln(n))
-for load balancing and truly sucks on multi-socket ]
+> If not, Tony could you please apply a cluebat? I thought Intel was going
+> to sit around the table with all hardware error people and come up with
+> a unified thing at LPC?
 
-You add a lot of pointer chasing to all the scheduler fast paths and
-there is quite significant data size bloat for even compiling with the
-controller enabled, let alone actually using the stuff.
-
-But sure, treat them as if they were free to use, I guess your machine
-is fast enough.
-
-
+Best Regards,
+Huang Ying
