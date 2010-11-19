@@ -1,58 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756322Ab0KSSls (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 13:41:48 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:32907 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754936Ab0KSSlr (ORCPT
+	id S1756362Ab0KSSlx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:41:53 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:37517 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756326Ab0KSSlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 13:41:47 -0500
+	Fri, 19 Nov 2010 13:41:51 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=bsvHpM5lifjt2Hv0DL1mMoYqFLBtDNh1qJGlY/dTPcRCrsDdrZfuR4ymRtY2Irwp56
-         yw3X3WMqMJKoss/Cky0n5bmPtexaSSHo2JLJOcbV9Tfs+Vqb7DqAEYktXkyXtVj8JPkV
-         wFUqdLknm40p8eOnx2M+Oku58V5hPzktweRXM=
+        b=QVEPB2ZEDZeKtbnKOSte42CikfblWFpAS1XUbhHqE9QiX24EWmTdFgdQK5VFyypxpb
+         v6qXk4RnZzd7ERp5gi8qJp1XlgoYQ8SJESEk4r6+RPHjpCDRim6Q6eNP/05FNZkJTtlK
+         jJov5Av/Ww7jmbvb/w0RjWLknQrVtRxwArTZI=
 From: Vasiliy Kulikov <segoon@openwall.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers: base: core: do not put noninitialized devices
-Date: Fri, 19 Nov 2010 21:41:40 +0300
-Message-Id: <1290192100-11451-1-git-send-email-segoon@openwall.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Russ Gorby <richardx.r.gorby@intel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH] serial: ifx6x60: fix memory leak
+Date: Fri, 19 Nov 2010 21:41:45 +0300
+Message-Id: <1290192105-11494-1-git-send-email-segoon@openwall.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If kobject_set_name_vargs() fails then put_device() frees
-device with zero kobj->state_initialized.  This leads to WARN().
-Divide device_register() call to device_initialize() call before
-kobject_set_name_vargs() and device_add() call after it.
+If tty_register_driver() failed then tty_driver is still alive.
+Free it with put_tty_driver().
 
 Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 ---
  Compile tested only.
 
- drivers/base/core.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/serial/ifx6x60.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 46ff6c2..833ccf3 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1424,11 +1424,12 @@ struct device *device_create_vargs(struct class *class, struct device *parent,
- 	dev->release = device_create_release;
- 	dev_set_drvdata(dev, drvdata);
- 
-+	device_initialize(dev);
- 	retval = kobject_set_name_vargs(&dev->kobj, fmt, args);
- 	if (retval)
- 		goto error;
- 
--	retval = device_register(dev);
-+	retval = device_add(dev);
- 	if (retval)
- 		goto error;
+diff --git a/drivers/serial/ifx6x60.c b/drivers/serial/ifx6x60.c
+index 3f8d5ee..ab93763 100644
+--- a/drivers/serial/ifx6x60.c
++++ b/drivers/serial/ifx6x60.c
+@@ -1384,6 +1384,7 @@ static int __init ifx_spi_init(void)
+ 	if (result) {
+ 		pr_err("%s: tty_register_driver failed(%d)",
+ 			DRVNAME, result);
++		put_tty_driver(tty_drv);
+ 		return result;
+ 	}
  
 -- 
 1.7.0.4
