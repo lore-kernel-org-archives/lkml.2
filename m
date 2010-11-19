@@ -1,92 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab0KSPof (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 10:44:35 -0500
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:55805 "HELO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752004Ab0KSPoe convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 10:44:34 -0500
-X-Greylist: delayed 379 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Nov 2010 10:44:33 EST
+	id S1755206Ab0KSPov (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 10:44:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55951 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753396Ab0KSPot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 10:44:49 -0500
+Date: Fri, 19 Nov 2010 16:44:33 +0100 (CET)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
+To: Mark Lord <kernel@teksavvy.com>
+cc: "Ted Ts'o" <tytso@mit.edu>, Steven Whitehouse <swhiteho@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
+ super_operation
+In-Reply-To: <4CE69940.6040908@teksavvy.com>
+Message-ID: <alpine.LFD.2.00.1011191640320.3238@dhcp-lab-213.englab.brq.redhat.com>
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com> <20101118130630.GJ6178@parisc-linux.org> <20101118134804.GN5618@dhcp231-156.rdu.redhat.com> <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org>
+ <1290100750.3041.72.camel@mulgrave.site> <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com> <1290168976.2570.45.camel@dolmen> <4CE68155.50705@teksavvy.com> <20101119140203.GC10039@thunk.org> <4CE69940.6040908@teksavvy.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB59302477EA939@dbde02.ent.ti.com>
-References: <cover.1289835508.git.bengardiner@nanometrics.ca>
-	<cover.1289935504.git.bengardiner@nanometrics.ca>
-	<95f48a32a0256ecdb7148aa08d16f64928a7e5d8.1289935504.git.bengardiner@nanometrics.ca>
-	<B85A65D85D7EB246BE421B3FB0FBB59302477EA939@dbde02.ent.ti.com>
-Date: Fri, 19 Nov 2010 10:38:10 -0500
-Message-ID: <AANLkTi=HS7ym8n6=hF8vAg2WR33Md5=YRZL2NS7a+F2y@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] da850-evm: add UI Expander pushbuttons
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Govindarajan, Sriramakrishnan" <srk@ti.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Clouter <alex@digriz.org.uk>,
-        Chris Cordahi <christophercordahi@nanometrics.ca>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sekhar,
+On Fri, 19 Nov 2010, Mark Lord wrote:
 
-Thank you for your reviews.
+> On 10-11-19 09:02 AM, Ted Ts'o wrote:
+> > but that's why mount -o discard is not the default.
+> 
+> 
+> But, oddly, it _is_ the default for mke2fs -t ext4,
+> which really threw me for a loop recently.
+> 
+> I though my system had locked up when suddenly everything
+> went dead for a very long time (many minutes) while installing a new system.
+> 
+> Then I figured out what was going on.
+> I really believe that "-K" should be the _default_ for mke2fs,
+> as otherwise lots of other people probably also wonder
+> if Linux is killing their SSD at system install time..
+> 
+> Cheers
+> 
 
-On Fri, Nov 19, 2010 at 4:58 AM, Nori, Sekhar <nsekhar@ti.com> wrote:
-> [...]
-> On Wed, Nov 17, 2010 at 01:09:35, Ben Gardiner wrote:
->> [...]
->> Changes since v1:
->>  * set INPUT_POLLDEV default for DA850_EVM machine, but don't select it
->>    unconditionally
->
-> I didn't see the v1 posting (wonder why), but why is this
-> required? Why cant we depend on this being selected from
-> Device Drivers->Input device support in menuconfig?
+That is exactly a reason why I posted a patch for
+"Make blkdev_issue_discard() interruptible", but nobody seems to care. As
+an addition I have patched mke2fs to inform user about ongoing discard,
+also with not much attention (Ted?).
 
-I'm sorry about that. I checked gmane and the v1 never made it to the
-davinci-linux list. I think it was because of my (mis)use of git
-send-email. Version 2 made it to the list so I've now found the magic
-incantation.
 
-The reason we should at least select INPUT_POLLDEV as a default option
-is: when it is not set the gpio-keys instances registered by the
-da850-evm board setup routine will fail probe() of the gpio-keys
-driver since it will not have polled-input support enabled.
-
-By setting INPUT_POLLDEV default for the da850-evm users will get
-functioning pushbuttons and switches with the default config but they
-will be able to disable INPUT_POLLDEV or gpio-keys drivers in their
-defconfig at their convenience.
-
-> [...]
->
->> @@ -349,6 +421,10 @@ static struct i2c_board_info __initdata da850_evm_i2c_devices[] = {
->>       {
->>               I2C_BOARD_INFO("tca6416", 0x20),
->>               .platform_data = &da850_evm_ui_expander_info,
->> +             /*
->> +              * TODO : populate at runtime using
->> +              * .irq = gpio_to_irq(GPIO_TO_PIN(2,7)),
->> +              */
->
-> You seem to be adding this in this patch and removing
-> in 4/4.
-
-Oops. That's my fault. The internal reviewers also reminded me to
-remove these before sending. Sorry for the noise/ I will remove this
-block in _this_ patch in the re-spin.
-
-Best Regards,
-Ben Gardiner
-
----
-Nanometrics Inc.
-http://www.nanometrics.ca
+Thanks!
+-Lukas
