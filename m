@@ -1,110 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754719Ab0KSQ7f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:59:35 -0500
-Received: from compulab.co.il ([67.18.134.219]:33663 "EHLO compulab.co.il"
+	id S1754870Ab0KSRA1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 12:00:27 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58462 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754242Ab0KSQ7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:59:34 -0500
-Message-ID: <4CE6ACE7.9010203@compulab.co.il>
-Date: Fri, 19 Nov 2010 18:59:19 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.7) Gecko/20100816 Lightning/1.0b2 Thunderbird/3.1.1
+	id S1754347Ab0KSRA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 12:00:26 -0500
+Date: Fri, 19 Nov 2010 11:59:52 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
+Message-ID: <20101119165952.GJ18100@redhat.com>
+References: <20101112172755.GR4823@redhat.com>
+ <20101116184325.GB4823@redhat.com>
+ <4CE2E3C3.6060800@windriver.com>
+ <20101118080516.GJ32621@elte.hu>
+ <4CE52048.5080802@windriver.com>
+ <1290086232.2109.1507.camel@laptop>
+ <20101118193247.GF18100@redhat.com>
+ <4CE583D0.8050407@windriver.com>
+ <20101118200807.GC8131@redhat.com>
+ <1290112234.2109.1534.camel@laptop>
 MIME-Version: 1.0
-To: srinath@mistralsolutions.com
-CC: linux-omap@vger.kernel.org, jdk@ti.com, tony@atomide.com,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, khilman@deeprootsystems.com,
-        nm@ti.com, nagendra@mistralsolutions.com, umeshk@mistralsolutions.com
-Subject: Re: [Patch v1] AM35xx: Craneboard: Add USB EHCI support
-References: <[PATCH] AM35xx-Craneboard-Add-USB-EHCI-support> <1290182862-21837-1-git-send-email-srinath@mistralsolutions.com>
-In-Reply-To: <1290182862-21837-1-git-send-email-srinath@mistralsolutions.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290112234.2109.1534.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Hi Srinath,
+On Thu, Nov 18, 2010 at 09:30:33PM +0100, Peter Zijlstra wrote:
+> On Thu, 2010-11-18 at 15:08 -0500, Don Zickus wrote:
+> > On Thu, Nov 18, 2010 at 01:51:44PM -0600, Jason Wessel wrote:
+> > > > So the problem is when the nmi watchdog is enabled, the perf event is
+> > > > 'active' and thus tries to read the counter value.  Because it is always
+> > > > zero, perf just assumes the counter overflowed and the NMI is his.
+> > > >
+> > > > Not sure how to fix it yet, other than include the logic that detects we
+> > > > are on a guest and disable perf??
+> > > >
+> > > >   
+> > > 
+> > > I highly doubt we want to disable perf.   I would rather use the source
+> > > and fix the nmi emulation in KVM/Qemu after we hear back the results
+> > 
+> > Well I think Peter does not have a positive opinion about emulating perf
+> > inside a guest.  
+> 
+> Well, I'll let someone else write it.. I tihnk its pretty pointless to
+> have, the whole virt layer totally destroys many (if not all) useful
+> metrics.
+> 
+> But I don't have a problem with full msr emulation, what I do not like
+> is a direct msr passthough bypassing perf.
+> 
+> > Nor are the KVM folks having much success in doing so.
+> 
+> Just busy doing other stuff I guess.. Jes was going to prod at it at
+> some point.
+> 
+> > Just to clarify, perf counter emulation is _not_ implemented in kvm.
+> > Therefore disabling perf in the guest makes sense until someone gets
+> > around to actually writing the emulation code for perf in a guest. :-)
+> 
+> Right, which is what I proposed, on init do a checking_wrmsrl() on a
+> known PMU reg, KVM/qemu should fault on that.. (I'd prefer it if they'd
+> also fault on reading it too).
 
-On 11/19/10 18:07, srinath@mistralsolutions.com wrote:
-> From: Srinath <srinath@mistralsolutions.com>
->
-> AM3517/05 Craneboard has one EHCI interface on board using port1.
->
-> GPIO35 is used as power enable.
-> GPIO38 is used as port1 PHY reset.
->
-> Signed-off-by: Srinath <srinath@mistralsolutions.com>
-> ---
->  arch/arm/mach-omap2/board-am3517crane.c |   21 +++++++++++++++++++++
->  1 files changed, 21 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/mach-omap2/board-am3517crane.c b/arch/arm/mach-omap2/board-am3517crane.c
-> index 13ead33..0e1a806 100644
-> --- a/arch/arm/mach-omap2/board-am3517crane.c
-> +++ b/arch/arm/mach-omap2/board-am3517crane.c
-> @@ -28,8 +28,10 @@
->  
->  #include <plat/board.h>
->  #include <plat/common.h>
-> +#include <plat/usb.h>
->  
->  #include "mux.h"
-> +#include "control.h"
->  
->  /* Board initialization */
->  static struct omap_board_config_kernel am3517_crane_config[] __initdata = {
-> @@ -53,10 +55,29 @@ static void __init am3517_crane_init_irq(void)
->  	omap_gpio_init();
->  }
->  
-> +static struct ehci_hcd_omap_platform_data ehci_pdata __initdata = {
-> +	.port_mode[0] = EHCI_HCD_OMAP_MODE_PHY,
-> +	.port_mode[1] = EHCI_HCD_OMAP_MODE_UNKNOWN,
-> +	.port_mode[2] = EHCI_HCD_OMAP_MODE_UNKNOWN,
-> +
-> +	.phy_reset  = true,
-> +	.reset_gpio_port[0]  = 38,
-> +	.reset_gpio_port[1]  = -EINVAL,
-> +	.reset_gpio_port[2]  = -EINVAL
-> +};
-> +
->  static void __init am3517_crane_init(void)
->  {
->  	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
->  	omap_serial_init();
-> +
-> +	/* Configure GPIO for EHCI port */
-> +	omap_mux_init_gpio(35, OMAP_PIN_OUTPUT);
-> +	gpio_request(35, "usb_ehci_enable");
+Reading the kvm code in arch/x86/kernel/kvm/x86.c, it seems like they do
+_not_ fault on writes, only on some (which don't include a bunch of the
+perfctrs).  The reason seems to be to prevent older distros from falling
+apart that could not handle those faults properly.
 
-gpio_request() can fail, you should check this
-and you should not use this gpio if the request fails.
-Also, may be the regulators framework is more appropriate
-for power enable line, but I'm not sure...
+I thought about a patch like this, but it only works for kvm and doesn't
+really solve the problem for other virt-machines like xen and vmware.
 
-> +	gpio_direction_output(35, 1);
-> +	gpio_set_value(35, 1);
-> +	omap_mux_init_gpio(38, OMAP_PIN_OUTPUT);
+Cheers,
+Don
 
-Shouldn't the omap_mux_init_gpio() be called before you request the gpio?
 
-> +	usb_ehci_init(&ehci_pdata);
->  }
->  
->  MACHINE_START(CRANEBOARD, "AM3517/05 CRANEBOARD")
-
--- 
-Regards,
-Igor.
-
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index bbe3c4a..ef7119e 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -493,6 +493,10 @@ static int x86_setup_perfctr(struct perf_event *event)
+ 
+ static int x86_pmu_hw_config(struct perf_event *event)
+ {
++	
++	if (perf_guest_cbs && !perf_guest_cbs->is_perfctr_emulated())
++		return -EOPNOTSUPP;
++
+ 	if (event->attr.precise_ip) {
+ 		int precise = 0;
+ 
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 2288ad8..58203ea 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4600,10 +4600,16 @@ static unsigned long kvm_get_guest_ip(void)
+ 	return ip;
+ }
+ 
++static int kvm_is_perfctr_emulated(void)
++{
++	return 0;
++}
++
+ static struct perf_guest_info_callbacks kvm_guest_cbs = {
+ 	.is_in_guest		= kvm_is_in_guest,
+ 	.is_user_mode		= kvm_is_user_mode,
+ 	.get_guest_ip		= kvm_get_guest_ip,
++	.is_perfctr_emulated	= kvm_is_perfctr_emulated,
+ };
+ 
+ void kvm_before_handle_nmi(struct kvm_vcpu *vcpu)
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 057bf22..9cb500b 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -469,6 +469,7 @@ struct perf_guest_info_callbacks {
+ 	int (*is_in_guest) (void);
+ 	int (*is_user_mode) (void);
+ 	unsigned long (*get_guest_ip) (void);
++	int (*is_perfctr_emulated) (void);
+ };
+ 
+ #ifdef CONFIG_HAVE_HW_BREAKPOINT
