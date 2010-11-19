@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab0KSLzY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 06:55:24 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:40368 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab0KSLzW (ORCPT
+	id S1753880Ab0KSL5c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 06:57:32 -0500
+Received: from casper.infradead.org ([85.118.1.10]:48447 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751210Ab0KSL5b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 06:55:22 -0500
-Date: Fri, 19 Nov 2010 06:55:16 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Greg Freemyer <greg.freemyer@gmail.com>
-Cc: Mark Lord <kernel@teksavvy.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
-        Lukas Czerner <lczerner@redhat.com>, tytso@mit.edu,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
- super_operation
-Message-ID: <20101119115516.GA1152@infradead.org>
-References: <20101118141957.GK6178@parisc-linux.org>
- <20101118142918.GA18510@infradead.org>
- <1290100750.3041.72.camel@mulgrave.site>
- <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
- <1290102098.3041.77.camel@mulgrave.site>
- <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>
- <4CE59E57.2090009@teksavvy.com>
- <yq1r5eiw5os.fsf@sermon.lab.mkp.net>
- <4CE5C616.7070706@teksavvy.com>
- <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 19 Nov 2010 06:57:31 -0500
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Samuel Thibault <samuel.thibault@ens-lyon.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Hans-Peter Jansen <hpj@urpla.net>,
+        linux-kernel@vger.kernel.org,
+        Lennart Poettering <mzxreary@0pointer.de>, david@lang.hm,
+        Dhaval Giani <dhaval.giani@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
+In-Reply-To: <20101119000720.GF6024@const.famille.thibault.fr>
+References: <1289916171.5169.117.camel@maggy.simson.net>
+	 <AANLkTimC_TWzKET-aabYK0TPG6fUUW06HDej6iOzYtKo@mail.gmail.com>
+	 <20101116211431.GA15211@tango.0pointer.de>
+	 <201011182333.48281.hpj@urpla.net>
+	 <20101118231218.GX6024@const.famille.thibault.fr>
+	 <1290123351.18039.49.camel@maggy.simson.net>
+	 <20101118234339.GA6024@const.famille.thibault.fr>
+	 <AANLkTimTNxLYGLgnS9TUT_YiMnmDVrqseByGGogj+A4Z@mail.gmail.com>
+	 <20101119000204.GE6024@const.famille.thibault.fr>
+	 <20101119000720.GF6024@const.famille.thibault.fr>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 19 Nov 2010 12:57:24 +0100
+Message-ID: <1290167844.2109.1560.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 05:16:36PM -0800, Greg Freemyer wrote:
-> I agree with Mark.  When you say "make coalescing work" it sounds like
-> major overkill.
+On Fri, 2010-11-19 at 01:07 +0100, Samuel Thibault wrote:
 > 
-> FITRIM should be able to lock a group of non-contiguous free ranges,
-> send them down to the block layer as a single pre-coalesced set, and
-> the block layer just needs to pass it on in a synchronous way.  Then
-> when that group of ranges is discarded, FITRIM releases the locks.
+> 
+> Also note that having a hierarchical process structure should permit to
+> make things globally more efficient: avoid putting e.g. your cpp, cc1,
+> and asm processes at three corners of your 4-socket NUMA machine :) 
 
-Given that you know the Linux I/O stack and hardware so well may I
-volunteer you to implement it?  Including remapping the multiple ranges
-in device mapper, and dealing with the incompatible range formats for
-TRIM vs UNMAP.  If your implementation is clean enough I'm pretty
-sure no one will object to merge it.
+We have the hierarchy mandated by POSIX to track parents, childs,
+sessions and all that stuff, its just not the data structure used for
+scheduling.
 
-> Every TRIM causes a cache flush anyway on the SSD, so the synchronous
-> aspect of the process should not be a problem.  (Maybe SCSI with thin
-> provisioning would see a performance hit?)
+And no, using that to load-balance between CPUs doesn't necessarily help
+with the NUMA case, load-balancing is an impossible job (equivalent to
+page-replacement -- you simply don't know the future), applications
+simply do wildly weird stuff. 
 
-What's your evidence?
+>From a process hierarchy there's absolutely no difference between a
+cc1/cpp/asm and some MPI jobs, both can be parent-child relations with
+pipes between, some just run short and have data affinity, others run
+long and don't have any.
+
 
