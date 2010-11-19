@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756613Ab0KSTbu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 14:31:50 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:32999 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1756277Ab0KSTbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 14:31:48 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+GNkoSaaKGZsL6SB9n8DcMEoGGwZP0pqPcjzHgGG
-	jNdwv3iMWoaKdX
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>, mzxreary@0pointer.de, tytso@mit.edu,
-        bgamari.foss@gmail.com, a.p.zijlstra@chello.nl, debiandev@gmail.com,
-        alan@lxorguk.ukuu.org.uk, dhaval.giani@gmail.com, vgoyal@redhat.com,
-        oleg@redhat.com, markus@trippelsdorf.de,
-        mathieu.desnoyers@efficios.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com
-In-Reply-To: <AANLkTiksmvcLKGx7-u5CnTnZU6dgOgg7wem6qf384zUg@mail.gmail.com>
-References: <C47257FC-498A-41B0-BC94-C81C72601D53@mit.edu>
-	 <20101119.082944.226775934.davem@davemloft.net>
-	 <20101119163430.GA12353@tango.0pointer.de>
-	 <20101119.084302.71115175.davem@davemloft.net>
-	 <AANLkTiksmvcLKGx7-u5CnTnZU6dgOgg7wem6qf384zUg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Nov 2010 12:31:27 -0700
-Message-ID: <1290195087.24581.27.camel@maggy.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1756472Ab0KSTlH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 14:41:07 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:47990 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143Ab0KSTlG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 14:41:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=a76k6G8TY6kICSuJRY4pJQCDHQcKu8TrVqpU0HWHFQyLtfal/WdAS+Otb+xCgQjfuN
+         8PhbltITmtCgffTQ2jpVJOUX6LF5MeNpjZ4j3fiAPRtns1Ou82iBtQOMcFXLfK24ne0k
+         4jhAZE7mWJvTEXebCmADhsvJjvx6fFsYrAWRw=
+MIME-Version: 1.0
+In-Reply-To: <20101116142029.433551838@kernel.dk>
+References: <20101116140900.039761100@kernel.dk>
+	<20101116142029.433551838@kernel.dk>
+Date: Fri, 19 Nov 2010 11:41:04 -0800
+X-Google-Sender-Auth: gFRyM0h9x7qz47zDwytWfjkEjSA
+Message-ID: <AANLkTingh9UxuD6xtoXmErf2v8gMr96ir5CVQhB=YdQ0@mail.gmail.com>
+Subject: Re: [patch 13/28] fs: dcache scale d_unhashed
+From: Tim Pepper <lnxninja@linux.vnet.ibm.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 09:51 -0800, Linus Torvalds wrote:
+On Tue, Nov 16, 2010 at 6:09 AM, Nick Piggin <npiggin@kernel.dk> wrote:
 
-> And you really _can_ combine them. As mentioned, I'd be nervous about
-> AIM benchmarks. I keep mentioning AIM, but that's because it has shown
-> odd tty issues before. Back when the RT guys wanted to do that crazy
-> blocking BKL thing (replace the spinlock with a semaphore), AIM7
-> plummeted by 40%. And people were looking all over the place (file
-> locking etc), and the tty layer was the biggest reason iirc.
+> @@ -1797,7 +1822,10 @@ static void d_move_locked(struct dentry
+>        /*
+>         * XXXX: do we really need to take target->d_lock?
+>         */
+> -       if (target < dentry) {
+> +       if (d_ancestor(dentry, target)) {
+> +               spin_lock(&dentry->d_lock);
+> +               spin_lock_nested(&target->d_lock, DENTRY_D_LOCK_NESTED);
+> +       } else if (d_ancestor(target, dentry) || target < dentry) {
+>                spin_lock(&target->d_lock);
+>                spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
+>        } else {
 
-If I were home, I'd have already checked out AIM7 and more, but I didn't
-load laptop up with all my toys unfortunately.  (or fortunately, since
-T130 ain't exactly a speed daemon)
-
-	-Mike
-
+This is the first hunk out of the series where I feel like reading the
+new code makes me say "ugh".
