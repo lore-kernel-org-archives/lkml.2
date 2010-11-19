@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757852Ab0KSWAl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:00:41 -0500
-Received: from kroah.org ([198.145.64.141]:45305 "EHLO coco.kroah.org"
+	id S1757865Ab0KSWBD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:01:03 -0500
+Received: from kroah.org ([198.145.64.141]:45377 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757669Ab0KSV7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:59:08 -0500
+	id S1757662Ab0KSV7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:59:07 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:45 2010
-Message-Id: <20101119215645.398325284@clark.site>
+Message-Id: <20101119215645.318233108@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:56:42 -0800
+Date: Fri, 19 Nov 2010 13:56:41 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tilman Schmidt <tilman@imap.cc>,
-        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>
-Subject: [81/82] isdn: avoid calling tty_ldisc_flush() in atomic context
+        Robin Holt <holt@sgi.com>
+Subject: [80/82] sgi-xp: incoming XPC channel messages can come in after the channels partition structures have been torn down
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +25,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tilman Schmidt <tilman@imap.cc>
+From: Robin Holt <holt@sgi.com>
 
-commit bc10f96757bd6ab3721510df8defa8f21c32f974 upstream.
+commit 09358972bff5ce99de496bbba97c85d417b3c054 upstream.
 
-Remove the call to tty_ldisc_flush() from the RESULT_NO_CARRIER
-branch of isdn_tty_modem_result(), as already proposed in commit
-00409bb045887ec5e7b9e351bc080c38ab6bfd33.
-This avoids a "sleeping function called from invalid context" BUG
-when the hardware driver calls the statcallb() callback with
-command==ISDN_STAT_DHUP in atomic context, which in turn calls
-isdn_tty_modem_result(RESULT_NO_CARRIER, ~), and from there,
-tty_ldisc_flush() which may sleep.
+Under some workloads, some channel messages have been observed being
+delayed on the sending side past the point where the receiving side has
+been able to tear down its partition structures.
 
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Cc: Arnd Bergmann <arnd@arndb.de>
+This condition is already detected in xpc_handle_activate_IRQ_uv(), but
+that information is not given to xpc_handle_activate_mq_msg_uv().  As a
+result, xpc_handle_activate_mq_msg_uv() assumes the structures still exist
+and references them, causing a NULL-pointer deref.
+
+Signed-off-by: Robin Holt <holt@sgi.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/isdn/i4l/isdn_tty.c |    6 ------
- 1 file changed, 6 deletions(-)
+ drivers/misc/sgi-xp/xpc_uv.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
---- a/drivers/isdn/i4l/isdn_tty.c
-+++ b/drivers/isdn/i4l/isdn_tty.c
-@@ -2636,12 +2636,6 @@ isdn_tty_modem_result(int code, modem_in
- 		if ((info->flags & ISDN_ASYNC_CLOSING) || (!info->tty)) {
- 			return;
- 		}
--#ifdef CONFIG_ISDN_AUDIO
--		if ( !info->vonline )
--			tty_ldisc_flush(info->tty);
--#else
--		tty_ldisc_flush(info->tty);
--#endif
- 		if ((info->flags & ISDN_ASYNC_CHECK_CD) &&
- 		    (!((info->flags & ISDN_ASYNC_CALLOUT_ACTIVE) &&
- 		       (info->flags & ISDN_ASYNC_CALLOUT_NOHUP)))) {
+--- a/drivers/misc/sgi-xp/xpc_uv.c
++++ b/drivers/misc/sgi-xp/xpc_uv.c
+@@ -417,6 +417,7 @@ xpc_process_activate_IRQ_rcvd_uv(void)
+ static void
+ xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
+ 			      struct xpc_activate_mq_msghdr_uv *msg_hdr,
++			      int part_setup,
+ 			      int *wakeup_hb_checker)
+ {
+ 	unsigned long irq_flags;
+@@ -481,6 +482,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREQUEST_UV: {
+ 		struct xpc_activate_mq_msg_chctl_closerequest_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				   xpc_activate_mq_msg_chctl_closerequest_uv,
+ 				   hdr);
+@@ -497,6 +501,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREPLY_UV: {
+ 		struct xpc_activate_mq_msg_chctl_closereply_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				   xpc_activate_mq_msg_chctl_closereply_uv,
+ 				   hdr);
+@@ -511,6 +518,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREQUEST_UV: {
+ 		struct xpc_activate_mq_msg_chctl_openrequest_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				   xpc_activate_mq_msg_chctl_openrequest_uv,
+ 				   hdr);
+@@ -528,6 +538,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREPLY_UV: {
+ 		struct xpc_activate_mq_msg_chctl_openreply_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				   xpc_activate_mq_msg_chctl_openreply_uv, hdr);
+ 		args = &part->remote_openclose_args[msg->ch_number];
+@@ -545,6 +558,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
+ 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENCOMPLETE_UV: {
+ 		struct xpc_activate_mq_msg_chctl_opencomplete_uv *msg;
+ 
++		if (!part_setup)
++			break;
++
+ 		msg = container_of(msg_hdr, struct
+ 				xpc_activate_mq_msg_chctl_opencomplete_uv, hdr);
+ 		spin_lock_irqsave(&part->chctl_lock, irq_flags);
+@@ -621,6 +637,7 @@ xpc_handle_activate_IRQ_uv(int irq, void
+ 
+ 			part_referenced = xpc_part_ref(part);
+ 			xpc_handle_activate_mq_msg_uv(part, msg_hdr,
++						      part_referenced,
+ 						      &wakeup_hb_checker);
+ 			if (part_referenced)
+ 				xpc_part_deref(part);
 
 
