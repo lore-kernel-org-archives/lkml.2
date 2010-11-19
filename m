@@ -1,47 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab0KSPsS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 10:48:18 -0500
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44363 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753054Ab0KSPsS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 10:48:18 -0500
-Date: Fri, 19 Nov 2010 15:47:05 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Dr. Werner Fink" <werner@suse.de>
-Cc: Greg KH <greg@kroah.com>, Lennart Poettering <mzxreary@0pointer.de>,
-        Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
-Message-ID: <20101119154705.7829487a@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101119132145.GA22883@boole.suse.de>
-References: <20101117235647.00766e32@lxorguk.ukuu.org.uk>
-	<20101118012734.GA8558@kroah.com>
-	<20101118014848.GA7873@tango.0pointer.de>
-	<20101118015310.GA30480@kroah.com>
-	<20101118110020.GA13871@boole.suse.de>
-	<20101118112335.434de53a@lxorguk.ukuu.org.uk>
-	<20101118121256.GA19884@boole.suse.de>
-	<20101118125822.16718289@lxorguk.ukuu.org.uk>
-	<20101118131420.GA23872@boole.suse.de>
-	<20101118144123.5417ccbd@lxorguk.ukuu.org.uk>
-	<20101119132145.GA22883@boole.suse.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754688Ab0KSPtd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 10:49:33 -0500
+Received: from smtp.nokia.com ([147.243.128.24]:60555 "EHLO mgw-da01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751150Ab0KSPtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 10:49:32 -0500
+From: Aaro Koskinen <aaro.koskinen@nokia.com>
+To: linux-pm@lists.linux-foundation.org, rjw@sisk.pl,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] pm: fix comments to match runtime callback code
+Date: Fri, 19 Nov 2010 17:48:52 +0200
+Message-Id: <1290181732-9124-1-git-send-email-aaro.koskinen@nokia.com>
+X-Mailer: git-send-email 1.5.6.5
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Currently the bootlogd(8) or blogd(8) parse the kernels command line
-> and if available do an ioctl TIOCGDEV (not supported by the upstream
-> kernel), then create a pty/tty pair, do an ioctl TIOCCONS to forward
+Commit 05aa55dddb9ee4045c320661068bea78dad6a6e5 changed routines to
+succeed if the driver handler is not defined. Comments were not updated.
 
-So perhaps the vendors using TIOCGDEV could get off their collective
-backsides and submit it upstream ?
+Signed-off-by: Aaro Koskinen <aaro.koskinen@nokia.com>
+---
+ drivers/base/power/generic_ops.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Alan
+diff --git a/drivers/base/power/generic_ops.c b/drivers/base/power/generic_ops.c
+index 81f2c84..3d2c350 100644
+--- a/drivers/base/power/generic_ops.c
++++ b/drivers/base/power/generic_ops.c
+@@ -39,7 +39,7 @@ EXPORT_SYMBOL_GPL(pm_generic_runtime_idle);
+  *
+  * If PM operations are defined for the @dev's driver and they include
+  * ->runtime_suspend(), execute it and return its error code.  Otherwise,
+- * return -EINVAL.
++ * return 0.
+  */
+ int pm_generic_runtime_suspend(struct device *dev)
+ {
+@@ -58,7 +58,7 @@ EXPORT_SYMBOL_GPL(pm_generic_runtime_suspend);
+  *
+  * If PM operations are defined for the @dev's driver and they include
+  * ->runtime_resume(), execute it and return its error code.  Otherwise,
+- * return -EINVAL.
++ * return 0.
+  */
+ int pm_generic_runtime_resume(struct device *dev)
+ {
+-- 
+1.5.6.5
+
