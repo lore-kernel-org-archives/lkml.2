@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754Ab0KSWCg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:02:36 -0500
-Received: from kroah.org ([198.145.64.141]:45394 "EHLO coco.kroah.org"
+	id S1757938Ab0KSWCs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:02:48 -0500
+Received: from kroah.org ([198.145.64.141]:45305 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757618Ab0KSV7B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:59:01 -0500
+	id S1757608Ab0KSV7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:59:00 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:44 2010
-Message-Id: <20101119215644.419063372@clark.site>
+Message-Id: <20101119215644.336025097@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:56:30 -0800
+Date: Fri, 19 Nov 2010 13:56:29 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Nagendra Singh Tomar <tomer_iisc@yahoo.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [69/82] net: Fix the condition passed to sk_wait_event()
+Subject: [68/82] rose: Fix signedness issues wrt. digi count.
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,69 +26,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Nagendra Tomar <tomer_iisc@yahoo.com>
+From: David S. Miller <davem@davemloft.net>
 
-[ Upstream commit 482964e56e1320cb7952faa1932d8ecf59c4bf75 ]
+[ Upstream commit 9828e6e6e3f19efcb476c567b9999891d051f52f ]
 
-This patch fixes the condition (3rd arg) passed to sk_wait_event() in
-sk_stream_wait_memory(). The incorrect check in sk_stream_wait_memory()
-causes the following soft lockup in tcp_sendmsg() when the global tcp
-memory pool has exhausted.
+Just use explicit casts, since we really can't change the
+types of structures exported to userspace which have been
+around for 15 years or so.
 
->>> snip <<<
-
-localhost kernel: BUG: soft lockup - CPU#3 stuck for 11s! [sshd:6429]
-localhost kernel: CPU 3:
-localhost kernel: RIP: 0010:[sk_stream_wait_memory+0xcd/0x200]  [sk_stream_wait_memory+0xcd/0x200] sk_stream_wait_memory+0xcd/0x200
-localhost kernel:
-localhost kernel: Call Trace:
-localhost kernel:  [sk_stream_wait_memory+0x1b1/0x200] sk_stream_wait_memory+0x1b1/0x200
-localhost kernel:  [<ffffffff802557c0>] autoremove_wake_function+0x0/0x40
-localhost kernel:  [ipv6:tcp_sendmsg+0x6e6/0xe90] tcp_sendmsg+0x6e6/0xce0
-localhost kernel:  [sock_aio_write+0x126/0x140] sock_aio_write+0x126/0x140
-localhost kernel:  [xfs:do_sync_write+0xf1/0x130] do_sync_write+0xf1/0x130
-localhost kernel:  [<ffffffff802557c0>] autoremove_wake_function+0x0/0x40
-localhost kernel:  [hrtimer_start+0xe3/0x170] hrtimer_start+0xe3/0x170
-localhost kernel:  [vfs_write+0x185/0x190] vfs_write+0x185/0x190
-localhost kernel:  [sys_write+0x50/0x90] sys_write+0x50/0x90
-localhost kernel:  [system_call+0x7e/0x83] system_call+0x7e/0x83
-
->>> snip <<<
-
-What is happening is, that the sk_wait_event() condition passed from
-sk_stream_wait_memory() evaluates to true for the case of tcp global memory
-exhaustion. This is because both sk_stream_memory_free() and vm_wait are true
-which causes sk_wait_event() to *not* call schedule_timeout().
-Hence sk_stream_wait_memory() returns immediately to the caller w/o sleeping.
-This causes the caller to again try allocation, which again fails and again
-calls sk_stream_wait_memory(), and so on.
-
-[ Bug introduced by commit c1cbe4b7ad0bc4b1d98ea708a3fecb7362aa4088
-  ("[NET]: Avoid atomic xchg() for non-error case") -DaveM ]
-
-Signed-off-by: Nagendra Singh Tomar <tomer_iisc@yahoo.com>
+Reported-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/core/stream.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ net/rose/af_rose.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/core/stream.c
-+++ b/net/core/stream.c
-@@ -144,10 +144,10 @@ int sk_stream_wait_memory(struct sock *s
+--- a/net/rose/af_rose.c
++++ b/net/rose/af_rose.c
+@@ -679,7 +679,7 @@ static int rose_bind(struct socket *sock
+ 	if (addr_len == sizeof(struct sockaddr_rose) && addr->srose_ndigis > 1)
+ 		return -EINVAL;
  
- 		set_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
- 		sk->sk_write_pending++;
--		sk_wait_event(sk, &current_timeo, !sk->sk_err &&
--						  !(sk->sk_shutdown & SEND_SHUTDOWN) &&
--						  sk_stream_memory_free(sk) &&
--						  vm_wait);
-+		sk_wait_event(sk, &current_timeo, sk->sk_err ||
-+						  (sk->sk_shutdown & SEND_SHUTDOWN) ||
-+						  (sk_stream_memory_free(sk) &&
-+						  !vm_wait));
- 		sk->sk_write_pending--;
+-	if (addr->srose_ndigis > ROSE_MAX_DIGIS)
++	if ((unsigned int) addr->srose_ndigis > ROSE_MAX_DIGIS)
+ 		return -EINVAL;
  
- 		if (vm_wait) {
+ 	if ((dev = rose_dev_get(&addr->srose_addr)) == NULL) {
+@@ -739,7 +739,7 @@ static int rose_connect(struct socket *s
+ 	if (addr_len == sizeof(struct sockaddr_rose) && addr->srose_ndigis > 1)
+ 		return -EINVAL;
+ 
+-	if (addr->srose_ndigis > ROSE_MAX_DIGIS)
++	if ((unsigned int) addr->srose_ndigis > ROSE_MAX_DIGIS)
+ 		return -EINVAL;
+ 
+ 	/* Source + Destination digis should not exceed ROSE_MAX_DIGIS */
 
 
