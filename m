@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760096Ab0KSA7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 19:59:46 -0500
-Received: from solo.fdn.fr ([80.67.169.19]:58621 "EHLO solo.fdn.fr"
+	id S1755802Ab0KSBFL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 20:05:11 -0500
+Received: from mail.perches.com ([173.55.12.10]:1560 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757346Ab0KSA7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 19:59:45 -0500
-Date: Fri, 19 Nov 2010 01:59:42 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mike Galbraith <efault@gmx.de>, Hans-Peter Jansen <hpj@urpla.net>,
-        linux-kernel@vger.kernel.org,
-        Lennart Poettering <mzxreary@0pointer.de>, david@lang.hm,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101119005942.GL6024@const.famille.thibault.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Mike Galbraith <efault@gmx.de>, Hans-Peter Jansen <hpj@urpla.net>,
-	linux-kernel@vger.kernel.org,
-	Lennart Poettering <mzxreary@0pointer.de>, david@lang.hm,
-	Dhaval Giani <dhaval.giani@gmail.com>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>,
-	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-	Ingo Molnar <mingo@elte.hu>,
-	Balbir Singh <balbir@linux.vnet.ibm.com>
-References: <1289916171.5169.117.camel@maggy.simson.net> <AANLkTimC_TWzKET-aabYK0TPG6fUUW06HDej6iOzYtKo@mail.gmail.com> <20101116211431.GA15211@tango.0pointer.de> <201011182333.48281.hpj@urpla.net> <20101118231218.GX6024@const.famille.thibault.fr> <1290123351.18039.49.camel@maggy.simson.net> <20101118234339.GA6024@const.famille.thibault.fr> <AANLkTimTNxLYGLgnS9TUT_YiMnmDVrqseByGGogj+A4Z@mail.gmail.com> <20101119000204.GE6024@const.famille.thibault.fr> <AANLkTi=n4r9STKsx76t--HbK7EiUWaaPm7tUN2nXtqxA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=n4r9STKsx76t--HbK7EiUWaaPm7tUN2nXtqxA@mail.gmail.com>
-User-Agent: Mutt/1.5.12-2006-07-14
+	id S1752023Ab0KSBFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 20:05:10 -0500
+Subject: Re: [PATCH] SuperH IrDA: correct Baud rate error correction
+From: Joe Perches <joe@perches.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Nicolas Kaiser <nikai@nikai.net>, Samuel Ortiz <samuel@sortiz.org>,
+        Kuninori Morimoto <morimoto.kuninori@renesas.com>,
+        irda-users@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101118164150.22aa7e16@nehalam>
+References: <20101119012402.43e9aa61@absol.kitzblitz>
+	 <20101118164150.22aa7e16@nehalam>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 18 Nov 2010 17:05:04 -0800
+Message-ID: <1290128704.1817.56.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds, le Thu 18 Nov 2010 16:42:27 -0800, a écrit :
-> Once per session is about as much as is acceptable. That's the kind of
-> granularity we should look at. So things like "groups per user",
-> "groups per session", "groups per one graphical application" are good.
-> Not things that can happen tens of thousands of times a second.
+On Thu, 2010-11-18 at 16:41 -0800, Stephen Hemminger wrote:
+> On Fri, 19 Nov 2010 01:24:02 +0100
+> Nicolas Kaiser <nikai@nikai.net> wrote:
+> >  	u32 rate_err_array[] = {
+> > -		0000, 0625, 1250, 1875,
+> > +		   0,  625, 1250, 1875,
+> >  		2500, 3125, 3750, 4375,
+> >  		5000, 5625, 6250, 6875,
+> >  		7500, 8125, 8750, 9375,
+> While you are at it make that table const.
 
-All right.  I believe that should already work quite well both for
-desktop and servers indeed.  "Per one graphical application" will most
-probably require desktop panel patching, however.
+Good find Nicolas.
 
-Samuel
+static const might be better still.
+
+
