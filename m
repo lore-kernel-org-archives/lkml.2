@@ -1,207 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab0KSSoQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 13:44:16 -0500
-Received: from mga01.intel.com ([192.55.52.88]:29047 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756478Ab0KSSoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 13:44:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,224,1288594800"; 
-   d="scan'208";a="859481438"
-Date: Sat, 20 Nov 2010 02:44:08 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        "Li, Shaohua" <shaohua.li@intel.com>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] writeback: prevent bandwidth calculation overflow
-Message-ID: <20101119184408.GA31113@localhost>
-References: <20101118065725.GB8458@localhost>
- <4CE537BE.6090103@redhat.com>
- <20101118154408.GA18582@localhost>
- <1290096121.2109.1525.camel@laptop>
- <20101118161356.GA20569@localhost>
- <20101119160653.GB3871@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101119160653.GB3871@tiehlicka.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756557Ab0KSSok (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:44:40 -0500
+Received: from mail.solarflare.com ([216.237.3.220]:23175 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756343Ab0KSSoj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 13:44:39 -0500
+Subject: [RFC][PATCH 1/5] genirq: Add IRQ affinity notifiers
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: David Miller <davem@davemloft.net>, Tom Herbert <therbert@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-net-drivers@solarflare.com
+In-Reply-To: <1290192176.2671.38.camel@bwh-desktop>
+References: <1290192176.2671.38.camel@bwh-desktop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Fri, 19 Nov 2010 18:44:35 +0000
+Message-ID: <1290192275.2671.39.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Nov 2010 18:44:38.0120 (UTC) FILETIME=[D1897E80:01CB8819]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17776.005
+X-TM-AS-Result: No--21.000000-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 20, 2010 at 12:06:53AM +0800, Michal Hocko wrote:
-> On Fri 19-11-10 00:13:56, Wu Fengguang wrote:
-> > On Fri, Nov 19, 2010 at 12:02:01AM +0800, Peter Zijlstra wrote:
-> > > On Thu, 2010-11-18 at 23:44 +0800, Wu Fengguang wrote:
-> > > > +               pause = HZ * pages_dirtied / (bw + 1);
-> > > 
-> > > Shouldn't that be using something like div64_u64 ?
-> > 
-> > Thanks for review. Here is the updated patch using div64_u64().
-> > 
-> > ---
-> > Subject: writeback: prevent bandwidth calculation overflow
-> > Date: Thu Nov 18 12:55:42 CST 2010
-> > 
-> > On 32bit kernel, bdi->write_bandwidth can express at most 4GB/s.
-> > 
-> > However the current calculation code can overflow when disk bandwidth
-> > reaches 800MB/s.  Fix it by using "long long" and div64_u64() in the
-> > calculations.
-> > 
-> > And further change its unit from bytes/second to pages/second.
-> > That allows up to 16TB/s bandwidth in 32bit kernel.
-> > 
-> > CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> >  mm/backing-dev.c    |    4 ++--
-> >  mm/page-writeback.c |   11 +++++------
-> >  2 files changed, 7 insertions(+), 8 deletions(-)
-> > 
-> > --- linux-next.orig/mm/page-writeback.c	2010-11-18 12:42:58.000000000 +0800
-> > +++ linux-next/mm/page-writeback.c	2010-11-19 00:08:23.000000000 +0800
-> > @@ -494,7 +494,7 @@ void bdi_update_write_bandwidth(struct b
-> >  	unsigned long written;
-> >  	unsigned long elapsed;
-> >  	unsigned long bw;
-> > -	unsigned long w;
-> > +	unsigned long long w;
-> >  
-> >  	if (*bw_written == 0)
-> >  		goto snapshot;
-> > @@ -513,7 +513,7 @@ void bdi_update_write_bandwidth(struct b
-> >  		goto snapshot;
-> >  
-> >  	written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]) - *bw_written;
-> > -	bw = (HZ * PAGE_CACHE_SIZE * written + elapsed/2) / elapsed;
-> > +	bw = (HZ * written + elapsed/2) / elapsed;
-> 
-> Sorry for a dumb question, but where did PAGE_CACHE_SIZE part go?
+When initiating I/O on a multiqueue and multi-IRQ device, we may want
+to select a queue for which the response will be handled on the same
+or a nearby CPU.  This requires a reverse-map of IRQ affinity.  Add a
+notification mechanism to support this.
 
-Because write_bandwidth's unit is bumped from bytes/s to pages/s,
-so that it can express much higher bandwidth.
-
-I've updated the patch again, and will submit more fixes tomorrow.
-
-Thanks,
-Fengguang
+This is based closely on work by Thomas Gleixner <tglx@linutronix.de>.
 ---
-Subject: writeback: prevent bandwidth calculation overflow
-Date: Thu Nov 18 12:55:42 CST 2010
+ include/linux/interrupt.h |   41 +++++++++++++++++++++++
+ include/linux/irqdesc.h   |    3 ++
+ kernel/irq/manage.c       |   81 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 125 insertions(+), 0 deletions(-)
 
-On 32bit kernel, bdi->write_bandwidth can express at most 4GB/s.
-
-However the current calculation code can overflow when disk bandwidth
-reaches 800MB/s.  Fix it by using "long long" and div64_u64() in the
-calculations.
-
-And further change its unit from bytes/second to pages/second.
-That allows up to 16TB/s bandwidth in 32bit kernel.
-
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- include/linux/backing-dev.h |    5 +++--
- mm/backing-dev.c            |    4 ++--
- mm/page-writeback.c         |   14 +++++++-------
- 3 files changed, 12 insertions(+), 11 deletions(-)
-
---- linux-next.orig/mm/page-writeback.c	2010-11-19 09:56:14.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-11-19 22:18:57.000000000 +0800
-@@ -494,7 +494,7 @@ void bdi_update_write_bandwidth(struct b
- 	unsigned long written;
- 	unsigned long elapsed;
- 	unsigned long bw;
--	unsigned long w;
-+	unsigned long long w;
+diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+index 79d0c4f..1649b30 100644
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -14,6 +14,8 @@
+ #include <linux/smp.h>
+ #include <linux/percpu.h>
+ #include <linux/hrtimer.h>
++#include <linux/kref.h>
++#include <linux/workqueue.h>
  
- 	if (*bw_written == 0)
- 		goto snapshot;
-@@ -513,9 +513,10 @@ void bdi_update_write_bandwidth(struct b
- 		goto snapshot;
+ #include <asm/atomic.h>
+ #include <asm/ptrace.h>
+@@ -231,6 +233,28 @@ static inline void resume_device_irqs(void) { };
+ static inline int check_wakeup_irqs(void) { return 0; }
+ #endif
  
- 	written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]) - *bw_written;
--	bw = (HZ * PAGE_CACHE_SIZE * written + elapsed/2) / elapsed;
-+	bw = (HZ * written + elapsed / 2) / elapsed;
- 	w = min(elapsed / unit_time, 128UL);
--	bdi->write_bandwidth = (bdi->write_bandwidth * (1024-w) + bw * w) >> 10;
-+	bdi->write_bandwidth = (bdi->write_bandwidth * (1024-w) +
-+				bw * w + 1023) >> 10;
- 	bdi->write_bandwidth_update_time = jiffies;
- snapshot:
- 	*bw_written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]);
-@@ -539,7 +540,7 @@ static void balance_dirty_pages(struct a
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
- 	unsigned long task_thresh;
--	unsigned long bw;
-+	unsigned long long bw;
- 	unsigned long pause = 0;
- 	bool dirty_exceeded = false;
- 	struct backing_dev_info *bdi = mapping->backing_dev_info;
-@@ -602,8 +603,7 @@ static void balance_dirty_pages(struct a
- 		 * of dirty pages have been cleaned during our pause time.
- 		 */
- 		if (nr_dirty < dirty_thresh &&
--		    bdi_prev_dirty - bdi_dirty >
--		    bdi->write_bandwidth >> (PAGE_CACHE_SHIFT + 2))
-+		    bdi_prev_dirty - bdi_dirty > (long)bdi->write_bandwidth / 4)
- 			break;
- 		bdi_prev_dirty = bdi_dirty;
- 
-@@ -626,7 +626,7 @@ static void balance_dirty_pages(struct a
- 		bw = bw * (task_thresh - bdi_dirty);
- 		bw = bw / (bdi_thresh / TASK_SOFT_DIRTY_LIMIT + 1);
- 
--		pause = HZ * (pages_dirtied << PAGE_CACHE_SHIFT) / (bw + 1);
-+		pause = HZ * pages_dirtied / ((unsigned long)bw + 1);
- 		pause = clamp_val(pause, 1, HZ/10);
- 
- pause:
---- linux-next.orig/mm/backing-dev.c	2010-11-19 09:56:14.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2010-11-19 22:18:19.000000000 +0800
-@@ -103,7 +103,7 @@ static int bdi_debug_stats_show(struct s
- 		   (unsigned long) K(bdi_stat(bdi, BDI_RECLAIMABLE)),
- 		   K(bdi_thresh), K(dirty_thresh), K(background_thresh),
- 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
--		   (unsigned long) bdi->write_bandwidth >> 10,
-+		   (unsigned long) K(bdi->write_bandwidth),
- 		   nr_dirty, nr_io, nr_more_io,
- 		   !list_empty(&bdi->bdi_list), bdi->state);
- #undef K
-@@ -662,7 +662,7 @@ int bdi_init(struct backing_dev_info *bd
- 			goto err;
- 	}
- 
--	bdi->write_bandwidth = 100 << 20;
-+	bdi->write_bandwidth = (100 << 20) / PAGE_CACHE_SIZE;
- 	bdi->dirty_exceeded = 0;
- 	err = prop_local_init_percpu(&bdi->completions);
- 
---- linux-next.orig/include/linux/backing-dev.h	2010-11-19 19:43:05.000000000 +0800
-+++ linux-next/include/linux/backing-dev.h	2010-11-19 22:18:19.000000000 +0800
-@@ -74,9 +74,10 @@ struct backing_dev_info {
- 
- 	struct percpu_counter bdi_stat[NR_BDI_STAT_ITEMS];
- 
--	struct prop_local_percpu completions;
-+	unsigned long write_bandwidth;
- 	unsigned long write_bandwidth_update_time;
--	int write_bandwidth;
++/**
++ * struct irq_affinity_notify - context for notification of IRQ affinity changes
++ * @irq:		Interrupt to which notification applies
++ * @kref:		Reference count, for internal use
++ * @work:		Work item, for internal use
++ * @notify:		Function to be called on change.  This will be
++ *			called in process context.
++ * @release:		Function to be called on release.  This will be
++ *			called in process context.  Once registered, the
++ *			structure must only be freed when this function is
++ *			called or later.
++ */
++struct irq_affinity_notify {
++        unsigned int irq;
++        struct kref kref;
++#if defined(CONFIG_SMP) && defined(CONFIG_GENERIC_HARDIRQS)
++        struct work_struct work;
++#endif
++        void (*notify)(struct irq_affinity_notify *, const cpumask_t *mask);
++        void (*release)(struct kref *ref);
++};
 +
-+	struct prop_local_percpu completions;
- 	int dirty_exceeded;
+ #if defined(CONFIG_SMP) && defined(CONFIG_GENERIC_HARDIRQS)
  
- 	unsigned int min_ratio;
+ extern cpumask_var_t irq_default_affinity;
+@@ -240,6 +264,13 @@ extern int irq_can_set_affinity(unsigned int irq);
+ extern int irq_select_affinity(unsigned int irq);
+ 
+ extern int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m);
++extern int
++irq_set_affinity_notifier(unsigned int irq, struct irq_affinity_notify *notify);
++
++static inline void irq_run_affinity_notifiers(void)
++{
++	flush_scheduled_work();
++}
+ #else /* CONFIG_SMP */
+ 
+ static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
+@@ -259,6 +290,16 @@ static inline int irq_set_affinity_hint(unsigned int irq,
+ {
+ 	return -EINVAL;
+ }
++
++static inline int
++irq_set_affinity_notifier(unsigned int irq, struct irq_affinity_notify *notify)
++{
++	return 0;
++}
++
++static inline void irq_run_affinity_notifiers(void)
++{
++}
+ #endif /* CONFIG_SMP && CONFIG_GENERIC_HARDIRQS */
+ 
+ #ifdef CONFIG_GENERIC_HARDIRQS
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index 979c68c..5e0d2e4 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -8,6 +8,7 @@
+  * For now it's included from <linux/irq.h>
+  */
+ 
++struct irq_affinity_notify;
+ struct proc_dir_entry;
+ struct timer_rand_state;
+ /**
+@@ -24,6 +25,7 @@ struct timer_rand_state;
+  * @last_unhandled:	aging timer for unhandled count
+  * @irqs_unhandled:	stats field for spurious unhandled interrupts
+  * @lock:		locking for SMP
++ * @affinity_notify:	context for notification of affinity changes
+  * @pending_mask:	pending rebalanced interrupts
+  * @threads_active:	number of irqaction threads currently running
+  * @wait_for_threads:	wait queue for sync_irq to wait for threaded handlers
+@@ -70,6 +72,7 @@ struct irq_desc {
+ 	raw_spinlock_t		lock;
+ #ifdef CONFIG_SMP
+ 	const struct cpumask	*affinity_hint;
++	struct irq_affinity_notify *affinity_notify;
+ #ifdef CONFIG_GENERIC_PENDING_IRQ
+ 	cpumask_var_t		pending_mask;
+ #endif
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 5f92acc..82b48d0 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -134,6 +134,10 @@ int irq_set_affinity(unsigned int irq, const struct cpumask *cpumask)
+ 		irq_set_thread_affinity(desc);
+ 	}
+ #endif
++	if (desc->affinity_notify) {
++		kref_get(&desc->affinity_notify->kref);
++		schedule_work(&desc->affinity_notify->work);
++	}
+ 	desc->status |= IRQ_AFFINITY_SET;
+ 	raw_spin_unlock_irqrestore(&desc->lock, flags);
+ 	return 0;
+@@ -155,6 +159,79 @@ int irq_set_affinity_hint(unsigned int irq, const struct cpumask *m)
+ }
+ EXPORT_SYMBOL_GPL(irq_set_affinity_hint);
+ 
++static void irq_affinity_notify(struct work_struct *work)
++{
++	struct irq_affinity_notify *notify =
++		container_of(work, struct irq_affinity_notify, work);
++	struct irq_desc *desc = irq_to_desc(notify->irq);
++	cpumask_var_t cpumask;
++	unsigned long flags;
++
++	if (!desc)
++		goto out;
++
++	if (!alloc_cpumask_var(&cpumask, GFP_KERNEL))
++		goto out;
++
++	raw_spin_lock_irqsave(&desc->lock, flags);
++#ifdef CONFIG_GENERIC_PENDING_IRQ
++	if (desc->status & IRQ_MOVE_PENDING)
++		cpumask_copy(cpumask, desc->pending_mask);
++	else
++#endif
++		cpumask_copy(cpumask, desc->affinity);
++	raw_spin_unlock_irqrestore(&desc->lock, flags);
++
++	notify->notify(notify, cpumask);
++
++	free_cpumask_var(cpumask);
++out:
++	kref_put(&notify->kref, notify->release);
++}
++
++/**
++ *	irq_set_affinity_notifier - control notification of IRQ affinity changes
++ *	@irq:		Interrupt for which to enable/disable notification
++ *	@notify:	Context for notification, or %NULL to disable
++ *			notification.  Function pointers must be initialised;
++ *			the other fields will be initialised by this function.
++ *
++ *	Must be called in process context.  Notification may only be enabled
++ *	after the IRQ is allocated but before it is bound with request_irq()
++ *	and must be disabled before the IRQ is freed using free_irq().
++ */
++int
++irq_set_affinity_notifier(unsigned int irq, struct irq_affinity_notify *notify)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	struct irq_affinity_notify *old_notify;
++	unsigned long flags;
++
++	/* The release function is promised process context */
++	might_sleep();
++
++	if (!desc)
++		return -EINVAL;
++
++	/* Complete initialisation of *notify */
++	if (notify) {
++		notify->irq = irq;
++		kref_init(&notify->kref);
++		INIT_WORK(&notify->work, irq_affinity_notify);
++	}
++
++	raw_spin_lock_irqsave(&desc->lock, flags);
++	old_notify = desc->affinity_notify;
++	desc->affinity_notify = notify;
++	raw_spin_unlock_irqrestore(&desc->lock, flags);
++
++	if (old_notify)
++		kref_put(&old_notify->kref, old_notify->release);
++	
++	return 0;
++}
++EXPORT_SYMBOL_GPL(irq_set_affinity_notifier);
++
+ #ifndef CONFIG_AUTO_IRQ_AFFINITY
+ /*
+  * Generic version of the affinity autoselector.
+@@ -1002,6 +1079,10 @@ void free_irq(unsigned int irq, void *dev_id)
+ 	if (!desc)
+ 		return;
+ 
++#ifdef CONFIG_SMP
++	BUG_ON(desc->affinity_notify);
++#endif
++
+ 	chip_bus_lock(desc);
+ 	kfree(__free_irq(irq, dev_id));
+ 	chip_bus_sync_unlock(desc);
+-- 
+1.7.3.2
+
+
+
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
