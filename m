@@ -1,97 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab0KSQG7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:06:59 -0500
-Received: from cantor.suse.de ([195.135.220.2]:35144 "EHLO mx1.suse.de"
+	id S1755171Ab0KSQIb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:08:31 -0500
+Received: from cantor.suse.de ([195.135.220.2]:35222 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755363Ab0KSQG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:06:57 -0500
-Date: Fri, 19 Nov 2010 17:06:53 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        "Li, Shaohua" <shaohua.li@intel.com>, Christoph Hellwig <hch@lst.de>,
-        Dave Chinner <david@fromorbit.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Chris Mason <chris.mason@oracle.com>, Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] writeback: prevent bandwidth calculation overflow
-Message-ID: <20101119160653.GB3871@tiehlicka.suse.cz>
-References: <20101118065725.GB8458@localhost>
- <4CE537BE.6090103@redhat.com>
- <20101118154408.GA18582@localhost>
- <1290096121.2109.1525.camel@laptop>
- <20101118161356.GA20569@localhost>
+	id S1753925Ab0KSQIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 11:08:30 -0500
+Date: Fri, 19 Nov 2010 17:08:28 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?ISO-8859-15?Q?=22Uwe_Kleine-K=F6nig=22?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Mike Frysinger <vapier@gentoo.org>
+Subject: Re: linux-next: manual merge of the trivial tree with the  tree
+In-Reply-To: <20101109132725.2e17ae65.sfr@canb.auug.org.au>
+Message-ID: <alpine.LNX.2.00.1011191708130.7420@pobox.suse.cz>
+References: <20101109132725.2e17ae65.sfr@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101118161356.GA20569@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 19-11-10 00:13:56, Wu Fengguang wrote:
-> On Fri, Nov 19, 2010 at 12:02:01AM +0800, Peter Zijlstra wrote:
-> > On Thu, 2010-11-18 at 23:44 +0800, Wu Fengguang wrote:
-> > > +               pause = HZ * pages_dirtied / (bw + 1);
-> > 
-> > Shouldn't that be using something like div64_u64 ?
-> 
-> Thanks for review. Here is the updated patch using div64_u64().
-> 
-> ---
-> Subject: writeback: prevent bandwidth calculation overflow
-> Date: Thu Nov 18 12:55:42 CST 2010
-> 
-> On 32bit kernel, bdi->write_bandwidth can express at most 4GB/s.
-> 
-> However the current calculation code can overflow when disk bandwidth
-> reaches 800MB/s.  Fix it by using "long long" and div64_u64() in the
-> calculations.
-> 
-> And further change its unit from bytes/second to pages/second.
-> That allows up to 16TB/s bandwidth in 32bit kernel.
-> 
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  mm/backing-dev.c    |    4 ++--
->  mm/page-writeback.c |   11 +++++------
->  2 files changed, 7 insertions(+), 8 deletions(-)
-> 
-> --- linux-next.orig/mm/page-writeback.c	2010-11-18 12:42:58.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2010-11-19 00:08:23.000000000 +0800
-> @@ -494,7 +494,7 @@ void bdi_update_write_bandwidth(struct b
->  	unsigned long written;
->  	unsigned long elapsed;
->  	unsigned long bw;
-> -	unsigned long w;
-> +	unsigned long long w;
->  
->  	if (*bw_written == 0)
->  		goto snapshot;
-> @@ -513,7 +513,7 @@ void bdi_update_write_bandwidth(struct b
->  		goto snapshot;
->  
->  	written = percpu_counter_read(&bdi->bdi_stat[BDI_WRITTEN]) - *bw_written;
-> -	bw = (HZ * PAGE_CACHE_SIZE * written + elapsed/2) / elapsed;
-> +	bw = (HZ * written + elapsed/2) / elapsed;
+On Tue, 9 Nov 2010, Stephen Rothwell wrote:
 
-Sorry for a dumb question, but where did PAGE_CACHE_SIZE part go?
+> Hi Jiri,
+> 
+> Today's linux-next merge of the trivial tree got a conflict in
+> arch/blackfin/mach-bf538/include/mach/defBF539.h,
+> arch/blackfin/mach-bf518/include/mach/defBF51x_base.h and
+> arch/blackfin/mach-bf527/include/mach/defBF52x_base.h between various
+> commits from the blackfin tree and commit
+> b595076a180a56d1bb170e6eceda6eb9d76f4cd3 ("tree-wide: fix comment/printk
+> typos") from the trivial tree.
+> 
+> I just used the versions from the blackfin tree for now since they moved
+> large amounts of code around and deleted the latter 2 files.
 
->  	w = min(elapsed / unit_time, 128UL);
->  	bdi->write_bandwidth = (bdi->write_bandwidth * (1024-w) + bw * w) >> 10;
->  	bdi->write_bandwidth_update_time = jiffies;
+I have reverted those hunks in my tree, so it should be conflict-less now.
+
+Thanks,
 
 -- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Jiri Kosina
+SUSE Labs, Novell Inc.
