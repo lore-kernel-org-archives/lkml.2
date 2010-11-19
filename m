@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507Ab0KSV6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:58:51 -0500
-Received: from kroah.org ([198.145.64.141]:45163 "EHLO coco.kroah.org"
+	id S1757597Ab0KSV66 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:58:58 -0500
+Received: from kroah.org ([198.145.64.141]:45246 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757460Ab0KSV6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:47 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:42 2010
-Message-Id: <20101119215642.539817880@clark.site>
+	id S1757534Ab0KSV6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:53 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:43 2010
+Message-Id: <20101119215643.348227969@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:56:07 -0800
+Date: Fri, 19 Nov 2010 13:56:17 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [46/82] USB: disable endpoints after unbinding interfaces, not before
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [56/82] [SCSI] Fix race when removing SCSI devices
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +26,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
 
-commit 80f0cf3947889014d3a3dc0ad60fb87cfda4b12a upstream.
+commit 546ae796bfac6399e30da4b5af2cf7a6d0f8a4ec upstream.
 
-This patch (as1430) fixes a bug in usbcore.  When a device
-configuration change occurs or a device is removed, the endpoints for
-the old config should be completely disabled.  However it turns out
-they aren't; this is because usb_unbind_interface() calls
-usb_enable_interface() or usb_set_interface() to put interfaces back
-in altsetting 0, which re-enables the interfaces' endpoints.
+Removing SCSI devices through
+echo 1 > /sys/bus/scsi/devices/ ... /delete
 
-As a result, when a device goes through a config change or is
-unconfigured, the ep_in[] and ep_out[] arrays may be left holding old
-pointers to usb_host_endpoint structures.  If the device is
-deauthorized these structures get freed, and the stale pointers cause
-errors when the the device is eventually unplugged.
+while the FC transport class removes the SCSI target can lead to an
+oops:
 
-The solution is to disable the endpoints after unbinding the
-interfaces instead of before.  This isn't as large a change as it
-sounds, since usb_unbind_interface() disables all the interface's
-endpoints anyway before calling the driver's disconnect routine,
-unless the driver claims to support "soft" unbind.
+Unable to handle kernel pointer dereference at virtual kernel address 00000000b6815000
+Oops: 0011 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+Modules linked in: sunrpc qeth_l3 binfmt_misc dm_multipath scsi_dh dm_mod ipv6 qeth ccwgroup [last unloaded: scsi_wait_scan]
+CPU: 1 Not tainted 2.6.35.5-45.x.20100924-s390xdefault #1
+Process fc_wq_0 (pid: 861, task: 00000000b7331240, ksp: 00000000b735bac0)
+Krnl PSW : 0704200180000000 00000000003ff6e4 (__scsi_remove_device+0x24/0xd0)
+           R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:2 PM:0 EA:3
+Krnl GPRS: 0000000000000001 0000000000000000 00000000b6815000 00000000bc24a8c0
+           00000000003ff7c8 000000000056dbb8 0000000000000002 0000000000835d80
+           ffffffff00000000 0000000000001000 00000000b6815000 00000000bc24a7f0
+           00000000b68151a0 00000000b6815000 00000000b735bc20 00000000b735bbf8
+Krnl Code: 00000000003ff6d6: a7840001            brc 8,3ff6d8
+           00000000003ff6da: a7fbffd8            aghi %r15,-40
+           00000000003ff6de: e3e0f0980024        stg %r14,152(%r15)
+          >00000000003ff6e4: e31021200004        lg %r1,288(%r2)
+           00000000003ff6ea: a71f0000            cghi    %r1,0
+           00000000003ff6ee: a7a40011            brc 10,3ff710
+           00000000003ff6f2: a7390003            lghi    %r3,3
+           00000000003ff6f6: c0e5ffffc8b1        brasl %r14,3f8858
+Call Trace:
+([<0000000000001000>] 0x1000)
+ [<00000000003ff7d2>] scsi_remove_device+0x42/0x54
+ [<00000000003ff8ba>] __scsi_remove_target+0xca/0xfc
+ [<00000000003ff99a>] __remove_child+0x3a/0x48
+ [<00000000003e3246>] device_for_each_child+0x72/0xbc
+ [<00000000003ff93a>] scsi_remove_target+0x4e/0x74
+ [<0000000000406586>] fc_rport_final_delete+0xb2/0x23c
+ [<000000000015d080>] worker_thread+0x200/0x344
+ [<000000000016330c>] kthread+0xa0/0xa8
+ [<0000000000106c1a>] kernel_thread_starter+0x6/0xc
+ [<0000000000106c14>] kernel_thread_starter+0x0/0xc
+INFO: lockdep is turned off.
+Last Breaking-Event-Address:
+ [<00000000003ff7cc>] scsi_remove_device+0x3c/0x54
 
-This fixes Bugzilla #19192.  Thanks to "Tom" Lei Ming for diagnosing
-the underlying cause of the problem.
+The function __scsi_remove_target iterates through the SCSI devices on
+the host, but it drops the host_lock before calling
+scsi_remove_device. When the SCSI device is deleted from another
+thread, the pointer to the SCSI device in scsi_remove_device can
+become invalid. Fix this by getting a reference to the SCSI device
+before dropping the host_lock to keep the SCSI device alive for the
+call to scsi_remove_device.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Carsten Sommer <carsten_sommer@ymail.com>
+Signed-off-by: Christof Schmitt <christof.schmitt@de.ibm.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/message.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/scsi/scsi_sysfs.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -1140,13 +1140,6 @@ void usb_disable_device(struct usb_devic
- {
- 	int i;
- 
--	dev_dbg(&dev->dev, "%s nuking %s URBs\n", __func__,
--		skip_ep0 ? "non-ep0" : "all");
--	for (i = skip_ep0; i < 16; ++i) {
--		usb_disable_endpoint(dev, i, true);
--		usb_disable_endpoint(dev, i + USB_DIR_IN, true);
--	}
--
- 	/* getting rid of interfaces will disconnect
- 	 * any drivers bound to them (a key side effect)
- 	 */
-@@ -1176,6 +1169,13 @@ void usb_disable_device(struct usb_devic
- 		if (dev->state == USB_STATE_CONFIGURED)
- 			usb_set_device_state(dev, USB_STATE_ADDRESS);
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -990,10 +990,11 @@ static void __scsi_remove_target(struct
+ 	list_for_each_entry(sdev, &shost->__devices, siblings) {
+ 		if (sdev->channel != starget->channel ||
+ 		    sdev->id != starget->id ||
+-		    sdev->sdev_state == SDEV_DEL)
++		    scsi_device_get(sdev))
+ 			continue;
+ 		spin_unlock_irqrestore(shost->host_lock, flags);
+ 		scsi_remove_device(sdev);
++		scsi_device_put(sdev);
+ 		spin_lock_irqsave(shost->host_lock, flags);
+ 		goto restart;
  	}
-+
-+	dev_dbg(&dev->dev, "%s nuking %s URBs\n", __func__,
-+		skip_ep0 ? "non-ep0" : "all");
-+	for (i = skip_ep0; i < 16; ++i) {
-+		usb_disable_endpoint(dev, i, true);
-+		usb_disable_endpoint(dev, i + USB_DIR_IN, true);
-+	}
- }
- 
- /**
 
 
