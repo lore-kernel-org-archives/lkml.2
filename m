@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab0KSPYz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 10:24:55 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.183]:36150 "EHLO
-	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754847Ab0KSPYy (ORCPT
+	id S1754936Ab0KSP3a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 10:29:30 -0500
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:26840 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754851Ab0KSP33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 10:24:54 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApIBAJsl5kxLd/sX/2dsb2JhbAAHgz3MN5EOgSKDNnMEhFqLEw
-X-IronPort-AV: E=Sophos;i="4.59,223,1288584000"; 
-   d="scan'208";a="82986229"
-Message-ID: <4CE696C4.4030309@teksavvy.com>
-Date: Fri, 19 Nov 2010 10:24:52 -0500
-From: Mark Lord <kernel@teksavvy.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+	Fri, 19 Nov 2010 10:29:29 -0500
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: vUw4ZB8VM1lyQls8vHFBrm43JzdHdTh45dCqbuc69EbqyV2
+ fvOr2xQYa4QDI29x8pj63Hp1TmcRC1ZdaLGZbHIoCRQu3A0MiThwu4SfMiT0
+ dOdMqzUdyZk7IC9zqGmy7z1_20i25PzsV58.9z5bM2wX2mcqbv5CqiGUJMVG
+ jaWfoPdwxmZ8Q7cVboxTeMIvk6SvIW0DWW.toNl937ks8Ji9b2DcXZwy7nLx
+ C9iZXYoG8MAI-
+X-Yahoo-Newman-Property: ymail-3
+Date: Fri, 19 Nov 2010 09:29:25 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Shaohua Li <shaohua.li@intel.com>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH] set_pgdat_percpu_threshold() don't use
+ for_each_online_cpu
+In-Reply-To: <20101116160720.5244ea22.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1011190923370.32655@router.home>
+References: <1288169256-7174-2-git-send-email-mel@csn.ul.ie> <20101028100920.5d4ce413.kamezawa.hiroyu@jp.fujitsu.com> <20101114163727.BEE0.A69D9226@jp.fujitsu.com> <20101116160720.5244ea22.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Greg Freemyer <greg.freemyer@gmail.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jeff Moyer <jmoyer@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
-        tytso@mit.edu, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-References: <1290102098.3041.77.camel@mulgrave.site> <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com> <4CE59E57.2090009@teksavvy.com> <yq1r5eiw5os.fsf@sermon.lab.mkp.net> <4CE5C616.7070706@teksavvy.com> <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com> <20101119115516.GA1152@infradead.org> <4CE6831E.4020606@teksavvy.com> <20101119140639.GA25488@infradead.org> <4CE68E2C.9070101@teksavvy.com> <20101119145423.GA27919@infradead.org>
-In-Reply-To: <20101119145423.GA27919@infradead.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10-11-19 09:54 AM, Christoph Hellwig wrote:
-> On Fri, Nov 19, 2010 at 09:48:12AM -0500, Mark Lord wrote:
->> I'm not sure about the issues on "adapting the block layer" ?
->> For FITRIM, the blocks being trimmed would be reserved at the fs level,
->> before issuing the discard for them.  So ordering through the block layer
->> shouldn't matter much for it.  Does that simplify things?
->>
->> I see FITRIM just allocating a page to hold the ranges (for the>1 case)
->> and passing that page down through the layers to libata (or any other
->> LLD that supports>1 ranges).
+On Tue, 16 Nov 2010, Andrew Morton wrote:
+
+> > Following patch use (2) beucase removing get_online_cpus() makes good
+> > side effect. It reduce potentially cpu-hotplug vs memory-shortage deadlock
+> > risk.
 >
-> Ordering should not be an issue.  What were problems when I tried this
-> before is that we currently assume in the block layer that discard
-> bios have a valid bi_sector/bi_size, which is already needed e.g. for
-> the trivial remapping use for partitions and that they don't have
-> a payload.  You'd need to teach various places that discard payloads
-> may have a payload, which contains multiple ranges that have a
-> sector/len tuple that needs to be remapped and checked in various
-> places.
+> Well.  Being able to run for_each_online_cpu() is a pretty low-level
+> and fundamental thing.  It's something we're likely to want to do more
+> and more of as time passes.  It seems a bad thing to tell ourselves
+> that we cannot use it in reclaim context.  That blots out large chunks
+> of filesystem and IO-layer code as well!
 
-I wonder if this can be treated more like how SG_IO does things?
-The SG_IO mechanism seems to have no issues passing through stuff
-like this, so perhaps we could implement something in a similar fashion?
+The online map can change if no locks were taken. Thus it
+becomes something difficult to do in some code paths and overhead
+increases significantly.
 
--ml
+> >  		threshold = (*calculate_pressure)(zone);
+> > -		for_each_online_cpu(cpu)
+> > +		for_each_possible_cpu(cpu)
+> >  			per_cpu_ptr(zone->pageset, cpu)->stat_threshold
+> >  							= threshold;
+> >  	}
+> > -	put_online_cpus();
+> >  }
+>
+> That's a pretty sad change IMO, especially of num_possible_cpus is much
+> larger than num_online_cpus.
+
+num_possible_cpus should only be higher if the arch code has detected
+that the system has the ability to physically online and offline cpus.
+I have never actually seen such a system. Heard rumors from Fujitsu that
+they have something.
+
+Maybe the virtualization people also need this? Otherwise cpu
+online/offline is useful mainly to debug the cpu offline/online handling
+in various subsystems which is unsurprisingly often buggy given the rarity
+of encountering such hardware.
+
+> What do we need to do to make get_online_cpus() safe to use in reclaim
+> context?  (And in kswapd context, if that's really equivalent to
+> "reclaim context").
+
+I think its not worth the effort.
+
