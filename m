@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab0KSXWY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 18:22:24 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45701 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756159Ab0KSXWX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 18:22:23 -0500
+	id S1757263Ab0KSXXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 18:23:18 -0500
+Received: from thunk.org ([69.25.196.29]:47463 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757148Ab0KSXXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 18:23:16 -0500
+Date: Fri, 19 Nov 2010 18:22:54 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Dustin Kirkland <kirkland@canonical.com>
+Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering
+ writeback
+Message-ID: <20101119232254.GA28151@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Michel Lespinasse <walken@google.com>,
+	Hugh Dickins <hughd@google.com>,
+	Christoph Hellwig <hch@infradead.org>,
+	Dave Chinner <david@fromorbit.com>,
+	Peter Zijlstra <peterz@infradead.org>,
+	Nick Piggin <npiggin@kernel.dk>, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+	Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
+	Suleiman Souhlal <suleiman@google.com>,
+	Dustin Kirkland <kirkland@canonical.com>
+References: <1289996638-21439-1-git-send-email-walken@google.com>
+ <1289996638-21439-4-git-send-email-walken@google.com>
+ <20101117125756.GA5576@amd>
+ <1290007734.2109.941.camel@laptop>
+ <AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
+ <20101117231143.GQ22876@dastard>
+ <20101118133702.GA18834@infradead.org>
+ <alpine.LSU.2.00.1011180934400.3210@tigran.mtv.corp.google.com>
+ <20101119072316.GA14388@google.com>
+ <20101119145442.ddf0c0e8.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1290201154.2116.29.camel@morgan.silverblock.net>
-References: <1290201154.2116.29.camel@morgan.silverblock.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 19 Nov 2010 15:22:00 -0800
-Message-ID: <AANLkTi=fnFhznMz2bTRSJDrfeDwsVUTyqiKDATPzEjhq@mail.gmail.com>
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
-To: Andy Walls <andy@silverblocksystems.net>
-Cc: linux-kernel@vger.kernel.org, sarah.a.sharp@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101119145442.ddf0c0e8.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 1:12 PM, Andy Walls <andy@silverblocksystems.net> wrote:
->>
->> If it actually breaks user-space, I think we should just revert it.
->
-> User space klogd is what's broken in this case:
+On Fri, Nov 19, 2010 at 02:54:42PM -0800, Andrew Morton wrote:
+> 
+> Dirtying all that memory at mlock() time is pretty obnoxious.
+> ...
+> So all that leaves me thinking that we merge your patches as-is.  Then
+> work out why users can fairly trivially use mlock to hang the kernel on
+> ext2 and ext3 (and others?) 
 
-Sure. I'm not surprised. I didn't really expect the /proc/kallsyms
-mode change to trigger anything like what Sarah reported, and
-user-space just being buggy because the error case had never even been
-tested is quite understandable.
+So at least on RHEL 4 and 5 systems, pam_limits was configured so that
+unprivileged processes could only mlock() at most 16k.  This was
+deemed enough so that programs could protect crypto keys.  The
+thinking when we added the mlock() ulimit setting was that
+unprivileged users could very easily make a nuisance of themselves,
+and grab way too much system resources, by using mlock() in obnoxious
+ways.
 
-But the thing is, it doesn't even matter.
+I was just checking to see if my memory was correct, and to my
+surprise, I've just found that Ubuntu deliberately sets the memlock
+ulimit to be unlimited.  Which means that Ubuntu systems are
+completely wide open for this particular DOS attack.  So if you
+administer an Ubuntu-based server, it might be a good idea to make a
+tiny little change to /etc/security/limits.conf....
 
-The rule is not "we don't break non-buggy user space" or "we don't
-break reasonable user-space". The rule is simply "we don't break
-user-space".
-
-Even if the breakage is totally incidental, that doesn't help the
-_user_. It's still breakage.
-
-We still have magic scheduler debug options to run children before
-parents after fork, simply because that used to _hide_ a race
-condition in some older "bash" versions (or maybe it was the other way
-around, whatever).
-
-The thing is, bugs happen. And if they never had test coverage, we
-can't blame people for them. Saying "tough luck, we changed it, and
-you did something wrong" may be manly, but it's also unacceptable. The
-developer may fix his bug, but there's still users out there.
-
-Now, there _are_ exceptions. There are always exceptions. Intelligent
-people don't run things off a script, and it's obviously always to
-some degree a judgment call. The breakage has to be balanced against
-the upsides. If the kernel behavior change is due to some fundamental
-security issue or a major redesign that we _had_ to do to make
-progress, and the user-level breakage is reasonably well-contained,
-we'll just say "sorry, we had to do it".
-
-In this case, the upside just wasn't big enough to accept _any_
-breakage, especially since people and distributions can just do the
-"chmod" themselves if they want to. There was a lot of discussion
-whether the patch should even go in in the first place. So this time,
-the "let's just revert it" was a very easy decision for me.
-
-              Linus
+							- Ted
