@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932854Ab0KSWWO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:22:14 -0500
-Received: from kroah.org ([198.145.64.141]:45259 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757555Ab0KSV6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758416Ab0KSWWK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:22:10 -0500
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:59202 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757552Ab0KSV6y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Nov 2010 16:58:54 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:43 2010
-Message-Id: <20101119215643.514073636@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:56:19 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <kees.cook@canonical.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [58/82] net: clear heap allocations for privileged ethtool actions
-In-Reply-To: <20101119215658.GA7804@kroah.com
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: thomas@winischhofer.net, aaro.koskinen@iki.fi
+Subject: [PATCH 7/9] sisfb: replace SiS_SetMemory with memset_io
+Date: Fri, 19 Nov 2010 23:58:49 +0200
+Message-Id: <1290203931-25188-8-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1290203931-25188-1-git-send-email-aaro.koskinen@iki.fi>
+References: <1290203931-25188-1-git-send-email-aaro.koskinen@iki.fi>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+Get rid of one more wrapper.
 
-------------------
-
-
-From: Kees Cook <kees.cook@canonical.com>
-
-[ Upstream commit b00916b189d13a615ff05c9242201135992fcda3 ]
-
-Several other ethtool functions leave heap uncleared (potentially) by
-drivers. Some interfaces appear safe (eeprom, etc), in that the sizes
-are well controlled. In some situations (e.g. unchecked error conditions),
-the heap will remain unchanged in areas before copying back to userspace.
-Note that these are less of an issue since these all require CAP_NET_ADMIN.
-
-Cc: stable@kernel.org
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
-Acked-by: Ben Hutchings <bhutchings@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: Thomas Winischhofer <thomas@winischhofer.net>
 ---
- net/core/ethtool.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/sis/init.c  |    4 ++--
+ drivers/video/sis/osdef.h |    2 --
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
---- a/net/core/ethtool.c
-+++ b/net/core/ethtool.c
-@@ -482,7 +482,7 @@ static int ethtool_get_rx_ntuple(struct
+diff --git a/drivers/video/sis/init.c b/drivers/video/sis/init.c
+index bfc6a1a..31137ad 100644
+--- a/drivers/video/sis/init.c
++++ b/drivers/video/sis/init.c
+@@ -1578,7 +1578,7 @@ SiS_ClearBuffer(struct SiS_Private *SiS_Pr, unsigned short ModeNo)
  
- 	gstrings.len = ret;
+    if(SiS_Pr->SiS_ModeType >= ModeEGA) {
+       if(ModeNo > 0x13) {
+-	 SiS_SetMemory(memaddr, memsize, 0);
++	 memset_io(memaddr, 0, memsize);
+       } else {
+ 	 pBuffer = (unsigned short SISIOMEMTYPE *)memaddr;
+ 	 for(i = 0; i < 0x4000; i++) writew(0x0000, &pBuffer[i]);
+@@ -1587,7 +1587,7 @@ SiS_ClearBuffer(struct SiS_Private *SiS_Pr, unsigned short ModeNo)
+       pBuffer = (unsigned short SISIOMEMTYPE *)memaddr;
+       for(i = 0; i < 0x4000; i++) writew(0x0720, &pBuffer[i]);
+    } else {
+-      SiS_SetMemory(memaddr, 0x8000, 0);
++      memset_io(memaddr, 0, 0x8000);
+    }
+ }
  
--	data = kmalloc(gstrings.len * ETH_GSTRING_LEN, GFP_USER);
-+	data = kzalloc(gstrings.len * ETH_GSTRING_LEN, GFP_USER);
- 	if (!data)
- 		return -ENOMEM;
+diff --git a/drivers/video/sis/osdef.h b/drivers/video/sis/osdef.h
+index be7f306..af5e9a2 100644
+--- a/drivers/video/sis/osdef.h
++++ b/drivers/video/sis/osdef.h
+@@ -63,6 +63,4 @@
+ #warning sisfb will not work!
+ #endif
  
-@@ -719,7 +719,7 @@ static int ethtool_get_regs(struct net_d
- 	if (regs.len > reglen)
- 		regs.len = reglen;
- 
--	regbuf = kmalloc(reglen, GFP_USER);
-+	regbuf = kzalloc(reglen, GFP_USER);
- 	if (!regbuf)
- 		return -ENOMEM;
- 
-
+-#define SiS_SetMemory(MemoryAddress,MemorySize,value) memset_io(MemoryAddress, value, MemorySize)
+-
+ #endif  /* _OSDEF_H_ */
+-- 
+1.5.6.5
 
