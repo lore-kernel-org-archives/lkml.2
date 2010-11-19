@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394Ab0KSMjU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 07:39:20 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:37098 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751911Ab0KSMjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 07:39:19 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19MgihvY39M6satU4w9v0pBonqQPG84GgyM5opqNb
-	aASY4u4KzaH4kY
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Hans-Peter Jansen <hpj@urpla.net>, linux-kernel@vger.kernel.org,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
-        Dhaval Giani <dhaval.giani@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <1290167376.2109.1553.camel@laptop>
-References: <1289916171.5169.117.camel@maggy.simson.net>
-	 <AANLkTimC_TWzKET-aabYK0TPG6fUUW06HDej6iOzYtKo@mail.gmail.com>
-	 <20101116211431.GA15211@tango.0pointer.de>
-	 <201011182333.48281.hpj@urpla.net>
-	 <20101118231218.GX6024@const.famille.thibault.fr>
-	 <1290123351.18039.49.camel@maggy.simson.net>
-	 <20101118234339.GA6024@const.famille.thibault.fr>
-	 <1290167376.2109.1553.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Nov 2010 05:38:56 -0700
-Message-ID: <1290170336.3840.40.camel@maggy.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1752671Ab0KSMnN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 07:43:13 -0500
+Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:54624 "EHLO
+	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752011Ab0KSMnM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 07:43:12 -0500
+X-AuditID: 1209190d-b7cacae000000a14-8e-4ce670df9f48
+Subject: Re: [PATCH 0/8] Use memory compaction instead of lumpy reclaim during high-order allocations
+Mime-Version: 1.0 (Apple Message framework v1082)
+Content-Type: text/plain; charset=us-ascii
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <20101119104856.GB28613@csn.ul.ie>
+Date: Fri, 19 Nov 2010 07:43:02 -0500
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Message-Id: <4B8266CB-F658-4CC8-BCA3-677C22BAFAE0@mit.edu>
+References: <1290010969-26721-1-git-send-email-mel@csn.ul.ie> <20101117154641.51fd7ce5.akpm@linux-foundation.org> <20101118081254.GB8135@csn.ul.ie> <20101118172627.cf25b83a.kamezawa.hiroyu@jp.fujitsu.com> <20101118083828.GA24635@cmpxchg.org> <20101118092044.GE8135@csn.ul.ie> <20101118114928.ecb2d6b0.akpm@linux-foundation.org> <20101119104856.GB28613@csn.ul.ie>
+To: Mel Gorman <mel@csn.ul.ie>
+X-Mailer: Apple Mail (2.1082)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 12:49 +0100, Peter Zijlstra wrote:
 
-> You add a lot of pointer chasing to all the scheduler fast paths and
-> there is quite significant data size bloat for even compiling with the
-> controller enabled, let alone actually using the stuff.
+On Nov 19, 2010, at 5:48 AM, Mel Gorman wrote:
 
-The pointer chasing hurts, but fast path + global spinlock is what
-slapped the hierarchical outta me :)
+> At least as long as !CONFIG_COMPACTION exists. That will be a while because
+> bear in mind CONFIG_COMPACTION is disabled by default (although I believe
+> some distros are enabling it at least). Maybe we should choose to deprecate
+> it in 2.6.40 and delete it at the infamous time of 2.6.42? That would give
+> ample time to iron out any issues that crop up with reclaim/compaction
+> (what this series has turned into).
 
-	-Mike
+How about making the default before 2.6.40, as an initial step?
 
+-Ted
