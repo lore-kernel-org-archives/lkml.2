@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756667Ab0KSUFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 15:05:44 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47124 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753281Ab0KSUFn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 15:05:43 -0500
+	id S932138Ab0KSUGm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 15:06:42 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:37921 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753281Ab0KSUGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 15:06:40 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Meelis Roos <mroos@linux.ee>
+Subject: Re: [Bug #16971] qla4xxx compile failure on 32-bit PowerPC: missing readq and writeq
+Date: Fri, 19 Nov 2010 21:05:42 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <tTUH_XeInOH.A.dMF.c3b5MB@chimera> <t78YtCSuOqN.A.AJ.q6b5MB@chimera> <alpine.SOC.1.00.1011191106540.26731@math.ut.ee>
+In-Reply-To: <alpine.SOC.1.00.1011191106540.26731@math.ut.ee>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1011191156470.19579@asgard.lang.hm>
-References: <20101116104600.GA24015@suse.de> <20101119191906.GA31760@xanatos>
- <AANLkTi=OsWEdrfCOHKz+SAtqo7DmK0nNxku7Ev21f0Lh@mail.gmail.com> <alpine.DEB.2.00.1011191156470.19579@asgard.lang.hm>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 19 Nov 2010 12:04:47 -0800
-Message-ID: <AANLkTikP5MpT6-WBBfNsP2nK1Cdh=St+nWky_bU9FhSO@mail.gmail.com>
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
-To: david@lang.hm
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Marcus Meissner <meissner@suse.de>, linux-kernel@vger.kernel.org,
-        tj@kernel.org, akpm@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
-        w@1wt.eu, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011192105.42351.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 11:58 AM,  <david@lang.hm> wrote:
->
-> how far back do we need to maintain compatibility with userspace?
->
-> Is this something that we can revisit in a few years and lock it down then?
+On Friday, November 19, 2010, Meelis Roos wrote:
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16971
+> > Subject		: qla4xxx compile failure on 32-bit PowerPC: missing readq and writeq
+> > Submitter	: Meelis Roos <mroos@linux.ee>
+> > Date		: 2010-08-19 21:03 (92 days old)
+> > Message-ID	: <<alpine.SOC.1.00.1008192359310.19654@math.ut.ee>>
+> > References	: http://marc.info/?l=linux-kernel&m=128225184900892&w=2
+> 
+> Still unfixed in mainline.
 
-The rule is basically "we never break user space".
+Thanks for the update.
 
-But the "out" to that rule is that "if nobody notices, it's not
-broken". In a few years? Who knows?
-
-So breaking user space is a bit like trees falling in the forest. If
-there's nobody around to see it, did it really break?
-
-                   Linus
+Rafael
