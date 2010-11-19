@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab0KSVEr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:04:47 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53139 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756713Ab0KSVEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:04:46 -0500
-Date: Fri, 19 Nov 2010 13:03:49 -0800
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Shan Wei <shanwei@cn.fujitsu.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #23092] WARNING in tty_io.c
-Message-Id: <20101119130349.4430e1d1.randy.dunlap@oracle.com>
-In-Reply-To: <201011192135.30477.rjw@sisk.pl>
-References: <sKkKYVppECN.A.KhC.Phb5MB@chimera>
-	<ATV3yiK8i4C.A.O7C.ehb5MB@chimera>
-	<4CE5E3EE.1080104@cn.fujitsu.com>
-	<201011192135.30477.rjw@sisk.pl>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756808Ab0KSVJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:09:30 -0500
+Received: from [209.172.55.172] ([209.172.55.172]:60523 "EHLO hd-t2309cn"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755234Ab0KSVJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:09:29 -0500
+X-Greylist: delayed 1210 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Nov 2010 16:09:29 EST
+From: "Cyjbzd Henvu" <mncc@wfnn.com>
+Subject: Ludtrdk Yjbrp
+To: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Date: Sat, 20 Nov 2010 04:46:44 +0800
+X-Priority: 1
+X-Mailer: Internet Mail Service (5.5.2650.21)
+Content-Type: application/octet-stream;
+        name="Sixuzfo159.rar"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+        filename="Sixuzfo159.rar"
+Message-ID: <HD-T2309CNJ7kBM3wON0001db4c@hd-t2309cn>
+X-OriginalArrivalTime: 19 Nov 2010 20:49:13.0211 (UTC) FILETIME=[3909DCB0:01CB882B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Nov 2010 21:35:30 +0100 Rafael J. Wysocki wrote:
+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
+O0VLHSIcfC+Z24XPgJ83/1DEPXsAQAcA
 
-> On Friday, November 19, 2010, Shan Wei wrote:
-> > Rafael J. Wysocki wrote, at 11/19/2010 07:42 AM:
-> > > This message has been generated automatically as a part of a summary report
-> > > of recent regressions.
-> > > 
-> > > The following bug entry is on the current list of known regressions
-> > > from 2.6.36.  Please verify if it still should be listed and let the tracking team
-> > > know (either way).
-> > > 
-> > > 
-> > > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=23092
-> > > Subject		: WARNING in tty_io.c
-> > > Submitter	: Shan Wei <shanwei@cn.fujitsu.com>
-> > > Date		: 2010-11-10 8:06 (9 days old)
-> > > Message-ID	: <4CDA5291.4010802@cn.fujitsu.com>
-> > > References	: http://marc.info/?l=linux-kernel&m=128937645120159&w=2
-> > 
-> > It's not appreared in 2.6.37-rc2+ with top commit 59365d13.
-> > I don't know which patch/commit fix it.
-> 
-> OK, closed.
-
-I can still reproduce it on 2.6.37-rc2-git4.
-I'll send a separate problem report on it.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
