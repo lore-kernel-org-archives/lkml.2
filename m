@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757530Ab0KSV6x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:58:53 -0500
-Received: from kroah.org ([198.145.64.141]:45177 "EHLO coco.kroah.org"
+	id S932909Ab0KSWXd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:23:33 -0500
+Received: from kroah.org ([198.145.64.141]:45234 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757465Ab0KSV6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:48 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:42 2010
-Message-Id: <20101119215642.698580675@clark.site>
+	id S1757523Ab0KSV6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:52 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:43 2010
+Message-Id: <20101119215643.266135986@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:56:09 -0800
+Date: Fri, 19 Nov 2010 13:56:16 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alon Ziv <alon-git@nolaviz.org>
-Subject: [48/82] USB: opticon: Fix long-standing bugs in opticon driver
+        Dan Carpenter <error27@gmail.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [55/82] [SCSI] gdth: integer overflow in ioctl
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alon Ziv <alon+git@nolaviz.org>
+From: Dan Carpenter <error27@gmail.com>
 
-commit 97cd8dc4ca9a1a5efb2cc38758e01492e3b013e2 upstream.
+commit f63ae56e4e97fb12053590e41a4fa59e7daa74a4 upstream.
 
-The bulk-read callback had two bugs:
-a) The bulk-in packet's leading two zeros were returned (and the two last
-   bytes truncated)
-b) The wrong URB was transmitted for the second (and later) read requests,
-   causing further reads to return the entire packet (including leading
-   zeros)
+gdth_ioctl_alloc() takes the size variable as an int.
+copy_from_user() takes the size variable as an unsigned long.
+gen.data_len and gen.sense_len are unsigned longs.
+On x86_64 longs are 64 bit and ints are 32 bit.
 
-Signed-off-by: Alon Ziv <alon-git@nolaviz.org>
+We could pass in a very large number and the allocation would truncate
+the size to 32 bits and allocate a small buffer.  Then when we do the
+copy_from_user(), it would result in a memory corruption.
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/opticon.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/scsi/gdth.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/drivers/usb/serial/opticon.c
-+++ b/drivers/usb/serial/opticon.c
-@@ -96,8 +96,8 @@ static void opticon_bulk_callback(struct
- 			/* real data, send it to the tty layer */
- 			tty = tty_port_tty_get(&port->port);
- 			if (tty) {
--				tty_insert_flip_string(tty, data,
--							       data_length);
-+				tty_insert_flip_string(tty, data + 2,
-+						       data_length);
- 				tty_flip_buffer_push(tty);
- 				tty_kref_put(tty);
- 			}
-@@ -130,7 +130,7 @@ exit:
- 						  priv->bulk_address),
- 				  priv->bulk_in_buffer, priv->buffer_size,
- 				  opticon_bulk_callback, priv);
--		result = usb_submit_urb(port->read_urb, GFP_ATOMIC);
-+		result = usb_submit_urb(priv->bulk_read_urb, GFP_ATOMIC);
- 		if (result)
- 			dev_err(&port->dev,
- 			    "%s - failed resubmitting read urb, error %d\n",
+--- a/drivers/scsi/gdth.c
++++ b/drivers/scsi/gdth.c
+@@ -4175,6 +4175,14 @@ static int ioc_general(void __user *arg,
+     ha = gdth_find_ha(gen.ionode);
+     if (!ha)
+         return -EFAULT;
++
++    if (gen.data_len > INT_MAX)
++        return -EINVAL;
++    if (gen.sense_len > INT_MAX)
++        return -EINVAL;
++    if (gen.data_len + gen.sense_len > INT_MAX)
++        return -EINVAL;
++
+     if (gen.data_len + gen.sense_len != 0) {
+         if (!(buf = gdth_ioctl_alloc(ha, gen.data_len + gen.sense_len,
+                                      FALSE, &paddr)))
 
 
