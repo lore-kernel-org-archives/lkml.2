@@ -1,88 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076Ab0KSVey (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:34:54 -0500
-Received: from kroah.org ([198.145.64.141]:44403 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756741Ab0KSVdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:33:55 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:32:31 2010
-Message-Id: <20101119213231.035284079@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:30:47 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tony Lindgren <tony@atomide.com>, Ingo Molnar <mingo@elte.hu>
-Subject: [2/5] sched: Fix string comparison in /proc/sched_features
-In-Reply-To: <20101119213300.GA4637@kroah.com>
+	id S1757004Ab0KSVfX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:35:23 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57182 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756758Ab0KSVfV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:35:21 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rfXfjiW7Edolu5WNqUrE9XOdqWXQdgz8wutLxC0240L/FMtqmgLjP+13yvNjzZRM7n
+         sCXEOOcPSQv0mLtqJTWoJB2ii8sHZ+EOLzgMhOQQqN+fcAOlmdS+gGbFDUPsayt8EOyE
+         a4YhF2HQO17H2OsvLL5+ffeeJhiPpK0thYTuA=
+MIME-Version: 1.0
+In-Reply-To: <20101119130329.675ebf0b@jbarnes-desktop>
+References: <AANLkTi=emVB3kqR322Man01sDd0DFecxzDENVCS6B1jj@mail.gmail.com>
+	<AANLkTik4Bj2_D_oz8jWxzKSKz16S=Yv6884iHA072bJe@mail.gmail.com>
+	<20101119130329.675ebf0b@jbarnes-desktop>
+Date: Fri, 19 Nov 2010 22:35:19 +0100
+Message-ID: <AANLkTimQQ62MKEs1WkuCMHqMQejC40rLBFc2KGF=SDHF@mail.gmail.com>
+Subject: Re: Regressions in resume on intel graphics
+From: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        airlied@redhat.com, intel-gfx@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-stable review patch.  If anyone has any objections, please let us know.
+2010/11/19 Jesse Barnes <jbarnes@virtuousgeek.org>:
+> On Fri, 12 Nov 2010 10:17:07 +0100
+> Zdenek Kabelac <zdenek.kabelac@gmail.com> wrote:
+>
+>> 2010/11/12 Zdenek Kabelac <zdenek.kabelac@gmail.com>:
+>> > Hi
+>> >
+>> > I've noticed that after resume  with 2.6.36 kernel I need to switch
+>> > between console and back to Xorg to get usable Xsession again.
+>> > (my hw - T61, gma965, 4GB)
+>> >
+>> > I've played bisect game -  and this is the first broken kernel:
+>> >
+>> > ---
+>> > commit 8fd4bd22350784d5b2fe9274f6790ba353976415
+>> > Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+>> > Date:   Wed Jun 23 12:56:12 2010 -0700
+>> >
+>> >    vt/console: try harder to print output when panicing
+>> > ---
+>>
+>> I've been able to boot and test with 2.6.37-rc1-00170-gf6614b7
+>> - and this problem seems to be fixed in this version (vt.c file seems
+>> to be gone?).
+>
+> This is really weird; there was one issue Dave tracked down related to
+> lockdep and the new oops code, but I think it's been fixed.  And it
+> should manifest as something other than a GPU hang...
+>
 
-------------------
+Well - unsure - how this worked ok - for 2.6.37-rc1-00170-gf6614b7 (I
+could try few more times - though this kernel seems to be crashing for
+various other reasons - so I've had quite few testruns before I've
+been able to test this in some very limited X environment - so maybe
+it was just some lucky case - but I still keep it on my disk)
 
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Anyway - as an update - I'm now regularly using 2.6.37-rc2 - and it
+has exactly same problems - as in my original report -  so the problem
+has not magically disappeared and it is still there.  Is there
+anything I should try ?
 
-commit 7740191cd909b75d75685fb08a5d1f54b8a9d28b upstream.
-
-Fix incorrect handling of the following case:
-
- INTERACTIVE
- INTERACTIVE_SOMETHING_ELSE
-
-The comparison only checks up to each element's length.
-
-Changelog since v1:
- - Embellish using some Rostedtisms.
-  [ mingo:                 ^^ == smaller and cleaner ]
-
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Tony Lindgren <tony@atomide.com>
-LKML-Reference: <20100913214700.GB16118@Krystal>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- kernel/sched.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -744,7 +744,7 @@ sched_feat_write(struct file *filp, cons
- 		size_t cnt, loff_t *ppos)
- {
- 	char buf[64];
--	char *cmp = buf;
-+	char *cmp;
- 	int neg = 0;
- 	int i;
- 
-@@ -755,6 +755,7 @@ sched_feat_write(struct file *filp, cons
- 		return -EFAULT;
- 
- 	buf[cnt] = 0;
-+	cmp = strstrip(buf);
- 
- 	if (strncmp(buf, "NO_", 3) == 0) {
- 		neg = 1;
-@@ -762,9 +763,7 @@ sched_feat_write(struct file *filp, cons
- 	}
- 
- 	for (i = 0; sched_feat_names[i]; i++) {
--		int len = strlen(sched_feat_names[i]);
--
--		if (strncmp(cmp, sched_feat_names[i], len) == 0) {
-+		if (strcmp(cmp, sched_feat_names[i]) == 0) {
- 			if (neg)
- 				sysctl_sched_features &= ~(1UL << i);
- 			else
+Basically every time after resume from suspend I have to switch from X
+to console and back to get usable screen back. Without this I seen
+only black screen with mouse over it - is there some way for reverting
+of this patch - or maybe just disabling some part of it ?
 
 
+To have reliable resume I still have to keep drm_kms_help thread
+disable - otherwise I observe GPU errors.
+Switch between consoles is 'relatively' easy to overcome.
+
+And another thing which might help -  during suspend/resume  I could
+usually see weird switch to console with some special text on the
+whole console screen -
+
+[ ###.... ]
+[ ###.... ]
+
+where  '###' is some changing number - and it seems to be different
+between resumes.
+Also I should add I'm using  'no-console-suspend'  kernel boot option.
+
+Zdenek
