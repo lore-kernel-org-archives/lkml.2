@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935Ab0KSXJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 18:09:30 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43784 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755518Ab0KSXJ3 convert rfc822-to-8bit (ORCPT
+	id S1757040Ab0KSXPE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 18:15:04 -0500
+Received: from mail.deathmatch.net ([72.66.92.28]:2512 "EHLO
+	mail.deathmatch.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756806Ab0KSXPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 18:09:29 -0500
-Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <20101119225902.GQ18100@redhat.com>
-References: <4CE2E3C3.6060800@windriver.com>
-	 <20101118080516.GJ32621@elte.hu> <4CE52048.5080802@windriver.com>
-	 <1290086232.2109.1507.camel@laptop> <20101118193247.GF18100@redhat.com>
-	 <4CE583D0.8050407@windriver.com> <20101118200807.GC8131@redhat.com>
-	 <1290112234.2109.1534.camel@laptop> <20101119165952.GJ18100@redhat.com>
-	 <1290191158.2109.1614.camel@laptop>  <20101119225902.GQ18100@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 20 Nov 2010 00:09:39 +0100
-Message-ID: <1290208179.2114.13.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 19 Nov 2010 18:15:03 -0500
+X-Greylist: delayed 1853 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Nov 2010 18:15:03 EST
+Date: Fri, 19 Nov 2010 17:28:46 -0500
+From: Bob Copeland <me@bobcopeland.com>
+To: Bruno Randolf <br1@einfach.org>
+Cc: Johannes Berg <johannes@sipsolutions.net>, Jouni Malinen <j@w1.fi>,
+        linville@tuxdriver.com, randy.dunlap@oracle.com, peterz@infradead.org,
+        blp@cs.stanford.edu, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
+        stefanr@s5r6.in-berlin.de, kosaki.motohiro@jp.fujitsu.com,
+        akpm@linux-foundation.org, kevin.granade@gmail.com
+Subject: Re: [PATCH v7 3/3] nl80211/mac80211: Report signal average
+Message-ID: <20101119222846.GA26592@hash.localnet>
+References: <20101112024901.28522.21895.stgit@localhost6.localdomain6> <1290010595.3777.0.camel@jlt3.sipsolutions.net> <AANLkTimoogSLAipNy=njGtHypqBQSk=usDmXut=KN9TM@mail.gmail.com> <201011191807.06013.br1@einfach.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201011191807.06013.br1@einfach.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 17:59 -0500, Don Zickus wrote:
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -381,6 +381,19 @@ static void release_pmc_hardware(void) {}
->  
->  #endif
->  
-> +static bool check_hw_exists(void)
-> +{
-> +       u64 val, val_new;
-> +
-> +       val = 0xabcdUL;
-> +       (void) checking_wrmsrl(x86_pmu.perfctr, val);
-> +       rdmsrl(x86_pmu.perfctr, val_new);
+On Fri, Nov 19, 2010 at 06:07:05PM +0900, Bruno Randolf wrote:
+> Hmm, maybe I suck in mathemathics, but I don't see a way to do that given the 
+> formula:
+> 
+> (((internal * (weight - 1)) + (val * factor)) / weight
 
+I was thinking something along the lines of:
 
-Yeah, this looks about right, although for extreme prudence I'd also use
-a checking_rdmsrl().
+round = (1 << n) - 1;
+(((internal * (weight - 1) + round) >> n) + val) * ((1 << n) / weight)
 
+where (1 << n) is the factor and ((1 << n) / weight) can be precomputed.
+If you think about it, this is just reciprocal multiplication in fixed-
+point math with n bits of decimal resolution. 
 
-> +       if (val != val_new)
-> +               return false;
-> +
-> +       return true;
-> +}
-> +
->  static void reserve_ds_buffers(void);
->  static void release_ds_buffers(void);
->  
-> @@ -1371,6 +1385,12 @@ void __init init_hw_perf_events(void)
->  
->         pmu_check_apic();
->  
-> +       /* sanity check that the hardware exists or is emulated */
-> +       if (!check_hw_exists()) {
-> +               pr_cont("no PMU driver, software events only.\n");
-> +               return;
-> +       } 
+The problem is the shift of the older terms introduces roundoff error, but
+there are some tricks you can do to maintain bounded error, e.g. shifting
+by some smaller factor of n and scaling other terms -- in the limit you
+reinvent floating point and then it's slower than division :)
 
-Maybe report something like this: 
-  "Broken PMU hardware detected, software events only."
+-- 
+Bob Copeland %% www.bobcopeland.com
 
-Because this is really not something that's supposed to happen.
