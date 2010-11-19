@@ -1,94 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab0KSJ6Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 04:58:24 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:34030 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752146Ab0KSJ6W convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 04:58:22 -0500
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: Ben Gardiner <bengardiner@nanometrics.ca>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: "Govindarajan, Sriramakrishnan" <srk@ti.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Clouter <alex@digriz.org.uk>,
-        Chris Cordahi <christophercordahi@nanometrics.ca>
-Date: Fri, 19 Nov 2010 15:28:00 +0530
-Subject: RE: [PATCH v2 2/4] da850-evm: add UI Expander pushbuttons
-Thread-Topic: [PATCH v2 2/4] da850-evm: add UI Expander pushbuttons
-Thread-Index: AcuFxjgo+BOOC+5US7WEopC9azNwNACBOQqw
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB59302477EA939@dbde02.ent.ti.com>
-References: <cover.1289835508.git.bengardiner@nanometrics.ca>
-	<cover.1289935504.git.bengardiner@nanometrics.ca>
- <95f48a32a0256ecdb7148aa08d16f64928a7e5d8.1289935504.git.bengardiner@nanometrics.ca>
-In-Reply-To: <95f48a32a0256ecdb7148aa08d16f64928a7e5d8.1289935504.git.bengardiner@nanometrics.ca>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752644Ab0KSJ76 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 04:59:58 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:43541 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752506Ab0KSJ74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 04:59:56 -0500
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX19UCehBDEJUEf7rVNFpg2fXfMtHM4ymHbSjWpu4k0
+	pufDzkEe5HKPhG
+Date: Fri, 19 Nov 2010 10:58:07 +0100
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: eparis@redhat.com
+Cc: linux-kernel@vger.kernel.org, agruen@suse.de,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] fanotify: on group destroy allow all waiters to bypass
+	permission check
+Message-ID: <20101119095807.GB22377@lsanfilippo.unix.rd.tt.avira.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
 
-Thanks for the patches. Some comments/questions below:
 
-On Wed, Nov 17, 2010 at 01:09:35, Ben Gardiner wrote:
-> This patch adds EV_KEYs for each of the 8 pushbuttons on the UI board via a
-> gpio-key device.
->
-> The expander is a tca6416; it controls the SEL_{A,B,C} lines which enable and
-> disable the peripherals found on the UI board in addition to the 8 pushbuttons
-> mentioned above. The reason the existing tca6416-keypad driver is not employed
-> is because there was no aparent way to keep the gpio lines used as
-> SEL_{A,B,C} registered while simultaneously registering the pushbuttons as a
-> tca6416-keypad instance.
->
-> Some experimentation with the polling interval was performed; we were searching
-> for the largest polling interval that did not affect the feel of the
-> responsiveness of the buttons. It is very subjective but 200ms seems to be a
-> good value that accepts firm pushes but rejects very light ones. The key values
-> assigned to the buttons were arbitrarily chosen to be F1-F8.
->
-> Signed-off-by: Ben Gardiner <bengardiner@nanometrics.ca>
-> Reviewed-by: Chris Cordahi <christophercordahi@nanometrics.ca>
-> CC: Govindarajan, Sriramakrishnan <srk@ti.com>
->
-> ---
->
-> Changes since v1:
->  * set INPUT_POLLDEV default for DA850_EVM machine, but don't select it
->    unconditionally
+When fanotify_release() is called, there may still be processes waiting for
+access permission. Currently only processes for which an event has already been
+queued into the groups access list will be woken up.  Processes for which no
+event has been queued will continue to sleep and thus cause a deadlock when
+fsnotify_put_group() is called.
+Furthermore there is a race allowing further processes to be waiting on the
+access wait queue after wake_up (if they arrive before clear_marks_by_group()
+is called).
+This patch corrects this by setting a flag to inform processes that the group
+is about to be destroyed and thus not to wait for access permission.
+Beside this it removes the unnecessary check for the bypass_perm flag in
+prepare_for_access_response(), since this function cant be called any more at
+the time release() is called and the flag is set.
 
-I didn't see the v1 posting (wonder why), but why is this
-required? Why cant we depend on this being selected from
-Device Drivers->Input device support in menuconfig?
+Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+---
+ fs/notify/fanotify/fanotify.c      |    8 +++++++-
+ fs/notify/fanotify/fanotify_user.c |   14 +++-----------
+ include/linux/fsnotify_backend.h   |    2 +-
+ 3 files changed, 11 insertions(+), 13 deletions(-)
 
-[...]
+This patch applies against commit 3aa13e3ff6700929c0e3a1a4cdc51c82139707e4 of
+branch 'origin/for-next' from git.infradead.org/users/eparis/notify.git
+CC'ed Andreas Gruenbacher since he originally reported this problem.
 
-> @@ -349,6 +421,10 @@ static struct i2c_board_info __initdata da850_evm_i2c_devices[] = {
->       {
->               I2C_BOARD_INFO("tca6416", 0x20),
->               .platform_data = &da850_evm_ui_expander_info,
-> +             /*
-> +              * TODO : populate at runtime using
-> +              * .irq = gpio_to_irq(GPIO_TO_PIN(2,7)),
-> +              */
-
-You seem to be adding this in this patch and removing
-in 4/4.
-
-Thanks,
-Sekhar
+diff --git a/fs/notify/fanotify/fanotify.c b/fs/notify/fanotify/fanotify.c
+index cb576b8..94438db 100644
+--- a/fs/notify/fanotify/fanotify.c
++++ b/fs/notify/fanotify/fanotify.c
+@@ -91,8 +91,14 @@ static int fanotify_get_response_from_access(struct fsnotify_group *group,
+ 	int ret;
+ 
+ 	pr_debug("%s: group=%p event=%p\n", __func__, group, event);
++	if (atomic_read(&group->fanotify_data.bypass_perm))
++		return 0;
+ 
+-	wait_event(group->fanotify_data.access_waitq, event->response);
++	wait_event(group->fanotify_data.access_waitq, event->response ||
++				atomic_read(&group->fanotify_data.bypass_perm));
++
++	if (!event->response) /* bypass_perm set */
++		return 0;
+ 
+ 	/* userspace responded, convert to something usable */
+ 	spin_lock(&event->lock);
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index ae36c73..342d22e 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -210,14 +210,6 @@ static int prepare_for_access_response(struct fsnotify_group *group,
+ 	re->fd = fd;
+ 
+ 	mutex_lock(&group->fanotify_data.access_mutex);
+-
+-	if (group->fanotify_data.bypass_perm) {
+-		mutex_unlock(&group->fanotify_data.access_mutex);
+-		kmem_cache_free(fanotify_response_event_cache, re);
+-		event->response = FAN_ALLOW;
+-		return 0;
+-	}
+-		
+ 	list_add_tail(&re->list, &group->fanotify_data.access_list);
+ 	mutex_unlock(&group->fanotify_data.access_mutex);
+ 
+@@ -399,10 +391,9 @@ static int fanotify_release(struct inode *ignored, struct file *file)
+ #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+ 	struct fanotify_response_event *re, *lre;
+ 
+-	mutex_lock(&group->fanotify_data.access_mutex);
+-
+-	group->fanotify_data.bypass_perm = true;
++	atomic_inc(&group->fanotify_data.bypass_perm);
+ 
++	mutex_lock(&group->fanotify_data.access_mutex);
+ 	list_for_each_entry_safe(re, lre, &group->fanotify_data.access_list, list) {
+ 		pr_debug("%s: found group=%p re=%p event=%p\n", __func__, group,
+ 			 re, re->event);
+@@ -706,6 +697,7 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
+ 	if (IS_ERR(group))
+ 		return PTR_ERR(group);
+ 
++	atomic_set(&group->fanotify_data.bypass_perm, 0);
+ 	group->fanotify_data.user = user;
+ 	atomic_inc(&user->fanotify_listeners);
+ 
+diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
+index d010f70..add1351 100644
+--- a/include/linux/fsnotify_backend.h
++++ b/include/linux/fsnotify_backend.h
+@@ -166,7 +166,7 @@ struct fsnotify_group {
+ 			struct mutex access_mutex;
+ 			struct list_head access_list;
+ 			wait_queue_head_t access_waitq;
+-			bool bypass_perm; /* protected by access_mutex */
++			atomic_t bypass_perm;
+ #endif /* CONFIG_FANOTIFY_ACCESS_PERMISSIONS */
+ 			bool readonly_fallback;
+ 			int f_flags;
+-- 
+1.5.6.5
 
