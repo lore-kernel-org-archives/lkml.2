@@ -1,139 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab0KSSAr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 13:00:47 -0500
-Received: from igw2.watson.ibm.com ([129.34.20.6]:56952 "EHLO
-	igw2.watson.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756093Ab0KSSAp convert rfc822-to-8bit (ORCPT
+	id S1756184Ab0KSSBm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:01:42 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:32998 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756054Ab0KSSBk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 13:00:45 -0500
-Subject: Re: [PATCH v1.4 4/5] keys: add new trusted key-type
-From: David Safford <safford@watson.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
-        linux-crypto@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        James Morris <jmorris@namei.org>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-In-Reply-To: <10330.1290183801@redhat.com>
-References: <1290120166-3132-5-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1290120166-3132-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <10330.1290183801@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 19 Nov 2010 13:01:40 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=h+isFOdDnLBqq8JECG7wRrgBwdzbxG5KwNVdryRM35DIk9NeVHXtifjXfQiehDuPeq
+         zpk6B60k0wZw6c2I59JVzQOs5vNq07WIARrijZjHUHeD/ivOpK7lqRKucFDnSa/qv4QF
+         ixeDzq/H4ib0gyo7WOt7gECXVLMlkvbFzFwtY=
+MIME-Version: 1.0
+In-Reply-To: <20101118214619.GA29097@kroah.com>
+References: <20101112012315.GE17097@core.coreip.homeip.net>
+ <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com>
+ <4CE1017E.4090409@panasas.com> <20101115161620.GB5981@kroah.com>
+ <4CE16B8E.1000300@panasas.com> <AANLkTikPVXGJ5-5YDk1uqfqrqxGLpSiSdaX3h7qxo-ie@mail.gmail.com>
+ <8985DEAF-4227-4629-B90A-938D2BA3534E@etechsoft.com> <4CE2846C.6070501@vlnb.net>
+ <4CE59482.3050002@gmail.com> <20101118214619.GA29097@kroah.com>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Fri, 19 Nov 2010 19:01:18 +0100
+X-Google-Sender-Auth: kTpOYcLCNRnStobRCLuykkEHZeg
+Message-ID: <AANLkTi=j_DPpRfKUYGG6oe2c6qKryyceoSFTN=pCtpqC@mail.gmail.com>
+Subject: Re: [Scst-devel] [PATCH 8/19]: SCST SYSFS interface implementation
+To: Greg KH <greg@kroah.com>
+Cc: Vladislav Bolkhovitin <vvvvvst@gmail.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Fri, 19 Nov 2010 13:00:16 -0500
-Message-ID: <1290189616.2597.53.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 16:23 +0000, David Howells wrote:
-> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+On Thu, Nov 18, 2010 at 10:46 PM, Greg KH <greg@kroah.com> wrote:
+> On Fri, Nov 19, 2010 at 12:02:58AM +0300, Vladislav Bolkhovitin wrote:
+>> Since nobody objected, Greg, could you consider to ACK SCST SYSFS
+>> management interface in /sys/kernel/scst_tgt/, please? Please find the
+>> SCST SYSFS ABI documentation file you requested below.
+>
+> No, sorry, again, you should not be using kobjects, and do not pollute
+> the main /sys/kernel/ namespace with this.
+>
+> Use 'struct device' please, that is what it is there for, and is what
+> the rest of the kernel is using.  And use the rest of the
+> driver/bus/device infrastructure as your model will work with it just
+> fine.
+>
+> Yes, I know you said you didn't think you could use it, and that your
+> code was different than everyone elses, but I still do not believe it,
+> sorry.
 
-thanks for the review! - getting closer...
+Hello Greg,
 
-> > +keyctl print returns an ascii hex copy of the sealed key, which is in standard
-> 
-> I'd quote 'keyctl print' just so it's obvious where the command ends and the
-> descriptive text starts.
+As you can see in recent messages (e.g.
+http://lkml.org/lkml/2010/11/18/578 or
+http://lkml.org/lkml/2010/11/15/296), the abstractions represented in
+SCST are:
+* Target templates (scst_tgt_template), e.g. scst_local or ib_srpt.
+These are drivers that implement a storage protocol.
+* Target ports (scst_tgt), e.g. ib_srpt_target_0, which represent a
+communication interface controlled by a storage protocol driver.
+* Sessions (scst_session), e.g. 0x00000000000000000002c9030005f34b. A
+session corresponds to a single initiator-target nexus.
+* Device handlers (scst_dev_type), e.g. scst_disk or scst_vdisk, which
+are drivers that allow SCST to export storage.
+* Target devices (scst_device), e.g. disk01, which represent exported
+storage. Each instance is controlled by a single device handler. This
+concept includes e.g. block devices and files. Some but not all target
+devices have a corresponding device node in /dev.
+* Access control groups (scst_acg), which allow e.g. to implement LUN masking.
+* Device-specific information such as the SCSI LUN (scst_acg_dev).
 
-ok
+As we all know the driver, bus and device abstractions were invented
+to model how peripheral devices are connected to a system. What a
+storage target does is the converse - define devices and make it
+possible for other systems to use these devices. As a result,
+unfortunately, the driver, bus and device abstractions do not map
+one-to-one on all of the concepts used in a storage target. So I'm
+still not sure whether it is a good idea to use the driver, bus and
+or/device concepts for all of the above concepts.
 
-> > +Usage:
-> > +  keyctl add encrypted name "new key-type:master-key-name keylen" ring
-> > +  keyctl add encrypted name "load key-type:master-key-name keylen hex_blob" ring
-> > +  keyctl update keyid "update key-type:master-key-name"
-> > +
-> > +where 'key-type' is either 'trusted' or 'user'.
-> 
-> I recommend adding some example commands with all the arguments substituted.
-> Nothing helps get to grip with an API like knowing what a command is supposed
-> to look like when it's actually used.
+Also, using the driver, bus or device concept for one or more of the
+storage target concepts would open up a potential for naming
+conflicts. There is already e.g. the well-known null device. SCST e.g.
+defines a vdisk_nullio target template. Having these all as device
+nodes under /dev might not only confuse users but also creates a huge
+potential for naming conflicts. That's why we prefer separate
+namespaces instead of reusing one of the existing concepts.
 
-now that this is moved to documentation, you are right, more examples 
-would be nice... willdo.
+In case you are still convinced that we should use the existing
+driver, bus and device abstractions, which concept should we map to
+which abstraction ?
 
-> > +static int trusted_tpm_send(u32 chip_num, unsigned char *cmd, int buflen)
-> 
-> There are still a lot of places in here where you should probably be using
-> const and size_t.
-
-will clean up.
-
-> > +static int my_get_random(unsigned char *buf, int len)
-> > +{
-> > +	struct tpm_buf *tb;
-> > +	int ret;
-> > +
-> > +	tb = kzalloc(sizeof *tb, GFP_KERNEL);
-> > +	if (!tb)
-> > +		return -ENOMEM;
-> > +	ret = tpm_get_random(tb, buf, len);
-> 
-> Using kzalloc() rather than kmalloc() is a waste of time, I'd've thought.
-> It's a temporary buffer.  Does it really need to be precleared?
-
-In this case, none need to be precleared. Will fix.
-
-> > +	ret = tpm_pcr_extend(TPM_ANY_NUM, pcrnum, hash);
-> > +	return ret;
-> 
-> Merge.
-
-agreed
-
-> > +static int trusted_update(struct key *key, const void *data, size_t datalen)
-> > +{
-> > ...
-> > +	*(datablob + datalen) = '\0';
-> 
-> That's what [] is for.
-
-agreed.
-
-> > +	if (new_o)
-> > +		kfree(new_o);
-> 
-> kfree() can handle a NULL pointer.
-
-agreed.
-
-> > +	if (new_o->pcrlock)
-> > +		ret = pcrlock(new_o->pcrlock);
-> > +	rcu_assign_pointer(key->payload.data, new_p);
-> > +	call_rcu(&p->rcu, trusted_rcu_free);
-> 
-> Should there be a check for pcrlock() failure?
-
-yes, because if the pcrlock failed, even though the key
-was successfully created, it is not safe to use. 
-Will correct.
-
-> > +/* not already defined in tpm.h - specific to this use */
-> > +#define TPM_TAG_RQU_COMMAND		193
-> > +#define TPM_TAG_RQU_AUTH1_COMMAND	194
-> > ...
-> 
-> Values defined for TPM hardware access really ought to be in a separate file
-> in include/linux/.  They aren't strictly specific to the trusted key
-> implementation here; that may be the only user currently in the kernel, but
-> that doesn't mean there can't be another user.
-
-Currently tpm request packet defines are private to the tpm driver.
-With the opening of a tpm_send() interface, perhaps it does make 
-sense for an include/linux/tpm_packet.h for everyone (including tpm.c)
-to use, even though there is little overlap currently.
-
-We could create that with these current defines to start,
-and then do a cleanup patch for tpm.c to take advantage.
-
-dave
-
-
-
-
-
+Bart.
