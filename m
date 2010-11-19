@@ -1,46 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab0KSMPh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 07:15:37 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49828 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678Ab0KSMPf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 07:15:35 -0500
-Subject: Re: [PATCH] ASoC: Move kfree(twl4030) to twl4030_soc_remove()
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Steve Sakoman <steve@sakoman.com>
-In-Reply-To: <20101119112546.GI7233@rakim.wolfsonmicro.main>
-References: <1290159068.10001.5.camel@mola>
-	 <20101119112546.GI7233@rakim.wolfsonmicro.main>
+	id S1754127Ab0KSMQP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 07:16:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34427 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751210Ab0KSMQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 07:16:14 -0500
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
+ super_operation
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, tytso@mit.edu,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, sandeen@redhat.com
+In-Reply-To: <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com>
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
+	 <20101118130630.GJ6178@parisc-linux.org>
+	 <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
+	 <20101118141957.GK6178@parisc-linux.org>
+	 <20101118142918.GA18510@infradead.org>
+	 <1290100750.3041.72.camel@mulgrave.site>
+	 <alpine.LFD.2.00.1011181826550.15886@dhcp-lab-213.englab.brq.redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Nov 2010 12:15:31 +0000
-Message-ID: <1290168931.3276.19.camel@odin>
+Organization: Red Hat UK Ltd
+Date: Fri, 19 Nov 2010 12:16:16 +0000
+Message-ID: <1290168976.2570.45.camel@dolmen>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 11:25 +0000, Mark Brown wrote:
-> On Fri, Nov 19, 2010 at 05:31:08PM +0800, Axel Lin wrote:
-> > As we allocate memory for twl4030 in twl4030_codec_probe(),
-> > twl4030_codec_remove() is a better place to free the memory.
-> > 
-> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Hi,
+
+On Thu, 2010-11-18 at 18:35 +0100, Lukas Czerner wrote:
+> On Thu, 18 Nov 2010, James Bottomley wrote:
 > 
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> > On Thu, 2010-11-18 at 09:29 -0500, Christoph Hellwig wrote:
+> > > On Thu, Nov 18, 2010 at 07:19:58AM -0700, Matthew Wilcox wrote:
+> > > > I guess I was assuming that, on receiving a FALLOC_FL_PUNCH_HOLE, a
+> > > > filesystem that was TRIM-aware would pass that information down to the
+> > > > block device that it's mounted on.  I strongly feel that we shouldn't
+> > > > have two interfaces to do essentially the same thing.
+> > > > 
+> > > > I guess I'm saying that you're going to have to learn about TRIM :-)
+> > > 
+> > > Did you actually look Lukas FITRIM code (not the slight reordering here,
+> > > but the original one).  It's the ext4 version of the batched discard
+> > > model, that is a userspace ioctl to discard free space in the
+> > > filesystem.
+> > > 
+> > > hole punching will free the blocks into the free space pool.  If you do
+> > > online discard it will also get discarded, but a filesystem that has
+> > > online discard enabled doesn't need FITRIM.
+> > 
+> > Not stepping into the debate: I'm happy to see punch go to the mapping
+> > data and FITRIM pick it up later.
+> > 
+> > However, I think it's time to question whether we actually still want to
+> > allow online discard at all.  Most of the benchmarks show it to be a net
+> > lose to almost everything (either SSD or Thinly Provisioned arrays), so
+> > it's become an "enable this to degrade performance" option with no
+> > upside.
+> > 
+> > James
+> > 
+> 
+> This time began a long time ago :) that is why am I originally created
+> batched discard for ext4 (ext3) accessible through FITRIM ioctl. Ext4
+> performance with -o discard mount option goes down on the most of the
+> SSD's and every Thinly-provisioned storage I have a chance to benchmark.
+> 
+> But, for example SSD's are getting better and as time goes by we might
+> see devices that does not suffer terrible performance loss with discard
+> enabled (discard on unlink in ext4 etc...), so this "online" discard
+> probably still does make sense.
+> 
+> -Lukas
 
-Applied
+I agree that it is early days for trim/discard hardware implementations.
+I hope that if it can be shown that it is useful (and if the hardware
+vendors are following this thread!) then maybe it will spur them on to
+providing faster implementations in the future. There doesn't seem to be
+any technical reason why faster implementations are not possible.
 
-Thanks
+Equally, FITRIM is useful since the overhead can be reduced to certain
+points in time when a system is less busy. With GFS2 (this may well also
+apply to OCFS2) doing a userspace trim is not very easy since there is
+no simple way to access the locking for the fs from userspace, so it
+would imply that an admin unmounted the filesystem on all nodes and then
+runs a utility on just one node. Using FITRIM though, it would be
+possible to perform the trim during normal fs operation (initiating
+FITRIM from multiple nodes at once would also work correctly, even if it
+is not desirable from a performance point of view)
 
-Liam
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+GFS2 already has code for online discard, and the changes required to
+support FITRIM are relatively small. Both online discard and FITRIM
+simply require iterating through the resource group bitmaps and
+generating discard requests depending on the bitmap states encountered.
+I'm intending to put a patch together fairly shortly to implement FITRIM
+for GFS2.
+
+So I think there is a place for both approaches,
+
+Steve.
+
 
