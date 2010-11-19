@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148Ab0KSLGX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 06:06:23 -0500
-Received: from mga14.intel.com ([143.182.124.37]:19428 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752867Ab0KSLGW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 06:06:22 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,222,1288594800"; 
-   d="scan'208";a="350816807"
-Date: Fri, 19 Nov 2010 10:46:31 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Liu Hong <hong.liu@intel.com>, Kalhan Trisal <kalhan.trisal@intel.com>
-Subject: Re: [PATCH] misc/isl29020: Remove incorrect kfree in
- isl29020_remove()
-Message-ID: <20101119104631.2c28da00@linux.intel.com>
-In-Reply-To: <1290144437.23599.4.camel@mola>
-References: <1290144437.23599.4.camel@mola>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753190Ab0KSLIG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 06:08:06 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55227 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753032Ab0KSLIE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 06:08:04 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=nNkMkfvO9j6OPTzrpWqlPJcOz49pahsGWTk1IULa7mdK8J3GtYhJXHv/OCBXZSE2t5
+         mfXB5YW9PHXfwjsnVfX9b8xA68XV1HfKhY57AkwyyCb/tRp63hHPPQrvI4UymKwm95BS
+         hcQe+t/I4sOll0rhqq6kpKL+X6maNwAliXGm0=
+MIME-Version: 1.0
+In-Reply-To: <20101119014029.GA26429@july>
+References: <20101119014029.GA26429@july>
+Date: Fri, 19 Nov 2010 11:08:02 +0000
+X-Google-Sender-Auth: nGY6gpMi-2mEcHTMyPdPlMynUWY
+Message-ID: <AANLkTinqvbPB5ijJnMGB1FP08WUMSUKFY_qZhgZaVUci@mail.gmail.com>
+Subject: Re: [PATCH] ARM: l2x0: Check the correct address range
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Tony Lindgren <tony@atomide.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Nov 2010 13:27:17 +0800
-Axel Lin <axel.lin@gmail.com> wrote:
+On 19 November 2010 01:40, Kyungmin Park <kmpark@infradead.org> wrote:
+> From: Boojin Kim <boojin.kim@samsung.com>
+>
+> When flush or clean the 1MiB, it doesn't flush or clean all since it doesn't check the correct address. So Check the correct address range.
 
-> struct als_data *data is not used in this driver at all.
-> 
-> Also add a missing ">" character for MODULE_AUTHOR.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+This line is very long.
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+The patch looks fine otherwise. I think the optimal value would be
+smaller than the whole cache size but it depends on many things.
 
-It stayed as NULL so the kfree was fine but it definitely wants removing
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
