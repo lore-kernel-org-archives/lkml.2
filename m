@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793Ab0KSCHj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 21:07:39 -0500
-Received: from kroah.org ([198.145.64.141]:57715 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750708Ab0KSCHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 21:07:37 -0500
-Date: Thu, 18 Nov 2010 18:08:20 -0800
-From: Greg KH <greg@kroah.com>
-To: Yehuda Sadeh Weinraub <yehuda@hq.newdream.net>
-Cc: sage@newdream.net, ceph-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rbd: replace the rbd sysfs interface
-Message-ID: <20101119020820.GB18767@kroah.com>
-References: <1289953929-30896-1-git-send-email-yehuda@hq.newdream.net> <20101117171924.GC12050@kroah.com> <AANLkTims_MjBS1SdHkOjOWvGqg1aRABH23MWk8J-E+-Y@mail.gmail.com> <20101118013002.GC8558@kroah.com> <AANLkTi=7z40CNBUmfVUEa68J+1R=7nbn9d8vM7ETpajA@mail.gmail.com>
+	id S1752124Ab0KSC2c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 21:28:32 -0500
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:40993 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751173Ab0KSC2b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 21:28:31 -0500
+Date: Fri, 19 Nov 2010 13:28:24 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Jan Kara <jack@suse.cz>,
+        Christoph Hellwig <hch@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
+        Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/13] IO-less dirty throttling
+Message-ID: <20101119022824.GB13830@dastard>
+References: <20101117035821.000579293@intel.com>
+ <20101117072538.GO22876@dastard>
+ <20101117100655.GA26501@localhost>
+ <20101118014051.GR22876@dastard>
+ <20101117175900.0d7878e5.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=7z40CNBUmfVUEa68J+1R=7nbn9d8vM7ETpajA@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20101117175900.0d7878e5.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 02:53:35PM -0800, Yehuda Sadeh Weinraub wrote:
-> On Wed, Nov 17, 2010 at 5:30 PM, Greg KH <greg@kroah.com> wrote:
-> > On Wed, Nov 17, 2010 at 03:00:17PM -0800, Yehuda Sadeh Weinraub wrote:
-> >> On Wed, Nov 17, 2010 at 9:19 AM, Greg KH <greg@kroah.com> wrote:
-> >> > On Tue, Nov 16, 2010 at 04:32:09PM -0800, Yehuda Sadeh wrote:
-> >> >> Hi Greg,
-> >> >>
-> >> >> Following is the new rbd sysfs interface. It lists devices in their own
-> >> >> subdirectories, as well as their underlying snapshots. Please let us
-> >> >> know if there's any issue you think we missed or did wrong.
-> >> >>
-> >> >> Thanks,
-> >> >> Yehuda
-> >> >>
-> >> >> ---
-> >> >>
-> >> >> The new interface creates directories per mapped image
-> >> >> and under each it creates a subdir per available snapshot.
-> >> >> This allows keeping a cleaner interface within the sysfs
-> >> >> guidelines. The ABI documentation was updated too.
-> >> >>
-> >> >> Signed-off-by: Yehuda Sadeh <yehuda@hq.newdream.net>
-> >> >> ---
-> >> >> ?Documentation/ABI/testing/sysfs-class-rbd | ? 83 +++
-> >> >> ?drivers/block/rbd.c ? ? ? ? ? ? ? ? ? ? ? | ?775 +++++++++++++++++------------
-> >> >> ?2 files changed, 547 insertions(+), 311 deletions(-)
-> >> >>
-> >> >> diff --git a/Documentation/ABI/testing/sysfs-class-rbd b/Documentation/ABI/testing/sysfs-class-rbd
-> >> >> new file mode 100644
-> >> >> index 0000000..4d96618
-> >> >> --- /dev/null
-> >> >> +++ b/Documentation/ABI/testing/sysfs-class-rbd
-> >> >> @@ -0,0 +1,83 @@
-> >> >> +What: ? ? ? ? ? ? ? ?/sys/class/rbd/
-> >> >
-> >> > I thought I mentioned that you should not add new classes to the kernel.
-> >> > Please don't do that, make it a bus_type instead.
-> >>
-> >>
-> >> Ahmm.. apparently not in the rbd related threads. So moving things
-> >> around and having rbd under /sys/bus we'll have the following:
-> >>
-> >> /sys/bus/rbd/drivers/rbd/..
-> >> ? ? add - add a device
-> >> ? ? remove - remove a device
-> >
-> > These files could go in /sys/bus/rbd/ directly instead of burying under
-> > 2 more layers, right?
-> >
-> >>
-> >> /sys/bus/rbd/devices/<id>
-> >> ? ?name
-> >> ? ?pool
-> >> ? ?...
-> >>
-> >> /sys/bus/rbd/devices/<id>/snaps/<name>
-> >> ? ? id
-> >> ? ? size
-> >> ? ? ...
-> >>
-> >>
-> >> Would this work?
-> >
-> > With the change mentioned above, I think that seems sane, do you?
-> >
+On Wed, Nov 17, 2010 at 05:59:00PM -0800, Andrew Morton wrote:
+> On Thu, 18 Nov 2010 12:40:51 +1100 Dave Chinner <david@fromorbit.com> wrote:
+> > Yeah, sorry, should have posted them - I didn't because I snapped
+> > the numbers before the run had finished. Without series:
+> > 
+> > 373.19user 14940.49system 41:42.17elapsed 612%CPU (0avgtext+0avgdata 82560maxresident)k
+> > 0inputs+0outputs (403major+2599763minor)pagefaults 0swaps
+> > 
+> > With your series:
+> > 
+> > 359.64user 5559.32system 40:53.23elapsed 241%CPU (0avgtext+0avgdata 82496maxresident)k
+> > 0inputs+0outputs (312major+2598798minor)pagefaults 0swaps
+> > 
+> > So the wall time with your series is lower, and system CPU time is
+> > way down (as I've already noted) for this workload on XFS.
 > 
-> Yes, pretty much. One problem that I do see is that if we define the
-> snaps/ as a device (and not just as a kobj) as you suggested before,
-> it'll automatically create a 'uevent' entry under it which can be a
-> real issue in the case we have a snapshot named like that. Shouldn't
-> we just create it as a kobj in that case?
+> How much of that benefit is an accounting artifact, moving work away
+> from the calling process's CPU and into kernel threads?
 
-No.  Just use the subdirectory option of an attribute group to handle
-that and you will not need to create any device or kobject with that
-name, the driver core will handle it all automatically for you.
+As I spelled out in my original results, the sustained CPU usage for
+the unmodified kernel is ~780% - 620% fs_mark, 80% bdi-flusher, 80%
+kswapd (i.e. completely CPU bound on the 8p test VM).  With this
+series, the sustained CPU usage is about 380% - 250% fs_mark, 80%
+bdi-flusher, 50% kswapd.
 
-hope this helps,
+IOWs, this series _halved_ the total sustained CPU usage even after
+taking into account all the kernel threads. With wall time also
+being reduced and the number of IOs issued dropping by 25%, I find
+it hard to classify the result as anything other than spectacular...
 
-greg k-h
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
