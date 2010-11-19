@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757865Ab0KSWBD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:01:03 -0500
-Received: from kroah.org ([198.145.64.141]:45377 "EHLO coco.kroah.org"
+	id S1757785Ab0KSWBg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:01:36 -0500
+Received: from kroah.org ([198.145.64.141]:45413 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757662Ab0KSV7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:59:07 -0500
+	id S1757640Ab0KSV7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:59:06 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:45 2010
-Message-Id: <20101119215645.318233108@clark.site>
+Message-Id: <20101119215645.151352011@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:56:41 -0800
+Date: Fri, 19 Nov 2010 13:56:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robin Holt <holt@sgi.com>
-Subject: [80/82] sgi-xp: incoming XPC channel messages can come in after the channels partition structures have been torn down
+        Eric Paris <eparis@redhat.com>, Paul Moore <paul.moore@hp.com>,
+        James Morris <jmorris@namei.org>
+Subject: [78/82] secmark: do not return early if there was no error
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,95 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
+From: Eric Paris <eparis@redhat.com>
 
-commit 09358972bff5ce99de496bbba97c85d417b3c054 upstream.
+commit 15714f7b58011cf3948cab2988abea560240c74f upstream.
 
-Under some workloads, some channel messages have been observed being
-delayed on the sending side past the point where the receiving side has
-been able to tear down its partition structures.
+Commit 4a5a5c73 attempted to pass decent error messages back to userspace for
+netfilter errors.  In xt_SECMARK.c however the patch screwed up and returned
+on 0 (aka no error) early and didn't finish setting up secmark.  This results
+in a kernel BUG if you use SECMARK.
 
-This condition is already detected in xpc_handle_activate_IRQ_uv(), but
-that information is not given to xpc_handle_activate_mq_msg_uv().  As a
-result, xpc_handle_activate_mq_msg_uv() assumes the structures still exist
-and references them, causing a NULL-pointer deref.
-
-Signed-off-by: Robin Holt <holt@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Acked-by: Paul Moore <paul.moore@hp.com>
+Signed-off-by: James Morris <jmorris@namei.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/misc/sgi-xp/xpc_uv.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ net/netfilter/xt_SECMARK.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/misc/sgi-xp/xpc_uv.c
-+++ b/drivers/misc/sgi-xp/xpc_uv.c
-@@ -417,6 +417,7 @@ xpc_process_activate_IRQ_rcvd_uv(void)
- static void
- xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 			      struct xpc_activate_mq_msghdr_uv *msg_hdr,
-+			      int part_setup,
- 			      int *wakeup_hb_checker)
- {
- 	unsigned long irq_flags;
-@@ -481,6 +482,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREQUEST_UV: {
- 		struct xpc_activate_mq_msg_chctl_closerequest_uv *msg;
+--- a/net/netfilter/xt_SECMARK.c
++++ b/net/netfilter/xt_SECMARK.c
+@@ -101,7 +101,7 @@ static int secmark_tg_check(const struct
+ 	switch (info->mode) {
+ 	case SECMARK_MODE_SEL:
+ 		err = checkentry_selinux(info);
+-		if (err <= 0)
++		if (err)
+ 			return err;
+ 		break;
  
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_closerequest_uv,
- 				   hdr);
-@@ -497,6 +501,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREPLY_UV: {
- 		struct xpc_activate_mq_msg_chctl_closereply_uv *msg;
- 
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_closereply_uv,
- 				   hdr);
-@@ -511,6 +518,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREQUEST_UV: {
- 		struct xpc_activate_mq_msg_chctl_openrequest_uv *msg;
- 
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_openrequest_uv,
- 				   hdr);
-@@ -528,6 +538,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREPLY_UV: {
- 		struct xpc_activate_mq_msg_chctl_openreply_uv *msg;
- 
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_openreply_uv, hdr);
- 		args = &part->remote_openclose_args[msg->ch_number];
-@@ -545,6 +558,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENCOMPLETE_UV: {
- 		struct xpc_activate_mq_msg_chctl_opencomplete_uv *msg;
- 
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				xpc_activate_mq_msg_chctl_opencomplete_uv, hdr);
- 		spin_lock_irqsave(&part->chctl_lock, irq_flags);
-@@ -621,6 +637,7 @@ xpc_handle_activate_IRQ_uv(int irq, void
- 
- 			part_referenced = xpc_part_ref(part);
- 			xpc_handle_activate_mq_msg_uv(part, msg_hdr,
-+						      part_referenced,
- 						      &wakeup_hb_checker);
- 			if (part_referenced)
- 				xpc_part_deref(part);
 
 
