@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab0KSSHO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 13:07:14 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:20381 "EHLO mx1.redhat.com"
+	id S1756214Ab0KSSJZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:09:25 -0500
+Received: from kroah.org ([198.145.64.141]:37833 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756169Ab0KSSHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 13:07:12 -0500
-Date: Fri, 19 Nov 2010 13:07:02 -0500
-From: Jarod Wilson <jarod@redhat.com>
-To: Bastien Nocera <hadess@hadess.net>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel <linux-kernel@vger.kernel.org>, mchehab@redhat.com
-Subject: Re: [RESEND] [PATCH] Input: add appleir USB driver
-Message-ID: <20101119180702.GB5022@redhat.com>
-References: <1285844276.26405.26.camel@cookie.hadess.net>
- <201009300847.43090.dmitry.torokhov@gmail.com>
- <1285861890.26405.37.camel@cookie.hadess.net>
- <20101008003940.GF31804@redhat.com>
- <1290053884.1435.10.camel@novo.hadess.net>
+	id S1755607Ab0KSSJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 13:09:24 -0500
+Date: Fri, 19 Nov 2010 10:02:58 -0800
+From: Greg KH <greg@kroah.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "Dr. Werner Fink" <werner@suse.de>,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
+Message-ID: <20101119180258.GA6745@kroah.com>
+References: <20101118014848.GA7873@tango.0pointer.de>
+ <20101118015310.GA30480@kroah.com>
+ <20101118110020.GA13871@boole.suse.de>
+ <20101118112335.434de53a@lxorguk.ukuu.org.uk>
+ <20101118121256.GA19884@boole.suse.de>
+ <20101118125822.16718289@lxorguk.ukuu.org.uk>
+ <20101118131420.GA23872@boole.suse.de>
+ <20101118144123.5417ccbd@lxorguk.ukuu.org.uk>
+ <20101119132145.GA22883@boole.suse.de>
+ <20101119154705.7829487a@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1290053884.1435.10.camel@novo.hadess.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101119154705.7829487a@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 04:18:03AM +0000, Bastien Nocera wrote:
-> On Thu, 2010-10-07 at 20:39 -0400, Jarod Wilson wrote:
-> > On Thu, Sep 30, 2010 at 04:51:30PM +0100, Bastien Nocera wrote:
-> > > On Thu, 2010-09-30 at 08:47 -0700, Dmitry Torokhov wrote:
-> > > > Bastien,
-> > ...
-> > > >  I'll try
-> > > > to get the driver in .37 but after that we should probably move it
-> > > > over to the new IR infrastructure...
-> > > 
-> > > I'm not sure what that would bring us, nor do I have any experience in
-> > > using the ir-core. From what I understood, it still needed fleshing out.
-> > 
-> > There are a few things that still need fleshing out, but nothing really
-> > that should have any major impact on a potential port of this driver.
-> > 
-> > Off the top of my head, the main thing it would give you is the ability to
-> > upload your own keymap for the receiver.
+On Fri, Nov 19, 2010 at 03:47:05PM +0000, Alan Cox wrote:
+> > Currently the bootlogd(8) or blogd(8) parse the kernels command line
+> > and if available do an ioctl TIOCGDEV (not supported by the upstream
+> > kernel), then create a pty/tty pair, do an ioctl TIOCCONS to forward
 > 
-> You could already change the keymap...
+> So perhaps the vendors using TIOCGDEV could get off their collective
+> backsides and submit it upstream ?
 
-You could change the mapping for the 6 buttons, but new scancode to
-keycode mappings wouldn't be possible. That's assuming the driver actually
-does raw IR decode -- the scancodes I see in the key tables in the driver
-definitely match decoded NEC that I get when using the Apple remote with
-another raw IR receiver (mceusb). Reading through the code though, it
-appears the IR signal is decoded in hardware and only the resulting
-scancodes are passed along... I wonder if it passes along scancodes for
-all NEC signals or if its doing filtering... I have sufficiently equipped
-Apple hardware of my own that I suppose I really ought to prod.
+Heh, that's what started this whole thing :)
 
-> >  Then someone wanting to use more
-> > than 6 buttons
-> 
-> But only for the 6 buttons supported.
-> 
-> >  or whatever it is might still be able to get the benefits
-> > of in-kernel decoding with everything coming through the input layer,
-> > rather than using lirc or the like.
-> 
-> I see very little benefits myself (I mean, unless you're adamant that
-> you want to use a remote that's not intended for that computer, but we
-> already have lirc user-space driver for doing that),
+I objected to TIOCGDEV going in as it seemed that only suse needed it
+for their boot sequence, and no other distro did which implied that it
+really wasn't necessary.
 
-I don't see why we shouldn't be able to do it in-kernel too, without the
-need for any userspace daemon. The bigger win though is probably
-de-duplication of keyup/keydown/timer logic. I had similar duplication in
-the imon driver (which is also scancode-based), and the code is smaller
-and cleaner after being adapted to use ir/rc-core functions.
+I'm still not convinced it is needed, and the many thousands of booting
+systems out there without it seem to confirm it...
 
-> and it would remove
-> metadata from the events, so we couldn't do "remote filtering" (each
-> remote has a semi-random UID, which gets passed in with the events).
+thanks,
 
-No it wouldn't. The lsb of the decoded NEC pulse train contains the ID,
-I'm able to see it just fine with other raw IR receivers and some
-experimental patches we're kicking around on linux-media.
-
-> When the appleir patch was finally accepted (which means I need to get
-> off my arse and do the changes Oliver mentioned), working on UID
-> filtering is next on my list of TODOs.
-
-I've got an implementation here using the in-kernel NEC decoder, an Apple
-remote any an mceusb transceiver that works. Its not terribly *elegant*,
-but it does work. (Executive summary: if not doing pairing, zero out the
-pair ID and use the full 32-bit scancode with a default keytable that has
-0x00 in the pair ID position. If doing pairing, pass that byte unmodified,
-and upload a keymap that matches).
-
--- 
-Jarod Wilson
-jarod@redhat.com
-
+greg k-h
