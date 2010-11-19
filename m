@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755376Ab0KSQKR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:10:17 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:39114 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753925Ab0KSQKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:10:16 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/r1t1HSHDrsiIP7nwK9fF/A/4aWpGshULcMl9jJB
-	zil5KQB76NVAfh
-Subject: Re: Galbraith patch
-From: Mike Galbraith <efault@gmx.de>
-To: Jordi Pujol <jordipujolp@gmail.com>
-Cc: Gene Heskett <gene.heskett@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <201011191509.49586.jordipujolp@gmail.com>
-References: <201011191509.49586.jordipujolp@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Nov 2010 09:09:58 -0700
-Message-ID: <1290182998.24581.8.camel@maggy.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1755480Ab0KSQKh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:10:37 -0500
+Received: from hera.kernel.org ([140.211.167.34]:52812 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755358Ab0KSQKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 11:10:36 -0500
+Message-ID: <4CE6A172.7010603@kernel.org>
+Date: Fri, 19 Nov 2010 17:10:26 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Kirill Korotaev <dev@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kapil Arya <kapil@ccs.neu.edu>, Gene Cooperman <gene@ccs.neu.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Containers <containers@lists.osdl.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+References: <20101104164401.GC10656@sundance.ccs.neu.edu>	<4CD3CE29.2010105@kernel.org>	<20101106053204.GB12449@count0.beaverton.ibm.com>	<20101106204008.GA31077@sundance.ccs.neu.edu>	<4CD5D99A.8000402@cs.columbia.edu>	<20101107184927.GF31077@sundance.ccs.neu.edu>	<4CD72150.9070705@cs.columbia.edu>	<4CE3C334.9080401@kernel.org>	<20101117153902.GA1155@hallyn.com>	<4CE3F8D1.10003@kernel.org>	<20101119041045.GC24031@hallyn.com>	<4CE683E1.6010500@kernel.org>	<04F4899E-B5C7-4BAF-8F2F-05D507A91408@parallels.com>	<4CE698C5.5060806@kernel.org>	<AANLkTikRHuaCpaROtty6X_Oe6JixzgcbVsxHxvtsu+UV@mail.gmail.com> <AANLkTikqpv8j-H15qjyhy7RJ92wNsWzeFykVMFKypt13@mail.gmail.com>
+In-Reply-To: <AANLkTikqpv8j-H15qjyhy7RJ92wNsWzeFykVMFKypt13@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 19 Nov 2010 16:10:28 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 15:09 +0100, Jordi Pujol wrote:
-> Hello,
+On 11/19/2010 05:01 PM, Alexey Dobriyan wrote:
+> On Fri, Nov 19, 2010 at 6:00 PM, Alexey Dobriyan <adobriyan@gmail.com> wrote:
+>>>> - setting different statistics counters (like netdev stats etc.)
+>>>> and so on...
+>>>
+>>> Why would this matter?
+>>
+>> Because you'll introduce million stupid interfaces not interesting to
+>> anyone but C/R.
 > 
-> it requires a little modification,
-> 
-> CONFIG_SCHED_DEBUG should not be a condition to create autogroup in structure
-> task_group
+> Just like CLONE_SET_PID.
 
-Yeah, thanks.  It was initially a debug only thing, but evolution
-changed that.
+Well, if you ask me, having pidns w/o a way to reinstate PID from
+userland is pretty silly and you and I might not know yet but it's
+quite imaginable that there will be other use cases for the capability
+unlike in-kernel CR.  Kernel provides building blocks not the whole
+frigging package and for very good reasons.
 
-	-Mike
-
+-- 
+tejun
