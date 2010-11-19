@@ -1,91 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932785Ab0KSWOF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:14:05 -0500
-Received: from kroah.org ([198.145.64.141]:52946 "EHLO coco.kroah.org"
+	id S1758076Ab0KSWER (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:04:17 -0500
+Received: from kroah.org ([198.145.64.141]:52884 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758075Ab0KSWES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:04:18 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:24 2010
-Message-Id: <20101119220124.633350514@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:01:01 -0800
+	id S1758012Ab0KSWEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:11 -0500
+Date: Fri, 19 Nov 2010 14:03:09 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [30/66] p54usb: add five more USBIDs
-In-Reply-To: <20101119220309.GA15562@kroah.com>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/66] 2.6.36.1-stable review
+Message-ID: <20101119220309.GA15562@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-stable review patch.  If anyone has any objections, please let us know.
+This is the start of the stable review cycle for the 2.6.36.1 release.
+There are 66 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-------------------
+Responses should be made by Monday, November 22, 2010, 12:00:00 UTC
+Anything received after that time might be too late.
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.36.1-rc1.gz
+and the diffstat can be found below.
 
-commit 1a92795dac419128eb511dce30a6aad672064b88 upstream.
+thanks,
 
-Source:
-http://www.wikidevi.com/wiki/Intersil/p54/usb/windows
-
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/net/wireless/p54/p54usb.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
-
---- a/drivers/net/wireless/p54/p54usb.c
-+++ b/drivers/net/wireless/p54/p54usb.c
-@@ -33,8 +33,17 @@ MODULE_ALIAS("prism54usb");
- MODULE_FIRMWARE("isl3886usb");
- MODULE_FIRMWARE("isl3887usb");
- 
-+/*
-+ * Note:
-+ *
-+ * Always update our wiki's device list (located at:
-+ * http://wireless.kernel.org/en/users/Drivers/p54/devices ),
-+ * whenever you add a new device.
-+ */
-+
- static struct usb_device_id p54u_table[] __devinitdata = {
- 	/* Version 1 devices (pci chip + net2280) */
-+	{USB_DEVICE(0x045e, 0x00c2)},	/* Microsoft MN-710 */
- 	{USB_DEVICE(0x0506, 0x0a11)},	/* 3COM 3CRWE254G72 */
- 	{USB_DEVICE(0x06b9, 0x0120)},	/* Thomson SpeedTouch 120g */
- 	{USB_DEVICE(0x0707, 0xee06)},	/* SMC 2862W-G */
-@@ -47,7 +56,9 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x0846, 0x4220)},	/* Netgear WG111 */
- 	{USB_DEVICE(0x09aa, 0x1000)},	/* Spinnaker Proto board */
- 	{USB_DEVICE(0x0cde, 0x0006)},	/* Medion 40900, Roper Europe */
-+	{USB_DEVICE(0x107b, 0x55f2)},	/* Gateway WGU-210 (Gemtek) */
- 	{USB_DEVICE(0x124a, 0x4023)},	/* Shuttle PN15, Airvast WM168g, IOGear GWU513 */
-+	{USB_DEVICE(0x1630, 0x0005)},	/* 2Wire 802.11g USB (v1) / Z-Com */
- 	{USB_DEVICE(0x1915, 0x2234)},	/* Linksys WUSB54G OEM */
- 	{USB_DEVICE(0x1915, 0x2235)},	/* Linksys WUSB54G Portable OEM */
- 	{USB_DEVICE(0x2001, 0x3701)},	/* DLink DWL-G120 Spinnaker */
-@@ -60,6 +71,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x050d, 0x7050)},	/* Belkin F5D7050 ver 1000 */
- 	{USB_DEVICE(0x0572, 0x2000)},	/* Cohiba Proto board */
- 	{USB_DEVICE(0x0572, 0x2002)},	/* Cohiba Proto board */
-+	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
- 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
- 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
- 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
-@@ -80,6 +92,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x13B1, 0x000C)},	/* Linksys WUSB54AG */
- 	{USB_DEVICE(0x1413, 0x5400)},   /* Telsey 802.11g USB2.0 Adapter */
- 	{USB_DEVICE(0x1435, 0x0427)},	/* Inventel UR054G */
-+	{USB_DEVICE(0x1668, 0x1050)},	/* Actiontec 802UIG-1 */
- 	{USB_DEVICE(0x2001, 0x3704)},	/* DLink DWL-G122 rev A2 */
- 	{USB_DEVICE(0x413c, 0x5513)},	/* Dell WLA3310 USB Wireless Adapter */
- 	{USB_DEVICE(0x413c, 0x8102)},	/* Spinnaker DUT */
+greg k-h
 
 
+ Makefile                                         |    2 +-
+ arch/arm/include/asm/kgdb.h                      |    5 ++-
+ arch/arm/kernel/kgdb.c                           |    2 +-
+ arch/arm/mach-cns3xxx/include/mach/debug-macro.S |    2 +-
+ arch/powerpc/kernel/ppc970-pmu.c                 |    2 +
+ arch/x86/include/asm/cpufeature.h                |    2 +-
+ arch/x86/include/asm/io.h                        |    1 +
+ arch/x86/include/asm/mrst.h                      |    2 +-
+ arch/x86/include/asm/smp.h                       |    9 ++++-
+ arch/x86/kernel/apic/io_apic.c                   |    2 +
+ arch/x86/kernel/cpu/mtrr/cleanup.c               |    2 +-
+ arch/x86/kernel/cpu/perf_event_amd.c             |    4 +-
+ arch/x86/kernel/crash_dump_64.c                  |    3 +-
+ arch/x86/kernel/olpc.c                           |    5 ++-
+ arch/x86/kernel/reboot.c                         |    2 +-
+ arch/x86/kernel/smp.c                            |   15 +++++---
+ arch/x86/kernel/traps.c                          |    1 +
+ arch/x86/kernel/vm86_32.c                        |   10 ++++-
+ arch/x86/kvm/svm.c                               |   37 +++++++++++++++++++-
+ arch/x86/kvm/x86.c                               |    4 +-
+ arch/x86/xen/enlighten.c                         |    2 +-
+ arch/x86/xen/smp.c                               |    6 ++--
+ drivers/ata/ahci.h                               |    1 +
+ drivers/ata/libahci.c                            |   18 ++++++++--
+ drivers/bluetooth/hci_ldisc.c                    |    7 ++++
+ drivers/char/pcmcia/synclink_cs.c                |    2 +
+ drivers/idle/intel_idle.c                        |    2 +-
+ drivers/misc/sgi-xp/xpc_uv.c                     |   17 +++++++++
+ drivers/net/wireless/p54/eeprom.c                |    4 ++-
+ drivers/net/wireless/p54/p54usb.c                |   15 ++++++++-
+ drivers/platform/x86/asus-laptop.c               |    6 ++--
+ drivers/scsi/gdth.c                              |    8 ++++
+ drivers/scsi/libsas/sas_ata.c                    |    1 +
+ drivers/scsi/pmcraid.h                           |    1 -
+ drivers/scsi/qla4xxx/ql4_nx.c                    |    1 +
+ drivers/scsi/scsi_lib.c                          |    3 +-
+ drivers/scsi/scsi_sysfs.c                        |    3 +-
+ drivers/scsi/sd.c                                |   15 +++++---
+ drivers/staging/phison/phison.c                  |    2 +-
+ drivers/staging/usbip/usbip_event.c              |   16 ++-------
+ drivers/staging/usbip/vhci_hcd.c                 |    2 +
+ drivers/usb/core/hcd-pci.c                       |    4 ++-
+ drivers/usb/core/hub.c                           |    9 +++--
+ drivers/usb/core/message.c                       |   14 ++++----
+ drivers/usb/gadget/atmel_usba_udc.c              |    3 ++
+ drivers/usb/gadget/composite.c                   |    3 +-
+ drivers/usb/gadget/f_acm.c                       |    2 +-
+ drivers/usb/gadget/g_ffs.c                       |    4 +-
+ drivers/usb/gadget/multi.c                       |    4 +-
+ drivers/usb/host/ohci-hcd.c                      |    9 ++++-
+ drivers/usb/host/ohci-pci.c                      |   18 ++++++++++
+ drivers/usb/host/ohci.h                          |    1 +
+ drivers/usb/host/pci-quirks.c                    |   18 ++++++----
+ drivers/usb/host/r8a66597.h                      |    2 +-
+ drivers/usb/musb/blackfin.c                      |    7 +++-
+ drivers/usb/musb/davinci.c                       |    2 +
+ drivers/usb/musb/musb_core.c                     |    4 --
+ drivers/usb/musb/omap2430.c                      |    1 +
+ drivers/usb/musb/tusb6010.c                      |    4 ++
+ drivers/usb/serial/cp210x.c                      |    2 +
+ drivers/usb/serial/ftdi_sio.c                    |   39 +++++++++++++++++++---
+ drivers/usb/serial/ftdi_sio_ids.h                |   39 +++++++++++++++++++++-
+ drivers/usb/serial/mct_u232.c                    |    7 +++-
+ drivers/usb/serial/opticon.c                     |    6 ++--
+ drivers/usb/serial/option.c                      |   23 +++++++++++--
+ drivers/usb/serial/visor.c                       |   11 +++++-
+ fs/cifs/cifsproto.h                              |    3 +-
+ fs/cifs/dir.c                                    |   12 +++----
+ fs/cifs/file.c                                   |    4 +-
+ fs/nfs/direct.c                                  |    2 +-
+ fs/pipe.c                                        |    2 +-
+ kernel/futex.c                                   |   31 +++++++++--------
+ kernel/perf_event.c                              |    8 ++++-
+ kernel/sched.c                                   |   13 ++-----
+ mm/vmalloc.c                                     |    9 +++++
+ net/bluetooth/l2cap.c                            |    4 +-
+ net/netfilter/xt_SECMARK.c                       |    2 +-
+ 77 files changed, 420 insertions(+), 150 deletions(-)
