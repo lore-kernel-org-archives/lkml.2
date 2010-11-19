@@ -1,134 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756164Ab0KSSGl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 13:06:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23642 "EHLO mx1.redhat.com"
+	id S1756221Ab0KSSHO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:07:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20381 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755247Ab0KSSGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 13:06:39 -0500
-Date: Fri, 19 Nov 2010 19:06:16 +0100 (CET)
-From: Lukas Czerner <lczerner@redhat.com>
-X-X-Sender: lukas@dhcp-lab-213.englab.brq.redhat.com
-To: Christoph Hellwig <hch@infradead.org>
-cc: Greg Freemyer <greg.freemyer@gmail.com>, Mark Lord <kernel@teksavvy.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jeff Moyer <jmoyer@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
-        tytso@mit.edu, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
- super_operation
-In-Reply-To: <20101119163828.GA8023@infradead.org>
-Message-ID: <alpine.LFD.2.00.1011191853210.3238@dhcp-lab-213.englab.brq.redhat.com>
-References: <1290100750.3041.72.camel@mulgrave.site> <x494obe4kd5.fsf@segfault.boston.devel.redhat.com> <1290102098.3041.77.camel@mulgrave.site> <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com> <4CE59E57.2090009@teksavvy.com>
- <yq1r5eiw5os.fsf@sermon.lab.mkp.net> <4CE5C616.7070706@teksavvy.com> <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com> <20101119115516.GA1152@infradead.org> <AANLkTimQZKLtKpKRUJ-KyCyo29F_Mnws8J54G3CeMkyc@mail.gmail.com>
- <20101119163828.GA8023@infradead.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756169Ab0KSSHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 13:07:12 -0500
+Date: Fri, 19 Nov 2010 13:07:02 -0500
+From: Jarod Wilson <jarod@redhat.com>
+To: Bastien Nocera <hadess@hadess.net>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input <linux-input@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel <linux-kernel@vger.kernel.org>, mchehab@redhat.com
+Subject: Re: [RESEND] [PATCH] Input: add appleir USB driver
+Message-ID: <20101119180702.GB5022@redhat.com>
+References: <1285844276.26405.26.camel@cookie.hadess.net>
+ <201009300847.43090.dmitry.torokhov@gmail.com>
+ <1285861890.26405.37.camel@cookie.hadess.net>
+ <20101008003940.GF31804@redhat.com>
+ <1290053884.1435.10.camel@novo.hadess.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290053884.1435.10.camel@novo.hadess.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Nov 2010, Christoph Hellwig wrote:
-
-> On Fri, Nov 19, 2010 at 08:20:58AM -0800, Greg Freemyer wrote:
-> > The kernel team has been coding around some Utopian SSD TRIM
-> > implementation for at least 2 years with the basic assumption that
-> > SSDs can handle thousands of trims per second.  Just mix em in with
-> > the rest of the i/o.  No problem.  Intel swore to us its the right
-> > thing to do.
+On Thu, Nov 18, 2010 at 04:18:03AM +0000, Bastien Nocera wrote:
+> On Thu, 2010-10-07 at 20:39 -0400, Jarod Wilson wrote:
+> > On Thu, Sep 30, 2010 at 04:51:30PM +0100, Bastien Nocera wrote:
+> > > On Thu, 2010-09-30 at 08:47 -0700, Dmitry Torokhov wrote:
+> > > > Bastien,
+> > ...
+> > > >  I'll try
+> > > > to get the driver in .37 but after that we should probably move it
+> > > > over to the new IR infrastructure...
+> > > 
+> > > I'm not sure what that would bring us, nor do I have any experience in
+> > > using the ir-core. From what I understood, it still needed fleshing out.
+> > 
+> > There are a few things that still need fleshing out, but nothing really
+> > that should have any major impact on a potential port of this driver.
+> > 
+> > Off the top of my head, the main thing it would give you is the ability to
+> > upload your own keymap for the receiver.
 > 
-> Thanks Greg, good that you told us what we've been doing.  I would have
-> forgot myself if you didn't remember me.
+> You could already change the keymap...
+
+You could change the mapping for the 6 buttons, but new scancode to
+keycode mappings wouldn't be possible. That's assuming the driver actually
+does raw IR decode -- the scancodes I see in the key tables in the driver
+definitely match decoded NEC that I get when using the Apple remote with
+another raw IR receiver (mceusb). Reading through the code though, it
+appears the IR signal is decoded in hardware and only the resulting
+scancodes are passed along... I wonder if it passes along scancodes for
+all NEC signals or if its doing filtering... I have sufficiently equipped
+Apple hardware of my own that I suppose I really ought to prod.
+
+> >  Then someone wanting to use more
+> > than 6 buttons
 > 
-> > I'm still waiting to see the first benchmark report from anywhere
-> > (SSD, Thin Provisioned SCSI) that the online approach used by mount -o
-> > discard is a win performance wise.  Linux has a history of designing
-> > for reality, but for some reason when it comes to SSDs reality seems
-> > not to be a big concern.
+> But only for the 6 buttons supported.
 > 
-> Both Lukas and I have done extensive benchmarks on various SSDs and
-> thinkly provisioned raids.  Unfortunately most of the hardware is only
-> available under NDA so we can't publish it.
+> >  or whatever it is might still be able to get the benefits
+> > of in-kernel decoding with everything coming through the input layer,
+> > rather than using lirc or the like.
 > 
-> For the XFS side which I've looked it I can summarize that we do have
-> arrays that do the online discard without measureable performance
-> penalty on various workloads, and we have devices (both SSDs and arrays)
-> where the overhead is incredibly huge.  I can also say that doing the
-> walk of the freespace btrees similar to the offline discard, but every
-> 30 seconds or at a similarly high interval is a sure way to completely
-> kill performance.
-> 
-> Or in short we haven't fund the holy grail yet.
-> 
+> I see very little benefits myself (I mean, unless you're adamant that
+> you want to use a remote that's not intended for that computer, but we
+> already have lirc user-space driver for doing that),
 
-Indeed we have not. But speaking of benchmarks I have just finished
-quick run (well, not so quick:)) of my discard-kit for btrfs filesystem
-and here are results. Note that tool used for this benchmark is
-postmark, hence it might not be the realest use-case, but it provides
-nice comparison between ext4 (below) and btrfs online discard
-implementation (FITRIM is NOT involved).
+I don't see why we shouldn't be able to do it in-kernel too, without the
+need for any userspace daemon. The bigger win though is probably
+de-duplication of keyup/keydown/timer logic. I had similar duplication in
+the imon driver (which is also scancode-based), and the code is smaller
+and cleaner after being adapted to use ir/rc-core functions.
 
+> and it would remove
+> metadata from the events, so we couldn't do "remote filtering" (each
+> remote has a semi-random UID, which gets passed in with the events).
 
-(Sadly the table is too wide so you have to...well, you guys can manage
-it somehow, right?).
+No it wouldn't. The lsb of the decoded NEC pulse train contains the ID,
+I'm able to see it just fine with other raw IR receivers and some
+experimental patches we're kicking around on linux-media.
 
-BTRFS
------
+> When the appleir patch was finally accepted (which means I need to get
+> off my arse and do the changes Oliver mentioned), working on UID
+> filtering is next on my list of TODOs.
 
-                                   |          BUFFERING ENABLED         |       BUFFERING DISABLED           |
---------------------------------------------------------------------------------------------------------------
-Type                               |NODISCARD    DISCARD      DIFF      |NODISCARD    DISCARD      DIFF      |
-==============================================================================================================
-Total_duration                     |230.90       336.20       45.60%    |232.00       335.00       44.40%    |
-Duration_of_transactions           |159.60       266.10       66.73%    |158.90       264.60       66.52%    |
-Transactions/s                     |313.32       188.01       -39.99%   |314.70       189.07       -39.92%   |
-Files_created/s                    |323.84       222.48       -31.30%   |322.28       223.28       -30.72%   |
-Creation_alone/s                   |778.08       796.37       2.35%     |756.66       787.68       4.10%     |
-Creation_mixed_with_transaction/s  |155.16       93.11        -39.99%   |155.84       93.63        -39.92%   |
-Read/s                             |156.50       93.91        -39.99%   |157.18       94.44        -39.92%   |
-Append/s                           |156.82       94.10        -39.99%   |157.50       94.63        -39.92%   |
-Deleted/s                          |323.84       222.48       -31.30%   |322.28       223.28       -30.72%   |
-Deletion_alone/s                   |770.64       788.75       2.35%     |749.42       780.15       4.10%     |
-Deletion_mixed_with_transaction/s  |158.16       94.90        -40.00%   |158.85       95.44        -39.92%   |
-Read_B/s                           |11925050.90  8192800.35   -31.30%   |11867797.20  8221997.40   -30.72%   |
-Write_B/s                          |37318466.00  25638695.00  -31.30%   |37139294.00  25730064.60  -30.72%   |
-==============================================================================================================
+I've got an implementation here using the in-kernel NEC decoder, an Apple
+remote any an mceusb transceiver that works. Its not terribly *elegant*,
+but it does work. (Executive summary: if not doing pairing, zero out the
+pair ID and use the full 32-bit scancode with a default keytable that has
+0x00 in the pair ID position. If doing pairing, pass that byte unmodified,
+and upload a keymap that matches).
 
-EXT4
-----
-                                   |          BUFFERING ENABLED         |       BUFFERING DISABLED           |
---------------------------------------------------------------------------------------------------------------
-Type                               |NODISCARD    DISCARD      DIFF      |NODISCARD    DISCARD      DIFF      |
-==============================================================================================================
-Total_duration                     |306.10       512.70       67.49%    |301.60       516.10       71.12%    |
-Duration_of_transactions           |243.50       449.80       84.72%    |239.00       453.90       89.92%    |
-Transactions/s                     |205.43       111.19       -45.87%   |209.32       110.17       -47.37%   |
-Files_created/s                    |244.30       145.85       -40.30%   |247.97       144.87       -41.58%   |
-Creation_alone/s                   |834.88       830.60       -0.51%    |830.60       833.42       0.34%     |
-Creation_mixed_with_transaction/s  |101.73       55.06        -45.88%   |103.66       54.55        -47.38%   |
-Read/s                             |102.61       55.54        -45.87%   |104.55       55.03        -47.36%   |
-Append/s                           |102.82       55.65        -45.88%   |104.76       55.14        -47.37%   |
-Deleted/s                          |244.30       145.85       -40.30%   |247.97       144.87       -41.58%   |
-Deletion_alone/s                   |826.90       822.66       -0.51%    |822.66       825.46       0.34%     |
-Deletion_mixed_with_transaction/s  |103.70       56.13        -45.87%   |105.66       55.61        -47.37%   |
-Read_B/s                           |8996110.60   5370694.40   -40.30%   |9131349.20   5334560.40   -41.58%   |
-Write_B/s                          |28152588.40  16807146.60  -40.30%   |28575806.40  16694068.00  -41.58%   |
-==============================================================================================================
+-- 
+Jarod Wilson
+jarod@redhat.com
 
-
-(Buffering means that C library function like fopen, fread, fwrite are
-used instead of open, read, write. I have used the word buffering in the
-same way as it is used in the postmark test)
-
-So, you can see that Btrfs handles online discard quite better than ext4
-(cca 20% difference), but it is still pretty massive performance loss on
-not-so-good-but-I-have-seen-worse SSD. So, I would say that you guys
-(Josef?) should at least consider the possibility of using FITRIM as well.
-
-Thanks!
-
--Lukas
