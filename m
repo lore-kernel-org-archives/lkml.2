@@ -1,69 +1,331 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578Ab0KSQAa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:00:30 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64463 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755376Ab0KSQA0 convert rfc822-to-8bit (ORCPT
+	id S1755615Ab0KSQA7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:00:59 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:25566 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755389Ab0KSP63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:00:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=o5mf91wkA/QUxjA9909TJuG8GgE8X1H+A7Rm13Ee5Jm38KwmeG2jKn9wFMRlTBRQd4
-         AqaZqKDbSznzxCBzxC3dATAiA+KSFy/vn3He6ajKSg8d5MQ9DRtBJhOZ5/VuCqcjaoti
-         DkjRIMCiC8pX8eWAW/dwHjJJnfIKE9Tk3KsiE=
-MIME-Version: 1.0
-In-Reply-To: <4CE698C5.5060806@kernel.org>
-References: <20101104164401.GC10656@sundance.ccs.neu.edu>
-	<4CD3CE29.2010105@kernel.org>
-	<20101106053204.GB12449@count0.beaverton.ibm.com>
-	<20101106204008.GA31077@sundance.ccs.neu.edu>
-	<4CD5D99A.8000402@cs.columbia.edu>
-	<20101107184927.GF31077@sundance.ccs.neu.edu>
-	<4CD72150.9070705@cs.columbia.edu>
-	<4CE3C334.9080401@kernel.org>
-	<20101117153902.GA1155@hallyn.com>
-	<4CE3F8D1.10003@kernel.org>
-	<20101119041045.GC24031@hallyn.com>
-	<4CE683E1.6010500@kernel.org>
-	<04F4899E-B5C7-4BAF-8F2F-05D507A91408@parallels.com>
-	<4CE698C5.5060806@kernel.org>
-Date: Fri, 19 Nov 2010 18:00:22 +0200
-Message-ID: <AANLkTikRHuaCpaROtty6X_Oe6JixzgcbVsxHxvtsu+UV@mail.gmail.com>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kirill Korotaev <dev@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Kapil Arya <kapil@ccs.neu.edu>, Gene Cooperman <gene@ccs.neu.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Containers <containers@lists.osdl.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 19 Nov 2010 10:58:29 -0500
+Date: Fri, 19 Nov 2010 16:58:06 +0100
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [RFCv6 08/13] mm: move some functions to page_isolation.c
+In-reply-to: <cover.1290172312.git.m.nazarewicz@samsung.com>
+To: mina86@mina86.com
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hans Verkuil <hverkuil@xs4all.nl>,
+        Johan Mossberg <johan.xx.mossberg@stericsson.com>,
+        Jonathan Corbet <corbet@lwn.net>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Marcus LORENTZON <marcus.xm.lorentzon@stericsson.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mel Gorman <mel@csn.ul.ie>, Pawel Osciak <pawel@osciak.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>, dipankar@in.ibm.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org
+Message-id: <1460279e4d5bc268225a9970402fe248baa0227c.1290172312.git.m.nazarewicz@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.2.3
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <cover.1290172312.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 5:33 PM, Tejun Heo <tj@kernel.org> wrote:
->> - insert SKB's into socket buffers
->
-> Can't we drain kernel buffers?  ie. Stop further writing and wait the
-> send-q to drop to zero.
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-On send:
-if network dies right after freeze, you lose.
+Memory hotplug is a logic for making pages unused in the specified range
+of pfn. So, some of core logics can be used for other purpose as
+allocating a very large contigous memory block.
 
-On receive:
-packets arrive after process freeze, but before network device freeze.
+This patch moves some functions from mm/memory_hotplug.c to
+mm/page_isolation.c. This helps adding a function for large-alloc in
+page_isolation.c with memory-unplug technique.
 
->> - setting different statistics counters (like netdev stats etc.)
->> and so on...
->
-> Why would this matter?
+Changelog: 2010/10/26
+ - adjusted to mmotm-1024 + Bob's 3 clean ups.
+Changelog: 2010/10/21
+ - adjusted to mmotm-1020
 
-Because you'll introduce million stupid interfaces not interesting to
-anyone but C/R.
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ include/linux/page-isolation.h |    7 +++
+ mm/memory_hotplug.c            |  108 --------------------------------------
+ mm/page_isolation.c            |  111 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 118 insertions(+), 108 deletions(-)
+
+diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
+index 051c1b1..58cdbac 100644
+--- a/include/linux/page-isolation.h
++++ b/include/linux/page-isolation.h
+@@ -33,5 +33,12 @@ test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
+ extern int set_migratetype_isolate(struct page *page);
+ extern void unset_migratetype_isolate(struct page *page);
+ 
++/*
++ * For migration.
++ */
++
++int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn);
++unsigned long scan_lru_pages(unsigned long start, unsigned long end);
++int do_migrate_range(unsigned long start_pfn, unsigned long end_pfn);
+ 
+ #endif
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 9260314..23f4e36 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -617,114 +617,6 @@ int is_mem_section_removable(unsigned long start_pfn, unsigned long nr_pages)
+ }
+ 
+ /*
+- * Confirm all pages in a range [start, end) is belongs to the same zone.
+- */
+-static int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
+-{
+-	unsigned long pfn;
+-	struct zone *zone = NULL;
+-	struct page *page;
+-	int i;
+-	for (pfn = start_pfn;
+-	     pfn < end_pfn;
+-	     pfn += MAX_ORDER_NR_PAGES) {
+-		i = 0;
+-		/* This is just a CONFIG_HOLES_IN_ZONE check.*/
+-		while ((i < MAX_ORDER_NR_PAGES) && !pfn_valid_within(pfn + i))
+-			i++;
+-		if (i == MAX_ORDER_NR_PAGES)
+-			continue;
+-		page = pfn_to_page(pfn + i);
+-		if (zone && page_zone(page) != zone)
+-			return 0;
+-		zone = page_zone(page);
+-	}
+-	return 1;
+-}
+-
+-/*
+- * Scanning pfn is much easier than scanning lru list.
+- * Scan pfn from start to end and Find LRU page.
+- */
+-static unsigned long scan_lru_pages(unsigned long start, unsigned long end)
+-{
+-	unsigned long pfn;
+-	struct page *page;
+-	for (pfn = start; pfn < end; pfn++) {
+-		if (pfn_valid(pfn)) {
+-			page = pfn_to_page(pfn);
+-			if (PageLRU(page))
+-				return pfn;
+-		}
+-	}
+-	return 0;
+-}
+-
+-static struct page *
+-hotremove_migrate_alloc(struct page *page, unsigned long private, int **x)
+-{
+-	/* This should be improooooved!! */
+-	return alloc_page(GFP_HIGHUSER_MOVABLE);
+-}
+-
+-#define NR_OFFLINE_AT_ONCE_PAGES	(256)
+-static int
+-do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
+-{
+-	unsigned long pfn;
+-	struct page *page;
+-	int move_pages = NR_OFFLINE_AT_ONCE_PAGES;
+-	int not_managed = 0;
+-	int ret = 0;
+-	LIST_HEAD(source);
+-
+-	for (pfn = start_pfn; pfn < end_pfn && move_pages > 0; pfn++) {
+-		if (!pfn_valid(pfn))
+-			continue;
+-		page = pfn_to_page(pfn);
+-		if (!page_count(page))
+-			continue;
+-		/*
+-		 * We can skip free pages. And we can only deal with pages on
+-		 * LRU.
+-		 */
+-		ret = isolate_lru_page(page);
+-		if (!ret) { /* Success */
+-			list_add_tail(&page->lru, &source);
+-			move_pages--;
+-			inc_zone_page_state(page, NR_ISOLATED_ANON +
+-					    page_is_file_cache(page));
+-
+-		} else {
+-#ifdef CONFIG_DEBUG_VM
+-			printk(KERN_ALERT "removing pfn %lx from LRU failed\n",
+-			       pfn);
+-			dump_page(page);
+-#endif
+-			/* Becasue we don't have big zone->lock. we should
+-			   check this again here. */
+-			if (page_count(page)) {
+-				not_managed++;
+-				ret = -EBUSY;
+-				break;
+-			}
+-		}
+-	}
+-	if (!list_empty(&source)) {
+-		if (not_managed) {
+-			putback_lru_pages(&source);
+-			goto out;
+-		}
+-		/* this function returns # of failed pages */
+-		ret = migrate_pages(&source, hotremove_migrate_alloc, 0, 1);
+-		if (ret)
+-			putback_lru_pages(&source);
+-	}
+-out:
+-	return ret;
+-}
+-
+-/*
+  * remove from free_area[] and mark all as Reserved.
+  */
+ static int
+diff --git a/mm/page_isolation.c b/mm/page_isolation.c
+index 4ae42bb..077cf19 100644
+--- a/mm/page_isolation.c
++++ b/mm/page_isolation.c
+@@ -5,6 +5,9 @@
+ #include <linux/mm.h>
+ #include <linux/page-isolation.h>
+ #include <linux/pageblock-flags.h>
++#include <linux/memcontrol.h>
++#include <linux/migrate.h>
++#include <linux/mm_inline.h>
+ #include "internal.h"
+ 
+ static inline struct page *
+@@ -139,3 +142,111 @@ int test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn)
+ 	spin_unlock_irqrestore(&zone->lock, flags);
+ 	return ret ? 0 : -EBUSY;
+ }
++
++
++/*
++ * Confirm all pages in a range [start, end) is belongs to the same zone.
++ */
++int test_pages_in_a_zone(unsigned long start_pfn, unsigned long end_pfn)
++{
++	unsigned long pfn;
++	struct zone *zone = NULL;
++	struct page *page;
++	int i;
++	for (pfn = start_pfn;
++	     pfn < end_pfn;
++	     pfn += MAX_ORDER_NR_PAGES) {
++		i = 0;
++		/* This is just a CONFIG_HOLES_IN_ZONE check.*/
++		while ((i < MAX_ORDER_NR_PAGES) && !pfn_valid_within(pfn + i))
++			i++;
++		if (i == MAX_ORDER_NR_PAGES)
++			continue;
++		page = pfn_to_page(pfn + i);
++		if (zone && page_zone(page) != zone)
++			return 0;
++		zone = page_zone(page);
++	}
++	return 1;
++}
++
++/*
++ * Scanning pfn is much easier than scanning lru list.
++ * Scan pfn from start to end and Find LRU page.
++ */
++unsigned long scan_lru_pages(unsigned long start, unsigned long end)
++{
++	unsigned long pfn;
++	struct page *page;
++	for (pfn = start; pfn < end; pfn++) {
++		if (pfn_valid(pfn)) {
++			page = pfn_to_page(pfn);
++			if (PageLRU(page))
++				return pfn;
++		}
++	}
++	return 0;
++}
++
++struct page *
++hotremove_migrate_alloc(struct page *page, unsigned long private, int **x)
++{
++	/* This should be improooooved!! */
++	return alloc_page(GFP_HIGHUSER_MOVABLE);
++}
++
++#define NR_OFFLINE_AT_ONCE_PAGES	(256)
++int do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
++{
++	unsigned long pfn;
++	struct page *page;
++	int move_pages = NR_OFFLINE_AT_ONCE_PAGES;
++	int not_managed = 0;
++	int ret = 0;
++	LIST_HEAD(source);
++
++	for (pfn = start_pfn; pfn < end_pfn && move_pages > 0; pfn++) {
++		if (!pfn_valid(pfn))
++			continue;
++		page = pfn_to_page(pfn);
++		if (!page_count(page))
++			continue;
++		/*
++		 * We can skip free pages. And we can only deal with pages on
++		 * LRU.
++		 */
++		ret = isolate_lru_page(page);
++		if (!ret) { /* Success */
++			list_add_tail(&page->lru, &source);
++			move_pages--;
++			inc_zone_page_state(page, NR_ISOLATED_ANON +
++					    page_is_file_cache(page));
++
++		} else {
++#ifdef CONFIG_DEBUG_VM
++			printk(KERN_ALERT "removing pfn %lx from LRU failed\n",
++			       pfn);
++			dump_page(page);
++#endif
++			/* Because we don't have big zone->lock. we should
++			   check this again here. */
++			if (page_count(page)) {
++				not_managed++;
++				ret = -EBUSY;
++				break;
++			}
++		}
++	}
++	if (!list_empty(&source)) {
++		if (not_managed) {
++			putback_lru_pages(&source);
++			goto out;
++		}
++		/* this function returns # of failed pages */
++		ret = migrate_pages(&source, hotremove_migrate_alloc, 0, 1);
++		if (ret)
++			putback_lru_pages(&source);
++	}
++out:
++	return ret;
++}
+-- 
+1.7.2.3
+
