@@ -1,385 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758664Ab0KSBQj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 20:16:39 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56513 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754730Ab0KSBQh (ORCPT
+	id S1760123Ab0KSBRD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 20:17:03 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47493 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754730Ab0KSBRA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 20:16:37 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 19 Nov 2010 10:10:41 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Re: [PATCH 36 of 66] memcg compound
-Message-Id: <20101119101041.ffe00712.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101118152628.GY8135@csn.ul.ie>
-References: <patchbomb.1288798055@v2.random>
-	<495ffee2d60adab4d18b.1288798091@v2.random>
-	<20101118152628.GY8135@csn.ul.ie>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 18 Nov 2010 20:17:00 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=t1173h/FJtk3vsZPBlA/6lVymFGuxBCvAHM7riMkn0NrmrV+1/ylRNT5Q+yPit2oLY
+         zxyR1SZIFK09h6YaxfQMrpBues0vkbUOi/SqhFg+HIgs6+bQbPj9hj5fcuvXJ8NVgpw4
+         hhkWEJ3luQgcg2DaRa6urN3sTCj0GFz8enZVQ=
+MIME-Version: 1.0
+In-Reply-To: <4CE5C616.7070706@teksavvy.com>
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
+ <20101118130630.GJ6178@parisc-linux.org> <20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
+ <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org>
+ <1290100750.3041.72.camel@mulgrave.site> <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
+ <1290102098.3041.77.camel@mulgrave.site> <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>
+ <4CE59E57.2090009@teksavvy.com> <yq1r5eiw5os.fsf@sermon.lab.mkp.net> <4CE5C616.7070706@teksavvy.com>
+From: Greg Freemyer <greg.freemyer@gmail.com>
+Date: Thu, 18 Nov 2010 17:16:36 -0800
+Message-ID: <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com>
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+To: Mark Lord <kernel@teksavvy.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>, tytso@mit.edu,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, sandeen@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010 15:26:28 +0000
-Mel Gorman <mel@csn.ul.ie> wrote:
+On Thu, Nov 18, 2010 at 4:34 PM, Mark Lord <kernel@teksavvy.com> wrote:
+> On 10-11-18 06:52 PM, Martin K. Petersen wrote:
+>>>>>>>
+>>>>>>> "Mark" == Mark Lord<kernel@teksavvy.com>  writes:
+>>
+>> Mark>  If FITRIM is still issuing single-range-at-a-time TRIMs, then I'd
+>> Mark>  call that a BUG that needs fixing.  Doing TRIM like that causes
+>> Mark>  tons of unnecessary ERASE cycles, shortening the SSD lifetime.  It
+>> Mark>  really needs to batch them into groups of (up to) 64 ranges at a
+>> Mark>  time (64 ranges fits into a single 512-byte parameter block).
+>>
+>> We don't support coalescing discontiguous requests into one command. But
+>> we will issue contiguous TRIM requests as big as the payload can
+>> handle. That's just short of two gigs per command given a 512-byte
+>> block.
+>>
+>> I spent quite a bit of time trying to make coalescing work in the
+>> spring. It got very big and unwieldy. When we discussed it at the
+>> filesystem summit the consensus was that it was too intrusive to the I/O
+>> stack, elevators, etc.
+>
+> Surely if a userspace tool and shell-script can accomplish this,
+> totally lacking real filesystem knowledge, then we should be able
+> to approximate it in kernel space?
+>
+> This is FITRIM we're talking about, not the on-the-fly automatic TRIM.
+>
+> FITRIM could perhaps use a similar approach to what wiper.sh does:
+> reserve a large number of free blocks, and issue coalesced TRIM(s) on them.
+>
+> The difference being, it could walk through the filesystem,
+> trimming in sections, rather than trying to reserve/trim the entire
+> freespace all in one go.
+>
+> Over-thinking it???
 
-> On Wed, Nov 03, 2010 at 04:28:11PM +0100, Andrea Arcangeli wrote:
-> > From: Andrea Arcangeli <aarcange@redhat.com>
-> > 
-> > Teach memcg to charge/uncharge compound pages.
-> > 
-> > Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > ---
-> > 
-> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> > --- a/mm/memcontrol.c
-> > +++ b/mm/memcontrol.c
-> > @@ -1019,6 +1019,10 @@ mem_cgroup_get_reclaim_stat_from_page(st
-> >  {
-> >  	struct page_cgroup *pc;
-> >  	struct mem_cgroup_per_zone *mz;
-> > +	int page_size = PAGE_SIZE;
-> > +
-> > +	if (PageTransHuge(page))
-> > +		page_size <<= compound_order(page);
-> >  
-> >  	if (mem_cgroup_disabled())
-> >  		return NULL;
-> > @@ -1879,12 +1883,14 @@ static int __mem_cgroup_do_charge(struct
-> >   * oom-killer can be invoked.
-> >   */
-> >  static int __mem_cgroup_try_charge(struct mm_struct *mm,
-> > -		gfp_t gfp_mask, struct mem_cgroup **memcg, bool oom)
-> > +				   gfp_t gfp_mask,
-> > +				   struct mem_cgroup **memcg, bool oom,
-> > +				   int page_size)
-> 
-> Any concerns about page_size overflowing int? ppc64 has 16G pages for example
-> although it will never be in this path. hmm, I see that charge size is already
-> int so maybe this is more of a memcg issue than it is THP but hugetlbfs
-> treats page sizes as unsigned long. For example see vma_kernel_pagesize()
-> 
+Martin,
 
-If there are requirements of big page > 4GB, unsigned long should be used.
+I agree with Mark.  When you say "make coalescing work" it sounds like
+major overkill.
 
+FITRIM should be able to lock a group of non-contiguous free ranges,
+send them down to the block layer as a single pre-coalesced set, and
+the block layer just needs to pass it on in a synchronous way.  Then
+when that group of ranges is discarded, FITRIM releases the locks.
 
-> 
-> >  {
-> >  	int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
-> >  	struct mem_cgroup *mem = NULL;
-> >  	int ret;
-> > -	int csize = CHARGE_SIZE;
-> > +	int csize = max(CHARGE_SIZE, (unsigned long) page_size);
-> >  
+Every TRIM causes a cache flush anyway on the SSD, so the synchronous
+aspect of the process should not be a problem.  (Maybe SCSI with thin
+provisioning would see a performance hit?)
 
-unsigned long here.
+To my small brain, the only really complex part is sending something
+like that into MDraid, because that one set of ranges might explode
+into thousands of ranges and then have to be coalesced back down to a
+more manageable number of ranges.
 
+ie. with a simple raid 0, each range will need to be broken into a
+bunch of stride sized ranges, then the contiguous strides on each
+spindle coalesced back into larger ranges.
 
-> >  	/*
-> >  	 * Unlike gloval-vm's OOM-kill, we're not in memory shortage
-> > @@ -1909,7 +1915,7 @@ again:
-> >  		VM_BUG_ON(css_is_removed(&mem->css));
-> >  		if (mem_cgroup_is_root(mem))
-> >  			goto done;
-> > -		if (consume_stock(mem))
-> > +		if (page_size == PAGE_SIZE && consume_stock(mem))
-> >  			goto done;
-> >  		css_get(&mem->css);
-> >  	} else {
-> > @@ -1933,7 +1939,7 @@ again:
-> >  			rcu_read_unlock();
-> >  			goto done;
-> >  		}
-> > -		if (consume_stock(mem)) {
-> > +		if (page_size == PAGE_SIZE && consume_stock(mem)) {
-> >  			/*
-> >  			 * It seems dagerous to access memcg without css_get().
-> >  			 * But considering how consume_stok works, it's not
-> > @@ -1974,7 +1980,7 @@ again:
-> >  		case CHARGE_OK:
-> >  			break;
-> >  		case CHARGE_RETRY: /* not in OOM situation but retry */
-> > -			csize = PAGE_SIZE;
-> > +			csize = page_size;
-> >  			css_put(&mem->css);
-> >  			mem = NULL;
-> >  			goto again;
-> > @@ -1995,8 +2001,8 @@ again:
-> >  		}
-> >  	} while (ret != CHARGE_OK);
-> >  
-> > -	if (csize > PAGE_SIZE)
-> > -		refill_stock(mem, csize - PAGE_SIZE);
-> > +	if (csize > page_size)
-> > +		refill_stock(mem, csize - page_size);
-> >  	css_put(&mem->css);
-> >  done:
-> >  	*memcg = mem;
-> > @@ -2024,9 +2030,10 @@ static void __mem_cgroup_cancel_charge(s
-> >  	}
-> >  }
-> >  
-> > -static void mem_cgroup_cancel_charge(struct mem_cgroup *mem)
-> > +static void mem_cgroup_cancel_charge(struct mem_cgroup *mem,
-> > +				     int page_size)
-> >  {
-> > -	__mem_cgroup_cancel_charge(mem, 1);
-> > +	__mem_cgroup_cancel_charge(mem, page_size >> PAGE_SHIFT);
-> >  }
-> >  
-> >  /*
-> > @@ -2082,8 +2089,9 @@ struct mem_cgroup *try_get_mem_cgroup_fr
-> >   */
-> >  
-> >  static void __mem_cgroup_commit_charge(struct mem_cgroup *mem,
-> > -				     struct page_cgroup *pc,
-> > -				     enum charge_type ctype)
-> > +				       struct page_cgroup *pc,
-> > +				       enum charge_type ctype,
-> > +				       int page_size)
-> >  {
-> >  	/* try_charge() can return NULL to *memcg, taking care of it. */
-> >  	if (!mem)
-> > @@ -2092,7 +2100,7 @@ static void __mem_cgroup_commit_charge(s
-> >  	lock_page_cgroup(pc);
-> >  	if (unlikely(PageCgroupUsed(pc))) {
-> >  		unlock_page_cgroup(pc);
-> > -		mem_cgroup_cancel_charge(mem);
-> > +		mem_cgroup_cancel_charge(mem, page_size);
-> >  		return;
-> >  	}
-> >  
-> > @@ -2166,7 +2174,7 @@ static void __mem_cgroup_move_account(st
-> >  	mem_cgroup_charge_statistics(from, pc, false);
-> >  	if (uncharge)
-> >  		/* This is not "cancel", but cancel_charge does all we need. */
-> > -		mem_cgroup_cancel_charge(from);
-> > +		mem_cgroup_cancel_charge(from, PAGE_SIZE);
-> >  
-> >  	/* caller should have done css_get */
-> >  	pc->mem_cgroup = to;
-> > @@ -2227,13 +2235,14 @@ static int mem_cgroup_move_parent(struct
-> >  		goto put;
-> >  
-> >  	parent = mem_cgroup_from_cont(pcg);
-> > -	ret = __mem_cgroup_try_charge(NULL, gfp_mask, &parent, false);
-> > +	ret = __mem_cgroup_try_charge(NULL, gfp_mask, &parent, false,
-> > +				      PAGE_SIZE);
-> >  	if (ret || !parent)
-> >  		goto put_back;
-> >  
-> >  	ret = mem_cgroup_move_account(pc, child, parent, true);
-> >  	if (ret)
-> > -		mem_cgroup_cancel_charge(parent);
-> > +		mem_cgroup_cancel_charge(parent, PAGE_SIZE);
-> >  put_back:
-> >  	putback_lru_page(page);
-> >  put:
-> > @@ -2254,6 +2263,10 @@ static int mem_cgroup_charge_common(stru
-> >  	struct mem_cgroup *mem = NULL;
-> >  	struct page_cgroup *pc;
-> >  	int ret;
-> > +	int page_size = PAGE_SIZE;
-> > +
-> > +	if (PageTransHuge(page))
-> > +		page_size <<= compound_order(page);
-> >  
-> >  	pc = lookup_page_cgroup(page);
-> >  	/* can happen at boot */
-> > @@ -2261,11 +2274,11 @@ static int mem_cgroup_charge_common(stru
-> >  		return 0;
-> >  	prefetchw(pc);
-> >  
-> > -	ret = __mem_cgroup_try_charge(mm, gfp_mask, &mem, true);
-> > +	ret = __mem_cgroup_try_charge(mm, gfp_mask, &mem, true, page_size);
-> >  	if (ret || !mem)
-> >  		return ret;
-> >  
-> > -	__mem_cgroup_commit_charge(mem, pc, ctype);
-> > +	__mem_cgroup_commit_charge(mem, pc, ctype, page_size);
-> >  	return 0;
-> >  }
-> >  
-> > @@ -2274,8 +2287,6 @@ int mem_cgroup_newpage_charge(struct pag
-> >  {
-> >  	if (mem_cgroup_disabled())
-> >  		return 0;
-> > -	if (PageCompound(page))
-> > -		return 0;
-> >  	/*
-> >  	 * If already mapped, we don't have to account.
-> >  	 * If page cache, page->mapping has address_space.
-> > @@ -2381,13 +2392,13 @@ int mem_cgroup_try_charge_swapin(struct 
-> >  	if (!mem)
-> >  		goto charge_cur_mm;
-> >  	*ptr = mem;
-> > -	ret = __mem_cgroup_try_charge(NULL, mask, ptr, true);
-> > +	ret = __mem_cgroup_try_charge(NULL, mask, ptr, true, PAGE_SIZE);
-> >  	css_put(&mem->css);
-> >  	return ret;
-> >  charge_cur_mm:
-> >  	if (unlikely(!mm))
-> >  		mm = &init_mm;
-> > -	return __mem_cgroup_try_charge(mm, mask, ptr, true);
-> > +	return __mem_cgroup_try_charge(mm, mask, ptr, true, PAGE_SIZE);
-> >  }
-> >  
-> >  static void
-> > @@ -2403,7 +2414,7 @@ __mem_cgroup_commit_charge_swapin(struct
-> >  	cgroup_exclude_rmdir(&ptr->css);
-> >  	pc = lookup_page_cgroup(page);
-> >  	mem_cgroup_lru_del_before_commit_swapcache(page);
-> > -	__mem_cgroup_commit_charge(ptr, pc, ctype);
-> > +	__mem_cgroup_commit_charge(ptr, pc, ctype, PAGE_SIZE);
-> >  	mem_cgroup_lru_add_after_commit_swapcache(page);
-> >  	/*
-> >  	 * Now swap is on-memory. This means this page may be
-> > @@ -2452,11 +2463,12 @@ void mem_cgroup_cancel_charge_swapin(str
-> >  		return;
-> >  	if (!mem)
-> >  		return;
-> > -	mem_cgroup_cancel_charge(mem);
-> > +	mem_cgroup_cancel_charge(mem, PAGE_SIZE);
-> >  }
-> >  
-> >  static void
-> > -__do_uncharge(struct mem_cgroup *mem, const enum charge_type ctype)
-> > +__do_uncharge(struct mem_cgroup *mem, const enum charge_type ctype,
-> > +	      int page_size)
-> >  {
-> >  	struct memcg_batch_info *batch = NULL;
-> >  	bool uncharge_memsw = true;
-> > @@ -2491,14 +2503,14 @@ __do_uncharge(struct mem_cgroup *mem, co
-> >  	if (batch->memcg != mem)
-> >  		goto direct_uncharge;
-> >  	/* remember freed charge and uncharge it later */
-> > -	batch->bytes += PAGE_SIZE;
-> > +	batch->bytes += page_size;
+But if MDraid can handle discards now with one range, it should not be
+that hard to teach it handle a group of ranges.
 
-Hmm, isn't it simpler to avoid batched-uncharge when page_size > PAGE_SIZE ?
+Greg
 
 
+-- 
+Greg Freemyer
+Head of EDD Tape Extraction and Processing team
+Litigation Triage Solutions Specialist
+http://www.linkedin.com/in/gregfreemyer
+CNN/TruTV Aired Forensic Imaging Demo -
+   http://insession.blogs.cnn.com/2010/03/23/how-computer-evidence-gets-retrieved/
 
-> >  	if (uncharge_memsw)
-> > -		batch->memsw_bytes += PAGE_SIZE;
-> > +		batch->memsw_bytes += page_size;
-> >  	return;
-> >  direct_uncharge:
-> > -	res_counter_uncharge(&mem->res, PAGE_SIZE);
-> > +	res_counter_uncharge(&mem->res, page_size);
-> >  	if (uncharge_memsw)
-> > -		res_counter_uncharge(&mem->memsw, PAGE_SIZE);
-> > +		res_counter_uncharge(&mem->memsw, page_size);
-> >  	if (unlikely(batch->memcg != mem))
-> >  		memcg_oom_recover(mem);
-> >  	return;
-> > @@ -2512,6 +2524,7 @@ __mem_cgroup_uncharge_common(struct page
-> >  {
-> >  	struct page_cgroup *pc;
-> >  	struct mem_cgroup *mem = NULL;
-> > +	int page_size = PAGE_SIZE;
-> >  
-> >  	if (mem_cgroup_disabled())
-> >  		return NULL;
-> > @@ -2519,6 +2532,9 @@ __mem_cgroup_uncharge_common(struct page
-> >  	if (PageSwapCache(page))
-> >  		return NULL;
-> >  
-> > +	if (PageTransHuge(page))
-> > +		page_size <<= compound_order(page);
-> > +
-> >  	/*
-> >  	 * Check if our page_cgroup is valid
-> >  	 */
-> > @@ -2572,7 +2588,7 @@ __mem_cgroup_uncharge_common(struct page
-> >  		mem_cgroup_get(mem);
-> >  	}
-> >  	if (!mem_cgroup_is_root(mem))
-> > -		__do_uncharge(mem, ctype);
-> > +		__do_uncharge(mem, ctype, page_size);
-> >  
-> >  	return mem;
-> >  
-> > @@ -2767,6 +2783,7 @@ int mem_cgroup_prepare_migration(struct 
-> >  	enum charge_type ctype;
-> >  	int ret = 0;
-> >  
-> > +	VM_BUG_ON(PageTransHuge(page));
-> >  	if (mem_cgroup_disabled())
-> >  		return 0;
-> >  
-> > @@ -2816,7 +2833,7 @@ int mem_cgroup_prepare_migration(struct 
-> >  		return 0;
-> >  
-> >  	*ptr = mem;
-> > -	ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, ptr, false);
-> > +	ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, ptr, false, PAGE_SIZE);
-> >  	css_put(&mem->css);/* drop extra refcnt */
-> >  	if (ret || *ptr == NULL) {
-> >  		if (PageAnon(page)) {
-> > @@ -2843,7 +2860,7 @@ int mem_cgroup_prepare_migration(struct 
-> >  		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
-> >  	else
-> >  		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> > -	__mem_cgroup_commit_charge(mem, pc, ctype);
-> > +	__mem_cgroup_commit_charge(mem, pc, ctype, PAGE_SIZE);
-> >  	return ret;
-> >  }
-> >  
-> > @@ -4452,7 +4469,8 @@ one_by_one:
-> >  			batch_count = PRECHARGE_COUNT_AT_ONCE;
-> >  			cond_resched();
-> >  		}
-> > -		ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, &mem, false);
-> > +		ret = __mem_cgroup_try_charge(NULL, GFP_KERNEL, &mem, false,
-> > +					      PAGE_SIZE);
-> >  		if (ret || !mem)
-> >  			/* mem_cgroup_clear_mc() will do uncharge later */
-> >  			return -ENOMEM;
-> > @@ -4614,6 +4632,7 @@ static int mem_cgroup_count_precharge_pt
-> >  	pte_t *pte;
-> >  	spinlock_t *ptl;
-> >  
-> > +	VM_BUG_ON(pmd_trans_huge(*pmd));
-> >  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
-> >  	for (; addr != end; pte++, addr += PAGE_SIZE)
-> >  		if (is_target_pte_for_mc(vma, addr, *pte, NULL))
-> > @@ -4765,6 +4784,7 @@ static int mem_cgroup_move_charge_pte_ra
-> >  	spinlock_t *ptl;
-> >  
-> >  retry:
-> > +	VM_BUG_ON(pmd_trans_huge(*pmd));
-> >  	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
-> >  	for (; addr != end; addr += PAGE_SIZE) {
-> >  		pte_t ptent = *(pte++);
-> > 
-> 
-
-Thanks,
--Kame
-
+The Norcross Group
+The Intersection of Evidence & Technology
+http://www.norcrossgroup.com
