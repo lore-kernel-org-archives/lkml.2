@@ -1,87 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760237Ab0KSBtj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 20:49:39 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31301 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755774Ab0KSBth (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 20:49:37 -0500
-To: Mark Lord <kernel@teksavvy.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
-        Lukas Czerner <lczerner@redhat.com>, tytso@mit.edu,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>
-	<20101118130630.GJ6178@parisc-linux.org>
-	<20101118134804.GN5618@dhcp231-156.rdu.redhat.com>
-	<20101118141957.GK6178@parisc-linux.org>
-	<20101118142918.GA18510@infradead.org>
-	<1290100750.3041.72.camel@mulgrave.site>
-	<x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
-	<1290102098.3041.77.camel@mulgrave.site>
-	<AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>
-	<4CE59E57.2090009@teksavvy.com> <yq1r5eiw5os.fsf@sermon.lab.mkp.net>
-	<4CE5C616.7070706@teksavvy.com>
-Date: Thu, 18 Nov 2010 20:49:04 -0500
-In-Reply-To: <4CE5C616.7070706@teksavvy.com> (Mark Lord's message of "Thu, 18
-	Nov 2010 19:34:30 -0500")
-Message-ID: <yq1eiaiw0a7.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1758674Ab0KSBxb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 20:53:31 -0500
+Received: from mga01.intel.com ([192.55.52.88]:56603 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754730Ab0KSBxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 20:53:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,220,1288594800"; 
+   d="scan'208";a="628259872"
+Date: Fri, 19 Nov 2010 08:32:25 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Paul Mundt <lethal@linux-sh.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+        ak@linux.intel.com, shaohui.zheng@linux.intel.com,
+        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>
+Subject: Re: [2/8,v3] NUMA Hotplug Emulator: infrastructure of NUMA hotplug
+ emulation
+Message-ID: <20101119003225.GB3327@shaohui>
+References: <20101117020759.016741414@intel.com>
+ <20101117021000.568681101@intel.com>
+ <alpine.DEB.2.00.1011162359160.17408@chino.kir.corp.google.com>
+ <20101117075128.GA30254@shaohui>
+ <alpine.DEB.2.00.1011171304060.10254@chino.kir.corp.google.com>
+ <20101118041407.GA2408@shaohui>
+ <20101118062715.GD17539@linux-sh.org>
+ <20101118052750.GD2408@shaohui>
+ <alpine.DEB.2.00.1011181321470.26680@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1011181321470.26680@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Mark" == Mark Lord <kernel@teksavvy.com> writes:
+On Thu, Nov 18, 2010 at 01:24:52PM -0800, David Rientjes wrote:
+> On Thu, 18 Nov 2010, Shaohui Zheng wrote:
+> 
+> > in our draft patch, we re-setup nr_node_ids when CONFIG_ARCH_MEMORY_PROBE enabled 
+> > and mem=XXX was specified in grub. we set nr_node_ids as MAX_NUMNODES + 1, because
+> >  we do not know how many nodes will be hot-added through memory/probe interface. 
+> >  it might be a little wasting of memory.
+> > 
+> 
+> nr_node_ids need not be set to anything different at boot, the 
+> MEM_GOING_ONLINE callback should be used for anything (like the slab 
+> allocators) where a new node is introduced and needs to be dealt with 
+> accordingly; this is how regular memory hotplug works, we need no 
+> additional code in this regard because it's emulated.  If a subsystem 
+> needs to change in response to a new node going online and doesn't as a 
+> result of using your emulator, that's a bug and either needs to be fixed 
+> or prohibited from use with CONFIG_MEMORY_HOTPLUG.
+> 
+> (See the MEM_GOING_ONLINE callback in mm/slub.c, for instance, which deals 
+> only with the case of node hotplug.)
 
-Mark> Surely if a userspace tool and shell-script can accomplish this,
-Mark> totally lacking real filesystem knowledge, then we should be able
-Mark> to approximate it in kernel space?
+nr_node_ids is the possible node number. when we do regular memory online,
+it is oline to a possible node, and it is already counted in to nr_node_ids.
 
-It's the splitting and merging on stacked devices that's the hard
-part. Something wiper.sh does not have to deal with. And thanks to
-differences in the protocols the SCSI-ATA translation isn't a perfect
-fit.
+if you increment nr_node_ids dynamically when node online, it causes a lot of
+problems. Many data are initialized according to nr_node_ids. That is our
+experience when we debug the emulator.
 
-Every time TRIM comes up the discussion turns into how much we suck at
-it because we don't support coalescing of discontiguous ranges.
+mm/page_alloc.c:
+/*
+ * Figure out the number of possible node ids.
+ */
+static void __init setup_nr_node_ids(void)
+{
+	unsigned int node;
+	unsigned int highest = 0;
 
-However, we *do* support discarding contiguous ranges of up to about 2GB
-per command on ATA. It's not like we're issuing a TRIM command for every
-sector.
+	for_each_node_mask(node, node_possible_map)
+		highest = node;
+	nr_node_ids = highest + 1;
+}
 
-For offline/weekly reclaim/FITRIM we have the full picture when the
-discard is issued. And thus we have the luxury of being able to send out
-relatively big contiguous discards unless the filesystem is insanely
-fragmented.
-
-For runtime discard usage we'll inevitably be issuing lots of itty-bitty
-512 or 4KB single-command discards. That's going to suck for performance
-on your average ATA SSD. Doctor, it hurts when I do this...
-
-So assuming we walk the filesystem to reclaim space on ATA SSDs on a
-weekly basis (since that's the only sane approach): 
-
-       What is the performance impact of not coalescing discontiguous
-       block ranges when cron scrubs your /home at 4am Sunday morning?
-
-That, to me, is the important question. That obviously depends on the
-SSD, filesystem, fragmentation and so on. Is the win really big enough
-to justify a bunch of highly intrusive changes to our I/O stack?
-
-Thanks to PCIe SSDs and other upcoming I/O technologies we're working
-hard to bring request latency down by simplifying things. Adding
-complexity seems like a bad idea at this time. And that was the
-rationale behind the consensus at the filesystem workshop.
+There is no conflict between emulator and CONFIG_MEMORY_HOTPLUG. A real node can be
+ onlined because we already set it as _possible_; if emulator is enabled, all the 
+nodes were marked as _possbile_ node, the real ndoe is also included in.
 
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+Thanks & Regards,
+Shaohui
+
