@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932424Ab0KSXR6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 18:17:58 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36762 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932211Ab0KSXR4 convert rfc822-to-8bit (ORCPT
+	id S932508Ab0KSXUN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 18:20:13 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51644 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932372Ab0KSXUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 18:17:56 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FL0ikLc+IZCGcNH4n1TcJNtXQ8+nmClgWiDM8X9KqxfJ1P3+VZmkzcPBIoAnnTHsYt
-         ymoO1SoVb4TTBuYHIJV0M2Om5eRAVpXS/CSUk3GcSzlTPtzMWkfIwQaBaVX82aaxk4H/
-         0goq1ssvovPYspRmT6CHDPljyinZINKCEj3ZI=
-MIME-Version: 1.0
-In-Reply-To: <4CE70543.2000206@teksavvy.com>
-References: <tTUH_XeInOH.A.dMF.c3b5MB@chimera>
-	<4CE5C919.7090504@teksavvy.com>
-	<AANLkTi=8G7pNA7QTxaXDWKrWrCERPfmKU+nLJWCA=JUH@mail.gmail.com>
-	<4CE7006E.4040102@teksavvy.com>
-	<AANLkTim9aXi1_EJyh2f-+X4HnNWJ3uk2z=P6m1hQso5a@mail.gmail.com>
-	<4CE70543.2000206@teksavvy.com>
-Date: Fri, 19 Nov 2010 18:17:54 -0500
-Message-ID: <AANLkTi==0+pNswCwfgo5v5tKA+Qkq7UfRdH4ftEqx7rf@mail.gmail.com>
-Subject: Re: 2.6.37-rc2-git4: Reported regressions 2.6.35 -> 2.6.36
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 19 Nov 2010 18:20:11 -0500
+Date: Fri, 19 Nov 2010 15:19:49 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: michalj@gmail.com, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Rolf Eike Beer <eike-kernel@sf-tec.de>, linux-kernel@vger.kernel.org,
+        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
+Subject: Re: abs() vs. abs64() (was: Re: [PATCH] fbdev: fix nearest mode
+ search)
+Message-Id: <20101119151949.b7e514f7.akpm@linux-foundation.org>
+In-Reply-To: <20101119150411.81092e94.akpm@linux-foundation.org>
+References: <AANLkTimYDAJr9x00sjGGnDF2vOVXU12qmbnmfuzA5_0h@mail.gmail.com>
+	<20101119140721.33576c61.akpm@linux-foundation.org>
+	<20101119222823.GA28797@quadria>
+	<20101119150411.81092e94.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 6:16 PM, Mark Lord <kernel@teksavvy.com> wrote:
-> On 10-11-19 05:58 PM, Alex Deucher wrote:
->>
->> On Fri, Nov 19, 2010 at 5:55 PM, Mark Lord<kernel@teksavvy.com>  wrote:
->>
->>> It now comes back at resume time.
->>
->> So that patch helped?
->
-> I think so.  It didn't used to resume from suspend with 2.6.36, and now it
-> does.
->
->>> But suffers long delays (also sometimes with 2.6.35) doing this:
->>>
->>> [drm:atom_op_jump] *ERROR* atombios stuck in loop for more than 5secs
->>> aborting
->>> [drm:atom_execute_table_locked] *ERROR* atombios stuck executing E576
->>> (len
->>> 105, WS 12, PS 8) @ 0xE5C4
->>> [drm:atom_op_jump] *ERROR* atombios stuck in loop for more than 5secs
->>> aborting
->>> [drm:atom_execute_table_locked] *ERROR* atombios stuck executing ECD2
->>> (len
->>> 86, WS 4, PS 0) @ 0xED05
->>> [drm:atom_op_jump] *ERROR* atombios stuck in loop for more than 5secs
->>> aborting
->>> [drm:atom_execute_table_locked] *ERROR* atombios stuck executing E576
->>> (len
->>> 105, WS 12, PS 8) @ 0xE5C4
->>> PM: resume of devices complete after 15718.253 msecs
->>>
->>
->> It's be nice if you could bisect to track down when those started.
->
-> It'd be even nicer if they hadn't started.  :)
->
-> What kernel release first had that atom/ops table in it?  I'll try that.
->
+On Fri, 19 Nov 2010 15:04:11 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-2.6.31 or 32 was when radeon kms got merged IIRC.
+> > Looks good to me.  I posted essentially the same thing some 3 months ago
+> > (http://marc.info/?l=linux-kernel&m=128033094822201&w=2) but it then
+> > failed to get any traction.  At any rate, I like your version better as
+> > it seems more readable.
+> > 
+> 
+> I spose we should document it.   Does this look complete and accurate?
+> 
+> --- a/include/linux/kernel.h~include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit-fix
+> +++ a/include/linux/kernel.h
+> @@ -143,6 +143,13 @@ extern int _cond_resched(void);
+>  
+>  #define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
+>  
+> +/*
+> + * abs() handles unsigned and signed longs, ints, shorts and chars.  For long
+> + * types it returns a signed long.  For int, short and char types it returns a
+> + * signed int.
+> + * abs() should not be used for 64-bit types (s64, u64, long long) - use abs64()
+> + * for those.
+> + */
+>  #define abs(x) ({						\
+>  		long ret;					\
+>  		if (sizeof(x) == sizeof(long)) {		\
 
-Alex
+Well that was a load of bollocks.  2nd attempt:
+
+--- a/include/linux/kernel.h~include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit-fix
++++ a/include/linux/kernel.h
+@@ -143,6 +143,12 @@ extern int _cond_resched(void);
+ 
+ #define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
+ 
++/*
++ * abs() handles unsigned and signed longs, ints, shorts and chars.  For all
++ * input types abs() returns a signed long.
++ * abs() should not be used for 64-bit types (s64, u64, long long) - use abs64()
++ * for those.
++ */
+ #define abs(x) ({						\
+ 		long ret;					\
+ 		if (sizeof(x) == sizeof(long)) {		\
+_
+
