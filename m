@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab0KSQUQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:20:16 -0500
-Received: from hera.kernel.org ([140.211.167.34]:53577 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755155Ab0KSQUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:20:15 -0500
-Message-ID: <4CE6A397.6010105@kernel.org>
-Date: Fri, 19 Nov 2010 17:19:35 +0100
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+	id S1755591Ab0KSQVY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:21:24 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61049 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755319Ab0KSQVX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 11:21:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=O7BGjG5O1R21A3TduIqFyXmomuhsbAaw/9X20HCkGD4ZayUc5iBG2CZpQuxjJAMEkf
+         pn9il5UG8WcZ8zCEIUxRFcmxp7SR1f6ZwLDit+D0M0/wUurxhMamIdbj8bUoqpmqGKA5
+         8PTMcMwY/nBYw9WHixveDH6h5u6WcHhv+Vvbw=
 MIME-Version: 1.0
-To: Alexey Dobriyan <adobriyan@gmail.com>
-CC: Kirill Korotaev <dev@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Kapil Arya <kapil@ccs.neu.edu>, Gene Cooperman <gene@ccs.neu.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Containers <containers@lists.osdl.org>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-References: <20101104164401.GC10656@sundance.ccs.neu.edu>	<4CD3CE29.2010105@kernel.org>	<20101106053204.GB12449@count0.beaverton.ibm.com>	<20101106204008.GA31077@sundance.ccs.neu.edu>	<4CD5D99A.8000402@cs.columbia.edu>	<20101107184927.GF31077@sundance.ccs.neu.edu>	<4CD72150.9070705@cs.columbia.edu>	<4CE3C334.9080401@kernel.org>	<20101117153902.GA1155@hallyn.com>	<4CE3F8D1.10003@kernel.org>	<20101119041045.GC24031@hallyn.com>	<4CE683E1.6010500@kernel.org>	<04F4899E-B5C7-4BAF-8F2F-05D507A91408@parallels.com>	<4CE698C5.5060806@kernel.org>	<AANLkTikRHuaCpaROtty6X_Oe6JixzgcbVsxHxvtsu+UV@mail.gmail.com>	<4CE6A076.2020807@kernel.org> <AANLkTikz++4_SvqU_Wvx5CjcpKJhPsD7q470swdqwn94@mail.gmail.com>
-In-Reply-To: <AANLkTikz++4_SvqU_Wvx5CjcpKJhPsD7q470swdqwn94@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
+In-Reply-To: <20101119115516.GA1152@infradead.org>
+References: <20101118141957.GK6178@parisc-linux.org> <20101118142918.GA18510@infradead.org>
+ <1290100750.3041.72.camel@mulgrave.site> <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
+ <1290102098.3041.77.camel@mulgrave.site> <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>
+ <4CE59E57.2090009@teksavvy.com> <yq1r5eiw5os.fsf@sermon.lab.mkp.net>
+ <4CE5C616.7070706@teksavvy.com> <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com>
+ <20101119115516.GA1152@infradead.org>
+From: Greg Freemyer <greg.freemyer@gmail.com>
+Date: Fri, 19 Nov 2010 08:20:58 -0800
+Message-ID: <AANLkTimQZKLtKpKRUJ-KyCyo29F_Mnws8J54G3CeMkyc@mail.gmail.com>
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Mark Lord <kernel@teksavvy.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Moyer <jmoyer@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        tytso@mit.edu, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 19 Nov 2010 16:19:37 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2010 05:16 PM, Alexey Dobriyan wrote:
-> On Fri, Nov 19, 2010 at 6:06 PM, Tejun Heo <tj@kernel.org> wrote:
->>>>> - setting different statistics counters (like netdev stats etc.)
->>>>> and so on...
->>>>
->>>> Why would this matter?
->>>
->>> Because you'll introduce million stupid interfaces not interesting to
->>> anyone but C/R.
+On Fri, Nov 19, 2010 at 3:55 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Thu, Nov 18, 2010 at 05:16:36PM -0800, Greg Freemyer wrote:
+>> I agree with Mark.  When you say "make coalescing work" it sounds like
+>> major overkill.
 >>
->> In this thread, how many have you guys come up with?  Not even a dozen
->> and most can be sovled almost trivially.  Seriously, what the hell..
-> 
-> I do not count them.
-> 
-> The paragon of absurdity is struct task_struct::did_exec .
+>> FITRIM should be able to lock a group of non-contiguous free ranges,
+>> send them down to the block layer as a single pre-coalesced set, and
+>> the block layer just needs to pass it on in a synchronous way.  Then
+>> when that group of ranges is discarded, FITRIM releases the locks.
+>
+> Given that you know the Linux I/O stack and hardware so well may I
+> volunteer you to implement it?  Including remapping the multiple ranges
+> in device mapper, and dealing with the incompatible range formats for
+> TRIM vs UNMAP.  If your implementation is clean enough I'm pretty
+> sure no one will object to merge it.
+>
+>> Every TRIM causes a cache flush anyway on the SSD, so the synchronous
+>> aspect of the process should not be a problem.  (Maybe SCSI with thin
+>> provisioning would see a performance hit?)
+>
+> What's your evidence?
 
-Yeah, then go and figure how to do that in a way which would be useful
-for other purposes too instead of trying to shove the whole
-checkpointer inside the kernel.  It sure would be harder but hey
-that's the way it is.
+The kernel team has been coding around some Utopian SSD TRIM
+implementation for at least 2 years with the basic assumption that
+SSDs can handle thousands of trims per second.  Just mix em in with
+the rest of the i/o.  No problem.  Intel swore to us its the right
+thing to do.
 
--- 
-tejun
+I'm still waiting to see the first benchmark report from anywhere
+(SSD, Thin Provisioned SCSI) that the online approach used by mount -o
+discard is a win performance wise.  Linux has a history of designing
+for reality, but for some reason when it comes to SSDs reality seems
+not to be a big concern.
+
+Greg
