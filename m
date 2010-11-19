@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab0KSTyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 14:54:15 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40333 "EHLO
+	id S932102Ab0KSTzR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 14:55:17 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44823 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756494Ab0KSTyO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 14:54:14 -0500
+	by vger.kernel.org with ESMTP id S1756494Ab0KSTzQ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 14:55:16 -0500
 MIME-Version: 1.0
-In-Reply-To: <87mxp53z72.fsf@gmail.com>
-References: <C47257FC-498A-41B0-BC94-C81C72601D53@mit.edu> <20101119.082944.226775934.davem@davemloft.net>
- <20101119163430.GA12353@tango.0pointer.de> <20101119.084302.71115175.davem@davemloft.net>
- <AANLkTiksmvcLKGx7-u5CnTnZU6dgOgg7wem6qf384zUg@mail.gmail.com> <87mxp53z72.fsf@gmail.com>
+In-Reply-To: <20101119191906.GA31760@xanatos>
+References: <20101116104600.GA24015@suse.de> <20101119191906.GA31760@xanatos>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 19 Nov 2010 11:48:04 -0800
-Message-ID: <AANLkTi=XPxnrKKu5yuJSpJjVis7MnP5d1bvhT_gKHJyV@mail.gmail.com>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-To: Ben Gamari <bgamari.foss@gmail.com>
-Cc: David Miller <davem@davemloft.net>, mzxreary@0pointer.de, tytso@mit.edu,
-        a.p.zijlstra@chello.nl, debiandev@gmail.com, alan@lxorguk.ukuu.org.uk,
-        dhaval.giani@gmail.com, efault@gmx.de, vgoyal@redhat.com,
-        oleg@redhat.com, markus@trippelsdorf.de,
-        mathieu.desnoyers@efficios.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com
+Date: Fri, 19 Nov 2010 11:54:26 -0800
+Message-ID: <AANLkTi=OsWEdrfCOHKz+SAtqo7DmK0nNxku7Ev21f0Lh@mail.gmail.com>
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of attacking
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Marcus Meissner <meissner@suse.de>, linux-kernel@vger.kernel.org,
+        tj@kernel.org, akpm@linux-foundation.org, hpa@zytor.com, mingo@elte.hu,
+        w@1wt.eu, alan@lxorguk.ukuu.org.uk
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 11:12 AM, Ben Gamari <bgamari.foss@gmail.com> wrote:
+On Fri, Nov 19, 2010 at 11:19 AM, Sarah Sharp
+<sarah.a.sharp@linux.intel.com> wrote:
 >
-> On that note, is there a good reason why the notify_on_release interface
-> works the way it does? Wouldn't it be simpler if the cgroup simply
-> provided a file on which a process (e.g. systemd) could block?
+> .config and dmesg are attached.  The box is running klogd 1.5.5ubuntu3
+> (from Jaunty).  Yes, I know that's old.  I read the bit in the commit
+> about changing the permissions of kallsyms after boot, but if I can't
+> boot that doesn't help.  Perhaps this can be made a configuration
+> option?
 
-Actually, the sane interface would likely just be to have a "drop on
-release" interface.
+It's not worth a config option.
 
-Maybe some people really want to be _notified_. But my guess would
-that that just dropping the cgroup when it becomes empty would be at
-least a reasonable subset of users.
+If it actually breaks user-space, I think we should just revert it.
+It's kind of sad to default to the world-visible thing, but as I
+mentioned in the commit, this is something where a sysadmin or distro
+can trivially just fix it at boot-time too, with just a
 
-Who uses that thing now? The desktop launcher/systemd approach
-definitely doesn't seem want the overhead of being notified and having
-to remove it manually. Does anybody else really want it?
+   chmod og-r /proc/kallsyms
 
-But that's really an independent question from all the other things.
-But with new cgroup users, it's very possible that it turns out that
-some of the original interfaces are just inconvenient and silly.
+in your bootup scripts.
 
-                   Linus
+And if somebody has taken control of the machine _before_ the bootup
+scripts get to run, you have bigger problems than a /proc/kallsyms
+file.
+
+So I guess I'll revert it.
+
+Thanks for testing and bisecting.
+
+                      Linus
