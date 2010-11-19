@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab0KSQis (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:38:48 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:49521 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753190Ab0KSQiq (ORCPT
+	id S1755748Ab0KSQjA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:39:00 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52526 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585Ab0KSQi4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:38:46 -0500
-Date: Fri, 19 Nov 2010 11:38:28 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Greg Freemyer <greg.freemyer@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Mark Lord <kernel@teksavvy.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jeff Moyer <jmoyer@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
-        tytso@mit.edu, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
- super_operation
-Message-ID: <20101119163828.GA8023@infradead.org>
-References: <1290100750.3041.72.camel@mulgrave.site>
- <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
- <1290102098.3041.77.camel@mulgrave.site>
- <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>
- <4CE59E57.2090009@teksavvy.com>
- <yq1r5eiw5os.fsf@sermon.lab.mkp.net>
- <4CE5C616.7070706@teksavvy.com>
- <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com>
- <20101119115516.GA1152@infradead.org>
- <AANLkTimQZKLtKpKRUJ-KyCyo29F_Mnws8J54G3CeMkyc@mail.gmail.com>
+	Fri, 19 Nov 2010 11:38:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UGExl26XZ1vXgCHmvnMrtkLJXSZ6/XrWgWlUdN2+LreBHzrcQwXQX3onGmHB+E5u0E
+         jtBvoPLYox9IVx0im1++qlED5kgE1ruoVvS0g6F0ey6em1S0gvHgViX6yI4eDa8cII5g
+         pTs463SLtw8wzq05SmpEhkj8bnF9VOSxktIbQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimQZKLtKpKRUJ-KyCyo29F_Mnws8J54G3CeMkyc@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <4CE6A69F.4030008@kernel.org>
+References: <20101104164401.GC10656@sundance.ccs.neu.edu>
+	<4CD3CE29.2010105@kernel.org>
+	<20101106053204.GB12449@count0.beaverton.ibm.com>
+	<20101106204008.GA31077@sundance.ccs.neu.edu>
+	<4CD5D99A.8000402@cs.columbia.edu>
+	<20101107184927.GF31077@sundance.ccs.neu.edu>
+	<4CD72150.9070705@cs.columbia.edu>
+	<4CE3C334.9080401@kernel.org>
+	<20101117153902.GA1155@hallyn.com>
+	<4CE3F8D1.10003@kernel.org>
+	<20101119041045.GC24031@hallyn.com>
+	<4CE683E1.6010500@kernel.org>
+	<04F4899E-B5C7-4BAF-8F2F-05D507A91408@parallels.com>
+	<4CE698C5.5060806@kernel.org>
+	<AANLkTikRHuaCpaROtty6X_Oe6JixzgcbVsxHxvtsu+UV@mail.gmail.com>
+	<4CE6A076.2020807@kernel.org>
+	<AANLkTikz++4_SvqU_Wvx5CjcpKJhPsD7q470swdqwn94@mail.gmail.com>
+	<4CE6A397.6010105@kernel.org>
+	<AANLkTin7kd3crS+fTLLea5PhAii7B3dz=n7p7YtQ6d4g@mail.gmail.com>
+	<4CE6A69F.4030008@kernel.org>
+Date: Fri, 19 Nov 2010 18:38:55 +0200
+Message-ID: <AANLkTim-M02Z1igZ4LyXH_Qgyzx1iD0ZQkRT6dxcSE3P@mail.gmail.com>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Kirill Korotaev <dev@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kapil Arya <kapil@ccs.neu.edu>, Gene Cooperman <gene@ccs.neu.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Containers <containers@lists.osdl.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 08:20:58AM -0800, Greg Freemyer wrote:
-> The kernel team has been coding around some Utopian SSD TRIM
-> implementation for at least 2 years with the basic assumption that
-> SSDs can handle thousands of trims per second.  Just mix em in with
-> the rest of the i/o.  No problem.  Intel swore to us its the right
-> thing to do.
+On Fri, Nov 19, 2010 at 6:32 PM, Tejun Heo <tj@kernel.org> wrote:
+> On 11/19/2010 05:27 PM, Alexey Dobriyan wrote:
+>> On Fri, Nov 19, 2010 at 6:19 PM, Tejun Heo <tj@kernel.org> wrote:
+>>>> The paragon of absurdity is struct task_struct::did_exec .
+>>>
+>>> Yeah, then go and figure how to do that in a way which would be useful
+>>> for other purposes too instead of trying to shove the whole
+>>> checkpointer inside the kernel.  It sure would be harder but hey
+>>> that's the way it is.
+>>
+>> System call for one bit? This is ridiculous.
+>
+> Why not just a flag in proc entry?  It's a frigging single bit.
 
-Thanks Greg, good that you told us what we've been doing.  I would have
-forgot myself if you didn't remember me.
+Because /proc/*/did_exec useless to anyone but C/R (even for reading!).
 
-> I'm still waiting to see the first benchmark report from anywhere
-> (SSD, Thin Provisioned SCSI) that the online approach used by mount -o
-> discard is a win performance wise.  Linux has a history of designing
-> for reality, but for some reason when it comes to SSDs reality seems
-> not to be a big concern.
+Because code is much simpler:
 
-Both Lukas and I have done extensive benchmarks on various SSDs and
-thinkly provisioned raids.  Unfortunately most of the hardware is only
-available under NDA so we can't publish it.
-
-For the XFS side which I've looked it I can summarize that we do have
-arrays that do the online discard without measureable performance
-penalty on various workloads, and we have devices (both SSDs and arrays)
-where the overhead is incredibly huge.  I can also say that doing the
-walk of the freespace btrees similar to the offline discard, but every
-30 seconds or at a similarly high interval is a sure way to completely
-kill performance.
-
-Or in short we haven't fund the holy grail yet.
-
+    tsk->did_exec = !!tsk_img->did_exec;
++
+    __u8 did_exec;
