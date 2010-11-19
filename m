@@ -1,92 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab0KSR4e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 12:56:34 -0500
-Received: from fieldses.org ([174.143.236.118]:60795 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754970Ab0KSR4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 12:56:33 -0500
-Date: Fri, 19 Nov 2010 12:56:28 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        jmorris@namei.org, akpm@linux-foundation.org, eparis@redhat.com,
-        viro@zeniv.linux.org.uk, Dave Chinner <david@fromorbit.com>,
-        David Safford <safford@watson.ibm.com>
-Subject: Re: [PATCH v1.2 0/5] IMA: making i_readcount a first class inode
- citizen (reposting)
-Message-ID: <20101119175628.GD29148@fieldses.org>
-References: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
- <AANLkTin9sYf99fQ_w7Bp4N6Gsm3PR0akpCU=4YEkOaez@mail.gmail.com>
- <20101119175053.GC29148@fieldses.org>
+	id S1756144Ab0KSSAV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:00:21 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47677 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622Ab0KSSAU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 13:00:20 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=bPXnRg77ki9HRaxKy45UmBiIxQQ4a1WwscRjcd9kBQVdiWyAv9gaVm8+1NTnHRwO/+
+         2wIbY1UWNLsi7hzwRi0sE9OCrWKQdOfWzEss9/Z6tlY+p4RGBz0ABBezdfQb7q43MuKE
+         81v9GqDTLt3Y059s4bs9JN4r2pRXEEH0gZaX8=
+Message-ID: <4CE6BB4A.5060606@gmail.com>
+Date: Fri, 19 Nov 2010 21:00:42 +0300
+From: Vladislav Bolkhovitin <vvvvvst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101119175053.GC29148@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <greg@kroah.com>
+CC: Richard Williams <richard@etechsoft.com>,
+        Bart Van Assche <bvanassche@acm.org>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        Hannes Reinecke <hare@suse.de>, Andy Yan <ayan@marvell.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Vu Pham <vuhuong@mellanox.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joel Becker <joel.becker@oracle.com>
+Subject: Re: [Scst-devel] [PATCH 8/19]: SCST SYSFS interface implementation
+References: <20101112012315.GE17097@core.coreip.homeip.net> <4CDEC8D2.8080101@vlnb.net> <20101113235938.GA1827@kroah.com> <4CE1017E.4090409@panasas.com> <20101115161620.GB5981@kroah.com> <4CE16B8E.1000300@panasas.com> <AANLkTikPVXGJ5-5YDk1uqfqrqxGLpSiSdaX3h7qxo-ie@mail.gmail.com> <8985DEAF-4227-4629-B90A-938D2BA3534E@etechsoft.com> <4CE2846C.6070501@vlnb.net> <4CE59482.3050002@gmail.com> <20101118214619.GA29097@kroah.com>
+In-Reply-To: <20101118214619.GA29097@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 12:50:53PM -0500, J. Bruce Fields wrote:
-> On Thu, Nov 18, 2010 at 03:31:10PM -0800, Linus Torvalds wrote:
-> > On Thu, Nov 18, 2010 at 3:02 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > >
-> > > This patchset separates the incrementing/decrementing of the i_readcount, in
-> > > the VFS layer, from other IMA functionality, by replacing the current
-> > > ima_counts_get() call with i_readcount_inc(). Its unclear whether this call to
-> > > increment i_readcount should be made earlier, like i_writecount.  Currently the
-> > > call is situated immediately after the switch from put_filp() to fput() for
-> > > cleanup.
-> > 
-> > Well, it seems nicer than the situation we have now. So I'm certainly
-> > ok with seeing this merged for 2.6.38 (through the security tree?) if
-> > nobody has objections.
-> > 
-> > It's a bit sad to have another atomic in the open path, but if the
-> > lease people want this and are ok with just the counter (no races?)
-> > then it seems worth it.
+Greg KH, on 11/19/2010 12:46 AM wrote:
+> On Fri, Nov 19, 2010 at 12:02:58AM +0300, Vladislav Bolkhovitin wrote:
+>> Since nobody objected, Greg, could you consider to ACK SCST SYSFS
+>> management interface in /sys/kernel/scst_tgt/, please? Please find the
+>> SCST SYSFS ABI documentation file you requested below.
 > 
-> Having thought about it more, I'm no longer convinced it will be useful
-> for leases.
-> 
-> It seems attractive to replace the current d_count/i_count checks by an
-> i_readcount check, but:
-> 
-> 	1) as long as break_lease() is called before i_readcount_inc(),
-> 	   there's a window between the two where setlease has no way to
-> 	   tell whether a read open is about to happen;
-> 
-> 	2) more importantly, it won't help file servers, which need more
-> 	   than mutual exclusion between opens and leases.
-> 
-> Number 2 in more detail:
-> 
-> Write leases exist to let a file server (nfsd or Samba) tell a client
-> that it has exclusive access to a file, so that the client can delay
-> writes, knowing that it will be notified on lease break (and given a
-> chance to write back dirty data) before someone else can look at the
-> file.
-> 
-> But say someone modifies a file on a client and then runs "make" on the
-> server.  The "make" needs to know about the modifications.  But make only
-> stat's the file, doesn't open it....
-> 
-> We can break leases on stat, but on its own that's racy--setlease needs
-> some way to determine whether a lease is in progress.  And i_readlease()
+> No, sorry, again, you should not be using kobjects, and do not polute
+> the main /sys/kernel/ namespace with this.
 
-(err, I meant i_readcount).
+Which other namespace should we "polute" then?
 
-> doesn't help there, unless we decide we're going to temporarily
-> increment that around every stat.  (But if another atomic in the open
-> path is bad, another in the stat path sounds worse--and it's probably
-> not the semantics ima needs anyway.)
+> Use 'struct device' please, that is what it is there for, and is what
+> the rest of the kernel is using. And use the rest of the
+> driver/bus/device infrastructure as your model will work with it just
+> fine.
 
-Anyway, so I've got nothing against i_readlease, but I don't see how to
-use them for the write lease implementation--it looks to me like we're
-better off living with d_count/i_count checks.  They give false
-positives, but I don't think some false positives are really a problem.
+Greg, sorry, I don't understand your requirements and, because of this,
+we can't go ahead implementing them. Could you explain your position,
+please?
 
---b.
+None of the SCST objects are Linux devices. None of them has entries in
+/dev, none of them needs to send any events to udev and none of them
+sends or receives data from DMA, hence has any DMA parameters or
+restrictions. So, how can them fit into the driver/bus/device model you
+are enforcing?
+
+For instance:
+
+ - struct sgv_pool (/sys/kernel/scst_tgt/sgv/<cache>) is an SG vectors
+cache. Isn't it a nonsense to make it device?
+
+ - struct scst_acg
+(/sys/kernel/scst_tgt/targets/<target_driver>/<target>/ini_groups/<group>/)
+is an access control group to define which initiators see which LUNs
+from target <target>. Same, isn't it a nonsense to make it device?
+
+ - struct scst_acn
+(/sys/kernel/scst_tgt/targets/<target_driver>/<target>/ini_groups/<group>/initiators/<initiator_name>)
+is an entry in the access control group <group> to define which
+initiators should use group <group>. Again, isn't it a nonsense to make
+it device?
+
+Etc.
+
+How could they fit in the driver/bus/device model?
+
+I guess, your confusion comes from word "device" you see in the SCST
+SYSFS tree and SCST supposed to work with "devices" and "dev handlers"?
+But those devices are not Linux devices, they are just objects to couple
+initiators' requests and backstorage which stores data.
+
+In other words, SCST devices are just redirection points passing
+incoming requests to Linux files and devices.
+
+SCST devices are the same as NFS exported directories. Do you believe,
+that struct device must be created for each NFS export?
+
+In the cases when we need to present SCST devices as Linux devices we
+use scst_local driver [1], which performs it exactly as you requesting,
+i.e. doing:
+
+root_device_register()
+bus_register()
+driver_register()
+...
+
+> Yes, I know you said you didn't think you could use it, and that your
+> code was different than everyone elses, but I still do not believe it,
+> sorry.
+
+What can we do to make you believe it? Shall we write a document
+describing all SCST objects and their relationship between each other?
+(Although looks like you haven't read even detailed docs we already
+written...)
+
+Our position is based on careful study of all possible alternatives and
+10+ years of Linux kernel development.
+
+SCST is being developed for 7+ years and, despite of not being mainline,
+has proved those years being the right way to go, not the mainline STGT
+which was chosen 5 years ago as the right way, but now we are
+considering to replace it.
+
+Sorry, but we have an impression that you are judging without seeing the
+full picture. Isn't it a duty of a subsystem's maintainer to see full
+picture before deciding if it's good or bad?
+
+We appreciate your effort reviewing SCST and willing to make all the
+needed actions to help you.
+
+The world of SCSI targets is pretty complex (I have been studying it for
+7+ years), hence SCST is very big (20K LOC only core) and hard to
+understand. But is it a sufficient reason to force to convert elegant,
+nice and carefully thought design into something ugly, hardly usable and
+hardly maintainable? If we do it, that wouldn't make SCST simpler to
+review. Opposite, it would make it HARDER to review.
+
+Thanks,
+Vlad
+
+[1] Patch for scst_local you can find in http://lkml.org/lkml/2010/10/1/131)
