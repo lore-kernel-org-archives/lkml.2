@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932417Ab0KSVpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:45:47 -0500
-Received: from kroah.org ([198.145.64.141]:51904 "EHLO coco.kroah.org"
+	id S932432Ab0KSVpt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:45:49 -0500
+Received: from kroah.org ([198.145.64.141]:51893 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932393Ab0KSVpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932363Ab0KSVpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Nov 2010 16:45:43 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:12 2010
-Message-Id: <20101119214412.882240243@clark.site>
+Message-Id: <20101119214412.717436655@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:43:22 -0800
+Date: Fri, 19 Nov 2010 13:43:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <error27@gmail.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [42/45] [SCSI] gdth: integer overflow in ioctl
+        Michael Reed <mdr@sgi.com>, James Bottomley <James.Bottomley@suse.de>
+Subject: [40/45] [SCSI] sd name space exhaustion causes system hang
 In-Reply-To: <20101119214439.GA26350@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Michael Reed <mdr@sgi.com>
 
-commit f63ae56e4e97fb12053590e41a4fa59e7daa74a4 upstream.
+commit 1a03ae0f556a931aa3747b70e44b78308f5b0590 upstream.
 
-gdth_ioctl_alloc() takes the size variable as an int.
-copy_from_user() takes the size variable as an unsigned long.
-gen.data_len and gen.sense_len are unsigned longs.
-On x86_64 longs are 64 bit and ints are 32 bit.
+Following a site power outage which re-enabled all the ports on my FC
+switches, my system subsequently booted with far too many luns!  I had
+let it run hoping it would make multi-user.  It didn't.  :(  It hung solid
+after exhausting the last sd device, sdzzz, and attempting to create sdaaaa
+and beyond.  I was unable to get a dump.
 
-We could pass in a very large number and the allocation would truncate
-the size to 32 bits and allocate a small buffer.  Then when we do the
-copy_from_user(), it would result in a memory corruption.
+Discovered using a 2.6.32.13 based system.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+correct this by detecting when the last index is utilized and failing
+the sd probe of the device.  Patch applies to scsi-misc-2.6.
+
+Signed-off-by: Michael Reed <mdr@sgi.com>
 Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/gdth.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/scsi/sd.c |   15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/scsi/gdth.c
-+++ b/drivers/scsi/gdth.c
-@@ -4174,6 +4174,14 @@ static int ioc_general(void __user *arg,
-     ha = gdth_find_ha(gen.ionode);
-     if (!ha)
-         return -EFAULT;
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2049,11 +2049,10 @@ static void sd_probe_async(void *data, a
+ 	index = sdkp->index;
+ 	dev = &sdp->sdev_gendev;
+ 
+-	if (index < SD_MAX_DISKS) {
+-		gd->major = sd_major((index & 0xf0) >> 4);
+-		gd->first_minor = ((index & 0xf) << 4) | (index & 0xfff00);
+-		gd->minors = SD_MINORS;
+-	}
++	gd->major = sd_major((index & 0xf0) >> 4);
++	gd->first_minor = ((index & 0xf) << 4) | (index & 0xfff00);
++	gd->minors = SD_MINORS;
 +
-+    if (gen.data_len > INT_MAX)
-+        return -EINVAL;
-+    if (gen.sense_len > INT_MAX)
-+        return -EINVAL;
-+    if (gen.data_len + gen.sense_len > INT_MAX)
-+        return -EINVAL;
+ 	gd->fops = &sd_fops;
+ 	gd->private_data = &sdkp->driver;
+ 	gd->queue = sdkp->device->request_queue;
+@@ -2142,6 +2141,12 @@ static int sd_probe(struct device *dev)
+ 	if (error)
+ 		goto out_put;
+ 
++	if (index >= SD_MAX_DISKS) {
++		error = -ENODEV;
++		sdev_printk(KERN_WARNING, sdp, "SCSI disk (sd) name space exhausted.\n");
++		goto out_free_index;
++	}
 +
-     if (gen.data_len + gen.sense_len != 0) {
-         if (!(buf = gdth_ioctl_alloc(ha, gen.data_len + gen.sense_len,
-                                      FALSE, &paddr)))
+ 	error = sd_format_disk_name("sd", index, gd->disk_name, DISK_NAME_LEN);
+ 	if (error)
+ 		goto out_free_index;
 
 
