@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394Ab0KSJvJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 04:51:09 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:40653 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab0KSJvI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 04:51:08 -0500
-Date: Fri, 19 Nov 2010 10:51:03 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>, acme@redhat.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 1/2] perf: Fix compilation on gcc 4.0.2 v2
-Message-ID: <20101119095103.GB23515@basil.fritz.box>
-References: <1290077461-12321-1-git-send-email-andi@firstfloor.org>
- <1290077461-12321-2-git-send-email-andi@firstfloor.org>
- <1290078937.2109.1345.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752507Ab0KSJwo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 04:52:44 -0500
+Received: from vpn.id2.novell.com ([195.33.99.129]:46626 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab0KSJwm convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:6:1>);
+	Fri, 19 Nov 2010 04:52:42 -0500
+Message-Id: <4CE656F402000078000234A0@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Fri, 19 Nov 2010 09:52:36 +0000
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <stable@kernel.org>, <cebbert@redhat.com>, "Jeff Mahoney" <jeffm@suse.com>,
+        <linux-kernel@vger.kernel.org>, <viro@zeniv.linux.org.uk>
+Subject: [PATCH] x86: restore 9d55b9923a1b7ea8193b8875c57ec940dc2ff027
+	 (x86: replace LOCK_PREFIX in futex.h)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <1290078937.2109.1345.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Updated version, this time using the try-cc command.
-I remove the useless -Wvolatile-register-var warning.
-I don't think any kernel coder will really do such
-a thing in the first place.]
+Somehow this change got lost during the move from include/asm-x86 to
+arch/x86/include/asm (i.e. between .27 and .28, while the original fix
+was applied for .25). The original commit comment was
 
-- Fix includes
-- Remove useless -Wvolatile-register-var
-- Move -Wstack-protector into stack protector test
+"The exception fixup for the futex macros __futex_atomic_op1/2 and
+ futex_atomic_cmpxchg_inatomic() is missing an entry when the lock
+ prefix is replaced by a NOP via SMP alternatives.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+ Chuck Ebert tracked this down from the information provided in:
+ https://bugzilla.redhat.com/show_bug.cgi?id=429412 
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index d1db0f6..993ecdb 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -201,13 +201,11 @@ EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wshadow
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Winit-self
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wpacked
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wredundant-decls
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstack-protector
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wstrict-aliasing=3
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-default
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wswitch-enum
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wno-system-headers
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wundef
--EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wvolatile-register-var
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wwrite-strings
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wbad-function-cast
- EXTRA_WARNINGS := $(EXTRA_WARNINGS) -Wmissing-declarations
-@@ -287,8 +285,8 @@ endif
+ A possible solution would be to add another fixup after the
+ LOCK_PREFIX, so both the LOCK and NOP case have their own entry in
+ the exception table, but it's not really worth the trouble.
+
+ Simply replace LOCK_PREFIX with lock and keep those untouched by SMP
+ alternatives."
+
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Cc: stable@kernel.org 
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Chuck Ebbert <cebbert@redhat.com>
+Cc: Jeff Mahoney <jeffm@suse.com>
+
+---
+ arch/x86/include/asm/futex.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- linux-2.6.37-rc2/arch/x86/include/asm/futex.h
++++ linux-2.6.37-rc2/arch/x86/include/asm/futex.h
+@@ -25,7 +25,7 @@
+ 	asm volatile("1:\tmovl	%2, %0\n"			\
+ 		     "\tmovl\t%0, %3\n"				\
+ 		     "\t" insn "\n"				\
+-		     "2:\t" LOCK_PREFIX "cmpxchgl %3, %2\n"	\
++		     "2:\tlock; cmpxchgl %3, %2\n"	\
+ 		     "\tjnz\t1b\n"				\
+ 		     "3:\t.section .fixup,\"ax\"\n"		\
+ 		     "4:\tmov\t%5, %1\n"			\
+@@ -64,7 +64,7 @@ static inline int futex_atomic_op_inuser
+ 		__futex_atomic_op1("xchgl %0, %2", ret, oldval, uaddr, oparg);
+ 		break;
+ 	case FUTEX_OP_ADD:
+-		__futex_atomic_op1(LOCK_PREFIX "xaddl %0, %2", ret, oldval,
++		__futex_atomic_op1("lock; xaddl %0, %2", ret, oldval,
+ 				   uaddr, oparg);
+ 		break;
+ 	case FUTEX_OP_OR:
+@@ -122,7 +122,7 @@ static inline int futex_atomic_cmpxchg_i
+ 	if (!access_ok(VERIFY_WRITE, uaddr, sizeof(int)))
+ 		return -EFAULT;
  
- -include feature-tests.mak
- 
--ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -fstack-protector-all),y)
--	CFLAGS := $(CFLAGS) -fstack-protector-all
-+ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -fstack-protector-all -Wstack-protector),y)
-+	CFLAGS := $(CFLAGS) -fstack-protector-all -Wstack-protector
- endif
- 
- 
-diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
-index bb4ac2e..50ce182 100644
---- a/tools/perf/util/include/linux/bitops.h
-+++ b/tools/perf/util/include/linux/bitops.h
-@@ -1,6 +1,7 @@
- #ifndef _PERF_LINUX_BITOPS_H_
- #define _PERF_LINUX_BITOPS_H_
- 
-+#include <linux/compiler.h>
- #include <linux/kernel.h>
- #include <asm/hweight.h>
- 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+-	asm volatile("1:\t" LOCK_PREFIX "cmpxchgl %3, %1\n"
++	asm volatile("1:\tlock; cmpxchgl %3, %1\n"
+ 		     "2:\t.section .fixup, \"ax\"\n"
+ 		     "3:\tmov     %2, %0\n"
+ 		     "\tjmp     2b\n"
+
+
+
