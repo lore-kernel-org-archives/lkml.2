@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756227Ab0KSSfJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 13:35:09 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:61885 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755247Ab0KSSfH convert rfc822-to-8bit (ORCPT
+	id S1756247Ab0KSSht (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:37:49 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:21385 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756044Ab0KSShr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 13:35:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=OpAOTBP+sYME6RMfDQd36z1p0imgpD7SVfnsSZ/Bw8wHCEr6AUK/FG+DMYLinjxirJ
-         so/Ao1jZz4jsMx+69S7TTirAuc01/1TjqKHBT4/C6FNNZwkrRhuVNQQZjzwWVzOHc1I6
-         dyAJWcyfxpxzunqFoLhQId5XeltyMgzE6SkCI=
+	Fri, 19 Nov 2010 13:37:47 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6172"; a="63575061"
+Date: Fri, 19 Nov 2010 10:37:45 -0800 (PST)
+From: Gregory Bean <gbean@codeaurora.org>
+X-X-Sender: gbean@gbean-linux.qualcomm.com
+To: Janakiram Sistla <janakiram.sistla@gmail.com>
+cc: Gregory Bean <gbean@codeaurora.org>, dwalker@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/2] msm: gpio: Add irq support to v2 gpiolib.
+In-Reply-To: <AANLkTiknYmWOmiFXGp6h2dT==aMuGs3BtXi82b6Vdq5i@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1011191035210.10052@gbean-linux.qualcomm.com>
+References: <1290109970-26752-1-git-send-email-gbean@codeaurora.org> <1290109970-26752-2-git-send-email-gbean@codeaurora.org> <AANLkTimTsyhjHJZggFO31C-2RswpmKWn-V4pGEiQ3+_2@mail.gmail.com> <alpine.DEB.2.00.1011181229380.26784@gbean-linux.qualcomm.com>
+ <AANLkTi=p02P=-JQ9+FynFyM1yxrAh3utKTD2uzqhnLxK@mail.gmail.com> <alpine.DEB.2.00.1011181256470.29924@gbean-linux.qualcomm.com> <AANLkTiknYmWOmiFXGp6h2dT==aMuGs3BtXi82b6Vdq5i@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20101119174257.58bb8e32@lxorguk.ukuu.org.uk>
-References: <20101119143207.b2d5731e.sfr@canb.auug.org.au>
-	<AANLkTik6Aq+kWzpmYckKkV5yVMFPt-J0E7OMM6Rd4ouO@mail.gmail.com>
-	<20101119174257.58bb8e32@lxorguk.ukuu.org.uk>
-Date: Fri, 19 Nov 2010 19:35:05 +0100
-Message-ID: <AANLkTimC51Rb+7eMGYoJ9biGS1Tp1wPC-Ujg55fkOvHR@mail.gmail.com>
-Subject: Re: linux-next: Tree for November 19
-From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/19 Alan Cox <alan@lxorguk.ukuu.org.uk>:
-> On Fri, 19 Nov 2010 18:40:41 +0100
-> Zimny Lech <napohybelskurwysynom2010@gmail.com> wrote:
->
->> Salve,
->>
->> 2010/11/19 Stephen Rothwell <sfr@canb.auug.org.au>:
->> > Hi all,
->> >
->> > Changes since 20101118:
->>
->> This probably should not be available on x86_64
->>
->>   BLD FW  drivers/net/wan/wanxlfw.inc
->> /bin/sh: as68k: command not found
->> /home/test/linux-2.6/drivers/net/wan/wanxlfw.S:39:0: fatal error: when
->> writing output to : Broken pipe
->> compilation terminated.
->> make[4]: *** [drivers/net/wan/wanxlfw.inc] Error 127
->
-> If you want to build the wanxl firmware then you need the m68k assembler
-> for the firmware, so it is right.
->
+On Thu, 18 Nov 2010, Janakiram Sistla wrote:
 
-Ok, thanks for the info.
+>> Targets with the v2 block define CONFIG_MSM_V2_TLMM.
+>
+> So in that case we can name  it as gpio-tlmm.c ??
 
-I'll try to find souces for this asm and install it to avoid future
-failed builds.
+No, not and have things be any clearer.
+
+All MSM chips have a TLMM block.  The older chips have
+version 1 (v1) of the TLMM block.  The newer chips have v2.
 
 -- 
-Slawa!
-N.P.S.
-
-Chwa³a tobie, Szatanie, cze¶æ na wysoko¶ciach
-Nieba, gdzie królowa³e¶, chwa³a w g³êboko¶ciach
-Piek³a, gdzie zwyciê¿ony, trwasz w dumnym milczeniu!
-Uczyñ, niechaj ma dusza spocznie z Tob± w cieniu
-Drzewa Wiedzy, gdy swoje konary rozwinie,
-Jak sklepienie ko¶cio³a, który nie przeminie!
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
