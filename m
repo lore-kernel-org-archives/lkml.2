@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250Ab0KSNVo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 08:21:44 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:37682 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194Ab0KSNVm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 08:21:42 -0500
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Ben Gamari <bgamari.foss@gmail.com>
-Cc: Andev <debiandev@gmail.com>, "Ted Ts'o" <tytso@mit.edu>,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
-        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <8762vtsbx5.fsf@gmail.com>
-References: <20101116170312.GA19327@tango.0pointer.de>
-	 <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com>
-	 <20101116181603.GC19327@tango.0pointer.de>
-	 <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com>
-	 <20101116202839.GC27235@tango.0pointer.de>
-	 <20101116205243.64e4a67a@lxorguk.ukuu.org.uk>
-	 <AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com>
-	 <20101116211909.GB16589@tango.0pointer.de>
-	 <20101116233934.GC1568@thunk.org> <20101117002159.GA3184@tango.0pointer.de>
-	 <20101117020626.GB3290@thunk.org>
-	 <AANLkTikLjQZiDcQx7HfgznPgFmYOfaN9of2ZtWLEvno8@mail.gmail.com>
-	 <1290167993.2109.1562.camel@laptop>  <8762vtsbx5.fsf@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 19 Nov 2010 14:21:18 +0100
-Message-ID: <1290172878.2109.1590.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754318Ab0KSNVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 08:21:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52672 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754294Ab0KSNVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 08:21:51 -0500
+Date: Fri, 19 Nov 2010 14:21:45 +0100
+From: "Dr. Werner Fink" <werner@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg KH <greg@kroah.com>, Lennart Poettering <mzxreary@0pointer.de>,
+        Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: tty: add 'active' sysfs attribute to tty0 and console device
+Message-ID: <20101119132145.GA22883@boole.suse.de>
+Mail-Followup-To: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Greg KH <greg@kroah.com>, Lennart Poettering <mzxreary@0pointer.de>,
+	Kay Sievers <kay.sievers@vrfy.org>, Valdis.Kletnieks@vt.edu,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Randy Dunlap <rdunlap@xenotime.net>, Jiri Slaby <jslaby@suse.cz>
+References: <20101117235647.00766e32@lxorguk.ukuu.org.uk>
+ <20101118012734.GA8558@kroah.com>
+ <20101118014848.GA7873@tango.0pointer.de>
+ <20101118015310.GA30480@kroah.com>
+ <20101118110020.GA13871@boole.suse.de>
+ <20101118112335.434de53a@lxorguk.ukuu.org.uk>
+ <20101118121256.GA19884@boole.suse.de>
+ <20101118125822.16718289@lxorguk.ukuu.org.uk>
+ <20101118131420.GA23872@boole.suse.de>
+ <20101118144123.5417ccbd@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20101118144123.5417ccbd@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 08:03 -0500, Ben Gamari wrote:
-> On Fri, 19 Nov 2010 12:59:53 +0100, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> > On Fri, 2010-11-19 at 00:20 -0500, Andev wrote:
-> > > +1 for implementing this in systemd than in the kernel.
-> > > 
-> > > The userspace has much more info about which process needs to go into
-> > > which group.
-> > 
-> > -1 on your systemd/gnome/wm/etc. crap, that means it will become
-> > impossible to sanely switch off (gnome firmly believes knobs are evil),
-> > leaving everybody who _does_ know wth they're doing up a certain creek
-> > without a paddle.
+On Thu, Nov 18, 2010 at 02:41:23PM +0000, Alan Cox wrote:
+> > How can I detect the major and minor of the primary console device
+> > of /dev/console without controlling tty?  Even if my old blogd
 > 
-> Please, can we stop with this false dichotomy? This is decidedly not
-> true and as Lennart has already pointed out, the knob already exists in
-> systemd.
+> In the general case you can't - because a console may not have a tty.
+> Quite a few don't. For the cases where one has a device I can't see a
+> clean way to do it as an fstat on the console device will give you the
+> console major/mninor and some code depends upon that.
 
-It does for systemd, but he also said he's proposing patches for other
-userspace components (something gnome). And as we all know, gnome is not
-big on options, its their way or the high-way.
+ACK ... nevertheless sometime it could be very useful to be able to
+debug the user space boot process on e.g. big irons aka mainframes.
 
->  You may like the kernel approach, but this does not mean there
-> is no place for grouping driven by userspace.
+> The iniability to get it is clearly a flaw and you need the sysfs link or
+> a sysfs list of consoles (again remembering many of them won't have a tty
+> bound).
 
-My concern is that I don't want to go trawling through a dozen unrelated
-userspace package configurations to disable all this.
+Even with this case and IMHO a copy of all system console messages
+would be sometimes useful for debugging.
+
+> > and the bootlogd(8) of SysInitV using TIOCCONS are outdated by SystemD
+> > the question before doing the TIOCCONS is which is the primary console
+> > device to e.g. create the device node in initrd or for bootlogd(8)
+> > to write a copy of the console messages back to the original
+> > primary console (and the other console devices).
+> 
+> For init it is /dev/console as opened at boot time and passed to the
+> initial user init task but with no nice way to work back to a device node.
+
+Currently the bootlogd(8) or blogd(8) parse the kernels command line
+and if available do an ioctl TIOCGDEV (not supported by the upstream
+kernel), then create a pty/tty pair, do an ioctl TIOCCONS to forward
+the system console to the created tty, now both daemons can parse
+all console messages to write out logs and write all copies to the
+former devices node(s) (compare with http://lkml.org/lkml/2000/12/15/160
+and http://lkml.org/lkml/1998/3/21/57).
+
+> Incidentally the primary console (as in printk) can be accessed as a tty
+> via the ttyprintk driver which got added recently because embedded people
+> wanted to use the printk interface as a (write only) tty console as well.
+
+I've seen that in the changelog of the kernel ... maybe this would
+a good replacment for the /dev/kmsg redirect of stdout/stderr in initrd.
 
 
+     Werner
+
+-- 
+System V style init programs - http://savannah.nongnu.org/projects/sysvinit/
