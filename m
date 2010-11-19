@@ -1,25 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010Ab0KSMDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 07:03:45 -0500
-Received: from smtp2web.tin.it ([212.216.176.236]:60248 "EHLO smtp2web.tin.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753981Ab0KSMDo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 07:03:44 -0500
-Message-ID: <12c63fd90f1.mail.info433@virgilio.it>
-Date: Fri, 19 Nov 2010 12:55:50 +0100 (CET)
-From: ELI MARK <mail.info433@virgilio.it>
-Reply-To: eli.mark@virgilio.it
-Subject: RE
-Mime-Version: 1.0
-Content-Type: text/plain;charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 91.121.79.206
-To: unlisted-recipients:; (no To-header on input)
+	id S1753982Ab0KSMHu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 07:07:50 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58732 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751892Ab0KSMHt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 07:07:49 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regulator: Fix prototype for MAX8998 buck set_voltage()
+Date: Fri, 19 Nov 2010 12:07:44 +0000
+Message-Id: <1290168464-15133-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/max8998.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-This is the second time we are notifying you about your fund worth of $10.7m
-your name,Address/tel is needed.More Information
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index cb28cf8..7568df6 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -354,7 +354,7 @@ static inline void buck2_gpio_set(int gpio, int v)
+ }
+ 
+ static int max8998_set_voltage_buck(struct regulator_dev *rdev,
+-				    int min_uV, int max_uV, int *selector)
++				    int min_uV, int max_uV, unsigned *selector)
+ {
+ 	struct max8998_data *max8998 = rdev_get_drvdata(rdev);
+ 	struct max8998_platform_data *pdata =
+-- 
+1.7.1
+
