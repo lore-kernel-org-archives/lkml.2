@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754632Ab0KSOr2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 09:47:28 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:62955 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754273Ab0KSOr0 (ORCPT
+	id S1754665Ab0KSOsV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 09:48:21 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:62240 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752255Ab0KSOsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 09:47:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Vi/WGlos3FiiatSt7wE2VsFmQO9vaGjJFLtmpMY4X12fGRuXr4P3OQr3J5CiQYnkFe
-         l30IVxdHhEzDG6ZUxN+WZDxnI3aK1NlDIjtLGLcU6VGi1gB0cPAKp/ccql3rfm0aD1t9
-         xej41+hwx527B89Z/KoERojaJksgGaLHMLMKM=
-Subject: Re: [PATCH] ext3: Coding style fix in namei.c
-From: Namhyung Kim <namhyung@gmail.com>
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <093B58FD-0DA7-4E94-A70E-C926EC6D02F6@mit.edu>
-References: <1290161589-5370-1-git-send-email-namhyung@gmail.com>
-	 <60024FF1-3903-49AD-9A68-B04C6D678A8E@mit.edu>
-	 <093B58FD-0DA7-4E94-A70E-C926EC6D02F6@mit.edu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 19 Nov 2010 23:47:14 +0900
-Message-ID: <1290178034.1678.53.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 19 Nov 2010 09:48:20 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBACod5kxLd/sX/2dsb2JhbAAHgz3MP5EQgSKDNnMEhFqLEw
+X-IronPort-AV: E=Sophos;i="4.59,223,1288584000"; 
+   d="scan'208";a="82981650"
+Message-ID: <4CE68E2C.9070101@teksavvy.com>
+Date: Fri, 19 Nov 2010 09:48:12 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: Greg Freemyer <greg.freemyer@gmail.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Moyer <jmoyer@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
+        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
+        tytso@mit.edu, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+References: <1290100750.3041.72.camel@mulgrave.site> <x494obe4kd5.fsf@segfault.boston.devel.redhat.com> <1290102098.3041.77.camel@mulgrave.site> <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com> <4CE59E57.2090009@teksavvy.com> <yq1r5eiw5os.fsf@sermon.lab.mkp.net> <4CE5C616.7070706@teksavvy.com> <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com> <20101119115516.GA1152@infradead.org> <4CE6831E.4020606@teksavvy.com> <20101119140639.GA25488@infradead.org>
+In-Reply-To: <20101119140639.GA25488@infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-11-19 (금), 08:05 -0500, Theodore Tso:
-> Oooh, I forgot another downside which just came to mind:
-> 
-> * Call of this code churn to fix whitespace all for the sake of keep
->  some damned checkpatch.pl script happy also breaks "git blame"
->  reports.
-> 
-> -- Ted
-> 
+On 10-11-19 09:06 AM, Christoph Hellwig wrote:
+> On Fri, Nov 19, 2010 at 09:01:02AM -0500, Mark Lord wrote:
+>> Ithink a reasonable approach would be to modify the existing interfaces
+>> so that the LLD can report a "max discard ranges per command" back up
+>> the stack.
+>>
+>> This way, libata could report a max of say, 64 ranges per "discard" (trim),
+>> and DM/RAID could simply (for now) report a max of one range per discard.
+>
+> That's certainly the easy way out.  You'll need a good way to actually
+> transport the ranges as we can't simply sote them in bi_sector/bi_size
+> and adapt the whole block layer to deal with the two types of different
+> discards.  Not saying it's impossible, but when I tried it before it
+> wasn't pretty.
 
-Ah, agreed, it would be bad really. :(
+Yeah.  I think for this to happen is has to be evolutionary,
+and the proposal above looks like a reasonable first crack at it.
 
+I'm not sure about the issues on "adapting the block layer" ?
+For FITRIM, the blocks being trimmed would be reserved at the fs level,
+before issuing the discard for them.  So ordering through the block layer
+shouldn't matter much for it.  Does that simplify things?
 
--- 
-Regards,
-Namhyung Kim
+I see FITRIM just allocating a page to hold the ranges (for the >1 case)
+and passing that page down through the layers to libata (or any other
+LLD that supports >1 ranges).
 
-
+??
