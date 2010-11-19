@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab0KSM1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 07:27:17 -0500
-Received: from service88.mimecast.com ([195.130.217.12]:56481 "HELO
-	service88.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753680Ab0KSM1Q convert rfc822-to-8bit (ORCPT
+	id S1754101Ab0KSMcQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 07:32:16 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:54880 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753735Ab0KSMcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 07:27:16 -0500
-X-Greylist: delayed 547 seconds by postgrey-1.27 at vger.kernel.org; Fri, 19 Nov 2010 07:27:16 EST
-Subject: Re: [PATCH 3/5] MIPS/Perf-events: Check event state in
- validate_event()
-From: Will Deacon <will.deacon@arm.com>
-To: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-Cc: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com
-In-Reply-To: <AANLkTikdLqo0-jkLkY-jGxurKMnmv+gb0VWWDZu6TOwd@mail.gmail.com>
-References: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
-	 <1290063401-25440-4-git-send-email-dengcheng.zhu@gmail.com>
-	 <1290159806.9342.7.camel@e102144-lin.cambridge.arm.com>
-	 <AANLkTikdLqo0-jkLkY-jGxurKMnmv+gb0VWWDZu6TOwd@mail.gmail.com>
-Date: Fri, 19 Nov 2010 12:05:05 +0000
-Message-ID: <1290168306.8175.8.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1
-X-OriginalArrivalTime: 19 Nov 2010 12:05:07.0087 (UTC) FILETIME=[01B021F0:01CB87E2]
-X-MC-Unique: 110111912051005301
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 19 Nov 2010 07:32:15 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=dkFupRExqIuyWilliR6TzB+2GED2lwFgPBQZ3CZqnafC9nZAFzCfcRmFPHWr0d+QHB
+         bIdk53W76YV2e8V7T9GA==
+MIME-Version: 1.0
+In-Reply-To: <1290167376.2109.1553.camel@laptop>
+References: <1289916171.5169.117.camel@maggy.simson.net> <AANLkTimC_TWzKET-aabYK0TPG6fUUW06HDej6iOzYtKo@mail.gmail.com>
+ <20101116211431.GA15211@tango.0pointer.de> <201011182333.48281.hpj@urpla.net>
+ <20101118231218.GX6024@const.famille.thibault.fr> <1290123351.18039.49.camel@maggy.simson.net>
+ <20101118234339.GA6024@const.famille.thibault.fr> <1290167376.2109.1553.camel@laptop>
+From: Paul Menage <menage@google.com>
+Date: Fri, 19 Nov 2010 04:31:50 -0800
+Message-ID: <AANLkTikB6QXxTav=b7qNzHUv4HXnjjT9TdcEdTYHbEkw@mail.gmail.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        Mike Galbraith <efault@gmx.de>, Hans-Peter Jansen <hpj@urpla.net>,
+        linux-kernel@vger.kernel.org,
+        Lennart Poettering <mzxreary@0pointer.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
+        Dhaval Giani <dhaval.giani@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 11:30 +0000, Deng-Cheng Zhu wrote:
-> Ah, I see. Thanks for your explanation.
-> 
-> But by doing this, I think we need to modify validate_group() as well.
-> Consider a group which has all its events either not for this PMU or in
-> OFF/Error state. Then the last validate_event() in validate_group() does
-> not work. Right? So, how about the following:
+On Fri, Nov 19, 2010 at 3:49 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> It must be nice to be that ignorant ;-) Speaking for the scheduler
+> cgroup controller (that being the only one I actually know), most all
+> the load-balance operations are O(n) in the number of active cgroups,
+> and a lot of the cpu local schedule operations are O(d) where d is the
+> depth of the cgroup tree.
 
-[...]
+The same would apply to CPU autogroups, presumably?
 
-If none of the events are for this PMU, then our validate_group()
-won't be called. If all the events are OFF/ERROR then I don't see
-what's wrong with passing the validation.
-
-Will
-
-
-
+Paul
