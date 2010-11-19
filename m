@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476Ab0KSVr6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:47:58 -0500
-Received: from kroah.org ([198.145.64.141]:51871 "EHLO coco.kroah.org"
+	id S932314Ab0KSVpi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:45:38 -0500
+Received: from kroah.org ([198.145.64.141]:51833 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932329Ab0KSVpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:45:40 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:12 2010
-Message-Id: <20101119214412.390922640@clark.site>
+	id S932273Ab0KSVpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:45:36 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:44:11 2010
+Message-Id: <20101119214411.811095431@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:43:16 -0800
+Date: Fri, 19 Nov 2010 13:43:09 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [36/45] USB: disable endpoints after unbinding interfaces, not before
+        Daniel Suchy <danny@danysek.cz>
+Subject: [29/45] USB: ftdi_sio: new VID/PIDs for various Papouch devices
 In-Reply-To: <20101119214439.GA26350@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +25,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Daniel Suchy <danny@danysek.cz>
 
-commit 80f0cf3947889014d3a3dc0ad60fb87cfda4b12a upstream.
+commit 59c6ccd9f9aecfa59c99ceba6d4d34b180547a05 upstream.
 
-This patch (as1430) fixes a bug in usbcore.  When a device
-configuration change occurs or a device is removed, the endpoints for
-the old config should be completely disabled.  However it turns out
-they aren't; this is because usb_unbind_interface() calls
-usb_enable_interface() or usb_set_interface() to put interfaces back
-in altsetting 0, which re-enables the interfaces' endpoints.
+This patch for FTDI USB serial driver ads new VID/PIDs used on various
+devices manufactured by Papouch (http://www.papouch.com). These devices
+have their own VID/PID, although they're using standard FTDI chip. In
+ftdi_sio.c, I also made small cleanup to have declarations for all
+Papouch devices together.
 
-As a result, when a device goes through a config change or is
-unconfigured, the ep_in[] and ep_out[] arrays may be left holding old
-pointers to usb_host_endpoint structures.  If the device is
-deauthorized these structures get freed, and the stale pointers cause
-errors when the the device is eventually unplugged.
-
-The solution is to disable the endpoints after unbinding the
-interfaces instead of before.  This isn't as large a change as it
-sounds, since usb_unbind_interface() disables all the interface's
-endpoints anyway before calling the driver's disconnect routine,
-unless the driver claims to support "soft" unbind.
-
-This fixes Bugzilla #19192.  Thanks to "Tom" Lei Ming for diagnosing
-the underlying cause of the problem.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Carsten Sommer <carsten_sommer@ymail.com>
+Signed-off-by: Daniel Suchy <danny@danysek.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/message.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |   30 +++++++++++++++++++++++++++++-
+ drivers/usb/serial/ftdi_sio_ids.h |   27 ++++++++++++++++++++++++++-
+ 2 files changed, 55 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -1185,13 +1185,6 @@ void usb_disable_device(struct usb_devic
- {
- 	int i;
- 
--	dev_dbg(&dev->dev, "%s nuking %s URBs\n", __func__,
--		skip_ep0 ? "non-ep0" : "all");
--	for (i = skip_ep0; i < 16; ++i) {
--		usb_disable_endpoint(dev, i, true);
--		usb_disable_endpoint(dev, i + USB_DIR_IN, true);
--	}
--
- 	/* getting rid of interfaces will disconnect
- 	 * any drivers bound to them (a key side effect)
- 	 */
-@@ -1221,6 +1214,13 @@ void usb_disable_device(struct usb_devic
- 		if (dev->state == USB_STATE_CONFIGURED)
- 			usb_set_device_state(dev, USB_STATE_ADDRESS);
- 	}
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -681,7 +681,6 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RRCIRKITS_LOCOBUFFER_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ASK_RDR400_PID) },
+ 	{ USB_DEVICE(ICOM_ID1_VID, ICOM_ID1_PID) },
+-	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_TMU_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
+@@ -722,8 +721,37 @@ static struct usb_device_id id_table_com
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(RATOC_VENDOR_ID, RATOC_PRODUCT_ID_USB60F) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_REU_TINY_PID) },
 +
-+	dev_dbg(&dev->dev, "%s nuking %s URBs\n", __func__,
-+		skip_ep0 ? "non-ep0" : "all");
-+	for (i = skip_ep0; i < 16; ++i) {
-+		usb_disable_endpoint(dev, i, true);
-+		usb_disable_endpoint(dev, i + USB_DIR_IN, true);
-+	}
- }
++	/* Papouch devices based on FTDI chip */
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AP485_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB422_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485_2_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AP485_2_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB422_2_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485S_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485C_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_LEC_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB232_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_TMU_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_IRAMP_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_DRAK5_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO8x8_PID) },
+ 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO4x4_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO2x2_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO10x1_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO30x3_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO60x3_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO2x16_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO3x32_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_DRAK6_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_UPSUSB_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_MU_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SIMUKEY_PID) },
+ 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AD4USB_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMUX_PID) },
++	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMSR_PID) },
++
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DGQG_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DUSB_PID) },
+ 	{ USB_DEVICE(ALTI2_VID, ALTI2_N3_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1030,9 +1030,34 @@
+  */
  
- /**
+ #define PAPOUCH_VID			0x5050	/* Vendor ID */
++#define PAPOUCH_SB485_PID		0x0100	/* Papouch SB485 USB-485/422 Converter */
++#define PAPOUCH_AP485_PID		0x0101	/* AP485 USB-RS485 Converter */
++#define PAPOUCH_SB422_PID		0x0102	/* Papouch SB422 USB-RS422 Converter  */
++#define PAPOUCH_SB485_2_PID		0x0103	/* Papouch SB485 USB-485/422 Converter */
++#define PAPOUCH_AP485_2_PID		0x0104	/* AP485 USB-RS485 Converter */
++#define PAPOUCH_SB422_2_PID		0x0105	/* Papouch SB422 USB-RS422 Converter  */
++#define PAPOUCH_SB485S_PID		0x0106	/* Papouch SB485S USB-485/422 Converter */
++#define PAPOUCH_SB485C_PID		0x0107	/* Papouch SB485C USB-485/422 Converter */
++#define PAPOUCH_LEC_PID			0x0300	/* LEC USB Converter */
++#define PAPOUCH_SB232_PID		0x0301	/* Papouch SB232 USB-RS232 Converter */
+ #define PAPOUCH_TMU_PID			0x0400	/* TMU USB Thermometer */
+-#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Quido 4/4 Module */
++#define PAPOUCH_IRAMP_PID		0x0500	/* Papouch IRAmp Duplex */
++#define PAPOUCH_DRAK5_PID		0x0700	/* Papouch DRAK5 */
++#define PAPOUCH_QUIDO8x8_PID		0x0800	/* Papouch Quido 8/8 Module */
++#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Papouch Quido 4/4 Module */
++#define PAPOUCH_QUIDO2x2_PID		0x0a00	/* Papouch Quido 2/2 Module */
++#define PAPOUCH_QUIDO10x1_PID		0x0b00	/* Papouch Quido 10/1 Module */
++#define PAPOUCH_QUIDO30x3_PID		0x0c00	/* Papouch Quido 30/3 Module */
++#define PAPOUCH_QUIDO60x3_PID		0x0d00	/* Papouch Quido 60(100)/3 Module */
++#define PAPOUCH_QUIDO2x16_PID		0x0e00	/* Papouch Quido 2/16 Module */
++#define PAPOUCH_QUIDO3x32_PID		0x0f00	/* Papouch Quido 3/32 Module */
++#define PAPOUCH_DRAK6_PID		0x1000	/* Papouch DRAK6 */
++#define PAPOUCH_UPSUSB_PID		0x8000	/* Papouch UPS-USB adapter */
++#define PAPOUCH_MU_PID			0x8001	/* MU controller */
++#define PAPOUCH_SIMUKEY_PID		0x8002	/* Papouch SimuKey */
+ #define PAPOUCH_AD4USB_PID		0x8003	/* AD4USB Measurement Module */
++#define PAPOUCH_GMUX_PID		0x8004	/* Papouch GOLIATH MUX */
++#define PAPOUCH_GMSR_PID		0x8005	/* Papouch GOLIATH MSR */
+ 
+ /*
+  * Marvell SheevaPlug
 
 
