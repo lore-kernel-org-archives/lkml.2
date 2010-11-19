@@ -1,123 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab0KSU0w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 15:26:52 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:36015 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755096Ab0KSU0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 15:26:51 -0500
-Date: Fri, 19 Nov 2010 12:26:48 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [RFC] show set_rtc_mmss: message only once
-Message-ID: <20101119122648.4274c994@nehalam>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756736Ab0KSU11 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 15:27:27 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:44142 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754797Ab0KSU10 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 15:27:26 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6172"; a="63406156"
+Date: Fri, 19 Nov 2010 12:27:26 -0800 (PST)
+From: Gregory Bean <gbean@codeaurora.org>
+X-X-Sender: gbean@gbean-linux.qualcomm.com
+To: Janakiram Sistla <janakiram.sistla@gmail.com>
+cc: Gregory Bean <gbean@codeaurora.org>, dwalker@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4 2/2] msm: gpio: Add irq support to v2 gpiolib.
+In-Reply-To: <AANLkTi=VGx1xR3f7_8-cMQAmaz6PQ-t=Xubk_Jtp911V@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1011191223570.10560@gbean-linux.qualcomm.com>
+References: <1290109970-26752-1-git-send-email-gbean@codeaurora.org> <1290109970-26752-2-git-send-email-gbean@codeaurora.org> <AANLkTimTsyhjHJZggFO31C-2RswpmKWn-V4pGEiQ3+_2@mail.gmail.com> <alpine.DEB.2.00.1011181229380.26784@gbean-linux.qualcomm.com>
+ <AANLkTi=p02P=-JQ9+FynFyM1yxrAh3utKTD2uzqhnLxK@mail.gmail.com> <alpine.DEB.2.00.1011181256470.29924@gbean-linux.qualcomm.com> <AANLkTiknYmWOmiFXGp6h2dT==aMuGs3BtXi82b6Vdq5i@mail.gmail.com> <alpine.DEB.2.00.1011191035210.10052@gbean-linux.qualcomm.com>
+ <AANLkTiknSudbo_j+nqBqmds49CWyqXf0jpvz+DTYH-zg@mail.gmail.com> <alpine.DEB.2.00.1011191053040.10560@gbean-linux.qualcomm.com> <AANLkTi=VGx1xR3f7_8-cMQAmaz6PQ-t=Xubk_Jtp911V@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Occasionally system get in state where CMOS clock has gotten
-slightly ahead of current time and the periodic update of RTC
-fails. The message is a nuisance and repeats spamming the log.
+>> Since gpio.c is v1, we used gpio-v2.c for v2.
+>
+> Greg, i agree your point ,but i think v2 differs from v1 with a new
+> features distinguished.Also there might be a intention behind going
+> for v2 that might resolve some hardware erratas in v1.
 
-  See: http://www.ntp.org/ntpfaq/NTP-s-trbl-spec.htm#Q-LINUX-SET-RTC-MMSS
+V2 is not an extension to or erratas to v1, it is almost
+completely different.  Any erratas to v1 would be released as v1.1 (I suspect).
 
-Rather than just removing the message, make it show only once
-and reduce severity since it indicates a normal and non urgent
-condition.
+> what if again a new generation comes then we will name it gpio-v3.c ??
 
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+I assume so.
 
----
- arch/alpha/kernel/time.c              |    2 +-
- arch/cris/kernel/time.c               |    2 +-
- arch/mips/dec/time.c                  |    2 +-
- arch/mips/include/asm/mc146818-time.h |    2 +-
- arch/mn10300/kernel/rtc.c             |    2 +-
- arch/sh/boards/mach-sh03/rtc.c        |    2 +-
- arch/x86/kernel/rtc.c                 |    2 +-
- 7 files changed, 7 insertions(+), 7 deletions(-)
-
---- a/arch/alpha/kernel/time.c	2010-11-19 12:14:47.003071149 -0800
-+++ b/arch/alpha/kernel/time.c	2010-11-19 12:15:13.058296694 -0800
-@@ -506,7 +506,7 @@ set_rtc_mmss(unsigned long nowtime)
- 		CMOS_WRITE(real_seconds,RTC_SECONDS);
- 		CMOS_WRITE(real_minutes,RTC_MINUTES);
- 	} else {
--		printk(KERN_WARNING
-+		printk_once(KERN_NOTICE
- 		       "set_rtc_mmss: can't update from %d to %d\n",
- 		       cmos_minutes, real_minutes);
-  		retval = -1;
---- a/arch/cris/kernel/time.c	2010-11-19 12:14:47.015069088 -0800
-+++ b/arch/cris/kernel/time.c	2010-11-19 12:15:22.168594662 -0800
-@@ -86,7 +86,7 @@ int set_rtc_mmss(unsigned long nowtime)
- 		CMOS_WRITE(real_seconds,RTC_SECONDS);
- 		CMOS_WRITE(real_minutes,RTC_MINUTES);
- 	} else {
--		printk(KERN_WARNING
-+		printk_once(KERN_NOTICE
- 		       "set_rtc_mmss: can't update from %d to %d\n",
- 		       cmos_minutes, real_minutes);
- 		retval = -1;
---- a/arch/mips/dec/time.c	2010-11-19 12:14:47.031066339 -0800
-+++ b/arch/mips/dec/time.c	2010-11-19 12:15:40.229230614 -0800
-@@ -104,7 +104,7 @@ int rtc_mips_set_mmss(unsigned long nowt
- 		CMOS_WRITE(real_seconds, RTC_SECONDS);
- 		CMOS_WRITE(real_minutes, RTC_MINUTES);
- 	} else {
--		printk(KERN_WARNING
-+		printk_once(KERN_NOTICE
- 		       "set_rtc_mmss: can't update from %d to %d\n",
- 		       cmos_minutes, real_minutes);
- 		retval = -1;
---- a/arch/mips/include/asm/mc146818-time.h	2010-11-19 12:14:47.047063590 -0800
-+++ b/arch/mips/include/asm/mc146818-time.h	2010-11-19 12:15:47.247926878 -0800
-@@ -66,7 +66,7 @@ static inline int mc146818_set_rtc_mmss(
- 		CMOS_WRITE(real_seconds, RTC_SECONDS);
- 		CMOS_WRITE(real_minutes, RTC_MINUTES);
- 	} else {
--		printk(KERN_WARNING
-+		printk_once(KERN_NOTICE
- 		       "set_rtc_mmss: can't update from %d to %d\n",
- 		       cmos_minutes, real_minutes);
- 		retval = -1;
---- a/arch/mn10300/kernel/rtc.c	2010-11-19 12:14:47.063060842 -0800
-+++ b/arch/mn10300/kernel/rtc.c	2010-11-19 12:16:02.309135936 -0800
-@@ -89,7 +89,7 @@ static int set_rtc_mmss(unsigned long no
- 		CMOS_WRITE(real_seconds, RTC_SECONDS);
- 		CMOS_WRITE(real_minutes, RTC_MINUTES);
- 	} else {
--		printk(KERN_WARNING
-+		printk_once(KERN_NOTICE
- 		       "set_rtc_mmss: can't update from %d to %d\n",
- 		       cmos_minutes, real_minutes);
- 		retval = -1;
---- a/arch/sh/boards/mach-sh03/rtc.c	2010-11-19 12:14:47.079058094 -0800
-+++ b/arch/sh/boards/mach-sh03/rtc.c	2010-11-19 12:16:14.478887406 -0800
-@@ -108,7 +108,7 @@ static int set_rtc_mmss(unsigned long no
- 		__raw_writeb(real_minutes % 10, RTC_MIN1);
- 		__raw_writeb(real_minutes / 10, RTC_MIN10);
- 	} else {
--		printk(KERN_WARNING
-+		printk_once(KERN_NOTICE
- 		       "set_rtc_mmss: can't update from %d to %d\n",
- 		       cmos_minutes, real_minutes);
- 		retval = -1;
---- a/arch/x86/kernel/rtc.c	2010-11-19 12:14:47.091056032 -0800
-+++ b/arch/x86/kernel/rtc.c	2010-11-19 12:16:26.092747020 -0800
-@@ -76,7 +76,7 @@ int mach_set_rtc_mmss(unsigned long nowt
- 		CMOS_WRITE(real_seconds, RTC_SECONDS);
- 		CMOS_WRITE(real_minutes, RTC_MINUTES);
- 	} else {
--		printk(KERN_WARNING
-+		printk_once(KERN_NOTICE
- 		       "set_rtc_mmss: can't update from %d to %d\n",
- 		       cmos_minutes, real_minutes);
- 		retval = -1;
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
