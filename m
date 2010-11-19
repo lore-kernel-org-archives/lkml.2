@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757938Ab0KSWCs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:02:48 -0500
-Received: from kroah.org ([198.145.64.141]:45305 "EHLO coco.kroah.org"
+	id S1757974Ab0KSWDG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:03:06 -0500
+Received: from kroah.org ([198.145.64.141]:45370 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757608Ab0KSV7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:59:00 -0500
+	id S1757534Ab0KSV66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:58 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:44 2010
-Message-Id: <20101119215644.336025097@clark.site>
+Message-Id: <20101119215644.078287603@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:56:29 -0800
+Date: Fri, 19 Nov 2010 13:56:26 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [68/82] rose: Fix signedness issues wrt. digi count.
+Subject: [65/82] qlcnic: dont set skb->truesize
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +27,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: David S. Miller <davem@davemloft.net>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 9828e6e6e3f19efcb476c567b9999891d051f52f ]
+[ Upstream commit 8df8fd27123054b02007361bd5483775db84b4a8 ]
 
-Just use explicit casts, since we really can't change the
-types of structures exported to userspace which have been
-around for 15 years or so.
+skb->truesize is set in core network.
 
-Reported-by: Dan Rosenberg <dan.j.rosenberg@gmail.com>
+Dont change it unless dealing with fragments.
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/rose/af_rose.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/qlcnic/qlcnic_init.c |    5 -----
+ 1 file changed, 5 deletions(-)
 
---- a/net/rose/af_rose.c
-+++ b/net/rose/af_rose.c
-@@ -679,7 +679,7 @@ static int rose_bind(struct socket *sock
- 	if (addr_len == sizeof(struct sockaddr_rose) && addr->srose_ndigis > 1)
- 		return -EINVAL;
+--- a/drivers/net/qlcnic/qlcnic_init.c
++++ b/drivers/net/qlcnic/qlcnic_init.c
+@@ -1363,7 +1363,6 @@ qlcnic_process_rcv(struct qlcnic_adapter
+ 	if (pkt_offset)
+ 		skb_pull(skb, pkt_offset);
  
--	if (addr->srose_ndigis > ROSE_MAX_DIGIS)
-+	if ((unsigned int) addr->srose_ndigis > ROSE_MAX_DIGIS)
- 		return -EINVAL;
+-	skb->truesize = skb->len + sizeof(struct sk_buff);
+ 	skb->protocol = eth_type_trans(skb, netdev);
  
- 	if ((dev = rose_dev_get(&addr->srose_addr)) == NULL) {
-@@ -739,7 +739,7 @@ static int rose_connect(struct socket *s
- 	if (addr_len == sizeof(struct sockaddr_rose) && addr->srose_ndigis > 1)
- 		return -EINVAL;
+ 	napi_gro_receive(&sds_ring->napi, skb);
+@@ -1425,8 +1424,6 @@ qlcnic_process_lro(struct qlcnic_adapter
  
--	if (addr->srose_ndigis > ROSE_MAX_DIGIS)
-+	if ((unsigned int) addr->srose_ndigis > ROSE_MAX_DIGIS)
- 		return -EINVAL;
+ 	skb_put(skb, lro_length + data_offset);
  
- 	/* Source + Destination digis should not exceed ROSE_MAX_DIGIS */
+-	skb->truesize = skb->len + sizeof(struct sk_buff) + skb_headroom(skb);
+-
+ 	skb_pull(skb, l2_hdr_offset);
+ 	skb->protocol = eth_type_trans(skb, netdev);
+ 
+@@ -1659,8 +1656,6 @@ qlcnic_process_rcv_diag(struct qlcnic_ad
+ 	if (pkt_offset)
+ 		skb_pull(skb, pkt_offset);
+ 
+-	skb->truesize = skb->len + sizeof(struct sk_buff);
+-
+ 	if (!qlcnic_check_loopback_buff(skb->data))
+ 		adapter->diag_cnt++;
+ 
 
 
