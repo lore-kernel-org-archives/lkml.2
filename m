@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758359Ab0KSWHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:07:48 -0500
-Received: from kroah.org ([198.145.64.141]:53067 "EHLO coco.kroah.org"
+	id S1758188Ab0KSWEb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:04:31 -0500
+Received: from kroah.org ([198.145.64.141]:53019 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757905Ab0KSWEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:04:32 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:26 2010
-Message-Id: <20101119220126.543302399@clark.site>
+	id S1758150Ab0KSWE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:26 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:25 2010
+Message-Id: <20101119220125.803731618@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:01:24 -0800
+Date: Fri, 19 Nov 2010 14:01:15 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        David Brownell <david-b@pacbell.net>
-Subject: [53/66] OHCI: work around for nVidia shutdown problem
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [44/66] USB: option: Add more ZTE modem USB ids
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,166 +25,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 3df7169e73fc1d71a39cffeacc969f6840cdf52b upstream.
+commit ecfa153ef616b901e86d9a051b329fcda7a6ce7b upstream.
 
-This patch (as1417) fixes a problem affecting some (or all) nVidia
-chipsets.  When the computer is shut down, the OHCI controllers
-continue to power the USB buses and evidently they drive a Reset
-signal out all their ports.  This prevents attached devices from going
-to low power.  Mouse LEDs stay on, for example, which is disconcerting
-for users and a drain on laptop batteries.
+There are lots of ZTE USB id's currently not covered by usb/serial. Adds them,
+to allow those devices to work properly on Linux.
 
-The fix involves leaving each OHCI controller in the OPERATIONAL state
-during system shutdown rather than putting it in the RESET state.
-Although this nominally means the controller is running, in fact it's
-not doing very much since all the schedules are all disabled.  However
-there is ongoing DMA to the Host Controller Communications Area, so
-the patch also disables the bus-master capability of all PCI USB
-controllers after the shutdown routine runs.
+While here, put the USB ID's for 0x2002/0x2003 at the sorted order.
 
-The fix is applied only to nVidia-based PCI OHCI controllers, so it
-shouldn't cause problems on systems using other hardware.  As an added
-safety measure, in case the kernel encounters one of these running
-controllers during boot, the patch changes quirk_usb_handoff_ohci()
-(which runs early on during PCI discovery) to reset the controller
-before anything bad can happen.
+This patch is based on zte.c file found on MF645.
 
-Reported-by: Pali Rohár <pali.rohar@gmail.com>
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: David Brownell <david-b@pacbell.net>
-Tested-by: Pali Rohár <pali.rohar@gmail.com>
+PS.: The ZTE driver is commenting the USB ID for 0x0053. It also adds, commented,
+an USB ID for 0x0026.
+
+Not sure why, but I think that 0053 is used by their devices in storage mode only.
+So, I opted to keep the comment on this patch.
+
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/hcd-pci.c    |    4 +++-
- drivers/usb/host/ohci-hcd.c   |    9 ++++++++-
- drivers/usb/host/ohci-pci.c   |   18 ++++++++++++++++++
- drivers/usb/host/ohci.h       |    1 +
- drivers/usb/host/pci-quirks.c |   18 +++++++++++-------
- 5 files changed, 41 insertions(+), 9 deletions(-)
+ drivers/usb/serial/option.c |   23 ++++++++++++++++++++---
+ 1 file changed, 20 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -329,8 +329,10 @@ void usb_hcd_pci_shutdown(struct pci_dev
- 		return;
- 
- 	if (test_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags) &&
--			hcd->driver->shutdown)
-+			hcd->driver->shutdown) {
- 		hcd->driver->shutdown(hcd);
-+		pci_disable_device(dev);
-+	}
- }
- EXPORT_SYMBOL_GPL(usb_hcd_pci_shutdown);
- 
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -398,7 +398,14 @@ ohci_shutdown (struct usb_hcd *hcd)
- 
- 	ohci = hcd_to_ohci (hcd);
- 	ohci_writel (ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
--	ohci_usb_reset (ohci);
-+	ohci->hc_control = ohci_readl(ohci, &ohci->regs->control);
-+
-+	/* If the SHUTDOWN quirk is set, don't put the controller in RESET */
-+	ohci->hc_control &= (ohci->flags & OHCI_QUIRK_SHUTDOWN ?
-+			OHCI_CTRL_RWC | OHCI_CTRL_HCFS :
-+			OHCI_CTRL_RWC);
-+	ohci_writel(ohci, ohci->hc_control, &ohci->regs->control);
-+
- 	/* flush the writes */
- 	(void) ohci_readl (ohci, &ohci->regs->control);
- }
---- a/drivers/usb/host/ohci-pci.c
-+++ b/drivers/usb/host/ohci-pci.c
-@@ -201,6 +201,20 @@ static int ohci_quirk_amd700(struct usb_
- 	return 0;
- }
- 
-+/* nVidia controllers continue to drive Reset signalling on the bus
-+ * even after system shutdown, wasting power.  This flag tells the
-+ * shutdown routine to leave the controller OPERATIONAL instead of RESET.
-+ */
-+static int ohci_quirk_nvidia_shutdown(struct usb_hcd *hcd)
-+{
-+	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
-+
-+	ohci->flags |= OHCI_QUIRK_SHUTDOWN;
-+	ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
-+
-+	return 0;
-+}
-+
- /*
-  * The hardware normally enables the A-link power management feature, which
-  * lets the system lower the power consumption in idle states.
-@@ -332,6 +346,10 @@ static const struct pci_device_id ohci_p
- 		PCI_DEVICE(PCI_VENDOR_ID_ATI, 0x4399),
- 		.driver_data = (unsigned long)ohci_quirk_amd700,
- 	},
-+	{
-+		PCI_DEVICE(PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID),
-+		.driver_data = (unsigned long) ohci_quirk_nvidia_shutdown,
-+	},
- 
- 	/* FIXME for some of the early AMD 760 southbridges, OHCI
- 	 * won't work at all.  blacklist them.
---- a/drivers/usb/host/ohci.h
-+++ b/drivers/usb/host/ohci.h
-@@ -403,6 +403,7 @@ struct ohci_hcd {
- #define	OHCI_QUIRK_HUB_POWER	0x100			/* distrust firmware power/oc setup */
- #define	OHCI_QUIRK_AMD_ISO	0x200			/* ISO transfers*/
- #define	OHCI_QUIRK_AMD_PREFETCH	0x400			/* pre-fetch for ISO transfer */
-+#define	OHCI_QUIRK_SHUTDOWN	0x800			/* nVidia power bug */
- 	// there are also chip quirks/bugs in init logic
- 
- 	struct work_struct	nec_work;	/* Worker for NEC quirk */
---- a/drivers/usb/host/pci-quirks.c
-+++ b/drivers/usb/host/pci-quirks.c
-@@ -169,6 +169,7 @@ static int __devinit mmio_resource_enabl
- static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
- {
- 	void __iomem *base;
-+	u32 control;
- 
- 	if (!mmio_resource_enabled(pdev, 0))
- 		return;
-@@ -177,10 +178,14 @@ static void __devinit quirk_usb_handoff_
- 	if (base == NULL)
- 		return;
- 
-+	control = readl(base + OHCI_CONTROL);
-+
- /* On PA-RISC, PDC can leave IR set incorrectly; ignore it there. */
--#ifndef __hppa__
--{
--	u32 control = readl(base + OHCI_CONTROL);
-+#ifdef __hppa__
-+#define	OHCI_CTRL_MASK		(OHCI_CTRL_RWC | OHCI_CTRL_IR)
-+#else
-+#define	OHCI_CTRL_MASK		OHCI_CTRL_RWC
-+
- 	if (control & OHCI_CTRL_IR) {
- 		int wait_time = 500; /* arbitrary; 5 seconds */
- 		writel(OHCI_INTR_OC, base + OHCI_INTRENABLE);
-@@ -194,13 +199,12 @@ static void __devinit quirk_usb_handoff_
- 			dev_warn(&pdev->dev, "OHCI: BIOS handoff failed"
- 					" (BIOS bug?) %08x\n",
- 					readl(base + OHCI_CONTROL));
--
--		/* reset controller, preserving RWC */
--		writel(control & OHCI_CTRL_RWC, base + OHCI_CONTROL);
- 	}
--}
- #endif
- 
-+	/* reset controller, preserving RWC (and possibly IR) */
-+	writel(control & OHCI_CTRL_MASK, base + OHCI_CONTROL);
-+
- 	/*
- 	 * disable interrupts
- 	 */
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -622,6 +622,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0011, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0012, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0013, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0014, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF628, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0016, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0017, 0xff, 0xff, 0xff) },
+@@ -633,38 +634,52 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0023, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0024, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0025, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0026, 0xff, 0xff, 0xff) },
++	/* { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0026, 0xff, 0xff, 0xff) }, */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0028, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0029, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0030, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_MF626, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0032, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0033, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0034, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0037, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0038, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0039, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0040, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0042, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0043, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0044, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0048, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0049, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0050, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0051, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0052, 0xff, 0xff, 0xff) },
++	/* { USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0053, 0xff, 0xff, 0xff) }, */
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0054, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0055, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0056, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0057, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0058, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0059, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0061, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0062, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0063, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0064, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0065, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0066, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0067, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0069, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0070, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0076, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0077, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0078, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0079, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0082, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0083, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0086, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2002, 0xff, 0xff, 0xff) },
+-	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2003, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0087, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0104, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0105, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0106, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0108, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0113, 0xff, 0xff, 0xff) },
+@@ -880,6 +895,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0073, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0130, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0141, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2002, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x2003, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_CDMA_TECH, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC8710, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, ZTE_PRODUCT_AC2726, 0xff, 0xff, 0xff) },
 
 
