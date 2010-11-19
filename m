@@ -1,15 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648Ab0KSQBj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:01:39 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:25566 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755354Ab0KSP62 (ORCPT
+	id S1755662Ab0KSQBz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:01:55 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:31934 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755345Ab0KSP61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 10:58:28 -0500
-Date: Fri, 19 Nov 2010 16:58:04 +0100
+	Fri, 19 Nov 2010 10:58:27 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Fri, 19 Nov 2010 16:58:01 +0100
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [RFCv6 06/13] mm: cma: Best-fit algorithm added
+Subject: [RFCv6 03/13] lib: genalloc: Generic allocator improvements
 In-reply-to: <cover.1290172312.git.m.nazarewicz@samsung.com>
 To: mina86@mina86.com
 Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
@@ -30,449 +33,374 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
         Zach Pfeffer <zpfeffer@codeaurora.org>, dipankar@in.ibm.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org
-Message-id: <b82ec382957f8846aedcb83f650aa1b48e5b87a8.1290172312.git.m.nazarewicz@samsung.com>
-MIME-version: 1.0
+Message-id: <62a42a9c9aa0d25f766e94c2c1a12e90af3943f0.1290172312.git.m.nazarewicz@samsung.com>
 X-Mailer: git-send-email 1.7.2.3
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
 References: <cover.1290172312.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commits adds a best-fit algorithm to the set of
-algorithms supported by the CMA.
+This commit adds a gen_pool_alloc_aligned() function to the
+generic allocator API.  It allows specifying alignment for the
+allocated block.  This feature uses
+the bitmap_find_next_zero_area_off() function.
+
+It also fixes possible issue with bitmap's last element being
+not fully allocated (ie. space allocated for chunk->bits is
+not a multiple of sizeof(long)).
+
+It also makes some other smaller changes:
+- moves structure definitions out of the header file,
+- adds __must_check to functions returning value,
+- makes gen_pool_add() return -ENOMEM rater than -1 on error,
+- changes list_for_each to list_for_each_entry, and
+- makes use of bitmap_clear().
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- mm/Kconfig        |   16 ++-
- mm/Makefile       |    1 +
- mm/cma-best-fit.c |  372 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 388 insertions(+), 1 deletions(-)
- create mode 100644 mm/cma-best-fit.c
+ include/linux/genalloc.h |   46 ++++++------
+ lib/genalloc.c           |  182 ++++++++++++++++++++++++++-------------------
+ 2 files changed, 129 insertions(+), 99 deletions(-)
 
-diff --git a/mm/Kconfig b/mm/Kconfig
-index a5480ea..5ad2471 100644
---- a/mm/Kconfig
-+++ b/mm/Kconfig
-@@ -332,10 +332,13 @@ config CLEANCACHE
+diff --git a/include/linux/genalloc.h b/include/linux/genalloc.h
+index 9869ef3..8ac7337 100644
+--- a/include/linux/genalloc.h
++++ b/include/linux/genalloc.h
+@@ -8,29 +8,31 @@
+  * Version 2.  See the file COPYING for more details.
+  */
  
- 	  If unsure, say Y to enable cleancache
++struct gen_pool;
  
-+config CMA_HAS_ALLOCATOR
-+	bool
+-/*
+- *  General purpose special memory pool descriptor.
+- */
+-struct gen_pool {
+-	rwlock_t lock;
+-	struct list_head chunks;	/* list of chunks in this pool */
+-	int min_alloc_order;		/* minimum allocation order */
+-};
++struct gen_pool *__must_check gen_pool_create(unsigned order, int nid);
+ 
+-/*
+- *  General purpose special memory pool chunk descriptor.
++int __must_check gen_pool_add(struct gen_pool *pool, unsigned long addr,
++			      size_t size, int nid);
 +
- config CMA
- 	bool "Contiguous Memory Allocator framework"
- 	# Currently there is only one allocator so force it on
--	select CMA_GENERIC_ALLOCATOR
-+	select CMA_GENERIC_ALLOCATOR if !CMA_HAS_ALLOCATOR
- 	help
- 	  This enables the Contiguous Memory Allocator framework which
- 	  allows drivers to allocate big physically-contiguous blocks of
-@@ -391,3 +394,14 @@ config CMA_GENERIC_ALLOCATOR
- 	  implementations: the first-fit, bitmap-based algorithm or
- 	  a best-fit, red-black tree-based algorithm.  The algorithm can
- 	  be changed under "Library routines".
++void gen_pool_destroy(struct gen_pool *pool);
 +
-+config CMA_BEST_FIT
-+	bool "CMA best-fit allocator"
-+	depends on CMA
-+	select CMA_HAS_ALLOCATOR
-+	help
-+	  This is a best-fit algorithm running in O(n log n) time where
-+	  n is the number of existing holes (which is never greater then
-+	  the number of allocated regions and usually much smaller).  It
-+	  allocates area from the smallest hole that is big enough for
-+	  allocation in question.
-diff --git a/mm/Makefile b/mm/Makefile
-index c6a84f1..2cb2569 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -44,3 +44,4 @@ obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
- obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
- obj-$(CONFIG_CLEANCACHE) += cleancache.o
- obj-$(CONFIG_CMA) += cma.o
-+obj-$(CONFIG_CMA_BEST_FIT) += cma-best-fit.o
-diff --git a/mm/cma-best-fit.c b/mm/cma-best-fit.c
-new file mode 100644
-index 0000000..5ed1168
---- /dev/null
-+++ b/mm/cma-best-fit.c
-@@ -0,0 +1,372 @@
-+/*
-+ * Contiguous Memory Allocator framework: Best Fit allocator
-+ * Copyright (c) 2010 by Samsung Electronics.
-+ * Written by Michal Nazarewicz (m.nazarewicz@samsung.com)
++unsigned long __must_check
++gen_pool_alloc_aligned(struct gen_pool *pool, size_t size,
++		       unsigned alignment_order);
++
++/**
++ * gen_pool_alloc() - allocate special memory from the pool
++ * @pool:	Pool to allocate from.
++ * @size:	Number of bytes to allocate from the pool.
 + *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation; either version 2 of the
-+ * License or (at your optional) any later version of the license.
-+ */
-+
-+#define pr_fmt(fmt) "cma: bf: " fmt
-+
-+#ifdef CONFIG_CMA_DEBUG
-+#  define DEBUG
-+#endif
-+
-+#include <linux/errno.h>       /* Error numbers */
-+#include <linux/slab.h>        /* kmalloc() */
-+
-+#include <linux/cma.h>         /* CMA structures */
-+
-+
-+/************************* Data Types *************************/
-+
-+struct cma_bf_node {
-+	unsigned long v;
-+	struct rb_node n;
++ * Allocate the requested number of bytes from the specified pool.
++ * Uses a first-fit algorithm.
+  */
+-struct gen_pool_chunk {
+-	spinlock_t lock;
+-	struct list_head next_chunk;	/* next chunk in pool */
+-	unsigned long start_addr;	/* starting address of memory chunk */
+-	unsigned long end_addr;		/* ending address of memory chunk */
+-	unsigned long bits[0];		/* bitmap for allocating memory chunk */
+-};
++static inline unsigned long __must_check
++gen_pool_alloc(struct gen_pool *pool, size_t size)
++{
++	return gen_pool_alloc_aligned(pool, size, 0);
++}
+ 
+-extern struct gen_pool *gen_pool_create(int, int);
+-extern int gen_pool_add(struct gen_pool *, unsigned long, size_t, int);
+-extern void gen_pool_destroy(struct gen_pool *);
+-extern unsigned long gen_pool_alloc(struct gen_pool *, size_t);
+-extern void gen_pool_free(struct gen_pool *, unsigned long, size_t);
++void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size);
+diff --git a/lib/genalloc.c b/lib/genalloc.c
+index 1923f14..dc6d833 100644
+--- a/lib/genalloc.c
++++ b/lib/genalloc.c
+@@ -15,54 +15,81 @@
+ #include <linux/bitmap.h>
+ #include <linux/genalloc.h>
+ 
++/* General purpose special memory pool descriptor. */
++struct gen_pool {
++	rwlock_t lock;			/* protects chunks list */
++	struct list_head chunks;	/* list of chunks in this pool */
++	unsigned order;			/* minimum allocation order */
 +};
 +
-+union cma_bf_item {
-+	struct cma chunk;
-+	struct {
-+		struct cma_bf_node start, size;
-+	};
++/* General purpose special memory pool chunk descriptor. */
++struct gen_pool_chunk {
++	spinlock_t lock;		/* protects bits */
++	struct list_head next_chunk;	/* next chunk in pool */
++	unsigned long start;		/* start of memory chunk */
++	unsigned long size;		/* number of bits */
++	unsigned long bits[0];		/* bitmap for allocating memory chunk */
 +};
+ 
+ /**
+- * gen_pool_create - create a new special memory pool
+- * @min_alloc_order: log base 2 of number of bytes each bitmap bit represents
+- * @nid: node id of the node the pool structure should be allocated on, or -1
++ * gen_pool_create() - create a new special memory pool
++ * @order:	Log base 2 of number of bytes each bitmap bit
++ *		represents.
++ * @nid:	Node id of the node the pool structure should be allocated
++ *		on, or -1.
+  *
+  * Create a new special memory pool that can be used to manage special purpose
+  * memory not managed by the regular kmalloc/kfree interface.
+  */
+-struct gen_pool *gen_pool_create(int min_alloc_order, int nid)
++struct gen_pool *__must_check gen_pool_create(unsigned order, int nid)
+ {
+ 	struct gen_pool *pool;
+ 
+-	pool = kmalloc_node(sizeof(struct gen_pool), GFP_KERNEL, nid);
+-	if (pool != NULL) {
++	if (WARN_ON(order >= BITS_PER_LONG))
++		return NULL;
 +
-+struct cma_bf_private {
-+	struct rb_root by_start_root;
-+	struct rb_root by_size_root;
-+	bool warned;
-+};
++	pool = kmalloc_node(sizeof *pool, GFP_KERNEL, nid);
++	if (pool) {
+ 		rwlock_init(&pool->lock);
+ 		INIT_LIST_HEAD(&pool->chunks);
+-		pool->min_alloc_order = min_alloc_order;
++		pool->order = order;
+ 	}
+ 	return pool;
+ }
+ EXPORT_SYMBOL(gen_pool_create);
+ 
+ /**
+- * gen_pool_add - add a new chunk of special memory to the pool
+- * @pool: pool to add new memory chunk to
+- * @addr: starting address of memory chunk to add to pool
+- * @size: size in bytes of the memory chunk to add to pool
+- * @nid: node id of the node the chunk structure and bitmap should be
+- *       allocated on, or -1
++ * gen_pool_add() - add a new chunk of special memory to the pool
++ * @pool:	Pool to add new memory chunk to.
++ * @addr:	Starting address of memory chunk to add to pool.
++ * @size:	Size in bytes of the memory chunk to add to pool.
++ * @nid:	Node id of the node the pool structure should be allocated
++ *		on, or -1.
+  *
+  * Add a new chunk of special memory to the specified pool.
+  */
+-int gen_pool_add(struct gen_pool *pool, unsigned long addr, size_t size,
+-		 int nid)
++int __must_check
++gen_pool_add(struct gen_pool *pool, unsigned long addr, size_t size, int nid)
+ {
+ 	struct gen_pool_chunk *chunk;
+-	int nbits = size >> pool->min_alloc_order;
+-	int nbytes = sizeof(struct gen_pool_chunk) +
+-				(nbits + BITS_PER_BYTE - 1) / BITS_PER_BYTE;
++	size_t nbytes;
 +
++	if (WARN_ON(!addr || addr + size < addr ||
++		    (addr & ((1 << pool->order) - 1))))
++		return -EINVAL;
+ 
+-	chunk = kmalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
+-	if (unlikely(chunk == NULL))
+-		return -1;
++	size = size >> pool->order;
++	if (WARN_ON(!size))
++		return -EINVAL;
 +
-+/************************* Basic Tree Manipulation *************************/
-+
-+static int  cma_bf_node_add(struct cma_bf_node *node, struct rb_root *root,
-+			    bool unique)
-+{
-+	struct rb_node **link = &root->rb_node, *parent = NULL;
-+	const unsigned long v = node->v;
-+
-+	while (*link) {
-+		struct cma_bf_node *n;
-+		parent = *link;
-+		n = rb_entry(parent, struct cma_bf_node, n);
-+
-+		if (unlikely(unique && v == n->v))
-+			return -EBUSY;
-+
-+		link = v <= n->v ? &parent->rb_left : &parent->rb_right;
-+	}
-+
-+	rb_link_node(&node->n, parent, link);
-+	rb_insert_color(&node->n, root);
-+
-+	return 0;
-+}
-+
-+static void cma_bf_node_del(struct cma_bf_node *node, struct rb_root *root)
-+{
-+	rb_erase(&node->n, root);
-+}
-+
-+static int  cma_bf_item_add_by_start(union cma_bf_item *item,
-+				     struct cma_bf_private *prv)
-+{
-+	int ret = cma_bf_node_add(&item->start, &prv->by_start_root, true);
-+	if (WARN_ON(ret && !prv->warned))
-+		prv->warned = true;
-+	return ret;
-+}
-+
-+static void cma_bf_item_del_by_start(union cma_bf_item *item,
-+				     struct cma_bf_private *prv)
-+{
-+	cma_bf_node_del(&item->start, &prv->by_start_root);
-+}
-+
-+static void cma_bf_item_add_by_size(union cma_bf_item *item,
-+				    struct cma_bf_private *prv)
-+{
-+	cma_bf_node_add(&item->size, &prv->by_size_root, false);
-+}
-+
-+static void cma_bf_item_del_by_size(union cma_bf_item *item,
-+				    struct cma_bf_private *prv)
-+{
-+	cma_bf_node_del(&item->size, &prv->by_size_root);
-+}
-+
-+
-+/************************* Device API *************************/
-+
-+static int cma_bf_init(struct cma_region *reg)
-+{
-+	struct cma_bf_private *prv;
-+	union cma_bf_item *item;
-+
-+	prv = kzalloc(sizeof *prv, GFP_KERNEL);
-+	if (unlikely(!prv))
++	nbytes = sizeof *chunk + BITS_TO_LONGS(size) * sizeof *chunk->bits;
++	chunk = kzalloc_node(nbytes, GFP_KERNEL, nid);
++	if (!chunk)
 +		return -ENOMEM;
+ 
+ 	spin_lock_init(&chunk->lock);
+-	chunk->start_addr = addr;
+-	chunk->end_addr = addr + size;
++	chunk->start = addr >> pool->order;
++	chunk->size  = size;
+ 
+ 	write_lock(&pool->lock);
+ 	list_add(&chunk->next_chunk, &pool->chunks);
+@@ -73,115 +100,116 @@ int gen_pool_add(struct gen_pool *pool, unsigned long addr, size_t size,
+ EXPORT_SYMBOL(gen_pool_add);
+ 
+ /**
+- * gen_pool_destroy - destroy a special memory pool
+- * @pool: pool to destroy
++ * gen_pool_destroy() - destroy a special memory pool
++ * @pool:	Pool to destroy.
+  *
+  * Destroy the specified special memory pool. Verifies that there are no
+  * outstanding allocations.
+  */
+ void gen_pool_destroy(struct gen_pool *pool)
+ {
+-	struct list_head *_chunk, *_next_chunk;
+ 	struct gen_pool_chunk *chunk;
+-	int order = pool->min_alloc_order;
+-	int bit, end_bit;
+-
++	int bit;
+ 
+-	list_for_each_safe(_chunk, _next_chunk, &pool->chunks) {
+-		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
++	while (!list_empty(&pool->chunks)) {
++		chunk = list_entry(pool->chunks.next, struct gen_pool_chunk,
++				   next_chunk);
+ 		list_del(&chunk->next_chunk);
+ 
+-		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
+-		bit = find_next_bit(chunk->bits, end_bit, 0);
+-		BUG_ON(bit < end_bit);
++		bit = find_next_bit(chunk->bits, chunk->size, 0);
++		BUG_ON(bit < chunk->size);
+ 
+ 		kfree(chunk);
+ 	}
+ 	kfree(pool);
+-	return;
+ }
+ EXPORT_SYMBOL(gen_pool_destroy);
+ 
+ /**
+- * gen_pool_alloc - allocate special memory from the pool
+- * @pool: pool to allocate from
+- * @size: number of bytes to allocate from the pool
++ * gen_pool_alloc_aligned() - allocate special memory from the pool
++ * @pool:		Pool to allocate from.
++ * @size:		Number of bytes to allocate from the pool.
++ * @alignment_order:	Order the allocated space should be
++ *			aligned to (eg. 20 means allocated space
++ *			must be aligned to 1MiB).
+  *
+  * Allocate the requested number of bytes from the specified pool.
+  * Uses a first-fit algorithm.
+  */
+-unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
++unsigned long __must_check
++gen_pool_alloc_aligned(struct gen_pool *pool, size_t size,
++		       unsigned alignment_order)
+ {
+-	struct list_head *_chunk;
++	unsigned long addr, align_mask = 0, flags, start;
+ 	struct gen_pool_chunk *chunk;
+-	unsigned long addr, flags;
+-	int order = pool->min_alloc_order;
+-	int nbits, start_bit, end_bit;
+ 
+ 	if (size == 0)
+ 		return 0;
+ 
+-	nbits = (size + (1UL << order) - 1) >> order;
++	if (alignment_order > pool->order)
++		align_mask = (1 << (alignment_order - pool->order)) - 1;
+ 
+-	read_lock(&pool->lock);
+-	list_for_each(_chunk, &pool->chunks) {
+-		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
++	size = (size + (1UL << pool->order) - 1) >> pool->order;
+ 
+-		end_bit = (chunk->end_addr - chunk->start_addr) >> order;
++	read_lock(&pool->lock);
++	list_for_each_entry(chunk, &pool->chunks, next_chunk) {
++		if (chunk->size < size)
++			continue;
+ 
+ 		spin_lock_irqsave(&chunk->lock, flags);
+-		start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit, 0,
+-						nbits, 0);
+-		if (start_bit >= end_bit) {
++		start = bitmap_find_next_zero_area_off(chunk->bits, chunk->size,
++						       0, size, align_mask,
++						       chunk->start);
++		if (start >= chunk->size) {
+ 			spin_unlock_irqrestore(&chunk->lock, flags);
+ 			continue;
+ 		}
+ 
+-		addr = chunk->start_addr + ((unsigned long)start_bit << order);
+-
+-		bitmap_set(chunk->bits, start_bit, nbits);
++		bitmap_set(chunk->bits, start, size);
+ 		spin_unlock_irqrestore(&chunk->lock, flags);
+-		read_unlock(&pool->lock);
+-		return addr;
++		addr = (chunk->start + start) << pool->order;
++		goto done;
+ 	}
 +
-+	item = kzalloc(sizeof *item, GFP_KERNEL);
-+	if (unlikely(!item)) {
-+		kfree(prv);
-+		return -ENOMEM;
-+	}
-+
-+	item->start.v = reg->start;
-+	item->size.v  = reg->size;
-+
-+	rb_root_init(&prv->by_start_root, &item->start.n);
-+	rb_root_init(&prv->by_size_root, &item->size.n);
-+	prv->warned = false;
-+
-+	reg->private_data = prv;
-+	return 0;
-+}
-+
-+static void cma_bf_cleanup(struct cma_region *reg)
-+{
-+	struct cma_bf_private *prv = reg->private_data;
-+	union cma_bf_item *item =
-+		rb_entry(prv->by_start_root.rb_node,
-+			 union cma_bf_item, start.n);
-+
-+	/* There should be only one item. */
-+	WARN_ON(!prv->warned &&
-+		(!item ||
-+		 item->start.n.rb_left || item->start.n.rb_right ||
-+		 item->size.n.rb_left || item->size.n.rb_right));
-+
-+	kfree(item);
-+	kfree(prv);
-+}
-+
-+struct cma *cma_bf_alloc(struct cma_region *reg,
-+			 size_t size, unsigned long alignment)
-+{
-+	struct cma_bf_private *prv = reg->private_data;
-+	struct rb_node *node = prv->by_size_root.rb_node;
-+	union cma_bf_item *hole = NULL, *item;
-+	unsigned long start;
-+	int ret;
-+
-+	/* First find hole that is large enough */
-+	while (node) {
-+		union cma_bf_item *item =
-+			rb_entry(node, union cma_bf_item, size.n);
-+
-+		if (item->size.v < size) {
-+			node = node->rb_right;
-+		} else if (item->size.v >= size) {
-+			node = node->rb_left;
-+			hole = item;
-+		}
-+	}
-+	if (!hole)
-+		return ERR_PTR(-ENOMEM);
-+
-+	/* Now look for items which can satisfy alignment requirements */
-+	for (;;) {
-+		unsigned long end = hole->start.v + hole->size.v;
-+		start = ALIGN(hole->start.v, alignment);
-+		if (start < end && end - start >= size)
-+			break;
-+
-+		node = rb_next(node);
-+		if (!node)
-+			return ERR_PTR(-ENOMEM);
-+
-+		hole = rb_entry(node, union cma_bf_item, size.n);
-+	}
-+
-+	/* And finally, take part of the hole */
-+
-+	/*
-+	 * There are three cases:
-+	 * 1. the chunk takes the whole hole,
-+	 * 2. the chunk is at the beginning or at the end of the hole, or
-+	 * 3. the chunk is in the middle of the hole.
-+	 */
-+
-+	/* Case 1, the whole hole */
-+	if (size == hole->size.v) {
-+		ret = __cma_grab(reg, start, size);
-+		if (ret)
-+			return ERR_PTR(ret);
-+
-+		cma_bf_item_del_by_start(hole, prv);
-+		cma_bf_item_del_by_size(hole, prv);
-+
-+		hole->chunk.phys = start;
-+		hole->chunk.size = size;
-+		return &hole->chunk;
-+	}
-+
-+	/* Allocate (so we can test early if ther's enough memory) */
-+	item = kmalloc(sizeof *item, GFP_KERNEL);
-+	if (unlikely(!item))
-+		return ERR_PTR(-ENOMEM);
-+
-+	/* Case 3, in the middle */
-+	if (start != hole->start.v &&
-+	    start + size != hole->start.v + hole->size.v) {
-+		union cma_bf_item *tail;
-+
-+		/*
-+		 * Space between the end of the chunk and the end of
-+		 * the region, ie. space left after the end of the
-+		 * chunk.  If this is dividable by alignment we can
-+		 * move the chunk to the end of the hole.
-+		 */
-+		unsigned long left =
-+			hole->start.v + hole->size.v - (start + size);
-+		if ((left & (alignment - 1)) == 0) {
-+			start += left;
-+			/* And so, we have reduced problem to case 2. */
-+			goto case_2;
-+		}
-+
-+		/*
-+		 * We are going to add a hole at the end.  This way,
-+		 * we will reduce the problem to case 2 -- the chunk
-+		 * will be at the end of a reduced hole.
-+		 */
-+		tail = kmalloc(sizeof *tail, GFP_KERNEL);
-+		if (unlikely(!tail)) {
-+			kfree(item);
-+			return ERR_PTR(-ENOMEM);
-+		}
-+
-+		tail->start.v = start + size;
-+		tail->size.v  =
-+			hole->start.v + hole->size.v - tail->start.v;
-+
-+		if (cma_bf_item_add_by_start(tail, prv))
-+			/*
-+			 * Things are broken beyond repair...  Abort
-+			 * inserting the hole but continue with the
-+			 * item.  We will loose some memory but we're
-+			 * screwed anyway.
-+			 */
-+			kfree(tail);
-+		else
-+			cma_bf_item_add_by_size(tail, prv);
-+
-+		/*
-+		 * It's important that we first insert the new hole in
-+		 * the tree sorted by size and later reduce the size
-+		 * of the old hole.  We will update the position of
-+		 * the old hole in the rb tree in code that handles
-+		 * case 2.
-+		 */
-+		hole->size.v = tail->start.v - hole->start.v;
-+
-+		/* Go to case 2 */
-+	}
-+
-+	/* Case 2, at the beginning or at the end */
-+case_2:
-+	/* No need to update the tree; order preserved. */
-+	if (start == hole->start.v)
-+		hole->start.v += size;
-+
-+	/* Alter hole's size */
-+	hole->size.v -= size;
-+	cma_bf_item_del_by_size(hole, prv);
-+	cma_bf_item_add_by_size(hole, prv);
-+
-+	item->chunk.phys = start;
-+	item->chunk.size = size;
-+	return &item->chunk;
-+}
-+
-+static void cma_bf_free(struct cma_chunk *chunk)
-+{
-+	struct cma_bf_private *prv = reg->private_data;
-+	union cma_bf_item *prev;
-+	struct rb_node *node;
-+	int twice;
-+
-+	{
-+		unsigned long start = item->chunk.phys;
-+		unsigned long size  = item->chunk.size;
-+		item->start.v = start;
-+		item->size.v = size;
-+	}
-+
-+	/* Add new hole */
-+	if (cma_bf_item_add_by_start(item, prv)) {
-+		/*
-+		 * We're screwed...  Just free the item and forget
-+		 * about it.  Things are broken beyond repair so no
-+		 * sense in trying to recover.
-+		 */
-+		kfree(item);
++	addr = 0;
++done:
+ 	read_unlock(&pool->lock);
+-	return 0;
++	return addr;
+ }
+-EXPORT_SYMBOL(gen_pool_alloc);
++EXPORT_SYMBOL(gen_pool_alloc_aligned);
+ 
+ /**
+- * gen_pool_free - free allocated special memory back to the pool
+- * @pool: pool to free to
+- * @addr: starting address of memory to free back to pool
+- * @size: size in bytes of memory to free
++ * gen_pool_free() - free allocated special memory back to the pool
++ * @pool:	Pool to free to.
++ * @addr:	Starting address of memory to free back to pool.
++ * @size:	Size in bytes of memory to free.
+  *
+  * Free previously allocated special memory back to the specified pool.
+  */
+ void gen_pool_free(struct gen_pool *pool, unsigned long addr, size_t size)
+ {
+-	struct list_head *_chunk;
+ 	struct gen_pool_chunk *chunk;
+ 	unsigned long flags;
+-	int order = pool->min_alloc_order;
+-	int bit, nbits;
+ 
+-	nbits = (size + (1UL << order) - 1) >> order;
++	if (!size)
 +		return;
-+	}
+ 
+-	read_lock(&pool->lock);
+-	list_for_each(_chunk, &pool->chunks) {
+-		chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
++	addr = addr >> pool->order;
++	size = (size + (1UL << pool->order) - 1) >> pool->order;
+ 
+-		if (addr >= chunk->start_addr && addr < chunk->end_addr) {
+-			BUG_ON(addr + size > chunk->end_addr);
++	BUG_ON(addr + size < addr);
 +
-+	cma_bf_item_add_by_size(item, prv);
-+
-+	/* Merge with prev or next sibling */
-+	twice = 2;
-+	node = rb_prev(&item->start.n);
-+	if (unlikely(!node))
-+		goto next;
-+	prev = rb_entry(node, union cma_bf_item, start.n);
-+
-+	for (;;) {
-+		if (prev->start.v + prev->size.v == item->start.v) {
-+			/* Remove previous hole from trees */
-+			cma_bf_item_del_by_start(prev, prv);
-+			cma_bf_item_del_by_size(prev, prv);
-+
-+			/* Alter this hole */
-+			item->start.v  = prev->start.v;
-+			item->size.v += prev->size.v;
-+			cma_bf_item_del_by_size(item, prv);
-+			cma_bf_item_del_by_size(item, prv);
-+			/*
-+			 * No need to update the by start trees as we
-+			 * do not break sequence order.
-+			 */
-+
-+			/* Free prev hole */
-+			kfree(prev);
-+		}
-+
-+next:
-+		if (!--twice)
-+			break;
-+
-+		node = rb_next(&item->start.n);
-+		if (unlikely(!node))
-+			break;
-+		prev = item;
-+		item = rb_entry(node, union cma_bf_item, start.n);
-+	}
-+}
-+
-+{
-+	__cma_ungrab(chunk->reg, chunk->phys, chunk->size);
-+	__cma_bf_free(chunk->reg, 
-+		      container_of(chunk, union cma_bf_item, chunk));
-+}
-+
-+/************************* Register *************************/
-+
-+static int cma_bf_module_init(void)
-+{
-+	static struct cma_allocator alloc = {
-+		.name    = "bf",
-+		.init    = cma_bf_init,
-+		.cleanup = cma_bf_cleanup,
-+		.alloc   = cma_bf_alloc,
-+		.free    = cma_bf_free,
-+	};
-+	return cma_allocator_register(&alloc);
-+}
-+module_init(cma_bf_module_init);
++	read_lock(&pool->lock);
++	list_for_each_entry(chunk, &pool->chunks, next_chunk)
++		if (addr >= chunk->start &&
++		    addr + size <= chunk->start + chunk->size) {
+ 			spin_lock_irqsave(&chunk->lock, flags);
+-			bit = (addr - chunk->start_addr) >> order;
+-			while (nbits--)
+-				__clear_bit(bit++, chunk->bits);
++			bitmap_clear(chunk->bits, addr - chunk->start, size);
+ 			spin_unlock_irqrestore(&chunk->lock, flags);
+-			break;
++			goto done;
+ 		}
+-	}
+-	BUG_ON(nbits > 0);
++	BUG_ON(1);
++done:
+ 	read_unlock(&pool->lock);
+ }
+ EXPORT_SYMBOL(gen_pool_free);
 -- 
 1.7.2.3
 
