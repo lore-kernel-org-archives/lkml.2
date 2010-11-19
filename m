@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab0KSStt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 13:49:49 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36740 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756518Ab0KSSts convert rfc822-to-8bit (ORCPT
+	id S1755268Ab0KSS5R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 13:57:17 -0500
+Received: from he.sipsolutions.net ([78.46.109.217]:49531 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754202Ab0KSS5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 13:49:48 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fpVTZWB5ECgxZSM565uCyyVsHxbHYpyGV1YrM45wB0aE9KpvHW/n9Yi/m8ezkjqY8G
-         Sl9EL+WI8Zxi+5NCs8AYcwTfRqfZHIah7damOKIcT7zM6GdPv6JRb2epo9sXg+KybzCi
-         siZQD19XXonUm2S8oMyDLQKm3zAO/rlQhrwIU=
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1011191035210.10052@gbean-linux.qualcomm.com>
-References: <1290109970-26752-1-git-send-email-gbean@codeaurora.org>
-	<1290109970-26752-2-git-send-email-gbean@codeaurora.org>
-	<AANLkTimTsyhjHJZggFO31C-2RswpmKWn-V4pGEiQ3+_2@mail.gmail.com>
-	<alpine.DEB.2.00.1011181229380.26784@gbean-linux.qualcomm.com>
-	<AANLkTi=p02P=-JQ9+FynFyM1yxrAh3utKTD2uzqhnLxK@mail.gmail.com>
-	<alpine.DEB.2.00.1011181256470.29924@gbean-linux.qualcomm.com>
-	<AANLkTiknYmWOmiFXGp6h2dT==aMuGs3BtXi82b6Vdq5i@mail.gmail.com>
-	<alpine.DEB.2.00.1011191035210.10052@gbean-linux.qualcomm.com>
-Date: Fri, 19 Nov 2010 10:49:47 -0800
-Message-ID: <AANLkTiknSudbo_j+nqBqmds49CWyqXf0jpvz+DTYH-zg@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] msm: gpio: Add irq support to v2 gpiolib.
-From: Janakiram Sistla <janakiram.sistla@gmail.com>
-To: Gregory Bean <gbean@codeaurora.org>
-Cc: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 19 Nov 2010 13:57:16 -0500
+Subject: Re: [PATCH v7 3/3] nl80211/mac80211: Report signal average
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Jouni Malinen <j@w1.fi>
+Cc: Bruno Randolf <br1@einfach.org>, linville@tuxdriver.com,
+        randy.dunlap@oracle.com, br1@thinktube.com, peterz@infradead.org,
+        blp@cs.stanford.edu, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Lars_Ericsson@telia.com,
+        stefanr@s5r6.in-berlin.de, kosaki.motohiro@jp.fujitsu.com,
+        akpm@linux-foundation.org, kevin.granade@gmail.com
+In-Reply-To: <20101116093743.GA21872@jm.kir.nu>
+References: <20101112024901.28522.21895.stgit@localhost6.localdomain6>
+	 <20101112030035.28522.75318.stgit@localhost6.localdomain6>
+	 <20101116093743.GA21872@jm.kir.nu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 19 Nov 2010 10:58:36 -0800
+Message-ID: <1290193116.3768.8.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 10:37 AM, Gregory Bean <gbean@codeaurora.org> wrote:
-> On Thu, 18 Nov 2010, Janakiram Sistla wrote:
->
->>> Targets with the v2 block define CONFIG_MSM_V2_TLMM.
->>
->> So in that case we can name  it as gpio-tlmm.c ??
->
-> No, not and have things be any clearer.
->
-> All MSM chips have a TLMM block.  The older chips have
-> version 1 (v1) of the TLMM block.  The newer chips have v2.
-I think that we should differentiate the new gpio infrastructure with
-appropriate naming that makes the diff between v1 and v2
-> --
-> Employee of Qualcomm Innovation Center, Inc.
-> Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
->
+On Tue, 2010-11-16 at 11:37 +0200, Jouni Malinen wrote:
+> On Fri, Nov 12, 2010 at 12:00:35PM +0900, Bruno Randolf wrote:
+> > Extend nl80211 to report an exponential weighted moving average (EWMA) of the
+> > signal value. Since the signal value usually fluctuates between different
+> > packets, an average can be more useful than the value of the last packet.
+> > 
+> > This uses the recently added generic EWMA library function.
+> 
+> Isn't that generic EWMA library function making this much more CPU
+> intensive than necessary?
+
+John, is there any reason you completely ignored Jouni's feedback here?
+This wasn't addressed in v8.
+
+johannes
+
