@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab0KSV6a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:58:30 -0500
-Received: from kroah.org ([198.145.64.141]:44966 "EHLO coco.kroah.org"
+	id S1757344Ab0KSWci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:32:38 -0500
+Received: from kroah.org ([198.145.64.141]:45017 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756820Ab0KSV61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:27 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:39 2010
-Message-Id: <20101119215639.740480040@clark.site>
+	id S932607Ab0KSV6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:31 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:40 2010
+Message-Id: <20101119215640.306813138@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:55:33 -0800
+Date: Fri, 19 Nov 2010 13:55:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Suresh Jayaraman <sjayaraman@suse.de>,
-        Steve French <sfrench@us.ibm.com>
-Subject: [12/82] cifs: fix broken oplock handling
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [19/82] x86, mtrr: Assume SYS_CFG[Tom2ForceMemTypeWB] exists on all future AMD CPUs
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,104 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Jayaraman <sjayaraman@suse.de>
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-commit aa91c7e4ab9b0842b7d7a7cbf8cca18b20df89b5 upstream.
+commit 3fdbf004c1706480a7c7fac3c9d836fa6df20d7d upstream.
 
-cifs_new_fileinfo() does not use the 'oplock' value from the callers. Instead,
-it sets it to REQ_OPLOCK which seems wrong. We should be using the oplock value
-obtained from the Server to set the inode's clientCanCacheAll or
-clientCanCacheRead flags. Fix this by passing oplock from the callers to
-cifs_new_fileinfo().
+Instead of adapting the CPU family check in amd_special_default_mtrr()
+for each new CPU family assume that all new AMD CPUs support the
+necessary bits in SYS_CFG MSR.
 
-This change dates back to commit a6ce4932 (2.6.30-rc3). So, all the affected
-versions will need this fix. Please Cc stable once reviewed and accepted.
+Tom2Enabled is architectural (defined in APM Vol.2).
+Tom2ForceMemTypeWB is defined in all BKDGs starting with K8 NPT.
+In pre K8-NPT BKDG this bit is reserved (read as zero).
 
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+W/o this adaption Linux would unnecessarily complain about bad MTRR
+settings on every new AMD CPU family, e.g.
+
+[    0.000000] WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 4863MB of RAM.
+
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+LKML-Reference: <20100930123235.GB20545@loge.amd.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/cifsproto.h |    3 ++-
- fs/cifs/dir.c       |   12 +++++-------
- fs/cifs/file.c      |    4 ++--
- 3 files changed, 9 insertions(+), 10 deletions(-)
+ arch/x86/kernel/cpu/mtrr/cleanup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/cifs/cifsproto.h
-+++ b/fs/cifs/cifsproto.h
-@@ -104,7 +104,8 @@ extern struct timespec cnvrtDosUnixTm(__
+--- a/arch/x86/kernel/cpu/mtrr/cleanup.c
++++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+@@ -827,7 +827,7 @@ int __init amd_special_default_mtrr(void
  
- extern struct cifsFileInfo *cifs_new_fileinfo(struct inode *newinode,
- 				__u16 fileHandle, struct file *file,
--				struct vfsmount *mnt, unsigned int oflags);
-+				struct vfsmount *mnt, unsigned int oflags,
-+				__u32 oplock);
- extern int cifs_posix_open(char *full_path, struct inode **pinode,
- 				struct super_block *sb,
- 				int mode, int oflags,
---- a/fs/cifs/dir.c
-+++ b/fs/cifs/dir.c
-@@ -138,9 +138,9 @@ cifs_bp_rename_retry:
-  */
- struct cifsFileInfo *
- cifs_new_fileinfo(struct inode *newinode, __u16 fileHandle,
--		  struct file *file, struct vfsmount *mnt, unsigned int oflags)
-+		  struct file *file, struct vfsmount *mnt, unsigned int oflags,
-+		  __u32 oplock)
- {
--	int oplock = 0;
- 	struct cifsFileInfo *pCifsFile;
- 	struct cifsInodeInfo *pCifsInode;
- 	struct cifs_sb_info *cifs_sb = CIFS_SB(mnt->mnt_sb);
-@@ -149,9 +149,6 @@ cifs_new_fileinfo(struct inode *newinode
- 	if (pCifsFile == NULL)
- 		return pCifsFile;
- 
--	if (oplockEnabled)
--		oplock = REQ_OPLOCK;
--
- 	pCifsFile->netfid = fileHandle;
- 	pCifsFile->pid = current->tgid;
- 	pCifsFile->pInode = igrab(newinode);
-@@ -476,7 +473,7 @@ cifs_create_set_dentry:
- 		}
- 
- 		pfile_info = cifs_new_fileinfo(newinode, fileHandle, filp,
--					       nd->path.mnt, oflags);
-+					       nd->path.mnt, oflags, oplock);
- 		if (pfile_info == NULL) {
- 			fput(filp);
- 			CIFSSMBClose(xid, tcon, fileHandle);
-@@ -738,7 +735,8 @@ cifs_lookup(struct inode *parent_dir_ino
- 
- 			cfile = cifs_new_fileinfo(newInode, fileHandle, filp,
- 						  nd->path.mnt,
--						  nd->intent.open.flags);
-+						  nd->intent.open.flags,
-+						  oplock);
- 			if (cfile == NULL) {
- 				fput(filp);
- 				CIFSSMBClose(xid, pTcon, fileHandle);
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -277,7 +277,7 @@ int cifs_open(struct inode *inode, struc
- 
- 			pCifsFile = cifs_new_fileinfo(inode, netfid, file,
- 							file->f_path.mnt,
--							oflags);
-+							oflags, oplock);
- 			if (pCifsFile == NULL) {
- 				CIFSSMBClose(xid, tcon, netfid);
- 				rc = -ENOMEM;
-@@ -367,7 +367,7 @@ int cifs_open(struct inode *inode, struc
- 		goto out;
- 
- 	pCifsFile = cifs_new_fileinfo(inode, netfid, file, file->f_path.mnt,
--					file->f_flags);
-+					file->f_flags, oplock);
- 	if (pCifsFile == NULL) {
- 		rc = -ENOMEM;
- 		goto out;
+ 	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
+ 		return 0;
+-	if (boot_cpu_data.x86 < 0xf || boot_cpu_data.x86 > 0x11)
++	if (boot_cpu_data.x86 < 0xf)
+ 		return 0;
+ 	/* In case some hypervisor doesn't pass SYSCFG through: */
+ 	if (rdmsr_safe(MSR_K8_SYSCFG, &l, &h) < 0)
 
 
