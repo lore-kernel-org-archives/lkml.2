@@ -1,106 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753931Ab0KSMxY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 07:53:24 -0500
-Received: from mail.sysgo.com ([195.145.229.155]:56589 "EHLO mail.sysgo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753493Ab0KSMxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 07:53:23 -0500
-Date: Fri, 19 Nov 2010 13:54:05 +0100
-From: Pavel Machek <pma@sysgo.com>
-To: kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        eric.y.miao@gmail.com, cko@sysgo.com
-Cc: pfilipek@jpembedded.eu
-Subject: Re: 19851c58e68 breaks spacecom1 board
-Message-ID: <20101119125405.GA29158@pma.sysgo.com>
-References: <20101116080311.GA17397@pma.sysgo.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101116080311.GA17397@pma.sysgo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754066Ab0KSMzf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 07:55:35 -0500
+Received: from casper.infradead.org ([85.118.1.10]:41386 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752011Ab0KSMze convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 07:55:34 -0500
+Subject: Re: [PATCH 0/2] Generic hardware error reporting support
+From: Peter Zijlstra <peterz@infradead.org>
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Tony Luck <tony.luck@intel.com>
+In-Reply-To: <AANLkTinrk8XN9XQeM-pmqhiz=tSw4x01JaGMjdRG52dF@mail.gmail.com>
+References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
+	 <1290165768.2109.1537.camel@laptop>
+	 <AANLkTik3ujs7-tMNUuk33wuMXFm+iusspMcR=yjPXtn_@mail.gmail.com>
+	 <1290168173.2109.1565.camel@laptop>
+	 <AANLkTinrk8XN9XQeM-pmqhiz=tSw4x01JaGMjdRG52dF@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 19 Nov 2010 13:55:15 +0100
+Message-ID: <1290171315.2109.1577.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2010-11-19 at 20:48 +0800, huang ying wrote:
+> 
+> I have talked with Mauro during LPC. We all agree that we need a
+> generic hardware error reporting interface. And now, I want to talk
+> with all interested parties with code. 
 
-Fix up interrupt numbers on SA1111 companion chip.
+talking with code could maybe be done.. but definitely not in the form
+of a 'pull' request of your approach.
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Also, I would think that if you do a RFC (the usual way to talk with
+code) is to list the various requirements and how you address them with
+your code and asking the other parties if the agree with the approach
+you've taken.
 
----
-
-This seems to fix the interrupt issue for me... USB now gets some
-interrupts. But some SA1111 expert should take a look at this.
-
-diff --git a/arch/arm/common/sa1111.c b/arch/arm/common/sa1111.c
-index a52a27c..e47a474 100644
---- a/arch/arm/common/sa1111.c
-+++ b/arch/arm/common/sa1111.c
-@@ -448,6 +454,7 @@ static struct irq_chip sa1111_high_chip = {
- static void sa1111_setup_irq(struct sa1111 *sachip)
- {
- 	void __iomem *irqbase = sachip->base + SA1111_INTC;
-+	int irq_base = sachip->irq_base; 
- 	unsigned int irq;
- 
- 	/*
-@@ -475,19 +482,19 @@ static void sa1111_setup_irq(struct sa1111 *sachip)
- 	sa1111_writel(~0, irqbase + SA1111_INTSTATCLR1);
- 
- 	for (irq = IRQ_GPAIN0; irq <= SSPROR; irq++) {
--		set_irq_chip(irq, &sa1111_low_chip);
--		set_irq_chip_data(irq, sachip);
--		set_irq_handler(irq, handle_edge_irq);
--		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
-+		set_irq_chip(irq + irq_base, &sa1111_low_chip);
-+		set_irq_chip_data(irq + irq_base, sachip);
-+		set_irq_handler(irq + irq_base, handle_edge_irq);
-+		set_irq_flags(irq + irq_base, IRQF_VALID | IRQF_PROBE);
- 	}
- 
- 	for (irq = AUDXMTDMADONEA; irq <= IRQ_S1_BVD1_STSCHG; irq++) {
--		set_irq_chip(irq, &sa1111_high_chip);
--		set_irq_chip_data(irq, sachip);
--		set_irq_handler(irq, handle_edge_irq);
--		set_irq_flags(irq, IRQF_VALID | IRQF_PROBE);
-+		set_irq_chip(irq + irq_base, &sa1111_high_chip);
-+		set_irq_chip_data(irq + irq_base, sachip);
-+		set_irq_handler(irq + irq_base, handle_edge_irq);
-+		set_irq_flags(irq + irq_base, IRQF_VALID | IRQF_PROBE);
- 	}
- 
- 	/*
- 	 * Register SA1111 interrupt
- 	 */
-@@ -782,6 +839,15 @@ __sa1111_probe(struct device *me, struct resource *mem, int irq)
- 	else
- 		has_devs &= ~(1 << 1);
- 
-+	for (i = 0; i < ARRAY_SIZE(sa1111_devices); i++) {
-+		int j;
-+		for (j = 0; j < 6; j++)			
-+			if (sa1111_devices[i].irq[j]) {
-+				sa1111_devices[i].irq[j] += sachip->irq_base;
-+				printk("Adjusting interrupt %d\n", sa1111_devices[i].irq[j]);
-+			}
-+	}
-+
- 	for (i = 0; i < ARRAY_SIZE(sa1111_devices); i++)
- 		if (has_devs & (1 << i))
- 			sa1111_init_one_child(sachip, mem, &sa1111_devices[i]);
-@@ -853,8 +919,13 @@ int dma_needs_bounce(struct device *dev, dma_addr_t addr, size_t size)
- 	 * SDRAM bank 1 on Neponset). The default configuration selects
- 	 * Assabet, so any address in bank 1 is necessarily invalid.
- 	 */
-+#ifdef CONFIG_MACH_SPACECOM1
-+	return ((machine_is_spacecom1()) &&
-+		(addr >= 0xa0100000 || (addr + size) >= 0xa0100000));
-+#else
- 	return ((machine_is_assabet() || machine_is_pfs168()) &&
- 		(addr >= 0xc8000000 || (addr + size) >= 0xc8000000));
-+#endif
- }
- 
- struct sa1111_save_data {
+You've done none of that, instead you ask Len to merge your muck without
+even mentioning what the other parties think.
