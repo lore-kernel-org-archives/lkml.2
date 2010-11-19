@@ -1,88 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751569Ab0KSHRL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 02:17:11 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35316 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab0KSHRJ convert rfc822-to-8bit (ORCPT
+	id S1751737Ab0KSHXh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 02:23:37 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:4762 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750912Ab0KSHXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 02:17:09 -0500
+	Fri, 19 Nov 2010 02:23:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=JB/MF0u9e9OvkSkEqnrXLax+vhU+qI9zxISy0218Mmu1nF16frdeUTszuw5GP/AmX1
-         WUHlfpRQsmRDzeKrn5Lqbc8qMqVPRyKFkKxYreXcDBA+GHqzPdYpJSZM2agckprbWrHY
-         YT/Rn2U/wSqsIemE2BTsq2L6rCJISrXYV5b5U=
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Rp5oM+rER74JCg/2/VJJKR1GSNc93VP65Z8oL0JjsSZuF2UZGza03KjyGtt4nVx2yq
+         R9R8Tf9njcZxxY9aTC9A==
+Date: Thu, 18 Nov 2010 23:23:16 -0800
+From: Michel Lespinasse <walken@google.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering
+ writeback
+Message-ID: <20101119072316.GA14388@google.com>
+References: <1289996638-21439-1-git-send-email-walken@google.com>
+ <1289996638-21439-4-git-send-email-walken@google.com>
+ <20101117125756.GA5576@amd>
+ <1290007734.2109.941.camel@laptop>
+ <AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
+ <20101117231143.GQ22876@dastard>
+ <20101118133702.GA18834@infradead.org>
+ <alpine.LSU.2.00.1011180934400.3210@tigran.mtv.corp.google.com>
 MIME-Version: 1.0
-In-Reply-To: <1290072458.18450.1.camel@e102144-lin.cambridge.arm.com>
-References: <1290063401-25440-1-git-send-email-dengcheng.zhu@gmail.com>
-	<1290063401-25440-6-git-send-email-dengcheng.zhu@gmail.com>
-	<1290072458.18450.1.camel@e102144-lin.cambridge.arm.com>
-Date: Fri, 19 Nov 2010 15:16:38 +0800
-Message-ID: <AANLkTin7+-f662m=mbv_XiVxETx-5Q0PnSDhhM9GVYis@mail.gmail.com>
-Subject: Re: [PATCH 5/5] MIPS/Perf-events: Use unsigned delta for right shift
- in event update
-From: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: ralf@linux-mips.org, a.p.zijlstra@chello.nl, fweisbec@gmail.com,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        wuzhangjin@gmail.com, paulus@samba.org, mingo@elte.hu, acme@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.00.1011180934400.3210@tigran.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks. The commit you pointed out was also in this patch set (#3).
+On Thu, Nov 18, 2010 at 09:41:22AM -0800, Hugh Dickins wrote:
+> On Thu, 18 Nov 2010, Christoph Hellwig wrote:
+> > On Thu, Nov 18, 2010 at 10:11:43AM +1100, Dave Chinner wrote:
+> > > Hence I think that avoiding ->page_mkwrite callouts is likely to
+> > > break some filesystems in subtle, undetected ways.  IMO, regardless
+> > > of what is done, it would be really good to start by writing a new
+> > > regression test to exercise and encode the expected the mlock
+> > > behaviour so we can detect regressions later on....
+> > 
+> > I think it would help if we could drink a bit of the test driven design
+> > coolaid here. Michel, can you write some testcases where pages on a
+> > shared mapping are mlocked, then dirtied and then munlocked, and then
+> > written out using msync/fsync.  Anything that fails this test on
+> > btrfs/ext4/gfs/xfs/etc obviously doesn't work.
 
-But I think the return value should stick to 0, not 1. Something out of my
-consideration?
+I think it's still under debate what's an acceptable result for this test
+(i.e. what's supposed to happen during mlock of a shared mapping of
+a sparsely allocated file - is a fallocate equivalent supposed to happen ?)
+But I agree discussing based on test results will make things more concrete.
+
+> Whilst it's hard to argue against a request for testing, Dave's worries
+> just sprang from a misunderstanding of all the talk about "avoiding ->
+> page_mkwrite".  There's nothing strange or risky about Michel's patch,
+> it does not avoid ->page_mkwrite when there is a write: it just stops
+> pretending that there was a write when locking down the shared area.
+
+So, I decided to test this using memtoy. /data is a separate partition
+where I had just 10GB free space, and /data/hole20G was created using
+dd if=/dev/zero of=/data/hole20G bs=1M seek=20480 count=0.
+
+memtoy>file /data/hole20G shared
+memtoy>map hole20G
+
+At this point the file is mapped using a writable, shared VMA.
+
+memtoy>touch hole20G
+memtoy:  touched 5242880 pages in 30.595 secs
+
+At this point memtoy's address space is populated with zeroed
+pages. The pages are distinct (meminfo does show 20G of allocated pages),
+are classified as file pages, not anon, and are associated with the
+struct address_space for /data/hole20G. That file still does not have
+blocks allocated, as can be seen with du /data/hole20G.
+
+memtoy>lock hole20G
+
+memtoy tries to mlock the hole20G VMA.
+This is where things get interesting.
+
+Using ext2, without my patch (ext3 should be similar):
+  - first, mlock does fast progress going though file pages, marking them
+    as dirty. Eventually, it hits the dirty limit and gets throttled.
+  - then, mlock does slow progress as it needs to wait for writeback.
+    writeback occurs and allocates blocks for the /data/hole20G.
+    Eventually, the /data partition gets full.
+  - then, mlock does no progress as it's at the dirty limit and nothing
+    gets written back.
+  - mlock never terminates.
+
+Using ext2, with my patch (ext3 should be similar):
+  - mlock goes through all pages in ~5 seconds, marking them as mlocked
+    (but still not dirty)
+  - mlock completes. /data/hole20G still does not have blocks allocated.
+  - if memtoy is then instructed to dirty all the pages
+    (using 'touch hole20G write'):
+    - first, memtoy does fast progress faulting through file pages, marking
+      them as dirty. Eventually, it hits the dirty limit and gets throttled.
+    - then, memtoy does slow progress as it needs to wait for writeback.
+      writeback occurs and allocates blocks for the /data/hole20G.
+      Eventually, the /data partition gets full.
+    - then, memtoy does no progress as it's at the dirty limit and nothing
+      gets written back. It gets stuck into a write fault that never
+      completes.
+  - i.e. this is essentially the same lockup as without my patch, except that
+    it occurs when the application tries to dirty the shared file rather than
+    during mlock itself.
+
+Using ext4, without my patch:
+  - first, mlock does fast progress going though file pages, marking them
+    as dirty. Eventually, it hits the dirty limit and gets throttled.
+  - then, mlock does slow progress as it needs to wait for writeback.
+    writeback occurs and allocates blocks for the /data/hole20G.
+    Eventually, the /data partition gets full.
+  - then, mlock returns an error.
+
+Using ext4, with my patch:
+  - mlock goes through all pages in ~5 seconds, marking them as mlocked
+    (but still not dirty)
+  - mlock completes. /data/hole20G still does not have blocks allocated.
+  - if memtoy is then instructed to dirty all the pages
+    (using 'touch hole20G write'):
+    - first, memtoy does fast progress faulting through file pages, marking
+      them as dirty. Eventually, it hits the dirty limit and gets throttled.
+    - then, memtoy does slow progress as it needs to wait for writeback.
+      writeback occurs and allocates blocks for the /data/hole20G.
+      Eventually, the /data partition gets full.
+    - at that point, memtoy dies of SIGBUS.
+  - i.e. for filesystems that define the page_mkwrite callback, the mlock
+    behavior when running out of space writing to sparse files is clearly
+    nicer without my patch than with it.
 
 
-Deng-Cheng
+Not 100% sure what to make of these results.
 
+Approaching the problem the other way - would there be any objection to
+adding code to do an fallocate() equivalent at the start of mlock ?
+This would be a no-op when the file is fully allocated on disk, and would
+allow mlock to return an error if the file can't get fully allocated
+(no idea what errno should be for such case, though).
 
-2010/11/18 Will Deacon <will.deacon@arm.com>:
-> On Thu, 2010-11-18 at 06:56 +0000, Deng-Cheng Zhu wrote:
->> Leverage the commit for ARM by Will Deacon:
->>
->> 446a5a8b1eb91a6990e5c8fe29f14e7a95b69132
->>         ARM: 6205/1: perf: ensure counter delta is treated as unsigned
->>
->> Signed-off-by: Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
->> ---
->>  arch/mips/kernel/perf_event.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/arch/mips/kernel/perf_event.c b/arch/mips/kernel/perf_event.c
->> index 345232a..0f1cdf5 100644
->> --- a/arch/mips/kernel/perf_event.c
->> +++ b/arch/mips/kernel/perf_event.c
->> @@ -169,7 +169,7 @@ static void mipspmu_event_update(struct perf_event *event,
->>         unsigned long flags;
->>         int shift = 64 - TOTAL_BITS;
->>         s64 prev_raw_count, new_raw_count;
->> -       s64 delta;
->> +       u64 delta;
->>
->>  again:
->>         prev_raw_count = local64_read(&hwc->prev_count);
->> --
->> 1.7.1
->
-> Acked-by: Will Deacon <will.deacon@arm.com>
->
-> You might also want to look at commit 65b4711f if you based
-> the MIPS port on the old ARM code.
->
-> Thanks,
->
-> Will
->
-> --
-> IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
->
-> -- IMPORTANT NOTICE: The contents of this email and any attachments are confidential and may also be privileged. If you are not the intended recipient, please notify the sender immediately and do not disclose the contents to any other person, use it for any purpose, or store or copy the information in any medium.  Thank you.
->
->
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
