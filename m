@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab0KSWb2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:31:28 -0500
-Received: from cobra.newdream.net ([66.33.216.30]:47119 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757084Ab0KSWbX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:31:23 -0500
-Date: Fri, 19 Nov 2010 14:35:32 -0800 (PST)
-From: Sage Weil <sage@newdream.net>
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
-Subject: [GIT PULL] Ceph updates for 2.6.37-rc3
-Message-ID: <Pine.LNX.4.64.1011191429530.1019@cobra.newdream.net>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757409Ab0KSWb5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:31:57 -0500
+Received: from kroah.org ([198.145.64.141]:45027 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932631Ab0KSV6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:58:32 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:40 2010
+Message-Id: <20101119215640.476005407@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 19 Nov 2010 13:55:42 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Cliff Wickman <cpw@sgi.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, kexec@lists.infradead.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [21/82] x86, kdump: Change copy_oldmem_page() to use cached addressing
+In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
-Please pull the following Ceph updates from
+------------------
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
+From: Cliff Wickman <cpw@sgi.com>
 
-It's an unfortunately rather big pile of bug fixes.  There's a revert to 
-fix a regression from 2.6.36, a problem with network reconnects, a 
-potential null deref, a series of small fixes that came up with clustered 
-MDS testing, a fix for non-page aligned direct IO, and a readdir fix that 
-turns up on 32bit arches.
+commit 37a2f9f30a360fb03522d15c85c78265ccd80287 upstream.
 
-Thanks!
-sage
+The copy of /proc/vmcore to a user buffer proceeds much faster
+if the kernel addresses memory as cached.
+
+With this patch we have seen an increase in transfer rate from
+less than 15MB/s to 80-460MB/s, depending on size of the
+transfer. This makes a big difference in time needed to save a
+system dump.
+
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: kexec@lists.infradead.org
+LKML-Reference: <E1OtMLz-0001yp-Ia@eag09.americas.sgi.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/x86/kernel/crash_dump_64.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/x86/kernel/crash_dump_64.c
++++ b/arch/x86/kernel/crash_dump_64.c
+@@ -34,7 +34,7 @@ ssize_t copy_oldmem_page(unsigned long p
+ 	if (!csize)
+ 		return 0;
+ 
+-	vaddr = ioremap(pfn << PAGE_SHIFT, PAGE_SIZE);
++	vaddr = ioremap_cache(pfn << PAGE_SHIFT, PAGE_SIZE);
+ 	if (!vaddr)
+ 		return -ENOMEM;
+ 
 
 
-Sage Weil (16):
-      Revert "ceph: update issue_seq on cap grant"
-      ceph: fix small seq message skipping
-      ceph: fix bad pointer dereference in ceph_fill_trace
-      ceph: fix open for write on clustered mds
-      ceph: only let auth caps update max_size
-      ceph: re-request max_size if cap auth changes
-      ceph: fix rdcache_gen usage and invalidate
-      ceph: fix uid/gid on resent mds requests
-      ceph: fix version check on racing inode updates
-      ceph: fix update of ctime from MDS
-      ceph: fix comment, remove extraneous args
-      ceph: make page alignment explicit in osd interface
-      ceph: explicitly specify page alignment in network messages
-      ceph: fix dangling pointer
-      ceph: fix frag offset for non-leftmost frags
-      ceph: fix readdir EOVERFLOW on 32-bit archs
-
- fs/ceph/addr.c                  |    6 ++--
- fs/ceph/caps.c                  |   17 +++++++-----
- fs/ceph/dir.c                   |   16 +++++++++---
- fs/ceph/file.c                  |   52 +++++++++++++++++++++++++-------------
- fs/ceph/inode.c                 |   49 +++++++++++++++++++++++-------------
- fs/ceph/mds_client.c            |    7 +++-
- fs/ceph/mds_client.h            |    2 +
- fs/ceph/super.h                 |    4 +--
- include/linux/ceph/libceph.h    |    3 +-
- include/linux/ceph/messenger.h  |    1 +
- include/linux/ceph/osd_client.h |    7 +++-
- net/ceph/messenger.c            |   13 ++++-----
- net/ceph/osd_client.c           |   25 ++++++++++++------
- net/ceph/pagevec.c              |    3 +-
- 14 files changed, 129 insertions(+), 76 deletions(-)
