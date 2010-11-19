@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807Ab0KSLyJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 06:54:09 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:53747 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab0KSLyI (ORCPT
+	id S1753848Ab0KSLzY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 06:55:24 -0500
+Received: from bombadil.infradead.org ([18.85.46.34]:40368 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab0KSLzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 06:54:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=PBNqCVLmIBrZ9+3Z5jQBebdTzZ0ztG/sBM97PdTnfqwwUK72sSMJPVHzTxjb/GDPPJ
-         eKQRcY1sm//zT6BDa1SEkrq03HSM/D8EKAXGVjv4c/koBAcG+GHsX8KxX1p/9wBWZ/mK
-         IYfpkA9kIQ8AUNRGBht3h82eP74La8teaktfQ=
+	Fri, 19 Nov 2010 06:55:22 -0500
+Date: Fri, 19 Nov 2010 06:55:16 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: Greg Freemyer <greg.freemyer@gmail.com>
+Cc: Mark Lord <kernel@teksavvy.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>, tytso@mit.edu,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
+ super_operation
+Message-ID: <20101119115516.GA1152@infradead.org>
+References: <20101118141957.GK6178@parisc-linux.org>
+ <20101118142918.GA18510@infradead.org>
+ <1290100750.3041.72.camel@mulgrave.site>
+ <x494obe4kd5.fsf@segfault.boston.devel.redhat.com>
+ <1290102098.3041.77.camel@mulgrave.site>
+ <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>
+ <4CE59E57.2090009@teksavvy.com>
+ <yq1r5eiw5os.fsf@sermon.lab.mkp.net>
+ <4CE5C616.7070706@teksavvy.com>
+ <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1290165768.2109.1537.camel@laptop>
-References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
-	<1290165768.2109.1537.camel@laptop>
-Date: Fri, 19 Nov 2010 19:54:07 +0800
-Message-ID: <AANLkTik3ujs7-tMNUuk33wuMXFm+iusspMcR=yjPXtn_@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Generic hardware error reporting support
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        linux-acpi@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 7:22 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2010-11-19 at 16:10 +0800, Huang Ying wrote:
->> Hi, Len,
->>
->> This is used by APEI ERST and GEHS. But it is a generic hardware
->> error reporting mechanism and can be used by other hardware error
->> reporting mechanisms such as EDAC, PCIe AER, Machine Check, etc.
->>
->> The patchset is split from the original APEI patchset to make it
->> explicit that this is a generic mechanism, not APEI specific bits.
->>
->> [PATCH 1/2] Generic hardware error reporting mechanism
->> [PATCH 2/2] Hardware error record persistent support
->
-> You call it generic, does that mean the EDAC guys agree, does it work on
-> AMD and IA64?
+On Thu, Nov 18, 2010 at 05:16:36PM -0800, Greg Freemyer wrote:
+> I agree with Mark.  When you say "make coalescing work" it sounds like
+> major overkill.
+> 
+> FITRIM should be able to lock a group of non-contiguous free ranges,
+> send them down to the block layer as a single pre-coalesced set, and
+> the block layer just needs to pass it on in a synchronous way.  Then
+> when that group of ranges is discarded, FITRIM releases the locks.
 
-I call it "generic", because it can be used by EDAC, PCIe AER, Machine
-Check, etc to report hardware errors, and it can work on  AMD and
-IA64.
+Given that you know the Linux I/O stack and hardware so well may I
+volunteer you to implement it?  Including remapping the multiple ranges
+in device mapper, and dealing with the incompatible range formats for
+TRIM vs UNMAP.  If your implementation is clean enough I'm pretty
+sure no one will object to merge it.
 
-> If not, Tony could you please apply a cluebat? I thought Intel was going
-> to sit around the table with all hardware error people and come up with
-> a unified thing at LPC?
+> Every TRIM causes a cache flush anyway on the SSD, so the synchronous
+> aspect of the process should not be a problem.  (Maybe SCSI with thin
+> provisioning would see a performance hit?)
 
-Best Regards,
-Huang Ying
+What's your evidence?
+
