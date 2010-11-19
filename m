@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758332Ab0KSWGm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:06:42 -0500
-Received: from kroah.org ([198.145.64.141]:53112 "EHLO coco.kroah.org"
+	id S1758365Ab0KSWGn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:06:43 -0500
+Received: from kroah.org ([198.145.64.141]:53108 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758233Ab0KSWEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758223Ab0KSWEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Nov 2010 17:04:35 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:27 2010
-Message-Id: <20101119220127.039226074@clark.site>
+Message-Id: <20101119220126.957162525@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:01:30 -0800
+Date: Fri, 19 Nov 2010 14:01:29 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <error27@gmail.com>,
+        Anil Ravindranath <anil_ravindranath@pmc-sierra.com>,
         James Bottomley <James.Bottomley@suse.de>
-Subject: [59/66] [SCSI] gdth: integer overflow in ioctl
+Subject: [58/66] [SCSI] pmcraid: remove duplicate struct member
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
+From: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
 
-commit f63ae56e4e97fb12053590e41a4fa59e7daa74a4 upstream.
+commit df30e5059681ed0671c9cc6ff702fe9ca7f20042 upstream.
 
-gdth_ioctl_alloc() takes the size variable as an int.
-copy_from_user() takes the size variable as an unsigned long.
-gen.data_len and gen.sense_len are unsigned longs.
-On x86_64 longs are 64 bit and ints are 32 bit.
+sense_buffer is both a direct member of struct pmcraid_cmd as well as
+an indirect one via an anonymous union and struct.  Fix this clash by
+eliminating the direct member in favour of the anonymous struct/union
+one.  The name duplication apparently isn't noticed by gcc versions
+earlier than 4.4
 
-We could pass in a very large number and the allocation would truncate
-the size to 32 bits and allocate a small buffer.  Then when we do the
-copy_from_user(), it would result in a memory corruption.
-
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Reported-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Anil Ravindranath <anil_ravindranath@pmc-sierra.com>
 Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/gdth.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/scsi/pmcraid.h |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/scsi/gdth.c
-+++ b/drivers/scsi/gdth.c
-@@ -4175,6 +4175,14 @@ static int ioc_general(void __user *arg,
-     ha = gdth_find_ha(gen.ionode);
-     if (!ha)
-         return -EFAULT;
-+
-+    if (gen.data_len > INT_MAX)
-+        return -EINVAL;
-+    if (gen.sense_len > INT_MAX)
-+        return -EINVAL;
-+    if (gen.data_len + gen.sense_len > INT_MAX)
-+        return -EINVAL;
-+
-     if (gen.data_len + gen.sense_len != 0) {
-         if (!(buf = gdth_ioctl_alloc(ha, gen.data_len + gen.sense_len,
-                                      FALSE, &paddr)))
+--- a/drivers/scsi/pmcraid.h
++++ b/drivers/scsi/pmcraid.h
+@@ -568,7 +568,6 @@ struct pmcraid_cmd {
+ 	struct pmcraid_control_block *ioa_cb;
+ 	dma_addr_t ioa_cb_bus_addr;
+ 	dma_addr_t dma_handle;
+-	u8 *sense_buffer;
+ 
+ 	/* pointer to mid layer structure of SCSI commands */
+ 	struct scsi_cmnd *scsi_cmd;
 
 
