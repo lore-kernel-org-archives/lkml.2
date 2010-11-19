@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab0KSNB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 08:01:26 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44484 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752243Ab0KSNBZ convert rfc822-to-8bit (ORCPT
+	id S1754141Ab0KSNDk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 08:03:40 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:39763 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752507Ab0KSNDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 08:01:25 -0500
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Mike Galbraith <efault@gmx.de>, Hans-Peter Jansen <hpj@urpla.net>,
-        linux-kernel@vger.kernel.org,
-        Lennart Poettering <mzxreary@0pointer.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>, david@lang.hm,
-        Dhaval Giani <dhaval.giani@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
+	Fri, 19 Nov 2010 08:03:39 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:in-reply-to:references:user-agent:date
+         :message-id:mime-version:content-type;
+        b=Y1mMpnu9ZI34sxm1/q3e+T7Y0yee6lq3QYNDHmISrew9BzvpWhRygM/j5EK2l/gWqb
+         GFFv1mWs/B6OzIyvt+6LWWbOc7hpJhAfZDsrbC/6AEI6/F190H6N6RPLbgnvMWqFvlyw
+         E36hvElozKnjBu3ti6XYG+lbTgnvxJ7EKY5GA=
+From: Ben Gamari <bgamari.foss@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Andev <debiandev@gmail.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Lennart Poettering <mzxreary@0pointer.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Dhaval Giani <dhaval.giani@gmail.com>, Mike Galbraith <efault@gmx.de>,
+        Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
-In-Reply-To: <20101119125548.GC24411@Krystal>
-References: <1289916171.5169.117.camel@maggy.simson.net>
-	 <AANLkTimC_TWzKET-aabYK0TPG6fUUW06HDej6iOzYtKo@mail.gmail.com>
-	 <20101116211431.GA15211@tango.0pointer.de>
-	 <201011182333.48281.hpj@urpla.net>
-	 <20101118231218.GX6024@const.famille.thibault.fr>
-	 <1290123351.18039.49.camel@maggy.simson.net>
-	 <20101118234339.GA6024@const.famille.thibault.fr>
-	 <1290167376.2109.1553.camel@laptop> <1290169178.2109.1573.camel@laptop>
-	 <20101119125548.GC24411@Krystal>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 19 Nov 2010 14:00:48 +0100
-Message-ID: <1290171648.2109.1580.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+In-Reply-To: <1290167993.2109.1562.camel@laptop>
+References: <20101116170312.GA19327@tango.0pointer.de> <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com> <20101116181603.GC19327@tango.0pointer.de> <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com> <20101116202839.GC27235@tango.0pointer.de> <20101116205243.64e4a67a@lxorguk.ukuu.org.uk> <AANLkTinSXM5RMH+1FHtkYJiehcyZaxZGs0z4ycLGGE9u@mail.gmail.com> <20101116211909.GB16589@tango.0pointer.de> <20101116233934.GC1568@thunk.org> <20101117002159.GA3184@tango.0pointer.de> <20101117020626.GB3290@thunk.org> <AANLkTikLjQZiDcQx7HfgznPgFmYOfaN9of2ZtWLEvno8@mail.gmail.com> <1290167993.2109.1562.camel@laptop>
+User-Agent: Notmuch/0.5-3-g22aadfc (http://notmuchmail.org) Emacs/23.1.1 (x86_64-pc-linux-gnu)
+Date: Fri, 19 Nov 2010 08:03:34 -0500
+Message-ID: <8762vtsbx5.fsf@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 07:55 -0500, Mathieu Desnoyers wrote:
+On Fri, 19 Nov 2010 12:59:53 +0100, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Fri, 2010-11-19 at 00:20 -0500, Andev wrote:
+> > +1 for implementing this in systemd than in the kernel.
+> > 
+> > The userspace has much more info about which process needs to go into
+> > which group.
 > 
-> > In general though, I think you can say that: cgroups ass overhead.
-> 
-> I really think you meant "add" here ? (Hey! The keys were next to each other!)
-> ;)
+> -1 on your systemd/gnome/wm/etc. crap, that means it will become
+> impossible to sanely switch off (gnome firmly believes knobs are evil),
+> leaving everybody who _does_ know wth they're doing up a certain creek
+> without a paddle.
 
-Uhm, quite!
+Please, can we stop with this false dichotomy? This is decidedly not
+true and as Lennart has already pointed out, the knob already exists in
+systemd. You may like the kernel approach, but this does not mean there
+is no place for grouping driven by userspace.
 
-> > Simply because you add constraints, this means you need to 1) account
-> > more, 2) enforce constraints. Both have definite non-zero cost in both
-> > data and time.
-> 
-> Yep, this looks like one of these perpetual throughput vs latency trade-offs.
-> 
-Trade-off sure, throughput vs latency only in a specific use-case, its
-more a feature vs cost thing, just like all them trace people want lower
-cost tracing but want more features at the same time..
-
-
+- Ben
