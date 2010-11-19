@@ -1,73 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab0KSRIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 12:08:47 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55310 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755050Ab0KSRIq (ORCPT
+	id S1755547Ab0KSRJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 12:09:27 -0500
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:55917 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754965Ab0KSRJZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 12:08:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=IRi751Fbh/4VVR3u3oFQ7qVK2Zc33xkDwBijL6KXuxQxHlQGm2TfcSu3bSoIxuncqt
-         fpFSaUGdVGkFPJb5iHtNUy2VCEdfcmJAlMp/l+URBmfJCkP6L0JcFIQSnLTQbNGkUBZ4
-         CZORRPkj0gTdQ5YlqDb6DtgOUCh7dGdFx1bqA=
-Date: Fri, 19 Nov 2010 09:08:37 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Glenn Sommer <gsommer@datanordisk.dk>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        linux-input@vger.kernel.org
-Subject: Re: Patch for LG Flatron T1710B touchscreen
-Message-ID: <20101119170837.GC6236@core.coreip.homeip.net>
-References: <4CE63CC7.9040709@datanordisk.dk>
+	Fri, 19 Nov 2010 12:09:25 -0500
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>,
+        "'James.Bottomley@HansenPartnership.com'" 
+	<James.Bottomley@HansenPartnership.com>,
+        "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
+CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+        "'akpm@osdl.org'" <akpm@osdl.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>,
+        Tomas Henzl <thenzl@redhat.com>,
+        "Karlikova, Lenka" <Lenka.Karlikova@lsi.com>,
+        "Nielson, Mike" <Mike.Nielson@lsi.com>,
+        "Jablonski, Charles" <Charles.Jablonski@lsi.com>
+Date: Fri, 19 Nov 2010 10:08:44 -0700
+Subject: [PATCH 4/9] scsi: megaraid_sas - Driver provide the version to FW
+Thread-Topic: [PATCH 4/9] scsi: megaraid_sas - Driver provide the version to
+ FW
+Thread-Index: AcsIRXwfwbieNXNUR6GBvdSy0cxVCQskSL/AFMvf1xAAAOfyYAAAMuKQAABVOuA=
+Message-ID: <4B6A08C587958942AA3002690DD4F8C30106A961F2@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3DBD67F68@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C30106A961BD@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C30106A961D6@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C30106A961E4@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C30106A961E4@cosmail02.lsi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: multipart/mixed;
+	boundary="_002_4B6A08C587958942AA3002690DD4F8C30106A961F2cosmail02lsic_"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE63CC7.9040709@datanordisk.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 10:00:55AM +0100, Glenn Sommer wrote:
-> I've recently got my hands on a LG Flatron T1710B touchscreen.
-> As other LG products, this seems to use the ITM panel.
-> 
-> I've patches my kernel to use the ITM driver with this device, and it seems to work great.
-> 
+--_002_4B6A08C587958942AA3002690DD4F8C30106A961F2cosmail02lsic_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Glenn,
+Driver added the version parmeter to provide the version to megaraid sas FW=
+ during the driver load
 
-I need you "Signed-off-by: ..." so I can apply the patch.
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
-Thank you.
+---
+drivers/scsi/megaraid/megaraid_sas.c |   22 ++++++++++++++++++++++
+drivers/scsi/megaraid/megaraid_sas.h |    8 +++++++-
+ 2 files changed, 29 insertions(+), 1 deletion(-)
 
-> --- PATCH START ---
-> 
-> --- drivers/input/touchscreen/usbtouchscreen.c.orig	2010-11-18 16:33:40.806381557 +0100
-> +++ drivers/input/touchscreen/usbtouchscreen.c	2010-11-19 09:40:13.909222383 +0100
-> @@ -173,6 +173,7 @@ static struct usb_device_id usbtouch_dev
-> 
->  #ifdef CONFIG_TOUCHSCREEN_USB_ITM
->  	{USB_DEVICE(0x0403, 0xf9e9), .driver_info = DEVTYPE_ITM},
-> +	{USB_DEVICE(0x16e3, 0xf9e9), .driver_info = DEVTYPE_ITM},
->  #endif
-> 
->  #ifdef CONFIG_TOUCHSCREEN_USB_ETURB
-> 
-> --- PATCH END ---
-> 
-> -- 
-> Med venlig hilsen / Best regards
-> Data Nordisk
-> 
-> Glenn Sommer
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--_002_4B6A08C587958942AA3002690DD4F8C30106A961F2cosmail02lsic_
+Content-Type: application/octet-stream; name="megasas-p4-version.patch"
+Content-Description: megasas-p4-version.patch
+Content-Disposition: attachment; filename="megasas-p4-version.patch";
+	size=2466; creation-date="Thu, 18 Nov 2010 20:37:02 GMT";
+	modification-date="Wed, 17 Nov 2010 13:09:11 GMT"
+Content-Transfer-Encoding: base64
 
--- 
-Dmitry
+ZGlmZiAtcnVwTiBvbGQvZHJpdmVycy9zY3NpL21lZ2FyYWlkL21lZ2FyYWlkX3Nhcy5jIG5ldy9k
+cml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMKLS0tIG9sZC9kcml2ZXJzL3Njc2kv
+bWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMJMjAxMC0xMS0xNCAxNTo0MDo1My4wMDAwMDAwMDAgLTA1
+MDAKKysrIG5ldy9kcml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMJMjAxMC0xMS0x
+NCAxNTo0Nzo0Ny4wMDAwMDAwMDAgLTA1MDAKQEAgLTMxNDYsNiArMzE0NiwxNSBAQCBtZWdhc2Fz
+X2lzc3VlX2luaXRfbWZpKHN0cnVjdCBtZWdhc2FzX2luCiAKIAlpbml0X2ZyYW1lLT5jbWQgPSBN
+RklfQ01EX0lOSVQ7CiAJaW5pdF9mcmFtZS0+Y21kX3N0YXR1cyA9IDB4RkY7CisKKwlpZiAoaW5z
+dGFuY2UtPnZlcmJ1ZikgeworCXNucHJpbnRmKChjaGFyICopaW5zdGFuY2UtPnZlcmJ1Ziwgc3Ry
+bGVuKE1FR0FTQVNfVkVSU0lPTikgKyAyLCAiJXNcbiIsCisJCQlNRUdBU0FTX1ZFUlNJT04pOwor
+CisJCWluaXRfZnJhbWUtPmRyaXZlcl92ZXJfbG8gPSBpbnN0YW5jZS0+dmVyYnVmX2g7CisJCWlu
+aXRfZnJhbWUtPmRyaXZlcl92ZXJfaGkgPSAwOworCX0KKwogCWluaXRfZnJhbWUtPnF1ZXVlX2lu
+Zm9fbmV3X3BoeXNfYWRkcl9sbyA9IGluaXRxX2luZm9faDsKIAogCWluaXRfZnJhbWUtPmRhdGFf
+eGZlcl9sZW4gPSBzaXplb2Yoc3RydWN0IG1lZ2FzYXNfaW5pdF9xdWV1ZV9pbmZvKTsKQEAgLTMz
+MjMsNiArMzMzMiwxNCBAQCBzdGF0aWMgaW50IG1lZ2FzYXNfaW5pdF9tZmkoc3RydWN0IG1lZ2Fz
+CiAJCWdvdG8gZmFpbF9yZXBseV9xdWV1ZTsKIAl9CiAKKwlpbnN0YW5jZS0+dmVyYnVmID0gcGNp
+X2FsbG9jX2NvbnNpc3RlbnQoaW5zdGFuY2UtPnBkZXYsCisJCQkJCQlNRUdBU0FTX01BWF9OQU1F
+KnNpemVvZih1MzIpLAorCQkJCQkJJmluc3RhbmNlLT52ZXJidWZfaCk7CisKKwlpZiAoIWluc3Rh
+bmNlLT52ZXJidWYpIHsKKwkJcHJpbnRrKEtFUk5fREVCVUcgIm1lZ2FzYXM6IENhbid0IGFsbG9j
+YXRlIHZlcnNpb24gYnVmZmVyXG4iKTsKKwl9CisKIAlpZiAobWVnYXNhc19pc3N1ZV9pbml0X21m
+aShpbnN0YW5jZSkpCiAJCWdvdG8gZmFpbF9md19pbml0OwogCkBAIC00MjI4LDYgKzQyNDUsMTEg
+QEAgc3RhdGljIHZvaWQgX19kZXZleGl0IG1lZ2FzYXNfZGV0YWNoX29uZQogCXBjaV9mcmVlX2Nv
+bnNpc3RlbnQocGRldiwgc2l6ZW9mKHUzMiksIGluc3RhbmNlLT5jb25zdW1lciwKIAkJCSAgICBp
+bnN0YW5jZS0+Y29uc3VtZXJfaCk7CiAKKwlpZiAoaW5zdGFuY2UtPnZlcmJ1ZikgeworCQlwY2lf
+ZnJlZV9jb25zaXN0ZW50KHBkZXYsIE1FR0FTQVNfTUFYX05BTUUqc2l6ZW9mKHUzMiksCisJCQlp
+bnN0YW5jZS0+dmVyYnVmLCBpbnN0YW5jZS0+dmVyYnVmX2gpOworCX0KKwogCXNjc2lfaG9zdF9w
+dXQoaG9zdCk7CiAKIAlwY2lfc2V0X2RydmRhdGEocGRldiwgTlVMTCk7CmRpZmYgLXJ1cE4gb2xk
+L2RyaXZlcnMvc2NzaS9tZWdhcmFpZC9tZWdhcmFpZF9zYXMuaCBuZXcvZHJpdmVycy9zY3NpL21l
+Z2FyYWlkL21lZ2FyYWlkX3Nhcy5oCi0tLSBvbGQvZHJpdmVycy9zY3NpL21lZ2FyYWlkL21lZ2Fy
+YWlkX3Nhcy5oCTIwMTAtMTEtMTEgMDU6NDY6MTkuMDAwMDAwMDAwIC0wNTAwCisrKyBuZXcvZHJp
+dmVycy9zY3NpL21lZ2FyYWlkL21lZ2FyYWlkX3Nhcy5oCTIwMTAtMTEtMTQgMTQ6MjU6MTQuMDAw
+MDAwMDAwIC0wNTAwCkBAIC03MDYsNiArNzA2LDcgQEAgc3RydWN0IG1lZ2FzYXNfY3RybF9pbmZv
+IHsKICNkZWZpbmUgTUVHQVNBU19NQVhfTERfSURTCQkJKE1FR0FTQVNfTUFYX0xEX0NIQU5ORUxT
+ICogXAogCQkJCQkJTUVHQVNBU19NQVhfREVWX1BFUl9DSEFOTkVMKQogCisjZGVmaW5lIE1FR0FT
+QVNfTUFYX05BTUUJCQkzMgogI2RlZmluZSBNRUdBU0FTX01BWF9TRUNUT1JTICAgICAgICAgICAg
+ICAgICAgICAoMioxMDI0KQogI2RlZmluZSBNRUdBU0FTX0RCR19MVkwJCQkJMQogCkBAIC04ODcs
+NyArODg4LDEwIEBAIHN0cnVjdCBtZWdhc2FzX2luaXRfZnJhbWUgewogCXUzMiBxdWV1ZV9pbmZv
+X29sZF9waHlzX2FkZHJfbG87CS8qMjBoICovCiAJdTMyIHF1ZXVlX2luZm9fb2xkX3BoeXNfYWRk
+cl9oaTsJLyoyNGggKi8KIAotCXUzMiByZXNlcnZlZF80WzZdOwkvKjI4aCAqLworCXUzMiBkcml2
+ZXJfdmVyX2xvOworCXUzMiBkcml2ZXJfdmVyX2hpOworCisJdTMyIHJlc2VydmVkXzRbNF07CS8q
+MjhoICovCiAKIH0gX19hdHRyaWJ1dGVfXyAoKHBhY2tlZCkpOwogCkBAIC0xMjU5LDYgKzEyNjMs
+OCBAQCBzdHJ1Y3QgbWVnYXNhc19pbnN0YW5jZSB7CiAJZG1hX2FkZHJfdCBwcm9kdWNlcl9oOwog
+CXUzMiAqY29uc3VtZXI7CiAJZG1hX2FkZHJfdCBjb25zdW1lcl9oOworCXUzMiAqdmVyYnVmOwor
+CWRtYV9hZGRyX3QgdmVyYnVmX2g7CiAKIAl1MzIgKnJlcGx5X3F1ZXVlOwogCWRtYV9hZGRyX3Qg
+cmVwbHlfcXVldWVfaDsK
+
+--_002_4B6A08C587958942AA3002690DD4F8C30106A961F2cosmail02lsic_--
