@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758148Ab0KSWE0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:04:26 -0500
-Received: from kroah.org ([198.145.64.141]:52979 "EHLO coco.kroah.org"
+	id S932670Ab0KSWJz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:09:55 -0500
+Received: from kroah.org ([198.145.64.141]:53013 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758117Ab0KSWEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:04:22 -0500
+	id S1758142Ab0KSWE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:26 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:25 2010
-Message-Id: <20101119220125.216899705@clark.site>
+Message-Id: <20101119220125.719396329@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:01:08 -0800
+Date: Fri, 19 Nov 2010 14:01:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Rainer Keller <mail@rainerkeller.de>
-Subject: [37/66] USB: add PID for FTDI based OpenDCC hardware
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Praveena Nadahally <praveen.nadahally@stericsson.com>
+Subject: [43/66] USB: Change acm_iad_descriptor bFunctionProtocol to USB_CDC_ACM_PROTO_AT_V25TER
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rainer Keller <mail@rainerkeller.de>
+From: Praveena Nadahally <praveen.nadahally@stericsson.com>
 
-commit 99c1e4f89d1033444ce4d0c064bd2826e81c3775 upstream.
+commit 5c8db070b4480c43394680d9dfd2ddb06b97d2ae upstream.
 
-The OpenDCC project is developing a new hardware. This patch adds its
-PID to the list of known FTDI devices. The PID can be found at
-http://www.opendcc.de/elektronik/usb/opendcc_usb.html
+The protocol code is set 00 in IAD and it's set to 01 in ACM control
+interface descriptor in f_acm.c file. Due to this, windows is unable to
+install the modem(ACM) driver based on class-subclass-protocol matching.
 
-Signed-off-by: Rainer Keller <mail@rainerkeller.de>
+This patch corrects the protocol code in ACM IAD to the same as in
+acm_control_interface_desc protocol code.
+
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Signed-off-by: Praveena Nadahally <praveen.nadahally@stericsson.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    1 +
- drivers/usb/serial/ftdi_sio_ids.h |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/usb/gadget/f_acm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -177,6 +177,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_SNIFFER_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_THROTTLE_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GATEWAY_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -61,6 +61,7 @@
- #define FTDI_OPENDCC_SNIFFER_PID	0xBFD9
- #define FTDI_OPENDCC_THROTTLE_PID	0xBFDA
- #define FTDI_OPENDCC_GATEWAY_PID	0xBFDB
-+#define FTDI_OPENDCC_GBM_PID	0xBFDC
+--- a/drivers/usb/gadget/f_acm.c
++++ b/drivers/usb/gadget/f_acm.c
+@@ -111,7 +111,7 @@ acm_iad_descriptor = {
+ 	.bInterfaceCount = 	2,	// control + data
+ 	.bFunctionClass =	USB_CLASS_COMM,
+ 	.bFunctionSubClass =	USB_CDC_SUBCLASS_ACM,
+-	.bFunctionProtocol =	USB_CDC_PROTO_NONE,
++	.bFunctionProtocol =	USB_CDC_ACM_PROTO_AT_V25TER,
+ 	/* .iFunction =		DYNAMIC */
+ };
  
- /*
-  * RR-CirKits LocoBuffer USB (http://www.rr-cirkits.com)
 
 
