@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698Ab0KSOyr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 09:54:47 -0500
-Received: from bombadil.infradead.org ([18.85.46.34]:39413 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548Ab0KSOyq (ORCPT
+	id S1754727Ab0KSOzJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 09:55:09 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:7899 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753548Ab0KSOzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 09:54:46 -0500
-Date: Fri, 19 Nov 2010 09:54:24 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Mark Lord <kernel@teksavvy.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Jeff Moyer <jmoyer@redhat.com>, Matthew Wilcox <matthew@wil.cx>,
-        Josef Bacik <josef@redhat.com>, Lukas Czerner <lczerner@redhat.com>,
-        tytso@mit.edu, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        sandeen@redhat.com
-Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate
- super_operation
-Message-ID: <20101119145423.GA27919@infradead.org>
-References: <1290102098.3041.77.camel@mulgrave.site>
- <AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>
- <4CE59E57.2090009@teksavvy.com>
- <yq1r5eiw5os.fsf@sermon.lab.mkp.net>
- <4CE5C616.7070706@teksavvy.com>
- <AANLkTikgEeUL2NVLLdoT3RX0r=v0Pzfp9-==F39DVRgN@mail.gmail.com>
- <20101119115516.GA1152@infradead.org>
- <4CE6831E.4020606@teksavvy.com>
- <20101119140639.GA25488@infradead.org>
- <4CE68E2C.9070101@teksavvy.com>
+	Fri, 19 Nov 2010 09:55:07 -0500
+X-IronPort-AV: E=Sophos;i="4.59,223,1288566000"; 
+   d="scan'208";a="88747481"
+Date: Fri, 19 Nov 2010 15:55:05 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mike Galbraith <efault@gmx.de>, Hans-Peter Jansen <hpj@urpla.net>,
+        linux-kernel@vger.kernel.org,
+        Lennart Poettering <mzxreary@0pointer.de>, david@lang.hm,
+        Dhaval Giani <dhaval.giani@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101119145505.GO6554@const.bordeaux.inria.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Mike Galbraith <efault@gmx.de>, Hans-Peter Jansen <hpj@urpla.net>,
+	linux-kernel@vger.kernel.org,
+	Lennart Poettering <mzxreary@0pointer.de>, david@lang.hm,
+	Dhaval Giani <dhaval.giani@gmail.com>,
+	Vivek Goyal <vgoyal@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+	Ingo Molnar <mingo@elte.hu>,
+	Balbir Singh <balbir@linux.vnet.ibm.com>
+References: <201011182333.48281.hpj@urpla.net> <20101118231218.GX6024@const.famille.thibault.fr> <1290123351.18039.49.camel@maggy.simson.net> <20101118234339.GA6024@const.famille.thibault.fr> <AANLkTimTNxLYGLgnS9TUT_YiMnmDVrqseByGGogj+A4Z@mail.gmail.com> <20101119000204.GE6024@const.famille.thibault.fr> <20101119000720.GF6024@const.famille.thibault.fr> <1290167844.2109.1560.camel@laptop> <20101119142418.GN6554@const.bordeaux.inria.fr> <1290177793.2109.1612.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4CE68E2C.9070101@teksavvy.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1290177793.2109.1612.camel@laptop>
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 09:48:12AM -0500, Mark Lord wrote:
-> I'm not sure about the issues on "adapting the block layer" ?
-> For FITRIM, the blocks being trimmed would be reserved at the fs level,
-> before issuing the discard for them.  So ordering through the block layer
-> shouldn't matter much for it.  Does that simplify things?
+Peter Zijlstra, le Fri 19 Nov 2010 15:43:13 +0100, a écrit :
+> > MPI jobs typically communicate with each other. Keeping them on the same
+> > socket permits to keep shared-memory MPI drivers to mostly remain in
+> > e.g. the L3 cache. That typically gives benefits.
 > 
-> I see FITRIM just allocating a page to hold the ranges (for the >1 case)
-> and passing that page down through the layers to libata (or any other
-> LLD that supports >1 ranges).
+> Pushing them away permits them to use a larger part of that same L3
+> cache allowing them to work on larger data sets.
 
-Ordering should not be an issue.  What were problems when I tried this
-before is that we currently assume in the block layer that discard
-bios have a valid bi_sector/bi_size, which is already needed e.g. for
-the trivial remapping use for partitions and that they don't have
-a payload.  You'd need to teach various places that discard payloads
-may have a payload, which contains multiple ranges that have a
-sector/len tuple that needs to be remapped and checked in various
-places.
+But then you are not benefitting from all CPU cores.
 
+> Most of the MPI apps
+> have a large compute to communication ratio because that is what allows
+> them to run in parallel so well (traditionally the interconnects were
+> terribly slow to boot), that suggests that working on larger data sets
+> is a good thing and running on the same node really doesn't matter since
+> communication is assumes slow anyway.
+
+Err, if the compute to communication ratio is big, then you should use
+all CPU cores, up to the point where communication becomes a matter
+again, and making sure that related MPI processes end up on the same
+socket will permit to got a it further.
+
+> There really is no simple solution to his.
+
+I never said there was even a solution, actually (in particular any kind
+of generic solution), but that there are a a few simple ways exist to
+make things better.
+
+Samuel
