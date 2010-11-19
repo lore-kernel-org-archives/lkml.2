@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab0KSUmz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 15:42:55 -0500
-Received: from mail.hq.newdream.net ([66.33.206.127]:58864 "EHLO
-	mail.hq.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754057Ab0KSUmy convert rfc822-to-8bit (ORCPT
+	id S1755606Ab0KSUpP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 15:45:15 -0500
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:48250 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755452Ab0KSUpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 15:42:54 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=hq.newdream.net; h=
-	mime-version:in-reply-to:references:date:message-id:subject:from
-	:to:cc:content-type:content-transfer-encoding; q=dns; s=drama; b=
-	Z6ogQDdTChPbHzH3mixubtXfW2ub31d82WrAtCeeBXvJfmaEjNN9TO76IoAT/jb2
-	mf/BUmMeFKKWGA/Yw8PrezBHdhOvOnyWMovMnTauUOn6b2DLlCLXXh3PCw+6VaX0
-	zqq6F1fT4VeHg/v5ncaOw8IkxTKkj5uLaaVw1KMue3g=
-MIME-Version: 1.0
-In-Reply-To: <20101119020820.GB18767@kroah.com>
-References: <1289953929-30896-1-git-send-email-yehuda@hq.newdream.net>
-	<20101117171924.GC12050@kroah.com>
-	<AANLkTims_MjBS1SdHkOjOWvGqg1aRABH23MWk8J-E+-Y@mail.gmail.com>
-	<20101118013002.GC8558@kroah.com>
-	<AANLkTi=7z40CNBUmfVUEa68J+1R=7nbn9d8vM7ETpajA@mail.gmail.com>
-	<20101119020820.GB18767@kroah.com>
-Date: Fri, 19 Nov 2010 12:42:51 -0800
-Message-ID: <AANLkTim4p=tpaQG_XDE5Vk0YAypYCegAguYNKRg-LeDF@mail.gmail.com>
-Subject: Re: [PATCH] rbd: replace the rbd sysfs interface
-From: Yehuda Sadeh Weinraub <yehuda@hq.newdream.net>
-To: Greg KH <greg@kroah.com>
-Cc: sage@newdream.net, ceph-devel@vger.kernel.org,
+	Fri, 19 Nov 2010 15:45:14 -0500
+Date: Fri, 19 Nov 2010 21:42:40 +0100
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Jarod Wilson <jarod@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: [PATCH] drivers/media: nuvoton: fix chip id probe v2
+Message-ID: <20101119214240.6b87dad7@absol.kitzblitz>
+In-Reply-To: <20101119191644.GF5022@redhat.com>
+References: <20101116211953.238012db@absol.kitzblitz>
+	<20101116215408.GA17140@redhat.com>
+	<4CE33527.8090800@infradead.org>
+	<20101117113525.1ded029c@absol.kitzblitz>
+	<20101119191644.GF5022@redhat.com>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 6:08 PM, Greg KH <greg@kroah.com> wrote:
-> On Thu, Nov 18, 2010 at 02:53:35PM -0800, Yehuda Sadeh Weinraub wrote:
->> Yes, pretty much. One problem that I do see is that if we define the
->> snaps/ as a device (and not just as a kobj) as you suggested before,
->> it'll automatically create a 'uevent' entry under it which can be a
->> real issue in the case we have a snapshot named like that. Shouldn't
->> we just create it as a kobj in that case?
->
-> No.  Just use the subdirectory option of an attribute group to handle
-> that and you will not need to create any device or kobject with that
-> name, the driver core will handle it all automatically for you.
->
+Make sure we have a matching chip id high and one or the other
+of the chip id low values.
+Print the values if the probe fails.
 
-One issue with using the groups name, is that it's not nested (unless
-I'm missing something), so we can't have it done for the entire
-planned hierarchy without holding a kobject on the way. Just a
-reminder, the device-specific hierarchy would look like this:
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ drivers/media/IR/nuvoton-cir.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-1. /sys/bus/rbd/devices/<id>/
-2. /sys/bus/rbd/devices/<id>/<device_attrs>
-3. /sys/bus/rbd/devices/<id>/snaps/
-4. /sys/bus/rbd/devices/<id>/snaps/<snap_name>/
-5. /sys/bus/rbd/devices/<id>/snaps/<snap_name>/<snap_attrs>
-
-One solution would be to create kobjects for (3) and for (4), without
-using a group name. Another way, we can create groups for (2), and (3)
-under (1), but that's about it, you can't create the snap specific
-directory this way without resorting to some internal sysfs directory
-creation, which will be horribly wrong. At that point we don't have
-anything for 'snaps', and we don't really need to do any operations
-under that directory, we just need it to exist so that it contains the
-snapshot-specific directories.
-
-Another way would be to create a group for (2) under (1) and create a
-kobject for (3), for which you can create group per snapshot.
-
-Am I missing something? We already have the first solution (kobjects
-only) implemented, is there some real benefit for using the third
-method? We'll have to manually add remove groups anyway, as snapshots
-can be removed and new snapshots can be added.
-
-Thanks,
-Yehuda
+diff --git a/drivers/media/IR/nuvoton-cir.c b/drivers/media/IR/nuvoton-cir.c
+index 301be53..e3274ef 100644
+--- a/drivers/media/IR/nuvoton-cir.c
++++ b/drivers/media/IR/nuvoton-cir.c
+@@ -249,9 +249,12 @@ static int nvt_hw_detect(struct nvt_dev *nvt)
+ 	chip_minor = nvt_cr_read(nvt, CR_CHIP_ID_LO);
+ 	nvt_dbg("%s: chip id: 0x%02x 0x%02x", chip_id, chip_major, chip_minor);
+ 
+-	if (chip_major != CHIP_ID_HIGH &&
+-	    (chip_minor != CHIP_ID_LOW || chip_minor != CHIP_ID_LOW2))
++	if (chip_major != CHIP_ID_HIGH ||
++	    (chip_minor != CHIP_ID_LOW && chip_minor != CHIP_ID_LOW2)) {
++		nvt_pr(KERN_ERR, "%s: unsupported chip, id: 0x%02x 0x%02x",
++		       chip_id, chip_major, chip_minor);
+ 		ret = -ENODEV;
++	}
+ 
+ 	nvt_efm_disable(nvt);
+ 
+-- 
+1.7.2.2
