@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129Ab0KSWEY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:04:24 -0500
-Received: from kroah.org ([198.145.64.141]:52934 "EHLO coco.kroah.org"
+	id S932699Ab0KSWKv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:10:51 -0500
+Received: from kroah.org ([198.145.64.141]:52999 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758065Ab0KSWEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:04:16 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:24 2010
-Message-Id: <20101119220124.389582020@clark.site>
+	id S1758065Ab0KSWEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:24 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:25 2010
+Message-Id: <20101119220125.547203661@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:00:58 -0800
+Date: Fri, 19 Nov 2010 14:01:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [27/66] USB: mct_u232: fix broken close
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        Mike Frysinger <vapier@gentoo.org>, Felipe Balbi <balbi@ti.com>
+Subject: [41/66] usb: musb: blackfin: call usb_nop_xceiv_unregister() in musb_platform_exit()
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
-commit 92ca0dc5ee022e4c0e488177e1d8865a0778c6c2 upstream.
+commit 3daad24d6c72affdd40e8b6a75c87d3c175880b6 upstream.
 
-Fix regression introduced by commit
-f26788da3b342099d2b02d99ba1cb7f154d6ef7b (USB: serial: refactor generic
-close) which broke driver close().
+Blackfin's musb_platform_exit() forgets to call usb_nop_xceiv_unregister().
+While fixing this, also remove the unneeded blank line there.
 
-This driver uses non-standard semantics for the read urb which makes the
-generic close function fail to kill it (the read urb is actually an
-interrupt urb and therefore bulk_in size is zero).
-
-Reported-by: Eric Shattow "Eprecocious" <lucent@gmail.com>
-Tested-by: Eric Shattow "Eprecocious" <lucent@gmail.com>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/mct_u232.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/usb/musb/blackfin.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/mct_u232.c
-+++ b/drivers/usb/serial/mct_u232.c
-@@ -549,9 +549,12 @@ static void mct_u232_close(struct usb_se
+--- a/drivers/usb/musb/blackfin.c
++++ b/drivers/usb/musb/blackfin.c
+@@ -394,9 +394,9 @@ int __init musb_platform_init(struct mus
+ 
+ int musb_platform_exit(struct musb *musb)
  {
- 	dbg("%s port %d", __func__, port->number);
+-
+ 	gpio_free(musb->config->gpio_vrsel);
  
--	usb_serial_generic_close(port);
--	if (port->serial->dev)
-+	if (port->serial->dev) {
-+		/* shutdown our urbs */
-+		usb_kill_urb(port->write_urb);
-+		usb_kill_urb(port->read_urb);
- 		usb_kill_urb(port->interrupt_in_urb);
-+	}
- } /* mct_u232_close */
- 
- 
+ 	otg_put_transceiver(musb->xceiv);
++	usb_nop_xceiv_unregister();
+ 	return 0;
+ }
 
 
