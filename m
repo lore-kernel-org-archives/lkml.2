@@ -1,134 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab0KSRA1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 12:00:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58462 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754347Ab0KSRA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 12:00:26 -0500
-Date: Fri, 19 Nov 2010 11:59:52 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>,
-        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
-Message-ID: <20101119165952.GJ18100@redhat.com>
-References: <20101112172755.GR4823@redhat.com>
- <20101116184325.GB4823@redhat.com>
- <4CE2E3C3.6060800@windriver.com>
- <20101118080516.GJ32621@elte.hu>
- <4CE52048.5080802@windriver.com>
- <1290086232.2109.1507.camel@laptop>
- <20101118193247.GF18100@redhat.com>
- <4CE583D0.8050407@windriver.com>
- <20101118200807.GC8131@redhat.com>
- <1290112234.2109.1534.camel@laptop>
+	id S1754829Ab0KSRCn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 12:02:43 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:38156 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754328Ab0KSRCm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 12:02:42 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=IElzS3Riz8LwwepSvVJ7ls2GpBJwDmqtF/rTVY0lE5dCGF4hSAcpoyX9Ov8TNTY9b0
+         HZBydNo3TUgAvyCA71YOxsy8elBATY4jcbxc4CVCrGVCQskk0Ed7tX0OQ0EtLfYSbZQ/
+         IdtsDNS67E9rqFhpY+N4ZzDrytmSkKgiA8a+4=
+Date: Fri, 19 Nov 2010 09:02:32 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Ben Gardiner <bengardiner@nanometrics.ca>
+Cc: "Nori, Sekhar" <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "Govindarajan, Sriramakrishnan" <srk@ti.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexander Clouter <alex@digriz.org.uk>,
+        Chris Cordahi <christophercordahi@nanometrics.ca>
+Subject: Re: [PATCH v2 4/4] da850-evm: add baseboard UI expander buttons,
+ switches and LEDs
+Message-ID: <20101119170232.GB6236@core.coreip.homeip.net>
+References: <cover.1289835508.git.bengardiner@nanometrics.ca>
+ <cover.1289935504.git.bengardiner@nanometrics.ca>
+ <d6d59b4a3c34149008f3681e0d6106efa15f354d.1289935504.git.bengardiner@nanometrics.ca>
+ <B85A65D85D7EB246BE421B3FB0FBB59302477EAA89@dbde02.ent.ti.com>
+ <AANLkTike4sRvptEe9PXLT2u+SrFMOpNC6pvLPSzBfVOX@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1290112234.2109.1534.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTike4sRvptEe9PXLT2u+SrFMOpNC6pvLPSzBfVOX@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 09:30:33PM +0100, Peter Zijlstra wrote:
-> On Thu, 2010-11-18 at 15:08 -0500, Don Zickus wrote:
-> > On Thu, Nov 18, 2010 at 01:51:44PM -0600, Jason Wessel wrote:
-> > > > So the problem is when the nmi watchdog is enabled, the perf event is
-> > > > 'active' and thus tries to read the counter value.  Because it is always
-> > > > zero, perf just assumes the counter overflowed and the NMI is his.
-> > > >
-> > > > Not sure how to fix it yet, other than include the logic that detects we
-> > > > are on a guest and disable perf??
-> > > >
-> > > >   
-> > > 
-> > > I highly doubt we want to disable perf.   I would rather use the source
-> > > and fix the nmi emulation in KVM/Qemu after we hear back the results
-> > 
-> > Well I think Peter does not have a positive opinion about emulating perf
-> > inside a guest.  
-> 
-> Well, I'll let someone else write it.. I tihnk its pretty pointless to
-> have, the whole virt layer totally destroys many (if not all) useful
-> metrics.
-> 
-> But I don't have a problem with full msr emulation, what I do not like
-> is a direct msr passthough bypassing perf.
-> 
-> > Nor are the KVM folks having much success in doing so.
-> 
-> Just busy doing other stuff I guess.. Jes was going to prod at it at
-> some point.
-> 
-> > Just to clarify, perf counter emulation is _not_ implemented in kvm.
-> > Therefore disabling perf in the guest makes sense until someone gets
-> > around to actually writing the emulation code for perf in a guest. :-)
-> 
-> Right, which is what I proposed, on init do a checking_wrmsrl() on a
-> known PMU reg, KVM/qemu should fault on that.. (I'd prefer it if they'd
-> also fault on reading it too).
+Hi Ben,
 
-Reading the kvm code in arch/x86/kernel/kvm/x86.c, it seems like they do
-_not_ fault on writes, only on some (which don't include a bunch of the
-perfctrs).  The reason seems to be to prevent older distros from falling
-apart that could not handle those faults properly.
+On Fri, Nov 19, 2010 at 10:40:50AM -0500, Ben Gardiner wrote:
+> 
+> >> +
+> >> +static struct gpio_keys_platform_data user_sw_gpio_key_platform_data = {
+> >> +     .buttons = user_sw_gpio_keys,
+> >> +     .nbuttons = ARRAY_SIZE(user_sw_gpio_keys),
+> >> +     .rep = 0, /* disable auto-repeat */
+> >> +     .poll_interval = DA850_SW_POLL_MS,
+> >> +};
+> >
+> > I wonder if we really have create to separate platform data
+> > for switches and push buttons. If it is only the debounce period
+> > that is different, it can be handled by initializing that field
+> > differently.
+> 
+> I see. Good idea; we can declare an array of gpio_keys_platform_data.
+> 
+> Note; it is the polling interval which differs, not the debounce interval.
 
-I thought about a patch like this, but it only works for kvm and doesn't
-really solve the problem for other virt-machines like xen and vmware.
+Another question is why do you want to poll the same device at
+different intervals? The processor is already woken up so it makes sense
+to do as much as possible instead of going to sleep. In your case
+200/700 for every 1400ms interval you wake an extra time to poll
+switches so unless polling switches takes very long time it is better to
+combine them together (and into one input device, probably).
 
-Cheers,
-Don
-
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index bbe3c4a..ef7119e 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -493,6 +493,10 @@ static int x86_setup_perfctr(struct perf_event *event)
- 
- static int x86_pmu_hw_config(struct perf_event *event)
- {
-+	
-+	if (perf_guest_cbs && !perf_guest_cbs->is_perfctr_emulated())
-+		return -EOPNOTSUPP;
-+
- 	if (event->attr.precise_ip) {
- 		int precise = 0;
- 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 2288ad8..58203ea 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4600,10 +4600,16 @@ static unsigned long kvm_get_guest_ip(void)
- 	return ip;
- }
- 
-+static int kvm_is_perfctr_emulated(void)
-+{
-+	return 0;
-+}
-+
- static struct perf_guest_info_callbacks kvm_guest_cbs = {
- 	.is_in_guest		= kvm_is_in_guest,
- 	.is_user_mode		= kvm_is_user_mode,
- 	.get_guest_ip		= kvm_get_guest_ip,
-+	.is_perfctr_emulated	= kvm_is_perfctr_emulated,
- };
- 
- void kvm_before_handle_nmi(struct kvm_vcpu *vcpu)
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 057bf22..9cb500b 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -469,6 +469,7 @@ struct perf_guest_info_callbacks {
- 	int (*is_in_guest) (void);
- 	int (*is_user_mode) (void);
- 	unsigned long (*get_guest_ip) (void);
-+	int (*is_perfctr_emulated) (void);
- };
- 
- #ifdef CONFIG_HAVE_HW_BREAKPOINT
+-- 
+Dmitry
