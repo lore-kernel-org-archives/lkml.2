@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab0KSTJX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 14:09:23 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51426 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755963Ab0KSTJR convert rfc822-to-8bit (ORCPT
+	id S1755793Ab0KSTLP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 14:11:15 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38730 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754501Ab0KSTLO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 14:09:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=R/ihlrV/qyE24YcRRi7X351byZT7eiMA1eV4bX6BHYBF5/y7Cn5P5i4hD2DxHux8Kd
-         6hho3cMP+LnmLpXCDg6jBrz6VkfeXayH+YpPZwOOs5g4esC2LtSLgrX6zuZdOziqTfRa
-         shOUB8/FWUwrUXb6ZYfnOP7wGiClYPJQ/qR/4=
+	Fri, 19 Nov 2010 14:11:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <1290039615-23407-1-git-send-email-ccross@android.com>
-References: <1290039615-23407-1-git-send-email-ccross@android.com>
-Date: Fri, 19 Nov 2010 20:08:48 +0100
-Message-ID: <AANLkTimjJVw3ZA1F5VEJPaJwwK0FyH=XXc+vkau5zzAk@mail.gmail.com>
-Subject: Re: [PATCH] ARM: tegra: timer: Separate clocksource and sched_clock
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Colin Cross <ccross@android.com>
-Cc: linux-tegra@vger.kernel.org, Nicolas Pitre <nico@fluxnic.net>,
-        john stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Erik Gilling <konkers@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <5b55a1$in84he@fmsmga002.fm.intel.com>
+References: <alpine.DEB.2.00.1011190118480.8681@skynet.skynet.ie> <5b55a1$in84he@fmsmga002.fm.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 19 Nov 2010 11:04:37 -0800
+Message-ID: <AANLkTikiZRHKRrosXgY5TEYODN_D_JLJ0XXWSb9g1zPQ@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/18 Colin Cross <ccross@android.com>:
-
-> tegra_clocksource_read should not use cnt32_to_63, wrapping is
-> already handled in the clocksource code.  Move the cnt32_to_63
-> into the sched_clock function, and replace the use of clocksource
-> mult and shift with a multiplication by 1000 to convert us to ns.
+On Fri, Nov 19, 2010 at 2:02 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
 >
-> Change-Id: Ica1158c3fbed0ba53391f7db61180129a957511d
+> Note it also contains a couple of fluff fallout patches from the recent
+> drm-fixes rebase. (I thought it would be wise to include any core drm
+> changes in our testing before sending the request...)
 
-The Linux kernel does not use Gerrit...
+F*%^ me, why does drm always have to be so messy?
 
-> Signed-off-by: Colin Cross <ccross@android.com>
+You guys pull each others trees, and then rebase them. Yes, git is
+smart enough that it will merge it all fine, but dammit, now that
+multi-hundred-line Radeon commit exists twice in the tree. Do this:
 
-Apart from that:
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+   git show --stat 16790569eddf fba4312e223f
+   git show --stat 21e2eae4daae a41c73e04673
 
-Yours,
-Linus Walleij
+and cry.
+
+And yeah, it's ugly. And if that patch introduces a regression (which
+is entirely possible, it's not like it's small and trivial and
+obviously correct) it will just make bisection harder, and add
+confusion.  And it's totally pointless. It only adds pain. And it
+makes the history harder to read.
+
+Why did the Intel drm tree merge a patch that had _nothing_
+what-so-ever to do with Intel DRM? WHY?
+
+And why did the drm tree rebase a tree that had obviously been public
+and pulled from? WHY? Why did you make it public before it was ready?
+And/or why was it so ugly that it needed to rebase it? Why do these
+things keep happening?
+
+What's wrong with the whole drm crowd? Even if it isn't rebasing, why
+is drivers/gpu/drm always so very visible in the later -rc trees?
+
+I'm asking "why", but what I really want you guys to do is to ask
+_yourself_ why. And ask "Why is that? What am I doing wrong that this
+keeps happening?"
+
+Really. Spend some time pondering. What the hell just happened, and
+why did it happen, and how can you guys stop doing it?
+
+Chris: stop pulling in random crap in your tree. Do _your_ development
+in your tree. Nothing else.
+
+And Dave, I have no idea why those two commits were rebased. They seem
+identical in the tree that Chris had pulled. They have the same base
+commit. What was the point?
+
+                     Linus
