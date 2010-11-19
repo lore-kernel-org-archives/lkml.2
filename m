@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758300Ab0KSWEt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 17:04:49 -0500
-Received: from kroah.org ([198.145.64.141]:53143 "EHLO coco.kroah.org"
+	id S1758323Ab0KSWFF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 17:05:05 -0500
+Received: from kroah.org ([198.145.64.141]:53139 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758263Ab0KSWEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 17:04:40 -0500
+	id S1758217Ab0KSWEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 17:04:39 -0500
 X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 14:01:27 2010
-Message-Id: <20101119220127.615616029@clark.site>
+Message-Id: <20101119220127.531723933@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 14:01:37 -0800
+Date: Fri, 19 Nov 2010 14:01:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robin Holt <holt@sgi.com>
-Subject: [66/66] sgi-xp: incoming XPC channel messages can come in after the channels partition structures have been torn down
+        Mac Lin <mkl0301@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [65/66] ARM: cns3xxx: Fixup the missing second parameter to addruart macro to allow them to build.
 In-Reply-To: <20101119220309.GA15562@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,95 +26,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robin Holt <holt@sgi.com>
+From: Mac Lin <mkl0301@gmail.com>
 
-commit 09358972bff5ce99de496bbba97c85d417b3c054 upstream.
+It can't be merged into Linus' tree because this file has already been
+changed in incompatible ways.
 
-Under some workloads, some channel messages have been observed being
-delayed on the sending side past the point where the receiving side has
-been able to tear down its partition structures.
+Fixup the missing second parameter to addruart macro to allow them to build,
+according to to commit 0e17226f7cd289504724466f4298abc9bdfca3fe.
 
-This condition is already detected in xpc_handle_activate_IRQ_uv(), but
-that information is not given to xpc_handle_activate_mq_msg_uv().  As a
-result, xpc_handle_activate_mq_msg_uv() assumes the structures still exist
-and references them, causing a NULL-pointer deref.
+Enabling DEBUG in head.S would cause:
+rch/arm/boot/compressed/head.S: Assembler messages:
+arch/arm/boot/compressed/head.S:1037: Error: too many positional arguments
+arch/arm/boot/compressed/head.S:1055: Error: too many positional arguments
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Mac Lin <mkl0301@gmail.com>
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/misc/sgi-xp/xpc_uv.c |   17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ arch/arm/mach-cns3xxx/include/mach/debug-macro.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/misc/sgi-xp/xpc_uv.c
-+++ b/drivers/misc/sgi-xp/xpc_uv.c
-@@ -417,6 +417,7 @@ xpc_process_activate_IRQ_rcvd_uv(void)
- static void
- xpc_handle_activate_mq_msg_uv(struct xpc_partition *part,
- 			      struct xpc_activate_mq_msghdr_uv *msg_hdr,
-+			      int part_setup,
- 			      int *wakeup_hb_checker)
- {
- 	unsigned long irq_flags;
-@@ -481,6 +482,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREQUEST_UV: {
- 		struct xpc_activate_mq_msg_chctl_closerequest_uv *msg;
+--- a/arch/arm/mach-cns3xxx/include/mach/debug-macro.S
++++ b/arch/arm/mach-cns3xxx/include/mach/debug-macro.S
+@@ -10,7 +10,7 @@
+  * published by the Free Software Foundation.
+  */
  
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_closerequest_uv,
- 				   hdr);
-@@ -497,6 +501,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_CLOSEREPLY_UV: {
- 		struct xpc_activate_mq_msg_chctl_closereply_uv *msg;
- 
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_closereply_uv,
- 				   hdr);
-@@ -511,6 +518,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREQUEST_UV: {
- 		struct xpc_activate_mq_msg_chctl_openrequest_uv *msg;
- 
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_openrequest_uv,
- 				   hdr);
-@@ -528,6 +538,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENREPLY_UV: {
- 		struct xpc_activate_mq_msg_chctl_openreply_uv *msg;
- 
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				   xpc_activate_mq_msg_chctl_openreply_uv, hdr);
- 		args = &part->remote_openclose_args[msg->ch_number];
-@@ -545,6 +558,9 @@ xpc_handle_activate_mq_msg_uv(struct xpc
- 	case XPC_ACTIVATE_MQ_MSG_CHCTL_OPENCOMPLETE_UV: {
- 		struct xpc_activate_mq_msg_chctl_opencomplete_uv *msg;
- 
-+		if (!part_setup)
-+			break;
-+
- 		msg = container_of(msg_hdr, struct
- 				xpc_activate_mq_msg_chctl_opencomplete_uv, hdr);
- 		spin_lock_irqsave(&part->chctl_lock, irq_flags);
-@@ -621,6 +637,7 @@ xpc_handle_activate_IRQ_uv(int irq, void
- 
- 			part_referenced = xpc_part_ref(part);
- 			xpc_handle_activate_mq_msg_uv(part, msg_hdr,
-+						      part_referenced,
- 						      &wakeup_hb_checker);
- 			if (part_referenced)
- 				xpc_part_deref(part);
+-		.macro	addruart,rx
++		.macro	addruart,rx,rtmp
+ 		mrc	p15, 0, \rx, c1, c0
+ 		tst	\rx, #1			@ MMU enabled?
+ 		moveq	\rx,      #0x10000000
 
 
