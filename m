@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab0KSQyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:54:15 -0500
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:35136 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754057Ab0KSQyO (ORCPT
+	id S1754583Ab0KSQz6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:55:58 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47296 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754194Ab0KSQz5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:54:14 -0500
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>,
-        "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-        "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
-CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-        "'akpm@osdl.org'" <akpm@osdl.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>,
-        Tomas Henzl <thenzl@redhat.com>
-Date: Fri, 19 Nov 2010 09:53:28 -0700
-Subject: [PATCH 2/9] scsi: megaraid_sas - Driver only report tape drive,
- JBOD and logic drives
-Thread-Topic: [PATCH 2/9] scsi: megaraid_sas - Driver only report tape
- drive, JBOD and logic drives
-Thread-Index: AcsIRXwfwbieNXNUR6GBvdSy0cxVCQskSL/AFMvf1xAAAOfyYA==
-Message-ID: <4B6A08C587958942AA3002690DD4F8C30106A961D6@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3DBD67F68@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C30106A961BD@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C30106A961BD@cosmail02.lsi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: multipart/mixed;
-	boundary="_002_4B6A08C587958942AA3002690DD4F8C30106A961D6cosmail02lsic_"
+	Fri, 19 Nov 2010 11:55:57 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Dox4TxEgpaIgxf6sxQuEWmtaynCnz6Xzuj6HOmvBgk5IOV7yPKlqXkF8lihxttOvrh
+         hVWnLvPbL/+3W10vsHKMCX0E3j/+sEFjfOCy0xDl/lWipuiXvRojIBdAqMS6cGSLew+B
+         s38h+pbplQ0A6UAM/gS1HAZWUHsJh89e3yRXM=
 MIME-Version: 1.0
+In-Reply-To: <4CE6AAB9.3070009@kernel.org>
+References: <20101104164401.GC10656@sundance.ccs.neu.edu>
+	<4CD3CE29.2010105@kernel.org>
+	<20101106053204.GB12449@count0.beaverton.ibm.com>
+	<20101106204008.GA31077@sundance.ccs.neu.edu>
+	<4CD5D99A.8000402@cs.columbia.edu>
+	<20101107184927.GF31077@sundance.ccs.neu.edu>
+	<4CD72150.9070705@cs.columbia.edu>
+	<4CE3C334.9080401@kernel.org>
+	<20101117153902.GA1155@hallyn.com>
+	<4CE3F8D1.10003@kernel.org>
+	<20101119041045.GC24031@hallyn.com>
+	<4CE683E1.6010500@kernel.org>
+	<04F4899E-B5C7-4BAF-8F2F-05D507A91408@parallels.com>
+	<4CE698C5.5060806@kernel.org>
+	<AANLkTikRHuaCpaROtty6X_Oe6JixzgcbVsxHxvtsu+UV@mail.gmail.com>
+	<4CE6A076.2020807@kernel.org>
+	<AANLkTikz++4_SvqU_Wvx5CjcpKJhPsD7q470swdqwn94@mail.gmail.com>
+	<4CE6A397.6010105@kernel.org>
+	<AANLkTin7kd3crS+fTLLea5PhAii7B3dz=n7p7YtQ6d4g@mail.gmail.com>
+	<4CE6A69F.4030008@kernel.org>
+	<AANLkTim-M02Z1igZ4LyXH_Qgyzx1iD0ZQkRT6dxcSE3P@mail.gmail.com>
+	<4CE6AAB9.3070009@kernel.org>
+Date: Fri, 19 Nov 2010 18:55:55 +0200
+Message-ID: <AANLkTin3bodz+be31ALAwgVA=d2P1=+Mir0A3zEWy9Li@mail.gmail.com>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Kirill Korotaev <dev@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kapil Arya <kapil@ccs.neu.edu>, Gene Cooperman <gene@ccs.neu.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Containers <containers@lists.osdl.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_4B6A08C587958942AA3002690DD4F8C30106A961D6cosmail02lsic_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Fri, Nov 19, 2010 at 6:50 PM, Tejun Heo <tj@kernel.org> wrote:
+> On 11/19/2010 05:38 PM, Alexey Dobriyan wrote:
+>> On Fri, Nov 19, 2010 at 6:32 PM, Tejun Heo <tj@kernel.org> wrote:
+>>> On 11/19/2010 05:27 PM, Alexey Dobriyan wrote:
+>>>> On Fri, Nov 19, 2010 at 6:19 PM, Tejun Heo <tj@kernel.org> wrote:
+>>>>>> The paragon of absurdity is struct task_struct::did_exec .
+>>>>>
+>>>>> Yeah, then go and figure how to do that in a way which would be useful
+>>>>> for other purposes too instead of trying to shove the whole
+>>>>> checkpointer inside the kernel.  It sure would be harder but hey
+>>>>> that's the way it is.
+>>>>
+>>>> System call for one bit? This is ridiculous.
+>>>
+>>> Why not just a flag in proc entry?  It's a frigging single bit.
+>>
+>> Because /proc/*/did_exec useless to anyone but C/R (even for reading!).
+>
+> I don't think you'll need a full file.  Just shove it in status or
+> somewhere.  Your argument is completely absurd.  So, because exporting
+> single bit is so horrible to everyone else, you want to shove the
+> whole frigging checkpointer inside the kernel?
+>
+>> Because code is much simpler:
+>>
+>>     tsk->did_exec = !!tsk_img->did_exec;
+>> +
+>>     __u8 did_exec;
+>
+> Sigh, yeah, except for the horror show to create tsk_img.
 
-Driver only report tape drive, JBOD and logic drives to OS
+task_struct image work is common for both userspace C/R and in-kernel.
+You _have_ to define it.
+Simpler code is only first line.
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
+> Your "paragon of absurdity" is did_exec which is only ever used
+> to decide whether setpgid() should fail with -EACCES, seriously?
+> Here's a thought.  Ignore it for now and concentrate on more
+> relevant problems.
 
----
-drivers/scsi/megaraid/megaraid_sas.c |   19 +++++++++++++------
- 1 file changed, 13 insertions(+), 6 deletions(-)
-
---_002_4B6A08C587958942AA3002690DD4F8C30106A961D6cosmail02lsic_
-Content-Type: application/octet-stream; name="megasas-p2-enclusure.patch"
-Content-Description: megasas-p2-enclusure.patch
-Content-Disposition: attachment; filename="megasas-p2-enclusure.patch";
-	size=1255; creation-date="Thu, 18 Nov 2010 20:37:02 GMT";
-	modification-date="Wed, 17 Nov 2010 13:09:11 GMT"
-Content-Transfer-Encoding: base64
-
-ZGlmZiAtcnVwTiBvbGQvZHJpdmVycy9zY3NpL21lZ2FyYWlkL21lZ2FyYWlkX3Nhcy5jIG5ldy9k
-cml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMKLS0tIG9sZC9kcml2ZXJzL3Njc2kv
-bWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMJMjAxMC0xMS0xNCAxNTozMzoyNS4wMDAwMDAwMDAgLTA1
-MDAKKysrIG5ldy9kcml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMJMjAxMC0xMS0x
-NCAxNTozNDowMC4wMDAwMDAwMDAgLTA1MDAKQEAgLTE0NDUsMTUgKzE0NDUsMjIgQEAgc3RhdGlj
-IGludCBtZWdhc2FzX3NsYXZlX2NvbmZpZ3VyZShzdHJ1YwogCSogICAgICAgIFRoYXQgd2lsbCBi
-ZSBmaXhlZCBvbmNlIExTSSBlbmdpbmVlcnMgaGF2ZSBhdWRpdGVkIHRoZQogCSogICAgICAgIGZp
-cm13YXJlIGZvciBwb3NzaWJsZSBpc3N1ZXMuCiAJKi8KLQlpZiAoc2Rldi0+Y2hhbm5lbCA8IE1F
-R0FTQVNfTUFYX1BEX0NIQU5ORUxTICYmCi0JCQkJc2Rldi0+dHlwZSA9PSBUWVBFX0RJU0spIHsK
-LQkJcGRfaW5kZXggPSAoc2Rldi0+Y2hhbm5lbCAqIE1FR0FTQVNfTUFYX0RFVl9QRVJfQ0hBTk5F
-TCkgKwotCQkJCQkJCQlzZGV2LT5pZDsKLQkJaWYgKGluc3RhbmNlLT5wZF9saXN0W3BkX2luZGV4
-XS5kcml2ZVN0YXRlID09Ci0JCQkJCQlNUl9QRF9TVEFURV9TWVNURU0pIHsKKwlpZiAoc2Rldi0+
-Y2hhbm5lbCA8IE1FR0FTQVNfTUFYX1BEX0NIQU5ORUxTKSB7CisJCWlmIChzZGV2LT50eXBlID09
-IFRZUEVfVEFQRSkgewogCQkJYmxrX3F1ZXVlX3JxX3RpbWVvdXQoc2Rldi0+cmVxdWVzdF9xdWV1
-ZSwKIAkJCQlNRUdBU0FTX0RFRkFVTFRfQ01EX1RJTUVPVVQgKiBIWik7CiAJCQlyZXR1cm4gMDsK
-KwkJfSBlbHNlIGlmIChzZGV2LT50eXBlID09IFRZUEVfRElTSykgeworCQlwZF9pbmRleCA9CisJ
-CShzZGV2LT5jaGFubmVsICogTUVHQVNBU19NQVhfREVWX1BFUl9DSEFOTkVMKSArIHNkZXYtPmlk
-OworCQkJaWYgKChpbnN0YW5jZS0+cGRfbGlzdFtwZF9pbmRleF0uZHJpdmVTdGF0ZSA9PQorCQkJ
-CQlNUl9QRF9TVEFURV9TWVNURU0pICYmCisJCQkJKGluc3RhbmNlLT5wZF9saXN0W3BkX2luZGV4
-XS5kcml2ZVR5cGUgPT0KKwkJCQkJCVRZUEVfRElTSykpIHsKKwkJCQlibGtfcXVldWVfcnFfdGlt
-ZW91dChzZGV2LT5yZXF1ZXN0X3F1ZXVlLAorCQkJCQlNRUdBU0FTX0RFRkFVTFRfQ01EX1RJTUVP
-VVQgKiBIWik7CisJCQkJcmV0dXJuIDA7CisJCQl9CiAJCX0KIAkJcmV0dXJuIC1FTlhJTzsKIAl9
-Cg==
-
---_002_4B6A08C587958942AA3002690DD4F8C30106A961D6cosmail02lsic_--
+You're so newjerseyly now.
