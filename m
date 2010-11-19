@@ -1,99 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab0KSQz6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:55:58 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:47296 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754194Ab0KSQz5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 11:55:57 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Dox4TxEgpaIgxf6sxQuEWmtaynCnz6Xzuj6HOmvBgk5IOV7yPKlqXkF8lihxttOvrh
-         hVWnLvPbL/+3W10vsHKMCX0E3j/+sEFjfOCy0xDl/lWipuiXvRojIBdAqMS6cGSLew+B
-         s38h+pbplQ0A6UAM/gS1HAZWUHsJh89e3yRXM=
+	id S1754719Ab0KSQ7f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:59:35 -0500
+Received: from compulab.co.il ([67.18.134.219]:33663 "EHLO compulab.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754242Ab0KSQ7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 11:59:34 -0500
+Message-ID: <4CE6ACE7.9010203@compulab.co.il>
+Date: Fri, 19 Nov 2010 18:59:19 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.7) Gecko/20100816 Lightning/1.0b2 Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <4CE6AAB9.3070009@kernel.org>
-References: <20101104164401.GC10656@sundance.ccs.neu.edu>
-	<4CD3CE29.2010105@kernel.org>
-	<20101106053204.GB12449@count0.beaverton.ibm.com>
-	<20101106204008.GA31077@sundance.ccs.neu.edu>
-	<4CD5D99A.8000402@cs.columbia.edu>
-	<20101107184927.GF31077@sundance.ccs.neu.edu>
-	<4CD72150.9070705@cs.columbia.edu>
-	<4CE3C334.9080401@kernel.org>
-	<20101117153902.GA1155@hallyn.com>
-	<4CE3F8D1.10003@kernel.org>
-	<20101119041045.GC24031@hallyn.com>
-	<4CE683E1.6010500@kernel.org>
-	<04F4899E-B5C7-4BAF-8F2F-05D507A91408@parallels.com>
-	<4CE698C5.5060806@kernel.org>
-	<AANLkTikRHuaCpaROtty6X_Oe6JixzgcbVsxHxvtsu+UV@mail.gmail.com>
-	<4CE6A076.2020807@kernel.org>
-	<AANLkTikz++4_SvqU_Wvx5CjcpKJhPsD7q470swdqwn94@mail.gmail.com>
-	<4CE6A397.6010105@kernel.org>
-	<AANLkTin7kd3crS+fTLLea5PhAii7B3dz=n7p7YtQ6d4g@mail.gmail.com>
-	<4CE6A69F.4030008@kernel.org>
-	<AANLkTim-M02Z1igZ4LyXH_Qgyzx1iD0ZQkRT6dxcSE3P@mail.gmail.com>
-	<4CE6AAB9.3070009@kernel.org>
-Date: Fri, 19 Nov 2010 18:55:55 +0200
-Message-ID: <AANLkTin3bodz+be31ALAwgVA=d2P1=+Mir0A3zEWy9Li@mail.gmail.com>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kirill Korotaev <dev@parallels.com>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Kapil Arya <kapil@ccs.neu.edu>, Gene Cooperman <gene@ccs.neu.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Containers <containers@lists.osdl.org>
+To: srinath@mistralsolutions.com
+CC: linux-omap@vger.kernel.org, jdk@ti.com, tony@atomide.com,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org, khilman@deeprootsystems.com,
+        nm@ti.com, nagendra@mistralsolutions.com, umeshk@mistralsolutions.com
+Subject: Re: [Patch v1] AM35xx: Craneboard: Add USB EHCI support
+References: <[PATCH] AM35xx-Craneboard-Add-USB-EHCI-support> <1290182862-21837-1-git-send-email-srinath@mistralsolutions.com>
+In-Reply-To: <1290182862-21837-1-git-send-email-srinath@mistralsolutions.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-ACL-Warn: {
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - compulab.site5.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 6:50 PM, Tejun Heo <tj@kernel.org> wrote:
-> On 11/19/2010 05:38 PM, Alexey Dobriyan wrote:
->> On Fri, Nov 19, 2010 at 6:32 PM, Tejun Heo <tj@kernel.org> wrote:
->>> On 11/19/2010 05:27 PM, Alexey Dobriyan wrote:
->>>> On Fri, Nov 19, 2010 at 6:19 PM, Tejun Heo <tj@kernel.org> wrote:
->>>>>> The paragon of absurdity is struct task_struct::did_exec .
->>>>>
->>>>> Yeah, then go and figure how to do that in a way which would be useful
->>>>> for other purposes too instead of trying to shove the whole
->>>>> checkpointer inside the kernel.  It sure would be harder but hey
->>>>> that's the way it is.
->>>>
->>>> System call for one bit? This is ridiculous.
->>>
->>> Why not just a flag in proc entry?  It's a frigging single bit.
->>
->> Because /proc/*/did_exec useless to anyone but C/R (even for reading!).
->
-> I don't think you'll need a full file.  Just shove it in status or
-> somewhere.  Your argument is completely absurd.  So, because exporting
-> single bit is so horrible to everyone else, you want to shove the
-> whole frigging checkpointer inside the kernel?
->
->> Because code is much simpler:
->>
->>     tsk->did_exec = !!tsk_img->did_exec;
->> +
->>     __u8 did_exec;
->
-> Sigh, yeah, except for the horror show to create tsk_img.
+ Hi Srinath,
 
-task_struct image work is common for both userspace C/R and in-kernel.
-You _have_ to define it.
-Simpler code is only first line.
+On 11/19/10 18:07, srinath@mistralsolutions.com wrote:
+> From: Srinath <srinath@mistralsolutions.com>
+>
+> AM3517/05 Craneboard has one EHCI interface on board using port1.
+>
+> GPIO35 is used as power enable.
+> GPIO38 is used as port1 PHY reset.
+>
+> Signed-off-by: Srinath <srinath@mistralsolutions.com>
+> ---
+>  arch/arm/mach-omap2/board-am3517crane.c |   21 +++++++++++++++++++++
+>  1 files changed, 21 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/board-am3517crane.c b/arch/arm/mach-omap2/board-am3517crane.c
+> index 13ead33..0e1a806 100644
+> --- a/arch/arm/mach-omap2/board-am3517crane.c
+> +++ b/arch/arm/mach-omap2/board-am3517crane.c
+> @@ -28,8 +28,10 @@
+>  
+>  #include <plat/board.h>
+>  #include <plat/common.h>
+> +#include <plat/usb.h>
+>  
+>  #include "mux.h"
+> +#include "control.h"
+>  
+>  /* Board initialization */
+>  static struct omap_board_config_kernel am3517_crane_config[] __initdata = {
+> @@ -53,10 +55,29 @@ static void __init am3517_crane_init_irq(void)
+>  	omap_gpio_init();
+>  }
+>  
+> +static struct ehci_hcd_omap_platform_data ehci_pdata __initdata = {
+> +	.port_mode[0] = EHCI_HCD_OMAP_MODE_PHY,
+> +	.port_mode[1] = EHCI_HCD_OMAP_MODE_UNKNOWN,
+> +	.port_mode[2] = EHCI_HCD_OMAP_MODE_UNKNOWN,
+> +
+> +	.phy_reset  = true,
+> +	.reset_gpio_port[0]  = 38,
+> +	.reset_gpio_port[1]  = -EINVAL,
+> +	.reset_gpio_port[2]  = -EINVAL
+> +};
+> +
+>  static void __init am3517_crane_init(void)
+>  {
+>  	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
+>  	omap_serial_init();
+> +
+> +	/* Configure GPIO for EHCI port */
+> +	omap_mux_init_gpio(35, OMAP_PIN_OUTPUT);
+> +	gpio_request(35, "usb_ehci_enable");
 
-> Your "paragon of absurdity" is did_exec which is only ever used
-> to decide whether setpgid() should fail with -EACCES, seriously?
-> Here's a thought.  Ignore it for now and concentrate on more
-> relevant problems.
+gpio_request() can fail, you should check this
+and you should not use this gpio if the request fails.
+Also, may be the regulators framework is more appropriate
+for power enable line, but I'm not sure...
 
-You're so newjerseyly now.
+> +	gpio_direction_output(35, 1);
+> +	gpio_set_value(35, 1);
+> +	omap_mux_init_gpio(38, OMAP_PIN_OUTPUT);
+
+Shouldn't the omap_mux_init_gpio() be called before you request the gpio?
+
+> +	usb_ehci_init(&ehci_pdata);
+>  }
+>  
+>  MACHINE_START(CRANEBOARD, "AM3517/05 CRANEBOARD")
+
+-- 
+Regards,
+Igor.
+
