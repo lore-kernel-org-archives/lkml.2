@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932931Ab0KSA20 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 19:28:26 -0500
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:35073 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758097Ab0KSA2Z (ORCPT
+	id S1755461Ab0KSAef (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 19:34:35 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.183]:16786 "EHLO
+	ironport2-out.pppoe.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753841Ab0KSAee (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 19:28:25 -0500
-Date: Fri, 19 Nov 2010 01:24:02 +0100
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Samuel Ortiz <samuel@sortiz.org>
-Cc: Kuninori Morimoto <morimoto.kuninori@renesas.com>,
-        irda-users@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] SuperH IrDA: correct Baud rate error correction
-Message-ID: <20101119012402.43e9aa61@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 18 Nov 2010 19:34:34 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApIBAMZU5UxLd/sX/2dsb2JhbAAHgz3NXpBygSKDNnMEhFqLEA
+X-IronPort-AV: E=Sophos;i="4.59,220,1288584000"; 
+   d="scan'208";a="82925761"
+Message-ID: <4CE5C616.7070706@teksavvy.com>
+Date: Thu, 18 Nov 2010 19:34:30 -0500
+From: Mark Lord <kernel@teksavvy.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Greg Freemyer <greg.freemyer@gmail.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Matthew Wilcox <matthew@wil.cx>, Josef Bacik <josef@redhat.com>,
+        Lukas Czerner <lczerner@redhat.com>, tytso@mit.edu,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, sandeen@redhat.com
+Subject: Re: [PATCH 1/2] fs: Do not dispatch FITRIM through separate super_operation
+References: <1290065809-3976-1-git-send-email-lczerner@redhat.com>	<20101118130630.GJ6178@parisc-linux.org>	<20101118134804.GN5618@dhcp231-156.rdu.redhat.com>	<20101118141957.GK6178@parisc-linux.org>	<20101118142918.GA18510@infradead.org>	<1290100750.3041.72.camel@mulgrave.site>	<x494obe4kd5.fsf@segfault.boston.devel.redhat.com>	<1290102098.3041.77.camel@mulgrave.site>	<AANLkTim=SkqBehcCvEME7YVHk3S0dLdmBS8ooRF+-BuW@mail.gmail.com>	<4CE59E57.2090009@teksavvy.com> <yq1r5eiw5os.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1r5eiw5os.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks to me as if the second value of rate_err_array is intended
-to be a decimal 625. However, with a leading 0 it becomes an octal
-constant, and as such evaluates to a decimal 405.
+On 10-11-18 06:52 PM, Martin K. Petersen wrote:
+>>>>>> "Mark" == Mark Lord<kernel@teksavvy.com>  writes:
+> Mark>  If FITRIM is still issuing single-range-at-a-time TRIMs, then I'd
+> Mark>  call that a BUG that needs fixing.  Doing TRIM like that causes
+> Mark>  tons of unnecessary ERASE cycles, shortening the SSD lifetime.  It
+> Mark>  really needs to batch them into groups of (up to) 64 ranges at a
+> Mark>  time (64 ranges fits into a single 512-byte parameter block).
+>
+> We don't support coalescing discontiguous requests into one command. But
+> we will issue contiguous TRIM requests as big as the payload can
+> handle. That's just short of two gigs per command given a 512-byte
+> block.
+>
+> I spent quite a bit of time trying to make coalescing work in the
+> spring. It got very big and unwieldy. When we discussed it at the
+> filesystem summit the consensus was that it was too intrusive to the I/O
+> stack, elevators, etc.
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- drivers/net/irda/sh_sir.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Surely if a userspace tool and shell-script can accomplish this,
+totally lacking real filesystem knowledge, then we should be able
+to approximate it in kernel space?
 
-diff --git a/drivers/net/irda/sh_sir.c b/drivers/net/irda/sh_sir.c
-index 00b38bc..52a7c86 100644
---- a/drivers/net/irda/sh_sir.c
-+++ b/drivers/net/irda/sh_sir.c
-@@ -258,7 +258,7 @@ static int sh_sir_set_baudrate(struct sh_sir_self *self, u32 baudrate)
- 
- 	/* Baud Rate Error Correction x 10000 */
- 	u32 rate_err_array[] = {
--		0000, 0625, 1250, 1875,
-+		   0,  625, 1250, 1875,
- 		2500, 3125, 3750, 4375,
- 		5000, 5625, 6250, 6875,
- 		7500, 8125, 8750, 9375,
--- 
-1.7.2.2
+This is FITRIM we're talking about, not the on-the-fly automatic TRIM.
+
+FITRIM could perhaps use a similar approach to what wiper.sh does:
+reserve a large number of free blocks, and issue coalesced TRIM(s) on them.
+
+The difference being, it could walk through the filesystem,
+trimming in sections, rather than trying to reserve/trim the entire
+freespace all in one go.
+
+Over-thinking it???
