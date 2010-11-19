@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757623Ab0KSV7B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 16:59:01 -0500
-Received: from kroah.org ([198.145.64.141]:45305 "EHLO coco.kroah.org"
+	id S1757734Ab0KSV7P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 16:59:15 -0500
+Received: from kroah.org ([198.145.64.141]:45413 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757389Ab0KSV65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 16:58:57 -0500
-X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:43 2010
-Message-Id: <20101119215643.836075327@clark.site>
+	id S1757627Ab0KSV7C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 16:59:02 -0500
+X-Mailbox-Line: From gregkh@clark.site Fri Nov 19 13:56:44 2010
+Message-Id: <20101119215644.581554967@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 19 Nov 2010 13:56:23 -0800
+Date: Fri, 19 Nov 2010 13:56:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ursula Braun <ursula.braun@de.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: [62/82] ipv6: fix refcnt problem related to POSTDAD state
+        Tom Marshall <tdm.code@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [71/82] tcp: Fix race in tcp_poll
 In-Reply-To: <20101119215658.GA7804@kroah.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,45 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Ursula Braun <ursula.braun@de.ibm.com>
+From: Tom Marshall <tdm.code@gmail.com>
 
-[ Upstream commit 801715f95be37b865af83b9909ad93da141a9306 ]
+[ Upstream commit a4d258036ed9b2a1811c3670c6099203a0f284a0 ]
 
-After running this bonding setup script
-    modprobe bonding miimon=100 mode=0 max_bonds=1
-    ifconfig bond0 10.1.1.1/16
-    ifenslave bond0 eth1
-    ifenslave bond0 eth3
-on s390 with qeth-driven slaves, modprobe -r fails with this message
-    unregister_netdevice: waiting for bond0 to become free. Usage count = 1
-due to twice detection of duplicate address.
-Problem is caused by a missing decrease of ifp->refcnt in addrconf_dad_failure.
-An extra call of in6_ifa_put(ifp) solves it.
-Problem has been introduced with commit f2344a131bccdbfc5338e17fa71a807dee7944fa.
+If a RST comes in immediately after checking sk->sk_err, tcp_poll will
+return POLLIN but not POLLOUT.  Fix this by checking sk->sk_err at the end
+of tcp_poll.  Additionally, ensure the correct order of operations on SMP
+machines with memory barriers.
 
-Signed-off-by: Ursula Braun <ursula.braun@de.ibm.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Tom Marshall <tdm.code@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv6/addrconf.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ net/ipv4/tcp.c       |    7 +++++--
+ net/ipv4/tcp_input.c |    2 ++
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/net/ipv6/addrconf.c
-+++ b/net/ipv6/addrconf.c
-@@ -1424,8 +1424,10 @@ void addrconf_dad_failure(struct inet6_i
- {
- 	struct inet6_dev *idev = ifp->idev;
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -388,8 +388,6 @@ unsigned int tcp_poll(struct file *file,
+ 	 */
  
--	if (addrconf_dad_end(ifp))
-+	if (addrconf_dad_end(ifp)) {
-+		in6_ifa_put(ifp);
- 		return;
-+	}
+ 	mask = 0;
+-	if (sk->sk_err)
+-		mask = POLLERR;
  
- 	if (net_ratelimit())
- 		printk(KERN_INFO "%s: IPv6 duplicate address %pI6c detected!\n",
+ 	/*
+ 	 * POLLHUP is certainly not done right. But poll() doesn't
+@@ -459,6 +457,11 @@ unsigned int tcp_poll(struct file *file,
+ 		if (tp->urg_data & TCP_URG_VALID)
+ 			mask |= POLLPRI;
+ 	}
++	/* This barrier is coupled with smp_wmb() in tcp_reset() */
++	smp_rmb();
++	if (sk->sk_err)
++		mask |= POLLERR;
++
+ 	return mask;
+ }
+ 
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -4041,6 +4041,8 @@ static void tcp_reset(struct sock *sk)
+ 	default:
+ 		sk->sk_err = ECONNRESET;
+ 	}
++	/* This barrier is coupled with smp_rmb() in tcp_poll() */
++	smp_wmb();
+ 
+ 	if (!sock_flag(sk, SOCK_DEAD))
+ 		sk->sk_error_report(sk);
 
 
