@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab0KSQuf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 11:50:35 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61765 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752531Ab0KSQue (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Fri, 19 Nov 2010 11:50:34 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, stefano.stabellini@eu.citrix.com
-Cc: Jeremy.Fitzhardinge@citrix.com, xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] xen/events: Use PIRQ instead of GSI value when unmapping MSI/MSI-X irqs.
-Date: Fri, 19 Nov 2010 11:48:54 -0500
-Message-Id: <1290185334-29814-1-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.1
+	id S1754438Ab0KSQvP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 11:51:15 -0500
+Received: from hera.kernel.org ([140.211.167.34]:51965 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753892Ab0KSQvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 11:51:14 -0500
+Message-ID: <4CE6AAB9.3070009@kernel.org>
+Date: Fri, 19 Nov 2010 17:50:01 +0100
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.12) Gecko/20101027 Lightning/1.0b2 Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Kirill Korotaev <dev@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Kapil Arya <kapil@ccs.neu.edu>, Gene Cooperman <gene@ccs.neu.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Containers <containers@lists.osdl.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+References: <20101104164401.GC10656@sundance.ccs.neu.edu>	<4CD3CE29.2010105@kernel.org>	<20101106053204.GB12449@count0.beaverton.ibm.com>	<20101106204008.GA31077@sundance.ccs.neu.edu>	<4CD5D99A.8000402@cs.columbia.edu>	<20101107184927.GF31077@sundance.ccs.neu.edu>	<4CD72150.9070705@cs.columbia.edu>	<4CE3C334.9080401@kernel.org>	<20101117153902.GA1155@hallyn.com>	<4CE3F8D1.10003@kernel.org>	<20101119041045.GC24031@hallyn.com>	<4CE683E1.6010500@kernel.org>	<04F4899E-B5C7-4BAF-8F2F-05D507A91408@parallels.com>	<4CE698C5.5060806@kernel.org>	<AANLkTikRHuaCpaROtty6X_Oe6JixzgcbVsxHxvtsu+UV@mail.gmail.com>	<4CE6A076.2020807@kernel.org>	<AANLkTikz++4_SvqU_Wvx5CjcpKJhPsD7q470swdqwn94@mail.gmail.com>	<4CE6A397.6010105@kernel.org>	<AANLkTin7kd3crS+fTLLea5PhAii7B3dz=n7p7YtQ6d4g@mail.gmail.com>	<4CE6A69F.4030008@kernel.org> <AANLkTim-M02Z1igZ4LyXH_Qgyzx1iD0ZQkRT6dxcSE3P@mail.gmail.com>
+In-Reply-To: <AANLkTim-M02Z1igZ4LyXH_Qgyzx1iD0ZQkRT6dxcSE3P@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 19 Nov 2010 16:50:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we allocate a vector for MSI/MSI-X we save away the PIRQ, and the
-vector value. When we unmap (de-allocate) the MSI/MSI-X vector(s) we
-need to provide the PIRQ and the vector value. What we did instead
-was to provide the GSI (which was zero) and the vector value, and we
-got these unhappy error messages:
+On 11/19/2010 05:38 PM, Alexey Dobriyan wrote:
+> On Fri, Nov 19, 2010 at 6:32 PM, Tejun Heo <tj@kernel.org> wrote:
+>> On 11/19/2010 05:27 PM, Alexey Dobriyan wrote:
+>>> On Fri, Nov 19, 2010 at 6:19 PM, Tejun Heo <tj@kernel.org> wrote:
+>>>>> The paragon of absurdity is struct task_struct::did_exec .
+>>>>
+>>>> Yeah, then go and figure how to do that in a way which would be useful
+>>>> for other purposes too instead of trying to shove the whole
+>>>> checkpointer inside the kernel.  It sure would be harder but hey
+>>>> that's the way it is.
+>>>
+>>> System call for one bit? This is ridiculous.
+>>
+>> Why not just a flag in proc entry?  It's a frigging single bit.
+> 
+> Because /proc/*/did_exec useless to anyone but C/R (even for reading!).
 
-(XEN) irq.c:1575: dom0: pirq 0 not mapped
-[    7.733415] unmap irq failed -22
+I don't think you'll need a full file.  Just shove it in status or
+somewhere.  Your argument is completely absurd.  So, because exporting
+single bit is so horrible to everyone else, you want to shove the
+whole frigging checkpointer inside the kernel?
 
-This patches fixes this and we use the PIRQ value instead of the GSI
-value.
+> Because code is much simpler:
+> 
+>     tsk->did_exec = !!tsk_img->did_exec;
+> +
+>     __u8 did_exec;
 
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Sigh, yeah, except for the horror show to create tsk_img.  Your
+"paragon of absurdity" is did_exec which is only ever used to decide
+whether setpgid() should fail with -EACCES, seriously?  Here's a
+thought.  Ignore it for now and concentrate on more relevant problems.
+I'm fairly sure CR'd program malfunctioning over did_exec wouldn't
+mark the beginning of the end of our civilization.  You gotta be
+kidding me.
 
-P.S.
-Stefano, I've tested this on domain zero. The path on PVonHVM looks correct,
-but I would appreciate you taking a look at this.
----
- drivers/xen/events.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 321a0c8..7eb720b 100644
---- a/drivers/xen/events.c
-+++ b/drivers/xen/events.c
-@@ -752,7 +752,7 @@ int xen_destroy_irq(int irq)
- 		goto out;
- 
- 	if (xen_initial_domain()) {
--		unmap_irq.pirq = info->u.pirq.gsi;
-+		unmap_irq.pirq = info->u.pirq.pirq;
- 		unmap_irq.domid = DOMID_SELF;
- 		rc = HYPERVISOR_physdev_op(PHYSDEVOP_unmap_pirq, &unmap_irq);
- 		if (rc) {
 -- 
-1.7.1
-
+tejun
