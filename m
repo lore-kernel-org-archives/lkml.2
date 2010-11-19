@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab0KSRPe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 12:15:34 -0500
-Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:60458 "HELO
-	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755069Ab0KSRPd (ORCPT
+	id S1755880Ab0KSRRj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 12:17:39 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:38592 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755309Ab0KSRRh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 12:15:33 -0500
-MIME-Version: 1.0
-In-Reply-To: <20101119170232.GB6236@core.coreip.homeip.net>
-References: <cover.1289835508.git.bengardiner@nanometrics.ca>
-	<cover.1289935504.git.bengardiner@nanometrics.ca>
-	<d6d59b4a3c34149008f3681e0d6106efa15f354d.1289935504.git.bengardiner@nanometrics.ca>
-	<B85A65D85D7EB246BE421B3FB0FBB59302477EAA89@dbde02.ent.ti.com>
-	<AANLkTike4sRvptEe9PXLT2u+SrFMOpNC6pvLPSzBfVOX@mail.gmail.com>
-	<20101119170232.GB6236@core.coreip.homeip.net>
-Date: Fri, 19 Nov 2010 12:15:32 -0500
-Message-ID: <AANLkTiniSAbRUkDROyaa9jD28iBd423e3=hqP4+R4uB4@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] da850-evm: add baseboard UI expander buttons,
- switches and LEDs
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "Nori, Sekhar" <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "Govindarajan, Sriramakrishnan" <srk@ti.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Clouter <alex@digriz.org.uk>,
-        Chris Cordahi <christophercordahi@nanometrics.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 19 Nov 2010 12:17:37 -0500
+Date: Fri, 19 Nov 2010 09:15:50 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for November 19 (sched_fair)
+Message-Id: <20101119091550.83c8149a.randy.dunlap@oracle.com>
+In-Reply-To: <20101119143207.b2d5731e.sfr@canb.auug.org.au>
+References: <20101119143207.b2d5731e.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Fri, 19 Nov 2010 14:32:07 +1100 Stephen Rothwell wrote:
 
-On Fri, Nov 19, 2010 at 12:02 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Another question is why do you want to poll the same device at
-> different intervals? The processor is already woken up so it makes sense
-> to do as much as possible instead of going to sleep. In your case
-> 200/700 for every 1400ms interval you wake an extra time to poll
-> switches so unless polling switches takes very long time it is better to
-> combine them together (and into one input device, probably).
+> Hi all,
+> 
+> Changes since 20101118:
 
-I see. That is a good question :)
 
-I didn't realize that splitting into two separate input devices with
-different polling intervals would have the opposite effect than what I
-intended. Thank you for pointing this out. I will definitely integrate
-them into one input device polled at 200ms.
+when CONFIG_SMP is not enabled:
 
-Best Regards,
-Ben Gardiner
+kernel/sched_fair.c:566: error: 'struct cfs_rq' has no member named 'load_unacc_exec_time'
+kernel/sched_fair.c:567: error: 'struct cfs_rq' has no member named 'load_unacc_exec_time'
 
 ---
-Nanometrics Inc.
-http://www.nanometrics.ca
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
