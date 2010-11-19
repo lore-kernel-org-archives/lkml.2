@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab0KSRRj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 12:17:39 -0500
-Received: from rcsinet10.oracle.com ([148.87.113.121]:38592 "EHLO
+	id S1755920Ab0KSRSb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 12:18:31 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40519 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755309Ab0KSRRh (ORCPT
+	with ESMTP id S1755465Ab0KSRS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 12:17:37 -0500
-Date: Fri, 19 Nov 2010 09:15:50 -0800
+	Fri, 19 Nov 2010 12:18:29 -0500
+Date: Fri, 19 Nov 2010 09:16:29 -0800
 From: Randy Dunlap <randy.dunlap@oracle.com>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
 Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for November 19 (sched_fair)
-Message-Id: <20101119091550.83c8149a.randy.dunlap@oracle.com>
+Subject: Re: linux-next: Tree for November 19 (rtmutex)
+Message-Id: <20101119091629.ddf35bec.randy.dunlap@oracle.com>
 In-Reply-To: <20101119143207.b2d5731e.sfr@canb.auug.org.au>
 References: <20101119143207.b2d5731e.sfr@canb.auug.org.au>
 Organization: Oracle Linux Eng.
@@ -31,10 +31,10 @@ On Fri, 19 Nov 2010 14:32:07 +1100 Stephen Rothwell wrote:
 > Changes since 20101118:
 
 
-when CONFIG_SMP is not enabled:
+when CONFIG_RT_MUTEXES is not enabled:
 
-kernel/sched_fair.c:566: error: 'struct cfs_rq' has no member named 'load_unacc_exec_time'
-kernel/sched_fair.c:567: error: 'struct cfs_rq' has no member named 'load_unacc_exec_time'
+kernel/rtmutex_common.h:81: error: 'struct task_struct' has no member named 'pi_waiters'
+kernel/rtmutex_common.h:87: error: 'struct task_struct' has no member named 'pi_waiters'
 
 ---
 ~Randy
