@@ -1,55 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751868Ab0KSFuR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 00:50:17 -0500
-Received: from ebb05.tieto.com ([131.207.168.36]:53270 "EHLO ebb05.tieto.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751677Ab0KSFuQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 00:50:16 -0500
-X-AuditID: 83cfa824-b7c8aae000005f9b-6f-4ce610169e57
-Message-ID: <4CE6111F.5070303@tieto.com>
-Date: Fri, 19 Nov 2010 13:54:39 +0800
-From: Yang Rui Rui <ruirui.r.yang@tieto.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.11) Gecko/20101013 Thunderbird/3.1.5
+	id S1752088Ab0KSFu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 00:50:56 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:15100 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751482Ab0KSFuy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 00:50:54 -0500
+Message-ID: <4CE6102B.9000505@dsn.okisemi.com>
+Date: Fri, 19 Nov 2010 14:50:35 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>, Randy Dunlap <rdunlap@xenotime.net>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] docs: INSTALL_HDR_PATH fix
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Wolfgang Grandegger <wg@grandegger.com>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
+        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
+Subject: [PATCH net-next-2.6 14/17] can: EG20T PCH: Comment optimization
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-INSTALL_HDR_PATH example in documentation is wrong.
-it should be a prefix like /usr
+Comment optimization
 
-Signed-off-by: Yang Ruirui<ruirui.r.yang@tieto.com>
+Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
 ---
-  Documentation/make/headers_install.txt |    4 ++--
-  1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/can/pch_can.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
---- linux-2.6.37-rc2.orig/Documentation/make/headers_install.txt	2010-11-16 10:31:02.000000000 +0800
-+++ linux-2.6.37-rc2/Documentation/make/headers_install.txt	2010-11-19 12:30:09.000000000 +0800
-@@ -24,7 +24,7 @@ The "make headers_install" command can b
-  kernel source code (or using a standard out-of-tree build).  It takes two
-  optional arguments:
-  
--  make headers_install ARCH=i386 INSTALL_HDR_PATH=/usr/include
-+  make headers_install ARCH=i386 INSTALL_HDR_PATH=/usr
-  
-  ARCH indicates which architecture to produce headers for, and defaults to the
-  current architecture.  The linux/asm directory of the exported kernel headers
-@@ -34,7 +34,7 @@ the command:
-    ls -d include/asm-* | sed 's/.*-//'
-  
-  INSTALL_HDR_PATH indicates where to install the headers.  It defaults to
--"./usr/include".
-+"./usr".
-  
-  The command "make headers_install_all" exports headers for all architectures
-  simultaneously.  (This is mostly of interest to distribution maintainers,
-
+diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
+index 610cf3b..df14569 100644
+--- a/drivers/net/can/pch_can.c
++++ b/drivers/net/can/pch_can.c
+@@ -292,7 +292,7 @@ static void pch_can_set_rxtx(struct pch_can_priv *priv, u32 buff_num,
+ 	else
+ 		ie = PCH_IF_MCONT_RXIE;
+ 
+-	/* Reading the receive buffer data from RAM to Interface1/2 registers */
++	/* Reading the Msg buffer from Message RAM to IF1/2 registers. */
+ 	iowrite32(PCH_CMASK_RX_TX_GET, &priv->regs->ifregs[dir].cmask);
+ 	pch_can_rw_msg_obj(&priv->regs->ifregs[dir].creq, buff_num);
+ 
+@@ -868,7 +868,7 @@ static int pch_can_open(struct net_device *ndev)
+ 		priv->use_msi = 1;
+ 	}
+ 
+-	/* Regsitering the interrupt. */
++	/* Regstering the interrupt. */
+ 	retval = request_irq(priv->dev->irq, pch_can_interrupt, IRQF_SHARED,
+ 			     ndev->name, ndev);
+ 	if (retval) {
+@@ -972,7 +972,7 @@ static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
+ 
+ 	can_put_echo_skb(skb, ndev, tx_obj_no - PCH_RX_OBJ_END - 1);
+ 
+-	/* Updating the size of the data. */
++	/* Set the size of the data. Update if2_mcont */
+ 	iowrite32(cf->can_dlc | PCH_IF_MCONT_NEWDAT | PCH_IF_MCONT_TXRQXT |
+ 		  PCH_IF_MCONT_TXIE, &priv->regs->ifregs[1].mcont);
+ 
+@@ -1072,8 +1072,8 @@ static u32 pch_can_get_rx_buffer_link(struct pch_can_priv *priv, u32 buffer_num)
+ 
+ static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
+ {
+-	int i;			/* Counter variable. */
+-	int retval;		/* Return value. */
++	int i;
++	int retval;
+ 	u32 buf_stat;	/* Variable for reading the transmit buffer status. */
+ 	int counter = PCH_COUNTER_LIMIT;
+ 
+@@ -1130,8 +1130,8 @@ static int pch_can_suspend(struct pci_dev *pdev, pm_message_t state)
+ 
+ static int pch_can_resume(struct pci_dev *pdev)
+ {
+-	int i;			/* Counter variable. */
+-	int retval;		/* Return variable. */
++	int i;
++	int retval;
+ 	struct net_device *dev = pci_get_drvdata(pdev);
+ 	struct pch_can_priv *priv = netdev_priv(dev);
+ 
 -- 
-To adhere means to yield. To yield means to adhere.
+1.6.0.6
+
