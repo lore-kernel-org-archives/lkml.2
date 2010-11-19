@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760355Ab0KSB4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 18 Nov 2010 20:56:09 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55589 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753976Ab0KSB4H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 18 Nov 2010 20:56:07 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=qcp4KzMVYJiL6msjSmC/adiv8J8nsyAyB/i96piIxH6viwX1ip5W86j+H6/y6pAlbh
-         2aAWmfoNZZI8jcAZWas3rHl8cvvUiNrYND6c63JvKFV2lQIqSge6ETdYyRM5HUFBGaLo
-         kUHWNpOE92b5ssE5f5d+kRNckpUlUDre+A1ro=
-From: Ping Cheng <pinglinux@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: dmitry.torokhov@gmail.com, Ping Cheng <pinglinux@gmail.com>,
-        Ping Cheng <pingc@wacom.com>
-Subject: [PATCH] input: wacom - Bring Bamboo in sync with other models
-Date: Thu, 18 Nov 2010 17:56:09 -0800
-Message-Id: <1290131769-18380-1-git-send-email-pinglinux@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1754843Ab0KSCCi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 18 Nov 2010 21:02:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6140 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753708Ab0KSCCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 18 Nov 2010 21:02:37 -0500
+From: Josef Bacik <josef@redhat.com>
+To: linux-fsdevel@vger.kernel.org, eparis@redhat.com,
+        linux-kernel@vger.kernel.org, sds@tycho.nsa.gov, selinux@tycho.nsa.gov,
+        bfields@fieldses.org
+Subject: [PATCH] fs: call security_d_instantiate in d_obtain_alias V2
+Date: Thu, 18 Nov 2010 20:52:55 -0500
+Message-Id: <1290131575-2489-1-git-send-email-josef@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tablet buttons are considered as a separate tool in the user land.
-All existing tablet models, wacom and hanwang, send PAD_DEVICE_ID
-and MSC_SERIAL events. Add them to Bamboo so clients can process
-them consistently accross models.
+While trying to track down some NFS problems with BTRFS, I kept noticing I was
+getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
+figure out that it was SELinux that was giving me grief, with the following
+denial
 
-Signed-off-by: Ping Cheng <pingc@wacom.com>
+type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
+comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
+tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
+
+Turns out this is because in d_obtain_alias if we can't find an alias we create
+one and do all the normal instantiation stuff, but we don't do the
+security_d_instantiate.
+
+Usually we are protected from getting a hashed dentry that hasn't yet run
+security_d_instantiate() by the parent's i_mutex, but obviously this isn't an
+option there, so in order to deal with the case that a second thread comes in
+and finds our new dentry before we get to run security_d_instantiate(), we go
+ahead and call it if we find a dentry already.  Eric assures me that this is ok
+as the code checks to see if the dentry has been initialized already so calling
+security_d_instantiate() against the same dentry multiple times is ok.  With
+this patch I'm no longer getting errant -EACCESS values.
+
+Signed-off-by: Josef Bacik <josef@redhat.com>
 ---
- drivers/input/tablet/wacom_wac.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+V1->V2:
+-added second security_d_instantiate() call
 
-diff --git a/drivers/input/tablet/wacom_wac.c b/drivers/input/tablet/wacom_wac.c
-index 360ce4a..e4da526 100644
---- a/drivers/input/tablet/wacom_wac.c
-+++ b/drivers/input/tablet/wacom_wac.c
-@@ -901,11 +901,15 @@ static int wacom_bpt_touch(struct wacom_wac *wacom)
- 	input_report_abs(input, ABS_PRESSURE, sp);
- 	input_report_abs(input, ABS_X, sx);
- 	input_report_abs(input, ABS_Y, sy);
-+	input_sync(input);
+ fs/dcache.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 23702a9..119d489 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -1201,9 +1201,12 @@ struct dentry *d_obtain_alias(struct inode *inode)
+ 	spin_unlock(&tmp->d_lock);
  
- 	input_report_key(input, BTN_LEFT, (data[1] & 0x08) != 0);
- 	input_report_key(input, BTN_FORWARD, (data[1] & 0x04) != 0);
- 	input_report_key(input, BTN_BACK, (data[1] & 0x02) != 0);
- 	input_report_key(input, BTN_RIGHT, (data[1] & 0x01) != 0);
-+	input_report_key(input, BTN_TOOL_BUTTONS, 0xf0);
-+	input_report_abs(input, ABS_MISC, PAD_DEVICE_ID);
-+	input_event(input, EV_MSC, MSC_SERIAL, 0xf0);
+ 	spin_unlock(&dcache_lock);
++	security_d_instantiate(tmp, inode);
+ 	return tmp;
  
- 	input_sync(input);
- 
-@@ -1261,9 +1265,8 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
- 		break;
- 
- 	case BAMBOO_PT:
--		__clear_bit(ABS_MISC, input_dev->absbit);
--
- 		if (features->device_type == BTN_TOOL_TRIPLETAP) {
-+			__set_bit(BTN_TOOL_BUTTONS, input_dev->keybit);
- 			__set_bit(BTN_LEFT, input_dev->keybit);
- 			__set_bit(BTN_FORWARD, input_dev->keybit);
- 			__set_bit(BTN_BACK, input_dev->keybit);
-@@ -1284,7 +1287,9 @@ void wacom_setup_input_capabilities(struct input_dev *input_dev,
- 					     features->pressure_fuzz, 0);
- 			input_set_abs_params(input_dev, ABS_MT_TRACKING_ID, 0,
- 					     MAX_TRACKING_ID, 0, 0);
--		} else if (features->device_type == BTN_TOOL_PEN) {
-+		} 
-+
-+		if (features->device_type == BTN_TOOL_PEN) {
- 			__set_bit(BTN_TOOL_RUBBER, input_dev->keybit);
- 			__set_bit(BTN_TOOL_PEN, input_dev->keybit);
- 			__set_bit(BTN_STYLUS, input_dev->keybit);
+  out_iput:
++	if (res && !IS_ERR(res))
++		security_d_instantiate(res, inode);
+ 	iput(inode);
+ 	return res;
+ }
 -- 
-1.7.2.3
+1.6.6.1
 
