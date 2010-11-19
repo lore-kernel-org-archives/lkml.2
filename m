@@ -1,95 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998Ab0KSH2x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 02:28:53 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:50442 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751198Ab0KSH2q (ORCPT
+	id S1751913Ab0KSHhG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 02:37:06 -0500
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:6108 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751257Ab0KSHhF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 02:28:46 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ijYeq9MzEC9tzxhnG2yXp+rTvP1AOYs4/yN20J7+FW+QhK5r0u6ehRpYhS+xn+xt7m
-         8VNI6slObvo4hEAgiUY2FXLSfetC9gotCnA8TmHq5N3YelJ4E+SKt6jbdIuCNU1k16sj
-         S8HAlMtttTZQw723vKfxydi9N5kSJd01Hj+kY=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] ext3: Add journal error check into ext3_rename()
-Date: Fri, 19 Nov 2010 16:28:36 +0900
-Message-Id: <1290151716-4041-2-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1290151716-4041-1-git-send-email-namhyung@gmail.com>
-References: <1290151716-4041-1-git-send-email-namhyung@gmail.com>
+	Fri, 19 Nov 2010 02:37:05 -0500
+Message-ID: <00bf01cb87bc$8ed6e300$66f8800a@maildom.okisemi.com>
+From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
+To: "Wolfgang Grandegger" <wg@grandegger.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        "Wolfram Sang" <w.sang@pengutronix.de>,
+        "Christian Pellegrin" <chripell@fsfe.org>,
+        "Barry Song" <21cnbao@gmail.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <andrew.chih.howe.khor@intel.com>,
+        <qi.wang@intel.com>, <margie.foster@intel.com>,
+        <yong.y.wang@intel.com>, "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>,
+        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>
+References: <4CE0EFA7.9020007@dsn.okisemi.com> <4CE141EA.5070702@grandegger.com> <001501cb8567$c7a38820$66f8800a@maildom.okisemi.com> <4CE259FB.5090402@grandegger.com>
+Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Add Flow control,
+Date: Fri, 19 Nov 2010 16:36:58 +0900
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check return value of ext3_journal_get_write_access() and
-ext3_journal_dirty_metadata(). 'new_bh' should be kept in
-order to get revoked in case of journal error in dir_bh.
+On Tuesday, November 16, 2010 7:16 PM, Wolfgang Grandegger wrote :
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- fs/ext3/namei.c |   27 +++++++++++++++++++++------
- 1 files changed, 21 insertions(+), 6 deletions(-)
+> > ......It seems the same line continues forever.
+> 
+> Yes, it will continue until you connect the cable, that's normal
+> behavior. But that's not the full sequence. Could you please repeat the
+> test as shown below:
+> 
+>   First start the following command in a *separate* session.
+>   # candump any,0:0,#FFFFFFFF"
+> 
+>   Then setup and start the CAN controller:
+>   # ip link set can0 up type can bitrate 125000
+>   # cansend can0 123#deadbeef
+> 
 
-diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
-index 672cea1..8061281 100644
---- a/fs/ext3/namei.c
-+++ b/fs/ext3/namei.c
-@@ -2371,7 +2371,9 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
- 			goto end_rename;
- 	} else {
- 		BUFFER_TRACE(new_bh, "get write access");
--		ext3_journal_get_write_access(handle, new_bh);
-+		retval = ext3_journal_get_write_access(handle, new_bh);
-+		if (retval)
-+			goto journal_error1;
- 		new_de->inode = cpu_to_le32(old_inode->i_ino);
- 		if (EXT3_HAS_INCOMPAT_FEATURE(new_dir->i_sb,
- 					      EXT3_FEATURE_INCOMPAT_FILETYPE))
-@@ -2380,9 +2382,12 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
- 		new_dir->i_ctime = new_dir->i_mtime = CURRENT_TIME_SEC;
- 		ext3_mark_inode_dirty(handle, new_dir);
- 		BUFFER_TRACE(new_bh, "call ext3_journal_dirty_metadata");
--		ext3_journal_dirty_metadata(handle, new_bh);
--		brelse(new_bh);
--		new_bh = NULL;
-+		retval = ext3_journal_dirty_metadata(handle, new_bh);
-+		if (retval) {
-+journal_error1:
-+			ext3_std_error(new_dir->i_sb, retval);
-+			goto end_rename;
-+		}
- 	}
- 
- 	/*
-@@ -2429,10 +2434,20 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
- 	ext3_update_dx_flag(old_dir);
- 	if (dir_bh) {
- 		BUFFER_TRACE(dir_bh, "get_write_access");
--		ext3_journal_get_write_access(handle, dir_bh);
-+		retval = ext3_journal_get_write_access(handle, dir_bh);
-+		if (retval)
-+			goto journal_error2;
- 		PARENT_INO(dir_bh->b_data) = cpu_to_le32(new_dir->i_ino);
- 		BUFFER_TRACE(dir_bh, "call ext3_journal_dirty_metadata");
--		ext3_journal_dirty_metadata(handle, dir_bh);
-+		retval = ext3_journal_dirty_metadata(handle, dir_bh);
-+		if (retval) {
-+journal_error2:
-+			if (new_bh)
-+				ext3_journal_revoke(handle, new_bh->b_blocknr,
-+						    new_bh);
-+			ext3_std_error(new_dir->i_sb, retval);
-+			goto end_rename;
-+		}
- 		drop_nlink(old_dir);
- 		if (new_inode) {
- 			drop_nlink(new_inode);
--- 
-1.7.0.4
+I show the result of the above command below,
+
+[root@localhost can-utils]# candump any,0:0,#FFFFFFFF
+  can0  20000020  [8] 00 00 00 00 00 00 08 00   ERRORFRAME
+  can0  20000020  [8] 00 00 00 00 00 00 10 00   ERRORFRAME
+  can0  20000020  [8] 00 00 00 00 00 00 18 00   ERRORFRAME
+  can0  20000020  [8] 00 00 00 00 00 00 20 00   ERRORFRAME
+  can0  20000020  [8] 00 00 00 00 00 00 28 00   ERRORFRAME
+  can0  20000020  [8] 00 00 00 00 00 00 30 00   ERRORFRAME
+  can0  20000020  [8] 00 00 00 00 00 00 38 00   ERRORFRAME
+  can0  20000020  [8] 00 00 00 00 00 00 40 00   ERRORFRAME
+  can0  20000020  [8] 00 00 00 00 00 00 48 00   ERRORFRAME
+  can0  20000020  [8] 00 00 00 00 00 00 50 00   ERRORFRAME
+  can0  20000020  [8] 00 00 00 00 00 00 58 00   ERRORFRAME
+  can0  20000024  [8] 00 00 00 00 00 00 60 00   ERRORFRAME
+  can0  20000024  [8] 00 08 00 00 00 00 68 00   ERRORFRAME
+  can0  20000024  [8] 00 08 00 00 00 00 70 00   ERRORFRAME
+  can0  20000024  [8] 00 08 00 00 00 00 78 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+  can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
+
+.....continue forever
+
+------
+Thanks,
+
+Tomoya MORINAGA
+OKI SEMICONDUCTOR CO., LTD.
 
