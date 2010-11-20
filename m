@@ -1,153 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921Ab0KTEQA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 23:16:00 -0500
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:58211 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754241Ab0KTEP6 (ORCPT
+	id S1757942Ab0KTE0L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 23:26:11 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:42899 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152Ab0KTE0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 23:15:58 -0500
-Date: Fri, 19 Nov 2010 21:15:53 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Andy Fleming <afleming@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Cyril Chemparathy <cyril@ti.com>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH v2] of/phylib: Use device tree properties to initialize
- Marvell PHYs.
-Message-ID: <20101120041552.GA7005@angua.secretlab.ca>
-References: <1290204798-28569-1-git-send-email-ddaney@caviumnetworks.com>
- <AANLkTikuikWgLbW67m1Ov0dt13A=DTSF150aTOs=PybT@mail.gmail.com>
- <4CE70A67.9010203@caviumnetworks.com>
+	Fri, 19 Nov 2010 23:26:09 -0500
+Date: Sat, 20 Nov 2010 09:55:57 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Lennart Poettering <mzxreary@0pointer.de>
+Cc: Ben Gamari <bgamari.foss@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, tytso@mit.edu,
+        a.p.zijlstra@chello.nl, debiandev@gmail.com, alan@lxorguk.ukuu.org.uk,
+        dhaval.giani@gmail.com, efault@gmx.de, vgoyal@redhat.com,
+        oleg@redhat.com, markus@trippelsdorf.de,
+        mathieu.desnoyers@efficios.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101120042557.GA12043@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <C47257FC-498A-41B0-BC94-C81C72601D53@mit.edu>
+ <20101119.082944.226775934.davem@davemloft.net>
+ <20101119163430.GA12353@tango.0pointer.de>
+ <20101119.084302.71115175.davem@davemloft.net>
+ <AANLkTiksmvcLKGx7-u5CnTnZU6dgOgg7wem6qf384zUg@mail.gmail.com>
+ <87mxp53z72.fsf@gmail.com>
+ <20101120011330.GB4183@tango.0pointer.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4CE70A67.9010203@caviumnetworks.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101120011330.GB4183@tango.0pointer.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 03:38:15PM -0800, David Daney wrote:
-> On 11/19/2010 03:02 PM, Andy Fleming wrote:
-> >On Fri, Nov 19, 2010 at 4:13 PM, David Daney<ddaney@caviumnetworks.com>  wrote:
-> >>Some aspects of PHY initialization are board dependent, things like
-> >>indicator LED connections and some clocking modes cannot be determined
-> >>by probing.  The dev_flags element of struct phy_device can be used to
-> >>control these things if an appropriate value can be passed from the
-> >>Ethernet driver.  We run into problems however if the PHY connections
-> >>are specified by the device tree.  There is no way for the Ethernet
-> >>driver to know what flags it should pass.
-> >>
-> >>If we are using the device tree, the struct phy_device will be
-> >>populated with the device tree node corresponding to the PHY, and we
-> >>can extract extra configuration information from there.
-> >>
-> >>The next question is what should the format of that information be?
-> >>It is highly device specific, and the device tree representation
-> >>should not be tied to any arbitrary kernel defined constants.  A
-> >>straight forward representation is just to specify the exact bits that
-> >>should be set using the "marvell,reg-init" property:
-> >>
-> >>      phy5: ethernet-phy@5 {
-> >>        reg =<5>;
-> >>        compatible = "marvell,88e1149r";
-> >>        marvell,reg-init =
-> >>                /* led[0]:1000, led[1]:100, led[2]:10, led[3]:tx */
-> >>                <3 0x10 0 0x5777>, /* Reg 3,16<- 0x5777 */
-> >>                /* mix %:0, led[0123]:drive low off hiZ */
-> >>                <3 0x11 0 0x00aa>, /* Reg 3,17<- 0x00aa */
-> >>                /* default blink periods. */
-> >>                <3 0x12 0 0x4105>, /* Reg 3,18<- 0x4105 */
-> >>                /* led[4]:rx, led[5]:dplx, led[45]:drive low off hiZ */
-> >>                <3 0x13 0 0x0a60>; /* Reg 3,19<- 0x0a60 */
-> >
-> >
-> >My inclination is to shy away from such hard-coded values.  I agreed
-> >with Grant's comment about separating into separate cells, but I think
-> >specification of hard-coded register writes is too rigid.  I think a
-> >better approach would be to specify configuration attributes, like:
-> >
-> >marvell,blink-periods =<blah>;
-> >marvell,led-config =<[drive type] [indicates]>;
+* Lennart Poettering <mzxreary@0pointer.de> [2010-11-20 02:13:30]:
 
-I'm certainly a strong advocate of describing the desired behaviour
-instead of trying to list a bunch of register values or similar.
-However, I think the use-case here is sufficiently straight forward
-(initial conditions for a set of registers) on things that will be set
-once and then forgotten about that I think that the simple approach is
-appropriate.
-
-> I considered doing that, but rejected the idea because it is so
-> complex.  There are literally probably a hundred different register
-> fields with widths varying between 1 and 16 bits.  The number of
-> settings that the driver might want to deal with are astronomical.
-> For any given PHY model there could be 30 different settings that
-> you might want to tweak.  In the example above I configure 5 LEDs
-> with two parameters each, and about 4 or 5 more blink settings, that
-> is something like 15 register fields.
+> On Fri, 19.11.10 14:12, Ben Gamari (bgamari.foss@gmail.com) wrote:
 > 
-> Take the marvell.c file.  It currently supports nine different PHY
-> models, each would have a bunch of model specific settings, the
-> complexity of decoding all that is formidable (and would be a lot
-> more code) also there would invariably be settings that were not
-> implemented in the first version, so people would have to repeatedly
-> extend it.
+> > 
+> > On Fri, 19 Nov 2010 09:51:14 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> > > And the user level approach? I think it's fine too. If you run systemd
+> > > for other reasons (or if the gnome people add it to the task launcher
+> > > or whatever), doing it there isn't wrong. I personally think it's
+> > > somewhat disgusting to have a user-level callback with processes etc
+> > > just to clean up a group, but whatever.  As long as it's not common,
+> > > who cares?
+> > > 
+> > On that note, is there a good reason why the notify_on_release interface
+> > works the way it does? Wouldn't it be simpler if the cgroup simply
+> > provided a file on which a process (e.g. systemd) could block?
 > 
-> My patch adds 550 bytes (not including the string storage) of code
-> on MIPS64, and can handle many cases without any changes.
-
-Right; the permutations are huge in this case, and the payoff quite
-low.
-
-> >For one, I always advocate making the DTS human-readable.  For
-> >another, I think that there are a number of configuration sequences
-> >that require read-modify-write, or write-wait-write.  In other words,
-> >I think that there are enough cases where actual software will be
-> >needed, that an attempt to generically specify a register
-> >initialization sequence will be impossible, and leave us with the same
-> >problems to solve later on.
+> The notify_on_release interface is awful indeed. Feels like the old
+> hotplug interface where each module request by the kernel caused a
+> hotplug script to be spawned by the kernel.
 > 
-> We can always add more properties as you suggest, if the existing
-> code does not prove to be sufficiently flexible.
-
-That is a very different situation however.  I am *strongly* against
-anything that begins to look like a scripting or interpreted commands.
-Initial conditions for a set of registers are one thing, but trying to
-encode rmw cycles or delay cycles enters into the realm where the
-driver really needs to understand the behaviour of the device and be
-responsible for talking to it appropriately.
-
-So, to summarize my opinion:
-- list of initial register settings? okay given the alternatives
-- method to perform arbitrary initialization sequences, including
-  delays and rmw?  right out.
-
+> However, I am not sure I like the idea of having pollable files like that,
+> because in the systemd case I am very much interested in getting
+> recursive notifications, i.e. I want to register once for getting
+> notifications for a full subtree instead of having to register for each
+> cgroup individually.
 > 
-> > For third...ly... allowing
-> >device-tree-specified register initializations might encourage
-> >developers to put all of their register initializations in the device
-> >tree.  Especially when they realize that the LED initialization for
-> >*their* PHY has to come between two standard initialization steps in
-> >the driver.  Or before.  Or after.
+> My personal favourite solution would be to get a netlink msg when a
+> cgroup runs empty. That way multiple programs could listen to the events
+> at the same time, and we'd have an easy way to subscribe to a whole
+> hierarchy of groups.
+>
 
-Probably unlikely considering the driver still needs to handle the
-device in the non-devicetree use case.  However, it may be appropriate
-for the driver to filter which registers it will initialize from dt
-data.
+The netlink message should not be hard to do if we agree to work on
+it. The largest objections I've heard is that netlink implies
+network programming and most users want to be able to script in
+their automation and network scripting is hard.
 
-> >
-> >By specifying actual functionality, the driver can work around those
-> >problems, while being aware of the functional goal.  However, I'm
-> >aware that such a path is more difficult, and perhaps just as futile,
-> >as PHY vendors frequently don't want to document what their magic
-> >sequences mean.
-> >
-> 
-> I certainly understand your desire to make the dts readable, but I
-> think it has to be balanced against the complexity and chance for
-> bugs in the drivers as well as churn in the bindings specifications.
-> 
-> David Daney
+-- 
+	Three Cheers,
+	Balbir
