@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab0KTClK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 21:41:10 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:38086 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756404Ab0KTClJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 21:41:09 -0500
-Date: Fri, 19 Nov 2010 18:40:34 -0800
-From: Kees Cook <kees.cook@canonical.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andy Walls <andy@silverblocksystems.net>, linux-kernel@vger.kernel.org,
-        sarah.a.sharp@linux.intel.com
-Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
- attacking
-Message-ID: <20101120024034.GB4617@outflux.net>
-References: <1290201154.2116.29.camel@morgan.silverblock.net>
- <AANLkTi=fnFhznMz2bTRSJDrfeDwsVUTyqiKDATPzEjhq@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=fnFhznMz2bTRSJDrfeDwsVUTyqiKDATPzEjhq@mail.gmail.com>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1757711Ab0KTCwq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 21:52:46 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:51679 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756329Ab0KTCwp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 21:52:45 -0500
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
+        David Brownell <david-b@pacbell.net>, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, stable-review@kernel.org,
+        alan@lxorguk.ukuu.org.uk, Greg KH <gregkh@suse.de>
+In-Reply-To: <20101119214412.633136072@clark.site>
+References: <20101119214412.633136072@clark.site>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-CnguxU8QFW5mSnm1kb/s"
+Date: Sat, 20 Nov 2010 02:52:37 +0000
+Message-ID: <1290221557.3818.117.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [Stable-review] [39/45] OHCI: work around for nVidia shutdown
+ problem
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 03:22:00PM -0800, Linus Torvalds wrote:
-> In this case, the upside just wasn't big enough to accept _any_
-> breakage, especially since people and distributions can just do the
-> "chmod" themselves if they want to. There was a lot of discussion
-> whether the patch should even go in in the first place. So this time,
-> the "let's just revert it" was a very easy decision for me.
 
-The downside is that /proc can be remounted multiple times for different
-containers, etc. Having to patch everything that mounts /proc to do the
-chmod seems much more painful that fixing a simple userspace bug in an old
-klog daemon.
+--=-CnguxU8QFW5mSnm1kb/s
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-(For example, rsyslogd handles this fine since it's root to open it, and
-even if it fails, it doesn't do the broken fclose().)
+On Fri, 2010-11-19 at 13:43 -0800, Greg KH wrote:
+> 2.6.32-stable review patch.  If anyone has any objections, please let us =
+know.
+>=20
+> ------------------
+>=20
+> From: Alan Stern <stern@rowland.harvard.edu>
+>=20
+> commit 3df7169e73fc1d71a39cffeacc969f6840cdf52b upstream.
+>=20
+> This patch (as1417) fixes a problem affecting some (or all) nVidia
+> chipsets.  When the computer is shut down, the OHCI controllers
+> continue to power the USB buses and evidently they drive a Reset
+> signal out all their ports.  This prevents attached devices from going
+> to low power.  Mouse LEDs stay on, for example, which is disconcerting
+> for users and a drain on laptop batteries.
+>=20
+> The fix involves leaving each OHCI controller in the OPERATIONAL state
+> during system shutdown rather than putting it in the RESET state.
+> Although this nominally means the controller is running, in fact it's
+> not doing very much since all the schedules are all disabled.  However
+> there is ongoing DMA to the Host Controller Communications Area, so
+> the patch also disables the bus-master capability of all PCI USB
+> controllers after the shutdown routine runs.
+[...]
 
--Kees
+This last bit seems like a major change in behaviour, and this commit
+has only just gone into the 2.6.37 cycle.  How thoroughly has this been
+tested on other OHCI controllers?  Wouldn't it make more sense to use
+the same quirk condition?
 
--- 
-Kees Cook
-Ubuntu Security Team
+Ben.
+
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
+
+--=-CnguxU8QFW5mSnm1kb/s
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIVAwUATOc38Oe/yOyVhhEJAQK8fRAAoYC7MN3+zuaMTSEJxMAD266R6dTGGUoy
+lRaus2lDX4OvCOgP8M+2z7w9LUafALNFetxIZScSgVw4SviM/atIP+wQdkwF/YgA
+VWIOsB0UX8nwLrU8h4tzNYGEWQeN8mHAfN9iY6K4suTTbO2z5i4cgcBT/3c1iI/M
+2OQSf4TEUja5bPQoBprLx/d4LsnndPcnZPwkXxfyPiIl4BLyWx8yzZlcT5nFTrUV
+8p4MUdcXRoUv8WAqYOJPmvljxeivyN6lWTeWaoUguDXY6WJ0JHUblxfnpv9or3Rm
+kZDQwZEr1Zjpr6nRjUnccUsFvzEP51CcAifiRyzoH6BzSkgR7kBZ3A4hZRBAkD56
+N2RyLs1ODwT0AiaB7Y0rySKsuwWH8WALHN4v5iRNrMRuc64mVNrtQ0cqCRH+jkyR
+Ud4Ugif0g2pQ68ximobAPt/sUZOn5GZobIqy5lGVakf1Xg8Gu7nnP3fX9E9TOHUX
+gW0wkQhaStWwaT88bH6J2rSKnuJpsVMyI0MOeFBQG6JVZmSl/l0UfqvK+08qfo8x
+FeR9UjBoFxr1z63J0LgR2lV03b3QAIRrgwT3oNvAi2mRQYONCzQbYa7Gmtkcm6Kc
+Xutjnh2IPSOaWkUhqSfoKW1aYnCZQaNMCBQtS4iSSLjjImXDtoBesD2no2aLbv+t
+SiTOm2czkbk=
+=UNMZ
+-----END PGP SIGNATURE-----
+
+--=-CnguxU8QFW5mSnm1kb/s--
