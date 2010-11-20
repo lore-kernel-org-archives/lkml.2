@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678Ab0KTDC6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 22:02:58 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52894 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932204Ab0KTDCz convert rfc822-to-8bit (ORCPT
+	id S932181Ab0KTDCq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 22:02:46 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:57047 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758001Ab0KTDCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 22:02:55 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=EBAr2idUeHgZwPiAWAqdRE9QOU1evPkgq2hkOG1nh+llWCtZmlUUlLef2z6ddctqHm
-         rOCXdUk4F9xUBgELNMuacGoM60B8ScMlcbSlm0q4ppyw5hMeOZVy3BrC9OpuCJJb4vtG
-         2J3E86xT8Rw0rVQ9LzXXW4Q4hjIFKQJ99iEEU=
-MIME-Version: 1.0
-In-Reply-To: <1290219413-21026-1-git-send-email-ccross@android.com>
-References: <1290219413-21026-1-git-send-email-ccross@android.com>
-Date: Sat, 20 Nov 2010 12:02:47 +0900
-X-Google-Sender-Auth: BGHUOK9k9hzO8qgAPt5kxDNpx2I
-Message-ID: <AANLkTi=d2xL_ZDhQtTE9Vt8SQkHGSM5oespHGT4m6Fav@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Fix spinlock bad magic on disabling nonboot cpu
-From: Kyungmin Park <kmpark@infradead.org>
-To: Colin Cross <ccross@android.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+	Fri, 19 Nov 2010 22:02:43 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6172"; a="63633398"
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
+To: dwalker@codeaurora.org
+Cc: davidb@codeaurora.org, bryanh@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org,
-        =?UTF-8?B?7ZWo66qF7KO8?= <myungjoo.ham@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Stepan Moskovchenko <stepanm@codeaurora.org>
+Subject: [PATCH 1/3] msm: iommu: Add bus clocks to platform data
+Date: Fri, 19 Nov 2010 19:02:32 -0800
+Message-Id: <1290222154-11096-2-git-send-email-stepanm@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.2
+In-Reply-To: <1290222154-11096-1-git-send-email-stepanm@codeaurora.org>
+References: <1290222154-11096-1-git-send-email-stepanm@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add the IOMMU bus clock and the IOMMU bus interconnect
+clocks to the platform data for an IOMMU device. These
+clocks are needed to access the IOMMU registers.
 
-I wonder why this patch is not merged previous rc cycles.
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+---
+Please hold off on this until the clock driver is in.
+ arch/arm/mach-msm/include/mach/iommu.h |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-it's already reported by Mr. Ham (a month or more ago) and get some
-acked for merge.
+diff --git a/arch/arm/mach-msm/include/mach/iommu.h b/arch/arm/mach-msm/include/mach/iommu.h
+index 296c0f1..62f6699 100644
+--- a/arch/arm/mach-msm/include/mach/iommu.h
++++ b/arch/arm/mach-msm/include/mach/iommu.h
+@@ -19,6 +19,7 @@
+ #define MSM_IOMMU_H
 
-To Rusell, Catalin,
-How to include or commit the latest kernel?
+ #include <linux/interrupt.h>
++#include <linux/clk.h>
 
-Thank you,
-Kyungmin Park
+ /* Sharability attributes of MSM IOMMU mappings */
+ #define MSM_IOMMU_ATTR_NON_SH		0x0
+@@ -74,13 +75,17 @@ struct msm_iommu_ctx_dev {
+  * struct msm_iommu_drvdata - A single IOMMU hardware instance
+  * @base:	IOMMU config port base address (VA)
+  * @irq:	Interrupt number
+-  *
++ * @clk:	The bus clock for this IOMMU hardware instance
++ * @pclk:	The clock for the IOMMU bus interconnect
++ *
+  * A msm_iommu_drvdata holds the global driver data about a single piece
+  * of an IOMMU hardware instance.
+  */
+ struct msm_iommu_drvdata {
+ 	void __iomem *base;
+ 	int irq;
++	struct clk *clk;
++	struct clk *pclk;
+ };
 
-On Sat, Nov 20, 2010 at 11:16 AM, Colin Cross <ccross@android.com> wrote:
-> The init_mm.context.id_lock spinlock is not initialized, which
-> causes a spinlock bad magic warning when nonboot cpus are disabled,
-> either through hotplug or during suspend.
->
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
->  arch/arm/include/asm/mmu.h |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/arm/include/asm/mmu.h b/arch/arm/include/asm/mmu.h
-> index 68870c7..1556f6a 100644
-> --- a/arch/arm/include/asm/mmu.h
-> +++ b/arch/arm/include/asm/mmu.h
-> @@ -13,6 +13,8 @@ typedef struct {
->
->  #ifdef CONFIG_CPU_HAS_ASID
->  #define ASID(mm)       ((mm)->context.id & 255)
-> +#define INIT_MM_CONTEXT(name)                                                 \
-> +        .context.id_lock = __SPIN_LOCK_UNLOCKED(name.context.id_lock),
->  #else
->  #define ASID(mm)       (0)
->  #endif
-> --
-> 1.7.3.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+ /**
+--
+1.7.0.2
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
