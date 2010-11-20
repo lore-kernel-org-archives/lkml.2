@@ -1,117 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756964Ab0KTCJZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 21:09:25 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:37322 "EHLO e7.ny.us.ibm.com"
+	id S1756636Ab0KTCJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 21:09:23 -0500
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:39182 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756557Ab0KTCJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756501Ab0KTCJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 19 Nov 2010 21:09:21 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: Mike Chan <mike@android.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [PATCH 4/5] scheduler: cpuacct: Enable platform callbacks for cpuacct power tracking
-Date: Fri, 19 Nov 2010 18:08:53 -0800
-Message-Id: <1290218934-8544-5-git-send-email-john.stultz@linaro.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        =?UTF-8?q?Arve=20Hj=F8nnev=E5g?= <arve@android.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Dima Zavin <dima@android.com>, Erik Gilling <konkers@android.com>,
+        Mike Chan <mike@android.com>
+Subject: [PATCH 0/5] [RFC] Trivial scheduler related Android patches
+Date: Fri, 19 Nov 2010 18:08:49 -0800
+Message-Id: <1290218934-8544-1-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.7.3.2.146.gca209
-In-Reply-To: <1290218934-8544-1-git-send-email-john.stultz@linaro.org>
-References: <1290218934-8544-1-git-send-email-john.stultz@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Chan <mike@android.com>
+So after all the heat that was generated in the various Android
+discussions, I took a look a look at the android git tree, and 
+while there are a fair number of large and controversial 
+infrastructure changes, there are also a number of small fixes 
+that apply easily against Linus' git tree.
 
-Platform must register cpu power function that return power in
-milliWatt seconds.
+So after cherry picking these 50-some small patches out of the
+android tree, I organized them into topic branches, and over
+the next few weeks, I hope to send them out to lkml and topic
+maintainers for comments.
 
+Now, I'm not proposing that these changes be merged as-is. It
+may very well be that, unknown to me, android developers have
+already tried to submit these patches and they have been rejected
+for good reason. Or some patches may very well be necessary hacks
+to get thing shipping while deeper fixes are being worked on. If
+that is the case, let me know and forgive me for the noise.
+
+But as, it seemed many of these small changes have been obscured
+by the debate over the larger infrastructure changes, I wanted 
+to bring them forward so that possibly good fixes were not missed
+in the controversy.
+
+Maintainers: If you do find any of these patches distasteful,
+that's fine, I'll be happy to drop them from my tree for now.
+I really don't want to stir up another huge mail thread over these 
+small patches, but I'd appreciate if you'd consider them as a
+bug report illustrating an issue or a desired feature, and suggest 
+what you see as a reasonable way to accomplish the desired
+functionality presented in the patch.
+
+The following patches are just the scheduler related trivial patches
+from the Android tree. You can find this as well as my other trivial
+Android topic branches here:
+http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=summary
+
+thanks
+-john
+
+Cc: Arve Hjønnevåg <arve@android.com>
 CC: Ingo Molnar <mingo@elte.hu>
 CC: Peter Zijlstra <peterz@infradead.org>
-Change-Id: I1caa0335e316c352eee3b1ddf326fcd4942bcbe8
-Signed-off-by: Mike Chan <mike@android.com>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- Documentation/cgroups/cpuacct.txt |    3 +++
- include/linux/cpuacct.h           |    4 +++-
- kernel/sched.c                    |   24 ++++++++++++++++++++++--
- 3 files changed, 28 insertions(+), 3 deletions(-)
+CC: Dima Zavin <dima@android.com>
+CC: Erik Gilling <konkers@android.com>
+CC: Mike Chan <mike@android.com>
 
-diff --git a/Documentation/cgroups/cpuacct.txt b/Documentation/cgroups/cpuacct.txt
-index 600d2d0..84e471b 100644
---- a/Documentation/cgroups/cpuacct.txt
-+++ b/Documentation/cgroups/cpuacct.txt
-@@ -44,6 +44,9 @@ cpuacct.cpufreq file gives CPU time (in nanoseconds) spent at each CPU
- frequency. Platform hooks must be implemented inorder to properly track
- time at each CPU frequency.
- 
-+cpuacct.power file gives CPU power consumed (in milliWatt seconds). Platform
-+must provide and implement power callback functions.
-+
- cpuacct controller uses percpu_counter interface to collect user and
- system times. This has two side effects:
- 
-diff --git a/include/linux/cpuacct.h b/include/linux/cpuacct.h
-index 560df02..8f68e73 100644
---- a/include/linux/cpuacct.h
-+++ b/include/linux/cpuacct.h
-@@ -31,7 +31,9 @@ struct cpuacct_charge_calls {
- 	 */
- 	void (*init) (void **cpuacct_data);
- 	void (*charge) (void *cpuacct_data,  u64 cputime, unsigned int cpu);
--	void (*show) (void *cpuacct_data, struct cgroup_map_cb *cb);
-+	void (*cpufreq_show) (void *cpuacct_data, struct cgroup_map_cb *cb);
-+	/* Returns power consumed in milliWatt seconds */
-+	u64 (*power_usage) (void *cpuacct_data);
- };
- 
- int cpuacct_charge_register(struct cpuacct_charge_calls *fn);
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 35055fc..270d34a 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -9282,12 +9282,28 @@ static int cpuacct_cpufreq_show(struct cgroup *cgrp, struct cftype *cft,
- 		struct cgroup_map_cb *cb)
- {
- 	struct cpuacct *ca = cgroup_ca(cgrp);
--	if (ca->cpufreq_fn && ca->cpufreq_fn->show)
--		ca->cpufreq_fn->show(ca->cpuacct_data, cb);
-+	if (ca->cpufreq_fn && ca->cpufreq_fn->cpufreq_show)
-+		ca->cpufreq_fn->cpufreq_show(ca->cpuacct_data, cb);
- 
- 	return 0;
- }
- 
-+/* return total cpu power usage (milliWatt second) of a group */
-+static u64 cpuacct_powerusage_read(struct cgroup *cgrp, struct cftype *cft)
-+{
-+	int i;
-+	struct cpuacct *ca = cgroup_ca(cgrp);
-+	u64 totalpower = 0;
-+
-+	if (ca->cpufreq_fn && ca->cpufreq_fn->power_usage)
-+		for_each_present_cpu(i) {
-+			totalpower += ca->cpufreq_fn->power_usage(
-+					ca->cpuacct_data);
-+		}
-+
-+	return totalpower;
-+}
-+
- static struct cftype files[] = {
- 	{
- 		.name = "usage",
-@@ -9306,6 +9322,10 @@ static struct cftype files[] = {
- 		.name =  "cpufreq",
- 		.read_map = cpuacct_cpufreq_show,
- 	},
-+	{
-+		.name = "power",
-+		.read_u64 = cpuacct_powerusage_read
-+	},
- };
- 
- static int cpuacct_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
+
+Arve HjÃ¸nnevÃ¥g (1):
+  sched: Enable might_sleep before initializing drivers.
+
+Dima Zavin (1):
+  sched: use the old min_vruntime when normalizing on dequeue
+
+Erik Gilling (1):
+  sched: make task dump print all 15 chars of proc comm
+
+Mike Chan (2):
+  scheduler: cpuacct: Enable platform hooks to track cpuusage for CPU
+    frequencies
+  scheduler: cpuacct: Enable platform callbacks for cpuacct power
+    tracking
+
+ Documentation/cgroups/cpuacct.txt |    7 +++
+ include/linux/cpuacct.h           |   43 +++++++++++++++++++
+ kernel/sched.c                    |   84 ++++++++++++++++++++++++++++++++++++-
+ kernel/sched_fair.c               |    6 ++-
+ 4 files changed, 137 insertions(+), 3 deletions(-)
+ create mode 100644 include/linux/cpuacct.h
+
 -- 
 1.7.3.2.146.gca209
 
