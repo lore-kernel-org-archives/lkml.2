@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab0KTPvu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 10:51:50 -0500
-Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:50753 "EHLO
-	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351Ab0KTPvt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 10:51:49 -0500
-Date: Sat, 20 Nov 2010 16:51:45 +0100
-From: Rodolfo Giometti <giometti@enneenne.com>
-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
-        linuxpps@ml.enneenne.com, Tejun Heo <tj@kernel.org>
-Message-ID: <20101120155145.GZ13356@enneenne.com>
-Mail-Followup-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-	linux-kernel@vger.kernel.org,
-	"Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-	Tejun Heo <tj@kernel.org>
-References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
- <73f5dc3f8658daf3378d7fd55ce28759637eb5d9.1290087479.git.lasaine@lvk.cs.msu.su>
+	id S1751581Ab0KTPxI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 10:53:08 -0500
+Received: from cantor.suse.de ([195.135.220.2]:43488 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750749Ab0KTPxH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 10:53:07 -0500
+Date: Sat, 20 Nov 2010 07:50:39 -0800
+From: Greg KH <gregkh@suse.de>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/66] 2.6.36.1-stable review
+Message-ID: <20101120155039.GA28803@suse.de>
+References: <20101119220309.GA15562@kroah.com> <1290268602.10615.2.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <73f5dc3f8658daf3378d7fd55ce28759637eb5d9.1290087479.git.lasaine@lvk.cs.msu.su>
-Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
-X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 192.168.32.37
-X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: Re: [PATCHv4 07/17] pps: move idr stuff to pps.c
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
+In-Reply-To: <1290268602.10615.2.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 07:01:00PM +0300, Alexander Gordeev wrote:
-> Since now idr is only used to manage char device id's and not used in
-> kernel API anymore it should be moved to pps.c. This also makes it
-> possible to release id only at actual device freeing so nobody can
-> register a pps device with the same id while our device is not freed
-> yet.
+On Sat, Nov 20, 2010 at 04:56:42PM +0100, Thomas Meyer wrote:
+> Am Freitag, den 19.11.2010, 14:03 -0800 schrieb Greg KH:
+> > This is the start of the stable review cycle for the 2.6.36.1 release.
+> > There are 66 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let us know.  If anyone is a maintainer of the proper subsystem, and
+> > wants to add a Signed-off-by: line to the patch, please respond with it.
+> 
+> This one is missing and crashes my 2.6.36 kernel:
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=22922
+> 
+> This was fixed in 2.6.37-rc1 in commit: a1c6c5698d53 (ext4: fix
+> NULL pointer dereference in print_daily_error_info())
 
-This patch must be delayed till patch 5 is not fixed.
+You need to get the ext4 maintainers to ack that and let me know about
+it before I can add it.
 
-Rodolfo
+thanks,
 
--- 
-
-GNU/Linux Solutions                  e-mail: giometti@enneenne.com
-Linux Device Driver                          giometti@linux.it
-Embedded Systems                     phone:  +39 349 2432127
-UNIX programming                     skype:  rodolfo.giometti
-Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
+greg k-h
