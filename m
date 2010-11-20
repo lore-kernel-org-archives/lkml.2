@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752610Ab0KTUuH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 15:50:07 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:17158 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751571Ab0KTUuF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 15:50:05 -0500
-Date: Sat, 20 Nov 2010 21:37:08 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Mike Galbraith <efault@gmx.de>
-cc: Linus Torvalds <torvalds@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-In-Reply-To: <1290282678.28711.23.camel@maggy.simson.net>
-Message-ID: <alpine.LNX.2.00.1011202136310.24071@swampdragon.chaosbits.net>
-References: <1287479765.9920.9.camel@marge.simson.net>  <1287487757.24189.40.camel@marge.simson.net>  <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>  <1287511983.7417.45.camel@marge.simson.net>  <1287514410.7368.10.camel@marge.simson.net> 
- <20101020025652.GB26822@elte.hu>  <1287648715.9021.20.camel@marge.simson.net>  <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>  <20101021162924.GA3225@redhat.com>  <1288076838.11930.1.camel@marge.simson.net>  <1288078144.7478.9.camel@marge.simson.net>
-  <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>  <1289489200.11397.21.camel@maggy.simson.net> <30291.1289860866@localhost>  <AANLkTikeLeLvYcZJ4HcAUH1ax13scgnrT27CSR=YzO_C@mail.gmail.com>  <alpine.LNX.2.00.1011202031130.24071@swampdragon.chaosbits.net>
- <1290282678.28711.23.camel@maggy.simson.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753190Ab0KTVCd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 16:02:33 -0500
+Received: from fr.prnet.org ([188.165.216.122]:57530 "EHLO fr.prnet.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752193Ab0KTVCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 16:02:31 -0500
+X-Greylist: delayed 1407 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Nov 2010 16:02:31 EST
+Message-ID: <4CE831E6.8040903@prnet.org>
+Date: Sat, 20 Nov 2010 21:39:02 +0100
+From: David Arendt <admin@prnet.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101029 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: linux-kernel@vger.kernel.org
+Subject: nfs mounting problem on kernel 2.6.36
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 20 Nov 2010, Mike Galbraith wrote:
+Hi,
 
-> On Sat, 2010-11-20 at 20:33 +0100, Jesper Juhl wrote:
-> > On Mon, 15 Nov 2010, Linus Torvalds wrote:
-> > 
-> > > On Mon, Nov 15, 2010 at 2:41 PM,  <Valdis.Kletnieks@vt.edu> wrote:
-> > > >
-> > > > So the set of all tasks that never call proc_set_tty() ends up in the same one
-> > > > big default group, correct?
-> > > 
-> > > Well, yes and no.
-> > > 
-> > > Yes, that's what the code currently does. But I did ask Mike (and he
-> > > delivered) to try to make the code look and work in a way where the
-> > > whole "tty thing" is just one of the heuristics.
-> > > 
-> > > It's not clear exactly what the non-tty heuristics would be, but I do
-> > > have a few suggestions:
-> > > 
-> > >  -  I think it might be a good idea to associate a task group with the
-> > > current "cred" of a process, and fall back on it in the absense of a
-> > > tty-provided one.
-> > > 
-> > Or how about (just brainstorming here) a group per 'process group'?
-> 
-> I switched to per session, which on my system at least looks like more
-> than enough granularity.
-> 
-Sounds sane and it's closer to the original 'per tty' which was so 
-successful.
+I have the following problem mounting an nfs device on kernel 2.6.36 
+(amd64). The nfs server is Windows Services for Unix on Windows XP. The 
+mount command was: mount fs01:e /mnt
 
--- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
+Thanks in advance
+Bye,
+David Arendt
+
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000090
+IP: [<ffffffff814c869f>] rpcauth_refreshcred+0x1f/0x1c0
+PGD 6ce12067 PUD c8136067 PMD 0
+Oops: 0000 [#3] PREEMPT SMP
+last sysfs file: 
+/sys/devices/pci0000:00/0000:00:1d.0/usb6/6-1/6-1:1.0/uevent
+CPU 1
+Modules linked in: nvidia(P)
+
+Pid: 10827, comm: mount.nfs Tainted: P      D     2.6.36server #3 
+P5QL-E/P5QL-E
+RIP: 0010:[<ffffffff814c869f>]  [<ffffffff814c869f>] 
+rpcauth_refreshcred+0x1f/0x1c0
+RSP: 0018:ffff880040f15b58  EFLAGS: 00010292
+RAX: ffffffff816772e0 RBX: ffff88012ff24480 RCX: 0000000000000006
+RDX: ffff88012dbcebc0 RSI: ffff88000188ef60 RDI: ffff88012ff24480
+RBP: ffff88012ff244f0 R08: ffff880040f14000 R09: ffffffff817740b0
+R10: 0000aa006c4c11da R11: 0000000000000000 R12: 0000000000000000
+R13: 0000000000000000 R14: ffff88012dbcead8 R15: ffff8800210ef300
+FS:  00007fa721e4b700(0000) GS:ffff880001880000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000090 CR3: 0000000084a3b000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process mount.nfs (pid: 10827, threadinfo ffff880040f14000, task 
+ffff880095379220)
+Stack:
+  ffffffff810735e0 ffff880040f15b60 ffff880040f15b60 ffff88012ff24480
+<0> ffff88012ff244f0 ffff88012ff24480 ffff88012ff244f0 0000000000000000
+<0> 0000000000000000 ffffffff814c7210 0000000000000000 ffff88012ff24480
+Call Trace:
+  [<ffffffff810735e0>] ? wake_bit_function+0x0/0x40
+  [<ffffffff814c7210>] ? __rpc_execute+0x70/0x220
+  [<ffffffff814c0355>] ? rpc_run_task+0xd5/0x130
+  [<ffffffff814c04ab>] ? rpc_call_sync+0x3b/0x70
+  [<ffffffff81177525>] ? T.883+0x25/0x70
+  [<ffffffff81178a83>] ? nfs3_proc_pathconf+0x43/0x90
+  [<ffffffff81161525>] ? nfs_probe_fsinfo+0x4d5/0x5b0
+  [<ffffffff81160f50>] ? nfs_init_server_rpcclient+0x30/0x130
+  [<ffffffff81162647>] ? nfs_create_server+0x387/0x620
+  [<ffffffff8116c9cd>] ? nfs_get_sb+0x36d/0xb90
+  [<ffffffff810cf95c>] ? vfs_kern_mount+0x6c/0x160
+  [<ffffffff810e661e>] ? get_fs_type+0x3e/0xd0
+  [<ffffffff810cfac3>] ? do_kern_mount+0x53/0x130
+  [<ffffffff810e9d3b>] ? do_mount+0x2eb/0x870
+  [<ffffffff810ea35a>] ? sys_mount+0x9a/0x100
+  [<ffffffff8102b36b>] ? system_call_fastpath+0x16/0x1b
+Code: ff 66 66 2e 0f 1f 84 00 00 00 00 00 48 83 ec 48 48 89 5c 24 28 48 
+89 6c 24 30 4c 89 64 24 38 4c 89 6c 24 40 48 89 fb 4c 8b 67 20 <49> 8b 
+ac 24 90 00 00 00 48 85 ed 74 54 f6 05 a5 bd 2d 00 10 0f
+RIP  [<ffffffff814c869f>] rpcauth_refreshcred+0x1f/0x1c0
+  RSP <ffff880040f15b58>
+CR2: 0000000000000090
+---[ end trace d0e0b9fa5e85ce98 ]---
 
