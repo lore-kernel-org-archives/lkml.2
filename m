@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509Ab0KTRBo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 12:01:44 -0500
-Received: from mail.perches.com ([173.55.12.10]:1584 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754319Ab0KTRBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 12:01:43 -0500
-Subject: Re: [PATCHv4 10/17] pps: use BUG_ON for kernel API safety checks
-From: Joe Perches <joe@perches.com>
-To: Rodolfo Giometti <giometti@enneenne.com>
-Cc: Alexander Gordeev <lasaine@lvk.cs.msu.su>, linux-kernel@vger.kernel.org,
-        "Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-        Tejun Heo <tj@kernel.org>
-In-Reply-To: <20101120161351.GC13356@enneenne.com>
-References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
-	 <1a1ebcf97b2eb62548c34d2d8fc139c0703a9077.1290087480.git.lasaine@lvk.cs.msu.su>
-	 <20101120161351.GC13356@enneenne.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 20 Nov 2010 09:01:41 -0800
-Message-ID: <1290272501.27951.27.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754464Ab0KTROC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 12:14:02 -0500
+Received: from casper.infradead.org ([85.118.1.10]:47179 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752969Ab0KTROB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 12:14:01 -0500
+Date: Sat, 20 Nov 2010 15:13:34 -0200
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        fweisbec@gmail.com, michaele@au1.ibm.com, ianmunsi@au1.ibm.com
+Subject: Re: [PATCH] perf: Change and clean up sys_perf_event_open error
+ handling
+Message-ID: <20101120171334.GB29710@ghostprotocols.net>
+References: <1290217044-26293-1-git-send-email-cjashfor@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290217044-26293-1-git-send-email-cjashfor@linux.vnet.ibm.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-11-20 at 17:13 +0100, Rodolfo Giometti wrote:
-> On Thu, Nov 18, 2010 at 07:01:03PM +0300, Alexander Gordeev wrote:
-> > This way less overhead is involved when running production kernel.
-> > If you want to debug a pps client module please define DEBUG to enable
-> > the checks.
-> > Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-[]
-> > diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-> > @@ -179,10 +168,8 @@ void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
-> >  	int captured = 0;
-> >  	struct pps_ktime ts_real;
-> >  
-> > -	if ((event & (PPS_CAPTUREASSERT | PPS_CAPTURECLEAR)) == 0) {
-> > -		dev_err(pps->dev, "unknown event (%x)\n", event);
-> > -		return;
-> > -	}
-> > +	/* check event type */
-> > +	BUG_ON((event & (PPS_CAPTUREASSERT | PPS_CAPTURECLEAR)) == 0);
+Em Fri, Nov 19, 2010 at 05:37:24PM -0800, Corey Ashford escreveu:
+> This patch makes several changes to "perf stat":
 > 
-> Ack.
+> - "perf stat" will no longer go ahead and run the application when one or
+> more of the specified events could not be opened.
+> - Use error() and die() instead of pr_err() so that the output is more
+> consistent with "perf top" and "perf record".
+> - Handle permission errors in a more robust way, and in a similar way to
+> "perf record" and "perf top".
 > 
-> This is a correct usage of BUG_ON. :)
+> In addition, the sys_perf_event_open() error handling of "perf top" and
+> "perf record" is made more consistent and adds the following phrase when an
+> event doesn't open (with something ther than an access or permission
+> error):
 
-I don't think that's true.
+Thanks, applied.
 
-/*
- * Don't use BUG() or BUG_ON() unless there's really no way out; one
- * example might be detecting data structure corruption in the middle
- * of an operation that can't be backed out of.  If the (sub)system
- * can somehow continue operating, perhaps with reduced functionality,
- * it's probably not BUG-worthy.
- *
- * If you're tempted to BUG(), think again:  is completely giving up
- * really the *only* solution?  There are usually better options, where
- * users don't need to reboot ASAP and can mostly shut down cleanly.
- */
+Ingo, this one is in my perf/core branch, in addition to the 3 patches I
+posted yesterday.
 
-
+- Arnaldo
