@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab0KTQPR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 11:15:17 -0500
-Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:34512 "EHLO
+	id S1754121Ab0KTQXY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 11:23:24 -0500
+Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:34653 "EHLO
 	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab0KTQPQ (ORCPT
+	with ESMTP id S1751156Ab0KTQXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 11:15:16 -0500
-Date: Sat, 20 Nov 2010 17:15:12 +0100
+	Sat, 20 Nov 2010 11:23:23 -0500
+Date: Sat, 20 Nov 2010 17:23:04 +0100
 From: Rodolfo Giometti <giometti@enneenne.com>
 To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
-        linuxpps@ml.enneenne.com, Tejun Heo <tj@kernel.org>
-Message-ID: <20101120161511.GD13356@enneenne.com>
+        linuxpps@ml.enneenne.com, Randy Dunlap <rdunlap@xenotime.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tilman Schmidt <tilman@imap.cc>, linux-doc@vger.kernel.org
+Message-ID: <20101120162304.GE13356@enneenne.com>
 Mail-Followup-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>,
 	linux-kernel@vger.kernel.org,
 	"Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-	Tejun Heo <tj@kernel.org>
+	Randy Dunlap <rdunlap@xenotime.net>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Tilman Schmidt <tilman@imap.cc>, linux-doc@vger.kernel.org
 References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
- <f78fed4c9fd5836636f2d307d1ffb808a3c10923.1290087480.git.lasaine@lvk.cs.msu.su>
+ <74f895fecc315f781a97b12d7feba3d6c4053195.1290087480.git.lasaine@lvk.cs.msu.su>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <f78fed4c9fd5836636f2d307d1ffb808a3c10923.1290087480.git.lasaine@lvk.cs.msu.su>
+In-Reply-To: <74f895fecc315f781a97b12d7feba3d6c4053195.1290087480.git.lasaine@lvk.cs.msu.su>
 Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
 X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-SA-Exim-Connect-IP: 192.168.32.37
 X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: Re: [PATCHv4 11/17] pps: simplify conditions a bit
+Subject: Re: [PATCHv4 12/17] pps: timestamp is always passed to dcd_change()
 X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
 X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 07:01:04PM +0300, Alexander Gordeev wrote:
-> Bitwise conjunction is distributive so we can simplify some conditions.
+On Thu, Nov 18, 2010 at 07:01:05PM +0300, Alexander Gordeev wrote:
+> Remove the code that gatheres timestamp in pps_tty_dcd_change() in case
+> passed ts parameter is NULL because it never happens in the current
+> code. Fix comments as well.
 > 
 > Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 > ---
->  drivers/pps/kapi.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
+>  Documentation/serial/tty.txt    |    2 +-
+>  drivers/pps/clients/pps-ldisc.c |    8 --------
+>  include/linux/tty_ldisc.h       |    2 +-
+>  3 files changed, 2 insertions(+), 10 deletions(-)
 > 
-> diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-> index 54261c4..2bdfbed 100644
-> --- a/drivers/pps/kapi.c
-> +++ b/drivers/pps/kapi.c
-> @@ -184,8 +184,7 @@ void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
+> diff --git a/Documentation/serial/tty.txt b/Documentation/serial/tty.txt
+> index 7c90050..540db41 100644
+> --- a/Documentation/serial/tty.txt
+> +++ b/Documentation/serial/tty.txt
+> @@ -107,7 +107,7 @@ write_wakeup()	-	May be called at any point between open and close.
 >  
->  	/* Check the event */
->  	pps->current_mode = pps->params.mode;
-> -	if ((event & PPS_CAPTUREASSERT) &
-> -			(pps->params.mode & PPS_CAPTUREASSERT)) {
-> +	if (event & pps->params.mode & PPS_CAPTUREASSERT) {
->  		/* We have to add an offset? */
->  		if (pps->params.mode & PPS_OFFSETASSERT)
->  			pps_add_offset(&ts_real,
-> @@ -199,8 +198,7 @@ void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
->  
->  		captured = ~0;
->  	}
-> -	if ((event & PPS_CAPTURECLEAR) &
-> -			(pps->params.mode & PPS_CAPTURECLEAR)) {
-> +	if (event & pps->params.mode & PPS_CAPTURECLEAR) {
->  		/* We have to add an offset? */
->  		if (pps->params.mode & PPS_OFFSETCLEAR)
->  			pps_add_offset(&ts_real,
-> -- 
-> 1.7.2.3
-> 
+>  dcd_change()	-	Report to the tty line the current DCD pin status
+>  			changes and the relative timestamp. The timestamp
+> -			can be NULL.
+> +			cannot be NULL.
 
-Acked-by: Rodolfo Giometti <giometti@linux.it>
+Can you please explain why it cannot be null? O_o
+
+Who does supply the timestamp to dcd_change?
+
+Ciao,
+
+Rodolfo
 
 -- 
 
