@@ -1,113 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751801Ab0KTI42 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 03:56:28 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44232 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751549Ab0KTI41 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 03:56:27 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=XboFHsfC5AyKtYGYVPeBi5pyTME5+1fb7JLE1eEOdxYNQCIpVZvDoryIck1EKmA72j
-         7XtsEEGhQhTCnOhRBHMyyjD1SqGIy+EEfm/t4EiVyukCFKngP7rxrljNNCd5K2HK+tDo
-         TsCaQfZb8W43XIgPcdEru17pW36RcaMgc1UtM=
+	id S1751918Ab0KTJAa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 04:00:30 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:59816 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751257Ab0KTJA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 04:00:27 -0500
+Date: Sat, 20 Nov 2010 10:00:22 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        linux-acpi@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/2] Generic hardware error reporting mechanism
+Message-ID: <20101120090022.GA26303@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	huang ying <huang.ying.caritas@gmail.com>,
+	Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
+	linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+	linux-acpi@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Ingo Molnar <mingo@elte.hu>,
+	Mauro Carvalho Chehab <mchehab@redhat.com>,
+	Thomas Gleixner <tglx@linutronix.de>
+References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
+ <1290154233-28695-2-git-send-email-ying.huang@intel.com>
+ <a6a56c8a0426c6e46de1a9361cebcd63.squirrel@www.skyhub.de>
+ <AANLkTin9AmJbeHOATyK4M8-MmaDGL4XPiVnTG4X=TEkS@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20101119151949.b7e514f7.akpm@linux-foundation.org>
-References: <AANLkTimYDAJr9x00sjGGnDF2vOVXU12qmbnmfuzA5_0h@mail.gmail.com>
-	<20101119140721.33576c61.akpm@linux-foundation.org>
-	<20101119222823.GA28797@quadria>
-	<20101119150411.81092e94.akpm@linux-foundation.org>
-	<20101119151949.b7e514f7.akpm@linux-foundation.org>
-Date: Sat, 20 Nov 2010 09:56:24 +0100
-X-Google-Sender-Auth: gL0dVPJoSeSu7wIFmrtEA8Wbuw8
-Message-ID: <AANLkTinneJ+PcnZ9zFVjYUeA+-9MQ96-67kqvO=gS7zW@mail.gmail.com>
-Subject: Re: abs() vs. abs64() (was: Re: [PATCH] fbdev: fix nearest mode search)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: michalj@gmail.com, Rolf Eike Beer <eike-kernel@sf-tec.de>,
-        linux-kernel@vger.kernel.org,
-        Linux Fbdev development list <linux-fbdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTin9AmJbeHOATyK4M8-MmaDGL4XPiVnTG4X=TEkS@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 20, 2010 at 00:19, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Fri, 19 Nov 2010 15:04:11 -0800
-> Andrew Morton <akpm@linux-foundation.org> wrote:
->
->> > Looks good to me.  I posted essentially the same thing some 3 months ago
->> > (http://marc.info/?l=linux-kernel&m=128033094822201&w=2) but it then
->> > failed to get any traction.  At any rate, I like your version better as
->> > it seems more readable.
->> >
->>
->> I spose we should document it.   Does this look complete and accurate?
->>
->> --- a/include/linux/kernel.h~include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit-fix
->> +++ a/include/linux/kernel.h
->> @@ -143,6 +143,13 @@ extern int _cond_resched(void);
->>
->>  #define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
->>
->> +/*
->> + * abs() handles unsigned and signed longs, ints, shorts and chars.  For long
->> + * types it returns a signed long.  For int, short and char types it returns a
->> + * signed int.
->> + * abs() should not be used for 64-bit types (s64, u64, long long) - use abs64()
->> + * for those.
->> + */
->>  #define abs(x) ({                                            \
->>               long ret;                                       \
->>               if (sizeof(x) == sizeof(long)) {                \
->
-> Well that was a load of bollocks.  2nd attempt:
+On Sat, Nov 20, 2010 at 10:52:56AM +0800, huang ying wrote:
+> On Fri, Nov 19, 2010 at 9:56 PM,  <boris@alien8.de> wrote:
+> > Yes, we need a generic error reporting format. Wait a second, this
+> > error format structure looks very much like a tracepoint record to me -
+> > it has common fields and record-specific fields. And we have all that
+> > infrastructure in the kernel and yet you've decided to reimplement it
+> > anew. Remind me again why?
+> 
+> You mean "struct trace_entry"? They are quite different on design. The
+> record format in patch can incorporate multiple sections into one
+> record, which is meaningful for hardware error reporting.
 
-Yeah, I was just gonna complain "but long _is_ 64-bit on 64-bit platforms"...
+Nope, I mean a tracepoint and it can do all those things.
 
-> --- a/include/linux/kernel.h~include-linux-kernelh-abs-fix-handling-of-32-bit-unsigneds-on-64-bit-fix
-> +++ a/include/linux/kernel.h
-> @@ -143,6 +143,12 @@ extern int _cond_resched(void);
->
->  #define might_sleep_if(cond) do { if (cond) might_sleep(); } while (0)
->
-> +/*
-> + * abs() handles unsigned and signed longs, ints, shorts and chars.  For all
-> + * input types abs() returns a signed long.
-> + * abs() should not be used for 64-bit types (s64, u64, long long) - use abs64()
-> + * for those.
-> + */
->  #define abs(x) ({                                              \
->                long ret;                                       \
->                if (sizeof(x) == sizeof(long)) {                \
+> And we do not need the fancy
+> "/sys/kernel/debug/tracing/events/<xxx>/<xxx>/format", user space
+> error daemon only consumes all error record it recognized and blindly
+> log all other records.
 
-After some second thinking, I think this is OK...
+Nobody said you needed that - the tracepoint contains all the
+information you need.
 
-In the first patch:
-> of similarity between video modes.  The arguments of abs() are sometimes
-> unsigned numbers.  This worked fine until commit a49c59c0 ("Make sure the
+[..]
 
-The "sometimes" is when the parameter is the difference of 2 numbers, which is a
-highly likely use case. Unlike most people's intuitive mathematical
-feelings, a difference
-is always unsigned in C (that was incorrect in the comment of Michal's
-first version).
-So I think it's worth mentioning that explicitly.
+> > - why do we need an
+> > error field for _every_ device on the system? Looks like a bunch of
+> > hoopla for only a few error types...
+> 
+> Because every device may report hardware errors, but not every device
+> will do it. So just a pointer is added to "struct device" and
+> corresponding data structure is only created when needed.
+> 
+> >> For example, the
+> >> "error" directory for APEI GHES is as follow.
+> >>
+> >> /sys/devices/platform/GHES.0/error/logs
+> >> /sys/devices/platform/GHES.0/error/overflows
+> >> /sys/devices/platform/GHES.0/error/throttles
+> >>
+> >> Where "logs" is number of error records logged; "throttles" is number
+> >> of error records not logged because the reporting rate is too high;
+> >> "overflows" is number of error records not logged because there is no
+> >> space available.
+> >>
+> >> Not all devices will report errors, so struct dev_herr_info and sysfs
+> >> directory/files are only allocated/created for devices explicitly
+> >> enable it.  So to enumerate the error sources of system, you just need
+> >> to enumerate "error" directory for each device directory in
+> >> /sys/devices.
+> >
+> > So how do you say which devices should report and which shouldn't report
+> > errors, from userspace with a tool? Default actions? What if you forget
+> > to enable error reporting of a device which actually is important?
+> 
+> In general all hardware errors should be reported and logged.
 
-... and please llet me do the third thinking during the rest of the day ;-)
+So why the need to enable/disable them? Why add all that code to
+enable/disable them when all devices can report hw errors but not all
+do it but all should do it... (I can go on forever). Do you see the
+spaghetti statement?
 
-Gr{oetje,eeting}s,
+> >> One device file (/dev/error/error) which mixed error records from all
+> >> hardware error reporting devices is created to convey error records
+> >> from kernel space to user space.  Because hardware devices are dealt
+> >> with, a device file is the most natural way to do that.  Because
+> >> hardware error reporting should not hurts system performance, the
+> >> throughput of the interface should be controlled to a low level (done
+> >> by user space error daemon), ordinary "read" is sufficient from
+> >> performance point of view.
+> >
+> > Right, so no need for a daemon but who does the read? cat? How are you
+> > going to collect all those errors? How do you enforce policies?
+> 
+> Some summary hardware error information can be put into printk. Error
+> daemon is needed because we need not only log the the error but the
+> predictive recovery. If you really have no daemon, cat can be used to
+> log the error. I don't fully understand your words, you want to
+> enforce policies without error daemon?
 
-                        Geert
+Sorry, I misread your original statement. So it is clear that we need
+some kind of daemon to do some error post-processing.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> > How do you inject errors?
+> 
+> We can use another device file to inject error, for example
+> /dev/error/error_inject. Just write the needed information to this
+> file. The format can be same as the error record defined as above,
+> because it is highly extensible.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Same argument as above - you can do that with tracepoints without
+duplicating functionality.
+
+[.. ]
+
+> >> A lock-less hardware error record allocator is provided.  So for
+> >> hardware error that can be ignored (such as corrected errors), it is
+> >> not needed to pre-allocate the error record or allocate the error
+> >> record on stack.  Because the possibility for two hardware parts to go
+> >> error simultaneously is very small, one big unified memory pool for
+> >> hardware errors is better than one memory pool or buffer for each
+> >> device.
+> >
+> > Yet another bloat winner. Why do we need a memory allocator for error
+> > records?
+> 
+> The point is lockless not the memory allocator. The lockless memory
+> allocator is not hardware error reporting specific, it can be used by
+> other part of the kernel too.
+
+Wait a second, are we talking about hardware errors or memory management
+here? If you want to push your lockless memory allocator, send it in to
+linux-mm and let the guys there look at it, but not in conjunction with
+hw errors. That's like I'm going for a run and, btw, while I'm at it, I
+can buy a coffee machine.
+
+> > You either get a single critical error which shuts down the
+> > system and you log it to persistent storage, if possible, or you work at
+> > those uncritical errors one at a time.
+> 
+> Uncritical errors can be reported in NMI handler too. So we need
+> lockless data structure for them.
+
+Why? What's wrong with using a single struct on the stack? Are you
+afraid that we might blow the NMI stack although NMIs don't nest?
+
+[.. ]
+
+Dude, let me save you the trouble: all everybody is trying to say is
+that you can achieve all that with stuff already available in the
+kernel. And HW errors are not that special to need a special subsystem
+grown for them - you just need to handle them properly. The only thing
+you should provide is the backend to persistent storage so that error
+info can be put there - everything else is bloat.
+
+-- 
+Regards/Gruss,
+    Boris.
