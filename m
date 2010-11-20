@@ -1,36 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab0KTMdQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 07:33:16 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:45331 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554Ab0KTMdP convert rfc822-to-8bit (ORCPT
+	id S1753257Ab0KTMkV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 07:40:21 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47861 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752644Ab0KTMkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 07:33:15 -0500
-Subject: Re: [PATCH 5/5] sched: use the old min_vruntime when normalizing
- on dequeue
-From: Peter Zijlstra <peterz@infradead.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Dima Zavin <dima@android.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-In-Reply-To: <1290250511.2118.7.camel@laptop>
-References: <1290218934-8544-1-git-send-email-john.stultz@linaro.org>
-	 <1290218934-8544-6-git-send-email-john.stultz@linaro.org>
-	 <1290250511.2118.7.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 20 Nov 2010 13:33:30 +0100
-Message-ID: <1290256410.2124.0.camel@laptop>
+	Sat, 20 Nov 2010 07:40:20 -0500
+Date: Sat, 20 Nov 2010 12:39:11 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Mark Allyn <mark.a.allyn@intel.com>
+Cc: linux-kernel@vger.kernel.org, greg@kroah.com
+Subject: Re: [PATCH 1/1] sep: Introduce sep driver
+Message-ID: <20101120123911.356bc780@lxorguk.ukuu.org.uk>
+In-Reply-To: <1290037536-12660-1-git-send-email-mark.a.allyn@intel.com>
+References: <1290037536-12660-1-git-send-email-mark.a.allyn@intel.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-11-20 at 11:55 +0100, Peter Zijlstra wrote:
-> Right, so assuming the reasoning is right (my brain still needs to wake
-> up) the patch is weird, by not simply move the code bock up and avoid
-> the whole extra variable like so?
 
-Also, clearly that comments needs addressing..
+
+> +/* rar handler */
+> +#ifndef CONFIG_MRST_RAR_HANDLER
+> +
+> +/* This stub header is for non Moorestown driver only */
+
+What happened to the patches I sent you a while back that cleaned this
+one up ?
+
