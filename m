@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754963Ab0KTVmg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 16:42:36 -0500
-Received: from mail.perches.com ([173.55.12.10]:1605 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752408Ab0KTVmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 16:42:36 -0500
-Subject: Re: [PATCHv4 06/17] pps: convert printk/pr_* to dev_*
-From: Joe Perches <joe@perches.com>
-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-Cc: Rodolfo Giometti <giometti@enneenne.com>, linux-kernel@vger.kernel.org,
-        "Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-In-Reply-To: <20101121003323.4bbf0199@apollo.gnet>
-References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
-	 <ce13c55a2acb39be7ef5667467c765595df19835.1290087479.git.lasaine@lvk.cs.msu.su>
-	 <20101120154940.GY13356@enneenne.com> <20101121003323.4bbf0199@apollo.gnet>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 20 Nov 2010 13:42:34 -0800
-Message-ID: <1290289354.31117.25.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1755153Ab0KTVs3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 16:48:29 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40465 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753676Ab0KTVs2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 16:48:28 -0500
+Date: Sat, 20 Nov 2010 22:48:20 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Patrice Vilchez <patrice.vilchez@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] atmel_spi: fix warning In function
+	'atmel_spi_dma_map_xfer'
+Message-ID: <20101120214820.GG8942@pengutronix.de>
+References: <20101120095906.GD4216@game.jcrosoft.org> <1290247733-17834-6-git-send-email-plagnioj@jcrosoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1290247733-17834-6-git-send-email-plagnioj@jcrosoft.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-21 at 00:33 +0300, Alexander Gordeev wrote:
-> В Sat, 20 Nov 2010 16:49:40 +0100
-> Rodolfo Giometti <giometti@enneenne.com> пишет:
-> > On Thu, Nov 18, 2010 at 07:00:59PM +0300, Alexander Gordeev wrote:
-> > > Since we now have direct pointers to struct pps_device everywhere it's
-> > > easy to use dev_* functions to print messages instead of plain printks.
-> > > Where dev_* cannot be used printks are converted to pr_*.
-> > > diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-[]
-> > > @@ -80,20 +81,20 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
-> > >  
-> > >  	/* Sanity checks */
-> > >  	if ((info->mode & default_params) != default_params) {
-> > > -		printk(KERN_ERR "pps: %s: unsupported default parameters\n",
-> > > +		pr_err("pps: %s: unsupported default parameters\n",
-> > >  					info->name);
+Hello,
 
-Perhaps you want to remove the "pps:" prefixes?
+[adding spi-devel-general and lkml to Cc:]
 
-> > > -		printk(KERN_ERR "pps: %s: echo function is not defined\n",
-> > > +		pr_err("pps: %s: echo function is not defined\n",
-[]
-> > > -		printk(KERN_ERR "pps: %s: unspecified time format\n",
-> > > +		pr_err("pps: %s: unspecified time format\n",
-[]
-> > > -		printk(KERN_ERR "pps: %s: too many PPS sources in the system\n",
-> > > +		pr_err("pps: %s: too many PPS sources in the system\n",
-[]
-> > > -		printk(KERN_ERR "pps: %s: unable to create char device\n",
-> > > +		pr_err("%s: unable to create char device\n",
+On Sat, Nov 20, 2010 at 11:08:53AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
+> passing argument 2 of 'dma_map_single' discards qualifiers from pointer target type
+> 
+> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> ---
+>  drivers/spi/atmel_spi.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/spi/atmel_spi.c b/drivers/spi/atmel_spi.c
+> index 154529a..2cf6abd 100644
+> --- a/drivers/spi/atmel_spi.c
+> +++ b/drivers/spi/atmel_spi.c
+> @@ -352,8 +352,10 @@ atmel_spi_dma_map_xfer(struct atmel_spi *as, struct spi_transfer *xfer)
+>  
+>  	xfer->tx_dma = xfer->rx_dma = INVALID_DMA_ADDRESS;
+>  	if (xfer->tx_buf) {
+> +		void *nonconst_tx = (void *)xfer->tx_buf; /* shut up gcc */
+> +
+>  		xfer->tx_dma = dma_map_single(dev,
+> -				(void *) xfer->tx_buf, xfer->len,
+> +				nonconst_tx, xfer->len,
+>  				DMA_TO_DEVICE);
+Hmm, I wonder if this is the right approach to do this.  I'd prefer to
+have something like:
 
-It's removed here.
+	dma_map_single_to_device(struct device *, const void *, ...)
 
-> > > -	printk(KERN_ERR "pps: %s: unable to register source\n", info->name);
-> > > +	pr_err("%s: unable to register source\n", info->name);
+don't know if that's sensible though.
 
-and here.
+And I wonder about gcc that your patch makes a difference.
 
+Best regards
+Uwe
 
+-- 
+Pengutronix e.K.                           | Uwe Kleine-K�nig            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
