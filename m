@@ -1,118 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756201Ab0KTBTe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 20:19:34 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:61853 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756058Ab0KTBTa (ORCPT
+	id S1756221Ab0KTBdn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 20:33:43 -0500
+Received: from tango.0pointer.de ([85.214.72.216]:49706 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab0KTBdm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 20:19:30 -0500
-X-IronPort-AV: E=Sophos;i="4.59,226,1288569600"; 
-   d="scan'208";a="2963171"
-Date: Sat, 20 Nov 2010 01:19:31 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [PATCH] xen: use PHYSDEVOP_get_free_pirq to implement
- find_unbound_pirq
-In-Reply-To: <20101119162353.GA26747@dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1011200115240.2373@kaball-desktop>
-References: <alpine.DEB.2.00.1011191350250.2373@kaball-desktop> <20101119162353.GA26747@dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 19 Nov 2010 20:33:42 -0500
+Date: Sat, 20 Nov 2010 02:33:22 +0100
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Gamari <bgamari.foss@gmail.com>, David Miller <davem@davemloft.net>,
+        tytso@mit.edu, a.p.zijlstra@chello.nl, debiandev@gmail.com,
+        alan@lxorguk.ukuu.org.uk, dhaval.giani@gmail.com, efault@gmx.de,
+        vgoyal@redhat.com, oleg@redhat.com, markus@trippelsdorf.de,
+        mathieu.desnoyers@efficios.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101120013321.GC4183@tango.0pointer.de>
+References: <C47257FC-498A-41B0-BC94-C81C72601D53@mit.edu>
+ <20101119.082944.226775934.davem@davemloft.net>
+ <20101119163430.GA12353@tango.0pointer.de>
+ <20101119.084302.71115175.davem@davemloft.net>
+ <AANLkTiksmvcLKGx7-u5CnTnZU6dgOgg7wem6qf384zUg@mail.gmail.com>
+ <87mxp53z72.fsf@gmail.com>
+ <AANLkTi=XPxnrKKu5yuJSpJjVis7MnP5d1bvhT_gKHJyV@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=XPxnrKKu5yuJSpJjVis7MnP5d1bvhT_gKHJyV@mail.gmail.com>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 19 Nov 2010, Konrad Rzeszutek Wilk wrote:
-> On Fri, Nov 19, 2010 at 01:58:03PM +0000, Stefano Stabellini wrote:
-> > Use PHYSDEVOP_get_free_pirq to implement find_unbound_pirq
-> > 
-> > Use the new hypercall PHYSDEVOP_get_free_pirq to ask Xen to allocate a
-> > pirq. Remove the unsupported PHYSDEVOP_get_nr_pirqs hypercall to get the
-> > amount of pirq available.
-> > 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > 
-> > diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> > index 321a0c8..ffd286e 100644
-> > --- a/drivers/xen/events.c
-> > +++ b/drivers/xen/events.c
-> > @@ -382,12 +382,17 @@ static int get_nr_hw_irqs(void)
-> >  	return ret;
-> >  }
-> >  
-> > -/* callers of this function should make sure that PHYSDEVOP_get_nr_pirqs
-> > - * succeeded otherwise nr_pirqs won't hold the right value */
-> > -static int find_unbound_pirq(void)
-> > +static int find_unbound_pirq(int type)
-> >  {
-> > -	int i;
-> > -	for (i = nr_pirqs-1; i >= 0; i--) {
-> > +	int rc, i;
-> > +	struct physdev_get_free_pirq op_get_free_pirq;
-> > +	op_get_free_pirq.type = type;
-> > +
-> > +	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_free_pirq, &op_get_free_pirq);
-> > +	if (!rc)
-> > +		return op_get_free_pirq.pirq;
-> > +
-> > +	for (i = 16; i <= nr_pirqs-1; i++) {
-> 
-> 16? No no. Why not re-use the old loop, like so:
-> 
->  	for (i = nr_pirqs-1; i >= 0; i--) {
-> 
+On Fri, 19.11.10 11:48, Linus Torvalds (torvalds@linux-foundation.org) wrote:
 
-Because we don't know the real nr_pirqs anymore (PHYSDEVOP_get_nr_pirqs
-has been removed), so it is highly possible that starting from the top
-down would give us pirq numbers out of range in Xen.  Therefore we need
-to start from the bottom up, and the bottom for Xen is 16.
-
-
-> >  		if (pirq_to_irq[i] < 0)
-> >  			return i;
-> >  	}
-> > @@ -669,7 +674,7 @@ void xen_allocate_pirq_msi(char *name, int *irq, int *pirq)
-> >  	if (*irq == -1)
-> >  		goto out;
-> >  
-> > -	*pirq = find_unbound_pirq();
-> > +	*pirq = find_unbound_pirq(MAP_PIRQ_TYPE_MSI);
-> >  	if (*pirq == -1)
-> >  		goto out;
-> >  
-> > @@ -1504,23 +1509,12 @@ void xen_callback_vector(void) {}
-> >  void __init xen_init_IRQ(void)
-> >  {
-> >  	int i, rc;
-> > -	struct physdev_nr_pirqs op_nr_pirqs;
-> >  
-> >  	cpu_evtchn_mask_p = kcalloc(nr_cpu_ids, sizeof(struct cpu_evtchn_s),
-> >  				    GFP_KERNEL);
-> >  	irq_info = kcalloc(nr_irqs, sizeof(*irq_info), GFP_KERNEL);
-> >  
-> > -	rc = HYPERVISOR_physdev_op(PHYSDEVOP_get_nr_pirqs, &op_nr_pirqs);
-> > -	if (rc < 0) {
-> > -		nr_pirqs = nr_irqs;
-> > -		if (rc != -ENOSYS)
-> > -			printk(KERN_WARNING "PHYSDEVOP_get_nr_pirqs returned rc=%d\n", rc);
-> > -	} else {
-> > -		if (xen_pv_domain() && !xen_initial_domain())
-> > -			nr_pirqs = max((int)op_nr_pirqs.nr_pirqs, nr_irqs);
-> > -		else
-> > -			nr_pirqs = op_nr_pirqs.nr_pirqs;
-> > -	}
-> > +	nr_pirqs = nr_irqs;
 > 
-> Why not just get rid of nr_pirgs altogether then? And use 'nr_irqs' instead?
+> On Fri, Nov 19, 2010 at 11:12 AM, Ben Gamari <bgamari.foss@gmail.com> wrote:
+> >
+> > On that note, is there a good reason why the notify_on_release interface
+> > works the way it does? Wouldn't it be simpler if the cgroup simply
+> > provided a file on which a process (e.g. systemd) could block?
 > 
+> Actually, the sane interface would likely just be to have a "drop on
+> release" interface.
 
-Yeah, I guess we could do that. I kept it around just to make it more
-obvious that the max pirq number is different from nr_irqs and we don't
-know what the exact value is.
+Hmm, I think automatic cleanup would be quite nice, but there are some
+niche cases to think about first (i.e. what do you do if a process
+generates a cgroup and wants to make itself a member of it, but then
+dies before it can do that, and the cgroup stays around but empty and
+never gets cleaned up).
+
+> Who uses that thing now? The desktop launcher/systemd approach
+> definitely doesn't seem want the overhead of being notified and having
+> to remove it manually. Does anybody else really want it?
+
+I'd like automatic cleanup, but definitely also want to be notified when
+a cgroup runs empty. Here's the use case: we run apache in a cgroup (in
+a named hierarchy, not attached to any controller, we do this for
+keeping track of the service and all its children). Now apache dies. Its
+children, various CGI scripts stay around. However, since Apache is
+configured to be restarted systemd now kills all remaining children and
+waits until they are all gone, so that when it starts Apache anew we are in
+a clean and defined environment, and no remains of the previous instance
+remain. For this to work I need some kind of notification when all
+children are gone. Of course if systemd is PID 1, I can just use SIGCHLD
+for that, but that's more difficult when we are managing user porcesses,
+and want to do that with a PID != 1. And even even we are PID 1 its kinda
+neat to have an explicit notification for when a cgroup is empty instead
+of having to constantly check whether the cgroup is now empty after each
+SIGCHLD we receive.
+
+Also, there must be a way to opt out of automatic cleanup for some
+groups, since it might make sense to give users access to subtrees of
+the hierarchy and if you clean up groups belonging to privileged code
+then you get a namespace problem because unprivileged code might
+recreate that group and confuse everybody.
+
+So yeah, auto-cleanup is nice, but notifications I want too, please
+thanks.
+
+Lennart
+
+-- 
+Lennart Poettering - Red Hat, Inc.
