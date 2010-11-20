@@ -1,171 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756080Ab0KSXzQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 18:55:16 -0500
-Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:51426 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753190Ab0KSXzO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 18:55:14 -0500
-Date: Sat, 20 Nov 2010 10:54:24 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Hugh Dickins <hughd@google.com>, Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
-        Suleiman Souhlal <suleiman@google.com>
-Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering
- writeback
-Message-ID: <20101119235424.GD13830@dastard>
-References: <1289996638-21439-1-git-send-email-walken@google.com>
- <1289996638-21439-4-git-send-email-walken@google.com>
- <20101117125756.GA5576@amd>
- <1290007734.2109.941.camel@laptop>
- <AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
- <20101117231143.GQ22876@dastard>
- <20101118133702.GA18834@infradead.org>
- <alpine.LSU.2.00.1011180934400.3210@tigran.mtv.corp.google.com>
- <20101119072316.GA14388@google.com>
+	id S1755570Ab0KTAFK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 19:05:10 -0500
+Received: from mail.wdtv.com ([66.118.69.84]:39562 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753190Ab0KTAFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 19:05:09 -0500
+From: Gene Heskett <gene.heskett@gmail.com>
+To: Mike Galbraith <efault@gmx.de>
+Subject: Re: Galbraith patch
+Date: Fri, 19 Nov 2010 19:05:03 -0500
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.3; i686; ; )
+Cc: Jordi Pujol <jordipujolp@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+References: <201011191509.49586.jordipujolp@gmail.com> <201011191005.12189.gene.heskett@gmail.com> <1290183668.24581.16.camel@maggy.simson.net>
+In-Reply-To: <1290183668.24581.16.camel@maggy.simson.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101119072316.GA14388@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011191905.03889.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 11:23:16PM -0800, Michel Lespinasse wrote:
-> On Thu, Nov 18, 2010 at 09:41:22AM -0800, Hugh Dickins wrote:
-> > On Thu, 18 Nov 2010, Christoph Hellwig wrote:
-> > > On Thu, Nov 18, 2010 at 10:11:43AM +1100, Dave Chinner wrote:
-> > > > Hence I think that avoiding ->page_mkwrite callouts is likely to
-> > > > break some filesystems in subtle, undetected ways.  IMO, regardless
-> > > > of what is done, it would be really good to start by writing a new
-> > > > regression test to exercise and encode the expected the mlock
-> > > > behaviour so we can detect regressions later on....
-> > > 
-> > > I think it would help if we could drink a bit of the test driven design
-> > > coolaid here. Michel, can you write some testcases where pages on a
-> > > shared mapping are mlocked, then dirtied and then munlocked, and then
-> > > written out using msync/fsync.  Anything that fails this test on
-> > > btrfs/ext4/gfs/xfs/etc obviously doesn't work.
-> 
-> I think it's still under debate what's an acceptable result for this test
-> (i.e. what's supposed to happen during mlock of a shared mapping of
-> a sparsely allocated file - is a fallocate equivalent supposed to happen ?)
-> But I agree discussing based on test results will make things more concrete.
-> 
-> > Whilst it's hard to argue against a request for testing, Dave's worries
-> > just sprang from a misunderstanding of all the talk about "avoiding ->
-> > page_mkwrite".  There's nothing strange or risky about Michel's patch,
-> > it does not avoid ->page_mkwrite when there is a write: it just stops
-> > pretending that there was a write when locking down the shared area.
-> 
-> So, I decided to test this using memtoy. /data is a separate partition
-> where I had just 10GB free space, and /data/hole20G was created using
-> dd if=/dev/zero of=/data/hole20G bs=1M seek=20480 count=0.
-> 
-> memtoy>file /data/hole20G shared
-> memtoy>map hole20G
-> 
-> At this point the file is mapped using a writable, shared VMA.
-> 
-> memtoy>touch hole20G
-> memtoy:  touched 5242880 pages in 30.595 secs
-> 
-> At this point memtoy's address space is populated with zeroed
-> pages. The pages are distinct (meminfo does show 20G of allocated pages),
-> are classified as file pages, not anon, and are associated with the
-> struct address_space for /data/hole20G. That file still does not have
-> blocks allocated, as can be seen with du /data/hole20G.
-> 
-> memtoy>lock hole20G
-> 
-> memtoy tries to mlock the hole20G VMA.
-> This is where things get interesting.
-> 
-> Using ext2, without my patch (ext3 should be similar):
->   - first, mlock does fast progress going though file pages, marking them
->     as dirty. Eventually, it hits the dirty limit and gets throttled.
->   - then, mlock does slow progress as it needs to wait for writeback.
->     writeback occurs and allocates blocks for the /data/hole20G.
->     Eventually, the /data partition gets full.
->   - then, mlock does no progress as it's at the dirty limit and nothing
->     gets written back.
->   - mlock never terminates.
+On Friday, November 19, 2010, Mike Galbraith wrote:
+>On Fri, 2010-11-19 at 10:05 -0500, Gene Heskett wrote:
+>> On Friday, November 19, 2010, Jordi Pujol wrote:
+>> >Hello,
+>> >
+>> >it requires a little modification,
+>> >
+>> >CONFIG_SCHED_DEBUG should not be a condition to create autogroup in
+>> >structure task_group
+>> >
+>> >remove
+>> >
+>> >    && defined(CONFIG_SCHED_DEBUG)
+>> >
+>> >in the following conditional:
+>> >
+>> >+++ linux-2.6.36/kernel/sched.c
+>> >@@ -78,6 +78,7 @@
+>> >
+>> > #include "sched_cpupri.h"
+>> > #include "workqueue_sched.h"
+>> >
+>> >+#include "sched_autogroup.h"
+>> >
+>> > #define CREATE_TRACE_POINTS
+>> > #include <trace/events/sched.h>
+>> >
+>> >@@ -268,6 +269,10 @@ struct task_group {
+>> >
+>> > 	struct task_group *parent;
+>> > 	struct list_head siblings;
+>> > 	struct list_head children;
+>> >
+>> >+
+>> >+#if (defined(CONFIG_SCHED_AUTOGROUP) && defined(CONFIG_SCHED_DEBUG))
+>> >+	struct autogroup *autogroup;
+>> >+#endif
+>> >
+>> > };
+>> >
+>> >Kind,
+>> >
+>> >Jordi Pujol
+>> 
+>> Thanks Jordi, but my last attempted build, using only the last 2
+>> patches that Mike posted on a fresh unpack of 2.6.36, couldn't get
+>> past stage 2 of the modules build, it kept squawking about all the IR
+>> control stuff that is not even configured to be built.
+>
+>No idea what's going on with that.  Maybe you should wait until I get
+>the /proc display/tweak interface cobbled together and post a checked
+>over patch instead of hasty WIP snapshot.
 
-That's the typical result of ENOSPC during mmap writes into holes on
-filesystems that don't implement ->page_mkwrite() - this effectively
-overcommits the filesystem free space with more dirty pages than can
-fit in the free space, and then the system will get stuck on ENOSPC
-errors when trying to allocate in the writeback path, leaving you
-with dirty pages that can't be cleaned...
+I have come to that conclusion of too.  But because I am interested in an 
+improvement in this 'interactivity' of the desktop, I was willing to give 
+even the WIP a try.  If what I report helps you, then my testing effort is 
+not wasted.  The more eyes and different hdwe theory. ;-)
 
-> Using ext2, with my patch (ext3 should be similar):
-....
->   - i.e. this is essentially the same lockup as without my patch, except that
->     it occurs when the application tries to dirty the shared file rather than
->     during mlock itself.
+Thanks Mike.
 
-Same thing - your patch just moves the trigger.
+>> I wonder how long it will take to get work this into mainline?
+>
+>If it goes in at all, it won't be before .38.
 
-> Using ext4, without my patch:
->   - first, mlock does fast progress going though file pages, marking them
->     as dirty. Eventually, it hits the dirty limit and gets throttled.
->   - then, mlock does slow progress as it needs to wait for writeback.
->     writeback occurs and allocates blocks for the /data/hole20G.
->     Eventually, the /data partition gets full.
->   - then, mlock returns an error.
+I was hoping sooner.  Some of us could use the help this seems to promise.
 
-Yup, ext4 implements page_mkwrite(), so can detect ENOSPC during the
-write page fault.
+>> Along the same line, how does this compare to CK's bfs patch?
+>
+>Like apple vs orange.
+>
+And they both contain too much sugar for me.  Dammit.
 
-> Using ext4, with my patch:
->   - mlock goes through all pages in ~5 seconds, marking them as mlocked
->     (but still not dirty)
->   - mlock completes. /data/hole20G still does not have blocks allocated.
->   - if memtoy is then instructed to dirty all the pages
->     (using 'touch hole20G write'):
->     - first, memtoy does fast progress faulting through file pages, marking
->       them as dirty. Eventually, it hits the dirty limit and gets throttled.
->     - then, memtoy does slow progress as it needs to wait for writeback.
->       writeback occurs and allocates blocks for the /data/hole20G.
->       Eventually, the /data partition gets full.
->     - at that point, memtoy dies of SIGBUS.
->   - i.e. for filesystems that define the page_mkwrite callback, the mlock
->     behavior when running out of space writing to sparse files is clearly
->     nicer without my patch than with it.
+>	-Mike
 
-Which is how all filesystems _should_ behave. Any filesystem that does
-not implement ->page_mkwrite will break under this test, regardless
-of your patch. It is exercising the exact problem that page_mkwrite
-was introduced to solve....
 
-> Not 100% sure what to make of these results.
-> 
-> Approaching the problem the other way - would there be any objection to
-> adding code to do an fallocate() equivalent at the start of mlock ?
-
-IMO, you do not need fallocate or any form of preallocation at all
-during mlock(). As I've already pointed out, this still requires
-filesystems to implement ->page_mkwrite to ensure mmap writes into
-preallocated regions work correctly.
-
-Fundamentally, filesystems need to implement ->page-mkwrite() to do
-the right thing w.r.t. mmap writes and ENOSPC, and any filesystem
-that doesn't is plain broken. You don't need to try to fix this
-problem by making mlock() jump through hoops - it'll be fixed by
-people implementing a working ->page_mkwrite function for their
-filesystem.
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+Deliberation, n.:
+	The act of examining one's bread to determine which side it is
+	buttered on.
+		-- Ambrose Bierce, "The Devil's Dictionary"
