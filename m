@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587Ab0KTNTT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 08:19:19 -0500
-Received: from pfepb.post.tele.dk ([195.41.46.236]:43531 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753354Ab0KTNTS (ORCPT
+	id S1753791Ab0KTN2T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 08:28:19 -0500
+Received: from fallback1.mail.ru ([94.100.176.18]:58729 "EHLO
+	fallback1.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753699Ab0KTN2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 08:19:18 -0500
-Date: Sat, 20 Nov 2010 14:19:14 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Guan <guanxuetao@mprc.pku.edu.cn>
-Cc: "'Arnd Bergmann'" <arnd@arndb.de>, "'Greg KH'" <greg@kroah.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Linus Torvalds'" <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Generic support for asm-generic headers [Was: a new UniCore32
-	arch-dependent patch for linux-2.6.37-rc1]
-Message-ID: <20101120131914.GA2396@merkur.ravnborg.org>
-References: <00a701cb8883$649d39f0$2dd7add0$@mprc.pku.edu.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <00a701cb8883$649d39f0$2dd7add0$@mprc.pku.edu.cn>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 20 Nov 2010 08:28:18 -0500
+From: Dmitry Artamonow <mad_soft@inbox.ru>
+To: alsa-devel@alsa-project.org
+Cc: Eric Miao <eric.y.miao@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Philipp Zabel <philipp.zabel@gmail.com>,
+        Harald Welte <laforge@gnumonks.org>
+Subject: [PATCH 0/3] ASoC: add support for audio on iPaq hx4700
+Date: Sat, 20 Nov 2010 15:59:21 +0300
+Message-Id: <1290257964-17435-1-git-send-email-mad_soft@inbox.ru>
+X-Mailer: git-send-email 1.7.0.4
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> > > +#####
-> > > +# Auto Generate the files that only include the corresponding
-> asm-generic
-> > file
-> > > +#   6 files in 27-uc: errno.h fcntl.h ioctl.h poll.h resource.h
-> siginfo.h
-> > > +
-> > > +define cmd_asmgeneric
-> > > +	(set -e; \
-> > > +	 echo '#include <asm-generic/$(notdir $@)>' )	> $@
-> > > +endef
-> > 
-> > Nice trick. I'd love to have something like this in the common code so
-> > we can do the same for all architectures.
+Here's three patches adding support for audio on iPaq hx4700 PDA.
+AK4641 codec driver was originally written by Harald Welte for 
+gnufiish project [1], then Philipp Zabel adapted it to use on hx4700.
+I picked Philipp's patches from his git repository[2], updated them to
+current kernel and also fixed all the issues I've met while
+using these patches on my hx4700 device. So now I would like to submit
+these patches for review in hope they could be included in 2.6.38.
 
-Just a quick proof-of-concept hack.
+This patchset is based on linux-next-20101119
 
-	Sam
+[1] http://gnufiish.org
+[2] http://git.linuxtogo.org/?p=ph5/kernel.git;a=summary
 
-diff --git a/Makefile b/Makefile
-index ab5359d..e878120 100644
---- a/Makefile
-+++ b/Makefile
-@@ -344,7 +344,9 @@ CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
- 
- # Use LINUXINCLUDE when you must reference the include/ directory.
- # Needed to be compatible with the O= option
--LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include -Iinclude \
-+LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
-+                   $(if $(KBUILD_SRC), -Iarch/$(hdr-arch)/include) \
-+                   -Iinclude \
-                    $(if $(KBUILD_SRC), -I$(srctree)/include) \
-                    -include include/generated/autoconf.h
- 
-@@ -950,7 +952,13 @@ prepare1: prepare2 include/linux/version.h include/generated/utsrelease.h \
- 
- archprepare: prepare1 scripts_basic
- 
--prepare0: archprepare FORCE
-+archheaders: $(addprefix arch/$(SRCARCH)/include/asm/, $(ARCH_GENERIC_HEADERS))
-+
-+$(addprefix arch/$(SRCARCH)/include/asm/, $(ARCH_GENERIC_HEADERS)): arch/$(SRCARCH)/Makefile
-+	$(Q)mkdir -p $(dir $@)
-+	$(Q)echo '#include <asm-generic/$(notdir $@)>' > $@
-+
-+prepare0: archprepare archheaders FORCE
- 	$(Q)$(MAKE) $(build)=.
- 	$(Q)$(MAKE) $(build)=. missing-syscalls
- 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index b02e509..fd23d01 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -12,6 +12,8 @@ endif
- # e.g.: obj-y += foo_$(BITS).o
- export BITS
- 
-+ARCH_GENERIC_HEADERS := termios.h
-+
- ifeq ($(CONFIG_X86_32),y)
-         BITS := 32
-         UTS_MACHINE := i386
-diff --git a/arch/x86/include/asm/termios.h b/arch/x86/include/asm/termios.h
-deleted file mode 100644
-index 280d78a..0000000
---- a/arch/x86/include/asm/termios.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#include <asm-generic/termios.h>
+
+Dmitry Artamonow (2):
+  ASoC: Asahi Kasei AK4641 codec driver
+  ASoC: add iPAQ hx4700 machine driver
+
+Philipp Zabel (1):
+  pxa/hx4700: add I2C board info for AK4641 codec
+
+ arch/arm/mach-pxa/hx4700.c              |   18 +
+ arch/arm/mach-pxa/include/mach/hx4700.h |    4 +-
+ include/sound/ak4641.h                  |   26 ++
+ sound/soc/codecs/Kconfig                |    4 +
+ sound/soc/codecs/Makefile               |    2 +
+ sound/soc/codecs/ak4641.c               |  628 +++++++++++++++++++++++++++++++
+ sound/soc/codecs/ak4641.h               |   47 +++
+ sound/soc/pxa/Kconfig                   |    9 +
+ sound/soc/pxa/Makefile                  |    2 +
+ sound/soc/pxa/hx4700.c                  |  253 +++++++++++++
+ 10 files changed, 991 insertions(+), 2 deletions(-)
+ create mode 100644 include/sound/ak4641.h
+ create mode 100644 sound/soc/codecs/ak4641.c
+ create mode 100644 sound/soc/codecs/ak4641.h
+ create mode 100644 sound/soc/pxa/hx4700.c
+
