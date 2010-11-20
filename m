@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184Ab0KTWRD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 17:17:03 -0500
-Received: from dyn60-31.dsl.spy.dnainternet.fi ([83.102.60.31]:52276 "EHLO
-	shogun.pilppa.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754883Ab0KTWRC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 17:17:02 -0500
-Date: Sun, 21 Nov 2010 00:16:46 +0200 (EET)
-From: Mika Laitio <lamikr@pilppa.org>
-To: Lennart Poettering <mzxreary@0pointer.de>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
+	id S1755230Ab0KTWS1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 17:18:27 -0500
+Received: from tomasu.net ([64.85.170.234]:60414 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754918Ab0KTWS0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 17:18:26 -0500
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: Konstantin Svist <fry.kun@gmail.com>
 Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-In-Reply-To: <20101116205043.GG27235@tango.0pointer.de>
-Message-ID: <alpine.LMD.2.00.1011210004090.2350@shogun.pilppa.org>
-References: <20101116015648.GA11534@redhat.com> <1289916171.5169.117.camel@maggy.simson.net> <1289916683.2109.625.camel@laptop> <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com> <20101116170312.GA19327@tango.0pointer.de>
- <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com> <20101116181603.GC19327@tango.0pointer.de> <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com> <AANLkTikjQKmo0j5xbvPiS=eriAUUZPMGKkcxt8w_z8XB@mail.gmail.com>
- <AANLkTikKdjH-ZM0eXTQMvzJjYkpyfKZR2OK06tNtCGFs@mail.gmail.com> <20101116205043.GG27235@tango.0pointer.de>
-User-Agent: Alpine 2.00 (LMD 1167 2008-08-23)
+Date: Sat, 20 Nov 2010 15:18:19 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
+References: <1287479765.9920.9.camel@marge.simson.net> <1290282678.28711.23.camel@maggy.simson.net> <4CE84578.5030800@gmail.com>
+In-Reply-To: <4CE84578.5030800@gmail.com>
+Cc: Linux Kernel List <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011201518.19978.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > What complexity? Have you looked at the patch? It has no complexity anywhere.
+On November 20, 2010, you wrote:
+> On 11/20/2010 11:51 AM, Mike Galbraith wrote:
+> > On Sat, 2010-11-20 at 20:33 +0100, Jesper Juhl wrote:
+> >> On Mon, 15 Nov 2010, Linus Torvalds wrote:
+> >>> On Mon, Nov 15, 2010 at 2:41 PM,<Valdis.Kletnieks@vt.edu>  wrote:
+> >>>> So the set of all tasks that never call proc_set_tty() ends up in the
+> >>>> same one big default group, correct?
+> >>> 
+> >>> Well, yes and no.
+> >>> 
+> >>> Yes, that's what the code currently does. But I did ask Mike (and he
+> >>> delivered) to try to make the code look and work in a way where the
+> >>> whole "tty thing" is just one of the heuristics.
+> >>> 
+> >>> It's not clear exactly what the non-tty heuristics would be, but I do
+> >>> 
+> >>> have a few suggestions:
+> >>>   -  I think it might be a good idea to associate a task group with the
+> >>> 
+> >>> current "cred" of a process, and fall back on it in the absense of a
+> >>> tty-provided one.
+> >> 
+> >> Or how about (just brainstorming here) a group per 'process group'?
 > > 
-> > It's a _lot_ less complex than having system daemons you don't
-> > control. We have not had good results with that approach in the past.
-> > System daemons tend to cause nasty problems, and debugging them is a
-> > nightmare.
+> > I switched to per session, which on my system at least looks like more
+> > than enough granularity
 > 
-> Well, userspace doesn't bite.
+> Will that have an effect on software like Chromium which creates a fork
+> for each tab? If a user opens Thunderbird and Chromium with 100 tabs,
+> Thunderbird should probably get 50% CPU time instead of just 1%...
 
-To me, this starts sounding like a legendary "userspace suspend" versus 
-"kernel suspend" support fights many years ago... Since that, I have 
-_sometimes_but_rarely_ been luckily enought to get my laptops 
-recovered from the suspend states successfully...
+At least on my machine, all of the chromium processes have the same session 
+id.
 
-And as the kernel patches allows disabling the schedyles feature either via kernel 
-build parameters, boot parameters or at runtime _if_you_ really want, I do 
-not understand why do you complaint if there will be much better defaults 
-in the kernel immediately once you just build and boot the new kernel.
-(I really do not plan to start converting init-rd boot scripts from 
-all of my computers systemd way of doing things in near future...)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Mika
+
+-- 
+Thomas Fjellstrom
+thomas@fjellstrom.ca
