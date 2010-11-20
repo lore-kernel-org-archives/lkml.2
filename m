@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab0KTMBk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 07:01:40 -0500
-Received: from unix.wroclaw.pl ([94.23.28.62]:46017 "EHLO unix.wroclaw.pl"
+	id S1752958Ab0KTMDV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 07:03:21 -0500
+Received: from unix.wroclaw.pl ([94.23.28.62]:58619 "EHLO unix.wroclaw.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428Ab0KTMBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 07:01:39 -0500
+	id S1752434Ab0KTMDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 07:03:21 -0500
 From: Mariusz Kozlowski <mk@lab.zgora.pl>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: linux-kernel@vger.kernel.org, Mariusz Kozlowski <mk@lab.zgora.pl>
-Subject: [PATCH] backlight: make 1-bit signed filed unsigned in l4f00242t03.c
-Date: Sat, 20 Nov 2010 13:01:24 +0100
-Message-Id: <1290254484-12141-1-git-send-email-mk@lab.zgora.pl>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mariusz Kozlowski <mk@lab.zgora.pl>
+Subject: [PATCH] btrfs: make 1-bit signed fileds unsigned
+Date: Sat, 20 Nov 2010 13:03:07 +0100
+Message-Id: <1290254587-12185-1-git-send-email-mk@lab.zgora.pl>
 X-Mailer: git-send-email 1.7.0.4
 X-SA-Report: SpamAssassin 3.2.5 (2008-06-10) on
 	Spam=No score=-1.4 bayes=0.5
@@ -21,28 +22,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes sparse warning:
-drivers/video/backlight/l4f00242t03.c:28:21: error: dubious one-bit
-signed bitfield
+Fixes these sparse warnings:
+fs/btrfs/ctree.h:811:17: error: dubious one-bit signed bitfield
+fs/btrfs/ctree.h:812:20: error: dubious one-bit signed bitfield
+fs/btrfs/ctree.h:813:19: error: dubious one-bit signed bitfield
 
 Signed-off-by: Mariusz Kozlowski <mk@lab.zgora.pl>
 ---
- drivers/video/backlight/l4f00242t03.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/btrfs/ctree.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/video/backlight/l4f00242t03.c b/drivers/video/backlight/l4f00242t03.c
-index c67801e..6d9ba0e 100644
---- a/drivers/video/backlight/l4f00242t03.c
-+++ b/drivers/video/backlight/l4f00242t03.c
-@@ -25,7 +25,7 @@
- struct l4f00242t03_priv {
- 	struct spi_device	*spi;
- 	struct lcd_device	*ld;
--	int lcd_on:1;
-+	unsigned int lcd_on:1;
- 	struct regulator *io_reg;
- 	struct regulator *core_reg;
- };
+diff --git a/fs/btrfs/ctree.h b/fs/btrfs/ctree.h
+index 8db9234..af52f6d 100644
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -808,9 +808,9 @@ struct btrfs_block_group_cache {
+ 	int extents_thresh;
+ 	int free_extents;
+ 	int total_bitmaps;
+-	int ro:1;
+-	int dirty:1;
+-	int iref:1;
++	unsigned int ro:1;
++	unsigned int dirty:1;
++	unsigned int iref:1;
+ 
+ 	int disk_cache_state;
+ 
 -- 
 1.7.0.4
 
