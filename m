@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab0KTVhj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 16:37:39 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35765 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052Ab0KTVhh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 16:37:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=RRJqwLduNmYAVWbqELYI6doiYVZv5ExOj0opk+A4LuuBiTNs0aql1DJpZZq9rqCCBd
-         0ZpxNVFcrMbQYBjvWWxTFmmAx8BTOsbdD+XRWr3ZyCQ5Wm9Ct+ri5xskg07WOf6aPzDh
-         1PzCPWZOh4/mfYCQpLAVe/R3TDG0CrK/sWKEc=
-Date: Sat, 20 Nov 2010 13:37:30 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Helge Deller <deller@gmx.de>
-Cc: Jesper Juhl <jj@chaosbits.net>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        =?iso-8859-1?Q?Andr=E9?= Goddard Rosa <andre.goddard@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH RFC] serio HIL MLC: don't deref null, don't leak and
- return proper error
-Message-ID: <20101120213730.GA16712@core.coreip.homeip.net>
-References: <alpine.LNX.2.00.1011072024100.26247@swampdragon.chaosbits.net>
- <20101109063520.GA10502@core.coreip.homeip.net>
- <4CE83A09.5020000@gmx.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CE83A09.5020000@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754963Ab0KTVmg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 16:42:36 -0500
+Received: from mail.perches.com ([173.55.12.10]:1605 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752408Ab0KTVmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 16:42:36 -0500
+Subject: Re: [PATCHv4 06/17] pps: convert printk/pr_* to dev_*
+From: Joe Perches <joe@perches.com>
+To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Cc: Rodolfo Giometti <giometti@enneenne.com>, linux-kernel@vger.kernel.org,
+        "Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+In-Reply-To: <20101121003323.4bbf0199@apollo.gnet>
+References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
+	 <ce13c55a2acb39be7ef5667467c765595df19835.1290087479.git.lasaine@lvk.cs.msu.su>
+	 <20101120154940.GY13356@enneenne.com> <20101121003323.4bbf0199@apollo.gnet>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 20 Nov 2010 13:42:34 -0800
+Message-ID: <1290289354.31117.25.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 20, 2010 at 10:13:45PM +0100, Helge Deller wrote:
-> On 11/09/2010 07:35 AM, Dmitry Torokhov wrote:
-> >On Sun, Nov 07, 2010 at 08:36:33PM +0100, Jesper Juhl wrote:
-> >>Hi,
-> >>
-> >>While reviewing various users of kernel memory allocation functions I came
-> >>across drivers/input/serio/hil_mlc.c::hil_mlc_register() and noticed that
-> >>  - it calls kzalloc() buf fails to check for a NULL return before use.
-> >>  - it makes several allocations and if one fails it doesn't free the
-> >>    previous ones.
-> >>  - It doesn't return -ENOMEM in the failed memory allocation case (it just
-> >>    crashes).
-> >>This patch corrects all of the above and also reworks the only caller of
-> >>this function that I could find
-> >>(drivers/input/serio/hp_sdc_mlc.c::hp_sdc_mlc_out()) so that it now checks
-> >>the return value of hil_mlc_register() and properly propagate it on
-> >>failure and I also restructured the code to remove some labels and goto's
-> >>to make it, IMHO nicer to read.
-> >>
-> >>I have no hardware to test, so please review carefully and let me know if
-> >>I've done something completely stupid. Please don't merge this RFC patch
-> >>unless at least one or more people who know this code and can actually
-> >>test it have ACK'ed it.
-> >I think Helge Deller (CCed) used to have access to such hardware...
-> 
-> Yes, and I tested the patch successfully.
-> 
-> Tested-by: Helge Deller <deller@gmx.de>
-> Acked-by: Helge Deller <deller@gmx.de>
-> 
+On Sun, 2010-11-21 at 00:33 +0300, Alexander Gordeev wrote:
+> В Sat, 20 Nov 2010 16:49:40 +0100
+> Rodolfo Giometti <giometti@enneenne.com> пишет:
+> > On Thu, Nov 18, 2010 at 07:00:59PM +0300, Alexander Gordeev wrote:
+> > > Since we now have direct pointers to struct pps_device everywhere it's
+> > > easy to use dev_* functions to print messages instead of plain printks.
+> > > Where dev_* cannot be used printks are converted to pr_*.
+> > > diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
+[]
+> > > @@ -80,20 +81,20 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
+> > >  
+> > >  	/* Sanity checks */
+> > >  	if ((info->mode & default_params) != default_params) {
+> > > -		printk(KERN_ERR "pps: %s: unsupported default parameters\n",
+> > > +		pr_err("pps: %s: unsupported default parameters\n",
+> > >  					info->name);
 
-Applied, thank you guys.
+Perhaps you want to remove the "pps:" prefixes?
 
--- 
-Dmitry
+> > > -		printk(KERN_ERR "pps: %s: echo function is not defined\n",
+> > > +		pr_err("pps: %s: echo function is not defined\n",
+[]
+> > > -		printk(KERN_ERR "pps: %s: unspecified time format\n",
+> > > +		pr_err("pps: %s: unspecified time format\n",
+[]
+> > > -		printk(KERN_ERR "pps: %s: too many PPS sources in the system\n",
+> > > +		pr_err("pps: %s: too many PPS sources in the system\n",
+[]
+> > > -		printk(KERN_ERR "pps: %s: unable to create char device\n",
+> > > +		pr_err("%s: unable to create char device\n",
+
+It's removed here.
+
+> > > -	printk(KERN_ERR "pps: %s: unable to register source\n", info->name);
+> > > +	pr_err("%s: unable to register source\n", info->name);
+
+and here.
+
+
