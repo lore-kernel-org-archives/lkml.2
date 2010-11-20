@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab0KTVs3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 16:48:29 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40465 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753676Ab0KTVs2 (ORCPT
+	id S1755188Ab0KTWCj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 17:02:39 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38711 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753676Ab0KTWCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 16:48:28 -0500
-Date: Sat, 20 Nov 2010 22:48:20 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Patrice Vilchez <patrice.vilchez@atmel.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] atmel_spi: fix warning In function
-	'atmel_spi_dma_map_xfer'
-Message-ID: <20101120214820.GG8942@pengutronix.de>
-References: <20101120095906.GD4216@game.jcrosoft.org> <1290247733-17834-6-git-send-email-plagnioj@jcrosoft.com>
+	Sat, 20 Nov 2010 17:02:38 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=VGCgGBqQbbMC3Zeo2+6mLPOXm1gAarnhDTTmWV0LuilBj7LNeioiTGO1zhq56XHFBj
+         mu/A6Y0wlIcgyOK2QjOYBgY7/wSdXeLUgPIXmIpfYZ7Xu1VHY7USNwaRtXc3asob/A8K
+         PYtwoT/hm7ORu5ViBqqWksWaZM8RJpdJH1CHI=
+Message-ID: <4CE84578.5030800@gmail.com>
+Date: Sat, 20 Nov 2010 14:02:32 -0800
+From: Konstantin Svist <fry.kun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b2 Mnenhy/0.8.2 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1290247733-17834-6-git-send-email-plagnioj@jcrosoft.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Mike Galbraith <efault@gmx.de>
+CC: Jesper Juhl <jj@chaosbits.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Valdis.Kletnieks@vt.edu, Oleg Nesterov <oleg@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+References: <1287479765.9920.9.camel@marge.simson.net>	 <1287487757.24189.40.camel@marge.simson.net>	 <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com>	 <1287511983.7417.45.camel@marge.simson.net>	 <1287514410.7368.10.camel@marge.simson.net>	 <20101020025652.GB26822@elte.hu>	 <1287648715.9021.20.camel@marge.simson.net>	 <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins>	 <20101021162924.GA3225@redhat.com>	 <1288076838.11930.1.camel@marge.simson.net>	 <1288078144.7478.9.camel@marge.simson.net>	 <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com>	 <1289489200.11397.21.camel@maggy.simson.net> <30291.1289860866@localhost>	 <AANLkTikeLeLvYcZJ4HcAUH1ax13scgnrT27CSR=YzO_C@mail.gmail.com>	 <alpine.LNX.2.00.1011202031130.24071@swampdragon.chaosbits.net> <1290282678.28711.23.camel@maggy.simson.net>
+In-Reply-To: <1290282678.28711.23.camel@maggy.simson.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 11/20/2010 11:51 AM, Mike Galbraith wrote:
+> On Sat, 2010-11-20 at 20:33 +0100, Jesper Juhl wrote:
+>> On Mon, 15 Nov 2010, Linus Torvalds wrote:
+>>
+>>> On Mon, Nov 15, 2010 at 2:41 PM,<Valdis.Kletnieks@vt.edu>  wrote:
+>>>> So the set of all tasks that never call proc_set_tty() ends up in the same one
+>>>> big default group, correct?
+>>> Well, yes and no.
+>>>
+>>> Yes, that's what the code currently does. But I did ask Mike (and he
+>>> delivered) to try to make the code look and work in a way where the
+>>> whole "tty thing" is just one of the heuristics.
+>>>
+>>> It's not clear exactly what the non-tty heuristics would be, but I do
+>>> have a few suggestions:
+>>>
+>>>   -  I think it might be a good idea to associate a task group with the
+>>> current "cred" of a process, and fall back on it in the absense of a
+>>> tty-provided one.
+>>>
+>> Or how about (just brainstorming here) a group per 'process group'?
+> I switched to per session, which on my system at least looks like more
+> than enough granularity
 
-[adding spi-devel-general and lkml to Cc:]
+Will that have an effect on software like Chromium which creates a fork 
+for each tab? If a user opens Thunderbird and Chromium with 100 tabs, 
+Thunderbird should probably get 50% CPU time instead of just 1%...
 
-On Sat, Nov 20, 2010 at 11:08:53AM +0100, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> passing argument 2 of 'dma_map_single' discards qualifiers from pointer target type
-> 
-> Signed-off-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-> ---
->  drivers/spi/atmel_spi.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/spi/atmel_spi.c b/drivers/spi/atmel_spi.c
-> index 154529a..2cf6abd 100644
-> --- a/drivers/spi/atmel_spi.c
-> +++ b/drivers/spi/atmel_spi.c
-> @@ -352,8 +352,10 @@ atmel_spi_dma_map_xfer(struct atmel_spi *as, struct spi_transfer *xfer)
->  
->  	xfer->tx_dma = xfer->rx_dma = INVALID_DMA_ADDRESS;
->  	if (xfer->tx_buf) {
-> +		void *nonconst_tx = (void *)xfer->tx_buf; /* shut up gcc */
-> +
->  		xfer->tx_dma = dma_map_single(dev,
-> -				(void *) xfer->tx_buf, xfer->len,
-> +				nonconst_tx, xfer->len,
->  				DMA_TO_DEVICE);
-Hmm, I wonder if this is the right approach to do this.  I'd prefer to
-have something like:
-
-	dma_map_single_to_device(struct device *, const void *, ...)
-
-don't know if that's sensible though.
-
-And I wonder about gcc that your patch makes a difference.
-
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
