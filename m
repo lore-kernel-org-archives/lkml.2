@@ -1,131 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312Ab0KTAZL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 19:25:11 -0500
-Received: from kroah.org ([198.145.64.141]:52420 "EHLO coco.kroah.org"
+	id S1754424Ab0KTAZJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 19:25:09 -0500
+Received: from kroah.org ([198.145.64.141]:52414 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752558Ab0KTAZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 19:25:08 -0500
-Date: Fri, 19 Nov 2010 16:18:39 -0800
+	id S1752555Ab0KTAZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 19:25:07 -0500
+Date: Fri, 19 Nov 2010 16:12:47 -0800
 From: Greg KH <greg@kroah.com>
-To: Bryan Huntsman <bryanh@codeaurora.org>
-Cc: Daniel Walker <dwalker@codeaurora.org>,
-        Tatyana Brokhman <tlinder@codeaurora.org>, gregkh@suse.de,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
+To: Jef Driesen <jefdriesen@telenet.be>,
+        Robert Lukassen <Robert.Lukassen@tomtom.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 1/1] usb: Adding SuperSpeed support to dummy_hcd
-Message-ID: <20101120001839.GD17421@kroah.com>
-References: <1289916492-28402-1-git-send-email-tlinder@codeaurora.org>
- <20101117213535.GD10541@kroah.com>
- <1290038388.16344.529.camel@c-dwalke-linux.qualcomm.com>
- <20101118012303.GA7710@kroah.com>
- <4CE6FA53.6060304@codeaurora.org>
+Subject: Re: [PATCH] USB: g_serial: Allow to override the default VID/PID
+Message-ID: <20101120001247.GB17421@kroah.com>
+References: <4CE6F807.1090607@telenet.be>
+ <1290209554-7026-1-git-send-email-jefdriesen@telenet.be>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CE6FA53.6060304@codeaurora.org>
+In-Reply-To: <1290209554-7026-1-git-send-email-jefdriesen@telenet.be>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 02:29:39PM -0800, Bryan Huntsman wrote:
-> On 11/17/2010 05:23 PM, Greg KH wrote:
-> > On Wed, Nov 17, 2010 at 03:59:48PM -0800, Daniel Walker wrote:
-> >> On Wed, 2010-11-17 at 13:35 -0800, Greg KH wrote:
-> >>> On Tue, Nov 16, 2010 at 04:08:12PM +0200, Tatyana Brokhman wrote:
-> >>>> USB 3.0 hub includes 2 hubs - HS and SS ones.
-> >>>> Thus, when dummy_hcd enabled it will register 2 root hubs (SS and HS).
-> >>>>
-> >>>> Signed-off-by: Tatyana Brokhman <tlinder@codeaurora.org>
-> >>>> ---
-> >>>>  drivers/usb/gadget/dummy_hcd.c |  500 ++++++++++++++++++++++++++++++++++++++-
-> >>>>  1 files changed, 487 insertions(+), 13 deletions(-)
-> >>>>
-> >>>> diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
-> >>>> index 13b9f47..ec6adf6 100644
-> >>>> --- a/drivers/usb/gadget/dummy_hcd.c
-> >>>> +++ b/drivers/usb/gadget/dummy_hcd.c
-> >>>> @@ -5,6 +5,7 @@
-> >>>>   *
-> >>>>   * Copyright (C) 2003 David Brownell
-> >>>>   * Copyright (C) 2003-2005 Alan Stern
-> >>>> + * Copyright (C) 2010 Code Aurora Forum. All rights reserved.
-> >>>
-> >>> Does your lawyers agree that this is correct to add based on the size of
-> >>> the file?  Hint, it doesn't pass the rule that some lawyers I work with
-> >>> go by, so I would be surprised that it passes theirs.
-> >>
-> >> It's part of our requirements .. However, if you push back on it I think
-> >> Tatyana can remove it.
-> > 
-> > It's not a valid requirement as it's not legally acceptable by the
-> > grounds of the lawyers I have worked with in the past.
-> > 
-> > So yes, again, I'm pushing back on this.  Can you prove that it is
-> > something that is legally viable?
+On Sat, Nov 20, 2010 at 12:32:34AM +0100, Jef Driesen wrote:
+> Override the default VID/PID if custom values are supplied through the
+> idVendor and idProduct kernel module parameters.
 > 
-> This might help:
-> 
-> Code Aurora Forum is non-profit mutual benefit corporation
-> Incorporated in the State of California.  Please see
-> https://www.codeaurora.org/learn/.
+> Signed-off-by: Jef Driesen <jefdriesen@telenet.be>
 
-That's fine, but again, this patch does not meet the grounds for
-allowing the ability to place any new copyright on the top of the file
-as per the rules layed out to me by a group of copyright lawyers that I
-trust.
+So this patch resolves the bug found in
+1ab83238740ff1e1773d5c13ecac43c60cf4aec4 which showed up in .35-rc1,
+right?
 
-And this whole thing was started by the odd rule that Code Aurora seems
-to have of trying to put such markings on _any_ file they touch, which
-is not a good thing as people are very picky about that, and for good
-reason.
-
-> >>> Also, I didn't think that "Code Aurora Forum" was a "real" legal entity
-> >>> last time I looked, so how can it own copyrights?  Who is the "real"
-> >>> owner here?  (hint, who does your lawyers work for...)
-> >>
-> >> The "Code Aurora Forum" is a real entity, and they do take the
-> >> copyrights .. At least that's the intent I think. We're not lawyers tho.
-> >>
-> >> I work for QuiC which stands for Qualcomm Innovation Center, Inc. (as
-> >> mentioned below) .. I think Tatyana does as well since he emails have
-> >> the same signature as mine.
-> > 
-> > Then how can the copyright go to "code aurora forum"?  That's my main
-> > point here, there are multiple "shell" organizations at play, all of
-> > which are trying to hide legal culpability, so to try to then try to get
-> > legal rights seems very disingenuous, if not flat out impossible.
-> 
-> People working on CodeAurora Forum projects have the option to assign
-> copyright for their work to CodeAurora.  The patch under question can
-> be found on CodeAurora at this location:
-> 
-> https://www.codeaurora.org/patches/quic/kernel/tlinder/2010-11-16/
-
-Ok, so how do we know if such copyright was properly assigned when you
-all end up putting:
-
-> -- 
-> Sent by an employee of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
-Or something like that, in your .signature?
-
-Being an employee or contractor of a different company than the one that
-your patch is claiming owns the copyright of, sets of huge red flags to
-those of us who have to deal with these things every day.  That
-copyright sometimes can _not_ be assigned to a different company
-(depending on the country where the work was done), or if it can be, it
-needs to be done in a manner that is told to the acceptor of the patch.
-
-Hope this helps explain my "grumpiness" when it comes to this type of
-thing.  I've had to sit through too many lawyer lectures about
-copyrights and licenses and all this type of stuff in order to ensure
-that everything works out properly for the kernel community and the
-companies and individuals who contribute to it.
+Robert, any objection to this as it was your patch that broke things?
 
 thanks,
 
 greg k-h
+> ---
+>  drivers/usb/gadget/serial.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/gadget/serial.c b/drivers/usb/gadget/serial.c
+> index f46a609..77b410e 100644
+> --- a/drivers/usb/gadget/serial.c
+> +++ b/drivers/usb/gadget/serial.c
+> @@ -271,6 +271,11 @@ static int __init init(void)
+>  	}
+>  	strings_dev[STRING_DESCRIPTION_IDX].s = serial_config_driver.label;
+>  
+> +	if (idVendor)
+> +		device_desc.idVendor = idVendor;
+> +	if (idProduct)
+> +		device_desc.idProduct = idProduct;
+> +
+>  	return usb_composite_register(&gserial_driver);
+>  }
+>  module_init(init);
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
