@@ -1,109 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab0KTAFK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 19:05:10 -0500
-Received: from mail.wdtv.com ([66.118.69.84]:39562 "EHLO mail.wdtv.com"
+	id S1752819Ab0KTAJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 19:09:36 -0500
+Received: from mga02.intel.com ([134.134.136.20]:31929 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753190Ab0KTAFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 19:05:09 -0500
-From: Gene Heskett <gene.heskett@gmail.com>
-To: Mike Galbraith <efault@gmx.de>
-Subject: Re: Galbraith patch
-Date: Fri, 19 Nov 2010 19:05:03 -0500
-User-Agent: KMail/1.13.5 (Linux/2.6.36; KDE/4.5.3; i686; ; )
-Cc: Jordi Pujol <jordipujolp@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-References: <201011191509.49586.jordipujolp@gmail.com> <201011191005.12189.gene.heskett@gmail.com> <1290183668.24581.16.camel@maggy.simson.net>
-In-Reply-To: <1290183668.24581.16.camel@maggy.simson.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1750761Ab0KTAJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 19:09:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,226,1288594800"; 
+   d="scan'208";a="679266930"
+Subject: [patch] x86: avoid unnecessary smp alternatives switch during
+ suspend/resume
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Fri, 19 Nov 2010 16:09:24 -0800
+Message-Id: <1290211764.2637.8.camel@sbsiddha-MOBL3.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011191905.03889.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 19, 2010, Mike Galbraith wrote:
->On Fri, 2010-11-19 at 10:05 -0500, Gene Heskett wrote:
->> On Friday, November 19, 2010, Jordi Pujol wrote:
->> >Hello,
->> >
->> >it requires a little modification,
->> >
->> >CONFIG_SCHED_DEBUG should not be a condition to create autogroup in
->> >structure task_group
->> >
->> >remove
->> >
->> >    && defined(CONFIG_SCHED_DEBUG)
->> >
->> >in the following conditional:
->> >
->> >+++ linux-2.6.36/kernel/sched.c
->> >@@ -78,6 +78,7 @@
->> >
->> > #include "sched_cpupri.h"
->> > #include "workqueue_sched.h"
->> >
->> >+#include "sched_autogroup.h"
->> >
->> > #define CREATE_TRACE_POINTS
->> > #include <trace/events/sched.h>
->> >
->> >@@ -268,6 +269,10 @@ struct task_group {
->> >
->> > 	struct task_group *parent;
->> > 	struct list_head siblings;
->> > 	struct list_head children;
->> >
->> >+
->> >+#if (defined(CONFIG_SCHED_AUTOGROUP) && defined(CONFIG_SCHED_DEBUG))
->> >+	struct autogroup *autogroup;
->> >+#endif
->> >
->> > };
->> >
->> >Kind,
->> >
->> >Jordi Pujol
->> 
->> Thanks Jordi, but my last attempted build, using only the last 2
->> patches that Mike posted on a fresh unpack of 2.6.36, couldn't get
->> past stage 2 of the modules build, it kept squawking about all the IR
->> control stuff that is not even configured to be built.
->
->No idea what's going on with that.  Maybe you should wait until I get
->the /proc display/tweak interface cobbled together and post a checked
->over patch instead of hasty WIP snapshot.
+During suspend, we disable all the non boot cpus. And during resume we bring
+them all back again. So no need to do alternatives_smp_switch() in between.
 
-I have come to that conclusion of too.  But because I am interested in an 
-improvement in this 'interactivity' of the desktop, I was willing to give 
-even the WIP a try.  If what I report helps you, then my testing effort is 
-not wasted.  The more eyes and different hdwe theory. ;-)
+This speeds up both suspend and resume paths.
 
-Thanks Mike.
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
 
->> I wonder how long it will take to get work this into mainline?
->
->If it goes in at all, it won't be before .38.
+ arch/x86/kernel/smpboot.c |    7 ++++++-
+ include/linux/cpu.h       |    2 ++
+ kernel/cpu.c              |    3 +++
+ 3 files changed, 11 insertions(+), 1 deletions(-)
 
-I was hoping sooner.  Some of us could use the help this seems to promise.
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index f0a0624..0b04ca3 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -1349,7 +1349,12 @@ void native_cpu_die(unsigned int cpu)
+ 			if (system_state == SYSTEM_RUNNING)
+ 				pr_info("CPU %u is now offline\n", cpu);
+ 
+-			if (1 == num_online_cpus())
++			/*
++			 * Don't do the smp alternatives switch during
++			 * suspend. We will be back in the SMP mode after
++			 * resume.
++			 */
++			if (1 == num_online_cpus() && !pm_sleep_smp)
+ 				alternatives_smp_switch(0);
+ 			return;
+ 		}
+diff --git a/include/linux/cpu.h b/include/linux/cpu.h
+index 4823af6..8cab04c 100644
+--- a/include/linux/cpu.h
++++ b/include/linux/cpu.h
+@@ -169,11 +169,13 @@ static inline void cpu_hotplug_driver_unlock(void)
+ 
+ #ifdef CONFIG_PM_SLEEP_SMP
+ extern int suspend_cpu_hotplug;
++extern int pm_sleep_smp;
+ 
+ extern int disable_nonboot_cpus(void);
+ extern void enable_nonboot_cpus(void);
+ #else /* !CONFIG_PM_SLEEP_SMP */
+ #define suspend_cpu_hotplug	0
++#define pm_sleep_smp		0
+ 
+ static inline int disable_nonboot_cpus(void) { return 0; }
+ static inline void enable_nonboot_cpus(void) {}
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 8615aa6..2eed810 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -381,6 +381,7 @@ out:
+ 
+ #ifdef CONFIG_PM_SLEEP_SMP
+ static cpumask_var_t frozen_cpus;
++int pm_sleep_smp;
+ 
+ int disable_nonboot_cpus(void)
+ {
+@@ -393,6 +394,7 @@ int disable_nonboot_cpus(void)
+ 	 * with the userspace trying to use the CPU hotplug at the same time
+ 	 */
+ 	cpumask_clear(frozen_cpus);
++	pm_sleep_smp = 1;
+ 
+ 	printk("Disabling non-boot CPUs ...\n");
+ 	for_each_online_cpu(cpu) {
+@@ -454,6 +456,7 @@ void __ref enable_nonboot_cpus(void)
+ 
+ 	cpumask_clear(frozen_cpus);
+ out:
++	pm_sleep_smp = 0;
+ 	cpu_maps_update_done();
+ }
+ 
 
->> Along the same line, how does this compare to CK's bfs patch?
->
->Like apple vs orange.
->
-And they both contain too much sugar for me.  Dammit.
 
->	-Mike
-
-
--- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Deliberation, n.:
-	The act of examining one's bread to determine which side it is
-	buttered on.
-		-- Ambrose Bierce, "The Devil's Dictionary"
