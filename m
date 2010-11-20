@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152Ab0KTWPG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 17:15:06 -0500
-Received: from solo.fdn.fr ([80.67.169.19]:34799 "EHLO solo.fdn.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753676Ab0KTWPF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 17:15:05 -0500
-Date: Sat, 20 Nov 2010 23:15:01 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Konstantin Svist <fry.kun@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>, Jesper Juhl <jj@chaosbits.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Valdis.Kletnieks@vt.edu, Oleg Nesterov <oleg@redhat.com>,
+	id S1755184Ab0KTWRD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 17:17:03 -0500
+Received: from dyn60-31.dsl.spy.dnainternet.fi ([83.102.60.31]:52276 "EHLO
+	shogun.pilppa.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754883Ab0KTWRC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 17:17:02 -0500
+Date: Sun, 21 Nov 2010 00:16:46 +0200 (EET)
+From: Mika Laitio <lamikr@pilppa.org>
+To: Lennart Poettering <mzxreary@0pointer.de>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Vivek Goyal <vgoyal@redhat.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
+        Balbir Singh <balbir@linux.vnet.ibm.com>
 Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-Message-ID: <20101120221501.GQ7194@const.famille.thibault.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Konstantin Svist <fry.kun@gmail.com>,
-	Mike Galbraith <efault@gmx.de>, Jesper Juhl <jj@chaosbits.net>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Valdis.Kletnieks@vt.edu, Oleg Nesterov <oleg@redhat.com>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-	Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-	Markus Trippelsdorf <markus@trippelsdorf.de>
-References: <20101021162924.GA3225@redhat.com> <1288076838.11930.1.camel@marge.simson.net> <1288078144.7478.9.camel@marge.simson.net> <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com> <1289489200.11397.21.camel@maggy.simson.net> <30291.1289860866@localhost> <AANLkTikeLeLvYcZJ4HcAUH1ax13scgnrT27CSR=YzO_C@mail.gmail.com> <alpine.LNX.2.00.1011202031130.24071@swampdragon.chaosbits.net> <1290282678.28711.23.camel@maggy.simson.net> <4CE84578.5030800@gmail.com>
+In-Reply-To: <20101116205043.GG27235@tango.0pointer.de>
+Message-ID: <alpine.LMD.2.00.1011210004090.2350@shogun.pilppa.org>
+References: <20101116015648.GA11534@redhat.com> <1289916171.5169.117.camel@maggy.simson.net> <1289916683.2109.625.camel@laptop> <AANLkTimun-VUNx77wJ4w7Z4io2jder=xkN5pCujPQL-a@mail.gmail.com> <20101116170312.GA19327@tango.0pointer.de>
+ <AANLkTi=CNEdUF_J4Mnyt9X52PvP2ftvrgsWVsRv1JW9M@mail.gmail.com> <20101116181603.GC19327@tango.0pointer.de> <AANLkTik7hxds1--gSWEtHGAfU607S=mZpvBrBdpFmCD=@mail.gmail.com> <AANLkTikjQKmo0j5xbvPiS=eriAUUZPMGKkcxt8w_z8XB@mail.gmail.com>
+ <AANLkTikKdjH-ZM0eXTQMvzJjYkpyfKZR2OK06tNtCGFs@mail.gmail.com> <20101116205043.GG27235@tango.0pointer.de>
+User-Agent: Alpine 2.00 (LMD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4CE84578.5030800@gmail.com>
-User-Agent: Mutt/1.5.12-2006-07-14
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konstantin Svist, le Sat 20 Nov 2010 14:02:32 -0800, a écrit :
-> Will that have an effect on software like Chromium which creates a fork 
-> for each tab? If a user opens Thunderbird and Chromium with 100 tabs, 
-> Thunderbird should probably get 50% CPU time instead of just 1%...
+> > What complexity? Have you looked at the patch? It has no complexity anywhere.
+> > 
+> > It's a _lot_ less complex than having system daemons you don't
+> > control. We have not had good results with that approach in the past.
+> > System daemons tend to cause nasty problems, and debugging them is a
+> > nightmare.
+> 
+> Well, userspace doesn't bite.
 
-Chromium doesn't create a session or even a process group for each tab.
+To me, this starts sounding like a legendary "userspace suspend" versus 
+"kernel suspend" support fights many years ago... Since that, I have 
+_sometimes_but_rarely_ been luckily enought to get my laptops 
+recovered from the suspend states successfully...
 
-Samuel
+And as the kernel patches allows disabling the schedyles feature either via kernel 
+build parameters, boot parameters or at runtime _if_you_ really want, I do 
+not understand why do you complaint if there will be much better defaults 
+in the kernel immediately once you just build and boot the new kernel.
+(I really do not plan to start converting init-rd boot scripts from 
+all of my computers systemd way of doing things in near future...)
+
+Mika
