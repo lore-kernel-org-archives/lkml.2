@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab0KTTqU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 14:46:20 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:16380 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754879Ab0KTTqT (ORCPT
+	id S1755034Ab0KTTr2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 14:47:28 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:53305 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754883Ab0KTTr1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 14:46:19 -0500
-Date: Sat, 20 Nov 2010 20:33:21 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Valdis.Kletnieks@vt.edu, Mike Galbraith <efault@gmx.de>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>
-Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
-In-Reply-To: <AANLkTikeLeLvYcZJ4HcAUH1ax13scgnrT27CSR=YzO_C@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1011202031130.24071@swampdragon.chaosbits.net>
-References: <1287479765.9920.9.camel@marge.simson.net> <1287487757.24189.40.camel@marge.simson.net> <AANLkTik08s=S7gZOGWEEhPW-zJtNRCse2h6jH3HAjoJH@mail.gmail.com> <1287511983.7417.45.camel@marge.simson.net> <1287514410.7368.10.camel@marge.simson.net>
- <20101020025652.GB26822@elte.hu> <1287648715.9021.20.camel@marge.simson.net> <20101021105114.GA10216@Krystal> <1287660312.3488.103.camel@twins> <20101021162924.GA3225@redhat.com> <1288076838.11930.1.camel@marge.simson.net> <1288078144.7478.9.camel@marge.simson.net>
- <AANLkTimOJAv2uRfq4bW_QPngkGCmJDjNX5n_izpX=eB8@mail.gmail.com> <1289489200.11397.21.camel@maggy.simson.net> <30291.1289860866@localhost> <AANLkTikeLeLvYcZJ4HcAUH1ax13scgnrT27CSR=YzO_C@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 20 Nov 2010 14:47:27 -0500
+X-Sasl-enc: sS1eUOT1iw54Mut5azJjAPoIqouq/FH44m28VXJER3p4 1290282446
+Date: Sat, 20 Nov 2010 17:47:23 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andy Walls <andy@silverblocksystems.net>, linux-kernel@vger.kernel.org,
+        sarah.a.sharp@linux.intel.com
+Subject: Re: [PATCH] kernel: make /proc/kallsyms mode 400 to reduce ease of
+ attacking
+Message-ID: <20101120194723.GH12640@khazad-dum.debian.net>
+References: <1290201154.2116.29.camel@morgan.silverblock.net>
+ <AANLkTi=fnFhznMz2bTRSJDrfeDwsVUTyqiKDATPzEjhq@mail.gmail.com>
+ <20101120024034.GB4617@outflux.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101120024034.GB4617@outflux.net>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 15 Nov 2010, Linus Torvalds wrote:
+On Fri, 19 Nov 2010, Kees Cook wrote:
+> On Fri, Nov 19, 2010 at 03:22:00PM -0800, Linus Torvalds wrote:
+> > In this case, the upside just wasn't big enough to accept _any_
+> > breakage, especially since people and distributions can just do the
+> > "chmod" themselves if they want to. There was a lot of discussion
+> > whether the patch should even go in in the first place. So this time,
+> > the "let's just revert it" was a very easy decision for me.
+> 
+> The downside is that /proc can be remounted multiple times for different
+> containers, etc. Having to patch everything that mounts /proc to do the
+> chmod seems much more painful that fixing a simple userspace bug in an old
+> klog daemon.
+> 
+> (For example, rsyslogd handles this fine since it's root to open it, and
+> even if it fails, it doesn't do the broken fclose().)
 
-> On Mon, Nov 15, 2010 at 2:41 PM,  <Valdis.Kletnieks@vt.edu> wrote:
-> >
-> > So the set of all tasks that never call proc_set_tty() ends up in the same one
-> > big default group, correct?
-> 
-> Well, yes and no.
-> 
-> Yes, that's what the code currently does. But I did ask Mike (and he
-> delivered) to try to make the code look and work in a way where the
-> whole "tty thing" is just one of the heuristics.
-> 
-> It's not clear exactly what the non-tty heuristics would be, but I do
-> have a few suggestions:
-> 
->  -  I think it might be a good idea to associate a task group with the
-> current "cred" of a process, and fall back on it in the absense of a
-> tty-provided one.
-> 
-Or how about (just brainstorming here) a group per 'process group'?
+If it is a pain only for buggy old/legacy userspace like klogd or a few
+tools, it would still be very useful as a Kconfig option defaulting to
+disabled.
 
+As an user and sysadmin, I'd rather not have to find out every place that
+mounts /proc in a chroot to chmod all relevant files :(  That's fighting a
+loosing battle, unlike fixing broken tools (which at least will stay fixed).
+
+Distros could get any fixing done they require, and then enable it for all
+their users.  Ubuntu and Debian are likely to do it, and I'd guess so is
+Fedora.
 
 -- 
-Jesper Juhl <jj@chaosbits.net>            http://www.chaosbits.net/
-Don't top-post http://www.catb.org/~esr/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
