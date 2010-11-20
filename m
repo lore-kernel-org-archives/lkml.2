@@ -1,40 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932302Ab0KTD2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 22:28:48 -0500
-Received: from hera.cwi.nl ([192.16.191.8]:52742 "EHLO hera.cwi.nl"
+	id S932558Ab0KTDfB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 22:35:01 -0500
+Received: from THUNK.ORG ([69.25.196.29]:52702 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932127Ab0KTD2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 22:28:47 -0500
-Date: Sat, 20 Nov 2010 04:28:33 +0100
-From: "Andries E. Brouwer" <Andries.Brouwer@cwi.nl>
-To: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: ide boot failure 2.6.36/2.6.28 - 2.6.27 works
-Message-ID: <20101120032828.GA14693@iq>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932071Ab0KTDfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 19 Nov 2010 22:35:00 -0500
+Date: Fri, 19 Nov 2010 22:34:57 -0500
+Message-Id: <E1PJeE5-0000CB-Vs@tytso-glaptop>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ext4 update for 2.6.37-rc3
+From: "Theodore Ts'o" <tytso@mit.edu>
+Phone: (781) 391-3464
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Answering myself (and providing info that can be Googled):
+Hi Linus,
 
-> I wanted to boot a recent kernel on an old machine and failed.
-> The last kernel that worked was 2.6.27.
-> What goes wrong is that the disks are no longer detected on 2.6.28.
+Please pull from:
 
-A typical error would be
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
 
-	Cannot open root device 342 or unknown block (3,66)
+Mustly bug fixes, but also we undo a change we made to the core VFS
+during -rc1 to keep things simpler.  (Basically, we vector the FITRIM
+ioctl through ioctl interface instead of through a new super_operations
+vector.)
 
-Reading the code shows that the default probing is no longer done.
-Editing ./drivers/ide/ide-generic.c and changing
+                                        - Ted
 
--static int probe_mask;
-+static int probe_mask = 3;
+Dan Carpenter (1):
+      ext4: missing unlock in ext4_clear_request_list()
 
-returns my disks to life, and this old machine boots again.
+Darrick J. Wong (1):
+      ext4: ext4_fill_super shouldn't return 0 on corruption
 
-Andries
+Lukas Czerner (2):
+      fs: Do not dispatch FITRIM through separate super_operation
+      ext4: Add EXT4_IOC_TRIM ioctl to handle batched discard
+
+Markus Trippelsdorf (1):
+      ext4: fix setting random pages PageUptodate
+
+yangsheng (1):
+      jbd2: fix /proc/fs/jbd2/<dev> when using an external journal
+
+ fs/ext4/ioctl.c    |   24 ++++++++++++++++++++++++
+ fs/ext4/page-io.c  |    4 ++--
+ fs/ext4/super.c    |    9 +++------
+ fs/ioctl.c         |   39 ---------------------------------------
+ fs/jbd2/journal.c  |   16 ++++++++--------
+ include/linux/fs.h |    1 -
+ 6 files changed, 37 insertions(+), 56 deletions(-)
