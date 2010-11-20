@@ -1,97 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967Ab0KTJBH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 04:01:07 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43017 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257Ab0KTJBF (ORCPT
+	id S1751318Ab0KTJ7s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 04:59:48 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62506 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761Ab0KTJ7q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 04:01:05 -0500
+	Sat, 20 Nov 2010 04:59:46 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=E3h+IdAu+2ku2FTPjoj4cwyDXLcuUF5/vgfNEAY0tb5wwURzh8fIdHWzG3Lf1MflOO
-         6oUXDyik4wmpstBaDFkR0NZLB39s1bElUWoIKrw04R5KbSqKdFwJBKXg+R7p/r3BKkgs
-         OnbN5z/j1tXOyGfNY3xc99cLOuooYn+WxlY9o=
-Date: Sat, 20 Nov 2010 12:00:59 +0300
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Greg KH <gregkh@suse.de>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: base: core: do not put noninitialized devices
-Message-ID: <20101120090058.GA4263@albatros>
-References: <1290192100-11451-1-git-send-email-segoon@openwall.com>
- <20101119190242.GA14328@suse.de>
- <20101119191424.GA12273@albatros>
- <20101119205709.GA17531@suse.de>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=DjgwkHuXUBQsC/fa+GyBZRYn89jnlY1Q0i4kA0Qegx3Yo33GcUHGyYIX+QlC1I6/7x
+         cmn8fUtf6fn4VQo/vWgF9467hE4vSVV9/tqj5weLh+MeSn1WuZ9gRU0kiqgBXAe8aEAx
+         OGfilBc1SU6aKe5ib5n4S7pbhDAnrufuRLTGc=
+Message-ID: <4CE79B4C.7030001@gmail.com>
+Date: Sat, 20 Nov 2010 10:56:28 +0100
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101119205709.GA17531@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+CC: Linux Embedded <linux-embedded@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Tim Bird <tim.bird@am.sony.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 00/16 v4] pramfs: persistent and protected RAM filesystem
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 19, 2010 at 12:57 -0800, Greg KH wrote:
-> On Fri, Nov 19, 2010 at 10:14:25PM +0300, Vasiliy Kulikov wrote:
-> > kobject_put() calls WARN if state_initialized == 0:
-> > 
-> >     void kobject_put(struct kobject *kobj)
-> >     {
-> >         if (kobj) {
-> >             if (!kobj->state_initialized)
-> >                 WARN(1, KERN_WARNING "kobject: '%s' (%p): is not "
-> >                        "initialized, yet kobject_put() is being "
-> >                        "called.\n", kobject_name(kobj), kobj);
-> > 
-> > 
-> > I got the stack dump with similar code:
-> > 
-> >     struct device *dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-> >     put_device(dev);
-> 
-> Sure, that's illegal code,
+Hi all,
 
-You might misunderstood me, see this part of device_create_vargs():
+fourth round for the patch series. I summarize here the changes to
+improve the review:
 
-struct device *device_create_vargs(...)
-{
-    ...
-	dev = kzalloc(sizeof(*dev), GFP_KERNEL); <<<
-	if (!dev)
-        ...
+v4:
+- in bitmap init used already present bitmap_set function
+- fix a possible memory leak in an error path reported by yidong zhang
 
-	dev->devt = devt;
-	dev->class = class;
-	dev->parent = parent;
-	dev->release = device_create_release;
-	dev_set_drvdata(dev, drvdata);
+v3:
+- fix a possible memory leak in an error path reported by yidong zhang
+- fix a warning when using XIP about not used __pram_mmap symbol
+- fix test module header description and replaced TEST_MODULE with
+PRAMFS_TEST_MODULE in the Kconfig and Makefile according to the comments
+done by Randy Dunlap
+- fix a compilation warning in super.c reported by James Hogan
+- fix a compilation error when XIP was enabled
+- removed not used symbol PRAM_XATTR_INDEX_LUSTRE
+- fix some comment style issue
 
-	retval = kobject_set_name_vargs(&dev->kobj, fmt, args); <<<
-	if (retval)
-		goto error; <<<
-    ...
+v2:
+- fix documentation errors reported by Randy Dunlap and Kieran Bingham
+- reworked memory write protection functions with the suggestions of
+Andi Kleen
 
-error:
-	put_device(dev); <<<
-    ...
-}
+v1:
+- first draft
 
-It is device_create_vargs()'s mistake, not the caller.
+Andrew/Greg, can you insert the code in the mm/staging tree?
 
-> and we want to warn about that.  So I would
-> say, if an error happens, we want to see this message so the code should
-> stay as-is.
-
-If you mean "if memomy allocation for name fails then we want to see
-message about allocation failure" then maybe use pr_err("No mem for device
-name\n") instead of confusing "kobject is not initialized, yet kobject_put()
-is being called"?
-
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Marco
