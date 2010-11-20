@@ -1,47 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab0KTQJw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 11:09:52 -0500
-Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:54397 "EHLO
+	id S1754004Ab0KTQN5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 11:13:57 -0500
+Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:56731 "EHLO
 	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab0KTQJv (ORCPT
+	with ESMTP id S1750972Ab0KTQN4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 11:09:51 -0500
-Date: Sat, 20 Nov 2010 17:09:47 +0100
+	Sat, 20 Nov 2010 11:13:56 -0500
+Date: Sat, 20 Nov 2010 17:13:51 +0100
 From: Rodolfo Giometti <giometti@enneenne.com>
 To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
 Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
         linuxpps@ml.enneenne.com, Tejun Heo <tj@kernel.org>
-Message-ID: <20101120160947.GB13356@enneenne.com>
+Message-ID: <20101120161351.GC13356@enneenne.com>
 Mail-Followup-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>,
 	linux-kernel@vger.kernel.org,
 	"Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
 	Tejun Heo <tj@kernel.org>
 References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
- <9e636c291cc28c3dda3762230fa595ec6384dbef.1290087479.git.lasaine@lvk.cs.msu.su>
+ <1a1ebcf97b2eb62548c34d2d8fc139c0703a9077.1290087480.git.lasaine@lvk.cs.msu.su>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <9e636c291cc28c3dda3762230fa595ec6384dbef.1290087479.git.lasaine@lvk.cs.msu.su>
+In-Reply-To: <1a1ebcf97b2eb62548c34d2d8fc139c0703a9077.1290087480.git.lasaine@lvk.cs.msu.su>
 Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
 X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-SA-Exim-Connect-IP: 192.168.32.37
 X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: Re: [PATCHv4 09/17] pps: don't disable interrupts when using spin
- locks
+Subject: Re: [PATCHv4 10/17] pps: use BUG_ON for kernel API safety checks
 X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
 X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 07:01:02PM +0300, Alexander Gordeev wrote:
-> Now all PPS spin locks are never used in interrupt context so we can
-> safely replace spin_lock_irq*/spin_unlock_irq* with plain
-> spin_lock/spin_unlock.
+On Thu, Nov 18, 2010 at 07:01:03PM +0300, Alexander Gordeev wrote:
+> This way less overhead is involved when running production kernel.
+> If you want to debug a pps client module please define DEBUG to enable
+> the checks.
+> 
+> Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+> ---
+>  drivers/pps/kapi.c |   33 ++++++++++-----------------------
+>  1 files changed, 10 insertions(+), 23 deletions(-)
+> 
+> diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
+> index fe832aa..54261c4 100644
+> --- a/drivers/pps/kapi.c
+> +++ b/drivers/pps/kapi.c
+> @@ -81,25 +81,14 @@ struct pps_device *pps_register_source(struct pps_source_info *info,
+>  	int err;
+>  
+>  	/* Sanity checks */
+> -	if ((info->mode & default_params) != default_params) {
+> -		pr_err("pps: %s: unsupported default parameters\n",
+> -					info->name);
+> -		err = -EINVAL;
+> -		goto pps_register_source_exit;
+> -	}
+> -	if ((info->mode & (PPS_ECHOASSERT | PPS_ECHOCLEAR)) != 0 &&
+> -			info->echo == NULL) {
+> -		pr_err("pps: %s: echo function is not defined\n",
+> -					info->name);
+> -		err = -EINVAL;
+> -		goto pps_register_source_exit;
+> -	}
+> -	if ((info->mode & (PPS_TSFMT_TSPEC | PPS_TSFMT_NTPFP)) == 0) {
+> -		pr_err("pps: %s: unspecified time format\n",
+> -					info->name);
+> -		err = -EINVAL;
+> -		goto pps_register_source_exit;
+> -	}
+> +
+> +	/* default_params should be supported */
+> +	BUG_ON((info->mode & default_params) != default_params);
+> +	/* echo function should be defined if we are asked to call it */
+> +	BUG_ON((info->mode & (PPS_ECHOASSERT | PPS_ECHOCLEAR)) != 0 &&
+> +			info->echo == NULL);
+> +	/* time format should be specified */
+> +	BUG_ON((info->mode & (PPS_TSFMT_TSPEC | PPS_TSFMT_NTPFP)) == 0);
 
-This patch must be delayed till the previous one is not fixed.
+Nack.
+
+If the userland gives us some wrong parameters this is not the same of
+a kernel bug (which BUG_ON is used for). The userland must be notified
+about the wrong input.
+
+>  	/* Allocate memory for the new PPS source struct */
+>  	pps = kzalloc(sizeof(struct pps_device), GFP_KERNEL);
+> @@ -179,10 +168,8 @@ void pps_event(struct pps_device *pps, struct pps_event_time *ts, int event,
+>  	int captured = 0;
+>  	struct pps_ktime ts_real;
+>  
+> -	if ((event & (PPS_CAPTUREASSERT | PPS_CAPTURECLEAR)) == 0) {
+> -		dev_err(pps->dev, "unknown event (%x)\n", event);
+> -		return;
+> -	}
+> +	/* check event type */
+> +	BUG_ON((event & (PPS_CAPTUREASSERT | PPS_CAPTURECLEAR)) == 0);
+
+Ack.
+
+This is a correct usage of BUG_ON. :)
+
+>  	dev_dbg(pps->dev, "PPS event at %ld.%09ld\n",
+>  			ts->ts_real.tv_sec, ts->ts_real.tv_nsec);
+> -- 
+> 1.7.2.3
+> 
 
 Ciao,
 
