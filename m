@@ -1,86 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab0KTA3g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 19 Nov 2010 19:29:36 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34497 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751621Ab0KTA3f (ORCPT
+	id S1755245Ab0KTAaY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 19 Nov 2010 19:30:24 -0500
+Received: from adelie.canonical.com ([91.189.90.139]:59732 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713Ab0KTAaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 19 Nov 2010 19:29:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=LT/7SsmhQFO6Q/vVM/NErdIsLPK7lVUpVSHfSqq37ap6MqQX3sZXPygrbUvBtcN5r4
-         A8HtFw+cfyXzv+UONPpsNHWpVp+KNup0USCLuelu6Whmw1VfUzDPGxd69QLG+MibyPVW
-         ocniwWOinoH5EncohXMjmBxUJ6dz9cBeKpFQY=
-MIME-Version: 1.0
-From: Julian Calaby <julian.calaby@gmail.com>
-Date: Sat, 20 Nov 2010 11:29:12 +1100
-Message-ID: <AANLkTim0=ds3EhQOEfHdrKt2dSnEqUgf5CLOPHNyW=jE@mail.gmail.com>
-Subject: Re-distributable 88w8335 Firmware?
-To: Dan Williams <dcbw@redhat.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        David.Woodhouse@intel.com, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org,
-        Lennert Buytenhek <buytenh@wantstofly.org>,
-        Holger Schurig <holgerschurig@googlemail.com>,
-        Markus Becker <mab@comnets.uni-bremen.de>, andreamrl@tiscali.it,
-        Denis Kirjanov <kirjanov@gmail.com>, dwmw2@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 19 Nov 2010 19:30:23 -0500
+Subject: Re: [PATCH 3/3] mlock: avoid dirtying pages and triggering
+ writeback
+From: Dustin Kirkland <kirkland@canonical.com>
+Reply-To: kirkland@canonical.com
+To: "Ted Ts'o" <tytso@mit.edu>, "kees.cook" <kees.cook@canonical.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Michel Lespinasse <walken@google.com>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Peter Zijlstra <peterz@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Kosaki Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Theodore Tso <tytso@google.com>, Michael Rubin <mrubin@google.com>,
+        Suleiman Souhlal <suleiman@google.com>
+In-Reply-To: <20101119232254.GA28151@thunk.org>
+References: <1289996638-21439-1-git-send-email-walken@google.com>
+	 <1289996638-21439-4-git-send-email-walken@google.com>
+	 <20101117125756.GA5576@amd> <1290007734.2109.941.camel@laptop>
+	 <AANLkTim4tO_aKzXLXJm-N-iEQ9rNSa0=HGJVDAz33kY6@mail.gmail.com>
+	 <20101117231143.GQ22876@dastard> <20101118133702.GA18834@infradead.org>
+	 <alpine.LSU.2.00.1011180934400.3210@tigran.mtv.corp.google.com>
+	 <20101119072316.GA14388@google.com>
+	 <20101119145442.ddf0c0e8.akpm@linux-foundation.org>
+	 <20101119232254.GA28151@thunk.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-pRpbJGsqVHszJYkyD81F"
+Date: Fri, 19 Nov 2010 18:29:49 -0600
+Message-ID: <1290212989.12760.87.camel@x201>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
 
-Once again, someone is trying to build a working driver for the Marvel
-88w8335 chipset, and is once again hampered by a lack of
-re-distributable or official firmware. (See:
-http://marc.info/?l=linux-wireless&m=128923265210125&w=2 )
+--=-pRpbJGsqVHszJYkyD81F
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-As such, on Denis's behalf, I'm asking if anyone knows of anyone at
-Marvel that they can poke in an attempt to get a re-distributable
-firmware for this chipset released for eventual inclusion into
-linux-firmware.
+On Fri, 2010-11-19 at 18:22 -0500, Ted Ts'o wrote:
+> On Fri, Nov 19, 2010 at 02:54:42PM -0800, Andrew Morton wrote:
+> >=20
+> > Dirtying all that memory at mlock() time is pretty obnoxious.
+> > ...
+> > So all that leaves me thinking that we merge your patches as-is.  Then
+> > work out why users can fairly trivially use mlock to hang the kernel on
+> > ext2 and ext3 (and others?)=20
+>=20
+> So at least on RHEL 4 and 5 systems, pam_limits was configured so that
+> unprivileged processes could only mlock() at most 16k.  This was
+> deemed enough so that programs could protect crypto keys.  The
+> thinking when we added the mlock() ulimit setting was that
+> unprivileged users could very easily make a nuisance of themselves,
+> and grab way too much system resources, by using mlock() in obnoxious
+> ways.
+>=20
+> I was just checking to see if my memory was correct, and to my
+> surprise, I've just found that Ubuntu deliberately sets the memlock
+> ulimit to be unlimited.  Which means that Ubuntu systems are
+> completely wide open for this particular DOS attack.  So if you
+> administer an Ubuntu-based server, it might be a good idea to make a
+> tiny little change to /etc/security/limits.conf....
+>=20
+> 							- Ted
 
-I believe that this chipset is pretty much obsolete (being only an
-802.11g part) so I cannot see any reasonable reason not to release the
-firmware, especially given that newer chipsets ("TopDog" - see the
-mwl8k driver) have had re-distributable firmware released along with
-open source Linux drivers for some time now.
+Kees,
 
-If we cannot obtain proper firmware files, the very least Marvel could
-do would be to bless the *BSD Malo driver's firmware files (obtainable
-here: http://www.nazgul.ch/malo/malo-firmware-1.4.tgz - see
-http://www.unix.com/man-page/freebsd/4/MALO/ for more info) with a
-proper re-distributable license.
+Copying you into this thread, in case you'd like to respond from the
+Ubuntu side.  Thanks for the heads-up, Ted.
 
-In terms of the actual chipsets in question, I'm referring to the
-88w8335, 88w8338, and 88w8385 chipsets. I believe Marvel refers to
-them as being part of the "Libertas" family of chipsets - however they
-don't have the fancy mesh stuff that the chips the libertas driver
-talks to have - and are also PCI.
+--=20
+:-Dustin
 
-A previous effort in 2008 is viewable here:
-http://lwn.net/Articles/275719/ and searching for "mrv8k" reveals the
-remnants of that effort which mostly happened before my involvement in
-this.
+Dustin Kirkland
+Canonical, LTD
+kirkland@canonical.com
+GPG: 1024D/83A61194
 
-A proper "official" set of firmware files would smooth one of the
-bumps in getting proper support for this driver into the Linux Kernel.
-(as well as helping the BSD folks with the Malo driver) Marvel has
-shown that they are willing to provide some support for the open
-source community with the TopDog driver, as well as the driver for the
-SAS chipset. Hopefully they can continue their support with what would
-be a small gesture in support of our efforts to write a driver for
-this old chipset.
+--=-pRpbJGsqVHszJYkyD81F
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Thanks,
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
--- 
+iEYEABECAAYFAkznFnsACgkQs7pNXIOmEZTcTgCaAmTGO89rHQk9XW6t5Ecx7Hya
+MRwAnAyVApmwthwP0mKPwiOtTflUnq26
+=0kmz
+-----END PGP SIGNATURE-----
 
-Julian Calaby
+--=-pRpbJGsqVHszJYkyD81F--
 
-Email: julian.calaby@gmail.com
-Profile: http://www.google.com/profiles/julian.calaby/
-.Plan: http://sites.google.com/site/juliancalaby/
