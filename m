@@ -1,36 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656Ab0KTSBo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 13:01:44 -0500
-Received: from 85-18-159-100.ip.fastwebnet.it ([85.18.159.100]:48118 "HELO
-	mail.remuna.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752969Ab0KTSBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 13:01:42 -0500
-Message-ID: <1290266089.4ce7e5e97813b@webmail.remuna.org>
-Date: Sat, 20 Nov 2010 16:14:49 +0100
-From: "Mr. Tsutomu Kimoto" <tsutomukimoto1@admin.in.th>
-Reply-to: tsutomu_kimoto010@yahoo.co.jp
-Subject: Greetings from Japan
+	id S1754676Ab0KTSF0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 13:05:26 -0500
+Received: from serrano.cc.columbia.edu ([128.59.29.6]:32959 "EHLO
+	serrano.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565Ab0KTSFZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 13:05:25 -0500
+Date: Sat, 20 Nov 2010 13:05:15 -0500 (EST)
+From: Oren Laadan <orenl@cs.columbia.edu>
+X-X-Sender: orenl@takamine.ncl.cs.columbia.edu
+To: Tejun Heo <tj@kernel.org>
+cc: Serge Hallyn <serge.hallyn@canonical.com>, Kapil Arya <kapil@ccs.neu.edu>,
+        Gene Cooperman <gene@ccs.neu.edu>, linux-kernel@vger.kernel.org,
+        xemul@sw.ru, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Linux Containers <containers@lists.osdl.org>
+Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
+In-Reply-To: <4CE683E1.6010500@kernel.org>
+Message-ID: <4CE69B9B.7020302@cs.columbia.edu>
+References: <20101104164401.GC10656@sundance.ccs.neu.edu> <4CD3CE29.2010105@kernel.org>
+ <20101106053204.GB12449@count0.beaverton.ibm.com> <20101106204008.GA31077@sundance.ccs.neu.edu>
+ <4CD5D99A.8000402@cs.columbia.edu> <20101107184927.GF31077@sundance.ccs.neu.edu>
+ <4CD72150.9070705@cs.columbia.edu> <4CE3C334.9080401@kernel.org>
+ <20101117153902.GA1155@hallyn.com> <4CE3F8D1.10003@kernel.org>
+ <20101119041045.GC24031@hallyn.com> <4CE683E1.6010500@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) 3.2.1
-X-Originating-IP: 41.138.176.186
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-No-Spam-Score: Local
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
+Based on discussion with Gene, I'd like to clarify key points and
+difference between kernel and userspace approaches (specifically
+linux-cr and dmtcp): three parts to break the long post...
 
-Greetings from Japan,
-I need your partnership in receiving funds on my behalf.However is not 
-mandatory nor will I in any manner compel you to honor against your will. 
-Please do treat with regards as I look forward to your reply and possibly our 
-partnership.
-Sincerely,
-Mr. Tsutomu Kimoto
+part I: perpsectice about the types of scopes of c/r in discussion
+part II: linux-cr design adn objectives
+part III: comparison kernel/userspace approaches
 
--------------------------------------------------
-This mail sent through IMP: http://horde.org/imp/
+[now relax, grab (another) cup of coffee and read on...]
 
+PART I:  ==PERSPECTIVE==
+
+A rough classification of c/r categories:
+
+* container-c/r: important use-case, e.g. c/r and migration of an
+  application containers like VPS (virtual private server), VDI
+  (desktop) or  other self-contained application (e.g. Oracle server).
+  Here _all_ the relevant processes are included in the checkpoint.
+
+* standalone-c/r: another use-case is standalone-c/r where a set of
+  processes is checkpointed, but not the entire environment, and then
+  those processes are restarted in a different "eco-system".
+
+* distributed-c/r: meaning several sets of processes, each running
+  on a different host. (Each set may be a separate container there).
+
+In container-c/r, the main challenge is to be _reliable_ in the sense
+that a restart from a successful checkpoint should always succeed.
+
+In standalone-c/r, the main challenge is that an application resumes
+execution after a restart in a possible _different_ eco-system. Some
+application don't care (e.g 'bc'). Other applications do care, and to
+different degrees; for these we need "glue" to pacify the application.
+
+There are generally three types of "glue":
+
+(1) Modify the application or selected libraries to be c/r-aware, and
+  notify it when restart completes. (e.g. CoCheck MPI library).
+(2) Add a userspace helper that will run post-restart to do necessary
+  trickery (eg. send a SIGWINCH to 'screen'; mount proper filesystem
+  at the new host after migration; reconnect a socket to a peer).
+(3) Use interposition on selected library calls and add wrapper code
+  that will glue in what's missing (e.g. dbus or nscd calls to
+  reconnect an application to those services).
+
+IMPORTANT: the glueing method is _orthogonal_ to how the c/r is done !
+We are strictly discussion the core c/r functionality.
+
+(next part: linux-cr philosophy...)
+
+Thanks,
+
+Oren.
