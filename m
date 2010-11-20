@@ -1,339 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab0KTNFl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 08:05:41 -0500
-Received: from fallback6.mail.ru ([94.100.176.134]:59171 "EHLO
-	fallback3.mail.ru" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752797Ab0KTNFk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 08:05:40 -0500
-X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Sat, 20 Nov 2010 08:05:39 EST
-From: Dmitry Artamonow <mad_soft@inbox.ru>
-To: alsa-devel@alsa-project.org
-Cc: Eric Miao <eric.y.miao@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Philipp Zabel <philipp.zabel@gmail.com>,
-        Harald Welte <laforge@gnumonks.org>
-Subject: [PATCH 2/3] ASoC: add iPAQ hx4700 machine driver
-Date: Sat, 20 Nov 2010 15:59:23 +0300
-Message-Id: <1290257964-17435-3-git-send-email-mad_soft@inbox.ru>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1290257964-17435-1-git-send-email-mad_soft@inbox.ru>
-References: <1290257964-17435-1-git-send-email-mad_soft@inbox.ru>
-X-Mras: Ok
+	id S1753484Ab0KTNLq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 08:11:46 -0500
+Received: from 5accd750.bb.sky.com ([90.204.215.80]:44176 "EHLO mayday.local"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752797Ab0KTNLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 08:11:45 -0500
+Date: Sat, 20 Nov 2010 13:11:41 +0000 (GMT)
+From: Robert de Bath <robert$@debath.co.uk>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups ... ps
+ jaxk sid ... You are using the wrong number.
+In-Reply-To: <AANLkTinF7BtYJwowfke+q0qjaXUc19EYRioAORU7YSAd@mail.gmail.com>
+Message-ID: <Pine.LNX.4.61.1011201009530.8468@mayday.local>
+References: <Pine.LNX.4.61.1011190750500.8468@mayday.local>
+ <AANLkTinF7BtYJwowfke+q0qjaXUc19EYRioAORU7YSAd@mail.gmail.com>
+X-Mailer: Pine for Linux
+Reply-By: 01 jan 2001 00:00:00
+X-Message-Flag: Linux: The choice of a GNU generation.
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AK4641 connected via I2S and I2C, jack detection via GPIO.
+On Sat, 20 Nov 2010, Linus Walleij wrote:
 
-Signed-off-by: Philipp Zabel <philipp.zabel@gmail.com>
-Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
----
- sound/soc/pxa/Kconfig  |    9 ++
- sound/soc/pxa/Makefile |    2 +
- sound/soc/pxa/hx4700.c |  253 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 264 insertions(+), 0 deletions(-)
- create mode 100644 sound/soc/pxa/hx4700.c
+> 2010/11/19 Robert de Bath <robert$@debath.co.uk>:
+>
+>> Using the SID solves the "all GUI programs are in the same group" problem
+>> but still keeps "make -j99" in one group and different [a-z]terms in
+>> different groups. What's more setsid(1) and setsid(2) make userspace
+>> control really easy.
+>
+> I grouped all the processes on my system but a few into per-session
+> control groups by a quick python hack into CGFreak. It looks very
+> funny atleast, I never spawned so many groups before:
+> http://www.df.lth.se/~triad/sidgroups/
 
-diff --git a/sound/soc/pxa/Kconfig b/sound/soc/pxa/Kconfig
-index 37f191b..1d7e7a5 100644
---- a/sound/soc/pxa/Kconfig
-+++ b/sound/soc/pxa/Kconfig
-@@ -154,6 +154,15 @@ config SND_SOC_RAUMFELD
- 	help
- 	  Say Y if you want to add support for SoC audio on Raumfeld devices
- 
-+config SND_PXA2XX_SOC_HX4700
-+	tristate "SoC Audio support for HP iPAQ hx4700"
-+	depends on SND_PXA2XX_SOC && MACH_H4700
-+	select SND_PXA2XX_SOC_I2S
-+	select SND_SOC_AK4641
-+	help
-+	  Say Y if you want to add support for SoC audio on the
-+	  HP iPAQ hx4700.
-+
- config SND_PXA2XX_SOC_MAGICIAN
- 	tristate "SoC Audio support for HTC Magician"
- 	depends on SND_PXA2XX_SOC && MACH_MAGICIAN
-diff --git a/sound/soc/pxa/Makefile b/sound/soc/pxa/Makefile
-index 0766016..af35762 100644
---- a/sound/soc/pxa/Makefile
-+++ b/sound/soc/pxa/Makefile
-@@ -22,6 +22,7 @@ snd-soc-palm27x-objs := palm27x.o
- snd-soc-saarb-objs := saarb.o
- snd-soc-tavorevb3-objs := tavorevb3.o
- snd-soc-zylonite-objs := zylonite.o
-+snd-soc-hx4700-objs := hx4700.o
- snd-soc-magician-objs := magician.o
- snd-soc-mioa701-objs := mioa701_wm9713.o
- snd-soc-z2-objs := z2.o
-@@ -37,6 +38,7 @@ obj-$(CONFIG_SND_PXA2XX_SOC_E800) += snd-soc-e800.o
- obj-$(CONFIG_SND_PXA2XX_SOC_SPITZ) += snd-soc-spitz.o
- obj-$(CONFIG_SND_PXA2XX_SOC_EM_X270) += snd-soc-em-x270.o
- obj-$(CONFIG_SND_PXA2XX_SOC_PALM27X) += snd-soc-palm27x.o
-+obj-$(CONFIG_SND_PXA2XX_SOC_HX4700) += snd-soc-hx4700.o
- obj-$(CONFIG_SND_PXA2XX_SOC_MAGICIAN) += snd-soc-magician.o
- obj-$(CONFIG_SND_PXA2XX_SOC_MIOA701) += snd-soc-mioa701.o
- obj-$(CONFIG_SND_PXA2XX_SOC_Z2) += snd-soc-z2.o
-diff --git a/sound/soc/pxa/hx4700.c b/sound/soc/pxa/hx4700.c
-new file mode 100644
-index 0000000..e629a88
---- /dev/null
-+++ b/sound/soc/pxa/hx4700.c
-@@ -0,0 +1,253 @@
-+/*
-+ * SoC audio for HP iPAQ hx4700
-+ *
-+ * Copyright (c) 2009 Philipp Zabel
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/timer.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <linux/delay.h>
-+#include <linux/gpio.h>
-+
-+#include <sound/core.h>
-+#include <sound/jack.h>
-+#include <sound/pcm.h>
-+#include <sound/pcm_params.h>
-+#include <sound/soc.h>
-+
-+#include <mach/hx4700.h>
-+#include <asm/mach-types.h>
-+#include "pxa2xx-i2s.h"
-+
-+#include "../codecs/ak4641.h"
-+
-+static struct snd_soc_jack hs_jack;
-+
-+/* Headphones jack detection DAPM pin */
-+static struct snd_soc_jack_pin hs_jack_pin[] = {
-+	{
-+		.pin	= "Headphone Jack",
-+		.mask	= SND_JACK_HEADPHONE,
-+	},
-+	{
-+		.pin	= "Speaker",
-+		/* disable speaker when hp jack is inserted */
-+		.mask   = SND_JACK_HEADPHONE,
-+		.invert	= 1,
-+	},
-+};
-+
-+/* Headphones jack detection GPIO */
-+static struct snd_soc_jack_gpio hs_jack_gpio = {
-+	.gpio		= GPIO75_HX4700_EARPHONE_nDET,
-+	.invert		= true,
-+	.name		= "hp-gpio",
-+	.report		= SND_JACK_HEADPHONE,
-+	.debounce_time	= 200,
-+};
-+
-+/*
-+ * iPAQ hx4700 uses I2S for capture and playback.
-+ */
-+static int hx4700_hw_params(struct snd_pcm_substream *substream,
-+			    struct snd_pcm_hw_params *params)
-+{
-+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
-+	struct snd_soc_dai *codec_dai = rtd->codec_dai;
-+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
-+	int ret = 0;
-+
-+	/* set codec DAI configuration */
-+	ret = snd_soc_dai_set_fmt(codec_dai,
-+			SND_SOC_DAIFMT_MSB | SND_SOC_DAIFMT_NB_NF |
-+			SND_SOC_DAIFMT_CBS_CFS);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* set cpu DAI configuration */
-+	ret = snd_soc_dai_set_fmt(cpu_dai,
-+			SND_SOC_DAIFMT_MSB | SND_SOC_DAIFMT_NB_NF |
-+			SND_SOC_DAIFMT_CBS_CFS);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* set the I2S system clock as output */
-+	ret = snd_soc_dai_set_sysclk(cpu_dai, PXA2XX_I2S_SYSCLK, 0,
-+			SND_SOC_CLOCK_OUT);
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static struct snd_soc_ops hx4700_ops = {
-+	.hw_params = hx4700_hw_params,
-+};
-+
-+static int hx4700_spk_power(struct snd_soc_dapm_widget *w,
-+			    struct snd_kcontrol *k, int event)
-+{
-+	gpio_set_value(GPIO107_HX4700_SPK_nSD, !!SND_SOC_DAPM_EVENT_ON(event));
-+	return 0;
-+}
-+
-+static int hx4700_hp_power(struct snd_soc_dapm_widget *w,
-+			   struct snd_kcontrol *k, int event)
-+{
-+	gpio_set_value(GPIO92_HX4700_HP_DRIVER, !!SND_SOC_DAPM_EVENT_ON(event));
-+	return 0;
-+}
-+
-+/* hx4700 machine dapm widgets */
-+static const struct snd_soc_dapm_widget ak4641_dapm_widgets[] = {
-+	SND_SOC_DAPM_HP("Headphone Jack", hx4700_hp_power),
-+	SND_SOC_DAPM_SPK("Speaker", hx4700_spk_power),
-+	SND_SOC_DAPM_MIC("Built-in Microphone", NULL),
-+};
-+
-+/* hx4700 machine audio_map */
-+static const struct snd_soc_dapm_route audio_map[] = {
-+
-+	/* Headphone connected to LOUT, ROUT */
-+	{"Headphone Jack", NULL, "LOUT"},
-+	{"Headphone Jack", NULL, "ROUT"},
-+
-+	/* Speaker connected to MOUT2 */
-+	{"Speaker", NULL, "MOUT2"},
-+
-+	/* Microphone connected to MICIN */
-+	{"MICIN", NULL, "Built-in Microphone"},
-+	{"AIN", NULL, "MICOUT"},
-+};
-+
-+static struct snd_soc_card snd_soc_card_hx4700;
-+
-+/*
-+ * Logic for a ak4641 as connected on a HP iPAQ hx4700
-+ */
-+static int hx4700_ak4641_init(struct snd_soc_pcm_runtime *rtd)
-+{
-+	struct snd_soc_codec *codec = rtd->codec;
-+	struct snd_soc_dapm_context *dapm = &codec->dapm;
-+	int err;
-+
-+	/* NC codec pins */
-+	/* FIXME: is anything connected here? */
-+	snd_soc_dapm_nc_pin(dapm, "MOUT1");
-+	snd_soc_dapm_nc_pin(dapm, "MICEXT");
-+	snd_soc_dapm_nc_pin(dapm, "AUX");
-+
-+	/* Add hx4700 specific widgets */
-+	snd_soc_dapm_new_controls(dapm, ak4641_dapm_widgets,
-+				  ARRAY_SIZE(ak4641_dapm_widgets));
-+
-+	/* Set up hx4700 specific audio path interconnects */
-+	snd_soc_dapm_add_routes(dapm, audio_map, ARRAY_SIZE(audio_map));
-+
-+	snd_soc_dapm_sync(dapm);
-+
-+	/* Jack detection API stuff */
-+	err = snd_soc_jack_new(codec, "Headphone Jack",
-+				SND_JACK_HEADPHONE, &hs_jack);
-+	if (err)
-+		return err;
-+
-+	err = snd_soc_jack_add_pins(&hs_jack, ARRAY_SIZE(hs_jack_pin),
-+					hs_jack_pin);
-+	if (err)
-+		return err;
-+
-+	err = snd_soc_jack_add_gpios(&hs_jack, 1, &hs_jack_gpio);
-+
-+	return err;
-+}
-+
-+/* hx4700 digital audio interface glue - connects codec <--> CPU */
-+static struct snd_soc_dai_link hx4700_dai[] = {
-+{
-+	.name = "ak4641",
-+	.stream_name = "AK4641",
-+	.cpu_dai_name = "pxa2xx-i2s",
-+	.codec_dai_name = "ak4641-hifi",
-+	.platform_name = "pxa-pcm-audio",
-+	.codec_name = "ak4641-codec.0-0012",
-+	.init = hx4700_ak4641_init,
-+	.ops = &hx4700_ops,
-+},
-+};
-+
-+/* hx4700 audio machine driver */
-+static struct snd_soc_card snd_soc_card_hx4700 = {
-+	.name = "iPAQ hx4700",
-+	.dai_link = hx4700_dai,
-+	.num_links = ARRAY_SIZE(hx4700_dai),
-+};
-+
-+static struct platform_device *hx4700_snd_device;
-+
-+static int __init hx4700_init(void)
-+{
-+	int ret;
-+
-+	if (!machine_is_h4700())
-+		return -ENODEV;
-+
-+	ret = gpio_request(GPIO107_HX4700_SPK_nSD, "SPK_POWER");
-+	if (ret)
-+		goto err_request_spk;
-+	ret = gpio_request(GPIO92_HX4700_HP_DRIVER, "EP_POWER");
-+	if (ret)
-+		goto err_request_ep;
-+
-+	gpio_direction_output(GPIO107_HX4700_SPK_nSD, 1);
-+	gpio_direction_output(GPIO92_HX4700_HP_DRIVER, 0);
-+
-+	hx4700_snd_device = platform_device_alloc("soc-audio", -1);
-+	if (!hx4700_snd_device) {
-+		ret = -ENOMEM;
-+		goto err_pdev;
-+	}
-+
-+	platform_set_drvdata(hx4700_snd_device, &snd_soc_card_hx4700);
-+	ret = platform_device_add(hx4700_snd_device);
-+	if (ret) {
-+		platform_device_put(hx4700_snd_device);
-+		goto err_pdev;
-+	}
-+
-+	return 0;
-+
-+err_pdev:
-+	gpio_free(GPIO92_HX4700_HP_DRIVER);
-+err_request_ep:
-+	gpio_free(GPIO107_HX4700_SPK_nSD);
-+err_request_spk:
-+	return ret;
-+}
-+
-+static void __exit hx4700_exit(void)
-+{
-+	snd_soc_jack_free_gpios(&hs_jack, 1, &hs_jack_gpio);
-+	platform_device_unregister(hx4700_snd_device);
-+
-+	gpio_set_value(GPIO92_HX4700_HP_DRIVER, 0);
-+	gpio_set_value(GPIO107_HX4700_SPK_nSD, 0);
-+
-+	gpio_free(GPIO92_HX4700_HP_DRIVER);
-+	gpio_free(GPIO107_HX4700_SPK_nSD);
-+}
-+
-+module_init(hx4700_init);
-+module_exit(hx4700_exit);
-+
-+MODULE_AUTHOR("Philipp Zabel");
-+MODULE_DESCRIPTION("ALSA SoC iPAQ hx4700");
-+MODULE_LICENSE("GPL");
+Sure looks like I would expect; after all 99% of the processes a system
+has running are completely idle.  With a normal cgroups setup you're
+only interested in the processes that are actually being a problem,
+the ones that you know want to eat CPUs, like "make -j99+gcc", like
+"apache+php". But here we're not using those extra assumptions, so you
+have to cut up the process list at every reasonable boundry.
+
+If you're in userspace (eg your python script) it might be reasonable
+to have an idleness test and arrange things so that only if you find a
+process that's busy (for a few seconds) do you move the SID group into
+it's own cgroup, then for idle processes you might start with the old
+group per user id. Or you could try per user id for system processes
+(uid < 1000) and SID for user processes. Or .. or .. some complicated
+cgroups deamon that can do all of the above.
+
+But in kernel space this kind of complexity feels like a bad idea. 
+(probably proven bad too)
+
+As an aside, the CPU time allocation per SID concept seems like a
+pretty good complement to Con Kolivas's BF Scheduler; after all BFS
+is supposed to be happier with what amounts to lower "load average"
+values and if all the processes under a given SID value get treated as
+one 'job' for global scheduling, that's what you get.
+  (NB: Yes I know, BFS breaks cgroups)
+
+> The big circle in the middle shows the cgroups alottment, the
+> satellites show the processes inside each cgroup. The number
+> on the perimeter is the SID.
+
+> Linus Walleij
+
 -- 
-1.7.0.4
+Rob.                          (Robert de Bath <robert$ @ debath.co.uk>)
+                                              <http://www.debath.co.uk/>
+
 
