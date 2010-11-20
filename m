@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522Ab0KTKVa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 05:21:30 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:57173 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750846Ab0KTKV3 (ORCPT
+	id S1751916Ab0KTKmW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 05:42:22 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:42681 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771Ab0KTKmU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 05:21:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=tGhyw7GClpR7QYMNiHxertH1LqqJ3w4WnBhIJWlCNAm2sU96s+7TJVONL2giUvg/cA
-         ZUb5+P2pP3BizwQYggQh/6zvePyLt4mYMEy1YxZD7mE8M+m5xu8sG+m6idLx6clVRX/D
-         MYE2CFXiRiXYh0BI23u9bt9W/DVhaqEegypqc=
-Date: Sat, 20 Nov 2010 11:21:24 +0100
-From: Johan Hovold <jhovold@gmail.com>
-To: Daniel Otte <daniel.otte@rub.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Trouble with ft2232
-Message-ID: <20101120102124.GC11984@localhost>
-References: <4CB4ACCA.9090407@rub.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CB4ACCA.9090407@rub.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 20 Nov 2010 05:42:20 -0500
+Subject: Re: [PATCH 1/5] sched: Enable might_sleep before initializing
+ drivers.
+From: Peter Zijlstra <peterz@infradead.org>
+To: John Stultz <john.stultz@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1290218934-8544-2-git-send-email-john.stultz@linaro.org>
+References: <1290218934-8544-1-git-send-email-john.stultz@linaro.org>
+	 <1290218934-8544-2-git-send-email-john.stultz@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 20 Nov 2010 11:42:35 +0100
+Message-ID: <1290249755.2118.0.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 08:45:30PM +0200, Daniel Otte wrote:
-> Hi Johan,
-> I have some trouble with the driver for the FT2232D.
-> It worked flawlessly the last time I checked (around August) but now it seems to
-> have troubles.
+On Fri, 2010-11-19 at 18:08 -0800, John Stultz wrote:
+> From: Arve Hjønnevåg <arve@android.com>
+> 
+> This allows detection of init bugs in built-in drivers.
+> 
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Arve Hjønnevåg <arve@android.com>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>  kernel/sched.c |   13 ++++++++++++-
+>  1 files changed, 12 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index aa14a56..0b58415 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -8104,13 +8104,24 @@ static inline int preempt_count_equals(int preempt_offset)
+>  	return (nested == PREEMPT_INATOMIC_BASE + preempt_offset);
+>  }
+>  
+> +static int __might_sleep_init_called;
+> +int __init __might_sleep_init(void)
+> +{
+> +	__might_sleep_init_called = 1;
+> +	return 0;
+> +}
+> +early_initcall(__might_sleep_init);
+> +
+>  void __might_sleep(const char *file, int line, int preempt_offset)
+>  {
+>  #ifdef in_atomic
+>  	static unsigned long prev_jiffy;	/* ratelimiting */
+>  
+>  	if ((preempt_count_equals(preempt_offset) && !irqs_disabled()) ||
+> -	    system_state != SYSTEM_RUNNING || oops_in_progress)
+> +	    oops_in_progress)
+> +		return;
+> +	if (system_state != SYSTEM_RUNNING &&
+> +	    (!__might_sleep_init_called || system_state != SYSTEM_BOOTING))
+>  		return;
+>  	if (time_before(jiffies, prev_jiffy + HZ) && prev_jiffy)
+>  		return;
 
-This could be related to a change that was incorrectly made to the
-DTR/RTS handling.  This change has later been reverted (commit
-677aeafe19e88c282af74564048243ccabb1c590 upstream).
-
-Could you see if 2.6.37-rc2 works as it should? The revert will also be
-part of 2.6.36.1 (and 2.6.35.9) soon to be released.
-
-> The device is correctly identified and /dev/ttyUSB0 and /dev/ttyUSB1 are
-> created, but at least /dev/ttyUSB1 does not transmit or receive data.
-> I'm running Kernel 2.6.32-25 on Ubuntu 10.04 but I could also verify this
-> problem on Kernel 2.6.35-7. The Device (LM3S9B90 dev kit) works correctly under
-> Windows 2000. Also flashing via openocd which uses libftdi works.
-> I already removed brltty (which seems to cause some trouble as I found out on
-> the web).
-
-Thanks,
-Johan
+Remind me, why isn't scheduler_running good enough?
