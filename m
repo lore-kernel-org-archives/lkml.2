@@ -1,375 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab0KTPgI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 10:36:08 -0500
-Received: from mail.openrapids.net ([64.15.138.104]:41589 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751608Ab0KTPgH (ORCPT
+	id S1753706Ab0KTPlY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 10:41:24 -0500
+Received: from tango.0pointer.de ([85.214.72.216]:39406 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256Ab0KTPlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 10:36:07 -0500
-Date: Sat, 20 Nov 2010 10:36:02 -0500
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca, linux-kernel@vger.kernel.org
-Cc: "Frank Ch. Eigler" <fche@redhat.com>
-Subject: Re: [RFC] lttngtrace (signal forwarding)
-Message-ID: <20101120153602.GA18580@Krystal>
-References: <20101119222112.GA32294@Krystal> <20101120002152.GA12529@Krystal> <20101120002823.GA22308@Krystal> <20101120142354.GA16996@Krystal>
+	Sat, 20 Nov 2010 10:41:23 -0500
+Date: Sat, 20 Nov 2010 16:41:01 +0100
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: Ben Gamari <bgamari.foss@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Miller <davem@davemloft.net>, tytso@mit.edu,
+        a.p.zijlstra@chello.nl, debiandev@gmail.com, alan@lxorguk.ukuu.org.uk,
+        dhaval.giani@gmail.com, efault@gmx.de, vgoyal@redhat.com,
+        oleg@redhat.com, markus@trippelsdorf.de,
+        mathieu.desnoyers@efficios.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC/RFT PATCH v3] sched: automated per tty task groups
+Message-ID: <20101120154100.GA25803@tango.0pointer.de>
+References: <C47257FC-498A-41B0-BC94-C81C72601D53@mit.edu>
+ <20101119.082944.226775934.davem@davemloft.net>
+ <20101119163430.GA12353@tango.0pointer.de>
+ <20101119.084302.71115175.davem@davemloft.net>
+ <AANLkTiksmvcLKGx7-u5CnTnZU6dgOgg7wem6qf384zUg@mail.gmail.com>
+ <87mxp53z72.fsf@gmail.com>
+ <20101120011330.GB4183@tango.0pointer.de>
+ <20101120042557.GA12043@balbir.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101120142354.GA16996@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 10:32:38 up 58 days, 19:34,  5 users,  load average: 0.17, 0.13,
-	0.10
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101120042557.GA12043@balbir.in.ibm.com>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This new version forwards SIGINT and SIGTERM to the child process. Signals are
-disabled around execution of the parent process until it reaches the point where
-it can forward them to the child.
+On Sat, 20.11.10 09:55, Balbir Singh (balbir@linux.vnet.ibm.com) wrote:
 
-Mathieu
+> > However, I am not sure I like the idea of having pollable files like that,
+> > because in the systemd case I am very much interested in getting
+> > recursive notifications, i.e. I want to register once for getting
+> > notifications for a full subtree instead of having to register for each
+> > cgroup individually.
+> > 
+> > My personal favourite solution would be to get a netlink msg when a
+> > cgroup runs empty. That way multiple programs could listen to the events
+> > at the same time, and we'd have an easy way to subscribe to a whole
+> > hierarchy of groups.
+> 
+> The netlink message should not be hard to do if we agree to work on
+> it. The largest objections I've heard is that netlink implies
+> network programming and most users want to be able to script in
+> their automation and network scripting is hard.
 
-/*
- * lttngtrace.c
- *
- * lttngtrace starts/stop system wide tracing around program execution.
- *
- * Copyright (c) 2010 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
- *
- * This file should be setuid root, and belong to a "tracing" group. Only users
- * part of the tracing group can trace and view the traces gathered.
- *
- * TODO: LTTng should support per-session tracepoint activation.
- * TODO: use mkstemp() and save last trace name in user's home directory.
- */
+Well, the notify_on_release stuff cannot be dropped anyway at this point
+in time, so netlink support would be an addition to, not a replacement for
+the current stuff that might be useful for scripting folks.
 
-#include <errno.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
-#include <dirent.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#if DEBUG
-#define printf_dbg(fmt, args...)	printf(fmt, args)
-#else
-#define printf_dbg(fmt, ...)
-#endif
-
-static char *trace_path;
-static char trace_path_pid[PATH_MAX];
-static int autotrace;	/*
-			 * Is the trace_path automatically chosen in /tmp ? Can
-			 * we unlink if needed ?
-			 */
-static int sigfwd_pid;
-
-static int recunlink(const char *dirname)
-{
-	DIR *dir;
-	struct dirent *entry;
-	char path[PATH_MAX];
-
-	dir = opendir(dirname);
-	if (dir == NULL) {
-		if (errno == ENOENT)
-			return 0;
-		perror("Error opendir()");
-		return -errno;
-	}
-
-	while ((entry = readdir(dir)) != NULL) {
-		if (strcmp(entry->d_name, ".") && strcmp(entry->d_name, "..")) {
-			snprintf(path, (size_t) PATH_MAX, "%s/%s", dirname,
-				 entry->d_name);
-			if (entry->d_type == DT_DIR)
-				recunlink(path);
-			else
-				unlink(path);
-		}
-	}
-	closedir(dir);
-	rmdir(dirname);
-
-	return 0;
-}
-
-static int start_tracing(void)
-{
-	int ret;
-	char command[PATH_MAX];
-
-	if (autotrace) {
-		ret = recunlink(trace_path);
-		if (ret)
-			return ret;
-	}
-
-	/*
-	 * Create the directory in /tmp to deal with races (refuse if fail).
-	 * Only allow user and group to read the trace data (to limit
-	 * information disclosure).
-	 */
-	ret = mkdir(trace_path, S_IRWXU|S_IRWXG);
-	if (ret) {
-		perror("Trace directory creation error");
-		return ret;
-	}
-	ret = system("ltt-armall > /dev/null");
-	if (ret)
-		return ret;
-
-	ret = snprintf(command, PATH_MAX - 1,
-		       "lttctl -C -w %s autotrace1 > /dev/null",
-		       trace_path);
-	ret = ret < 0 ? ret : 0;
-	if (ret)
-		return ret;
-	ret = system(command);
-	if (ret)
-		return ret;
-}
-
-static int stop_tracing(uid_t uid, gid_t egid)
-{
-	int ret;
-
-	ret = system("lttctl -D autotrace1 > /dev/null");
-	if (ret)
-		return ret;
-	ret = system("ltt-disarmall > /dev/null");
-	if (ret)
-		return ret;
-	/* Hand the trace back to the user after tracing is over */
-	ret = chown(trace_path, uid, egid);
-	if (ret) {
-		perror("chown error");
-		return ret;
-	}
-}
-
-static int write_child_pid(pid_t pid, uid_t uid, gid_t gid)
-{
-	int fd;
-	FILE *fp;
-	int ret;
-
-	/* Create the file as exclusive to deal with /tmp file creation races */
-	fd = open(trace_path_pid, O_WRONLY | O_CREAT | O_EXCL | O_TRUNC,
-		  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
-	fp = fdopen(fd, "w");
-	if (!fp) {
-		perror("Error writing child pid");
-		return -errno;
-	}
-	
-	fprintf(fp, "%u", (unsigned int) pid);
-	ret = fclose(fp);
-	if (ret)
-		perror("Error in fclose");
-	/* Hand pid information file back to user */
-	ret = chown(trace_path_pid, uid, gid);
-	if (ret)
-		perror("chown error");
-	return ret;
-}
-
-static int parse_options(int argc, char *argv[], int *arg)
-{
-	int ret = 0;
-
-	for (;;) {
-		if (*arg >= argc
-		    || argv[*arg][0] != '-'
-		    || argv[*arg][0] == '\0'
-		    || argv[*arg][1] == '\0'
-		    || !strcmp(argv[*arg], "--"))
-			break;
-		switch (argv[*arg][1]) {
-		case 'o':	if (*arg + 1 >= argc) {
-					printf("Missing -o trace name\n");
-					ret = -EINVAL;
-					break;
-				}
-				trace_path = argv[*arg + 1];
-				(*arg) += 2;
-				break;
-		default:	printf("Unknown option -%c\n", argv[*arg][1]);
-				ret = -EINVAL;
-				return ret;
-		}
-	}
-	return ret;
-}
-
-static int init_trace_path(void)
-{
-	int ret;
-
-	if (!trace_path) {
-		trace_path = "/tmp/autotrace1";
-		autotrace = 1;
-	}
-	ret = snprintf(trace_path_pid, PATH_MAX - 1, "%s/%s",
-		       trace_path, "pid");
-	ret = ret < 0 ? ret : 0;
-	return ret;
-}
-
-static void sighandler(int signo, siginfo_t *siginfo, void *context)
-{
-	kill(sigfwd_pid, signo);
-}
-
-static int init_sighand(sigset_t *saved_mask)
-{
-	sigset_t sig_all_mask;
-	int gret = 0, ret;
-
-	/* Block signals */
-	ret = sigfillset(&sig_all_mask);
-	if (ret)
-		perror("Error in sigfillset");
-	gret = (gret == 0) ? ret : gret;
-	ret = sigprocmask(SIG_SETMASK, &sig_all_mask, saved_mask);
-	if (ret)
-		perror("Error in sigprocmask");
-	gret = (gret == 0) ? ret : gret;
-	return gret;
-}
-
-static int forward_signals(pid_t pid, sigset_t *saved_mask)
-{
-	struct sigaction act;
-	int gret = 0, ret;
-
-	/* Forward SIGINT and SIGTERM */
-	sigfwd_pid = pid;
-	act.sa_sigaction = sighandler;
-	act.sa_flags = SA_SIGINFO | SA_RESTART;
-	sigemptyset(&act.sa_mask);
-	ret = sigaction(SIGINT, &act, NULL);
-	if (ret)
-		perror("Error in sigaction");
-	gret = (gret == 0) ? ret : gret;
-	ret = sigaction(SIGTERM, &act, NULL);
-	if (ret)
-		perror("Error in sigaction");
-	gret = (gret == 0) ? ret : gret;
-
-	/* Reenable signals */
-	ret = sigprocmask(SIG_SETMASK, saved_mask, NULL);
-	if (ret)
-		perror("Error in sigprocmask");
-	gret = (gret == 0) ? ret : gret;
-	return gret;
-}
-
-int main(int argc, char *argv[])
-{
-	uid_t euid, uid;
-	gid_t egid, gid;
-	pid_t pid;
-	int gret = 0, ret = 0;
-	int arg = 1;
-	sigset_t saved_mask;
-
-	if (argc < 2)
-		return -ENOENT;
-
-	euid = geteuid();
-	uid = getuid();
-	egid = getegid();
-	gid = geteuid();
-
-	if (euid != 0 && uid != 0) {
-		printf("%s must be setuid root\n", argv[0]);
-		return -EPERM;
-	}
-
-	printf_dbg("euid: %d\n", euid);
-	printf_dbg("uid: %d\n", uid);
-	printf_dbg("egid: %d\n", egid);
-	printf_dbg("gid: %d\n", gid);
-
-	if (arg < argc) {
-		ret = parse_options(argc, argv, &arg);
-		if (ret)
-			return ret;
-	}
-
-	ret = init_trace_path();
-	gret = (gret == 0) ? ret : gret;
-
-	ret = init_sighand(&saved_mask);
-	gret = (gret == 0) ? ret : gret;
-
-	ret = start_tracing();
-	if (ret)
-		return ret;
-
-	pid = fork();
-	if (pid > 0) {		/* parent */
-		int status;
-
-		ret = forward_signals(pid, &saved_mask);
-		gret = (gret == 0) ? ret : gret;
-		pid = wait(&status);
-		if (pid == -1)
-			gret = (gret == 0) ? -errno : gret;
-
-		ret = stop_tracing(uid, egid);
-		gret = (gret == 0) ? ret : gret;
-		ret = write_child_pid(pid, uid, egid);
-		gret = (gret == 0) ? ret : gret;
-	} else if (pid == 0) {	/* child */
-		/* Drop root euid before executing child program */
-		seteuid(uid);
-		/* Reenable signals */
-		ret = sigprocmask(SIG_SETMASK, &saved_mask, NULL);
-		if (ret) {
-			perror("Error in sigprocmask");
-			return ret;
-		}
-		ret = execvp(argv[arg], &argv[arg]);
-		if (ret)
-			perror("Execution error");
-		return ret;
-	} else {		/* error */
-		perror("Error in fork");
-		return -errno;
-	}
-	return ret;
-}
-
+Lennart
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Lennart Poettering - Red Hat, Inc.
