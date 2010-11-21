@@ -1,87 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428Ab0KUN5u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 08:57:50 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55396 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753200Ab0KUN5t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 08:57:49 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Uw5SPZGuFZNjqUGvKgZoZO4JG8RWdFKbZU5gZUJtEb+gue1Hh2FMms5RVWVAnZYSqu
-         9WRO0bqjWS9B80XT8tcwfSqEBn6+QKa5ZXb0HZFyL11/y4tgxquDLxlIj0xWliwmofkW
-         hH7/z0Sf9H96iIBptech1yFV//eEdnxA7FjAE=
-Date: Sun, 21 Nov 2010 22:00:57 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Shaohui Zheng <shaohui.zheng@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-        lethal@linux-sh.org, Andi Kleen <ak@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>
-Subject: Re: [1/8,v3] NUMA Hotplug Emulator: add function to hide memory
-	region via e820 table.
-Message-ID: <20101121140057.GH9099@hack>
-References: <20101117020759.016741414@intel.com> <20101117021000.479272928@intel.com> <alpine.DEB.2.00.1011162354390.16875@chino.kir.corp.google.com> <20101118092052.GE2408@shaohui> <alpine.DEB.2.00.1011181313140.26680@chino.kir.corp.google.com> <20101119001218.GA3327@shaohui> <alpine.DEB.2.00.1011201642200.10618@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1011201642200.10618@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1753488Ab0KUOE3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 09:04:29 -0500
+Received: from mga14.intel.com ([143.182.124.37]:6883 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753346Ab0KUOE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 09:04:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,231,1288594800"; 
+   d="scan'208";a="351427644"
+Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
+From: Lin Ming <ming.m.lin@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <8e9ff9280b0c4a059bc82b5c4a629897.squirrel@www.firstfloor.org>
+References: <1290340877.2245.124.camel@localhost>
+	 <8e9ff9280b0c4a059bc82b5c4a629897.squirrel@www.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 21 Nov 2010 22:04:19 +0800
+Message-Id: <1290348259.2245.172.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 20, 2010 at 04:45:06PM -0800, David Rientjes wrote:
->On Fri, 19 Nov 2010, Shaohui Zheng wrote:
->
->> > > > > Index: linux-hpe4/arch/x86/kernel/e820.c
->> > > > > ===================================================================
->> > > > > --- linux-hpe4.orig/arch/x86/kernel/e820.c	2010-11-15 17:13:02.483461667 +0800
->> > > > > +++ linux-hpe4/arch/x86/kernel/e820.c	2010-11-15 17:13:07.083461581 +0800
->> > > > > @@ -971,6 +971,7 @@
->> > > > >  }
->> > > > >  
->> > > > >  static int userdef __initdata;
->> > > > > +static u64 max_mem_size __initdata = ULLONG_MAX;
->> > > > >  
->> > > > >  /* "mem=nopentium" disables the 4MB page tables. */
->> > > > >  static int __init parse_memopt(char *p)
->> > > > > @@ -989,12 +990,28 @@
->> > > > >  
->> > > > >  	userdef = 1;
->> > > > >  	mem_size = memparse(p, &p);
->> > > > > -	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
->> > > > > +	e820_remove_range(mem_size, max_mem_size - mem_size, E820_RAM, 1);
->> > > > > +	max_mem_size = mem_size;
->> > > > >  
->> > > > >  	return 0;
->> > > > >  }
->> > > > 
->> > > > This needs memmap= support as well, right?
->> > > we did not do the testing after combine both memmap and numa=hide paramter, 
->> > > I think that the result should similar with mem=XX, they both remove a memory
->> > > region from the e820 table.
->> > > 
->> > 
->> > You've modified the parser for mem= but not memmap= so the change needs 
->> > additional support for the latter.
->> > 
->> 
->> the parser for mem= is not modified, the changed parser is numa=, I add a addtional
->> option numa=hide=.
->> 
->
->The above hunk is modifying the x86 parser for the mem= parameter.
->
+On Sun, 2010-11-21 at 20:46 +0800, Andi Kleen wrote:
+> >
+> > 2. Uncore pmu NMI handling
+> >
+> > All the 4 cores are programmed to receive uncore counter overflow
+> > interrupt. The NMI handler(running on 1 of the 4 cores) handle all
+> > counters enabled by all 4 cores.
+> 
+> Really for uncore monitoring there is no need to use an NMI handler.
+> You can't profile a core anyways, so you can just delay the reporting
+> a little bit. It may simplify the code to not use one here
+> and just use an ordinary handler.
 
-That is fine as long as "mem=" is parsed before "numa=".
+OK, I can use on ordinary interrupt handler here.
 
-I think "mem=" should always be parsed before "numa=" no matter what
-order they are specified in cmdline, since we need know how much total
-memory we have at first.
+> 
+> In general since there is already much trouble with overloaded
+> NMI events avoiding new NMIs is a good idea.
+> 
+> 
+> 
+> > +
+> > +static struct node_hw_events *uncore_events[MAX_NUMNODES];
+> 
+> Don't declare static arrays with MAX_NUMNODES, that number can be
+> very large and cause unnecessary bloat. Better use per CPU data or similar
+> (e.g. with  alloc_percpu)
 
-Thanks.
+I really need is a per physical cpu data here, is alloc_percpu enough?
+
+> 
+> > +	/*
+> > +	 * The hw event starts counting from this event offset,
+> > +	 * mark it to be able to extra future deltas:
+> > +	 */
+> > +	local64_set(&hwc->prev_count, (u64)-left);
+> 
+> Your use of local* seems dubious. That is only valid if it's really
+> all on the same CPU. Is that really true?
+
+Good catch! That is not true.
+
+The interrupt handler is running on one core and the
+data(hwc->prev_count) maybe on another core.
+
+Any idea to set this cross-core data?
+
+> 
+> > +static int uncore_pmu_add(struct perf_event *event, int flags)
+> > +{
+> > +	int node = numa_node_id();
+> 
+> this should be still package id
+
+Understand, this is in my TODO.
+
+> 
+> > +	/* Check CPUID signatures: 06_1AH, 06_1EH, 06_1FH */
+> > +	model = eax.split.model | (eax.split.ext_model << 4);
+> > +	if (eax.split.family != 6 || (model != 0x1A && model != 0x1E && model !=
+> > 0x1F))
+> > +		return;
+> 
+> You can just get that from boot_cpu_data, no need to call cpuid
+
+Nice, will use it.
+
+> 
+> > +#include <linux/perf_event.h>
+> > +#include <linux/capability.h>
+> > +#include <linux/notifier.h>
+> > +#include <linux/hardirq.h>
+> > +#include <linux/kprobes.h>
+> > +#include <linux/module.h>
+> > +#include <linux/kdebug.h>
+> > +#include <linux/sched.h>
+> > +#include <linux/uaccess.h>
+> > +#include <linux/slab.h>
+> > +#include <linux/highmem.h>
+> > +#include <linux/cpu.h>
+> > +#include <linux/bitops.h>
+> 
+> Do you really need all these includes?
+
+Only
+
+#include <linux/perf_event.h>
+#include <linux/kprobes.h>
+#include <linux/hardirq.h>
+#include <linux/slab.h>
+
+are needed.
+
+Thanks for the comments.
+Lin Ming
+
+
