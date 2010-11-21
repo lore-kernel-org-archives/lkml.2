@@ -1,36 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab0KUVux (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 16:50:53 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46925 "EHLO
+	id S1754648Ab0KUWMs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 17:12:48 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58965 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754297Ab0KUVuv convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754297Ab0KUWMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 16:50:51 -0500
+	Sun, 21 Nov 2010 17:12:46 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=eAZaGZTIFKj/LCgxzK0kQmAZQRz8EGsfTsX6XYZkGUN09m26FSjqzj1PvnZ+z3+04y
-         Qa6oi0QUO1CoOD86hbHohBJKxDL9w+nFC+F0a8F6+wh5qmYioR5M6fDQ51mfSeye0FcM
-         vvuATCk6OIbghepr4JzOIB1tcbnFMfql6mQu0=
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=nnPgJZPdnbpSyQMjDU0rmKXFLJc6Sqog1KfXbfxbLpUrDoGV2O9kBEoRDIHJcMkU7m
+         HflxbqOKnPVgTrYQlooAWmOS6YtD4x//p4KXb68kqyqFNz1qa9DUof7crh+VTTjAjwPt
+         YQbBuB8jNVN60nyVCJQ8F15rVzZhjteYKno4k=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinEm1mLAtPZdEp2sHRfKPeV6qYP8f9Dbbr92_JD@mail.gmail.com>
+In-Reply-To: <AANLkTi==VRvn2XjNf3EWZf8jAXwFTrRz8uyFSnnYVi8c@mail.gmail.com>
 References: <AANLkTim4jVaZxYp8nSgJyy28iwxcxbPeNUzxTfoHAX4S@mail.gmail.com>
  <F46C52ED-8DB8-4347-957D-B9D84406D53F@mit.edu> <AANLkTinyafwe9MyXhSSe5vxEKnTUeLV0AZDWY_uXsu8f@mail.gmail.com>
  <20101121130236.GE23423@thunk.org> <20101121172906.GD3703@kroah.com>
  <AANLkTik6MQjYTCQ4wtyRpOGb94uyUTA+juvX-8UsP95J@mail.gmail.com>
- <20101121203124.1ba8212e@lxorguk.ukuu.org.uk> <20101121214407.GH23423@thunk.org>
- <AANLkTinEm1mLAtPZdEp2sHRfKPeV6qYP8f9Dbbr92_JD@mail.gmail.com>
+ <20101121203124.1ba8212e@lxorguk.ukuu.org.uk> <AANLkTi==VRvn2XjNf3EWZf8jAXwFTrRz8uyFSnnYVi8c@mail.gmail.com>
 From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Date: Sun, 21 Nov 2010 13:50:30 -0800
-X-Google-Sender-Auth: MIGQyAJjxq8CwDyqRaDZnqFVhEo
-Message-ID: <AANLkTikVdm5bnXhGeg9rYsacWJsf_2s6A+b3iKJQeisD@mail.gmail.com>
+Date: Sun, 21 Nov 2010 14:12:25 -0800
+X-Google-Sender-Auth: VyBqYd8PBt8RfauaJD9uuUkWhPA
+Message-ID: <AANLkTi=PQmAfNPFj9pytgP0yMX+B8eZ6Bg3KYwyZZsO3@mail.gmail.com>
 Subject: Re: Challenges with doing hardware bring up with Linux first
-To: =?UTF-8?Q?G=C3=A1bor_Stefanik?= <netrolller.3d@gmail.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg KH <greg@kroah.com>, "Ted Ts'o" <tytso@mit.edu>,
+        linux-kernel@vger.kernel.org,
         linux-wireless <linux-wireless@vger.kernel.org>,
         David Miller <davem@davemloft.net>,
         "John W. Linville" <linville@tuxdriver.com>,
@@ -42,49 +40,60 @@ Cc: "Ted Ts'o" <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Don Breslin <Don.Breslin@atheros.com>,
         Doug Dahlby <Doug.Dahlby@atheros.com>, Julia Lawall <julia@diku.dk>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/11/21 Gábor Stefanik <netrolller.3d@gmail.com>:
-> On Sun, Nov 21, 2010 at 10:44 PM, Ted Ts'o <tytso@mit.edu> wrote:
->> On Sun, Nov 21, 2010 at 08:31:24PM +0000, Alan Cox wrote:
->>>
->>> Which we know in practice they won't. They'll sit on fixes (often
->>> security fixes) and tweak and add private copies of features. In turn the
->>> Linux one could then only keep up by adding features itself - which would
->>> have to be GPL to stop the same abuse continuing.
->>>
->>> It's a nice idea but the corporations exist to make money and adding
->>> proprietary custom stack add-ons is clearly a good move on their part to
->>> do that.
+On Sun, Nov 21, 2010 at 1:47 PM, Luis R. Rodriguez
+<lrodriguez@atheros.com> wrote:
+> On Sun, Nov 21, 2010 at 12:31 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>>> Right -- which is why ideally I think it'd be nice to have an open
+>>> permissive stack people shared. My preference would be to just pick up
 >>
->> Hence my recommendation that if someone is going to do the work to
->> create a 802.11 layer that has shims that work on multiple operating
->> systems, it be GPL with explicit exceptions to allow said layer to
->> work on legacy operating systems like QNX, et. al.  That way it forces
->> the hardware specific code to be released under the GPL --- if they
->> want to take advantage of the "write onces, work on multiple operating
->> systems" feature.
+>> Which we know in practice they won't. They'll sit on fixes (often
+>> security fixes) and tweak and add private copies of features. In turn the
+>> Linux one could then only keep up by adding features itself - which would
+>> have to be GPL to stop the same abuse continuing.
 >>
->> If someone is going to go through all of this work to make it possible
->> --- particularly if it's at a company such as Luis's employer, or any
->> other wifi chipset provider --- why should it allow their competitors
->> to do closed source drivers?  Better to structure the driver licensing
->> such that (a) there is benefit for companies to make a Linux driver by
->> using this common stack, and (b) but in exchange, it forces them to
->> make a driver which is guaranteed to be usable by Linux by virtual of
->> the fact that (1) the native interface is Linux's wireless stack, and
->> (2) the license forces them to GPL their driver.
+>> It's a nice idea but the corporations exist to make money and adding
+>> proprietary custom stack add-ons is clearly a good move on their part to
+>> do that.
 >
-> By forcing the driver to be GPL, you automatically exclude Windows
-> from the list of platforms supported by such a cross-OS driver, as the
-> Windows NDIS headers are AFAIK under a GPL-incompatible license, so no
-> GPL driver can be written for Windows.
+> I agree completely with you. Its up to companies to decide whether or
+> not they want to do that and ultimately traditionally companies have
+> preferred not to. I actually think there is more to it than not
+> wanting though... As I see it without people upstream working for some
+> of these companies its really hard for them to get these ideas and
+> actually believe in the possibility of it and the benefits. I'm
+> voicing this publicly to our own managers and lkml because I'd like to
+> see that companies get the message because realistically I really
+> don't expect anything like this has been *seriously* considered
+> before. When I ask people about it, I often hear people say they think
+> it'd be nice, but that's about it. Nothing more. No push, no action.
+> Its to the industry's best interest IMHO. Even if a common 802.11
+> stack was shared, if it was permissive licensed companies could still
+> go on and hack their own proprietary crap on top if they so wish, so
+> that would still be an option.
+>
+> My point with all this thread is this: companies tend to not think out
+> of the proprietary box they have been put in by old driver development
+> habits, and driver development should not be so hard and tedious. They
+> should start considering working on more open solutions even for
+> proprietary operating systems, under a permissive license. I suspect
+> this will help out with resources considerations, bug fix propagation
+> and coordination between supporting different Operating Systems. We
+> also stand to gain from this on Linux too, after all a driver bug fix
+> for hardware sensitive code will need to be propagated to other OSes
+> anyway.
+>
+> I can surely ignore the other OSes and their IMHO their terrible
+> software practices but I can't because although it only affects Linux
+> in a tedious way I think we can do better and strive for that. If
+> sharing an 802.11 stack seems like a pipe dream oh well, at least I
+> think we should consider opening up the code for the other OSes and
+> let communities help with that crap for our company. Let it evolve
+> naturally. The benefits of FOSS cannot just only benefit Linux.
 
-I've actually have been told GPL drivers for windows are possible with
-some hard work. I have yet to investigate further on what that "hard
-work" means. But yes, that is a good example.
+Maybe what we need is a BSD guy at Atheros :)
 
   Luis
