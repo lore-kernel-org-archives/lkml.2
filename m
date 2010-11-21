@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab0KUCjn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:39:43 -0500
-Received: from mail.perches.com ([173.55.12.10]:1629 "EHLO mail.perches.com"
+	id S1756441Ab0KUCkB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:40:01 -0500
+Received: from mail.perches.com ([173.55.12.10]:1636 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751152Ab0KUCjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:39:41 -0500
+	id S1756136Ab0KUCjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:39:47 -0500
 From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 01/62] 3c501: Use static const
-Date: Sat, 20 Nov 2010 18:38:02 -0800
-Message-Id: <c8433be50e87f26df24850d5b767d102e9abef3c.1290305775.git.joe@perches.com>
+To: Michael Chan <mchan@broadcom.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 07/62] bnx2: Use static const
+Date: Sat, 20 Nov 2010 18:38:08 -0800
+Message-Id: <667c5a9ea33b9883c450edaff9541d305619f6ca.1290305775.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1290305773.git.joe@perches.com>
 References: <cover.1290305773.git.joe@perches.com>
@@ -23,29 +23,71 @@ Using static const generally increases object text and decreases data size.
 It also generally decreases overall object size.
 
    text	   data	    bss	    dec	    hex	filename
-   9927	    472	   2128	  12527	   30ef	drivers/net/3c501.o.new
-   9915	    484	   2128	  12527	   30ef	drivers/net/3c501.o.old
+  92097	    560	  22488	 115145	  1c1c9	drivers/net/bnx2.o.new
+  92133	    560	  22488	 115181	  1c1ed	drivers/net/bnx2.o.old
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/3c501.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/bnx2.c |   46 ++++++++++++++++++++++++----------------------
+ 1 files changed, 24 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/net/3c501.c b/drivers/net/3c501.c
-index 1776ab6..9e1c03e 100644
---- a/drivers/net/3c501.c
-+++ b/drivers/net/3c501.c
-@@ -158,8 +158,8 @@ static int mem_start;
- struct net_device * __init el1_probe(int unit)
- {
- 	struct net_device *dev = alloc_etherdev(sizeof(struct net_local));
--	static unsigned ports[] = { 0x280, 0x300, 0};
--	unsigned *port;
-+	static const unsigned ports[] = { 0x280, 0x300, 0};
-+	const unsigned *port;
- 	int err = 0;
+diff --git a/drivers/net/bnx2.c b/drivers/net/bnx2.c
+index 062600b..7805a4b 100644
+--- a/drivers/net/bnx2.c
++++ b/drivers/net/bnx2.c
+@@ -6801,28 +6801,30 @@ bnx2_get_regs(struct net_device *dev, struct ethtool_regs *regs, void *_p)
+ 	u32 *p = _p, i, offset;
+ 	u8 *orig_p = _p;
+ 	struct bnx2 *bp = netdev_priv(dev);
+-	u32 reg_boundaries[] = { 0x0000, 0x0098, 0x0400, 0x045c,
+-				 0x0800, 0x0880, 0x0c00, 0x0c10,
+-				 0x0c30, 0x0d08, 0x1000, 0x101c,
+-				 0x1040, 0x1048, 0x1080, 0x10a4,
+-				 0x1400, 0x1490, 0x1498, 0x14f0,
+-				 0x1500, 0x155c, 0x1580, 0x15dc,
+-				 0x1600, 0x1658, 0x1680, 0x16d8,
+-				 0x1800, 0x1820, 0x1840, 0x1854,
+-				 0x1880, 0x1894, 0x1900, 0x1984,
+-				 0x1c00, 0x1c0c, 0x1c40, 0x1c54,
+-				 0x1c80, 0x1c94, 0x1d00, 0x1d84,
+-				 0x2000, 0x2030, 0x23c0, 0x2400,
+-				 0x2800, 0x2820, 0x2830, 0x2850,
+-				 0x2b40, 0x2c10, 0x2fc0, 0x3058,
+-				 0x3c00, 0x3c94, 0x4000, 0x4010,
+-				 0x4080, 0x4090, 0x43c0, 0x4458,
+-				 0x4c00, 0x4c18, 0x4c40, 0x4c54,
+-				 0x4fc0, 0x5010, 0x53c0, 0x5444,
+-				 0x5c00, 0x5c18, 0x5c80, 0x5c90,
+-				 0x5fc0, 0x6000, 0x6400, 0x6428,
+-				 0x6800, 0x6848, 0x684c, 0x6860,
+-				 0x6888, 0x6910, 0x8000 };
++	static const u32 reg_boundaries[] = {
++		0x0000, 0x0098, 0x0400, 0x045c,
++		0x0800, 0x0880, 0x0c00, 0x0c10,
++		0x0c30, 0x0d08, 0x1000, 0x101c,
++		0x1040, 0x1048, 0x1080, 0x10a4,
++		0x1400, 0x1490, 0x1498, 0x14f0,
++		0x1500, 0x155c, 0x1580, 0x15dc,
++		0x1600, 0x1658, 0x1680, 0x16d8,
++		0x1800, 0x1820, 0x1840, 0x1854,
++		0x1880, 0x1894, 0x1900, 0x1984,
++		0x1c00, 0x1c0c, 0x1c40, 0x1c54,
++		0x1c80, 0x1c94, 0x1d00, 0x1d84,
++		0x2000, 0x2030, 0x23c0, 0x2400,
++		0x2800, 0x2820, 0x2830, 0x2850,
++		0x2b40, 0x2c10, 0x2fc0, 0x3058,
++		0x3c00, 0x3c94, 0x4000, 0x4010,
++		0x4080, 0x4090, 0x43c0, 0x4458,
++		0x4c00, 0x4c18, 0x4c40, 0x4c54,
++		0x4fc0, 0x5010, 0x53c0, 0x5444,
++		0x5c00, 0x5c18, 0x5c80, 0x5c90,
++		0x5fc0, 0x6000, 0x6400, 0x6428,
++		0x6800, 0x6848, 0x684c, 0x6860,
++		0x6888, 0x6910, 0x8000
++	};
  
- 	if (!dev)
+ 	regs->version = 0;
+ 
 -- 
 1.7.3.2.245.g03276.dirty
 
