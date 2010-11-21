@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab0KUAzb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 19:55:31 -0500
-Received: from smtp-out.google.com ([216.239.44.51]:10271 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753484Ab0KUAz3 (ORCPT
+	id S1755782Ab0KUBFx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 20:05:53 -0500
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:33675 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755691Ab0KUBFt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 19:55:29 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=Y2Rq10qFHYr8pQLq0W206GKx2z2/vVtoDiYyzcQgYY7Yjd8pTnYFhHCZcIbkbWVkO+
-         ka/Lny39Fq7wBKkhF5Eg==
-Date: Sat, 20 Nov 2010 16:55:22 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Matt Mackall <mpm@selenic.com>
-cc: b32542@freescale.com, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, Zeng Zhaoming <zengzm.kernel@gmail.com>
-Subject: Re: [PATCH] slub: operate cache name memory same to slab and slob
-In-Reply-To: <1290119265.26343.814.camel@calx>
-Message-ID: <alpine.DEB.2.00.1011201650120.10618@chino.kir.corp.google.com>
-References: <1290049259-20108-1-git-send-email-b32542@freescale.com> <1290114908.26343.721.camel@calx> <alpine.DEB.2.00.1011181333160.26680@chino.kir.corp.google.com> <1290119265.26343.814.camel@calx>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Sat, 20 Nov 2010 20:05:49 -0500
+X-Spam-ASN: 
+Date: Sun, 21 Nov 2010 04:05:31 +0300
+From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+To: Rodolfo Giometti <giometti@enneenne.com>
+Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, Andrew Morton <akpm@linux-foundation.org>,
+        John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCHv4 13/17] ntp: add hardpps implementation
+Message-ID: <20101121040531.5c7ba047@apollo.gnet>
+In-Reply-To: <20101120162718.GF13356@enneenne.com>
+References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
+	<2783e9e632882e211abde03e9b4ad89a336fd167.1290087480.git.lasaine@lvk.cs.msu.su>
+	<20101120162718.GF13356@enneenne.com>
+Organization: LVK
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA256;
+ boundary="Sig_/UBBg+sCib6A9H/W64mL+0OT"; protocol="application/pgp-signature"
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 18 Nov 2010, Matt Mackall wrote:
+--Sig_/UBBg+sCib6A9H/W64mL+0OT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> > The leak in ext4_mb_init() above is because it is using kstrdup() to 
-> > allocate the string itself and then on destroy uses kmem_cache_name() to 
-> > attain the slub allocator's pointer to the name, not the memory the ext4 
-> > layer allocated itself.
-> 
-> And Pekka says:
-> 
-> > The kstrdup() is there because of SLUB cache merging. See commit 
-> > 84c1cf62465e2fb0a692620dcfeb52323ab03d48 ("SLUB: Fix merged slab 
-> > cache names") for details.
-> 
-> I see. So we can either:
-> 
-> - force anyone using dynamically-allocated names to track their own damn
-> pointer
-> - implement kstrdup in the other allocators and fix all callers (the
-> bulk of which use static names!)
-> - eliminate dynamically-allocated names (mostly useless when we start
-> merging slabs!)
-> - add an indirection layer for slub that holds the unmerged details
-> - stop pretending we track slab names and show only generic names based
-> on size in /proc
-> 
+=D0=92 Sat, 20 Nov 2010 17:27:18 +0100
+Rodolfo Giometti <giometti@enneenne.com> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
 
-I agree that we should force each user to track its own memory, and this 
-is really what the issue is about (it doesn't matter if that memory is the 
-cache's name).  This particular issue is an ext4 memory leak and not the 
-responsibility of any allocator.
+> On Thu, Nov 18, 2010 at 07:01:06PM +0300, Alexander Gordeev wrote:
+> > This commit adds hardpps() implementation based upon the original one
+> > from the NTPv4 reference kernel code from David Mills. However, it is
+> > highly optimized towards very fast syncronization and maximum stickness
+> > to PPS signal. The typical error is less then a microsecond.
+> > To make it sync faster I had to throw away exponential phase filter so
+> > that the full phase offset is corrected immediately. Then I also had to
+> > throw away median phase filter because it gives a bigger error itself
+> > if used without exponential filter.
+> > Maybe we will find an appropriate filtering scheme in the future but
+> > it's not necessary if the signal quality is ok.
+>=20
+> This patch (and follows) adds a new functionality to PPS subsystem, so
+> let me suggest to you splitting in two parts this patch set: a first
+> patch set who fixes up the current PPS implementation, and a second
+> patch set who adds kernel consumer (and follows).
 
-> kmem_cache_name() is also a highly suspect function in a
-> post-merged-slabs kernel. As ext4 is the only user in the kernel, and it
-> got it wrong, perhaps it's time to rip it out.
-> 
+But the patches that add hardpps and parport client+generator depend on
+the previous ones because the latter change lots of things in PPS
+subsystem. I don't want to maintain them separately because we use all
+of them in the production.
 
-Yes, I think kmem_cache_name() should be removed since it shouldn't be 
-used for anything other than the internal slabinfo/slabtop display as the 
-slub allocator actually specifies in include/linux/slub_def.h.  The only 
-user is ext4 to track this dynamically allocated pointer, so we can 
-eliminate it if we leave it to track its own memory allocations (a slab 
-allocator shouldn't be carrying a metadata payload).
+However I can tell here that it'll be ok for me if not all the patches
+enter mainline at the same time. For example, patches 1-3 are already
+ACKed and are actually bugfixes (patch 2 is trivial and patch 3 depends
+on it) so I think they could be merged in the next rc. I placed them
+in the beginning exactly for this reason. Whom should I mail them?
+
+Same thing with other patches. Smaller patchset -> me (and probably
+users) more happy. :)
+
+--=20
+  Alexander
+
+--Sig_/UBBg+sCib6A9H/W64mL+0OT
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBCAAGBQJM6HBbAAoJEElrwznyooJbSlkH/jrljGE55aDULgacVSRmFa39
+xjZmP4LB39SZ5t+WEHTKHHjNhSKICtfDAvKSUXAem9f48ho0NQ/A27Uul0qVH8bJ
+F0TgTacyzQhKfeanTjeAGeDwWU/zbuhbMFtgVgm5rTkefx1N/pFaAnZ729eGYCAh
+nPXKuGmg/D7aRHVRneeupm+YqIn4MHIumtdIQ//tNn0lQB9jH6Ola40XnzQlAMjB
+ss54mAUusuQ+8hkm3map1wYXLAqg/9MVb1QkkfQlWEa7M9TANpOoWawSi0Z7H8nA
+ddjt2T/Krt37+fGnjQDg2mY8gzigMv0RUFxbHvJKB08+XulKEXPL31ACEtEk0Gk=
+=aOR8
+-----END PGP SIGNATURE-----
+
+--Sig_/UBBg+sCib6A9H/W64mL+0OT--
