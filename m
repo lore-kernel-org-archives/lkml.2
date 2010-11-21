@@ -1,51 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757622Ab0KUCzY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:55:24 -0500
-Received: from mail.perches.com ([173.55.12.10]:1630 "EHLO mail.perches.com"
+	id S1756963Ab0KUC7v (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:59:51 -0500
+Received: from fieldses.org ([174.143.236.118]:33038 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755912Ab0KUCjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:39:42 -0500
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 02/62] 3c503: Use static const
-Date: Sat, 20 Nov 2010 18:38:03 -0800
-Message-Id: <69724d82dfab68246d76ba62a0d4b9315fbdfeb3.1290305775.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
-In-Reply-To: <cover.1290305773.git.joe@perches.com>
-References: <cover.1290305773.git.joe@perches.com>
+	id S1750969Ab0KUC7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:59:49 -0500
+Date: Sat, 20 Nov 2010 21:59:45 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Josef Bacik <josef@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, eparis@redhat.com,
+        linux-kernel@vger.kernel.org, sds@tycho.nsa.gov, selinux@tycho.nsa.gov
+Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias V2
+Message-ID: <20101121025945.GA4365@fieldses.org>
+References: <1290131575-2489-1-git-send-email-josef@redhat.com>
+ <20101119223552.GB12783@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101119223552.GB12783@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using static const generally increases object text and decreases data size.
-It also generally decreases overall object size.
+On Fri, Nov 19, 2010 at 05:35:52PM -0500, J. Bruce Fields wrote:
+> On Thu, Nov 18, 2010 at 08:52:55PM -0500, Josef Bacik wrote:
+> > While trying to track down some NFS problems with BTRFS, I kept noticing I was
+> > getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
+> > figure out that it was SELinux that was giving me grief, with the following
+> > denial
+> > 
+> > type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
+> > comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
+> > tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
+> > 
+> > Turns out this is because in d_obtain_alias if we can't find an alias we create
+> > one and do all the normal instantiation stuff, but we don't do the
+> > security_d_instantiate.
+> > 
+> > Usually we are protected from getting a hashed dentry that hasn't yet run
+> > security_d_instantiate() by the parent's i_mutex, but obviously this isn't an
+> > option there, so in order to deal with the case that a second thread comes in
+> > and finds our new dentry before we get to run security_d_instantiate(), we go
+> > ahead and call it if we find a dentry already.  Eric assures me that this is ok
+> > as the code checks to see if the dentry has been initialized already so calling
+> > security_d_instantiate() against the same dentry multiple times is ok.  With
+> > this patch I'm no longer getting errant -EACCESS values.
+> 
+> Thanks, I can't see any reason that wouldn't work.
 
-   text	   data	    bss	    dec	    hex	filename
-   7938	    140	   1688	   9766	   2626	drivers/net/3c503.o.new
-   7951	    140	   1688	   9779	   2633	drivers/net/3c503.o.old
+(FWIW, I also ran my usual nfs regression tests with this applied.  They
+don't exercise the problem you were seeing, but maybe it's at least some
+sort of sanity check.)
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/3c503.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+--b.
 
-diff --git a/drivers/net/3c503.c b/drivers/net/3c503.c
-index 4777a1c..d84f6e8 100644
---- a/drivers/net/3c503.c
-+++ b/drivers/net/3c503.c
-@@ -392,8 +392,8 @@ el2_open(struct net_device *dev)
-     int retval;
- 
-     if (dev->irq < 2) {
--	int irqlist[] = {5, 9, 3, 4, 0};
--	int *irqp = irqlist;
-+	static const int irqlist[] = {5, 9, 3, 4, 0};
-+	const int *irqp = irqlist;
- 
- 	outb(EGACFR_NORM, E33G_GACFR);	/* Enable RAM and interrupts. */
- 	do {
--- 
-1.7.3.2.245.g03276.dirty
-
+> 
+> --b.
+> 
+> > 
+> > Signed-off-by: Josef Bacik <josef@redhat.com>
+> > ---
+> > V1->V2:
+> > -added second security_d_instantiate() call
+> > 
+> >  fs/dcache.c |    3 +++
+> >  1 files changed, 3 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/fs/dcache.c b/fs/dcache.c
+> > index 23702a9..119d489 100644
+> > --- a/fs/dcache.c
+> > +++ b/fs/dcache.c
+> > @@ -1201,9 +1201,12 @@ struct dentry *d_obtain_alias(struct inode *inode)
+> >  	spin_unlock(&tmp->d_lock);
+> >  
+> >  	spin_unlock(&dcache_lock);
+> > +	security_d_instantiate(tmp, inode);
+> >  	return tmp;
+> >  
+> >   out_iput:
+> > +	if (res && !IS_ERR(res))
+> > +		security_d_instantiate(res, inode);
+> >  	iput(inode);
+> >  	return res;
+> >  }
+> > -- 
+> > 1.6.6.1
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
