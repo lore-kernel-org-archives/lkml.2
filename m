@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755782Ab0KUBFx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 20:05:53 -0500
-Received: from gate.lvk.cs.msu.su ([158.250.17.1]:33675 "EHLO
-	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755691Ab0KUBFt (ORCPT
+	id S1755585Ab0KUBFm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 20:05:42 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25150 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755212Ab0KUBFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 20:05:49 -0500
-X-Spam-ASN: 
-Date: Sun, 21 Nov 2010 04:05:31 +0300
-From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-To: Rodolfo Giometti <giometti@enneenne.com>
-Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
-        linuxpps@ml.enneenne.com, Andrew Morton <akpm@linux-foundation.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCHv4 13/17] ntp: add hardpps implementation
-Message-ID: <20101121040531.5c7ba047@apollo.gnet>
-In-Reply-To: <20101120162718.GF13356@enneenne.com>
-References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
-	<2783e9e632882e211abde03e9b4ad89a336fd167.1290087480.git.lasaine@lvk.cs.msu.su>
-	<20101120162718.GF13356@enneenne.com>
-Organization: LVK
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA256;
- boundary="Sig_/UBBg+sCib6A9H/W64mL+0OT"; protocol="application/pgp-signature"
-X-AV-Checked: ClamAV using ClamSMTP
+	Sat, 20 Nov 2010 20:05:41 -0500
+Message-ID: <4CE87041.9070704@oracle.com>
+Date: Sat, 20 Nov 2010 17:05:05 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Jean Delvare <khali@linux-fr.org>, Greg KH <gregkh@suse.de>
+Subject: Re: WARNING: at tty_io.c: line 1331
+References: <4CE82F40.3060807@oracle.com>
+In-Reply-To: <4CE82F40.3060807@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/UBBg+sCib6A9H/W64mL+0OT
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+[oops, first posting was too large for lkml, so instead of attachments,
+I'll put the relevant files online]
 
-=D0=92 Sat, 20 Nov 2010 17:27:18 +0100
-Rodolfo Giometti <giometti@enneenne.com> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
 
-> On Thu, Nov 18, 2010 at 07:01:06PM +0300, Alexander Gordeev wrote:
-> > This commit adds hardpps() implementation based upon the original one
-> > from the NTPv4 reference kernel code from David Mills. However, it is
-> > highly optimized towards very fast syncronization and maximum stickness
-> > to PPS signal. The typical error is less then a microsecond.
-> > To make it sync faster I had to throw away exponential phase filter so
-> > that the full phase offset is corrected immediately. Then I also had to
-> > throw away median phase filter because it gives a bigger error itself
-> > if used without exponential filter.
-> > Maybe we will find an appropriate filtering scheme in the future but
-> > it's not necessary if the signal quality is ok.
->=20
-> This patch (and follows) adds a new functionality to PPS subsystem, so
-> let me suggest to you splitting in two parts this patch set: a first
-> patch set who fixes up the current PPS implementation, and a second
-> patch set who adds kernel consumer (and follows).
+On 11/20/10 12:27, Randy Dunlap wrote:
+> 2.6.37-rc2-git4 on x86_64, nearly allmodconfig with a several debug/test
+> options disabled and a few options changed to =y so that things work
+> (like serial console).  Could there be some kernel options that are
+> interfering here?
+> 
+> 
+> Kernel config file is attached.
+> 
+> Reproducible by running 'modules_tester' script with the ONLY environment
+> variable set to "hwmon".  I have not been able to reproduce this with other
+> driver subsystems.
+> 
+> Today's test failed during loading/unloaded tmp421.  Previous tests have
+> failed with adt7470, adm1031, and jc42.  The log of modules_tester output
+> is attached. (mod-hwmon-r2g4.out)
+> 
+> (as root:)
+> # ONLY=hwmon ./modules_tester 2>&1 | tee test.out
+> 
+> modules_tester just loads and unloads modules 3 times in a row. (it is
+> available from http://oss.oracle.com/~rdunlap/scripts/modules_tester)
+> 
+> 
+> This scripted test always fails (WARNING: + kernel is tainted) with:
+> 
+> WARNING: at /local/linsrc/linux-2.6.37-rc2-git4/drivers/tty/tty_io.c:1331 tty_reopen+0xa8/0xc5()
+> 
+> The full kernel log is attached as hwmon-fail-37r2g4.txt.
+> 
 
-But the patches that add hardpps and parport client+generator depend on
-the previous ones because the latter change lots of things in PPS
-subsystem. I don't want to maintain them separately because we use all
-of them in the production.
+Please see http://oss.oracle.com/~rdunlap/tty-warning/
+for all of the relevant files.
 
-However I can tell here that it'll be ok for me if not all the patches
-enter mainline at the same time. For example, patches 1-3 are already
-ACKed and are actually bugfixes (patch 2 is trivial and patch 3 depends
-on it) so I think they could be merged in the next rc. I placed them
-in the beginning exactly for this reason. Whom should I mail them?
-
-Same thing with other patches. Smaller patchset -> me (and probably
-users) more happy. :)
-
---=20
-  Alexander
-
---Sig_/UBBg+sCib6A9H/W64mL+0OT
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBCAAGBQJM6HBbAAoJEElrwznyooJbSlkH/jrljGE55aDULgacVSRmFa39
-xjZmP4LB39SZ5t+WEHTKHHjNhSKICtfDAvKSUXAem9f48ho0NQ/A27Uul0qVH8bJ
-F0TgTacyzQhKfeanTjeAGeDwWU/zbuhbMFtgVgm5rTkefx1N/pFaAnZ729eGYCAh
-nPXKuGmg/D7aRHVRneeupm+YqIn4MHIumtdIQ//tNn0lQB9jH6Ola40XnzQlAMjB
-ss54mAUusuQ+8hkm3map1wYXLAqg/9MVb1QkkfQlWEa7M9TANpOoWawSi0Z7H8nA
-ddjt2T/Krt37+fGnjQDg2mY8gzigMv0RUFxbHvJKB08+XulKEXPL31ACEtEk0Gk=
-=aOR8
------END PGP SIGNATURE-----
-
---Sig_/UBBg+sCib6A9H/W64mL+0OT--
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
