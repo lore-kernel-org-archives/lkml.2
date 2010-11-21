@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755014Ab0KURht (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 12:37:49 -0500
-Received: from thunk.org ([69.25.196.29]:53161 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754654Ab0KURhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 12:37:48 -0500
-Date: Sun, 21 Nov 2010 12:37:26 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux-ext4@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Eric Sandeen <sandeen@redhat.com>
-Subject: Re: [BUG?] [Ext4] INFO: suspicious rcu_dereference_check() usage
-Message-ID: <20101121173726.GG23423@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Minchan Kim <minchan.kim@gmail.com>, linux-ext4@vger.kernel.org,
-	linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	Paul McKenney <paulmck@linux.vnet.ibm.com>,
-	Eric Sandeen <sandeen@redhat.com>
-References: <20101121112611.GB4267@deepthought.bhanu.net>
- <20101121133024.GF23423@thunk.org>
- <20101121153949.GD20947@barrios-desktop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101121153949.GD20947@barrios-desktop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1755176Ab0KURkU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 12:40:20 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:43618 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754935Ab0KURkO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 12:40:14 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=CvmbUsUMmZU33/3HF8jmRmi9k8zAFBN1sVRLcydPQ6UDIp7uXPA87IeXwfGQPRNpAq
+         TywimHHXpWWCoMFBIKnGQaH9ALqzugUlRlAgyZ3VwvGZVtGJRrOwJyeUfUEybL4RMVZS
+         4buc+4+uHqRsXaV05lEOd0kz5AdNTilxi4XFk=
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Jaya Kumar <jayalk@intworks.biz>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] video: arcfb: fix buffer overflow
+Date: Sun, 21 Nov 2010 20:40:01 +0300
+Message-Id: <1290361202-15065-1-git-send-email-segoon@openwall.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 12:39:49AM +0900, Minchan Kim wrote:
-> 
-> I think it's no problem. 
-> 
-> That's because migration always holds lock_page on the file page.
-> So the page couldn't remove from radix. 
+(count + p) is not checked for integer overflow.  If p < fbmemlength
+and count == (size_t)(1 - p) (very big unsigned integer) then
+count + p == 1 < fbmemlength and copy_to_user(base_addr+p, buf, count)
+overflows base_addr.
 
-It may be "ok" in that it won't cause a race, but it still leaves an
-unsightly warning if LOCKDEP is enabled, and LOCKDEP warnings will
-cause /proc_lock_stat to be disabled.  So I think it still needs to be
-fixed by adding rcu_read_lock()/rcu_read_unlock() to
-migrate_page_move_mapping().
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ Compile tested only.
 
-      	 					     - Ted
+ drivers/video/arcfb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/video/arcfb.c b/drivers/video/arcfb.c
+index 3ec4923..67a4cd4 100644
+--- a/drivers/video/arcfb.c
++++ b/drivers/video/arcfb.c
+@@ -454,7 +454,7 @@ static ssize_t arcfb_write(struct fb_info *info, const char __user *buf,
+ 	xres = info->var.xres;
+ 	fbmemlength = (xres * info->var.yres)/8;
+ 
+-	if (p > fbmemlength)
++	if (p > fbmemlength || (p + count < p))
+ 		return -ENOSPC;
+ 
+ 	err = 0;
+-- 
+1.7.0.4
+
