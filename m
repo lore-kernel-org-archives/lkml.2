@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113Ab0KURkS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 12:40:18 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:43618 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754982Ab0KURkQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 12:40:16 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=tLqDLBL9Q9ahOIAAL7xjWOy/0Ast1rY0E6EJ+PP1yj/DjxU5jkaoCW2XxUHdP9i6y4
-         3ghRvrTXLk6WP9kPtXEak9HSggD02j2OLE3mywLtdrqiDgx5Mpp0XpyXF7XQJtJde882
-         +OVtYhRaQk98b1xs21KTCIhyWKi6TLQeTuJYs=
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ALSA: snd-atmel-abdac: test wrong variable
-Date: Sun, 21 Nov 2010 20:40:07 +0300
-Message-Id: <1290361209-15121-1-git-send-email-segoon@openwall.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755134Ab0KURoC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 12:44:02 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56523 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754650Ab0KURoA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 12:44:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=ej5guZ2R72=fqe5mciwjVeY5LkDL3Qx1W0GvA@mail.gmail.com>
+References: <AANLkTi=ej5guZ2R72=fqe5mciwjVeY5LkDL3Qx1W0GvA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 21 Nov 2010 09:42:57 -0800
+Message-ID: <AANLkTikRJ3QBRJ_VsoMG4Q+HMs=a9C8XkJ31dtdKrfpO@mail.gmail.com>
+Subject: Re: [PROBLEM] WARNING: at kernel/exit.c:910 do_exit
+To: Pekka Enberg <penberg@kernel.org>
+Cc: oleg@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Netdev List <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After clk_get() pclk is checked second time instead of sample_clk check.
+On Sun, Nov 21, 2010 at 7:35 AM, Pekka Enberg <penberg@kernel.org> wrote:
+>
+> The following warning triggered on me while I was browsing the web:
+>
+>  http://twitpic.com/38vxxg
+>
+> [ Click on the "Rotate photo" button for landscape version. ]
+>
+> It's
+>
+>        WARN_ON(atomic_read(&tsk->fs_excl));
+>
+> in do_exit(). There was a prior oops in __pipe_free_info() called in
+> sys_recvmsg() paths that unfortunately scrolled away.
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- Compile tested only.
+That WARN_ON() is almost certainly due to the previous oops.
 
- sound/atmel/abdac.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The previous oops may have scrolled away, but you can see the
+call-chain, since it's part of the later oops. Except the photo is
+hard to read ;)
 
-diff --git a/sound/atmel/abdac.c b/sound/atmel/abdac.c
-index f2f41c8..4e47baa 100644
---- a/sound/atmel/abdac.c
-+++ b/sound/atmel/abdac.c
-@@ -420,7 +420,7 @@ static int __devinit atmel_abdac_probe(struct platform_device *pdev)
- 		return PTR_ERR(pclk);
- 	}
- 	sample_clk = clk_get(&pdev->dev, "sample_clk");
--	if (IS_ERR(pclk)) {
-+	if (IS_ERR(sample_clk)) {
- 		dev_dbg(&pdev->dev, "no sample clock\n");
- 		retval = PTR_ERR(pclk);
- 		goto out_put_pclk;
--- 
-1.7.0.4
+In fact, you can see that there has been _two_ oopses before that. The
+"free_pipe_info()" oops comes from the "do_exit()" path of the _first_
+oops.
 
+So the original oops seems to be around here:
+
+   (*probably* oopsed in __scm_destroy)
+   (the fd_install on the stack is likely from scm_detach_fds calling
+it before calling __scm_destroy - just a stale pointer remaining on
+the stack)
+   scm_detach_fds
+   unix_stream_recvmsg
+   sock_recvmsg
+   __sys_recvmsg
+   sys_recvmsg
+
+which means that this is almost certainly in networking. Then, when
+that oops caused us to die, do_exit() tried to clean up the state, and
+_that_ caused us to oops again (now in free_pipe_info). That second
+oops is the partial one you see. And then the _third_ oops is the one
+you actually caught.
+
+The free_pipe_info() oops in turn must be because we passed in an
+invalid "inode" pointer. It's almost certainly the "inode->i_pipe"
+dereference, so inode was NULL or something. I don't see why that
+would happen, but with a previous oops it's not necessarily clear that
+there _is_ a reason.
+
+And who knows? It may be that the networking oops was due to some
+other earlier problem that isn't part of this particular callchain and
+that has long since scrolled away. I don't see any unix domain changes
+since -rc1.
+
+                   Linus
