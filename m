@@ -1,51 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755185Ab0KURxx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 12:53:53 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46489 "EHLO
+	id S1755229Ab0KUR5M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 12:57:12 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50616 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754645Ab0KURxw (ORCPT
+	by vger.kernel.org with ESMTP id S1754941Ab0KUR5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 12:53:52 -0500
+	Sun, 21 Nov 2010 12:57:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <4CE928DD.2010309@gmail.com>
-References: <1290007619-5787-1-git-send-email-arnd@arndb.de>
- <20101118233439.GB5004@quack.suse.cz> <AANLkTin0Gm8Xqm-ARGmd4T+fCM4mMA0=PbDA6eSsYUOG@mail.gmail.com>
- <4CE928DD.2010309@gmail.com>
+In-Reply-To: <1290345498.2412.38.camel@localhost.localdomain>
+References: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
+ <AANLkTin9sYf99fQ_w7Bp4N6Gsm3PR0akpCU=4YEkOaez@mail.gmail.com>
+ <20101119175053.GC29148@fieldses.org> <1290345498.2412.38.camel@localhost.localdomain>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 21 Nov 2010 09:45:12 -0800
-Message-ID: <AANLkTi=qvOHwgsbaCO6_Eu2Uik7MP5=C64+WW8R-RR8B@mail.gmail.com>
-Subject: Re: [PATCH 0/7] BKL removal follow-up
-To: Boaz Harrosh <openosd@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, Nathan Laredo <laredo@gnu.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Dave Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        Alessio Igor Bogani <alessioigorbogani@gmail.com>
+Date: Sun, 21 Nov 2010 09:56:17 -0800
+Message-ID: <AANLkTikjz3j4j-zLSzagF=wnVE1ROZBGsjtuhGEvB9=n@mail.gmail.com>
+Subject: Re: [PATCH v1.2 0/5] IMA: making i_readcount a first class inode
+ citizen (reposting)
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jmorris@namei.org, akpm@linux-foundation.org, eparis@redhat.com,
+        viro@zeniv.linux.org.uk, Dave Chinner <david@fromorbit.com>,
+        David Safford <safford@watson.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 21, 2010 at 6:12 AM, Boaz Harrosh <openosd@gmail.com> wrote:
-> On 11/19/2010 01:40 AM, Linus Torvalds wrote:
->>
->> I don't think I can reasonably do it in 37, we're late enough in the
->> -rc series. So UDF and really saying 'n' to BKL by default will have
->> to be for the next merge window.
+On Sun, Nov 21, 2010 at 5:18 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
 >
-> Could it not default to "n" but be SELECTed by the like of UDF. Or
-> that too big of a Kconfig change for 37-rcX? I understand it does
-> not really buy us anything for distro's with allmodconfig style,
-> but it should help with defconfig on all the other ARCH's.
+> IMA (and the proposed EVM/IMA-appraisal patches) detects file change
+> based on i_version. When the file is closed, if the file has changed,
+> IMA marks the file as needing to be re-measured. Of course this requires
+> the filesystem to be mounted with iversion. Don't know if this helps.
 
-Yes, I'd be ok with UDF doing a "select BKL" along with a "default n"
-for BKL itself.
+If you only do this at close time, I see a _major_ security hole.
 
-I think UDF currently is the only sane reason to have BKL enabled any
-more, and yes, it would probably make it easier to configure things.
+The attacker can just write to the file, and keep it open. Ta-daa,
+everybody who reads it sees the new contents, but your IMA logic is
+oblivious and thinks it doesn't need to be re-measured.
 
-Tested patch?
-
-                       Linus
+                            Linus
