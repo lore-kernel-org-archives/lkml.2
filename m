@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab0KUXCd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 18:02:33 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:36344 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754463Ab0KUXCc convert rfc822-to-8bit (ORCPT
+	id S1754930Ab0KUXF5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 18:05:57 -0500
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39442 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754326Ab0KUXF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 18:02:32 -0500
+	Sun, 21 Nov 2010 18:05:56 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
          :content-transfer-encoding;
-        b=Lqq9Lo+JdcmO+yRLjfe/YKSes408LvUTYovZOh5Ya9DmDiZsFBfQPi5XrXJ1mipMUb
-         w2Xh6+BiVgPHbEa5SDcQ==
+        b=QwMIzeIk1eeWPMQMOEatrpcvAf6Y242DEL390u7O3uCxwDOw7DDt7mtBdHfn56ftyD
+         Iw31jLg47MWWa1EjKHTNKDD0feqIj6zVkecTKf+C5rskXjiCjJdDt49qfqfLS/8Xz4iq
+         7euvm8warnU3ylEjeZAzdD9s/EXlXYwObprn8=
+Message-ID: <4CE9A5D0.4080701@gmail.com>
+Date: Mon, 22 Nov 2010 00:05:52 +0100
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.12) Gecko/20101026 SUSE/3.1.6 Thunderbird/3.1.6
 MIME-Version: 1.0
-In-Reply-To: <1290304824-22722-1-git-send-email-ccross@android.com>
-References: <1290304824-22722-1-git-send-email-ccross@android.com>
-Date: Sun, 21 Nov 2010 15:02:28 -0800
-X-Google-Sender-Auth: wRs2yIzqSnMspfJQDcblxSOagmw
-Message-ID: <AANLkTikx6d0_VFtZ4zWQucRCf=vFt7N2M6=0jpnKasEE@mail.gmail.com>
-Subject: Re: [PATCH] cgroup: Remove RCU from task->cgroups
-From: Colin Cross <ccross@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Colin Cross <ccross@android.com>, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Andreas Hartmann <andihartmann@01019freenet.de>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: missing 700 MB of RAM
+References: <icbqak$32o$1@ID-44327.news.uni-berlin.de>
+In-Reply-To: <icbqak$32o$1@ID-44327.news.uni-berlin.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 20, 2010 at 6:00 PM, Colin Cross <ccross@android.com> wrote:
-> The synchronize_rcu call in cgroup_attach_task can be very
-> expensive.  All fastpath accesses to task->cgroups already
-> use task_lock() or cgroup_lock() to protect against updates,
-> and only the CGROUP_DEBUG files have RCU read-side critical
-> sections.
->
-> This patch replaces rcu_read_lock() with task_lock(current)
-> around the debug file acceses to current->cgroups and removes
-> the synchronize_rcu call in cgroup_attach_task.
->
-> Signed-off-by: Colin Cross <ccross@android.com>
-> ---
->  kernel/cgroup.c |   22 ++++++++--------------
->  1 files changed, 8 insertions(+), 14 deletions(-)
->
+On 11/21/2010 08:02 PM, Andreas Hartmann wrote:
+> I've got 8 GB RAM installed, but linux reports 7,3 GB. Where is the
+> missing RAM (700 MB)?
+...
+> The motherboard is a GA-MA78GM-S2H (64bit, AMD) with a on board Radeon
+> HD 3200 VGA card. The card uses 256 MB of RAM - so 444 MB of RAM are
+> missing. Where are they gone?
 
-This patch isn't correct, there's an rcu_dereference I missed inside
-task_group(), and that's the important one.
+Hi, ask your BIOS:
+
+> BIOS-provided physical RAM map:
+> BIOS-e820: 0000000000000000 - 000000000009f800 (usable)
+> BIOS-e820: 000000000009f800 - 00000000000a0000 (reserved)
+> BIOS-e820: 00000000000f0000 - 0000000000100000 (reserved)
+> BIOS-e820: 0000000000100000 - 00000000afde0000 (usable)
+> BIOS-e820: 00000000afde0000 - 00000000afde3000 (ACPI NVS)
+> BIOS-e820: 00000000afde3000 - 00000000afdf0000 (ACPI data)
+> BIOS-e820: 00000000afdf0000 - 00000000afe00000 (reserved)
+> BIOS-e820: 00000000e0000000 - 00000000f0000000 (reserved)
+> BIOS-e820: 00000000fec00000 - 0000000100000000 (reserved)
+> BIOS-e820: 0000000100000000 - 0000000230000000 (usable)
+
+It reports 7677M of usable mem. Or maybe your loader is cheating on you?
+I doubt so...
+
+regards,
+-- 
+js
