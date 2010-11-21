@@ -1,88 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265Ab0KURo0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 12:44:26 -0500
-Received: from canuck.infradead.org ([134.117.69.58]:47782 "EHLO
+	id S1755199Ab0KURpT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 12:45:19 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:47790 "EHLO
 	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645Ab0KURoY convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754686Ab0KURpS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 12:44:24 -0500
-Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
+	Sun, 21 Nov 2010 12:45:18 -0500
+Subject: Re: [RFC PATCH 3/3 v2] perf: Update perf tool to monitor uncore
+ events
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        lkml <linux-kernel@vger.kernel.org>,
+To: Stephane Eranian <eranian@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Lin Ming <ming.m.lin@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <1290348259.2245.172.camel@localhost>
-References: <1290340877.2245.124.camel@localhost>
-	 <8e9ff9280b0c4a059bc82b5c4a629897.squirrel@www.firstfloor.org>
-	 <1290348259.2245.172.camel@localhost>
+In-Reply-To: <AANLkTi=bxEgsLjk-1CK4pSmknyxR_y3OxTJ9DZ_dBW8n@mail.gmail.com>
+References: <1290340907.2245.125.camel@localhost>
+	 <340872239c47b2ec237c88488cb7b6ac.squirrel@www.firstfloor.org>
+	 <AANLkTi=bxEgsLjk-1CK4pSmknyxR_y3OxTJ9DZ_dBW8n@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Sun, 21 Nov 2010 18:44:33 +0100
-Message-ID: <1290361473.2153.39.camel@laptop>
+Date: Sun, 21 Nov 2010 18:45:29 +0100
+Message-ID: <1290361529.2153.42.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-21 at 22:04 +0800, Lin Ming wrote:
-> On Sun, 2010-11-21 at 20:46 +0800, Andi Kleen wrote:
-> > >
-> > > 2. Uncore pmu NMI handling
-> > >
-> > > All the 4 cores are programmed to receive uncore counter overflow
-> > > interrupt. The NMI handler(running on 1 of the 4 cores) handle all
-> > > counters enabled by all 4 cores.
-> > 
-> > Really for uncore monitoring there is no need to use an NMI handler.
-> > You can't profile a core anyways, so you can just delay the reporting
-> > a little bit. It may simplify the code to not use one here
-> > and just use an ordinary handler.
-> 
-> OK, I can use on ordinary interrupt handler here.
+On Sun, 2010-11-21 at 13:22 +0100, Stephane Eranian wrote:
+> On Sun, Nov 21, 2010 at 1:09 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> >
+> >>
+> >>              samples  pcnt function               DSO
+> >>              _______ _____ ______________________
+> >> ____________________________________
+> >>
+> >>                 8.00 18.6% kallsyms_expand_symbol [kernel.kallsyms]
+> >
+> > Reporting a symbol for an uncore event seems highly misleading.
+> > After all the uncore counter has no idea for which core the event was,
+> > so there isn't really any instruction pointer to report.
+> > The event could be event caused by a PCI device or similar.
+> >
+> > For per function monitoring of uncore events one has to use
+> > OFFCORE_RESPONSE, like I implemented recently.
+> >
+> > I would suggest to not report any symbol names for uncore events.
+> > Doing so just will confuse users.
+> >
+> > In fact I suspect uncore events are only really useful
+> > with "stat", but not with "top", or if they are used in top
+> > then the symbol reporting should be disabled.
+> >
+> I agree, uncore should only be used for counting on a
+> per-cpu basis. You can leave the perf tool as is, but
+> that opens up the risk of misinterpretation by many users,
+> or you restrict this in the tool directly which is the better
+> solution in my mind.
 
-Does the hardware actually allow using a different interrupt source?
-
-> > 
-> > In general since there is already much trouble with overloaded
-> > NMI events avoiding new NMIs is a good idea.
-> > 
-> > 
-> > 
-> > > +
-> > > +static struct node_hw_events *uncore_events[MAX_NUMNODES];
-> > 
-> > Don't declare static arrays with MAX_NUMNODES, that number can be
-> > very large and cause unnecessary bloat. Better use per CPU data or similar
-> > (e.g. with  alloc_percpu)
-> 
-> I really need is a per physical cpu data here, is alloc_percpu enough?
-
-Nah, simply manually allocate bits using kmalloc_node(), that's
-something I still need to fix in Andi's patches as well.
-
-> > > +	/*
-> > > +	 * The hw event starts counting from this event offset,
-> > > +	 * mark it to be able to extra future deltas:
-> > > +	 */
-> > > +	local64_set(&hwc->prev_count, (u64)-left);
-> > 
-> > Your use of local* seems dubious. That is only valid if it's really
-> > all on the same CPU. Is that really true?
-> 
-> Good catch! That is not true.
-> 
-> The interrupt handler is running on one core and the
-> data(hwc->prev_count) maybe on another core.
-> 
-> Any idea to set this cross-core data?
-
-IIRC you can steer the uncore interrupts (it has a mask somewhere)
-simply steer everything to the first cpu in the nodemask?
-
-
-
+I would argue against restricting the tool, print a warning perhaps. I
+mean, give the user all the rope he needs and tell him how to tie the
+knot is the unix way, right? :-)
