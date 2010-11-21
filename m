@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab0KURoC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 12:44:02 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56523 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754650Ab0KURoA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 12:44:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=ej5guZ2R72=fqe5mciwjVeY5LkDL3Qx1W0GvA@mail.gmail.com>
-References: <AANLkTi=ej5guZ2R72=fqe5mciwjVeY5LkDL3Qx1W0GvA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 21 Nov 2010 09:42:57 -0800
-Message-ID: <AANLkTikRJ3QBRJ_VsoMG4Q+HMs=a9C8XkJ31dtdKrfpO@mail.gmail.com>
-Subject: Re: [PROBLEM] WARNING: at kernel/exit.c:910 do_exit
-To: Pekka Enberg <penberg@kernel.org>
-Cc: oleg@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Netdev List <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755265Ab0KURo0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 12:44:26 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:47782 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab0KURoY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 12:44:24 -0500
+Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <1290348259.2245.172.camel@localhost>
+References: <1290340877.2245.124.camel@localhost>
+	 <8e9ff9280b0c4a059bc82b5c4a629897.squirrel@www.firstfloor.org>
+	 <1290348259.2245.172.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Sun, 21 Nov 2010 18:44:33 +0100
+Message-ID: <1290361473.2153.39.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 21, 2010 at 7:35 AM, Pekka Enberg <penberg@kernel.org> wrote:
->
-> The following warning triggered on me while I was browsing the web:
->
->  http://twitpic.com/38vxxg
->
-> [ Click on the "Rotate photo" button for landscape version. ]
->
-> It's
->
->        WARN_ON(atomic_read(&tsk->fs_excl));
->
-> in do_exit(). There was a prior oops in __pipe_free_info() called in
-> sys_recvmsg() paths that unfortunately scrolled away.
+On Sun, 2010-11-21 at 22:04 +0800, Lin Ming wrote:
+> On Sun, 2010-11-21 at 20:46 +0800, Andi Kleen wrote:
+> > >
+> > > 2. Uncore pmu NMI handling
+> > >
+> > > All the 4 cores are programmed to receive uncore counter overflow
+> > > interrupt. The NMI handler(running on 1 of the 4 cores) handle all
+> > > counters enabled by all 4 cores.
+> > 
+> > Really for uncore monitoring there is no need to use an NMI handler.
+> > You can't profile a core anyways, so you can just delay the reporting
+> > a little bit. It may simplify the code to not use one here
+> > and just use an ordinary handler.
+> 
+> OK, I can use on ordinary interrupt handler here.
 
-That WARN_ON() is almost certainly due to the previous oops.
+Does the hardware actually allow using a different interrupt source?
 
-The previous oops may have scrolled away, but you can see the
-call-chain, since it's part of the later oops. Except the photo is
-hard to read ;)
+> > 
+> > In general since there is already much trouble with overloaded
+> > NMI events avoiding new NMIs is a good idea.
+> > 
+> > 
+> > 
+> > > +
+> > > +static struct node_hw_events *uncore_events[MAX_NUMNODES];
+> > 
+> > Don't declare static arrays with MAX_NUMNODES, that number can be
+> > very large and cause unnecessary bloat. Better use per CPU data or similar
+> > (e.g. with  alloc_percpu)
+> 
+> I really need is a per physical cpu data here, is alloc_percpu enough?
 
-In fact, you can see that there has been _two_ oopses before that. The
-"free_pipe_info()" oops comes from the "do_exit()" path of the _first_
-oops.
+Nah, simply manually allocate bits using kmalloc_node(), that's
+something I still need to fix in Andi's patches as well.
 
-So the original oops seems to be around here:
+> > > +	/*
+> > > +	 * The hw event starts counting from this event offset,
+> > > +	 * mark it to be able to extra future deltas:
+> > > +	 */
+> > > +	local64_set(&hwc->prev_count, (u64)-left);
+> > 
+> > Your use of local* seems dubious. That is only valid if it's really
+> > all on the same CPU. Is that really true?
+> 
+> Good catch! That is not true.
+> 
+> The interrupt handler is running on one core and the
+> data(hwc->prev_count) maybe on another core.
+> 
+> Any idea to set this cross-core data?
 
-   (*probably* oopsed in __scm_destroy)
-   (the fd_install on the stack is likely from scm_detach_fds calling
-it before calling __scm_destroy - just a stale pointer remaining on
-the stack)
-   scm_detach_fds
-   unix_stream_recvmsg
-   sock_recvmsg
-   __sys_recvmsg
-   sys_recvmsg
+IIRC you can steer the uncore interrupts (it has a mask somewhere)
+simply steer everything to the first cpu in the nodemask?
 
-which means that this is almost certainly in networking. Then, when
-that oops caused us to die, do_exit() tried to clean up the state, and
-_that_ caused us to oops again (now in free_pipe_info). That second
-oops is the partial one you see. And then the _third_ oops is the one
-you actually caught.
 
-The free_pipe_info() oops in turn must be because we passed in an
-invalid "inode" pointer. It's almost certainly the "inode->i_pipe"
-dereference, so inode was NULL or something. I don't see why that
-would happen, but with a previous oops it's not necessarily clear that
-there _is_ a reason.
 
-And who knows? It may be that the networking oops was due to some
-other earlier problem that isn't part of this particular callchain and
-that has long since scrolled away. I don't see any unix domain changes
-since -rc1.
-
-                   Linus
