@@ -1,17 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756653Ab0KUCkI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:40:08 -0500
-Received: from mail.perches.com ([173.55.12.10]:1644 "EHLO mail.perches.com"
+	id S1756851Ab0KUCtt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:49:49 -0500
+Received: from mail.perches.com ([173.55.12.10]:1678 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756150Ab0KUCjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:39:51 -0500
+	id S1756626Ab0KUCkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:40:08 -0500
 From: Joe Perches <joe@perches.com>
-To: Divy Le Ray <divy@chelsio.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 11/62] cxgb3: Use static const
-Date: Sat, 20 Nov 2010 18:38:12 -0800
-Message-Id: <c76c0a62288f3d7f55bf877db065e4a67ac06737.1290305776.git.joe@perches.com>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>,
+        Don Skidmore <donald.c.skidmore@intel.com>,
+        Greg Rose <gregory.v.rose@intel.com>,
+        PJ Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
+        Alex Duyck <alexander.h.duyck@intel.com>,
+        John Ronciak <john.ronciak@intel.com>
+Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 27/62] ixgbevf: Use static const
+Date: Sat, 20 Nov 2010 18:38:28 -0800
+Message-Id: <2f0b47333ee780c36283db8b098a78285e7547fd.1290305776.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1290305773.git.joe@perches.com>
 References: <cover.1290305773.git.joe@perches.com>
@@ -23,119 +32,68 @@ Using static const generally increases object text and decreases data size.
 It also generally decreases overall object size.
 
    text	   data	    bss	    dec	    hex	filename
-   8401	    368	   2008	  10777	   2a19	drivers/net/cxgb3/ael1002.o.new
-   8129	    680	   2008	  10817	   2a41	drivers/net/cxgb3/ael1002.o.old
+   8436	    372	   1728	  10536	   2928	drivers/net/ixgbevf/ethtool.o.old
+   8469	    252	   1728	  10449	   28d1	drivers/net/ixgbevf/ethtool.o.new
+
+Make single file scope definition for register_test_patterns.
+Rename _test to register_test_patterns.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/cxgb3/ael1002.c |   24 ++++++++++++------------
- 1 files changed, 12 insertions(+), 12 deletions(-)
+ drivers/net/ixgbevf/ethtool.c |   18 +++++++++++-------
+ 1 files changed, 11 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/cxgb3/ael1002.c b/drivers/net/cxgb3/ael1002.c
-index 35cd367..2028da9 100644
---- a/drivers/net/cxgb3/ael1002.c
-+++ b/drivers/net/cxgb3/ael1002.c
-@@ -292,7 +292,7 @@ unknown:
-  */
- static int ael2005_setup_sr_edc(struct cphy *phy)
- {
--	static struct reg_val regs[] = {
-+	static const struct reg_val regs[] = {
- 		{ MDIO_MMD_PMAPMD, 0xc003, 0xffff, 0x181 },
- 		{ MDIO_MMD_PMAPMD, 0xc010, 0xffff, 0x448a },
- 		{ MDIO_MMD_PMAPMD, 0xc04a, 0xffff, 0x5200 },
-@@ -324,11 +324,11 @@ static int ael2005_setup_sr_edc(struct cphy *phy)
+diff --git a/drivers/net/ixgbevf/ethtool.c b/drivers/net/ixgbevf/ethtool.c
+index 4cc817a..fa29b3c 100644
+--- a/drivers/net/ixgbevf/ethtool.c
++++ b/drivers/net/ixgbevf/ethtool.c
+@@ -544,7 +544,7 @@ struct ixgbevf_reg_test {
+ #define TABLE64_TEST_HI	6
  
- static int ael2005_setup_twinax_edc(struct cphy *phy, int modtype)
- {
--	static struct reg_val regs[] = {
-+	static const struct reg_val regs[] = {
- 		{ MDIO_MMD_PMAPMD, 0xc04a, 0xffff, 0x5a00 },
- 		{ 0, 0, 0, 0 }
- 	};
--	static struct reg_val preemphasis[] = {
-+	static const struct reg_val preemphasis[] = {
- 		{ MDIO_MMD_PMAPMD, 0xc014, 0xffff, 0xfe16 },
- 		{ MDIO_MMD_PMAPMD, 0xc015, 0xffff, 0xa000 },
- 		{ 0, 0, 0, 0 }
-@@ -393,7 +393,7 @@ static int ael2005_intr_clear(struct cphy *phy)
+ /* default VF register test */
+-static struct ixgbevf_reg_test reg_test_vf[] = {
++static const struct ixgbevf_reg_test reg_test_vf[] = {
+ 	{ IXGBE_VFRDBAL(0), 2, PATTERN_TEST, 0xFFFFFF80, 0xFFFFFF80 },
+ 	{ IXGBE_VFRDBAH(0), 2, PATTERN_TEST, 0xFFFFFFFF, 0xFFFFFFFF },
+ 	{ IXGBE_VFRDLEN(0), 2, PATTERN_TEST, 0x000FFF80, 0x000FFFFF },
+@@ -557,19 +557,23 @@ static struct ixgbevf_reg_test reg_test_vf[] = {
+ 	{ 0, 0, 0, 0 }
+ };
  
- static int ael2005_reset(struct cphy *phy, int wait)
- {
--	static struct reg_val regs0[] = {
-+	static const struct reg_val regs0[] = {
- 		{ MDIO_MMD_PMAPMD, 0xc001, 0, 1 << 5 },
- 		{ MDIO_MMD_PMAPMD, 0xc017, 0, 1 << 5 },
- 		{ MDIO_MMD_PMAPMD, 0xc013, 0xffff, 0xf341 },
-@@ -403,7 +403,7 @@ static int ael2005_reset(struct cphy *phy, int wait)
- 		{ MDIO_MMD_PMAPMD, 0xc210, 0xffff, 0 },
- 		{ 0, 0, 0, 0 }
- 	};
--	static struct reg_val regs1[] = {
-+	static const struct reg_val regs1[] = {
- 		{ MDIO_MMD_PMAPMD, 0xca00, 0xffff, 0x0080 },
- 		{ MDIO_MMD_PMAPMD, 0xca12, 0xffff, 0 },
- 		{ 0, 0, 0, 0 }
-@@ -522,7 +522,7 @@ int t3_ael2005_phy_prep(struct cphy *phy, struct adapter *adapter,
-  */
- static int ael2020_setup_sr_edc(struct cphy *phy)
- {
--	static struct reg_val regs[] = {
-+	static const struct reg_val regs[] = {
- 		/* set CDR offset to 10 */
- 		{ MDIO_MMD_PMAPMD, 0xcc01, 0xffff, 0x488a },
++static const u32 register_test_patterns[] = {
++	0x5A5A5A5A, 0xA5A5A5A5, 0x00000000, 0xFFFFFFFF
++};
++
+ #define REG_PATTERN_TEST(R, M, W)                                             \
+ {                                                                             \
+ 	u32 pat, val, before;                                                 \
+-	const u32 _test[] = {0x5A5A5A5A, 0xA5A5A5A5, 0x00000000, 0xFFFFFFFF}; \
+-	for (pat = 0; pat < ARRAY_SIZE(_test); pat++) {                       \
++	for (pat = 0; pat < ARRAY_SIZE(register_test_patterns); pat++) {      \
+ 		before = readl(adapter->hw.hw_addr + R);                      \
+-		writel((_test[pat] & W), (adapter->hw.hw_addr + R));          \
++		writel((register_test_patterns[pat] & W),                     \
++		       (adapter->hw.hw_addr + R));                            \
+ 		val = readl(adapter->hw.hw_addr + R);                         \
+-		if (val != (_test[pat] & W & M)) {                            \
++		if (val != (register_test_patterns[pat] & W & M)) {           \
+ 			hw_dbg(&adapter->hw,                                  \
+ 			"pattern test reg %04X failed: got "                  \
+ 			"0x%08X expected 0x%08X\n",                           \
+-			R, val, (_test[pat] & W & M));                        \
++			R, val, (register_test_patterns[pat] & W & M));       \
+ 			*data = R;                                            \
+ 			writel(before, adapter->hw.hw_addr + R);              \
+ 			return 1;                                             \
+@@ -596,7 +600,7 @@ static struct ixgbevf_reg_test reg_test_vf[] = {
  
-@@ -551,20 +551,20 @@ static int ael2020_setup_sr_edc(struct cphy *phy)
- static int ael2020_setup_twinax_edc(struct cphy *phy, int modtype)
+ static int ixgbevf_reg_test(struct ixgbevf_adapter *adapter, u64 *data)
  {
- 	/* set uC to 40MHz */
--	static struct reg_val uCclock40MHz[] = {
-+	static const struct reg_val uCclock40MHz[] = {
- 		{ MDIO_MMD_PMAPMD, 0xff28, 0xffff, 0x4001 },
- 		{ MDIO_MMD_PMAPMD, 0xff2a, 0xffff, 0x0002 },
- 		{ 0, 0, 0, 0 }
- 	};
+-	struct ixgbevf_reg_test *test;
++	const struct ixgbevf_reg_test *test;
+ 	u32 i;
  
- 	/* activate uC clock */
--	static struct reg_val uCclockActivate[] = {
-+	static const struct reg_val uCclockActivate[] = {
- 		{ MDIO_MMD_PMAPMD, 0xd000, 0xffff, 0x5200 },
- 		{ 0, 0, 0, 0 }
- 	};
- 
- 	/* set PC to start of SRAM and activate uC */
--	static struct reg_val uCactivate[] = {
-+	static const struct reg_val uCactivate[] = {
- 		{ MDIO_MMD_PMAPMD, 0xd080, 0xffff, 0x0100 },
- 		{ MDIO_MMD_PMAPMD, 0xd092, 0xffff, 0x0000 },
- 		{ 0, 0, 0, 0 }
-@@ -624,7 +624,7 @@ static int ael2020_get_module_type(struct cphy *phy, int delay_ms)
-  */
- static int ael2020_intr_enable(struct cphy *phy)
- {
--	struct reg_val regs[] = {
-+	static const struct reg_val regs[] = {
- 		/* output Module's Loss Of Signal (LOS) to LED */
- 		{ MDIO_MMD_PMAPMD, AEL2020_GPIO_CFG+AEL2020_GPIO_LSTAT,
- 			0xffff, 0x4 },
-@@ -664,7 +664,7 @@ static int ael2020_intr_enable(struct cphy *phy)
-  */
- static int ael2020_intr_disable(struct cphy *phy)
- {
--	struct reg_val regs[] = {
-+	static const struct reg_val regs[] = {
- 		/* reset "link status" LED to "off" */
- 		{ MDIO_MMD_PMAPMD, AEL2020_GPIO_CTRL,
- 			0xffff, 0xb << (AEL2020_GPIO_LSTAT*4) },
-@@ -701,7 +701,7 @@ static int ael2020_intr_clear(struct cphy *phy)
- 	return err ? err : t3_phy_lasi_intr_clear(phy);
- }
- 
--static struct reg_val ael2020_reset_regs[] = {
-+static const struct reg_val ael2020_reset_regs[] = {
- 	/* Erratum #2: CDRLOL asserted, causing PMA link down status */
- 	{ MDIO_MMD_PMAPMD, 0xc003, 0xffff, 0x3101 },
- 
+ 	test = reg_test_vf;
 -- 
 1.7.3.2.245.g03276.dirty
 
