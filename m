@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754383Ab0KUQQH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 11:16:07 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:56967 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753416Ab0KUQQF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 11:16:05 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/mEvEJCfLmZhrqri9YNBaErCIriAzaQmQsJIcEw8
-	V7y7cZsUs7lGiC
-Subject: Re: [PATCH v4] sched: automated per session task groups
-From: Mike Galbraith <efault@gmx.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101121133744.GA10765@elte.hu>
-References: <20101121133744.GA10765@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 21 Nov 2010 09:15:44 -0700
-Message-ID: <1290356144.4816.11.camel@maggy.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+	id S1754561Ab0KUQeI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 11:34:08 -0500
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:58302 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754106Ab0KUQeG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 11:34:06 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=iWZGHeZ2xaypMkvqeTsh+i0pZIS67LyA5NlzKS/5bdj6LaCLW5KX80ijZu795GE0kk
+         uQweHj1rPWuMkTaGvXTO0OeEBnOBsMvLjVQ6+owf0Bgz6Bed0aEw8zgxZL/Sav5QVPi+
+         aStZPwPy8DKCeCVAZLSFT1bCZUkQfCDPNFXjs=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Tino Keitel <tino.keitel@tikei.de>
+Subject: Re: DVI/EDID broken with Intel i945 graphics and 2.6.37-rc2
+Date: Sun, 21 Nov 2010 17:33:58 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc2; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <20101116184914.GA15794@mac.home>
+In-Reply-To: <20101116184914.GA15794@mac.home>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Message-Id: <201011211733.59220.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-21 at 14:37 +0100, Ingo Molnar wrote:
-> Hello Mike,
+On wtorek, 16 listopada 2010 o 19:49:14 Tino Keitel wrote:
+> Hi,
 > 
-> * Mike Galbraith <efault@gmx.de> wrote:
+> 2.6.37-rc2 doesn't seem to detect the LCD connected via DVI on my Mac
+> mini Core2 Duo with i945 graphics:
 > 
-> > On Tue, 2010-11-16 at 18:28 +0100, Ingo Molnar wrote:
-> > 
-> > > Mike,
-> > > 
-> > > Mind sending a new patch with a separate v2 announcement in a new thread, once you 
-> > > have something i could apply to the scheduler tree (for a v2.6.38 merge)?
-> > 
-> > Changes since last:
-> > - switch to per session vs tty
-> > - make autogroups visible in /proc/sched_debug
-> > - make autogroups visible in /proc/<pid>/autogroup
-> > - add nice level bandwidth tweakability to /proc/<pid>/autogroup
+> [drm] initialized overlay support
+> No connectors reported connected with modes
+> [drm] Cannot find any crtc or sizes - going 1024x768
 > 
-> I tested it a bit, and autosched-v4 crashes on bootup with with attached config.
+> The text console is just black, and X uses a bogus resolution
+> (1152x864). The native resolution of the LCD is 1680x1050.
+> 
+> It works with 2.6.36.
+> 
 
-Oh crud.  I ran 37, but not tip, it's toxic with my own config.  So much
-for darn thing being ready :(
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=23462
+for your bug report, please add your address to the CC list in there, thanks!
 
-	-Mike
 
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
