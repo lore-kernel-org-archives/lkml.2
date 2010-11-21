@@ -1,109 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab0KUVh7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 16:37:59 -0500
-Received: from fieldses.org ([174.143.236.118]:41000 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755943Ab0KUVh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 16:37:57 -0500
-Date: Sun, 21 Nov 2010 16:37:54 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, jmorris@namei.org,
-        akpm@linux-foundation.org, eparis@redhat.com, viro@zeniv.linux.org.uk,
-        Dave Chinner <david@fromorbit.com>,
-        David Safford <safford@watson.ibm.com>
-Subject: Re: [PATCH v1.2 0/5] IMA: making i_readcount a first class inode
- citizen (reposting)
-Message-ID: <20101121213754.GB6772@fieldses.org>
-References: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
- <AANLkTin9sYf99fQ_w7Bp4N6Gsm3PR0akpCU=4YEkOaez@mail.gmail.com>
- <20101119175053.GC29148@fieldses.org>
- <1290345498.2412.38.camel@localhost.localdomain>
+	id S1755999Ab0KUVm6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 16:42:58 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:51379 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755727Ab0KUVm4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 16:42:56 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=jqvA2ykw7HlT3LoH+IJVSEMUUI3HwPEIGpWK8atJy8NSumOma15oIi7yXA0KH4U1Am
+         ribE4/mZ2qgkGrO+g3iw==
+Date: Sun, 21 Nov 2010 13:42:49 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Li, Haicheng" <haicheng.li@intel.com>
+cc: "Zheng, Shaohui" <shaohui.zheng@intel.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "haicheng.li@linux.intel.com" <haicheng.li@linux.intel.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "shaohui.zheng@linux.intel.com" <shaohui.zheng@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: RE: [2/8,v3] NUMA Hotplug Emulator: infrastructure of NUMA hotplug
+ emulation
+In-Reply-To: <789F9655DD1B8F43B48D77C5D30659732FE95E6E@shsmsx501.ccr.corp.intel.com>
+Message-ID: <alpine.DEB.2.00.1011211334150.26304@chino.kir.corp.google.com>
+References: <20101117020759.016741414@intel.com> <20101117021000.568681101@intel.com> <alpine.DEB.2.00.1011162359160.17408@chino.kir.corp.google.com> <20101117075128.GA30254@shaohui> <alpine.DEB.2.00.1011171304060.10254@chino.kir.corp.google.com>
+ <20101118041407.GA2408@shaohui> <20101118062715.GD17539@linux-sh.org> <20101118052750.GD2408@shaohui> <alpine.DEB.2.00.1011181321470.26680@chino.kir.corp.google.com> <20101119003225.GB3327@shaohui> <alpine.DEB.2.00.1011201645230.10618@chino.kir.corp.google.com>
+ <789F9655DD1B8F43B48D77C5D30659732FE95E6E@shsmsx501.ccr.corp.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290345498.2412.38.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 21, 2010 at 08:18:18AM -0500, Mimi Zohar wrote:
-> On Fri, 2010-11-19 at 12:50 -0500, J. Bruce Fields wrote:
-> > On Thu, Nov 18, 2010 at 03:31:10PM -0800, Linus Torvalds wrote:
-> > > On Thu, Nov 18, 2010 at 3:02 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > > >
-> > > > This patchset separates the incrementing/decrementing of the i_readcount, in
-> > > > the VFS layer, from other IMA functionality, by replacing the current
-> > > > ima_counts_get() call with i_readcount_inc(). Its unclear whether this call to
-> > > > increment i_readcount should be made earlier, like i_writecount.  Currently the
-> > > > call is situated immediately after the switch from put_filp() to fput() for
-> > > > cleanup.
-> > > 
-> > > Well, it seems nicer than the situation we have now. So I'm certainly
-> > > ok with seeing this merged for 2.6.38 (through the security tree?) if
-> > > nobody has objections.
-> > > 
-> > > It's a bit sad to have another atomic in the open path, but if the
-> > > lease people want this and are ok with just the counter (no races?)
-> > > then it seems worth it.
-> > 
-> > Having thought about it more, I'm no longer convinced it will be useful
-> > for leases.
-> > 
-> > It seems attractive to replace the current d_count/i_count checks by an
-> > i_readcount check, but:
-> > 
-> > 	1) as long as break_lease() is called before i_readcount_inc(),
-> > 	   there's a window between the two where setlease has no way to
-> > 	   tell whether a read open is about to happen;
-> > 
-> > 	2) more importantly, it won't help file servers, which need more
-> > 	   than mutual exclusion between opens and leases.
-> > 
-> > Number 2 in more detail:
-> > 
-> > Write leases exist to let a file server (nfsd or Samba) tell a client
-> > that it has exclusive access to a file, so that the client can delay
-> > writes, knowing that it will be notified on lease break (and given a
-> > chance to write back dirty data) before someone else can look at the
-> > file.
-> > 
-> > But say someone modifies a file on a client and then runs "make" on the
-> > server.  The "make" needs to know about the modifications.  But make only
-> > stat's the file, doesn't open it....
-> 
-> Hi Bruce,
-> 
-> IMA (and the proposed EVM/IMA-appraisal patches) detects file change
-> based on i_version. When the file is closed, if the file has changed,
-> IMA marks the file as needing to be re-measured. Of course this requires
-> the filesystem to be mounted with iversion. Don't know if this helps.
+On Sun, 21 Nov 2010, Li, Haicheng wrote:
 
-In this example, it's not poor time resolution or anything that prevents
-make from noticing the modification; it's the simple fact that the copy
-of the file on the server hasn't been modified at all; only the remote
-client knows about the modification, and the only way to find out about
-the modification is to synchronously call back to the client and let it
-write out its dirty data before allowing a local user to read its data
-or metadata.
-
---b.
-
-> 
-> Mimi
-> 
-> > We can break leases on stat, but on its own that's racy--setlease needs
-> > some way to determine whether a lease is in progress.  And i_readlease()
-> > doesn't help there, unless we decide we're going to temporarily
-> > increment that around every stat.  (But if another atomic in the open
-> > path is bad, another in the stat path sounds worse--and it's probably
-> > not the semantics ima needs anyway.)
+> > I think what we'll end up wanting to do is something like this, which
+> > adds 
+> > a numa=possible=<N> parameter for x86; this will add an additional N
+> > possible nodes to node_possible_map that we can use to online later. 
+> > It 
+> > also adds a new /sys/devices/system/memory/add_node file which takes a
+> > typical "size@start" value to hot-add an emulated node.  For example,
+> > using "mem=2G numa=possible=1" on the command line and doing
+> > echo 128M@0x80000000" > /sys/devices/system/memory/add_node would
+> > hot-add 
+> > a node of 128M.
 > > 
-> > --b.
+> > Comments?
 > 
+> Sorry for the late response as I'm in a biz trip recently.
 > 
+> David, your original concern is just about powerful/flexibility. I'm 
+> sure our implementation can better meets such requirments.
 > 
+
+Not with hacky hidden nodes or being unnecessarily tied to e820, it can't.
+
+> IMHO, I don't see any powerful/flexibility from your patch, compared to 
+> our original implementation. you just make things more complex and mess.
+> Why not use "numa=hide=N*size" as originally implemented?
+
+Hidden nodes are a hack and completely unnecessary for node hotplug 
+emulation, there's no need to have additional nodemasks or node states 
+throughout the kernel.  They also require that you define the node sizes 
+at boot, mine allows you to hotplug multiple node sizes of your choice at 
+runtime.
+
+> - later you just need to online the node once you want. And it 
+> naturally/exactly emulates the behavior that current HW provides.
+
+My proposal allows you to hotplug various node sizes, they can be 
+offlined, their sizes can be subsequently changed, and re-hotplugged.  
+It's a very dynamic and flexible model that allows you to emulate all 
+possible combinations of node hotplug without constantly rebooting.
+
+> - N is the possible node number. And we can use 128M as the default 
+> size for each hidden node if user doesn't specify a size.
+
+My model allows you to define the node size you'd like to add at runtime.
+
+> - If user wants more mem for hidden node, he just needs specify the 
+> "size".
+> - besides, user can also use "mem=" to hide more mem and later use 
+> mem-add i/f to freely attach more mem to the hidden node during runtime.
+> 
+
+Each of these requires a reboot, you cannot emulate hotplugging a node, 
+offlining it, removing the memory, and re-hotplugging the same node with a 
+larger amount of added memory with your model.
+
+> Your patch introduces additional dependency on "mem=", but ours is 
+> simple and flexibly compatible with "mem=" and "numa=emu". 
+> 
+
+This is the natural use case of mem=, to truncate the memory map to only 
+allow the kernel to have a portion of usable memory.  The remainder can be 
+used by this new interface, if desired, with complete power and control 
+over the size of nodes you're adding without having to conform to hidden 
+node sizes that you've specified at boot.
