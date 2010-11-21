@@ -1,110 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752590Ab0KULUY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 06:20:24 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56799 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435Ab0KULUX (ORCPT
+	id S1752781Ab0KUL0U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 06:26:20 -0500
+Received: from mail-px0-f174.google.com ([209.85.212.174]:51420 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752161Ab0KUL0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 06:20:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=F0L93B1rlchw2675tcRctmilOaaByALiql5MsxAVPGu+Vor7P/ciOavT/+ONcvkd4Y
-         NajbMWUTVcMsWy2ZDLl+F/L6SZqUZDVGOuyi7TOq8q1VL0QCwOlPjV45LxL9GCKyMneh
-         O2JfG0T01Lgj1OTajUXd3vKKwqiA5lqn1JELk=
+	Sun, 21 Nov 2010 06:26:19 -0500
+Date: Sun, 21 Nov 2010 19:26:11 +0800
+From: Arun Bhanu <ab@arunbhanu.com>
+To: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Eric Sandeen <sandeen@redhat.com>
+Subject: [BUG?] [Ext4] INFO: suspicious rcu_dereference_check() usage
+Message-ID: <20101121112611.GB4267@deepthought.bhanu.net>
+Reply-To: Arun Bhanu <ab@arunbhanu.com>
+Mail-Followup-To: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Theodore Ts'o <tytso@mit.edu>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	Paul McKenney <paulmck@linux.vnet.ibm.com>,
+	Eric Sandeen <sandeen@redhat.com>
 MIME-Version: 1.0
-From: Vincent Vanackere <vincent.vanackere@gmail.com>
-Date: Sun, 21 Nov 2010 12:20:01 +0100
-Message-ID: <AANLkTinEbBirwkREAVaaB4gH0w44tem0ik9nPU5-6aNJ@mail.gmail.com>
-Subject: [i915] 2.6.37-rc1 G33 regression : no DVI output
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=0016368322ba417e0e04958e5352
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016368322ba417e0e04958e5352
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+I saw this in kernel log messages while testing 2.6.37-rc2. I think it
+appeared while mounting an external hard-disk. I can't seem to
+reproduce it.
 
-Hi,
+Please let me know if you need more info.
 
- I'm trying to track down a regression occuring in recent kernel : I
-get the DVI output of my intel G33 chipset through a Sapphire ADD2
-DVI-D SDVO adaptor card and it was working fine until
-kernel 2.6.37-rc1 :
-- all more recent kernels only give a black screen
-- I can log through ssh and no oops nor anything suspicious is in the log
-- I get an output if I uses the VGA builtin port.
+[47064.272151] ===================================================
+[47064.273474] [ INFO: suspicious rcu_dereference_check() usage. ]
+[47064.273956] ---------------------------------------------------
+[47064.274431] include/linux/radix-tree.h:145 invoked rcu_dereference_check() without protection!
+[47064.274905] 
+[47064.274906] other info that might help us debug this:
+[47064.274907] 
+[47064.276303] 
+[47064.276303] rcu_scheduler_active = 1, debug_locks = 0
+[47064.277202] 2 locks held by mount/21199:
+[47064.277635]  #0:  (&type->s_umount_key#20/1){+.+.+.}, at: [<c05007f0>] sget+0x21f/0x35d
+[47064.278078]  #1:  (&(&inode->i_data.tree_lock)->rlock){..-.-.}, at: [<c04f5e67>] migrate_page_move_mapping+0x3a/0x120
+[47064.278529] 
+[47064.278529] stack backtrace:
+[47064.279409] Pid: 21199, comm: mount Not tainted 2.6.37-rc2-ab2-589136bfa784a4558b397f017ca2f06f0ca9080e+ #1
+[47064.279864] Call Trace:
+[47064.280313]  [<c0822e61>] ? printk+0x2d/0x34
+[47064.280765]  [<c04709c8>] lockdep_rcu_dereference+0x97/0x9f
+[47064.281220]  [<c04f5e28>] radix_tree_deref_slot+0x4a/0x4f
+[47064.281680]  [<c04f5ea7>] migrate_page_move_mapping+0x7a/0x120
+[47064.282129]  [<c04f6323>] migrate_page+0x1f/0x35
+[47064.282573]  [<c04f6464>] move_to_new_page+0x12b/0x164
+[47064.283017]  [<c04f6773>] migrate_pages+0x1e1/0x2ee
+[47064.283463]  [<c04eed89>] ? compaction_alloc+0x0/0x1ef
+[47064.283918]  [<c04eebdc>] compact_zone+0x24f/0x3fc
+[47064.284363]  [<c04ef0f4>] try_to_compact_pages+0x17c/0x1e6
+[47064.284820]  [<c04cac33>] __alloc_pages_nodemask+0x397/0x6b7
+[47064.285276]  [<c04caf75>] __get_free_pages+0x22/0x33
+[47064.285729]  [<c04f4304>] __kmalloc+0x2f/0x112
+[47064.286193]  [<c0435adc>] ? should_resched+0xd/0x28
+[47064.286655]  [<c0578ca9>] kzalloc.clone.58+0x12/0x14
+[47064.287118]  [<c057c7f1>] ext4_fill_super+0x1090/0x2521
+[47064.287573]  [<c040ea02>] ? native_sched_clock+0x14/0x52
+[47064.288029]  [<c054774a>] ? disk_name+0x86/0x90
+[47064.288477]  [<c0523bfa>] ? set_blocksize+0x33/0x78
+[47064.288930]  [<c0500aed>] mount_bdev+0x123/0x16d
+[47064.289385]  [<c057b761>] ? ext4_fill_super+0x0/0x2521
+[47064.289842]  [<c05776fd>] ? ext4_mount+0x0/0x24
+[47064.290300]  [<c057771c>] ext4_mount+0x1f/0x24
+[47064.290760]  [<c057b761>] ? ext4_fill_super+0x0/0x2521
+[47064.291222]  [<c05003e1>] vfs_kern_mount+0xa1/0x1ad
+[47064.291687]  [<c0511c36>] ? get_fs_type+0x38/0x91
+[47064.292149]  [<c0500546>] do_kern_mount+0x3d/0xc8
+[47064.292615]  [<c05142b2>] do_mount+0x614/0x640
+[47064.293056]  [<c04d69f0>] ? strndup_user+0x2e/0x3f
+[47064.293489]  [<c05144a1>] sys_mount+0x6d/0x99
+[47064.293925]  [<c040971f>] sysenter_do_call+0x12/0x38
+[47064.368116] EXT4-fs (sdb1): mounted filesystem with ordered data mode. Opts: (null)
 
-I did a git bisect to track down the problem but unfortunately if got
-stuck at commit 890f3359f7b84d7015104360d647ccac5f515542 that causes
-an oops and doesn't allow me do do more finegrained bisection because
-so far all later commits show either this oops or a black screen.
-What can I do to help solve this problem ? Attached is my current git
-bisect log.
-
-Best regards,
-
-Vincent Vanack=C3=A8re
-
---0016368322ba417e0e04958e5352
-Content-Type: text/x-log; charset=US-ASCII; name="g33-regression-bisect.log"
-Content-Disposition: attachment; filename="g33-regression-bisect.log"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_ggrtu5950
-
-Z2l0IGJpc2VjdCBzdGFydAojIGJhZDogW2U1M2JlYWNkMjNkOWNiNDc1OTBkYTZhN2E3ZjZkNDE3
-Yjk0MWE5OTRdIExpbnV4IDIuNi4zNy1yYzIKZ2l0IGJpc2VjdCBiYWQgZTUzYmVhY2QyM2Q5Y2I0
-NzU5MGRhNmE3YTdmNmQ0MTdiOTQxYTk5NAojIGdvb2Q6IFtmNmY5NGUyYWIxYjMzZjAwODJhYzIy
-ZDcxZjY2Mzg1YTYwZDgxNTdmXSBMaW51eCAyLjYuMzYKZ2l0IGJpc2VjdCBnb29kIGY2Zjk0ZTJh
-YjFiMzNmMDA4MmFjMjJkNzFmNjYzODVhNjBkODE1N2YKIyBnb29kOiBbMmEzNDY5OTY2MjZlY2Ji
-NDI2OWMyMzllOWZmNzM3MmExODI5MDdlOV0gaHdtb246IGxpczM6IHBtX3J1bnRpbWUgc3VwcG9y
-dApnaXQgYmlzZWN0IGdvb2QgMmEzNDY5OTY2MjZlY2JiNDI2OWMyMzllOWZmNzM3MmExODI5MDdl
-OQojIGJhZDogWzA4NTE2NjhmZGQ5N2U1MjZiMmE0MWY3OTRiNzg1YzIwNGRkM2QzZTBdIE1lcmdl
-IGJyYW5jaCAndjRsX2Zvcl9saW51cycgb2YgZ2l0Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9s
-aW51eC9rZXJuZWwvZ2l0L21jaGVoYWIvbGludXgtMi42CmdpdCBiaXNlY3QgYmFkIDA4NTE2Njhm
-ZGQ5N2U1MjZiMmE0MWY3OTRiNzg1YzIwNGRkM2QzZTAKIyBiYWQ6IFtjNDhjNDNlNDIyYzE0MDRm
-ZDcyYzU3ZDFkMjFhNmY2ZDAxZTE4OTAwXSBNZXJnZSBicmFuY2ggJ2RybS1jb3JlLW5leHQnIG9m
-IGdpdDovL2dpdC5rZXJuZWwub3JnL3B1Yi9zY20vbGludXgva2VybmVsL2dpdC9haXJsaWVkL2Ry
-bS0yLjYKZ2l0IGJpc2VjdCBiYWQgYzQ4YzQzZTQyMmMxNDA0ZmQ3MmM1N2QxZDIxYTZmNmQwMWUx
-ODkwMAojIGdvb2Q6IFsxOGEwNDNmOTQxMzI3NzUyM2NmNTAxMWU1OTRjYWExNzQ3ZGI0OTQ4XSBN
-ZXJnZSBicmFuY2ggJ25mcy1mb3ItMi42LjM3JyBvZiBnaXQ6Ly9naXQubGludXgtbmZzLm9yZy9w
-cm9qZWN0cy90cm9uZG15L25mcy0yLjYKZ2l0IGJpc2VjdCBnb29kIDE4YTA0M2Y5NDEzMjc3NTIz
-Y2Y1MDExZTU5NGNhYTE3NDdkYjQ5NDgKIyBiYWQ6IFswYzhlYjBkYzY1ZjVhNzhiMjUyZWVmZjZj
-NzI5YmE0NzQxMzkwZTIzXSBNZXJnZSByZW1vdGUgYnJhbmNoICdub3V2ZWF1L2Zvci1haXJsaWVk
-JyBvZiAuLi9kcm0tbm91dmVhdS1uZXh0IGludG8gZHJtLWNvcmUtbmV4dApnaXQgYmlzZWN0IGJh
-ZCAwYzhlYjBkYzY1ZjVhNzhiMjUyZWVmZjZjNzI5YmE0NzQxMzkwZTIzCiMgYmFkOiBbYWI2Zjhl
-MzI1MDgzZjEzOGNlNWRhODQxN2JhZjQ4ODg3ZDYyZGEzY10gZHJtL2k5MTUvcmluZ2J1ZmZlcjog
-d2hpdGVzcGFjZSBjbGVhbnVwCmdpdCBiaXNlY3QgYmFkIGFiNmY4ZTMyNTA4M2YxMzhjZTVkYTg0
-MTdiYWY0ODg4N2Q2MmRhM2MKIyBnb29kOiBbMjEwYjIzYzJmN2I5NzIxYWZiMGE1NzQ1OWI3ZGJh
-YzNiMDk0ODYyZV0gaW50ZWwtZ3R0OiBpOTY1OiB1c2UgZGV0ZWN0ZWQgZ3R0IHNpemUgZm9yIG1h
-cHBpbmcKZ2l0IGJpc2VjdCBnb29kIDIxMGIyM2MyZjdiOTcyMWFmYjBhNTc0NTliN2RiYWMzYjA5
-NDg2MmUKIyBnb29kOiBbNzg4MzE5ZDQ4ZGMyYjYxZGI3MzJiMTliYjk1OThjMDYyYzc1ZWMzN10g
-ZHJtL2k5MTUvbHZkczogTW92ZSBwcml2YXRlIGRhdGEgdG8gdGhlIGNvbm5lY3RvciBmcm9tIHRo
-ZSBkZXZpY2UuCmdpdCBiaXNlY3QgZ29vZCA3ODgzMTlkNDhkYzJiNjFkYjczMmIxOWJiOTU5OGMw
-NjJjNzVlYzM3CiMgYmFkOiBbZjQ5ZjA1ODYxOTFmZTE2MTQwNDEwZGIwYTQ2ZDQzYmRjNjkwZDZh
-Zl0gZHJtL2k5MTU6IEFjdHVhbGx5IHNldCB0aGUgcmVzZXQgYml0IGluIGk5NjVfcmVzZXQuCmdp
-dCBiaXNlY3QgYmFkIGY0OWYwNTg2MTkxZmUxNjE0MDQxMGRiMGE0NmQ0M2JkYzY5MGQ2YWYKIyBz
-a2lwOiBbMmI2ZWZhYTQ3NjE1YjI5ZTU3MmQ3ZmM0NDQ1NjVkYjYyY2E5YmNmN10gZHJtL2k5MTU6
-IFJlbW92ZSB1bnVzZWQgaW50ZWxfcmluZ2J1ZmZlci0+cmluZ19mbGFnCmdpdCBiaXNlY3Qgc2tp
-cCAyYjZlZmFhNDc2MTViMjllNTcyZDdmYzQ0NDU2NWRiNjJjYTliY2Y3CiMgZ29vZDogW2U2NWQ5
-MzA1ZjUyOGQ0ZjM1NDM3ODY5MDEzNWVlOGQxYzYwZWMwYTVdIGRybS9pOTE1OiBJbml0aWFsaXpl
-IGludGVsX2NydGMtPmFjdGl2ZQpnaXQgYmlzZWN0IGdvb2QgZTY1ZDkzMDVmNTI4ZDRmMzU0Mzc4
-NjkwMTM1ZWU4ZDFjNjBlYzBhNQojIGdvb2Q6IFswYmMyM2FhZDNiNjdjYTBjZDc0ODBkZWMwYjc2
-NTJkOWI4Njg2NDMyXSBkcm0vaTkxNTogRml4IHJlZ3Jlc3Npb24gaW4gYmEzZDhkNzQ5YgpnaXQg
-YmlzZWN0IGdvb2QgMGJjMjNhYWQzYjY3Y2EwY2Q3NDgwZGVjMGI3NjUyZDliODY4NjQzMgojIGdv
-b2Q6IFtkYjhjMDc2YjkyMDZlYTM1YjFmNzI5OTcwOGQ1NTEwYjE3Njc0ZGIyXSBNZXJnZSByZW1v
-dGUgYnJhbmNoICdsaW51cycgaW50byBkcm0taW50ZWwtZml4ZXMKZ2l0IGJpc2VjdCBnb29kIGRi
-OGMwNzZiOTIwNmVhMzViMWY3Mjk5NzA4ZDU1MTBiMTc2NzRkYjIKIyBza2lwOiBbM2YwOGU0ZWY4
-MDdjMzEwM2NlZWJmNzk5M2M3NDYzYzdhOTA2NDZmM10gYWdwL2ludGVsOiBGaXggcmVzdW1lIHJl
-Z3Jlc3Npb24gZnJvbSAyZDI0MzBjZgpnaXQgYmlzZWN0IHNraXAgM2YwOGU0ZWY4MDdjMzEwM2Nl
-ZWJmNzk5M2M3NDYzYzdhOTA2NDZmMwojIGJhZDogWzIxOWFkYWUxMzg1MTNiYWUyMGIyNTZmMTk0
-NmI5Y2IzYjc1Y2EwNWNdIGRybS9pOTE1OiBDYWNoZSBMVkRTIEVESUQKZ2l0IGJpc2VjdCBiYWQg
-MjE5YWRhZTEzODUxM2JhZTIwYjI1NmYxOTQ2YjljYjNiNzVjYTA1YwojIGdvb2Q6IFsyY2YzNGQ3
-YjdlZTk5YzI3YzFhNmJkZDJmOTEzNDRjYmZhNWZlZjVjXSBkcm0vaTkxNTogQWxsb3cgZ2V0X2Zl
-bmNlX3JlZygpIHRvIGJlIHVuaW50ZXJydXB0aWJsZQpnaXQgYmlzZWN0IGdvb2QgMmNmMzRkN2I3
-ZWU5OWMyN2MxYTZiZGQyZjkxMzQ0Y2JmYTVmZWY1Ywo=
---0016368322ba417e0e04958e5352--
+-Arun
