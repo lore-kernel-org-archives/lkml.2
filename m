@@ -1,21 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172Ab0KUCnm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:43:42 -0500
-Received: from mail.perches.com ([173.55.12.10]:1724 "EHLO mail.perches.com"
+	id S1756935Ab0KUCkZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:40:25 -0500
+Received: from mail.perches.com ([173.55.12.10]:1702 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757088Ab0KUCkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:40:32 -0500
+	id S1756121Ab0KUCkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:40:22 -0500
 From: Joe Perches <joe@perches.com>
-To: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Bob Copeland <me@bobcopeland.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 51/62] ath5k: Use static const
-Date: Sat, 20 Nov 2010 18:38:52 -0800
-Message-Id: <b2362f9dc7f404ad453c72b9d850a64fd810bc8a.1290305776.git.joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 41/62] smc-ultra: Use static const
+Date: Sat, 20 Nov 2010 18:38:42 -0800
+Message-Id: <936f7f2182d553e5f3598c8d7a2152c946c9a0fb.1290305776.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1290305773.git.joe@perches.com>
 References: <cover.1290305773.git.joe@perches.com>
@@ -27,88 +23,33 @@ Using static const generally increases object text and decreases data size.
 It also generally decreases overall object size.
 
    text	   data	    bss	    dec	    hex	filename
-  11266	     56	   2464	  13786	   35da	drivers/net/wireless/ath/ath5k/ani.o.old
-  11181	     56	   2464	  13701	   3585	drivers/net/wireless/ath/ath5k/ani.o.new
+   5316	    112	   1176	   6604	   19cc	drivers/net/smc-ultra.o.new
+   5302	    112	   1176	   6590	   19be	drivers/net/smc-ultra.o.old
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/wireless/ath/ath5k/ani.c |   34 +++++++++++++++++-----------------
- 1 files changed, 17 insertions(+), 17 deletions(-)
+ drivers/net/smc-ultra.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath5k/ani.c b/drivers/net/wireless/ath/ath5k/ani.c
-index db98a85..6b75b22 100644
---- a/drivers/net/wireless/ath/ath5k/ani.c
-+++ b/drivers/net/wireless/ath/ath5k/ani.c
-@@ -63,15 +63,15 @@ ath5k_ani_set_noise_immunity_level(struct ath5k_hw *ah, int level)
- 	 * so i stick with the HAL version for now...
- 	 */
- #if 0
--	const s8 hi[] = { -18, -18, -16, -14, -12 };
--	const s8 lo[] = { -52, -56, -60, -64, -70 };
--	const s8 sz[] = { -34, -41, -48, -55, -62 };
--	const s8 fr[] = { -70, -72, -75, -78, -80 };
-+	static const s8 hi[] = { -18, -18, -16, -14, -12 };
-+	static const s8 lo[] = { -52, -56, -60, -64, -70 };
-+	static const s8 sz[] = { -34, -41, -48, -55, -62 };
-+	static const s8 fr[] = { -70, -72, -75, -78, -80 };
- #else
--	const s8 sz[] = { -55, -62 };
--	const s8 lo[] = { -64, -70 };
--	const s8 hi[] = { -14, -12 };
--	const s8 fr[] = { -78, -80 };
-+	static const s8 sz[] = { -55, -62 };
-+	static const s8 lo[] = { -64, -70 };
-+	static const s8 hi[] = { -14, -12 };
-+	static const s8 fr[] = { -78, -80 };
- #endif
- 	if (level < 0 || level >= ARRAY_SIZE(sz)) {
- 		ATH5K_ERR(ah->ah_sc, "noise immuniy level %d out of range",
-@@ -102,7 +102,7 @@ ath5k_ani_set_noise_immunity_level(struct ath5k_hw *ah, int level)
- void
- ath5k_ani_set_spur_immunity_level(struct ath5k_hw *ah, int level)
- {
--	const int val[] = { 2, 4, 6, 8, 10, 12, 14, 16 };
-+	static const int val[] = { 2, 4, 6, 8, 10, 12, 14, 16 };
+diff --git a/drivers/net/smc-ultra.c b/drivers/net/smc-ultra.c
+index d2dd8e6..235a3c6 100644
+--- a/drivers/net/smc-ultra.c
++++ b/drivers/net/smc-ultra.c
+@@ -277,8 +277,12 @@ static int __init ultra_probe1(struct net_device *dev, int ioaddr)
+ 	dev->base_addr = ioaddr+ULTRA_NIC_OFFSET;
  
- 	if (level < 0 || level >= ARRAY_SIZE(val) ||
- 	    level > ah->ah_sc->ani_state.max_spur_level) {
-@@ -127,7 +127,7 @@ ath5k_ani_set_spur_immunity_level(struct ath5k_hw *ah, int level)
- void
- ath5k_ani_set_firstep_level(struct ath5k_hw *ah, int level)
- {
--	const int val[] = { 0, 4, 8 };
-+	static const int val[] = { 0, 4, 8 };
+ 	{
+-		int addr_tbl[4] = {0x0C0000, 0x0E0000, 0xFC0000, 0xFE0000};
+-		short num_pages_tbl[4] = {0x20, 0x40, 0x80, 0xff};
++		static const int addr_tbl[4] = {
++			0x0C0000, 0x0E0000, 0xFC0000, 0xFE0000
++		};
++		static const short num_pages_tbl[4] = {
++			0x20, 0x40, 0x80, 0xff
++		};
  
- 	if (level < 0 || level >= ARRAY_SIZE(val)) {
- 		ATH5K_ERR(ah->ah_sc, "firstep level %d out of range", level);
-@@ -151,12 +151,12 @@ ath5k_ani_set_firstep_level(struct ath5k_hw *ah, int level)
- void
- ath5k_ani_set_ofdm_weak_signal_detection(struct ath5k_hw *ah, bool on)
- {
--	const int m1l[] = { 127, 50 };
--	const int m2l[] = { 127, 40 };
--	const int m1[] = { 127, 0x4d };
--	const int m2[] = { 127, 0x40 };
--	const int m2cnt[] = { 31, 16 };
--	const int m2lcnt[] = { 63, 48 };
-+	static const int m1l[] = { 127, 50 };
-+	static const int m2l[] = { 127, 40 };
-+	static const int m1[] = { 127, 0x4d };
-+	static const int m2[] = { 127, 0x40 };
-+	static const int m2cnt[] = { 31, 16 };
-+	static const int m2lcnt[] = { 63, 48 };
- 
- 	AR5K_REG_WRITE_BITS(ah, AR5K_PHY_WEAK_OFDM_LOW_THR,
- 				AR5K_PHY_WEAK_OFDM_LOW_THR_M1, m1l[on]);
-@@ -192,7 +192,7 @@ ath5k_ani_set_ofdm_weak_signal_detection(struct ath5k_hw *ah, bool on)
- void
- ath5k_ani_set_cck_weak_signal_detection(struct ath5k_hw *ah, bool on)
- {
--	const int val[] = { 8, 6 };
-+	static const int val[] = { 8, 6 };
- 	AR5K_REG_WRITE_BITS(ah, AR5K_PHY_CCK_CROSSCORR,
- 				AR5K_PHY_CCK_CROSSCORR_WEAK_SIG_THR, val[on]);
- 	ah->ah_sc->ani_state.cck_weak_sig = on;
+ 		dev->mem_start = ((addr & 0x0f) << 13) + addr_tbl[(addr >> 6) & 3] ;
+ 		num_pages = num_pages_tbl[(addr >> 4) & 3];
 -- 
 1.7.3.2.245.g03276.dirty
 
