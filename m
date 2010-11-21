@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab0KUR5M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 12:57:12 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50616 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754941Ab0KUR5K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 12:57:10 -0500
+	id S1755440Ab0KUSHk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 13:07:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4970 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755218Ab0KUSHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 13:07:39 -0500
+Message-ID: <4CE95FD7.1060805@redhat.com>
+Date: Sun, 21 Nov 2010 13:07:19 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-In-Reply-To: <1290345498.2412.38.camel@localhost.localdomain>
-References: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
- <AANLkTin9sYf99fQ_w7Bp4N6Gsm3PR0akpCU=4YEkOaez@mail.gmail.com>
- <20101119175053.GC29148@fieldses.org> <1290345498.2412.38.camel@localhost.localdomain>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 21 Nov 2010 09:56:17 -0800
-Message-ID: <AANLkTikjz3j4j-zLSzagF=wnVE1ROZBGsjtuhGEvB9=n@mail.gmail.com>
-Subject: Re: [PATCH v1.2 0/5] IMA: making i_readcount a first class inode
- citizen (reposting)
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        jmorris@namei.org, akpm@linux-foundation.org, eparis@redhat.com,
-        viro@zeniv.linux.org.uk, Dave Chinner <david@fromorbit.com>,
-        David Safford <safford@watson.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] vmscan: Make move_active_pages_to_lru more generic
+References: <1290349496-13297-1-git-send-email-minchan.kim@gmail.com>
+In-Reply-To: <1290349496-13297-1-git-send-email-minchan.kim@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 21, 2010 at 5:18 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+On 11/21/2010 09:24 AM, Minchan Kim wrote:
+> Now move_active_pages_to_lru can move pages into active or inactive.
+> if it moves the pages into inactive, it itself can clear PG_acive.
+> It makes the function more generic.
+
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index aa4f1cb..bd408b3 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1457,6 +1457,10 @@ static void move_active_pages_to_lru(struct zone *zone,
+>   		VM_BUG_ON(PageLRU(page));
+>   		SetPageLRU(page);
 >
-> IMA (and the proposed EVM/IMA-appraisal patches) detects file change
-> based on i_version. When the file is closed, if the file has changed,
-> IMA marks the file as needing to be re-measured. Of course this requires
-> the filesystem to be mounted with iversion. Don't know if this helps.
+> +		/* we are de-activating */
+> +		if (!is_active_lru(lru))
+> +			ClearPageActive(page);
+> +
 
-If you only do this at close time, I see a _major_ security hole.
+Does that mean we also want code to ensure that pages have
+the PG_active bit set when we add them to an active list?
 
-The attacker can just write to the file, and keep it open. Ta-daa,
-everybody who reads it sees the new contents, but your IMA logic is
-oblivious and thinks it doesn't need to be re-measured.
-
-                            Linus
+-- 
+All rights reversed
