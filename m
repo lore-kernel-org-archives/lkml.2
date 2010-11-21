@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327Ab0KUCm1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:42:27 -0500
-Received: from mail.perches.com ([173.55.12.10]:1751 "EHLO mail.perches.com"
+	id S932135Ab0KUCmt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:42:49 -0500
+Received: from mail.perches.com ([173.55.12.10]:1739 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757195Ab0KUCkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:40:45 -0500
+	id S1757164Ab0KUCkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:40:40 -0500
 From: Joe Perches <joe@perches.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+To: Stefano Brivio <stefano.brivio@polimi.it>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 58/62] ray_cs: Use static const
-Date: Sat, 20 Nov 2010 18:38:59 -0800
-Message-Id: <e530e506090e3de049ea79098ccaa7665575db52.1290305776.git.joe@perches.com>
+Subject: [PATCH 55/62] b43: Use static const
+Date: Sat, 20 Nov 2010 18:38:56 -0800
+Message-Id: <515c42b1b99e90575869532cfa383cadb7b66515.1290305776.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1290305773.git.joe@perches.com>
 References: <cover.1290305773.git.joe@perches.com>
@@ -24,29 +25,33 @@ Using static const generally increases object text and decreases data size.
 It also generally decreases overall object size.
 
    text	   data	    bss	    dec	    hex	filename
-  42607	   3581	   8536	  54724	   d5c4	drivers/net/wireless/ray_cs.o.new
-  42603	   3585	   8536	  54724	   d5c4	drivers/net/wireless/ray_cs.o.old
+   5502	     56	   1336	   6894	   1aee	drivers/net/wireless/b43/phy_common.o.new
+   5511	     56	   1336	   6903	   1af7	drivers/net/wireless/b43/phy_common.o.old
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/wireless/ray_cs.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/b43/phy_common.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wireless/ray_cs.c b/drivers/net/wireless/ray_cs.c
-index 97007d9..2b1cbba 100644
---- a/drivers/net/wireless/ray_cs.c
-+++ b/drivers/net/wireless/ray_cs.c
-@@ -2286,8 +2286,8 @@ static void untranslate(ray_dev_t *local, struct sk_buff *skb, int len)
- 	struct ethhdr *peth;
- 	UCHAR srcaddr[ADDRLEN];
- 	UCHAR destaddr[ADDRLEN];
--	static UCHAR org_bridge[3] = { 0, 0, 0xf8 };
--	static UCHAR org_1042[3] = { 0, 0, 0 };
-+	static const UCHAR org_bridge[3] = { 0, 0, 0xf8 };
-+	static const UCHAR org_1042[3] = { 0, 0, 0 };
- 
- 	memcpy(destaddr, ieee80211_get_DA(pmac), ADDRLEN);
- 	memcpy(srcaddr, ieee80211_get_SA(pmac), ADDRLEN);
+diff --git a/drivers/net/wireless/b43/phy_common.c b/drivers/net/wireless/b43/phy_common.c
+index 7b2ea67..fa7f83f 100644
+--- a/drivers/net/wireless/b43/phy_common.c
++++ b/drivers/net/wireless/b43/phy_common.c
+@@ -427,9 +427,11 @@ void b43_phyop_switch_analog_generic(struct b43_wldev *dev, bool on)
+ /* http://bcm-v4.sipsolutions.net/802.11/PHY/Cordic */
+ struct b43_c32 b43_cordic(int theta)
+ {
+-	u32 arctg[] = { 2949120, 1740967, 919879, 466945, 234379, 117304,
+-		      58666, 29335, 14668, 7334, 3667, 1833, 917, 458,
+-		      229, 115, 57, 29, };
++	static const u32 arctg[] = {
++		2949120, 1740967, 919879, 466945, 234379, 117304,
++		  58666,   29335,  14668,   7334,   3667,   1833,
++		    917,     458,    229,    115,     57,     29,
++	};
+ 	u8 i;
+ 	s32 tmp;
+ 	s8 signx = 1;
 -- 
 1.7.3.2.245.g03276.dirty
 
