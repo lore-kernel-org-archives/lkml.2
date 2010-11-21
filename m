@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127Ab0KUMWJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 07:22:09 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:46361 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917Ab0KUMWI convert rfc822-to-8bit (ORCPT
+	id S1753085Ab0KUMqX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 07:46:23 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:50274 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935Ab0KUMqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 07:22:08 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ewrZnNODwU6FTpe2qoR7Y7Q6tOjcq9SNGjSiZS14qdIIn9Fh94o+jnwa43yqNr5Bmp
-         tmvi9mBhYaZLFoKRevaA==
+	Sun, 21 Nov 2010 07:46:22 -0500
+Message-ID: <8e9ff9280b0c4a059bc82b5c4a629897.squirrel@www.firstfloor.org>
+In-Reply-To: <1290340877.2245.124.camel@localhost>
+References: <1290340877.2245.124.camel@localhost>
+Date: Sun, 21 Nov 2010 13:46:21 +0100
+Subject: Re: [RFC PATCH 2/3 v2] perf: Implement Nehalem uncore pmu
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Lin Ming" <ming.m.lin@intel.com>
+Cc: "Peter Zijlstra" <a.p.zijlstra@chello.nl>, "Ingo Molnar" <mingo@elte.hu>,
+        "Stephane Eranian" <eranian@google.com>,
+        "Andi Kleen" <andi@firstfloor.org>,
+        "lkml" <linux-kernel@vger.kernel.org>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        "Arjan van de Ven" <arjan@infradead.org>
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-In-Reply-To: <340872239c47b2ec237c88488cb7b6ac.squirrel@www.firstfloor.org>
-References: <1290340907.2245.125.camel@localhost>
-	<340872239c47b2ec237c88488cb7b6ac.squirrel@www.firstfloor.org>
-Date: Sun, 21 Nov 2010 13:22:03 +0100
-Message-ID: <AANLkTi=bxEgsLjk-1CK4pSmknyxR_y3OxTJ9DZ_dBW8n@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/3 v2] perf: Update perf tool to monitor uncore events
-From: Stephane Eranian <eranian@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 21, 2010 at 1:09 PM, Andi Kleen <andi@firstfloor.org> wrote:
+
 >
->>
->>              samples  pcnt function               DSO
->>              _______ _____ ______________________
->> ____________________________________
->>
->>                 8.00 18.6% kallsyms_expand_symbol [kernel.kallsyms]
+> 2. Uncore pmu NMI handling
 >
-> Reporting a symbol for an uncore event seems highly misleading.
-> After all the uncore counter has no idea for which core the event was,
-> so there isn't really any instruction pointer to report.
-> The event could be event caused by a PCI device or similar.
->
-> For per function monitoring of uncore events one has to use
-> OFFCORE_RESPONSE, like I implemented recently.
->
-> I would suggest to not report any symbol names for uncore events.
-> Doing so just will confuse users.
->
-> In fact I suspect uncore events are only really useful
-> with "stat", but not with "top", or if they are used in top
-> then the symbol reporting should be disabled.
->
-I agree, uncore should only be used for counting on a
-per-cpu basis. You can leave the perf tool as is, but
-that opens up the risk of misinterpretation by many users,
-or you restrict this in the tool directly which is the better
-solution in my mind.
+> All the 4 cores are programmed to receive uncore counter overflow
+> interrupt. The NMI handler(running on 1 of the 4 cores) handle all
+> counters enabled by all 4 cores.
+
+Really for uncore monitoring there is no need to use an NMI handler.
+You can't profile a core anyways, so you can just delay the reporting
+a little bit. It may simplify the code to not use one here
+and just use an ordinary handler.
+
+In general since there is already much trouble with overloaded
+NMI events avoiding new NMIs is a good idea.
+
+
+
+> +
+> +static struct node_hw_events *uncore_events[MAX_NUMNODES];
+
+Don't declare static arrays with MAX_NUMNODES, that number can be
+very large and cause unnecessary bloat. Better use per CPU data or similar
+(e.g. with  alloc_percpu)
+
+> +	/*
+> +	 * The hw event starts counting from this event offset,
+> +	 * mark it to be able to extra future deltas:
+> +	 */
+> +	local64_set(&hwc->prev_count, (u64)-left);
+
+Your use of local* seems dubious. That is only valid if it's really
+all on the same CPU. Is that really true?
+
+> +static int uncore_pmu_add(struct perf_event *event, int flags)
+> +{
+> +	int node = numa_node_id();
+
+this should be still package id
+
+> +	/* Check CPUID signatures: 06_1AH, 06_1EH, 06_1FH */
+> +	model = eax.split.model | (eax.split.ext_model << 4);
+> +	if (eax.split.family != 6 || (model != 0x1A && model != 0x1E && model !=
+> 0x1F))
+> +		return;
+
+You can just get that from boot_cpu_data, no need to call cpuid
+
+> +#include <linux/perf_event.h>
+> +#include <linux/capability.h>
+> +#include <linux/notifier.h>
+> +#include <linux/hardirq.h>
+> +#include <linux/kprobes.h>
+> +#include <linux/module.h>
+> +#include <linux/kdebug.h>
+> +#include <linux/sched.h>
+> +#include <linux/uaccess.h>
+> +#include <linux/slab.h>
+> +#include <linux/highmem.h>
+> +#include <linux/cpu.h>
+> +#include <linux/bitops.h>
+
+Do you really need all these includes?
+
+
+-Andi
