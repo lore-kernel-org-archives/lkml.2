@@ -1,29 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289Ab0KUCyP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:54:15 -0500
-Received: from mail.perches.com ([173.55.12.10]:1653 "EHLO mail.perches.com"
+	id S1756002Ab0KUCjm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:39:42 -0500
+Received: from mail.perches.com ([173.55.12.10]:1624 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756195Ab0KUCjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:39:55 -0500
+	id S1751102Ab0KUCjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:39:40 -0500
 From: Joe Perches <joe@perches.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>,
-        Don Skidmore <donald.c.skidmore@intel.com>,
-        Greg Rose <gregory.v.rose@intel.com>,
-        PJ Waskiewicz <peter.p.waskiewicz.jr@intel.com>,
-        Alex Duyck <alexander.h.duyck@intel.com>,
-        John Ronciak <john.ronciak@intel.com>
-Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 15/62] e1000: Use static const
-Date: Sat, 20 Nov 2010 18:38:16 -0800
-Message-Id: <4aca5fa3f038345bdea4975476693cc3c73e8373.1290305776.git.joe@perches.com>
+To: netdev@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+        linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org,
+        ath5k-devel@venema.h4ckr.net, ath9k-devel@venema.h4ckr.net,
+        libertas-dev@lists.infradead.org, users@rt2x00.serialmonkey.com
+Cc: linux-kernel@vger.kernel.org, socketcan-core@lists.berlios.de
+Subject: [PATCH 00/62] drivers/net: Use static const
+Date: Sat, 20 Nov 2010 18:38:01 -0800
+Message-Id: <cover.1290305773.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
-In-Reply-To: <cover.1290305773.git.joe@perches.com>
-References: <cover.1290305773.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,41 +23,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Using static const generally increases object text and decreases data size.
 It also generally decreases overall object size.
 
+Summary of sizes old and new.  Compiled allyesconfig x86 only.
+
    text	   data	    bss	    dec	    hex	filename
-  74538	   4296	  19168	  98002	  17ed2	drivers/net/e1000/e1000_hw.o.old
-  74501	   4296	  19168	  97965	  17ead	drivers/net/e1000/e1000_hw.o.new
+2075402   67170  466644 2609216  27d040 (TOTALS) -new
+2074597   70614  466668 2611879  27daa7 (TOTALS) -old
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/e1000/e1000_hw.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Joe Perches (62):
+  3c501: Use static const
+  3c503: Use static const
+  3c507: Use static const
+  3c527: Use static const
+  at1700: Use static const
+  benet: Use static const
+  bnx2: Use static const
+  bnx2x: Use static const
+  can: Use static const
+  chelsio: Use static const
+  cxgb3: Use static const
+  cxgb3: Use static const
+  cxgb4: Use static const
+  cxgb4vf: Use static const
+  e1000: Use static const
+  e1000: Use static const
+  e1000e: Use static const
+  e2100: Use static const
+  eepro: Use static const
+  eexpress: Use static const
+  gianfar: Use static const
+  hp: Use static const
+  igb: Use static const
+  irda: Use static const
+  irda: Use static const
+  ixgbe: Use static const
+  ixgbevf: Use static const
+  ixgb: Use static const
+  jme: Use static const
+  ksz884x: Use static const
+  netxen: Use static const
+  ni52: Use static const
+  ni65: Use static const
+  pcmcia: Use static const
+  qlcnic: Use static const
+  qlge: Use static const
+  r8169: Use static const
+  s2io: Use static const
+  skfp: Use static const
+  skge: Use static const
+  smc-ultra: Use static const
+  tg3: Use static const
+  tokenring: Use static const
+  tulip: Use static const
+  tulip: Use static const
+  usb: Use static const
+  vmxnet3: Use static const
+  wan: Use static const
+  wd: Use static const
+  ar9170: Use const
+  ath5k: Use static const
+  ath9k: Use static const
+  carl9170: Use static const
+  atmel: Use static const
+  b43: Use static const
+  iwlwifi: Use static const
+  libertas: Use static const
+  ray_cs: Use static const
+  rndis_wlan: Use static const
+  rt2x00: Use static const
+  wl12xx: Use static const
+  zd1211rw: Use const
 
-diff --git a/drivers/net/e1000/e1000_hw.c b/drivers/net/e1000/e1000_hw.c
-index c7e242b6..c866ef0 100644
---- a/drivers/net/e1000/e1000_hw.c
-+++ b/drivers/net/e1000/e1000_hw.c
-@@ -4892,8 +4892,8 @@ static s32 e1000_get_cable_length(struct e1000_hw *hw, u16 *min_length,
- 	} else if (hw->phy_type == e1000_phy_igp) {	/* For IGP PHY */
- 		u16 cur_agc_value;
- 		u16 min_agc_value = IGP01E1000_AGC_LENGTH_TABLE_SIZE;
--		u16 agc_reg_array[IGP01E1000_PHY_CHANNEL_NUM] =
--		    { IGP01E1000_PHY_AGC_A,
-+		static const u16 agc_reg_array[IGP01E1000_PHY_CHANNEL_NUM] = {
-+			IGP01E1000_PHY_AGC_A,
- 			IGP01E1000_PHY_AGC_B,
- 			IGP01E1000_PHY_AGC_C,
- 			IGP01E1000_PHY_AGC_D
-@@ -5071,8 +5071,8 @@ static s32 e1000_config_dsp_after_link_change(struct e1000_hw *hw, bool link_up)
- {
- 	s32 ret_val;
- 	u16 phy_data, phy_saved_data, speed, duplex, i;
--	u16 dsp_reg_array[IGP01E1000_PHY_CHANNEL_NUM] =
--	    { IGP01E1000_PHY_AGC_PARAM_A,
-+	static const u16 dsp_reg_array[IGP01E1000_PHY_CHANNEL_NUM] = {
-+		IGP01E1000_PHY_AGC_PARAM_A,
- 		IGP01E1000_PHY_AGC_PARAM_B,
- 		IGP01E1000_PHY_AGC_PARAM_C,
- 		IGP01E1000_PHY_AGC_PARAM_D
+ drivers/net/3c501.c                            |    4 +-
+ drivers/net/3c503.c                            |    4 +-
+ drivers/net/3c507.c                            |    4 +-
+ drivers/net/3c527.c                            |    6 +-
+ drivers/net/at1700.c                           |    6 +-
+ drivers/net/benet/be_ethtool.c                 |    4 +-
+ drivers/net/benet/be_main.c                    |   10 ++--
+ drivers/net/bnx2.c                             |   46 ++++++++++++-----------
+ drivers/net/bnx2x/bnx2x_main.c                 |    6 ++-
+ drivers/net/can/sja1000/plx_pci.c              |    2 +-
+ drivers/net/chelsio/sge.c                      |   10 ++---
+ drivers/net/cxgb3/ael1002.c                    |   24 ++++++------
+ drivers/net/cxgb3/t3_hw.c                      |    2 +-
+ drivers/net/cxgb4/t4_hw.c                      |   48 ++++++++++++------------
+ drivers/net/cxgb4vf/t4vf_hw.c                  |    2 +-
+ drivers/net/e1000/e1000_hw.c                   |    8 ++--
+ drivers/net/e1000/e1000_param.c                |   13 +++---
+ drivers/net/e1000e/phy.c                       |   11 +++--
+ drivers/net/e2100.c                            |    2 +-
+ drivers/net/eepro.c                            |    9 ++--
+ drivers/net/eexpress.c                         |    2 +-
+ drivers/net/gianfar.c                          |   10 +++--
+ drivers/net/hp.c                               |    6 +-
+ drivers/net/igb/e1000_phy.c                    |   11 +++--
+ drivers/net/irda/act200l-sir.c                 |    2 +-
+ drivers/net/irda/donauboe.c                    |    4 +-
+ drivers/net/ixgb/ixgb_param.c                  |   21 +++++-----
+ drivers/net/ixgbe/ixgbe_ethtool.c              |   22 ++++++----
+ drivers/net/ixgbevf/ethtool.c                  |   18 +++++---
+ drivers/net/jme.c                              |    4 +-
+ drivers/net/ksz884x.c                          |   20 +++++-----
+ drivers/net/netxen/netxen_nic_hw.c             |   16 +++++---
+ drivers/net/ni52.c                             |    4 +-
+ drivers/net/ni65.c                             |    4 +-
+ drivers/net/pcmcia/nmclan_cs.c                 |    2 +-
+ drivers/net/qlcnic/qlcnic_hw.c                 |   15 ++++---
+ drivers/net/qlge/qlge_main.c                   |   13 +++---
+ drivers/net/r8169.c                            |    2 +-
+ drivers/net/s2io.c                             |   20 ++++++----
+ drivers/net/skfp/smt.c                         |    4 +-
+ drivers/net/skge.c                             |    4 +-
+ drivers/net/smc-ultra.c                        |    8 +++-
+ drivers/net/tg3.c                              |   26 ++++++-------
+ drivers/net/tokenring/ibmtr.c                  |    5 +-
+ drivers/net/tulip/de2104x.c                    |   18 ++++++---
+ drivers/net/tulip/tulip_core.c                 |   15 ++++---
+ drivers/net/usb/hso.c                          |   39 ++++++++-----------
+ drivers/net/vmxnet3/vmxnet3_drv.c              |    4 +-
+ drivers/net/wan/dscc4.c                        |    6 +-
+ drivers/net/wd.c                               |    2 +-
+ drivers/net/wireless/ath/ar9170/cmd.c          |    2 +-
+ drivers/net/wireless/ath/ath5k/ani.c           |   34 ++++++++--------
+ drivers/net/wireless/ath/ath9k/ani.c           |    8 ++--
+ drivers/net/wireless/ath/ath9k/ar5008_phy.c    |   32 ++++++++-------
+ drivers/net/wireless/ath/ath9k/ar9002_phy.c    |   12 +++--
+ drivers/net/wireless/ath/ath9k/ar9003_calib.c  |   10 ++--
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    8 ++-
+ drivers/net/wireless/ath/ath9k/ar9003_paprd.c  |    4 +-
+ drivers/net/wireless/ath/ath9k/ar9003_phy.c    |    4 +-
+ drivers/net/wireless/ath/ath9k/eeprom_4k.c     |   12 +++--
+ drivers/net/wireless/ath/ath9k/eeprom_9287.c   |   14 +++---
+ drivers/net/wireless/ath/ath9k/eeprom_def.c    |   17 +++++---
+ drivers/net/wireless/ath/ath9k/htc_drv_init.c  |    2 +-
+ drivers/net/wireless/ath/ath9k/hw.c            |    9 ++--
+ drivers/net/wireless/ath/ath9k/rc.c            |    6 +-
+ drivers/net/wireless/ath/carl9170/cmd.c        |    2 +-
+ drivers/net/wireless/atmel.c                   |    6 ++-
+ drivers/net/wireless/b43/phy_common.c          |    8 ++-
+ drivers/net/wireless/b43/phy_n.c               |    9 ++--
+ drivers/net/wireless/iwlwifi/iwl-3945.c        |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-agn-lib.c     |    6 +-
+ drivers/net/wireless/libertas/cfg.c            |    2 +-
+ drivers/net/wireless/libertas/rx.c             |    4 +-
+ drivers/net/wireless/ray_cs.c                  |    4 +-
+ drivers/net/wireless/rndis_wlan.c              |    9 +++-
+ drivers/net/wireless/rt2x00/rt2800lib.c        |    2 +-
+ drivers/net/wireless/wl12xx/wl1271_acx.c       |    4 +-
+ drivers/net/wireless/zd1211rw/zd_chip.c        |    4 +-
+ 78 files changed, 422 insertions(+), 362 deletions(-)
+
 -- 
 1.7.3.2.245.g03276.dirty
 
