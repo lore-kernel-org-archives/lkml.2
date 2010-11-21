@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753596Ab0KUOIq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 09:08:46 -0500
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:62277 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346Ab0KUOIp (ORCPT
+	id S1753815Ab0KUOJF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 09:09:05 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:45162 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753709Ab0KUOJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 09:08:45 -0500
-Message-ID: <4CE9277D.9050505@ru.mvista.com>
-Date: Sun, 21 Nov 2010 17:06:53 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Jan Dumon <j.dumon@option.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 46/62] usb: Use static const
-References: <cover.1290305773.git.joe@perches.com> <ed2a5bd07f07601ba12ce3c8fcbce2dd954c35aa.1290305776.git.joe@perches.com>
-In-Reply-To: <ed2a5bd07f07601ba12ce3c8fcbce2dd954c35aa.1290305776.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Sun, 21 Nov 2010 09:09:03 -0500
+Date: Sun, 21 Nov 2010 14:07:57 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: Mark Allyn <mark.a.allyn@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] sep: Introduce sep driver
+Message-ID: <20101121140757.66681d35@lxorguk.ukuu.org.uk>
+In-Reply-To: <20101120162726.GA29623@kroah.com>
+References: <1290037536-12660-1-git-send-email-mark.a.allyn@intel.com>
+	<20101120123911.356bc780@lxorguk.ukuu.org.uk>
+	<20101120162726.GA29623@kroah.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Sat, 20 Nov 2010 08:27:26 -0800
+Greg KH <greg@kroah.com> wrote:
 
-On 21-11-2010 5:38, Joe Perches wrote:
+> On Sat, Nov 20, 2010 at 12:39:11PM +0000, Alan Cox wrote:
+> > 
+> > 
+> > > +/* rar handler */
+> > > +#ifndef CONFIG_MRST_RAR_HANDLER
+> > > +
+> > > +/* This stub header is for non Moorestown driver only */
+> > 
+> > What happened to the patches I sent you a while back that cleaned this
+> > one up ?
+> 
+> Wait, this isn't the cleaned up version?  Ick, should I just drop it and
+> wait for a working one instead?  Or Mark, are you going to fix this one
+> up for real this time?
 
-> Using static const generally increases object text and decreases data size.
-> It also generally decreases overall object size.
+I sent Mark a set of follow on patches. Dunno if they got lost in part or
+not. No big deal as they applied on top of his previous set so can just
+be applied as a follow up to the merge.
 
->     text	   data	    bss	    dec	    hex	filename
->    36120	    312	   9000	  45432	   b178	drivers/net/usb/hso.o.old
->    36043	    312	   9008	  45363	   b133	drivers/net/usb/hso.o.new
+So I'd rather you carried on merging them and we'll figure out which of
+the other bits need dropping on top.
 
-> Consolidate duplicated code into new fix_crc_bug function
-> and declare data in that function static const.
-
-> Signed-off-by: Joe Perches<joe@perches.com>
-[...]
-
-> diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-> index be8cc2a..c77d0ea 100644
-> --- a/drivers/net/usb/hso.c
-> +++ b/drivers/net/usb/hso.c
-> @@ -1001,6 +1001,18 @@ static void packetizeRx(struct hso_net *odev, unsigned char *ip_pkt,
->   	}
->   }
->
-> +static void fix_crc_bug(struct urb *urb, __le16 max_packet_size)
-> +{
-> +	static const u8 crc_check[4] = { 0xDE, 0xAD, 0xBE, 0xEF };
-> +	u32 rest = urb->actual_length % le16_to_cpu(max_packet_size);
-> +
-> +	if (((rest == 5) || (rest == 6)) &&
-> +	    !memcmp(((u8 *)urb->transfer_buffer) + urb->actual_length - 4,
-
-    Parens around '(u8 *)urb->transfer_buffer' not needed. Could get rid of 
-them, while at it...
-
-> +		    crc_check, 4)) {
-> +		urb->actual_length -= 4;
-> +	}
-> +}
-> +
->   /* Moving data from usb to kernel (in interrupt state) */
->   static void read_bulk_callback(struct urb *urb)
->   {
-
-WBR, Sergei
+Alan
