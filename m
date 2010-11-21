@@ -1,55 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab0KUB3p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 20:29:45 -0500
-Received: from hera.cwi.nl ([192.16.191.8]:35472 "EHLO hera.cwi.nl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754121Ab0KUB3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 20:29:44 -0500
-Date: Sun, 21 Nov 2010 02:29:16 +0100
-From: "Andries E. Brouwer" <Andries.Brouwer@cwi.nl>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "Andries E. Brouwer" <Andries.Brouwer@cwi.nl>,
-        Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: ide boot failure 2.6.36/2.6.28 - 2.6.27 works
-Message-ID: <20101121012916.GC8365@iq>
-References: <20101120032828.GA14693@iq>
- <20101120074508.GA16854@liondog.tnic>
- <20101120121121.GA30338@iq>
- <20101120130401.59d8b8a1@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101120130401.59d8b8a1@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755737Ab0KUCA5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:00:57 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:9698 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755270Ab0KUCA4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:00:56 -0500
+From: Colin Cross <ccross@android.com>
+To: linux-kernel@vger.kernel.org
+Cc: Colin Cross <ccross@android.com>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
+Subject: [PATCH] cgroup: Remove RCU from task->cgroups
+Date: Sat, 20 Nov 2010 18:00:24 -0800
+Message-Id: <1290304824-22722-1-git-send-email-ccross@android.com>
+X-Mailer: git-send-email 1.7.3.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+The synchronize_rcu call in cgroup_attach_task can be very
+expensive.  All fastpath accesses to task->cgroups already
+use task_lock() or cgroup_lock() to protect against updates,
+and only the CGROUP_DEBUG files have RCU read-side critical
+sections.
 
-> On a PCI box however you should always have a matching PCI driver,
+This patch replaces rcu_read_lock() with task_lock(current)
+around the debug file acceses to current->cgroups and removes
+the synchronize_rcu call in cgroup_attach_task.
 
-True - in this case PIIX4, and selecting it makes things work
-(but was not required earlier).
-
-> If you have a PCI ATA driver which is not handled by any of the libata
-> drivers and is not known by ata_generic then please let me know.
-
-Also libata needs the additional selection of PIIX4,
-but then works fine. (Of course all devices are renamed.)
-
-Andries
-
-
-> if its hitting a lot of people
-
-Maybe a few hundred visible via Google.
-One in every hundred thousand users?
-
+Signed-off-by: Colin Cross <ccross@android.com>
 ---
-Post by Thomas Ingerslev 2009-09-02
-I have been struggling with error this fore quite a while,
-and have finally found a solution.
-... I ended up with just adding ide_generic.probe_mask=0x03 ...
+ kernel/cgroup.c |   22 ++++++++--------------
+ 1 files changed, 8 insertions(+), 14 deletions(-)
+
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 66a416b..4a40183 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -725,14 +725,11 @@ static struct cgroup *task_cgroup_from_root(struct task_struct *task,
+  * cgroup_attach_task(), which overwrites one tasks cgroup pointer with
+  * another.  It does so using cgroup_mutex, however there are
+  * several performance critical places that need to reference
+- * task->cgroup without the expense of grabbing a system global
++ * task->cgroups without the expense of grabbing a system global
+  * mutex.  Therefore except as noted below, when dereferencing or, as
+- * in cgroup_attach_task(), modifying a task'ss cgroup pointer we use
++ * in cgroup_attach_task(), modifying a task's cgroups pointer we use
+  * task_lock(), which acts on a spinlock (task->alloc_lock) already in
+  * the task_struct routinely used for such matters.
+- *
+- * P.S.  One more locking exception.  RCU is used to guard the
+- * update of a tasks cgroup pointer by cgroup_attach_task()
+  */
+ 
+ /**
+@@ -1786,7 +1783,7 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+ 		retval = -ESRCH;
+ 		goto out;
+ 	}
+-	rcu_assign_pointer(tsk->cgroups, newcg);
++	tsk->cgroups = newcg;
+ 	task_unlock(tsk);
+ 
+ 	/* Update the css_set linked lists if we're using them */
+@@ -1802,7 +1799,6 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+ 			ss->attach(ss, cgrp, oldcgrp, tsk, false);
+ 	}
+ 	set_bit(CGRP_RELEASABLE, &oldcgrp->flags);
+-	synchronize_rcu();
+ 	put_css_set(cg);
+ 
+ 	/*
+@@ -4827,9 +4823,9 @@ static u64 current_css_set_refcount_read(struct cgroup *cont,
+ {
+ 	u64 count;
+ 
+-	rcu_read_lock();
++	task_lock(current);
+ 	count = atomic_read(&current->cgroups->refcount);
+-	rcu_read_unlock();
++	task_unlock(current);
+ 	return count;
+ }
+ 
+@@ -4838,12 +4834,10 @@ static int current_css_set_cg_links_read(struct cgroup *cont,
+ 					 struct seq_file *seq)
+ {
+ 	struct cg_cgroup_link *link;
+-	struct css_set *cg;
+ 
+ 	read_lock(&css_set_lock);
+-	rcu_read_lock();
+-	cg = rcu_dereference(current->cgroups);
+-	list_for_each_entry(link, &cg->cg_links, cg_link_list) {
++	task_lock(current);
++	list_for_each_entry(link, &current->cgroups->cg_links, cg_link_list) {
+ 		struct cgroup *c = link->cgrp;
+ 		const char *name;
+ 
+@@ -4854,7 +4848,7 @@ static int current_css_set_cg_links_read(struct cgroup *cont,
+ 		seq_printf(seq, "Root %d group %s\n",
+ 			   c->root->hierarchy_id, name);
+ 	}
+-	rcu_read_unlock();
++	task_unlock(current);
+ 	read_unlock(&css_set_lock);
+ 	return 0;
+ }
+-- 
+1.7.3.1
+
