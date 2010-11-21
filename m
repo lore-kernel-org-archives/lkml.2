@@ -1,72 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275Ab0KUQGN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 11:06:13 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48506 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325Ab0KUQGM (ORCPT
+	id S1754383Ab0KUQKV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 11:10:21 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:59039 "HELO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753416Ab0KUQKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 11:06:12 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=TnW8f9MLfSML7mk5Wq4JKBRRHoMHvJzkGuahVLdB3o6mbrv3kwrJEZJOL5eJAj+0VM
-         Tjk0D4PpK1sjyG7pBmkaGcXeqwo9EPef5gAX82iTAasqqVqsbRCSf6fhW+bxZEZbEMZ3
-         9Mf9AkT/c0Cynsa75HYqTvWPmjv/M1YFuh2BM=
-MIME-Version: 1.0
-Date: Mon, 22 Nov 2010 00:06:10 +0800
-Message-ID: <AANLkTi==JZK7r27zQndo7V5fjKMfyoVdzxESMJCXLBwR@mail.gmail.com>
-Subject: [BUG] perf-tip: compile failure on ARM
-From: Ming Lei <tom.leiming@gmail.com>
-To: mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 21 Nov 2010 11:10:20 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Andreas Schwab <schwab@linux-m68k.org>,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>
+Subject: [PATCH v2] perf: Handle DT_UNKNOWN on filesystems that don't support d_type
+Date: Sun, 21 Nov 2010 10:09:39 -0600
+Message-Id: <1290355779-3276-1-git-send-email-sbohrer@rgmadvisors.com>
+X-Mailer: git-send-email 1.7.2.3
+In-Reply-To: <20101121155433.GB2527@BohrerMBP>
+References: <20101121155433.GB2527@BohrerMBP>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Some filesystems like xfs and reiserfs will return DT_UNKNOWN for the
+d_type.  Handle this case by calling stat() to determine the type.
 
-Building -tip tree on ARM failed, follows the error messge:
+Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+---
 
+Cleaned up the boolean logic from Andreas Schwab's review.
 
-  CC      kernel/trace/trace_syscalls.o
-In file included from kernel/trace/trace_syscalls.c:2:
-include/trace/events/syscalls.h:11:25: error: asm/syscall.h: No such
-file or directory
-kernel/trace/trace_syscalls.c:15: error: 'NR_syscalls' undeclared here
-(not in a function)
-kernel/trace/trace_syscalls.c: In function 'ftrace_syscall_enter':
-kernel/trace/trace_syscalls.c:306: error: implicit declaration of
-function 'syscall_get_nr'
-kernel/trace/trace_syscalls.c:325: error: implicit declaration of
-function 'syscall_get_arguments'
-kernel/trace/trace_syscalls.c: In function 'ftrace_syscall_exit':
-kernel/trace/trace_syscalls.c:357: error: implicit declaration of
-function 'syscall_get_return_value'
-kernel/trace/trace_syscalls.c: In function 'reg_event_syscall_enter':
-kernel/trace/trace_syscalls.c:374: error: implicit declaration of
-function 'register_trace_sys_enter'
-kernel/trace/trace_syscalls.c: In function 'unreg_event_syscall_enter':
-kernel/trace/trace_syscalls.c:394: error: implicit declaration of
-function 'unregister_trace_sys_enter'
-kernel/trace/trace_syscalls.c: In function 'reg_event_syscall_exit':
-kernel/trace/trace_syscalls.c:408: error: implicit declaration of
-function 'register_trace_sys_exit'
-kernel/trace/trace_syscalls.c: In function 'unreg_event_syscall_exit':
-kernel/trace/trace_syscalls.c:428: error: implicit declaration of
-function 'unregister_trace_sys_exit'
-kernel/trace/trace_syscalls.c: In function 'arch_syscall_addr':
-kernel/trace/trace_syscalls.c:451: error: 'sys_call_table' undeclared
-(first use in this function)
-kernel/trace/trace_syscalls.c:451: error: (Each undeclared identifier
-is reported only once
-kernel/trace/trace_syscalls.c:451: error: for each function it appears in.)
-make[2]: *** [kernel/trace/trace_syscalls.o] Error 1
-make[1]: *** [kernel/trace] Error 2
-make: *** [kernel] Error 2
-make: *** Waiting for unfinished jobs....
+ tools/perf/builtin-trace.c |   33 +++++++++++++++++++++++++--------
+ 1 files changed, 25 insertions(+), 8 deletions(-)
 
-thanks,
+diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+index 86cfe38..4783ed8 100644
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -301,17 +301,34 @@ static int parse_scriptname(const struct option *opt __used,
+ 	return 0;
+ }
+ 
+-#define for_each_lang(scripts_dir, lang_dirent, lang_next)		\
++/* Helper function for filesystems that return a dent->d_type DT_UNKNOWN */
++static int is_directory(const char *base_path, const struct dirent *dent)
++{
++	char path[PATH_MAX];
++	struct stat st;
++
++	sprintf(path, "%s/%s", base_path, dent->d_name);
++	if (stat(path, &st))
++		return 0;
++
++	return S_ISDIR(st.st_mode);
++}
++
++#define for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next)\
+ 	while (!readdir_r(scripts_dir, &lang_dirent, &lang_next) &&	\
+ 	       lang_next)						\
+-		if (lang_dirent.d_type == DT_DIR &&			\
++		if ((lang_dirent.d_type == DT_DIR ||			\
++		     (lang_dirent.d_type == DT_UNKNOWN &&		\
++		      is_directory(scripts_path, &lang_dirent))) &&	\
+ 		    (strcmp(lang_dirent.d_name, ".")) &&		\
+ 		    (strcmp(lang_dirent.d_name, "..")))
+ 
+-#define for_each_script(lang_dir, script_dirent, script_next)		\
++#define for_each_script(lang_path, lang_dir, script_dirent, script_next)\
+ 	while (!readdir_r(lang_dir, &script_dirent, &script_next) &&	\
+ 	       script_next)						\
+-		if (script_dirent.d_type != DT_DIR)
++		if (script_dirent.d_type != DT_DIR &&			\
++		    (script_dirent.d_type != DT_UNKNOWN ||		\
++		     !is_directory(lang_path, &script_dirent)))
+ 
+ 
+ #define RECORD_SUFFIX			"-record"
+@@ -466,14 +483,14 @@ static int list_available_scripts(const struct option *opt __used,
+ 	if (!scripts_dir)
+ 		return -1;
+ 
+-	for_each_lang(scripts_dir, lang_dirent, lang_next) {
++	for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next) {
+ 		snprintf(lang_path, MAXPATHLEN, "%s/%s/bin", scripts_path,
+ 			 lang_dirent.d_name);
+ 		lang_dir = opendir(lang_path);
+ 		if (!lang_dir)
+ 			continue;
+ 
+-		for_each_script(lang_dir, script_dirent, script_next) {
++		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
+ 			script_root = strdup(script_dirent.d_name);
+ 			str = ends_with(script_root, REPORT_SUFFIX);
+ 			if (str) {
+@@ -514,14 +531,14 @@ static char *get_script_path(const char *script_root, const char *suffix)
+ 	if (!scripts_dir)
+ 		return NULL;
+ 
+-	for_each_lang(scripts_dir, lang_dirent, lang_next) {
++	for_each_lang(scripts_path, scripts_dir, lang_dirent, lang_next) {
+ 		snprintf(lang_path, MAXPATHLEN, "%s/%s/bin", scripts_path,
+ 			 lang_dirent.d_name);
+ 		lang_dir = opendir(lang_path);
+ 		if (!lang_dir)
+ 			continue;
+ 
+-		for_each_script(lang_dir, script_dirent, script_next) {
++		for_each_script(lang_path, lang_dir, script_dirent, script_next) {
+ 			__script_root = strdup(script_dirent.d_name);
+ 			str = ends_with(__script_root, suffix);
+ 			if (str) {
 -- 
-Lei Ming
+1.7.2.3
+
