@@ -1,88 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754303Ab0KUPvP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 10:51:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26270 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753356Ab0KUPvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 10:51:14 -0500
-Date: Sun, 21 Nov 2010 16:44:35 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4] sched: automated per session task groups
-Message-ID: <20101121154435.GA25966@redhat.com>
-References: <20101121133744.GA10765@elte.hu> <20101121133919.GA10976@elte.hu>
+	id S1754574Ab0KUPxH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 10:53:07 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:35968 "HELO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754156Ab0KUPxF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 10:53:05 -0500
+Date: Sun, 21 Nov 2010 09:52:52 -0600
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf: Handle DT_UNKNOWN on filesystems that don't
+ support d_type
+Message-ID: <20101121155252.GA2527@BohrerMBP>
+References: <1290300139-2695-1-git-send-email-sbohrer@rgmadvisors.com>
+ <20101121004836.GA16668@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101121133919.GA10976@elte.hu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101121004836.GA16668@ghostprotocols.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/21, Ingo Molnar wrote:
->
-> Btw., there's a small cleanup in the patch that i picked up (see below), and i also
-> edited the commit log a bit - so you might want to pick up the version below.
+On Sat, Nov 20, 2010 at 10:48:36PM -0200, Arnaldo Carvalho de Melo wrote:
+> Em Sat, Nov 20, 2010 at 06:42:19PM -0600, Shawn Bohrer escreveu:
+> > Some filesystems like xfs and reiserfs will return DT_UNKNOWN for the
+> > d_type.  Handle this case by calling stat() to determine the type.
+> 
+> Thanks for the fix, just waiting for some more reviewers to chime in,
+> seems odd, like readdir_r has a bug.
 
-I didn't read the patch in details, but a couple of nits...
+The readdir_r man page says the following:
 
-> +static void
-> +autogroup_move_group(struct task_struct *p, struct autogroup *ag)
-> +{
-> +	struct autogroup *prev;
-> +	struct task_struct *t;
-> +
-> +	spin_lock(&p->sighand->siglock);
+       If  the  file type could not be determined, the value DT_UNKNOWN
+       is returned in d_type.
 
-This needs spin_lock_irq(), ->siglock is irq-safe.
+       Currently, only some file  systems  (among  them:  Btrfs,  ext2,
+       ext3,  and  ext4)  have  full support returning the file type in
+       d_type.  All applications  must  properly  handle  a  return  of
+       DT_UNKNOWN.
 
-The same for other lockers, but:
+So it isn't a bug in readdir_r.  This also isn't the only place that
+perf uses readdir/readdir_r, and doesn't handle DT_UNKNOWN. In the
+other locations it looked to me like it was only reading from debugfs,
+so I don't think it matters.
 
-> +static inline struct autogroup *autogroup_get(struct task_struct *p)
-> +{
-> +	struct autogroup *ag;
-> +
-> +	/* task may be moved after we unlock.. tough */
-> +	spin_lock(&p->sighand->siglock);
-
-This is called by fs/proc. In this case nothing protects us from
-release_task(), we can hit ->siglock == NULL (or we can race with
-exec which changes ->sighand in theory).
-
-This needs lock_task_sighand() (it can fail). Perhaps something
-else have the same problem...
-
-If the task is current and it is not exiting, or it is the new
-child (sched_autogroup_fork), then it is safe to use ->siglock
-directly.
-
-And a pure cosmetic nit,
-
-> +void sched_autogroup_fork(struct signal_struct *sig)
-> +{
-> +     struct sighand_struct *sighand = current->sighand;
-> +
-> +     spin_lock(&sighand->siglock);
-> +     sig->autogroup = autogroup_kref_get(current->signal->autogroup);
-> +     spin_unlock(&sighand->siglock);
-> +}
-
-This looks a bit confusing. We do not need current->sighand->siglock
-to set sig->autogroup. Nobody except us can see this new signal_struct,
-and in any case current->sighand->siglock can't help.
-
-It is needed for autogroup_kref_get(), but we already have autogroup_get().
-I'd suggest
-
-	void sched_autogroup_fork(struct signal_struct *sig)
-	{
-		sig->autogroup = autogroup_get(current);	
-	}
-
-Oleg.
-
+> Even if that is the case we'll have to cope, and doing the extra stat
+> only when in "doubt" (i.e. when getting DT_UNKNOWN) seems the right
+> thing to me.
+> 
+> - Arnaldo
