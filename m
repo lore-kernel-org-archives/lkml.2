@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab0KUCtt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:49:49 -0500
-Received: from mail.perches.com ([173.55.12.10]:1678 "EHLO mail.perches.com"
+	id S1756803Ab0KUCuM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:50:12 -0500
+Received: from mail.perches.com ([173.55.12.10]:1675 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756626Ab0KUCkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:40:08 -0500
+	id S1756139Ab0KUCkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:40:06 -0500
 From: Joe Perches <joe@perches.com>
 To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Jesse Brandeburg <jesse.brandeburg@intel.com>,
@@ -18,9 +18,9 @@ To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         John Ronciak <john.ronciak@intel.com>
 Cc: e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 27/62] ixgbevf: Use static const
-Date: Sat, 20 Nov 2010 18:38:28 -0800
-Message-Id: <2f0b47333ee780c36283db8b098a78285e7547fd.1290305776.git.joe@perches.com>
+Subject: [PATCH 26/62] ixgbe: Use static const
+Date: Sat, 20 Nov 2010 18:38:27 -0800
+Message-Id: <cea5119e8784f6d18368a17b606200f2e5615187.1290305776.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1290305773.git.joe@perches.com>
 References: <cover.1290305773.git.joe@perches.com>
@@ -32,31 +32,40 @@ Using static const generally increases object text and decreases data size.
 It also generally decreases overall object size.
 
    text	   data	    bss	    dec	    hex	filename
-   8436	    372	   1728	  10536	   2928	drivers/net/ixgbevf/ethtool.o.old
-   8469	    252	   1728	  10449	   28d1	drivers/net/ixgbevf/ethtool.o.new
+  31444	     56	   6552	  38052	   94a4	drivers/net/ixgbe/ixgbe_ethtool.o.new
+  30905	    560	   6552	  38017	   9481	drivers/net/ixgbe/ixgbe_ethtool.o.old
 
 Make single file scope definition for register_test_patterns.
 Rename _test to register_test_patterns.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/ixgbevf/ethtool.c |   18 +++++++++++-------
- 1 files changed, 11 insertions(+), 7 deletions(-)
+ drivers/net/ixgbe/ixgbe_ethtool.c |   22 +++++++++++++---------
+ 1 files changed, 13 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/net/ixgbevf/ethtool.c b/drivers/net/ixgbevf/ethtool.c
-index 4cc817a..fa29b3c 100644
---- a/drivers/net/ixgbevf/ethtool.c
-+++ b/drivers/net/ixgbevf/ethtool.c
-@@ -544,7 +544,7 @@ struct ixgbevf_reg_test {
+diff --git a/drivers/net/ixgbe/ixgbe_ethtool.c b/drivers/net/ixgbe/ixgbe_ethtool.c
+index f9b5839..5b31775 100644
+--- a/drivers/net/ixgbe/ixgbe_ethtool.c
++++ b/drivers/net/ixgbe/ixgbe_ethtool.c
+@@ -1157,7 +1157,7 @@ struct ixgbe_reg_test {
  #define TABLE64_TEST_HI	6
  
- /* default VF register test */
--static struct ixgbevf_reg_test reg_test_vf[] = {
-+static const struct ixgbevf_reg_test reg_test_vf[] = {
- 	{ IXGBE_VFRDBAL(0), 2, PATTERN_TEST, 0xFFFFFF80, 0xFFFFFF80 },
- 	{ IXGBE_VFRDBAH(0), 2, PATTERN_TEST, 0xFFFFFFFF, 0xFFFFFFFF },
- 	{ IXGBE_VFRDLEN(0), 2, PATTERN_TEST, 0x000FFF80, 0x000FFFFF },
-@@ -557,19 +557,23 @@ static struct ixgbevf_reg_test reg_test_vf[] = {
+ /* default 82599 register test */
+-static struct ixgbe_reg_test reg_test_82599[] = {
++static const struct ixgbe_reg_test reg_test_82599[] = {
+ 	{ IXGBE_FCRTL_82599(0), 1, PATTERN_TEST, 0x8007FFF0, 0x8007FFF0 },
+ 	{ IXGBE_FCRTH_82599(0), 1, PATTERN_TEST, 0x8007FFF0, 0x8007FFF0 },
+ 	{ IXGBE_PFCTOP, 1, PATTERN_TEST, 0xFFFFFFFF, 0xFFFFFFFF },
+@@ -1181,7 +1181,7 @@ static struct ixgbe_reg_test reg_test_82599[] = {
+ };
+ 
+ /* default 82598 register test */
+-static struct ixgbe_reg_test reg_test_82598[] = {
++static const struct ixgbe_reg_test reg_test_82598[] = {
+ 	{ IXGBE_FCRTL(0), 1, PATTERN_TEST, 0x8007FFF0, 0x8007FFF0 },
+ 	{ IXGBE_FCRTH(0), 1, PATTERN_TEST, 0x8007FFF0, 0x8007FFF0 },
+ 	{ IXGBE_PFCTOP, 1, PATTERN_TEST, 0xFFFFFFFF, 0xFFFFFFFF },
+@@ -1208,18 +1208,22 @@ static struct ixgbe_reg_test reg_test_82598[] = {
  	{ 0, 0, 0, 0 }
  };
  
@@ -76,24 +85,24 @@ index 4cc817a..fa29b3c 100644
 +		       (adapter->hw.hw_addr + R));                            \
  		val = readl(adapter->hw.hw_addr + R);                         \
 -		if (val != (_test[pat] & W & M)) {                            \
+-			e_err(drv, "pattern test reg %04X failed: got "   \
 +		if (val != (register_test_patterns[pat] & W & M)) {           \
- 			hw_dbg(&adapter->hw,                                  \
- 			"pattern test reg %04X failed: got "                  \
- 			"0x%08X expected 0x%08X\n",                           \
--			R, val, (_test[pat] & W & M));                        \
-+			R, val, (register_test_patterns[pat] & W & M));       \
++			e_err(drv, "pattern test reg %04X failed: got "       \
+ 			      "0x%08X expected 0x%08X\n",		      \
+-			      R, val, (_test[pat] & W & M));                \
++			      R, val, (register_test_patterns[pat] & W & M)); \
  			*data = R;                                            \
  			writel(before, adapter->hw.hw_addr + R);              \
  			return 1;                                             \
-@@ -596,7 +600,7 @@ static struct ixgbevf_reg_test reg_test_vf[] = {
+@@ -1246,7 +1250,7 @@ static struct ixgbe_reg_test reg_test_82598[] = {
  
- static int ixgbevf_reg_test(struct ixgbevf_adapter *adapter, u64 *data)
+ static int ixgbe_reg_test(struct ixgbe_adapter *adapter, u64 *data)
  {
--	struct ixgbevf_reg_test *test;
-+	const struct ixgbevf_reg_test *test;
- 	u32 i;
+-	struct ixgbe_reg_test *test;
++	const struct ixgbe_reg_test *test;
+ 	u32 value, before, after;
+ 	u32 i, toggle;
  
- 	test = reg_test_vf;
 -- 
 1.7.3.2.245.g03276.dirty
 
