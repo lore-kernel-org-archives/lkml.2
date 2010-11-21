@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab0KUIb5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 03:31:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31555 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751714Ab0KUIb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 03:31:56 -0500
-Date: Sun, 21 Nov 2010 10:31:22 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>,
-        Patrick Pannuto <ppannuto@codeaurora.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch: teach checkpatch about rcu
-Message-ID: <20101121083121.GA15587@redhat.com>
-References: <20101118170515.GA14005@redhat.com>
- <1290100547.2781.206.camel@edumazet-laptop>
+	id S1752398Ab0KUIhW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 03:37:22 -0500
+Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:45872 "EHLO
+	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab0KUIhV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 03:37:21 -0500
+Date: Sun, 21 Nov 2010 09:37:16 +0100
+From: Rodolfo Giometti <giometti@enneenne.com>
+To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, Andrew Morton <akpm@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>
+Message-ID: <20101121083716.GN13356@enneenne.com>
+Mail-Followup-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>,
+	linux-kernel@vger.kernel.org,
+	"Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Tejun Heo <tj@kernel.org>
+References: <cover.1290087473.git.lasaine@lvk.cs.msu.su>
+ <65eae4de46680aa8d644619f6dc61ba17f1fdc77.1290087479.git.lasaine@lvk.cs.msu.su>
+ <20101120160851.GA13356@enneenne.com>
+ <20101121022302.2bce2240@apollo.gnet>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1290100547.2781.206.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101121022302.2bce2240@apollo.gnet>
+Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
+X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 192.168.32.37
+X-SA-Exim-Mail-From: giometti@enneenne.com
+Subject: Re: [PATCHv4 08/17] pps: add async PPS event handler
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Nov 18, 2010 at 06:15:47PM +0100, Eric Dumazet wrote:
-> Le jeudi 18 novembre 2010 à 19:05 +0200, Michael S. Tsirkin a écrit :
-> > I got this:
-> > +       struct kvm_kernel_irq_routing_entry __rcu *irq_entry;
-> > which is because checkpatch does not know about __rcu.
-> > So here's a patch to teach it about that tag.
+On Sun, Nov 21, 2010 at 02:23:02AM +0300, Alexander Gordeev wrote:
+> ?? Sat, 20 Nov 2010 17:08:51 +0100
+> Rodolfo Giometti <giometti@enneenne.com> ??????????:
+> 
+> > On Thu, Nov 18, 2010 at 07:01:01PM +0300, Alexander Gordeev wrote:
+> > > This handler should be called from an IRQ handler. It uses per-device
+> > > workqueue internally.
 > > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  scripts/checkpatch.pl |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> > index 2039acd..1b11c8e 100755
-> > --- a/scripts/checkpatch.pl
-> > +++ b/scripts/checkpatch.pl
-> > @@ -143,6 +143,7 @@ our $Sparse	= qr{
-> >  			__must_check|
-> >  			__init_refok|
-> >  			__kprobes|
-> > +			__rcu|
-> >  			__ref
-> >  		}x;
-> >  
+> > Can you please explain to me why do you need this patch? Maybe you can
+> > add a verbose patch's description? :)
 > 
+> Well, it's all about optimizing latencies on rt-preempt kernel: if
+> everything is done in a process context than we can use mutexes
+> (haven't done that yet) and don't disable interrupts, which is better
+> for hard real time. I measured that pps_event with kernel consumer
+> enabled takes 1-2us on my test machine. Not a big deal, of course...
 > 
-> Hmm, why __percpu is in $Attribute, and __rcu in $Sparse ?
+> Sorry, I've completely forgotten about an echo function. However quick
+> look to current clients shows that it is only used in pps-ktimer.c
+> for debug printing... Maybe it's not needed at all? I mean, have you
+> ever got any user request for this feature? If yes, it can be removed
+> IMHO since RFC-2783 says that it's optional. I can handle the removal in
+> the next version of the patchset.
 > 
+> If you don't want it I can have this patch on my rt branch only and
+> don't try to push it into mainline.
 
-I can't say: we have __kernel and __user and __iomem address spaces in $Sparse
-and only __percpu in $Attribute, so I thought address spaces belong in
-$Sparse and __percpu just sneaked in there with a ton of other
-attributes added by 03f1df7da5696ddfa6e167b37e0c0ce5aad3de79.
+The echo function is not used as far as I know, so it's ok for me to
+remove echo support if you get better performance.
 
-Should __percpu be moved to $Sparse perhaps?
+In case we can study how to reimplement it! ;)
+
+Acked-by: Rodolfo Giometti <giometti@linux.it>
 
 -- 
-MST
 
+GNU/Linux Solutions                  e-mail: giometti@enneenne.com
+Linux Device Driver                          giometti@linux.it
+Embedded Systems                     phone:  +39 349 2432127
+UNIX programming                     skype:  rodolfo.giometti
+Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
