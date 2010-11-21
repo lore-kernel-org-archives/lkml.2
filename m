@@ -1,114 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab0KUCA5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:00:57 -0500
-Received: from smtp-out.google.com ([74.125.121.35]:9698 "EHLO
+	id S1756036Ab0KUC2s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:28:48 -0500
+Received: from smtp-out.google.com ([74.125.121.35]:21032 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755270Ab0KUCA4 (ORCPT
+	with ESMTP id S1751102Ab0KUC2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:00:56 -0500
-From: Colin Cross <ccross@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Colin Cross <ccross@android.com>, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org
-Subject: [PATCH] cgroup: Remove RCU from task->cgroups
-Date: Sat, 20 Nov 2010 18:00:24 -0800
-Message-Id: <1290304824-22722-1-git-send-email-ccross@android.com>
-X-Mailer: git-send-email 1.7.3.1
+	Sat, 20 Nov 2010 21:28:45 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=RkZFiY0soAva/k8vKscGvsRjJiQ/QBHYalrDRikL3iEiAiiHfk8mtSfqBxgni+yJbb
+         MuB0C7gi7t4+WI5K7jmA==
+Date: Sat, 20 Nov 2010 18:28:38 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Shaohui Zheng <shaohui.zheng@intel.com>,
+        Paul Mundt <lethal@linux-sh.org>, Andi Kleen <ak@linux.intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Haicheng Li <haicheng.li@intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, x86@kernel.org
+Subject: [patch 2/2] mm: add node hotplug emulation
+In-Reply-To: <alpine.DEB.2.00.1011201826140.12889@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1011201827540.12889@chino.kir.corp.google.com>
+References: <20101117020759.016741414@intel.com> <20101117021000.568681101@intel.com> <alpine.DEB.2.00.1011162359160.17408@chino.kir.corp.google.com> <20101117075128.GA30254@shaohui> <alpine.DEB.2.00.1011171304060.10254@chino.kir.corp.google.com>
+ <20101118041407.GA2408@shaohui> <20101118062715.GD17539@linux-sh.org> <20101118052750.GD2408@shaohui> <alpine.DEB.2.00.1011181321470.26680@chino.kir.corp.google.com> <20101119003225.GB3327@shaohui> <alpine.DEB.2.00.1011201645230.10618@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1011201826140.12889@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The synchronize_rcu call in cgroup_attach_task can be very
-expensive.  All fastpath accesses to task->cgroups already
-use task_lock() or cgroup_lock() to protect against updates,
-and only the CGROUP_DEBUG files have RCU read-side critical
-sections.
 
-This patch replaces rcu_read_lock() with task_lock(current)
-around the debug file acceses to current->cgroups and removes
-the synchronize_rcu call in cgroup_attach_task.
+Add an interface to allow new nodes to be added when performing memory
+hot-add.  This provides a convenient interface to test memory hotplug
+notifier callbacks and surrounding hotplug code when new nodes are
+onlined without actually having a machine with such hotpluggable SRAT
+entries.
 
-Signed-off-by: Colin Cross <ccross@android.com>
+This adds a new interface at /sys/devices/system/memory/add_node that
+behaves in a similar way to the memory hot-add "probe" interface.  Its
+format is size@start, where "size" is the size of the new node to be
+added and "start" is the physical address of the new memory.
+
+The new node id is a currently offline, but possible, node.  The bit must
+be set in node_possible_map so that nr_node_ids is sized appropriately.
+
+For emulation on x86, for example, it would be possible to set aside
+memory for hotplugged nodes (say, anything above 2G) and to add an
+additional three nodes as being possible on boot with
+
+	mem=2G numa=possible=3
+
+and then creating a new 128M node at runtime:
+
+	# echo 128M@0x80000000 > /sys/devices/system/memory/add_node
+	On node 1 totalpages: 0
+	init_memory_mapping: 0000000080000000-0000000088000000
+	 0080000000 - 0088000000 page 2M
+
+Once the new node has been added, its memory can be onlined.  If this
+memory represents memory section 16, for example:
+
+	# echo online > /sys/devices/system/memory/memory16/state
+	Built 2 zonelists in Node order, mobility grouping on.  Total pages: 514846
+	Policy zone: Normal
+
+ [ The memory section(s) mapped to a particular node are visible via
+   /sys/devices/system/node/node1, in this example. ]
+
+The new node is now hotplugged and ready for testing.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- kernel/cgroup.c |   22 ++++++++--------------
- 1 files changed, 8 insertions(+), 14 deletions(-)
+ Documentation/memory-hotplug.txt |   24 ++++++++++++++++++++++++
+ drivers/base/memory.c            |   36 +++++++++++++++++++++++++++++++++++-
+ 2 files changed, 59 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 66a416b..4a40183 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -725,14 +725,11 @@ static struct cgroup *task_cgroup_from_root(struct task_struct *task,
-  * cgroup_attach_task(), which overwrites one tasks cgroup pointer with
-  * another.  It does so using cgroup_mutex, however there are
-  * several performance critical places that need to reference
-- * task->cgroup without the expense of grabbing a system global
-+ * task->cgroups without the expense of grabbing a system global
-  * mutex.  Therefore except as noted below, when dereferencing or, as
-- * in cgroup_attach_task(), modifying a task'ss cgroup pointer we use
-+ * in cgroup_attach_task(), modifying a task's cgroups pointer we use
-  * task_lock(), which acts on a spinlock (task->alloc_lock) already in
-  * the task_struct routinely used for such matters.
-- *
-- * P.S.  One more locking exception.  RCU is used to guard the
-- * update of a tasks cgroup pointer by cgroup_attach_task()
-  */
+diff --git a/Documentation/memory-hotplug.txt b/Documentation/memory-hotplug.txt
+--- a/Documentation/memory-hotplug.txt
++++ b/Documentation/memory-hotplug.txt
+@@ -18,6 +18,7 @@ be changed often.
+ 4. Physical memory hot-add phase
+   4.1 Hardware(Firmware) Support
+   4.2 Notify memory hot-add event by hand
++  4.3 Node hotplug emulation
+ 5. Logical Memory hot-add phase
+   5.1. State of memory
+   5.2. How to online memory
+@@ -215,6 +216,29 @@ current implementation). You'll have to online memory by yourself.
+ Please see "How to online memory" in this text.
  
- /**
-@@ -1786,7 +1783,7 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- 		retval = -ESRCH;
- 		goto out;
- 	}
--	rcu_assign_pointer(tsk->cgroups, newcg);
-+	tsk->cgroups = newcg;
- 	task_unlock(tsk);
  
- 	/* Update the css_set linked lists if we're using them */
-@@ -1802,7 +1799,6 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- 			ss->attach(ss, cgrp, oldcgrp, tsk, false);
- 	}
- 	set_bit(CGRP_RELEASABLE, &oldcgrp->flags);
--	synchronize_rcu();
- 	put_css_set(cg);
++4.3 Node hotplug emulation
++------------
++It is possible to test node hotplug by assigning the newly added memory to a
++new node id when using a different interface with a similar behavior to
++"probe" described in section 4.2.  If a node id is possible (there are bits
++in /sys/devices/system/memory/possible that are not online), then it may be
++used to emulate a newly added node as the result of memory hotplug by using
++the "add_node" interface.
++
++The add_node interface is located at
++/sys/devices/system/memory/add_node
++
++You can create a new node of a specified size starting at the physical
++address of new memory by
++
++% echo size@start_address_of_new_memory > /sys/devices/system/memory/add_node
++
++Where "size" can be represented in megabytes or gigabytes (for example,
++"128M" or "1G").  The minumum size is that of a memory section.
++
++Once the new node has been added, it is possible to online the memory by
++toggling the "state" of its memory section(s) as described in section 5.1.
++
  
- 	/*
-@@ -4827,9 +4823,9 @@ static u64 current_css_set_refcount_read(struct cgroup *cont,
- {
- 	u64 count;
- 
--	rcu_read_lock();
-+	task_lock(current);
- 	count = atomic_read(&current->cgroups->refcount);
--	rcu_read_unlock();
-+	task_unlock(current);
- 	return count;
+ ------------------------------
+ 5. Logical Memory hot-add phase
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -353,10 +353,44 @@ memory_probe_store(struct class *class, struct class_attribute *attr,
  }
+ static CLASS_ATTR(probe, S_IWUSR, NULL, memory_probe_store);
  
-@@ -4838,12 +4834,10 @@ static int current_css_set_cg_links_read(struct cgroup *cont,
- 					 struct seq_file *seq)
++static ssize_t
++memory_add_node_store(struct class *class, struct class_attribute *attr,
++		      const char *buf, size_t count)
++{
++	nodemask_t mask;
++	u64 start, size;
++	char *p;
++	int nid;
++	int ret;
++
++	size = memparse(buf, &p);
++	if (size < (PAGES_PER_SECTION << PAGE_SHIFT))
++		return -EINVAL;
++	if (*p != '@')
++		return -EINVAL;
++
++	start = simple_strtoull(p + 1, NULL, 0);
++
++	nodes_andnot(mask, node_possible_map, node_online_map);
++	nid = first_node(mask);
++	if (nid == MAX_NUMNODES)
++		return -EINVAL;
++
++	ret = add_memory(nid, start, size);
++	return ret ? ret : count;
++}
++static CLASS_ATTR(add_node, S_IWUSR, NULL, memory_add_node_store);
++
+ static int memory_probe_init(void)
  {
- 	struct cg_cgroup_link *link;
--	struct css_set *cg;
- 
- 	read_lock(&css_set_lock);
--	rcu_read_lock();
--	cg = rcu_dereference(current->cgroups);
--	list_for_each_entry(link, &cg->cg_links, cg_link_list) {
-+	task_lock(current);
-+	list_for_each_entry(link, &current->cgroups->cg_links, cg_link_list) {
- 		struct cgroup *c = link->cgrp;
- 		const char *name;
- 
-@@ -4854,7 +4848,7 @@ static int current_css_set_cg_links_read(struct cgroup *cont,
- 		seq_printf(seq, "Root %d group %s\n",
- 			   c->root->hierarchy_id, name);
- 	}
--	rcu_read_unlock();
-+	task_unlock(current);
- 	read_unlock(&css_set_lock);
- 	return 0;
+-	return sysfs_create_file(&memory_sysdev_class.kset.kobj,
++	int err;
++
++	err = sysfs_create_file(&memory_sysdev_class.kset.kobj,
+ 				&class_attr_probe.attr);
++	if (err)
++		return err;
++	return sysfs_create_file(&memory_sysdev_class.kset.kobj,
++				&class_attr_add_node.attr);
  }
--- 
-1.7.3.1
-
+ #else
+ static inline int memory_probe_init(void)
