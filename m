@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab0KUAvH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 19:51:07 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53921 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755119Ab0KUAvF (ORCPT
+	id S1755562Ab0KUAzb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 19:55:31 -0500
+Received: from smtp-out.google.com ([216.239.44.51]:10271 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753484Ab0KUAz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 19:51:05 -0500
+	Sat, 20 Nov 2010 19:55:29 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=Y2Rq10qFHYr8pQLq0W206GKx2z2/vVtoDiYyzcQgYY7Yjd8pTnYFhHCZcIbkbWVkO+
+         ka/Lny39Fq7wBKkhF5Eg==
+Date: Sat, 20 Nov 2010 16:55:22 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Matt Mackall <mpm@selenic.com>
+cc: b32542@freescale.com, linux-mm@kvack.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, tytso@mit.edu,
+        linux-kernel@vger.kernel.org, Zeng Zhaoming <zengzm.kernel@gmail.com>
+Subject: Re: [PATCH] slub: operate cache name memory same to slab and slob
+In-Reply-To: <1290119265.26343.814.camel@calx>
+Message-ID: <alpine.DEB.2.00.1011201650120.10618@chino.kir.corp.google.com>
+References: <1290049259-20108-1-git-send-email-b32542@freescale.com> <1290114908.26343.721.camel@calx> <alpine.DEB.2.00.1011181333160.26680@chino.kir.corp.google.com> <1290119265.26343.814.camel@calx>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikZ=TPN4_GXnUasRq-m8uwy6Spdzd=m_fR08Okt@mail.gmail.com>
-References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
- <AANLkTin_SyFFP_2=pKoS+8+4V1qXVWyrus7BKz8ENVsJ@mail.gmail.com>
- <AANLkTincYS7G1yb2ukT67qvpjwQmptXzQZabLQLYrEqn@mail.gmail.com>
- <AANLkTi=U7F7MS48dC=GgGqh=cm8YrtVhrm6sDXOma6Fc@mail.gmail.com>
- <AANLkTiki3d3Ft3-XJwFg8DUzUYcz3xPoYTzLZokLf+dv@mail.gmail.com>
- <AANLkTinAZgHbexU+LTUZHs-+7C0N990=kyuO-USV1Ncp@mail.gmail.com>
- <AANLkTinBBELXbUu1O+iSX+1FMXTwa9epwPYmi7EnCP+o@mail.gmail.com> <AANLkTikZ=TPN4_GXnUasRq-m8uwy6Spdzd=m_fR08Okt@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 20 Nov 2010 16:50:41 -0800
-Message-ID: <AANLkTimvf8t5Rti73kYKV9cG3d7d7Y=OCn57LQNzUuTR@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Generic hardware error reporting support
-To: huang ying <huang.ying.caritas@gmail.com>
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        linux-acpi@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 20, 2010 at 4:42 PM, huang ying
-<huang.ying.caritas@gmail.com> wrote:
->
-> I don't want to hide the information from the MIS people with the
-> tool. I want to show the information to MIS people in a better way.
+On Thu, 18 Nov 2010, Matt Mackall wrote:
 
-You really don't understand, do you?
+> > The leak in ext4_mb_init() above is because it is using kstrdup() to 
+> > allocate the string itself and then on destroy uses kmem_cache_name() to 
+> > attain the slub allocator's pointer to the name, not the memory the ext4 
+> > layer allocated itself.
+> 
+> And Pekka says:
+> 
+> > The kstrdup() is there because of SLUB cache merging. See commit 
+> > 84c1cf62465e2fb0a692620dcfeb52323ab03d48 ("SLUB: Fix merged slab 
+> > cache names") for details.
+> 
+> I see. So we can either:
+> 
+> - force anyone using dynamically-allocated names to track their own damn
+> pointer
+> - implement kstrdup in the other allocators and fix all callers (the
+> bulk of which use static names!)
+> - eliminate dynamically-allocated names (mostly useless when we start
+> merging slabs!)
+> - add an indirection layer for slub that holds the unmerged details
+> - stop pretending we track slab names and show only generic names based
+> on size in /proc
+> 
 
-People won't even _know_ about your tool.  It's too f*cking
-specialized. They'll have come from other Unixes, they'll have come
-from older Linux versions, they don't know, they don't care.
+I agree that we should force each user to track its own memory, and this 
+is really what the issue is about (it doesn't matter if that memory is the 
+cache's name).  This particular issue is an ext4 memory leak and not the 
+responsibility of any allocator.
 
-They _do_ know about system logs.
+> kmem_cache_name() is also a highly suspect function in a
+> post-merged-slabs kernel. As ext4 is the only user in the kernel, and it
+> got it wrong, perhaps it's time to rip it out.
+> 
 
-The most common kind of "system admin" is the random end-user. Now,
-admittedly Intel seems to have its head up its arse on the whole
-"regular people care about ECC and random memory corruption", and it
-may be that consumer chips simply won't support the whole magic error
-handling code, but the point remains: we don't want yet another
-obscure error reporting tool that almost nobody knows about.
-Especially for errors that are so rare that you'll never notice if you
-are missing them.
-
-                   Linus
+Yes, I think kmem_cache_name() should be removed since it shouldn't be 
+used for anything other than the internal slabinfo/slabtop display as the 
+slub allocator actually specifies in include/linux/slub_def.h.  The only 
+user is ext4 to track this dynamically allocated pointer, so we can 
+eliminate it if we leave it to track its own memory allocations (a slab 
+allocator shouldn't be carrying a metadata payload).
