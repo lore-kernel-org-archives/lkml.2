@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab0KUCkR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:40:17 -0500
-Received: from mail.perches.com ([173.55.12.10]:1688 "EHLO mail.perches.com"
+	id S1757483Ab0KUCrZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:47:25 -0500
+Received: from mail.perches.com ([173.55.12.10]:1693 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756270Ab0KUCkN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:40:13 -0500
+	id S1756804Ab0KUCkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:40:17 -0500
 From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 32/62] ni52: Use static const
-Date: Sat, 20 Nov 2010 18:38:33 -0800
-Message-Id: <e4a77d76882c7d1d0be1a8132bbbbb885ebf4aad.1290305776.git.joe@perches.com>
+To: Ron Mercer <ron.mercer@qlogic.com>, linux-driver@qlogic.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 36/62] qlge: Use static const
+Date: Sat, 20 Nov 2010 18:38:37 -0800
+Message-Id: <48665ee85cb773b28d8389077cac9a7467440443.1290305776.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1290305773.git.joe@perches.com>
 References: <cover.1290305773.git.joe@perches.com>
@@ -23,30 +23,38 @@ Using static const generally increases object text and decreases data size.
 It also generally decreases overall object size.
 
    text	   data	    bss	    dec	    hex	filename
-  13787	     89	   3576	  17452	   442c	drivers/net/ni52.o.old
-  13811	     65	   3576	  17452	   442c	drivers/net/ni52.o.new
+  66820	    265	  15296	  82381	  141cd	drivers/net/qlge/qlge_main.o.old
+  66786	    265	  15296	  82347	  141ab	drivers/net/qlge/qlge_main.o.new
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/ni52.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/qlge/qlge_main.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/ni52.c b/drivers/net/ni52.c
-index 33618edc..d973fc6 100644
---- a/drivers/net/ni52.c
-+++ b/drivers/net/ni52.c
-@@ -388,9 +388,9 @@ static long memend;	/* e.g 0xd4000 */
- struct net_device * __init ni52_probe(int unit)
- {
- 	struct net_device *dev = alloc_etherdev(sizeof(struct priv));
--	static int ports[] = {0x300, 0x280, 0x360 , 0x320 , 0x340, 0};
-+	static const int ports[] = {0x300, 0x280, 0x360, 0x320, 0x340, 0};
-+	const int *port;
- 	struct priv *p;
--	int *port;
- 	int err = 0;
+diff --git a/drivers/net/qlge/qlge_main.c b/drivers/net/qlge/qlge_main.c
+index d9a7626..01b0533 100644
+--- a/drivers/net/qlge/qlge_main.c
++++ b/drivers/net/qlge/qlge_main.c
+@@ -3548,12 +3548,13 @@ err_irq:
  
- 	if (!dev)
+ static int ql_start_rss(struct ql_adapter *qdev)
+ {
+-	u8 init_hash_seed[] = {0x6d, 0x5a, 0x56, 0xda, 0x25, 0x5b, 0x0e, 0xc2,
+-				0x41, 0x67, 0x25, 0x3d, 0x43, 0xa3, 0x8f,
+-				0xb0, 0xd0, 0xca, 0x2b, 0xcb, 0xae, 0x7b,
+-				0x30, 0xb4, 0x77, 0xcb, 0x2d, 0xa3, 0x80,
+-				0x30, 0xf2, 0x0c, 0x6a, 0x42, 0xb7, 0x3b,
+-				0xbe, 0xac, 0x01, 0xfa};
++	static const u8 init_hash_seed[] = {
++		0x6d, 0x5a, 0x56, 0xda, 0x25, 0x5b, 0x0e, 0xc2,
++		0x41, 0x67, 0x25, 0x3d, 0x43, 0xa3, 0x8f, 0xb0,
++		0xd0, 0xca, 0x2b, 0xcb, 0xae, 0x7b, 0x30, 0xb4,
++		0x77, 0xcb, 0x2d, 0xa3, 0x80, 0x30, 0xf2, 0x0c,
++		0x6a, 0x42, 0xb7, 0x3b, 0xbe, 0xac, 0x01, 0xfa
++	};
+ 	struct ricb *ricb = &qdev->ricb;
+ 	int status = 0;
+ 	int i;
 -- 
 1.7.3.2.245.g03276.dirty
 
