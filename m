@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932266Ab0KUCvo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:51:44 -0500
-Received: from mail.perches.com ([173.55.12.10]:1666 "EHLO mail.perches.com"
+	id S1757555Ab0KUCwB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:52:01 -0500
+Received: from mail.perches.com ([173.55.12.10]:1665 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756076Ab0KUCkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:40:02 -0500
+	id S1756447Ab0KUCkB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:40:01 -0500
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 22/62] hp: Use static const
-Date: Sat, 20 Nov 2010 18:38:23 -0800
-Message-Id: <6a5db66ec82dab8c4438da5751874778d93b7f30.1290305776.git.joe@perches.com>
+Subject: [PATCH 21/62] gianfar: Use static const
+Date: Sat, 20 Nov 2010 18:38:22 -0800
+Message-Id: <e3ebafc0b5c921d2887c00678905d755f33d95d6.1290305776.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1290305773.git.joe@perches.com>
 References: <cover.1290305773.git.joe@perches.com>
@@ -22,32 +22,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Using static const generally increases object text and decreases data size.
 It also generally decreases overall object size.
 
-   text	   data	    bss	    dec	    hex	filename
-   4743	    104	   1256	   6103	   17d7	drivers/net/hp.o.new
-   4720	    104	   1256	   6080	   17c0	drivers/net/hp.o.old
+Changed gfar_set_mac_for_addr to take const *
+
+Uncompiled.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/hp.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/gianfar.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/hp.c b/drivers/net/hp.c
-index d15d2f2..ef20143 100644
---- a/drivers/net/hp.c
-+++ b/drivers/net/hp.c
-@@ -162,9 +162,9 @@ static int __init hp_probe1(struct net_device *dev, int ioaddr)
+diff --git a/drivers/net/gianfar.c b/drivers/net/gianfar.c
+index d1bec62..45c4b7b 100644
+--- a/drivers/net/gianfar.c
++++ b/drivers/net/gianfar.c
+@@ -143,7 +143,8 @@ void gfar_halt(struct net_device *dev);
+ static void gfar_halt_nodisable(struct net_device *dev);
+ void gfar_start(struct net_device *dev);
+ static void gfar_clear_exact_match(struct net_device *dev);
+-static void gfar_set_mac_for_addr(struct net_device *dev, int num, u8 *addr);
++static void gfar_set_mac_for_addr(struct net_device *dev, int num,
++				  const u8 *addr);
+ static int gfar_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
  
- 	/* Snarf the interrupt now.  Someday this could be moved to open(). */
- 	if (dev->irq < 2) {
--		int irq_16list[] = { 11, 10, 5, 3, 4, 7, 9, 0};
--		int irq_8list[] = { 7, 5, 3, 4, 9, 0};
--		int *irqp = wordmode ? irq_16list : irq_8list;
-+		static const int irq_16list[] = { 11, 10, 5, 3, 4, 7, 9, 0};
-+		static const int irq_8list[] = { 7, 5, 3, 4, 9, 0};
-+		const int *irqp = wordmode ? irq_16list : irq_8list;
- 		do {
- 			int irq = *irqp;
- 			if (request_irq (irq, NULL, 0, "bogus", NULL) != -EBUSY) {
+ MODULE_AUTHOR("Freescale Semiconductor, Inc");
+@@ -3094,10 +3095,10 @@ static void gfar_set_multi(struct net_device *dev)
+ static void gfar_clear_exact_match(struct net_device *dev)
+ {
+ 	int idx;
+-	u8 zero_arr[MAC_ADDR_LEN] = {0,0,0,0,0,0};
++	static const u8 zero_arr[MAC_ADDR_LEN] = {0, 0, 0, 0, 0, 0};
+ 
+ 	for(idx = 1;idx < GFAR_EM_NUM + 1;idx++)
+-		gfar_set_mac_for_addr(dev, idx, (u8 *)zero_arr);
++		gfar_set_mac_for_addr(dev, idx, zero_arr);
+ }
+ 
+ /* Set the appropriate hash bit for the given addr */
+@@ -3132,7 +3133,8 @@ static void gfar_set_hash_for_addr(struct net_device *dev, u8 *addr)
+ /* There are multiple MAC Address register pairs on some controllers
+  * This function sets the numth pair to a given address
+  */
+-static void gfar_set_mac_for_addr(struct net_device *dev, int num, u8 *addr)
++static void gfar_set_mac_for_addr(struct net_device *dev, int num,
++				  const u8 *addr)
+ {
+ 	struct gfar_private *priv = netdev_priv(dev);
+ 	struct gfar __iomem *regs = priv->gfargrp[0].regs;
 -- 
 1.7.3.2.245.g03276.dirty
 
