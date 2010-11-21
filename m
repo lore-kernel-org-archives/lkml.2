@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab0KUOMP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 09:12:15 -0500
-Received: from mga11.intel.com ([192.55.52.93]:61901 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751938Ab0KUOMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 09:12:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,231,1288594800"; 
-   d="scan'208";a="859905374"
-Subject: Re: [RFC PATCH 3/3 v2] perf: Update perf tool to monitor uncore
- events
-From: Lin Ming <ming.m.lin@intel.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <340872239c47b2ec237c88488cb7b6ac.squirrel@www.firstfloor.org>
-References: <1290340907.2245.125.camel@localhost>
-	 <340872239c47b2ec237c88488cb7b6ac.squirrel@www.firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 21 Nov 2010 22:12:13 +0800
-Message-Id: <1290348733.2245.173.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+	id S1753724Ab0KUOMy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 09:12:54 -0500
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63110 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753421Ab0KUOMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 09:12:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=BaK/s+cChDZ79/dykr2tuQFHEnpZWpxIJw0jnhmsVugaWCvZj6pRd4DdmpTxSR8OL6
+         VLIozSZNN5lc4JAum8w+N879ZZQoej1rTzEkeUverqt9hrhSpn85Fgg2Djxjc5lKBSQU
+         vE7EITEHu9ttv54Dn/or2TWwtrvy92RbMSdjE=
+Message-ID: <4CE928DD.2010309@gmail.com>
+Date: Sun, 21 Nov 2010 16:12:45 +0200
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jan Kara <jack@suse.cz>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, Nathan Laredo <laredo@gnu.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Dave Airlie <airlied@linux.ie>,
+        dri-devel@lists.freedesktop.org,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        Alessio Igor Bogani <alessioigorbogani@gmail.com>
+Subject: Re: [PATCH 0/7] BKL removal follow-up
+References: <1290007619-5787-1-git-send-email-arnd@arndb.de> <20101118233439.GB5004@quack.suse.cz> <AANLkTin0Gm8Xqm-ARGmd4T+fCM4mMA0=PbDA6eSsYUOG@mail.gmail.com>
+In-Reply-To: <AANLkTin0Gm8Xqm-ARGmd4T+fCM4mMA0=PbDA6eSsYUOG@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-11-21 at 20:09 +0800, Andi Kleen wrote:
-> >
-> >              samples  pcnt function               DSO
-> >              _______ _____ ______________________
-> > ____________________________________
-> >
-> >                 8.00 18.6% kallsyms_expand_symbol [kernel.kallsyms]
+On 11/19/2010 01:40 AM, Linus Torvalds wrote:
+> On Thu, Nov 18, 2010 at 3:34 PM, Jan Kara <jack@suse.cz> wrote:
+>>
+>>  Just for info, UDF BKL removal patches seem to work fine but I want to
+>> give them some final SMP testing on Monday before pushing them to -next.
+>> I'm not sure how much people hurry with disabling the lock so if I should
+>> push them ASAP or whether the next merge window is fine...
 > 
-> Reporting a symbol for an uncore event seems highly misleading.
-> After all the uncore counter has no idea for which core the event was,
-> so there isn't really any instruction pointer to report.
-> The event could be event caused by a PCI device or similar.
+> I don't think I can reasonably do it in 37, we're late enough in the
+> -rc series. So UDF and really saying 'n' to BKL by default will have
+> to be for the next merge window.
 > 
-> For per function monitoring of uncore events one has to use
-> OFFCORE_RESPONSE, like I implemented recently.
+> I hate to do it, but I'd be too nervous about it any other way.
+> 
+>                    Linus
 
-Let me look at this and then get back to you.
+Could it not default to "n" but be SELECTed by the like of UDF. Or
+that too big of a Kconfig change for 37-rcX? I understand it does
+not really buy us anything for distro's with allmodconfig style,
+but it should help with defconfig on all the other ARCH's.
 
-Thanks.
-
-> 
-> I would suggest to not report any symbol names for uncore events.
-> Doing so just will confuse users.
-> 
-> In fact I suspect uncore events are only really useful
-> with "stat", but not with "top", or if they are used in top
-> then the symbol reporting should be disabled.
-> 
-> -Andi
-> 
-> 
-
-
+Thanks
+Boaz
