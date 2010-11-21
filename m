@@ -1,295 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635Ab0KULIJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 06:08:09 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42554 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067Ab0KULIH (ORCPT
+	id S1752590Ab0KULUY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 06:20:24 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56799 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab0KULUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 06:08:07 -0500
-Date: Sun, 21 Nov 2010 19:07:58 +0800
-From: Arun Bhanu <ab@arunbhanu.com>
-To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Cc: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>,
-        Francisco Jerez <currojerez@riseup.net>,
-        Dave Airlie <airlied@redhat.com>,
-        Marcin =?utf-8?Q?Ko=C5=9Bcielnicki?= <koriakin@0x04.net>
-Subject: [BUG?] [Nouveau] INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order
- detected
-Message-ID: <20101121110758.GA4267@deepthought.bhanu.net>
-Reply-To: Arun Bhanu <ab@arunbhanu.com>
-Mail-Followup-To: linux-kernel@vger.kernel.org,
-	dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
-	Ben Skeggs <bskeggs@redhat.com>,
-	Francisco Jerez <currojerez@riseup.net>,
-	Dave Airlie <airlied@redhat.com>,
-	Marcin =?utf-8?Q?Ko=C5=9Bcielnicki?= <koriakin@0x04.net>
+	Sun, 21 Nov 2010 06:20:23 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=F0L93B1rlchw2675tcRctmilOaaByALiql5MsxAVPGu+Vor7P/ciOavT/+ONcvkd4Y
+         NajbMWUTVcMsWy2ZDLl+F/L6SZqUZDVGOuyi7TOq8q1VL0QCwOlPjV45LxL9GCKyMneh
+         O2JfG0T01Lgj1OTajUXd3vKKwqiA5lqn1JELk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Vincent Vanackere <vincent.vanackere@gmail.com>
+Date: Sun, 21 Nov 2010 12:20:01 +0100
+Message-ID: <AANLkTinEbBirwkREAVaaB4gH0w44tem0ik9nPU5-6aNJ@mail.gmail.com>
+Subject: [i915] 2.6.37-rc1 G33 regression : no DVI output
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=0016368322ba417e0e04958e5352
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am seeing the following in kernel log messages every time I reboot.
-I am running 2.6.37-rc2.
-(commit 589136bfa784a4558b397f017ca2f06f0ca9080e).
+--0016368322ba417e0e04958e5352
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Please let me know if you need more info or want me to test any
-patches.
+Hi,
 
-[ 1043.994049] ======================================================
-[ 1043.995596] [ INFO: HARDIRQ-safe -> HARDIRQ-unsafe lock order detected ]
-[ 1043.996203] 2.6.37-rc2-ab3-589136bfa784a4558b397f017ca2f06f0ca9080e+ #2
-[ 1043.996817] ------------------------------------------------------
-[ 1043.997432] Xorg/2097 [HC0[0]:SC0[0]:HE0:SE1] is trying to acquire:
-[ 1043.998038]  (&(&dev_priv->ramin_lock)->rlock){+.+...}, at: [<f0887014>] nouveau_gpuobj_del+0xb8/0xe2 [nouveau]
-[ 1043.998658] 
-[ 1043.998658] and this task is already holding:
-[ 1043.999891]  (&(&ramht->lock)->rlock){-.....}, at: [<f089fe4f>] nouveau_ramht_remove+0x23/0x3e [nouveau]
-[ 1043.999906] which would create a new lock dependency:
-[ 1043.999907]  (&(&ramht->lock)->rlock){-.....} -> (&(&dev_priv->ramin_lock)->rlock){+.+...}
-[ 1043.999913] 
-[ 1043.999913] but this new dependency connects a HARDIRQ-irq-safe lock:
-[ 1043.999914]  (&(&ramht->lock)->rlock){-.....}
-[ 1043.999916] ... which became HARDIRQ-irq-safe at:
-[ 1043.999917]   [<c0472027>] __lock_acquire+0x27a/0xc06
-[ 1043.999921]   [<c0472e10>] lock_acquire+0xbc/0xdc
-[ 1043.999923]   [<c0824efb>] _raw_spin_lock_irqsave+0x48/0x78
-[ 1043.999927]   [<f089fe93>] nouveau_ramht_find+0x29/0x6d [nouveau]
-[ 1043.999941]   [<f0888e74>] nouveau_irq_handler+0x16a/0x17aa [nouveau]
-[ 1043.999953]   [<c049da82>] handle_IRQ_event+0x51/0x10f
-[ 1043.999956]   [<c049f7bb>] handle_fasteoi_irq+0x95/0xcc
-[ 1043.999959] 
-[ 1043.999960] to a HARDIRQ-irq-unsafe lock:
-[ 1043.999961]  (&(&dev_priv->ramin_lock)->rlock){+.+...}
-[ 1043.999962] ... which became HARDIRQ-irq-unsafe at:
-[ 1043.999963] ...  [<c047209b>] __lock_acquire+0x2ee/0xc06
-[ 1043.999966]   [<c0472e10>] lock_acquire+0xbc/0xdc
-[ 1043.999968]   [<c0824d98>] _raw_spin_lock+0x3b/0x68
-[ 1043.999970]   [<f0887167>] nouveau_gpuobj_new+0x129/0x39b [nouveau]
-[ 1043.999981]   [<f08b583f>] nv50_instmem_init+0x11a/0x7db [nouveau]
-[ 1043.999996]   [<f088371c>] nouveau_card_init+0xeda/0x1214 [nouveau]
-[ 1044.000007]   [<f0884158>] nouveau_load+0x6e7/0x73e [nouveau]
-[ 1044.000017]   [<ef819b8f>] drm_get_pci_dev+0x165/0x257 [drm]
-[ 1044.000029]   [<f08c5c12>] nouveau_pci_probe+0x12/0x14 [nouveau]
-[ 1044.000043]   [<c060c794>] local_pci_probe+0x34/0x5f
-[ 1044.000046]   [<c060cc70>] pci_device_probe+0x4d/0x70
-[ 1044.000048]   [<c06b1a9a>] driver_probe_device+0x119/0x1e9
-[ 1044.000052]   [<c06b1bae>] __driver_attach+0x44/0x60
-[ 1044.000053]   [<c06b0c44>] bus_for_each_dev+0x42/0x65
-[ 1044.000055]   [<c06b1707>] driver_attach+0x1e/0x20
-[ 1044.000057]   [<c06b1369>] bus_add_driver+0xc0/0x218
-[ 1044.000059]   [<c06b1d9d>] driver_register+0x84/0xe3
-[ 1044.000061]   [<c060ce6d>] __pci_register_driver+0x51/0xae
-[ 1044.000063]   [<ef819f11>] drm_pci_init+0x37/0x96 [drm]
-[ 1044.000074]   [<ef8135ae>] drm_init+0x5c/0x5e [drm]
-[ 1044.000083]   [<f08e4042>] 0xf08e4042
-[ 1044.000086]   [<c0403192>] do_one_initcall+0x8c/0x146
-[ 1044.000088]   [<c047c610>] sys_init_module+0x12e9/0x1486
-[ 1044.000091]   [<c040971f>] sysenter_do_call+0x12/0x38
-[ 1044.000094] 
-[ 1044.000095] other info that might help us debug this:
-[ 1044.000096] 
-[ 1044.000097] 2 locks held by Xorg/2097:
-[ 1044.000098]  #0:  (drm_global_mutex){+.+.+.}, at: [<ef8138f8>] drm_ioctl+0x2f1/0x3c5 [drm]
-[ 1044.000107]  #1:  (&(&ramht->lock)->rlock){-.....}, at: [<f089fe4f>] nouveau_ramht_remove+0x23/0x3e [nouveau]
-[ 1044.000123] 
-[ 1044.000123] the dependencies between HARDIRQ-irq-safe lock and the holding lock:
-[ 1044.000147] -> (&(&ramht->lock)->rlock){-.....} ops: 61 {
-[ 1044.000149]    IN-HARDIRQ-W at:
-[ 1044.000150]                                        [<c0472027>] __lock_acquire+0x27a/0xc06
-[ 1044.000154]                                        [<c0472e10>] lock_acquire+0xbc/0xdc
-[ 1044.000156]                                        [<c0824efb>] _raw_spin_lock_irqsave+0x48/0x78
-[ 1044.000159]                                        [<f089fe93>] nouveau_ramht_find+0x29/0x6d [nouveau]
-[ 1044.000173]                                        [<f0888e74>] nouveau_irq_handler+0x16a/0x17aa [nouveau]
-[ 1044.000186]                                        [<c049da82>] handle_IRQ_event+0x51/0x10f
-[ 1044.000189]                                        [<c049f7bb>] handle_fasteoi_irq+0x95/0xcc
-[ 1044.000192]    INITIAL USE at:
-[ 1044.000193]                                       [<c047210f>] __lock_acquire+0x362/0xc06
-[ 1044.000196]                                       [<c0472e10>] lock_acquire+0xbc/0xdc
-[ 1044.000199]                                       [<c0824efb>] _raw_spin_lock_irqsave+0x48/0x78
-[ 1044.000201]                                       [<f089fe93>] nouveau_ramht_find+0x29/0x6d [nouveau]
-[ 1044.000216]                                       [<f089ff10>] nouveau_ramht_insert+0x39/0x2dd [nouveau]
-[ 1044.000230]                                       [<f08b9b84>] nv50_evo_dmaobj_new.clone.4+0xe7/0xfd [nouveau]
-[ 1044.000246]                                       [<f08babd8>] nv50_display_create+0x289/0x5bd [nouveau]
-[ 1044.000262]                                       [<f08837bd>] nouveau_card_init+0xf7b/0x1214 [nouveau]
-[ 1044.000273]                                       [<f0884158>] nouveau_load+0x6e7/0x73e [nouveau]
-[ 1044.000284]                                       [<ef819b8f>] drm_get_pci_dev+0x165/0x257 [drm]
-[ 1044.000295]                                       [<f08c5c12>] nouveau_pci_probe+0x12/0x14 [nouveau]
-[ 1044.000308]                                       [<c060c794>] local_pci_probe+0x34/0x5f
-[ 1044.000311]                                       [<c060cc70>] pci_device_probe+0x4d/0x70
-[ 1044.000313]                                       [<c06b1a9a>] driver_probe_device+0x119/0x1e9
-[ 1044.000315]                                       [<c06b1bae>] __driver_attach+0x44/0x60
-[ 1044.000318]                                       [<c06b0c44>] bus_for_each_dev+0x42/0x65
-[ 1044.000320]                                       [<c06b1707>] driver_attach+0x1e/0x20
-[ 1044.000323]                                       [<c06b1369>] bus_add_driver+0xc0/0x218
-[ 1044.000325]                                       [<c06b1d9d>] driver_register+0x84/0xe3
-[ 1044.000327]                                       [<c060ce6d>] __pci_register_driver+0x51/0xae
-[ 1044.000329]                                       [<ef819f11>] drm_pci_init+0x37/0x96 [drm]
-[ 1044.000341]                                       [<ef8135ae>] drm_init+0x5c/0x5e [drm]
-[ 1044.000351]                                       [<f08e4042>] 0xf08e4042
-[ 1044.000354]                                       [<c0403192>] do_one_initcall+0x8c/0x146
-[ 1044.000356]                                       [<c047c610>] sys_init_module+0x12e9/0x1486
-[ 1044.000360]                                       [<c040971f>] sysenter_do_call+0x12/0x38
-[ 1044.000362]  }
-[ 1044.000363]  ... key      at: [<f08d6c60>] __key.34354+0x0/0xfffeefd6 [nouveau]
-[ 1044.000373]  ... acquired at:
-[ 1044.000374]    [<c0471975>] check_irq_usage+0x40/0x86
-[ 1044.000376]    [<c047274c>] __lock_acquire+0x99f/0xc06
-[ 1044.000379]    [<c0472e10>] lock_acquire+0xbc/0xdc
-[ 1044.000381]    [<c0824d98>] _raw_spin_lock+0x3b/0x68
-[ 1044.000382]    [<f0887014>] nouveau_gpuobj_del+0xb8/0xe2 [nouveau]
-[ 1044.000393]    [<c05f2f2d>] kref_put+0x39/0x42
-[ 1044.000396]    [<f088683b>] nouveau_gpuobj_ref+0x2d/0x33 [nouveau]
-[ 1044.000407]    [<f089fc4f>] nouveau_ramht_remove_locked+0x50/0x1d7 [nouveau]
-[ 1044.000422]    [<f089fe5b>] nouveau_ramht_remove+0x2f/0x3e [nouveau]
-[ 1044.000436]    [<f0886aab>] nouveau_ioctl_gpuobj_free+0x89/0x93 [nouveau]
-[ 1044.000447]    [<ef81390c>] drm_ioctl+0x305/0x3c5 [drm]
-[ 1044.000456]    [<c050af42>] do_vfs_ioctl+0x591/0x5c2
-[ 1044.000459]    [<c050afbb>] sys_ioctl+0x48/0x69
-[ 1044.000461]    [<c040971f>] sysenter_do_call+0x12/0x38
-[ 1044.000463] 
-[ 1044.000464] 
-[ 1044.000464] the dependencies between the lock to be acquired and HARDIRQ-irq-unsafe lock:
-[ 1044.000486] -> (&(&dev_priv->ramin_lock)->rlock){+.+...} ops: 20682 {
-[ 1044.000489]    HARDIRQ-ON-W at:
-[ 1044.000490]                                        [<c047209b>] __lock_acquire+0x2ee/0xc06
-[ 1044.000492]                                        [<c0472e10>] lock_acquire+0xbc/0xdc
-[ 1044.000495]                                        [<c0824d98>] _raw_spin_lock+0x3b/0x68
-[ 1044.000498]                                        [<f0887167>] nouveau_gpuobj_new+0x129/0x39b [nouveau]
-[ 1044.000509]                                        [<f08b583f>] nv50_instmem_init+0x11a/0x7db [nouveau]
-[ 1044.000524]                                        [<f088371c>] nouveau_card_init+0xeda/0x1214 [nouveau]
-[ 1044.000536]                                        [<f0884158>] nouveau_load+0x6e7/0x73e [nouveau]
-[ 1044.000546]                                        [<ef819b8f>] drm_get_pci_dev+0x165/0x257 [drm]
-[ 1044.000557]                                        [<f08c5c12>] nouveau_pci_probe+0x12/0x14 [nouveau]
-[ 1044.000571]                                        [<c060c794>] local_pci_probe+0x34/0x5f
-[ 1044.000574]                                        [<c060cc70>] pci_device_probe+0x4d/0x70
-[ 1044.000577]                                        [<c06b1a9a>] driver_probe_device+0x119/0x1e9
-[ 1044.000579]                                        [<c06b1bae>] __driver_attach+0x44/0x60
-[ 1044.000581]                                        [<c06b0c44>] bus_for_each_dev+0x42/0x65
-[ 1044.000585]                                        [<c06b1707>] driver_attach+0x1e/0x20
-[ 1044.000587]                                        [<c06b1369>] bus_add_driver+0xc0/0x218
-[ 1044.000589]                                        [<c06b1d9d>] driver_register+0x84/0xe3
-[ 1044.000591]                                        [<c060ce6d>] __pci_register_driver+0x51/0xae
-[ 1044.000595]                                        [<ef819f11>] drm_pci_init+0x37/0x96 [drm]
-[ 1044.000606]                                        [<ef8135ae>] drm_init+0x5c/0x5e [drm]
-[ 1044.000615]                                        [<f08e4042>] 0xf08e4042
-[ 1044.000617]                                        [<c0403192>] do_one_initcall+0x8c/0x146
-[ 1044.000621]                                        [<c047c610>] sys_init_module+0x12e9/0x1486
-[ 1044.000624]                                        [<c040971f>] sysenter_do_call+0x12/0x38
-[ 1044.000626]    SOFTIRQ-ON-W at:
-[ 1044.000627]                                        [<c04720ba>] __lock_acquire+0x30d/0xc06
-[ 1044.000630]                                        [<c0472e10>] lock_acquire+0xbc/0xdc
-[ 1044.000633]                                        [<c0824d98>] _raw_spin_lock+0x3b/0x68
-[ 1044.000636]                                        [<f0887167>] nouveau_gpuobj_new+0x129/0x39b [nouveau]
-[ 1044.000646]                                        [<f08b583f>] nv50_instmem_init+0x11a/0x7db [nouveau]
-[ 1044.000662]                                        [<f088371c>] nouveau_card_init+0xeda/0x1214 [nouveau]
-[ 1044.000672]                                        [<f0884158>] nouveau_load+0x6e7/0x73e [nouveau]
-[ 1044.000682]                                        [<ef819b8f>] drm_get_pci_dev+0x165/0x257 [drm]
-[ 1044.000693]                                        [<f08c5c12>] nouveau_pci_probe+0x12/0x14 [nouveau]
-[ 1044.000707]                                        [<c060c794>] local_pci_probe+0x34/0x5f
-[ 1044.000710]                                        [<c060cc70>] pci_device_probe+0x4d/0x70
-[ 1044.000712]                                        [<c06b1a9a>] driver_probe_device+0x119/0x1e9
-[ 1044.000715]                                        [<c06b1bae>] __driver_attach+0x44/0x60
-[ 1044.000717]                                        [<c06b0c44>] bus_for_each_dev+0x42/0x65
-[ 1044.000720]                                        [<c06b1707>] driver_attach+0x1e/0x20
-[ 1044.000722]                                        [<c06b1369>] bus_add_driver+0xc0/0x218
-[ 1044.000724]                                        [<c06b1d9d>] driver_register+0x84/0xe3
-[ 1044.000726]                                        [<c060ce6d>] __pci_register_driver+0x51/0xae
-[ 1044.000729]                                        [<ef819f11>] drm_pci_init+0x37/0x96 [drm]
-[ 1044.000740]                                        [<ef8135ae>] drm_init+0x5c/0x5e [drm]
-[ 1044.000750]                                        [<f08e4042>] 0xf08e4042
-[ 1044.000755]                                        [<c0403192>] do_one_initcall+0x8c/0x146
-[ 1044.000760]                                        [<c047c610>] sys_init_module+0x12e9/0x1486
-[ 1044.000762]                                        [<c040971f>] sysenter_do_call+0x12/0x38
-[ 1044.000765]    INITIAL USE at:
-[ 1044.000766]                                       [<c047210f>] __lock_acquire+0x362/0xc06
-[ 1044.000769]                                       [<c0472e10>] lock_acquire+0xbc/0xdc
-[ 1044.000772]                                       [<c0824d98>] _raw_spin_lock+0x3b/0x68
-[ 1044.000775]                                       [<f0887167>] nouveau_gpuobj_new+0x129/0x39b [nouveau]
-[ 1044.000786]                                       [<f08b583f>] nv50_instmem_init+0x11a/0x7db [nouveau]
-[ 1044.000801]                                       [<f088371c>] nouveau_card_init+0xeda/0x1214 [nouveau]
-[ 1044.000811]                                       [<f0884158>] nouveau_load+0x6e7/0x73e [nouveau]
-[ 1044.000821]                                       [<ef819b8f>] drm_get_pci_dev+0x165/0x257 [drm]
-[ 1044.000832]                                       [<f08c5c12>] nouveau_pci_probe+0x12/0x14 [nouveau]
-[ 1044.000845]                                       [<c060c794>] local_pci_probe+0x34/0x5f
-[ 1044.000848]                                       [<c060cc70>] pci_device_probe+0x4d/0x70
-[ 1044.000851]                                       [<c06b1a9a>] driver_probe_device+0x119/0x1e9
-[ 1044.000854]                                       [<c06b1bae>] __driver_attach+0x44/0x60
-[ 1044.000856]                                       [<c06b0c44>] bus_for_each_dev+0x42/0x65
-[ 1044.000858]                                       [<c06b1707>] driver_attach+0x1e/0x20
-[ 1044.000861]                                       [<c06b1369>] bus_add_driver+0xc0/0x218
-[ 1044.000864]                                       [<c06b1d9d>] driver_register+0x84/0xe3
-[ 1044.000866]                                       [<c060ce6d>] __pci_register_driver+0x51/0xae
-[ 1044.000868]                                       [<ef819f11>] drm_pci_init+0x37/0x96 [drm]
-[ 1044.000879]                                       [<ef8135ae>] drm_init+0x5c/0x5e [drm]
-[ 1044.000887]                                       [<f08e4042>] 0xf08e4042
-[ 1044.000891]                                       [<c0403192>] do_one_initcall+0x8c/0x146
-[ 1044.000893]                                       [<c047c610>] sys_init_module+0x12e9/0x1486
-[ 1044.000896]                                       [<c040971f>] sysenter_do_call+0x12/0x38
-[ 1044.000899]  }
-[ 1044.000900]  ... key      at: [<f08d6c2c>] __key.34274+0x0/0xfffef00a [nouveau]
-[ 1044.000910]  ... acquired at:
-[ 1044.000911]    [<c0471975>] check_irq_usage+0x40/0x86
-[ 1044.000914]    [<c047274c>] __lock_acquire+0x99f/0xc06
-[ 1044.000916]    [<c0472e10>] lock_acquire+0xbc/0xdc
-[ 1044.000918]    [<c0824d98>] _raw_spin_lock+0x3b/0x68
-[ 1044.000920]    [<f0887014>] nouveau_gpuobj_del+0xb8/0xe2 [nouveau]
-[ 1044.000930]    [<c05f2f2d>] kref_put+0x39/0x42
-[ 1044.000932]    [<f088683b>] nouveau_gpuobj_ref+0x2d/0x33 [nouveau]
-[ 1044.000942]    [<f089fc4f>] nouveau_ramht_remove_locked+0x50/0x1d7 [nouveau]
-[ 1044.000956]    [<f089fe5b>] nouveau_ramht_remove+0x2f/0x3e [nouveau]
-[ 1044.000970]    [<f0886aab>] nouveau_ioctl_gpuobj_free+0x89/0x93 [nouveau]
-[ 1044.000980]    [<ef81390c>] drm_ioctl+0x305/0x3c5 [drm]
-[ 1044.000988]    [<c050af42>] do_vfs_ioctl+0x591/0x5c2
-[ 1044.000991]    [<c050afbb>] sys_ioctl+0x48/0x69
-[ 1044.000993]    [<c040971f>] sysenter_do_call+0x12/0x38
-[ 1044.000995] 
-[ 1044.000995] 
-[ 1044.000996] stack backtrace:
-[ 1044.000998] Pid: 2097, comm: Xorg Not tainted 2.6.37-rc2-ab3-589136bfa784a4558b397f017ca2f06f0ca9080e+ #2
-[ 1044.000999] Call Trace:
-[ 1044.001002]  [<c0822e61>] ? printk+0x2d/0x34
-[ 1044.001005]  [<c0471928>] check_usage+0x2d9/0x2e6
-[ 1044.001007]  [<c0471c18>] ? mark_lock+0x26/0x1bb
-[ 1044.001011]  [<c040ea48>] ? sched_clock+0x8/0xb
-[ 1044.001013]  [<c0471975>] check_irq_usage+0x40/0x86
-[ 1044.001016]  [<c047274c>] __lock_acquire+0x99f/0xc06
-[ 1044.001018]  [<c046ff1f>] ? register_lock_class+0x17/0x2a1
-[ 1044.001030]  [<f0887014>] ? nouveau_gpuobj_del+0xb8/0xe2 [nouveau]
-[ 1044.001032]  [<c0472e10>] lock_acquire+0xbc/0xdc
-[ 1044.001043]  [<f0887014>] ? nouveau_gpuobj_del+0xb8/0xe2 [nouveau]
-[ 1044.001046]  [<c0824d98>] _raw_spin_lock+0x3b/0x68
-[ 1044.001057]  [<f0887014>] ? nouveau_gpuobj_del+0xb8/0xe2 [nouveau]
-[ 1044.001068]  [<f0887014>] nouveau_gpuobj_del+0xb8/0xe2 [nouveau]
-[ 1044.001071]  [<c04653da>] ? local_clock+0x32/0x49
-[ 1044.001082]  [<f0886f5c>] ? nouveau_gpuobj_del+0x0/0xe2 [nouveau]
-[ 1044.001084]  [<c05f2f2d>] kref_put+0x39/0x42
-[ 1044.001095]  [<f088683b>] nouveau_gpuobj_ref+0x2d/0x33 [nouveau]
-[ 1044.001110]  [<f089fc4f>] nouveau_ramht_remove_locked+0x50/0x1d7 [nouveau]
-[ 1044.001125]  [<f089fe5b>] nouveau_ramht_remove+0x2f/0x3e [nouveau]
-[ 1044.001136]  [<f0886aab>] nouveau_ioctl_gpuobj_free+0x89/0x93 [nouveau]
-[ 1044.001139]  [<c0824018>] ? mutex_lock_nested+0x3b/0x40
-[ 1044.001149]  [<ef81390c>] drm_ioctl+0x305/0x3c5 [drm]
-[ 1044.001162]  [<f0886a22>] ? nouveau_ioctl_gpuobj_free+0x0/0x93 [nouveau]
-[ 1044.001166]  [<c040ea3b>] ? native_sched_clock+0x4d/0x52
-[ 1044.001168]  [<c040ea48>] ? sched_clock+0x8/0xb
-[ 1044.001170]  [<c046529d>] ? sched_clock_cpu+0x42/0x14d
-[ 1044.001173]  [<c0824dbe>] ? _raw_spin_lock+0x61/0x68
-[ 1044.001175]  [<c046fc0e>] ? trace_hardirqs_off+0xb/0xd
-[ 1044.001177]  [<c04653da>] ? local_clock+0x32/0x49
-[ 1044.001180]  [<c046fe3e>] ? lock_release_holdtime+0x30/0xb5
-[ 1044.001189]  [<ef813607>] ? drm_ioctl+0x0/0x3c5 [drm]
-[ 1044.001191]  [<c050af42>] do_vfs_ioctl+0x591/0x5c2
-[ 1044.001195]  [<c0463e8d>] ? up_read+0x22/0x25
-[ 1044.001198]  [<c082864c>] ? do_page_fault+0x330/0x36e
-[ 1044.001200]  [<c046fde7>] ? lock_is_held+0x70/0x78
-[ 1044.001202]  [<c04ff199>] ? fcheck_files+0xab/0xdc
-[ 1044.001204]  [<c04ff815>] ? fget_light+0x2f/0x6d
-[ 1044.001206]  [<c050afbb>] sys_ioctl+0x48/0x69
-[ 1044.001209]  [<c040971f>] sysenter_do_call+0x12/0x38
-[ 1044.001822] [drm] nouveau 0000:08:00.0: nouveau_channel_free: freeing fifo 2
+ I'm trying to track down a regression occuring in recent kernel : I
+get the DVI output of my intel G33 chipset through a Sapphire ADD2
+DVI-D SDVO adaptor card and it was working fine until
+kernel 2.6.37-rc1 :
+- all more recent kernels only give a black screen
+- I can log through ssh and no oops nor anything suspicious is in the log
+- I get an output if I uses the VGA builtin port.
 
--Arun
+I did a git bisect to track down the problem but unfortunately if got
+stuck at commit 890f3359f7b84d7015104360d647ccac5f515542 that causes
+an oops and doesn't allow me do do more finegrained bisection because
+so far all later commits show either this oops or a black screen.
+What can I do to help solve this problem ? Attached is my current git
+bisect log.
+
+Best regards,
+
+Vincent Vanack=C3=A8re
+
+--0016368322ba417e0e04958e5352
+Content-Type: text/x-log; charset=US-ASCII; name="g33-regression-bisect.log"
+Content-Disposition: attachment; filename="g33-regression-bisect.log"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_ggrtu5950
+
+Z2l0IGJpc2VjdCBzdGFydAojIGJhZDogW2U1M2JlYWNkMjNkOWNiNDc1OTBkYTZhN2E3ZjZkNDE3
+Yjk0MWE5OTRdIExpbnV4IDIuNi4zNy1yYzIKZ2l0IGJpc2VjdCBiYWQgZTUzYmVhY2QyM2Q5Y2I0
+NzU5MGRhNmE3YTdmNmQ0MTdiOTQxYTk5NAojIGdvb2Q6IFtmNmY5NGUyYWIxYjMzZjAwODJhYzIy
+ZDcxZjY2Mzg1YTYwZDgxNTdmXSBMaW51eCAyLjYuMzYKZ2l0IGJpc2VjdCBnb29kIGY2Zjk0ZTJh
+YjFiMzNmMDA4MmFjMjJkNzFmNjYzODVhNjBkODE1N2YKIyBnb29kOiBbMmEzNDY5OTY2MjZlY2Ji
+NDI2OWMyMzllOWZmNzM3MmExODI5MDdlOV0gaHdtb246IGxpczM6IHBtX3J1bnRpbWUgc3VwcG9y
+dApnaXQgYmlzZWN0IGdvb2QgMmEzNDY5OTY2MjZlY2JiNDI2OWMyMzllOWZmNzM3MmExODI5MDdl
+OQojIGJhZDogWzA4NTE2NjhmZGQ5N2U1MjZiMmE0MWY3OTRiNzg1YzIwNGRkM2QzZTBdIE1lcmdl
+IGJyYW5jaCAndjRsX2Zvcl9saW51cycgb2YgZ2l0Oi8vZ2l0Lmtlcm5lbC5vcmcvcHViL3NjbS9s
+aW51eC9rZXJuZWwvZ2l0L21jaGVoYWIvbGludXgtMi42CmdpdCBiaXNlY3QgYmFkIDA4NTE2Njhm
+ZGQ5N2U1MjZiMmE0MWY3OTRiNzg1YzIwNGRkM2QzZTAKIyBiYWQ6IFtjNDhjNDNlNDIyYzE0MDRm
+ZDcyYzU3ZDFkMjFhNmY2ZDAxZTE4OTAwXSBNZXJnZSBicmFuY2ggJ2RybS1jb3JlLW5leHQnIG9m
+IGdpdDovL2dpdC5rZXJuZWwub3JnL3B1Yi9zY20vbGludXgva2VybmVsL2dpdC9haXJsaWVkL2Ry
+bS0yLjYKZ2l0IGJpc2VjdCBiYWQgYzQ4YzQzZTQyMmMxNDA0ZmQ3MmM1N2QxZDIxYTZmNmQwMWUx
+ODkwMAojIGdvb2Q6IFsxOGEwNDNmOTQxMzI3NzUyM2NmNTAxMWU1OTRjYWExNzQ3ZGI0OTQ4XSBN
+ZXJnZSBicmFuY2ggJ25mcy1mb3ItMi42LjM3JyBvZiBnaXQ6Ly9naXQubGludXgtbmZzLm9yZy9w
+cm9qZWN0cy90cm9uZG15L25mcy0yLjYKZ2l0IGJpc2VjdCBnb29kIDE4YTA0M2Y5NDEzMjc3NTIz
+Y2Y1MDExZTU5NGNhYTE3NDdkYjQ5NDgKIyBiYWQ6IFswYzhlYjBkYzY1ZjVhNzhiMjUyZWVmZjZj
+NzI5YmE0NzQxMzkwZTIzXSBNZXJnZSByZW1vdGUgYnJhbmNoICdub3V2ZWF1L2Zvci1haXJsaWVk
+JyBvZiAuLi9kcm0tbm91dmVhdS1uZXh0IGludG8gZHJtLWNvcmUtbmV4dApnaXQgYmlzZWN0IGJh
+ZCAwYzhlYjBkYzY1ZjVhNzhiMjUyZWVmZjZjNzI5YmE0NzQxMzkwZTIzCiMgYmFkOiBbYWI2Zjhl
+MzI1MDgzZjEzOGNlNWRhODQxN2JhZjQ4ODg3ZDYyZGEzY10gZHJtL2k5MTUvcmluZ2J1ZmZlcjog
+d2hpdGVzcGFjZSBjbGVhbnVwCmdpdCBiaXNlY3QgYmFkIGFiNmY4ZTMyNTA4M2YxMzhjZTVkYTg0
+MTdiYWY0ODg4N2Q2MmRhM2MKIyBnb29kOiBbMjEwYjIzYzJmN2I5NzIxYWZiMGE1NzQ1OWI3ZGJh
+YzNiMDk0ODYyZV0gaW50ZWwtZ3R0OiBpOTY1OiB1c2UgZGV0ZWN0ZWQgZ3R0IHNpemUgZm9yIG1h
+cHBpbmcKZ2l0IGJpc2VjdCBnb29kIDIxMGIyM2MyZjdiOTcyMWFmYjBhNTc0NTliN2RiYWMzYjA5
+NDg2MmUKIyBnb29kOiBbNzg4MzE5ZDQ4ZGMyYjYxZGI3MzJiMTliYjk1OThjMDYyYzc1ZWMzN10g
+ZHJtL2k5MTUvbHZkczogTW92ZSBwcml2YXRlIGRhdGEgdG8gdGhlIGNvbm5lY3RvciBmcm9tIHRo
+ZSBkZXZpY2UuCmdpdCBiaXNlY3QgZ29vZCA3ODgzMTlkNDhkYzJiNjFkYjczMmIxOWJiOTU5OGMw
+NjJjNzVlYzM3CiMgYmFkOiBbZjQ5ZjA1ODYxOTFmZTE2MTQwNDEwZGIwYTQ2ZDQzYmRjNjkwZDZh
+Zl0gZHJtL2k5MTU6IEFjdHVhbGx5IHNldCB0aGUgcmVzZXQgYml0IGluIGk5NjVfcmVzZXQuCmdp
+dCBiaXNlY3QgYmFkIGY0OWYwNTg2MTkxZmUxNjE0MDQxMGRiMGE0NmQ0M2JkYzY5MGQ2YWYKIyBz
+a2lwOiBbMmI2ZWZhYTQ3NjE1YjI5ZTU3MmQ3ZmM0NDQ1NjVkYjYyY2E5YmNmN10gZHJtL2k5MTU6
+IFJlbW92ZSB1bnVzZWQgaW50ZWxfcmluZ2J1ZmZlci0+cmluZ19mbGFnCmdpdCBiaXNlY3Qgc2tp
+cCAyYjZlZmFhNDc2MTViMjllNTcyZDdmYzQ0NDU2NWRiNjJjYTliY2Y3CiMgZ29vZDogW2U2NWQ5
+MzA1ZjUyOGQ0ZjM1NDM3ODY5MDEzNWVlOGQxYzYwZWMwYTVdIGRybS9pOTE1OiBJbml0aWFsaXpl
+IGludGVsX2NydGMtPmFjdGl2ZQpnaXQgYmlzZWN0IGdvb2QgZTY1ZDkzMDVmNTI4ZDRmMzU0Mzc4
+NjkwMTM1ZWU4ZDFjNjBlYzBhNQojIGdvb2Q6IFswYmMyM2FhZDNiNjdjYTBjZDc0ODBkZWMwYjc2
+NTJkOWI4Njg2NDMyXSBkcm0vaTkxNTogRml4IHJlZ3Jlc3Npb24gaW4gYmEzZDhkNzQ5YgpnaXQg
+YmlzZWN0IGdvb2QgMGJjMjNhYWQzYjY3Y2EwY2Q3NDgwZGVjMGI3NjUyZDliODY4NjQzMgojIGdv
+b2Q6IFtkYjhjMDc2YjkyMDZlYTM1YjFmNzI5OTcwOGQ1NTEwYjE3Njc0ZGIyXSBNZXJnZSByZW1v
+dGUgYnJhbmNoICdsaW51cycgaW50byBkcm0taW50ZWwtZml4ZXMKZ2l0IGJpc2VjdCBnb29kIGRi
+OGMwNzZiOTIwNmVhMzViMWY3Mjk5NzA4ZDU1MTBiMTc2NzRkYjIKIyBza2lwOiBbM2YwOGU0ZWY4
+MDdjMzEwM2NlZWJmNzk5M2M3NDYzYzdhOTA2NDZmM10gYWdwL2ludGVsOiBGaXggcmVzdW1lIHJl
+Z3Jlc3Npb24gZnJvbSAyZDI0MzBjZgpnaXQgYmlzZWN0IHNraXAgM2YwOGU0ZWY4MDdjMzEwM2Nl
+ZWJmNzk5M2M3NDYzYzdhOTA2NDZmMwojIGJhZDogWzIxOWFkYWUxMzg1MTNiYWUyMGIyNTZmMTk0
+NmI5Y2IzYjc1Y2EwNWNdIGRybS9pOTE1OiBDYWNoZSBMVkRTIEVESUQKZ2l0IGJpc2VjdCBiYWQg
+MjE5YWRhZTEzODUxM2JhZTIwYjI1NmYxOTQ2YjljYjNiNzVjYTA1YwojIGdvb2Q6IFsyY2YzNGQ3
+YjdlZTk5YzI3YzFhNmJkZDJmOTEzNDRjYmZhNWZlZjVjXSBkcm0vaTkxNTogQWxsb3cgZ2V0X2Zl
+bmNlX3JlZygpIHRvIGJlIHVuaW50ZXJydXB0aWJsZQpnaXQgYmlzZWN0IGdvb2QgMmNmMzRkN2I3
+ZWU5OWMyN2MxYTZiZGQyZjkxMzQ0Y2JmYTVmZWY1Ywo=
+--0016368322ba417e0e04958e5352--
