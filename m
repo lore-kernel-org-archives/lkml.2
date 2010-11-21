@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624Ab0KUCkH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:40:07 -0500
-Received: from mail.perches.com ([173.55.12.10]:1640 "EHLO mail.perches.com"
+	id S1757103Ab0KUCkc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:40:32 -0500
+Received: from mail.perches.com ([173.55.12.10]:1720 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756140Ab0KUCjt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:39:49 -0500
+	id S1757074Ab0KUCka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:40:30 -0500
 From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: Wolfgang Grandegger <wg@grandegger.com>, socketcan-core@lists.berlios.de,
+To: Christian Lamparter <chunkeey@web.de>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 09/62] can: Use static const
-Date: Sat, 20 Nov 2010 18:38:10 -0800
-Message-Id: <4f763de26328274655d53080c368c178a28771fa.1290305775.git.joe@perches.com>
+Subject: [PATCH 50/62] ar9170: Use const
+Date: Sat, 20 Nov 2010 18:38:51 -0800
+Message-Id: <589b0a937f059a48a972d174c1cfd84b7578143a.1290305776.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1290305773.git.joe@perches.com>
 References: <cover.1290305773.git.joe@perches.com>
@@ -20,31 +21,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using static const generally increases object text and decreases data size.
-It also generally decreases overall object size.
-
-   text	   data	    bss	    dec	    hex	filename
-   4399	    604	   1160	   6163	   1813	drivers/net/can/sja1000/plx_pci.o.old
-   4396	    604	   1160	   6160	   1810	drivers/net/can/sja1000/plx_pci.o.new
+Mark an array const.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/can/sja1000/plx_pci.c |    2 +-
+ drivers/net/wireless/ath/ar9170/cmd.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/can/sja1000/plx_pci.c b/drivers/net/can/sja1000/plx_pci.c
-index 437b5c7..231385b 100644
---- a/drivers/net/can/sja1000/plx_pci.c
-+++ b/drivers/net/can/sja1000/plx_pci.c
-@@ -383,7 +383,7 @@ static void plx_pci_reset_marathon(struct pci_dev *pdev)
+diff --git a/drivers/net/wireless/ath/ar9170/cmd.c b/drivers/net/wireless/ath/ar9170/cmd.c
+index 4604de0..6452c50 100644
+--- a/drivers/net/wireless/ath/ar9170/cmd.c
++++ b/drivers/net/wireless/ath/ar9170/cmd.c
+@@ -54,7 +54,7 @@ int ar9170_write_mem(struct ar9170 *ar, const __le32 *data, size_t len)
+ 
+ int ar9170_write_reg(struct ar9170 *ar, const u32 reg, const u32 val)
  {
- 	void __iomem *reset_addr;
- 	int i;
--	int reset_bar[2] = {3, 5};
-+	static const int reset_bar[2] = {3, 5};
- 
- 	plx_pci_reset_common(pdev);
- 
+-	__le32 buf[2] = {
++	const __le32 buf[2] = {
+ 		cpu_to_le32(reg),
+ 		cpu_to_le32(val),
+ 	};
 -- 
 1.7.3.2.245.g03276.dirty
 
