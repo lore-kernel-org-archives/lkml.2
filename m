@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab0KUCkm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:40:42 -0500
-Received: from mail.perches.com ([173.55.12.10]:1733 "EHLO mail.perches.com"
+	id S1757228Ab0KUCkq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:40:46 -0500
+Received: from mail.perches.com ([173.55.12.10]:1749 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757121Ab0KUCki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:40:38 -0500
+	id S1757121Ab0KUCko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:40:44 -0500
 From: Joe Perches <joe@perches.com>
-To: Christian Lamparter <chunkeey@googlemail.com>
+To: Dan Williams <dcbw@redhat.com>
 Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 53/62] carl9170: Use static const
-Date: Sat, 20 Nov 2010 18:38:54 -0800
-Message-Id: <d94b7e1a273107e3b04709615cbf31ef1b92d87a.1290305776.git.joe@perches.com>
+        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 57/62] libertas: Use static const
+Date: Sat, 20 Nov 2010 18:38:58 -0800
+Message-Id: <0faf86e7288c88cc96902b01bfd06ef81d399e65.1290305776.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1290305773.git.joe@perches.com>
 References: <cover.1290305773.git.joe@perches.com>
@@ -25,27 +25,45 @@ Using static const generally increases object text and decreases data size.
 It also generally decreases overall object size.
 
    text	   data	    bss	    dec	    hex	filename
-   1897	     56	    672	   2625	    a41	drivers/net/wireless/ath/carl9170/cmd.o.new
-   1897	     56	    672	   2625	    a41	drivers/net/wireless/ath/carl9170/cmd.o.old
+   3650	     56	    704	   4410	   113a	drivers/net/wireless/libertas/rx.o.new
+   3695	     56	    704	   4455	   1167	drivers/net/wireless/libertas/rx.o.old
+  27328	    964	   5240	  33532	   82fc	drivers/net/wireless/libertas/cfg.o.new
+  27328	    964	   5240	  33532	   82fc	drivers/net/wireless/libertas/cfg.o.old
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/wireless/ath/carl9170/cmd.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/wireless/libertas/cfg.c |    2 +-
+ drivers/net/wireless/libertas/rx.c  |    4 +++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/carl9170/cmd.c b/drivers/net/wireless/ath/carl9170/cmd.c
-index c21f336..cdfc94c 100644
---- a/drivers/net/wireless/ath/carl9170/cmd.c
-+++ b/drivers/net/wireless/ath/carl9170/cmd.c
-@@ -41,7 +41,7 @@
- 
- int carl9170_write_reg(struct ar9170 *ar, const u32 reg, const u32 val)
- {
--	__le32 buf[2] = {
-+	const __le32 buf[2] = {
- 		cpu_to_le32(reg),
- 		cpu_to_le32(val),
+diff --git a/drivers/net/wireless/libertas/cfg.c b/drivers/net/wireless/libertas/cfg.c
+index 373930a..3f21fcb 100644
+--- a/drivers/net/wireless/libertas/cfg.c
++++ b/drivers/net/wireless/libertas/cfg.c
+@@ -2062,7 +2062,7 @@ static void lbs_cfg_set_regulatory_hint(struct lbs_private *priv)
  	};
+ 
+ 	/* Section 5.17.2 */
+-	static struct region_code_mapping regmap[] = {
++	static const struct region_code_mapping regmap[] = {
+ 		{"US ", 0x10}, /* US FCC */
+ 		{"CA ", 0x20}, /* Canada */
+ 		{"EU ", 0x30}, /* ETSI   */
+diff --git a/drivers/net/wireless/libertas/rx.c b/drivers/net/wireless/libertas/rx.c
+index a4d0bca..a2b1df2 100644
+--- a/drivers/net/wireless/libertas/rx.c
++++ b/drivers/net/wireless/libertas/rx.c
+@@ -55,7 +55,9 @@ int lbs_process_rxed_packet(struct lbs_private *priv, struct sk_buff *skb)
+ 	struct rxpd *p_rx_pd;
+ 	int hdrchop;
+ 	struct ethhdr *p_ethhdr;
+-	const u8 rfc1042_eth_hdr[] = { 0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00 };
++	static const u8 rfc1042_eth_hdr[] = {
++		0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00
++	};
+ 
+ 	lbs_deb_enter(LBS_DEB_RX);
+ 
 -- 
 1.7.3.2.245.g03276.dirty
 
