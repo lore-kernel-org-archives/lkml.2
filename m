@@ -1,88 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750Ab0KUBGi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 20:06:38 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:58206 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755371Ab0KUBGg convert rfc822-to-8bit (ORCPT
+	id S1755747Ab0KUBMw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 20:12:52 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:55827 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755456Ab0KUBMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 20:06:36 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FdKm4+Qr4uYdCrkyKvqZRF7ImFhAUeN2yRDlKYgjZ5aqc4HKXUfKC0juIh+faM+Rgp
-         oQvXL/bvbJmLuzX8noTkYZn5Jt7uwVP3KWo3Vutb9F+5XBGz3cAxJCj/BVny0d4p1VFN
-         4nTZdpVTH4iPWnfaKLgOEUv4Y2h7X34J85XF4=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimvf8t5Rti73kYKV9cG3d7d7Y=OCn57LQNzUuTR@mail.gmail.com>
-References: <1290154233-28695-1-git-send-email-ying.huang@intel.com>
-	<AANLkTin_SyFFP_2=pKoS+8+4V1qXVWyrus7BKz8ENVsJ@mail.gmail.com>
-	<AANLkTincYS7G1yb2ukT67qvpjwQmptXzQZabLQLYrEqn@mail.gmail.com>
-	<AANLkTi=U7F7MS48dC=GgGqh=cm8YrtVhrm6sDXOma6Fc@mail.gmail.com>
-	<AANLkTiki3d3Ft3-XJwFg8DUzUYcz3xPoYTzLZokLf+dv@mail.gmail.com>
-	<AANLkTinAZgHbexU+LTUZHs-+7C0N990=kyuO-USV1Ncp@mail.gmail.com>
-	<AANLkTinBBELXbUu1O+iSX+1FMXTwa9epwPYmi7EnCP+o@mail.gmail.com>
-	<AANLkTikZ=TPN4_GXnUasRq-m8uwy6Spdzd=m_fR08Okt@mail.gmail.com>
-	<AANLkTimvf8t5Rti73kYKV9cG3d7d7Y=OCn57LQNzUuTR@mail.gmail.com>
-Date: Sun, 21 Nov 2010 09:06:35 +0800
-Message-ID: <AANLkTin_-05__F-CMPcOFHceJraJgDN3EGaHe4MT-EyM@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Generic hardware error reporting support
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Huang Ying <ying.huang@intel.com>, Len Brown <lenb@kernel.org>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        linux-acpi@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 20 Nov 2010 20:12:51 -0500
+From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org, mingo@elte.hu, paulus@samba.org,
+        a.p.zijlstra@chello.nl, acme@redhat.org
+Cc: ianmunsi@au1.ibm.com, michaele@au1.ibm.com,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Subject: [PATCH] perf tools: add event grouping capability to "perf stat"
+Date: Sat, 20 Nov 2010 17:07:39 -0800
+Message-Id: <1290301659-4146-1-git-send-email-cjashfor@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 21, 2010 at 8:50 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sat, Nov 20, 2010 at 4:42 PM, huang ying
-> <huang.ying.caritas@gmail.com> wrote:
->>
->> I don't want to hide the information from the MIS people with the
->> tool. I want to show the information to MIS people in a better way.
->
-> You really don't understand, do you?
+Add the ability to create multiple event groups, each with their own leader
+using the existing "-e <event>[,<event> ...] [-e <event>[,<event>]]"
+syntax.  Each additional -e switch creates a new group, and each event
+listed within a -e switch is within that group.
 
-I mean the tool can cook the raw error information from kernel and
-report it in a better way. Yes. You are right that the user space
-error daemon is not popular now. But every tool has its beginning,
-isn't it? I know it is impossible for this tool becomes popular in
-desktop users because hardware error is really rare for them. But it
-may become popular for server farm administrators, to them hardware
-errors are common and they really care about the RAS.
+Signed-off-by: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+---
+ tools/perf/Documentation/perf-stat.txt |   12 +++++++++---
+ tools/perf/builtin-stat.c              |   12 ++++++++++--
+ tools/perf/util/parse-events.c         |    4 ++++
+ tools/perf/util/parse-events.h         |    1 +
+ 4 files changed, 24 insertions(+), 5 deletions(-)
 
-> People won't even _know_ about your tool.  It's too f*cking
-> specialized. They'll have come from other Unixes, they'll have come
-> from older Linux versions, they don't know, they don't care.
->
-> They _do_ know about system logs.
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 4b3a2d4..d522ebd 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -8,8 +8,8 @@ perf-stat - Run a command and gather performance counter statistics
+ SYNOPSIS
+ --------
+ [verse]
+-'perf stat' [-e <EVENT> | --event=EVENT] [-S] [-a] <command>
+-'perf stat' [-e <EVENT> | --event=EVENT] [-S] [-a] -- <command> [<options>]
++'perf stat' [-e <EVENT>[,<EVENT>...] | --event=<EVENT>[,<EVENT>...]] [-S] [-a] <command>
++'perf stat' [-e <EVENT>[,<EVENT>...] | --event=<EVENT>[,<EVENT>...]] [-S] [-a] -- <command> [<options>]
+ 
+ DESCRIPTION
+ -----------
+@@ -28,7 +28,13 @@ OPTIONS
+ 	Select the PMU event. Selection can be a symbolic event name
+ 	(use 'perf list' to list all events) or a raw PMU
+ 	event (eventsel+umask) in the form of rNNN where NNN is a
+-	 hexadecimal event descriptor.
++	hexadecimal event descriptor.  As shown, multiple events can be
++	separated by commas in each -e/--event switch.  Each additional
++	-e/--event switch creates a new event group.  Grouped events are
++	scheduled onto the PMU hardware at the same time, which is
++	important to know when the PMU is overscheduled.  A good example of
++	this is measuring CPI where both instructions and cycles events
++	need to be scheduled simultaneously to get an accurate estimate.
+ 
+ -i::
+ --no-inherit::
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 8b9afa6..5f9fdc8 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -162,8 +162,12 @@ static int create_perf_stat_counter(int counter, bool *perm_err)
+ 		int cpu;
+ 
+ 		for (cpu = 0; cpu < nr_cpus; cpu++) {
++			if (counter == grp_leaders[counter])
++				/* first counter in the group is the leader */
++				fd[cpu][grp_leaders[counter]][0] = -1;
+ 			fd[cpu][counter][0] = sys_perf_event_open(attr,
+-					-1, cpumap[cpu], -1, 0);
++					-1, cpumap[cpu],
++					fd[cpu][grp_leaders[counter]][0], 0);
+ 			if (fd[cpu][counter][0] < 0) {
+ 				if (errno == EPERM || errno == EACCES)
+ 					*perm_err = true;
+@@ -180,8 +184,12 @@ static int create_perf_stat_counter(int counter, bool *perm_err)
+ 			attr->enable_on_exec = 1;
+ 		}
+ 		for (thread = 0; thread < thread_num; thread++) {
++			if (counter == grp_leaders[counter])
++				/* first counter in the group is the leader */
++				fd[0][grp_leaders[counter]][thread] = -1;
+ 			fd[0][counter][thread] = sys_perf_event_open(attr,
+-				all_tids[thread], -1, -1, 0);
++				all_tids[thread], -1,
++				fd[0][grp_leaders[counter]][thread], 0);
+ 			if (fd[0][counter][thread] < 0) {
+ 				if (errno == EPERM || errno == EACCES)
+ 					*perm_err = true;
+diff --git a/tools/perf/util/parse-events.c b/tools/perf/util/parse-events.c
+index 4af5bd5..eeecb2a 100644
+--- a/tools/perf/util/parse-events.c
++++ b/tools/perf/util/parse-events.c
+@@ -12,6 +12,7 @@
+ 
+ int				nr_counters;
+ 
++int				grp_leaders[MAX_COUNTERS];
+ struct perf_event_attr		attrs[MAX_COUNTERS];
+ char				*filters[MAX_COUNTERS];
+ 
+@@ -804,11 +805,13 @@ int parse_events(const struct option *opt __used, const char *str, int unset __u
+ {
+ 	struct perf_event_attr attr;
+ 	enum event_result ret;
++	int grp_leader;
+ 
+ 	if (strchr(str, ':'))
+ 		if (store_event_type(str) < 0)
+ 			return -1;
+ 
++	grp_leader = nr_counters;
+ 	for (;;) {
+ 		if (nr_counters == MAX_COUNTERS)
+ 			return -1;
+@@ -822,6 +825,7 @@ int parse_events(const struct option *opt __used, const char *str, int unset __u
+ 			return -1;
+ 
+ 		if (ret != EVT_HANDLED_ALL) {
++			grp_leaders[nr_counters] = grp_leader;
+ 			attrs[nr_counters] = attr;
+ 			nr_counters++;
+ 		}
+diff --git a/tools/perf/util/parse-events.h b/tools/perf/util/parse-events.h
+index fc4ab3f..d820f42 100644
+--- a/tools/perf/util/parse-events.h
++++ b/tools/perf/util/parse-events.h
+@@ -17,6 +17,7 @@ extern bool have_tracepoints(struct perf_event_attr *pattrs, int nb_events);
+ 
+ extern int			nr_counters;
+ 
++extern int grp_leaders[MAX_COUNTERS];
+ extern struct perf_event_attr attrs[MAX_COUNTERS];
+ extern char *filters[MAX_COUNTERS];
+ 
+-- 
+1.7.0.4
 
-I have no objection to report hardware errors in system logs too. So
-these people can get the information too. I just want to add another
-tool oriented interface too. So that some other users (like cluster
-administrator) can get their work done better too.
-
-> The most common kind of "system admin" is the random end-user. Now,
-> admittedly Intel seems to have its head up its arse on the whole
-> "regular people care about ECC and random memory corruption", and it
-> may be that consumer chips simply won't support the whole magic error
-> handling code, but the point remains: we don't want yet another
-> obscure error reporting tool that almost nobody knows about.
-> Especially for errors that are so rare that you'll never notice if you
-> are missing them.
-
-For desktop users, that is true. But for cluster administrator, the
-hardware errors are really common. Some engineer of local search
-engine vendor told me that they have broken DIMM everyday.
-
-Best Regards,
-Huang Ying
