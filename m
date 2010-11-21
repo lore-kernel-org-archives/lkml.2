@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932068Ab0KUCqQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:46:16 -0500
-Received: from mail.perches.com ([173.55.12.10]:1703 "EHLO mail.perches.com"
+	id S1757470Ab0KUCqe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:46:34 -0500
+Received: from mail.perches.com ([173.55.12.10]:1700 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756886Ab0KUCkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:40:23 -0500
+	id S1756851Ab0KUCkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:40:21 -0500
 From: Joe Perches <joe@perches.com>
-To: Matt Carlson <mcarlson@broadcom.com>, Michael Chan <mchan@broadcom.com>
+To: Stephen Hemminger <shemminger@linux-foundation.org>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 42/62] tg3: Use static const
-Date: Sat, 20 Nov 2010 18:38:43 -0800
-Message-Id: <c0ef5b45823fa90cdf1ca498a5a8c830f9cc6b68.1290305776.git.joe@perches.com>
+Subject: [PATCH 40/62] skge: Use static const
+Date: Sat, 20 Nov 2010 18:38:41 -0800
+Message-Id: <2ddff3ba3e1582bddc3b544dfcd22d8317df59cc.1290305776.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1290305773.git.joe@perches.com>
 References: <cover.1290305773.git.joe@perches.com>
@@ -23,69 +23,36 @@ Using static const generally increases object text and decreases data size.
 It also generally decreases overall object size.
 
    text	   data	    bss	    dec	    hex	filename
- 168118	    970	  41008	 210096	  334b0	drivers/net/tg3.o.old
- 168286	    802	  41008	 210096	  334b0	drivers/net/tg3.o.new
-
-Use DEFINE_PCI_DEVICE_TABLE not direct declarations.
+  52665	    927	  12680	  66272	  102e0	drivers/net/skge.o.new
+  52730	    927	  12680	  66337	  10321	drivers/net/skge.o.old
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/tg3.c |   26 ++++++++++++--------------
- 1 files changed, 12 insertions(+), 14 deletions(-)
+ drivers/net/skge.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/tg3.c b/drivers/net/tg3.c
-index 30ccbb6..93483a7 100644
---- a/drivers/net/tg3.c
-+++ b/drivers/net/tg3.c
-@@ -13047,17 +13047,15 @@ static inline u32 tg3_rx_ret_ring_size(struct tg3 *tp)
- 		return 512;
- }
+diff --git a/drivers/net/skge.c b/drivers/net/skge.c
+index 220e039..e9dbe52 100644
+--- a/drivers/net/skge.c
++++ b/drivers/net/skge.c
+@@ -1191,7 +1191,7 @@ static void genesis_init(struct skge_hw *hw)
  
-+DEFINE_PCI_DEVICE_TABLE(write_reorder_chipsets) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_FE_GATE_700C) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_8131_BRIDGE) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8385_0) },
-+	{ },
-+};
-+
- static int __devinit tg3_get_invariants(struct tg3 *tp)
+ static void genesis_reset(struct skge_hw *hw, int port)
  {
--	static struct pci_device_id write_reorder_chipsets[] = {
--		{ PCI_DEVICE(PCI_VENDOR_ID_AMD,
--			     PCI_DEVICE_ID_AMD_FE_GATE_700C) },
--		{ PCI_DEVICE(PCI_VENDOR_ID_AMD,
--			     PCI_DEVICE_ID_AMD_8131_BRIDGE) },
--		{ PCI_DEVICE(PCI_VENDOR_ID_VIA,
--			     PCI_DEVICE_ID_VIA_8385_0) },
--		{ },
--	};
- 	u32 misc_ctrl_reg;
- 	u32 pci_state_reg, grc_misc_cfg;
- 	u32 val;
-@@ -14153,6 +14151,11 @@ static int __devinit tg3_do_test_dma(struct tg3 *tp, u32 *buf, dma_addr_t buf_dm
+-	const u8 zero[8]  = { 0 };
++	static const u8 zero[8]  = { 0 };
+ 	u32 reg;
  
- #define TEST_BUFFER_SIZE	0x2000
+ 	skge_write8(hw, SK_REG(port, GMAC_IRQ_MSK), 0);
+@@ -1557,7 +1557,7 @@ static void genesis_mac_init(struct skge_hw *hw, int port)
+ 	int jumbo = hw->dev[port]->mtu > ETH_DATA_LEN;
+ 	int i;
+ 	u32 r;
+-	const u8 zero[6]  = { 0 };
++	static const u8 zero[6]  = { 0 };
  
-+DEFINE_PCI_DEVICE_TABLE(dma_wait_state_chipsets) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_APPLE, PCI_DEVICE_ID_APPLE_UNI_N_PCI15) },
-+	{ },
-+};
-+
- static int __devinit tg3_test_dma(struct tg3 *tp)
- {
- 	dma_addr_t buf_dma;
-@@ -14321,11 +14324,6 @@ static int __devinit tg3_test_dma(struct tg3 *tp)
- 	}
- 	if ((tp->dma_rwctrl & DMA_RWCTRL_WRITE_BNDRY_MASK) !=
- 	    DMA_RWCTRL_WRITE_BNDRY_16) {
--		static struct pci_device_id dma_wait_state_chipsets[] = {
--			{ PCI_DEVICE(PCI_VENDOR_ID_APPLE,
--				     PCI_DEVICE_ID_APPLE_UNI_N_PCI15) },
--			{ },
--		};
- 
- 		/* DMA test passed without adjusting DMA boundary,
- 		 * now look for chipsets that are known to expose the
+ 	for (i = 0; i < 10; i++) {
+ 		skge_write16(hw, SK_REG(port, TX_MFF_CTRL1),
 -- 
 1.7.3.2.245.g03276.dirty
 
