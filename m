@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab0KUOXL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 09:23:11 -0500
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:55495 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753421Ab0KUOXJ (ORCPT
+	id S1753930Ab0KUOZW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 09:25:22 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59403 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365Ab0KUOZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 09:23:09 -0500
+	Sun, 21 Nov 2010 09:25:21 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=RUmh7yNC2qWzi/7yPqC0Sh1xTbqEHOH89am8cJFpwNtjKGA8ED5b2+xGZw03p4hcxC
-         gtdl1MIsL/vsN9tyT6/hJjW56Vdd4PCKN0x9Xk/JwPIMqwldgtyhIXqBxd/NLXVmEWL4
-         2WohPEKvYxaZH09TWxvRZ2xeIa44Y3w6AbVVU=
-Date: Sun, 21 Nov 2010 22:26:15 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Shaohui Zheng <shaohui.zheng@intel.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <ak@linux.intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Haicheng Li <haicheng.li@intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, x86@kernel.org
-Subject: Re: [patch 1/2] x86: add numa=possible command line option
-Message-ID: <20101121142615.GI9099@hack>
-References: <alpine.DEB.2.00.1011162359160.17408@chino.kir.corp.google.com> <20101117075128.GA30254@shaohui> <alpine.DEB.2.00.1011171304060.10254@chino.kir.corp.google.com> <20101118041407.GA2408@shaohui> <20101118062715.GD17539@linux-sh.org> <20101118052750.GD2408@shaohui> <alpine.DEB.2.00.1011181321470.26680@chino.kir.corp.google.com> <20101119003225.GB3327@shaohui> <alpine.DEB.2.00.1011201645230.10618@chino.kir.corp.google.com> <alpine.DEB.2.00.1011201826140.12889@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1011201826140.12889@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=svIFmVIoFk/cqj2AVmSmqiuKEVHSN+2GC6IhY5+TvT9qcaf0Sf6wY75zgF/qRrbr5J
+         RE5nOmB5p3z6RpoKeChzZVe9a/4HBf8l22eOtkwer7Sgf5c+J/5F8boZQqvFMkCck4Bz
+         LK2MtY0HXb5XF8STIWEm31MayuezF/U9fe9xs=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: [PATCH] vmscan: Make move_active_pages_to_lru more generic
+Date: Sun, 21 Nov 2010 23:24:56 +0900
+Message-Id: <1290349496-13297-1-git-send-email-minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Now move_active_pages_to_lru can move pages into active or inactive.
+if it moves the pages into inactive, it itself can clear PG_acive.
+It makes the function more generic.
 
-Hi, David
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
 
-On Sat, Nov 20, 2010 at 06:28:31PM -0800, David Rientjes wrote:
->Adds a numa=possible=<N> command line option to set an additional N nodes
->as being possible for memory hotplug.  This set of possible nodes
->controls nr_node_ids and the sizes of several dynamically allocated node
->arrays.
->
->This allows memory hotplug to create new nodes for newly added memory
->rather than binding it to existing nodes.
->
->The first use-case for this will be node hotplug emulation which will use
->these possible nodes to create new nodes to test the memory hotplug
->callbacks and surrounding memory hotplug code.
->
+---
+ mm/vmscan.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index aa4f1cb..bd408b3 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1457,6 +1457,10 @@ static void move_active_pages_to_lru(struct zone *zone,
+ 		VM_BUG_ON(PageLRU(page));
+ 		SetPageLRU(page);
+ 
++		/* we are de-activating */
++		if (!is_active_lru(lru))
++			ClearPageActive(page);
++
+ 		list_move(&page->lru, &zone->lru[lru].list);
+ 		mem_cgroup_add_lru_list(page, lru);
+ 		pgmoved++;
+@@ -1543,7 +1547,6 @@ static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
+ 			}
+ 		}
+ 
+-		ClearPageActive(page);  /* we are de-activating */
+ 		list_add(&page->lru, &l_inactive);
+ 	}
+ 
+-- 
+1.7.0.4
 
-I am not sure how much value of making this dynamic,
-for CPU, we do this at compile time, i.e. NR_CPUS,
-so how about NR_NODES?
-
-Also, numa=possible= is not as clear as numa=max=, for me at least.
-
-Thanks.
