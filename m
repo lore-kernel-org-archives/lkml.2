@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754388Ab0KUPpB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 10:45:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57599 "EHLO mx1.redhat.com"
+	id S1754303Ab0KUPvP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 10:51:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26270 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754031Ab0KUPpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 10:45:00 -0500
-Date: Sun, 21 Nov 2010 10:44:04 -0500
-From: Josef Bacik <josef@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        eparis@redhat.com, linux-kernel@vger.kernel.org, sds@tycho.nsa.gov,
-        selinux@tycho.nsa.gov
-Subject: Re: [PATCH] fs: call security_d_instantiate in d_obtain_alias V2
-Message-ID: <20101121154402.GA20863@dhcp231-156.rdu.redhat.com>
-References: <1290131575-2489-1-git-send-email-josef@redhat.com> <20101119223552.GB12783@fieldses.org> <20101121025945.GA4365@fieldses.org>
+	id S1753356Ab0KUPvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 10:51:14 -0500
+Date: Sun, 21 Nov 2010 16:44:35 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Mike Galbraith <efault@gmx.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4] sched: automated per session task groups
+Message-ID: <20101121154435.GA25966@redhat.com>
+References: <20101121133744.GA10765@elte.hu> <20101121133919.GA10976@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101121025945.GA4365@fieldses.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20101121133919.GA10976@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Nov 20, 2010 at 09:59:45PM -0500, J. Bruce Fields wrote:
-> On Fri, Nov 19, 2010 at 05:35:52PM -0500, J. Bruce Fields wrote:
-> > On Thu, Nov 18, 2010 at 08:52:55PM -0500, Josef Bacik wrote:
-> > > While trying to track down some NFS problems with BTRFS, I kept noticing I was
-> > > getting -EACCESS for no apparent reason.  Eric Paris and printk() helped me
-> > > figure out that it was SELinux that was giving me grief, with the following
-> > > denial
-> > > 
-> > > type=AVC msg=audit(1290013638.413:95): avc:  denied  { 0x800000 } for  pid=1772
-> > > comm="nfsd" name="" dev=sda1 ino=256 scontext=system_u:system_r:kernel_t:s0
-> > > tcontext=system_u:object_r:unlabeled_t:s0 tclass=file
-> > > 
-> > > Turns out this is because in d_obtain_alias if we can't find an alias we create
-> > > one and do all the normal instantiation stuff, but we don't do the
-> > > security_d_instantiate.
-> > > 
-> > > Usually we are protected from getting a hashed dentry that hasn't yet run
-> > > security_d_instantiate() by the parent's i_mutex, but obviously this isn't an
-> > > option there, so in order to deal with the case that a second thread comes in
-> > > and finds our new dentry before we get to run security_d_instantiate(), we go
-> > > ahead and call it if we find a dentry already.  Eric assures me that this is ok
-> > > as the code checks to see if the dentry has been initialized already so calling
-> > > security_d_instantiate() against the same dentry multiple times is ok.  With
-> > > this patch I'm no longer getting errant -EACCESS values.
-> > 
-> > Thanks, I can't see any reason that wouldn't work.
-> 
-> (FWIW, I also ran my usual nfs regression tests with this applied.  They
-> don't exercise the problem you were seeing, but maybe it's at least some
-> sort of sanity check.)
+On 11/21, Ingo Molnar wrote:
 >
+> Btw., there's a small cleanup in the patch that i picked up (see below), and i also
+> edited the commit log a bit - so you might want to pick up the version below.
 
-Oh I should have mentioned the testing I gave it.  With BTRFS I could regularly
-reproduce this by doing the following
+I didn't read the patch in details, but a couple of nits...
 
-SERVER
-mount /dev/sda1 /mnt/btrfs
-btrfs subvol create /mnt/btrfs/foo
-cp mutt.tar.gz /mnt/btrfs/foo
+> +static void
+> +autogroup_move_group(struct task_struct *p, struct autogroup *ag)
+> +{
+> +	struct autogroup *prev;
+> +	struct task_struct *t;
+> +
+> +	spin_lock(&p->sighand->siglock);
 
-CLIENT
-mount server:/mnt/btrfs /mnt/test
-cd /mnt/test/foo
-tar xzvf mutt.tar.gz
-cd mutt
-ls
+This needs spin_lock_irq(), ->siglock is irq-safe.
 
-SERVER
-echo 3 > /proc/sys/vm/drop_caches
+The same for other lockers, but:
 
-CLIENT
-ls
+> +static inline struct autogroup *autogroup_get(struct task_struct *p)
+> +{
+> +	struct autogroup *ag;
+> +
+> +	/* task may be moved after we unlock.. tough */
+> +	spin_lock(&p->sighand->siglock);
 
-and bam I'd get -EACCESS every time.  I did this a bunch of times to make sure
-it didn't happen anymore plus variations of the above.  Thanks,
+This is called by fs/proc. In this case nothing protects us from
+release_task(), we can hit ->siglock == NULL (or we can race with
+exec which changes ->sighand in theory).
 
-Josef 
+This needs lock_task_sighand() (it can fail). Perhaps something
+else have the same problem...
+
+If the task is current and it is not exiting, or it is the new
+child (sched_autogroup_fork), then it is safe to use ->siglock
+directly.
+
+And a pure cosmetic nit,
+
+> +void sched_autogroup_fork(struct signal_struct *sig)
+> +{
+> +     struct sighand_struct *sighand = current->sighand;
+> +
+> +     spin_lock(&sighand->siglock);
+> +     sig->autogroup = autogroup_kref_get(current->signal->autogroup);
+> +     spin_unlock(&sighand->siglock);
+> +}
+
+This looks a bit confusing. We do not need current->sighand->siglock
+to set sig->autogroup. Nobody except us can see this new signal_struct,
+and in any case current->sighand->siglock can't help.
+
+It is needed for autogroup_kref_get(), but we already have autogroup_get().
+I'd suggest
+
+	void sched_autogroup_fork(struct signal_struct *sig)
+	{
+		sig->autogroup = autogroup_get(current);	
+	}
+
+Oleg.
+
