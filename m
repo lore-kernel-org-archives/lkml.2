@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab0KUCkV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:40:21 -0500
-Received: from mail.perches.com ([173.55.12.10]:1695 "EHLO mail.perches.com"
+	id S1756774Ab0KUCkP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:40:15 -0500
+Received: from mail.perches.com ([173.55.12.10]:1689 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756121Ab0KUCkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:40:18 -0500
+	id S1756442Ab0KUCkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:40:14 -0500
 From: Joe Perches <joe@perches.com>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 37/62] r8169: Use static const
-Date: Sat, 20 Nov 2010 18:38:38 -0800
-Message-Id: <400a1fb40ac73a27cd214d535d312c372e961643.1290305776.git.joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 33/62] ni65: Use static const
+Date: Sat, 20 Nov 2010 18:38:34 -0800
+Message-Id: <af8e14326a7f1657e3c7180f0c7b0ae5d5da5afe.1290305776.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1290305773.git.joe@perches.com>
 References: <cover.1290305773.git.joe@perches.com>
@@ -23,27 +23,29 @@ Using static const generally increases object text and decreases data size.
 It also generally decreases overall object size.
 
    text	   data	    bss	    dec	    hex	filename
-  43939	    232	   9904	  54075	   d33b	drivers/net/r8169.o.new
-  43974	    232	   9904	  54110	   d35e	drivers/net/r8169.o.old
+  13234	    187	   3488	  16909	   420d	drivers/net/ni65.o.old
+  13254	    167	   3488	  16909	   420d	drivers/net/ni65.o.new
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/r8169.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/net/ni65.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 7d33ef4..f9ad0d6 100644
---- a/drivers/net/r8169.c
-+++ b/drivers/net/r8169.c
-@@ -2516,7 +2516,7 @@ static void rtl8168d_2_hw_phy_config(void __iomem *ioaddr)
+diff --git a/drivers/net/ni65.c b/drivers/net/ni65.c
+index da228a0..c75ae85 100644
+--- a/drivers/net/ni65.c
++++ b/drivers/net/ni65.c
+@@ -361,8 +361,8 @@ static int dma;
+ struct net_device * __init ni65_probe(int unit)
+ {
+ 	struct net_device *dev = alloc_etherdev(0);
+-	static int ports[] = {0x360,0x300,0x320,0x340, 0};
+-	int *port;
++	static const int ports[] = { 0x360, 0x300, 0x320, 0x340, 0 };
++	const int *port;
+ 	int err = 0;
  
- 		val = mdio_read(ioaddr, 0x0d);
- 		if ((val & 0x00ff) != 0x006c) {
--			u32 set[] = {
-+			static const u32 set[] = {
- 				0x0065, 0x0066, 0x0067, 0x0068,
- 				0x0069, 0x006a, 0x006b, 0x006c
- 			};
+ 	if (!dev)
 -- 
 1.7.3.2.245.g03276.dirty
 
