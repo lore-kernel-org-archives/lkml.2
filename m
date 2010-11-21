@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756380Ab0KUCj7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 20 Nov 2010 21:39:59 -0500
-Received: from mail.perches.com ([173.55.12.10]:1633 "EHLO mail.perches.com"
+	id S1757586Ab0KUCww (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 20 Nov 2010 21:52:52 -0500
+Received: from mail.perches.com ([173.55.12.10]:1662 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756099Ab0KUCjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 20 Nov 2010 21:39:45 -0500
+	id S1756351Ab0KUCj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 20 Nov 2010 21:39:59 -0500
 From: Joe Perches <joe@perches.com>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 05/62] at1700: Use static const
-Date: Sat, 20 Nov 2010 18:38:06 -0800
-Message-Id: <eeec670c8100c9b6c6dcf60f15806b635e129b39.1290305775.git.joe@perches.com>
+Subject: [PATCH 19/62] eepro: Use static const
+Date: Sat, 20 Nov 2010 18:38:20 -0800
+Message-Id: <926c2282ee57805ec9459b127b8244d7a5734fb4.1290305776.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276.dirty
 In-Reply-To: <cover.1290305773.git.joe@perches.com>
 References: <cover.1290305773.git.joe@perches.com>
@@ -23,31 +23,36 @@ Using static const generally increases object text and decreases data size.
 It also generally decreases overall object size.
 
    text	   data	    bss	    dec	    hex	filename
-   9083	    370	   2232	  11685	   2da5	drivers/net/at1700.o.new
-   9167	    370	   2232	  11769	   2df9	drivers/net/at1700.o.old
+  13007	     97	   3888	  16992	   4260	drivers/net/eepro.o.old
+  12969	     97	   3888	  16954	   423a	drivers/net/eepro.o.new
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/at1700.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/eepro.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/at1700.c b/drivers/net/at1700.c
-index 871b163..f4744fc 100644
---- a/drivers/net/at1700.c
-+++ b/drivers/net/at1700.c
-@@ -270,9 +270,9 @@ static const struct net_device_ops at1700_netdev_ops = {
+diff --git a/drivers/net/eepro.c b/drivers/net/eepro.c
+index 6fa4227..eb35951 100644
+--- a/drivers/net/eepro.c
++++ b/drivers/net/eepro.c
+@@ -891,12 +891,13 @@ err:
+    there is non-reboot way to recover if something goes wrong.
+    */
  
- static int __init at1700_probe1(struct net_device *dev, int ioaddr)
+-static char irqrmap[] = {-1,-1,0,1,-1,2,-1,-1,-1,0,3,4,-1,-1,-1,-1};
+-static char irqrmap2[] = {-1,-1,4,0,1,2,-1,3,-1,4,5,6,7,-1,-1,-1};
++static const char irqrmap[] = {-1,-1,0,1,-1,2,-1,-1,-1,0,3,4,-1,-1,-1,-1};
++static const char irqrmap2[] = {-1,-1,4,0,1,2,-1,3,-1,4,5,6,7,-1,-1,-1};
+ static int	eepro_grab_irq(struct net_device *dev)
  {
--	char fmv_irqmap[4] = {3, 7, 10, 15};
--	char fmv_irqmap_pnp[8] = {3, 4, 5, 7, 9, 10, 11, 15};
--	char at1700_irqmap[8] = {3, 4, 5, 9, 10, 11, 14, 15};
-+	static const char fmv_irqmap[4] = {3, 7, 10, 15};
-+	static const char fmv_irqmap_pnp[8] = {3, 4, 5, 7, 9, 10, 11, 15};
-+	static const char at1700_irqmap[8] = {3, 4, 5, 9, 10, 11, 14, 15};
- 	unsigned int i, irq, is_fmv18x = 0, is_at1700 = 0;
- 	int slot, ret = -ENODEV;
- 	struct net_local *lp = netdev_priv(dev);
+-	int irqlist[] = { 3, 4, 5, 7, 9, 10, 11, 12, 0 };
+-	int *irqp = irqlist, temp_reg, ioaddr = dev->base_addr;
++	static const int irqlist[] = { 3, 4, 5, 7, 9, 10, 11, 12, 0 };
++	const int *irqp = irqlist;
++	int temp_reg, ioaddr = dev->base_addr;
+ 
+ 	eepro_sw2bank1(ioaddr); /* be CAREFUL, BANK 1 now */
+ 
 -- 
 1.7.3.2.245.g03276.dirty
 
