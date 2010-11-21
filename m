@@ -1,241 +1,391 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820Ab0KWEwI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 23:52:08 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34493 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510Ab0KWEwG convert rfc822-to-8bit (ORCPT
+	id S1751817Ab0KWEzq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 23:55:46 -0500
+Received: from smtp-out3.blueyonder.co.uk ([195.188.213.6]:43384 "EHLO
+	smtp-out3.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751017Ab0KWEzp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 23:52:06 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GsI+J56wxVhZMZ+qYQUFbafsFrTkBmfpxgQp5PLIJmi/FaaRl5eBj6/+QuvzIvIHf7
-         ly2X/uujkcgT6Cwm7mLqHMcJ9/1wv4viny5RZ4PTjQh24f9hvH72hX6CRcZkfsVuWNpG
-         FZ6fUkHrdmpejCVVMs4AKX4Faug1IvyE9Ma+4=
+	Mon, 22 Nov 2010 23:55:45 -0500
+From: "Ash Hughes" <ashley.hughes@blueyonder.co.uk>
+To: <nico@fluxnic.net>, <kernel@wantstofly.org>, <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] ARM Orion: added Buffalo LS-CHL support
+Date: Sun, 21 Nov 2010 23:05:10 -0000
+Message-ID: <000401cb89d0$8d1927b0$a74b7710$@blueyonder.co.uk>
 MIME-Version: 1.0
-In-Reply-To: <20101122141449.9de58a2c.akpm@linux-foundation.org>
-References: <bdd6628e81c06f6871983c971d91160fca3f8b5e.1290349672.git.minchan.kim@gmail.com>
-	<20101122141449.9de58a2c.akpm@linux-foundation.org>
-Date: Tue, 23 Nov 2010 13:52:05 +0900
-Message-ID: <AANLkTimk4JL7hDvLWuHjiXGNYxz8GJ_TypWFC=74Xt1Q@mail.gmail.com>
-Subject: Re: [RFC 1/2] deactive invalidated pages
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nick Piggin <npiggin@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AcuJ0BP5IjBbsT29RxqMJEp1701Nlg==
+Content-Language: en-gb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 23, 2010 at 7:14 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Sun, 21 Nov 2010 23:30:23 +0900
-> Minchan Kim <minchan.kim@gmail.com> wrote:
->
->> Recently, there are reported problem about thrashing.
->> (http://marc.info/?l=rsync&m=128885034930933&w=2)
->> It happens by backup workloads(ex, nightly rsync).
->> That's because the workload makes just use-once pages
->> and touches pages twice. It promotes the page into
->> active list so that it results in working set page eviction.
->>
->> Some app developer want to support POSIX_FADV_NOREUSE.
->> But other OSes don't support it, either.
->> (http://marc.info/?l=linux-mm&m=128928979512086&w=2)
->>
->> By Other approach, app developer uses POSIX_FADV_DONTNEED.
->> But it has a problem. If kernel meets page is writing
->> during invalidate_mapping_pages, it can't work.
->> It is very hard for application programmer to use it.
->> Because they always have to sync data before calling
->> fadivse(..POSIX_FADV_DONTNEED) to make sure the pages could
->> be discardable. At last, they can't use deferred write of kernel
->> so that they could see performance loss.
->> (http://insights.oetiker.ch/linux/fadvise.html)
->>
->> In fact, invalidate is very big hint to reclaimer.
->> It means we don't use the page any more. So let's move
->> the writing page into inactive list's head.
->>
->> If it is real working set, it could have a enough time to
->> activate the page since we always try to keep many pages in
->> inactive list.
->>
->> I reuse lru_demote of Peter with some change.
->>
->>
->> ...
->>
->> +/*
->> + * Function used to forecefully demote a page to the head of the inactive
->> + * list.
->> + */
->
-> This comment is wrong?  The page gets moved to the _tail_ of the
-> inactive list?
+Adds support for Buffalo Linkstation Live v3 (LS-CHL) NAS drives.
+Signed-off-by: Ash Hughes <ashley.hughes@blueyonder.co.uk>
 
-No. I add it in _head_ of the inactive list intentionally.
-Why I don't add it to _tail_ is that I don't want to be aggressive.
-The page might be real working set. So I want to give a chance to
-activate it again.
-If it's not working set, it can be reclaimed easily and it can prevent
-active page demotion since inactive list size would be big enough for
-not calling shrink_active_list.
-
->
->> +void lru_deactive_page(struct page *page)
->
-> Should be "deactivate" throughout the patch. IMO.
-
-Thank you.
-
->
->> +{
->> +     if (likely(get_page_unless_zero(page))) {
->> +             struct pagevec *pvec = &get_cpu_var(lru_deactive_pvecs);
->> +
->> +             if (!pagevec_add(pvec, page))
->> +                     __pagevec_lru_deactive(pvec);
->> +             put_cpu_var(lru_deactive_pvecs);
->> +     }
->>  }
->>
->> +
->>  void lru_add_drain(void)
->>  {
->>       drain_cpu_pagevecs(get_cpu());
->> diff --git a/mm/truncate.c b/mm/truncate.c
->> index cd94607..c73fb19 100644
->> --- a/mm/truncate.c
->> +++ b/mm/truncate.c
->> @@ -332,7 +332,8 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
->>  {
->>       struct pagevec pvec;
->>       pgoff_t next = start;
->> -     unsigned long ret = 0;
->> +     unsigned long ret;
->> +     unsigned long count = 0;
->>       int i;
->>
->>       pagevec_init(&pvec, 0);
->> @@ -359,8 +360,10 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
->>                       if (lock_failed)
->>                               continue;
->>
->> -                     ret += invalidate_inode_page(page);
->> -
->> +                     ret = invalidate_inode_page(page);
->> +                     if (!ret)
->> +                             lru_deactive_page(page);
->
-> This is the core part of the patch and it needs a code comment to
-> explain the reasons for doing this.
->
-> I wonder about the page_mapped() case.  We were unable to invalidate
-> the page because it was mapped into pagetables.  But was it really
-> appropriate to deactivate the page in that case?
-
-Yes. My assumption is that if it's real working set, it could be
-activated easily during inactive list moving window time.
-
->
->
->> +                     count += ret;
->>                       unlock_page(page);
->>                       if (next > end)
->>                               break;
->
-> Suggested updates:
->
->
->  include/linux/swap.h |    2 +-
->  mm/swap.c            |   13 ++++++-------
->  mm/truncate.c        |    7 ++++++-
->  3 files changed, 13 insertions(+), 9 deletions(-)
->
-> diff -puN include/linux/swap.h~mm-deactivate-invalidated-pages-fix include/linux/swap.h
-> --- a/include/linux/swap.h~mm-deactivate-invalidated-pages-fix
-> +++ a/include/linux/swap.h
-> @@ -213,7 +213,7 @@ extern void mark_page_accessed(struct pa
->  extern void lru_add_drain(void);
->  extern int lru_add_drain_all(void);
->  extern void rotate_reclaimable_page(struct page *page);
-> -extern void lru_deactive_page(struct page *page);
-> +extern void lru_deactivate_page(struct page *page);
->  extern void swap_setup(void);
->
->  extern void add_page_to_unevictable_list(struct page *page);
-> diff -puN mm/swap.c~mm-deactivate-invalidated-pages-fix mm/swap.c
-> --- a/mm/swap.c~mm-deactivate-invalidated-pages-fix
-> +++ a/mm/swap.c
-> @@ -39,7 +39,7 @@ int page_cluster;
->
->  static DEFINE_PER_CPU(struct pagevec[NR_LRU_LISTS], lru_add_pvecs);
->  static DEFINE_PER_CPU(struct pagevec, lru_rotate_pvecs);
-> -static DEFINE_PER_CPU(struct pagevec, lru_deactive_pvecs);
-> +static DEFINE_PER_CPU(struct pagevec, lru_deactivate_pvecs);
->
->
->  /*
-> @@ -334,23 +334,22 @@ static void drain_cpu_pagevecs(int cpu)
->                local_irq_restore(flags);
->        }
->
-> -       pvec = &per_cpu(lru_deactive_pvecs, cpu);
-> +       pvec = &per_cpu(lru_deactivate_pvecs, cpu);
->        if (pagevec_count(pvec))
->                __pagevec_lru_deactive(pvec);
->  }
->
->  /*
-> - * Function used to forecefully demote a page to the head of the inactive
-> - * list.
-> + * Forecfully demote a page to the tail of the inactive list.
->  */
-> -void lru_deactive_page(struct page *page)
-> +void lru_deactivate_page(struct page *page)
->  {
->        if (likely(get_page_unless_zero(page))) {
-> -               struct pagevec *pvec = &get_cpu_var(lru_deactive_pvecs);
-> +               struct pagevec *pvec = &get_cpu_var(lru_deactivate_pvecs);
->
->                if (!pagevec_add(pvec, page))
->                        __pagevec_lru_deactive(pvec);
-> -               put_cpu_var(lru_deactive_pvecs);
-> +               put_cpu_var(lru_deactivate_pvecs);
->        }
->  }
->
-> diff -puN mm/truncate.c~mm-deactivate-invalidated-pages-fix mm/truncate.c
-> --- a/mm/truncate.c~mm-deactivate-invalidated-pages-fix
-> +++ a/mm/truncate.c
-> @@ -361,8 +361,13 @@ unsigned long invalidate_mapping_pages(s
->                                continue;
->
->                        ret = invalidate_inode_page(page);
-> +                       /*
-> +                        * If the page was dirty or under writeback we cannot
-> +                        * invalidate it now.  Move it to the tail of the
-> +                        * inactive LRU so that reclaim will free it promptly.
-> +                        */
->                        if (!ret)
-> -                               lru_deactive_page(page);
-> +                               lru_deactivate_page(page);
->                        count += ret;
->                        unlock_page(page);
->                        if (next > end)
-> _
->
->
+---
 
 
+diff -uprN linux-2.6-vanilla//arch/arm/mach-orion5x/Kconfig linux-2.6/arch/arm/mach-orion5x/Kconfig
+--- linux-2.6-vanilla//arch/arm/mach-orion5x/Kconfig	2010-11-14 10:58:39.000000000 +0000
++++ linux-2.6/arch/arm/mach-orion5x/Kconfig	2010-11-14 11:02:42.874582000 +0000
+@@ -51,6 +51,13 @@ config MACH_LINKSTATION_PRO
+ 	  Buffalo Linkstation Pro/Live platform. Both v1 and
+ 	  v2 devices are supported.
+ 
++config MACH_LINKSTATION_LSCHL
++	bool "Buffalo Linkstation Live v3 (LS-CHL)"
++	select I2C_BOARDINFO
++	help
++	  Say 'Y' here if you want your kernel to support the
++	  Buffalo Linkstation Live v3 (LS-CHL) platform.
++
+ config MACH_LINKSTATION_MINI
+ 	bool "Buffalo Linkstation Mini"
+ 	select I2C_BOARDINFO
+diff -uprN linux-2.6-vanilla//arch/arm/mach-orion5x/ls-chl-setup.c linux-2.6/arch/arm/mach-orion5x/ls-chl-setup.c
+--- linux-2.6-vanilla//arch/arm/mach-orion5x/ls-chl-setup.c	1970-01-01 01:00:00.000000000 +0100
++++ linux-2.6/arch/arm/mach-orion5x/ls-chl-setup.c	2010-11-21 15:33:43.910827481 +0000
+@@ -0,0 +1,329 @@
++/*
++ * arch/arm/mach-orion5x/ls-chl-setup.c
++ *
++ * Maintainer: Ash Hughes <ashley.hughes@blueyonder.co.uk>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2.  This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
++ */
++
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/mtd/physmap.h>
++#include <linux/mv643xx_eth.h>
++#include <linux/leds.h>
++#include <linux/gpio_keys.h>
++#include <linux/gpio-fan.h>
++#include <linux/input.h>
++#include <linux/i2c.h>
++#include <linux/ata_platform.h>
++#include <linux/gpio.h>
++#include <asm/mach-types.h>
++#include <asm/mach/arch.h>
++#include <asm/system.h>
++#include <mach/orion5x.h>
++#include "common.h"
++#include "mpp.h"
++
++/*****************************************************************************
++ * Linkstation LS-CHL Info
++ ****************************************************************************/
++
++/*
++ * 256K NOR flash Device bus boot chip select
++ */
++
++#define LSCHL_NOR_BOOT_BASE	0xf4000000
++#define LSCHL_NOR_BOOT_SIZE	SZ_256K
++
++/*****************************************************************************
++ * 256KB NOR Flash on BOOT Device
++ ****************************************************************************/
++
++static struct physmap_flash_data lschl_nor_flash_data = {
++	.width		= 1,
++};
++
++static struct resource lschl_nor_flash_resource = {
++	.flags	= IORESOURCE_MEM,
++	.start	= LSCHL_NOR_BOOT_BASE,
++	.end	= LSCHL_NOR_BOOT_BASE + LSCHL_NOR_BOOT_SIZE - 1,
++};
++
++static struct platform_device lschl_nor_flash = {
++	.name			= "physmap-flash",
++	.id			= 0,
++	.dev		= {
++		.platform_data	= &lschl_nor_flash_data,
++	},
++	.num_resources		= 1,
++	.resource		= &lschl_nor_flash_resource,
++};
++
++/*****************************************************************************
++ * Ethernet
++ ****************************************************************************/
++
++static struct mv643xx_eth_platform_data lschl_eth_data = {
++	.phy_addr	= MV643XX_ETH_PHY_ADDR(8),
++};
++
++/*****************************************************************************
++ * RTC 5C372a on I2C bus
++ ****************************************************************************/
++
++static struct i2c_board_info __initdata lschl_i2c_rtc = {
++	I2C_BOARD_INFO("rs5c372a", 0x32),
++};
++
++/*****************************************************************************
++ * LEDs attached to GPIO
++ ****************************************************************************/
++
++#define LSCHL_GPIO_LED_ALARM	2
++#define LSCHL_GPIO_LED_INFO	3
++#define LSCHL_GPIO_LED_FUNC	17
++#define LSCHL_GPIO_LED_PWR	0
++
++static struct gpio_led lschl_led_pins[] = {
++	{
++		.name	   = "alarm:red",
++		.gpio	   = LSCHL_GPIO_LED_ALARM,
++		.active_low     = 1,
++	}, {
++		.name	   = "info:amber",
++		.gpio	   = LSCHL_GPIO_LED_INFO,
++		.active_low     = 1,
++	}, {
++		.name	   = "func:blue:top",
++		.gpio	   = LSCHL_GPIO_LED_FUNC,
++		.active_low     = 1,
++	}, {
++		.name	   = "power:blue:bottom",
++		.gpio	   = LSCHL_GPIO_LED_PWR,
++	},
++};
++
++static struct gpio_led_platform_data lschl_led_data = {
++	.leds	   = lschl_led_pins,
++	.num_leds       = ARRAY_SIZE(lschl_led_pins),
++};
++
++static struct platform_device lschl_leds = {
++	.name   = "leds-gpio",
++	.id     = -1,
++	.dev    = {
++		.platform_data  = &lschl_led_data,
++	},
++};
++
++/*****************************************************************************
++ * SATA
++ ****************************************************************************/
++static struct mv_sata_platform_data lschl_sata_data = {
++	.n_ports	= 2,
++};
++
++/*****************************************************************************
++ * LS-CHL specific power off method: reboot
++ ****************************************************************************/
++/*
++ * On the LS-CHL, the shutdown process is following:
++ * - Userland monitors key events until the power switch goes to off position
++ * - The board reboots
++ * - U-boot starts and goes into an idle mode waiting for the user
++ *   to move the switch to ON position
++ *
++ */
++
++static void lschl_power_off(void)
++{
++	arm_machine_restart('h', NULL);
++}
++
++/*****************************************************************************
++ * General Setup
++ ****************************************************************************/
++#define LSCHL_GPIO_USB_POWER	9
++#define LSCHL_GPIO_AUTO_POWER	17
++#define LSCHL_GPIO_POWER	18
++
++/****************************************************************************
++ * GPIO Attached Keys
++ ****************************************************************************/
++#define LSCHL_GPIO_KEY_FUNC		15
++#define LSCHL_GPIO_KEY_POWER		8
++#define LSCHL_GPIO_KEY_AUTOPOWER	10
++#define LSCHL_SW_POWER		0x00
++#define LSCHL_SW_AUTOPOWER	0x01
++#define LSCHL_SW_FUNC		0x02
++
++static struct gpio_keys_button lschl_buttons[] = {
++	{
++		.type		= EV_SW,
++		.code	   = LSCHL_SW_POWER,
++		.gpio	   = LSCHL_GPIO_KEY_POWER,
++		.desc	   = "Power-on Switch",
++		.active_low     = 1,
++	}, {
++		.type		= EV_SW,
++		.code	   = LSCHL_SW_AUTOPOWER,
++		.gpio	   = LSCHL_GPIO_KEY_AUTOPOWER,
++		.desc	   = "Power-auto Switch",
++		.active_low     = 1,
++	}, {
++		.type		= EV_SW,
++		.code	   = LSCHL_SW_FUNC,
++		.gpio	   = LSCHL_GPIO_KEY_FUNC,
++		.desc	   = "Function Switch",
++		.active_low     = 1,
++	},
++};
++
++static struct gpio_keys_platform_data lschl_button_data = {
++	.buttons	= lschl_buttons,
++	.nbuttons       = ARRAY_SIZE(lschl_buttons),
++};
++
++static struct platform_device lschl_button_device = {
++	.name		= "gpio-keys",
++	.id		= -1,
++	.num_resources	= 0,
++	.dev		= {
++		.platform_data  = &lschl_button_data,
++	},
++};
++
++#define LSCHL_GPIO_HDD_POWER	1
++
++/****************************************************************************
++ * GPIO Fan
++ ****************************************************************************/
++
++#define LSCHL_GPIO_FAN_LOW	16
++#define LSCHL_GPIO_FAN_HIGH	14
++#define LSCHL_GPIO_FAN_LOCK	6
++
++static struct gpio_fan_alarm lschl_alarm = {
++	.gpio = LSCHL_GPIO_FAN_LOCK,
++	.active_low = 0,
++};
++
++static struct gpio_fan_speed lschl_speeds[] = {
++	{
++		.rpm = 0,
++		.ctrl_val = 3,
++	}, {
++		.rpm = 1,
++		.ctrl_val = 2,
++	}, {
++		.rpm = 2,
++		.ctrl_val = 1,
++	}, {
++		.rpm = 3,
++		.ctrl_val = 0,
++	},
++};
++
++static int lschl_gpio_list[] = {
++	LSCHL_GPIO_FAN_HIGH, LSCHL_GPIO_FAN_LOW,
++};
++
++static struct gpio_fan_platform_data lschl_fan_data = {
++	.num_ctrl = 2,
++	.ctrl = lschl_gpio_list,
++	.alarm = &lschl_alarm,
++	.num_speed = 4,
++	.speed = lschl_speeds,
++};
++
++static struct platform_device lschl_fan_device = {
++	.name		= "gpio-fan",
++	.id		= -1,
++	.num_resources	= 0,
++	.dev		= {
++		.platform_data  = &lschl_fan_data,
++	},
++};
++
++/****************************************************************************
++ * GPIO Data
++ ****************************************************************************/
++
++static struct orion5x_mpp_mode lschl_mpp_modes[] __initdata = {
++	{  0, MPP_GPIO }, /* LED POWER */
++	{  1, MPP_GPIO }, /* HDD POWER */
++	{  2, MPP_GPIO }, /* LED ALARM */
++	{  3, MPP_GPIO }, /* LED INFO */
++	{  4, MPP_UNUSED },
++	{  5, MPP_UNUSED },
++	{  6, MPP_GPIO }, /* FAN LOCK */
++	{  7, MPP_GPIO }, /* SW INIT */
++	{  8, MPP_GPIO }, /* SW POWER */
++	{  9, MPP_GPIO }, /* USB POWER */
++	{ 10, MPP_GPIO }, /* SW AUTO POWER */
++	{ 11, MPP_UNUSED },
++	{ 12, MPP_UNUSED },
++	{ 13, MPP_UNUSED },
++	{ 14, MPP_GPIO }, /* FAN HIGH */
++	{ 15, MPP_GPIO }, /* SW FUNC */
++	{ 16, MPP_GPIO }, /* FAN LOW */
++	{ 17, MPP_GPIO }, /* LED FUNC */
++	{ 18, MPP_UNUSED },
++	{ 19, MPP_UNUSED },
++	{ -1 },
++};
++
++static void __init lschl_init(void)
++{
++	/*
++	 * Setup basic Orion functions. Needs to be called early.
++	 */
++	orion5x_init();
++
++	orion5x_mpp_conf(lschl_mpp_modes);
++
++	/*
++	 * Configure peripherals.
++	 */
++	orion5x_ehci0_init();
++	orion5x_ehci1_init();
++	orion5x_eth_init(&lschl_eth_data);
++	orion5x_i2c_init();
++	orion5x_sata_init(&lschl_sata_data);
++	orion5x_uart0_init();
++	orion5x_xor_init();
++
++	orion5x_setup_dev_boot_win(LSCHL_NOR_BOOT_BASE,
++				   LSCHL_NOR_BOOT_SIZE);
++	platform_device_register(&lschl_nor_flash);
++
++	platform_device_register(&lschl_leds);
++
++	platform_device_register(&lschl_button_device);
++
++	platform_device_register(&lschl_fan_device);
++
++	i2c_register_board_info(0, &lschl_i2c_rtc, 1);
++
++	/* usb power on */
++	gpio_set_value(LSCHL_GPIO_USB_POWER, 1);
++
++	/* register power-off method */
++	pm_power_off = lschl_power_off;
++
++	pr_info("%s: finished\n", __func__);
++}
++
++MACHINE_START(LINKSTATION_LSCHL, "Buffalo Linkstation LiveV3 (LS-CHL)")
++	/* Maintainer: Ash Hughes <ashley.hughes@blueyonder.co.uk> */
++	.boot_params	= 0x00000100,
++	.init_machine	= lschl_init,
++	.map_io		= orion5x_map_io,
++	.init_irq	= orion5x_init_irq,
++	.timer		= &orion5x_timer,
++	.fixup		= tag_fixup_mem32,
++MACHINE_END
++
+diff -uprN linux-2.6-vanilla//arch/arm/mach-orion5x/Makefile linux-2.6/arch/arm/mach-orion5x/Makefile
+--- linux-2.6-vanilla//arch/arm/mach-orion5x/Makefile	2010-11-14 10:58:39.000000000 +0000
++++ linux-2.6/arch/arm/mach-orion5x/Makefile	2010-11-14 11:03:34.444582001 +0000
+@@ -21,3 +21,4 @@ obj-$(CONFIG_MACH_WNR854T)	+= wnr854t-se
+ obj-$(CONFIG_MACH_RD88F5181L_GE)	+= rd88f5181l-ge-setup.o
+ obj-$(CONFIG_MACH_RD88F5181L_FXO)	+= rd88f5181l-fxo-setup.o
+ obj-$(CONFIG_MACH_RD88F6183AP_GE)	+= rd88f6183ap-ge-setup.o
++obj-$(CONFIG_MACH_LINKSTATION_LSCHL)   += ls-chl-setup.o
 
--- 
-Kind regards,
-Minchan Kim
