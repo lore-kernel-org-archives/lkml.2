@@ -1,129 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab0KVMQL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 07:16:11 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:52234 "EHLO e7.ny.us.ibm.com"
+	id S1755481Ab0KVMXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 07:23:43 -0500
+Received: from ist.d-labs.de ([213.239.218.44]:38472 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755221Ab0KVMQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 07:16:07 -0500
-Subject: Re: [PATCH v1.4 5/5] keys: add new key-type encrypted
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        keyrings@linux-nfs.org, linux-crypto@vger.kernel.org,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-In-Reply-To: <10563.1290185000@redhat.com>
-References: <1290120166-3132-6-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1290120166-3132-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <10563.1290185000@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Nov 2010 07:16:01 -0500
-Message-ID: <1290428161.2604.6.camel@localhost.localdomain>
+	id S1754525Ab0KVMXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 07:23:41 -0500
+Date: Mon, 22 Nov 2010 13:23:06 +0100
+From: Florian Mickler <florian@mickler.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        Mike Chan <mike@android.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 3/5] scheduler: cpuacct: Enable platform hooks to track
+ cpuusage for CPU frequencies
+Message-ID: <20101122132306.245e0bcb@schatten.dmk.lab>
+In-Reply-To: <1290422639.2110.3.camel@laptop>
+References: <1290218934-8544-1-git-send-email-john.stultz@linaro.org>
+	<1290218934-8544-4-git-send-email-john.stultz@linaro.org>
+	<1290250104.2118.4.camel@laptop>
+	<20101122065129.072bba06@schatten.dmk.lab>
+	<1290422639.2110.3.camel@laptop>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 16:43 +0000, David Howells wrote: 
-> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+On Mon, 22 Nov 2010 11:43:59 +0100
+Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Mon, 2010-11-22 at 06:51 +0100, Florian Mickler wrote:
+> > On Sat, 20 Nov 2010 11:48:24 +0100
+> > Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > On Fri, 2010-11-19 at 18:08 -0800, John Stultz wrote:
+> > > > From: Mike Chan <mike@android.com>
+> > > > 
+> > > > Introduce new platform callback hooks for cpuacct for tracking CPU frequencies
+> > > > 
+> > > > Not all platforms / architectures have a set CPU_FREQ_TABLE defined
+> > > > for CPU transition speeds. In order to track time spent in at various
+> > > > CPU frequencies, we enable platform callbacks from cpuacct for this accounting.
+> > > > 
+> > > > Architectures that support overclock boosting, or don't have pre-defined
+> > > > frequency tables can implement their own bucketing system that makes sense
+> > > > given their cpufreq scaling abilities.
+> > > > 
+> > > > New file:
+> > > > cpuacct.cpufreq reports the CPU time (in nanoseconds) spent at each CPU
+> > > > frequency.
+> > > 
+> > > I utterly detest all such accounting crap.. it adds ABI constraints it
+> > > add runtime overhead. etc.. 
+> > > 
+> > > Can't you get the same information by using the various perf bits? If
+> > > you trace the cpufreq changes you can compute the time spend in each
+> > > power state, if you additionally trace the sched_switch you can compute
+> > > it for each task.
+> > > 
+> > > 
+> > This is probably used for "on-site" debugging of production systems.
 > 
-> > +static int datablob_format(char __user *buffer,
-> > +			   struct encrypted_key_payload *epayload,
-> > +			   int asciiblob_len)
+> Dude, its from the _android_ tree... its cpufreq crud.. it must be some
+> crack induced power management scheme.
 > 
-> size_t?  There are other instances where you should be using size_t too.
-
-Most of the crypto library calls use "unsigned int". Obviously didn't
-quite get everything else. Will look again.  thanks.
-
-> > +	index = strcspn(epayload->master_desc, ":");
-> > +	if (index == strlen(epayload->master_desc))
-> > +		goto out;
 > 
-> For single chars, use strchr() rather than strcspn(), and if you happen to
-> know the length too, use memchr().  This also means you don't need to do the
-> strlen() again to check the result.
 
-Don't have the length, but getting it once and then using strchr/memchr,
-should work. thanks.
+:) 
 
-> > +	memset(derived_key, 0, sizeof derived_key);
-> > +	ret = get_derived_key(derived_key, AUTH_KEY, master_key, master_keylen)
-> 
-> Is the memset() actually necessary?
+what I wanted to get at, was that they probably need these stats
+aggregated somewhere neat and tidy and can not compute them on the fly
+recording massive amounts of data...
 
-not sure, will check.
+I wonder why they didn't put this in the
+idle-driver.  I don't know. 
 
-> > +	decrypted_datalen = (unsigned short)dlen;
-> 
-> Unnecessary cast.
-
-ok
-
-> > +	*(datablob + datalen) = 0;
-> > +	*(buf + datalen) = 0;
-> 
-> Use [].
-
-> > +	if (index == strlen(new_master_desc)
-> > +	    || (strncmp(new_master_desc, epayload->master_desc, index) != 0)) {
-> 
-> Superfluous brackets.
-> 
-> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> 
-> > +	mkey = request_master_key(epayload, &master_key, &master_keylen);
-> > +	if (IS_ERR(mkey))
-> > +		return PTR_ERR(mkey);
-> > +
-> > +	memset(derived_key, 0, sizeof derived_key);
-> > +	ret = get_derived_key(derived_key, ENC_KEY, master_key, master_keylen);
-> > +	if (ret < 0)
-> > +		goto out;
-> > +
-> > +	ret = derived_key_encrypt(epayload, derived_key, sizeof derived_key);
-> > +	if (ret < 0)
-> > +		goto out;
-> > +
-> > +	ret = datablob_hmac_append(epayload, master_key, master_keylen);
-> > +	if (ret < 0)
-> > +		goto out;
-> > +
-> > +	ret = datablob_format(buffer, epayload, asciiblob_len);
-> > +	if (ret < 0)
-> > +		goto out;
-> > +
-> > +	rcu_read_unlock();
-> 
-> NAK!  This is not safe.  You may not sleep whilst you hold the RCU read lock
-> on the master key.  At the very least, datablob_format() may sleep as it
-> writes to userspace.
-
-datablob_format() could be split up into formatting the string returned
-to userspace and copying it userspace, releasing the lock before copying
-it, but that wouldn't resolve the other places it may sleep, like alloc.
-
-> I think what you should do is ignore RCU entirely and read lock the master
-> key's semaphore.
-
-thanks, will do.
-
-> > +	ret = aes_get_sizes();
-> > +	return ret;
-> 
-> Merge.
-> 
-> David
-
-ok
-
-thanks,
-
-Mimi
+Regards,
+Flo
 
