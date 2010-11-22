@@ -1,51 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab0KVMbA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 07:31:00 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:36730 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755557Ab0KVMa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 07:30:59 -0500
-Date: Mon, 22 Nov 2010 12:30:50 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Richard Purdie <rpurdie@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        nouveau@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, linux-acpi@vger.kernel.org,
-        lenb@kernel.org
-Subject: Re: [PATCH 1/5] Backlight: Add backlight type
-Message-ID: <20101122123050.GA5385@srcf.ucam.org>
-References: <1290182036-30484-1-git-send-email-mjg@redhat.com> <20101119120523.15bc341c.akpm@linux-foundation.org> <20101119202558.GA10898@srcf.ucam.org> <1290421020.1272.16707.camel@rex>
+	id S1755475Ab0KVMm4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 07:42:56 -0500
+Received: from mail.bspu.unibel.by ([195.50.2.21]:58323 "EHLO mail.bspu.local"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754244Ab0KVMmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 07:42:55 -0500
+X-Greylist: delayed 906 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Nov 2010 07:42:55 EST
+Message-ID: <4CEA62BB.9040403@bspu.unibel.by>
+Date: Mon, 22 Nov 2010 14:31:55 +0200
+From: Dzianis Kahanovich <mahatma@bspu.unibel.by>
+Reply-To: mahatma@eu.by
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b7pre) Gecko/20101111 Firefox/4.0b7pre SeaMonkey/2.1b1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290421020.1272.16707.camel@rex>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] viafb: I2C/DDC LCD detection for VIA framebuffer
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 10:17:00AM +0000, Richard Purdie wrote:
+I2C/DDC LCD detection for VIA framebuffer
 
-> I also want to make sure you think this patch is going to scale with
-> multiple GPU output machines? Thats the main reason I've held off any
-> patch like this as it doesn't help solve that problem as far as I can
-> tell. Yes, we have the device parent information and I see later in the
-> patch series you ensure the backlight is registered against the
-> connector which is good. If you have an ACPI "firmware" control that you
-> say should always be preferred, how do we know which connector device
-> that corresponds to in the multiple output case? From that point of view
-> this model falls apart?
+Adding legacy I2C/DDC support for VIA framebuffer, used to fix LCD
+panel size and (if "via_active_dev" is empty default) force LCD
+detection. This solving at least defaults on Chrome9 video
+on HP mini 2133 notebook, but must be good in other cases,
+include double-LCD. Also forcing viafb_active_dev to NULL as bugfix.
 
-The ACPI device will point at the correct PCI device. Associating it 
-with the appropriate connector is theoretically possible in the case of 
-open drivers, but I hadn't seen it as a high priority since (in 
-practice) there's no situations where an ACPI interface will be able to 
-control more than one backlight.
+Signed-off-by: Dzianis Kahanovich <mahatma@eu.by>
+---
+diff -pruN a/drivers/video/via/via-core.c b/drivers/video/via/via-core.c
+--- a/drivers/video/via/via-core.c	2010-11-22 13:11:44.000000000 +0200
++++ b/drivers/video/via/via-core.c	2010-11-22 13:59:07.000000000 +0200
+@@ -2,6 +2,7 @@
+  * Copyright 1998-2009 VIA Technologies, Inc. All Rights Reserved.
+  * Copyright 2001-2008 S3 Graphics, Inc. All Rights Reserved.
+  * Copyright 2009 Jonathan Corbet <corbet@lwn.net>
++ * Copyright 2010 Dzianis Kahanovich <mahatma@eu.by>
+  */
+
+ /*
+@@ -16,6 +17,8 @@
+ #include <linux/interrupt.h>
+ #include <linux/platform_device.h>
+
++extern char *viafb_active_dev;
++
+ /*
+  * The default port config.
+  */
+@@ -576,6 +579,56 @@ static void via_teardown_subdevs(void)
+ }
+
++static void via_i2c_detect(void)
++{
++	const u8 *edid;
++	struct fb_var_screeninfo var;
++	int i, n = 0;
++	struct i2c_adapter *adapter;
++
++	for (i = 0; i < VIAFB_NUM_PORTS; i++) {
++		adapter = viafb_find_i2c_adapter(i);
++		if (!adapter || !adapter->algo_data ||
++		    !(edid = fb_ddc_read(adapter)))
++			continue;
++		if (fb_parse_edid(edid, &var))
++			goto free_edid;
++		if (n) {
++			fb_edid_to_monspecs(edid, &viafbinfo1->monspecs);
++			viaparinfo->lvds_setting_info2->lcd_panel_hres =
++			    var.xres;
++			viaparinfo->lvds_setting_info2->lcd_panel_vres =
++			    var.yres;
++			if (!viafb_active_dev) {
++				viafb_SAMM_ON = STATE_ON;
++				if (viafbinfo1->monspecs.input & FB_DISP_DDI)
++					viafb_LCD2_ON = STATE_ON;
++			}
++		} else {
++			fb_edid_to_monspecs(edid, &viafbinfo->monspecs);
++			viaparinfo->lvds_setting_info->lcd_panel_hres =
++			    var.xres;
++			viaparinfo->lvds_setting_info->lcd_panel_vres =
++			    var.yres;
++			if (!viafb_active_dev) {
++				viafb_DVI_ON =
++				    viaparinfo->tmds_setting_info->
++				    max_hres ? STATE_ON : STATE_OFF;
++				if (viafbinfo->monspecs.input & FB_DISP_DDI) {
++					viafb_DeviceStatus = LCD_Device;
++					viafb_primary_dev = LCD_Device;
++					viafb_LCD_ON = STATE_ON;
++				}
++			}
++		}
++		n++;
++free_edid:
++		kfree(edid);
++		if (n > 1)
++			break;
++	}
++}
++
+
+ static int __devinit via_pci_probe(struct pci_dev *pdev,
+ 		const struct pci_device_id *ent)
+ {
+@@ -607,6 +660,7 @@ static int __devinit via_pci_probe(struc
+ 	ret = via_fb_pci_probe(&global_dev);
+ 	if (ret)
+ 		goto out_subdevs;
++	via_i2c_detect();
+ 	return 0;
+
+ out_subdevs:
+diff -pruN a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+--- a/drivers/video/via/viafbdev.c	2010-11-22 13:11:44.000000000 +0200
++++ b/drivers/video/via/viafbdev.c	2010-11-22 13:59:07.000000000 +0200
+@@ -43,7 +43,7 @@ static int viafb_second_size;
+ static int viafb_accel = 1;
+
+ /* Added for specifying active devices.*/
+-char *viafb_active_dev;
++char *viafb_active_dev = NULL;
+
+ /*Added for specify lcd output port*/
+ char *viafb_lcd_port = "";
+--
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+WBR, Dzianis Kahanovich AKA Denis Kaganovich, http://mahatma.bspu.unibel.by/
