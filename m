@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755590Ab0KVN00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 08:26:26 -0500
-Received: from casper.infradead.org ([85.118.1.10]:51736 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754157Ab0KVN0X (ORCPT
+	id S1755486Ab0KVN2s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 08:28:48 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55916 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab0KVN2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 08:26:23 -0500
-Message-ID: <4CEA6F70.50200@infradead.org>
-Date: Mon, 22 Nov 2010 11:26:08 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
+	Mon, 22 Nov 2010 08:28:47 -0500
+Date: Mon, 22 Nov 2010 13:28:31 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 01/20] ARM: LPAE: Use PMD_(SHIFT|SIZE|MASK) instead
+	of PGDIR_*
+Message-ID: <20101122132831.GH31227@n2100.arm.linux.org.uk>
+References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com> <1289584840-18097-2-git-send-email-catalin.marinas@arm.com> <20101122124353.GB31227@n2100.arm.linux.org.uk> <1290430810.29754.9.camel@e102109-lin.cambridge.arm.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Arnaud Lacombe <lacombar@gmail.com>, Michal Marek <mmarek@suse.cz>,
-        randy.dunlap@oracle.com, catalin.marinas@arm.com,
-        linux-kbuild@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xiyou.wangcong@gmail.com
-Subject: Re: [PATCH] Revert "kconfig: Temporarily disable dependency warnings"
-References: <20101011145930.11fe570c.randy.dunlap@oracle.com>	<1286889586-13483-1-git-send-email-mmarek@suse.cz>	<20101029113731.5c7c54b9.sfr@canb.auug.org.au>	<20101122114801.2eee4c4d.sfr@canb.auug.org.au>	<AANLkTikwxBZUupGNA-gsrxWYpyCKK7wiVZu82WaUST-K@mail.gmail.com> <20101122135715.121b5eb7.sfr@canb.auug.org.au>
-In-Reply-To: <20101122135715.121b5eb7.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290430810.29754.9.camel@e102109-lin.cambridge.arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 22-11-2010 00:57, Stephen Rothwell escreveu:
-> Hi,
+On Mon, Nov 22, 2010 at 01:00:10PM +0000, Catalin Marinas wrote:
+> On Mon, 2010-11-22 at 12:43 +0000, Russell King - ARM Linux wrote:
+> > On Fri, Nov 12, 2010 at 06:00:21PM +0000, Catalin Marinas wrote:
+> > > diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> > > index 8c19595..40b386c 100644
+> > > --- a/arch/arm/kernel/smp.c
+> > > +++ b/arch/arm/kernel/smp.c
+> > > @@ -78,7 +78,7 @@ static inline void identity_mapping_add(pgd_t *pgd, unsigned long start,
+> > >       if (cpu_architecture() <= CPU_ARCH_ARMv5TEJ && !cpu_is_xscale())
+> > >               prot |= PMD_BIT4;
+> > > 
+> > > -     for (addr = start & PGDIR_MASK; addr < end;) {
+> > > +     for (addr = start & PMD_MASK; addr < end;) {
+> > >               pmd = pmd_offset(pgd + pgd_index(addr), addr);
+> > >               pmd[0] = __pmd(addr | prot);
+> > >               addr += SECTION_SIZE;
+> > > @@ -95,7 +95,7 @@ static inline void identity_mapping_del(pgd_t *pgd, unsigned long start,
+> > >       unsigned long addr;
+> > >       pmd_t *pmd;
+> > > 
+> > > -     for (addr = start & PGDIR_MASK; addr < end; addr += PGDIR_SIZE) {
+> > > +     for (addr = start & PMD_MASK; addr < end; addr += PMD_SIZE) {
+> > >               pmd = pmd_offset(pgd + pgd_index(addr), addr);
+> > >               pmd[0] = __pmd(0);
+> > >               pmd[1] = __pmd(0);
+> > ...
+> > > @@ -1068,12 +1068,12 @@ void setup_mm_for_reboot(char mode)
+> > >               base_pmdval |= PMD_BIT4;
+> > > 
+> > >       for (i = 0; i < FIRST_USER_PGD_NR + USER_PTRS_PER_PGD; i++, pgd++) {
+> > > -             unsigned long pmdval = (i << PGDIR_SHIFT) | base_pmdval;
+> > > +             unsigned long pmdval = (i << PMD_SHIFT) | base_pmdval;
+> > >               pmd_t *pmd;
+> > > 
+> > > -             pmd = pmd_off(pgd, i << PGDIR_SHIFT);
+> > > +             pmd = pmd_off(pgd, i << PMD_SHIFT);
+> > >               pmd[0] = __pmd(pmdval);
+> > > -             pmd[1] = __pmd(pmdval + (1 << (PGDIR_SHIFT - 1)));
+> > > +             pmd[1] = __pmd(pmdval + (1 << (PMD_SHIFT - 1)));
+> > >               flush_pmd_entry(pmd);
+> > >       }
+> > > 
+> > 
+> > This lot really does need unifying - and in any case this last addition
+> > should be using 'SECTION SIZE' not something related to PMD shifts.
 > 
-> On Sun, 21 Nov 2010 20:58:54 -0500 Arnaud Lacombe <lacombar@gmail.com> wrote:
->>
->> There is 2 patches which fixes that by adding to the kconfig language
->> a "visible" property to menus, 1 revert of "another" solution (which
->> works but does not scale) and 2 patch which makes usage of the new
->> property. Ack-ed and complemented by Mauro, but still waiting
->> review/blessing by Michal.
->>
->> The core change is available here: https://patchwork.kernel.org/patch/306412/
->>
->> Alternatively, if you don't care about the menu structure, Randy
->> proposed a one-liner.
-> 
-> OK, good to know it is being worked on.  Thanks.
-> 
+> On the classic page tables, the PMD_SHIFT is 21 while the SECTION_SHIFT
+> is 20. They have slightly different meaning.
 
-I added a branch on my tree with Arnaud patches and my additional patch, at:
+Correct, and if you look at the code again and analyze what it's doing,
+you'll see that it's using the wrong thing.  The code pre-exists the
+SECTION_* macros, and was never fixed up when they were introduced.
 
-http://git.kernel.org/?p=linux/kernel/git/mchehab/linux-next.git;a=shortlog;h=refs/heads/kconfig_fixes
+SECTION_SIZE is the right thing here - it's setting up sections.
 
-This way, we avoid loosing the patches, and people might use it to remove those warnings.
-
-Cheers,
-Mauro
-
-PS.: I don't intend to merge them on my master branch, as the proper way is to submit it
-to 2.6.37 via Michal's tree. Also, it will may cause conflicts on linux-next, due to the
-bison-generated files.
+Just look at identity_mapping_add() to see how the code _should_ be.
