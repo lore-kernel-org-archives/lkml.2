@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab0KVF66 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 00:58:58 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:21012 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751519Ab0KVF65 (ORCPT
+	id S1751639Ab0KVGBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 01:01:51 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50365 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967Ab0KVGBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 00:58:57 -0500
-Message-ID: <4CEA069D.20009@dsn.okisemi.com>
-Date: Mon, 22 Nov 2010 14:58:53 +0900
-From: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Dr. David Alan Gilbert" <linux@treblig.org>,
-        "David S. Miller" <davem@davemloft.net>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        John Linn <john.linn@xilinx.com>, Ralf Baechle <ralf@linux-mips.org>,
-        Kristoffer Glembo <kristoffer@gaisler.com>,
-        Maxime Bizon <mbizon@freebox.fr>, Greg Rose <gregory.v.rose@intel.com>,
-        ML netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
-        "Wang, Qi" <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        Andrew <andrew.chih.howe.khor@intel.com>,
-        Intel OTC <joel.clark@intel.com>,
-        "Foster, Margie" <margie.foster@intel.com>,
-        "Ewe, Kok Howg" <kok.howg.ewe@intel.com>
-Subject: [PATCH 2/2] pch_gbe driver: The wrong of initializer entry
-Content-Type: text/plain; charset=ISO-2022-JP
+	Mon, 22 Nov 2010 01:01:50 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=smTzpjyjg/v+KiaykekIMb14jcek/vJjlqmG2mmWh0O/9/d4XU0leZ59dGCsMjdpd6
+         jrFiK79Pph07hXkO+I2c5UWK2kr/FbD1XWgbrHQViXZwW2CwfdPA3/RZSYETuMfprgTd
+         XadscIZZLP1C9e9lgwUK5d+jhc1h24Yx8Kg1c=
+Subject: [RFC][PATCH] Input: ct82c710 - remove a redundant
+	serio_register_port()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        Vojtech Pavlik <vojtech@ucw.cz>
+Content-Type: text/plain
+Date: Mon, 22 Nov 2010 14:06:47 +0800
+Message-Id: <1290406007.6941.15.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The wrong of initializer entry was modified.
+We already call serio_register_port() in ct82c710_probe(),
+thus remove a redundant serio_register_port() in ct82c710_init().
 
-Signed-off-by: Toshiharu Okada <toshiharu-linux@dsn.okisemi.com>
+Looks like this bug is introduced by 
+916d83cfe5da1cda454d8b0ae233f06b58bd7f91
+"Input: ct82c710 - convert to the new platform device interface"
+
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/net/pch_gbe/pch_gbe_param.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+I don't have this hardware handy, I appreciate if someone can test this patch.
 
-diff --git a/drivers/net/pch_gbe/pch_gbe_param.c b/drivers/net/pch_gbe/pch_gbe_param.c
-index 2510146..ef0996a 100644
---- a/drivers/net/pch_gbe/pch_gbe_param.c
-+++ b/drivers/net/pch_gbe/pch_gbe_param.c
-@@ -434,8 +434,8 @@ void pch_gbe_check_options(struct pch_gbe_adapter *adapter)
- 			.err  = "using default of "
- 				__MODULE_STRING(PCH_GBE_DEFAULT_TXD),
- 			.def  = PCH_GBE_DEFAULT_TXD,
--			.arg  = { .r = { .min = PCH_GBE_MIN_TXD } },
--			.arg  = { .r = { .max = PCH_GBE_MAX_TXD } }
-+			.arg  = { .r = { .min = PCH_GBE_MIN_TXD,
-+					 .max = PCH_GBE_MAX_TXD } }
- 		};
- 		struct pch_gbe_tx_ring *tx_ring = adapter->tx_ring;
- 		tx_ring->count = TxDescriptors;
-@@ -450,8 +450,8 @@ void pch_gbe_check_options(struct pch_gbe_adapter *adapter)
- 			.err  = "using default of "
- 				__MODULE_STRING(PCH_GBE_DEFAULT_RXD),
- 			.def  = PCH_GBE_DEFAULT_RXD,
--			.arg  = { .r = { .min = PCH_GBE_MIN_RXD } },
--			.arg  = { .r = { .max = PCH_GBE_MAX_RXD } }
-+			.arg  = { .r = { .min = PCH_GBE_MIN_RXD,
-+					 .max = PCH_GBE_MAX_RXD } }
- 		};
- 		struct pch_gbe_rx_ring *rx_ring = adapter->rx_ring;
- 		rx_ring->count = RxDescriptors;
+Regards,
+Axel
+
+ drivers/input/serio/ct82c710.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/serio/ct82c710.c b/drivers/input/serio/ct82c710.c
+index 4a30846..0f8304a 100644
+--- a/drivers/input/serio/ct82c710.c
++++ b/drivers/input/serio/ct82c710.c
+@@ -237,8 +237,6 @@ static int __init ct82c710_init(void)
+ 	if (error)
+ 		goto err_free_device;
+ 
+-	serio_register_port(ct82c710_port);
+-
+ 	printk(KERN_INFO "serio: C&T 82c710 mouse port at %#llx irq %d\n",
+ 		(unsigned long long)CT82C710_DATA, CT82C710_IRQ);
+ 
 -- 
-1.6.2.5
+1.7.2
+
+
+
