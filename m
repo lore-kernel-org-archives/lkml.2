@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab0KVQyr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 11:54:47 -0500
-Received: from bgs.hu ([195.70.62.77]:42663 "HELO mail.bgs.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750790Ab0KVQyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 11:54:46 -0500
-X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Nov 2010 11:54:45 EST
-Message-ID: <4CEA9EB1.4000209@bgs.hu>
-Date: Mon, 22 Nov 2010 17:47:45 +0100
-From: Bgs <bgs@bgs.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101106 Thunderbird/3.1.6
+	id S1753874Ab0KVQzf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 11:55:35 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37369 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254Ab0KVQzd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 11:55:33 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=L7+28AD43z7FY+5OAsyid59/ztKXgq5sj2XR9x0Flp9iO3QeT1zJrI+tHj09Tyqpsp
+         XajHl1ooYfF7nVYsQG9ucSbSd5SE1HwOyTV39+S8HrmAdnNEv3/UXtKI/FelT83yQehN
+         uxvjPNiJu7Zqyg6muyOsnC+qBONHirhsLDKxg=
 MIME-Version: 1.0
+Date: Mon, 22 Nov 2010 09:55:14 -0700
+Message-ID: <AANLkTikt2k8jC4ykYqYG_hQPAZt0-GXAvD1DPogu+AB0@mail.gmail.com>
+Subject: Best place to ask this question: error with compiler.h when switching
+ from 2.6.32 to 2.6.36
+From: Derek Nielson <dereknielson@gmail.com>
 To: linux-kernel@vger.kernel.org
-Subject: Apparent non-sync related to CF+(u)mount
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Last week I posted on here about a problem I am having switching from
+kernel 2.6.32 to 2.6.36 and compiling modules against the kernel.  I
+was not able to get a response and I'm thinking it's because this is
+the wrong place to post this question.  Where is the best place to ask
+this kind of question?  Is there another mailing list that I should be
+posting to?
 
-  Greetings,
+Thanks
 
-I've ran into a strange problem that (to me) seems to be around the kernel.
+Previous Post:
 
-Nutshell description: when using CF (compact flash) remount read-only 
-does not flush to the card, only umount does.
+I am switching from Kernel 2.6.32 to Kernel 2.6.36.  The kernel builds
+fine but when I compile a module (that worked with the previously
+kernel) against the new kernel I am getting an error that I don't
+understand.
 
-Detailed description:
+Here is the error:
 
-I have a lot of systems that boot from CF cards. Been doing that for 
-years. Most of the system is on read-only mounted partitions. I have 
-integrity checks based on the hash of the read-only partitions. The 
-problem I ran into comes when I update the system. What I expect is that 
-after 'remount read-write' -> update -> 'remount read-only' (-> and a 
-safety sync, practice from old-old times), the hash should be stable for 
-the partition. What I found is that after reboot the hash changes and 
-becomes stable from there. I tracked the change down to the umounting on 
-a CF card.
+In file included from include/linux/string.h:10,
+                 from
+/mnt/local/home/linux-omap-2.6/arch/arm/include/asm/uaccess.h:14,
+                 from /home/my_module/my_module.c:24:
+include/linux/compiler.h:62: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or
+‘__attribute__’ before ‘struct’
+make[2]: *** [/home/my_module/my_module.o] Error 1
+make[1]: *** [_module_/home/my_module] Error 2
+make[1]: Leaving directory `/mnt/local/home/linux-omap-2.6'
+make: *** [release] Error 2
 
-So here is the 'hash history':
+I found this thread http://lkml.org/lkml/2007/10/17/213 and tried
+following their solution but it didn't fix the problem.
 
-Before mount: old hash
-After mount read-only: old hash
-After update+remount read-only: new intermittent hash
-After umount (or reboot for a system): new hash
-
-I did several tests with:
-- HDD
-- Loopback device
-- CF on ATA
-- CF on USB reader
-- USB flash drive
-- Different CF manufacturers and products
-- Different filesystems (xfs, ext3, vfat)
-- Different kernels (and even distros)
-- Sync()
-- Waiting times after remount
-
-The only combination that manifests the effect is any that has CF and 
-change only happens at umount.
-
-Tests were made at least on the following kernel versions:
-- 2.6.32-24-generic, 32 bit (Ubuntu 10.04LTS)
-- 2.6.33, 64 bit (Vanilla, Slackware current)
-- 2.6.35.22, 64 bit (Ubuntu 10.10)
-
-It's 100% reproducible.
-
-There is either some badly cached, unwritten data somewhere ('badly' 
-means that reading back from the device should give the right data 
-regardless of it being written out or not). It's not (just) inode 
-related or alike as I found from the following test:
-
-Made a 200MB partition and used a 10MB random data written to a file as 
-'update'. I did a dd copy of the partition after the partition was 
-remounted read-only and after umount. Doing a cmp on the two images gave 
-me a bit over 10MB of difference. This was more or less expected as I 
-noticed that umounting after update always takes time while with non-CF 
-media only the remount does.
-
-It might or might not be related, but the first differing byte is at 
-48kiB+1.
-
-Any ideas where the problem lies? As the behavior itself is out of 
-ordinary I tried to make various tests but I may have missed some still.
-
-Regards
-Bgs
-
-
+Does anyone know how to fix this error?
