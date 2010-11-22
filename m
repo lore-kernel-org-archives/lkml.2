@@ -1,84 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab0KVRFQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 12:05:16 -0500
-Received: from waste.org ([173.11.57.241]:37873 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751291Ab0KVRFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 12:05:13 -0500
-Subject: Re: [PATCH] ext4: Fix memory leak in groupinfo cache name
-From: Matt Mackall <mpm@selenic.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: zeng.zhaoming@freescale.com, linux-ext4@vger.kernel.org, tytso@mit.edu,
-        adilger.kernel@dilger.ca, rientjes@google.com,
-        Zeng Zhaoming <zengzm.kernel@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4CEA1208.4060005@cs.helsinki.fi>
-References: <1290376931-2129-1-git-send-email-zeng.zhaoming@freescale.com>
-	 <1290376931-2129-2-git-send-email-zeng.zhaoming@freescale.com>
-	 <4CEA1208.4060005@cs.helsinki.fi>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Nov 2010 11:05:09 -0600
-Message-ID: <1290445509.10595.105.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1755201Ab0KVRIe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 12:08:34 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44433 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751810Ab0KVRId (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 12:08:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <949636.86471.qm@web31809.mail.mud.yahoo.com>
+References: <949636.86471.qm@web31809.mail.mud.yahoo.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 22 Nov 2010 09:07:51 -0800
+Message-ID: <AANLkTi=7tW6wqrk8ZkFuTYwmS-wZ4nQ+jkxk8U95H42F@mail.gmail.com>
+Subject: Re: [PATCH repost 3] [SCSI] Retrieve the Caching mode page
+To: ltuikov@yahoo.com
+Cc: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-11-22 at 08:47 +0200, Pekka Enberg wrote:
-> On 11/22/10 12:02 AM, zeng.zhaoming@freescale.com wrote:
-> > From: Zeng Zhaoming<zengzm.kernel@gmail.com>
-> >
-> > please check the discuss with allocator guys.
-> > http://marc.info/?l=linux-kernel&m=129004890020256&w=2
-> >
-> > Get a memory leak about ext4:
-> >    comm "mount", pid 1159, jiffies 4294904647 (age 6077.804s)
-> >    hex dump (first 32 bytes):
-> >      65 78 74 34 5f 67 72 6f 75 70 69 6e 66 6f 5f 31  ext4_groupinfo_1
-> >      30 00 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b a5  0.kkkkkkkkkkkkk.
-> >    backtrace:
-> >      [<c068ade3>] kmemleak_alloc+0x93/0xd0
-> >      [<c024e54c>] __kmalloc_track_caller+0x30c/0x380
-> >      [<c02269d3>] kstrdup+0x33/0x60
-> >      [<c0318a70>] ext4_mb_init+0x4e0/0x550
-> >      [<c0304e0e>] ext4_fill_super+0x1e6e/0x2f60
-> >      [<c0261140>] mount_bdev+0x1c0/0x1f0
-> >      [<c02fc00f>] ext4_mount+0x1f/0x30
-> >      [<c02603d8>] vfs_kern_mount+0x78/0x250
-> >      [<c026060e>] do_kern_mount+0x3e/0x100
-> >      [<c027b4c2>] do_mount+0x2e2/0x780
-> >      [<c027ba04>] sys_mount+0xa4/0xd0
-> >      [<c010429f>] sysenter_do_call+0x12/0x38
-> >      [<ffffffff>] 0xffffffff
-> >
-> > ext4 allocate memory for cache name by:
-> >      namep = kstrdup(name, GFP_KERNEL);
-> > and reclaim it by:
-> >      name = kmem_cache_name(cache);
-> >      kfree(name)
-> >
-> > This is ok if allocator only reference to the cache name memory, and return
-> > the name memory pass to kmem_cache_create() by kmem_cache_name();
-> > But not true in slub, when using slub, memory leak and double free error appears.
-> >
-> > In this patch, we track the cache name memory in ext4, rather than allocator.
-> >
-> > Signed-off-by: Zeng Zhaoming<zengzm.kernel@gmail.com>
-> > ---
-> 
-> Hmm. Maybe it's better to change SLAB and SLOB to do kstrdup() 
-> internally so we can drop it from ext4 code. Matt, are you OK with that?
+On Mon, Nov 22, 2010 at 8:56 AM, Luben Tuikov <ltuikov@yahoo.com> wrote:
+>
+> Some kernel transport drivers unconditionally disable
+> retrieval of the Caching mode page. One such for example is
+> the BBB/CBI transport over USB.
 
-If we drop the kmem_cache_name interface, then SLOB can drop tracking
-the name entirely.
+One reason for that is that historically we've seen devices that
+simply go crazy - to the point of simply stopping to respond to
+anything - when you ask for pages that Windows doesn't ask for.
 
--- 
-Mathematics is the supreme nostalgia of our time.
+It's especially common on USB storage, but it happens elsewhere too.
+The device firmware simply hasn't ever been tested in that situation,
+and it's buggy.
 
+So I don't mind the patch per se, but I think it's potentially way
+more dangerous than it looks.
 
+                    Linus
