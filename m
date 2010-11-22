@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757612Ab0KVV67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 16:58:59 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43098 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757581Ab0KVV66 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 16:58:58 -0500
-Date: Mon, 22 Nov 2010 13:58:55 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] romfs: have romfs_fs.h pull in necessary headers
-Message-Id: <20101122135855.6825700d.akpm@linux-foundation.org>
-In-Reply-To: <1290385461-29831-1-git-send-email-vapier@gentoo.org>
-References: <1290385461-29831-1-git-send-email-vapier@gentoo.org>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757641Ab0KVWA7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 17:00:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28142 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757128Ab0KVWA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 17:00:58 -0500
+Date: Mon, 22 Nov 2010 17:00:40 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
+Subject: Re: linux-next: build failure after merge of the final tree (tip
+ tree related)
+Message-ID: <20101122220040.GC18100@redhat.com>
+References: <20101122133949.93201b15.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101122133949.93201b15.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 21 Nov 2010 19:24:21 -0500
-Mike Frysinger <vapier@gentoo.org> wrote:
-
-> This header uses things like __be32, so pull in linux/types.h.
+On Mon, Nov 22, 2010 at 01:39:49PM +1100, Stephen Rothwell wrote:
+> Hi all,
 > 
-> Further, it uses BLOCK_SIZE, so pull in linux/fs.h.
+> After merging the final tree, today's linux-next build (sparc64 defconfig)
+> failed like this:
 > 
-> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-> ---
->  include/linux/romfs_fs.h |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+> arch/sparc/kernel/nmi.c:54: error: redefinition of 'touch_nmi_watchdog'
+> include/linux/nmi.h:21: note: previous definition of 'touch_nmi_watchdog' was here
 > 
-> diff --git a/include/linux/romfs_fs.h b/include/linux/romfs_fs.h
-> index c490fbc..5f57f93 100644
-> --- a/include/linux/romfs_fs.h
-> +++ b/include/linux/romfs_fs.h
-> @@ -1,6 +1,9 @@
->  #ifndef __LINUX_ROMFS_FS_H
->  #define __LINUX_ROMFS_FS_H
->  
-> +#include <linux/types.h>
-> +#include <linux/fs.h>
-> +
->  /* The basic structures of the romfs filesystem */
->  
->  #define ROMBSIZE BLOCK_SIZE
+> Caused (or, at least exposed) by commit
+> 5f2b0ba4d94b3ac23cbc4b7f675d98eb677a760a ("x86, nmi_watchdog: Remove the
+> old nmi_watchdog").  Sparc appears to have a touch_nmi_watchdog() and
+> defines ARCH_HAS_NMI_WATCHDOG but not CONFIG_HARDLOCKUP_DETECTOR.
 
-Better changelogs please.
+Sorry about that.  I'll push another patch to Ingo to fix this.
 
-Does this fix any build error?  If so, is that build error present in
-2.6.36 or earlier?
-
+Cheers,
+Don
