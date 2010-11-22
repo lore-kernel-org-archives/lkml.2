@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab0KVQAB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 11:00:01 -0500
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:41750 "EHLO
+	id S1751393Ab0KVQA3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 11:00:29 -0500
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:58514 "EHLO
 	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751393Ab0KVP77 (ORCPT
+	by vger.kernel.org with ESMTP id S1755322Ab0KVQAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 10:59:59 -0500
-X-Sasl-enc: VzcIamP+8569HkwnBQMBB4Y4GGsdyDPOMGFRzzVWjZiy 1290441598
+	Mon, 22 Nov 2010 11:00:24 -0500
+X-Sasl-enc: QM7NgtFiV3DipYLgvAVKtQUAOW2Yb/QaPS8cC4O7cqyp 1290441624
 To: Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [RFC][PATCH 2/4] fs: move file->f_cred initialization before security_file_alloc()
+Subject: [RFC][PATCH 3/4] selinux: use file->f_cred to determine task's SID
 From: Roberto Sassu <roberto.sassu@polito.it>
 Organization: Politecnico di Torino
-Date: Mon, 22 Nov 2010 16:57:21 +0100
+Date: Mon, 22 Nov 2010 16:57:46 +0100
 Cc: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
         Eric Paris <eparis@parisplace.org>,
         Casey Schaufler <casey@schaufler-ca.com>,
@@ -21,54 +21,47 @@ Cc: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
         selinux@tycho.nsa.gov
 MIME-Version: 1.0
 Content-Type: multipart/signed;
-  boundary="nextPart6362672.EAEOHeV1jh";
+  boundary="nextPart1991112.EFMH0bOWyC";
   protocol="application/pkcs7-signature";
   micalg=sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011221657.21504.roberto.sassu@polito.it>
+Message-Id: <201011221657.47087.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart6362672.EAEOHeV1jh
+--nextPart1991112.EFMH0bOWyC
 Content-Type: text/plain;
   charset="utf-8"
 Content-Transfer-Encoding: quoted-printable
 
-The initialization of the 'f_cred' field of the file descriptor structure
-has been moved before calling the function security_file_alloc() in order
-to allow LSM security modules to use such information.
+The Security IDentifier to be associated to the newly created file
+descriptor is computed from the credentials set in the 'f_cred' field of
+the same structure instead of those relative to the 'current' process.
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 =2D--
- fs/file_table.c |    2 +-
+ security/selinux/hooks.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/file_table.c b/fs/file_table.c
-index fd446e3..78b9174 100644
-=2D-- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -125,13 +125,13 @@ struct file *get_empty_filp(const struct cred *task_c=
-red)
- 		goto fail;
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 0346d26..aff2d59 100644
+=2D-- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -229,7 +229,7 @@ static void inode_free_security(struct inode *inode)
+ static int file_alloc_security(struct file *file)
+ {
+ 	struct file_security_struct *fsec;
+=2D	u32 sid =3D current_sid();
++	u32 sid =3D cred_sid(file->f_cred);
 =20
- 	percpu_counter_inc(&nr_files);
-+	f->f_cred =3D get_cred(cred);
- 	if (security_file_alloc(f))
- 		goto fail_sec;
-=20
- 	INIT_LIST_HEAD(&f->f_u.fu_list);
- 	atomic_long_set(&f->f_count, 1);
- 	rwlock_init(&f->f_owner.lock);
-=2D	f->f_cred =3D get_cred(cred);
- 	spin_lock_init(&f->f_lock);
- 	eventpoll_init_file(f);
- 	/* f->f_version: 0 */
+ 	fsec =3D kzalloc(sizeof(struct file_security_struct), GFP_KERNEL);
+ 	if (!fsec)
 =2D-=20
 1.7.2.3
 
 
---nextPart6362672.EAEOHeV1jh
+--nextPart1991112.EFMH0bOWyC
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -149,12 +142,12 @@ TdtCm/yxR8XUlFyZkLHfhY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAxggIc
 MIICGAIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8x
 NjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQIC
 A8EwCQYFKw4DAhoFAKCBhzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEP
-Fw0xMDExMjIxNTU3MjFaMCMGCSqGSIb3DQEJBDEWBBTPN+OfMvKh6wSa2mJnpaQpYGzjEzAoBgkq
-hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQDB
-tFgvRVo/5S0v0boZz3E3PwzhvXPdOoN24RQEuNPPMatYHwO+4cWIUe+sQX28zi/LgNfkPJvIEcg0
-x56SKiRuGa0o6tTNCcH7/YwgGLUZY9xoegriBI0Vop5qpxStkEnnfmtkRY5dRTtJjiSjl9PqUNyw
-YITO1rDUQLbeEsUzxYrxLS2YVgZozPNI51scLhwUWnBIspMCbO7rqEXRCvtIZhKomXeFLu9a1FmM
-mMBTvViZqbZ/ZWED+o7N3DZaWedeeByzYCmmvI1Jez79CNnFKZ57IK5ipfdBbjlP8sJOzPExc5fO
-p9Ny3AP7b+1PN5SVx6uySn3NGpW6hkhUqztfAAAAAAAA
+Fw0xMDExMjIxNTU3NDdaMCMGCSqGSIb3DQEJBDEWBBQO7nr834Pt3x3AemvrlkzdjD9gkTAoBgkq
+hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQCQ
+Y7qhDdb45dWAIqG1QU3WarM8264/8uRdGgU1yz2eOQ8/mXDDs20tnvv5HezOuUw2SAofrO5UBgD5
+Hlr7VGtfc6awR6s5zjkxkHzYf5MECKdH+4Tdbdf8/Dl5hwKJXfm0jiNO1ZaJX64UQ0NutJvuNuNf
+fbzABIgLVqTM1kVbyrCxM+k5qWfN7359LGTvJ2qz3YgXpFkdw05ZgvBlhSfaVLzGmVFvAxpwdSBk
+ZVwAxHWYvjdXjF+LBissnETRlo9QN2sX3shfBIJUbEkVkvLcGPLw+kQfB8QmBn3CB+F8PAl28aEF
+j0YID5Lt4qRX+ihGAuIhnzcLfiHaIpVyOVPzAAAAAAAA
 
---nextPart6362672.EAEOHeV1jh--
+--nextPart1991112.EFMH0bOWyC--
