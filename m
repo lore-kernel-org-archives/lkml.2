@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949Ab0KVIja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 03:39:30 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:50306 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953Ab0KVIj3 (ORCPT
+	id S1752330Ab0KVIkh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 03:40:37 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46653 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953Ab0KVIkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 03:39:29 -0500
+	Mon, 22 Nov 2010 03:40:35 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=sl0hTJRQ3HH3I47DvpIg+wwflg86C0FltYdOn7Re1cbEyy6IyJvF8zoo/JecwLtui/
-         8AuBikg/RuklzZVChiVjNZ0rXjtq+gFqWxZ1eErc1I0tj3oKhdGZNt5CTkYZxR+GcI3R
-         beZXGfLmN763Or3xNWpakhT1wvnNTYMY9Ivwo=
-Subject: [PATCH 1/4] [ARM] davinci_mmc: fix a memory leak
+        b=gzQj237e1hm0AFJBzaG+2MiSI4K+YLe94lk6oAxM/75k3Q/31uAvZcRvV2ndGsC+qH
+         thXBGspNtVi1nNjsK849dTncP8jrqN99fS2MlYd5tnShRpukq/Qat8W9Z3a0mqX6g8on
+         8PFxBspYJ0up96tZc0sejh26YAK8jR62d5wM0=
+Subject: [PATCH 2/4] [ARM] mvsdio: fix a memory leak
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Vipin Bhandari <vipin.bhandari@ti.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
+Cc: Nicolas Pitre <nico@fluxnic.net>, Chris Ball <cjb@laptop.org>,
         linux-mmc@vger.kernel.org
-In-Reply-To: <1290415359.5471.4.camel@mola>
-References: <1290415359.5471.4.camel@mola>
+In-Reply-To: <1290415467.5471.7.camel@mola>
+References: <1290415359.5471.4.camel@mola>  <1290415467.5471.7.camel@mola>
 Content-Type: text/plain
-Date: Mon, 22 Nov 2010 16:44:27 +0800
-Message-Id: <1290415467.5471.7.camel@mola>
+Date: Mon, 22 Nov 2010 16:45:34 +0800
+Message-Id: <1290415534.5471.8.camel@mola>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
@@ -39,32 +37,31 @@ memory, thus use release_mem_region() instead to fix the memory leak.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/mmc/host/davinci_mmc.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/mmc/host/mvsdio.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/host/davinci_mmc.c b/drivers/mmc/host/davinci_mmc.c
-index e15547c..7c7d268 100644
---- a/drivers/mmc/host/davinci_mmc.c
-+++ b/drivers/mmc/host/davinci_mmc.c
-@@ -1297,7 +1297,7 @@ cpu_freq_fail:
+diff --git a/drivers/mmc/host/mvsdio.c b/drivers/mmc/host/mvsdio.c
+index a5bf60e..6a29972 100644
+--- a/drivers/mmc/host/mvsdio.c
++++ b/drivers/mmc/host/mvsdio.c
+@@ -825,7 +825,7 @@ out:
+ 			iounmap(host->base);
+ 	}
+ 	if (r)
+-		release_resource(r);
++		release_mem_region(r->start, SZ_1K);
+ 	if (mmc)
  		mmc_free_host(mmc);
  
- 	if (mem)
--		release_resource(mem);
-+		release_mem_region(mem->start, resource_size(mem));
- 
- 	dev_dbg(&pdev->dev, "probe err %d\n", ret);
- 
-@@ -1322,7 +1322,8 @@ static int __exit davinci_mmcsd_remove(struct platform_device *pdev)
- 
+@@ -850,7 +850,7 @@ static int __exit mvsd_remove(struct platform_device *pdev)
+ 		del_timer_sync(&host->timer);
+ 		mvsd_power_down(host);
  		iounmap(host->base);
- 
--		release_resource(host->mem_res);
-+		release_mem_region(host->mem_res->start,
-+					resource_size(host->mem_res));
- 
- 		mmc_free_host(host->mmc);
+-		release_resource(host->res);
++		release_mem_region(host->res->start, SZ_1K);
+ 		mmc_free_host(mmc);
  	}
+ 	platform_set_drvdata(pdev, NULL);
 -- 
 1.7.2
 
