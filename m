@@ -1,191 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab0KVHcT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 02:32:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52670 "EHLO mx2.suse.de"
+	id S1752386Ab0KVHcd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 02:32:33 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43907 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750767Ab0KVHcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 02:32:18 -0500
-Date: Mon, 22 Nov 2010 18:32:07 +1100
-From: Neil Brown <neilb@suse.de>
-To: <aniket@netezza.com>
-Cc: <linux-raid@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] md: Fix nr_pending race during raid10 recovery
-Message-ID: <20101122183207.2c8b85d4@notabene.brown>
-In-Reply-To: <1290020270.3055.12.camel@aniket-desktop>
-References: <1290020270.3055.12.camel@aniket-desktop>
-X-Mailer: Claws Mail 3.7.7 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751833Ab0KVHcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 02:32:31 -0500
+Date: Mon, 22 Nov 2010 08:32:27 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu,
+        greg@kroah.com, akpm@linux-foundation.org, ying.huang@intel.com
+Subject: Re: [RFC] persistent store
+Message-ID: <20101122073227.GA17928@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Tony Luck <tony.luck@gmail.com>, "Luck, Tony" <tony.luck@intel.com>,
+	linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+	tglx@linutronix.de, mingo@elte.hu, greg@kroah.com,
+	akpm@linux-foundation.org, ying.huang@intel.com
+References: <4ce85e437577ae827@agluck-desktop.sc.intel.com>
+ <20101121090707.GA5016@liondog.tnic>
+ <AANLkTincT5w82v0964Pfaw+yudmDC2D1uGkC9p6_N23_@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTincT5w82v0964Pfaw+yudmDC2D1uGkC9p6_N23_@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 17 Nov 2010 13:57:50 -0500
-Aniket Kulkarni <aniket@netezza.com> wrote:
-
-> If a RAID10 rdev that is undergoing recovery is marked 'faulty', the rdev 
-> could get taken out of the array in spite of outstanding IOs leading to 
-> a kernel panic. There are two issues here -
+On Sun, Nov 21, 2010 at 01:47:22PM -0800, Tony Luck wrote:
+> >> 1) "Why do you only allow one platform driver to register?"
+> >>   I only have one such driver.  Adding more is easy from the "read" side
+> >>   (just collect all the records from all devices and remember where they
+> >>   came from so you can call the correct "eraser" function).  But the "write"
+> >>   side opens up questions that I don't have good answers for:
+> >>   - Which device(s) should error records be written to?
+> >>     All of them? Start with one and move on when it is
+> >>     full?  Write some types of records to one device?
+> >
+> > Maybe based on the error type? We definitely need one device which
+> > should contain all the records, something like main pstore device.
 > 
-> 1. The ref count (nr_pending) increment for sync or recovery leaves a lot of
-> open windows for concurrent rdev removals
-> 2. raid10 sync thread continues to submit recovery IOs to faulty devices. These get
-> rejected at a later stage by management thread (raid10d).
+> But who decides which records go where? And which device gets to be
+> the "main" one?  I don't think that we can usefully do this in the
+> registration mechanism (how does a driver know that other drivers even
+> exist?).  I continue to want to defer this until someone with two or more
+> devices on one machine steps forward.
+
+Yeah, let's wait and see.
+
+[..]
+
+> > /sys/firmware might not be all that sensible if someone comes up with
+> > persistent storage type which is the network but we'll change that then.
 > 
-> Note - rd denotes the rdev from which we are reading, and wr the one we are
-> writing to
+> I'd like to get the right place first time - change means having to update
+> any applications that coded in the pathname.
+
+True, true.
+
+> >> +int
+> >> +pstore_register(struct pstore_info *psi)
+> >> +{
+> >> +     struct  pstore_entry    *new_pstore;
+> >> +     int     rc = 0, type;
+> >> +     unsigned long size;
+> >> +     u64     id;
+> >> +     unsigned long ps_maxsize;
+> >
+> > Alignment here? Maybe something like this:
+> >
+> >        struct pstore_entry     *new_pstore;
+> >        unsigned long           ps_maxsize;
+> >        int                     rc = 0, type;
 > 
->   Sync Thread                                Management Thread
+> Are you talking about textual alignment of the declarations? Yours
+> does look prettier.
+
+Yep, textual alignment.
+
+[..]
+
+> >> +     list_del(&search_pstore->list);
+> >> +
+> >> +     spin_unlock(&pstore_lock);
+> >> +
+> >> +     sysfs_remove_bin_file(&pstore_kset->kobj, &search_pstore->attr);
+> >
+> > AFAICT, you might want to remove the sysfs file _before_ you remove it
+> > from the pstore list/erase its contents, otherwise concurrent accesses
+> > to it from userspace readers might make us go boom.
 > 
-> sync_request
->   ++rd.nr_pending
->   bi_end_io = end_sync_read
->   generic_make_request         -------> recovery_request_write
->          |                    |             wr.nr_pending++
->          |                    |             bi_end_io = end_sync_write
->          V                    |             generic_make_request
-> end_sync_read    --------------                      |
->   --rd.nr_pending                                    |
->   reschedule_retry for write                         |
->                                                      v
->                                          end_sync_write
->                                              --wr.nr_pending
+> I'll think about the ordering.  I have three things to do here:
+> 1) Remove from the pstore_list
+> 2) Call platform driver to erase from store
+> 3) Call sysfs to remove the binfile.
 > 
-> So a set-faulty and remove on recovery rdev between sync_request and 
-> recovery_request_write is allowed and will lead to a panic.
-> 
-> The fix is -
-> 
-> 1. Increment wr.nr_pending immediately after selecting a good target. Ofcourse
-> the decrements will be added to error paths in sync_request and end_sync_read.
-> 2. Don't submit recovery IOs to faulty targets
-> 
-> Signed-off-by: Aniket Kulkarni <aniket@netezza.com>
-> ---
->  drivers/md/raid10.c |   46 +++++++++++++++++++++++++++++++++++++++++++---
->  1 files changed, 43 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-> index c67aa54..ec1ea43 100644
-> --- a/drivers/md/raid10.c
-> +++ b/drivers/md/raid10.c
-> @@ -1408,6 +1408,16 @@ static void sync_request_write(mddev_t *mddev, r10bio_t *r10_bio)
->  
->  done:
->  	if (atomic_dec_and_test(&r10_bio->remaining)) {
-> +		for (i = 0; i < conf->copies ; i++)  {
-> +			/* for any unsuccessful IOs give up the pending count on the
-> +			 * write device
-> +			 */
-> +			if (!test_bit(BIO_UPTODATE, &r10_bio->devs[i].bio->bi_flags) &&
-> +				r10_bio->devs[i].bio->bi_end_io == end_sync_write) {
-> +				int d = r10_bio->devs[i].devnum;
-> +				rdev_dec_pending(conf->mirrors[d].rdev, mddev);
-> +			}
-> +		}
->  		md_done_sync(mddev, r10_bio->sectors, 1);
->  		put_buf(r10_bio);
->  	}
-> @@ -1443,7 +1453,6 @@ static void recovery_request_write(mddev_t *mddev, r10bio_t *r10_bio)
->  	}
->  	d = r10_bio->devs[1].devnum;
->  
-> -	atomic_inc(&conf->mirrors[d].rdev->nr_pending);
->  	md_sync_acct(conf->mirrors[d].rdev->bdev, wbio->bi_size >> 9);
->  	if (test_bit(R10BIO_Uptodate, &r10_bio->state))
->  		generic_make_request(wbio);
-> @@ -1906,14 +1915,24 @@ static sector_t sync_request(mddev_t *mddev, sector_t sector_nr, int *skipped, i
->  		int j, k;
->  		r10_bio = NULL;
->  
-> -		for (i=0 ; i<conf->raid_disks; i++)
-> +		for (i = 0; i < conf->raid_disks; i++)
->  			if (conf->mirrors[i].rdev &&
->  			    !test_bit(In_sync, &conf->mirrors[i].rdev->flags)) {
->  				int still_degraded = 0;
->  				/* want to reconstruct this device */
->  				r10bio_t *rb2 = r10_bio;
-> -				sector_t sect = raid10_find_virt(conf, sector_nr, i);
-> +				sector_t sect;
->  				int must_sync;
-> +
-> +				/* Skip over the faulty drives */
-> +				if (test_bit(Faulty, &conf->mirrors[i].rdev->flags))
-> +					continue;
+> Potentially the erase could fail ... and I should probably notice
+> that and do something.
 
-You shouldn't need to check for Faulty here as In_sync is always cleared when
-Faulty is set, and we know In_sync is not clear.
+Right, and I was also wondering what might happen if userspace accesses
+the bin attribute before you've removed it from the sysfs hierarchy but
+after erasing its backing storage in the firmware?
 
-> +
-> +				/* up the nr_pending count; this will be decremented on
-> +				 * sync/recovery IO completion (success/erorr) to this dev
-> +				 */
-> +				atomic_inc(&conf->mirrors[i].rdev->nr_pending);
+AFAICT, it could be that those ps->data and ps->size members which are
+accessed in pstore_show() (which is called when the bin attribute is
+read from /sysfs) after the block of data is erased by platform driver,
+might contain crap data and memory_read_from_buffer() could do some
+illegal accesses to some kernel memory if not cleared properly by the
+->erase() routine.
 
-If you delay that atomic_inc a little .....
+OTOH, you might want to do the clearing here and leave the platform
+driver as dumb as possible by having a lower level __pstore_erase()
+wrapper or similar.
 
-> +				sect = raid10_find_virt(conf, sector_nr, i);
->  				/* Unless we are doing a full sync, we only need
->  				 * to recover the block if it is set in the bitmap
->  				 */
-> @@ -1927,6 +1946,7 @@ static sector_t sync_request(mddev_t *mddev, sector_t sector_nr, int *skipped, i
->  					 * that there will never be anything to do here
->  					 */
->  					chunks_skipped = -1;
-> +					rdev_dec_pending(conf->mirrors[i].rdev, mddev);
->  					continue;
->  				}
+Do you see my point? (I could very well be completely offcourse too :))
 
-.... to here, you don't need the rdev_dec_pending.
+Thanks.
 
-
->  
-> @@ -1997,6 +2017,10 @@ static sector_t sync_request(mddev_t *mddev, sector_t sector_nr, int *skipped, i
->  				if (j == conf->copies) {
->  					/* Cannot recover, so abort the recovery */
->  					put_buf(r10_bio);
-> +					/* we wanted to write to 'i' but we didn't; so dec the
-> +					 * pending count
-> +					 */
-> +					rdev_dec_pending(conf->mirrors[i].rdev, mddev);
->  					if (rb2)
->  						atomic_dec(&rb2->remaining);
->  					r10_bio = rb2;
-> @@ -2014,6 +2038,22 @@ static sector_t sync_request(mddev_t *mddev, sector_t sector_nr, int *skipped, i
->  				r10_bio = (r10bio_t*) rb2->master_bio;
->  				rb2->master_bio = NULL;
->  				put_buf(rb2);
-> +				if (r10_bio)  {
-> +					int d;
-> +					/* Before throwing away the complete r10bio chain, decrement
-> +					 * the nr_pending ref counts incremented along the way
-> +					 * We do this only for our master_bio and then on because
-> +					 * if biolist == NULL no ref count was incremented in this
-> +					 * r10_bio
-> +					 */
-> +					for (d = 0; d < conf->copies; d++)  {
-> +						if (r10_bio->devs[d].bio &&
-> +							r10_bio->devs[d].bio->bi_end_io)	{
-> +							int dn = r10_bio->devs[d].devnum;
-> +							rdev_dec_pending(conf->mirrors[dn].rdev, mddev);
-> +						}
-> +					}
-> +				}
-
-In raid1, we do this rdev_dec_pending loop inside put_buf.  I think I'd like
-to do that for raid10 too, but I'll make that a separate patch.
-
-
->  			}
->  			goto giveup;
->  		}
-
-I also need some rcu locking in there and need to review the 'resync' (as
-opposed to recovery) paths to make sure they are OK too.
-
-Thanks,
-NeilBrown
-
-
+-- 
+Regards/Gruss,
+    Boris.
