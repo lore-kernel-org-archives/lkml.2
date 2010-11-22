@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754351Ab0KVQfX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 11:35:23 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:32864 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349Ab0KVQfV (ORCPT
+	id S1753556Ab0KVQgB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 11:36:01 -0500
+Received: from canuck.infradead.org ([134.117.69.58]:59630 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab0KVQgA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 11:35:21 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=a1N6PAD5zpVma/YunrmqAgY11JJOTWhP/eFeYMw3MVX3L9Sd+E5CcSmFoKTD184Bn0
-         t4WS2la3k755JRgc68P02YYKm84Jy15Du+huspqUJpSwMCt6/zkCvii9o1afH7kPTPzq
-         Ndek+kY8XjN/AQaVrBVv4BXKtmL3mDpBCD48M=
-From: mkl0301@gmail.com
-To: cbouatmailru@gmail.com, avorontsov@mvista.com,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dbrownell@users.sourceforge.net, linux-usb@vger.kernel.org
-Cc: Mac Lin <mkl0301@gmail.com>
-Subject: [PATCH v2 0/3] USB: add support for cns3xxx SOC's EHCI/OHCI controller
-Date: Tue, 23 Nov 2010 00:32:42 +0800
-Message-Id: <1290443565-20766-1-git-send-email-mkl0301@gmail.com>
-X-Mailer: git-send-email 1.7.3
+	Mon, 22 Nov 2010 11:36:00 -0500
+Subject: Re: -tip tree resume fail, bisect to 5bd5a45(x86: Add NX
+ protection for kernel data)
+From: Peter Zijlstra <peterz@infradead.org>
+To: castet.matthieu@free.fr
+Cc: Lin Ming <ming.m.lin@intel.com>, Siarhei Liakh <sliakh.lkml@gmail.com>,
+        Xuxian Jiang <jiang@cs.ncsu.edu>, Ingo Molnar <mingo@elte.hu>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>,
+        tglx <tglx@linutronix.de>
+In-Reply-To: <1290443379.4cea9a73cd9ce@imp.free.fr>
+References: <1290410581.2405.24.camel@minggr.sh.intel.com>
+	 <1290431008.2072.119.camel@laptop>  <1290443379.4cea9a73cd9ce@imp.free.fr>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 22 Nov 2010 17:35:58 +0100
+Message-ID: <1290443758.2072.318.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mac Lin <mkl0301@gmail.com>
+On Mon, 2010-11-22 at 17:29 +0100, castet.matthieu@free.fr wrote:
+> Hi,
+> 
+> Quoting Peter Zijlstra <peterz@infradead.org>:
+> 
+> > On Mon, 2010-11-22 at 15:23 +0800, Lin Ming wrote:
+> > > Hi, all
+> > >
+> > > Current -tip tree(92c883a) fail to resume after suspend to mem.
+> > > Bisect to commit 5bd5a45(x86: Add NX protection for kernel data).
+> >
+> > Drad, if only I'd looked at LKML before I did the bisection myself..
+> >
+> > > commit 5bd5a452662bc37c54fb6828db1a3faf87e6511c
+> > > Author: Matthieu Castet <castet.matthieu@free.fr>
+> > > Date:   Tue Nov 16 22:31:26 2010 +0100
+> > >
+> > >     x86: Add NX protection for kernel data
+> > >
+> > >
+> > > I did some debug and found the regression is caused by below line.
+> > >
+> > > -       set_memory_nx(rodata_start, (end - rodata_start) >> PAGE_SHIFT);
+> > > +       set_memory_nx(rodata_start, (kernel_end - rodata_start) >>
+> > PAGE_SHIFT);
+> >
+> >
+> > Confirmed, with that hunk reverted my machine works again..
+> >
+> Ok,
+> I will submit a proper fix :
+> in acpi_save_state_mem/acpi_restore_state_mem make the trampoline X or NX.
 
-v2:
- - Changing CNS3XXX to cns3xxx in subjec for part of the patches are filtered due to "capital Triple-X in subject".
+That seems to be a S3 specific code path, that won't fix anything.
+Simply do:
 
-v1: 
-The first patch prepare the mach-cns3xxx power management code for drivers use.
-The other two patches add the bus glue for EHCI/OHCI controller in mach-cns3xxx 
-and usb.
+echo 0 > /sys/devices/system/cpu/cpu1/online;
+echo 1 > /sys/devices/system/cpu/cpu1/online;
 
-This patchset is based on linux-2.6.37-rc2
+and your machine will explode..
 
-Mac Lin (3):
-      ARM: cns3xxx: Add new and export the old power management functions
-      ARM: cns3xxx: Add architecture definition for EHCI/OHCI controller
-      USB: cns3xxx: Add EHCI and OHCI bus glue for cns3xxx SOCs
 
- arch/arm/mach-cns3xxx/cns3420vb.c            |   50 ++++++++
- arch/arm/mach-cns3xxx/core.h                 |    4 +-
- arch/arm/mach-cns3xxx/include/mach/cns3xxx.h |    2 -
- arch/arm/mach-cns3xxx/include/mach/pm.h      |   21 +++
- arch/arm/mach-cns3xxx/pm.c                   |   21 +++
- drivers/usb/Kconfig                          |    2 +
- drivers/usb/host/Kconfig                     |   15 +++
- drivers/usb/host/ehci-cns3xxx.c              |  176 ++++++++++++++++++++++++++
- drivers/usb/host/ehci-hcd.c                  |    5 +
- drivers/usb/host/ohci-cns3xxx.c              |  171 +++++++++++++++++++++++++
- drivers/usb/host/ohci-hcd.c                  |    5 +
- 11 files changed, 468 insertions(+), 4 deletions(-)
- create mode 100644 arch/arm/mach-cns3xxx/include/mach/pm.h
- create mode 100644 drivers/usb/host/ehci-cns3xxx.c
- create mode 100644 drivers/usb/host/ohci-cns3xxx.c
