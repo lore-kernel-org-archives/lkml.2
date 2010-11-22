@@ -1,110 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab0KVLTq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 06:19:46 -0500
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46414 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609Ab0KVLTo (ORCPT
+	id S1754429Ab0KVLUS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 06:20:18 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52570 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753340Ab0KVLUP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 06:19:44 -0500
+	Mon, 22 Nov 2010 06:20:15 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Jb9GsxUwQygjTf//MGHe8CUXcriWJ0c/UwC++XdPJNF0N9APxo+STKIJIrtik4UuTU
-         YrBY5DaXt9kfVHTfCMyEmw5xQvrIGqiDT7Mx/NxhqBAtzaEuV8Z2rcQcwRPn+VFJPyOW
-         nLyK5Y6TahCRp6gsnKNogLuH9+ItP2OX50A28=
-Subject: Re: iwl3945: regression - unregister_netdevice: waiting for wlan0
- to become free. Usage count = 1
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>, David Miller <davem@davemloft.net>
-Cc: linux-wireless@vger.kernel.org,
-        Reinette Chatre <reinette.chatre@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>
-In-Reply-To: <20101122104341.GA3897@tiehlicka.suse.cz>
-References: <20101122104341.GA3897@tiehlicka.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 22 Nov 2010 12:19:36 +0100
-Message-ID: <1290424776.2811.32.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SH3+dBXXvzkeeK8/EzjMxIxcdbSViOE4jykwOdppCMPMNk6Z7UwVJIpHYhgjNGTPxf
+         00uZp2EqmRAWFciQsDw6t8xblceexVmCkPFPtBXpH0/3uGXhdvQ31567XZ0qnk+vQ5Tl
+         NqIS/doj6zKC4Rr+EJRhcONyUl+vCo0fM8k8Q=
+MIME-Version: 1.0
+In-Reply-To: <20101119171415.aa320cab.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20101119171033.a8d9dc8f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101119171415.aa320cab.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Mon, 22 Nov 2010 20:20:14 +0900
+Message-ID: <AANLkTinvmJNAXAKFbSZvhyPAbZsEW1eBY2YDkqvr5FF5@mail.gmail.com>
+Subject: Re: [PATCH 2/4] alloc_contig_pages() find appropriate physical memory range
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Bob Liu <lliubbo@gmail.com>, fujita.tomonori@lab.ntt.co.jp,
+        m.nazarewicz@samsung.com, pawel@osciak.com, andi.kleen@intel.com,
+        felipe.contreras@gmail.com,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 22 novembre 2010 Ã  11:43 +0100, Michal Hocko a Ã©crit :
-> Hi,
-> I am experiencing iwl3945 driver reference counting problem with the current
-> 2.6.37-rc2 kernel release. 
-> 
-> The problem can be easily reproduced by associating to an AP (I have
-> tried only wep and wpa based auth) and then rmmod iw3945 which gets
-> stuck in unregister_netdevice (in the endless loop as there is no way -
-> I guess - to decrease the reference count to 0) spitting the following
-> message:
-> 
-> unregister_netdevice: waiting for wlan0 to become free. Usage count = 1
-> 
-> The situation is even worse as the rmmod process sits on the CPU and
-> cannot be killed and the loop never ends so the only solution is
-> rebooting.
-> 
-> 2.6.37-rc1 looks good. I have tried to bisect to the culprit but I am
-> failing to boot some of the kernels on the way (due to some unrelated
-> issue which is already fixed in rc2). This is a partial bisect log
-> (maybe it helps to narrow down the range of commits):
-> 
-> $ git bisect log
-> git bisect start
-> # bad: [e53beacd23d9cb47590da6a7a7f6d417b941a994] Linux 2.6.37-rc2
-> git bisect bad e53beacd23d9cb47590da6a7a7f6d417b941a994
-> # good: [151f52f09c5728ecfdd0c289da1a4b30bb416f2c] ipw2x00: remove the right /proc/net entry
-> git bisect good 151f52f09c5728ecfdd0c289da1a4b30bb416f2c
-> # good: [891cbd30ef456664e50bbd28436ef3006a81cf7c] Merge branch 'upstream/core' of git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen
-> git bisect good 891cbd30ef456664e50bbd28436ef3006a81cf7c
-> # good: [80ef913f5e6a84551545016cea709f5e96d0cda6] Merge branch 'upstream-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev
-> git bisect good 80ef913f5e6a84551545016cea709f5e96d0cda6
-> # bad: [c22cff08db00ef0411be088956d7934681a1f988] Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6
-> git bisect bad c22cff08db00ef0411be088956d7934681a1f988
-> # skip: [8877870f8a8127b653f8c9a55c6b4de9f96f639b] Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6
-> git bisect skip 8877870f8a8127b653f8c9a55c6b4de9f96f639b
-> # skip: [75e6047431872dadd0b13503b374e48ccd71a507] ucc_geth: Fix deadlock
-> git bisect skip 75e6047431872dadd0b13503b374e48ccd71a507
-> # skip: [18943d292facbc70e6a36fc62399ae833f64671b] inet: fix ip_mc_drop_socket()
-> git bisect skip 18943d292facbc70e6a36fc62399ae833f64671b
-> [Here I gave up]
-> 
-> skipped steps are non-bootable kernels. From the log it looks like the last
-> good commit is 80ef913f5e6a845.
-> 
-> There is only one patch in that range for iwlwifi drivers:
-> $ git shortlog 80ef913f5e6a845..v2.6.37-rc2 -- drivers/net/wireless/iwlwifi/
-> Wey-Yi Guy (1):
->       iwlwifi: dont use pci_dev before it being assign
-> 
-> and this one doesn't look to manipulate the reference counting so I
-> guess this is more general problem.
-> 
-> $ git shortlog 80ef913f5e6a845..v2.6.37-rc2 -- net/wireless/
-> Felix Fietkau (1):
->       cfg80211: fix a crash in dev lookup on dump commands
-> 
-> Doesn't look to be the culprit as well, though. Btw. I am getting the
-> same patches also in the v2.6.37-rc1..v2.6.37-rc2 range.
-> 
-> Please let me know if you need any further information.
-> Thanks!
+On Fri, Nov 19, 2010 at 5:14 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> Unlike memory hotplug, at an allocation of contigous memory range, address
+> may not be a problem. IOW, if a requester of memory wants to allocate 100M of
+> of contigous memory, placement of allocated memory may not be a problem.
+> So, "finding a range of memory which seems to be MOVABLE" is required.
+>
+> This patch adds a functon to isolate a length of memory within [start, end).
+> This function returns a pfn which is 1st page of isolated contigous chunk
+> of given length within [start, end).
+>
+> If no_search=true is passed as argument, start address is always same to
+> the specified "base" addresss.
+>
+> After isolation, free memory within this area will never be allocated.
+> But some pages will remain as "Used/LRU" pages. They should be dropped by
+> page reclaim or migration.
+>
+> Changelog: 2010-11-17
+>  - fixed some conding style (if-then-else)
+>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/page_isolation.c |  146 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 146 insertions(+)
+>
+> Index: mmotm-1117/mm/page_isolation.c
+> ===================================================================
+> --- mmotm-1117.orig/mm/page_isolation.c
+> +++ mmotm-1117/mm/page_isolation.c
+> @@ -7,6 +7,7 @@
+>  #include <linux/pageblock-flags.h>
+>  #include <linux/memcontrol.h>
+>  #include <linux/migrate.h>
+> +#include <linux/memory_hotplug.h>
+>  #include <linux/mm_inline.h>
+>  #include "internal.h"
+>
+> @@ -250,3 +251,148 @@ int do_migrate_range(unsigned long start
+>  out:
+>        return ret;
+>  }
+> +
+> +/*
+> + * Functions for getting contiguous MOVABLE pages in a zone.
+> + */
+> +struct page_range {
+> +       unsigned long base; /* Base address of searching contigouous block */
+> +       unsigned long end;
+> +       unsigned long pages;/* Length of contiguous block */
+
+Nitpick.
+You used nr_pages in other place.
+I hope you use the name consistent.
+
+> +       int align_order;
+> +       unsigned long align_mask;
+
+Does we really need this field 'align_mask'?
+We can get always from align_order.
+
+> +};
+> +
+> +int __get_contig_block(unsigned long pfn, unsigned long nr_pages, void *arg)
+> +{
+> +       struct page_range *blockinfo = arg;
+> +       unsigned long end;
+> +
+> +       end = pfn + nr_pages;
+> +       pfn = ALIGN(pfn, 1 << blockinfo->align_order);
+> +       end = end & ~(MAX_ORDER_NR_PAGES - 1);
+> +
+> +       if (end < pfn)
+> +               return 0;
+> +       if (end - pfn >= blockinfo->pages) {
+> +               blockinfo->base = pfn;
+> +               blockinfo->end = end;
+> +               return 1;
+> +       }
+> +       return 0;
+> +}
+> +
+> +static void __trim_zone(struct zone *zone, struct page_range *range)
+> +{
+> +       unsigned long pfn;
+> +       /*
+> +        * skip pages which dones'nt under the zone.
+
+typo dones'nt -> doesn't :)
+
+> +        * There are some archs which zones are not in linear layout.
+> +        */
+> +       if (page_zone(pfn_to_page(range->base)) != zone) {
+> +               for (pfn = range->base;
+> +                       pfn < range->end;
+> +                       pfn += MAX_ORDER_NR_PAGES) {
+> +                       if (page_zone(pfn_to_page(pfn)) == zone)
+> +                               break;
+> +               }
+> +               range->base = min(pfn, range->end);
+> +       }
+> +       /* Here, range-> base is in the zone if range->base != range->end */
+> +       for (pfn = range->base;
+> +            pfn < range->end;
+> +            pfn += MAX_ORDER_NR_PAGES) {
+> +               if (zone != page_zone(pfn_to_page(pfn))) {
+> +                       pfn = pfn - MAX_ORDER_NR_PAGES;
+> +                       break;
+> +               }
+> +       }
+> +       range->end = min(pfn, range->end);
+> +       return;
+
+Remove return
+
+> +}
+> +
+> +/*
+> + * This function is for finding a contiguous memory block which has length
+> + * of pages and MOVABLE. If it finds, make the range of pages as ISOLATED
+> + * and return the first page's pfn.
+> + * This checks all pages in the returned range is free of Pg_LRU. To reduce
+> + * the risk of false-positive testing, lru_add_drain_all() should be called
+> + * before this function to reduce pages on pagevec for zones.
+> + */
+> +
+> +static unsigned long find_contig_block(unsigned long base,
+> +               unsigned long end, unsigned long pages,
+> +               int align_order, struct zone *zone)
+> +{
+> +       unsigned long pfn, pos;
+> +       struct page_range blockinfo;
+> +       int ret;
+> +
+> +       VM_BUG_ON(pages & (MAX_ORDER_NR_PAGES - 1));
+> +       VM_BUG_ON(base & ((1 << align_order) - 1));
+> +retry:
+> +       blockinfo.base = base;
+> +       blockinfo.end = end;
+> +       blockinfo.pages = pages;
+> +       blockinfo.align_order = align_order;
+> +       blockinfo.align_mask = (1 << align_order) - 1;
+
+We don't need this.
+
+> +       /*
+> +        * At first, check physical page layout and skip memory holes.
+> +        */
+> +       ret = walk_system_ram_range(base, end - base, &blockinfo,
+> +               __get_contig_block);
+> +       if (!ret)
+> +               return 0;
+> +       /* check contiguous pages in a zone */
+> +       __trim_zone(zone, &blockinfo);
+> +
+> +       /*
+> +        * Ok, we found contiguous memory chunk of size. Isolate it.
+> +        * We just search MAX_ORDER aligned range.
+> +        */
+> +       for (pfn = blockinfo.base; pfn + pages <= blockinfo.end;
+> +            pfn += (1 << align_order)) {
+> +               struct zone *z = page_zone(pfn_to_page(pfn));
+> +               if (z != zone)
+> +                       continue;
+
+Could we make sure pass __trim_zone is to satisfy whole pfn in zone
+what we want.
+Repeated the zone check is rather annoying.
+I mean let's __get_contig_block or __trim_zone already does check zone
+so that we remove the zone check in here.
+
+> +
+> +               spin_lock_irq(&z->lock);
+> +               pos = pfn;
+> +               /*
+> +                * Check the range only contains free pages or LRU pages.
+> +                */
+> +               while (pos < pfn + pages) {
+> +                       struct page *p;
+> +
+> +                       if (!pfn_valid_within(pos))
+> +                               break;
+> +                       p = pfn_to_page(pos);
+> +                       if (PageReserved(p))
+> +                               break;
+> +                       if (!page_count(p)) {
+> +                               if (!PageBuddy(p))
+> +                                       pos++;
+> +                               else
+> +                                       pos += (1 << page_order(p));
+> +                       } else if (PageLRU(p)) {
+
+Could we check get_pageblock_migratetype(page) == MIGRATE_MOVABLE in
+here and early bail out?
+
+> +                               pos++;
+> +                       } else
+> +                               break;
+> +               }
+> +               spin_unlock_irq(&z->lock);
+> +               if ((pos == pfn + pages)) {
+> +                       if (!start_isolate_page_range(pfn, pfn + pages))
+> +                               return pfn;
+> +               } else/* the chunk including "pos" should be skipped */
+> +                       pfn = pos & ~((1 << align_order) - 1);
+> +               cond_resched();
+> +       }
+> +
+> +       /* failed */
+> +       if (blockinfo.end + pages <= end) {
+> +               /* Move base address and find the next block of RAM. */
+> +               base = blockinfo.end;
+> +               goto retry;
+> +       }
+> +       return 0;
+
+If the base is 0, isn't it impossible return pfn 0?
+x86 in FLAT isn't impossible but I think some architecture might be possible.
+Just guessing.
+
+How about returning negative value and return first page pfn and last
+page pfn as out parameter base, end?
+
+> +}
+>
+>
 
 
-Oh well, it seems David put the fix in net-next-2.6 instead of net-2.6
 
-Please try :
-
-http://git.kernel.org/?p=linux/kernel/git/davem/net-next-2.6.git;a=commitdiff;h=9d82ca98f71fd686ef2f3017c5e3e6a4871b6e46
-
-Thanks
-
-
+-- 
+Kind regards,
+Minchan Kim
