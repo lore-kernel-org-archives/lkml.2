@@ -1,68 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab0KVOPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 09:15:50 -0500
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:60287 "HELO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754983Ab0KVOPt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 09:15:49 -0500
+	id S1756351Ab0KVOTP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 09:19:15 -0500
+Received: from mail.bspu.unibel.by ([195.50.2.21]:38152 "EHLO mail.bspu.local"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755632Ab0KVOTP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 09:19:15 -0500
+Message-ID: <4CEA7CD9.2060903@bspu.unibel.by>
+Date: Mon, 22 Nov 2010 16:23:21 +0200
+From: Dzianis Kahanovich <mahatma@bspu.unibel.by>
+Reply-To: mahatma@eu.by
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b7pre) Gecko/20101111 Firefox/4.0b7pre SeaMonkey/2.1b1
 MIME-Version: 1.0
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB59302477EB2D8@dbde02.ent.ti.com>
-References: <cover.1289835508.git.bengardiner@nanometrics.ca>
-	<cover.1289935504.git.bengardiner@nanometrics.ca>
-	<d6d59b4a3c34149008f3681e0d6106efa15f354d.1289935504.git.bengardiner@nanometrics.ca>
-	<B85A65D85D7EB246BE421B3FB0FBB59302477EAA89@dbde02.ent.ti.com>
-	<AANLkTike4sRvptEe9PXLT2u+SrFMOpNC6pvLPSzBfVOX@mail.gmail.com>
-	<B85A65D85D7EB246BE421B3FB0FBB59302477EB2D8@dbde02.ent.ti.com>
-Date: Mon, 22 Nov 2010 09:15:46 -0500
-Message-ID: <AANLkTin8+y0xkjv+RmnSZNKXgfwr2iV3c9P7cBMfVw3k@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] da850-evm: add baseboard UI expander buttons,
- switches and LEDs
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Govindarajan, Sriramakrishnan" <srk@ti.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Clouter <alex@digriz.org.uk>,
-        Chris Cordahi <christophercordahi@nanometrics.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH v2] viafb: I2C/DDC LCD detection for VIA framebuffer
+Content-Type: text/plain; charset=KOI8-R
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sekhar,
+I2C/DDC LCD detection for VIA framebuffer
 
-On Mon, Nov 22, 2010 at 7:00 AM, Nori, Sekhar <nsekhar@ti.com> wrote:
-> Thanks for the explanation. I should have probably asked
-> earlier, why do we need to prevent sysfs access of
-> deep sleep enable and sw reset pins? We don't seem to be
-> using them in the kernel either.
+Adding legacy I2C/DDC support for VIA framebuffer, used to fix LCD
+panel size and (if "via_active_dev" is empty default) force LCD
+detection. This solving at least defaults on Chrome9 video
+on HP mini 2133 notebook, but must be good in other cases,
+include double-LCD. Also forcing viafb_active_dev to NULL as bugfix.
 
-You're welcome.
-
-I was assuming that those pins were not exported as gpio pins on
-purpose; I was taking the prudent approach to prevent haphazard
-toggling of sw_rst and deep_sleep_en from userspace. sw_rst because it
-could initiate a reset of the cpu when toggled and deep_sleep_en
-because it can override the behaviour of davinci_pm_enter().
-
-I'm not sure how they would be used by existing kernel classes either.
-The sw_rst pin could be used for reset but since it is on the other
-end of an i2c bus and there is an existing implementation of reset
-using the on chip watchdog I don't think it would be benficial to
-switch. Deep_sleep_en could override the behaviour in
-davinci_pm_enter() -- _maybe_ (I don't really know) it could be used
-as a hardware-assisted suspend-blocker? But I totally guessing here.
-
-Best Regards,
-Ben Gardiner
-
+Signed-off-by: Dzianis Kahanovich <mahatma@eu.by>
 ---
-Nanometrics Inc.
-http://www.nanometrics.ca
+diff -pruN a/drivers/video/via/via-core.c b/drivers/video/via/via-core.c
+--- a/drivers/video/via/via-core.c	2010-11-22 13:11:44.000000000 +0200
++++ b/drivers/video/via/via-core.c	2010-11-22 13:59:07.000000000 +0200
+@@ -2,6 +2,7 @@
+  * Copyright 1998-2009 VIA Technologies, Inc. All Rights Reserved.
+  * Copyright 2001-2008 S3 Graphics, Inc. All Rights Reserved.
+  * Copyright 2009 Jonathan Corbet <corbet@lwn.net>
++ * Copyright 2010 Dzianis Kahanovich <mahatma@eu.by>
+  */
+
+ /*
+@@ -16,6 +17,8 @@
+ #include <linux/interrupt.h>
+ #include <linux/platform_device.h>
+
++extern char *viafb_active_dev;
++
+ /*
+  * The default port config.
+  */
+@@ -576,6 +579,56 @@ static void via_teardown_subdevs(void)
+ }
+
++static void via_i2c_detect(void)
++{
++	u8 *edid;
++	struct fb_var_screeninfo var;
++	int i, n = 0;
++	struct i2c_adapter *adapter;
++
++	for (i = 0; i < VIAFB_NUM_PORTS; i++) {
++		adapter = viafb_find_i2c_adapter(i);
++		if (!adapter || !adapter->algo_data ||
++		    !(edid = fb_ddc_read(adapter)))
++			continue;
++		if (fb_parse_edid(edid, &var))
++			goto free_edid;
++		if (n) {
++			fb_edid_to_monspecs(edid, &viafbinfo1->monspecs);
++			viaparinfo->lvds_setting_info2->lcd_panel_hres =
++			    var.xres;
++			viaparinfo->lvds_setting_info2->lcd_panel_vres =
++			    var.yres;
++			if (!viafb_active_dev) {
++				viafb_SAMM_ON = STATE_ON;
++				if (viafbinfo1->monspecs.input & FB_DISP_DDI)
++					viafb_LCD2_ON = STATE_ON;
++			}
++		} else {
++			fb_edid_to_monspecs(edid, &viafbinfo->monspecs);
++			viaparinfo->lvds_setting_info->lcd_panel_hres =
++			    var.xres;
++			viaparinfo->lvds_setting_info->lcd_panel_vres =
++			    var.yres;
++			if (!viafb_active_dev) {
++				viafb_DVI_ON =
++				    viaparinfo->tmds_setting_info->
++				    max_hres ? STATE_ON : STATE_OFF;
++				if (viafbinfo->monspecs.input & FB_DISP_DDI) {
++					viafb_DeviceStatus = LCD_Device;
++					viafb_primary_dev = LCD_Device;
++					viafb_LCD_ON = STATE_ON;
++				}
++			}
++		}
++		n++;
++free_edid:
++		kfree(edid);
++		if (n > 1)
++			break;
++	}
++}
++
+
+ static int __devinit via_pci_probe(struct pci_dev *pdev,
+ 		const struct pci_device_id *ent)
+ {
+@@ -607,6 +660,7 @@ static int __devinit via_pci_probe(struc
+ 	ret = via_fb_pci_probe(&global_dev);
+ 	if (ret)
+ 		goto out_subdevs;
++	via_i2c_detect();
+ 	return 0;
+
+ out_subdevs:
+diff -pruN a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+--- a/drivers/video/via/viafbdev.c	2010-11-22 13:11:44.000000000 +0200
++++ b/drivers/video/via/viafbdev.c	2010-11-22 13:59:07.000000000 +0200
+@@ -43,7 +43,7 @@ static int viafb_second_size;
+ static int viafb_accel = 1;
+
+ /* Added for specifying active devices.*/
+-char *viafb_active_dev;
++char *viafb_active_dev = NULL;
+
+ /*Added for specify lcd output port*/
+ char *viafb_lcd_port = "";
+--
+
+-- 
+WBR, Dzianis Kahanovich AKA Denis Kaganovich, http://mahatma.bspu.unibel.by/
