@@ -1,54 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab0KVKlp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 05:41:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52759 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754336Ab0KVKln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 05:41:43 -0500
-Message-ID: <4CEA48DF.2080605@redhat.com>
-Date: Mon, 22 Nov 2010 12:41:35 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Gregory Haskins <ghaskins@novell.com>,
-        Chris Lalancette <clalance@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kvm: fast-path msi injection with irqfd
-References: <20101118170907.GA14039@redhat.com>
-In-Reply-To: <20101118170907.GA14039@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753874Ab0KVKnl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 05:43:41 -0500
+Received: from casper.infradead.org ([85.118.1.10]:60142 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116Ab0KVKnk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 05:43:40 -0500
+Subject: Re: [PATCH 3/5] scheduler: cpuacct: Enable platform hooks to track
+ cpuusage for CPU frequencies
+From: Peter Zijlstra <peterz@infradead.org>
+To: Florian Mickler <florian@mickler.org>
+Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
+        Mike Chan <mike@android.com>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20101122065129.072bba06@schatten.dmk.lab>
+References: <1290218934-8544-1-git-send-email-john.stultz@linaro.org>
+	 <1290218934-8544-4-git-send-email-john.stultz@linaro.org>
+	 <1290250104.2118.4.camel@laptop> <20101122065129.072bba06@schatten.dmk.lab>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 22 Nov 2010 11:43:59 +0100
+Message-ID: <1290422639.2110.3.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/18/2010 07:09 PM, Michael S. Tsirkin wrote:
-> Store irq routing table pointer in the irqfd object,
-> and use that to inject MSI directly without bouncing out to
-> a kernel thread.
->
-> While we touch this structure, rearrange irqfd fields to make fastpath
-> better packed for better cache utilization.
->
-> This also adds some comments about locking rules and rcu usage in code.
->
-> Some notes on the design:
-> - Use pointer into the rt instead of copying an entry,
->    to make it possible to use rcu, thus side-stepping
->    locking complexities.  We also save some memory this way.
-> - Old workqueue code is still used for level irqs.
->    I don't think we DTRT with level anyway, however,
->    it seems easier to keep the code around as
->    it has been thought through and debugged, and fix level later than
->    rip out and re-instate it later.
->
+On Mon, 2010-11-22 at 06:51 +0100, Florian Mickler wrote:
+> On Sat, 20 Nov 2010 11:48:24 +0100
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Fri, 2010-11-19 at 18:08 -0800, John Stultz wrote:
+> > > From: Mike Chan <mike@android.com>
+> > > 
+> > > Introduce new platform callback hooks for cpuacct for tracking CPU frequencies
+> > > 
+> > > Not all platforms / architectures have a set CPU_FREQ_TABLE defined
+> > > for CPU transition speeds. In order to track time spent in at various
+> > > CPU frequencies, we enable platform callbacks from cpuacct for this accounting.
+> > > 
+> > > Architectures that support overclock boosting, or don't have pre-defined
+> > > frequency tables can implement their own bucketing system that makes sense
+> > > given their cpufreq scaling abilities.
+> > > 
+> > > New file:
+> > > cpuacct.cpufreq reports the CPU time (in nanoseconds) spent at each CPU
+> > > frequency.
+> > 
+> > I utterly detest all such accounting crap.. it adds ABI constraints it
+> > add runtime overhead. etc.. 
+> > 
+> > Can't you get the same information by using the various perf bits? If
+> > you trace the cpufreq changes you can compute the time spend in each
+> > power state, if you additionally trace the sched_switch you can compute
+> > it for each task.
+> > 
+> > 
+> This is probably used for "on-site" debugging of production systems.
 
-Applied, thanks.
+Dude, its from the _android_ tree... its cpufreq crud.. it must be some
+crack induced power management scheme.
 
--- 
-error compiling committee.c: too many arguments to function
 
