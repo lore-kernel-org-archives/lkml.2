@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330Ab0KVG77 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 01:59:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52060 "EHLO mx2.suse.de"
+	id S1751206Ab0KVHC0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 02:02:26 -0500
+Received: from cantor.suse.de ([195.135.220.2]:58375 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750779Ab0KVG76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 01:59:58 -0500
-Date: Mon, 22 Nov 2010 07:59:56 +0100
-Message-ID: <s5hpqtxrggj.wl%tiwai@suse.de>
+	id S1750856Ab0KVHCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 02:02:25 -0500
+Date: Mon, 22 Nov 2010 08:02:24 +0100
+Message-ID: <s5hoc9hrgcf.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>, Jaroslav Kysela <perex@perex.cz>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 48/49] sound/oss/dev_table.c: Use vzalloc
-In-Reply-To: <a81978ec2765c2f5d90b736f3f691935e2afa17c.1288925425.git.joe@perches.com>
-References: <alpine.DEB.2.00.1011031108260.11625@router.home>
-	<a81978ec2765c2f5d90b736f3f691935e2afa17c.1288925425.git.joe@perches.com>
+To: Florian Fainelli <florian@openwrt.org>
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Jaroslav Kysela <perex@perex.cz>
+Subject: Re: [PATCH] sound/mixart: avoid redefining {readl,write}_{le,be} accessors
+In-Reply-To: <201011121829.11914.florian@openwrt.org>
+References: <201011091829.08664.florian@openwrt.org>
+	<201011121829.11914.florian@openwrt.org>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,60 +25,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu,  4 Nov 2010 20:08:12 -0700,
-Joe Perches wrote:
+At Fri, 12 Nov 2010 18:29:11 +0100,
+Florian Fainelli wrote:
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> On Tuesday 09 November 2010 18:29:08 Florian Fainelli wrote:
+> > From: Florian Fainelli <florian@openwrt.org>
+> 
+> Takashi, do you have any comments on this patch?
 
-Thanks, applied.
-[Sorry to be late, this has been already applied in my tree but this
- reply mail wasn't triggered to be sent out until now...]
+Sorry for the late reply.  Yes, I already applied it weeks ago, but
+the reply mail wasn't sent out but stuck in my output queue by some
+reason during my vacation.
+
+Anyway, thanks for the patch.  I think it's OK in the way you did
+for the time being.  Ideally, read*_be() should be defined on all
+platforms, though.
 
 
 Takashi
 
-> ---
->  sound/oss/dev_table.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
 > 
-> diff --git a/sound/oss/dev_table.c b/sound/oss/dev_table.c
-> index 727bdb9..d8cf3e5 100644
-> --- a/sound/oss/dev_table.c
-> +++ b/sound/oss/dev_table.c
-> @@ -71,7 +71,7 @@ int sound_install_audiodrv(int vers, char *name, struct audio_driver *driver,
->  	if (sound_nblocks >= MAX_MEM_BLOCKS)
->  		sound_nblocks = MAX_MEM_BLOCKS - 1;
->  
-> -	op = (struct audio_operations *) (sound_mem_blocks[sound_nblocks] = vmalloc(sizeof(struct audio_operations)));
-> +	op = (struct audio_operations *) (sound_mem_blocks[sound_nblocks] = vzalloc(sizeof(struct audio_operations)));
->  	sound_nblocks++;
->  	if (sound_nblocks >= MAX_MEM_BLOCKS)
->  		sound_nblocks = MAX_MEM_BLOCKS - 1;
-> @@ -81,7 +81,6 @@ int sound_install_audiodrv(int vers, char *name, struct audio_driver *driver,
->  		sound_unload_audiodev(num);
->  		return -(ENOMEM);
->  	}
-> -	memset((char *) op, 0, sizeof(struct audio_operations));
->  	init_waitqueue_head(&op->in_sleeper);
->  	init_waitqueue_head(&op->out_sleeper);	
->  	init_waitqueue_head(&op->poll_sleeper);
-> @@ -128,7 +127,7 @@ int sound_install_mixer(int vers, char *name, struct mixer_operations *driver,
->  	/* FIXME: This leaks a mixer_operations struct every time its called
->  	   until you unload sound! */
->  	   
-> -	op = (struct mixer_operations *) (sound_mem_blocks[sound_nblocks] = vmalloc(sizeof(struct mixer_operations)));
-> +	op = (struct mixer_operations *) (sound_mem_blocks[sound_nblocks] = vzalloc(sizeof(struct mixer_operations)));
->  	sound_nblocks++;
->  	if (sound_nblocks >= MAX_MEM_BLOCKS)
->  		sound_nblocks = MAX_MEM_BLOCKS - 1;
-> @@ -137,7 +136,6 @@ int sound_install_mixer(int vers, char *name, struct mixer_operations *driver,
->  		printk(KERN_ERR "Sound: Can't allocate mixer driver for (%s)\n", name);
->  		return -ENOMEM;
->  	}
-> -	memset((char *) op, 0, sizeof(struct mixer_operations));
->  	memcpy((char *) op, (char *) driver, driver_size);
->  
->  	strlcpy(op->name, name, sizeof(op->name));
-> -- 
-> 1.7.3.1.g432b3.dirty
+> Thanks!
+> 
+> > 
+> > If the platform already provides a definition for these accessors
+> > do not redefine them. The warning was caught on MIPS.
+> > 
+> > Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> > ---
+> > diff --git a/sound/pci/mixart/mixart_hwdep.h
+> > b/sound/pci/mixart/mixart_hwdep.h index a46f508..812e288 100644
+> > --- a/sound/pci/mixart/mixart_hwdep.h
+> > +++ b/sound/pci/mixart/mixart_hwdep.h
+> > @@ -25,11 +25,21 @@
+> > 
+> >  #include <sound/hwdep.h>
+> > 
+> > +#ifndef readl_be
+> >  #define readl_be(x) be32_to_cpu(__raw_readl(x))
+> > +#endif
+> > +
+> > +#ifndef writel_be
+> >  #define writel_be(data,addr) __raw_writel(cpu_to_be32(data),addr)
+> > +#endif
+> > 
+> > +#ifndef readl_le
+> >  #define readl_le(x) le32_to_cpu(__raw_readl(x))
+> > +#endif
+> > +
+> > +#ifndef writel_le
+> >  #define writel_le(data,addr) __raw_writel(cpu_to_le32(data),addr)
+> > +#endif
+> > 
+> >  #define MIXART_MEM(mgr,x)	((mgr)->mem[0].virt + (x))
+> >  #define MIXART_REG(mgr,x)	((mgr)->mem[1].virt + (x))
 > 
