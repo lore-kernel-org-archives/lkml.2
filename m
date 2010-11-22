@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754713Ab0KVLcw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 06:32:52 -0500
-Received: from casper.infradead.org ([85.118.1.10]:56504 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753864Ab0KVLcu (ORCPT
+	id S1755014Ab0KVLgr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 06:36:47 -0500
+Received: from smtp-vbr12.xs4all.nl ([194.109.24.32]:2483 "EHLO
+	smtp-vbr12.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab0KVLgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 06:32:50 -0500
-Message-ID: <4CEA54C9.4030300@infradead.org>
-Date: Mon, 22 Nov 2010 09:32:25 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
+	Mon, 22 Nov 2010 06:36:45 -0500
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Subject: Re: What should poll() return when a device is unregistered ? (was "media: Media device node support")
+Date: Mon, 22 Nov 2010 12:36:39 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.32-23-generic; KDE/4.4.5; x86_64; ; )
+Cc: Jonathan Corbet <corbet@lwn.net>, linux-media@vger.kernel.org,
+        sakari.ailus@maxwell.research.nokia.com, linux-kernel@vger.kernel.org
+References: <1285241696-16826-1-git-send-email-laurent.pinchart@ideasonboard.com> <201011221008.06852.hverkuil@xs4all.nl> <201011221141.27945.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201011221141.27945.laurent.pinchart@ideasonboard.com>
 MIME-Version: 1.0
-To: Raffaele Recalcati <lamiaposta71@gmail.com>
-CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: tvp5150 extension to tvp5151
-References: <AANLkTinTwyioFt2mGmetK=rfj-q_7hLBQ_FR_aE20FXZ@mail.gmail.com>
-In-Reply-To: <AANLkTinTwyioFt2mGmetK=rfj-q_7hLBQ_FR_aE20FXZ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Message-Id: <201011221236.40194.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Raffaele,
+On Monday, November 22, 2010 11:41:27 Laurent Pinchart wrote:
+> Hi Hans,
+> 
+> On Monday 22 November 2010 10:08:06 Hans Verkuil wrote:
+> > On Monday, November 22, 2010 00:35:54 Laurent Pinchart wrote:
+> > > Hi Jonathan,
+> > > 
+> > > I forgot to answer one of your comments.
+> > > 
+> > > On Wednesday 17 November 2010 01:31:15 Jonathan Corbet wrote:
+> > > 
+> > > [snip]
+> > > 
+> > > > > +static unsigned int media_poll(struct file *filp,
+> > > > > +			       struct poll_table_struct *poll)
+> > > > > +{
+> > > > > +	struct media_devnode *mdev = media_devnode_data(filp);
+> > > > > +
+> > > > > +	if (!mdev->fops->poll || !media_devnode_is_registered(mdev))
+> > > > > +		return DEFAULT_POLLMASK;
+> > > > > +	return mdev->fops->poll(filp, poll);
+> > > > > +}
+> > > > 
+> > > > If it's not registered, I would expect poll() to return an error.
+> > > 
+> > > Agreed. I'll return POLLERR | POLLHUP in that case. Is that fine with you
+> > > ?
+> > 
+> > When I looked at this for the core code I decided to just return POLLERR.
+> 
+> I've copied the usbdevfs code which returns POLLERR | POLLHUP when devices are 
+> disconnected.
+> 
+> > That seemed to be what the majority of other usb drivers do. ALSA returns
+> > POLLERR | POLLNVAL, by the way, which I think is a poor choice.
+> 
+> Indeed, POLLNVAL has a clear semantics that doesn't apply here.
 
-Em 19-11-2010 16:26, Raffaele Recalcati escreveu:
-> I need to support fully tvp5151.
-> So I'm trying to understand your driver, that is ready for VBI and not
-> for video acquisition.
-> I also take sometimes a look at tvp514x.c, for instance trying to add
-> VIDIOC_ENUM_FMT and other ioctls.
-> I think we can move from tvp5150.c to tvp515x.c, maybe...
-> I don't think is good to have tvp51xx.c because tvp514x.c family is
-> more complex (more inputs...).
-> By now I'm using tvp5150.c with some modifications and video acquisition works.
-> I need to complete the support in order to have gstreamer fully running.
-> I'm working on 2.6.32, but I have planned to port it to mainline.
+In fact, POLLNVAL is currently only set by ./sound/core/init.c and by
+./drivers/media/video/zoran/zoran_driver.c. In both cases it's rather dubious.
 
-Renaming it to tvp515x.c and adding support for tvp5051 seems a good way.
-With tvp5150, video acquisition works fine with several devices with em28xx,
-although we may need to add more video formats at the media bus, depending
-on what you're doing. I didn't test VBI support on it, because the devices
-I have are based on em28xx, and I didn't find any way to capture the VBI
-decoded packages and sent to userspace with that design. So, the basic stuff
-is there, but maybe some adjusts may be needed for VBI.
+> > This doesn't really seem to be standardized :-(
+> 
+> CC'ing LKML with the question.
+> 
+> POLLERR | POLLHUP and POLLERR won't make a difference to select(), but we 
+> should still standardize on a poll() return code when devices are unregistered 
+> and/or - for hot-pluggable devices - disconnected (for V4L devices 
+> unregistered usually means disconnected) ?
 
-> Do you have any suggestion for my work?
+Drivers return POLLERR, POLLERR|POLLHUP or POLLHUP in case of a disconnect.
+I'm leaning towards POLLHUP as the most appropriate poll return value for a
+USB disconnect.
 
-The better is to submit the patches you have, for us to apply upstream.
+Regards,
 
-Cheers,
-Mauro
+	Hans
+
+-- 
+Hans Verkuil - video4linux developer - sponsored by Cisco
