@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab0KVKnr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 05:43:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59309 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754248Ab0KVKno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 05:43:44 -0500
-Date: Mon, 22 Nov 2010 11:43:41 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-wireless@vger.kernel.org
-Cc: Reinette Chatre <reinette.chatre@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: iwl3945: regression - unregister_netdevice: waiting for wlan0 to
- become free. Usage count = 1
-Message-ID: <20101122104341.GA3897@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754754Ab0KVKpL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 05:45:11 -0500
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34169 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753303Ab0KVKpH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 05:45:07 -0500
+Date: Mon, 22 Nov 2010 10:43:12 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Huang Ying <ying.huang@intel.com>
+Cc: "Luck, Tony" <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, "greg@kroah.com" <greg@kroah.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [RFC] persistent store
+Message-ID: <20101122104312.23b6daea@lxorguk.ukuu.org.uk>
+In-Reply-To: <1290391175.2903.132.camel@yhuang-dev>
+References: <4ce85e437577ae827@agluck-desktop.sc.intel.com>
+	<1290391175.2903.132.camel@yhuang-dev>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I am experiencing iwl3945 driver reference counting problem with the current
-2.6.37-rc2 kernel release. 
+> > "reader" which iterates over all records currently in the
+> > store - returning type, size and a record identifier as
+> > well as the actual data.
+> > 
+> > "writer" which writes a record with a type to the persistent store
+> 
+> I think it is necessary to require this to be NMI safe (in comments?),
+> because hardware error handler may need to write to persistent storage
+> in NMI context. Or we can add a "flag" field to let storage provider
+> advocate its capability of NMI safe.
 
-The problem can be easily reproduced by associating to an AP (I have
-tried only wep and wpa based auth) and then rmmod iw3945 which gets
-stuck in unregister_netdevice (in the endless loop as there is no way -
-I guess - to decrease the reference count to 0) spitting the following
-message:
+One thing we need for some of the driver code sitting in the pending pile
+is support for hardware assisted logging, where record numberes are handed
+out by a device register access.
 
-unregister_netdevice: waiting for wlan0 to become free. Usage count = 1
+> > The "type" of error record I mentioned earlier is used to
+> > name the files ... saved console logs from kmsg_dmp() are
+> > named with a "dmesg" prefix as shown above.
+> > 
+> > Once an error record has been viewed, analysed, saved. The
+> > user can request it to be cleared by writing its name to the
+> > "erase" file:
 
-The situation is even worse as the rmmod process sits on the CPU and
-cannot be killed and the loop never ends so the only solution is
-rebooting.
+How will fragmentation be handled ?
 
-2.6.37-rc1 looks good. I have tried to bisect to the culprit but I am
-failing to boot some of the kernels on the way (due to some unrelated
-issue which is already fixed in rc2). This is a partial bisect log
-(maybe it helps to narrow down the range of commits):
+> The persistent storage may be full, and the writing may fail. So I think
+> we can just try to write one by one, until the first success writing.
 
-$ git bisect log
-git bisect start
-# bad: [e53beacd23d9cb47590da6a7a7f6d417b941a994] Linux 2.6.37-rc2
-git bisect bad e53beacd23d9cb47590da6a7a7f6d417b941a994
-# good: [151f52f09c5728ecfdd0c289da1a4b30bb416f2c] ipw2x00: remove the right /proc/net entry
-git bisect good 151f52f09c5728ecfdd0c289da1a4b30bb416f2c
-# good: [891cbd30ef456664e50bbd28436ef3006a81cf7c] Merge branch 'upstream/core' of git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen
-git bisect good 891cbd30ef456664e50bbd28436ef3006a81cf7c
-# good: [80ef913f5e6a84551545016cea709f5e96d0cda6] Merge branch 'upstream-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jgarzik/libata-dev
-git bisect good 80ef913f5e6a84551545016cea709f5e96d0cda6
-# bad: [c22cff08db00ef0411be088956d7934681a1f988] Merge branch 'v4l_for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6
-git bisect bad c22cff08db00ef0411be088956d7934681a1f988
-# skip: [8877870f8a8127b653f8c9a55c6b4de9f96f639b] Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6
-git bisect skip 8877870f8a8127b653f8c9a55c6b4de9f96f639b
-# skip: [75e6047431872dadd0b13503b374e48ccd71a507] ucc_geth: Fix deadlock
-git bisect skip 75e6047431872dadd0b13503b374e48ccd71a507
-# skip: [18943d292facbc70e6a36fc62399ae833f64671b] inet: fix ip_mc_drop_socket()
-git bisect skip 18943d292facbc70e6a36fc62399ae833f64671b
-[Here I gave up]
+If you intend to treat it basically like an fs why not just make it a
+file system. No more weird echo erase into magic sysfs file node you can
+just use "rm".
 
-skipped steps are non-bootable kernels. From the log it looks like the last
-good commit is 80ef913f5e6a845.
+The logging off an interrupt isn't a big problem either as you can have a
+pool of blocks which are preallocated for the log files and more can be
+stitched into the files asynchronously after the interrupt logging
+events. For that matter you can keep it as a circular log just easily but
+present it as a file system.
 
-There is only one patch in that range for iwlwifi drivers:
-$ git shortlog 80ef913f5e6a845..v2.6.37-rc2 -- drivers/net/wireless/iwlwifi/
-Wey-Yi Guy (1):
-      iwlwifi: dont use pci_dev before it being assign
+> [...]
+> > + * Erase records by writing their filename to the "erase" file. E.g.
+> > + *     # echo "dmesg-0" > erase
 
-and this one doesn't look to manipulate the reference counting so I
-guess this is more general problem.
+rm dmesg-0
 
-$ git shortlog 80ef913f5e6a845..v2.6.37-rc2 -- net/wireless/
-Felix Fietkau (1):
-      cfg80211: fix a crash in dev lookup on dump commands
+We have a model for this and filesystem indirected via sysfs commands is
+in the daft category.
 
-Doesn't look to be the culprit as well, though. Btw. I am getting the
-same patches also in the v2.6.37-rc1..v2.6.37-rc2 range.
 
-Please let me know if you need any further information.
-Thanks!
--- 
-Michal Hocko
-L3 team 
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
