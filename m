@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751216Ab0KVFwI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 00:52:08 -0500
-Received: from ist.d-labs.de ([213.239.218.44]:59100 "EHLO mx01.d-labs.de"
+	id S1751291Ab0KVF5i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 00:57:38 -0500
+Received: from tango.tkos.co.il ([62.219.50.35]:59387 "EHLO tango.tkos.co.il"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751039Ab0KVFwH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 00:52:07 -0500
-Date: Mon, 22 Nov 2010 06:51:29 +0100
-From: Florian Mickler <florian@mickler.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Newsgroups: gmane.linux.kernel
-Cc: John Stultz <john.stultz@linaro.org>, lkml <linux-kernel@vger.kernel.org>,
-        Mike Chan <mike@android.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 3/5] scheduler: cpuacct: Enable platform hooks to track
- cpuusage for CPU frequencies
-Message-ID: <20101122065129.072bba06@schatten.dmk.lab>
-In-Reply-To: <1290250104.2118.4.camel@laptop>
-References: <1290218934-8544-1-git-send-email-john.stultz@linaro.org>
-	<1290218934-8544-4-git-send-email-john.stultz@linaro.org>
-	<1290250104.2118.4.camel@laptop>
-X-Newsreader: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751083Ab0KVF5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 00:57:37 -0500
+Date: Mon, 22 Nov 2010 07:57:05 +0200
+From: Baruch Siach <baruch@tkos.co.il>
+To: Thomas Chou <thomas@wytron.com.tw>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Indan Zupancic <indan@nul.nu>, Greg KH <greg@kroah.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Alex Gershgorin <agersh@rambler.ru>
+Subject: Re: [PATCHv3] drivers/misc: Altera active serial implementation
+Message-ID: <20101122055704.GA28660@jasper.tkos.co.il>
+References: <fa8a1cda966a356d4c0bfe6e285c01679bf6ef60.1289809182.git.baruch@tkos.co.il>
+ <4CE373BC.30805@wytron.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CE373BC.30805@wytron.com.tw>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 20 Nov 2010 11:48:24 +0100
-Peter Zijlstra <peterz@infradead.org> wrote:
+Hi Thomas,
 
-> On Fri, 2010-11-19 at 18:08 -0800, John Stultz wrote:
-> > From: Mike Chan <mike@android.com>
-> > 
-> > Introduce new platform callback hooks for cpuacct for tracking CPU frequencies
-> > 
-> > Not all platforms / architectures have a set CPU_FREQ_TABLE defined
-> > for CPU transition speeds. In order to track time spent in at various
-> > CPU frequencies, we enable platform callbacks from cpuacct for this accounting.
-> > 
-> > Architectures that support overclock boosting, or don't have pre-defined
-> > frequency tables can implement their own bucketing system that makes sense
-> > given their cpufreq scaling abilities.
-> > 
-> > New file:
-> > cpuacct.cpufreq reports the CPU time (in nanoseconds) spent at each CPU
-> > frequency.
+On Wed, Nov 17, 2010 at 02:18:36PM +0800, Thomas Chou wrote:
+> On 11/15/2010 04:23 PM, Baruch Siach wrote:
+> >From: Alex Gershgorin<agersh@rambler.ru>
+> >
+> >The active serial protocol can be used to program Altera serial configuration
+> >devices. This driver uses the kernel gpio interface to implement the active
+> >serial protocol.
+> >
+> >This patch also introduces the include/platform_drivers/ directory, which is
+> >the new home for platform data headers. This is per Greg's suggestion.
 > 
-> I utterly detest all such accounting crap.. it adds ABI constraints it
-> add runtime overhead. etc.. 
-> 
-> Can't you get the same information by using the various perf bits? If
-> you trace the cpufreq changes you can compute the time spend in each
-> power state, if you additionally trace the sched_switch you can compute
-> it for each task.
-> 
-> 
-This is probably used for "on-site" debugging of production systems.
+> Altera EPCS is normal SPI serial flash, which is exactly the same as
+> STmicro part. Please consider existing drivers/mtd/devices/m25p80.c
+> and drivers/spi/spi_gpio.c.
 
-I.e. when someone sends them a problem report using an
-bugreport-tool, they gather all useful information they can get on the
-system because they only have one-way communication with their bug
-reporters.
+For the record, I tested your suggestion and it works perfectly. Thanks.
 
-Do the perf bits work for such a usecase? If I guess correctly, the
-perf bits need a userspace part that computes what would be in the
-cpuacct.cpufreq file? 
+Thank you everyone for your helpful suggestion regarding the, now abandoned, 
+Altera active serial implementation driver.
 
-Regards,
-Flo
+baruch
+
+-- 
+                                                     ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
