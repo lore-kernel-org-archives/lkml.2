@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757520Ab0KVUI7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 15:08:59 -0500
-Received: from mms3.broadcom.com ([216.31.210.19]:4216 "EHLO MMS3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757379Ab0KVUI5 convert rfc822-to-8bit (ORCPT
+	id S1757536Ab0KVUKS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 15:10:18 -0500
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:32976
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757220Ab0KVUKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 15:08:57 -0500
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-From: "Arend Van Spriel" <arend@broadcom.com>
-To: "Greg KH" <gregkh@suse.de>,
-        "Zimny Lech" <napohybelskurwysynom2010@gmail.com>
-cc: "Stephen Rothwell" <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Brett Rudley" <brudley@broadcom.com>,
-        "Henry Ptasinski" <henryp@broadcom.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-Date: Mon, 22 Nov 2010 12:08:28 -0800
-Subject: RE: linux-next: Tree for November 22
-Thread-Topic: linux-next: Tree for November 22
-Thread-Index: AcuKfgxWp0FdJFODQYio77vQ220+FAAAf21j
-Message-ID: <400C43189542CE41BC0A5B252FC90136952F05944A@SJEXCHCCR02.corp.ad.broadcom.com>
-References: <20101122134911.b7e106f9.sfr@canb.auug.org.au>
- <AANLkTi=QeU_vb6+XRei0pqz7GSfp2E4TC3oTJYy9adv4@mail.gmail.com>,<20101122194643.GB21985@suse.de>
-In-Reply-To: <20101122194643.GB21985@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-MIME-Version: 1.0
-X-WSS-ID: 60F412550GS766-06-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+	Mon, 22 Nov 2010 15:10:17 -0500
+Date: Mon, 22 Nov 2010 12:10:42 -0800 (PST)
+Message-Id: <20101122.121042.260064840.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg, Stephen,
 
-The file wl_iw.c declare a struct semaphore variable and uses semaphore function, but there is no explicit inclusion of <linux/semaphore.h>. I hit this problem last week when trying a minimal kernel configuration for my development system. Normally we build and test against kernel configuration similar to Ubuntu configuration and we got the semaphore definitions for free. Expect a patch soon.
+1) Fix screaming IRQ in e1000, from Anupam Chanda.
 
-Gr. AvS
-________________________________________
-From: linux-wireless-owner@vger.kernel.org [linux-wireless-owner@vger.kernel.org] On Behalf Of Greg KH [gregkh@suse.de]
-Sent: Monday, November 22, 2010 8:46 PM
-To: Zimny Lech
-Cc: Stephen Rothwell; linux-next@vger.kernel.org; LKML; Brett Rudley; Henry Ptasinski; linux-wireless@vger.kernel.org
-Subject: Re: linux-next: Tree for November 22
+2) Fix module parameter bustage in qlge, from Sonny Rao.
 
-On Mon, Nov 22, 2010 at 04:37:57PM +0100, Zimny Lech wrote:
-> Salve
->
-> 2010/11/22 Stephen Rothwell <sfr@canb.auug.org.au>:
-> > Hi all,
-> >
-> > Changes since 20101119:
-> >
->
->
->   CC [M]  drivers/staging/brcm80211/brcmfmac/wl_iw.o
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c:130:19:
-> error: field 'sysioc_sem' has incomplete type
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c: In
-> function 'wl_iw_timerfunc':
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c:1070:4:
-> error: implicit declaration of function 'up'
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c: In
-> function '_iscan_sysioc_thread':
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c:1181:2:
-> error: implicit declaration of function 'down_interruptible'
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c: In
-> function 'wl_iw_attach':
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c:3708:2:
-> error: implicit declaration of function 'sema_init'
-> make[5]: *** [drivers/staging/brcm80211/brcmfmac/wl_iw.o] Error 1
-> make[4]: *** [drivers/staging/brcm80211/brcmfmac] Error 2
-> make[3]: *** [drivers/staging/brcm80211] Error 2
-> make[2]: *** [drivers/staging] Error 2
-> make[1]: *** [drivers] Error 2
-> make: *** [sub-make] Error 2
->
+3) Interface address leak in ipv6, fix from John Fastabend.
 
-Ick, not good.
+   This would have been merged sooner except that I erroneously
+   put this into my net-next-2.6 tree, oops.
 
-Henry, Brett, any ideas?
+4) Support for more Marvell PHY variants, from David Daney.
 
-thanks,
+5) Chip variant checking fix in atl1c from Ben Hutchings.
 
-greg k-h
---
-To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+6) Baud rate correction fix in SH-irda driver, from Nicolas Kaiser.
 
+Please pull, thanks a lot!
 
+The following changes since commit b86db4744230c94e480de56f1b7f31117edbf193:
+
+  Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2010-11-19 19:46:45 -0800)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Anupam Chanda (1):
+      e1000: fix screaming IRQ
+
+Ben Hutchings (1):
+      atl1c: Fix hardware type check for enabling OTP CLK
+
+David Daney (3):
+      phylib: Use common page register definition for Marvell PHYs.
+      phylib: Add support for Marvell 88E1149R devices.
+      of/phylib: Use device tree properties to initialize Marvell PHYs.
+
+Eric Dumazet (1):
+      net: allow GFP_HIGHMEM in __vmalloc()
+
+John Fastabend (1):
+      ipv6: fix missing in6_ifa_put in addrconf
+
+Nicolas Kaiser (1):
+      SuperH IrDA: correct Baud rate error correction
+
+Simon Horman (1):
+      bonding: change list contact to netdev@vger.kernel.org
+
+Sonny Rao (1):
+      qlge: Fix incorrect usage of module parameters and netdev msg level
+
+ MAINTAINERS                    |    2 +-
+ drivers/net/atl1c/atl1c_hw.c   |    2 +-
+ drivers/net/e1000/e1000_main.c |   12 ++-
+ drivers/net/irda/sh_sir.c      |    2 +-
+ drivers/net/phy/marvell.c      |  164 ++++++++++++++++++++++++++++++++++++---
+ drivers/net/qlge/qlge_main.c   |    6 +-
+ include/linux/marvell_phy.h    |    1 +
+ net/ceph/buffer.c              |    2 +-
+ net/core/request_sock.c        |    4 +-
+ net/ipv4/fib_trie.c            |    2 +-
+ net/ipv6/addrconf.c            |    6 +-
+ net/xfrm/xfrm_hash.c           |    2 +-
+ 12 files changed, 173 insertions(+), 32 deletions(-)
