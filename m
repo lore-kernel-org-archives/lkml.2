@@ -1,31 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab0KVDUr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 22:20:47 -0500
-Received: from zfrontend1.aha.ru ([195.2.83.147]:34660 "EHLO aha.ru"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756517Ab0KVDUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 22:20:46 -0500
-From: "werner" <w.landgraf@ru.ru>
-Subject: 2.6.37-rc3 problems
-To: linux-kernel@vger.kernel.org
-X-Mailer: CommuniGate Pro WebUser Interface v.4.3.12
-Date: Sun, 21 Nov 2010 23:20:40 -0400
-Message-ID: <web-407197955@zbackend1.aha.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"; format="flowed"
-Content-Transfer-Encoding: 8bit
+	id S1756652Ab0KVDbX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 22:31:23 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:58296 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756501Ab0KVDbW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 22:31:22 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+From: Milton Miller <miltonm@bga.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mm@vger.kernel.org>,
+        <linux-ext4@vger.kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Arun Bhanu <ab@arunbhanu.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [BUG?] [Ext4] INFO: suspicious rcu_dereference_check() usage
+Message-id: <rcu-radix-tree@mdm.bga.com>
+In-Reply-To: <AANLkTimeSWWo-TAJPPH81OO_h1zFzWAT1Gg=XSLyFftH@mail.gmail.com>
+References: <20101121112611.GB4267@deepthought.bhanu.net>
+	<20101121133024.GF23423@thunk.org>
+	<20101121133024.GF23423@thunk.org> 
+	<20101121153949.GD20947@barrios-desktop>
+	<20101121173726.GG23423@thunk.org>
+	<AANLkTimeSWWo-TAJPPH81OO_h1zFzWAT1Gg=XSLyFftH@mail.gmail.com>
+Date: Sun, 21 Nov 2010 21:31:14 -0600
+X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.37-rc3 problems
+On 2010-11-22 at around 0:38:49, Minchan Kim wrote:
+> On Mon, Nov 22, 2010 at 2:37 AM, Ted Ts'o <tytso@mit.edu> wrote:
+> > On Mon, Nov 22, 2010 at 12:39:49AM +0900, Minchan Kim wrote:
+> > >
+> > > I think it's no problem.
+> > >
+> > > That's because migration always holds lock_page on the file page.
+> > > So the page couldn't remove from radix.
+> >
+> > It may be "ok" in that it won't cause a race, but it still leaves an
+> > unsightly warning if LOCKDEP is enabled, and LOCKDEP warnings will
+> > cause /proc_lock_stat to be disabled.  So I think it still needs to be
+> > fixed by adding rcu_read_lock()/rcu_read_unlock() to
+> > migrate_page_move_mapping().
+> >
+> >                                                     - Ted
+> >
+> 
+> Yes. if it is really "ok" about race, we will add rcu_read_lock with
+> below comment to prevent false positive.
+> "suppress RCU lockdep false positives".
+> But I am not sure it's good although rcu_read_lock is little cost.
+> Whenever we find false positive, should we add rcu_read_lock to
+> suppress although it's no problem in real product?
+> Couldn't we provide following function? (or we might have already it
+> but I missed it. )
+> 
+> /*
+>  * Suppress RCU lockdep false positive.
+>  */
+> #ifdef CONFIG_PROVE_RCU
+> #define rcu_read_lock_suppress rcu_read_lock
+> #else
+> #define rcu_read_lock_suppress
+> #endif
 
-easycap_main.c lines 4251,4 : implicit declaration 
-lock-kernel   ,  unlock_kernel
+No, you don't need anything like this, as rcu_dereference_check already
+takes a test for alternate locking.
 
-(compilation error)
+However, looking more closely at the code, it appears this is the
+"the tree is write locked" case as described in radix-tree.h
 
-wl
----
-Professional hosting for everyone - http://www.host.ru
+Looking at rcupdate.h, perhaps we need a version of radix_tree_deref_slot
+that uses rcu_dereference_protected?
+
+Copying Paul McKenney for rcu ...
+
+milton
