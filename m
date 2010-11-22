@@ -1,84 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab0KVSMu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 13:12:50 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:42135 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756634Ab0KVSMt (ORCPT
+	id S1756900Ab0KVSM4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 13:12:56 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:61659 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756863Ab0KVSMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 13:12:49 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: holzheu@linux.vnet.ibm.com
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Oleg Nesterov <oleg@redhat.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org
-Subject: Re: [patch 0/4] taskstats: Improve cumulative time accounting
-In-Reply-To: Your message of "Mon, 22 Nov 2010 13:47:55 +0100."
-             <1290430075.5655.3.camel@holzheu-laptop>
-From: Valdis.Kletnieks@vt.edu
-References: <20101119201108.269346583@linux.vnet.ibm.com> <1290197955.2109.1617.camel@laptop> <1290423780.1974.1.camel@holzheu-laptop>
-            <1290430075.5655.3.camel@holzheu-laptop>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1290449494_5325P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Mon, 22 Nov 2010 13:11:34 -0500
-Message-ID: <9359.1290449494@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020208.4CEAB256.0211,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Mon, 22 Nov 2010 13:12:54 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=Q+SJnVTLgwJkPDuxbekQn1mFyaHf6oAp9vgkWHir+t4aAXSJuJkddE5trKPF+dy/vt
+         mV6cRWJJrcRvLdd/w5MApNbU5JLkj3TAEyPaze/MD8sp/Uq/BSVnxRJt1UKVmXaRS620
+         2t6SALR3sCAMyue5cHV3qRB8hrcJsOoY9MZ8o=
+From: Rabin Vincent <rabin@rab.in>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jreiser@BitWagon.com, Rabin Vincent <rabin@rab.in>
+Subject: [PATCH] ftrace/ARM: add ARM support for C version of recordmcount
+Date: Mon, 22 Nov 2010 23:43:06 +0530
+Message-Id: <1290449586-1512-1-git-send-email-rabin@rab.in>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1290449494_5325P
-Content-Type: text/plain; charset=us-ascii
+Depending on the compiler version, ARM GCC calls the mcount function
+either __gnu_mcount_nc or mcount.
 
-On Mon, 22 Nov 2010 13:47:55 +0100, Michael Holzheu said:
+Also, arch/arm/kernel/ftrace.c references mcount like
+kernel/tracing/ftrace.c, so change the exclusion filter to match any
+ftrace.c
 
-> Currently the cumulative time accounting in Linux is not complete.
-> Due to POSIX POSIX.1-2001, the CPU time of processes is not accounted
-> to the cumulative time of the parents, if the parents ignore SIGCHLD
-> or have set SA_NOCLDWAIT. This behaviour has the major drawback that
-> it is not possible to calculate all consumed CPU time of a system by
-> looking at the current tasks. CPU time can be lost.
-> 
-> This patch adds a new sysctl "kernel.full_cdata" that allows to switch
-> between the POSIX behavior and complete cumulative accounting.
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+---
+ arch/arm/Kconfig       |    1 +
+ scripts/recordmcount.c |    7 +++++--
+ scripts/recordmcount.h |    5 +++--
+ 3 files changed, 9 insertions(+), 4 deletions(-)
 
-> +unsigned int full_cdata_enabled = 1;
-
-This probably needs to default to "current kernel behavior" but allow
-sysadmins to change to the new behavior.
-
---==_Exmh_1290449494_5325P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFM6rJWcC3lWbTT17ARAhLuAJ9w9yHiwsgg93iJ9IglEfL7oX5UjQCeK/t3
-zhgax7MWZ1/i9HVqgzueW/o=
-=PjvI
------END PGP SIGNATURE-----
-
---==_Exmh_1290449494_5325P--
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 81c71da..5fdddda 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -23,6 +23,7 @@ config ARM
+ 	select PERF_USE_VMALLOC
+ 	select HAVE_REGS_AND_STACK_ACCESS_API
+ 	select HAVE_HW_BREAKPOINT if (PERF_EVENTS && (CPU_V6 || CPU_V7))
++	select HAVE_C_RECORDMCOUNT
+ 	help
+ 	  The ARM series is a line of low-power-consumption RISC chip designs
+ 	  licensed by ARM Ltd and targeted at embedded applications and
+diff --git a/scripts/recordmcount.c b/scripts/recordmcount.c
+index f2f32ee..038b3d1 100644
+--- a/scripts/recordmcount.c
++++ b/scripts/recordmcount.c
+@@ -38,6 +38,7 @@ static void *ehdr_curr; /* current ElfXX_Ehdr *  for resource cleanup */
+ static char gpfx;	/* prefix for global symbol name (sometimes '_') */
+ static struct stat sb;	/* Remember .st_size, etc. */
+ static jmp_buf jmpenv;	/* setjmp/longjmp per-file error escape */
++static const char *altmcount;	/* alternate mcount symbol name */
+ 
+ /* setjmp() return values */
+ enum {
+@@ -299,7 +300,9 @@ do_file(char const *const fname)
+ 		fail_file();
+ 	} break;
+ 	case EM_386:	 reltype = R_386_32;                   break;
+-	case EM_ARM:	 reltype = R_ARM_ABS32;                break;
++	case EM_ARM:	 reltype = R_ARM_ABS32;
++			 altmcount = "__gnu_mcount_nc";
++			 break;
+ 	case EM_IA_64:	 reltype = R_IA64_IMM64;   gpfx = '_'; break;
+ 	case EM_MIPS:	 /* reltype: e_class    */ gpfx = '_'; break;
+ 	case EM_PPC:	 reltype = R_PPC_ADDR32;   gpfx = '_'; break;
+@@ -357,7 +360,7 @@ do_file(char const *const fname)
+ int
+ main(int argc, char const *argv[])
+ {
+-	const char ftrace[] = "kernel/trace/ftrace.o";
++	const char ftrace[] = "/ftrace.o";
+ 	int ftrace_size = sizeof(ftrace) - 1;
+ 	int n_error = 0;  /* gcc-4.3.0 false positive complaint */
+ 
+diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
+index 58e933a..8087bc8 100644
+--- a/scripts/recordmcount.h
++++ b/scripts/recordmcount.h
+@@ -275,11 +275,12 @@ static uint_t *sift_rel_mcount(uint_t *mlocp,
+ 			Elf_Sym const *const symp =
+ 				&sym0[Elf_r_sym(relp)];
+ 			char const *symname = &str0[w(symp->st_name)];
++			char const *mcount = '_' == gpfx ? "_mcount" : "mcount";
+ 
+ 			if ('.' == symname[0])
+ 				++symname;  /* ppc64 hack */
+-			if (0 == strcmp((('_' == gpfx) ? "_mcount" : "mcount"),
+-					symname))
++			if (0 == strcmp(mcount, symname) ||
++			    (altmcount && 0 == strcmp(altmcount, symname)))
+ 				mcountsym = Elf_r_sym(relp);
+ 		}
+ 
+-- 
+1.7.2.3
 
