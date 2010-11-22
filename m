@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab0KVKlV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 05:41:21 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:35121 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754115Ab0KVKlU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 05:41:20 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Subject: What should poll() return when a device is unregistered ? (was "media: Media device node support")
-Date: Mon, 22 Nov 2010 11:41:27 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r1; KDE/4.5.3; x86_64; ; )
-Cc: Jonathan Corbet <corbet@lwn.net>, linux-media@vger.kernel.org,
-        sakari.ailus@maxwell.research.nokia.com, linux-kernel@vger.kernel.org
-References: <1285241696-16826-1-git-send-email-laurent.pinchart@ideasonboard.com> <201011220035.55615.laurent.pinchart@ideasonboard.com> <201011221008.06852.hverkuil@xs4all.nl>
-In-Reply-To: <201011221008.06852.hverkuil@xs4all.nl>
+	id S1754713Ab0KVKlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 05:41:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52759 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754336Ab0KVKln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 05:41:43 -0500
+Message-ID: <4CEA48DF.2080605@redhat.com>
+Date: Mon, 22 Nov 2010 12:41:35 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101103 Fedora/1.0-0.33.b2pre.fc14 Lightning/1.0b3pre Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Gregory Haskins <ghaskins@novell.com>,
+        Chris Lalancette <clalance@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm: fast-path msi injection with irqfd
+References: <20101118170907.GA14039@redhat.com>
+In-Reply-To: <20101118170907.GA14039@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201011221141.27945.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
+On 11/18/2010 07:09 PM, Michael S. Tsirkin wrote:
+> Store irq routing table pointer in the irqfd object,
+> and use that to inject MSI directly without bouncing out to
+> a kernel thread.
+>
+> While we touch this structure, rearrange irqfd fields to make fastpath
+> better packed for better cache utilization.
+>
+> This also adds some comments about locking rules and rcu usage in code.
+>
+> Some notes on the design:
+> - Use pointer into the rt instead of copying an entry,
+>    to make it possible to use rcu, thus side-stepping
+>    locking complexities.  We also save some memory this way.
+> - Old workqueue code is still used for level irqs.
+>    I don't think we DTRT with level anyway, however,
+>    it seems easier to keep the code around as
+>    it has been thought through and debugged, and fix level later than
+>    rip out and re-instate it later.
+>
 
-On Monday 22 November 2010 10:08:06 Hans Verkuil wrote:
-> On Monday, November 22, 2010 00:35:54 Laurent Pinchart wrote:
-> > Hi Jonathan,
-> > 
-> > I forgot to answer one of your comments.
-> > 
-> > On Wednesday 17 November 2010 01:31:15 Jonathan Corbet wrote:
-> > 
-> > [snip]
-> > 
-> > > > +static unsigned int media_poll(struct file *filp,
-> > > > +			       struct poll_table_struct *poll)
-> > > > +{
-> > > > +	struct media_devnode *mdev = media_devnode_data(filp);
-> > > > +
-> > > > +	if (!mdev->fops->poll || !media_devnode_is_registered(mdev))
-> > > > +		return DEFAULT_POLLMASK;
-> > > > +	return mdev->fops->poll(filp, poll);
-> > > > +}
-> > > 
-> > > If it's not registered, I would expect poll() to return an error.
-> > 
-> > Agreed. I'll return POLLERR | POLLHUP in that case. Is that fine with you
-> > ?
-> 
-> When I looked at this for the core code I decided to just return POLLERR.
-
-I've copied the usbdevfs code which returns POLLERR | POLLHUP when devices are 
-disconnected.
-
-> That seemed to be what the majority of other usb drivers do. ALSA returns
-> POLLERR | POLLNVAL, by the way, which I think is a poor choice.
-
-Indeed, POLLNVAL has a clear semantics that doesn't apply here.
-
-> This doesn't really seem to be standardized :-(
-
-CC'ing LKML with the question.
-
-POLLERR | POLLHUP and POLLERR won't make a difference to select(), but we 
-should still standardize on a poll() return code when devices are unregistered 
-and/or - for hot-pluggable devices - disconnected (for V4L devices 
-unregistered usually means disconnected) ?
+Applied, thanks.
 
 -- 
-Regards,
+error compiling committee.c: too many arguments to function
 
-Laurent Pinchart
