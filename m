@@ -1,167 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605Ab0KVUNs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 15:13:48 -0500
-Received: from vms173009pub.verizon.net ([206.46.173.9]:47836 "EHLO
-	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757576Ab0KVUNp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 15:13:45 -0500
-Date: Mon, 22 Nov 2010 15:13:24 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [PATCH RESEND] tools: add power/x86/x86_energy_perf_policy to
- program MSR_IA32_ENERGY_PERF_BIAS
-In-reply-to: <8739r0rxlz.fsf@basil.nowhere.org>
-Message-id: <alpine.LFD.2.00.1011221348200.19247@x980>
-References: <alpine.LFD.2.00.1006161659140.24913@localhost.localdomain>
- <alpine.LFD.2.00.1009281143070.14962@localhost.localdomain>
- <alpine.LFD.2.00.1010230035360.29399@localhost.localdomain>
- <alpine.LFD.2.00.1011151103280.2939@x980> <8739r0rxlz.fsf@basil.nowhere.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S932216Ab0KVUPM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 15:15:12 -0500
+Received: from claw.goop.org ([74.207.240.146]:44258 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932167Ab0KVUPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 15:15:07 -0500
+Message-ID: <4CEACF49.8040701@goop.org>
+Date: Mon, 22 Nov 2010 12:15:05 -0800
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.12) Gecko/20101027 Fedora/3.1.6-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.6
+MIME-Version: 1.0
+To: Jens Axboe <axboe@kernel.dk>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@lst.de>
+Subject: Re: linux-next: manual merge of the xen tree with Linus' tree
+References: <20101115112352.6cbf5604.sfr@canb.auug.org.au> <4CE1A07B.5010202@goop.org> <4CE1A124.3010108@kernel.dk>
+In-Reply-To: <4CE1A124.3010108@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andy,
+On 11/15/2010 01:07 PM, Jens Axboe wrote:
+> On 2010-11-15 22:04, Jeremy Fitzhardinge wrote:
+>> On 11/14/2010 04:23 PM, Stephen Rothwell wrote:
+>>> Hi all,
+>>>
+>>> Today's linux-next merge of the xen tree got a conflict in
+>>> drivers/block/xen-blkfront.c between commit
+>>> 02e031cbc843b010e72fcc05c76113c688b2860f ("block: remove
+>>> REQ_HARDBARRIER") from Linus' tree and commits
+>>> c64e38ea17a81721da0393584fd807f8434050fa ("xen/blkfront: map REQ_FLUSH
+>>> into a full barrier") and be2f8373c188ed1f5d36003c9928e4d695213080
+>>> ("xen/blkfront: Implement FUA with BLKIF_OP_WRITE_BARRIER") from the xen
+>>> tree.
+>>>
+>>> I used the xen tree version.
+>> I'll drop that because you should be seeing those changes come via Jens.
+> Yep, since Linus pulled the last batch, for-linus now has the next bits
+> (which include the xen barrier set).
 
-Thank you for the review!
+These don't seem to be in -rc3.  Did they get dropped on the ground
+somewhere?
 
-responses below.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/blkfront
 
-> > +install :
-> > +	install x86_energy_perf_policy /usr/bin/x86_energy_perf_policy
-> 
-> It's not clear to me how this Makefile ensures it's only
-> build on x86. 
-> 
-> If someone on another architecture does a full tools build
-> in the future (I think that is not wired up yet, but should
-> eventually) such a mechanism would be needed.
+Jeremy Fitzhardinge (4):
+      xen/blkfront: map REQ_FLUSH into a full barrier
+      xen/blkfront: change blk_shadow.request to proper pointer
+      xen/blkfront: Implement FUA with BLKIF_OP_WRITE_BARRIER
+      xen/blkfront: cope with backend that fail empty BLKIF_OP_WRITE_BARRIER requests
 
-Per the comments from Andrew and others, the concept of a
-"full tools build" doesn't actually exit (yet).
+ drivers/block/xen-blkfront.c |   55 ++++++++++++++++++++++++-----------------
+ 1 files changed, 32 insertions(+), 23 deletions(-)
 
-So I guess the only assurance that somebody not on x86 would run
-make in this directory this utility lives in tools/power/x86/
-
-Note that there are other utilities under tools
-which have no Makefile at all...
-
-> ...I would prefer a manpage
-
-I'll be happy to write a manpage.
-Is there good example I should follow?
-
-> > +cmdline(int argc, char **argv) {
-> 
-> No type?
-
-okay,  now void.
-
-> > +	while ((opt = getopt(argc, argv, "+rvc:")) != -1) {
-> 
-> Maybe it's me, but I prefer having long options too (getopt_long)
-> These are easier to memorize.
-
-I'm not inclined to bother, as the use-case for this utility
-is to be invoked by another program, and the options available
-are really there just for verification/debugging, and don't
-really merit being memorized by a human after that task.
-
-> An obvious improvement would be to put the exit() into usage()
-
-done.
-
-> > +			new_bias = atoll(argv[optind]);
-> 
-> If you used strtoull() you could actually check if the input
-> is really a number (end == argv[optind])
-
-done.
-
-> > +	asm("cpuid" : "=a" (max_level), "=b" (ebx), "=c" (ecx),
-> > +		"=d" (edx) : "a" (0));
-> 
-> Strictly for 386/early 486 you would need to check if cpuid
-> is available using pushf too. Perhaps it's safer to use cpuinfo
-
-Meh, maybe simpler to crash on 486 and earlier?:-)
-I'm not fond of parsing /proc/cpuinfo.
-
-> > +check_dev_msr() {
-> 
-> Return type missing again
-
-routine deleted.
-
-> > +	struct stat sb;
-> > +
-> > +	if (stat("/dev/cpu/0/msr", &sb)) {
-> > +		printf("no /dev/cpu/0/msr\n");
-> 
-> This will fail if we eventually implement cpu 0 hotplug...
-> Better readdir or similar.
-
-simpler to delete check_dev_msr() and stumble forward
-assuming /dev/cpu/*/msr exists, and print a message and
-exit if it doesn't.
-
-> > +		printf("Try \"# modprobe msr\"\n");
-> > +		exit(-5);
-> 
-> Again -5 is unusual.
-
-okay, I canged all the exits to 1.
-
-> > +	sprintf(msr_path, "/dev/cpu/%d/msr", cpu);
-> > +	fd = open(msr_path, O_RDONLY);
-> > +	if (fd < 0) {
-> > +		perror(msr_path);
-> > +		exit(-1);
-> 
-> This should be a soft error because the CPU can go away
-> any time.
-
-In the highly unlikely scenario that somebody uses
-the -r option to excerise the read-only code,
-and simultaneously invokes and completes a cpu hot remove
-during the execution of this utility,
-I think the utility exiting is just as useful,
-and less complicated, than handling soft error.
-Since in either case, the user would probably
-simply re-invoke the utility to see what the
-current state of the settled machine is.
-
-> > +/*
-> > + * run func() on every cpu in /dev/cpu
-> > + */
-...
-> > +	fp = fopen(proc_stat, "r");
-> 
-> Using /proc/stat to get the number of CPUs is unusual
-> and you don't handle holes in the cpu numbers which
-> can happen due to hotplug.
-
-The code does handle holes in cpu number namespace.
-
-The "num_cpus" variable was a hold-over from
-an older version that did not, and so I've deleted it.
-
-> I would just readdir or fnmatch the MSR /dev/cpu/* directories.
-
-I used to do that, but Arjan convinced me to use /proc/stat.
-turbostat, rdmsr, and wrmsr all use /proc/stat.
-
-thanks,
--Len Brown, Intel Open Source Technology Center
-
-
+Thanks,
+	J
 
 
