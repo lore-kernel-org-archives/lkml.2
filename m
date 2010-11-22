@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757547Ab0KVULS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 15:11:18 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54405 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755512Ab0KVULQ (ORCPT
+	id S1757577Ab0KVUL2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 15:11:28 -0500
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:52308 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755512Ab0KVUL1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 15:11:16 -0500
-Date: Mon, 22 Nov 2010 12:10:49 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: gerald.schaefer@de.ibm.com
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [PATCH] mutex: Introduce arch_mutex_cpu_relax()
-Message-Id: <20101122121049.01c4690a.akpm@linux-foundation.org>
-In-Reply-To: <1290437256.7455.4.camel@thinkpad>
-References: <1290437256.7455.4.camel@thinkpad>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Mon, 22 Nov 2010 15:11:27 -0500
+Date: Mon, 22 Nov 2010 20:09:31 +0000
+From: Alban Crequy <alban.crequy@collabora.co.uk>
+To: "=?UTF-8?B?UsOpbWk=?= Denis-Courmont" <remi@remlab.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/9] AF_UNIX: Documentation on multicast Unix Sockets
+Message-ID: <20101122200931.106731cd@chocolatine.cbg.collabora.co.uk>
+In-Reply-To: <201011222107.41548.remi@remlab.net>
+References: <20101122183447.124afce5@chocolatine.cbg.collabora.co.uk>
+	<1290450982-17480-7-git-send-email-alban.crequy@collabora.co.uk>
+	<201011222107.41548.remi@remlab.net>
+Organization: Collabora
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Nov 2010 15:47:36 +0100
-Gerald Schaefer <gerald.schaefer@de.ibm.com> wrote:
+Le Mon, 22 Nov 2010 21:07:40 +0200,
+"Rémi Denis-Courmont" <remi@remlab.net> a écrit :
 
-> From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+> Le lundi 22 novembre 2010 20:36:20 Alban Crequy, vous avez écrit :
+> > +Multicast Unix sockets
+> > +======================
+> > +
+> > +Multicast group memberships are stored in struct unix_mcast nodes.
+> > An Unix +socket can join several multicast groups. Struct
+> > unix_mcast nodes are doubly +linked:
+> > +- In (struct unix_sock)->mcast_subscriptions
+> > +- In (struct unix_sock)->mcast_members
 > 
-> The spinning mutex implementation uses cpu_relax() in busy loops as a
-> compiler barrier. Depending on the architecture, cpu_relax() may do more
-> than needed in this specific mutex spin loops. On System z we also give
-> up the time slice of the virtual cpu in cpu_relax(), which prevents
-> effective spinning on the mutex.
-> 
-> This patch replaces cpu_relax() in the spinning mutex code with
-> arch_mutex_cpu_relax(), which can be defined by each architecture that
-> selects HAVE_ARCH_MUTEX_CPU_RELAX. The default is still cpu_relax(), so
-> this patch should not affect other architectures than System z for now.
-> 
-> ...
->
-> --- a/include/linux/mutex.h
-> +++ b/include/linux/mutex.h
-> @@ -160,4 +160,8 @@ extern int mutex_trylock(struct mutex *l
->  extern void mutex_unlock(struct mutex *lock);
->  extern int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
->  
-> +#ifndef CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX
-> +#define arch_mutex_cpu_relax()	cpu_relax()
-> +#endif
+> I may be stupid, but I found this whole documentation very confusing,
+> and so the API it tries to describe. Traditionally:
+> - Senders may or not may be part of the group and are not kept track
+> of.
+> - Receivers join to the group then receive message sent to it.
+> - Loopback defines whether a sender receives its own echo if it sends
+> to a group that it has joined.
+> - If connected to a multicast group, messages from the socket are
+> routed to the group (in absence of a contradictoy socket address).
+> This has no effect on membership to the multicast group under any
+> circumstance.
 
-A simpler way of doing this is to remove the CONFIG_ variable
-altogether and do 
+I keep these traditional properties for multicast on Unix sockets.
 
-#ifndef arch_mutex_cpu_relax
-#define arch_mutex_cpu_relax()	cpu_relax()
-#endif
+> You cannot 'listen' or 'accept' on a multicast group.
 
-When doing this, one should be clear about _which_ arch file has the
-responsibility of defining arch_mutex_cpu_relax, and make sure that
-this arch file is reliably included in the .c file.
+Datagram sockets cannot listen() or accept() but seqpacket sockets can.
+I would like multicast to work on seqpacket sockets too. In this case,
+there is a central daemon who listen(), and accept() returns a new
+socket. The central daemon controls the lifetime of the multicast
+group and can receive the messages from the peers on the socket
+returned by accept() if UNIX_MREQ_SEND_TO_PEER is set.
+
+The accepted socket could join the multicast group (and then receive
+messages addressed to the group) with the setsockopt() call, but then
+there would be a race that it may not receive the first messages if a
+peer connect() and send a message immediately afterwards. connect() can
+returns on the peer process before the daemon accept() and runs
+setsockopt(). I added the flag UNIX_MREQ_AUTOJOIN (to be set when
+creating the multicast group) to prevent that race.
+
+Using connected sockets (seqpacket) is useful for D-Bus because a
+central daemon can know when members are connecting and disconnecting
+and then emit the D-Bus signal 'NameOwnerChanged'.
+
+> So I am not entirely clear what semantics your patchset is following.
+> But it does not seem like "multicast" to me and therefore seems not
+> very well documented :-(
+
+I am willing to improve it.
+
+-- 
+Alban
