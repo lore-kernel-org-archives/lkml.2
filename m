@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab0KVBGQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 20:06:16 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42017 "EHLO
+	id S1756501Ab0KVBEZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 20:04:25 -0500
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:35395 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756452Ab0KVBEX (ORCPT
+	with ESMTP id S1756238Ab0KVBED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 20:04:23 -0500
+	Sun, 21 Nov 2010 20:04:03 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ifYMF7OQXCLtPAFgScxekKYv13Q4XNlalT/DlXXOgiTGsOTjUTBmsvatIUiNG9Zwb3
-         eUOI+GeY1OHCUJYiMKOCrFjeraVnFWCgD6pWxWhhXF0HtZJnNDRqZ8G80PCMvxxlisRE
-         pM8GnAeTG6xpdKUkx4sx4wz58ZLoDmUdMCNQc=
+        b=O249mRlox42iKfVkFX9ah2iKawFtgUd1hdUoZEENVhkFSw3Rqx22mnUjNvLiHY9uNc
+         T1jfVNXHyrm49tG2NrXoGV3T8tV6kMa1r0SgdwUF57atb012tdpylvapuprg/lcm7nCR
+         EWYgtEjtpJjv9cqpqr3pDNt/RdgcUwywwmsd0=
 From: Tracey Dent <tdent48227@gmail.com>
 To: davem@davemloft.net
 Cc: marcel@holtmann.org, padovan@profusion.mobi,
@@ -24,9 +24,9 @@ Cc: marcel@holtmann.org, padovan@profusion.mobi,
         linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
         netfilter@vger.kernel.org, samuel@sortiz.org,
         Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 15/17] Net: rxrpc: Makefile: Remove deprecated kbuild goal definitions
-Date: Sun, 21 Nov 2010 20:03:26 -0500
-Message-Id: <1290387808-2239-16-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH 06/17] Net: econet: Makefile: Remove deprecated kbuild goal definitions
+Date: Sun, 21 Nov 2010 20:03:17 -0500
+Message-Id: <1290387808-2239-7-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3.2.245.g03276
 In-Reply-To: <1290387808-2239-1-git-send-email-tdent48227@gmail.com>
 References: <1290387808-2239-1-git-send-email-tdent48227@gmail.com>
@@ -40,31 +40,19 @@ Documentation/kbuild/makefiles.txt.
 
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- net/rxrpc/Makefile |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ net/econet/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/net/rxrpc/Makefile b/net/rxrpc/Makefile
-index c46867c..d1c3429 100644
---- a/net/rxrpc/Makefile
-+++ b/net/rxrpc/Makefile
-@@ -2,7 +2,7 @@
- # Makefile for Linux kernel RxRPC
- #
+diff --git a/net/econet/Makefile b/net/econet/Makefile
+index 39f0a77..05fae8b 100644
+--- a/net/econet/Makefile
++++ b/net/econet/Makefile
+@@ -4,4 +4,4 @@
  
--af-rxrpc-objs := \
-+af-rxrpc-y := \
- 	af_rxrpc.o \
- 	ar-accept.o \
- 	ar-ack.o \
-@@ -21,7 +21,7 @@ af-rxrpc-objs := \
- 	ar-transport.o
+ obj-$(CONFIG_ECONET) += econet.o
  
- ifeq ($(CONFIG_PROC_FS),y)
--af-rxrpc-objs += ar-proc.o
-+af-rxrpc-y += ar-proc.o
- endif
- 
- obj-$(CONFIG_AF_RXRPC) += af-rxrpc.o
+-econet-objs := af_econet.o
++econet-y := af_econet.o
 -- 
 1.7.3.2.245.g03276
 
