@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab0KVNcd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 08:32:33 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54783 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750734Ab0KVNca (ORCPT
+	id S1755230Ab0KVNdz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 08:33:55 -0500
+Received: from igw2.watson.ibm.com ([129.34.20.6]:59340 "EHLO
+	igw2.watson.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734Ab0KVNdy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 08:32:30 -0500
-Date: Mon, 22 Nov 2010 13:32:16 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 11/20] ARM: LPAE: Add fault handling support
-Message-ID: <20101122133216.GI31227@n2100.arm.linux.org.uk>
-References: <1289584840-18097-1-git-send-email-catalin.marinas@arm.com> <1289584840-18097-12-git-send-email-catalin.marinas@arm.com> <20101122131546.GG31227@n2100.arm.linux.org.uk> <1290431967.29754.11.camel@e102109-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290431967.29754.11.camel@e102109-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 22 Nov 2010 08:33:54 -0500
+Subject: Re: [PATCH v1.2 0/5] IMA: making i_readcount a first class inode
+ citizen (reposting)
+From: David Safford <safford@watson.ibm.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        jmorris@namei.org, akpm@linux-foundation.org, eparis@redhat.com,
+        viro@zeniv.linux.org.uk, Dave Chinner <david@fromorbit.com>
+In-Reply-To: <1290375229.2412.95.camel@localhost.localdomain>
+References: <1290121382-4039-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <AANLkTin9sYf99fQ_w7Bp4N6Gsm3PR0akpCU=4YEkOaez@mail.gmail.com>
+	 <20101119175053.GC29148@fieldses.org>
+	 <1290345498.2412.38.camel@localhost.localdomain>
+	 <AANLkTikjz3j4j-zLSzagF=wnVE1ROZBGsjtuhGEvB9=n@mail.gmail.com>
+	 <1290375229.2412.95.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 22 Nov 2010 08:33:02 -0500
+Message-ID: <1290432782.2718.14.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 01:19:27PM +0000, Catalin Marinas wrote:
-> On Mon, 2010-11-22 at 13:15 +0000, Russell King - ARM Linux wrote:
-> > On Fri, Nov 12, 2010 at 06:00:31PM +0000, Catalin Marinas wrote:
-> > > @@ -108,7 +113,9 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
-> > > 
-> > >               pte = pte_offset_map(pmd, addr);
-> > >               printk(", *pte=%08lx", pte_val(*pte));
-> > > +#ifndef CONFIG_ARM_LPAE
-> > >               printk(", *ppte=%08lx", pte_val(pte[-LINUX_PTE_OFFSET]));
-> > > +#endif
+On Sun, 2010-11-21 at 16:33 -0500, Mimi Zohar wrote:
+> On Sun, 2010-11-21 at 09:56 -0800, Linus Torvalds wrote:
+> > On Sun, Nov 21, 2010 at 5:18 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > >
+> > > IMA (and the proposed EVM/IMA-appraisal patches) detects file change
+> > > based on i_version. When the file is closed, if the file has changed,
+> > > IMA marks the file as needing to be re-measured. Of course this requires
+> > > the filesystem to be mounted with iversion. Don't know if this helps.
 > > 
-> > This is an unrelated change - should it be in a different patch?
+> > If you only do this at close time, I see a _major_ security hole.
+> > 
+> > The attacker can just write to the file, and keep it open. Ta-daa,
+> > everybody who reads it sees the new contents, but your IMA logic is
+> > oblivious and thinks it doesn't need to be re-measured.
+> > 
+> >                             Linus
 > 
-> It was intended to be in this patch as I couldn't find a better place.
-> This patch sorts out the fault handling (and error reporting) for LPAE
-> and we don't need the additional printk here.
+> Not exactly.  While the file remains open for write, it doesn't make any
+> sense to re-measure the file, as there is nothing preventing the file
+> from continuing to change.  Any measurement would thus be meaningless.
+> Only after the file closes, does it make sense to re-measure.  I did not
+> mean to imply there isn't any indication of the problem in the
+> measurement list, there obviously is.
+> 
+> Mimi
+> 
+To elaborate a bit on Mimi's response - in the case of a malicious
+program keeping a file open for write to avoid measurement:
+1. as she points out, the reason for i_writecount and i_readcount
+   is to detect this "open_writer" problem and log it in both the 
+   measurement list and in the audit log.
+2. the attacker program itself must have been measured before it
+   was executed. 
 
-It doesn't sort the fault error reporting actually.  With pte_val()
-returning u64 constants on LPAE, all the above printk's using %08lx will
-issue warnings.
-
-Also, as one of your previous patches changed the non-LPAE stuff to use
-u32, which is 'unsigned int', %08lx is wrong for them too, and will cause
-the compiler to spit out warnings.
-
-I can only assume this patch hasn't been build-tested, or maybe it has
-but the warnings ignored?
-
-It seems a larger patch is required here - and as such might as well
-become a separate "fix fault reporting" patch.
+dave
