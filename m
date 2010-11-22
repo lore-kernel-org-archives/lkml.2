@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab0KVJA3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 04:00:29 -0500
-Received: from mga02.intel.com ([134.134.136.20]:20126 "EHLO mga02.intel.com"
+	id S1752759Ab0KVJH5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 04:07:57 -0500
+Received: from tomasu.net ([64.85.170.234]:56553 "EHLO mail.tomasu.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752330Ab0KVJA2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 04:00:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,235,1288594800"; 
-   d="scan'208";a="679758329"
-From: "Kleen, Andi" <andi.kleen@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "minchan.kim@gmail.com" <minchan.kim@gmail.com>,
-        Bob Liu <lliubbo@gmail.com>,
-        "fujita.tomonori@lab.ntt.co.jp" <fujita.tomonori@lab.ntt.co.jp>,
-        "m.nazarewicz@samsung.com" <m.nazarewicz@samsung.com>,
-        "pawel@osciak.com" <pawel@osciak.com>,
-        "felipe.contreras@gmail.com" <felipe.contreras@gmail.com>,
-        "kosaki.motohiro@jp.fujitsu.com" <kosaki.motohiro@jp.fujitsu.com>
-Date: Mon, 22 Nov 2010 08:59:57 +0000
-Subject: RE: [PATCH 0/4] big chunk memory allocator v4
-Thread-Topic: [PATCH 0/4] big chunk memory allocator v4
-Thread-Index: AcuILFwXL5r8Gsi2R6+68dJwTzuUDgB9vzIQ
-Message-ID: <F4DF93C7785E2549970341072BC32CD796018FCB@irsmsx503.ger.corp.intel.com>
-References: <20101119171033.a8d9dc8f.kamezawa.hiroyu@jp.fujitsu.com>
- <20101119125653.16dd5452.akpm@linux-foundation.org>
-In-Reply-To: <20101119125653.16dd5452.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751133Ab0KVJHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 04:07:55 -0500
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+Reply-To: thomas@fjellstrom.ca
+To: linux-kernel@vger.kernel.org
+Subject: occasional glitches with 2.6.36+
+Date: Mon, 22 Nov 2010 02:07:45 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.36-nofp; KDE/4.5.2; x86_64; svn-1188918; 2010-10-21)
 MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201011220207.45410.thomas@fjellstrom.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >   But yes, because of fragmentation, this cannot guarantee 100%
-> alloc.
-> >   If alloc_contig_pages() is called in system boot up or movable_zone
-> is used,
-> >   this allocation succeeds at high rate.
-> 
-> So this is an alternatve implementation for the functionality offered
-> by Michal's "The Contiguous Memory Allocator framework".
+Over the past couple months I've noticed a couple problems that don't always 
+happen.
 
-I see them more as orthogonal: Michal's code relies on preallocation
-and manages the memory after that.
+First, the framebuffer (intel gfx) thinks its about 1/4 the size it really is, 
+even after logging in.
 
-This code supplies the infrastructure to replace preallocation
-with just using movable zones.
+Second, my sdhci device likes to error out:
+[    1.615309] irq 17: nobody cared (try booting with the "irqpoll" option)
+[    1.615365] Pid: 0, comm: kworker/0:0 Not tainted 2.6.36-nofp #25
+[    1.615418] Call Trace:
+[    1.615467]  <IRQ>  [<ffffffff810a6086>] __report_bad_irq+0x26/0xa0
+[    1.615564]  [<ffffffff810a628c>] note_interrupt+0x18c/0x1d0
+[    1.615618]  [<ffffffff810a6a3d>] handle_fasteoi_irq+0xcd/0x100
+[    1.615673]  [<ffffffff810057cd>] handle_irq+0x1d/0x30
+[    1.615725]  [<ffffffff81004cee>] do_IRQ+0x6e/0xf0
+[    1.615779]  [<ffffffff81385dd3>] ret_from_intr+0x0/0xa
+[    1.615831]  <EOI>  [<ffffffff8100b4d7>] ? mwait_idle+0xa7/0xf0
+[    1.615923]  [<ffffffff8100b474>] ? mwait_idle+0x44/0xf0
+[    1.615977]  [<ffffffff81388fb1>] ? atomic_notifier_call_chain+0x11/0x20
+[    1.616033]  [<ffffffff810019fa>] cpu_idle+0xba/0x180
+[    1.616088]  [<ffffffff810743b9>] ? clockevents_register_device+0xd9/0xf0
+[    1.616144]  [<ffffffff8137d6f5>] start_secondary+0x1e5/0x1ec
+[    1.616197] handlers:
+[    1.616245] [<ffffffffa02a8100>] (sdhci_irq+0x0/0x5f0 [sdhci])
+[    1.616306] Disabling IRQ #17
 
--Andi
+Neither of these always happen. I've tested with memtest86+ a couple times, 
+nothing so far.
 
+But they both seem to happen at the same time.
 
+-- 
+Thomas Fjellstrom
+thomas@fjellstrom.ca
