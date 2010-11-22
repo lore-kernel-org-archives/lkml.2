@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903Ab0KVQdV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 11:33:21 -0500
+	id S1752550Ab0KVQdd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 11:33:33 -0500
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:55770 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab0KVQdT (ORCPT
+	with ESMTP id S1751992Ab0KVQdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 11:33:19 -0500
+	Mon, 22 Nov 2010 11:33:31 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=GyBmOstvP4NpVek9RlnTiKSierW4UUOin3yek2eHCZ+PW49zZky0zEsJmbVmn5klxx
-         Wcu8KawvmN3mvG0npy9m4CEXkHqWLeff1Z7brFPoHsuZc0WVEYi13+DdE6rfZKZii57v
-         e2bNmXqLz+nHxA0SRYOWyGso6nYlfOiUfBzhQ=
+        b=Tck6nsAp+O/3ztF85mYRnV49Enr7Hqrz25rH/zOUpDuDHdJiYDaheoXF63DtTjeWf8
+         WQaJsoCDF9nao4wj/FvJqq0A734nfXmDGcbXeGqhUNwa1Umwt9DCz0dgZMp2e3C3Dh89
+         jiNBIJNEGKh+fNif+nUsMa/K97VXMcUxyGAZM=
 From: mkl0301@gmail.com
 To: cbouatmailru@gmail.com, avorontsov@mvista.com,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         dbrownell@users.sourceforge.net, linux-usb@vger.kernel.org
 Cc: Mac Lin <mkl0301@gmail.com>
-Subject: [PATCH v2 1/3] ARM: cns3xxx: Add new and export the old power management functions
-Date: Tue, 23 Nov 2010 00:32:43 +0800
-Message-Id: <1290443565-20766-2-git-send-email-mkl0301@gmail.com>
+Subject: [PATCH v2 2/3] ARM: cns3xxx: Add architecture definition for EHCI/OHCI controller
+Date: Tue, 23 Nov 2010 00:32:44 +0800
+Message-Id: <1290443565-20766-3-git-send-email-mkl0301@gmail.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1290443565-20766-1-git-send-email-mkl0301@gmail.com>
 References: <1290443565-20766-1-git-send-email-mkl0301@gmail.com>
@@ -30,129 +30,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Mac Lin <mkl0301@gmail.com>
 
-This patch add cns3xxx_pwr_clk_dis, and export thoes power management functions
-that may be used by many other device drivers on CNS3XXX.
+This patch add plateform_device for EHCI and OHCI controller on CNS3XXX. Power
+reference count (usb_pwr_ref) is used to control enabling and disabling the
+single clock control for both EHCI and OHCI controller.
+
+It also remove EHCI/OHCI unused virtual address definitions.
 
 Signed-off-by: Mac Lin <mkl0301@gmail.com>
 ---
- arch/arm/mach-cns3xxx/core.h            |    4 ++--
- arch/arm/mach-cns3xxx/include/mach/pm.h |   19 +++++++++++++++++++
- arch/arm/mach-cns3xxx/pm.c              |   17 +++++++++++++++++
- 3 files changed, 38 insertions(+), 2 deletions(-)
- create mode 100644 arch/arm/mach-cns3xxx/include/mach/pm.h
+ arch/arm/mach-cns3xxx/cns3420vb.c            |   50 ++++++++++++++++++++++++++
+ arch/arm/mach-cns3xxx/include/mach/cns3xxx.h |    2 -
+ arch/arm/mach-cns3xxx/include/mach/pm.h      |    2 +
+ arch/arm/mach-cns3xxx/pm.c                   |    4 ++
+ 4 files changed, 56 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-cns3xxx/core.h b/arch/arm/mach-cns3xxx/core.h
-index 6b33ec1..c6636bd 100644
---- a/arch/arm/mach-cns3xxx/core.h
-+++ b/arch/arm/mach-cns3xxx/core.h
-@@ -11,13 +11,13 @@
- #ifndef __CNS3XXX_CORE_H
- #define __CNS3XXX_CORE_H
+diff --git a/arch/arm/mach-cns3xxx/cns3420vb.c b/arch/arm/mach-cns3xxx/cns3420vb.c
+index 90fe9ab..4824223 100644
+--- a/arch/arm/mach-cns3xxx/cns3420vb.c
++++ b/arch/arm/mach-cns3xxx/cns3420vb.c
+@@ -107,11 +107,61 @@ static void __init cns3420_early_serial_setup(void)
+ #endif
+ }
  
-+#include <mach/pm.h>
++static struct resource cns3xxx_usb_ehci_resource[] = {
++	[0] = {
++		.start = CNS3XXX_USB_BASE,
++		.end   = CNS3XXX_USB_BASE + SZ_16M - 1,
++		.flags = IORESOURCE_MEM,
++	},
++	[1] = {
++		.start = IRQ_CNS3XXX_USB_EHCI,
++		.flags = IORESOURCE_IRQ,
++	},
++};
 +
- extern void __iomem *gic_cpu_base_addr;
- extern struct sys_timer cns3xxx_timer;
++static u64 cns3xxx_usb_dma_mask = 0xffffffffULL;
++
++static struct platform_device cns3xxx_usb_ehci_device = {
++	.name		= "cns3xxx-ehci",
++	.num_resources	= ARRAY_SIZE(cns3xxx_usb_ehci_resource),
++	.resource	= cns3xxx_usb_ehci_resource,
++	.dev		= {
++		.dma_mask		= &cns3xxx_usb_dma_mask,
++		.coherent_dma_mask	= 0xffffffffULL,
++	},
++};
++
++static struct resource cns3xxx_usb_ohci_resource[] = {
++	[0] = {
++		.start          = CNS3XXX_USB_OHCI_BASE,
++		.end            = CNS3XXX_USB_OHCI_BASE + SZ_16M - 1,
++		.flags          = IORESOURCE_MEM,
++	},
++	[1] = {
++		.start          = IRQ_CNS3XXX_USB_OHCI,
++		.flags          = IORESOURCE_IRQ,
++	},
++};
++
++static u64 cns3xxx_usb_ohci_dma_mask = 0xffffffffULL;
++static struct platform_device cns3xxx_usb_ohci_device = {
++	.name = "cns3xxx-ohci",
++	.dev                = {
++		.dma_mask       = &cns3xxx_usb_ohci_dma_mask,
++		.coherent_dma_mask = 0xffffffffULL,
++	},
++	.num_resources = 2,
++	.resource = cns3xxx_usb_ohci_resource,
++};
++
++
+ /*
+  * Initialization
+  */
+ static struct platform_device *cns3420_pdevs[] __initdata = {
+ 	&cns3420_nor_pdev,
++	&cns3xxx_usb_ehci_device,
++	&cns3xxx_usb_ohci_device,
+ };
  
- void __init cns3xxx_map_io(void);
- void __init cns3xxx_init_irq(void);
- void cns3xxx_power_off(void);
--void cns3xxx_pwr_power_up(unsigned int block);
--void cns3xxx_pwr_power_down(unsigned int block);
+ static void __init cns3420_init(void)
+diff --git a/arch/arm/mach-cns3xxx/include/mach/cns3xxx.h b/arch/arm/mach-cns3xxx/include/mach/cns3xxx.h
+index 6dbce13..191c8e5 100644
+--- a/arch/arm/mach-cns3xxx/include/mach/cns3xxx.h
++++ b/arch/arm/mach-cns3xxx/include/mach/cns3xxx.h
+@@ -165,7 +165,6 @@
+ #define CNS3XXX_USBOTG_BASE_VIRT		0xFFF15000
  
- #endif /* __CNS3XXX_CORE_H */
+ #define CNS3XXX_USB_BASE			0x82000000	/* USB Host Control */
+-#define CNS3XXX_USB_BASE_VIRT			0xFFF16000
+ 
+ #define CNS3XXX_SATA2_BASE			0x83000000	/* SATA */
+ #define CNS3XXX_SATA2_SIZE			SZ_16M
+@@ -184,7 +183,6 @@
+ #define CNS3XXX_2DG_BASE_VIRT			0xFFF1B000
+ 
+ #define CNS3XXX_USB_OHCI_BASE			0x88000000	/* USB OHCI */
+-#define CNS3XXX_USB_OHCI_BASE_VIRT		0xFFF1C000
+ 
+ #define CNS3XXX_L2C_BASE			0x92000000	/* L2 Cache Control */
+ #define CNS3XXX_L2C_BASE_VIRT			0xFFF27000
 diff --git a/arch/arm/mach-cns3xxx/include/mach/pm.h b/arch/arm/mach-cns3xxx/include/mach/pm.h
-new file mode 100644
-index 0000000..102617b
---- /dev/null
+index 102617b..ddbe7d7 100644
+--- a/arch/arm/mach-cns3xxx/include/mach/pm.h
 +++ b/arch/arm/mach-cns3xxx/include/mach/pm.h
-@@ -0,0 +1,19 @@
-+/*
-+ * Copyright 2000 Deep Blue Solutions Ltd
-+ * Copyright 2004 ARM Limited
-+ * Copyright 2008 Cavium Networks
-+ *
-+ * This file is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License, Version 2, as
-+ * published by the Free Software Foundation.
-+ */
+@@ -16,4 +16,6 @@ void cns3xxx_pwr_clk_dis(unsigned int block);
+ void cns3xxx_pwr_power_up(unsigned int block);
+ void cns3xxx_pwr_power_down(unsigned int block);
+ 
++extern atomic_t usb_pwr_ref;
 +
-+#ifndef __CNS3XXX_PM_H
-+#define __CNS3XXX_PM_H
-+
-+void cns3xxx_pwr_clk_en(unsigned int block);
-+void cns3xxx_pwr_clk_dis(unsigned int block);
-+void cns3xxx_pwr_power_up(unsigned int block);
-+void cns3xxx_pwr_power_down(unsigned int block);
-+
-+#endif /* __CNS3XXX_PM_H */
+ #endif /* __CNS3XXX_PM_H */
 diff --git a/arch/arm/mach-cns3xxx/pm.c b/arch/arm/mach-cns3xxx/pm.c
-index 38e4470..a4495e6 100644
+index a4495e6..784af93 100644
 --- a/arch/arm/mach-cns3xxx/pm.c
 +++ b/arch/arm/mach-cns3xxx/pm.c
-@@ -6,6 +6,8 @@
-  * published by the Free Software Foundation.
-  */
- 
-+#include <linux/init.h>
-+#include <linux/module.h>
+@@ -10,6 +10,7 @@
+ #include <linux/module.h>
  #include <linux/io.h>
  #include <linux/delay.h>
++#include <asm/atomic.h>
  #include <mach/system.h>
-@@ -18,6 +20,16 @@ void cns3xxx_pwr_clk_en(unsigned int block)
- 	reg |= (block & PM_CLK_GATE_REG_MASK);
- 	__raw_writel(reg, PM_CLK_GATE_REG);
- }
-+EXPORT_SYMBOL(cns3xxx_pwr_clk_en);
-+
-+void cns3xxx_pwr_clk_dis(unsigned int block)
-+{
-+	u32 reg = __raw_readl(PM_CLK_GATE_REG);
-+
-+	reg &= ~(block & PM_CLK_GATE_REG_MASK);
-+	__raw_writel(reg, PM_CLK_GATE_REG);
-+}
-+EXPORT_SYMBOL(cns3xxx_pwr_clk_dis);
+ #include <mach/cns3xxx.h>
  
- void cns3xxx_pwr_power_up(unsigned int block)
- {
-@@ -29,6 +41,7 @@ void cns3xxx_pwr_power_up(unsigned int block)
- 	/* Wait for 300us for the PLL output clock locked. */
- 	udelay(300);
- };
-+EXPORT_SYMBOL(cns3xxx_pwr_power_up);
- 
- void cns3xxx_pwr_power_down(unsigned int block)
- {
-@@ -38,6 +51,7 @@ void cns3xxx_pwr_power_down(unsigned int block)
- 	reg |= (block & CNS3XXX_PWR_PLL_ALL);
- 	__raw_writel(reg, PM_PLL_HM_PD_CTRL_REG);
- };
-+EXPORT_SYMBOL(cns3xxx_pwr_power_down);
- 
- static void cns3xxx_pwr_soft_rst_force(unsigned int block)
- {
-@@ -56,6 +70,7 @@ static void cns3xxx_pwr_soft_rst_force(unsigned int block)
- 
- 	__raw_writel(reg, PM_SOFT_RST_REG);
- }
-+EXPORT_SYMBOL(cns3xxx_pwr_soft_rst_force);
- 
- void cns3xxx_pwr_soft_rst(unsigned int block)
- {
-@@ -69,6 +84,7 @@ void cns3xxx_pwr_soft_rst(unsigned int block)
- 	}
- 	cns3xxx_pwr_soft_rst_force(block);
- }
-+EXPORT_SYMBOL(cns3xxx_pwr_soft_rst);
- 
- void arch_reset(char mode, const char *cmd)
- {
-@@ -99,3 +115,4 @@ int cns3xxx_cpu_clock(void)
- 
+@@ -116,3 +117,6 @@ int cns3xxx_cpu_clock(void)
  	return cpu;
  }
-+EXPORT_SYMBOL(cns3xxx_cpu_clock);
+ EXPORT_SYMBOL(cns3xxx_cpu_clock);
++
++atomic_t usb_pwr_ref = ATOMIC_INIT(0);
++EXPORT_SYMBOL(usb_pwr_ref);
 -- 
 1.7.3
 
