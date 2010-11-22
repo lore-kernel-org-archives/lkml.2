@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab0KVEIT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 23:08:19 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:5843 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756460Ab0KVEIS (ORCPT
+	id S1756630Ab0KVELN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 23:11:13 -0500
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:34835 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756501Ab0KVELM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 23:08:18 -0500
-Message-ID: <001001cb89fa$e4453040$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "David Miller" <davem@davemloft.net>
-Cc: <wg@grandegger.com>, <w.sang@pengutronix.de>, <chripell@fsfe.org>,
-        <21cnbao@gmail.com>, <sameo@linux.intel.com>,
-        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <qi.wang@intel.com>,
-        <yong.y.wang@intel.com>, <andrew.chih.howe.khor@intel.com>,
-        <joel.clark@intel.com>, <kok.howg.ewe@intel.com>,
-        <margie.foster@intel.com>
-References: <4CE9C6A4.1090809@dsn.okisemi.com><20101121.180535.193735538.davem@davemloft.net><00b201cb89ec$a7fa3170$66f8800a@maildom.okisemi.com> <20101121.194249.193718430.davem@davemloft.net>
-Subject: Re: [PATCH net-next-2.6 7/17 v2] can: EG20T PCH: Modify function/macro name/type
-Date: Mon, 22 Nov 2010 13:08:14 +0900
+	Sun, 21 Nov 2010 23:11:12 -0500
+Date: Mon, 22 Nov 2010 13:09:54 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Matt Mackall <mpm@selenic.com>
+Subject: Re: [BUGFIX][PATCH] pagemap: set pagemap walk limit to PMD boundary
+Message-ID: <20101122040953.GB3017@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1290157665-17215-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20101122120102.e0e76373.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1.5
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <20101122120102.e0e76373.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > My previous v2 two patches don't influence subsequent patches.
+> > @@ -776,7 +777,7 @@ static ssize_t pagemap_read(struct file *file, char __user *buf,
+> >  		unsigned long end;
+> >
+> >  		pm.pos = 0;
+> > -		end = start_vaddr + PAGEMAP_WALK_SIZE;
+> > +		end = (start_vaddr + PAGEMAP_WALK_SIZE) & PAGEMAP_WALK_MASK;
+> >  		/* overflow ? */
+> >  		if (end < start_vaddr || end > end_vaddr)
+> >  			end = end_vaddr;
 >
-> I still want you to resubmit the entire series.
-
-I see.
-I will resubmit entire patches.
-
----
-Thanks,
-
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
-
------ Original Message ----- 
-From: "David Miller" <davem@davemloft.net>
-To: <tomoya-linux@dsn.okisemi.com>
-Cc: <wg@grandegger.com>; <w.sang@pengutronix.de>; <chripell@fsfe.org>; <21cnbao@gmail.com>; <sameo@linux.intel.com>;
-<socketcan-core@lists.berlios.de>; <netdev@vger.kernel.org>; <linux-kernel@vger.kernel.org>; <qi.wang@intel.com>;
-<yong.y.wang@intel.com>; <andrew.chih.howe.khor@intel.com>; <joel.clark@intel.com>; <kok.howg.ewe@intel.com>;
-<margie.foster@intel.com>
-Sent: Monday, November 22, 2010 12:42 PM
-Subject: Re: [PATCH net-next-2.6 7/17 v2] can: EG20T PCH: Modify function/macro name/type
-
-
-> From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-> Date: Mon, 22 Nov 2010 11:26:19 +0900
+> Ack.
 >
-> > My previous v2 two patches don't influence subsequent patches.
->
-> I still want you to resubmit the entire series.
->
+> But ALIGN() can't be used ?
 
+ALIGN() returns the same address as the input if it is already aligned,
+but what we need here is the next PMD boundary. So something like
+
+                end = IS_ALIGNED(start_vaddr, PAGEMAP_WALK_SIZE) ?
+                        start_vaddr + PAGEMAP_WALK_SIZE :
+                        ALIGN(start_vaddr, PAGEMAP_WALK_SIZE)          
+
+keeps the semantics, but I don't like it because it's lengthy.
+
+Anyway, thanks for your comment.
+
+Naoya Horiguchi
