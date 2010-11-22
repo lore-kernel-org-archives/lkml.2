@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946Ab0KVTq7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 14:46:59 -0500
-Received: from cantor.suse.de ([195.135.220.2]:56052 "EHLO mx1.suse.de"
+	id S1757288Ab0KVTsg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 14:48:36 -0500
+Received: from kroah.org ([198.145.64.141]:36535 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755750Ab0KVTq5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 14:46:57 -0500
-Date: Mon, 22 Nov 2010 11:46:43 -0800
-From: Greg KH <gregkh@suse.de>
-To: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Brett Rudley <brudley@broadcom.com>,
-        Henry Ptasinski <henryp@broadcom.com>, linux-wireless@vger.kernel.org
-Subject: Re: linux-next: Tree for November 22
-Message-ID: <20101122194643.GB21985@suse.de>
-References: <20101122134911.b7e106f9.sfr@canb.auug.org.au>
- <AANLkTi=QeU_vb6+XRei0pqz7GSfp2E4TC3oTJYy9adv4@mail.gmail.com>
+	id S1756880Ab0KVTse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 14:48:34 -0500
+Date: Mon, 22 Nov 2010 11:47:36 -0800
+From: Greg KH <greg@kroah.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: werner <w.landgraf@ru.ru>, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.37-rc3 problems
+Message-ID: <20101122194736.GA29830@kroah.com>
+References: <web-407197955@zbackend1.aha.ru>
+ <20101122043520.GA10958@kroah.com>
+ <20101121205626.4589e544.randy.dunlap@oracle.com>
+ <20101121211311.05963007.randy.dunlap@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=QeU_vb6+XRei0pqz7GSfp2E4TC3oTJYy9adv4@mail.gmail.com>
+In-Reply-To: <20101121211311.05963007.randy.dunlap@oracle.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 04:37:57PM +0100, Zimny Lech wrote:
-> Salve
+On Sun, Nov 21, 2010 at 09:13:11PM -0800, Randy Dunlap wrote:
+> On Sun, 21 Nov 2010 20:56:26 -0800 Randy Dunlap wrote:
 > 
-> 2010/11/22 Stephen Rothwell <sfr@canb.auug.org.au>:
-> > Hi all,
-> >
-> > Changes since 20101119:
-> >
+> > On Sun, 21 Nov 2010 20:35:20 -0800 Greg KH wrote:
+> > 
+> > > On Sun, Nov 21, 2010 at 11:20:40PM -0400, werner wrote:
+> > > > 2.6.37-rc3 problems
+> > > >
+> > > > easycap_main.c lines 4251,4 : implicit declaration lock-kernel   ,  
+> > > > unlock_kernel
+> > > >
+> > > > (compilation error)
+> > > 
+> > > Either disable this driver from your .config, or enable the BKL in your
+> > > .config.  I have a pending patch to get to Linus to fix this Kconfig
+> > > issue for this driver.
+> > 
+> > The build error happens even when CONFIG_BKL=y.  In fact, that's the only
+> > way to enable EASYCAP, since EASYCAP depends on BKL.
 > 
-> 
->   CC [M]  drivers/staging/brcm80211/brcmfmac/wl_iw.o
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c:130:19:
-> error: field 'sysioc_sem' has incomplete type
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c: In
-> function 'wl_iw_timerfunc':
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c:1070:4:
-> error: implicit declaration of function 'up'
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c: In
-> function '_iscan_sysioc_thread':
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c:1181:2:
-> error: implicit declaration of function 'down_interruptible'
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c: In
-> function 'wl_iw_attach':
-> /home/test/linux-2.6/drivers/staging/brcm80211/brcmfmac/wl_iw.c:3708:2:
-> error: implicit declaration of function 'sema_init'
-> make[5]: *** [drivers/staging/brcm80211/brcmfmac/wl_iw.o] Error 1
-> make[4]: *** [drivers/staging/brcm80211/brcmfmac] Error 2
-> make[3]: *** [drivers/staging/brcm80211] Error 2
-> make[2]: *** [drivers/staging] Error 2
-> make[1]: *** [drivers] Error 2
-> make: *** [sub-make] Error 2
-> 
+> OTOH, adding <linux/smp_lock.h> to easycap.h fixes the build.
 
-Ick, not good.
-
-Henry, Brett, any ideas?
+Ah, nice.  Someone want to send me a patch?  :)
 
 thanks,
 
