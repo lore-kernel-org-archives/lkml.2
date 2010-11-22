@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab0KVUKS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 15:10:18 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:32976
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757220Ab0KVUKR (ORCPT
+	id S1757547Ab0KVULS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 15:11:18 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54405 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755512Ab0KVULQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 15:10:17 -0500
-Date: Mon, 22 Nov 2010 12:10:42 -0800 (PST)
-Message-Id: <20101122.121042.260064840.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 22 Nov 2010 15:11:16 -0500
+Date: Mon, 22 Nov 2010 12:10:49 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: gerald.schaefer@de.ibm.com
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH] mutex: Introduce arch_mutex_cpu_relax()
+Message-Id: <20101122121049.01c4690a.akpm@linux-foundation.org>
+In-Reply-To: <1290437256.7455.4.camel@thinkpad>
+References: <1290437256.7455.4.camel@thinkpad>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 22 Nov 2010 15:47:36 +0100
+Gerald Schaefer <gerald.schaefer@de.ibm.com> wrote:
 
-1) Fix screaming IRQ in e1000, from Anupam Chanda.
+> From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+> 
+> The spinning mutex implementation uses cpu_relax() in busy loops as a
+> compiler barrier. Depending on the architecture, cpu_relax() may do more
+> than needed in this specific mutex spin loops. On System z we also give
+> up the time slice of the virtual cpu in cpu_relax(), which prevents
+> effective spinning on the mutex.
+> 
+> This patch replaces cpu_relax() in the spinning mutex code with
+> arch_mutex_cpu_relax(), which can be defined by each architecture that
+> selects HAVE_ARCH_MUTEX_CPU_RELAX. The default is still cpu_relax(), so
+> this patch should not affect other architectures than System z for now.
+> 
+> ...
+>
+> --- a/include/linux/mutex.h
+> +++ b/include/linux/mutex.h
+> @@ -160,4 +160,8 @@ extern int mutex_trylock(struct mutex *l
+>  extern void mutex_unlock(struct mutex *lock);
+>  extern int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
+>  
+> +#ifndef CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX
+> +#define arch_mutex_cpu_relax()	cpu_relax()
+> +#endif
 
-2) Fix module parameter bustage in qlge, from Sonny Rao.
+A simpler way of doing this is to remove the CONFIG_ variable
+altogether and do 
 
-3) Interface address leak in ipv6, fix from John Fastabend.
+#ifndef arch_mutex_cpu_relax
+#define arch_mutex_cpu_relax()	cpu_relax()
+#endif
 
-   This would have been merged sooner except that I erroneously
-   put this into my net-next-2.6 tree, oops.
-
-4) Support for more Marvell PHY variants, from David Daney.
-
-5) Chip variant checking fix in atl1c from Ben Hutchings.
-
-6) Baud rate correction fix in SH-irda driver, from Nicolas Kaiser.
-
-Please pull, thanks a lot!
-
-The following changes since commit b86db4744230c94e480de56f1b7f31117edbf193:
-
-  Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4 (2010-11-19 19:46:45 -0800)
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Anupam Chanda (1):
-      e1000: fix screaming IRQ
-
-Ben Hutchings (1):
-      atl1c: Fix hardware type check for enabling OTP CLK
-
-David Daney (3):
-      phylib: Use common page register definition for Marvell PHYs.
-      phylib: Add support for Marvell 88E1149R devices.
-      of/phylib: Use device tree properties to initialize Marvell PHYs.
-
-Eric Dumazet (1):
-      net: allow GFP_HIGHMEM in __vmalloc()
-
-John Fastabend (1):
-      ipv6: fix missing in6_ifa_put in addrconf
-
-Nicolas Kaiser (1):
-      SuperH IrDA: correct Baud rate error correction
-
-Simon Horman (1):
-      bonding: change list contact to netdev@vger.kernel.org
-
-Sonny Rao (1):
-      qlge: Fix incorrect usage of module parameters and netdev msg level
-
- MAINTAINERS                    |    2 +-
- drivers/net/atl1c/atl1c_hw.c   |    2 +-
- drivers/net/e1000/e1000_main.c |   12 ++-
- drivers/net/irda/sh_sir.c      |    2 +-
- drivers/net/phy/marvell.c      |  164 ++++++++++++++++++++++++++++++++++++---
- drivers/net/qlge/qlge_main.c   |    6 +-
- include/linux/marvell_phy.h    |    1 +
- net/ceph/buffer.c              |    2 +-
- net/core/request_sock.c        |    4 +-
- net/ipv4/fib_trie.c            |    2 +-
- net/ipv6/addrconf.c            |    6 +-
- net/xfrm/xfrm_hash.c           |    2 +-
- 12 files changed, 173 insertions(+), 32 deletions(-)
+When doing this, one should be clear about _which_ arch file has the
+responsibility of defining arch_mutex_cpu_relax, and make sure that
+this arch file is reliably included in the .c file.
