@@ -1,48 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755964Ab0KVNkO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 08:40:14 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:39089 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753511Ab0KVNkN (ORCPT
+	id S1755486Ab0KVNlE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 08:41:04 -0500
+Received: from 206.83.70.70.ptr.us.xo.net ([206.83.70.70]:58259 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab0KVNlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 08:40:13 -0500
-Date: Mon, 22 Nov 2010 13:40:04 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Richard Purdie <rpurdie@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        nouveau@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org, linux-acpi@vger.kernel.org,
-        lenb@kernel.org
-Subject: Re: [PATCH 1/5] Backlight: Add backlight type
-Message-ID: <20101122134004.GA6870@srcf.ucam.org>
-References: <1290182036-30484-1-git-send-email-mjg@redhat.com> <20101119120523.15bc341c.akpm@linux-foundation.org> <20101119202558.GA10898@srcf.ucam.org> <1290421020.1272.16707.camel@rex> <20101122123050.GA5385@srcf.ucam.org> <1290432949.1272.16768.camel@rex>
+	Mon, 22 Nov 2010 08:41:03 -0500
+X-Greylist: delayed 318 seconds by postgrey-1.27 at vger.kernel.org; Mon, 22 Nov 2010 08:41:02 EST
+Message-ID: <4CEA71AD.5010606@tilera.com>
+Date: Mon, 22 Nov 2010 08:35:41 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.12) Gecko/20101027 Thunderbird/3.1.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290432949.1272.16768.camel@rex>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Cypher Wu <cypher.w@gmail.com>
+CC: <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH] arch/tile: fix rwlock so would-be write lockers don't
+ block new readers
+References: <AANLkTikvT=x9eBovn2-m6HLqk7wyXSAR3sc9jCQ0C6mL@mail.gmail.com>	<1289489007.17691.1310.camel@edumazet-laptop>	<AANLkTik93QUQxSDmwd4Qj-gXQiWWPzd68JPAYAHBAsHR@mail.gmail.com>	<ZXmP8hjgLHA.4648@exchange1.tad.internal.tilera.com>	<4CDF1945.8090101@tilera.com>	<AANLkTind92uwcigzmDn8yn9a22exDy7zcreGQ5-6NLV-@mail.gmail.com>	<201011151425.oAFEPU3W005682@farm-0010.internal.tilera.com> <AANLkTikGj+zG9OqVJseKh4fGqQNnqnJpHgcaaXOL8nNi@mail.gmail.com>
+In-Reply-To: <AANLkTikGj+zG9OqVJseKh4fGqQNnqnJpHgcaaXOL8nNi@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 01:35:48PM +0000, Richard Purdie wrote:
+On 11/22/2010 12:39 AM, Cypher Wu wrote:
+> 2010/11/15 Chris Metcalf <cmetcalf@tilera.com>:
+>> This avoids a deadlock in the IGMP code where one core gets a read
+>> lock, another core starts trying to get a write lock (thus blocking
+>> new readers), and then the first core tries to recursively re-acquire
+>> the read lock.
+>>
+>> We still try to preserve some degree of balance by giving priority
+>> to additional write lockers that come along while the lock is held
+>> for write, so they can all complete quickly and return the lock to
+>> the readers.
+>>
+>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+>> ---
+>> This should apply relatively cleanly to 2.6.26.7 source code too.
+>> [...]
+>
+> I've finished my business trip and tested that patch for more than an
+> hour and it works. The test is still running now.
+>
+> But it seems there still has a potential problem: we used ticket lock
+> for write_lock(), and if there are so many write_lock() occurred, is
+> 256 ticket enough for 64 or even more cores to avoiding overflow?
+> Since is we try to write_unlock() and there's already write_lock()
+> waiting we'll only adding current ticket.
 
-> Its the reverse situation I worry about. Are there situations where
-> there are multiple connectors on the PCI device and the ACPI interface
-> just controls one of them but controls for the other connectors may
-> exist?
-
-Yes, that's certainly possible and it'd be desirable to fix this up, but 
-the same problem also applies to platform interfaces and it's typically 
-unfixable there. My userspace implementation looks at the connector type 
-to determine the best approach - if it's not LVDS or eDP it ignores the 
-firmware and platform interfaces, so you'll fall back to the raw 
-interface if it can provide support for your connector (presumably via 
-ddcci, although we don't have this implemented yet)
+This is OK, since each core can issue at most one (blocking) write_lock(),
+and we have only 64 cores.  Future >256 core machines will be based on
+TILE-Gx anyway, which doesn't have the 256-core limit since it doesn't use
+the spinlock_32.c implementation.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
