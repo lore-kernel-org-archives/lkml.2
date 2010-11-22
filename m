@@ -1,52 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab0KVQmx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 11:42:53 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:37711 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751522Ab0KVQmw (ORCPT
+	id S1752931Ab0KVQqz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 11:46:55 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39480 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402Ab0KVQqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 11:42:52 -0500
-Date: Mon, 22 Nov 2010 17:42:47 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: castet.matthieu@free.fr, Lin Ming <ming.m.lin@intel.com>,
-        Siarhei Liakh <sliakh.lkml@gmail.com>,
-        Xuxian Jiang <jiang@cs.ncsu.edu>, Ingo Molnar <mingo@elte.hu>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>, lkml <linux-kernel@vger.kernel.org>,
-        tglx <tglx@linutronix.de>
-Subject: Re: -tip tree resume fail, bisect to 5bd5a45(x86: Add NX
- protection for kernel data)
-Message-ID: <20101122164247.GC21836@basil.fritz.box>
-References: <1290410581.2405.24.camel@minggr.sh.intel.com>
- <1290431008.2072.119.camel@laptop>
- <1290443379.4cea9a73cd9ce@imp.free.fr>
- <1290443758.2072.318.camel@laptop>
+	Mon, 22 Nov 2010 11:46:53 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=DnQn3x6fhB5Ii3tm25GI3VOloR3CxPYheFjks4XetlDGh5Gli/K73DI0PQNOHs6szJ
+         Nji3TGksWOpvt3QGjR+fDHi+jZvwb7ViWtvi7NPQzjG0izb7bi9MsXNGcm8rE0/YKFM4
+         xAG0Hs82H+uujIArTVhoFr9oZJUxAr+zg0beY=
+Date: Mon, 22 Nov 2010 19:46:23 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: pavan_savoy@ti.com
+Cc: marcel@holtmann.org, padovan@profusion.mobi,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v6] Bluetooth: btwilink driver
+Message-ID: <20101122164623.GB8882@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>, pavan_savoy@ti.com,
+	marcel@holtmann.org, padovan@profusion.mobi,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1290424125-2717-1-git-send-email-pavan_savoy@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1290443758.2072.318.camel@laptop>
+In-Reply-To: <1290424125-2717-1-git-send-email-pavan_savoy@ti.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That seems to be a S3 specific code path, that won't fix anything.
-> Simply do:
-> 
-> echo 0 > /sys/devices/system/cpu/cpu1/online;
-> echo 1 > /sys/devices/system/cpu/cpu1/online;
-> 
-> and your machine will explode..
+On Mon, Nov 22, 2010 at 06:08:45AM -0500, pavan_savoy@ti.com wrote:
+> +static int bt_ti_probe(struct platform_device *pdev)
+> +{
+> +	static struct ti_st *hst;
+> +	struct hci_dev *hdev;
+> +	int err;
+> +
+> +	hst = kzalloc(sizeof(struct ti_st), GFP_KERNEL);
+> +	if (!hst)
+> +		return -ENOMEM;
+> +
+> +	/* Expose "hciX" device to user space */
+> +	hdev = hci_alloc_dev();
+> +	if (!hdev) {
+> +		kfree(hst);
+> +		return -ENOMEM;
+> +	}
+> +
+> +	BT_DBG("hdev %p", hdev);
+> +
+> +	hst->hdev = hdev;
+> +	hdev->bus = HCI_UART;
+> +	hdev->driver_data = hst;
+> +	hdev->open = ti_st_open;
+> +	hdev->close = ti_st_close;
+> +	hdev->flush = NULL;
+> +	hdev->send = ti_st_send_frame;
+> +	hdev->destruct = ti_st_destruct;
+> +	hdev->owner = THIS_MODULE;
+> +
+> +	err = hci_register_dev(hdev);
+> +	if (err < 0) {
+> +		BT_ERR("Can't register HCI device error %d", err);
+> +		hci_free_dev(hdev);
 
-The SMP startup trampoline is copied I believe
-and only executed in real mode without page tables.
+	Should there be a kfree(hst); here?  That's how it's done in
+	bpa10x_probe() from drivers/bluetooth/bpa10x.c
 
-So it's perhaps not the trampoline, but the early startup 
-code that ends up being broken.
+> +		return err;
+> +	}
+> +
+> +	BT_DBG(" HCI device registered (hdev %p)", hdev);
+                ^
+	Quite a few places have an extra space at the start.
 
--Andi
+> +
+> +	dev_set_drvdata(&pdev->dev, hst);
+> +	return err;
+> +}
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+regards,
+dan carpenter
+
+
