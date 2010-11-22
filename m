@@ -1,21 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab0KVXuM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 18:50:12 -0500
-Received: from cantor.suse.de ([195.135.220.2]:34598 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757871Ab0KVXuK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 18:50:10 -0500
-Date: Tue, 23 Nov 2010 10:50:00 +1100
-From: Neil Brown <neilb@suse.de>
-To: djwong@us.ibm.com
-Cc: linux-raid@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] md: Call blk_queue_flush() to establish flush/fua
- support
-Message-ID: <20101123105000.331b40f8@notabene.brown>
-In-Reply-To: <20101122232208.GU14383@tux1.beaverton.ibm.com>
-References: <20101122232208.GU14383@tux1.beaverton.ibm.com>
-X-Mailer: Claws Mail 3.7.7 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	id S1757953Ab0KVXvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 18:51:25 -0500
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41207 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757899Ab0KVXvY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 18:51:24 -0500
+Date: Mon, 22 Nov 2010 15:50:43 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        kernel-janitors@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Jelinek <jakub@redhat.com>
+Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
+Message-Id: <20101122155043.fbbb74f4.akpm@linux-foundation.org>
+In-Reply-To: <4CE268C8.5010203@panasas.com>
+References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
+	<20101112120834.33062900.akpm@linux-foundation.org>
+	<8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
+	<20101114092533.GB5323@albatros>
+	<20101114180643.593d19ac.akpm@linux-foundation.org>
+	<1289848341.2607.125.camel@edumazet-laptop>
+	<4CE268C8.5010203@panasas.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -23,98 +35,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 22 Nov 2010 15:22:08 -0800
-"Darrick J. Wong" <djwong@us.ibm.com> wrote:
+On Tue, 16 Nov 2010 13:19:36 +0200
+Boaz Harrosh <bharrosh@panasas.com> wrote:
 
-> Before 2.6.37, the md layer had a mechanism for catching I/Os with the barrier
-> flag set, and translating the barrier into barriers for all the underlying
-> devices.  With 2.6.37, I/O barriers have become plain old flushes, and the md
-> code was updated to reflect this.  However, one piece was left out -- the md
-> layer does not tell the block layer that it supports flushes or FUA access at
-> all, which results in md silently dropping flush requests.
+> On 11/15/2010 09:12 PM, Eric Dumazet wrote:
+> > Le dimanche 14 novembre 2010 __ 18:06 -0800, Andrew Morton a __crit : 
+> >> On Sun, 14 Nov 2010 12:25:33 +0300 Vasiliy Kulikov <segoon@openwall.com> wrote:
+> >>>  
+> >>>  	if (timeval) {
+> >>> -		rtv.tv_sec = rts.tv_sec;
+> >>> -		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
+> >>> +		struct timeval rtv = {
+> >>> +			.tv_sec = rts.tv_sec,
+> >>> +			.tv_usec = rts.tv_nsec / NSEC_PER_USEC
+> >>> +		};
+> >>>  
+> >>>  		if (!copy_to_user(p, &rtv, sizeof(rtv)))
+> >>>  			return ret;
+> >>
+> >> Please check the assembly code - this will still leave four bytes of
+> >> uninitalised stack data in 'rtv', surely.
+> > 
+> > Thats a good question.
+> > 
+> > In my understanding, gcc should initialize all holes (and other not
+> > mentioned fields) with 0, even for automatic storage [C99 only mandates
+> > this on static storage]
+> > 
+> > I tested on x86_64 and this is the case, but could not find a definitive
+> > answer in gcc documentation.
+> > 
+> > This kind of construct is widely used in networking tree.
+> > 
+> > Maybe we should ask to gcc experts if this behavior is guaranteed by
+> > gcc, or if we must review our code ;(
+> > 
+> > CC Jakub
+> > 
+> > Thanks !
+> > 
 > 
-> Since the support already seems there, just add this one piece of bookkeeping
-> to restore the ability to flush writes through md.
-
-I would rather just unconditionally call
-   blk_queue_flush(mddev->queue, REQ_FLUSH | REQ_FUA);
-
-I don't think there is much to be gained by trying to track exactly what the
-underlying devices support, and as the devices can change, that is racy
-anyway.
-
-Thoughts?
-
-NeilBrown
-
-
-
-
+> This is what I thought too. If it is not there are tones of bugs I wrote
+> of code that relays on this behaviour.
 > 
-> Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-> ---
-> 
->  drivers/md/md.c |   25 ++++++++++++++++++++++++-
->  1 files changed, 24 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/md/md.c b/drivers/md/md.c
-> index 324a366..a52d7be 100644
-> --- a/drivers/md/md.c
-> +++ b/drivers/md/md.c
-> @@ -356,6 +356,21 @@ EXPORT_SYMBOL(mddev_congested);
->  /*
->   * Generic flush handling for md
->   */
-> +static void evaluate_flush_capability(mddev_t *mddev)
-> +{
-> +	mdk_rdev_t *rdev;
-> +	unsigned int flush = REQ_FLUSH | REQ_FUA;
-> +
-> +	rcu_read_lock();
-> +	list_for_each_entry_rcu(rdev, &mddev->disks, same_set) {
-> +		if (rdev->raid_disk < 0)
-> +			continue;
-> +		flush &= rdev->bdev->bd_disk->queue->flush_flags;
-> +	}
-> +	rcu_read_unlock();
-> +
-> +	blk_queue_flush(mddev->queue, flush);
-> +}
->  
->  static void md_end_flush(struct bio *bio, int err)
->  {
-> @@ -1885,6 +1900,8 @@ static int bind_rdev_to_array(mdk_rdev_t * rdev, mddev_t * mddev)
->  	/* May as well allow recovery to be retried once */
->  	mddev->recovery_disabled = 0;
->  
-> +	evaluate_flush_capability(mddev);
-> +
->  	return 0;
->  
->   fail:
-> @@ -1903,17 +1920,23 @@ static void md_delayed_delete(struct work_struct *ws)
->  static void unbind_rdev_from_array(mdk_rdev_t * rdev)
->  {
->  	char b[BDEVNAME_SIZE];
-> +	mddev_t *mddev;
-> +
->  	if (!rdev->mddev) {
->  		MD_BUG();
->  		return;
->  	}
-> -	bd_release_from_disk(rdev->bdev, rdev->mddev->gendisk);
-> +	mddev = rdev->mddev;
-> +	bd_release_from_disk(rdev->bdev, mddev->gendisk);
->  	list_del_rcu(&rdev->same_set);
->  	printk(KERN_INFO "md: unbind<%s>\n", bdevname(rdev->bdev,b));
->  	rdev->mddev = NULL;
->  	sysfs_remove_link(&rdev->kobj, "block");
->  	sysfs_put(rdev->sysfs_state);
->  	rdev->sysfs_state = NULL;
-> +
-> +	evaluate_flush_capability(mddev);
-> +
->  	/* We need to delay this, otherwise we can deadlock when
->  	 * writing to 'remove' to "dev/state".  We also need
->  	 * to delay it due to rcu usage.
+> It would be interesting to know for sure
+
+Well.  We certainly assume in many places that
+
+	struct foo {
+		int a;
+		int b;
+	} f = {
+		.a = 1,
+	};
+
+will initialise b to zero.  But I doubt if much code at all assumes
+that this initialisation patterm will reliably zero out *holes* in the
+struct.
 
