@@ -1,170 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305Ab0KVO3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 09:29:08 -0500
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53490 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab0KVO3F (ORCPT
+	id S1755987Ab0KVO3Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 09:29:25 -0500
+Received: from casper.infradead.org ([85.118.1.10]:49592 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753511Ab0KVO3X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 09:29:05 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=rZlPTNq/U11eUsqn2LCNCu1/nwnQ3XP4WMB03/Q5deeQ2GiXFGXIP3dCw98h701s6s
-         tQFeXsUjaxk2aftpt6SlKRQvecjCTUZJc56mLjfmAy7xFMivRlr3YC9+k3vyjkTb6EGi
-         BaIB6CuxIk5N+0EpDBPOnyuC7He2QeGmRS5O8=
-From: dirk.brandewie@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH] ce4100: Add errata fixes for UART on CE4100
-Date: Mon, 22 Nov 2010 06:28:48 -0800
-Message-Id: <1290436128-17958-1-git-send-email-dirk.brandewie@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <395c11879580e72e3a47272ef8cf5e04fa334210.1289331834.git.dirk.brandewie@gmail.com>
-References: <395c11879580e72e3a47272ef8cf5e04fa334210.1289331834.git.dirk.brandewie@gmail.com>
+	Mon, 22 Nov 2010 09:29:23 -0500
+Subject: Re: [V2 PATCH 0/6] x86, NMI: give NMI handler a face-lift
+From: Peter Zijlstra <peterz@infradead.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>, Ingo Molnar <mingo@elte.hu>,
+        Robert Richter <robert.richter@amd.com>, ying.huang@intel.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <20101122142212.GS18100@redhat.com>
+References: <4CE52048.5080802@windriver.com>
+	 <1290086232.2109.1507.camel@laptop> <20101118193247.GF18100@redhat.com>
+	 <4CE583D0.8050407@windriver.com> <20101118200807.GC8131@redhat.com>
+	 <1290112234.2109.1534.camel@laptop> <20101119165952.GJ18100@redhat.com>
+	 <1290191158.2109.1614.camel@laptop> <20101119225902.GQ18100@redhat.com>
+	 <1290208179.2114.13.camel@laptop>  <20101122142212.GS18100@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 22 Nov 2010 15:29:29 +0100
+Message-ID: <1290436169.2072.251.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
+On Mon, 2010-11-22 at 09:22 -0500, Don Zickus wrote:
+> > > +static bool check_hw_exists(void)
+> > > +{
+> > > +       u64 val, val_new;
+> > > +
+> > > +       val = 0xabcdUL;
+> > > +       (void) checking_wrmsrl(x86_pmu.perfctr, val);
+> > > +       rdmsrl(x86_pmu.perfctr, val_new);
+> > 
+> > 
+> > Yeah, this looks about right, although for extreme prudence I'd also
+> use
+> > a checking_rdmsrl().
+> 
+> I didn't realize such a function existed, I'll look into it.
 
-This patch enables the UART on the CE4100.  The UART has a couple of
-issues that need to be worked around.  First the UART is mostly PC
-compatible except that it is clocked eight times faster than a
-standard PC so the default configuration provided in
-arch/x86/include/asm/serial.h needs to be overridden. Second the TX
-interrupt may not be set correctly all the time. Lastly accessing the
-UART via I/O space for early_prink() hangs the chip when the IOAPIC is
-enabled.
-
-A custom mem_serial_in() is provided to work around the TX interrupt
-issue. The configuration issues are dealt with in the call back
-registered with the 8250 driver via serial8250_set_isa_configurator()
-
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
----
- arch/x86/platform/ce4100/ce4100.c |   92 +++++++++++++++++++++++++++++++++++-
- 1 files changed, 89 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/platform/ce4100/ce4100.c b/arch/x86/platform/ce4100/ce4100.c
-index b8f1c48..d2c0d51 100644
---- a/arch/x86/platform/ce4100/ce4100.c
-+++ b/arch/x86/platform/ce4100/ce4100.c
-@@ -12,25 +12,111 @@
- #include <linux/kernel.h>
- #include <linux/irq.h>
- #include <linux/module.h>
-+#include <linux/serial_reg.h>
-+#include <linux/serial_8250.h>
- 
- #include <asm/setup.h>
--
-+#include <asm/io.h>
- 
- static int ce4100_i8042_detect(void)
- {
- 	return 0;
- }
- 
--static void __init sdv_arch_setup(void)
-+static void __init sdv_find_smp_config(void)
- {
-+}
-+
-+#ifdef CONFIG_SERIAL_8250
-+
- 
-+static unsigned int mem_serial_in(struct uart_port *p, int offset)
-+{
-+	offset = offset << p->regshift;
-+	return readl(p->membase + offset);
- }
- 
-+/*
-+ * The UART Tx interrupts are not set under some conditions and therefore serial
-+ * transmission hangs. This is a silicon issue and has not been root caused. The
-+ * workaround for this silicon issue checks UART_LSR_THRE bit and UART_LSR_TEMT
-+ * bit of LSR register in interrupt handler to see whether at least one of these
-+ * two bits is set, if so then process the transmit request. If this workaround
-+ * is not applied, then the serial transmission may hang. This workaround is for
-+ * errata number 9 in Errata - B step.
-+*/
- 
--static void __init sdv_find_smp_config(void)
-+static unsigned int ce4100_mem_serial_in(struct uart_port *p, int offset)
-+{
-+	unsigned int ret, ier, lsr;
-+
-+	if (offset == UART_IIR) {
-+		offset = offset << p->regshift;
-+		ret = readl(p->membase + offset);
-+		if (ret & UART_IIR_NO_INT) {
-+			/* see if the TX interrupt should have really set */
-+			ier = mem_serial_in(p, UART_IER);
-+			/* see if the UART's XMIT interrupt is enabled */
-+			if (ier & UART_IER_THRI) {
-+				lsr = mem_serial_in(p, UART_LSR);
-+				/* now check to see if the UART should be
-+				   generating an interrupt (but isn't) */
-+				if (lsr & (UART_LSR_THRE | UART_LSR_TEMT))
-+					ret &= ~UART_IIR_NO_INT;
-+			}
-+		}
-+	} else
-+		ret =  mem_serial_in(p, offset);
-+	return ret;
-+}
-+
-+static void ce4100_mem_serial_out(struct uart_port *p, int offset, int value)
-+{
-+	offset = offset << p->regshift;
-+	writel(value, p->membase + offset);
-+}
-+
-+static void ce4100_serial_fixup(int port, struct uart_port *up,
-+	unsigned short *capabilites)
-+{
-+#ifdef CONFIG_EARLY_PRINTK
-+	/*
-+	 * Over ride the legacy port configuration that comes from
-+	 * asm/serial.h. Using the ioport driver then switching to the
-+	 * PCI memmaped driver hangs the IOAPIC
-+	 */
-+	if (up->iotype !=  UPIO_MEM32) {
-+		up->uartclk  = 14745600;
-+		up->mapbase = 0xdffe0200;
-+		set_fixmap_nocache(FIX_EARLYCON_MEM_BASE,
-+				up->mapbase & PAGE_MASK);
-+		up->membase =
-+			(void __iomem *)__fix_to_virt(FIX_EARLYCON_MEM_BASE);
-+		up->membase += up->mapbase & ~PAGE_MASK;
-+		up->iotype   = UPIO_MEM32;
-+		up->regshift = 2;
-+	}
-+#endif
-+	up->iobase = 0;
-+	up->serial_in = ce4100_mem_serial_in;
-+	up->serial_out = ce4100_mem_serial_out;
-+
-+	*capabilites |= (1 << 12);
-+}
-+
-+static __init void sdv_serial_fixup(void)
- {
-+	serial8250_set_isa_configurator(ce4100_serial_fixup);
- }
- 
-+#else
-+static inline void sdv_serial_fixup(void);
-+#endif
-+
-+static void __init sdv_arch_setup(void)
-+{
-+	sdv_serial_fixup();
-+}
- 
- /*
-  * CE4100 specific x86_init function overrides and early setup
--- 
-1.7.2.3
-
+yeah, the msr functions are a bit of a mess, but I think its called
+something like rdmsrl_safe()
