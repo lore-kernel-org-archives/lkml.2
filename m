@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316Ab0KVB3U (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 20:29:20 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:3383 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756169Ab0KVB3T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 20:29:19 -0500
-Message-ID: <4CE9C759.5070903@dsn.okisemi.com>
-Date: Mon, 22 Nov 2010 10:28:57 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
+	id S1756168Ab0KVBhN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 20:37:13 -0500
+Received: from mga11.intel.com ([192.55.52.93]:37835 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754900Ab0KVBhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 20:37:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.59,232,1288594800"; 
+   d="scan'208";a="860004239"
+Date: Mon, 22 Nov 2010 09:36:55 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH] vmscan: Make move_active_pages_to_lru more generic
+Message-ID: <20101122013655.GA10126@localhost>
+References: <1290349496-13297-1-git-send-email-minchan.kim@gmail.com>
 MIME-Version: 1.0
-To: Wolfgang Grandegger <wg@grandegger.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Christian Pellegrin <chripell@fsfe.org>,
-        Barry Song <21cnbao@gmail.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-CC: qi.wang@intel.com, yong.y.wang@intel.com, andrew.chih.howe.khor@intel.com,
-        joel.clark@intel.com, kok.howg.ewe@intel.com, margie.foster@intel.com
-Subject: [PATCH net-next-2.6 8/17 v2] can: EG20T PCH: Change Copyright and
- module description
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290349496-13297-1-git-send-email-minchan.kim@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, Copyright and module description are not formal.
+On Sun, Nov 21, 2010 at 10:24:56PM +0800, Minchan Kim wrote:
+> Now move_active_pages_to_lru can move pages into active or inactive.
+> if it moves the pages into inactive, it itself can clear PG_acive.
+> It makes the function more generic.
 
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
----
- drivers/net/can/pch_can.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Do you plan to use this "more generic" function? Because the patch in
+itself makes code slightly less efficient. It adds one "if" test, and
+moves one operation into the spin lock.
 
-diff --git a/drivers/net/can/pch_can.c b/drivers/net/can/pch_can.c
-index 5b7a392..3a39786 100644
---- a/drivers/net/can/pch_can.c
-+++ b/drivers/net/can/pch_can.c
-@@ -1,6 +1,6 @@
- /*
-  * Copyright (C) 1999 - 2010 Intel Corporation.
-- * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
-+ * Copyright (C) 2010 OKI SEMICONDUCTOR CO., LTD.
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-@@ -1312,6 +1312,6 @@ static void __exit pch_can_pci_exit(void)
- }
- module_exit(pch_can_pci_exit);
- 
--MODULE_DESCRIPTION("Controller Area Network Driver");
-+MODULE_DESCRIPTION("Intel EG20T PCH CAN(Controller Area Network) Driver");
- MODULE_LICENSE("GPL v2");
- MODULE_VERSION("0.94");
--- 
-1.6.0.6
-
+Thanks,
+Fengguang
