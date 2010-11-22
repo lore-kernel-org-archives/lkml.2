@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab0KVQSA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 11:18:00 -0500
-Received: from sunjammer.sugarlabs.org ([140.186.70.53]:43259 "EHLO
-	sunjammer.sugarlabs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176Ab0KVQR7 (ORCPT
+	id S1750734Ab0KVQTc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 11:19:32 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:40277 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750830Ab0KVQTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 11:17:59 -0500
-Subject: Re: pc300too on a modern kernel?
-From: Bernie Innocenti <bernie@codewiz.org>
-To: Krzysztof Halasa <khc@pm.waw.pl>
-Cc: Ward Vandewege <ward@gnu.org>, lkml <linux-kernel@vger.kernel.org>,
-        Jan Seiffert <kaffeemonster@googlemail.com>
-In-Reply-To: <m3tyjd7za9.fsf@intrepid.localdomain>
-References: <20100902131531.GA19028@countzero.vandewege.net>
-	 <m3mxrw1lg0.fsf@intrepid.localdomain>
-	 <1289421869.9336.49.camel@giskard.codewiz.org>
-	 <m3sjz34mka.fsf@intrepid.localdomain>
-	 <1289944619.2677.22.camel@giskard.codewiz.org>
-	 <m3tyjd7za9.fsf@intrepid.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Sugar Labs - http://www.sugarlabs.org/
-Date: Mon, 22 Nov 2010 11:17:55 -0500
-Message-ID: <1290442675.5515.92.camel@giskard.codewiz.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
+	Mon, 22 Nov 2010 11:19:31 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Andy Walls <awalls@md.metrocast.net>
+Subject: Re: What should poll() return when a device is unregistered ? (was "media: Media device node support")
+Date: Mon, 22 Nov 2010 17:19:37 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-gentoo-r1; KDE/4.5.3; x86_64; ; )
+Cc: Hans Verkuil <hverkuil@xs4all.nl>, Jonathan Corbet <corbet@lwn.net>,
+        linux-media@vger.kernel.org, sakari.ailus@maxwell.research.nokia.com,
+        linux-kernel@vger.kernel.org
+References: <1285241696-16826-1-git-send-email-laurent.pinchart@ideasonboard.com> <201011221236.40194.hverkuil@xs4all.nl> <1290430297.2092.16.camel@morgan.silverblock.net>
+In-Reply-To: <1290430297.2092.16.camel@morgan.silverblock.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201011221719.38369.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-11-19 at 22:56 +0100, Krzysztof Halasa wrote:
+Hi Andy,
 
-> It seems it happens this way:
-> - sca_xmit() fills the whole ring (leaving one descriptor empty as
->   designed - for EDA to work)
-> - the chip transmits something and signals IRQ->sca_tx_done()
-> - sca_tx_done can't see any descriptor processed and only wakes the
->   queue. Perhaps we should only wake the queue if at least one
->   descriptor has been processed - though sca_tx_done() should never be
->   called otherwise.
-> - sca_xmit is called again with full ring, thus BUG().
+On Monday 22 November 2010 13:51:37 Andy Walls wrote:
+> On Mon, 2010-11-22 at 12:36 +0100, Hans Verkuil wrote:
+> > On Monday, November 22, 2010 11:41:27 Laurent Pinchart wrote:
+> > > Hi Hans,
+> > > 
+> > > On Monday 22 November 2010 10:08:06 Hans Verkuil wrote:
+> > > > On Monday, November 22, 2010 00:35:54 Laurent Pinchart wrote:
+> > > > > Hi Jonathan,
+> > > > 
+> > > > This doesn't really seem to be standardized :-(
+> > > 
+> > > CC'ing LKML with the question.
+> > > 
+> > > POLLERR | POLLHUP and POLLERR won't make a difference to select(), but
+> > > we should still standardize on a poll() return code when devices are
+> > > unregistered and/or - for hot-pluggable devices - disconnected (for
+> > > V4L devices unregistered usually means disconnected) ?
+> > 
+> > Drivers return POLLERR, POLLERR|POLLHUP or POLLHUP in case of a
+> > disconnect. I'm leaning towards POLLHUP as the most appropriate poll
+> > return value for a USB disconnect.
 > 
-> I wonder if the following helps (untested):
+> +1 POLLHUP
 > 
-> --- a/drivers/net/wan/hd64572.c
-> +++ b/drivers/net/wan/hd64572.c
-> @@ -293,6 +293,7 @@ static inline void sca_tx_done(port_t *port)
->  	struct net_device *dev = port->netdev;
->  	card_t* card = port->card;
->  	u8 stat;
-> +	int wake = 0;
->  
->  	spin_lock(&port->lock);
->  
-> @@ -316,10 +317,12 @@ static inline void sca_tx_done(port_t *port)
->  			dev->stats.tx_bytes += readw(&desc->len);
->  		}
->  		writeb(0, &desc->stat);	/* Free descriptor */
-> +		wake = 1;
->  		port->txlast = (port->txlast + 1) % card->tx_ring_buffers;
->  	}
->  
-> -	netif_wake_queue(dev);
-> +	if (wake)
-> +		netif_wake_queue(dev);
->  	spin_unlock(&port->lock);
->  }
+> http://www.opengroup.org/onlinepubs/009695399/functions/poll.html
+> 
+> "POLLHUP
+>         The device has been disconnected. [...]"
+> 
+> 
+> My $0.02 below:
+> The communication link with the device is closed due to circumstances
+> that the OS considers normal operation.  The OS has, at some level, shut
+> down its side of the communication link gracefully as well.
+> 
+> Just because the application or the OS cannot always predict when a USB
+> disconnect may happen, doesn't mean it is an error.
 
-Last Friday I applied a patch very similar to this one, with a printk on
-the no-wake case.
-
-As you predicted, this made the BUG_ON() disappear. My printk fired
-approximately at same frequency of the debug statements I had in
-sca_xmit(), thus confirming your hypothesis.
-
-Now the question is: why do we get so many spurious interrupts?
-
-With this workaround applied, we're st seeing occasional clusters of
-packet loss. We're working to graph the ping loss alongside traffic to
-see if there's any correlation.
+POLLHUP seems to be the best option standard-wise, but it could be a problem 
+for output devices. Applications use the write file descriptors set with 
+select() to wait for a buffer to be ready. Unlike POLLERR, POLLHUP only 
+reports an event on the read file descriptors set.
 
 -- 
-   // Bernie Innocenti - http://codewiz.org/
- \X/  Sugar Labs       - http://sugarlabs.org/
+Regards,
 
+Laurent Pinchart
