@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757539Ab0KVUeE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 15:34:04 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:57417 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755765Ab0KVUeB (ORCPT
+	id S1757617Ab0KVUui (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 15:50:38 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60392 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab0KVUuh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 15:34:01 -0500
-Date: Mon, 22 Nov 2010 21:33:59 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH RESEND] tools: add power/x86/x86_energy_perf_policy to
- program MSR_IA32_ENERGY_PERF_BIAS
-Message-ID: <20101122203359.GD21836@basil.fritz.box>
-References: <alpine.LFD.2.00.1006161659140.24913@localhost.localdomain>
- <alpine.LFD.2.00.1009281143070.14962@localhost.localdomain>
- <alpine.LFD.2.00.1010230035360.29399@localhost.localdomain>
- <alpine.LFD.2.00.1011151103280.2939@x980>
- <8739r0rxlz.fsf@basil.nowhere.org>
- <alpine.LFD.2.00.1011221348200.19247@x980>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1011221348200.19247@x980>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 22 Nov 2010 15:50:37 -0500
+Date: Mon, 22 Nov 2010 12:48:34 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Fabio Comolli <fabio.comolli@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] dmar: use function stubs when CONFIG_INTR_REMAP is disabled
+Message-Id: <20101122124834.74429004.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTikKAO7TMhYgGU=ggWCTXbvABsgjhmQUPRQB35kL@mail.gmail.com>
+References: <AANLkTikKAO7TMhYgGU=ggWCTXbvABsgjhmQUPRQB35kL@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 03:13:24PM -0500, Len Brown wrote:
-> Per the comments from Andrew and others, the concept of a
-> "full tools build" doesn't actually exit (yet).
-> 
-> So I guess the only assurance that somebody not on x86 would run
-> make in this directory this utility lives in tools/power/x86/
-> 
-> Note that there are other utilities under tools
-> which have no Makefile at all...
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-I suspect this will need to be fixed at some point.
+The stubs for CONFIG_INTR_REMAP disabled need to be functions
+instead of values to eliminate build warnings.
 
-e.g. kernel rpms probably don't want to hard code all of this
-but just call some standard make file target. And the kernel
-eventually needs a make install_user or similar.
+arch/x86/kernel/apic/apic.c: In function 'lapic_suspend':
+arch/x86/kernel/apic/apic.c:2060:3: warning: statement with no effect
+arch/x86/kernel/apic/apic.c: In function 'lapic_resume':
+arch/x86/kernel/apic/apic.c:2137:3: warning: statement with no effect
 
-> 
-> > ...I would prefer a manpage
-> 
-> I'll be happy to write a manpage.
-> Is there good example I should follow?
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Reported-by: Fabio Comolli <fabio.comolli@gmail.com>
+---
+ include/linux/dmar.h |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
 
-Just pick one from /usr/share/man.  You can grep for my 
-name if you want one written by me, but I don't claim they are
-necessarily better than others @)
-
-> I'm not inclined to bother, as the use-case for this utility
-> is to be invoked by another program, and the options available
-
-What other program?
-
-I could well imagine administrators sticking this 
-into their boot.locals to set the policy they want.
-
-> In the highly unlikely scenario that somebody uses
-> the -r option to excerise the read-only code,
-> and simultaneously invokes and completes a cpu hot remove
-
-FWIW there are setups where core offlining can happen
-automatically in response to an error.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+--- lnx-2637-rc3.orig/include/linux/dmar.h
++++ lnx-2637-rc3/include/linux/dmar.h
+@@ -175,10 +175,21 @@ static inline int set_msi_sid(struct irt
+ 	return 0;
+ }
+ 
+-#define enable_intr_remapping(mode)	(-1)
+-#define disable_intr_remapping()	(0)
+-#define reenable_intr_remapping(mode)	(0)
+ #define intr_remapping_enabled		(0)
++
++static inline int enable_intr_remapping(int eim)
++{
++	return -1;
++}
++
++static inline void disable_intr_remapping(void)
++{
++}
++
++static inline int reenable_intr_remapping(int eim)
++{
++	return 0;
++}
+ #endif
+ 
+ /* Can't use the common MSI interrupt functions
