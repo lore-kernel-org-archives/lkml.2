@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab0KVRgH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 12:36:07 -0500
-Received: from tarap.cc.columbia.edu ([128.59.29.7]:60174 "EHLO
-	tarap.cc.columbia.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752706Ab0KVRgF (ORCPT
+	id S1755926Ab0KVRgM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 12:36:12 -0500
+Received: from legolas.restena.lu ([158.64.1.34]:54722 "EHLO
+	legolas.restena.lu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753864Ab0KVRgK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 12:36:05 -0500
-Date: Mon, 22 Nov 2010 12:34:54 -0500 (EST)
-From: Oren Laadan <orenl@cs.columbia.edu>
-X-X-Sender: orenl@takamine.ncl.cs.columbia.edu
-To: Gene Cooperman <gene@ccs.neu.edu>
-cc: Tejun Heo <tj@kernel.org>, Kapil Arya <kapil@ccs.neu.edu>,
-        linux-kernel@vger.kernel.org, xemul@sw.ru,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Linux Containers <containers@lists.osdl.org>
-Subject: Re: [Ksummit-2010-discuss] checkpoint-restart: naked patch
-In-Reply-To: <20101121081853.GA21672@sundance.ccs.neu.edu>
-Message-ID: <Pine.LNX.4.64.1011221222260.14320@takamine.ncl.cs.columbia.edu>
-References: <20101107184927.GF31077@sundance.ccs.neu.edu> <4CD72150.9070705@cs.columbia.edu>
- <4CE3C334.9080401@kernel.org> <20101117153902.GA1155@hallyn.com>
- <4CE3F8D1.10003@kernel.org> <20101119041045.GC24031@hallyn.com>
- <4CE683E1.6010500@kernel.org> <4CE69B8C.6050606@cs.columbia.edu>
- <Pine.LNX.4.64.1011201312470.15662@takamine.ncl.cs.columbia.edu>
- <4CE8228C.3000108@kernel.org> <20101121081853.GA21672@sundance.ccs.neu.edu>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-No-Spam-Score: Local
+	Mon, 22 Nov 2010 12:36:10 -0500
+Date: Mon, 22 Nov 2010 18:35:54 +0100
+From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
+To: Derek Nielson <dereknielson@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Best place to ask this question: error with compiler.h when
+ switching from 2.6.32 to 2.6.36
+Message-ID: <20101122183554.764aa480@neptune.home>
+In-Reply-To: <AANLkTikt2k8jC4ykYqYG_hQPAZt0-GXAvD1DPogu+AB0@mail.gmail.com>
+References: <AANLkTikt2k8jC4ykYqYG_hQPAZt0-GXAvD1DPogu+AB0@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 21 Nov 2010, Gene Cooperman wrote:
+Hi,
 
-> Below, we'll summarize the four major questions that we've understood from
-> this discussion so far.  But before doing so, I want to point out that a single
-> process or process tree will always have many possible interactions with
-> the rest of the world.  Within our own group, we have an internal slogan:
->   "You can't checkpoint the world."
-> A virtual machine can have a relatively closed world, which makes it more
-> robust, but checkpointing will always have some fragile parts.
+You should post the corresponding code in my_module.c around line 24
+(preferably a link to the whole code of your external module).
 
-That depends of what your definition of "world". One definition
-is "world := VM", as you state above. Another is "world := container"
-which I stated in my post(s). You can checkpoint both.
+The error alone won't help too much as probably it's happening more or
+less deep inside macros, thus the whole parameters to the macro are
+required to understand.
 
-For those cases where the "world" cannot be fully checkpointed, 
-I explicitly pointed  that we should focus on the core c/r 
-functionality, because the "glue" can be done either way.
+Bruno
 
-> We give four examples below: 
-> a.  time virtualization
 
-IMHO, irrelevant to current discussion. And btw, this is done in
-linux-cr for live migration of tcp connections.
-
-> b.  external database
-> c.  NSCD daemon
-
-This falls within the category of "glue", and is - as I try once
-again to remind - tentirely oorthogonal to the topic of where
-to do c/r.
-
-> d.  screen and other full-screen text programs
-> These are not the only examples of difficult interactions with the
-> rest of the world.
-
-This actually never required a userspace "component" with Zap
-or linux-cr (to the best of my knowledge)..
-
-Even if it did - the question is not how to deal with "glue"
-(you demonstrated quite well how to do that with DMTCP), but 
-how should teh basic, core c/r functionality work - which is
-below, and orthogonal to the "glue".
-
-Let us please focus on the base c/r engine functionality...
-
-(gotta disconnect now .. more later)
-
-Oren.
+On Mon, 22 November 2010 Derek Nielson <dereknielson@gmail.com> wrote:
+> Last week I posted on here about a problem I am having switching from
+> kernel 2.6.32 to 2.6.36 and compiling modules against the kernel.  I
+> was not able to get a response and I'm thinking it's because this is
+> the wrong place to post this question.  Where is the best place to ask
+> this kind of question?  Is there another mailing list that I should be
+> posting to?
+> 
+> Thanks
+> 
+> Previous Post:
+> 
+> I am switching from Kernel 2.6.32 to Kernel 2.6.36.  The kernel builds
+> fine but when I compile a module (that worked with the previously
+> kernel) against the new kernel I am getting an error that I don't
+> understand.
+> 
+> Here is the error:
+> 
+> In file included from include/linux/string.h:10,
+>                  from
+> /mnt/local/home/linux-omap-2.6/arch/arm/include/asm/uaccess.h:14,
+>                  from /home/my_module/my_module.c:24:
+> include/linux/compiler.h:62: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or
+> ‘__attribute__’ before ‘struct’
+> make[2]: *** [/home/my_module/my_module.o] Error 1
+> make[1]: *** [_module_/home/my_module] Error 2
+> make[1]: Leaving directory `/mnt/local/home/linux-omap-2.6'
+> make: *** [release] Error 2
+> 
+> I found this thread http://lkml.org/lkml/2007/10/17/213 and tried
+> following their solution but it didn't fix the problem.
+> 
+> Does anyone know how to fix this error?
