@@ -1,42 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab0KVQRJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 11:17:09 -0500
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38265
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756093Ab0KVQRH (ORCPT
+	id S1756816Ab0KVQSA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 11:18:00 -0500
+Received: from sunjammer.sugarlabs.org ([140.186.70.53]:43259 "EHLO
+	sunjammer.sugarlabs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751176Ab0KVQR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 11:17:07 -0500
-Date: Mon, 22 Nov 2010 08:17:31 -0800 (PST)
-Message-Id: <20101122.081731.226770168.davem@davemloft.net>
-To: tdent48227@gmail.com
-Cc: marcel@holtmann.org, padovan@profusion.mobi,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        sjur.brandeland@stericsson.com, socketcan@hartkopp.net,
-        urs.thuermann@volkswagen.de, socketcan-core@lists.berlios.de,
-        sage@newdream.net, ceph-devel@vger.kernel.org, wang840925@gmail.com,
-        jlayton@redhat.com, kaber@trash.net, pekkas@netcore.fi,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, samuel@sortiz.org
-Subject: Re: [PATCH 00/00] Remove deprecated items from Makefiles
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1290387808-2239-1-git-send-email-tdent48227@gmail.com>
-References: <1290387808-2239-1-git-send-email-tdent48227@gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 22 Nov 2010 11:17:59 -0500
+Subject: Re: pc300too on a modern kernel?
+From: Bernie Innocenti <bernie@codewiz.org>
+To: Krzysztof Halasa <khc@pm.waw.pl>
+Cc: Ward Vandewege <ward@gnu.org>, lkml <linux-kernel@vger.kernel.org>,
+        Jan Seiffert <kaffeemonster@googlemail.com>
+In-Reply-To: <m3tyjd7za9.fsf@intrepid.localdomain>
+References: <20100902131531.GA19028@countzero.vandewege.net>
+	 <m3mxrw1lg0.fsf@intrepid.localdomain>
+	 <1289421869.9336.49.camel@giskard.codewiz.org>
+	 <m3sjz34mka.fsf@intrepid.localdomain>
+	 <1289944619.2677.22.camel@giskard.codewiz.org>
+	 <m3tyjd7za9.fsf@intrepid.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Sugar Labs - http://www.sugarlabs.org/
+Date: Mon, 22 Nov 2010 11:17:55 -0500
+Message-ID: <1290442675.5515.92.camel@giskard.codewiz.org>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.32.0 (2.32.0-2.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tracey Dent <tdent48227@gmail.com>
-Date: Sun, 21 Nov 2010 20:03:11 -0500
+On Fri, 2010-11-19 at 22:56 +0100, Krzysztof Halasa wrote:
 
-> I changed Makefiles to use <modules>-y instead of <modules>-objs because -objs
-> is deprecated and not even mentioned in Documentation/kbuild/makefiles.txt.
+> It seems it happens this way:
+> - sca_xmit() fills the whole ring (leaving one descriptor empty as
+>   designed - for EDA to work)
+> - the chip transmits something and signals IRQ->sca_tx_done()
+> - sca_tx_done can't see any descriptor processed and only wakes the
+>   queue. Perhaps we should only wake the queue if at least one
+>   descriptor has been processed - though sca_tx_done() should never be
+>   called otherwise.
+> - sca_xmit is called again with full ring, thus BUG().
 > 
-> Also, remove some if-conditional statments because I used the ccflags-$ flag 
-> instead of EXTRA_CFLAGS because EXTRA_CFLAGS.
+> I wonder if the following helps (untested):
+> 
+> --- a/drivers/net/wan/hd64572.c
+> +++ b/drivers/net/wan/hd64572.c
+> @@ -293,6 +293,7 @@ static inline void sca_tx_done(port_t *port)
+>  	struct net_device *dev = port->netdev;
+>  	card_t* card = port->card;
+>  	u8 stat;
+> +	int wake = 0;
+>  
+>  	spin_lock(&port->lock);
+>  
+> @@ -316,10 +317,12 @@ static inline void sca_tx_done(port_t *port)
+>  			dev->stats.tx_bytes += readw(&desc->len);
+>  		}
+>  		writeb(0, &desc->stat);	/* Free descriptor */
+> +		wake = 1;
+>  		port->txlast = (port->txlast + 1) % card->tx_ring_buffers;
+>  	}
+>  
+> -	netif_wake_queue(dev);
+> +	if (wake)
+> +		netif_wake_queue(dev);
+>  	spin_unlock(&port->lock);
+>  }
 
-All applied, thanks Tracey.
+Last Friday I applied a patch very similar to this one, with a printk on
+the no-wake case.
+
+As you predicted, this made the BUG_ON() disappear. My printk fired
+approximately at same frequency of the debug statements I had in
+sca_xmit(), thus confirming your hypothesis.
+
+Now the question is: why do we get so many spurious interrupts?
+
+With this workaround applied, we're st seeing occasional clusters of
+packet loss. We're working to graph the ping loss alongside traffic to
+see if there's any correlation.
+
+-- 
+   // Bernie Innocenti - http://codewiz.org/
+ \X/  Sugar Labs       - http://sugarlabs.org/
+
