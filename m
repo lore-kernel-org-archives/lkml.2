@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757177Ab0KVSgv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 13:36:51 -0500
-Received: from vms173019pub.verizon.net ([206.46.173.19]:44059 "EHLO
-	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757145Ab0KVSgt (ORCPT
+	id S1757152Ab0KVSjZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 13:39:25 -0500
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:38589 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757096Ab0KVSjY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 13:36:49 -0500
-Date: Mon, 22 Nov 2010 13:36:31 -0500 (EST)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@x980
-To: stable@kernel.org
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [linux-pm] [git pull 2.6.36.stable] intel_idle patches for
- 2.6.36.stable
-In-reply-to: <alpine.LFD.2.00.1011170331150.24426@x980>
-Message-id: <alpine.LFD.2.00.1011221318230.19247@x980>
-References: <alpine.LFD.2.00.1011151227190.2939@x980>
- <alpine.LFD.2.00.1011170322270.24426@x980>
- <alpine.LFD.2.00.1011170331150.24426@x980>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 22 Nov 2010 13:39:24 -0500
+From: Alban Crequy <alban.crequy@collabora.co.uk>
+To: Alban Crequy <alban.crequy@collabora.co.uk>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Ian Molton <ian.molton@collabora.co.uk>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Alban Crequy <alban.crequy@collabora.co.uk>
+Subject: [PATCH 1/9] AF_UNIX: Add constant for Unix socket options level
+Date: Mon, 22 Nov 2010 18:36:14 +0000
+Message-Id: <1290450982-17480-1-git-send-email-alban.crequy@collabora.co.uk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20101122183447.124afce5@chocolatine.cbg.collabora.co.uk>
+References: <20101122183447.124afce5@chocolatine.cbg.collabora.co.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Assign the next free socket options level to be used by the Unix
+protocol and address family.
 
-I retract my intel_idle pull requests for .stable
+Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
+---
+ include/linux/socket.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-The idle-release branches in...
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/
-	linux-idle-2.6.32.git
-	linux-idle-2.6.35.git
-	linux-idle-2.6.36.git
+diff --git a/include/linux/socket.h b/include/linux/socket.h
+index 86b652f..7c5a4da 100644
+--- a/include/linux/socket.h
++++ b/include/linux/socket.h
+@@ -307,6 +307,7 @@ struct ucred {
+ #define SOL_RDS		276
+ #define SOL_IUCV	277
+ #define SOL_CAIF	278
++#define SOL_UNIX	279
+ 
+ /* IPX options */
+ #define IPX_TYPE	1
+-- 
+1.7.1
 
-are for distros and others that want to run the latest intel_idle
-driver on the specified release.  The backports in these trees
-contain every upstream patch that touch the driver, including new
-platform support and any dependent cosmetic patches.
-
-So they are optimized for the maintenance task of comparing
-the backport versus the upstream driver to verify the release
-includes everything that is upstream.
-However, as it does not exclude cosmetic or trivial patches,
-the backports do not qualify for inclusion in .stable.
-
-Sorry to bother you.
-
-thanks,
-Len Brown, Intel Open Source Technology Center
