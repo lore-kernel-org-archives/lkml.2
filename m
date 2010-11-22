@@ -1,59 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756847Ab0KVSDk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 13:03:40 -0500
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49679 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab0KVSDi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 13:03:38 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=x19jLiJHI3JYYxwgKjfpRiv8v97AmIjPkc/aGZIBnV9xijQYrp/lo5uXaeVpUmFRhE
-         cVfVL7lYa5bUjYFyZka9X5eu4e8UNuETJSpthVVNBnwQ1nr3OPMh3+nuGrjHC3ozlfAI
-         s+ImP1sUwzxse5Y9m6jqj9EV+wVhXY5h+I1Ao=
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Dave Airlie <airlied@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tiago Vignatti <tiago.vignatti@nokia.com>,
-        Mike Travis <travis@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	id S1756751Ab0KVSFI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 13:05:08 -0500
+Received: from cantor.suse.de ([195.135.220.2]:53234 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753438Ab0KVSFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 22 Nov 2010 13:05:06 -0500
+Date: Mon, 22 Nov 2010 19:05:01 +0100
+From: Jan Kara <jack@suse.cz>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2] gpu: vga: limit kmalloc'ed memory size
-Date: Mon, 22 Nov 2010 20:11:03 +0300
-Message-Id: <1290445864-13657-1-git-send-email-segoon@openwall.com>
-X-Mailer: git-send-email 1.7.0.4
+Subject: Re: [PATCH 2/2] ext3: Add journal error check into ext3_rename()
+Message-ID: <20101122180501.GE5012@quack.suse.cz>
+References: <1290151716-4041-1-git-send-email-namhyung@gmail.com>
+ <1290151716-4041-2-git-send-email-namhyung@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1290151716-4041-2-git-send-email-namhyung@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-count is not checked before kmalloc() call.  Too big value would
-generate stack dump.  To prevent this limit 'count' maximum value.
-1024 looks OK - the data should be the string of tens of bytes.
+On Fri 19-11-10 16:28:36, Namhyung Kim wrote:
+> Check return value of ext3_journal_get_write_access() and
+> ext3_journal_dirty_metadata(). 'new_bh' should be kept in
+> order to get revoked in case of journal error in dir_bh.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  fs/ext3/namei.c |   27 +++++++++++++++++++++------
+>  1 files changed, 21 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
+> index 672cea1..8061281 100644
+> --- a/fs/ext3/namei.c
+> +++ b/fs/ext3/namei.c
+> @@ -2371,7 +2371,9 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
+>  			goto end_rename;
+>  	} else {
+>  		BUFFER_TRACE(new_bh, "get write access");
+> -		ext3_journal_get_write_access(handle, new_bh);
+> +		retval = ext3_journal_get_write_access(handle, new_bh);
+> +		if (retval)
+> +			goto journal_error1;
+>  		new_de->inode = cpu_to_le32(old_inode->i_ino);
+>  		if (EXT3_HAS_INCOMPAT_FEATURE(new_dir->i_sb,
+>  					      EXT3_FEATURE_INCOMPAT_FILETYPE))
+> @@ -2380,9 +2382,12 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
+>  		new_dir->i_ctime = new_dir->i_mtime = CURRENT_TIME_SEC;
+>  		ext3_mark_inode_dirty(handle, new_dir);
+>  		BUFFER_TRACE(new_bh, "call ext3_journal_dirty_metadata");
+> -		ext3_journal_dirty_metadata(handle, new_bh);
+> -		brelse(new_bh);
+> -		new_bh = NULL;
+> +		retval = ext3_journal_dirty_metadata(handle, new_bh);
+> +		if (retval) {
+> +journal_error1:
+> +			ext3_std_error(new_dir->i_sb, retval);
+> +			goto end_rename;
+> +		}
+>  	}
+>  
+>  	/*
+> @@ -2429,10 +2434,20 @@ static int ext3_rename (struct inode * old_dir, struct dentry *old_dentry,
+>  	ext3_update_dx_flag(old_dir);
+>  	if (dir_bh) {
+>  		BUFFER_TRACE(dir_bh, "get_write_access");
+> -		ext3_journal_get_write_access(handle, dir_bh);
+> +		retval = ext3_journal_get_write_access(handle, dir_bh);
+> +		if (retval)
+> +			goto journal_error2;
+>  		PARENT_INO(dir_bh->b_data) = cpu_to_le32(new_dir->i_ino);
+>  		BUFFER_TRACE(dir_bh, "call ext3_journal_dirty_metadata");
+> -		ext3_journal_dirty_metadata(handle, dir_bh);
+> +		retval = ext3_journal_dirty_metadata(handle, dir_bh);
+> +		if (retval) {
+> +journal_error2:
+> +			if (new_bh)
+> +				ext3_journal_revoke(handle, new_bh->b_blocknr,
+> +						    new_bh);
+  Uhuh, why ext3_journal_revoke()? I expect you want to cancel the changes
+you possibly did to new_bh. ext3_journal_forget() is for that but even that
+doesn't necessarily do what you want because it could cancel also changes
+some unrelated operation did to the buffer. So the only way to really undo
+the change is to set new_de->inode and new_de->file_type to original
+values. Also since we already unlinked the inode from the old directory,
+I'm not sure it's even beneficial to undo linking it to the new one. So I'd
+just bail out as fast as we can and leave on fsck to handle the mess...
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- Compile tested only.
+								Honza
 
- v1 had incorrect comment text, as Dan Rosenberg noticed.
-
- drivers/gpu/vga/vgaarb.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/gpu/vga/vgaarb.c b/drivers/gpu/vga/vgaarb.c
-index c380c65..09e3090 100644
---- a/drivers/gpu/vga/vgaarb.c
-+++ b/drivers/gpu/vga/vgaarb.c
-@@ -836,6 +836,8 @@ static ssize_t vga_arb_write(struct file *file, const char __user * buf,
- 	int ret_val;
- 	int i;
- 
-+	if (count > 1024)
-+		count = 1024;
- 
- 	kbuf = kmalloc(count + 1, GFP_KERNEL);
- 	if (!kbuf)
+> +			ext3_std_error(new_dir->i_sb, retval);
+> +			goto end_rename;
+> +		}
+>  		drop_nlink(old_dir);
+>  		if (new_inode) {
+>  			drop_nlink(new_inode);
+> -- 
+> 1.7.0.4
+> 
 -- 
-1.7.0.4
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
