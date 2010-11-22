@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756104Ab0KVNu5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 08:50:57 -0500
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:37019 "HELO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754646Ab0KVNuy (ORCPT
+	id S1756207Ab0KVNv1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 08:51:27 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33749 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754646Ab0KVNvZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 08:50:54 -0500
-MIME-Version: 1.0
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB59302477EB2BE@dbde02.ent.ti.com>
-References: <cover.1289835508.git.bengardiner@nanometrics.ca>
-	<cover.1289935504.git.bengardiner@nanometrics.ca>
-	<95f48a32a0256ecdb7148aa08d16f64928a7e5d8.1289935504.git.bengardiner@nanometrics.ca>
-	<B85A65D85D7EB246BE421B3FB0FBB59302477EA939@dbde02.ent.ti.com>
-	<AANLkTi=HS7ym8n6=hF8vAg2WR33Md5=YRZL2NS7a+F2y@mail.gmail.com>
-	<B85A65D85D7EB246BE421B3FB0FBB59302477EB2BE@dbde02.ent.ti.com>
-Date: Mon, 22 Nov 2010 08:50:48 -0500
-Message-ID: <AANLkTimRbsmR6xMok8P_wXpQAd1Xykew6_pPhqUWGsEN@mail.gmail.com>
-Subject: Re: [PATCH v2 2/4] da850-evm: add UI Expander pushbuttons
-From: Ben Gardiner <bengardiner@nanometrics.ca>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Govindarajan, Sriramakrishnan" <srk@ti.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Clouter <alex@digriz.org.uk>,
-        Chris Cordahi <christophercordahi@nanometrics.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 22 Nov 2010 08:51:25 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/2] regulator: Fix obfuscated log messages
+Date: Mon, 22 Nov 2010 13:51:18 +0000
+Message-Id: <1290433879-6184-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 22, 2010 at 6:49 AM, Nori, Sekhar <nsekhar@ti.com> wrote:
-> On Fri, Nov 19, 2010 at 21:08:10, Ben Gardiner wrote:
->> [...]
->> By setting INPUT_POLLDEV default for the da850-evm users will get
->> functioning pushbuttons and switches with the default config but they
->> will be able to disable INPUT_POLLDEV or gpio-keys drivers in their
->> defconfig at their convenience.
->
-> I guess we could also just modify the defconfig to switch on
-> INPUT_POLLDEV? Since only gpio-keys functionality is affected
-> by not enabling the correct options in kernel, it should be OK.
+Don't use %s to format fixed static strings into log messages, it just
+makes searching for and reading the message in the kernel source
+needlessly hard.
 
-Yes -- only gpio-keys is affected but enabling the option does
-introduce an additional .o file:
-
-drivers/input/Makefile:obj-$(CONFIG_INPUT_POLLDEV)      += input-polldev.o
-
-I agree that in its current state a user couls inadvertently disable
-the gpio-keys support on da850-evm simply by disabling INPUT_POLLDEV
--- which is less than Ideal. How about I replace the current changes
-to arch/arm/mach-davinci/Kconfig with:
-
-config KEYBOARD_GPIO
-        default MACH_DAVINCI_DA850_EVM
-        select INPUT_POLLDEV
-
-So 1) gpio-keys functionality is default for the da850evm and 2)
-whenever gpio-keys is enabled so is INPUT_POLLDEV.
-
-Best Regards,
-Ben Gardiner
-
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
-Nanometrics Inc.
-http://www.nanometrics.ca
+ drivers/regulator/core.c |   14 ++++++--------
+ 1 files changed, 6 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 8d492f4..fe47860 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -760,7 +760,7 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 
+ 		/* else require explicit machine-level constraints */
+ 		if (cmin <= 0 || cmax <= 0 || cmax < cmin) {
+-			pr_err("%s '%s' voltage constraints\n", "invalid",
++			pr_err("invalid '%s' voltage constraints\n",
+ 				name);
+ 			return -EINVAL;
+ 		}
+@@ -782,22 +782,20 @@ static int machine_constraints_voltage(struct regulator_dev *rdev,
+ 
+ 		/* final: [min_uV..max_uV] valid iff constraints valid */
+ 		if (max_uV < min_uV) {
+-			pr_err("%s '%s' voltage constraints\n", "unsupportable",
++			pr_err("unsupportable '%s' voltage constraints\n",
+ 				name);
+ 			return -EINVAL;
+ 		}
+ 
+ 		/* use regulator's subset of machine constraints */
+ 		if (constraints->min_uV < min_uV) {
+-			pr_debug("override '%s' %s, %d -> %d\n",
+-				 name, "min_uV",
+-				 constraints->min_uV, min_uV);
++			pr_debug("override '%s' min_uV, %d -> %d\n",
++				 name, constraints->min_uV, min_uV);
+ 			constraints->min_uV = min_uV;
+ 		}
+ 		if (constraints->max_uV > max_uV) {
+-			pr_debug("override '%s' %s, %d -> %d\n",
+-				 name, "max_uV",
+-				 constraints->max_uV, max_uV);
++			pr_debug("override '%s' max_uV, %d -> %d\n",
++				 name, constraints->max_uV, max_uV);
+ 			constraints->max_uV = max_uV;
+ 		}
+ 	}
+-- 
+1.7.1
+
