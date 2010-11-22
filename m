@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab0KVQzf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 11:55:35 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37369 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752254Ab0KVQzd convert rfc822-to-8bit (ORCPT
+	id S1754445Ab0KVQzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 11:55:45 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59591 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164Ab0KVQzn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 11:55:33 -0500
+	Mon, 22 Nov 2010 11:55:43 -0500
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
          :content-transfer-encoding;
-        b=L7+28AD43z7FY+5OAsyid59/ztKXgq5sj2XR9x0Flp9iO3QeT1zJrI+tHj09Tyqpsp
-         XajHl1ooYfF7nVYsQG9ucSbSd5SE1HwOyTV39+S8HrmAdnNEv3/UXtKI/FelT83yQehN
-         uxvjPNiJu7Zqyg6muyOsnC+qBONHirhsLDKxg=
+        b=s5VUbXhlTXel1SA0xxwZVbTcP6PTpEIHKBZOd/7HFgITNGbXT5hQWYkFVLVs8HU/uQ
+         eSHTvSFCRrDhQ6QLnercMGcYZpNJRCynrea5WwyQqjl7L2UH/q6STH+BUPYw5/lv3m8Z
+         NtuK9XZ7KNA42wJb8rWKUNdCCGd6haRMmCDoM=
 MIME-Version: 1.0
-Date: Mon, 22 Nov 2010 09:55:14 -0700
-Message-ID: <AANLkTikt2k8jC4ykYqYG_hQPAZt0-GXAvD1DPogu+AB0@mail.gmail.com>
-Subject: Best place to ask this question: error with compiler.h when switching
- from 2.6.32 to 2.6.36
-From: Derek Nielson <dereknielson@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
+In-Reply-To: <1290391175.2903.132.camel@yhuang-dev>
+References: <4ce85e437577ae827@agluck-desktop.sc.intel.com>
+	<1290391175.2903.132.camel@yhuang-dev>
+Date: Mon, 22 Nov 2010 08:55:34 -0800
+X-Google-Sender-Auth: 7Nazs40KFLDZoGDr-3_7eyymTkU
+Message-ID: <AANLkTi=fNH4-VjLh1zzk-UdEQevR16_K8igdLeodw6yL@mail.gmail.com>
+Subject: Re: [RFC] persistent store
+From: Tony Luck <tony.luck@intel.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>, "greg@kroah.com" <greg@kroah.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Last week I posted on here about a problem I am having switching from
-kernel 2.6.32 to 2.6.36 and compiling modules against the kernel.  I
-was not able to get a response and I'm thinking it's because this is
-the wrong place to post this question.  Where is the best place to ask
-this kind of question?  Is there another mailing list that I should be
-posting to?
+On Sun, Nov 21, 2010 at 5:59 PM, Huang Ying <ying.huang@intel.com> wrote:
+> This patch provides a general "read" interface for kmsg_dumper and some
+> other persistent storage users. Another possible choice is to just
+> extend the original interface to add persistent store support. For
+> example, we can add a "read" function in kmsg_dumper, and output the
+> content of persistent store via extend /dev/kmsg via prefix every line
+> comes from persistent store or adding some "ioctl" to do that. (But it
+> seems that nobody likes "ioctl").
 
-Thanks
+In Linux (and Unix before it) "everything is a file" ... but this
+doesn't work very well if the file has internal structure (e.g.
+is made of records that can be individually changed or
+deleted).  A filesystem seems a much better model.
 
-Previous Post:
+>> "writer" which writes a record with a type to the persistent store
+>
+> I think it is necessary to require this to be NMI safe (in comments?),
+> because hardware error handler may need to write to persistent storage
+> in NMI context. Or we can add a "flag" field to let storage provider
+> advocate its capability of NMI safe.
 
-I am switching from Kernel 2.6.32 to Kernel 2.6.36.  The kernel builds
-fine but when I compile a module (that worked with the previously
-kernel) against the new kernel I am getting an error that I don't
-understand.
+I can add a comment to pstore.h to document the NMI-safe
+requirement for the "writer" function.
 
-Here is the error:
+>>   - Which device(s) should error records be written to?
+>>     All of them? Start with one and move on when it is
+>>     full?  Write some types of records to one device?
+>
+> The persistent storage may be full, and the writing may fail. So I think
+> we can just try to write one by one, until the first success writing.
 
-In file included from include/linux/string.h:10,
-                 from
-/mnt/local/home/linux-omap-2.6/arch/arm/include/asm/uaccess.h:14,
-                 from /home/my_module/my_module.c:24:
-include/linux/compiler.h:62: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or
-‘__attribute__’ before ‘struct’
-make[2]: *** [/home/my_module/my_module.o] Error 1
-make[1]: *** [_module_/home/my_module] Error 2
-make[1]: Leaving directory `/mnt/local/home/linux-omap-2.6'
-make: *** [release] Error 2
+A good option - if we ever find someone luck enough to have
+more than one persistent store device.
 
-I found this thread http://lkml.org/lkml/2007/10/17/213 and tried
-following their solution but it didn't fix the problem.
+>> +       sysfs_remove_bin_file(&pstore_kset->kobj, &search_pstore->attr);
+>
+> It seems that the corresponding memory is not freed after erasing.
 
-Does anyone know how to fix this error?
+Ouch!  Good catch.  Will add a kfree()
+
+-Tony
