@@ -1,174 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750943Ab0KVFUZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 00:20:25 -0500
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:39814 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750779Ab0KVFUX (ORCPT
+	id S1750943Ab0KVF0P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 00:26:15 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59344 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab0KVF0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 00:20:23 -0500
-Message-ID: <006801cb8a04$f60f4810$66f8800a@maildom.okisemi.com>
-From: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-To: "Wolfgang Grandegger" <wg@grandegger.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "Wolfram Sang" <w.sang@pengutronix.de>,
-        "Christian Pellegrin" <chripell@fsfe.org>,
-        "Barry Song" <21cnbao@gmail.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <andrew.chih.howe.khor@intel.com>,
-        <qi.wang@intel.com>, <margie.foster@intel.com>,
-        <yong.y.wang@intel.com>, "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>,
-        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>
-References: <4CE0EFA7.9020007@dsn.okisemi.com> <4CE141EA.5070702@grandegger.com> <001501cb8567$c7a38820$66f8800a@maildom.okisemi.com> <4CE259FB.5090402@grandegger.com> <00bf01cb87bc$8ed6e300$66f8800a@maildom.okisemi.com> <4CE63C05.6060101@grandegger.com>
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Add Flow control,
-Date: Mon, 22 Nov 2010 14:20:19 +0900
+	Mon, 22 Nov 2010 00:26:14 -0500
+Message-ID: <4CE9FED1.1050008@kernel.org>
+Date: Sun, 21 Nov 2010 21:25:37 -0800
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101026 SUSE/3.0.10 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>
+CC: Myron Stowe <myron.stowe@hp.com>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+        linux-kernel@vger.kernel.org, Wu Fengguang <fengguang.wu@intel.com>
+Subject: [PATCH] x86, acpi: Parse all SRAT cpu entries even have cpu num limitation
+References: <20101104041236.GA9389@helgaas.com>	 <1288937844.3234.1.camel@edumazet-laptop> <1289500084.2698.12.camel@zim>	 <201011121152.30204.knikanth@suse.de> <1289756161.2814.29.camel@zim>	 <AANLkTikUnLc8L_0+CQOwPgr-oifws=sqnFPxWz46MTCi@mail.gmail.com> <1290123161.2447.27.camel@zim>
+In-Reply-To: <1290123161.2447.27.camel@zim>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, November 19, 2010 5:57 PM,  wrote :
-> Could you please do the same testing while triggering a bus-off? After
-> the test, the output of "ip -d -s link" would be interesting as well.
 
-I show the result below.
+Recent Intel new system have different order in MADT, aka will list all thread0
+at first, then all thread1.
+But SRAT table still old order, it will list cpus in one socket all together.
 
-[root@localhost can]# ip -d -s link
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436 qdisc noqueue state UNKNOWN
-    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-    RX: bytes  packets  errors  dropped overrun mcast
-    2280       40       0       0       0       0
-    TX: bytes  packets  errors  dropped carrier collsns
-    2280       40       0       0       0       0
-2: eth1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
-    link/ether 00:40:26:c0:8a:31 brd ff:ff:ff:ff:ff:ff
-    RX: bytes  packets  errors  dropped overrun mcast
-    10119825   10809    0       0       0       664
-    TX: bytes  packets  errors  dropped carrier collsns
-    979543     6434     0       0       0       0
-3: pan0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN
-    link/ether de:02:85:50:76:f6 brd ff:ff:ff:ff:ff:ff
-    RX: bytes  packets  errors  dropped overrun mcast
-    0          0        0       0       0       0
-    TX: bytes  packets  errors  dropped carrier collsns
-    0          0        0       0       0       0
-8: can0: <NOARP,UP,LOWER_UP,ECHO> mtu 16 qdisc pfifo_fast state UNKNOWN qlen 10
-    link/can
-    can state ERROR-PASSIVE restart-ms 0
-    bitrate 125000 sample-point 0.875
-    tq 500 prop-seg 6 phase-seg1 7 phase-seg2 2 sjw 1
-    pch_can: tseg1 1..16 tseg2 1..8 sjw 1..4 brp 1..1024 brp-inc 1
-    clock 50000000
-    re-started bus-errors arbit-lost error-warn error-pass bus-off
-    0          156295     0          156284     156280     0
-    RX: bytes  packets  errors  dropped overrun mcast
-    1250360    156295   156295  0       0       0
-    TX: bytes  packets  errors  dropped carrier collsns
-    0          0        0       0       0       0
-[root@localhost can]#
+If the user have compiled limited NR_CPUS or boot with nr_cpus=, could have missed
+to put some cpus apic id to node mapping into apicid_to_node[].
 
+for example for 4 sockets system with 64 cpus with nr_cpus=32 will get crash...
 
-------
-Thanks,
+[    9.106288] Total of 32 processors activated (136190.88 BogoMIPS).
+[    9.235021] divide error: 0000 [#1] SMP 
+[    9.235315] last sysfs file: 
+[    9.235481] CPU 1 
+[    9.235592] Modules linked in:
+[    9.245398] 
+[    9.245478] Pid: 2, comm: kthreadd Not tainted 2.6.37-rc1-tip-yh-01782-ge92ef79-dirty #274      /Sun Fire x4800
+[    9.265415] RIP: 0010:[<ffffffff81075a8f>]  [<ffffffff81075a8f>] select_task_rq_fair+0x4f0/0x623
+...
+[    9.645938] RIP  [<ffffffff81075a8f>] select_task_rq_fair+0x4f0/0x623
+[    9.665356]  RSP <ffff88103f8d1c40>
+[    9.665568] ---[ end trace 2296156d35fdfc87 ]---
 
-Tomoya MORINAGA
-OKI SEMICONDUCTOR CO., LTD.
+So let just parse all cpu entries in SRAT.
 
------ Original Message ----- 
-From: "Wolfgang Grandegger" <wg@grandegger.com>
-To: "Tomoya MORINAGA" <tomoya-linux@dsn.okisemi.com>
-Cc: "David S. Miller" <davem@davemloft.net>; "Wolfram Sang" <w.sang@pengutronix.de>; "Christian Pellegrin"
-<chripell@fsfe.org>; "Barry Song" <21cnbao@gmail.com>; "Samuel Ortiz" <sameo@linux.intel.com>;
-<socketcan-core@lists.berlios.de>; <netdev@vger.kernel.org>; <linux-kernel@vger.kernel.org>;
-<andrew.chih.howe.khor@intel.com>; <qi.wang@intel.com>; <margie.foster@intel.com>; <yong.y.wang@intel.com>; "Masayuki
-Ohtake" <masa-korg@dsn.okisemi.com>; <kok.howg.ewe@intel.com>; <joel.clark@intel.com>
-Sent: Friday, November 19, 2010 5:57 PM
-Subject: Re: [PATCH net-next-2.6 v2] can: Topcliff: PCH_CAN driver: Add Flow control,
+Also add apicid checking with MAX_LOCAL_APIC, in case We could out of boundaries of
+apicid_to_node[].
 
+it fixes following bug too.
+https://bugzilla.kernel.org/show_bug.cgi?id=22662
 
-> Hi Tomoya,
->
-> On 11/19/2010 08:36 AM, Tomoya MORINAGA wrote:
-> > On Tuesday, November 16, 2010 7:16 PM, Wolfgang Grandegger wrote :
-> >
-> >>> ......It seems the same line continues forever.
-> >>
-> >> Yes, it will continue until you connect the cable, that's normal
-> >> behavior. But that's not the full sequence. Could you please repeat the
-> >> test as shown below:
-> >>
-> >>   First start the following command in a *separate* session.
-> >>   # candump any,0:0,#FFFFFFFF"
-> >>
-> >>   Then setup and start the CAN controller:
-> >>   # ip link set can0 up type can bitrate 125000
-> >>   # cansend can0 123#deadbeef
-> >>
-> >
-> > I show the result of the above command below,
-> >
-> > [root@localhost can-utils]# candump any,0:0,#FFFFFFFF
-> >   can0  20000020  [8] 00 00 00 00 00 00 08 00   ERRORFRAME
-> >   can0  20000020  [8] 00 00 00 00 00 00 10 00   ERRORFRAME
-> >   can0  20000020  [8] 00 00 00 00 00 00 18 00   ERRORFRAME
-> >   can0  20000020  [8] 00 00 00 00 00 00 20 00   ERRORFRAME
-> >   can0  20000020  [8] 00 00 00 00 00 00 28 00   ERRORFRAME
-> >   can0  20000020  [8] 00 00 00 00 00 00 30 00   ERRORFRAME
-> >   can0  20000020  [8] 00 00 00 00 00 00 38 00   ERRORFRAME
-> >   can0  20000020  [8] 00 00 00 00 00 00 40 00   ERRORFRAME
-> >   can0  20000020  [8] 00 00 00 00 00 00 48 00   ERRORFRAME
-> >   can0  20000020  [8] 00 00 00 00 00 00 50 00   ERRORFRAME
-> >   can0  20000020  [8] 00 00 00 00 00 00 58 00   ERRORFRAME
->
-> The above lines describe bus errors. Therefore it should be
->
->     can0  20000088  [8] 00 00 80 19 00 00 58 00   ERRORFRAME
->
-> >   can0  20000024  [8] 00 00 00 00 00 00 60 00   ERRORFRAME
->
-> The TX error counter has reached 96 signaling a can error state change
-> to "error warning".
->
-> >   can0  20000024  [8] 00 08 00 00 00 00 68 00   ERRORFRAME
->
-> CAN_ERR_CRTL in the id and CAN_ERR_CRTL_TX_WARNING in data[1], but ...
->
-> >   can0  20000024  [8] 00 08 00 00 00 00 70 00   ERRORFRAME
->
-> the state change should be signaled only *once*.
->
-> >   can0  20000024  [8] 00 08 00 00 00 00 78 00   ERRORFRAME
-> >   can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
->
-> "Error passive" state is reached and CAN_ERR_CRTL_TX_PASSIVE sould be
-> set in data[1], but CAN_ERR_CRTL_TX_WARNING should be removed.
->
-> >   can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
-> >   can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
-> >   can0  20000024  [8] 00 28 00 00 00 00 80 00   ERRORFRAME
->
-> Sounds magic, well, I'm going to prepare a patch as soon as your pending
-> patch series is applied.
->
-> Could you please do the same testing while triggering a bus-off? After
-> the test, the output of "ip -d -s link" would be interesting as well.
->
-> Thanks,
->
-> Wolfgang.
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Reported-and-Tested-by: Wu Fengguang <fengguang.wu@intel.com>
+Reported-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Tested-by: Myron Stowe <myron.stowe@hp.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
+---
+ arch/x86/kernel/acpi/boot.c |    7 +++++++
+ arch/x86/mm/srat_64.c       |    8 ++++++++
+ drivers/acpi/numa.c         |   14 ++++++++++++--
+ 3 files changed, 27 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/arch/x86/kernel/acpi/boot.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/acpi/boot.c
++++ linux-2.6/arch/x86/kernel/acpi/boot.c
+@@ -198,6 +198,13 @@ static void __cpuinit acpi_register_lapi
+ {
+ 	unsigned int ver = 0;
+ 
++#ifdef CONFIG_X86_64
++	if (id >= (MAX_APICS-1)) {
++		printk(KERN_INFO PREFIX "skipped apicid that is too big\n");
++		return;
++	}
++#endif
++
+ 	if (!enabled) {
+ 		++disabled_cpus;
+ 		return;
+Index: linux-2.6/arch/x86/mm/srat_64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/srat_64.c
++++ linux-2.6/arch/x86/mm/srat_64.c
+@@ -134,6 +134,10 @@ acpi_numa_x2apic_affinity_init(struct ac
+ 	}
+ 
+ 	apic_id = pa->apic_id;
++	if (apic_id >= MAX_LOCAL_APIC) {
++		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%04x -> Node %u skipped apicid is too big\n", pxm, apic_id, node);
++		return;
++	}
+ 	apicid_to_node[apic_id] = node;
+ 	node_set(node, cpu_nodes_parsed);
+ 	acpi_numa = 1;
+@@ -168,6 +172,10 @@ acpi_numa_processor_affinity_init(struct
+ 		apic_id = (pa->apic_id << 8) | pa->local_sapic_eid;
+ 	else
+ 		apic_id = pa->apic_id;
++	if (apic_id >= MAX_LOCAL_APIC) {
++		printk(KERN_INFO "SRAT: PXM %u -> APIC 0x%02x -> Node %u skipped apicid that is too big\n", pxm, apic_id, node);
++		return;
++	}
+ 	apicid_to_node[apic_id] = node;
+ 	node_set(node, cpu_nodes_parsed);
+ 	acpi_numa = 1;
+Index: linux-2.6/drivers/acpi/numa.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/numa.c
++++ linux-2.6/drivers/acpi/numa.c
+@@ -275,13 +275,23 @@ acpi_table_parse_srat(enum acpi_srat_typ
+ int __init acpi_numa_init(void)
+ {
+ 	int ret = 0;
++	int nr_cpu_entries = nr_cpu_ids;
++
++#ifdef CONFIG_X86_64
++	/*
++	 * Should not limit number with cpu num that is from NR_CPUS or nr_cpus=
++	 * SRAT cpu entries could have different order with that in MADT.
++	 * So go over all cpu entries in SRAT to get apicid to node mapping.
++	 */
++	nr_cpu_entries = MAX_LOCAL_APIC;
++#endif
+ 
+ 	/* SRAT: Static Resource Affinity Table */
+ 	if (!acpi_table_parse(ACPI_SIG_SRAT, acpi_parse_srat)) {
+ 		acpi_table_parse_srat(ACPI_SRAT_TYPE_X2APIC_CPU_AFFINITY,
+-				     acpi_parse_x2apic_affinity, nr_cpu_ids);
++				     acpi_parse_x2apic_affinity, nr_cpu_entries);
+ 		acpi_table_parse_srat(ACPI_SRAT_TYPE_CPU_AFFINITY,
+-				     acpi_parse_processor_affinity, nr_cpu_ids);
++				     acpi_parse_processor_affinity, nr_cpu_entries);
+ 		ret = acpi_table_parse_srat(ACPI_SRAT_TYPE_MEMORY_AFFINITY,
+ 					    acpi_parse_memory_affinity,
+ 					    NR_NODE_MEMBLKS);
