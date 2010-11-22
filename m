@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab0KVBhN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 21 Nov 2010 20:37:13 -0500
-Received: from mga11.intel.com ([192.55.52.93]:37835 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754900Ab0KVBhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 21 Nov 2010 20:37:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.59,232,1288594800"; 
-   d="scan'208";a="860004239"
-Date: Mon, 22 Nov 2010 09:36:55 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH] vmscan: Make move_active_pages_to_lru more generic
-Message-ID: <20101122013655.GA10126@localhost>
-References: <1290349496-13297-1-git-send-email-minchan.kim@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1290349496-13297-1-git-send-email-minchan.kim@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756166Ab0KVBqd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 21 Nov 2010 20:46:33 -0500
+Received: from rcsinet10.oracle.com ([148.87.113.121]:48002 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754900Ab0KVBqc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 21 Nov 2010 20:46:32 -0500
+Date: Sun, 21 Nov 2010 17:44:56 -0800
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Michal Marek <mmarek@suse.cz>, catalin.marinas@arm.com,
+        linux-kbuild@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lacombar@gmail.com,
+        xiyou.wangcong@gmail.com,
+        Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: Re: [PATCH] Revert
+ "kconfig: Temporarily disable dependency warnings"
+Message-Id: <20101121174456.c6f77f56.randy.dunlap@oracle.com>
+In-Reply-To: <20101122114801.2eee4c4d.sfr@canb.auug.org.au>
+References: <20101011145930.11fe570c.randy.dunlap@oracle.com>
+	<1286889586-13483-1-git-send-email-mmarek@suse.cz>
+	<20101029113731.5c7c54b9.sfr@canb.auug.org.au>
+	<20101122114801.2eee4c4d.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Nov 21, 2010 at 10:24:56PM +0800, Minchan Kim wrote:
-> Now move_active_pages_to_lru can move pages into active or inactive.
-> if it moves the pages into inactive, it itself can clear PG_acive.
-> It makes the function more generic.
+On Mon, 22 Nov 2010 11:48:01 +1100 Stephen Rothwell wrote:
 
-Do you plan to use this "more generic" function? Because the patch in
-itself makes code slightly less efficient. It adds one "if" test, and
-moves one operation into the spin lock.
+> On Fri, 29 Oct 2010 11:37:31 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > On Tue, 12 Oct 2010 15:19:46 +0200 Michal Marek <mmarek@suse.cz> wrote:
+> > >
+> > > This reverts commit 71ebc01, which was a 2.6.36-only stopgap solution.
+> > 
+> > I was hoping that we would have the number of these warnings down to
+> > something reasonable before this revert made it into Linus' tree ...
+> > 
+> > I guess fixing the V4L stuff will become a bit more urgent, now :-)
+> 
+> Is there any chance that the V4L kconfig warnings will be fixed?  It is
+> quite irritating for those of us who do allmodconfig (and allyesconfig)
+> builds ...
 
-Thanks,
-Fengguang
+Yes, the MEDIA kconfig warnings are irritating.
+I just use "grep -v MEDIA" to ignore them.  :)
+
+I haven't seen any email from Michal for more than one week.
+Hopefully he will be back soon.
+
+There are patches from Arnaud Lacombe <lacombar@gmail.com>
+to introduce a VISIBLE property for kconfig symbols (this fixes the
+MEDIA kconfig warnings), but Michal has not commented on them.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
