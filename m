@@ -1,95 +1,396 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab0KVXvZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 22 Nov 2010 18:51:25 -0500
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41207 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757899Ab0KVXvY (ORCPT
+	id S1757974Ab0KVXvv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 22 Nov 2010 18:51:51 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:20572 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757899Ab0KVXvu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 22 Nov 2010 18:51:24 -0500
-Date: Mon, 22 Nov 2010 15:50:43 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        kernel-janitors@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jakub Jelinek <jakub@redhat.com>
-Subject: Re: [PATCH v2] fs: select: fix information leak to userspace
-Message-Id: <20101122155043.fbbb74f4.akpm@linux-foundation.org>
-In-Reply-To: <4CE268C8.5010203@panasas.com>
-References: <1289421483-23907-1-git-send-email-segooon@gmail.com>
-	<20101112120834.33062900.akpm@linux-foundation.org>
-	<8D90F8B2-EA29-4EB9-9807-294CE0D5523B@dilger.ca>
-	<20101114092533.GB5323@albatros>
-	<20101114180643.593d19ac.akpm@linux-foundation.org>
-	<1289848341.2607.125.camel@edumazet-laptop>
-	<4CE268C8.5010203@panasas.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Mon, 22 Nov 2010 18:51:50 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6175"; a="63935097"
+Subject: Re: [PATCH 3/3] msm: iommu: Rework clock logic and add IOMMU bus
+ clock control
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: davidb@codeaurora.org, bryanh@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1290222154-11096-4-git-send-email-stepanm@codeaurora.org>
+References: <1290222154-11096-1-git-send-email-stepanm@codeaurora.org>
+	 <1290222154-11096-4-git-send-email-stepanm@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 22 Nov 2010 15:51:49 -0800
+Message-ID: <1290469909.4258.34.camel@m0nster>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 16 Nov 2010 13:19:36 +0200
-Boaz Harrosh <bharrosh@panasas.com> wrote:
-
-> On 11/15/2010 09:12 PM, Eric Dumazet wrote:
-> > Le dimanche 14 novembre 2010 __ 18:06 -0800, Andrew Morton a __crit : 
-> >> On Sun, 14 Nov 2010 12:25:33 +0300 Vasiliy Kulikov <segoon@openwall.com> wrote:
-> >>>  
-> >>>  	if (timeval) {
-> >>> -		rtv.tv_sec = rts.tv_sec;
-> >>> -		rtv.tv_usec = rts.tv_nsec / NSEC_PER_USEC;
-> >>> +		struct timeval rtv = {
-> >>> +			.tv_sec = rts.tv_sec,
-> >>> +			.tv_usec = rts.tv_nsec / NSEC_PER_USEC
-> >>> +		};
-> >>>  
-> >>>  		if (!copy_to_user(p, &rtv, sizeof(rtv)))
-> >>>  			return ret;
-> >>
-> >> Please check the assembly code - this will still leave four bytes of
-> >> uninitalised stack data in 'rtv', surely.
-> > 
-> > Thats a good question.
-> > 
-> > In my understanding, gcc should initialize all holes (and other not
-> > mentioned fields) with 0, even for automatic storage [C99 only mandates
-> > this on static storage]
-> > 
-> > I tested on x86_64 and this is the case, but could not find a definitive
-> > answer in gcc documentation.
-> > 
-> > This kind of construct is widely used in networking tree.
-> > 
-> > Maybe we should ask to gcc experts if this behavior is guaranteed by
-> > gcc, or if we must review our code ;(
-> > 
-> > CC Jakub
-> > 
-> > Thanks !
-> > 
+On Fri, 2010-11-19 at 19:02 -0800, Stepan Moskovchenko wrote:
+> Clean up the clock control code in the probe calls, and add
+> support for controlling the clock for the IOMMU bus
+> interconnect. With the (proper) clock driver in place, the
+> clock control logic in the probe function can be made much
+> cleaner since it does not have to deal with the placeholder
+> driver anymore.
 > 
-> This is what I thought too. If it is not there are tones of bugs I wrote
-> of code that relays on this behaviour.
+> Change-Id: I1040bc4e18f4ab4b7cc0dd5fe667f9df83b9f1f5
+
+You need to remove this Change-Id ..
+
+> Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
+> ---
+> Please hold off on this until the clock driver is in.
+> The patch seems like it is a lot of changes, but a lot of
+> it comes from removing one condition, which causes a bunch
+> of code to be unindented by one level. This implementation
+> is a lot cleaner IMO.
+>  arch/arm/mach-msm/devices-msm8x60-iommu.c |    5 -
+>  arch/arm/mach-msm/include/mach/iommu.h    |    5 -
+>  arch/arm/mach-msm/iommu_dev.c             |  204 +++++++++++++++++------------
+>  3 files changed, 120 insertions(+), 94 deletions(-)
 > 
-> It would be interesting to know for sure
+> diff --git a/arch/arm/mach-msm/devices-msm8x60-iommu.c b/arch/arm/mach-msm/devices-msm8x60-iommu.c
+> index f9e7bd3..e12d7e2 100644
+> --- a/arch/arm/mach-msm/devices-msm8x60-iommu.c
+> +++ b/arch/arm/mach-msm/devices-msm8x60-iommu.c
+> @@ -282,7 +282,6 @@ static struct platform_device msm_root_iommu_dev = {
+> 
+>  static struct msm_iommu_dev jpegd_iommu = {
+>  	.name = "jpegd",
+> -	.clk_rate = -1
+>  };
+> 
+>  static struct msm_iommu_dev vpe_iommu = {
+> @@ -307,7 +306,6 @@ static struct msm_iommu_dev ijpeg_iommu = {
+> 
+>  static struct msm_iommu_dev vfe_iommu = {
+>  	.name = "vfe",
+> -	.clk_rate = -1
+>  };
+> 
+>  static struct msm_iommu_dev vcodec_a_iommu = {
+> @@ -320,17 +318,14 @@ static struct msm_iommu_dev vcodec_b_iommu = {
+> 
+>  static struct msm_iommu_dev gfx3d_iommu = {
+>  	.name = "gfx3d",
+> -	.clk_rate = 27000000
+>  };
+> 
+>  static struct msm_iommu_dev gfx2d0_iommu = {
+>  	.name = "gfx2d0",
+> -	.clk_rate = 27000000
+>  };
+> 
+>  static struct msm_iommu_dev gfx2d1_iommu = {
+>  	.name = "gfx2d1",
+> -	.clk_rate = 27000000
+>  };
+> 
+>  static struct platform_device msm_device_iommu_jpegd = {
+> diff --git a/arch/arm/mach-msm/include/mach/iommu.h b/arch/arm/mach-msm/include/mach/iommu.h
+> index 62f6699..10811ba 100644
+> --- a/arch/arm/mach-msm/include/mach/iommu.h
+> +++ b/arch/arm/mach-msm/include/mach/iommu.h
+> @@ -45,14 +45,9 @@
+>  /**
+>   * struct msm_iommu_dev - a single IOMMU hardware instance
+>   * name		Human-readable name given to this IOMMU HW instance
+> - * clk_rate	Rate to set for this IOMMU's clock, if applicable to this
+> - *		particular IOMMU. 0 means don't set a rate.
+> - *		-1 means it is an AXI clock with no valid rate
+> - *
+>   */
+>  struct msm_iommu_dev {
+>  	const char *name;
+> -	int clk_rate;
+>  };
+> 
+>  /**
+> diff --git a/arch/arm/mach-msm/iommu_dev.c b/arch/arm/mach-msm/iommu_dev.c
+> index b83c73b..7f2b730 100644
+> --- a/arch/arm/mach-msm/iommu_dev.c
+> +++ b/arch/arm/mach-msm/iommu_dev.c
+> @@ -29,6 +29,7 @@
+> 
+>  #include <mach/iommu_hw-8xxx.h>
+>  #include <mach/iommu.h>
+> +#include <mach/clk.h>
+> 
+>  struct iommu_ctx_iter_data {
+>  	/* input */
+> @@ -130,117 +131,134 @@ static int msm_iommu_probe(struct platform_device *pdev)
+>  {
+>  	struct resource *r, *r2;
+>  	struct clk *iommu_clk;
+> +	struct clk *iommu_pclk;
+>  	struct msm_iommu_drvdata *drvdata;
+>  	struct msm_iommu_dev *iommu_dev = pdev->dev.platform_data;
+>  	void __iomem *regs_base;
+>  	resource_size_t	len;
+> -	int ret = 0, ncb, nm2v, irq;
+> +	int ret, ncb, nm2v, irq;
+> 
+> -	if (pdev->id != -1) {
+> -		drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
+> +	if (pdev->id == -1) {
+> +		msm_iommu_root_dev = pdev;
+> +		return 0;
+> +	}
+> 
+> -		if (!drvdata) {
+> -			ret = -ENOMEM;
+> -			goto fail;
+> -		}
+> +	drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
+> 
+> -		if (!iommu_dev) {
+> -			ret = -ENODEV;
+> -			goto fail;
+> -		}
+> +	if (!drvdata) {
+> +		ret = -ENOMEM;
+> +		goto fail;
+> +	}
+> +
+> +	if (!iommu_dev) {
+> +		ret = -ENODEV;
+> +		goto fail;
+> +	}
+> 
+> -		if (iommu_dev->clk_rate != 0) {
+> -			iommu_clk = clk_get(&pdev->dev, "iommu_clk");
+> -
+> -			if (IS_ERR(iommu_clk)) {
+> -				ret = -ENODEV;
+> -				goto fail;
+> -			}
+> -
+> -			if (iommu_dev->clk_rate > 0) {
+> -				ret = clk_set_rate(iommu_clk,
+> -							iommu_dev->clk_rate);
+> -				if (ret) {
+> -					clk_put(iommu_clk);
+> -					goto fail;
+> -				}
+> -			}
+> -
+> -			ret = clk_enable(iommu_clk);
+> -			if (ret) {
+> -				clk_put(iommu_clk);
+> -				goto fail;
+> -			}
+> +	iommu_pclk = clk_get(NULL, "smmu_pclk");
+> +	if (IS_ERR(iommu_pclk)) {
+> +		ret = -ENODEV;
+> +		goto fail;
+> +	}
+> +
+> +	ret = clk_enable(iommu_pclk);
+> +	if (ret)
+> +		goto fail_enable;
+> +
+> +	iommu_clk = clk_get(&pdev->dev, "iommu_clk");
+> +
+> +	if (!IS_ERR(iommu_clk))	{
+> +		if (clk_get_rate(iommu_clk) == 0)
+> +			clk_set_min_rate(iommu_clk, 1);
+> +
+> +		ret = clk_enable(iommu_clk);
+> +		if (ret) {
+>  			clk_put(iommu_clk);
+> +			goto fail_pclk;
+>  		}
+> +	} else
+> +		iommu_clk = NULL;
+> 
+> -		r = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+> -						 "physbase");
+> -		if (!r) {
+> -			ret = -ENODEV;
+> -			goto fail;
+> -		}
+> +	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "physbase");
+> 
+> -		len = r->end - r->start + 1;
+> +	if (!r) {
+> +		ret = -ENODEV;
+> +		goto fail_clk;
+> +	}
+> 
+> -		r2 = request_mem_region(r->start, len, r->name);
+> -		if (!r2) {
+> -			pr_err("Could not request memory region: "
+> -			"start=%p, len=%d\n", (void *) r->start, len);
+> -			ret = -EBUSY;
+> -			goto fail;
+> -		}
+> +	len = r->end - r->start + 1;
+> 
+> -		regs_base = ioremap(r2->start, len);
+> +	r2 = request_mem_region(r->start, len, r->name);
+> +	if (!r2) {
+> +		pr_err("Could not request memory region: start=%p, len=%d\n",
+> +							(void *) r->start, len);(void *) r->start, len);
 
-Well.  We certainly assume in many places that
+You usually just tab over till you get to the " like this,
 
-	struct foo {
-		int a;
-		int b;
-	} f = {
-		.a = 1,
-	};
+pr_err("Could not request memory region: start=%p, len=%d\n",
+	(void *) r->start, len);
 
-will initialise b to zero.  But I doubt if much code at all assumes
-that this initialisation patterm will reliably zero out *holes* in the
-struct.
+> +		ret = -EBUSY;
+> +		goto fail_clk;
+> +	}
+> 
+> -		if (!regs_base) {
+> -			pr_err("Could not ioremap: start=%p, len=%d\n",
+> -				 (void *) r2->start, len);
+> -			ret = -EBUSY;
+> -			goto fail_mem;
+> -		}
+> +	regs_base = ioremap(r2->start, len);
+> 
+> -		irq = platform_get_irq_byname(pdev, "secure_irq");
+> -		if (irq < 0) {
+> -			ret = -ENODEV;
+> -			goto fail_io;
+> -		}
+> +	if (!regs_base) {
+> +		pr_err("Could not ioremap: start=%p, len=%d\n",
+> +			 (void *) r2->start, len);
+> +		ret = -EBUSY;
+> +		goto fail_mem;
+> +	}
+> +
+> +	irq = platform_get_irq_byname(pdev, "secure_irq");
+> +	if (irq < 0) {
+> +		ret = -ENODEV;
+> +		goto fail_io;
+> +	}
+> 
+> -		mb();
+> +	mb();
+> 
+> -		if (GET_IDR(regs_base) == 0) {
+> -			pr_err("Invalid IDR value detected\n");
+> -			ret = -ENODEV;
+> -			goto fail_io;
+> -		}
+> +	if (GET_IDR(regs_base) == 0) {
+> +		pr_err("Invalid IDR value detected\n");
+> +		ret = -ENODEV;
+> +		goto fail_io;
+> +	}
+> 
+> -		ret = request_irq(irq, msm_iommu_fault_handler, 0,
+> -				"msm_iommu_secure_irpt_handler", drvdata);
+> -		if (ret) {
+> -			pr_err("Request IRQ %d failed with ret=%d\n", irq, ret);
+> -			goto fail_io;
+> -		}
+> +	ret = request_irq(irq, msm_iommu_fault_handler, 0,
+> +			"msm_iommu_secure_irpt_handler", drvdata);
+> +	if (ret) {
+> +		pr_err("Request IRQ %d failed with ret=%d\n", irq, ret);
+> +		goto fail_io;
+> +	}
+> 
+> -		msm_iommu_reset(regs_base);
+> -		drvdata->base = regs_base;
+> -		drvdata->irq = irq;
+> +	msm_iommu_reset(regs_base);
+> +	drvdata->pclk = iommu_pclk;
+> +	drvdata->clk = iommu_clk;
+> +	drvdata->base = regs_base;
+> +	drvdata->irq = irq;
+> 
+> -		nm2v = GET_NM2VCBMT((unsigned long) regs_base);
+> -		ncb = GET_NCB((unsigned long) regs_base);
+> +	nm2v = GET_NM2VCBMT((unsigned long) regs_base);
+> +	ncb = GET_NCB((unsigned long) regs_base);
+> 
+> -		pr_info("device %s mapped at %p, irq %d with %d ctx banks\n",
+> +	pr_info("device %s mapped at %p, irq %d with %d ctx banks\n",
+>  			iommu_dev->name, regs_base, irq, ncb+1);
+> 
+> -		platform_set_drvdata(pdev, drvdata);
+> -	} else
+> -		msm_iommu_root_dev = pdev;
+> +	platform_set_drvdata(pdev, drvdata);
+> 
+> -	return 0;
+> +	if (iommu_clk)
+> +		clk_disable(iommu_clk);
+> +
+> +	clk_disable(iommu_pclk);
+> 
+> +	return 0;
+>  fail_io:
+>  	iounmap(regs_base);
+>  fail_mem:
+>  	release_mem_region(r->start, len);
+> +fail_clk:
+> +	if (iommu_clk) {
+> +		clk_disable(iommu_clk);
+> +		clk_put(iommu_clk);
+> +	}
+> +fail_pclk:
+> +	clk_disable(iommu_pclk);
+> +fail_enable:
+> +	clk_put(iommu_pclk);
+>  fail:
+>  	kfree(drvdata);
+>  	return ret;
+> @@ -252,7 +270,10 @@ static int msm_iommu_remove(struct platform_device *pdev)
+> 
+>  	drv = platform_get_drvdata(pdev);
+>  	if (drv) {
+> -		memset(drv, 0, sizeof(struct msm_iommu_drvdata));
+> +		if (drv->clk)
+> +			clk_put(drv->clk);
+> +		clk_put(drv->pclk);
+> +		memset(drv, 0, sizeof(*drv));
+
+Do you really need the memset ?
+
+>  		kfree(drv);
+>  		platform_set_drvdata(pdev, NULL);
+>  	}
+> @@ -264,7 +285,7 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
+>  	struct msm_iommu_ctx_dev *c = pdev->dev.platform_data;
+>  	struct msm_iommu_drvdata *drvdata;
+>  	struct msm_iommu_ctx_drvdata *ctx_drvdata = NULL;
+> -	int i, ret = 0;
+> +	int i, ret;
+>  	if (!c || !pdev->dev.parent) {
+>  		ret = -EINVAL;
+>  		goto fail;
+> @@ -288,6 +309,18 @@ static int msm_iommu_ctx_probe(struct platform_device *pdev)
+>  	INIT_LIST_HEAD(&ctx_drvdata->attached_elm);
+>  	platform_set_drvdata(pdev, ctx_drvdata);
+> 
+> +	ret = clk_enable(drvdata->pclk);
+> +	if (ret)
+> +		goto fail;
+> +
+> +	if (drvdata->clk) {
+> +		ret = clk_enable(drvdata->clk);
+> +		if (ret) {
+> +			clk_disable(drvdata->pclk);
+> +			goto fail;
+> +		}
+> +	}
+
+You did this in a prior patch also, you could combine them into a single
+helper function. Maybe do the same for the disable side too.
+
+Daniel
+
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
+
 
